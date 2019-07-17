@@ -15,6 +15,14 @@
         {
             "packageName": "redo-recommended",
             "projectFolder": "packages/redo-recommended"
+        },
+        {
+            "packageName": "redo-utils",
+            "projectFolder": "packages/redo-utils"
+        },
+        {
+            "packageName": "shapeql",
+            "projectFolder": "packages/shapeql"
         }
     ]
 }
