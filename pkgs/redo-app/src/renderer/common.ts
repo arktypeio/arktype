@@ -1,5 +1,5 @@
 import ApolloClient, { InMemoryCache, Resolvers } from "apollo-boost"
-import { Root, Learner, Bounds, Events, rootHandler } from "state"
+import { Root, Learner, Bounds, rootHandler } from "state"
 import { BrowserEvent } from "redo-model"
 import { buildSchemaSync, Resolver } from "type-graphql"
 import { createResolversMap } from "type-graphql/dist/utils/createResolversMap"
@@ -7,9 +7,6 @@ import { printSchema } from "graphql"
 import { createStore } from "shapeql"
 
 const uri = `http://localhost:${process.env.PORT}`
-
-@Resolver(of => Events)
-export class EventsResolver {}
 
 @Resolver(of => BrowserEvent)
 export class BrowserEventResolver {}
@@ -21,12 +18,7 @@ export class LearnerResolver {}
 export class BoundsResolver {}
 
 export const schema = buildSchemaSync({
-    resolvers: [
-        BrowserEventResolver,
-        LearnerResolver,
-        BoundsResolver,
-        EventsResolver
-    ],
+    resolvers: [BrowserEventResolver, LearnerResolver, BoundsResolver],
     skipCheck: true
 })
 

@@ -1,7 +1,14 @@
 import React from "react"
 import { Theme, createStyles } from "@material-ui/core"
-import { component, PrimaryButton, Response } from "blocks"
-import { deactivateLearner } from "state"
+import {
+    component,
+    PrimaryButton,
+    Response,
+    SecondaryButton,
+    Row,
+    Column
+} from "blocks"
+import { deactivateLearner, saveLearner } from "state"
 import { LearnerEvents } from "custom"
 
 const styles = (theme: Theme) =>
@@ -19,18 +26,28 @@ export const Learner = component({
     styles,
     query: { learner: { events: null, chromiumInstalling: null } }
 })(({ classes, data }) => (
-    <Response
-        loadingMessage="Downloading Chrome"
-        isLoading={data.learner!.chromiumInstalling}
-        contentOnLoading={true}
-    >
-        <>
-            <PrimaryButton
+    <Column justify="flex-start">
+        <Row align="center" justify="flex-start">
+            <SecondaryButton
                 text="Back home"
                 onClick={deactivateLearner}
-                color="primary"
+                color="secondary"
             />
-            <LearnerEvents events={data.learner!.events.processed} />
-        </>
-    </Response>
+
+            <Response isLoading={false}>
+                <PrimaryButton
+                    text="Save test"
+                    onClick={saveLearner}
+                    color="primary"
+                />
+            </Response>
+        </Row>
+        <Response
+            loadingMessage="Downloading Chrome"
+            isLoading={data.learner!.chromiumInstalling}
+            contentOnLoading={true}
+        >
+            <LearnerEvents events={data.learner!.events} />
+        </Response>
+    </Column>
 ))

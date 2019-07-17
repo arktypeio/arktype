@@ -25,7 +25,7 @@ export const updateMap = <T extends object>(
                     >
                     return [k, update(v)]
                 } else {
-                    return isRecursible(v)
+                    return isRecursible(v) && !Array.isArray(updater[key])
                         ? Array.isArray(v)
                             ? [
                                   k,
