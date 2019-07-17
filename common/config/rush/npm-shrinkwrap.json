@@ -284,9 +284,16 @@
       "resolved": "https://registry.npmjs.org/@material-ui/styles/-/styles-4.2.0.tgz"
     },
     "@material-ui/system": {
-      "version": "4.3.0",
+      "version": "4.3.1",
       "from": "@material-ui/system@^4.3.0",
-      "resolved": "https://registry.npmjs.org/@material-ui/system/-/system-4.3.0.tgz"
+      "resolved": "https://registry.npmjs.org/@material-ui/system/-/system-4.3.1.tgz",
+      "dependencies": {
+        "deepmerge": {
+          "version": "4.0.0",
+          "from": "deepmerge@^4.0.0",
+          "resolved": "https://registry.npmjs.org/deepmerge/-/deepmerge-4.0.0.tgz"
+        }
+      }
     },
     "@material-ui/types": {
       "version": "4.1.1",
@@ -382,6 +389,11 @@
       "version": "0.0.0",
       "from": "projects/redo-app.tgz",
       "resolved": "file:projects/redo-app.tgz"
+    },
+    "@rush-temp/redo-components": {
+      "version": "0.0.0",
+      "from": "projects/redo-components.tgz",
+      "resolved": "file:projects/redo-components.tgz"
     },
     "@rush-temp/redo-model": {
       "version": "0.0.0",
