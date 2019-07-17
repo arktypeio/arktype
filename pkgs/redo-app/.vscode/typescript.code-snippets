@@ -1,0 +1,39 @@
+{
+    "Component": {
+        "scope": "typescriptreact",
+        "prefix": "component",
+        "body": [
+            "import React from \"react\"",
+            "import { component } from \"blocks\"",
+            "",
+            "export type ${TM_FILENAME_BASE}Props = {}",
+            "",
+            "export const ${TM_FILENAME_BASE} = component({",
+            "\tname: \"${TM_FILENAME_BASE}\",",
+            "\tdefaultProps: {} as Partial<${TM_FILENAME_BASE}Props>,",
+            "})(({}) => ${0:<></>})"
+        ],
+        "description": "Create a Redo component"
+    },
+    "Styled Component": {
+        "scope": "typescriptreact",
+        "prefix": "styledComponent",
+        "body": [
+            "import React from \"react\"",
+            "import { Theme } from \"@material-ui/core\"",
+            "import { component } from \"blocks\"",
+            "import { createStyles } from \"@material-ui/styles\"",
+            "",
+            "const styles = (theme: Theme) => createStyles({})",
+            "",
+            "export type ${TM_FILENAME_BASE}Props = {}",
+            "",
+            "export const ${TM_FILENAME_BASE} = component({",
+            "\tname: \"${TM_FILENAME_BASE}\",",
+            "\tdefaultProps: {} as Partial<${TM_FILENAME_BASE}Props>,",
+            "\tstyles",
+            "})(({ classes }) => ${0:<></>})"
+        ],
+        "description": "Create a styled Redo component"
+    }
+}

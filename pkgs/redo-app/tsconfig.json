@@ -1,0 +1,27 @@
+{
+    "extends": "./node_modules/redo-recommended/tsconfig.base",
+    "compilerOptions": {
+        "baseUrl": "src",
+        "outDir": "dist",
+        "paths": {
+            "*": ["*"],
+            "state": ["renderer/state"],
+            "state/*": ["renderer/state/*"],
+            "blocks": ["renderer/components/blocks"],
+            "blocks/*": ["renderer/components/blocks/*"],
+            "renderer/*": ["renderer/*"],
+            "custom": ["renderer/components/custom"],
+            "custom/*": ["renderer/components/custom/*"],
+            "gql": ["renderer/components/gql"],
+            "gql/*": ["renderer/components/gql/*"],
+            "pages": ["renderer/pages"],
+            "pages/*": ["renderer/pages/*"],
+            "browser": ["browser"],
+            "browser/*": ["browser/*"],
+            "assets": ["renderer/assets"],
+            "assets/*": ["renderer/assets/*"]
+        }
+    },
+    "include": ["src"],
+    "exclude": ["node_modules", "**/__tests__"]
+}

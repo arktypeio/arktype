@@ -1,0 +1,43 @@
+{
+    "name": "shapeql",
+    "version": "1.0.0",
+    "author": "redo.qa",
+    "description": "Build 💪-typed GraphQL from simple shapes🔷",
+    "private": true,
+    "main": "dist/index.js",
+    "types": "dist/index.d.ts",
+    "scripts": {
+        "build": "npm run clean && tsc",
+        "clean": "rm -rf dist && mkdir dist",
+        "test": "jest"
+    },
+    "dependencies": {
+        "class-transformer": "0.2.0",
+        "deepmerge": "3.2.1",
+        "moize": "5.4.4",
+        "redo-utils": "1.0.0",
+        "reflect-metadata": "0.1.13"
+    },
+    "devDependencies": {
+        "@types/graphql": "14.2.2",
+        "@types/jest": "24.0.13",
+        "@types/node": "12.6.6",
+        "apollo-cache-inmemory": "1.6.2",
+        "apollo-client": "2.6.3",
+        "apollo-link-http": "1.5.15",
+        "graphql": "14.4.2",
+        "graphql-tag": "2.10.0",
+        "isomorphic-fetch": "2.2.1",
+        "jest": "24.8.0",
+        "redo-recommended": "1.0.0",
+        "ts-jest": "24.0.2",
+        "typescript": "3.5.2",
+        "type-graphql": "0.17.4"
+    },
+    "peerDependencies": {
+        "apollo-client": "2.x.x",
+        "graphql": "14.x.x",
+        "graphql-tag": "2.x.x",
+        "type-graphql": "0.17.x"
+    }
+}
