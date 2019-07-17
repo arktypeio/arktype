@@ -1,0 +1,20 @@
+{
+    "$schema": "https://developer.microsoft.com/json-schemas/rush/v5/rush.schema.json",
+    "rushVersion": "5.10.2",
+    "pnpmVersion": "2.15.1",
+    "pnpmOptions": {
+        "strictPeerDependencies": true
+    },
+    "nodeSupportedVersionRange": ">=10.13.0 <11.0.0",
+    "ensureConsistentVersions": true,
+
+    "repository": {
+        "url": "https://github.com/redo-qa/redo"
+    },
+    "projects": [
+        {
+            "packageName": "redo-recommended",
+            "projectFolder": "packages/redo-recommended"
+        }
+    ]
+}
