@@ -1,0 +1,28 @@
+{
+    "name": "redo-model",
+    "version": "1.0.0",
+    "author": "redo.qa",
+    "description": "Shared types that model Redo",
+    "private": true,
+    "main": "dist/index.js",
+    "types": "dist/index.d.ts",
+    "scripts": {
+        "build": "rm -rf dist && tsc"
+    },
+    "dependencies": {
+        "class-transformer": "0.2.0",
+        "class-validator": "0.9.1",
+        "validate.js": "0.13.1"
+    },
+    "devDependencies": {
+        "graphql": "14.4.2",
+        "redo-recommended": "1.0.0",
+        "reflect-metadata": "0.1.13",
+        "type-graphql": "0.17.4",
+        "typescript": "3.5.2"
+    },
+    "peerDependencies": {
+        "graphql": "14.x.x",
+        "type-graphql": "0.17.x"
+    }
+}

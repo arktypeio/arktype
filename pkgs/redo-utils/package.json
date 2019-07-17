@@ -1,0 +1,23 @@
+{
+    "name": "redo-utils",
+    "version": "1.0.0",
+    "author": "redo.qa",
+    "description": "Common utilities consumed by Redo",
+    "private": true,
+    "main": "dist/index.js",
+    "types": "dist/index.d.ts",
+    "scripts": {
+        "build": "rm -rf dist && tsc"
+    },
+    "dependencies": {
+        "class-transformer": "0.2.0",
+        "fs-extra": "8.1.0",
+        "moize": "5.4.4"
+    },
+    "devDependencies": {
+        "@types/fs-extra": "8.0.0",
+        "@types/node": "12.6.6",
+        "redo-recommended": "1.0.0",
+        "typescript": "3.5.2"
+    }
+}
