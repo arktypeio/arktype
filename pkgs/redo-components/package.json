@@ -1,0 +1,16 @@
+{
+    "name": "redo-components",
+    "version": "1.0.0",
+    "author": "redo.qa",
+    "description": "Common UI components consumed by Redo",
+    "private": true,
+    "main": "dist/index.js",
+    "types": "dist/index.d.ts",
+    "scripts": {
+        "build": "rm -rf dist && tsc"
+    },
+    "dependencies": {},
+    "devDependencies": {
+        "redo-recommended": "1.0.0"
+    }
+}

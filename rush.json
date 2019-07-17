@@ -32,6 +32,10 @@
         {
             "packageName": "redo-server",
             "projectFolder": "pkgs/redo-server"
+        },
+        {
+            "packageName": "redo-components",
+            "projectFolder": "pkgs/redo-components"
         }
     ]
 }
