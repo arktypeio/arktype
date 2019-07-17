@@ -57,6 +57,11 @@ describe("queries", () => {
             d: [initialA, initialA]
         })
     })
+    test("handle filtered object within array", () => {
+        expect(store.query({ d: { a: null } })).toStrictEqual({
+            d: [{ a: 0 }, { a: 0 }]
+        })
+    })
     test("don't include extraneous keys", () => {
         expect(store.query({ a: { a: null } })).toStrictEqual({
             a: { a: initialA.a }
@@ -127,6 +132,26 @@ describe("mutations", () => {
             ]
         })
     })
+    test("sets array value", async () => {
+        await store.mutate({ d: [] })
+        expect(
+            client.readQuery({
+                query: gql`
+                    {
+                        d {
+                            a
+                            b {
+                                a
+                            }
+                        }
+                    }
+                `
+            })
+        ).toStrictEqual({
+            d: []
+        })
+    })
+
     test("doesn't update extraneous keys", async () => {
         const expected = store.queryAll()
         expected.a.b.a = [0, 1]

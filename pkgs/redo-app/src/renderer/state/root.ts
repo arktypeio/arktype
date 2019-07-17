@@ -34,7 +34,7 @@ export const rootHandler: Handler<Root> = {
 
 export const initialRoot: Root = {
     learner: learnerInitial,
-    token: "",
+    token: "fake",
     page: Page.Home,
     cardFilter: ""
 }

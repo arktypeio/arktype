@@ -19,7 +19,7 @@ const isArrayField = (o: any, field: FieldMetadata): o is any[] => {
                 field,
                 undefined,
                 4
-            )}\n but found ${JSON.stringify(o)}.`
+            )}\n but found ${JSON.stringify(o, undefined, 4)}.`
         )
     }
     return arrayExpected

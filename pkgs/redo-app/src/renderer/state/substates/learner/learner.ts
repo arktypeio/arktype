@@ -10,7 +10,6 @@ import p from "puppeteer"
 import { store } from "renderer/common"
 import { ObjectType, Field } from "type-graphql"
 import { remote, Rectangle } from "electron"
-import { Events, handleEvents } from "./events"
 import { handle } from "shapeql"
 import { isDeepStrictEqual } from "util"
 import { join } from "path"
@@ -49,8 +48,8 @@ export class Learner {
     @Field()
     active: boolean
 
-    @Field()
-    events: Events
+    @Field(type => [BrowserEvent])
+    events: BrowserEvent[]
 
     @Field()
     lastConnectedEndpoint: string
@@ -63,16 +62,12 @@ export class Learner {
 }
 
 export const handleLearner = handle({
-    active: async _ => await (_ ? start() : stop()),
-    events: handleEvents
+    active: async _ => await (_ ? start() : stop())
 })
 
 export const learnerInitial: Learner = {
     active: false,
-    events: {
-        processed: [],
-        current: []
-    },
+    events: [],
     lastConnectedEndpoint: "",
     lastMainWindowBounds: {
         height: -1,
@@ -159,11 +154,20 @@ export const deactivateLearner = async () => {
     })
 }
 
+export const saveLearner = async () => {
+    await store.mutate({
+        learner: {
+            events: [] // works with arrow function
+        }
+    })
+}
+
 const notify = (event: BrowserEvent) => {
     try {
         store.mutate({
-            learner: { events: { current: current => current.concat(event) } }
+            learner: { events: _ => _.concat(event) }
         })
+        console.log(`Notify is working: ${event} `)
     } catch (e) {
         console.log(e)
     }
