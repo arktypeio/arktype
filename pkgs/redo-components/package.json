@@ -1,16 +1,23 @@
 {
-    "name": "redo-components",
-    "version": "1.0.0",
-    "author": "redo.qa",
-    "description": "Common UI components consumed by Redo",
-    "private": true,
-    "main": "dist/index.js",
-    "types": "dist/index.d.ts",
-    "scripts": {
-        "build": "rm -rf dist && tsc"
-    },
-    "dependencies": {},
-    "devDependencies": {
-        "redo-recommended": "1.0.0"
-    }
+  "name": "redo-components",
+  "version": "1.0.0",
+  "author": "redo.qa",
+  "description": "Common UI components consumed by Redo",
+  "private": true,
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "rm -rf dist && tsc"
+  },
+  "dependencies": {
+    "@material-ui/core": "4.2.0",
+    "@material-ui/styles": "4.2.0",
+    "react": "16.8.6",
+    "react-dom": "16.8.6"
+  },
+  "devDependencies": {
+    "@types/react": "16.8.8",
+    "@types/react-dom": "16.8.3",
+    "redo-recommended": "1.0.0"
+  }
 }
