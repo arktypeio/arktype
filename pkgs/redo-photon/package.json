@@ -1,0 +1,20 @@
+{
+    "name": "redo-photon",
+    "version": "1.0.0",
+    "scripts": {
+        "start": "ts-node-dev --no-notify --respawn --transpileOnly ./src",
+        "seed": "ts-node prisma/seed.ts",
+        "postinstall": "prisma2 generate"
+    },
+    "dependencies": {
+        "@prisma/nexus": "0.0.1",
+        "graphql-yoga": "1.17.4",
+        "nexus": "0.11.7"
+    },
+    "devDependencies": {
+        "@types/node": "12.6.6",
+        "ts-node": "8.3.0",
+        "ts-node-dev": "1.0.0-pre.40",
+        "typescript": "3.5.2"
+    }
+}
