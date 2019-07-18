@@ -14,6 +14,7 @@ import { handle } from "shapeql"
 import { isDeepStrictEqual } from "util"
 import { join } from "path"
 import { homedir } from "os"
+import { Resolver } from "type-graphql"
 
 const BROWSER_WINDOW_TITLEBAR_SIZE = 35
 
@@ -157,7 +158,7 @@ export const deactivateLearner = async () => {
 export const saveLearner = async () => {
     await store.mutate({
         learner: {
-            events: [] // works with arrow function
+            events: []
         }
     })
 }

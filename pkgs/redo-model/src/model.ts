@@ -4,7 +4,8 @@ import { IsNotEmpty } from "class-validator"
 import { Expose } from "class-transformer"
 import { EqualsProperty, IsEmail } from "./validators"
 
-@ObjectType()
+@ObjectType("BrowserObject")
+@InputType("BrowserInput")
 export class BrowserEvent {
     @Field()
     type: string
@@ -25,6 +26,22 @@ export class Test {
     tags: string[]
 
     @Field(type => [BrowserEvent])
+    steps: BrowserEvent[]
+}
+
+@ArgsType()
+@InputType()
+export class TestInput implements Partial<Test> {
+    @Field()
+    @Expose()
+    name: string
+
+    @Field(type => [String])
+    @Expose()
+    tags: string[]
+
+    @Field(type => [BrowserEvent])
+    @Expose()
     steps: BrowserEvent[]
 }
 
