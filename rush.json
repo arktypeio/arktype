@@ -36,6 +36,10 @@
         {
             "packageName": "redo-components",
             "projectFolder": "pkgs/redo-components"
+        },
+        {
+            "packageName": "redo-photon",
+            "projectFolder": "pkgs/redo-photon"
         }
     ]
 }
