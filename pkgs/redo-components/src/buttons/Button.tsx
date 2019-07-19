@@ -1,51 +1,34 @@
 import React from "react"
-import { Button as MuiButton, Typography, Theme } from "@material-ui/core"
-import { createStyles } from "@material-ui/styles"
+import {
+    Button as MuiButton,
+    Typography as MuiTypography,
+    Theme
+} from "@material-ui/core"
+import { makeStyles } from "@material-ui/styles"
 import { ButtonProps as MuiButtonProps } from "@material-ui/core/Button"
-import { component, GridProps } from "blocks"
-import { Page } from "state"
 
-const styles = (theme: Theme) =>
-    createStyles({
-        button: {
-            textTransform: "none",
-            minWidth: theme.spacing(10)
-        },
-        defaultTextClass: {
-            color: theme.palette.primary.contrastText
-        }
-    })
-
-export type ButtonProps = Partial<MuiButtonProps> &
-    GridProps & {
-        text: string
-        textClass?: string
-        linkTo?: Page
+const stylize = makeStyles((theme: Theme) => ({
+    button: {
+        textTransform: "none",
+        minWidth: theme.spacing(10)
+    },
+    defaultText: {
+        color: theme.palette.primary.contrastText
     }
+}))
 
-export const Button = component({
-    name: "Button",
-    defaultProps: {} as Partial<ButtonProps>,
-    gridded: true,
-    store: true,
-    styles
-})(({ text, textClass, classes, linkTo, onClick, store, ...rest }) => (
-    <MuiButton
-        className={classes.button}
-        {...rest}
-        onClick={e => {
-            if (onClick) {
-                onClick(e)
-            }
-            if (linkTo) {
-                store.mutate({ page: linkTo })
-            }
-        }}
-    >
-        <Typography
-            className={textClass ? textClass : classes.defaultTextClass}
-        >
-            {text}
-        </Typography>
-    </MuiButton>
-))
+export type ButtonProps = Partial<MuiButtonProps> & {
+    text: string
+    textClass?: string
+}
+
+export const Button = ({ text, textClass, ...rest }: ButtonProps) => {
+    const { button, defaultText } = stylize()
+    return (
+        <MuiButton className={button} {...rest}>
+            <MuiTypography className={textClass ? textClass : defaultText}>
+                {text}
+            </MuiTypography>
+        </MuiButton>
+    )
+}
