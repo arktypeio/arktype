@@ -4,7 +4,8 @@
     "scripts": {
         "start": "ts-node-dev --no-notify --respawn --transpileOnly ./src",
         "seed": "ts-node prisma/seed.ts",
-        "postinstall": "prisma2 generate"
+        "postinstall": "prisma2 generate",
+        "build": ""
     },
     "dependencies": {
         "@prisma/nexus": "0.0.1",
