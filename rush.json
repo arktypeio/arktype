@@ -36,6 +36,10 @@
         {
             "packageName": "redo-components",
             "projectFolder": "pkgs/redo-components"
+        },
+        {
+            "packageName": "babel-preset-redo",
+            "projectFolder": "pkgs/babel-preset-redo"
         }
     ]
 }

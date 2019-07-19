@@ -9,7 +9,6 @@ import {
     HotModuleReplacementPlugin,
     NoEmitOnErrorsPlugin
 } from "webpack"
-const CircularDependencyPlugin = require("circular-dependency-plugin")
 
 export const env = process.env.NODE_ENV as any
 export const isDev = () => env === "development"
@@ -31,8 +30,8 @@ export const commonConfig: Configuration = {
     module: {
         rules: [
             {
-                test: /\.tsx?$/,
-                loader: "ts-loader",
+                test: /\.(j|t)sx?$/,
+                loader: "babel-loader",
                 exclude: /node_modules/
             },
             {
@@ -45,11 +44,7 @@ export const commonConfig: Configuration = {
                 use: []
             }
         ]
-    },
-    plugins: [
-        // TODO: Reenable this once circular dependencies are removed
-        // new CircularDependencyPlugin()
-    ]
+    }
 }
 
 export const webConfig: Configuration = merge.smart(commonConfig, {
