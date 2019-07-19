@@ -7,7 +7,9 @@
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
-    "build": "rm -rf dist && tsc"
+    "build": "rm -rf dist && tsc",
+    "storybook": "start-storybook -p 6006",
+    "build-storybook": "build-storybook"
   },
   "dependencies": {
     "@material-ui/core": "4.2.0",
@@ -16,8 +18,16 @@
     "react-dom": "16.8.6"
   },
   "devDependencies": {
+    "@babel/core": "7.5.5",
+    "@storybook/addon-actions": "5.1.9",
+    "@storybook/addon-info": "~5.1.9",
+    "@storybook/addon-links": "5.1.9",
+    "@storybook/addons": "5.1.9",
+    "@storybook/react": "5.1.9",
     "@types/react": "16.8.8",
     "@types/react-dom": "16.8.3",
+    "@types/storybook__react": "4.0.2",
+    "babel-loader": "8.0.6",
     "redo-recommended": "1.0.0"
   }
 }
