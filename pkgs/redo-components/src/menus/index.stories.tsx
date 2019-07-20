@@ -2,7 +2,7 @@ import React from "react"
 import { storiesOf } from "@storybook/react"
 import { muiTheme } from "../utils"
 import { Menu, MenuItem } from "."
-import { PrimaryButton, PrimaryButtonProps } from "../buttons"
+import { PrimaryButton } from "../buttons"
 
 storiesOf("Menu", module)
     .addDecorator(muiTheme())

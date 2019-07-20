@@ -1,6 +1,5 @@
 import React from "react"
 import { Field } from "formik"
-import { component } from "blocks"
 
 export type InnerFormFieldProps = {
     component: string | React.ComponentType<any>
@@ -9,11 +8,8 @@ export type InnerFormFieldProps = {
 
 export type FormFieldProps = Omit<InnerFormFieldProps, "component">
 
-export const FormField = component({
-    name: "FormField",
-    defaultProps: {} as Partial<InnerFormFieldProps>
-})(({ ...props }) => {
+export const FormField = ({ ...props }: FormFieldProps) => {
     return <Field {...props} />
-})
+}
 
 export type FormFieldElement = React.ReactElement<FormFieldProps>
