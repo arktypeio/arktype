@@ -1,23 +1,13 @@
 import React from "react"
 import { Theme, Typography } from "@material-ui/core"
-import { component, Row } from "blocks"
-import { createStyles } from "@material-ui/styles"
+import { makeStyles } from "@material-ui/styles"
 
-const styles = (theme: Theme) =>
-    createStyles({
-        row: {
-            justifyContent: "space-around"
-        }
-    })
+const styles = makeStyles((theme: Theme) => ({}))
 
 export type InfoTextProps = {
     children: string
 }
 
-export const InfoText = component({
-    name: "InfoText",
-    defaultProps: {} as Partial<InfoTextProps>,
-    styles
-})(({ classes, children }) => {
+export const InfoText = ({ children }: InfoTextProps) => {
     return <Typography align="center">{children}</Typography>
-})
+}
