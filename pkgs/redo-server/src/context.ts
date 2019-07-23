@@ -1,7 +1,7 @@
-import { Prisma } from "./database"
+import Photon from "@generated/photon"
 
 export interface Context {
-    prisma: Prisma
+    prisma: Photon
     req: any
     userId: string
 }

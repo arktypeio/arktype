@@ -2,9 +2,11 @@ import "dotenv/config"
 import "reflect-metadata"
 import { ApolloServer } from "apollo-server"
 import { buildSchema } from "type-graphql"
-import { prisma } from "./database"
 import { authChecker, getUserId } from "./auth"
 import { resolvers } from "./resolvers"
+import Photon from "@generated/photon"
+
+const photon = new Photon()
 
 const serve = async () => {
     const schema = await buildSchema({ resolvers, authChecker })
@@ -14,7 +16,7 @@ const serve = async () => {
         context: ({ req }: any) => ({
             ...req,
             userId: getUserId(req),
-            prisma
+            photon
         }),
         debug: true,
         formatError: error => {
