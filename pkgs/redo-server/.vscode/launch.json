@@ -2,10 +2,36 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Node Inspector",
+            "name": "Current TS file",
             "type": "node",
             "request": "launch",
             "args": ["${file}"],
+            "runtimeArgs": ["-r", "ts-node/register"],
+            "cwd": "${workspaceRoot}",
+            "protocol": "inspector",
+            "internalConsoleOptions": "openOnSessionStart",
+            "env": {
+                "TS_NODE_IGNORE": "false"
+            }
+        },
+        {
+            "name": "Generate",
+            "type": "node",
+            "request": "launch",
+            "args": ["${workspaceRoot}/generate.ts"],
+            "runtimeArgs": ["-r", "ts-node/register"],
+            "cwd": "${workspaceRoot}",
+            "protocol": "inspector",
+            "internalConsoleOptions": "openOnSessionStart",
+            "env": {
+                "TS_NODE_IGNORE": "false"
+            }
+        },
+        {
+            "name": "Start server",
+            "type": "node",
+            "request": "launch",
+            "args": ["${workspaceRoot}/src/index.ts"],
             "runtimeArgs": ["-r", "ts-node/register"],
             "cwd": "${workspaceRoot}",
             "protocol": "inspector",

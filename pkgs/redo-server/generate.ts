@@ -1,7 +1,6 @@
 import "dotenv/config"
 import "reflect-metadata"
-import { generateModel } from "./src/generateModel"
-import { resolvers } from "./src/resolvers"
-import { authChecker } from "./src/auth"
+import "redo-model"
+import { generateSchema } from "./src/generateSchema"
 
-generateModel({ resolvers, authChecker })
+generateSchema({})
