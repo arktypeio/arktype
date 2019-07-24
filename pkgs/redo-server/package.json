@@ -5,9 +5,10 @@
     "description": "Redo's server",
     "private": true,
     "scripts": {
-        "build": "",
+        "build": "tsc",
+        "buildGenerate": "tsc prisma/generate.ts",
         "start": "ts-node-dev --no-notify --respawn --transpileOnly ./src",
-        "generate": "ts-node generate.ts",
+        "generate": "ts-node prisma/generate.ts",
         "postinstall": "prisma2 generate",
         "test": "jest"
     },
@@ -22,6 +23,7 @@
         "isomorphic-ws": "4.0.1",
         "jsonwebtoken": "8.5.0",
         "redo-model": "1.0.0",
+        "redo-utils": "1.0.0",
         "reflect-metadata": "0.1.13",
         "type-graphql": "0.17.4"
     },

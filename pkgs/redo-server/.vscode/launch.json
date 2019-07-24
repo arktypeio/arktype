@@ -2,43 +2,22 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Current TS file",
-            "type": "node",
-            "request": "launch",
-            "args": ["${file}"],
-            "runtimeArgs": ["-r", "ts-node/register"],
-            "cwd": "${workspaceRoot}",
-            "protocol": "inspector",
-            "internalConsoleOptions": "openOnSessionStart",
-            "env": {
-                "TS_NODE_IGNORE": "false"
-            }
-        },
-        {
             "name": "Generate",
             "type": "node",
             "request": "launch",
-            "args": ["${workspaceRoot}/generate.ts"],
-            "runtimeArgs": ["-r", "ts-node/register"],
-            "cwd": "${workspaceRoot}",
             "protocol": "inspector",
-            "internalConsoleOptions": "openOnSessionStart",
-            "env": {
-                "TS_NODE_IGNORE": "false"
-            }
+            "program": "${workspaceFolder}/prisma/generate.ts",
+            "preLaunchTask": "tsc: build - tsconfig.generate.json",
+            "outFiles": ["${workspaceFolder}/dist/__generate__/**/*.js"]
         },
         {
             "name": "Start server",
             "type": "node",
             "request": "launch",
-            "args": ["${workspaceRoot}/src/index.ts"],
-            "runtimeArgs": ["-r", "ts-node/register"],
-            "cwd": "${workspaceRoot}",
             "protocol": "inspector",
-            "internalConsoleOptions": "openOnSessionStart",
-            "env": {
-                "TS_NODE_IGNORE": "false"
-            }
+            "program": "${workspaceRoot}/src/index.ts",
+            "preLaunchTask": "tsc: build - tsconfig.json",
+            "outFiles": ["${workspaceFolder}/dist/**/*.js"]
         }
     ]
 }

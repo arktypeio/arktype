@@ -13065,6 +13065,9 @@ packages:
       node: '>=6'
     peerDependencies:
       typescript: '*'
+    peerDependenciesMeta:
+      typescript:
+        optional: true
     resolution:
       integrity: sha512-f5Knjh7XCyRIzoC/z1Su1yLLRrPrFCgtUAh/9fCSP6NKbATwpOL1+idQVXQokK9GRFURn/jYPGPfegIctwunoA==
   /tsconfig-paths-webpack-plugin/3.2.0:
@@ -13934,7 +13937,7 @@ packages:
     dev: false
     name: '@rush-temp/redo-app'
     resolution:
-      integrity: sha512-j4Cr/dZToQW3+5xjUxxn5vzTCV1CfGvO3wCuHTQF2qguq/DVf71/ZkYQAV1pLBNBawfgP2tq9OYEyc45Bsmjrg==
+      integrity: sha512-xXbsEPyhnK6HSgL+LpYyKt4uMvvXy4RRjJYEWmouel068hfsfCGC6Ymurb+G3ts6vji10aRAkZA6bV7DL3GRlQ==
       tarball: 'file:projects/redo-app.tgz'
     version: 0.0.0
   'file:projects/redo-components.tgz_typescript@3.5.2+webpack@4.29.6':
@@ -13965,7 +13968,7 @@ packages:
       typescript: '*'
       webpack: '*'
     resolution:
-      integrity: sha512-I7sxBozknMw4hl41T86FdNSL1uQb994VKmufTfsbZh9J0chLNutO+ZhxuVGhEDfoJPV2ienMKF3WNx0bU7hf2A==
+      integrity: sha512-QB6a9S6QDOoT9J/yb8vY11KL8mnQ++uP6F9WPN3Nje2pEdwc26FiqdnD4G1jcBeDRiAH+FLoz0Diqr+QH2xyew==
       tarball: 'file:projects/redo-components.tgz'
     version: 0.0.0
   'file:projects/redo-model.tgz_@types+graphql@14.2.2':
@@ -13983,7 +13986,7 @@ packages:
     peerDependencies:
       '@types/graphql': '*'
     resolution:
-      integrity: sha512-csf/VPpIvYGI0eSaFida1QJLXD7PFbDUEBnjk3It9WAysVr53agBKuP6q14DaMAl/a9IR824kR0sGfozcDQqyw==
+      integrity: sha512-69vhON/hxR1M4iVn/8Wk+zGAPb6TQQ34bKOL3FV6xP8c/2cg5RMi/xvRJnBnbMy/RqLaLnIsWLKzxLMxQEdheg==
       tarball: 'file:projects/redo-model.tgz'
     version: 0.0.0
   'file:projects/redo-recommended.tgz':
@@ -14007,7 +14010,7 @@ packages:
       '@babel/core': 7.5.5
       '@babel/runtime-corejs3': 7.5.5
     resolution:
-      integrity: sha512-ZriuKxbQryhpvH5uWSrBHvBavEwnNgwSmpow81ajnWhZ+v3F2eNLuBTQLFvEdT4Uvp6+vWoSMtHq5if8MUHQcA==
+      integrity: sha512-+yas8sGw4AWZTVjMm0hTIslgrbuWkhqFg3EgZUr7PMghIYAehBqOghKhQAx2B074PG+qZAxbw5GaB+GAgUw9jg==
       tarball: 'file:projects/redo-recommended.tgz'
     version: 0.0.0
   'file:projects/redo-server.tgz':
@@ -14040,7 +14043,7 @@ packages:
     dev: false
     name: '@rush-temp/redo-server'
     resolution:
-      integrity: sha512-HrdjohFYcQocwgzWdbkV8NxdPc30Vgk2HIJp5ulxCcO9U3fP4hPIa58gNJTd1FvGfXS+ESzmVJt6OCmRwViJZQ==
+      integrity: sha512-o3OEr1LgFXUNJBcxPg0nh+mzFOK/LXeGzHLw4bhK2FCX3ly7t6Bpye0hS4KcDyp6VGI4+BuQxs39RN4aCd8FDw==
       tarball: 'file:projects/redo-server.tgz'
     version: 0.0.0
   'file:projects/redo-utils.tgz':
@@ -14054,7 +14057,7 @@ packages:
     dev: false
     name: '@rush-temp/redo-utils'
     resolution:
-      integrity: sha512-+HE+CsIcGhK1GIDshbv88lUwWeyN5lsr3NCIIPbks6C5oZVvpCeW21KxBZqxWobjKOjCRmV69QgEblWFdTxnmA==
+      integrity: sha512-KOiNCPmn1fynMigBz2iVRW3X71W4uZfWOtzfDBOmFg94pOUMLzp8UrB+nRAO02ScCuXEX8jeFYOvpNW234jfuQ==
       tarball: 'file:projects/redo-utils.tgz'
     version: 0.0.0
   'file:projects/shapeql.tgz':
@@ -14079,9 +14082,10 @@ packages:
     dev: false
     name: '@rush-temp/shapeql'
     resolution:
-      integrity: sha512-ZNByrUjamQSwfja93aVPvVNFMChgy7PYd409p0VW7zxrkzlP+b2/7Gvj2duts1umhmLW/xvnsNag8tEYf6P9OQ==
+      integrity: sha512-cRMczglB7GvNLLsYOCC+H8HiJCSnZSsyk4etwMdNU+WiKfwAanLspiRIVpqqO9DYE4yT7GnZ8JlPtQuTSoPZ8Q==
       tarball: 'file:projects/shapeql.tgz'
     version: 0.0.0
+registry: ''
 specifiers:
   '@babel/cli': 7.5.5
   '@babel/core': 7.5.5
