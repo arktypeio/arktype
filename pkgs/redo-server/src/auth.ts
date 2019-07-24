@@ -25,14 +25,14 @@ export function getUserId(req: any) {
 }
 
 export const authChecker: AuthChecker<Context> = async (
-    { context: { prisma, userId } },
+    { context: { photon, id } },
     roles
 ) => {
-    if (!userId) {
+    if (!id) {
         return false
     }
-    const user = await prisma.user({ id: userId })
-    if(!user) {
+    const user = await photon.users.findOne({ where: { id } })
+    if (!user) {
         return false
     }
     return (

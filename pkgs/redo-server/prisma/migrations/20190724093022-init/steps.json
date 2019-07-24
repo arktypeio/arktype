@@ -1,0 +1,46 @@
+{
+  "version": "0.0.158",
+  "steps": [
+    {
+      "stepType": "UpdateField",
+      "model": "BrowserEvent",
+      "name": "test",
+      "type": {
+        "Relation": {
+          "to": "Test",
+          "to_fields": [
+            "id"
+          ],
+          "name": "BrowserEventToTest",
+          "on_delete": "None"
+        }
+      }
+    },
+    {
+      "stepType": "UpdateField",
+      "model": "Test",
+      "name": "tags",
+      "arity": "list"
+    },
+    {
+      "stepType": "UpdateField",
+      "model": "Test",
+      "name": "steps",
+      "type": {
+        "Relation": {
+          "to": "BrowserEvent",
+          "to_fields": [],
+          "name": "BrowserEventToTest",
+          "on_delete": "None"
+        }
+      },
+      "arity": "list"
+    },
+    {
+      "stepType": "UpdateField",
+      "model": "User",
+      "name": "roles",
+      "arity": "list"
+    }
+  ]
+}
