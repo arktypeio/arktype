@@ -5,7 +5,7 @@
     "description": "Redo's server",
     "private": true,
     "scripts": {
-        "build": "tsc",
+        "build": "npm run generate && tsc",
         "buildGenerate": "tsc -p tsconfig.generate.json",
         "start": "ts-node-dev --no-notify --respawn --transpileOnly ./src",
         "generateSchema": "npm run buildGenerate && node dist/__generate__/generate.js",
