@@ -1,19 +1,19 @@
-import React from "react"
+import React, { useState } from "react"
 import { Theme, CircularProgress } from "@material-ui/core"
 import { makeStyles } from "@material-ui/styles"
 import { Column } from "../layouts"
-import { ErrorText, InfoText } from "../typography"
-import { FormText } from "forms"
+import { ErrorText } from "../typography"
+import deepmerge from "deepmerge"
 
 const styles = makeStyles((theme: Theme) => {})
 
-export type RespondToProps<T> = {
-    children: JSX.Element
-    response: Response<T>
-    options: ResponseOptions<T>
+export type RespondToProps<T = any> = {
+    response: ResponseState<T>
+    children?: JSX.Element
+    options?: ResponseOptions<T>
 }
 
-export type Response<T> = {
+export type ResponseState<T = any> = {
     data?: T
     loading?: boolean
     errors?: string[]
@@ -25,62 +25,76 @@ export type ResponseOptions<T> = {
     loading?: ResponseItemOptions<boolean>
 }
 
-export type ResponseItemOptions<T> = {
+type ResponseItemOptions<T> = {
     showContent?: boolean
-    onChange?: (value: T) => void
-    displayAs?: (props: ResponseStateProps<T>) => JSX.Element
+    // TODO determine whether this should be included as part of API
+    onChange?: (value: T | undefined) => void
+    displayAs?: (props: ResponseStateProps<T>) => JSX.Element | null
 }
 
-export type ResponseStateProps<T> = {
+type ResponseStateProps<T> = {
     value: T
 }
+const defaultRespondToOptions: ResponseOptions<any> = {
+    errors: {
+        displayAs: ({ value }) => (
+            <>
+                {value.map((message, key) => (
+                    <ErrorText key={key}>{message}</ErrorText>
+                ))}
+            </>
+        )
+    },
+    loading: {
+        displayAs: ({ value }) => (value ? <CircularProgress /> : null)
+    }
+}
 
-export const RespondTo = <T extends any>({
+export const RespondTo = <T extends any = any>({
     children,
     response,
-    options
+    options = {}
 }: RespondToProps<T>) => {
-    const showContent = Object.values(options).some(
-        options => options && options.showContent === false
+    const opts = deepmerge(defaultRespondToOptions, options)
+    const [lastResponse, setLastResponse] = useState<ResponseState<T>>({})
+    const showChildren = !Object.values(opts).some(
+        opts => opts && opts.showContent === false
     )
-    const results = Object.entries(response).reduce(
-        (displayElements, [responseItemType, responseItemValue]) => {
-            return displayElements
-        },
-        [] as JSX.Element[]
-    )
+    handleChanges(response, lastResponse, setLastResponse, opts)
+    const displayResponseAs = Object.entries(response).map(([k, v]) => {
+        const key = k as keyof ResponseOptions<T>
+        if (opts && opts[key] && opts[key]!.displayAs) {
+            const DisplayAs = opts[key]!.displayAs!
+            return <DisplayAs key={key} value={v as any} />
+        }
+        return null
+    })
     return (
         <Column align="center">
-            {results}
-            {showContent ? children : null}
+            {displayResponseAs}
+            {showChildren ? children : null}
         </Column>
     )
 }
 
-// export const Response = ({
-//     contentOnError = true,
-//     children,
-//     loading = false,
-//     errors,
-//     data,
-//     loadingMessage,
-//     contentOnLoading = false
-// }: ResponseProps) => {
-//     const results: JSX.Element[] = []
-//     if ((!errors || contentOnError) && (!isLoading || contentOnLoading)) {
-//         results.push(children)
-//     }
-//     if (isLoading) {
-//         results.push(<CircularProgress key="loading" />)
-//         if (loadingMessage) {
-//             results.push(<InfoText>{loadingMessage}</InfoText>)
-//         }
-//     } else {
-//         if (errors) {
-//             errors.forEach((message, key) =>
-//                 results.push(<ErrorText key={key}>{message}</ErrorText>)
-//             )
-//         }
-//     }
-//     return <Column align="center">{results}</Column>
-// }
+const handleChanges = <T extends any>(
+    currentResponse: ResponseState<T>,
+    lastResponse: ResponseState<T>,
+    setLastResponse: React.Dispatch<React.SetStateAction<ResponseState<T>>>,
+    options: ResponseOptions<T>
+) => {
+    Object.entries(currentResponse).forEach(([k, v]) => {
+        const key = k as keyof ResponseState<T>
+        if (lastResponse[key] !== v) {
+            const option = options[key]
+            if (option && option.onChange) {
+                option.onChange(v as any)
+            }
+
+            setLastResponse({
+                ...lastResponse,
+                [k]: v
+            })
+        }
+    })
+}

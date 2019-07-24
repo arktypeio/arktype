@@ -1,56 +1,42 @@
 import React from "react"
-import { FieldProps } from "formik"
-import { component, GridProps } from "blocks"
-import { FormField, FormFieldProps } from "./FormField"
-import { TextInput, TextInputProps } from "blocks"
-import { createStyles } from "@material-ui/styles"
+import { TextInput } from "../inputs"
+import { makeStyles } from "@material-ui/styles"
 import { Theme } from "@material-ui/core"
 import { ErrorText } from "../typography"
 import { Column } from "../layouts"
+import { useFormContext } from "./FormContext"
+import { FormFieldProps } from "./FormField"
 
-const styles = (theme: Theme) =>
-    createStyles({
-        size: { width: "100%" } // height 100% fixes spcing
-    })
+const stylize = makeStyles((theme: Theme) => ({
+    size: { width: "100%" } // height 100% fixes spcing
+}))
 
-type CommonProps = TextInputProps & FormFieldProps
+export type FormTextProps = FormFieldProps & {
+    label?: string
+    required?: boolean
+}
 
-type FormTextInnerProps = FieldProps & CommonProps
-
-export type FormTextProps = GridProps & CommonProps
-
-export const FormText = component({
-    name: "FormText",
-    defaultProps: {} as Partial<FormTextProps>
-})(props => {
-    return <FormField component={FormTextField} {...props} />
-})
-
-const FormTextField = component({
-    name: "FormTextField",
-    defaultProps: {} as Partial<FormTextInnerProps>
-})(
-    ({
-        field: { name, onBlur, onChange },
-        form: { touched, errors },
-        holds,
-        label,
-        ...rest
-    }) => {
-        const errorMessage = !!(touched[holds] && errors[holds])
-            ? (errors[holds] as string)
-            : ""
-        return (
-            <Column>
-                <TextInput
-                    id={holds}
-                    label={label ? label : holds}
-                    error={!!errorMessage}
-                    {...{ name, onBlur, onChange }}
-                    {...rest}
-                />
-                {errorMessage ? <ErrorText>{errorMessage}</ErrorText> : null}
-            </Column>
-        )
+export const FormText = ({ name, label, required = false }: FormTextProps) => {
+    const { register, errors, validate, getValues, setError } = useFormContext()
+    const updateFieldErrors = () => {
+        const validationResult = validate(getValues())
+        Object.keys(validationResult)
+            .filter(input => input === "")
+            .forEach(key => {
+                setError(key, "error", validationResult[key].join("\n"))
+            })
     }
-)
+    return (
+        <Column>
+            <TextInput
+                name={name}
+                label={label ? label : name}
+                inputRef={register}
+                onBlur={updateFieldErrors}
+            />
+            {errors[name] ? (
+                <ErrorText>{errors[name].message.split("\n")}</ErrorText>
+            ) : null}
+        </Column>
+    )
+}

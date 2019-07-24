@@ -1,16 +1,35 @@
 import React from "react"
 import { storiesOf } from "@storybook/react"
-import { action } from "@storybook/addon-actions"
 import { muiTheme } from "../utils"
-import { PrimaryButton, SecondaryButton } from "./"
+import { FormText } from "./"
+import { FormSubmit } from "./FormSubmit"
+import { Form } from "./Form"
+import { InfoText } from "typography"
 
-storiesOf("Button", module)
+storiesOf("Form", module)
     .addDecorator(muiTheme())
-    .add("Primary button with text", () => (
-        <PrimaryButton onClick={action("clicked")}>Hello Button</PrimaryButton>
-    ))
-    .add("Secondary text with some emoji", () => (
-        <SecondaryButton onClick={action("clicked")}>
-            😀 😎 👍 💯
-        </SecondaryButton>
-    ))
+    .add("FormText", () => <FormTextSample />)
+
+const FormTextSample = () => {
+    return (
+        <Form
+            submit={async () => ({ data: 42 })}
+            validate={_ => {
+                return {
+                    Firstname: [],
+                    Lastname: []
+                }
+            }}
+        >
+            <FormText name="Firstname" required={true} />
+            <FormText name="Lastname" required={true} />
+            <FormSubmit
+                responseOptions={{
+                    data: { displayAs: data => <p>{data.value}</p> }
+                }}
+            >
+                Submit
+            </FormSubmit>
+        </Form>
+    )
+}
