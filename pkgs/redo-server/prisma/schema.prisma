@@ -31,3 +31,9 @@ model User {
   lastName String
 }
 
+model Session {
+  id String @default(cuid()) @id @unique
+  token String
+  user User
+}
+
