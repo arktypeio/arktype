@@ -56,6 +56,8 @@ jspm_packages/
 temp
 generated
 prisma/migrations
+prisma/schema.prisma
+prisma/dev.db
 
 # Build output
 dist
