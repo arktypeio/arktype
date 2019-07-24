@@ -18,16 +18,22 @@ model BrowserEvent {
 model Test {
   id String @default(cuid()) @id @unique
   name String
-  tags String
-  steps BrowserEvent
+  tags String[]
+  steps BrowserEvent[]
 }
 
 model User {
   id String @default(cuid()) @id @unique
-  email String
+  email String @unique
   password String
-  roles String
+  roles String[]
   firstName String
   lastName String
+}
+
+model Session {
+  id String @default(cuid()) @id @unique
+  token String
+  user User
 }
 

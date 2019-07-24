@@ -85,6 +85,9 @@ export class User {
 
 @ObjectType()
 export class Session {
+    @Field(type => ID)
+    readonly id: string
+
     @Field()
     token: string
 
