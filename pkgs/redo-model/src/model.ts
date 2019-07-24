@@ -4,21 +4,38 @@ import { IsNotEmpty } from "class-validator"
 import { Expose } from "class-transformer"
 import { EqualsProperty, IsEmail } from "./validators"
 
-@ObjectType("BrowserObject")
-@InputType("BrowserInput")
+@ObjectType()
 export class BrowserEvent {
+    @Field(type => ID)
+    readonly id: string | number
+
     @Field()
     type: string
 
-    @Field({ nullable: true })
-    selector?: string
+    @Field()
+    selector: string
 
-    @Field({ nullable: true })
-    value?: string
+    @Field()
+    value: string
+}
+
+@InputType()
+export class BrowserEventInput {
+    @Field()
+    type: string
+
+    @Field()
+    selector: string
+
+    @Field()
+    value: string
 }
 
 @ObjectType()
 export class Test {
+    @Field(type => ID)
+    readonly id: string | number
+
     @Field()
     name: string
 
@@ -40,7 +57,7 @@ export class TestInput implements Partial<Test> {
     @Expose()
     tags: string[]
 
-    @Field(type => [BrowserEvent])
+    @Field(type => [BrowserEventInput])
     @Expose()
     steps: BrowserEvent[]
 }
@@ -48,9 +65,9 @@ export class TestInput implements Partial<Test> {
 @ObjectType()
 export class User {
     @Field(type => ID)
-    readonly id: string | number
+    readonly id: string
 
-    @Field()
+    @Field({ description: "String @unique" })
     email: string
 
     @Field()

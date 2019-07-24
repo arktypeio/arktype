@@ -1,7 +1,7 @@
 import Photon from "@generated/photon"
 
 export interface Context {
-    prisma: Photon
+    photon: Photon
     req: any
-    userId: string
+    id: string
 }

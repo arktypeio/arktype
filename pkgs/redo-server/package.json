@@ -6,10 +6,10 @@
     "private": true,
     "scripts": {
         "build": "tsc",
-        "buildGenerate": "tsc prisma/generate.ts",
+        "buildGenerate": "tsc -p tsconfig.generate.json",
         "start": "ts-node-dev --no-notify --respawn --transpileOnly ./src",
-        "generate": "ts-node prisma/generate.ts",
-        "postinstall": "prisma2 generate",
+        "generateSchema": "npm run buildGenerate && node dist/__generate__/generate.js",
+        "generate": "npm run generateSchema && prisma2 generate && prisma2 lift save --name init && prisma2 lift up",
         "test": "jest"
     },
     "dependencies": {

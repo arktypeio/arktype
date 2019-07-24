@@ -1,0 +1,8 @@
+# IF THERE'S A GIT CONFLICT IN THIS FILE, DON'T SOLVE IT MANUALLY!
+# INSTEAD EXECUTE `prisma lift fix`
+# lift lockfile v1
+# Read more about conflict resolution here: TODO
+
+20190724084409-init
+20190724093022-init
+20190724093358-init

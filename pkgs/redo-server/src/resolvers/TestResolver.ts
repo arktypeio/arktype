@@ -7,14 +7,17 @@ export class TestResolver {
     @Mutation(returns => Test)
     async submitTest(
         @Args() { name, steps, tags }: TestInput,
-        @Ctx() { prisma }: Context
+        @Ctx() { photon }: Context
     ) {
-        const test = await prisma.createTest({
-            name,
-            steps: { create: [{ type: "click" }] },
-            tags: { set: "bat" }
+        const test = await photon.tests.create({
+            data: {
+                name,
+                steps: {
+                    create: [{ type: "click", selector: "#some", value: "" }]
+                },
+                tags: { set: "bat" }
+            }
         })
-
         return test
     }
 }

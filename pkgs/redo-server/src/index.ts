@@ -15,7 +15,7 @@ const serve = async () => {
         schema,
         context: ({ req }: any) => ({
             ...req,
-            userId: getUserId(req),
+            id: getUserId(req),
             photon
         }),
         debug: true,
