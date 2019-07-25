@@ -55,6 +55,9 @@ jspm_packages/
 # Common toolchain intermediate files
 temp
 generated
+**/prisma/migrations
+**/prisma/schema.prisma
+**/prisma/dev.db
 
 # Build output
 dist
