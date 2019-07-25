@@ -1,7 +1,6 @@
 import React from "react"
 import { makeStyles } from "@material-ui/styles"
 import Grid, { GridProps, GridItemsAlignment } from "@material-ui/core/Grid"
-import { component } from "blocks"
 
 const stylize = makeStyles({
     grid: ({ flexGrow, grow }: RowOrColumnProps) => ({
@@ -17,10 +16,16 @@ export type RowOrColumnProps = GridProps & {
     grow?: boolean
 }
 
-export const RowOrColumn = component({
-    name: "RowOrColumn",
-    defaultProps: {} as Partial<RowOrColumnProps>
-})(({ direction, reverse, wrap, align, flexGrow, grow, children, ...rest }) => {
+export const RowOrColumn = ({
+    direction,
+    reverse,
+    wrap,
+    align,
+    flexGrow,
+    grow,
+    children,
+    ...rest
+}: RowOrColumnProps) => {
     const { grid } = stylize({ flexGrow, grow })
     return (
         <Grid
@@ -35,4 +40,4 @@ export const RowOrColumn = component({
             {children}
         </Grid>
     )
-})
+}

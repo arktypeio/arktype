@@ -3,7 +3,6 @@ Order matters here if components are using the tsconfig path 'blocks' to referen
 Components higher up on the dependency tree should be at the top of the exports list, hence
 'meta' being first.
 */
-export * from "./meta"
 export * from "./buttons"
 export * from "./cards"
 export * from "./forms"

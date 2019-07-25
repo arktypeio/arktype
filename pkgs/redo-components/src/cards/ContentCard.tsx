@@ -1,20 +1,16 @@
 import React from "react"
 import { Theme, Typography } from "@material-ui/core"
-import { component, Column, Row } from "blocks"
+import { Column, Row } from "../layouts"
 import { createStyles } from "@material-ui/styles"
-import { Card } from "./Card"
+import { Card, CardProps } from "./Card"
 
 const styles = (theme: Theme) => createStyles({})
 
-export type ContentCardProps = {
+export type ContentCardProps = CardProps & {
     from: Record<string, string | number>
 }
 
-export const ContentCard = component({
-    name: "ContentCard",
-    defaultProps: {} as Partial<ContentCardProps>,
-    styles
-})(({ classes, from, children }) => {
+export const ContentCard = ({ from, children }: ContentCardProps) => {
     return (
         <Card>
             {from ? (
@@ -33,4 +29,4 @@ export const ContentCard = component({
             )}
         </Card>
     )
-})
+}

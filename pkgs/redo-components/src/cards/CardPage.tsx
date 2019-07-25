@@ -1,15 +1,11 @@
-import React, { useEffect, useRef } from "react"
+import React from "react"
 import { Card, CardProps } from "./Card"
 import { Theme } from "@material-ui/core"
-import { useTheme, makeStyles } from "@material-ui/styles"
-import { component } from "blocks"
+import { useTheme } from "@material-ui/styles"
 
 export type CardPageProps = CardProps
 
-export const CardPage = component({
-    name: "CardPage",
-    defaultProps: {} as Partial<CardPageProps>
-})(({ children, classes, ...rest }) => {
+export const CardPage = ({ children, classes, ...rest }: CardPageProps) => {
     const theme = useTheme<Theme>()
     return (
         <Card
@@ -21,4 +17,4 @@ export const CardPage = component({
             {children}
         </Card>
     )
-})
+}

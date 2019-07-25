@@ -2,13 +2,15 @@ import React from "react"
 import { storiesOf } from "@storybook/react"
 import { action } from "@storybook/addon-actions"
 import { muiTheme } from "../utils"
-import { PrimaryButton } from "."
+import { PrimaryButton, SecondaryButton } from "./"
 
 storiesOf("Button", module)
     .addDecorator(muiTheme())
-    .add("with text", () => (
-        <PrimaryButton onClick={action("clicked")} text="Hello Button" />
+    .add("Primary button with text", () => (
+        <PrimaryButton onClick={action("clicked")}>Hello Button</PrimaryButton>
     ))
-    .add("with some emoji", () => (
-        <PrimaryButton onClick={action("clicked")} text="😀 😎 👍 💯" />
+    .add("Secondary text with some emoji", () => (
+        <SecondaryButton onClick={action("clicked")}>
+            😀 😎 👍 💯
+        </SecondaryButton>
     ))

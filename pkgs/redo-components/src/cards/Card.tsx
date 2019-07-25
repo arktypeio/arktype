@@ -16,16 +16,6 @@ const stylize = makeStyles((theme: Theme) => ({
     root: {}
 }))
 
-// const stylize = makeStyles((theme: Theme) => ({
-//     button: {
-//         textTransform: "none",
-//         minWidth: theme.spacing(10)
-//     },
-//     defaultText: {
-//         color: theme.palette.primary.contrastText
-//     }
-// }))
-
 export type CardProps = MuiCardProps & {
     rootClass?: string
     contentFrom?: Record<string, string | number>

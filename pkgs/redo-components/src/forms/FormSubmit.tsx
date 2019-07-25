@@ -1,74 +1,37 @@
-import React from "react"
+import React, { useState, ReactNode } from "react"
 import { Theme } from "@material-ui/core"
-import { createStyles } from "@material-ui/styles"
-import { component, GridProps, Response } from "blocks"
-import { PrimaryButton, PrimaryButtonProps } from "blocks"
-import { MutationComponentType } from "gql"
+import { makeStyles } from "@material-ui/styles"
+import { RespondTo, ResponseState, ResponseOptions } from "../responses"
+import { PrimaryButton } from "../buttons"
+import { useFormContext } from "./FormContext"
 
-const styles = (theme: Theme) => createStyles({})
+const styles = makeStyles((theme: Theme) => {})
 
-const defaultButtonProps = { text: "Go" }
-
-export type FormSubmitProps<V, R> = GridProps & {
-    Mutation: MutationComponentType<V, R>
-    unsubmitted?: Array<keyof V>
-    onSuccess?: (data: R, results: JSX.Element[]) => any
-    onError?: (error: Error, results: JSX.Element[]) => any
-    buttonProps?: Partial<PrimaryButtonProps>
+export type FormSubmitProps<T = any> = {
+    responseOptions?: ResponseOptions<T>
+    children: ReactNode
 }
 
-export const createFormSubmit = <V, R>() =>
-    component({
-        name: "FormSubmit",
-        defaultProps: { unsubmitted: [] } as Partial<FormSubmitProps<V, R>>,
-        styles,
-        defaultVariables: {} as Partial<V>,
-        returnedData: {} as Partial<R>,
-        form: true
-    })(
-        ({
-            Mutation,
-            unsubmitted,
-            buttonProps,
-            formik: { values, isValid, submitForm }
-        }) => {
-            const buttonPropsWithDefaults = Object.assign(
-                { ...defaultButtonProps },
-                buttonProps
-            )
-            const submittedValues = { ...values }
-            unsubmitted!.forEach(k => delete submittedValues[k])
-            return (
-                <Mutation variables={submittedValues}>
-                    {(submit, { loading, data, error }) => {
-                        const handleSubmit = () => {
-                            submitForm()
-                            if (isValid) {
-                                submit()
-                            }
-                        }
-
-                        return (
-                            <Response
-                                isLoading={loading}
-                                errors={
-                                    error
-                                        ? error.graphQLErrors.map(
-                                              _ => _.message
-                                          )
-                                        : undefined
-                                }
-                            >
-                                <PrimaryButton
-                                    type="submit"
-                                    onClick={handleSubmit as any}
-                                    key="submit"
-                                    {...buttonPropsWithDefaults}
-                                />
-                            </Response>
-                        )
-                    }}
-                </Mutation>
-            )
-        }
+export const FormSubmit = <T extends any = any>({
+    responseOptions,
+    ...rest
+}: FormSubmitProps<T>) => {
+    const { getValues, submit, errors, validate } = useFormContext()
+    const [state, setState] = useState<ResponseState>({})
+    console.log(state)
+    return (
+        <RespondTo response={state} options={responseOptions}>
+            <PrimaryButton
+                type="submit"
+                onClick={async () => {
+                    const values = getValues()
+                    if (Object.values(validate(values)).every(_ => !_.length)) {
+                        setState({ loading: true })
+                        setState({ ...(await submit(values)), loading: false })
+                    }
+                }}
+                {...rest}
+            />
+        </RespondTo>
     )
+}

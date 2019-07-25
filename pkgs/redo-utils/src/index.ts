@@ -1,17 +1,5 @@
-import { readdirSync, lstatSync } from "fs-extra"
-import { join } from "path"
 import moize from "moize"
 import { classToPlain, plainToClass } from "class-transformer"
-
-export const walk = (dir: string): string[] =>
-    fromEntries(
-        readdirSync(dir).map(item => [
-            item,
-            lstatSync(join(dir, item)).isDirectory()
-                ? walk(join(dir, item))
-                : null
-        ])
-    )
 
 export const objectify = classToPlain
 export const classify = plainToClass

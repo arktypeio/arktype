@@ -11,24 +11,16 @@ const stylize = makeStyles((theme: Theme) => ({
     button: {
         textTransform: "none",
         minWidth: theme.spacing(10)
-    },
-    defaultText: {
-        color: theme.palette.primary.contrastText
     }
 }))
 
-export type ButtonProps = Partial<MuiButtonProps> & {
-    text: string
-    textClass?: string
-}
+export type ButtonProps = Partial<MuiButtonProps> & {}
 
-export const Button = ({ text, textClass, ...rest }: ButtonProps) => {
-    const { button, defaultText } = stylize()
+export const Button = ({ children, ...rest }: ButtonProps) => {
+    const { button } = stylize()
     return (
         <MuiButton className={button} {...rest}>
-            <MuiTypography className={textClass ? textClass : defaultText}>
-                {text}
-            </MuiTypography>
+            {children}
         </MuiButton>
     )
 }
