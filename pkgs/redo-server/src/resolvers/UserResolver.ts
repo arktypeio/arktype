@@ -6,7 +6,7 @@ import { Context } from "../context"
 export class UserResolver {
     @Authorized()
     @Query(returns => User)
-    async me(@Ctx() { prisma, userId }: Context) {
-        return prisma.user({ id: userId })
+    async me(@Ctx() { photon, id }: Context) {
+        return photon.users.findOne({ where: { id } })
     }
 }

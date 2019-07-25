@@ -1,20 +1,30 @@
 import React from "react"
 import { Card as MuiCard, Theme } from "@material-ui/core"
 import { CardProps as MuiCardProps } from "@material-ui/core/Card"
-import { createStyles } from "@material-ui/styles"
-import { component } from "blocks"
+import { makeStyles } from "@material-ui/styles"
 
-const styles = (theme: Theme) =>
-    createStyles({
-        card: ({ height, width, padding }: CardProps) => ({
+const stylize = makeStyles((theme: Theme) => ({
+    card: ({ height, width, padding }: CardProps) => {
+        return {
             padding: padding ? padding : theme.spacing(1),
             height: height,
             width: width,
             display: "flex",
             flexDirection: "column"
-        }),
-        root: {}
-    })
+        }
+    },
+    root: {}
+}))
+
+// const stylize = makeStyles((theme: Theme) => ({
+//     button: {
+//         textTransform: "none",
+//         minWidth: theme.spacing(10)
+//     },
+//     defaultText: {
+//         color: theme.palette.primary.contrastText
+//     }
+// }))
 
 export type CardProps = MuiCardProps & {
     rootClass?: string
@@ -24,14 +34,20 @@ export type CardProps = MuiCardProps & {
     padding?: string | number
 }
 
-export const Card = component({
-    name: "Card",
-    defaultProps: {} as Partial<CardProps>,
-    styles
-})(({ children, classes, rootClass, contentFrom, ...rest }) => {
+export const Card = ({
+    children,
+    classes,
+    rootClass,
+    contentFrom,
+    height,
+    width,
+    padding,
+    ...rest
+}: CardProps) => {
+    const { card } = stylize({ height: height, width: width, padding: padding })
     return (
-        <MuiCard className={classes.card} {...rest}>
+        <MuiCard className={card} {...rest}>
             {children}
         </MuiCard>
     )
-})
+}
