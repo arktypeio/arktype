@@ -1,0 +1,23 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Generate",
+            "type": "node",
+            "request": "launch",
+            "protocol": "inspector",
+            "program": "${workspaceFolder}/prisma/generate.ts",
+            "preLaunchTask": "tsc: build - tsconfig.generate.json",
+            "outFiles": ["${workspaceFolder}/dist/__generate__/**/*.js"]
+        },
+        {
+            "name": "Start server",
+            "type": "node",
+            "request": "launch",
+            "protocol": "inspector",
+            "program": "${workspaceRoot}/src/index.ts",
+            "preLaunchTask": "tsc: build - tsconfig.json",
+            "outFiles": ["${workspaceFolder}/dist/**/*.js"]
+        }
+    ]
+}

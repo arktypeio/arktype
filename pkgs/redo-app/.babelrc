@@ -1,3 +1,4 @@
 {
-    "presets": ["redo-recommended/babel"]
+    "presets": ["redo-recommended/babel"],
+    "plugins": ["react-hot-loader/babel"]
 }
