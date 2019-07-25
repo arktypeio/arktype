@@ -13,5 +13,5 @@ export type SecondaryButtonProps = ButtonProps
 
 export const SecondaryButton = ({ ...rest }: SecondaryButtonProps) => {
     const { text } = stylize()
-    return <Button textClass={text} variant="outlined" {...rest} />
+    return <Button classes={{ text }} variant="outlined" {...rest} />
 }

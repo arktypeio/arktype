@@ -1,26 +1,27 @@
 import React from "react"
 import { Theme } from "@material-ui/core"
-import { component } from "blocks"
+import { makeStyles } from "@material-ui/styles"
 import { Menu as MuiMenu } from "@material-ui/core"
 import { MenuProps as MuiMenuProps } from "@material-ui/core/Menu"
-import { MenuItem } from "blocks"
+import { MenuItem } from "./"
 
-const styles = (theme: Theme) => ({})
+const stylize = makeStyles((theme: Theme) => ({}))
 
 export type MenuProps = Partial<MuiMenuProps> & {
     Button: React.ComponentType<{
         onClick: (e: React.MouseEvent<HTMLButtonElement>) => void
     }>
     options?: Record<string, () => void>
+    buttonText?: string
 }
 
-export const Menu = component({
-    name: "Menu",
-    defaultProps: {
-        options: {}
-    } as Partial<MenuProps>,
-    styles
-})(({ Button, options, classes, ...rest }) => {
+export const Menu = ({
+    Button,
+    buttonText,
+    options,
+    classes,
+    ...rest
+}: MenuProps) => {
     const [anchor, setAnchor] = React.useState<null | HTMLElement>(null)
 
     const handleClick = (e: React.MouseEvent<HTMLButtonElement>) =>
@@ -30,7 +31,7 @@ export const Menu = component({
 
     return (
         <>
-            <Button onClick={handleClick} />
+            <Button onClick={handleClick}>{buttonText}</Button>
             <MuiMenu
                 anchorEl={anchor}
                 open={!!anchor}
@@ -45,4 +46,4 @@ export const Menu = component({
             </MuiMenu>
         </>
     )
-})
+}
