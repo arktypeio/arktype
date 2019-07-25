@@ -6,7 +6,7 @@ import { PrimaryButton } from "../buttons"
 
 storiesOf("Menu", module)
     .addDecorator(muiTheme())
-    .add("Single menu item", () => <MenuItem> This is a menu item </MenuItem>)
+    .add("Single menu item", () => <MenuItem>This is a menu item</MenuItem>)
     .add("Full menu", () => (
         <Menu
             Button={PrimaryButton}

@@ -8,7 +8,6 @@ storiesOf("Dialog", module)
     .addDecorator(muiTheme())
     .add("Dialog with text", () => (
         <Dialog open={true} title="This is a dialog">
-            {" "}
-            Hi! This is a Dialog.{" "}
+            Hi! This is a Dialog.
         </Dialog>
     ))

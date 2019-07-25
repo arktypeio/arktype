@@ -4,8 +4,6 @@ import MuiMenuItem, {
     MenuItemProps as MuiMenuItemProps
 } from "@material-ui/core/MenuItem"
 
-const styles = (theme: Theme) => ({})
-
 //Mui's button prop type isn't compatible with itself. Somehow.
 export type MenuItemProps = MuiMenuItemProps & { button?: true }
 

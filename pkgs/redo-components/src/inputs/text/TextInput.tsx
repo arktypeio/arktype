@@ -5,7 +5,7 @@ import { BaseTextFieldProps } from "@material-ui/core/TextField"
 import { TextInputVariants } from "./TextInputVariants"
 
 const stylize = makeStyles((theme: Theme) => ({
-    labelStyles: {
+    inputLabel: {
         color: theme.palette.primary.light,
         "&$focused": {
             color: theme.palette.primary.dark
@@ -29,14 +29,14 @@ export const TextInput = ({
     ...rest
 }: TextInputProps) => {
     const Component = TextInputVariants[variant]
-    const { labelStyles } = stylize()
+    const { inputLabel } = stylize()
     return (
         <Component
             label={label}
             margin="dense"
             fullWidth
             InputLabelProps={{
-                classes: { root: labelStyles }
+                classes: { root: inputLabel }
             }}
             {...rest}
         />

@@ -26,7 +26,7 @@ const InputResponse = () => {
                 options={{
                     data: {
                         onChange: value =>
-                            value === "" || alert(`the state is ${value}`),
+                            !value || console.log(`the state is ${value}`),
                         displayAs: ({ value }) => <InfoText>{value}</InfoText>
                     }
                 }}
