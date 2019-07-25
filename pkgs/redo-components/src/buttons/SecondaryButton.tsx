@@ -1,22 +1,17 @@
 import React from "react"
 import { Theme } from "@material-ui/core"
-import { createStyles } from "@material-ui/styles"
-import { component } from "blocks"
+import { makeStyles } from "@material-ui/styles"
 import { Button, ButtonProps } from "./Button"
 
-const styles = (theme: Theme) =>
-    createStyles({
-        text: {
-            color: theme.palette.common.black
-        }
-    })
+const stylize = makeStyles((theme: Theme) => ({
+    text: {
+        color: theme.palette.common.black
+    }
+}))
 
 export type SecondaryButtonProps = ButtonProps
 
-export const SecondaryButton = component({
-    name: "SecondaryButton",
-    defaultProps: {} as Partial<SecondaryButtonProps>,
-    styles
-})(({ classes, ...rest }) => (
-    <Button textClass={classes.text} variant="outlined" {...rest} />
-))
+export const SecondaryButton = ({ ...rest }: SecondaryButtonProps) => {
+    const { text } = stylize()
+    return <Button textClass={text} variant="outlined" {...rest} />
+}

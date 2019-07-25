@@ -4,26 +4,38 @@ import { sign } from "jsonwebtoken"
 import { Session, SignInInput, SignUpInput } from "redo-model"
 import { APP_SECRET } from "../utils"
 import { Context } from "../context"
+import Photon from "@generated/photon"
+
+const userWithEmail = async (email: string, photon: Photon) => {
+    // TODO: Find an idiomatic way to check if a unique field exists in photon
+    try {
+        return await photon.users.findOne({ where: { email } })
+    } catch {
+        return null
+    }
+}
 
 @Resolver(of => Session)
 export class SessionResolver {
     @Mutation(returns => Session)
     async signUp(
         @Args() { email, password, firstName, lastName }: SignUpInput,
-        @Ctx() { prisma }: Context
+        @Ctx() { photon }: Context
     ) {
         const hashedPassword = await hash(password, 10)
-        if (await prisma.$exists.user({ email: email })) {
+        if (await userWithEmail(email, photon)) {
             throw new Error(
                 "Someone's already using that email. If it's you, try signing in instead!"
             )
         }
-        const user = await prisma.createUser({
-            email,
-            password: hashedPassword,
-            firstName,
-            lastName,
-            roles: { set: [] }
+        const user = await photon.users.create({
+            data: {
+                email,
+                password: hashedPassword,
+                firstName,
+                lastName,
+                roles: { set: ["user"] }
+            }
         })
         return {
             token: sign({ userId: user.id }, APP_SECRET),
@@ -34,9 +46,9 @@ export class SessionResolver {
     @Mutation(returns => Session)
     async signIn(
         @Args() { email, password }: SignInInput,
-        @Ctx() { prisma }: Context
+        @Ctx() { photon }: Context
     ) {
-        const user = await prisma.user({ email })
+        const user = await userWithEmail(email, photon)
         if (!user) {
             throw new Error("We don't recognize that email.")
         }
