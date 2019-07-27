@@ -3,7 +3,10 @@ module.exports = ({ config }) => {
         test: /\.tsx?$/,
         use: [
             {
-                loader: require.resolve("babel-loader")
+                loader: require.resolve("babel-loader"),
+                options: {
+                    presets: [require.resolve("redo-recommended/babel.js")]
+                }
             },
             require.resolve("react-docgen-typescript-loader")
         ]
