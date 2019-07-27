@@ -4,7 +4,6 @@ import { muiTheme } from "../utils"
 import { FormText } from "./"
 import { FormSubmit } from "./FormSubmit"
 import { Form } from "./Form"
-import { InfoText } from "typography"
 
 storiesOf("Form", module)
     .addDecorator(muiTheme())
@@ -21,8 +20,8 @@ const FormTextSample = () => {
                 }
             }}
         >
-            <FormText name="Firstname" required={true} />
-            <FormText name="Lastname" required={true} />
+            <FormText name="Firstname" />
+            <FormText name="Lastname" />
             <FormSubmit
                 responseOptions={{
                     data: { displayAs: data => <p>{data.value}</p> }
