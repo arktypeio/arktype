@@ -1,4 +1,4 @@
-import React from "react"
+import React, { useState } from "react"
 import { TextInput } from "../inputs"
 import { makeStyles } from "@material-ui/styles"
 import { Theme } from "@material-ui/core"
@@ -8,50 +8,75 @@ import { useFormContext } from "./FormContext"
 import { FormFieldProps } from "./FormField"
 import { FormActions, Fields } from "./FormContext"
 
-const stylize = makeStyles((theme: Theme) => ({
-    size: { width: "100%" } // height 100% fixes spcing
-}))
-
 export type FormTextProps = FormFieldProps & {
     label?: string
     required?: boolean
 }
 
-type UpdateFieldErrorsOptions = Pick<FormActions, "validate"> & {
+type UpdateFieldErrorsOptions = Pick<FormActions<Fields>, "validate"> & {
     setError: (key: string, _: string, errors: string) => void
+    clearError: (key: string) => void
     values: Fields
+    touched: string[]
 }
 
 const updateFieldErrors = ({
     setError,
+    clearError,
     validate,
-    values
+    values,
+    touched
 }: UpdateFieldErrorsOptions) => {
     const validationResult = validate(values)
-    Object.keys(validationResult)
-        .filter(input => input === "")
+    Object.keys(values)
+        .filter(input => touched.includes(input))
         .forEach(key => {
-            setError(key, "error", validationResult[key].join("\n"))
+            if (
+                key in validationResult &&
+                validationResult[key] &&
+                validationResult[key]!.length
+            ) {
+                setError(key, "error", validationResult[key]!.join("\n"))
+            } else {
+                clearError(key)
+            }
         })
 }
 
-export const FormText = ({ name, label, required = false }: FormTextProps) => {
-    const { register, errors, validate, getValues, setError } = useFormContext()
+export const FormText = ({ name, label }: FormTextProps) => {
+    const {
+        register,
+        errors,
+        validate,
+        getValues,
+        setError,
+        clearError,
+        touched
+    } = useFormContext()
+    console.log(errors)
+    const [state, setState] = useState("")
     return (
         <Column>
             <TextInput
                 name={name}
                 label={label ? label : name}
                 inputRef={register}
-                onBlur={() =>
+                onChange={e => setState(e.target.value)}
+                value={state}
+                onBlur={() => {
+                    if (!touched.includes(name)) {
+                        touched.push(name)
+                    }
                     updateFieldErrors({
                         setError,
                         validate,
-                        values: getValues()
+                        values: getValues(),
+                        touched,
+                        clearError
                     })
-                }
+                }}
             />
-            {errors[name].message ? (
+            {errors[name] && errors[name].message ? (
                 <ErrorText>{errors[name].message.split("\n")}</ErrorText>
             ) : null}
         </Column>
