@@ -1,0 +1,14 @@
+{
+    "compilerOptions": {
+        "target": "es2016",
+        "module": "commonjs",
+        "lib": ["dom", "esnext"],
+        "jsx": "react",
+        "rootDir": "./src",
+        "strict": true,
+        "incremental": true,
+        "experimentalDecorators": true,
+        "allowSyntheticDefaultImports": true,
+        "esModuleInterop": true
+    }
+}

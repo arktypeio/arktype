@@ -1,0 +1,32 @@
+{
+    "name": "redo-website",
+    "version": "1.0.0",
+    "description": "Redo's landing page",
+    "author": "redo.qa",
+    "main": "src/index.tsx",
+    "scripts": {
+        "start": "",
+        "build": ""
+    },
+    "svgr": {
+        "svgo": false
+    },
+    "dependencies": {
+        "@material-ui/core": "4.2.1",
+        "@material-ui/icons": "4.2.1",
+        "@material-ui/styles": "4.2.1",
+        "react": "16.8.6",
+        "react-dom": "16.8.6",
+        "typeface-roboto": "0.0.54",
+        "@babel/runtime-corejs3": "7.5.5"
+    },
+    "devDependencies": {
+        "@hot-loader/react-dom": "16.8.6",
+        "@svgr/parcel-plugin-svgr": "4.3.1",
+        "@types/node": "12.6.6",
+        "@types/react": "16.8.8",
+        "@types/react-dom": "16.8.3",
+        "react-hot-loader": "4.12.8",
+        "typescript": "3.5.2"
+    }
+}
