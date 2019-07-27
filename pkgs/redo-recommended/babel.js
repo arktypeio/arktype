@@ -6,7 +6,9 @@ const presets = [
         {
             targets: {
                 node: "current"
-            }
+            },
+            useBuiltIns: "usage",
+            corejs: 3
         }
     ],
     require("@babel/preset-typescript"),
