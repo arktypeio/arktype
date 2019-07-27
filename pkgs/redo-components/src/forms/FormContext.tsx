@@ -4,12 +4,17 @@ import { ResponseState } from "../responses"
 
 export type Fields = Record<string, any>
 
-export type FormActions = {
-    validate: (fields: Fields) => Record<string, string[]>
-    submit: (fields: Fields) => Promise<ResponseState>
+export type FormErrors<T extends Fields> = { [K in keyof T]?: string[] }
+
+export type FormActions<T extends Fields, D = any> = {
+    validate: (fields: T) => FormErrors<T>
+    submit: (fields: T) => Promise<ResponseState<D>>
 }
 
 export const useFormContext = useHookFormContext as () => ReturnType<
     typeof useHookFormContext
 > &
-    FormActions
+    FormActions<Fields> & {
+        touched: string[]
+        clearError: (name: string) => void
+    }
