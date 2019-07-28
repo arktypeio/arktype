@@ -39,6 +39,10 @@
         {
             "packageName": "redo-website",
             "projectFolder": "pkgs/redo-website"
+        },
+        {
+            "packageName": "redo-bundle",
+            "projectFolder": "pkgs/redo-bundle"
         }
     ]
 }
