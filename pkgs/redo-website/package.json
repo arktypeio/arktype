@@ -21,12 +21,13 @@
         "@babel/runtime-corejs3": "7.5.5"
     },
     "devDependencies": {
-        "@hot-loader/react-dom": "16.8.6",
         "@svgr/parcel-plugin-svgr": "4.3.1",
         "@types/node": "12.6.6",
         "@types/react": "16.8.8",
         "@types/react-dom": "16.8.3",
         "react-hot-loader": "4.12.8",
-        "typescript": "3.5.2"
+        "typescript": "3.5.2",
+        "redo-bundle": "1.0.0",
+        "redo-recommended": "1.0.0"
     }
 }
