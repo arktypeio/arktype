@@ -21,14 +21,11 @@ export type IconButtonProps = MuiIconButtonProps & {
     iconProps?: MuiSvgIconProps
 }
 
-export const IconButton = component({
-    name: "IconButton",
-    defaultProps: {} as Partial<IconButtonProps>
-})(({ Icon, iconProps, ...rest }) => (
+export const IconButton = ({ Icon, iconProps, ...rest }: IconButtonProps) => (
     <MuiIconButton {...rest}>
         <Icon {...iconProps} />
     </MuiIconButton>
-))
+)
 
 export type LaunchBrowserButtonProps = IconButtonProps & {
     browser: Browser
@@ -67,16 +64,15 @@ export type SvgIconProps = MuiSvgIconProps & {
     fill?: string
 }
 
-export const SvgIcon = component({
-    name: "SvgIcon",
-    defaultProps: {
-        fill: "#000000"
-    } as Partial<SvgIconProps>
-})(({ path, fill, ...rest }) => (
+export const SvgIcon = ({
+    path,
+    fill = "#000000",
+    ...rest
+}: Partial<SvgIconProps>) => (
     <MuiSvgIcon {...rest}>
         <path fill={fill} d={path} />
     </MuiSvgIcon>
-))
+)
 
 export const svgIconFrom = (path: string) => (
     props: Omit<SvgIconProps, "path">

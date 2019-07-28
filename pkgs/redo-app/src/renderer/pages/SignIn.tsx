@@ -1,8 +1,8 @@
 import React, { useEffect } from "react"
 import { Theme } from "@material-ui/core"
 import { makeStyles } from "@material-ui/styles"
-import { Form, FormText, Column, CardPage } from "blocks"
-import { SecondarySignUpButton } from "custom"
+import { FormText, FormSubmit, Column, CardPage } from "redo-components"
+import { SecondarySignUpButton, SignInOrUp } from "custom"
 import { component } from "blocks"
 import { SignInSubmit } from "gql"
 import { SignInInput } from "redo-model"
@@ -23,7 +23,7 @@ export const SignIn = component({})(() => {
         <Column align="center" justify="center">
             <CardPage>
                 <img src={logo} />
-                <Form validateAgainst={new SignInInput()}>
+                <SignInOrUp>
                     <Column grow>
                         <AnimatePresence>
                             <motion.div
@@ -36,17 +36,14 @@ export const SignIn = component({})(() => {
                                 className={fields}
                             >
                                 <Column>
-                                    <FormText holds="email" autoFocus />
-                                    <FormText
-                                        holds="password"
-                                        type="password"
-                                    />
+                                    <FormText name="email" />
+                                    <FormText name="password" />
                                 </Column>
                             </motion.div>
                         </AnimatePresence>
-                        <SignInSubmit />
                     </Column>
-                </Form>
+                    <FormSubmit>Sign in</FormSubmit>
+                </SignInOrUp>
             </CardPage>
             <SecondarySignUpButton text="Need an account?" />
         </Column>
