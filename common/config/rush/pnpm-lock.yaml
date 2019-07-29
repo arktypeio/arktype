@@ -85,6 +85,8 @@ dependencies:
   reflect-metadata: 0.1.13
   storybook-addon-material-ui: 0.9.0-alpha.20_8fc843230fc8dd03e3f2a50afbd90d80
   style-loader: 0.23.1
+  svgo: 1.3.0
+  svgo-loader: 2.2.1_svgo@1.3.0
   ts-jest: 24.0.2_jest@24.8.0
   ts-loader: 6.0.1_typescript@3.5.2
   ts-node: 8.3.0_typescript@3.5.2
@@ -12653,6 +12655,16 @@ packages:
     dev: false
     resolution:
       integrity: sha512-1gtApepKFweigFZj3sGO8KT8LvVZK8io146EzXrpVuWCDAbISz/yMucco3hWTkpZNoPabM+dnMOpy6Swue68Zg==
+  /svgo-loader/2.2.1_svgo@1.3.0:
+    dependencies:
+      js-yaml: 3.13.1
+      loader-utils: 1.2.3
+      svgo: 1.3.0
+    dev: false
+    peerDependencies:
+      svgo: ^1.0.0
+    resolution:
+      integrity: sha512-9dyz/h6ae04pAVRz7QY8bLXtMbwA19NPpCPfCixgW0qXNDCOlHbDRqvtT5/2gzRxfuibWCUP6ZBQmZWF9rjWhQ==
   /svgo/1.3.0:
     dependencies:
       chalk: 2.4.2
@@ -13045,6 +13057,9 @@ packages:
       node: '>=6'
     peerDependencies:
       typescript: '*'
+    peerDependenciesMeta:
+      typescript:
+        optional: true
     resolution:
       integrity: sha512-f5Knjh7XCyRIzoC/z1Su1yLLRrPrFCgtUAh/9fCSP6NKbATwpOL1+idQVXQokK9GRFURn/jYPGPfegIctwunoA==
   /tsconfig-paths-webpack-plugin/3.2.0:
@@ -13937,6 +13952,8 @@ packages:
       react-hot-loader: 4.12.8_react-dom@16.8.6+react@16.8.6
       react-svg-loader: 3.0.3
       style-loader: 0.23.1
+      svgo: 1.3.0
+      svgo-loader: 2.2.1_svgo@1.3.0
       ts-loader: 6.0.1_typescript@3.5.2
       ts-node: 8.3.0_typescript@3.5.2
       tsconfig-paths-webpack-plugin: 3.2.0
@@ -13951,7 +13968,7 @@ packages:
       react-dom: '*'
       typescript: '*'
     resolution:
-      integrity: sha512-l2FIXzrsmkXFjVipPPtudU46gsOJmRkWxWSBPv9zELSLIsalwvqx7oWjRrqQ/i+D0J36n7FcSxYMgeXeQ2WTmg==
+      integrity: sha512-r377CIQHlyHcVXA5jzsGPPgvVxUXqET8w9DFocoKMsXZsh9VkbeZfq8H31zj94/9rRmtL0op5B3uUgb3RgnnaA==
       tarball: 'file:projects/redo-bundle.tgz'
     version: 0.0.0
   'file:projects/redo-components.tgz_webpack@4.29.6':
@@ -14081,21 +14098,28 @@ packages:
   'file:projects/redo-website.tgz':
     dependencies:
       '@babel/runtime-corejs3': 7.5.5
+      '@hot-loader/react-dom': 16.8.6_react@16.8.6
       '@material-ui/core': 4.2.1_react-dom@16.8.6+react@16.8.6
       '@material-ui/icons': 4.2.1_f35c714a02d617073918f9017b0a4e91
       '@material-ui/styles': 4.2.1_react-dom@16.8.6+react@16.8.6
       '@types/node': 12.6.6
       '@types/react': 16.8.8
       '@types/react-dom': 16.8.3
+      '@types/webpack-merge': 4.1.3
       react: 16.8.6
       react-dom: 16.8.6_react@16.8.6
       react-hot-loader: 4.12.8_react-dom@16.8.6+react@16.8.6
+      ts-node: 8.3.0_typescript@3.5.2
       typeface-roboto: 0.0.54
       typescript: 3.5.2
+      webpack: 4.29.6_webpack@4.29.6
+      webpack-cli: 3.3.0_webpack@4.29.6
+      webpack-dev-server: 3.7.2_webpack@4.29.6
+      webpack-merge: 4.1.4
     dev: false
     name: '@rush-temp/redo-website'
     resolution:
-      integrity: sha512-UaWFBVojNjzHQXBkkKH0O+6eYUmw9hpR1IKgxk+sCfJWN0zT9gUxBOvBuI8bp5vkE/jAUI1OR2Eru8YsvLqSEw==
+      integrity: sha512-NLZz2bviKtxy+nW/EcuTbRkFLjklLLGYltg6dF818VzU4IbGBifLxW+AsNIxEBX/AZVy27qugEuvOFRsABT+ZQ==
       tarball: 'file:projects/redo-website.tgz'
     version: 0.0.0
   'file:projects/shapeql.tgz':
@@ -14123,6 +14147,7 @@ packages:
       integrity: sha512-ZNByrUjamQSwfja93aVPvVNFMChgy7PYd409p0VW7zxrkzlP+b2/7Gvj2duts1umhmLW/xvnsNag8tEYf6P9OQ==
       tarball: 'file:projects/shapeql.tgz'
     version: 0.0.0
+registry: ''
 specifiers:
   '@babel/cli': 7.5.5
   '@babel/core': 7.5.5
@@ -14210,6 +14235,8 @@ specifiers:
   reflect-metadata: 0.1.13
   storybook-addon-material-ui: 0.9.0-alpha.20
   style-loader: 0.23.1
+  svgo: 1.3.0
+  svgo-loader: 2.2.1
   ts-jest: 24.0.2
   ts-loader: 6.0.1
   ts-node: 8.3.0
