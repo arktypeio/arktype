@@ -9,6 +9,7 @@ import {
     HotModuleReplacementPlugin,
     NoEmitOnErrorsPlugin
 } from "webpack"
+import ForkTsCheckerPlugin from "fork-ts-checker-webpack-plugin"
 
 export const env = process.env.NODE_ENV as any
 export const isDev = () => env === "development"
@@ -73,10 +74,6 @@ export const webConfig: Configuration = merge.smart(commonConfig, {
 
 export const rendererConfig: Configuration = merge.smart(webConfig, {
     target: "electron-renderer",
-    entry: [resolve(__dirname, "src", "renderer", "index.tsx")],
-    output: {
-        filename: "renderer.js"
-    },
     resolve: {
         /*
         Override default value ["browser"] since we have enabled node integration
