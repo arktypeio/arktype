@@ -1,8 +1,9 @@
 import { spawn } from "child_process"
 import merge from "webpack-merge"
-import { devServerConfig, rendererConfig } from "./webpack.common"
+import { devServerConfig } from "redo-bundle/webpack.base"
+import { rendererConfig } from "./webpack.common"
 
-const rendererDevServerConfig = merge.smart(rendererConfig, devServerConfig, {
+const rendererDevServerConfig = merge.smart(devServerConfig, rendererConfig, {
     devServer: {
         after() {
             spawn("npm", ["run", "electron"], {

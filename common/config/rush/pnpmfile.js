@@ -34,10 +34,5 @@ function readPackage(packageJson, context) {
             graphql: "^0.11.0 || ^0.12.0 || ^0.13.0 || ^14.0.0"
         }
     }
-    if (packageJson.name === "@material-ui/system") {
-        context.log("Fixing dependencies for @material-ui/system...")
-        packageJson.dependencies["csstype"] = "^2.5.2"
-    }
-
     return packageJson
 }
