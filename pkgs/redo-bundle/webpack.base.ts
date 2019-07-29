@@ -49,8 +49,17 @@ export const webConfig: Configuration = merge.smart(commonConfig, {
     module: {
         rules: [
             {
-                test: /\.(jpg|png|svg|ico|icns|woff|woff2)$/,
+                test: /\.(jpg|png|ico|icns|woff|woff2)$/,
                 loader: "file-loader"
+            },
+            {
+                test: /\.svg$/,
+                use: [
+                    { loader: "file-loader" },
+                    {
+                        loader: "svgo-loader"
+                    }
+                ]
             },
             {
                 test: /\.css$/,
