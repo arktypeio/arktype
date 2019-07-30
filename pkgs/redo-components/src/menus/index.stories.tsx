@@ -1,11 +1,11 @@
 import React from "react"
 import { storiesOf } from "@storybook/react"
-import { muiTheme } from "../utils"
+import { withTheme } from "../storybook"
 import { Menu, MenuItem } from "."
 import { PrimaryButton } from "../buttons"
 
 storiesOf("Menu", module)
-    .addDecorator(muiTheme())
+    .addDecorator(withTheme())
     .add("Single menu item", () => <MenuItem>This is a menu item</MenuItem>)
     .add("Full menu", () => (
         <Menu

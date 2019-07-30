@@ -1,12 +1,12 @@
 import React, { useState } from "react"
 import { storiesOf } from "@storybook/react"
-import { muiTheme } from "../utils"
+import { withTheme } from "../storybook"
 import { RespondTo } from "."
 import { InfoText } from "../typography"
 import { TextInput } from "../inputs"
 
 storiesOf("Response", module)
-    .addDecorator(muiTheme())
+    .addDecorator(withTheme())
     .add("Data updates", () => <InputResponse />)
 
 const InputResponse = () => {

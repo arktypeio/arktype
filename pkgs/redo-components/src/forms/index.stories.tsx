@@ -1,12 +1,12 @@
 import React from "react"
 import { storiesOf } from "@storybook/react"
-import { muiTheme } from "../utils"
+import { withTheme } from "../storybook"
 import { FormText } from "./"
 import { FormSubmit } from "./FormSubmit"
 import { Form } from "./Form"
 
 storiesOf("Form", module)
-    .addDecorator(muiTheme())
+    .addDecorator(withTheme())
     .add("FormText", () => <FormTextSample />)
 
 const FormTextSample = () => {
