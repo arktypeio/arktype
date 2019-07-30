@@ -1,6 +1,8 @@
-import { createMuiTheme } from "@material-ui/core"
+import createMuiTheme, {
+    ThemeOptions
+} from "@material-ui/core/styles/createMuiTheme"
 
-export const defaultTheme = createMuiTheme({
+export const defaultConfig: ThemeOptions = {
     palette: {
         type: "light",
         primary: {
@@ -16,4 +18,6 @@ export const defaultTheme = createMuiTheme({
             textTransform: "none"
         }
     }
-})
+}
+
+export const defaultTheme = createMuiTheme(defaultConfig)
