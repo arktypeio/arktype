@@ -3,7 +3,7 @@ import { Theme } from "@material-ui/core"
 import { makeStyles } from "@material-ui/styles"
 import { component } from "blocks"
 import { AddButton, ScheduleButton, AccountButton, HelpButton } from "custom"
-import { Row, Menu } from "blocks"
+import { Row, Menu } from "redo-components"
 import { SearchInput } from "./SearchInput"
 
 const stylize = makeStyles((theme: Theme) => ({
