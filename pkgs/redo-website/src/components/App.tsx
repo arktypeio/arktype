@@ -4,10 +4,10 @@ import { CssBaseline } from "@material-ui/core"
 import { ThemeProvider } from "@material-ui/styles"
 import { Background } from "./Background"
 import { Content } from "./Content"
-import { theme } from "./theme"
+import { defaultTheme } from "redo-components"
 
 const ColdApp = () => (
-    <ThemeProvider theme={theme}>
+    <ThemeProvider theme={defaultTheme}>
         <CssBaseline />
         <Background />
         <Content />
