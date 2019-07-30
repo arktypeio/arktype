@@ -5,28 +5,39 @@
     "author": "redo.qa",
     "main": "src/index.tsx",
     "scripts": {
-        "start": "",
-        "build": ""
+        "start": "npm run clean && npm run devServer",
+        "build": "NODE_ENV=development webpack --progress --colors",
+        "devServer": "NODE_ENV=development webpack-dev-server --config webpack.devServer.config.ts --progress --colors",
+        "clean": "rm -rf dist && mkdir dist"
     },
     "svgr": {
         "svgo": false
     },
     "dependencies": {
+        "@babel/runtime-corejs3": "7.5.5",
+        "@hot-loader/react-dom": "16.8.6",
         "@material-ui/core": "4.2.1",
         "@material-ui/icons": "4.2.1",
         "@material-ui/styles": "4.2.1",
+        "framer-motion": "1.4.1",
         "react": "16.8.6",
         "react-dom": "16.8.6",
+        "redo-components": "1.0.0",
         "typeface-roboto": "0.0.54",
-        "@babel/runtime-corejs3": "7.5.5"
+        "webpack-merge": "4.1.4"
     },
     "devDependencies": {
-        "@hot-loader/react-dom": "16.8.6",
-        "@svgr/parcel-plugin-svgr": "4.3.1",
         "@types/node": "12.6.6",
         "@types/react": "16.8.8",
         "@types/react-dom": "16.8.3",
+        "@types/webpack-merge": "4.1.3",
         "react-hot-loader": "4.12.8",
-        "typescript": "3.5.2"
+        "redo-bundle": "1.0.0",
+        "redo-recommended": "1.0.0",
+        "ts-node": "8.3.0",
+        "typescript": "3.5.2",
+        "webpack": "4.29.6",
+        "webpack-cli": "3.3.0",
+        "webpack-dev-server": "3.7.2"
     }
 }

@@ -9,13 +9,7 @@ import {
 } from "@material-ui/core"
 import { yellow, blue } from "@material-ui/core/colors"
 import "typeface-roboto"
-
-const theme = createMuiTheme({
-    palette: {
-        primary: yellow,
-        secondary: blue
-    }
-})
+import { defaultTheme } from "redo-components"
 
 const style = makeStyles({
     content: {
@@ -75,40 +69,38 @@ export const Content = () => {
         email
     } = style()
     return (
-        <ThemeProvider theme={theme}>
-            <div className={content}>
-                <div className={header}>
-                    <AnimatedLogo />
-                    <Typography variant="h2">
-                        Free automated testing that builds itself.
-                    </Typography>
-                </div>
-                <div className={explain}>
-                    <div className={explainHeader}>
-                        <Typography variant="h3">How it works:</Typography>
-                    </div>
-                    <div className={explainContent}>
-                        <Typography>1.</Typography>
-                        <Typography>2.</Typography>
-                        <Typography>3.</Typography>
-                    </div>
-                </div>
-                <Typography variant="h3" className={email}>
-                    Sign up to be notified on release!
+        <div className={content}>
+            <div className={header}>
+                <AnimatedLogo />
+                <Typography variant="h2">
+                    Free automated testing that builds itself.
                 </Typography>
-                <div className={email}>
-                    <TextField
-                        type="text"
-                        name="email"
-                        placeholder="email"
-                        variant="outlined"
-                        color="secondary"
-                    />
-                    <Button variant="contained" color="primary">
-                        Sign up!
-                    </Button>
+            </div>
+            <div className={explain}>
+                <div className={explainHeader}>
+                    <Typography variant="h3">How it works:</Typography>
+                </div>
+                <div className={explainContent}>
+                    <Typography>1.</Typography>
+                    <Typography>2.</Typography>
+                    <Typography>3.</Typography>
                 </div>
             </div>
-        </ThemeProvider>
+            <Typography variant="h3" className={email}>
+                Sign up to be notified on release!
+            </Typography>
+            <div className={email}>
+                <TextField
+                    type="text"
+                    name="email"
+                    placeholder="email"
+                    variant="outlined"
+                    color="secondary"
+                />
+                <Button variant="contained" color="primary">
+                    Sign up!
+                </Button>
+            </div>
+        </div>
     )
 }
