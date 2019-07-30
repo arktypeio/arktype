@@ -7,7 +7,7 @@ import { SecondarySignInButton } from "custom"
 import { component } from "blocks"
 import { SignUpSubmit } from "gql"
 import { SignUpInput } from "redo-model"
-import logo from "assets/logo.svg"
+import Logo from "assets/logo.svg"
 
 const styles = (theme: Theme) =>
     createStyles({
@@ -25,7 +25,7 @@ export const SignUp = component({
             <CardPage>
                 <Form validateAgainst={new SignUpInput()}>
                     <Column justify="space-evenly" className={classes.fields}>
-                        <img src={logo} />
+                        <Logo />
                         <AnimatePresence>
                             <motion.div
                                 positionTransition
