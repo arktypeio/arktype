@@ -1,13 +1,8 @@
 import React from "react"
-import { Theme, Typography } from "@material-ui/core"
-import { makeStyles } from "@material-ui/styles"
+import { Text, TextProps } from "./Text"
 
-const styles = makeStyles((theme: Theme) => ({}))
+export type InfoTextProps = TextProps
 
-export type InfoTextProps = {
-    children: string
-}
-
-export const InfoText = ({ children }: InfoTextProps) => {
-    return <Typography align="center">{children}</Typography>
-}
+export const InfoText = ({ children }: InfoTextProps) => (
+    <Text align="center">{children}</Text>
+)
