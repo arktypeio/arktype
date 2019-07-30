@@ -7,7 +7,7 @@ import { component } from "blocks"
 import { SignInSubmit } from "gql"
 import { SignInInput } from "redo-model"
 import { motion, AnimatePresence } from "framer-motion"
-import logo from "assets/logo.svg"
+import Logo from "assets/logo.svg"
 
 const stylize = makeStyles((theme: Theme) => ({
     fields: {
@@ -22,7 +22,7 @@ export const SignIn = component({})(() => {
     return (
         <Column align="center" justify="center">
             <CardPage>
-                <img src={logo} />
+                <Logo />
                 <Form validateAgainst={new SignInInput()}>
                     <Column grow>
                         <AnimatePresence>

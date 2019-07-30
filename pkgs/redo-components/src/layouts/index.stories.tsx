@@ -1,13 +1,13 @@
 import React from "react"
 import { storiesOf } from "@storybook/react"
 import { action } from "@storybook/addon-actions"
-import { muiTheme } from "../utils"
+import { withTheme } from "../storybook"
 import { Row } from "./"
 import { Card } from "../cards"
 import { Column } from "./Column"
 
 storiesOf("Row", module)
-    .addDecorator(muiTheme())
+    .addDecorator(withTheme())
     .add("Row of cards", () => (
         <Row>
             <Card>Hi! This is a card.</Card>

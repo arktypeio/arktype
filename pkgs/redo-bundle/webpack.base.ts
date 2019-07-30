@@ -55,9 +55,14 @@ export const webConfig: Configuration = merge.smart(commonConfig, {
             {
                 test: /\.svg$/,
                 use: [
-                    { loader: "file-loader" },
                     {
-                        loader: "svgo-loader"
+                        loader: "babel-loader"
+                    },
+                    {
+                        loader: "react-svg-loader",
+                        options: {
+                            jsx: true
+                        }
                     }
                 ]
             },
