@@ -22,7 +22,7 @@ import { validateSync } from "class-validator"
 import { useMutation } from "@apollo/react-hooks"
 
 import { store } from "renderer/common"
-import { createValidator, UseMutation } from "custom/CustomForm"
+import { createValidator, UseMutation, submitForm } from "custom/CustomForm"
 
 const stylize = makeStyles((theme: Theme) => ({
     animatedFields: {
@@ -48,25 +48,6 @@ type SignInData = {
 
 const validate = createValidator(new SignInInput())
 
-const submitSignIn = async (
-    submit: ReturnType<UseMutation<SignInData, SignInInput>>[0],
-    fields: SignInInput
-): Promise<ResponseState<SignInData>> => {
-    const result = {} as ResponseState<SignInData>
-    try {
-        const submitResult = await submit({ variables: fields })
-        if (submitResult && submitResult.data) {
-            result.data = submitResult.data
-            store.mutate({ token: result.data.signIn.token })
-        } else {
-            result.errors = ["We called, but the server didn't pick up ☎️😞"]
-        }
-    } catch (e) {
-        result.errors = [e.message]
-    }
-    return result
-}
-
 export const SignIn = () => {
     const [submit] = useMutation<SignInData, SignInInput>(SIGNIN)
     const { animatedFields } = stylize()
@@ -75,7 +56,13 @@ export const SignIn = () => {
             <CardPage>
                 <Logo />
                 <Form<SignInInput, SignInData>
-                    submit={fields => submitSignIn(submit, fields)}
+                    submit={async fields => {
+                        const result = await submitForm({ submit, fields })
+                        if (result.data && result.data.signIn) {
+                            store.mutate({ token: result.data.signIn.token })
+                        }
+                        return result
+                    }}
                     validate={validate}
                 >
                     <Column grow>
