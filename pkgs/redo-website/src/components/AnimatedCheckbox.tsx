@@ -15,13 +15,8 @@ const tickVariants = {
 }
 
 export const AnimatedCheckbox: FC = () => {
-    const [isChecked, setIsChecked] = useState(false)
-    const {
-        palette: {
-            primary: { main },
-            secondary: { main: secondary }
-        }
-    } = useTheme<Theme>()
+    const [isChecked, setIsChecked] = useState(true)
+    const theme = useTheme<Theme>()
     return (
         <motion.svg
             initial={false}
@@ -36,7 +31,7 @@ export const AnimatedCheckbox: FC = () => {
                 d="M 72 136 C 72 100.654 100.654 72 136 72 L 304 72 C 339.346 72 368 100.654 368 136 L 368 304 C 368 339.346 339.346 368 304 368 L 136 368 C 100.654 368 72 339.346 72 304 Z"
                 fill="transparent"
                 strokeWidth="50"
-                stroke={main}
+                stroke={theme.palette.primary.main}
             />
             <motion.path
                 d="M 0 128.666 L 128.658 257.373 L 341.808 0"
@@ -54,7 +49,7 @@ export const AnimatedCheckbox: FC = () => {
                 transform="translate(54.917 68.947) rotate(-4 170.904 128.687)"
                 fill="transparent"
                 strokeWidth="65"
-                stroke={secondary}
+                stroke="#19e119"
                 strokeLinecap="round"
                 strokeLinejoin="round"
                 variants={tickVariants}

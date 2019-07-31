@@ -1,12 +1,8 @@
-import React from "react"
-import { Theme } from "@material-ui/core"
+import React, { FC } from "react"
 import { RowOrColumn, RowOrColumnProps } from "./RowOrColumn"
-import { createStyles } from "@material-ui/styles"
-
-const styles = (theme: Theme) => createStyles({})
 
 export type ColumnProps = Omit<RowOrColumnProps, "direction">
 
-export const Column = ({ classes, ...rest }: ColumnProps) => {
-    return <RowOrColumn direction="column" {...rest} />
+export const Column: FC<ColumnProps> = props => {
+    return <RowOrColumn direction="column" {...props} />
 }

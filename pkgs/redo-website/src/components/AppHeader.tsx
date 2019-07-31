@@ -7,7 +7,7 @@ import { Theme } from "@material-ui/core"
 
 const stylize = makeStyles<Theme>(theme => ({
     header: {
-        height: 250
+        height: 300
     }
 }))
 
@@ -17,7 +17,7 @@ export const AppHeader: FC = () => {
         <div className={header}>
             <AnimatedLogo />
             <Text variant="h4" color="primary" align="center">
-                Free automated testing
+                Automated testing
             </Text>
             <Typist startDelay={400} cursor={{ show: false }}>
                 <Text variant="h4" color="secondary" align="center">
