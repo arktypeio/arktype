@@ -1,15 +1,16 @@
 import React from "react"
+import { withStyles, WithTheme } from "@material-ui/styles"
 import {
-    withStyles,
-    WithTheme
-} from "@material-ui/styles"
-import { StyleRulesCallback, WithStyles, StyleRules } from "@material-ui/styles/withStyles"
+    StyleRulesCallback,
+    WithStyles,
+    StyleRules
+} from "@material-ui/styles/withStyles"
 import { Grid, Theme } from "@material-ui/core"
 import { GridProps as MuiGridProps } from "@material-ui/core/Grid"
 import { store as rootStore } from "renderer/common"
 import { connect, FormikProps } from "formik"
 import { withApollo, graphql, DataProps } from "react-apollo"
-import { ApolloClient } from "apollo-boost"
+import { ApolloClient } from "apollo-client"
 import { Root } from "state"
 import { Query, shapeql } from "shapeql"
 

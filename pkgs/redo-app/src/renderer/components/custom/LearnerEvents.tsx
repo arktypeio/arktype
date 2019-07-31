@@ -1,34 +1,32 @@
 import React from "react"
-import { Theme, List, ListItem, createStyles } from "@material-ui/core"
+import { Theme, List, ListItem } from "@material-ui/core"
+import { makeStyles } from "@material-ui/styles"
 import { LearnerEventCard } from "custom"
 import { BrowserEvent } from "redo-model"
-import { component } from "blocks"
 
-const styles = (theme: Theme) =>
-    createStyles({
-        list: {
-            height: "100%",
-            width: "100%"
-        },
-        listItem: {
-            padding: theme.spacing(2)
-        }
-    })
+const stylize = makeStyles((theme: Theme) => ({
+    list: {
+        height: "100%",
+        width: "100%"
+    },
+    listItem: {
+        padding: theme.spacing(2)
+    }
+}))
 
 export type LearnerEventsProps = {
     events: BrowserEvent[]
 }
 
-export const LearnerEvents = component({
-    name: "LearnerEvents",
-    defaultProps: {} as Partial<LearnerEventsProps>,
-    styles
-})(({ classes, events }) => (
-    <List className={classes.list}>
-        {events.map((e, i) => (
-            <ListItem className={classes.listItem} key={i}>
-                <LearnerEventCard event={e} />
-            </ListItem>
-        ))}
-    </List>
-))
+export const LearnerEvents = ({ events }: LearnerEventsProps) => {
+    const { list, listItem } = stylize()
+    return (
+        <List className={list}>
+            {events.map((e, i) => (
+                <ListItem className={listItem} key={i}>
+                    <LearnerEventCard event={e} />
+                </ListItem>
+            ))}
+        </List>
+    )
+}

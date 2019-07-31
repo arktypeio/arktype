@@ -1,5 +1,5 @@
 import React, { useState } from "react"
-import { TextInput } from "../inputs"
+import { TextInput, TextInputProps } from "../inputs"
 import { makeStyles } from "@material-ui/styles"
 import { Theme } from "@material-ui/core"
 import { ErrorText } from "../typography"
@@ -8,10 +8,7 @@ import { useFormContext } from "./FormContext"
 import { FormFieldProps } from "./FormField"
 import { FormActions, Fields } from "./FormContext"
 
-export type FormTextProps = FormFieldProps & {
-    label?: string
-    required?: boolean
-}
+export type FormTextProps = FormFieldProps & TextInputProps
 
 type UpdateFieldErrorsOptions = Pick<FormActions<Fields>, "validate"> & {
     setError: (key: string, _: string, errors: string) => void
@@ -43,7 +40,7 @@ const updateFieldErrors = ({
         })
 }
 
-export const FormText = ({ name, label }: FormTextProps) => {
+export const FormText = ({ name, label, ...rest }: FormTextProps) => {
     const {
         register,
         errors,
@@ -53,16 +50,12 @@ export const FormText = ({ name, label }: FormTextProps) => {
         clearError,
         touched
     } = useFormContext()
-    console.log(errors)
-    const [state, setState] = useState("")
     return (
         <Column>
             <TextInput
                 name={name}
                 label={label ? label : name}
                 inputRef={register}
-                onChange={e => setState(e.target.value)}
-                value={state}
                 onBlur={() => {
                     if (!touched.includes(name)) {
                         touched.push(name)
@@ -75,6 +68,7 @@ export const FormText = ({ name, label }: FormTextProps) => {
                         clearError
                     })
                 }}
+                {...rest}
             />
             {errors[name] && errors[name].message ? (
                 <ErrorText>{errors[name].message.split("\n")}</ErrorText>
