@@ -7,7 +7,7 @@ import { Theme } from "@material-ui/core"
 
 const stylize = makeStyles<Theme>(theme => ({
     header: {
-        height: 300
+        height: theme.spacing(33)
     }
 }))
 

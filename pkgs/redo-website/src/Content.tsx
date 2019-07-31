@@ -1,7 +1,7 @@
 import "typeface-ubuntu"
 import React from "react"
 import { makeStyles } from "@material-ui/styles"
-import { Theme } from "@material-ui/core"
+import { Theme, Box } from "@material-ui/core"
 import { Column } from "redo-components"
 import { AppHeader, HowItWorks, SignUp } from "./components"
 
@@ -11,19 +11,20 @@ const stylize = makeStyles((theme: Theme) => ({
         padding: theme.spacing(5),
         top: 0,
         height: "100vh",
-        width: "100vw"
+        width: "100vw",
+        overflow: "hidden"
     },
-    column: {
-        maxWidth: theme.spacing(100)
+    primary: {
+        maxWidth: theme.spacing(50)
     }
 }))
 
 export const Content = () => {
-    const { content, column } = stylize()
+    const { content, primary } = stylize()
     return (
         <Column className={content} align="center">
-            <AppHeader />
-            <Column className={column}>
+            <Column className={primary} align="center">
+                <AppHeader />
                 <HowItWorks />
                 <SignUp />
             </Column>
