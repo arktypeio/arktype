@@ -1,29 +1,70 @@
-import React, { useEffect } from "react"
+import React from "react"
 import { Theme } from "@material-ui/core"
 import { makeStyles } from "@material-ui/styles"
-import { Form, FormText, Column, CardPage } from "blocks"
+import {
+    FormText,
+    FormSubmit,
+    Column,
+    CardPage,
+    Form,
+    Fields,
+    ResponseState,
+    FormErrors
+} from "redo-components"
 import { SecondarySignUpButton } from "custom"
 import { component } from "blocks"
-import { SignInSubmit } from "gql"
+import gql from "graphql-tag"
 import { SignInInput } from "redo-model"
 import { motion, AnimatePresence } from "framer-motion"
 import Logo from "assets/logo.svg"
+import { plainToClassFromExist } from "class-transformer"
+import { validateSync } from "class-validator"
+import { useMutation } from "@apollo/react-hooks"
+
+import { store } from "renderer/common"
+import { createValidator, UseMutation, submitForm } from "custom/CustomForm"
 
 const stylize = makeStyles((theme: Theme) => ({
-    fields: {
+    animatedFields: {
         display: "flex",
         flexGrow: 1,
         justifyContent: "space-around"
     }
 }))
 
-export const SignIn = component({})(() => {
-    const { fields } = stylize()
+const SIGNIN = gql`
+    mutation signIn($email: String!, $password: String!) {
+        signIn(email: $email, password: $password) {
+            token
+        }
+    }
+`
+
+type SignInData = {
+    signIn: {
+        token: string
+    }
+}
+
+const validate = createValidator(new SignInInput())
+
+export const SignIn = () => {
+    const [submit] = useMutation<SignInData, SignInInput>(SIGNIN)
+    const { animatedFields } = stylize()
     return (
         <Column align="center" justify="center">
             <CardPage>
                 <Logo />
-                <Form validateAgainst={new SignInInput()}>
+                <Form<SignInInput, SignInData>
+                    submit={async fields => {
+                        const result = await submitForm({ submit, fields })
+                        if (result.data && result.data.signIn) {
+                            store.mutate({ token: result.data.signIn.token })
+                        }
+                        return result
+                    }}
+                    validate={validate}
+                >
                     <Column grow>
                         <AnimatePresence>
                             <motion.div
@@ -33,22 +74,25 @@ export const SignIn = component({})(() => {
                                 }}
                                 animate={{ x: 0 }}
                                 exit={{ x: -500 }}
-                                className={fields}
+                                className={animatedFields}
                             >
                                 <Column>
-                                    <FormText holds="email" autoFocus />
-                                    <FormText
-                                        holds="password"
-                                        type="password"
-                                    />
+                                    <FormText name="email" autoFocus />
+                                    <FormText type="password" name="password" />
                                 </Column>
                             </motion.div>
                         </AnimatePresence>
-                        <SignInSubmit />
                     </Column>
+                    <FormSubmit
+                        responseOptions={{
+                            loading: { hideContent: true }
+                        }}
+                    >
+                        Sign in
+                    </FormSubmit>
                 </Form>
             </CardPage>
-            <SecondarySignUpButton text="Need an account?" />
+            <SecondarySignUpButton>Need an account?</SecondarySignUpButton>
         </Column>
     )
-})
+}
