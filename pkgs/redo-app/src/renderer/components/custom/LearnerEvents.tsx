@@ -1,8 +1,12 @@
 import React from "react"
 import { Theme, List, ListItem, createStyles } from "@material-ui/core"
 import { LearnerEventCard } from "custom"
+<<<<<<< Updated upstream
 import { BrowserEvent } from "redo-model"
 import { component } from "blocks"
+=======
+import { BrowserEventInput } from "renderer/common"
+>>>>>>> Stashed changes
 
 const styles = (theme: Theme) =>
     createStyles({
@@ -16,7 +20,7 @@ const styles = (theme: Theme) =>
     })
 
 export type LearnerEventsProps = {
-    events: BrowserEvent[]
+    events: BrowserEventInput[]
 }
 
 export const LearnerEvents = component({

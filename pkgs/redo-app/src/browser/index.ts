@@ -1,9 +1,9 @@
 import finder from "@medv/finder"
-import { BrowserEvent } from "redo-model"
+import { BrowserEventInput } from "renderer/common"
 
 export const watchPage = async () => {
     const browserWindow: Window & {
-        notify: (e: BrowserEvent) => void
+        notify: (e: BrowserEventInput) => void
     } = window as any
     const events = {
         CLICK: "click",
@@ -16,7 +16,7 @@ export const watchPage = async () => {
         browserWindow.addEventListener(
             event,
             async (e: Event) => {
-                const browserEvent: BrowserEvent = {
+                const browserEvent: BrowserEventInput = {
                     type: e.type,
                     selector: "",
                     value: ""

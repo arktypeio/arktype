@@ -3,8 +3,8 @@ import { resolve } from "path"
 import { IgnorePlugin } from "webpack"
 import {
     commonConfig,
-    webConfig,
-    rendererConfig as baseRendererConfig
+    rendererConfig as baseRendererConfig,
+    injectedWebConfig
 } from "redo-bundle/webpack.base"
 
 export const mainConfig = merge.smart(commonConfig, {
@@ -15,7 +15,7 @@ export const mainConfig = merge.smart(commonConfig, {
     }
 })
 
-export const browserConfig = merge.smart(webConfig, {
+export const browserConfig = merge.smart(injectedWebConfig, {
     entry: [resolve(__dirname, "src", "browser", "index.ts")],
     output: {
         filename: "browser.js"
