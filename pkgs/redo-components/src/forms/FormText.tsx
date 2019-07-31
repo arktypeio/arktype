@@ -1,8 +1,6 @@
-import React, { useState } from "react"
+import React, { FC } from "react"
 import { TextInput, TextInputProps } from "../inputs"
-import { makeStyles } from "@material-ui/styles"
-import { Theme } from "@material-ui/core"
-import { ErrorText } from "../typography"
+import { ErrorText } from "../text"
 import { Column } from "../layouts"
 import { useFormContext } from "./FormContext"
 import { FormFieldProps } from "./FormField"
@@ -40,7 +38,12 @@ const updateFieldErrors = ({
         })
 }
 
-export const FormText = ({ name, label, ...rest }: FormTextProps) => {
+export const FormText: FC<FormTextProps> = ({
+    name,
+    label,
+    fullWidth,
+    ...rest
+}) => {
     const {
         register,
         errors,
@@ -51,7 +54,7 @@ export const FormText = ({ name, label, ...rest }: FormTextProps) => {
         touched
     } = useFormContext()
     return (
-        <Column>
+        <Column alignItems={fullWidth ? "stretch" : "center"}>
             <TextInput
                 name={name}
                 label={label ? label : name}
