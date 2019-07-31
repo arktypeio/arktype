@@ -1,6 +1,6 @@
 import React from "react"
 import { component } from "blocks"
-import { Dialog, Row } from "blocks"
+import { Dialog, Row } from "redo-components"
 import { ChromeButton, FirefoxButton } from "custom"
 
 // TODO: Reuse this component for launching browsers

@@ -1,27 +1,28 @@
 import React from "react"
 import { Theme } from "@material-ui/core"
+import { makeStyles } from "@material-ui/styles"
 import { component } from "blocks"
 import { AddButton, ScheduleButton, AccountButton, HelpButton } from "custom"
-import { Row, Menu } from "blocks"
+import { Row, Menu } from "redo-components"
 import { SearchInput } from "./SearchInput"
 
-const styles = (theme: Theme) => ({
+const stylize = makeStyles((theme: Theme) => ({
     homeActionsRow: {
         height: theme.spacing(10)
     },
     searchInput: {
         width: theme.spacing(40)
     }
-})
+}))
 
 export const HomeActionsRow = component({
     name: "HomeActionsRow",
-    styles,
     store: true
-})(({ classes, store }) => {
+})(({ store }) => {
+    const { homeActionsRow, searchInput } = stylize()
     return (
         <>
-            <Row justify="center" className={classes.homeActionsRow}>
+            <Row justify="center" className={homeActionsRow}>
                 <AddButton
                     onClick={() =>
                         store.mutate({
@@ -30,7 +31,10 @@ export const HomeActionsRow = component({
                     }
                 />
                 <ScheduleButton />
-                <SearchInput placeholder="Search your tests" />
+                <SearchInput
+                    className={searchInput}
+                    placeholder="Search your tests"
+                />
                 <HelpButton />
                 <Menu
                     Button={AccountButton}

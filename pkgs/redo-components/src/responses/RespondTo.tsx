@@ -4,6 +4,7 @@ import { makeStyles } from "@material-ui/styles"
 import { Column } from "../layouts"
 import { ErrorText } from "../typography"
 import deepmerge from "deepmerge"
+import { ValueOf } from "../../../redo-utils/dist"
 
 const styles = makeStyles((theme: Theme) => {})
 
@@ -26,7 +27,7 @@ export type ResponseOptions<T> = {
 }
 
 type ResponseItemOptions<T> = {
-    showContent?: boolean
+    hideContent?: boolean
     // TODO determine whether this should be included as part of API
     onChange?: (value: T | undefined) => void
     displayAs?: (props: ResponseStateProps<T>) => JSX.Element | null
@@ -50,6 +51,12 @@ const defaultRespondToOptions: ResponseOptions<any> = {
     }
 }
 
+const isStateActiveMap: Record<string, (value: any) => boolean> = {
+    data: (_?: any) => _,
+    errors: (_?: string[]) => !!_ && !!_.length,
+    loading: (_?: boolean) => _ === true
+}
+
 export const RespondTo = <T extends any = any>({
     children,
     response,
@@ -57,8 +64,14 @@ export const RespondTo = <T extends any = any>({
 }: RespondToProps<T>) => {
     const opts = deepmerge(defaultRespondToOptions, options)
     const [lastResponse, setLastResponse] = useState<ResponseState<T>>({})
-    const showChildren = !Object.values(opts).some(
-        opts => opts && opts.showContent === false
+    const hideChildren = Object.entries(opts).some(
+        ([key, { hideContent }]: [string, ResponseItemOptions<any>]) => {
+            const k = key as keyof ResponseOptions<any>
+            if (hideContent === true) {
+                return isStateActiveMap[k](response[k])
+            }
+            return false
+        }
     )
     handleChanges(response, lastResponse, setLastResponse, opts)
     const displayResponseAs = Object.entries(response).map(([k, v]) => {
@@ -72,7 +85,7 @@ export const RespondTo = <T extends any = any>({
     return (
         <Column align="center">
             {displayResponseAs}
-            {showChildren ? children : null}
+            {hideChildren ? null : children}
         </Column>
     )
 }

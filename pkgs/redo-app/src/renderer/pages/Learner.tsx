@@ -1,15 +1,17 @@
 import React from "react"
 import { Theme, createStyles } from "@material-ui/core"
+import { component } from "blocks"
 import {
-    component,
     PrimaryButton,
-    Response,
+    RespondTo,
     SecondaryButton,
     Row,
-    Column
-} from "blocks"
+    Column,
+    InfoText
+} from "redo-components"
 import { deactivateLearner, saveLearner } from "state"
 import { LearnerEvents } from "custom"
+import { CircularProgress } from "@material-ui/core"
 
 const styles = (theme: Theme) =>
     createStyles({
@@ -25,29 +27,37 @@ export const Learner = component({
     defaultProps: {} as Partial<LearnerProps>,
     styles,
     query: { learner: { events: null, chromiumInstalling: null } }
-})(({ classes, data }) => (
-    <Column justify="flex-start">
-        <Row align="center" justify="flex-start">
-            <SecondaryButton
-                text="Back home"
-                onClick={deactivateLearner}
-                color="secondary"
-            />
+})(({ classes, data }) => {
+    return (
+        <Column justify="flex-start">
+            <Row align="center" justify="flex-start">
+                <SecondaryButton onClick={deactivateLearner} color="secondary">
+                    Back home
+                </SecondaryButton>
 
-            <Response isLoading={false}>
-                <PrimaryButton
-                    text="Save test"
-                    onClick={saveLearner}
-                    color="primary"
-                />
-            </Response>
-        </Row>
-        <Response
-            loadingMessage="Downloading Chrome"
-            isLoading={data.learner!.chromiumInstalling}
-            contentOnLoading={true}
-        >
-            <LearnerEvents events={data.learner!.events} />
-        </Response>
-    </Column>
-))
+                <RespondTo response={{ loading: false }}>
+                    <PrimaryButton onClick={saveLearner} color="primary">
+                        Save test
+                    </PrimaryButton>
+                </RespondTo>
+            </Row>
+            <RespondTo
+                response={{ loading: data.learner!.chromiumInstalling }}
+                options={{
+                    loading: {
+                        displayAs: ({ value }) =>
+                            value ? (
+                                <>
+                                    <CircularProgress />{" "}
+                                    <InfoText>Downloading Chrome</InfoText>
+                                </>
+                            ) : null,
+                        hideContent: false
+                    }
+                }}
+            >
+                <LearnerEvents events={data.learner!.events} />
+            </RespondTo>
+        </Column>
+    )
+})
