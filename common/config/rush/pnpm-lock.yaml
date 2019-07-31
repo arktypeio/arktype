@@ -30,7 +30,6 @@ dependencies:
   '@storybook/addon-links': 5.1.9_react-dom@16.8.6+react@16.8.6
   '@storybook/addons': 5.1.9_react-dom@16.8.6
   '@storybook/react': 5.1.9_74b9b0d99c1272f45a2827fcfa1b3669
-  '@types/animejs': 2.0.2
   '@types/bcrypt': 3.0.0
   '@types/dotenv': 6.1.0
   '@types/electron-devtools-installer': 2.2.0
@@ -43,10 +42,10 @@ dependencies:
   '@types/puppeteer': 1.12.4
   '@types/react': 16.8.8
   '@types/react-dom': 16.8.3
+  '@types/react-typist': 2.0.0
   '@types/storybook__react': 4.0.2
   '@types/webpack': 4.4.26
   '@types/webpack-merge': 4.1.3
-  animejs: 3.1.0
   apollo-cache-inmemory: 1.6.2
   apollo-link-http: 1.5.15
   apollo-server: 2.7.0
@@ -84,6 +83,7 @@ dependencies:
   react-hook-form: 3.18.8_react-dom@16.8.6+react@16.8.6
   react-hot-loader: 4.12.8_react-dom@16.8.6+react@16.8.6
   react-svg-loader: 3.0.3
+  react-typist: 2.0.5_react-dom@16.8.6+react@16.8.6
   reflect-metadata: 0.1.13
   storybook-addon-material-ui: 0.9.0-alpha.20_8fc843230fc8dd03e3f2a50afbd90d80
   style-loader: 0.23.1
@@ -2932,6 +2932,12 @@ packages:
     dev: false
     resolution:
       integrity: sha512-5Fv2DQNO+GpdPZcxp2x/OQG/H19A01WlmpjVD9cKvVFmoVLOZ9LvBgSWG6pSXIU4og5fgbvGPaCV5+VGkWAEHA==
+  /@types/react-typist/2.0.0:
+    dependencies:
+      '@types/react': 16.8.8
+    dev: false
+    resolution:
+      integrity: sha512-whoNrWBhxBGhLTnSO05TYjjRJIzPmU1PEiguZFanTG/vru9uYAwGeo3q8OgKYRYwIUedEV6FjmbSBR5a9ETtfg==
   /@types/react/16.8.8:
     dependencies:
       '@types/prop-types': 15.7.1
@@ -11388,6 +11394,17 @@ packages:
       react-dom: '>=16.6.0'
     resolution:
       integrity: sha512-IXrPr93VzCPupwm2O6n6C2kJIofJ/Rp5Ltihhm9UfE8lkuVX2ng/SUUl/oWjblybK9Fq2Io7LGa6maVqPB762Q==
+  /react-typist/2.0.5_react-dom@16.8.6+react@16.8.6:
+    dependencies:
+      prop-types: 15.7.2
+      react: 16.8.6
+      react-dom: 16.8.6_react@16.8.6
+    dev: false
+    peerDependencies:
+      react: ^0.14 || ^15.0 || ^16.0
+      react-dom: ^^0.14 || ^15.0 || ^16.0
+    resolution:
+      integrity: sha512-iZCkeqeegO0TlkTMiH2JD1tvMtY9RrXkRylnAI6m8aCVAUUwNzoWTVF7CKLij6THeOMcUDCznLDDvNp55s+YZA==
   /react/16.8.6:
     dependencies:
       loose-envify: 1.4.0
@@ -14120,6 +14137,7 @@ packages:
       '@types/node': 12.6.6
       '@types/react': 16.8.8
       '@types/react-dom': 16.8.3
+      '@types/react-typist': 2.0.0
       '@types/webpack-merge': 4.1.3
       animejs: 3.1.0
       framer-motion: 1.4.1_react-dom@16.8.6+react@16.8.6
@@ -14128,8 +14146,10 @@ packages:
       react: 16.8.6
       react-dom: 16.8.6_react@16.8.6
       react-hot-loader: 4.12.8_react-dom@16.8.6+react@16.8.6
+      react-typist: 2.0.5_react-dom@16.8.6+react@16.8.6
       ts-node: 8.3.0_typescript@3.5.2
       typeface-roboto: 0.0.54
+      typeface-ubuntu: 0.0.65
       typescript: 3.5.2
       webpack: 4.29.6_webpack@4.29.6
       webpack-cli: 3.3.0_webpack@4.29.6
@@ -14138,7 +14158,7 @@ packages:
     dev: false
     name: '@rush-temp/redo-website'
     resolution:
-      integrity: sha512-gIWCXpW8oD9aca+ToFxcoWM4XnmEhhPL8EXJSnb7c8FUtdA3gY0E5eQtrdHQ1lIOvDGj5hvADok6+1L/q5xIAA==
+      integrity: sha512-I0ZKlPf4FAalw38zp7jerTPq3/w8+2SRj66qhhF7n8Slnn+uIAhpn5odmDsJAFb6Nr1oHE23gCblhlFuZIjosA==
       tarball: 'file:projects/redo-website.tgz'
     version: 0.0.0
   'file:projects/shapeql.tgz':
@@ -14199,7 +14219,6 @@ specifiers:
   '@storybook/addon-links': 5.1.9
   '@storybook/addons': 5.1.9
   '@storybook/react': 5.1.9
-  '@types/animejs': 2.0.2
   '@types/bcrypt': 3.0.0
   '@types/dotenv': 6.1.0
   '@types/electron-devtools-installer': 2.2.0
@@ -14212,10 +14231,10 @@ specifiers:
   '@types/puppeteer': 1.12.4
   '@types/react': 16.8.8
   '@types/react-dom': 16.8.3
+  '@types/react-typist': 2.0.0
   '@types/storybook__react': 4.0.2
   '@types/webpack': 4.4.26
   '@types/webpack-merge': 4.1.3
-  animejs: 3.1.0
   apollo-cache-inmemory: 1.6.2
   apollo-link-http: 1.5.15
   apollo-server: 2.7.0
@@ -14253,6 +14272,7 @@ specifiers:
   react-hook-form: 3.18.8
   react-hot-loader: 4.12.8
   react-svg-loader: 3.0.3
+  react-typist: 2.0.5
   reflect-metadata: 0.1.13
   storybook-addon-material-ui: 0.9.0-alpha.20
   style-loader: 0.23.1

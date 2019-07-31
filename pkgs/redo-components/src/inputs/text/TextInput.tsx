@@ -34,7 +34,6 @@ export const TextInput = ({
         <Component
             label={label}
             margin="dense"
-            fullWidth
             InputLabelProps={{
                 classes: { root: inputLabel }
             }}

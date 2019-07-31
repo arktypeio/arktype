@@ -1,77 +1,22 @@
-import React, { useEffect } from "react"
-import { makeStyles } from "@material-ui/styles"
+import React from "react"
+import { makeStyles, createStyles } from "@material-ui/styles"
+import { Card } from "redo-components"
 import { Theme } from "@material-ui/core"
-import { KeyboardArrowDown as ArrowIcon } from "@material-ui/icons"
-import anime from "animejs"
-
-const ARROW = {
-    count: 8,
-    xOffsetRange: 50,
-    minSize: 40,
-    maxSize: 80,
-    minFallTime: 10 * 1000,
-    maxFallTime: 20 * 1000,
-    fallStagger: 1 * 1000,
-    opacity: 0.6,
-    color: "#74D6FF"
-}
 
 const stylize = makeStyles<Theme>(theme => ({
-    area: {
-        background: theme.palette.background.paper,
+    skewedBackground: {
+        overflow: "hidden",
         width: "100vw",
-        height: "100vh"
+        position: "absolute",
+        top: -150,
+        height: 375,
+        background: theme.palette.background.paper,
+        transform: "skewY(8deg)",
+        transformOrigin: "top left"
     }
 }))
 
 export const Background = () => {
-    const { area } = stylize()
-    const { count } = ARROW
-    return (
-        <div className={area}>
-            {[...Array(count).keys()].map(index => (
-                <Arrow key={index} index={index} />
-            ))}
-        </div>
-    )
-}
-
-export const Arrow = ({ index }: { index: number }) => {
-    const {
-        minSize,
-        maxSize,
-        minFallTime,
-        maxFallTime,
-        fallStagger,
-        opacity,
-        xOffsetRange,
-        count,
-        color
-    } = ARROW
-    const fontSize = anime.random(minSize, maxSize)
-    const availableWidth = window.innerWidth / count
-    useEffect(() => {
-        anime({
-            targets: `.animated-arrow-${index}`,
-            translateY: innerHeight + maxSize,
-            duration: _ => anime.random(minFallTime, maxFallTime),
-            easing: "easeInCirc",
-            delay: index * fallStagger,
-            loop: true
-        })
-    })
-    const xOffset = anime.random(-xOffsetRange, xOffsetRange)
-    return (
-        <ArrowIcon
-            className={`animated-arrow-${index}`}
-            style={{
-                position: "absolute",
-                left: index * availableWidth + xOffset,
-                top: -maxSize,
-                fontSize,
-                opacity,
-                color
-            }}
-        />
-    )
+    const { skewedBackground } = stylize()
+    return <Card elevation={20} className={skewedBackground} />
 }
