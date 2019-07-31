@@ -2,15 +2,26 @@ import { ApolloClient, Resolvers } from "apollo-client"
 import { InMemoryCache } from "apollo-cache-inmemory"
 import { createHttpLink } from "apollo-link-http"
 import { Root, Learner, Bounds, rootHandler } from "state"
-import { BrowserEvent } from "redo-model"
-import { buildSchemaSync, Resolver } from "type-graphql"
+import { buildSchemaSync, Resolver, ObjectType, Field } from "type-graphql"
 import { createResolversMap } from "type-graphql/dist/utils/createResolversMap"
 import { printSchema } from "graphql"
 import { createStore } from "shapeql"
 
 const link = createHttpLink({ uri: `http://localhost:${process.env.PORT}` })
 
-@Resolver(of => BrowserEvent)
+@ObjectType()
+export class BrowserEventInput {
+    @Field()
+    type: string
+
+    @Field()
+    selector: string
+
+    @Field()
+    value: string
+}
+
+@Resolver(of => BrowserEventInput)
 export class BrowserEventResolver {}
 
 @Resolver(of => Learner)

@@ -1,6 +1,5 @@
 import { readFileSync, chmodSync, mkdirp } from "fs-extra"
-import { BrowserEvent } from "redo-model"
-// import { walk } from "redo-utils"
+import { BrowserEventInput } from "renderer/common"
 /*Important we use this format as opposed to import { ... } from "puppeteer".
 Puppeteer is actually a class object whose methods rely on this, which will
 be undefined if we use that style of import.*/
@@ -49,8 +48,8 @@ export class Learner {
     @Field()
     active: boolean
 
-    @Field(type => [BrowserEvent])
-    events: BrowserEvent[]
+    @Field(type => [BrowserEventInput])
+    events: BrowserEventInput[]
 
     @Field()
     lastConnectedEndpoint: string
@@ -155,7 +154,7 @@ export const deactivateLearner = async () => {
     })
 }
 
-export const saveLearner = async () => {
+export const resetLearner = async () => {
     await store.mutate({
         learner: {
             events: []
@@ -163,7 +162,7 @@ export const saveLearner = async () => {
     })
 }
 
-const notify = (event: BrowserEvent) => {
+const notify = (event: BrowserEventInput) => {
     try {
         store.mutate({
             learner: { events: _ => _.concat(event) }

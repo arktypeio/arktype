@@ -1,4 +1,4 @@
-import { Ctx, Mutation, Resolver, Args } from "type-graphql"
+import { Ctx, Mutation, Query, Resolver, Args } from "type-graphql"
 import { Test, TestInput } from "redo-model"
 import { Context } from "../context"
 
@@ -19,5 +19,12 @@ export class TestResolver {
             }
         })
         return test
+    }
+
+    @Query(returns => [Test])
+    async getTest(@Ctx() { photon }: Context) {
+        const results = await photon.tests.findMany()
+        console.log(results)
+        return results
     }
 }
