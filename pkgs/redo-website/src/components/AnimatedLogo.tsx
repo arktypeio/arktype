@@ -1,35 +1,26 @@
 import React, { FC } from "react"
-import { Card, Header } from "redo-components"
 import { Theme } from "@material-ui/core"
 import { useTheme } from "@material-ui/styles"
 import { motion, SVGMotionProps } from "framer-motion"
 
-export const HeaderCard: FC = () => {
-    return (
-        <>
-            <AnimatedLogo />
-            <Header>Free automated testing that builds itself.</Header>
-        </>
-    )
-}
-
-const arrowAnimationProps: SVGMotionProps<SVGPathElement> = {
-    initial: {
-        pathLength: 0,
-        opacity: 0
-    },
-    animate: {
-        pathLength: 1,
-        opacity: 1
-    },
-    transition: {
-        delay: 0.5,
-        duration: 0.2,
-        easings: "easeIn"
+const animationProps = (delay: number): SVGMotionProps<SVGPathElement> => {
+    return {
+        initial: {
+            pathLength: 0,
+            opacity: 0
+        },
+        animate: {
+            pathLength: 1,
+            opacity: 1
+        },
+        transition: {
+            delay,
+            duration: 0.4
+        }
     }
 }
 
-export const AnimatedLogo = () => {
+export const AnimatedLogo: FC = () => {
     const {
         palette: {
             primary: { main },
@@ -37,7 +28,7 @@ export const AnimatedLogo = () => {
         }
     } = useTheme<Theme>()
     return (
-        <motion.svg height="200" viewBox="0 0 1823 575">
+        <motion.svg height="120" viewBox="0 0 1823 575">
             <motion.g
                 fill="none"
                 strokeLinecap="round"
@@ -52,8 +43,8 @@ export const AnimatedLogo = () => {
                 <motion.path
                     id="r-arrow"
                     stroke={secondary}
-                    {...arrowAnimationProps}
                     d="M353.388 162.585h88.82v-88.82"
+                    {...animationProps(0.4)}
                 />
                 <motion.path
                     id="e-main"
@@ -64,6 +55,7 @@ export const AnimatedLogo = () => {
                     id="e-cross"
                     stroke={secondary}
                     d="M605.77 228.02h226.6"
+                    {...animationProps(0.8)}
                 />
                 <motion.path
                     id="d-and-o-main"
@@ -74,12 +66,13 @@ export const AnimatedLogo = () => {
                     id="d-cross"
                     stroke={secondary}
                     d="M1027.066 139.595V435.66"
+                    {...animationProps(1.2)}
                 />
                 <motion.path
                     id="o-arrow"
                     stroke={secondary}
-                    {...arrowAnimationProps}
                     d="M1739.75 73.4h-88.82v88.82"
+                    {...animationProps(1.6)}
                 />
             </motion.g>
         </motion.svg>

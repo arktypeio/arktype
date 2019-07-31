@@ -9,7 +9,7 @@ const styles = makeStyles((theme: Theme) => {})
 
 export type FormSubmitProps<D = any> = {
     responseOptions?: ResponseOptions<D>
-    children: ReactNode
+    children?: ReactNode
 }
 
 export const FormSubmit = <D extends any = any>({
