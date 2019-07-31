@@ -48,7 +48,7 @@ export const Learner = component({
                         displayAs: ({ value }) =>
                             value ? (
                                 <>
-                                    <CircularProgress />{" "}
+                                    <CircularProgress />
                                     <InfoText>Downloading Chrome</InfoText>
                                 </>
                             ) : null,
