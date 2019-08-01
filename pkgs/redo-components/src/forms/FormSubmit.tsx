@@ -16,7 +16,7 @@ export const FormSubmit = <D extends any = any>({
     responseOptions,
     ...rest
 }: FormSubmitProps<D>) => {
-    const { getValues, submit, errors, validate } = useFormContext()
+    const { getValues, submit, validate } = useFormContext()
     const [state, setState] = useState<ResponseState>({})
     return (
         <RespondTo response={state} options={responseOptions}>

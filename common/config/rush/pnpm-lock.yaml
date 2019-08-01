@@ -1,4 +1,5 @@
 dependencies:
+  '@apollo/react-hooks': 0.1.0-beta.11_react-dom@16.8.6+react@16.8.6
   '@babel/cli': 7.5.5_@babel+core@7.5.5
   '@babel/core': 7.5.5
   '@babel/helper-plugin-utils': 7.0.0
@@ -31,6 +32,7 @@ dependencies:
   '@storybook/addons': 5.1.9_react-dom@16.8.6
   '@storybook/react': 5.1.9_74b9b0d99c1272f45a2827fcfa1b3669
   '@types/bcrypt': 3.0.0
+  '@types/copy-webpack-plugin': 4.4.4
   '@types/dotenv': 6.1.0
   '@types/electron-devtools-installer': 2.2.0
   '@types/fs-extra': 8.0.0
@@ -44,6 +46,7 @@ dependencies:
   '@types/react-dom': 16.8.3
   '@types/storybook__react': 4.0.2
   '@types/webpack': 4.4.26
+  '@types/webpack-dev-server': 3.1.6
   '@types/webpack-merge': 4.1.3
   apollo-cache-inmemory: 1.6.2
   apollo-link-http: 1.5.15
@@ -85,8 +88,6 @@ dependencies:
   reflect-metadata: 0.1.13
   storybook-addon-material-ui: 0.9.0-alpha.20_8fc843230fc8dd03e3f2a50afbd90d80
   style-loader: 0.23.1
-  svgo: 1.3.0
-  svgo-loader: 2.2.1_svgo@1.3.0
   ts-jest: 24.0.2_jest@24.8.0
   ts-loader: 6.0.1_typescript@3.5.2
   ts-node: 8.3.0_typescript@3.5.2
@@ -103,6 +104,68 @@ dependencies:
   webpack-merge: 4.1.4
 lockfileVersion: 5.1
 packages:
+  /@apollo/react-common/0.1.0-beta.9_3a1b395053c9abfeebec9ad6134cd3d4:
+    dependencies:
+      apollo-client: 2.6.3_graphql@14.4.2
+      graphql: 14.4.2
+      react: 16.8.6
+      ts-invariant: 0.4.4
+      tslib: 1.10.0
+    dev: false
+    peerDependencies:
+      apollo-client: ^2.6.3
+      apollo-utilities: ^1.3.2
+      graphql: ^14.3.1
+      react: ^16.8.0
+    resolution:
+      integrity: sha512-3/FYW7LilVlhfCkxL26Yglmr1LfWd2z+LEMHvtHF8K54Ejmb8kYglvDfbuAIsGT1f8WagpIkDm7eI1tfTdgNmw==
+  /@apollo/react-common/0.1.0-beta.9_react@16.8.6:
+    dependencies:
+      react: 16.8.6
+      ts-invariant: 0.4.4
+      tslib: 1.10.0
+    dev: false
+    peerDependencies:
+      apollo-client: ^2.6.3
+      apollo-utilities: ^1.3.2
+      graphql: ^14.3.1
+      react: ^16.8.0
+    resolution:
+      integrity: sha512-3/FYW7LilVlhfCkxL26Yglmr1LfWd2z+LEMHvtHF8K54Ejmb8kYglvDfbuAIsGT1f8WagpIkDm7eI1tfTdgNmw==
+  /@apollo/react-hooks/0.1.0-beta.11_35ab70f1809251eaeba2409e25037ea6:
+    dependencies:
+      '@apollo/react-common': 0.1.0-beta.9_3a1b395053c9abfeebec9ad6134cd3d4
+      '@wry/equality': 0.1.9
+      apollo-client: 2.6.3_graphql@14.4.2
+      graphql: 14.4.2
+      react: 16.8.6
+      react-dom: 16.8.6_react@16.8.6
+      ts-invariant: 0.4.4
+      tslib: 1.10.0
+    dev: false
+    peerDependencies:
+      apollo-client: ^2.6.3
+      graphql: ^14.3.1
+      react: ^16.8.0
+      react-dom: ^16.8.0
+    resolution:
+      integrity: sha512-hcEQWLFLpO2lN6AcXFsO/tK27Ve9+hIpw827fQBCuIbCyy2+e715ZMwrgzY5HCeCvLPY9DcS9I++0etr+f3UXw==
+  /@apollo/react-hooks/0.1.0-beta.11_react-dom@16.8.6+react@16.8.6:
+    dependencies:
+      '@apollo/react-common': 0.1.0-beta.9_react@16.8.6
+      '@wry/equality': 0.1.9
+      react: 16.8.6
+      react-dom: 16.8.6_react@16.8.6
+      ts-invariant: 0.4.4
+      tslib: 1.10.0
+    dev: false
+    peerDependencies:
+      apollo-client: ^2.6.3
+      graphql: ^14.3.1
+      react: ^16.8.0
+      react-dom: ^16.8.0
+    resolution:
+      integrity: sha512-hcEQWLFLpO2lN6AcXFsO/tK27Ve9+hIpw827fQBCuIbCyy2+e715ZMwrgzY5HCeCvLPY9DcS9I++0etr+f3UXw==
   /@apollographql/apollo-tools/0.3.7:
     dependencies:
       apollo-env: 0.5.1
@@ -2766,12 +2829,27 @@ packages:
     dev: false
     resolution:
       integrity: sha512-A1HQhQ0hkvqqByJMgg+Wiv9p9XdoYEzuwm11SVo1mX2/4PSdhjcrUlilJQoqLscIheC51t1D5g+EFWCXZ2VTQQ==
+  /@types/connect-history-api-fallback/1.3.2:
+    dependencies:
+      '@types/express-serve-static-core': 4.16.7
+      '@types/node': 12.6.6
+    dev: false
+    resolution:
+      integrity: sha512-tobKLYh5XszXIQ2lHTeyK1wMi/3K5WiOKb/sl6MENCirlOcXw0jUBHHmST2dLKnYMv6WHWPOSmR8jIF3za0MBQ==
   /@types/connect/3.4.32:
     dependencies:
       '@types/node': 12.6.6
     dev: false
     resolution:
       integrity: sha512-4r8qa0quOvh7lGD0pre62CAb1oni1OO6ecJLGCezTmhQ8Fz50Arx9RUszryR8KlgK6avuSXvviL6yWyViQABOg==
+  /@types/copy-webpack-plugin/4.4.4:
+    dependencies:
+      '@types/minimatch': 3.0.3
+      '@types/node': 12.6.6
+      '@types/webpack': 4.4.26
+    dev: false
+    resolution:
+      integrity: sha512-D8NyCMfHFWi638Cn5gi88mELGrISQdzDAcmOk4j70bzm0kLey99Zp5xsFsL44qPi+a22tcB39U5jiJiV2XMd9A==
   /@types/cors/2.8.5:
     dependencies:
       '@types/express': 4.17.0
@@ -2841,6 +2919,20 @@ packages:
     dev: false
     resolution:
       integrity: sha512-in9rViBsTRB4ZApndZ12It68nGzSMHVK30JD7c49iLIHMFeTPbP7I7wevzMv7re2o0k5TlU6Ry/beyrmgWX7Bg==
+  /@types/http-proxy-middleware/0.19.2:
+    dependencies:
+      '@types/connect': 3.4.32
+      '@types/http-proxy': 1.17.0
+      '@types/node': 12.6.6
+    dev: false
+    resolution:
+      integrity: sha512-aXcAs2VEaiHwlFlEqMJ+sNSFCO+wuWXcvdBk5Un7f0tUv1eTIIAmkd4S5D/Yi5JI0xofPpm9h3017TngbrLh7A==
+  /@types/http-proxy/1.17.0:
+    dependencies:
+      '@types/node': 12.6.6
+    dev: false
+    resolution:
+      integrity: sha512-l+s0IoxSHqhLFJPDHRfO235kgrCkvFD8JmdV/T9C4BKBYPIjrQopGFH4r7h2e3jQqgJRCthRCAZIxDoFnj1zwQ==
   /@types/istanbul-lib-coverage/2.0.1:
     dev: false
     resolution:
@@ -2979,6 +3071,16 @@ packages:
     dev: false
     resolution:
       integrity: sha512-SudIN9TRJ+v8g5pTG8RRCqfqTMNqgWCKKd3vtynhGzkIIjxaicNAMuY5TRadJ6tzDu3Dotf3ngaMILtmOdmWEQ==
+  /@types/webpack-dev-server/3.1.6:
+    dependencies:
+      '@types/connect-history-api-fallback': 1.3.2
+      '@types/express': 4.17.0
+      '@types/http-proxy-middleware': 0.19.2
+      '@types/serve-static': 1.13.2
+      '@types/webpack': 4.4.26
+    dev: false
+    resolution:
+      integrity: sha512-fysTHPetk7emf4XPj+GCbwGy56JTIUXWH7FuSABctCU2i+pczOD9bbUqd1+vT18WhqEqsr5v8SPshvm/FL3yDw==
   /@types/webpack-env/1.14.0:
     dev: false
     resolution:
@@ -4052,7 +4154,7 @@ packages:
   /autoprefixer/9.6.1:
     dependencies:
       browserslist: 4.6.6
-      caniuse-lite: 1.0.30000986
+      caniuse-lite: 1.0.30000987
       chalk: 2.4.2
       normalize-range: 0.1.2
       num2fraction: 1.2.2
@@ -4648,8 +4750,8 @@ packages:
       integrity: sha512-Z942RysHXmJrhqk88FmKBVq/v5tqmSkDz7p54G/MGyjMnCFFnC79XWNbg+Vta8W6Wb2qtSZTSxIGkJrRpCFEiA==
   /browserslist/4.5.4:
     dependencies:
-      caniuse-lite: 1.0.30000986
-      electron-to-chromium: 1.3.203
+      caniuse-lite: 1.0.30000987
+      electron-to-chromium: 1.3.205
       node-releases: 1.1.26
     dev: false
     hasBin: true
@@ -4657,8 +4759,8 @@ packages:
       integrity: sha512-rAjx494LMjqKnMPhFkuLmLp8JWEX0o8ADTGeAbOqaF+XCvYLreZrG5uVjnPBlAQ8REZK4pzXGvp0bWgrFtKaag==
   /browserslist/4.6.6:
     dependencies:
-      caniuse-lite: 1.0.30000986
-      electron-to-chromium: 1.3.203
+      caniuse-lite: 1.0.30000987
+      electron-to-chromium: 1.3.205
       node-releases: 1.1.26
     dev: false
     hasBin: true
@@ -4831,10 +4933,10 @@ packages:
     dev: false
     resolution:
       integrity: sha1-IsxKNKCrxDlQ9CxkEQJKP2NmtFo=
-  /caniuse-lite/1.0.30000986:
+  /caniuse-lite/1.0.30000987:
     dev: false
     resolution:
-      integrity: sha512-pM+LnkoAX0+QnIH3tpW5EnkmfpEoqOD8FAcoBvsl3Xh6DXkgctiCxeCbXphP/k3XJtJzm+zOAJbi6U6IVkpWZQ==
+      integrity: sha512-O3VrjtRMTxoU5Cn5/QSmXeIR1gkVps4j9jqfIm4FLaQ5JzqBlVjMUG1xWnoYFv8N+H3Lp++aa05TekyIbjHL7g==
   /capture-exit/2.0.0:
     dependencies:
       rsvp: 4.8.5
@@ -6039,10 +6141,10 @@ packages:
     hasBin: true
     resolution:
       integrity: sha512-FjEWG9Jb/ppK/2zToP+U5dds114fM1ZOJqMAR4aXXL5CvyPE9fiqBK/9YcwC9poIFQTEJk/EM/zyRwziziRZrg==
-  /electron-to-chromium/1.3.203:
+  /electron-to-chromium/1.3.205:
     dev: false
     resolution:
-      integrity: sha512-Z1FjJKEBhYrCNmnususVk8khiBabVI/bSJB/295V4ghVt4MFmtbP+mXgRZLQZinEBI469U6FtiGgpXnlLs6qiQ==
+      integrity: sha512-VV+f2FVeFI5D/slUD7A3V1lTMDkQTUGWYH2dZGAijIutN5Aga4Fn/Hv4Gc+60OpXFVLYIq5HpXb2cG6NrGGQaA==
   /electron/5.0.2:
     dependencies:
       '@types/node': 10.14.13
@@ -8209,12 +8311,6 @@ packages:
       node: '>=4'
     resolution:
       integrity: sha1-HxbkqiKwTRM2tmGIpmrzxgDDpm0=
-  /is-wsl/2.1.0:
-    dev: false
-    engines:
-      node: '>=8'
-    resolution:
-      integrity: sha512-pFTjpv/x5HRj8kbZ/Msxi9VrvtOMRBqaDi3OIcbwPI3OuH+r3lLxVWukLITBaOGJIbA/w2+M1eVmVa4XNQlAmQ==
   /isarray/0.0.1:
     dev: false
     resolution:
@@ -12661,16 +12757,6 @@ packages:
     dev: false
     resolution:
       integrity: sha512-1gtApepKFweigFZj3sGO8KT8LvVZK8io146EzXrpVuWCDAbISz/yMucco3hWTkpZNoPabM+dnMOpy6Swue68Zg==
-  /svgo-loader/2.2.1_svgo@1.3.0:
-    dependencies:
-      js-yaml: 3.13.1
-      loader-utils: 1.2.3
-      svgo: 1.3.0
-    dev: false
-    peerDependencies:
-      svgo: ^1.0.0
-    resolution:
-      integrity: sha512-9dyz/h6ae04pAVRz7QY8bLXtMbwA19NPpCPfCixgW0qXNDCOlHbDRqvtT5/2gzRxfuibWCUP6ZBQmZWF9rjWhQ==
   /svgo/1.3.0:
     dependencies:
       chalk: 2.4.2
@@ -13046,7 +13132,7 @@ packages:
       make-error: 1.3.5
       source-map-support: 0.5.12
       typescript: 3.5.2
-      yn: 3.1.0
+      yn: 3.1.1
     dev: false
     engines:
       node: '>=4.2.0'
@@ -13063,9 +13149,6 @@ packages:
       node: '>=6'
     peerDependencies:
       typescript: '*'
-    peerDependenciesMeta:
-      typescript:
-        optional: true
     resolution:
       integrity: sha512-f5Knjh7XCyRIzoC/z1Su1yLLRrPrFCgtUAh/9fCSP6NKbATwpOL1+idQVXQokK9GRFURn/jYPGPfegIctwunoA==
   /tsconfig-paths-webpack-plugin/3.2.0:
@@ -13855,12 +13938,12 @@ packages:
     dev: false
     resolution:
       integrity: sha1-lSj0QtqxsihOWLQ3m7GU4i4MQAU=
-  /yn/3.1.0:
+  /yn/3.1.1:
     dev: false
     engines:
       node: '>=6'
     resolution:
-      integrity: sha512-kKfnnYkbTfrAdd0xICNFw7Atm8nKpLcLv9AZGEt+kczL/WQVai4e2V6ZN8U/O+iI6WrNuJjNNOyu4zfhl9D3Hg==
+      integrity: sha512-Ux4ygGWsu2c7isFWe8Yu1YluJmqVhxqK2cLXNQA5AcC3QfbGNpM7fu0Y8b/z16pXLnFxZYvWhd3fhBY9DLmC6Q==
   /zen-observable-ts/0.8.19:
     dependencies:
       tslib: 1.10.0
@@ -13874,6 +13957,7 @@ packages:
       integrity: sha512-kQz39uonEjEESwh+qCi83kcC3rZJGh4mrZW7xjkSQYXkq//JZHTtKo+6yuVloTgMtzsIWOJrjIrKvk/dqm0L5g==
   'file:projects/redo-app.tgz':
     dependencies:
+      '@apollo/react-hooks': 0.1.0-beta.11_35ab70f1809251eaeba2409e25037ea6
       '@babel/core': 7.5.5
       '@babel/runtime-corejs3': 7.5.5
       '@hot-loader/react-dom': 16.8.6_react@16.8.6
@@ -13882,42 +13966,57 @@ packages:
       '@material-ui/styles': 4.2.1_react-dom@16.8.6+react@16.8.6
       '@mdi/js': 3.6.95
       '@medv/finder': 1.1.1
+      '@types/copy-webpack-plugin': 4.4.4
       '@types/dotenv': 6.1.0
       '@types/electron-devtools-installer': 2.2.0
       '@types/fs-extra': 8.0.0
       '@types/graphql': 14.2.2
+      '@types/html-webpack-plugin': 3.2.0
       '@types/node': 12.6.6
       '@types/puppeteer': 1.12.4
       '@types/react': 16.8.8
       '@types/react-dom': 16.8.3
       '@types/webpack': 4.4.26
+      '@types/webpack-dev-server': 3.1.6
       '@types/webpack-merge': 4.1.3
       apollo-cache-inmemory: 1.6.2_graphql@14.4.2
       apollo-client: 2.6.3_graphql@14.4.2
       apollo-link-http: 1.5.15_graphql@14.4.2
+      babel-loader: 8.0.6_@babel+core@7.5.5+webpack@4.29.6
       class-transformer: 0.2.0
       class-validator: 0.9.1
+      clean-webpack-plugin: 2.0.2_webpack@4.29.6
+      copy-webpack-plugin: 5.0.3_webpack@4.29.6
       core-js: 3.1.4
+      css-loader: 2.1.1_webpack@4.29.6
       deepmerge: 3.2.1
       dotenv: 7.0.0
       electron: 5.0.2
+      file-loader: 3.0.1_webpack@4.29.6
+      fork-ts-checker-webpack-plugin: 1.3.3
       formik: 1.5.1_react@16.8.6
       framer-motion: 1.4.1_react-dom@16.8.6+react@16.8.6
       fs-extra: 8.1.0
       graphql: 14.4.2
       graphql-tag: 2.10.0_graphql@14.4.2
+      html-webpack-plugin: 3.2.0_webpack@4.29.6
       isomorphic-ws: 4.0.1
       puppeteer: 1.17.0
       react: 16.8.6
       react-apollo: 2.5.8_35ab70f1809251eaeba2409e25037ea6
       react-dom: 16.8.6_react@16.8.6
       react-hot-loader: 4.12.8_react-dom@16.8.6+react@16.8.6
+      react-svg-loader: 3.0.3
       reflect-metadata: 0.1.13
+      style-loader: 0.23.1
+      ts-loader: 6.0.1_typescript@3.5.2
       ts-node: 8.3.0_typescript@3.5.2
       tsconfig-paths: 3.7.0
+      tsconfig-paths-webpack-plugin: 3.2.0
       type-graphql: 0.17.4_0e03e0594630b7e21c2ca22fa525a8b1
       typeface-ubuntu: 0.0.65
       typescript: 3.5.2
+      validate.js: 0.13.1
       webpack: 4.29.6_webpack@4.29.6
       webpack-cli: 3.3.0_webpack@4.29.6
       webpack-dev-server: 3.7.2_webpack@4.29.6
@@ -13925,7 +14024,7 @@ packages:
     dev: false
     name: '@rush-temp/redo-app'
     resolution:
-      integrity: sha512-/RjvyAu4PtXjaWW+bBA83J0ytOnaok7CLGTqkOBpEDuz4qCz0V4P3J3TkPYSms2QGKeslFYLdp8n5N+7LIcnRQ==
+      integrity: sha512-PZ2GfqDc9H6lNy6ci3WtcOVq1xNWe0DwAEo0ME6mpps8H6efSC/Jelr/mtXtW5j4hdyzbs0HDJQJ7tltAbB8Eg==
       tarball: 'file:projects/redo-app.tgz'
     version: 0.0.0
   'file:projects/redo-bundle.tgz_6d196698478dde40c00275b1457e23b0':
@@ -13958,8 +14057,6 @@ packages:
       react-hot-loader: 4.12.8_react-dom@16.8.6+react@16.8.6
       react-svg-loader: 3.0.3
       style-loader: 0.23.1
-      svgo: 1.3.0
-      svgo-loader: 2.2.1_svgo@1.3.0
       ts-loader: 6.0.1_typescript@3.5.2
       ts-node: 8.3.0_typescript@3.5.2
       tsconfig-paths-webpack-plugin: 3.2.0
@@ -13974,7 +14071,7 @@ packages:
       react-dom: '*'
       typescript: '*'
     resolution:
-      integrity: sha512-r377CIQHlyHcVXA5jzsGPPgvVxUXqET8w9DFocoKMsXZsh9VkbeZfq8H31zj94/9rRmtL0op5B3uUgb3RgnnaA==
+      integrity: sha512-QicAKnxqkfkQi66NJqMbgmfgs7DK7REiwk7kEJtt3KYMQ/9CVJrWq6PQ6ooa9FRcR1yGcDGCsYIyM1afNkoo0A==
       tarball: 'file:projects/redo-bundle.tgz'
     version: 0.0.0
   'file:projects/redo-components.tgz_webpack@4.29.6':
@@ -14009,7 +14106,7 @@ packages:
     peerDependencies:
       webpack: '*'
     resolution:
-      integrity: sha512-5OzKW+AC9HGe2e92B5Kvpd7/2RjOawfb4fiZY8F+YOpCZwur5Y95DpAQQmHZ1yKaHPfO1i3KXtiiazh8LAQEAg==
+      integrity: sha512-SBG7uG3FEOfAAuCKORpHrAVI4M7Ia0NXpn2gqW+WNyi+v0DdTDXlPFabP4glf3iGTVcPBrdyuygRs+0rAuYqWQ==
       tarball: 'file:projects/redo-components.tgz'
     version: 0.0.0
   'file:projects/redo-model.tgz_@types+graphql@14.2.2':
@@ -14027,7 +14124,7 @@ packages:
     peerDependencies:
       '@types/graphql': '*'
     resolution:
-      integrity: sha512-csf/VPpIvYGI0eSaFida1QJLXD7PFbDUEBnjk3It9WAysVr53agBKuP6q14DaMAl/a9IR824kR0sGfozcDQqyw==
+      integrity: sha512-1Y1J38S5GW0JHf9B6nxT8uXq59HUMXiMlxbmCbjzBLCRV0wuRinMTHMRf5D0drE4pCUtAXkrW7/XotndJlddoA==
       tarball: 'file:projects/redo-model.tgz'
     version: 0.0.0
   'file:projects/redo-recommended.tgz':
@@ -14051,7 +14148,7 @@ packages:
       '@babel/core': 7.5.5
       '@babel/runtime-corejs3': 7.5.5
     resolution:
-      integrity: sha512-ZriuKxbQryhpvH5uWSrBHvBavEwnNgwSmpow81ajnWhZ+v3F2eNLuBTQLFvEdT4Uvp6+vWoSMtHq5if8MUHQcA==
+      integrity: sha512-eSiRWjNtaXApaeeHxBzwy2osaS1uKwjq8/KNn0DvvHC1sc7OWK0dsIkYeZdkM4/Qdjj4j80sLLFDuCQOmOkHqg==
       tarball: 'file:projects/redo-recommended.tgz'
     version: 0.0.0
   'file:projects/redo-server.tgz':
@@ -14084,7 +14181,7 @@ packages:
     dev: false
     name: '@rush-temp/redo-server'
     resolution:
-      integrity: sha512-vdS64ajRd0rTVYcKog3S3kFH1DkNOJsTXBcg/bOH7+ZrpOjZSSErQl6iqax/jSW2bHHQfoe4dB6Kn4wh11Sh6Q==
+      integrity: sha512-zhvyuUqTQlQ9RrfEA6/HMAsrjKhGhebcIGYlAhfScd8AoH2sQ861tiV/Rfg/66CGCs0Q5gbN78kdesQlKmlqcw==
       tarball: 'file:projects/redo-server.tgz'
     version: 0.0.0
   'file:projects/redo-utils.tgz':
@@ -14098,7 +14195,7 @@ packages:
     dev: false
     name: '@rush-temp/redo-utils'
     resolution:
-      integrity: sha512-+HE+CsIcGhK1GIDshbv88lUwWeyN5lsr3NCIIPbks6C5oZVvpCeW21KxBZqxWobjKOjCRmV69QgEblWFdTxnmA==
+      integrity: sha512-ETan3E2n3RXlbyMcENj/UWRM6bAE8LyMxoyY+6JOPA9JnoOmzPxNA/vzZbhv1TahNLUe1zIFQXG3IstR8rD1NA==
       tarball: 'file:projects/redo-utils.tgz'
     version: 0.0.0
   'file:projects/redo-website.tgz':
@@ -14113,8 +14210,6 @@ packages:
       '@types/react-dom': 16.8.3
       '@types/webpack-merge': 4.1.3
       framer-motion: 1.4.1_react-dom@16.8.6+react@16.8.6
-      is-wsl: 2.1.0
-      open: 6.4.0
       react: 16.8.6
       react-dom: 16.8.6_react@16.8.6
       react-hot-loader: 4.12.8_react-dom@16.8.6+react@16.8.6
@@ -14128,7 +14223,7 @@ packages:
     dev: false
     name: '@rush-temp/redo-website'
     resolution:
-      integrity: sha512-BeOqjjP5hUcgYe5YLI2U3P5LHwcpJVwOA2/xUgFdJMKKLCc/jie7gRbJ5kglsdWpbYyN3npFI+/6bsR9BoNP/g==
+      integrity: sha512-X92iDXawVDUP54C1MwUv+O7zvE8qG/7CDvZdaqL/XjN+neCwndV3Eg7TkZl38+q00ueIvNEwS5AqGVGzsS3xcA==
       tarball: 'file:projects/redo-website.tgz'
     version: 0.0.0
   'file:projects/shapeql.tgz':
@@ -14153,11 +14248,11 @@ packages:
     dev: false
     name: '@rush-temp/shapeql'
     resolution:
-      integrity: sha512-ZNByrUjamQSwfja93aVPvVNFMChgy7PYd409p0VW7zxrkzlP+b2/7Gvj2duts1umhmLW/xvnsNag8tEYf6P9OQ==
+      integrity: sha512-pCHDKUdT+WlQJXmq4aQ296iluReCpYvzOQHyO/rDimrTQgeHUo16XRxjyAnqJkOBUWamDwuTBruCLzXGifxkxw==
       tarball: 'file:projects/shapeql.tgz'
     version: 0.0.0
-registry: ''
 specifiers:
+  '@apollo/react-hooks': ~0.1.0-beta.11
   '@babel/cli': 7.5.5
   '@babel/core': 7.5.5
   '@babel/helper-plugin-utils': 7.0.0
@@ -14190,6 +14285,7 @@ specifiers:
   '@storybook/addons': 5.1.9
   '@storybook/react': 5.1.9
   '@types/bcrypt': 3.0.0
+  '@types/copy-webpack-plugin': 4.4.4
   '@types/dotenv': 6.1.0
   '@types/electron-devtools-installer': 2.2.0
   '@types/fs-extra': 8.0.0
@@ -14203,6 +14299,7 @@ specifiers:
   '@types/react-dom': 16.8.3
   '@types/storybook__react': 4.0.2
   '@types/webpack': 4.4.26
+  '@types/webpack-dev-server': 3.1.6
   '@types/webpack-merge': 4.1.3
   apollo-cache-inmemory: 1.6.2
   apollo-link-http: 1.5.15
@@ -14244,8 +14341,6 @@ specifiers:
   reflect-metadata: 0.1.13
   storybook-addon-material-ui: 0.9.0-alpha.20
   style-loader: 0.23.1
-  svgo: 1.3.0
-  svgo-loader: 2.2.1
   ts-jest: 24.0.2
   ts-loader: 6.0.1
   ts-node: 8.3.0
