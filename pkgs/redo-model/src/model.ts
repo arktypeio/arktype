@@ -7,7 +7,7 @@ import { EqualsProperty, IsEmail } from "./validators"
 @ObjectType()
 export class BrowserEvent {
     @Field(type => ID)
-    readonly id: string | number
+    readonly id: string
 
     @Field()
     type: string
@@ -34,7 +34,7 @@ export class BrowserEventInput {
 @ObjectType()
 export class Test {
     @Field(type => ID)
-    readonly id: string | number
+    readonly id: string
 
     @Field()
     name: string
