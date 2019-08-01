@@ -1,26 +1,19 @@
 import React from "react"
 import { Theme, createStyles } from "@material-ui/core"
+import { component } from "blocks"
 import {
-    component,
-    PrimaryButton,
-    Response,
-    SecondaryButton,
-    Row,
-<<<<<<< Updated upstream
-    Column
-} from "blocks"
-import { deactivateLearner, saveLearner } from "state"
-import { LearnerEvents } from "custom"
-=======
     Column,
-    InfoText
+    InfoText,
+    PrimaryButton,
+    RespondTo,
+    SecondaryButton,
+    Row
 } from "redo-components"
 import { deactivateLearner, resetLearner } from "state"
 import { LearnerEvents } from "custom"
 import { CircularProgress } from "@material-ui/core"
 import { useMutation } from "@apollo/react-hooks"
 import gql from "graphql-tag"
->>>>>>> Stashed changes
 
 const styles = (theme: Theme) =>
     createStyles({
@@ -46,34 +39,6 @@ export const Learner = component({
     defaultProps: {} as Partial<LearnerProps>,
     styles,
     query: { learner: { events: null, chromiumInstalling: null } }
-<<<<<<< Updated upstream
-})(({ classes, data }) => (
-    <Column justify="flex-start">
-        <Row align="center" justify="flex-start">
-            <SecondaryButton
-                text="Back home"
-                onClick={deactivateLearner}
-                color="secondary"
-            />
-
-            <Response isLoading={false}>
-                <PrimaryButton
-                    text="Save test"
-                    onClick={saveLearner}
-                    color="primary"
-                />
-            </Response>
-        </Row>
-        <Response
-            loadingMessage="Downloading Chrome"
-            isLoading={data.learner!.chromiumInstalling}
-            contentOnLoading={true}
-        >
-            <LearnerEvents events={data.learner!.events} />
-        </Response>
-    </Column>
-))
-=======
 })(({ classes, data }) => {
     const [saveTest] = useMutation(SAVETEST)
     return (
@@ -121,4 +86,3 @@ export const Learner = component({
         </Column>
     )
 })
->>>>>>> Stashed changes

@@ -1,15 +1,11 @@
 import React from "react"
-<<<<<<< Updated upstream
 import { Theme } from "@material-ui/core"
 import { component } from "blocks"
-import { BrowserEvent } from "redo-model"
-import { ContentCard } from "blocks"
 
-const styles = (theme: Theme) => ({})
-=======
 import { BrowserEventInput } from "renderer/common"
 import { ContentCard } from "redo-components"
->>>>>>> Stashed changes
+
+const styles = (theme: Theme) => ({})
 
 export type LearnerEventCardProps = {
     event: BrowserEventInput
