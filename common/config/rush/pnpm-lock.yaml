@@ -75,6 +75,7 @@ dependencies:
   isomorphic-ws: 4.0.1
   jest: 24.8.0
   jsonwebtoken: 8.5.0
+  material-ui-chip-input: 1.0.0_f35c714a02d617073918f9017b0a4e91
   moize: 5.4.4
   prisma2: 2.0.0-preview-2
   puppeteer: 1.17.0
@@ -9449,6 +9450,20 @@ packages:
     dev: false
     resolution:
       integrity: sha512-tB4cQxIY7f8PWTcIouJO/V60rl9JVVOmCDjmukYVO7mdpGM1JWl4qIP98iDYItexSXZ0DkEqk6yXFxgdmZRMxA==
+  /material-ui-chip-input/1.0.0_f35c714a02d617073918f9017b0a4e91:
+    dependencies:
+      '@material-ui/core': 4.2.1_react-dom@16.8.6+react@16.8.6
+      classnames: 2.2.6
+      prop-types: 15.7.2
+      react: 16.8.6
+      react-dom: 16.8.6_react@16.8.6
+    dev: false
+    peerDependencies:
+      '@material-ui/core': ^1.0.0 || ^3.1.0
+      react: ^16.3.0
+      react-dom: ^16.3.0
+    resolution:
+      integrity: sha512-GJ9xkGB+n1SODvflOca4YanHaV8hWkKKBIMrM0YVjo5Jnm+gIom2915CwT86FiDWyoIS6BQOMIof48/l85hZxQ==
   /md5.js/1.3.5:
     dependencies:
       hash-base: 3.0.4
@@ -13149,6 +13164,9 @@ packages:
       node: '>=6'
     peerDependencies:
       typescript: '*'
+    peerDependenciesMeta:
+      typescript:
+        optional: true
     resolution:
       integrity: sha512-f5Knjh7XCyRIzoC/z1Su1yLLRrPrFCgtUAh/9fCSP6NKbATwpOL1+idQVXQokK9GRFURn/jYPGPfegIctwunoA==
   /tsconfig-paths-webpack-plugin/3.2.0:
@@ -14001,6 +14019,7 @@ packages:
       graphql-tag: 2.10.0_graphql@14.4.2
       html-webpack-plugin: 3.2.0_webpack@4.29.6
       isomorphic-ws: 4.0.1
+      material-ui-chip-input: 1.0.0_f35c714a02d617073918f9017b0a4e91
       puppeteer: 1.17.0
       react: 16.8.6
       react-apollo: 2.5.8_35ab70f1809251eaeba2409e25037ea6
@@ -14024,7 +14043,7 @@ packages:
     dev: false
     name: '@rush-temp/redo-app'
     resolution:
-      integrity: sha512-PZ2GfqDc9H6lNy6ci3WtcOVq1xNWe0DwAEo0ME6mpps8H6efSC/Jelr/mtXtW5j4hdyzbs0HDJQJ7tltAbB8Eg==
+      integrity: sha512-iU2qOg+RpbGPvmRXqTKyL/NVJonz/W3t1nKQdPQGrjze6uRoJQsZXYagZ3oGqnm2/nG8aIdfS7lwiUJOEomTYg==
       tarball: 'file:projects/redo-app.tgz'
     version: 0.0.0
   'file:projects/redo-bundle.tgz_6d196698478dde40c00275b1457e23b0':
@@ -14251,6 +14270,7 @@ packages:
       integrity: sha512-pCHDKUdT+WlQJXmq4aQ296iluReCpYvzOQHyO/rDimrTQgeHUo16XRxjyAnqJkOBUWamDwuTBruCLzXGifxkxw==
       tarball: 'file:projects/shapeql.tgz'
     version: 0.0.0
+registry: ''
 specifiers:
   '@apollo/react-hooks': ~0.1.0-beta.11
   '@babel/cli': 7.5.5
@@ -14328,6 +14348,7 @@ specifiers:
   isomorphic-ws: 4.0.1
   jest: 24.8.0
   jsonwebtoken: 8.5.0
+  material-ui-chip-input: 1.0.0
   moize: 5.4.4
   prisma2: 2.0.0-preview-2
   puppeteer: 1.17.0

@@ -1,10 +1,11 @@
 import { Ctx, Mutation, Query, Resolver, Args } from "type-graphql"
 import { Test, TestInput } from "redo-model"
 import { Context } from "../context"
+import { BrowserEvent } from "@generated/photon"
 
 @Resolver(of => Test)
 export class TestResolver {
-    @Mutation(returns => Test)
+    @Mutation(returns => String)
     async submitTest(
         @Args() { name, steps, tags }: TestInput,
         @Ctx() { photon }: Context
@@ -13,18 +14,19 @@ export class TestResolver {
             data: {
                 name,
                 steps: {
-                    create: [{ type: "click", selector: "#some", value: "" }]
+                    create: steps
                 },
-                tags: { set: "bat" }
+                tags: { set: tags }
             }
         })
-        return test
+        return test.id
     }
 
     @Query(returns => [Test])
     async getTest(@Ctx() { photon }: Context) {
-        const results = await photon.tests.findMany()
-        console.log(results)
+        const results = await photon.tests.findMany({
+            include: { steps: true }
+        })
         return results
     }
 }

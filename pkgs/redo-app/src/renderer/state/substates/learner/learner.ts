@@ -13,7 +13,6 @@ import { handle } from "shapeql"
 import { isDeepStrictEqual } from "util"
 import { join } from "path"
 import { homedir } from "os"
-import { Resolver } from "type-graphql"
 
 const BROWSER_WINDOW_TITLEBAR_SIZE = 35
 
@@ -154,12 +153,23 @@ export const deactivateLearner = async () => {
     })
 }
 
-export const resetLearner = async () => {
+type ResetLearnerType = {
+    updateName: React.Dispatch<React.SetStateAction<string>>
+    updateTags: React.Dispatch<React.SetStateAction<string[]>>
+}
+
+// could use advice on naming this:
+export const resetLearner = async ({
+    updateName,
+    updateTags
+}: ResetLearnerType) => {
     await store.mutate({
         learner: {
             events: []
         }
     })
+    updateName("")
+    updateTags([])
 }
 
 const notify = (event: BrowserEventInput) => {
