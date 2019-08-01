@@ -11,8 +11,6 @@ export type LearnerEventCardProps = {
     event: BrowserEventInput
 }
 
-export const LearnerEventCard = component({
-    name: "LearnerEventCard",
-    defaultProps: {} as Partial<LearnerEventCardProps>,
-    styles
-})(({ event, classes }) => <ContentCard from={event as any} />)
+export const LearnerEventCard = ({ event }: LearnerEventCardProps) => (
+    <ContentCard from={event as any} />
+)

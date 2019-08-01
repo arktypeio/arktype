@@ -2,18 +2,18 @@ import React from "react"
 import { Theme, createStyles } from "@material-ui/core"
 import { component } from "blocks"
 import {
-    Column,
-    InfoText,
     PrimaryButton,
     RespondTo,
     SecondaryButton,
-    Row
+    Row,
+    Column,
+    InfoText
 } from "redo-components"
 import { deactivateLearner, resetLearner } from "state"
 import { LearnerEvents } from "custom"
 import { CircularProgress } from "@material-ui/core"
-import { useMutation } from "@apollo/react-hooks"
 import gql from "graphql-tag"
+import { useMutation } from "@apollo/react-hooks"
 
 const styles = (theme: Theme) =>
     createStyles({
