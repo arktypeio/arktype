@@ -2,7 +2,7 @@ import React, { useState } from "react"
 import { storiesOf } from "@storybook/react"
 import { withTheme } from "../storybook"
 import { RespondTo } from "."
-import { InfoText } from "../text"
+import { Text } from "../text"
 import { TextInput } from "../inputs"
 
 storiesOf("Response", module)
@@ -27,11 +27,11 @@ const InputResponse = () => {
                     data: {
                         onChange: value =>
                             !value || console.log(`the state is ${value}`),
-                        displayAs: ({ value }) => <InfoText>{value}</InfoText>
+                        displayAs: ({ value }) => <Text>{value}</Text>
                     }
                 }}
             >
-                <InfoText> This is the content.</InfoText>
+                <Text> This is the content.</Text>
             </RespondTo>
         </>
     )
