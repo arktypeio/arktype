@@ -3,7 +3,7 @@ import React from "react"
 import { makeStyles } from "@material-ui/styles"
 import { Theme, Box } from "@material-ui/core"
 import { Column } from "redo-components"
-import { AppHeader, HowItWorks, SignUp } from "./components"
+import { AppHeader, HowItWorks, SignUp, SubHeader } from "./components"
 
 const stylize = makeStyles((theme: Theme) => ({
     content: {
@@ -25,6 +25,7 @@ export const Content = () => {
         <Column className={content} align="center">
             <Column className={primary} align="center">
                 <AppHeader />
+                <SubHeader />
                 <HowItWorks />
                 <SignUp />
             </Column>
