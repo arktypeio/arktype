@@ -1,4 +1,4 @@
-import React from "react"
+import React, { FC } from "react"
 import { storiesOf } from "@storybook/react"
 import { withTheme } from "../storybook"
 import { FormText } from "./"
@@ -8,8 +8,8 @@ import { Form } from "./Form"
 storiesOf("Form", module)
     .addDecorator(withTheme())
     .add("FormText", () => <FormTextSample />)
-
-const FormTextSample = () => {
+//this doesn't have anything to put in <>?
+const FormTextSample: FC = () => {
     return (
         <Form
             submit={async () => ({ data: 42 })}

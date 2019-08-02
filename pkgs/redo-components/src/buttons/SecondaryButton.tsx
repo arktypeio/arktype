@@ -1,4 +1,4 @@
-import React from "react"
+import React, { FC } from "react"
 import { Theme } from "@material-ui/core"
 import { makeStyles } from "@material-ui/styles"
 import { Button, ButtonProps } from "./Button"
@@ -11,7 +11,7 @@ const stylize = makeStyles((theme: Theme) => ({
 
 export type SecondaryButtonProps = ButtonProps
 
-export const SecondaryButton = ({ ...rest }: SecondaryButtonProps) => {
+export const SecondaryButton: FC<SecondaryButtonProps> = ({ ...rest }) => {
     const { text } = stylize()
     return <Button className={text} variant="outlined" {...rest} />
 }

@@ -1,11 +1,11 @@
-import React from "react"
+import React, { FC } from "react"
 import { Card, CardProps } from "./Card"
 import { Theme } from "@material-ui/core"
 import { useTheme } from "@material-ui/styles"
 
 export type CardPageProps = CardProps
 
-export const CardPage = ({ children, classes, ...rest }: CardPageProps) => {
+export const CardPage: FC<CardPageProps> = ({ children, classes, ...rest }) => {
     const theme = useTheme<Theme>()
     return (
         <Card

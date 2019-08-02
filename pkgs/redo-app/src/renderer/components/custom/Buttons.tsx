@@ -1,4 +1,4 @@
-import React from "react"
+import React, { FC } from "react"
 import {
     IconButton as MuiIconButton,
     SvgIcon as MuiSvgIcon
@@ -21,7 +21,11 @@ export type IconButtonProps = MuiIconButtonProps & {
     iconProps?: MuiSvgIconProps
 }
 
-export const IconButton = ({ Icon, iconProps, ...rest }: IconButtonProps) => (
+export const IconButton: FC<IconButtonProps> = ({
+    Icon,
+    iconProps,
+    ...rest
+}) => (
     <MuiIconButton {...rest}>
         <Icon {...iconProps} />
     </MuiIconButton>
@@ -64,7 +68,7 @@ export type SvgIconProps = MuiSvgIconProps & {
     fill?: string
 }
 
-export const SvgIcon = ({
+export const SvgIcon: FC<SvgIconProps> = ({
     path,
     fill = "#000000",
     ...rest

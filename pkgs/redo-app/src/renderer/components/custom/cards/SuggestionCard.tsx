@@ -1,4 +1,4 @@
-import React from "react"
+import React, { FC } from "react"
 import { Theme, Typography as MuiTypography } from "@material-ui/core"
 import { makeStyles } from "@material-ui/styles"
 import { PlayButton, ViewButton } from "custom"
@@ -17,11 +17,11 @@ export type SuggestionCardProps = {
     description?: string
 }
 
-export const SuggestionCard = ({
+export const SuggestionCard: FC<SuggestionCardProps> = ({
     name,
     type,
     description
-}: SuggestionCardProps) => {
+}) => {
     const { suggestionCard } = stylize()
     return (
         <div className={suggestionCard}>

@@ -14,7 +14,7 @@ type UpdateFieldErrorsOptions = Pick<FormActions<Fields>, "validate"> & {
     values: Fields
     touched: string[]
 }
-
+//It told me I couldn't make it an FC it here I think? Note: delete this before people other than us see it :)
 const updateFieldErrors = ({
     setError,
     clearError,

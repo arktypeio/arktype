@@ -1,4 +1,4 @@
-import React from "react"
+import React, { FC } from "react"
 import { Content } from "./Content"
 import { ThemeProvider } from "@material-ui/styles"
 import { ApolloProvider } from "react-apollo"
@@ -13,10 +13,7 @@ export type AppProps = {
     theme: Theme
 }
 
-export const App = component({
-    name: "App",
-    defaultProps: {} as Partial<AppProps>
-})(({ apolloClient, theme }) => (
+export const App: FC<AppProps> = ({ apolloClient, theme }) => (
     <ApolloProvider client={apolloClient}>
         <ApolloHooksProvider client={apolloClient}>
             <ThemeProvider theme={theme}>
@@ -25,4 +22,4 @@ export const App = component({
             </ThemeProvider>
         </ApolloHooksProvider>
     </ApolloProvider>
-))
+)
