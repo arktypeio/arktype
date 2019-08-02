@@ -1,4 +1,4 @@
-import React from "react"
+import React, { FC } from "react"
 import { makeStyles } from "@material-ui/styles"
 import Grid, { GridProps, GridItemsAlignment } from "@material-ui/core/Grid"
 
@@ -16,16 +16,15 @@ export type RowOrColumnProps = GridProps & {
     grow?: boolean
 }
 
-export const RowOrColumn = ({
+export const RowOrColumn: FC<RowOrColumnProps> = ({
     direction,
     reverse,
     wrap,
     align,
     flexGrow,
     grow,
-    children,
     ...rest
-}: RowOrColumnProps) => {
+}) => {
     const { grid } = stylize({ flexGrow, grow })
     return (
         <Grid
@@ -36,8 +35,6 @@ export const RowOrColumn = ({
             wrap={wrap ? "wrap" : "nowrap"}
             alignItems={align}
             {...rest}
-        >
-            {children}
-        </Grid>
+        />
     )
 }
