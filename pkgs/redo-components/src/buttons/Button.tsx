@@ -1,4 +1,4 @@
-import React from "react"
+import React, { FC } from "react"
 import {
     Button as MuiButton,
     Typography as MuiTypography,
@@ -16,7 +16,7 @@ const stylize = makeStyles((theme: Theme) => ({
 
 export type ButtonProps = Partial<MuiButtonProps> & {}
 
-export const Button = ({ children, ...rest }: ButtonProps) => {
+export const Button: FC<ButtonProps> = ({ children, ...rest }) => {
     const { button } = stylize()
     return (
         <MuiButton className={button} {...rest}>
@@ -24,3 +24,4 @@ export const Button = ({ children, ...rest }: ButtonProps) => {
         </MuiButton>
     )
 }
+;<Button color="primary"> Fhing </Button>
