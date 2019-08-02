@@ -2,7 +2,7 @@ import React, { useState } from "react"
 import { storiesOf } from "@storybook/react"
 import { withTheme } from "../storybook"
 import { RespondTo } from "."
-import { InfoText } from "../typography"
+import { InfoText } from "../text"
 import { TextInput } from "../inputs"
 
 storiesOf("Response", module)

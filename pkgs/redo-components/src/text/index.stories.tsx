@@ -3,7 +3,7 @@ import { storiesOf } from "@storybook/react"
 import { withTheme } from "../storybook"
 import { ErrorText, Header, InfoText } from "."
 
-storiesOf("Typography", module)
+storiesOf("Text", module)
     .addDecorator(withTheme())
     .add("ErrorText", () => <ErrorText> This is an ErrorText </ErrorText>)
     .add("Header", () => <Header> This is a header! </Header>)

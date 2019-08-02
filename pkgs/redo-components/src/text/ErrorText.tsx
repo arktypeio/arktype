@@ -1,8 +1,8 @@
 import React from "react"
-import { Theme, Typography } from "@material-ui/core"
+import { Theme, Typography, Tooltip } from "@material-ui/core"
 import { makeStyles } from "@material-ui/styles"
-import Tooltip from "@material-ui/core/Tooltip"
-import { listify } from "../../../redo-utils"
+import { listify } from "redo-utils"
+import { Text } from "./Text"
 
 const stylize = makeStyles((theme: Theme) => ({
     errorMessage: {
@@ -29,11 +29,11 @@ export const ErrorText = ({ children }: ErrorTextProps) => {
                 <ErrorText key={index}>{`${message}\n`}</ErrorText>
             ))}
         >
-            <Typography variant="caption" className={errorMessage} noWrap>
+            <Text variant="caption" className={errorMessage} noWrap>
                 {messages.length > 1
                     ? `🤯${messages[0]} (and more...)`
                     : `🤔${messages[0]}`}
-            </Typography>
+            </Text>
         </Tooltip>
     )
 }
