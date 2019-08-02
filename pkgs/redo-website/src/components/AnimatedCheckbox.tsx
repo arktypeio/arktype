@@ -1,11 +1,6 @@
 import React, { FC } from "react"
 import { useState } from "react"
-import {
-    motion,
-    useMotionValue,
-    useTransform,
-    SVGMotionProps
-} from "framer-motion"
+import { motion } from "framer-motion"
 import { Theme } from "@material-ui/core"
 import { useTheme } from "@material-ui/styles"
 
@@ -49,7 +44,7 @@ export const AnimatedCheckbox: FC = () => {
                 transform="translate(54.917 68.947) rotate(-4 170.904 128.687)"
                 fill="transparent"
                 strokeWidth="65"
-                stroke="#19e119"
+                stroke={theme.palette.secondary.main}
                 strokeLinecap="round"
                 strokeLinejoin="round"
                 variants={tickVariants}

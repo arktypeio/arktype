@@ -1,41 +1,37 @@
 import React, { FC } from "react"
-import { Row, Text, Card, Column } from "redo-components"
-import { makeStyles, useTheme } from "@material-ui/styles"
-import { Theme, Grid } from "@material-ui/core"
+import { Row, Text } from "redo-components"
+import { Theme } from "@material-ui/core"
+import { makeStyles } from "@material-ui/styles"
+import { AnimatedCheckbox } from "./AnimatedCheckbox"
 
 const stylize = makeStyles((theme: Theme) => ({
-    descriptionText: {
-        lineHeight: 3.6
+    stepText: {
+        width: 331
     }
 }))
 
 type StepProps = {
-    label: string
     children: string
 }
 
-const Step: FC<StepProps> = ({ label, children }) => {
-    const { descriptionText } = stylize()
+const Step: FC<StepProps> = ({ children }) => {
+    const { stepText } = stylize()
     return (
-        <Card width="100%">
-            <Row align="baseline">
-                <Text variant="h3" color="secondary">
-                    {label}
-                </Text>
-                <Text className={descriptionText} variant="h5" color="primary">
-                    {children}
-                </Text>
-            </Row>
-        </Card>
+        <Row align="center" justify="space-between">
+            <AnimatedCheckbox />
+            <Text className={stepText} variant="h5">
+                {children}
+            </Text>
+        </Row>
     )
 }
 
 export const HowItWorks: FC = () => {
     return (
         <>
-            <Step label="1.">Open the Redo desktop app</Step>
-            <Step label="2.">Interact with your website</Step>
-            <Step label="3.">Save your new automated test</Step>
+            <Step>Open the Redo desktop app</Step>
+            <Step>Interact with your website</Step>
+            <Step>Save your new automated test</Step>
         </>
     )
 }

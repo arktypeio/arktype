@@ -8,7 +8,7 @@ export const SignUp = () => {
             submit={async _ => ({})}
         >
             <FormText name="email" />
-            <FormSubmit>Submit</FormSubmit>
+            <FormSubmit>Keep me posted!</FormSubmit>
         </Form>
     )
 }
