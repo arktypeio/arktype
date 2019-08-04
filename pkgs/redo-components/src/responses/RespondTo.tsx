@@ -2,7 +2,7 @@ import React, { useState } from "react"
 import { Theme, CircularProgress } from "@material-ui/core"
 import { makeStyles } from "@material-ui/styles"
 import { Column } from "../layouts"
-import { ErrorText } from "../typography"
+import { ErrorText } from "../text"
 import deepmerge from "deepmerge"
 import { ValueOf } from "../../../redo-utils/dist"
 

@@ -1,4 +1,4 @@
-import React from "react"
+import React, { FC } from "react"
 import { Theme, List, ListItem } from "@material-ui/core"
 import { makeStyles } from "@material-ui/styles"
 import { LearnerEventCard } from "custom"
@@ -19,7 +19,7 @@ export type LearnerEventsProps = {
     events: BrowserEventInput[]
 }
 
-export const LearnerEvents = ({ events }: LearnerEventsProps) => {
+export const LearnerEvents: FC<LearnerEventsProps> = ({ events }) => {
     const { list, listItem } = stylize()
     return (
         <List className={list}>

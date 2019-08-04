@@ -8,6 +8,4 @@ storiesOf("Text Input", module)
     .add("Underlined text input", () => (
         <TextInput variant="underlined"> </TextInput>
     ))
-    .add("Outlined text input", () => (
-        <TextInput variant="outlined"> </TextInput>
-    ))
+    .add("Outlined text input", () => <TextInput variant="outlined" />)
