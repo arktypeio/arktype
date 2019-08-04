@@ -1,24 +1,14 @@
-<<<<<<< HEAD
-import React from "react"
-import { Theme, Box } from "@material-ui/core"
-import { makeStyles, useTheme } from "@material-ui/styles"
-import { FormText, FormSubmit, Column, Card, Form } from "redo-components"
-=======
 import React, { FC } from "react"
 import { Theme } from "@material-ui/core"
-import { makeStyles } from "@material-ui/styles"
+import { makeStyles, useTheme } from "@material-ui/styles"
 import {
     FormText,
     FormSubmit,
     Column,
-    CardPage,
+    Card,
     Form,
-    Fields,
-    ResponseState,
-    FormErrors
+    SecondaryButton
 } from "redo-components"
->>>>>>> master
-import { SecondarySignUpButton } from "custom"
 import gql from "graphql-tag"
 import { SignInInput } from "redo-model"
 import { motion, AnimatePresence } from "framer-motion"
@@ -26,6 +16,7 @@ import Logo from "assets/logo.svg"
 import { useMutation } from "@apollo/react-hooks"
 import { store } from "renderer/common"
 import { createValidator, submitForm } from "custom/CustomForm"
+import { Page } from "renderer/state"
 
 const stylize = makeStyles((theme: Theme) => ({
     animatedFields: {
@@ -102,7 +93,11 @@ export const SignIn: FC = () => {
                     </FormSubmit>
                 </Form>
             </Card>
-            <SecondarySignUpButton>Need an account?</SecondarySignUpButton>
+            <SecondaryButton
+                onClick={() => store.mutate({ page: Page.SignUp })}
+            >
+                Need an account?
+            </SecondaryButton>
         </Column>
     )
 }
