@@ -5,10 +5,6 @@ import { Theme } from "@material-ui/core"
 
 const stylize = makeStyles((theme: Theme) => ({
     background: {
-        overflow: "hidden",
-        height: "100vh",
-        width: "100vw",
-        position: "absolute",
         background: theme.palette.background.paper
     },
     skewedHeader: {

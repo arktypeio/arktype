@@ -4,8 +4,6 @@ import { Column, Row } from "../layouts"
 import { createStyles } from "@material-ui/styles"
 import { Card, CardProps } from "./Card"
 
-const styles = (theme: Theme) => createStyles({})
-
 export type ContentCardProps = CardProps & {
     from: Record<string, string | number>
 }
