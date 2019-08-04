@@ -1,5 +1,6 @@
 import React from "react"
 import { Form, FormText, FormSubmit } from "redo-components"
+import Analytics from "analytics-node"
 
 export const SignUp = () => {
     return (
