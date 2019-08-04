@@ -1,4 +1,4 @@
-import React from "react"
+import React, { FC } from "react"
 import { TextInput, TextInputProps } from "redo-components"
 import { store } from "renderer/common"
 
@@ -9,6 +9,6 @@ const onChange = async (event: React.ChangeEvent<HTMLInputElement>) =>
         cardFilter: event.target.value
     })
 
-export const SearchInput = ({ ...rest }) => (
+export const SearchInput: FC = ({ ...rest }) => (
     <TextInput variant="underlined" {...{ onChange, ...rest }} />
 )

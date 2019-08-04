@@ -1,4 +1,4 @@
-import React, { useState, ReactNode } from "react"
+import React, { FC, useState, ReactNode } from "react"
 import { Theme } from "@material-ui/core"
 import { makeStyles } from "@material-ui/styles"
 import { RespondTo, ResponseState, ResponseOptions } from "../responses"
@@ -12,7 +12,7 @@ export type FormSubmitProps<D = any> = {
     children?: ReactNode
 }
 
-export const FormSubmit = <D extends any = any>({
+export const FormSubmit: FC<FormSubmitProps> = <D extends any = any>({
     responseOptions,
     ...rest
 }: FormSubmitProps<D>) => {

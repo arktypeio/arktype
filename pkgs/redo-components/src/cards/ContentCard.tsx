@@ -1,4 +1,4 @@
-import React from "react"
+import React, { FC } from "react"
 import { Theme, Typography } from "@material-ui/core"
 import { Column, Row } from "../layouts"
 import { createStyles } from "@material-ui/styles"
@@ -10,7 +10,7 @@ export type ContentCardProps = CardProps & {
     from: Record<string, string | number>
 }
 
-export const ContentCard = ({ from, children }: ContentCardProps) => {
+export const ContentCard: FC<ContentCardProps> = ({ from, children }) => {
     return (
         <Card>
             {from ? (
