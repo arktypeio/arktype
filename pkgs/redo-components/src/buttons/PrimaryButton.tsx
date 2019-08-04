@@ -3,6 +3,6 @@ import { Button, ButtonProps } from "./Button"
 
 export type PrimaryButtonProps = ButtonProps
 
-export const PrimaryButton: FC<PrimaryButtonProps> = ({ ...rest }) => (
-    <Button color="primary" variant="contained" {...rest} />
+export const PrimaryButton: FC<PrimaryButtonProps> = props => (
+    <Button color="primary" variant="contained" {...props} />
 )

@@ -11,7 +11,7 @@ const stylize = makeStyles((theme: Theme) => ({
 
 export type SecondaryButtonProps = ButtonProps
 
-export const SecondaryButton: FC<SecondaryButtonProps> = ({ ...rest }) => {
+export const SecondaryButton: FC<SecondaryButtonProps> = props => {
     const { text } = stylize()
-    return <Button className={text} variant="outlined" {...rest} />
+    return <Button className={text} variant="outlined" {...props} />
 }

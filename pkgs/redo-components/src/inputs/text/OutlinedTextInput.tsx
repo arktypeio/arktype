@@ -2,7 +2,7 @@ import React, { FC } from "react"
 import { TextField, Theme } from "@material-ui/core"
 import { makeStyles } from "@material-ui/styles"
 import { BaseTextFieldProps } from "@material-ui/core/TextField"
-//I can't change this one?
+
 const stylize = makeStyles((theme: Theme) => ({
     focused: {},
     disabled: {},
@@ -30,7 +30,7 @@ const stylize = makeStyles((theme: Theme) => ({
 
 export type OutlinedTextInputProps = Omit<BaseTextFieldProps, "variant">
 
-export const OutlinedTextInput: FC<OutlinedTextInputProps> = ({ ...props }) => {
+export const OutlinedTextInput: FC<OutlinedTextInputProps> = props => {
     return (
         <TextField
             variant="outlined"

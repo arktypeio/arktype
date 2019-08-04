@@ -1,9 +1,5 @@
 import React, { FC } from "react"
-import {
-    Button as MuiButton,
-    Typography as MuiTypography,
-    Theme
-} from "@material-ui/core"
+import { Button as MuiButton, Theme } from "@material-ui/core"
 import { makeStyles } from "@material-ui/styles"
 import { ButtonProps as MuiButtonProps } from "@material-ui/core/Button"
 
@@ -14,14 +10,10 @@ const stylize = makeStyles((theme: Theme) => ({
     }
 }))
 
-export type ButtonProps = Partial<MuiButtonProps> & {}
+export type ButtonProps = Partial<MuiButtonProps> &
+    Required<Pick<MuiButtonProps, "onClick">>
 
-export const Button: FC<ButtonProps> = ({ children, ...rest }) => {
+export const Button: FC<ButtonProps> = props => {
     const { button } = stylize()
-    return (
-        <MuiButton className={button} {...rest}>
-            {children}
-        </MuiButton>
-    )
+    return <MuiButton className={button} {...props} />
 }
-;<Button color="primary"> Fhing </Button>

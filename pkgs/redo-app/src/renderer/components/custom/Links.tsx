@@ -5,7 +5,7 @@ import { store } from "renderer/common"
 
 export type SecondaryButtonLinkProps = SecondaryButtonProps
 
-export const SecondarySignInButton: FC<SecondaryButtonLinkProps> = () => (
+export const SecondarySignInButton: FC<SecondaryButtonLinkProps> = props => (
     <SecondaryButton
         onClick={() => store.mutate({ page: Page.SignIn })}
         {...props}
@@ -13,7 +13,7 @@ export const SecondarySignInButton: FC<SecondaryButtonLinkProps> = () => (
         Back to sign in
     </SecondaryButton>
 )
-export const SecondarySignUpButton: FC<SecondaryButtonLinkProps> = () => (
+export const SecondarySignUpButton: FC<SecondaryButtonLinkProps> = props => (
     <SecondaryButton
         onClick={() => store.mutate({ page: Page.SignUp })}
         {...props}
