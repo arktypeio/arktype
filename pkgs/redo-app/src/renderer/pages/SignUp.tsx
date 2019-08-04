@@ -2,25 +2,15 @@ import React from "react"
 import { Theme } from "@material-ui/core"
 import { makeStyles } from "@material-ui/styles"
 import { AnimatePresence, motion } from "framer-motion"
-import {
-    Form,
-    FormText,
-    Column,
-    Row,
-    CardPage,
-    FormSubmit,
-    ErrorText
-} from "redo-components"
+import { Form, FormText, Column, Row, FormSubmit, Card } from "redo-components"
 import { SecondarySignInButton } from "custom"
-import { component } from "blocks"
 import { SignUpInput } from "redo-model"
 import Logo from "assets/logo.svg"
-import { createValidator, UseMutation } from "custom/CustomForm"
-import { ResponseState } from "redo-components"
+import { createValidator } from "custom/CustomForm"
 import { store } from "renderer/common"
 import { useMutation } from "@apollo/react-hooks"
-import gql from "graphql-tag"
 import { submitForm } from "custom/CustomForm"
+import gql from "graphql-tag"
 
 const stylize = makeStyles((theme: Theme) => ({
     animatedFields: {
@@ -59,7 +49,7 @@ export const SignUp = () => {
     const [submit] = useMutation<SignUpData, SignUpInput>(SIGNUP)
     return (
         <Column align="center" justify="center">
-            <CardPage>
+            <Card>
                 <Form<SignUpInput, SignUpData>
                     validate={validate}
                     submit={async fields => {
@@ -108,7 +98,7 @@ export const SignUp = () => {
                         </FormSubmit>
                     </Column>
                 </Form>
-            </CardPage>
+            </Card>
             <SecondarySignInButton>Back to sign in</SecondarySignInButton>
         </Column>
     )

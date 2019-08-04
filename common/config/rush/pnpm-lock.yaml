@@ -27,6 +27,7 @@ dependencies:
   '@rush-temp/redo-website': 'file:projects/redo-website.tgz'
   '@rush-temp/shapeql': 'file:projects/shapeql.tgz'
   '@storybook/addon-actions': 5.1.9_react-dom@16.8.6
+  '@storybook/addon-console': 1.2.1_@storybook+addon-actions@5.1.9
   '@storybook/addon-info': 5.1.9_react-dom@16.8.6
   '@storybook/addon-links': 5.1.9_react-dom@16.8.6+react@16.8.6
   '@storybook/addons': 5.1.9_react-dom@16.8.6
@@ -2317,6 +2318,15 @@ packages:
       react-dom: '*'
     resolution:
       integrity: sha512-h/csHPotBESyEUYlML3yyF2jUlDChB+u3TUNC3Ztzh/x7HzLqy88SL0INSIdY0dCBGx4TK5Gh+rMI7z28Hfdyw==
+  /@storybook/addon-console/1.2.1_@storybook+addon-actions@5.1.9:
+    dependencies:
+      '@storybook/addon-actions': 5.1.9_react-dom@16.8.6
+      global: 4.4.0
+    dev: false
+    peerDependencies:
+      '@storybook/addon-actions': '*'
+    resolution:
+      integrity: sha512-2iDbDTipWonvRpIqLLntfhCGvawFFvoG1xyErpyL7K/HRdQ1zzIvR1Qm83S7TK8Vg+RzZWm4wcDbxx7WOsFCNg==
   /@storybook/addon-info/5.1.9_react-dom@16.8.6:
     dependencies:
       '@storybook/addons': 5.1.9_react-dom@16.8.6
@@ -14227,6 +14237,7 @@ packages:
       '@material-ui/core': 4.2.1_react-dom@16.8.6+react@16.8.6
       '@material-ui/styles': 4.2.1_react-dom@16.8.6+react@16.8.6
       '@storybook/addon-actions': 5.1.9_react-dom@16.8.6
+      '@storybook/addon-console': 1.2.1_@storybook+addon-actions@5.1.9
       '@storybook/addon-info': 5.1.9_react-dom@16.8.6
       '@storybook/addon-links': 5.1.9_react-dom@16.8.6+react@16.8.6
       '@storybook/addons': 5.1.9_react-dom@16.8.6
@@ -14252,7 +14263,7 @@ packages:
     peerDependencies:
       webpack: '*'
     resolution:
-      integrity: sha512-5OzKW+AC9HGe2e92B5Kvpd7/2RjOawfb4fiZY8F+YOpCZwur5Y95DpAQQmHZ1yKaHPfO1i3KXtiiazh8LAQEAg==
+      integrity: sha512-H1axQupPi+cEzARPlK0LEDRvslIUHzyZuzS/rZiFBZNlF4yyLzM+kBYEitecwoL29g62c+xuDmmTB0dEH614kQ==
       tarball: 'file:projects/redo-components.tgz'
     version: 0.0.0
   'file:projects/redo-model.tgz_@types+graphql@14.2.2':
@@ -14436,6 +14447,7 @@ specifiers:
   '@rush-temp/redo-website': 'file:./projects/redo-website.tgz'
   '@rush-temp/shapeql': 'file:./projects/shapeql.tgz'
   '@storybook/addon-actions': 5.1.9
+  '@storybook/addon-console': 1.2.1
   '@storybook/addon-info': 5.1.9
   '@storybook/addon-links': 5.1.9
   '@storybook/addons': 5.1.9

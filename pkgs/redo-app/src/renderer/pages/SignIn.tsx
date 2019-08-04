@@ -1,28 +1,15 @@
 import React from "react"
-import { Theme } from "@material-ui/core"
-import { makeStyles } from "@material-ui/styles"
-import {
-    FormText,
-    FormSubmit,
-    Column,
-    CardPage,
-    Form,
-    Fields,
-    ResponseState,
-    FormErrors
-} from "redo-components"
+import { Theme, Box } from "@material-ui/core"
+import { makeStyles, useTheme } from "@material-ui/styles"
+import { FormText, FormSubmit, Column, Card, Form } from "redo-components"
 import { SecondarySignUpButton } from "custom"
-import { component } from "blocks"
 import gql from "graphql-tag"
 import { SignInInput } from "redo-model"
 import { motion, AnimatePresence } from "framer-motion"
 import Logo from "assets/logo.svg"
-import { plainToClassFromExist } from "class-transformer"
-import { validateSync } from "class-validator"
 import { useMutation } from "@apollo/react-hooks"
-
 import { store } from "renderer/common"
-import { createValidator, UseMutation, submitForm } from "custom/CustomForm"
+import { createValidator, submitForm } from "custom/CustomForm"
 
 const stylize = makeStyles((theme: Theme) => ({
     animatedFields: {
@@ -51,9 +38,16 @@ const validate = createValidator(new SignInInput())
 export const SignIn = () => {
     const [submit] = useMutation<SignInData, SignInInput>(SIGNIN)
     const { animatedFields } = stylize()
+    const theme = useTheme<Theme>()
     return (
-        <Column align="center" justify="center">
-            <CardPage>
+        <Column css={{ justifyContent: "center", alignItems: "center" }}>
+            <Card
+                css={{
+                    width: theme.spacing(45),
+                    height: theme.spacing(50),
+                    padding: `${theme.spacing(3)}px ${theme.spacing(5)}px`
+                }}
+            >
                 <Logo />
                 <Form<SignInInput, SignInData>
                     submit={async fields => {
@@ -65,7 +59,7 @@ export const SignIn = () => {
                     }}
                     validate={validate}
                 >
-                    <Column grow>
+                    <Column css={{ flexGrow: 1 }}>
                         <AnimatePresence>
                             <motion.div
                                 positionTransition
@@ -91,7 +85,7 @@ export const SignIn = () => {
                         Sign in
                     </FormSubmit>
                 </Form>
-            </CardPage>
+            </Card>
             <SecondarySignUpButton>Need an account?</SecondarySignUpButton>
         </Column>
     )
