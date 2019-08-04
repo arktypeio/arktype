@@ -6,6 +6,8 @@ import { BaseCSSProperties } from "@material-ui/styles/withStyles"
 
 const stylize = makeStyles((theme: Theme) => ({
     root: ({ css }: RowOrColumnProps) => ({
+        height: "100%",
+        width: "100%",
         alignItems: "flex-start",
         ...css
     })
