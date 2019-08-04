@@ -3,6 +3,6 @@ import { RowOrColumn, RowOrColumnProps } from "./RowOrColumn"
 
 export type ColumnProps = Omit<RowOrColumnProps, "direction">
 
-export const Column: FC<ColumnProps> = props => {
-    return <RowOrColumn css={{ flexDirection: "row" }} {...props} />
+export const Column: FC<ColumnProps> = ({ css, ...rest }) => {
+    return <RowOrColumn css={{ flexDirection: "column", ...css }} {...rest} />
 }

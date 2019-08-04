@@ -6,6 +6,8 @@ import { TextInput } from "./text"
 storiesOf("Text Input", module)
     .addDecorator(withTheme())
     .add("Underlined text input", () => (
-        <TextInput variant="underlined"> </TextInput>
+        <TextInput label="name" variant="underlined" />
     ))
-    .add("Outlined text input", () => <TextInput variant="outlined" />)
+    .add("Outlined text input", () => (
+        <TextInput label="name" variant="outlined" />
+    ))
