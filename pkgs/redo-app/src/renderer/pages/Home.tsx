@@ -1,15 +1,21 @@
 import React from "react"
-import { Theme } from "@material-ui/core"
-import { createStyles } from "@material-ui/styles"
-import { component } from "blocks"
 import { HomeActionsRow, SuggestionResultsGrid } from "custom"
-import { Column } from "redo-components"
+import { Column, Row, SecondaryButton } from "redo-components"
 import { suggestionData } from "custom/FakeSuggestions"
+import { store } from "renderer/common"
+import { Page } from "renderer/state"
 
 export const Home = () => {
     return (
         <Column justify="flex-start">
-            <HomeActionsRow />
+            <Row>
+                <SecondaryButton
+                    onClick={() => store.mutate({ page: Page.TestView })}
+                >
+                    See all tests
+                </SecondaryButton>
+                <HomeActionsRow />
+            </Row>
             <SuggestionResultsGrid suggestions={suggestionData} />
         </Column>
     )

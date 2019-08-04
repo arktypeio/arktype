@@ -4,16 +4,7 @@ import { sign } from "jsonwebtoken"
 import { Session, SignInInput, SignUpInput } from "redo-model"
 import { APP_SECRET } from "../utils"
 import { Context } from "../context"
-import Photon from "@generated/photon"
-
-const userWithEmail = async (email: string, photon: Photon) => {
-    // TODO: Find an idiomatic way to check if a unique field exists in photon
-    try {
-        return await photon.users.findOne({ where: { email } })
-    } catch {
-        return null
-    }
-}
+import { findUser } from "./common"
 
 @Resolver(of => Session)
 export class SessionResolver {
@@ -23,7 +14,7 @@ export class SessionResolver {
         @Ctx() { photon }: Context
     ) {
         const hashedPassword = await hash(password, 10)
-        if (await userWithEmail(email, photon)) {
+        if (await findUser({ query: { where: { email } }, photon })) {
             throw new Error(
                 "Someone's already using that email. If it's you, try signing in instead!"
             )
@@ -48,7 +39,7 @@ export class SessionResolver {
         @Args() { email, password }: SignInInput,
         @Ctx() { photon }: Context
     ) {
-        const user = await userWithEmail(email, photon)
+        const user = await findUser({ query: { where: { email } }, photon })
         if (!user) {
             throw new Error("We don't recognize that email.")
         }

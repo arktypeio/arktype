@@ -11,7 +11,7 @@ import { App } from "./App"
 const root = document.getElementById("root")
 
 const render = async () => {
-    await store.initialize(initialRoot)
+    await store.initialize(initialRoot as any)
     ReactDOM.render(
         <App apolloClient={client as any} theme={defaultTheme} />,
         root
