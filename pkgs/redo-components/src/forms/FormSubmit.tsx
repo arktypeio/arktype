@@ -30,7 +30,8 @@ export const FormSubmit = <D extends any = any>({
                         )
                     ) {
                         setState({ loading: true })
-                        setState({ ...(await submit(values)), loading: false })
+                        const response = (await submit(values)) || {}
+                        setState({ ...response, loading: false })
                     }
                 }}
                 {...rest}
