@@ -7,7 +7,7 @@ import {
     SecondaryButton,
     Row,
     Column,
-    InfoText
+    Text
 } from "redo-components"
 import { deactivateLearner, saveLearner } from "state"
 import { LearnerEvents } from "custom"
@@ -48,8 +48,10 @@ export const Learner = component({
                         displayAs: ({ value }) =>
                             value ? (
                                 <>
-                                    <CircularProgress />{" "}
-                                    <InfoText>Downloading Chrome</InfoText>
+                                    <CircularProgress />
+                                    <Text align="center">
+                                        Downloading Chrome
+                                    </Text>
                                 </>
                             ) : null,
                         hideContent: false

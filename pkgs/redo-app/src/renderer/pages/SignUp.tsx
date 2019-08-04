@@ -20,6 +20,7 @@ import { ResponseState } from "redo-components"
 import { store } from "renderer/common"
 import { useMutation } from "@apollo/react-hooks"
 import gql from "graphql-tag"
+import { submitForm } from "custom/CustomForm"
 
 const stylize = makeStyles((theme: Theme) => ({
     animatedFields: {
@@ -51,25 +52,6 @@ export const SIGNUP = gql`
     }
 `
 
-const submitSignUp = async (
-    submit: ReturnType<UseMutation<SignUpData, SignUpInput>>[0],
-    fields: SignUpInput
-): Promise<ResponseState<SignUpData>> => {
-    const result = {} as ResponseState<SignUpData>
-    try {
-        const submitResult = await submit({ variables: fields })
-        if (submitResult && submitResult.data) {
-            result.data = submitResult.data
-            store.mutate({ token: result.data.signUp.token })
-        } else {
-            result.errors = ["We called, but the server didn't pick up ☎️😞"]
-        }
-    } catch (e) {
-        result.errors = [e.message]
-    }
-    return result
-}
-
 const validate = createValidator(new SignUpInput())
 
 export const SignUp = () => {
@@ -80,7 +62,13 @@ export const SignUp = () => {
             <CardPage>
                 <Form<SignUpInput, SignUpData>
                     validate={validate}
-                    submit={fields => submitSignUp(submit, fields)}
+                    submit={async fields => {
+                        const result = await submitForm({ submit, fields })
+                        if (result.data && result.data.signUp) {
+                            store.mutate({ token: result.data.signUp.token })
+                        }
+                        return result
+                    }}
                 >
                     <Column justify="space-evenly" className={animatedFields}>
                         <Logo />
