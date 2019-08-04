@@ -17,7 +17,7 @@ type StepProps = {
 const Step: FC<StepProps> = ({ children }) => {
     const { stepText } = stylize()
     return (
-        <Row align="center" justify="space-between">
+        <Row align="center">
             <AnimatedCheckbox />
             <Text className={stepText} variant="h5">
                 {children}

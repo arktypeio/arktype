@@ -4,9 +4,6 @@ import { makeStyles } from "@material-ui/styles"
 import { Column } from "../layouts"
 import { ErrorText } from "../text"
 import deepmerge from "deepmerge"
-import { ValueOf } from "../../../redo-utils/dist"
-
-const styles = makeStyles((theme: Theme) => {})
 
 export type RespondToProps<T = any> = {
     response: ResponseState<T>
@@ -83,7 +80,7 @@ export const RespondTo = <T extends any = any>({
         return null
     })
     return (
-        <Column align="center">
+        <Column>
             {displayResponseAs}
             {hideChildren ? null : children}
         </Column>

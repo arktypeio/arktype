@@ -1,6 +1,6 @@
 import React, { FC } from "react"
 import { Theme } from "@material-ui/core"
-import { useTheme } from "@material-ui/styles"
+import { useTheme, makeStyles } from "@material-ui/styles"
 import { motion, SVGMotionProps } from "framer-motion"
 
 const animationProps = (delay: number): SVGMotionProps<SVGPathElement> => {
@@ -20,6 +20,13 @@ const animationProps = (delay: number): SVGMotionProps<SVGPathElement> => {
     }
 }
 
+const stylize = makeStyles((theme: Theme) => ({
+    logo: {
+        maxHeight: theme.spacing(15),
+        maxWidth: theme.spacing(47.55)
+    }
+}))
+
 export const AnimatedLogo: FC = () => {
     const {
         palette: {
@@ -27,8 +34,9 @@ export const AnimatedLogo: FC = () => {
             secondary: { main: secondary }
         }
     } = useTheme<Theme>()
+    const { logo } = stylize()
     return (
-        <motion.svg height="120" viewBox="0 0 1823 575">
+        <motion.svg className={logo} viewBox="0 0 1823 575">
             <motion.g
                 fill="none"
                 strokeLinecap="round"

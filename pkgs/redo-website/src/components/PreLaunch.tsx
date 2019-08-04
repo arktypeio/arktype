@@ -1,5 +1,5 @@
 import React from "react"
-import { Form, FormText, FormSubmit } from "redo-components"
+import { Form, FormText, FormSubmit, PrimaryButton } from "redo-components"
 import { track } from "../Analytics"
 
 export const SignUp = () => {
@@ -9,7 +9,20 @@ export const SignUp = () => {
             submit={async ({ email }) => track.prelaunchRegister({ email })}
         >
             <FormText name="email" />
-            <FormSubmit>Keep me posted!</FormSubmit>
+            <FormSubmit
+                responseOptions={{
+                    data: {
+                        displayAs: () => (
+                            <PrimaryButton disabled>
+                                You're in the loop 💌
+                            </PrimaryButton>
+                        ),
+                        hideContent: true
+                    }
+                }}
+            >
+                Keep me posted!
+            </FormSubmit>
         </Form>
     )
 }

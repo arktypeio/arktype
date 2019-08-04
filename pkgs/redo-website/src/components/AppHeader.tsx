@@ -1,29 +1,20 @@
 import React, { FC } from "react"
-import { Text, Card } from "redo-components"
+import { Text, Column } from "redo-components"
 import { AnimatedLogo } from "./AnimatedLogo"
 import Typist from "react-typist"
-import { makeStyles } from "@material-ui/styles"
-import { Theme } from "@material-ui/core"
-
-const stylize = makeStyles<Theme>(theme => ({
-    header: {
-        height: theme.spacing(33)
-    }
-}))
 
 export const AppHeader: FC = () => {
-    const { header } = stylize()
     return (
-        <div className={header}>
+        <>
             <AnimatedLogo />
-            <Text variant="h4" color="primary" align="center">
+            <Text variant="h4" color="primary">
                 Automated testing
             </Text>
             <Typist startDelay={400} cursor={{ show: false }}>
-                <Text variant="h4" color="secondary" align="center">
+                <Text variant="h4" color="secondary">
                     that builds itself.
                 </Text>
             </Typist>
-        </div>
+        </>
     )
 }
