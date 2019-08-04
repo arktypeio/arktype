@@ -54,6 +54,12 @@ export class Learner {
     lastConnectedEndpoint: string
 
     @Field()
+    name: string
+
+    @Field(type => [String])
+    tags: string[]
+
+    @Field()
     lastMainWindowBounds: Bounds
 
     @Field()
@@ -67,6 +73,8 @@ export const handleLearner = handle({
 export const learnerInitial: Learner = {
     active: false,
     events: [],
+    name: "",
+    tags: [],
     lastConnectedEndpoint: "",
     lastMainWindowBounds: {
         height: -1,
@@ -153,23 +161,14 @@ export const deactivateLearner = async () => {
     })
 }
 
-type ResetLearnerType = {
-    updateName: React.Dispatch<React.SetStateAction<string>>
-    updateTags: React.Dispatch<React.SetStateAction<string[]>>
-}
-
-// could use advice on naming this:
-export const resetLearner = async ({
-    updateName,
-    updateTags
-}: ResetLearnerType) => {
+export const resetLearner = async () => {
     await store.mutate({
         learner: {
-            events: []
+            events: [],
+            name: "",
+            tags: []
         }
     })
-    updateName("")
-    updateTags([])
 }
 
 const notify = (event: BrowserEventInput) => {

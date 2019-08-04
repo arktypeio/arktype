@@ -22,6 +22,7 @@
     "@medv/finder": "1.1.1",
     "apollo-cache-inmemory": "1.6.2",
     "apollo-client": "2.6.3",
+    "apollo-link-context": "1.0.18",
     "apollo-link-http": "1.5.15",
     "class-transformer": "0.2.0",
     "class-validator": "0.9.1",

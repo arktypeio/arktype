@@ -6,8 +6,12 @@ import { buildSchemaSync, Resolver, ObjectType, Field } from "type-graphql"
 import { createResolversMap } from "type-graphql/dist/utils/createResolversMap"
 import { printSchema } from "graphql"
 import { createStore } from "shapeql"
+import { setContext } from "apollo-link-context"
 
-const link = createHttpLink({ uri: `http://localhost:${process.env.PORT}` })
+const httpLink = createHttpLink({ uri: `http://localhost:${process.env.PORT}` })
+const contextLink = setContext(() => ({
+    headers: { authorization: `Bearer ${store.query({ token: null }).token}` }
+}))
 
 @ObjectType()
 export class BrowserEventInput {
@@ -41,7 +45,7 @@ export const resolvers = createResolversMap(schema)
 
 export const cache = new InMemoryCache()
 export const client = new ApolloClient({
-    link,
+    link: contextLink.concat(httpLink),
     cache,
     typeDefs,
     resolvers: resolvers as Resolvers
