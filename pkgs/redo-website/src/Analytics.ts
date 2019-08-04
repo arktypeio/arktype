@@ -13,18 +13,15 @@ type TrackOptions = {
 
 const prelaunchRegister = async ({
     email
-}: TrackOptions): Promise<ResponseState<any>> => {
+}: TrackOptions): Promise<ResponseState<{}>> => {
     client.track({
         event: "Prelaunch User Registered",
-        anonymousId: (localStorage.getItem("ajs_anonymous_id") || "?").replace(
-            /"/g,
-            ""
-        ),
+        anonymousId: "?",
         properties: {
             email
         }
     })
-    return {}
+    return { data: {} }
 }
 
 export const track = {

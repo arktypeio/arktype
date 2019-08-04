@@ -1,40 +1,18 @@
 import React, { FC } from "react"
 import { makeStyles } from "@material-ui/styles"
-import Grid, { GridProps, GridItemsAlignment } from "@material-ui/core/Grid"
+import { Theme } from "@material-ui/core"
+import Grid, { GridProps } from "@material-ui/core/Grid"
+import { BaseCSSProperties } from "@material-ui/styles/withStyles"
 
-const stylize = makeStyles({
-    grid: ({ flexGrow, grow }: RowOrColumnProps) => ({
-        flexGrow: flexGrow ? flexGrow : grow ? 1 : undefined
-    })
-})
+const stylize = makeStyles((theme: Theme) => ({
+    root: (css: BaseCSSProperties) => ({ ...css })
+}))
 
 export type RowOrColumnProps = GridProps & {
-    reverse?: boolean
-    wrap?: boolean
-    align?: GridItemsAlignment
-    flexGrow?: number
-    grow?: boolean
+    css?: BaseCSSProperties
 }
 
-export const RowOrColumn: FC<RowOrColumnProps> = ({
-    direction,
-    reverse,
-    wrap,
-    align,
-    flexGrow,
-    grow,
-    ...rest
-}) => {
-    const { grid } = stylize({ flexGrow, grow })
-    return (
-        <Grid
-            container
-            item
-            className={grid}
-            direction={`${direction}${reverse ? "-reverse" : ""}` as any}
-            wrap={wrap ? "wrap" : "nowrap"}
-            alignItems={align}
-            {...rest}
-        />
-    )
+export const RowOrColumn: FC<RowOrColumnProps> = ({ css = {}, ...rest }) => {
+    const { root } = stylize(css)
+    return <Grid container item className={root} {...rest} />
 }

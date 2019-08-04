@@ -1,11 +1,7 @@
 import React, { useState, ReactNode } from "react"
-import { Theme } from "@material-ui/core"
-import { makeStyles } from "@material-ui/styles"
 import { RespondTo, ResponseState, ResponseOptions } from "../responses"
 import { PrimaryButton } from "../buttons"
 import { useFormContext } from "./FormContext"
-
-const styles = makeStyles((theme: Theme) => {})
 
 export type FormSubmitProps<D = any> = {
     responseOptions?: ResponseOptions<D>

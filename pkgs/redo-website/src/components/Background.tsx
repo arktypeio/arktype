@@ -16,8 +16,7 @@ const stylize = makeStyles((theme: Theme) => ({
         width: "100%",
         top: -theme.spacing(100),
         height: theme.spacing(134),
-        transform: "skewY(-6deg)",
-        transformOrigin: "top middle"
+        transform: "skewY(-6deg)"
     }
 }))
 
