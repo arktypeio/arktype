@@ -1,9 +1,16 @@
 import React, { FC } from "react"
 import { Theme } from "@material-ui/core"
-import { makeStyles } from "@material-ui/styles"
+import { makeStyles, useTheme } from "@material-ui/styles"
 import { AnimatePresence, motion } from "framer-motion"
-import { Form, FormText, Column, Row, FormSubmit, Card } from "redo-components"
-import { SecondarySignInButton } from "custom"
+import {
+    Form,
+    FormText,
+    Column,
+    Row,
+    FormSubmit,
+    Card,
+    SecondaryButton
+} from "redo-components"
 import { SignUpInput } from "redo-model"
 import Logo from "assets/logo.svg"
 import { createValidator } from "custom/CustomForm"
@@ -11,6 +18,7 @@ import { store } from "renderer/common"
 import { useMutation } from "@apollo/react-hooks"
 import { submitForm } from "custom/CustomForm"
 import gql from "graphql-tag"
+import { Page } from "renderer/state"
 
 const stylize = makeStyles((theme: Theme) => ({
     animatedFields: {
@@ -46,10 +54,18 @@ const validate = createValidator(new SignUpInput())
 
 export const SignUp: FC = () => {
     const { animatedFields } = stylize()
+    const theme = useTheme<Theme>()
     const [submit] = useMutation<SignUpData, SignUpInput>(SIGNUP)
     return (
-        <Column align="center" justify="center">
-            <Card>
+        <Column css={{ justifyContent: "center", alignItems: "center" }}>
+            <Card
+                css={{
+                    width: theme.spacing(45),
+                    height: theme.spacing(50),
+                    padding: `${theme.spacing(3)}px ${theme.spacing(5)}px`
+                }}
+            >
+                <Logo />
                 <Form<SignUpInput, SignUpData>
                     validate={validate}
                     submit={async fields => {
@@ -61,7 +77,6 @@ export const SignUp: FC = () => {
                     }}
                 >
                     <Column justify="space-evenly" className={animatedFields}>
-                        <Logo />
                         <AnimatePresence>
                             <motion.div
                                 positionTransition
@@ -89,7 +104,7 @@ export const SignUp: FC = () => {
                                 </Row>
                             </motion.div>
                         </AnimatePresence>
-                        <FormSubmit<SignUpData>
+                        <FormSubmit
                             responseOptions={{
                                 loading: { hideContent: true }
                             }}
@@ -99,7 +114,11 @@ export const SignUp: FC = () => {
                     </Column>
                 </Form>
             </Card>
-            <SecondarySignInButton>Back to sign in</SecondarySignInButton>
+            <SecondaryButton
+                onClick={() => store.mutate({ page: Page.SignIn })}
+            >
+                Back to sign in
+            </SecondaryButton>
         </Column>
     )
 }
