@@ -1,4 +1,4 @@
-import React, { useState } from "react"
+import React, { FC, useState } from "react"
 import { storiesOf } from "@storybook/react"
 import { withTheme } from "../storybook"
 import { RespondTo } from "."
@@ -9,7 +9,7 @@ storiesOf("Response", module)
     .addDecorator(withTheme())
     .add("Data updates", () => <InputResponse />)
 
-const InputResponse = () => {
+const InputResponse: FC = () => {
     const [value, setValue] = useState("")
     return (
         <>
