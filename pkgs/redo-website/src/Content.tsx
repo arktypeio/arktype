@@ -9,9 +9,7 @@ const stylize = makeStyles((theme: Theme) => ({
     content: {
         position: "absolute",
         padding: theme.spacing(2),
-        top: 0,
-        height: "100vh",
-        width: "100vw"
+        top: 0
     }
 }))
 

@@ -5,7 +5,7 @@ import Typist from "react-typist"
 
 export const AppHeader: FC = () => {
     return (
-        <>
+        <Column>
             <AnimatedLogo />
             <Text variant="h4" color="primary">
                 Automated testing
@@ -15,6 +15,6 @@ export const AppHeader: FC = () => {
                     that builds itself.
                 </Text>
             </Typist>
-        </>
+        </Column>
     )
 }

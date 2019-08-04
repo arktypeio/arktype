@@ -5,7 +5,7 @@ import { makeStyles } from "@material-ui/styles"
 import { BaseCSSProperties } from "@material-ui/styles/withStyles"
 
 const stylize = makeStyles((theme: Theme) => ({
-    root: (css: BaseCSSProperties) => ({
+    root: ({ css }: CardProps) => ({
         width: "fit-content",
         padding: theme.spacing(1),
         ...css

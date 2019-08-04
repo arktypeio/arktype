@@ -5,14 +5,17 @@ import Grid, { GridProps } from "@material-ui/core/Grid"
 import { BaseCSSProperties } from "@material-ui/styles/withStyles"
 
 const stylize = makeStyles((theme: Theme) => ({
-    root: (css: BaseCSSProperties) => ({ ...css })
+    root: ({ css }: RowOrColumnProps) => ({
+        alignItems: "flex-start",
+        ...css
+    })
 }))
 
-export type RowOrColumnProps = GridProps & {
+export type RowOrColumnProps = Omit<GridProps, keyof BaseCSSProperties> & {
     css?: BaseCSSProperties
 }
 
-export const RowOrColumn: FC<RowOrColumnProps> = ({ css = {}, ...rest }) => {
-    const { root } = stylize(css)
-    return <Grid container item className={root} {...rest} />
+export const RowOrColumn: FC<RowOrColumnProps> = props => {
+    const { root } = stylize(props)
+    return <Grid container className={root} {...props} />
 }
