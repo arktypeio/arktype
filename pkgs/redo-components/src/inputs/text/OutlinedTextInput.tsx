@@ -1,4 +1,4 @@
-import React from "react"
+import React, { FC } from "react"
 import { TextField, Theme } from "@material-ui/core"
 import { makeStyles } from "@material-ui/styles"
 import { BaseTextFieldProps } from "@material-ui/core/TextField"
@@ -8,7 +8,7 @@ const stylize = makeStyles((theme: Theme) => ({
     disabled: {},
     error: {},
     notchedOutline: {},
-    input: {
+    root: {
         color: theme.palette.primary.dark,
         "&$focused $notchedOutline": {
             borderColor: theme.palette.secondary.main
@@ -30,24 +30,14 @@ const stylize = makeStyles((theme: Theme) => ({
 
 export type OutlinedTextInputProps = Omit<BaseTextFieldProps, "variant">
 
-export const OutlinedTextInput = ({
-    classes,
-    ...rest
-}: OutlinedTextInputProps) => {
-    const { focused, disabled, error, notchedOutline, input } = stylize()
+export const OutlinedTextInput: FC<OutlinedTextInputProps> = props => {
     return (
         <TextField
             variant="outlined"
             InputProps={{
-                classes: {
-                    notchedOutline: notchedOutline,
-                    disabled: disabled,
-                    error: error,
-                    focused: focused,
-                    root: input
-                }
+                classes: stylize()
             }}
-            {...rest}
+            {...props}
         />
     )
 }

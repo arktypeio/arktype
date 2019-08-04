@@ -1,4 +1,4 @@
-import React from "react"
+import React, { FC } from "react"
 import { Theme } from "@material-ui/core"
 import { makeStyles } from "@material-ui/styles"
 import { FormText, FormSubmit, Column, CardPage, Form } from "redo-components"
@@ -36,7 +36,7 @@ type SignInData = {
 
 const validate = createValidator(new SignInInput())
 
-export const SignIn = () => {
+export const SignIn: FC = () => {
     const [submit] = useMutation<SignInData, SignInInput>(SIGNIN)
     const { animatedFields } = stylize()
     return (

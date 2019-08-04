@@ -1,11 +1,7 @@
-import React from "react"
-import { Theme } from "@material-ui/core"
-import { makeStyles } from "@material-ui/styles"
+import React, { FC } from "react"
 import { Menu as MuiMenu } from "@material-ui/core"
 import { MenuProps as MuiMenuProps } from "@material-ui/core/Menu"
-import { MenuItem } from "./"
-
-const stylize = makeStyles((theme: Theme) => ({}))
+import { MenuItem } from "."
 
 export type MenuProps = Partial<MuiMenuProps> & {
     Button: React.ComponentType<{
@@ -15,13 +11,13 @@ export type MenuProps = Partial<MuiMenuProps> & {
     buttonText?: string
 }
 
-export const Menu = ({
+export const Menu: FC<MenuProps> = ({
     Button,
     buttonText,
     options,
     classes,
     ...rest
-}: MenuProps) => {
+}) => {
     const [anchor, setAnchor] = React.useState<null | HTMLElement>(null)
 
     const handleClick = (e: React.MouseEvent<HTMLButtonElement>) =>

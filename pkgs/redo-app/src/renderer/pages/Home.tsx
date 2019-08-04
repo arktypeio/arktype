@@ -1,11 +1,11 @@
-import React from "react"
+import React, { FC } from "react"
 import { HomeActionsRow, SuggestionResultsGrid } from "custom"
 import { Column, Row, SecondaryButton } from "redo-components"
 import { suggestionData } from "custom/FakeSuggestions"
 import { store } from "renderer/common"
 import { Page } from "renderer/state"
 
-export const Home = () => {
+export const Home: FC = () => {
     return (
         <Column justify="flex-start">
             <Row>

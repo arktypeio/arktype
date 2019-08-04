@@ -1,4 +1,8 @@
+<<<<<<< HEAD
 import React from "react"
+=======
+import React, { FC } from "react"
+>>>>>>> master
 import { Theme } from "@material-ui/core"
 import { makeStyles } from "@material-ui/styles"
 import { BaseTextFieldProps } from "@material-ui/core/TextField"
@@ -22,19 +26,18 @@ export type TextInputProps = BaseTextFieldVariantProps & {
     label?: string
     variant?: "outlined" | "underlined"
 }
-export const TextInput = ({
+export const TextInput: FC<TextInputProps> = ({
     icon,
     label,
     variant = "outlined",
     ...rest
-}: TextInputProps) => {
+}) => {
     const Component = TextInputVariants[variant]
     const { inputLabel } = stylize()
     return (
         <Component
             label={label}
             margin="dense"
-            fullWidth
             InputLabelProps={{
                 classes: { root: inputLabel }
             }}

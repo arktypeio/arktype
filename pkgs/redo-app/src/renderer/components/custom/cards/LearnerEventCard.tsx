@@ -1,12 +1,11 @@
-import React from "react"
-
-import { BrowserEventInput } from "renderer/common"
+import React, { FC } from "react"
+import { BrowserEventInput } from "redo-model"
 import { ContentCard } from "redo-components"
 
 export type LearnerEventCardProps = {
     event: BrowserEventInput
 }
 
-export const LearnerEventCard = ({ event }: LearnerEventCardProps) => (
+export const LearnerEventCard: FC<LearnerEventCardProps> = ({ event }) => (
     <ContentCard from={event as any} />
 )

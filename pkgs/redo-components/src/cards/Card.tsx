@@ -1,4 +1,4 @@
-import React from "react"
+import React, { FC } from "react"
 import { Card as MuiCard, Theme } from "@material-ui/core"
 import { CardProps as MuiCardProps } from "@material-ui/core/Card"
 import { makeStyles } from "@material-ui/styles"
@@ -24,7 +24,7 @@ export type CardProps = MuiCardProps & {
     padding?: string | number
 }
 
-export const Card = ({
+export const Card: FC<CardProps> = ({
     children,
     classes,
     rootClass,
@@ -33,7 +33,7 @@ export const Card = ({
     width,
     padding,
     ...rest
-}: CardProps) => {
+}) => {
     const { card } = stylize({ height: height, width: width, padding: padding })
     return (
         <MuiCard className={card} {...rest}>

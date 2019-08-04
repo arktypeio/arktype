@@ -1,15 +1,15 @@
-import React, { useState } from "react"
+import React, { FC, useState } from "react"
 import { storiesOf } from "@storybook/react"
 import { withTheme } from "../storybook"
 import { RespondTo } from "."
-import { InfoText } from "../typography"
+import { Text } from "../text"
 import { TextInput } from "../inputs"
 
 storiesOf("Response", module)
     .addDecorator(withTheme())
     .add("Data updates", () => <InputResponse />)
 
-const InputResponse = () => {
+const InputResponse: FC = () => {
     const [value, setValue] = useState("")
     return (
         <>
@@ -27,11 +27,11 @@ const InputResponse = () => {
                     data: {
                         onChange: value =>
                             !value || console.log(`the state is ${value}`),
-                        displayAs: ({ value }) => <InfoText>{value}</InfoText>
+                        displayAs: ({ value }) => <Text>{value}</Text>
                     }
                 }}
             >
-                <InfoText> This is the content.</InfoText>
+                <Text> This is the content.</Text>
             </RespondTo>
         </>
     )
