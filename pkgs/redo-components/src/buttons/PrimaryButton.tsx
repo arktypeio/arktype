@@ -1,10 +1,8 @@
-import React from "react"
-import { Theme } from "@material-ui/core"
-import { makeStyles } from "@material-ui/styles"
+import React, { FC } from "react"
 import { Button, ButtonProps } from "./Button"
 
 export type PrimaryButtonProps = ButtonProps
 
-export const PrimaryButton = ({ ...rest }: PrimaryButtonProps) => (
-    <Button color="primary" variant="contained" {...rest} />
+export const PrimaryButton: FC<PrimaryButtonProps> = props => (
+    <Button color="primary" variant="contained" {...props} />
 )

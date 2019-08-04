@@ -1,4 +1,4 @@
-import React from "react"
+import React, { FC } from "react"
 import { Theme, Typography, Tooltip } from "@material-ui/core"
 import { makeStyles } from "@material-ui/styles"
 import { listify } from "redo-utils"
@@ -19,9 +19,11 @@ export type ErrorTextProps = {
     children: string | string[]
 }
 
-export const ErrorText = ({ children }: ErrorTextProps) => {
+export const ErrorText: FC<ErrorTextProps> = ({ children }) => {
     const { errorMessage, tooltip } = stylize()
-    const messages = listify(children).filter(child => !!child.trim())
+    const messages = (listify(children) as string[]).filter(
+        child => !!child.trim()
+    )
     return (
         <Tooltip
             classes={{ tooltip }}

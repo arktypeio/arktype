@@ -1,7 +1,23 @@
+<<<<<<< HEAD
 import React from "react"
 import { Theme, Box } from "@material-ui/core"
 import { makeStyles, useTheme } from "@material-ui/styles"
 import { FormText, FormSubmit, Column, Card, Form } from "redo-components"
+=======
+import React, { FC } from "react"
+import { Theme } from "@material-ui/core"
+import { makeStyles } from "@material-ui/styles"
+import {
+    FormText,
+    FormSubmit,
+    Column,
+    CardPage,
+    Form,
+    Fields,
+    ResponseState,
+    FormErrors
+} from "redo-components"
+>>>>>>> master
 import { SecondarySignUpButton } from "custom"
 import gql from "graphql-tag"
 import { SignInInput } from "redo-model"
@@ -35,7 +51,7 @@ type SignInData = {
 
 const validate = createValidator(new SignInInput())
 
-export const SignIn = () => {
+export const SignIn: FC = () => {
     const [submit] = useMutation<SignInData, SignInInput>(SIGNIN)
     const { animatedFields } = stylize()
     const theme = useTheme<Theme>()

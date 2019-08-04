@@ -1,4 +1,4 @@
-import React from "react"
+import React, { FC } from "react"
 import { storiesOf } from "@storybook/react"
 import { withTheme } from "../storybook"
 import { FormText, FormSubmit, Form } from "."
@@ -14,7 +14,7 @@ type TextOnlyFormFields = {
     last: string
 }
 
-const TextOnlyForm = () => {
+const TextOnlyForm: FC = () => {
     return (
         <Form<TextOnlyFormFields, string>
             submit={async ({ first, last }) => ({
