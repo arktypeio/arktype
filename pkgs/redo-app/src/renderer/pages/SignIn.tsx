@@ -55,43 +55,55 @@ export const SignIn: FC = () => {
                     padding: `${theme.spacing(3)}px ${theme.spacing(5)}px`
                 }}
             >
-                <Logo />
-                <Form<SignInInput, SignInData>
-                    submit={async fields => {
-                        const result = await submitForm({ submit, fields })
-                        if (result.data && result.data.signIn) {
-                            store.mutate({ token: result.data.signIn.token })
-                        }
-                        return result
-                    }}
-                    validate={validate}
-                >
-                    <Column css={{ flexGrow: 1 }}>
-                        <AnimatePresence>
-                            <motion.div
-                                positionTransition
-                                initial={{
-                                    x: -500
-                                }}
-                                animate={{ x: 0 }}
-                                exit={{ x: -500 }}
-                                className={animatedFields}
-                            >
-                                <Column>
-                                    <FormText name="email" autoFocus />
-                                    <FormText type="password" name="password" />
-                                </Column>
-                            </motion.div>
-                        </AnimatePresence>
-                    </Column>
-                    <FormSubmit
-                        responseOptions={{
-                            loading: { hideContent: true }
+                <Column css={{ height: "100%", width: "100%" }}>
+                    <Logo />
+                    <Form<SignInInput, SignInData>
+                        submit={async fields => {
+                            const result = await submitForm({ submit, fields })
+                            if (result.data && result.data.signIn) {
+                                store.mutate({
+                                    token: result.data.signIn.token
+                                })
+                            }
+                            return result
                         }}
+                        validate={validate}
                     >
-                        Sign in
-                    </FormSubmit>
-                </Form>
+                        <Column
+                            css={{
+                                flexGrow: 1,
+                                justifyContent: "space-between"
+                            }}
+                        >
+                            <AnimatePresence>
+                                <motion.div
+                                    positionTransition
+                                    initial={{
+                                        x: -500
+                                    }}
+                                    animate={{ x: 0 }}
+                                    exit={{ x: -500 }}
+                                    className={animatedFields}
+                                >
+                                    <Column>
+                                        <FormText name="email" autoFocus />
+                                        <FormText
+                                            type="password"
+                                            name="password"
+                                        />
+                                    </Column>
+                                </motion.div>
+                            </AnimatePresence>
+                        </Column>
+                        <FormSubmit
+                            responseOptions={{
+                                loading: { hideContent: true }
+                            }}
+                        >
+                            Sign in
+                        </FormSubmit>
+                    </Form>
+                </Column>
             </Card>
             <SecondaryButton
                 onClick={() => store.mutate({ page: Page.SignUp })}
