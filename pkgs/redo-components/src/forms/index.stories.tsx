@@ -8,7 +8,7 @@ import { Form } from "./Form"
 storiesOf("Form", module)
     .addDecorator(withTheme())
     .add("FormText", () => <FormTextSample />)
-//this doesn't have anything to put in <>?
+
 const FormTextSample: FC = () => {
     return (
         <Form
