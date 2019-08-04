@@ -30,7 +30,7 @@ const stylize = makeStyles((theme: Theme) => ({
 
 export type OutlinedTextInputProps = Omit<BaseTextFieldProps, "variant">
 
-export const OutlinedTextInput: FC<OutlinedTextInputProps> = ({ ...props }) => {
+export const OutlinedTextInput: FC<OutlinedTextInputProps> = props => {
     return (
         <TextField
             variant="outlined"

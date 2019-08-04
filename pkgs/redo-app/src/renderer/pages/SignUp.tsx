@@ -1,4 +1,4 @@
-import React from "react"
+import React, { FC } from "react"
 import { Theme } from "@material-ui/core"
 import { makeStyles } from "@material-ui/styles"
 import { AnimatePresence, motion } from "framer-motion"
@@ -44,7 +44,7 @@ export const SIGNUP = gql`
 
 const validate = createValidator(new SignUpInput())
 
-export const SignUp = () => {
+export const SignUp: FC = () => {
     const { animatedFields } = stylize()
     const [submit] = useMutation<SignUpData, SignUpInput>(SIGNUP)
     return (

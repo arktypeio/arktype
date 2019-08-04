@@ -1,14 +1,13 @@
-import React, { useState, ReactNode } from "react"
+import React, { useState, FC } from "react"
 import { RespondTo, ResponseState, ResponseOptions } from "../responses"
 import { PrimaryButton } from "../buttons"
 import { useFormContext } from "./FormContext"
 
 export type FormSubmitProps<D = any> = {
     responseOptions?: ResponseOptions<D>
-    children?: ReactNode
 }
 
-export const FormSubmit = <D extends any = any>({
+export const FormSubmit: FC<FormSubmitProps> = <D extends any = any>({
     responseOptions,
     ...rest
 }: FormSubmitProps<D>) => {
