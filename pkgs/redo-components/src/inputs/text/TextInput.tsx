@@ -1,8 +1,4 @@
-<<<<<<< HEAD
-import React from "react"
-=======
 import React, { FC } from "react"
->>>>>>> master
 import { Theme } from "@material-ui/core"
 import { makeStyles } from "@material-ui/styles"
 import { BaseTextFieldProps } from "@material-ui/core/TextField"
