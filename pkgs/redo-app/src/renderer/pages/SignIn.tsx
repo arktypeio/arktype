@@ -94,14 +94,14 @@ export const SignIn: FC = () => {
                                     </Column>
                                 </motion.div>
                             </AnimatePresence>
+                            <FormSubmit
+                                responseOptions={{
+                                    loading: { hideContent: true }
+                                }}
+                            >
+                                Sign in
+                            </FormSubmit>
                         </Column>
-                        <FormSubmit
-                            responseOptions={{
-                                loading: { hideContent: true }
-                            }}
-                        >
-                            Sign in
-                        </FormSubmit>
                     </Form>
                 </Column>
             </Card>

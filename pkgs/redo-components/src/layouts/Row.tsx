@@ -1,8 +1,8 @@
 import React, { FC } from "react"
-import { RowOrColumn, RowOrColumnProps } from "./RowOrColumn"
+import { Container, ContainerProps } from "./Container"
 
-export type RowProps = Omit<RowOrColumnProps, "direction">
+export type RowProps = Omit<ContainerProps, "direction">
 
-export const Row: FC<RowProps> = ({ css, ...rest }) => {
-    return <RowOrColumn css={{ flexDirection: "row", ...css }} {...rest} />
-}
+export const Row: FC<RowProps> = props => (
+    <Container direction="row" {...props} />
+)
