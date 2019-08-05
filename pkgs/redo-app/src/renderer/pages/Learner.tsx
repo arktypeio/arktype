@@ -7,7 +7,8 @@ import {
     SecondaryButton,
     Row,
     Column,
-    Text
+    Text,
+    TextInput
 } from "redo-components"
 import { deactivateLearner, resetLearner } from "state"
 import { LearnerEvents } from "custom"
