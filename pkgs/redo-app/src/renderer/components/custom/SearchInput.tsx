@@ -9,6 +9,6 @@ const onChange = async (event: React.ChangeEvent<HTMLInputElement>) =>
         cardFilter: event.target.value
     })
 
-export const SearchInput: FC = ({ ...rest }) => (
+export const SearchInput: FC<SearchInputProps> = ({ ...rest }) => (
     <TextInput variant="underlined" {...{ onChange, ...rest }} />
 )
