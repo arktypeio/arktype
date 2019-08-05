@@ -1,23 +1,41 @@
-import React from "react"
+import React, { FC } from "react"
 import { storiesOf } from "@storybook/react"
 import { withTheme } from "../storybook"
-import { Row } from "./"
+import { defaultTheme } from "../themes"
+import { Row, Column, Item } from "."
 import { Card } from "../cards"
-import { Column } from "./Column"
 
 storiesOf("Layout", module)
-    .addDecorator(withTheme())
-    .add("Row of cards", () => (
-        <Row>
-            <Card>Hi! This is a card.</Card>
-            <Card>Second card.</Card>
-            <Card>Third card.</Card>
-        </Row>
-    ))
-    .add("Column of cards ", () => (
-        <Column>
-            <Card>Hi! This is a card.</Card>
-            <Card>Second card.</Card>
-            <Card>Third card.</Card>
-        </Column>
-    ))
+    .addDecorator(
+        withTheme({
+            ...defaultTheme,
+            overrides: {
+                MuiGrid: {
+                    container: {
+                        border: `solid ${defaultTheme.palette.primary.main}`
+                    },
+                    item: {
+                        border: `solid ${defaultTheme.palette.secondary.main}`
+                    }
+                }
+            }
+        })
+    )
+    .add("Row", () => {
+        return (
+            <Row>
+                <div>One</div>
+                <div>Two</div>
+                <div>Three</div>
+            </Row>
+        )
+    })
+    .add("Column", () => {
+        return (
+            <Column>
+                <div>One</div>
+                <Card>Two</Card>
+                <Card>Three</Card>
+            </Column>
+        )
+    })

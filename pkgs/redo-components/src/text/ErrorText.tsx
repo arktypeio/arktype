@@ -1,5 +1,5 @@
 import React, { FC } from "react"
-import { Theme, Typography, Tooltip } from "@material-ui/core"
+import { Theme, Tooltip } from "@material-ui/core"
 import { makeStyles } from "@material-ui/styles"
 import { listify } from "redo-utils"
 import { Text } from "./Text"
