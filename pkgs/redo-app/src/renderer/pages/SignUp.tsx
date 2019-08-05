@@ -99,12 +99,12 @@ export const SignUp: FC = () => {
                                 </Row>
                             </motion.div>
                         </AnimatePresence>
-                        <FormSubmit<SignUpData>
-                            responseOptions={{
+                        <FormSubmit>
+                            responseOptions=
+                            {{
                                 loading: { hideContent: true }
                             }}
-                        >
-                            Sign Up
+                            > Sign Up
                         </FormSubmit>
                     </Column>
                 </Form>

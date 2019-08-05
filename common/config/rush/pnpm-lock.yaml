@@ -14,6 +14,7 @@ dependencies:
   '@hot-loader/react-dom': 16.8.6_react@16.8.6
   '@material-ui/core': 4.2.1_react-dom@16.8.6+react@16.8.6
   '@material-ui/icons': 4.2.1_f35c714a02d617073918f9017b0a4e91
+  '@material-ui/lab': 4.0.0-alpha.22_f35c714a02d617073918f9017b0a4e91
   '@material-ui/styles': 4.2.1_react-dom@16.8.6+react@16.8.6
   '@mdi/js': 3.6.95
   '@medv/finder': 1.1.1
@@ -2126,6 +2127,25 @@ packages:
       react-dom: ^16.8.0
     resolution:
       integrity: sha512-FvSD5lUBJ66frI4l4AYAPy2CH14Zs2Dgm0o3oOMr33BdQtOAjCgbdOcvPBeaD1w6OQl31uNW3CKOE8xfPNxvUQ==
+  /@material-ui/lab/4.0.0-alpha.22_f35c714a02d617073918f9017b0a4e91:
+    dependencies:
+      '@babel/runtime': 7.5.5
+      '@material-ui/core': 4.2.1_react-dom@16.8.6+react@16.8.6
+      '@material-ui/utils': 4.3.0_react-dom@16.8.6+react@16.8.6
+      clsx: 1.0.4
+      prop-types: 15.7.2
+      react: 16.8.6
+      react-dom: 16.8.6_react@16.8.6
+      warning: 4.0.3
+    dev: false
+    engines:
+      node: '>=8.0.0'
+    peerDependencies:
+      '@material-ui/core': ^4.3.0
+      react: ^16.8.0
+      react-dom: ^16.8.0
+    resolution:
+      integrity: sha512-EuBJXI9evhWWwIqi0gpT9zee6WHjQb/YnWsGGyxGZ8AvdAhNs0VrpDCGwoZh9DElQXyygwZoy1P//TO3IzrbpA==
   /@material-ui/styles/4.2.1_react-dom@16.8.6+react@16.8.6:
     dependencies:
       '@babel/runtime': 7.5.5
@@ -13233,6 +13253,9 @@ packages:
       node: '>=6'
     peerDependencies:
       typescript: '*'
+    peerDependenciesMeta:
+      typescript:
+        optional: true
     resolution:
       integrity: sha512-f5Knjh7XCyRIzoC/z1Su1yLLRrPrFCgtUAh/9fCSP6NKbATwpOL1+idQVXQokK9GRFURn/jYPGPfegIctwunoA==
   /tsconfig-paths-webpack-plugin/3.2.0:
@@ -14165,6 +14188,7 @@ packages:
       '@babel/core': 7.5.5
       '@babel/runtime-corejs3': 7.5.5
       '@material-ui/core': 4.2.1_react-dom@16.8.6+react@16.8.6
+      '@material-ui/lab': 4.0.0-alpha.22_f35c714a02d617073918f9017b0a4e91
       '@material-ui/styles': 4.2.1_react-dom@16.8.6+react@16.8.6
       '@storybook/addon-actions': 5.1.9_react-dom@16.8.6
       '@storybook/addon-info': 5.1.9_react-dom@16.8.6
@@ -14192,7 +14216,7 @@ packages:
     peerDependencies:
       webpack: '*'
     resolution:
-      integrity: sha512-SBG7uG3FEOfAAuCKORpHrAVI4M7Ia0NXpn2gqW+WNyi+v0DdTDXlPFabP4glf3iGTVcPBrdyuygRs+0rAuYqWQ==
+      integrity: sha512-8mxkKJVHD0MdZ/zZdViw4Yq8vqFtohnHvI1ZjM1Pe4X74A33xo09GbTrfDkfIySR04dGJLukKpZgxFvU9yflhw==
       tarball: 'file:projects/redo-components.tgz'
     version: 0.0.0
   'file:projects/redo-model.tgz_@types+graphql@14.2.2':
@@ -14340,6 +14364,7 @@ packages:
       integrity: sha512-pCHDKUdT+WlQJXmq4aQ296iluReCpYvzOQHyO/rDimrTQgeHUo16XRxjyAnqJkOBUWamDwuTBruCLzXGifxkxw==
       tarball: 'file:projects/shapeql.tgz'
     version: 0.0.0
+registry: ''
 specifiers:
   '@apollo/react-hooks': ~0.1.0-beta.11
   '@babel/cli': 7.5.5
@@ -14356,6 +14381,7 @@ specifiers:
   '@hot-loader/react-dom': 16.8.6
   '@material-ui/core': 4.2.1
   '@material-ui/icons': 4.2.1
+  '@material-ui/lab': 4.0.0-alpha.22
   '@material-ui/styles': 4.2.1
   '@mdi/js': 3.6.95
   '@medv/finder': 1.1.1

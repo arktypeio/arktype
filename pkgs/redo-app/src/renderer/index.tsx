@@ -11,6 +11,7 @@ import { App } from "./App"
 const root = document.getElementById("root")
 
 const render = async () => {
+    // TODO remove any type once trello item is done
     await store.initialize(initialRoot as any)
     ReactDOM.render(
         <App apolloClient={client as any} theme={defaultTheme} />,
