@@ -46,7 +46,7 @@ const setMainWindowBounds = (bounds: Partial<Bounds>) => {
 export class Learner {
     @Field()
     active: boolean
-
+    //TODO: https://trello.com/c/QjInW5CL fix BrowserEventInput type
     @Field(type => [BrowserEventInput])
     events: BrowserEventInput[]
 
@@ -54,10 +54,10 @@ export class Learner {
     lastConnectedEndpoint: string
 
     @Field()
-    name: string
+    testName: string
 
     @Field(type => [String])
-    tags: string[]
+    testTags: string[]
 
     @Field()
     lastMainWindowBounds: Bounds
@@ -73,8 +73,8 @@ export const handleLearner = handle({
 export const learnerInitial: Learner = {
     active: false,
     events: [],
-    name: "",
-    tags: [],
+    testName: "",
+    testTags: [],
     lastConnectedEndpoint: "",
     lastMainWindowBounds: {
         height: -1,
@@ -165,8 +165,8 @@ export const resetLearner = async () => {
     await store.mutate({
         learner: {
             events: [],
-            name: "",
-            tags: []
+            testName: "",
+            testTags: []
         }
     })
 }

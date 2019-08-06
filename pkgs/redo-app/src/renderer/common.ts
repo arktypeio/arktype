@@ -13,6 +13,8 @@ const contextLink = setContext(() => ({
     headers: { authorization: `Bearer ${store.query({ token: null }).token}` }
 }))
 
+//TODO: https://trello.com/c/QjInW5CL fix BrowserEventInput type
+
 @ObjectType()
 export class BrowserEventInput {
     @Field()

@@ -3,8 +3,9 @@ import { Theme } from "@material-ui/core"
 import { makeStyles } from "@material-ui/styles"
 import { component } from "blocks"
 import { AddButton, ScheduleButton, AccountButton, HelpButton } from "custom"
-import { Row, Menu } from "redo-components"
+import { Row, Menu, SecondaryButton } from "redo-components"
 import { SearchInput } from "./SearchInput"
+import { Page } from "renderer/state"
 
 const stylize = makeStyles((theme: Theme) => ({
     homeActionsRow: {
@@ -23,6 +24,12 @@ export const HomeActionsRow = component({
     return (
         <>
             <Row justify="center" className={homeActionsRow}>
+                <SecondaryButton
+                    onClick={() => store.mutate({ page: Page.TestView })}
+                >
+                    See all tests
+                </SecondaryButton>
+
                 <AddButton
                     onClick={() =>
                         store.mutate({

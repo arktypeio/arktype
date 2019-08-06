@@ -2,7 +2,7 @@ import React, { FC } from "react"
 import { Theme, List, ListItem } from "@material-ui/core"
 import { makeStyles } from "@material-ui/styles"
 import { LearnerEventCard } from "custom"
-import { component } from "blocks"
+//TODO: https://trello.com/c/QjInW5CL fix BrowserEventInput type
 import { BrowserEventInput } from "renderer/common"
 
 const stylize = makeStyles((theme: Theme) => ({
