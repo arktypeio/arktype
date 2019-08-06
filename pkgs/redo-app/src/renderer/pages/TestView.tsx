@@ -1,19 +1,12 @@
 import React from "react"
-import { HomeActionsRow, SuggestionResultsGrid } from "custom"
-import {
-    Column,
-    Row,
-    SecondaryButton,
-    ContentCard,
-    TreeView
-} from "redo-components"
-import { suggestionData } from "custom/FakeSuggestions"
+import { HomeActionsRow } from "custom"
+import { Column, Row, SecondaryButton, TreeView } from "redo-components"
 import { useQuery } from "@apollo/react-hooks"
 import { store } from "renderer/common"
 import { Page } from "renderer/state"
 
 import gql from "graphql-tag"
-import { User, BrowserEvent } from "redo-model"
+import { BrowserEvent } from "redo-model"
 
 const GET_TESTS = gql`
     query {
@@ -25,9 +18,6 @@ const GET_TESTS = gql`
                 value
             }
             tags
-            user {
-                email
-            }
         }
     }
 `
@@ -48,20 +38,12 @@ export const TestView = () => {
         data && data.getTest
             ? data.getTest.reduce(
                   (tests, { name, tags, steps }) => {
-                      let features = {} as FeatureOptions
-                      if (tags) {
-                          features.tags = tags
-                      }
-                      if (steps) {
-                          features.steps = steps
-                      }
-                      tests[name] = features
+                      tests[name] = { tags, steps }
                       return tests
                   },
-                  {} as any
+                  {} as Record<string, FeatureOptions>
               )
             : {}
-    console.log(formattedData)
     return (
         <Column justify="flex-start">
             <Row>

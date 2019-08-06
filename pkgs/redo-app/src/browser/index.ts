@@ -16,6 +16,7 @@ export const watchPage = async () => {
         browserWindow.addEventListener(
             event,
             async (e: Event) => {
+                // TODO https://trello.com/c/QjInW5CL
                 const browserEvent: BrowserEventInput = {
                     type: e.type,
                     selector: "",

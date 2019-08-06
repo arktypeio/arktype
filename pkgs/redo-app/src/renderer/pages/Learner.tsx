@@ -12,7 +12,7 @@ import {
 } from "redo-components"
 import { deactivateLearner, resetLearner } from "state"
 import { LearnerEvents } from "custom"
-import { CircularProgress, Typography } from "@material-ui/core"
+import { CircularProgress } from "@material-ui/core"
 import gql from "graphql-tag"
 import { useMutation } from "@apollo/react-hooks"
 import ChipInput from "material-ui-chip-input"
@@ -45,12 +45,17 @@ export const Learner = component({
         learner: {
             events: null,
             chromiumInstalling: null,
-            name: null,
-            tags: null
+            testName: null,
+            testTags: null
         }
     }
 })(({ data }) => {
-    const { events, tags, name, chromiumInstalling } = data.learner!
+    const {
+        events,
+        testTags: tags,
+        testName: name,
+        chromiumInstalling
+    } = data.learner!
     const [saveTest] = useMutation(SAVETEST)
     return (
         <Column justify="flex-start">
@@ -85,18 +90,22 @@ export const Learner = component({
                     value={name}
                     placeholder="Test name"
                     onChange={e =>
-                        store.mutate({ learner: { name: e.target.value } })
+                        store.mutate({ learner: { testName: e.target.value } })
                     }
                 />
+                {/* TODO Chip input should be moved to redo components as part of: https://trello.com/c/eVo1vyZj */}
                 <ChipInput
                     value={tags}
                     onAdd={(chip: string) =>
-                        store.mutate({ learner: { tags: _ => [..._, chip] } })
+                        store.mutate({
+                            learner: { testTags: _ => [..._, chip] }
+                        })
                     }
                     onDelete={(chip: string) => {
                         store.mutate({
                             learner: {
-                                tags: _ => _.filter(current => current !== chip)
+                                testTags: _ =>
+                                    _.filter(current => current !== chip)
                             }
                         })
                     }}
