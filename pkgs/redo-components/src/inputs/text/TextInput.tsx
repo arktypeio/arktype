@@ -1,42 +1,109 @@
-import React, { FC } from "react"
+import React, { FC, useState } from "react"
 import { Theme } from "@material-ui/core"
+import { useTheme } from "@material-ui/styles"
+import { BaseTextFieldProps as MuiTextFieldProps } from "@material-ui/core/TextField"
+import { TextField } from "@material-ui/core"
 import { makeStyles } from "@material-ui/styles"
-import { BaseTextFieldProps } from "@material-ui/core/TextField"
-import { TextInputVariants } from "./TextInputVariants"
+import { makeKinds, KindsFrom } from "../../common"
 
-const stylize = makeStyles((theme: Theme) => ({
-    inputLabel: {
-        color: theme.palette.primary.light,
-        "&$focused": {
-            color: theme.palette.primary.dark
+const stylizeOutlined = makeStyles((theme: Theme) => ({
+    focused: {},
+    disabled: {},
+    error: {},
+    notchedOutline: {},
+    root: {
+        color: theme.palette.primary.dark,
+        "&$focused $notchedOutline": {
+            borderColor: theme.palette.secondary.main
+        },
+        "&:not($focused) $notchedOutline": {
+            borderColor: theme.palette.primary.light
+        },
+        "&$error $notchedOutline": {
+            borderColor: theme.palette.error.main
+        },
+        "&:hover:not($disabled):not($focused):not($error) $notchedOutline": {
+            borderColor: theme.palette.primary.dark,
+            "@media (hover: none)": {
+                borderColor: theme.palette.primary.light
+            }
         }
     }
 }))
 
-// for unknown reason, taking intersection of this type narrows
-// the variant prop to be the default value only, so omitting variant is required.
-export type BaseTextFieldVariantProps = Omit<BaseTextFieldProps, "variant">
-
-export type TextInputProps = BaseTextFieldVariantProps & {
-    icon?: JSX.Element
-    label?: string
-    variant?: "outlined" | "underlined"
+type TextInputKindsOptions = {
+    state: {
+        focused: boolean
+        hovered: boolean
+        error: boolean
+    }
+    theme: Theme
 }
-export const TextInput: FC<TextInputProps> = ({
-    icon,
-    label,
-    variant = "outlined",
-    ...rest
-}) => {
-    const Component = TextInputVariants[variant]
-    const { inputLabel } = stylize()
+
+const stylize = makeStyles((theme: Theme) => ({
+    defaultClass: { borderColor: theme.palette.primary.dark },
+    errorClass: { borderColor: theme.palette.error.main },
+    focusedClass: { borderColor: theme.palette.secondary.main },
+    hoveredClass: { borderColor: theme.palette.primary.light }
+}))
+
+const getBorderClass = ({ state, theme }: TextInputKindsOptions) => {
+    const { defaultClass, errorClass, focusedClass, hoveredClass } = stylize()
+    const { focused, hovered, error } = state
+    return focused
+        ? focusedClass
+        : error
+        ? errorClass
+        : hovered
+        ? hoveredClass
+        : defaultClass
+}
+
+const useKind = makeKinds<MuiTextFieldProps>()(
+    ({ state, theme }: TextInputKindsOptions) => ({
+        outlined: {
+            fake: "jake",
+            variant: "outlined",
+            InputProps: {
+                classes: {
+                    notchedOutline: getBorderClass({ state, theme })
+                }
+            }
+        },
+        underlined: {
+            variant: "standard"
+        }
+    })
+)
+
+export type TextInputProps = MuiTextFieldProps & {
+    kind: KindsFrom<typeof useKind>
+}
+
+export const TextInput: FC<TextInputProps> = ({ kind, ...rest }) => {
+    const theme = useTheme<Theme>()
+    const [state, setState] = useState({
+        focused: false,
+        error: false,
+        hovered: false
+    })
     return (
-        <Component
-            label={label}
+        <TextField
             margin="dense"
+            onFocus={() => setState({ ...state, focused: true })}
+            onBlur={() => setState({ ...state, focused: false })}
+            onError={() => setState({ ...state, error: true })}
+            onReset={() => setState({ ...state, error: false })}
+            onMouseOver={() => setState({ ...state, hovered: true })}
+            onMouseOut={() => setState({ ...state, hovered: false })}
             InputLabelProps={{
-                classes: { root: inputLabel }
+                style: {
+                    color: state.focused
+                        ? theme.palette.primary.dark
+                        : theme.palette.primary.light
+                }
             }}
+            {...useKind(kind, { state, theme }) as any}
             {...rest}
         />
     )
