@@ -2,7 +2,8 @@ import React, { FC } from "react"
 import { Theme, List, ListItem } from "@material-ui/core"
 import { makeStyles } from "@material-ui/styles"
 import { LearnerEventCard } from "custom"
-import { BrowserEvent } from "redo-model"
+//TODO: https://trello.com/c/QjInW5CL fix BrowserEventInput type
+import { BrowserEventInput } from "renderer/common"
 
 const stylize = makeStyles((theme: Theme) => ({
     list: {
@@ -15,7 +16,7 @@ const stylize = makeStyles((theme: Theme) => ({
 }))
 
 export type LearnerEventsProps = {
-    events: BrowserEvent[]
+    events: BrowserEventInput[]
 }
 
 export const LearnerEvents: FC<LearnerEventsProps> = ({ events }) => {

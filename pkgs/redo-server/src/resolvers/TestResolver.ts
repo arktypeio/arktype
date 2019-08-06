@@ -1,23 +1,33 @@
-import { Ctx, Mutation, Resolver, Args } from "type-graphql"
+import { Authorized, Ctx, Mutation, Query, Resolver, Args } from "type-graphql"
 import { Test, TestInput } from "redo-model"
 import { Context } from "../context"
-
 @Resolver(of => Test)
 export class TestResolver {
-    @Mutation(returns => Test)
+    @Authorized()
+    @Mutation(returns => String)
     async submitTest(
         @Args() { name, steps, tags }: TestInput,
-        @Ctx() { photon }: Context
+        @Ctx() { photon, id }: Context
     ) {
         const test = await photon.tests.create({
             data: {
                 name,
                 steps: {
-                    create: [{ type: "click", selector: "#some", value: "" }]
+                    create: steps
                 },
-                tags: { set: "bat" }
+                tags: { set: tags },
+                user: { connect: { id: id! } }
             }
         })
-        return test
+        return test.id
+    }
+    @Authorized()
+    @Query(returns => [Test])
+    async getTest(@Ctx() { photon, id }: Context) {
+        const results = await photon.tests.findMany({
+            where: { user: { id: id! } },
+            include: { steps: true, user: true }
+        })
+        return results
     }
 }

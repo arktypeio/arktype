@@ -1,28 +1,16 @@
 import React, { FC } from "react"
 import { Theme } from "@material-ui/core"
 import { makeStyles } from "@material-ui/styles"
-import {
-    FormText,
-    FormSubmit,
-    Column,
-    CardPage,
-    Form,
-    Fields,
-    ResponseState,
-    FormErrors
-} from "redo-components"
+import { FormText, FormSubmit, Column, CardPage, Form } from "redo-components"
 import { SecondarySignUpButton } from "custom"
-import { component } from "blocks"
 import gql from "graphql-tag"
 import { SignInInput } from "redo-model"
 import { motion, AnimatePresence } from "framer-motion"
 import Logo from "assets/logo.svg"
-import { plainToClassFromExist } from "class-transformer"
-import { validateSync } from "class-validator"
 import { useMutation } from "@apollo/react-hooks"
 
 import { store } from "renderer/common"
-import { createValidator, UseMutation, submitForm } from "custom/CustomForm"
+import { createValidator, submitForm } from "custom/CustomForm"
 
 const stylize = makeStyles((theme: Theme) => ({
     animatedFields: {
