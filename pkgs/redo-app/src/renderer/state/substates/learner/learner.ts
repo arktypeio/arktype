@@ -1,6 +1,5 @@
 import { readFileSync, chmodSync, mkdirp } from "fs-extra"
-import { BrowserEvent } from "redo-model"
-// import { walk } from "redo-utils"
+import { BrowserEventInput } from "renderer/common"
 /*Important we use this format as opposed to import { ... } from "puppeteer".
 Puppeteer is actually a class object whose methods rely on this, which will
 be undefined if we use that style of import.*/
@@ -14,7 +13,6 @@ import { handle } from "shapeql"
 import { isDeepStrictEqual } from "util"
 import { join } from "path"
 import { homedir } from "os"
-import { Resolver } from "type-graphql"
 
 const BROWSER_WINDOW_TITLEBAR_SIZE = 35
 
@@ -48,12 +46,18 @@ const setMainWindowBounds = (bounds: Partial<Bounds>) => {
 export class Learner {
     @Field()
     active: boolean
-
-    @Field(type => [BrowserEvent])
-    events: BrowserEvent[]
+    //TODO: https://trello.com/c/QjInW5CL fix BrowserEventInput type
+    @Field(type => [BrowserEventInput])
+    events: BrowserEventInput[]
 
     @Field()
     lastConnectedEndpoint: string
+
+    @Field()
+    testName: string
+
+    @Field(type => [String])
+    testTags: string[]
 
     @Field()
     lastMainWindowBounds: Bounds
@@ -69,6 +73,8 @@ export const handleLearner = handle({
 export const learnerInitial: Learner = {
     active: false,
     events: [],
+    testName: "",
+    testTags: [],
     lastConnectedEndpoint: "",
     lastMainWindowBounds: {
         height: -1,
@@ -155,15 +161,17 @@ export const deactivateLearner = async () => {
     })
 }
 
-export const saveLearner = async () => {
+export const resetLearner = async () => {
     await store.mutate({
         learner: {
-            events: []
+            events: [],
+            testName: "",
+            testTags: []
         }
     })
 }
 
-const notify = (event: BrowserEvent) => {
+const notify = (event: BrowserEventInput) => {
     try {
         store.mutate({
             learner: { events: _ => _.concat(event) }

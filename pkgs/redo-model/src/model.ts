@@ -7,7 +7,7 @@ import { EqualsProperty, IsEmail } from "./validators"
 @ObjectType()
 export class BrowserEvent {
     @Field(type => ID)
-    readonly id: string | number
+    readonly id: string
 
     @Field()
     type: string
@@ -32,9 +32,33 @@ export class BrowserEventInput {
 }
 
 @ObjectType()
+export class User {
+    @Field(type => ID)
+    readonly id: string
+
+    @Field({ description: "String @unique" })
+    email: string
+
+    @Field()
+    password: string
+
+    @Field(type => [String])
+    roles: string[]
+
+    @Field()
+    firstName: string
+
+    @Field()
+    lastName: string
+}
+
+@ObjectType()
 export class Test {
     @Field(type => ID)
-    readonly id: string | number
+    readonly id: string
+
+    @Field()
+    user: User
 
     @Field()
     name: string
@@ -60,27 +84,6 @@ export class TestInput implements Partial<Test> {
     @Field(type => [BrowserEventInput])
     @Expose()
     steps: BrowserEvent[]
-}
-
-@ObjectType()
-export class User {
-    @Field(type => ID)
-    readonly id: string
-
-    @Field({ description: "String @unique" })
-    email: string
-
-    @Field()
-    password: string
-
-    @Field(type => [String])
-    roles: string[]
-
-    @Field()
-    firstName: string
-
-    @Field()
-    lastName: string
 }
 
 @ObjectType()

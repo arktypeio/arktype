@@ -60,7 +60,7 @@ const mutate = <T extends S>(config: StoreConfig<T>) => async <
     }
 }
 
-export type Handle<T> = (change: DeepPartial<T>) => Promise<void>
+export type Handle<T> = (change: DeepPartial<T>) => Promise<any>
 export type Handler<T extends S> = { [P in keyof T]?: Handle<T[P]> }
 
 export const handle = <T extends S, C extends DeepPartial<T>>(
