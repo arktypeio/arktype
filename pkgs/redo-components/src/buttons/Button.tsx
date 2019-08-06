@@ -1,19 +1,26 @@
 import React, { FC } from "react"
-import { Button as MuiButton, Theme } from "@material-ui/core"
-import { makeStyles } from "@material-ui/styles"
-import { ButtonProps as MuiButtonProps } from "@material-ui/core/Button"
+import MuiButton, {
+    ButtonProps as MuiButtonProps
+} from "@material-ui/core/Button"
+import { makeKinds, KindsFrom } from "../common"
 
-const stylize = makeStyles((theme: Theme) => ({
-    button: {
-        textTransform: "none",
-        minWidth: theme.spacing(10)
+const useKind = makeKinds<MuiButtonProps>()({
+    primary: {
+        color: "primary",
+        variant: "contained"
+    },
+    secondary: {
+        variant: "outlined",
+        style: {
+            color: "black"
+        }
     }
-}))
+})
 
-export type ButtonProps = Partial<MuiButtonProps> &
-    Required<Pick<MuiButtonProps, "onClick">>
+export type ButtonProps = MuiButtonProps & {
+    kind: KindsFrom<typeof useKind>
+}
 
-export const Button: FC<ButtonProps> = props => {
-    const { button } = stylize()
-    return <MuiButton className={button} {...props} />
+export const Button: FC<ButtonProps> = ({ kind, ...props }) => {
+    return <MuiButton style={{ minWidth: 80 }} {...useKind(kind)} {...props} />
 }

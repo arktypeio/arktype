@@ -1,6 +1,6 @@
 import React, { useState, FC } from "react"
 import { RespondTo, ResponseState, ResponseOptions } from "../responses"
-import { PrimaryButton } from "../buttons"
+import { Button } from "../buttons"
 import { useFormContext } from "./FormContext"
 
 export type FormSubmitProps<D = any> = {
@@ -15,7 +15,8 @@ export const FormSubmit: FC<FormSubmitProps> = <D extends any = any>({
     const [state, setState] = useState<ResponseState>({})
     return (
         <RespondTo response={state} options={responseOptions}>
-            <PrimaryButton
+            <Button
+                kind="primary"
                 type="submit"
                 onClick={async () => {
                     const values = getValues()

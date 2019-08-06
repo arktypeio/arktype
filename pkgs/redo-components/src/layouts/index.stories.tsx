@@ -1,8 +1,8 @@
-import React, { FC } from "react"
+import React from "react"
 import { storiesOf } from "@storybook/react"
 import { withTheme } from "../storybook"
 import { defaultTheme } from "../themes"
-import { Row, Column, Item } from "."
+import { Row, Column } from "."
 import { Card } from "../cards"
 
 storiesOf("Layout", module)
@@ -33,7 +33,7 @@ storiesOf("Layout", module)
     .add("Column", () => {
         return (
             <Column>
-                <div>One</div>
+                <div style={{ height: 100 }}>One</div>
                 <Card>Two</Card>
                 <Card>Three</Card>
             </Column>
