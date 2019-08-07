@@ -104,7 +104,6 @@ const start = async () => {
         executablePath,
         headless: false,
         defaultViewport: null,
-
         args: [
             `--window-position=${browserBounds.x},${browserBounds.y}`,
             `--window-size=${browserBounds.width},${browserBounds.height}`
