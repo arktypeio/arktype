@@ -4,7 +4,7 @@ import { useTheme } from "@material-ui/styles"
 import { BaseTextFieldProps as MuiTextFieldProps } from "@material-ui/core/TextField"
 import { TextField } from "@material-ui/core"
 import { makeStyles } from "@material-ui/styles"
-import { makeKinds, KindsFrom } from "../../common"
+import { makeKinds, KindFrom } from "../../common"
 
 const stylizeOutlined = makeStyles((theme: Theme) => ({
     focused: {},
@@ -77,7 +77,7 @@ const useKind = makeKinds<MuiTextFieldProps>()(
 )
 
 export type TextInputProps = MuiTextFieldProps & {
-    kind: KindsFrom<typeof useKind>
+    kind: KindFrom<typeof useKind>
 }
 
 export const TextInput: FC<TextInputProps> = ({ kind, ...rest }) => {

@@ -4,6 +4,7 @@ import { withTheme } from "../storybook"
 import { defaultTheme } from "../themes"
 import { Row, Column } from "."
 import { Card } from "../cards"
+import { Item } from "./Item"
 
 storiesOf("Layout", module)
     .addDecorator(
@@ -21,21 +22,27 @@ storiesOf("Layout", module)
             }
         })
     )
-    .add("Row", () => {
+    .add("Row of cards", () => {
         return (
-            <Row>
-                <div>One</div>
-                <div>Two</div>
-                <div>Three</div>
+            <Row justify="space-around">
+                <Card>One</Card>
+                <Card>Two</Card>
+                <Card>Three</Card>
             </Row>
         )
     })
-    .add("Column", () => {
+    .add("Row of card items", () => {
         return (
-            <Column>
-                <div style={{ height: 100 }}>One</div>
-                <Card>Two</Card>
-                <Card>Three</Card>
-            </Column>
+            <Row>
+                <Item xs={2}>
+                    <Card>Small</Card>
+                </Item>
+                <Item xs={8}>
+                    <div>Big</div>
+                </Item>
+                <Item xs={2}>
+                    <Card>Small</Card>
+                </Item>
+            </Row>
         )
     })

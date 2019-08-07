@@ -1,29 +1,16 @@
-export type Kinds<Props> = Record<string, Partial<Props>>
+type Exact<T> = Record<keyof T, T[keyof T]>
 
-type KindsFunction<Props, Options, K extends Kinds<Props>> = (
-    options: Options
-) => K
-
-export const makeKinds = <Props>() => <K extends Kinds<Props>, Options>(
-    kinds: K | KindsFunction<Props, Options, K>
+export const makeKinds = <Props>() => <
+    Kinds extends Record<Kind, Partial<Props>>,
+    Kind extends string,
+    Options
+>(
+    kinds:
+        | Kinds & Record<Kind, Partial<Exact<Props>>>
+        | ((_: Options) => Record<Kind, Partial<Exact<Props>>>)
 ) =>
     typeof kinds === "function"
-        ? (kind: keyof K, options?: Options) => kinds(options!)[kind]
-        : (kind: keyof K) => kinds[kind]
+        ? (kind: Kind, options?: Options) => kinds(options!)[kind]
+        : (kind: Kind) => kinds[kind]
 
-export type KindsFrom<T extends (...args: any[]) => any> = Parameters<T>[0]
-
-type FakeProps = {
-    some: "one" | "two"
-    another: number
-}
-
-const useKindsWithOptions = makeKinds<FakeProps>()({
-    primary: {
-        some: "one",
-        another: 0
-    },
-    secondary: {
-        some: "two"
-    }
-})
+export type KindFrom<T extends (...args: any[]) => any> = Parameters<T>[0]

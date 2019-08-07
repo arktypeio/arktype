@@ -2,7 +2,7 @@ import React, { FC } from "react"
 import MuiButton, {
     ButtonProps as MuiButtonProps
 } from "@material-ui/core/Button"
-import { makeKinds, KindsFrom } from "../common"
+import { makeKinds, KindFrom } from "../common"
 
 const useKind = makeKinds<MuiButtonProps>()({
     primary: {
@@ -15,12 +15,12 @@ const useKind = makeKinds<MuiButtonProps>()({
             color: "black"
         }
     }
-})
+} as const)
 
 export type ButtonProps = MuiButtonProps & {
-    kind: KindsFrom<typeof useKind>
+    kind?: KindFrom<typeof useKind>
 }
 
-export const Button: FC<ButtonProps> = ({ kind, ...props }) => {
+export const Button: FC<ButtonProps> = ({ kind = "primary", ...props }) => {
     return <MuiButton style={{ minWidth: 80 }} {...useKind(kind)} {...props} />
 }
