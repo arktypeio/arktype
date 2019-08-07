@@ -1,31 +1,33 @@
 import React, { FC, useState } from "react"
 import { storiesOf } from "@storybook/react"
 import { withTheme } from "../storybook"
-import { TreeView } from "./TreeView"
+import { Tree } from "."
 
 storiesOf("TreeView", module)
     .addDecorator(withTheme())
-    .add("Basic View", () => (
-        <TreeView
-            style={{ width: 200 }}
-            from={{
-                z: "stuff",
-                a: 33,
-                b: {
-                    c: true,
-                    d: {
-                        e: () => {
-                            console.log(3)
-                        },
-                        f: {
-                            g: {
-                                h: {
-                                    i: { j: { k: "h" } }
-                                }
-                            }
-                        }
+    .add("Input as array of test data", () => (
+        <Tree style={{ width: 200 }} labelKey="z" from={[src]} />
+    ))
+    .add("Input as single object of test data", () => (
+        <Tree style={{ width: 200 }} from={src} />
+    ))
+
+const src = {
+    z: "stuff",
+    a: 33,
+    b: {
+        c: true,
+        d: {
+            e: () => {
+                console.log(3)
+            },
+            f: {
+                g: {
+                    h: {
+                        i: { j: { k: "h" } }
                     }
                 }
-            }}
-        />
-    ))
+            }
+        }
+    }
+}

@@ -6,34 +6,23 @@ import { store } from "renderer/common"
 import { Page } from "renderer/state"
 
 import gql from "graphql-tag"
-import { BrowserEvent, Tag } from "redo-model"
 
-const GET_TESTS = gql`
+const GET_TAGS = gql`
     query {
-        getTest {
+        getTag {
             name
-            steps {
-                type
-                selector
-                value
-            }
-            tags {
-                name
-            }
         }
     }
 `
 
-type TestData = {
-    getTest: {
+type TagData = {
+    getTag: {
         name: string
-        tags: Tag[]
-        steps: BrowserEvent[]
     }[]
 }
 
-export const TestView = () => {
-    const { data } = useQuery<TestData>(GET_TESTS)
+export const TagView = () => {
+    const { data } = useQuery<TagData>(GET_TAGS)
     return (
         <Column justify="flex-start">
             <Row>
@@ -44,8 +33,8 @@ export const TestView = () => {
                 </SecondaryButton>
                 <HomeActionsRow />
             </Row>
-            {data && data.getTest ? (
-                <Tree from={data.getTest} labelKey="name" />
+            {data && data.getTag ? (
+                <Tree from={data.getTag} labelKey="name" />
             ) : null}
         </Column>
     )

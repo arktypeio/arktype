@@ -5,33 +5,6 @@ import { Expose } from "class-transformer"
 import { EqualsProperty, IsEmail } from "./validators"
 
 @ObjectType()
-export class BrowserEvent {
-    @Field(type => ID)
-    readonly id: string
-
-    @Field()
-    type: string
-
-    @Field()
-    selector: string
-
-    @Field()
-    value: string
-}
-
-@InputType()
-export class BrowserEventInput {
-    @Field()
-    type: string
-
-    @Field()
-    selector: string
-
-    @Field()
-    value: string
-}
-
-@ObjectType()
 export class User {
     @Field(type => ID)
     readonly id: string
@@ -53,6 +26,61 @@ export class User {
 }
 
 @ObjectType()
+export class BrowserEvent {
+    @Field(type => ID)
+    readonly id: string
+
+    @Field()
+    type: string
+
+    @Field()
+    selector: string
+
+    @Field()
+    value: string
+
+    @Field(type => [Tag])
+    tags: Tag[]
+
+    @Field()
+    user: User
+}
+
+@InputType()
+export class BrowserEventInput {
+    @Field()
+    type: string
+
+    @Field()
+    selector: string
+
+    @Field()
+    value: string
+
+    @Field(type => [Tag])
+    tags: TagInput[]
+}
+
+@ObjectType()
+export class Tag {
+    @Field(type => ID)
+    readonly id: string
+
+    @Field({ description: "String @unique" })
+    name: string
+
+    @Field()
+    user: User
+}
+
+@ArgsType()
+@InputType()
+export class TagInput {
+    @Field()
+    name: string
+}
+
+@ObjectType()
 export class Test {
     @Field(type => ID)
     readonly id: string
@@ -63,8 +91,8 @@ export class Test {
     @Field()
     name: string
 
-    @Field(type => [String])
-    tags: string[]
+    @Field(type => [Tag])
+    tags: Tag[]
 
     @Field(type => [BrowserEvent])
     steps: BrowserEvent[]
@@ -72,18 +100,18 @@ export class Test {
 
 @ArgsType()
 @InputType()
-export class TestInput implements Partial<Test> {
+export class TestInput {
     @Field()
     @Expose()
     name: string
 
-    @Field(type => [String])
+    @Field(type => [TagInput])
     @Expose()
-    tags: string[]
+    tags: TagInput[]
 
     @Field(type => [BrowserEventInput])
     @Expose()
-    steps: BrowserEvent[]
+    steps: BrowserEventInput[]
 }
 
 @ObjectType()
