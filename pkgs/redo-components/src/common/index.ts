@@ -12,3 +12,18 @@ export const makeKinds = <Props>() => <K extends Kinds<Props>, Options>(
         : (kind: keyof K) => kinds[kind]
 
 export type KindsFrom<T extends (...args: any[]) => any> = Parameters<T>[0]
+
+type FakeProps = {
+    some: "one" | "two"
+    another: number
+}
+
+const useKindsWithOptions = makeKinds<FakeProps>()({
+    primary: {
+        some: "one",
+        another: 0
+    },
+    secondary: {
+        some: "two"
+    }
+})
