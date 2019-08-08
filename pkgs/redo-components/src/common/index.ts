@@ -1,61 +1,18 @@
-import MuiButton, {
-    ButtonProps as MuiButtonProps
-} from "@material-ui/core/Button"
-
-type Exact<T> = Record<keyof T, T[keyof T]>
-
 export const makeKinds = <Props>() => <
-    Input extends Kinds | ((_: Options) => Kinds),
-    Kinds extends Record<Kind, Partial<Props>>,
     Kind extends string,
-    Options extends any
+    Options = undefined
 >(
-    input: Input
-) => 5
-// typeof input === "function"
-//     ? (
-//           kind: Kind,
-//           options: Input extends (options: any) => any
-//               ? Parameters<Input>
-//               : never
-//       ) => input(options)[kind]
-//     : (kind: Kind) => (input as Kinds)[kind]
+    kinds:
+        | Record<Kind, Partial<Props>>
+        | ((options: Options) => Record<Kind, Partial<Props>>)
+) =>
+    ((typeof kinds === "function"
+        ? (kind: Kind, options: Options) => kinds(options)[kind]
+        : (kind: Kind) => kinds[kind]) as any) as Options extends undefined
+        ? (kind: Kind) => Record<Kind, Partial<Props>>
+        : (
+              kind: Kind,
+              options: Options extends boolean ? true | false : Options
+          ) => Record<Kind, Partial<Props>>
 
 export type KindFrom<T extends (...args: any[]) => any> = Parameters<T>[0]
-
-type FakeProps = {
-    some: "one" | "two"
-    another: number
-}
-
-const useKindsWithOptions = makeKinds<FakeProps>()((s: boolean) => ({
-    primary: {
-        some: "one"
-    },
-    secondary: {
-        some: "two"
-    }
-}))
-
-const useKinds = makeKinds<FakeProps>()({
-    primary: {
-        some: "one",
-        another: 
-    },
-    secondary: {
-        some: "two"
-    }
-})
-
-const useKind = makeKinds<MuiButtonProps>()({
-    primary: {
-        color: "primary",
-        variant: "contained"
-    },
-    secondary: {
-        variant: "outlined",
-        style: {
-            color: "black"
-        }
-    }
-})
