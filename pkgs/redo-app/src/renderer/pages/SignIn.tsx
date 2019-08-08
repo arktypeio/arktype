@@ -5,6 +5,7 @@ import {
     FormText,
     FormSubmit,
     Column,
+    Row,
     Card,
     Form,
     Button
@@ -17,14 +18,6 @@ import { useMutation } from "@apollo/react-hooks"
 import { store } from "renderer/common"
 import { createValidator, submitForm } from "custom/CustomForm"
 import { Page } from "renderer/state"
-
-const stylize = makeStyles((theme: Theme) => ({
-    animatedFields: {
-        display: "flex",
-        flexGrow: 1,
-        justifyContent: "space-around"
-    }
-}))
 
 const SIGNIN = gql`
     mutation signIn($email: String!, $password: String!) {
@@ -44,10 +37,9 @@ const validate = createValidator(new SignInInput())
 
 export const SignIn: FC = () => {
     const [submit] = useMutation<SignInData, SignInInput>(SIGNIN)
-    const { animatedFields } = stylize()
     const theme = useTheme<Theme>()
     return (
-        <Column justify="center" align="center">
+        <Column full justify="center" align="center">
             <Card
                 style={{
                     width: theme.spacing(45),
@@ -55,11 +47,14 @@ export const SignIn: FC = () => {
                     padding: `${theme.spacing(3)}px ${theme.spacing(5)}px`
                 }}
             >
-                <Column style={{ height: "100%", width: "100%" }}>
+                <Column full>
                     <Logo />
                     <Form<SignInInput, SignInData>
                         submit={async fields => {
-                            const result = await submitForm({ submit, fields })
+                            const result = await submitForm({
+                                submit,
+                                fields
+                            })
                             if (result.data && result.data.signIn) {
                                 store.mutate({
                                     token: result.data.signIn.token
@@ -69,10 +64,7 @@ export const SignIn: FC = () => {
                         }}
                         validate={validate}
                     >
-                        <Column
-                            grow
-                            justify="space-between"
-                        >
+                        <Column grow align="center">
                             <AnimatePresence>
                                 <motion.div
                                     positionTransition
@@ -81,9 +73,16 @@ export const SignIn: FC = () => {
                                     }}
                                     animate={{ x: 0 }}
                                     exit={{ x: -500 }}
-                                    className={animatedFields}
+                                    style={{
+                                        width: "100%",
+                                        height: "100%"
+                                    }}
                                 >
-                                    <Column>
+                                    <Column
+                                        full
+                                        justify="center"
+                                        align="stretch"
+                                    >
                                         <FormText name="email" autoFocus />
                                         <FormText
                                             type="password"

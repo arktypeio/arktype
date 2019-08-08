@@ -27,7 +27,7 @@ const TextOnlyForm: FC = () => {
                 }
             }}
         >
-            <Column>
+            <Column width={200}>
                 <FormText name="first" />
                 <FormText name="last" />
                 <FormSubmit
