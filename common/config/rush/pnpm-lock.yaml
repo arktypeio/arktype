@@ -14,6 +14,7 @@ dependencies:
   '@hot-loader/react-dom': 16.8.6_react@16.8.6
   '@material-ui/core': 4.2.1_react-dom@16.8.6+react@16.8.6
   '@material-ui/icons': 4.2.1_f35c714a02d617073918f9017b0a4e91
+  '@material-ui/lab': 4.0.0-alpha.22_f35c714a02d617073918f9017b0a4e91
   '@material-ui/styles': 4.2.1_react-dom@16.8.6+react@16.8.6
   '@mdi/js': 3.6.95
   '@medv/finder': 1.1.1
@@ -27,7 +28,6 @@ dependencies:
   '@rush-temp/redo-website': 'file:projects/redo-website.tgz'
   '@rush-temp/shapeql': 'file:projects/shapeql.tgz'
   '@storybook/addon-actions': 5.1.9_react-dom@16.8.6
-  '@storybook/addon-console': 1.2.1_@storybook+addon-actions@5.1.9
   '@storybook/addon-info': 5.1.9_react-dom@16.8.6
   '@storybook/addon-links': 5.1.9_react-dom@16.8.6+react@16.8.6
   '@storybook/addons': 5.1.9_react-dom@16.8.6
@@ -53,6 +53,7 @@ dependencies:
   '@types/webpack-merge': 4.1.3
   analytics-node: 3.4.0-beta.1
   apollo-cache-inmemory: 1.6.2
+  apollo-link-context: 1.0.18
   apollo-link-http: 1.5.15
   apollo-server: 2.7.0
   babel-loader: 8.0.6_@babel+core@7.5.5+webpack@4.29.6
@@ -79,8 +80,9 @@ dependencies:
   isomorphic-ws: 4.0.1
   jest: 24.8.0
   jsonwebtoken: 8.5.0
+  material-ui-chip-input: 1.0.0_f35c714a02d617073918f9017b0a4e91
   moize: 5.4.4
-  prisma2: 2.0.0-preview-2
+  prisma2: 2.0.0-preview-5
   puppeteer: 1.17.0
   react: 16.8.6
   react-apollo: 2.5.8_react-dom@16.8.6+react@16.8.6
@@ -2127,6 +2129,25 @@ packages:
       react-dom: ^16.8.0
     resolution:
       integrity: sha512-FvSD5lUBJ66frI4l4AYAPy2CH14Zs2Dgm0o3oOMr33BdQtOAjCgbdOcvPBeaD1w6OQl31uNW3CKOE8xfPNxvUQ==
+  /@material-ui/lab/4.0.0-alpha.22_f35c714a02d617073918f9017b0a4e91:
+    dependencies:
+      '@babel/runtime': 7.5.5
+      '@material-ui/core': 4.2.1_react-dom@16.8.6+react@16.8.6
+      '@material-ui/utils': 4.3.0_react-dom@16.8.6+react@16.8.6
+      clsx: 1.0.4
+      prop-types: 15.7.2
+      react: 16.8.6
+      react-dom: 16.8.6_react@16.8.6
+      warning: 4.0.3
+    dev: false
+    engines:
+      node: '>=8.0.0'
+    peerDependencies:
+      '@material-ui/core': ^4.3.0
+      react: ^16.8.0
+      react-dom: ^16.8.0
+    resolution:
+      integrity: sha512-EuBJXI9evhWWwIqi0gpT9zee6WHjQb/YnWsGGyxGZ8AvdAhNs0VrpDCGwoZh9DElQXyygwZoy1P//TO3IzrbpA==
   /@material-ui/styles/4.2.1_react-dom@16.8.6+react@16.8.6:
     dependencies:
       '@babel/runtime': 7.5.5
@@ -3662,6 +3683,25 @@ packages:
       graphql: ^14.2.1
     resolution:
       integrity: sha512-t3CO/xIDVsCG2qOvx2MEbuu4b/6LzQjcBBwiVnxclmmFyAxYCIe7rpPlnLHSq7HyOMlCWDMozjoeWfdqYSaLqQ==
+  /apollo-link-context/1.0.18:
+    dependencies:
+      apollo-link: 1.2.12
+      tslib: 1.10.0
+    dev: false
+    peerDependencies:
+      graphql: ^0.11.0 || ^0.12.0 || ^0.13.0 || ^14.0.0
+    resolution:
+      integrity: sha512-aG5cbUp1zqOHHQjAJXG7n/izeMQ6LApd/whEF5z6qZp5ATvcyfSNkCfy3KRJMMZZ3iNfVTs6jF+IUA8Zvf+zeg==
+  /apollo-link-context/1.0.18_graphql@14.4.2:
+    dependencies:
+      apollo-link: 1.2.12_graphql@14.4.2
+      graphql: 14.4.2
+      tslib: 1.10.0
+    dev: false
+    peerDependencies:
+      graphql: ^0.11.0 || ^0.12.0 || ^0.13.0 || ^14.0.0
+    resolution:
+      integrity: sha512-aG5cbUp1zqOHHQjAJXG7n/izeMQ6LApd/whEF5z6qZp5ATvcyfSNkCfy3KRJMMZZ3iNfVTs6jF+IUA8Zvf+zeg==
   /apollo-link-http-common/0.2.14:
     dependencies:
       apollo-link: 1.2.12
@@ -9567,6 +9607,20 @@ packages:
     dev: false
     resolution:
       integrity: sha512-tB4cQxIY7f8PWTcIouJO/V60rl9JVVOmCDjmukYVO7mdpGM1JWl4qIP98iDYItexSXZ0DkEqk6yXFxgdmZRMxA==
+  /material-ui-chip-input/1.0.0_f35c714a02d617073918f9017b0a4e91:
+    dependencies:
+      '@material-ui/core': 4.2.1_react-dom@16.8.6+react@16.8.6
+      classnames: 2.2.6
+      prop-types: 15.7.2
+      react: 16.8.6
+      react-dom: 16.8.6_react@16.8.6
+    dev: false
+    peerDependencies:
+      '@material-ui/core': ^1.0.0 || ^3.1.0
+      react: ^16.3.0
+      react-dom: ^16.3.0
+    resolution:
+      integrity: sha512-GJ9xkGB+n1SODvflOca4YanHaV8hWkKKBIMrM0YVjo5Jnm+gIom2915CwT86FiDWyoIS6BQOMIof48/l85hZxQ==
   /md5.js/1.3.5:
     dependencies:
       hash-base: 3.0.4
@@ -10936,12 +10990,12 @@ packages:
       node: '>= 0.8'
     resolution:
       integrity: sha1-t+PqQkNaTJsnWdmeDyAesZWALuE=
-  /prisma2/2.0.0-preview-2:
+  /prisma2/2.0.0-preview-5:
     dev: false
     hasBin: true
     requiresBuild: true
     resolution:
-      integrity: sha512-unboTATyVsQnL5o6AxUTd6//IjcGsb/9ERouWs6feu1zOPnkdfhvrkYJRyeRia8y2pS9y9RVtY7GhjQS8EWeDw==
+      integrity: sha512-TPPNjbLPZN43JgjNY7LRMQ5LGalvv70ZWx000A2qRf5Zsp76eYXykrYoJ/ylx8Lj9w8evdHx4OV8jViYTCdnCw==
   /prismjs/1.17.1:
     dev: false
     optionalDependencies:
@@ -14135,6 +14189,7 @@ packages:
       '@types/webpack-merge': 4.1.3
       apollo-cache-inmemory: 1.6.2_graphql@14.4.2
       apollo-client: 2.6.3_graphql@14.4.2
+      apollo-link-context: 1.0.18_graphql@14.4.2
       apollo-link-http: 1.5.15_graphql@14.4.2
       babel-loader: 8.0.6_@babel+core@7.5.5+webpack@4.29.6
       class-transformer: 0.2.0
@@ -14155,6 +14210,7 @@ packages:
       graphql-tag: 2.10.0_graphql@14.4.2
       html-webpack-plugin: 3.2.0_webpack@4.29.6
       isomorphic-ws: 4.0.1
+      material-ui-chip-input: 1.0.0_f35c714a02d617073918f9017b0a4e91
       puppeteer: 1.17.0
       react: 16.8.6
       react-apollo: 2.5.8_35ab70f1809251eaeba2409e25037ea6
@@ -14178,7 +14234,7 @@ packages:
     dev: false
     name: '@rush-temp/redo-app'
     resolution:
-      integrity: sha512-vMCuxGHFeiUeTqIM7Do7VeAQ4g3pXPXILe6CCaBiZzd0XIqI151NGNNtwhWzd9+XtVlXA1Az4K5C2putSBgXHA==
+      integrity: sha512-ewUZk2FSi8PbrL/4j4OLu6FiXpdTNqRj6AJm5sMOZmT0fjnNBWjpDqtY6k9wBl5EURjH29DWSjdwqndLvp+8Gw==
       tarball: 'file:projects/redo-app.tgz'
     version: 0.0.0
   'file:projects/redo-bundle.tgz_6d196698478dde40c00275b1457e23b0':
@@ -14235,6 +14291,8 @@ packages:
       '@babel/core': 7.5.5
       '@babel/runtime-corejs3': 7.5.5
       '@material-ui/core': 4.2.1_react-dom@16.8.6+react@16.8.6
+      '@material-ui/icons': 4.2.1_f35c714a02d617073918f9017b0a4e91
+      '@material-ui/lab': 4.0.0-alpha.22_f35c714a02d617073918f9017b0a4e91
       '@material-ui/styles': 4.2.1_react-dom@16.8.6+react@16.8.6
       '@storybook/addon-actions': 5.1.9_react-dom@16.8.6
       '@storybook/addon-console': 1.2.1_@storybook+addon-actions@5.1.9
@@ -14263,7 +14321,7 @@ packages:
     peerDependencies:
       webpack: '*'
     resolution:
-      integrity: sha512-H1axQupPi+cEzARPlK0LEDRvslIUHzyZuzS/rZiFBZNlF4yyLzM+kBYEitecwoL29g62c+xuDmmTB0dEH614kQ==
+      integrity: sha512-Jug1IQs9Mtsae6HHuzrxhGD/knedaA86ngRQ71GlMFEKuVmyapntxJIpGTsEuPAnYs/8vNtMy/XchCzs/IUn3w==
       tarball: 'file:projects/redo-components.tgz'
     version: 0.0.0
   'file:projects/redo-model.tgz_@types+graphql@14.2.2':
@@ -14328,7 +14386,7 @@ packages:
       isomorphic-ws: 4.0.1
       jest: 24.8.0
       jsonwebtoken: 8.5.0
-      prisma2: 2.0.0-preview-2
+      prisma2: 2.0.0-preview-5
       reflect-metadata: 0.1.13
       ts-jest: 24.0.2_jest@24.8.0
       ts-node: 8.3.0_typescript@3.5.2
@@ -14338,7 +14396,7 @@ packages:
     dev: false
     name: '@rush-temp/redo-server'
     resolution:
-      integrity: sha512-vdS64ajRd0rTVYcKog3S3kFH1DkNOJsTXBcg/bOH7+ZrpOjZSSErQl6iqax/jSW2bHHQfoe4dB6Kn4wh11Sh6Q==
+      integrity: sha512-LTybFEvhRXe9Ikigjsh/i9CZ28WYAgA4635LmZ1eZ15cYT+TI8SJjNZq1vNDhD/LuM0cn+NeK+GUknO+I+GTgQ==
       tarball: 'file:projects/redo-server.tgz'
     version: 0.0.0
   'file:projects/redo-utils.tgz':
@@ -14434,6 +14492,7 @@ specifiers:
   '@hot-loader/react-dom': 16.8.6
   '@material-ui/core': 4.2.1
   '@material-ui/icons': 4.2.1
+  '@material-ui/lab': 4.0.0-alpha.22
   '@material-ui/styles': 4.2.1
   '@mdi/js': 3.6.95
   '@medv/finder': 1.1.1
@@ -14447,7 +14506,6 @@ specifiers:
   '@rush-temp/redo-website': 'file:./projects/redo-website.tgz'
   '@rush-temp/shapeql': 'file:./projects/shapeql.tgz'
   '@storybook/addon-actions': 5.1.9
-  '@storybook/addon-console': 1.2.1
   '@storybook/addon-info': 5.1.9
   '@storybook/addon-links': 5.1.9
   '@storybook/addons': 5.1.9
@@ -14473,6 +14531,7 @@ specifiers:
   '@types/webpack-merge': 4.1.3
   analytics-node: 3.4.0-beta.1
   apollo-cache-inmemory: 1.6.2
+  apollo-link-context: 1.0.18
   apollo-link-http: 1.5.15
   apollo-server: 2.7.0
   babel-loader: 8.0.6
@@ -14499,8 +14558,9 @@ specifiers:
   isomorphic-ws: 4.0.1
   jest: 24.8.0
   jsonwebtoken: 8.5.0
+  material-ui-chip-input: 1.0.0
   moize: 5.4.4
-  prisma2: 2.0.0-preview-2
+  prisma2: 2.0.0-preview-5
   puppeteer: 1.17.0
   react: 16.8.6
   react-apollo: 2.5.8

@@ -86,6 +86,18 @@ export const webConfig: Configuration = merge.smart(commonConfig, {
     ]
 })
 
+export const injectedWebConfig: Configuration = merge.smart(webConfig, {
+    module: {
+        rules: [
+            {
+                test: /\.(j|t)sx?$/,
+                loader: "ts-loader",
+                exclude: /node_modules/
+            }
+        ]
+    }
+})
+
 export const rendererConfig: Configuration = merge.smart(webConfig, {
     target: "electron-renderer",
     resolve: {

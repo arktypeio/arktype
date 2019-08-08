@@ -1,4 +1,6 @@
 export * from "./Home"
+export * from "./TestView"
+export * from "./TagView"
 export * from "./Learner"
 export * from "./SignIn"
 export * from "./SignUp"

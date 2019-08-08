@@ -7,6 +7,6 @@ export class UserResolver {
     @Authorized()
     @Query(returns => User)
     async me(@Ctx() { photon, id }: Context) {
-        return photon.users.findOne({ where: { id } })
+        return photon.users.findOne({ where: { id: id! } })
     }
 }

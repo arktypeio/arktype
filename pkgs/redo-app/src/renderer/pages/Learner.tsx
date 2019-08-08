@@ -2,16 +2,20 @@ import React from "react"
 import { Theme, createStyles } from "@material-ui/core"
 import { component } from "blocks"
 import {
-    PrimaryButton,
+    Button,
     RespondTo,
-    SecondaryButton,
     Row,
     Column,
-    Text
+    Text,
+    TextInput
 } from "redo-components"
-import { deactivateLearner, saveLearner } from "state"
+import { deactivateLearner, resetLearner } from "state"
 import { LearnerEvents } from "custom"
 import { CircularProgress } from "@material-ui/core"
+import gql from "graphql-tag"
+import { useMutation } from "@apollo/react-hooks"
+import ChipInput from "material-ui-chip-input"
+import { store } from "renderer/common"
 
 const styles = (theme: Theme) =>
     createStyles({
@@ -20,29 +24,95 @@ const styles = (theme: Theme) =>
         }
     })
 
+const SAVETEST = gql`
+    mutation submitTest(
+        $name: String!
+        $tags: [TagInput!]!
+        $steps: [BrowserEventInput!]!
+    ) {
+        submitTest(name: $name, tags: $tags, steps: $steps)
+    }
+`
+
 export type LearnerProps = {}
 
 export const Learner = component({
     name: "Learner",
     defaultProps: {} as Partial<LearnerProps>,
     styles,
-    query: { learner: { events: null, chromiumInstalling: null } }
-})(({ classes, data }) => {
+    query: {
+        learner: {
+            events: null,
+            chromiumInstalling: null,
+            testName: null,
+            testTags: null
+        }
+    }
+})(({ data }) => {
+    const {
+        events,
+        testTags: tags,
+        testName: name,
+        chromiumInstalling
+    } = data.learner!
+    const [saveTest] = useMutation(SAVETEST)
     return (
         <Column justify="flex-start">
             <Row align="center" justify="flex-start">
-                <SecondaryButton onClick={deactivateLearner} color="secondary">
+                <Button onClick={deactivateLearner} kind="secondary">
                     Back home
-                </SecondaryButton>
+                </Button>
 
                 <RespondTo response={{ loading: false }}>
-                    <PrimaryButton onClick={saveLearner} color="primary">
+                    <Button
+                        kind="primary"
+                        onClick={async () => {
+                            await saveTest({
+                                variables: {
+                                    name,
+                                    tags: tags.map(_ => ({ name: _ })),
+                                    steps: events.map(
+                                        ({ __typename, ...inputs }: any) =>
+                                            inputs
+                                    )
+                                }
+                            })
+                            resetLearner()
+                        }}
+                    >
                         Save test
-                    </PrimaryButton>
+                    </Button>
                 </RespondTo>
             </Row>
+            <Row>
+                <TextInput
+                    value={name}
+                    placeholder="Test name"
+                    onChange={e =>
+                        store.mutate({ learner: { testName: e.target.value } })
+                    }
+                />
+                {/* TODO Chip input should be moved to redo components as part of: https://trello.com/c/eVo1vyZj */}
+                <ChipInput
+                    value={tags}
+                    onAdd={(chip: string) =>
+                        store.mutate({
+                            learner: { testTags: _ => [..._, chip] }
+                        })
+                    }
+                    onDelete={(chip: string) => {
+                        store.mutate({
+                            learner: {
+                                testTags: _ =>
+                                    _.filter(current => current !== chip)
+                            }
+                        })
+                    }}
+                />
+            </Row>
+
             <RespondTo
-                response={{ loading: data.learner!.chromiumInstalling }}
+                response={{ loading: chromiumInstalling }}
                 options={{
                     loading: {
                         displayAs: ({ value }) =>
@@ -58,7 +128,7 @@ export const Learner = component({
                     }
                 }}
             >
-                <LearnerEvents events={data.learner!.events} />
+                <LearnerEvents events={events} />
             </RespondTo>
         </Column>
     )
