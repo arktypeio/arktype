@@ -4,14 +4,15 @@ import { CardProps as MuiCardProps } from "@material-ui/core/Card"
 
 export type CardProps = MuiCardProps
 
-export const Card: FC<CardProps> = props => {
+export const Card: FC<CardProps> = ({ style, ...rest }) => {
     return (
         <MuiCard
             style={{
                 width: "fit-content",
-                padding: 8
+                padding: 8,
+                ...style
             }}
-            {...props}
+            {...rest}
         />
     )
 }

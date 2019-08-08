@@ -15,7 +15,7 @@ const useKind = makeKinds<MuiButtonProps>()({
             color: "black"
         }
     }
-} as const)
+})
 
 export type ButtonProps = MuiButtonProps & {
     kind?: KindFrom<typeof useKind>
