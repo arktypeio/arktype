@@ -1,6 +1,4 @@
 import React, { FC } from "react"
-import { Theme } from "@material-ui/core"
-import { makeStyles, useTheme } from "@material-ui/styles"
 import { AnimatePresence, motion } from "framer-motion"
 import {
     Form,
@@ -9,7 +7,8 @@ import {
     Row,
     FormSubmit,
     Card,
-    Button
+    Button,
+    useTheme
 } from "redo-components"
 import { SignUpInput } from "redo-model"
 import Logo from "assets/logo.svg"
@@ -19,12 +18,6 @@ import { useMutation } from "@apollo/react-hooks"
 import { submitForm } from "custom/CustomForm"
 import gql from "graphql-tag"
 import { Page } from "renderer/state"
-
-const stylize = makeStyles((theme: Theme) => ({
-    animatedFields: {
-        flexGrow: 1
-    }
-}))
 
 type SignUpData = {
     signUp: {
@@ -53,11 +46,10 @@ export const SIGNUP = gql`
 const validate = createValidator(new SignUpInput())
 
 export const SignUp: FC = () => {
-    const { animatedFields } = stylize()
-    const theme = useTheme<Theme>()
+    const theme = useTheme()
     const [submit] = useMutation<SignUpData, SignUpInput>(SIGNUP)
     return (
-        <Column justify="center" align="center">
+        <Column full justify="center" align="center">
             <Card
                 style={{
                     width: theme.spacing(45),
@@ -65,54 +57,75 @@ export const SignUp: FC = () => {
                     padding: `${theme.spacing(3)}px ${theme.spacing(5)}px`
                 }}
             >
-                <Logo />
-                <Form<SignUpInput, SignUpData>
-                    validate={validate}
-                    submit={async fields => {
-                        const result = await submitForm({ submit, fields })
-                        if (result.data && result.data.signUp) {
-                            store.mutate({ token: result.data.signUp.token })
-                        }
-                        return result
-                    }}
-                >
-                    <Column justify="space-evenly" className={animatedFields}>
-                        <AnimatePresence>
-                            <motion.div
-                                positionTransition
-                                initial={{
-                                    x: 500
+                <Column full>
+                    <Logo />
+                    <Form<SignUpInput, SignUpData>
+                        validate={validate}
+                        submit={async fields => {
+                            const result = await submitForm({ submit, fields })
+                            if (result.data && result.data.signUp) {
+                                store.mutate({
+                                    token: result.data.signUp.token
+                                })
+                            }
+                            return result
+                        }}
+                    >
+                        <Column grow align="center">
+                            <AnimatePresence>
+                                <motion.div
+                                    style={{ height: "100%", width: "100%" }}
+                                    positionTransition
+                                    initial={{
+                                        x: 500
+                                    }}
+                                    animate={{ x: 0 }}
+                                    exit={{ x: 500 }}
+                                >
+                                    <Column
+                                        full
+                                        justify="center"
+                                        align="stretch"
+                                    >
+                                        <Row>
+                                            <FormText
+                                                name="firstName"
+                                                label="first"
+                                                autoFocus
+                                            />
+                                            <FormText
+                                                name="lastName"
+                                                label="last"
+                                            />
+                                        </Row>
+
+                                        <FormText name="email" />
+
+                                        <Row>
+                                            <FormText
+                                                type="password"
+                                                name="password"
+                                            />
+                                            <FormText
+                                                type="password"
+                                                name="confirm"
+                                            />
+                                        </Row>
+                                    </Column>
+                                </motion.div>
+                            </AnimatePresence>
+                            <FormSubmit
+                                responseOptions={{
+                                    loading: { hideContent: true }
                                 }}
-                                animate={{ x: 0 }}
-                                exit={{ x: 500 }}
-                                className={animatedFields}
                             >
-                                <Row spacing={1}>
-                                    <FormText
-                                        name="firstName"
-                                        label="first"
-                                        autoFocus
-                                    />
-                                    <FormText name="lastName" label="last" />
-                                </Row>
-                                <Row spacing={1}>
-                                    <FormText name="email" />
-                                </Row>
-                                <Row spacing={1}>
-                                    <FormText type="password" name="password" />
-                                    <FormText type="password" name="confirm" />
-                                </Row>
-                            </motion.div>
-                        </AnimatePresence>
-                        <FormSubmit
-                            responseOptions={{
-                                loading: { hideContent: true }
-                            }}
-                        > Sign Up
-                        </FormSubmit>
-                    </Column>
-                </Form>
+                                Sign Up
+                            </FormSubmit>
+                        </Column>
+                    </Form>
+                </Column>
             </Card>
+
             <Button
                 kind="secondary"
                 onClick={() => store.mutate({ page: Page.SignIn })}
