@@ -4,5 +4,5 @@
         "outDir": "dist/__generate__"
     },
     "include": ["prisma"],
-    "exclude": ["src"]
+    "exclude": ["src", "prisma/seed.ts"]
 }

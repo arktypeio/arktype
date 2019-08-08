@@ -28,7 +28,7 @@ const styles = (theme: Theme) =>
 const SAVETEST = gql`
     mutation submitTest(
         $name: String!
-        $tags: [String!]!
+        $tags: [TagInput!]!
         $steps: [BrowserEventInput!]!
     ) {
         submitTest(name: $name, tags: $tags, steps: $steps)
@@ -70,7 +70,7 @@ export const Learner = component({
                             await saveTest({
                                 variables: {
                                     name,
-                                    tags,
+                                    tags: tags.map(_ => ({ name: _ })),
                                     steps: events.map(
                                         ({ __typename, ...inputs }: any) =>
                                             inputs
