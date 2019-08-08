@@ -1,6 +1,4 @@
 import React, { FC } from "react"
-import { Theme } from "@material-ui/core"
-import { makeStyles, useTheme } from "@material-ui/styles"
 import { AnimatePresence, motion } from "framer-motion"
 import {
     Form,
@@ -9,7 +7,8 @@ import {
     Row,
     FormSubmit,
     Card,
-    Button
+    Button,
+    useTheme
 } from "redo-components"
 import { SignUpInput } from "redo-model"
 import Logo from "assets/logo.svg"
@@ -19,14 +18,6 @@ import { useMutation } from "@apollo/react-hooks"
 import { submitForm } from "custom/CustomForm"
 import gql from "graphql-tag"
 import { Page } from "renderer/state"
-
-const stylize = makeStyles((theme: Theme) => ({
-    animatedFields: {
-        display: "flex",
-        flexGrow: 1,
-        justifyContent: "space-around"
-    }
-}))
 
 type SignUpData = {
     signUp: {
@@ -55,8 +46,7 @@ export const SIGNUP = gql`
 const validate = createValidator(new SignUpInput())
 
 export const SignUp: FC = () => {
-    const { animatedFields } = stylize()
-    const theme = useTheme<Theme>()
+    const theme = useTheme()
     const [submit] = useMutation<SignUpData, SignUpInput>(SIGNUP)
     return (
         <Column full justify="center" align="center">
@@ -84,43 +74,39 @@ export const SignUp: FC = () => {
                         <Column grow align="center">
                             <AnimatePresence>
                                 <motion.div
-                                    style={{ width: "100%" }}
+                                    style={{ height: "100%", width: "100%" }}
                                     positionTransition
                                     initial={{
                                         x: 500
                                     }}
                                     animate={{ x: 0 }}
                                     exit={{ x: 500 }}
-                                    className={animatedFields}
                                 >
-                                    <Column grow justify="center">
+                                    <Column
+                                        full
+                                        justify="center"
+                                        align="stretch"
+                                    >
                                         <Row>
                                             <FormText
-                                                style={{ width: "100%" }}
                                                 name="firstName"
                                                 label="first"
                                                 autoFocus
                                             />
                                             <FormText
-                                                style={{ width: "100%" }}
                                                 name="lastName"
                                                 label="last"
                                             />
                                         </Row>
+
+                                        <FormText name="email" />
+
                                         <Row>
                                             <FormText
-                                                style={{ width: "100%" }}
-                                                name="email"
-                                            />
-                                        </Row>
-                                        <Row>
-                                            <FormText
-                                                style={{ width: "100%" }}
                                                 type="password"
                                                 name="password"
                                             />
                                             <FormText
-                                                style={{ width: "100%" }}
                                                 type="password"
                                                 name="confirm"
                                             />

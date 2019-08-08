@@ -19,14 +19,6 @@ import { store } from "renderer/common"
 import { createValidator, submitForm } from "custom/CustomForm"
 import { Page } from "renderer/state"
 
-const stylize = makeStyles((theme: Theme) => ({
-    animatedFields: {
-        display: "flex",
-        flexGrow: 1,
-        justifyContent: "space-around"
-    }
-}))
-
 const SIGNIN = gql`
     mutation signIn($email: String!, $password: String!) {
         signIn(email: $email, password: $password) {
@@ -45,7 +37,6 @@ const validate = createValidator(new SignInInput())
 
 export const SignIn: FC = () => {
     const [submit] = useMutation<SignInData, SignInInput>(SIGNIN)
-    const { animatedFields } = stylize()
     const theme = useTheme<Theme>()
     return (
         <Column full justify="center" align="center">
@@ -76,23 +67,24 @@ export const SignIn: FC = () => {
                         <Column grow align="center">
                             <AnimatePresence>
                                 <motion.div
-                                    style={{ width: "100%" }}
                                     positionTransition
                                     initial={{
                                         x: -500
                                     }}
                                     animate={{ x: 0 }}
                                     exit={{ x: -500 }}
-                                    className={animatedFields}
+                                    style={{
+                                        width: "100%",
+                                        height: "100%"
+                                    }}
                                 >
-                                    <Column grow justify="center">
+                                    <Column
+                                        full
+                                        justify="center"
+                                        align="stretch"
+                                    >
+                                        <FormText name="email" autoFocus />
                                         <FormText
-                                            style={{ width: "100%" }}
-                                            name="email"
-                                            autoFocus
-                                        />
-                                        <FormText
-                                            style={{ width: "100%" }}
                                             type="password"
                                             name="password"
                                         />
