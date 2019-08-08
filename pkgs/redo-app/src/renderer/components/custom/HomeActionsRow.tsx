@@ -3,7 +3,7 @@ import { Theme } from "@material-ui/core"
 import { makeStyles } from "@material-ui/styles"
 import { component } from "blocks"
 import { AddButton, ScheduleButton, AccountButton, HelpButton } from "custom"
-import { Row, Menu, SecondaryButton } from "redo-components"
+import { Row, Menu, Button } from "redo-components"
 import { SearchInput } from "./SearchInput"
 import { Page } from "renderer/state"
 
@@ -24,16 +24,18 @@ export const HomeActionsRow = component({
     return (
         <>
             <Row justify="center" className={homeActionsRow}>
-                <SecondaryButton
+                <Button
+                    kind="secondary"
                     onClick={() => store.mutate({ page: Page.TestView })}
                 >
                     See all tests
-                </SecondaryButton>
-                <SecondaryButton
+                </Button>
+                <Button
+                    kind="secondary"
                     onClick={() => store.mutate({ page: Page.TagView })}
                 >
                     See all tags
-                </SecondaryButton>
+                </Button>
                 <AddButton
                     onClick={() =>
                         store.mutate({
@@ -48,9 +50,12 @@ export const HomeActionsRow = component({
                 />
                 <HelpButton />
                 <Menu
-                    Button={AccountButton}
-                    options={{ Logout: () => store.mutate({ token: "" }) }}
-                />
+
+                >
+                    {
+                        { toggle: <AccountButton />, options: { Logout: () => store.mutate({ token: "" }) } }
+                    }
+                </Menu>
             </Row>
         </>
     )

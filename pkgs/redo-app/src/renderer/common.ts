@@ -28,13 +28,13 @@ export class BrowserEventInput {
 }
 
 @Resolver(of => BrowserEventInput)
-export class BrowserEventResolver {}
+export class BrowserEventResolver { }
 
 @Resolver(of => Learner)
-export class LearnerResolver {}
+export class LearnerResolver { }
 
 @Resolver(of => Bounds)
-export class BoundsResolver {}
+export class BoundsResolver { }
 
 export const schema = buildSchemaSync({
     resolvers: [BrowserEventResolver, LearnerResolver, BoundsResolver],

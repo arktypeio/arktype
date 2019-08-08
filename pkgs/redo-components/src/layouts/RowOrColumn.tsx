@@ -1,40 +1,29 @@
-import React, { FC } from "react"
-import { makeStyles } from "@material-ui/styles"
-import Grid, { GridProps, GridItemsAlignment } from "@material-ui/core/Grid"
+import React, { CSSProperties } from "react"
+import {
+    GridProps,
+    GridItemsAlignment
+} from "@material-ui/core/Grid"
+import { ValueFrom } from "redo-utils";
 
-const stylize = makeStyles({
-    grid: ({ flexGrow, grow }: RowOrColumnProps) => ({
-        flexGrow: flexGrow ? flexGrow : grow ? 1 : undefined
-    })
-})
-
-export type RowOrColumnProps = GridProps & {
-    reverse?: boolean
-    wrap?: boolean
-    align?: GridItemsAlignment
-    flexGrow?: number
+export type RowOrColumnProps = Omit<GridProps, "direction"> & {
+    align?: GridItemsAlignment,
     grow?: boolean
+    reverse?: boolean,
+    height?: ValueFrom<CSSProperties, "height">,
+    width?: ValueFrom<CSSProperties, "width">
 }
 
-export const RowOrColumn: FC<RowOrColumnProps> = ({
-    direction,
-    reverse,
-    wrap,
-    align,
-    flexGrow,
-    grow,
+export const toGridProps = (direction: "row" | "column", { align, grow, height, width, reverse, style, ...rest }: RowOrColumnProps): GridProps => ({
+    container: true,
+    item: true,
+    wrap: "nowrap",
+    alignItems: align,
+    style: {
+        height,
+        width,
+        flexGrow: grow ? 1 : undefined,
+        ...style
+    },
+    direction: `${direction}${reverse ? "-reverse" : ""}` as any,
     ...rest
-}) => {
-    const { grid } = stylize({ flexGrow, grow })
-    return (
-        <Grid
-            container
-            item
-            className={grid}
-            direction={`${direction}${reverse ? "-reverse" : ""}` as any}
-            wrap={wrap ? "wrap" : "nowrap"}
-            alignItems={align}
-            {...rest}
-        />
-    )
-}
+})

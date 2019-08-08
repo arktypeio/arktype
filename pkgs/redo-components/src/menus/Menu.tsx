@@ -1,37 +1,31 @@
-import React, { FC } from "react"
+import React, { FC, cloneElement } from "react"
 import { Menu as MuiMenu } from "@material-ui/core"
 import { MenuProps as MuiMenuProps } from "@material-ui/core/Menu"
 import { MenuItem } from "."
 
 export type MenuProps = Partial<MuiMenuProps> & {
-    Button: React.ComponentType<{
-        onClick: (e: React.MouseEvent<HTMLButtonElement>) => void
-    }>
-    options?: Record<string, () => void>
-    buttonText?: string
+    children: {
+        toggle: JSX.Element
+        options: Record<string, () => any>
+    }
 }
 
 export const Menu: FC<MenuProps> = ({
-    Button,
-    buttonText,
-    options,
-    classes,
+    children: { toggle, options },
     ...rest
 }) => {
-    const [anchor, setAnchor] = React.useState<null | HTMLElement>(null)
-
-    const handleClick = (e: React.MouseEvent<HTMLButtonElement>) =>
-        setAnchor(e.currentTarget)
-
-    const handleClose = () => setAnchor(null)
-
+    const [anchor, setAnchor] = React.useState<HTMLElement | null>(null)
+    const button = cloneElement(toggle, {
+        onClick: (e: React.MouseEvent<HTMLButtonElement>) =>
+            setAnchor(e.currentTarget)
+    })
     return (
         <>
-            <Button onClick={handleClick}>{buttonText}</Button>
+            {button}
             <MuiMenu
                 anchorEl={anchor}
                 open={!!anchor}
-                onClose={handleClose}
+                onClose={() => setAnchor(null)}
                 {...rest}
             >
                 {Object.entries(options!).map(([name, onClick]) => (

@@ -1,6 +1,6 @@
 import React from "react"
 import { HomeActionsRow } from "custom"
-import { Column, Row, SecondaryButton, Tree } from "redo-components"
+import { Column, Row, Button, Tree } from "redo-components"
 import { useQuery } from "@apollo/react-hooks"
 import { store } from "renderer/common"
 import { Page } from "renderer/state"
@@ -26,11 +26,12 @@ export const TagView = () => {
     return (
         <Column justify="flex-start">
             <Row>
-                <SecondaryButton
+                <Button
+                    kind="secondary"
                     onClick={() => store.mutate({ page: Page.Home })}
                 >
                     Home
-                </SecondaryButton>
+                </Button>
                 <HomeActionsRow />
             </Row>
             {data && data.getTag ? (

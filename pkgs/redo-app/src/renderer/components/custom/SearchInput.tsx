@@ -10,5 +10,5 @@ const onChange = async (event: React.ChangeEvent<HTMLInputElement>) =>
     })
 
 export const SearchInput: FC<SearchInputProps> = ({ ...rest }) => (
-    <TextInput variant="underlined" {...{ onChange, ...rest }} />
+    <TextInput kind="underlined" {...{ onChange, ...rest }} />
 )

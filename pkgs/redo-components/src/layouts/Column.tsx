@@ -1,8 +1,9 @@
 import React, { FC } from "react"
-import { RowOrColumn, RowOrColumnProps } from "./RowOrColumn"
+import { Grid } from "@material-ui/core"
+import { toGridProps, RowOrColumnProps } from "./RowOrColumn"
 
-export type ColumnProps = Omit<RowOrColumnProps, "direction">
+export type ColumnProps = RowOrColumnProps
 
-export const Column: FC<ColumnProps> = props => {
-    return <RowOrColumn direction="column" {...props} />
-}
+export const Column: FC<ColumnProps> = props => (
+    <Grid {...toGridProps("column", props)} />
+)
