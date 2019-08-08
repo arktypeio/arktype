@@ -1,7 +1,7 @@
 import React from "react"
 import { storiesOf } from "@storybook/react"
 import { withTheme } from "../storybook"
-import { TextInput } from "./text"
+import { TextInput } from "."
 
 storiesOf("Text Input", module)
     .addDecorator(withTheme())

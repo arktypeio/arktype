@@ -1,5 +1,5 @@
 import React, { FC } from "react"
-import { Typography } from "@material-ui/core"
+import { Text } from "../text"
 import { Column, Row } from "../layouts"
 import { Card, CardProps } from "./Card"
 
@@ -15,17 +15,17 @@ export const ContentCard: FC<ContentCardProps> = ({ from, children }) => {
                     <Column>
                         {Object.entries(from).map(([k, v]) => (
                             <Row justify="center" key={k}>
-                                <Typography variant="body2">{`${k}: ${String(
+                                <Text variant="body2">{`${k}: ${String(
                                     v
-                                )}`}</Typography>
+                                )}`}</Text>
                             </Row>
                         ))}
                     </Column>
                     {children}
                 </>
             ) : (
-                children
-            )}
+                    children
+                )}
         </Card>
     )
 }

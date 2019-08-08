@@ -4,13 +4,14 @@ import { useTheme } from "@material-ui/styles"
 import { BaseTextFieldProps as MuiTextFieldProps } from "@material-ui/core/TextField"
 import { TextField } from "@material-ui/core"
 import { makeStyles } from "@material-ui/styles"
-import { makeKinds, KindFrom } from "../../common"
+import { makeKinds, KindFrom } from "../common"
 
+// Mui's theme overrides these styles unless !important is specified
 const stylize = makeStyles((theme: Theme) => ({
-    defaultClass: { borderColor: theme.palette.primary.dark },
-    errorClass: { borderColor: theme.palette.error.main },
-    focusedClass: { borderColor: theme.palette.secondary.main },
-    hoveredClass: { borderColor: theme.palette.primary.light }
+    defaultClass: { borderColor: `${theme.palette.primary.dark} !important` },
+    errorClass: { borderColor: `${theme.palette.error.main} !important` },
+    focusedClass: { borderColor: `${theme.palette.secondary.main} !important` },
+    hoveredClass: { borderColor: `${theme.palette.primary.light} !important` }
 }))
 
 const getBorderClass = (state: TextInputState) => {
@@ -19,10 +20,10 @@ const getBorderClass = (state: TextInputState) => {
     return focused
         ? focusedClass
         : error
-        ? errorClass
-        : hovered
-        ? hoveredClass
-        : defaultClass
+            ? errorClass
+            : hovered
+                ? hoveredClass
+                : defaultClass
 }
 
 const useKind = makeKinds<MuiTextFieldProps>()((state: TextInputState) => ({
@@ -60,7 +61,6 @@ export const TextInput: FC<TextInputProps> = ({
         hovered: false
     })
     const kindProps = useKind(kind, state)
-    console.log(kindProps)
     return (
         <TextField
             margin="dense"
