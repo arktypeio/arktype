@@ -1,15 +1,7 @@
 import React, { FC } from "react"
-import { Theme, Typography as MuiTypography } from "@material-ui/core"
-import { makeStyles } from "@material-ui/styles"
+import { Typography as MuiTypography } from "@material-ui/core"
 import { PlayButton, ViewButton } from "custom"
-import { Column, Card, Row } from "redo-components"
-
-const stylize = makeStyles((theme: Theme) => ({
-    suggestionCard: {
-        height: theme.spacing(20),
-        width: theme.spacing(20)
-    }
-}))
+import { Column, Card, Row, useTheme } from "redo-components"
 
 export type SuggestionCardProps = {
     name: string
@@ -22,9 +14,14 @@ export const SuggestionCard: FC<SuggestionCardProps> = ({
     type,
     description
 }) => {
-    const { suggestionCard } = stylize()
+    const theme = useTheme()
     return (
-        <div className={suggestionCard}>
+        <div
+            style={{
+                height: theme.spacing(20),
+                width: theme.spacing(20)
+            }}
+        >
             <Card>
                 <Column>
                     <Row justify="center">
