@@ -20,10 +20,10 @@ const getBorderClass = (state: TextInputState) => {
     return focused
         ? focusedClass
         : error
-            ? errorClass
-            : hovered
-                ? hoveredClass
-                : defaultClass
+        ? errorClass
+        : hovered
+        ? hoveredClass
+        : defaultClass
 }
 
 const useKind = makeKinds<MuiTextFieldProps>()((state: TextInputState) => ({
