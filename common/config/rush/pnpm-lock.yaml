@@ -80,7 +80,7 @@ dependencies:
   jsonwebtoken: 8.5.0
   material-ui-chip-input: 1.0.0_f35c714a02d617073918f9017b0a4e91
   moize: 5.4.4
-  prisma2: 2.0.0-preview-2
+  prisma2: 2.0.0-preview-5
   puppeteer: 1.17.0
   react: 16.8.6
   react-apollo: 2.5.8_react-dom@16.8.6+react@16.8.6
@@ -10905,12 +10905,12 @@ packages:
       node: '>= 0.8'
     resolution:
       integrity: sha1-t+PqQkNaTJsnWdmeDyAesZWALuE=
-  /prisma2/2.0.0-preview-2:
+  /prisma2/2.0.0-preview-5:
     dev: false
     hasBin: true
     requiresBuild: true
     resolution:
-      integrity: sha512-unboTATyVsQnL5o6AxUTd6//IjcGsb/9ERouWs6feu1zOPnkdfhvrkYJRyeRia8y2pS9y9RVtY7GhjQS8EWeDw==
+      integrity: sha512-TPPNjbLPZN43JgjNY7LRMQ5LGalvv70ZWx000A2qRf5Zsp76eYXykrYoJ/ylx8Lj9w8evdHx4OV8jViYTCdnCw==
   /prismjs/1.17.1:
     dev: false
     optionalDependencies:
@@ -14188,6 +14188,7 @@ packages:
       '@babel/core': 7.5.5
       '@babel/runtime-corejs3': 7.5.5
       '@material-ui/core': 4.2.1_react-dom@16.8.6+react@16.8.6
+      '@material-ui/icons': 4.2.1_f35c714a02d617073918f9017b0a4e91
       '@material-ui/lab': 4.0.0-alpha.22_f35c714a02d617073918f9017b0a4e91
       '@material-ui/styles': 4.2.1_react-dom@16.8.6+react@16.8.6
       '@storybook/addon-actions': 5.1.9_react-dom@16.8.6
@@ -14216,7 +14217,7 @@ packages:
     peerDependencies:
       webpack: '*'
     resolution:
-      integrity: sha512-8mxkKJVHD0MdZ/zZdViw4Yq8vqFtohnHvI1ZjM1Pe4X74A33xo09GbTrfDkfIySR04dGJLukKpZgxFvU9yflhw==
+      integrity: sha512-+eRWl+ToO/apytPmXZeFcuOGyVC27XfMCGjljl+VhlbCDsCM3qZ4Fsh4Ghy3MENIOJY3zlX0rJxi6ncfAbxg2A==
       tarball: 'file:projects/redo-components.tgz'
     version: 0.0.0
   'file:projects/redo-model.tgz_@types+graphql@14.2.2':
@@ -14281,7 +14282,7 @@ packages:
       isomorphic-ws: 4.0.1
       jest: 24.8.0
       jsonwebtoken: 8.5.0
-      prisma2: 2.0.0-preview-2
+      prisma2: 2.0.0-preview-5
       reflect-metadata: 0.1.13
       ts-jest: 24.0.2_jest@24.8.0
       ts-node: 8.3.0_typescript@3.5.2
@@ -14291,7 +14292,7 @@ packages:
     dev: false
     name: '@rush-temp/redo-server'
     resolution:
-      integrity: sha512-zhvyuUqTQlQ9RrfEA6/HMAsrjKhGhebcIGYlAhfScd8AoH2sQ861tiV/Rfg/66CGCs0Q5gbN78kdesQlKmlqcw==
+      integrity: sha512-Hnn1xQsct6qC4ZlJMHToawSj6YhfofEp7zU1ihHvvxVqr8+K41bWySfye+PvpLIBRCKtaVrwnJeZVfQMDy9y2w==
       tarball: 'file:projects/redo-server.tgz'
     version: 0.0.0
   'file:projects/redo-utils.tgz':
@@ -14447,7 +14448,7 @@ specifiers:
   jsonwebtoken: 8.5.0
   material-ui-chip-input: 1.0.0
   moize: 5.4.4
-  prisma2: 2.0.0-preview-2
+  prisma2: 2.0.0-preview-5
   puppeteer: 1.17.0
   react: 16.8.6
   react-apollo: 2.5.8

@@ -29,7 +29,11 @@ export const HomeActionsRow = component({
                 >
                     See all tests
                 </SecondaryButton>
-
+                <SecondaryButton
+                    onClick={() => store.mutate({ page: Page.TagView })}
+                >
+                    See all tags
+                </SecondaryButton>
                 <AddButton
                     onClick={() =>
                         store.mutate({
