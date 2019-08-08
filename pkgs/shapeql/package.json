@@ -12,7 +12,11 @@
         "test": "jest"
     },
     "dependencies": {
-        "@apollo/react-hooks": "~0.1.0-beta.11",
+        "@apollo/react-hooks": "3.0.0",
+        "apollo-cache-inmemory": "1.6.2",
+        "apollo-client": "2.6.3",
+        "apollo-link-context": "1.0.18",
+        "apollo-link-http": "1.5.15",
         "class-transformer": "0.2.0",
         "deepmerge": "3.2.1",
         "moize": "5.4.4",
@@ -20,7 +24,6 @@
         "reflect-metadata": "0.1.13"
     },
     "peerDependencies": {
-        "apollo-client": "2.x.x",
         "graphql": "14.x.x",
         "graphql-tag": "2.x.x",
         "type-graphql": "0.17.x"
