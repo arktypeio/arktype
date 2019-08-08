@@ -1,30 +1,25 @@
 import React, { FC } from "react"
-import { Theme, List, ListItem } from "@material-ui/core"
-import { makeStyles } from "@material-ui/styles"
+import { List, ListItem } from "@material-ui/core"
 import { LearnerEventCard } from "custom"
 //TODO: https://trello.com/c/QjInW5CL fix BrowserEventInput type
 import { BrowserEventInput } from "renderer/common"
-
-const stylize = makeStyles((theme: Theme) => ({
-    list: {
-        height: "100%",
-        width: "100%"
-    },
-    listItem: {
-        padding: theme.spacing(2)
-    }
-}))
+import { useTheme } from "redo-components"
 
 export type LearnerEventsProps = {
     events: BrowserEventInput[]
 }
 
 export const LearnerEvents: FC<LearnerEventsProps> = ({ events }) => {
-    const { list, listItem } = stylize()
+    const theme = useTheme()
     return (
-        <List className={list}>
+        <List
+            style={{
+                height: "100%",
+                width: "100%"
+            }}
+        >
             {events.map((e, i) => (
-                <ListItem className={listItem} key={i}>
+                <ListItem style={{ padding: theme.spacing(2) }} key={i}>
                     <LearnerEventCard event={{ ...e, tags: [] }} />
                 </ListItem>
             ))}

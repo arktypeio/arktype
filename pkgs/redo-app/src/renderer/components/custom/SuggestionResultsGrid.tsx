@@ -1,17 +1,8 @@
 import React from "react"
-import { Theme, GridList, GridListTile } from "@material-ui/core"
-import { makeStyles } from "@material-ui/styles"
+import { GridList, GridListTile } from "@material-ui/core"
 import { component } from "blocks"
 import { SuggestionCard } from "custom"
-import { Card } from "redo-components"
-
-const stylize = makeStyles((theme: Theme) => ({
-    gridList: {
-        minHeight: theme.spacing(90),
-        minWidth: theme.spacing(180),
-        padding: theme.spacing(2)
-    }
-}))
+import { Card, useTheme } from "redo-components"
 
 export type SuggestionData = {
     name: string
@@ -28,7 +19,7 @@ export const SuggestionResultsGrid = component({
     defaultProps: {} as Partial<SuggestionResultsGridProps>,
     query: { cardFilter: null }
 })(({ suggestions, data: { cardFilter } }) => {
-    const { gridList } = stylize()
+    const theme = useTheme()
     const suggestionCards = suggestions
         .filter(({ name, description }) =>
             name
@@ -43,7 +34,14 @@ export const SuggestionResultsGrid = component({
         ))
     return (
         <Card>
-            <GridList className={gridList} cols={4}>
+            <GridList
+                style={{
+                    minHeight: theme.spacing(90),
+                    minWidth: theme.spacing(180),
+                    padding: theme.spacing(2)
+                }}
+                cols={4}
+            >
                 {suggestionCards}
             </GridList>
         </Card>
