@@ -1,15 +1,10 @@
-import React, { FC, useState, ReactNode } from "react"
-import { Theme } from "@material-ui/core"
-import { makeStyles } from "@material-ui/styles"
+import React, { useState, FC } from "react"
 import { RespondTo, ResponseState, ResponseOptions } from "../responses"
-import { PrimaryButton } from "../buttons"
+import { Button } from "../buttons"
 import { useFormContext } from "./FormContext"
-
-const styles = makeStyles((theme: Theme) => {})
 
 export type FormSubmitProps<D = any> = {
     responseOptions?: ResponseOptions<D>
-    children?: ReactNode
 }
 
 export const FormSubmit: FC<FormSubmitProps> = <D extends any = any>({
@@ -20,7 +15,8 @@ export const FormSubmit: FC<FormSubmitProps> = <D extends any = any>({
     const [state, setState] = useState<ResponseState>({})
     return (
         <RespondTo response={state} options={responseOptions}>
-            <PrimaryButton
+            <Button
+                kind="primary"
                 type="submit"
                 onClick={async () => {
                     const values = getValues()
@@ -30,7 +26,8 @@ export const FormSubmit: FC<FormSubmitProps> = <D extends any = any>({
                         )
                     ) {
                         setState({ loading: true })
-                        setState({ ...(await submit(values)), loading: false })
+                        const response = (await submit(values)) || {}
+                        setState({ ...response, loading: false })
                     }
                 }}
                 {...rest}

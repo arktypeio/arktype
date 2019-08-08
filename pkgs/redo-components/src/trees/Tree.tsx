@@ -45,15 +45,16 @@ type TreeItemsProps = {
 const TreeItems: FC<TreeItemsProps> = ({ entries }) => (
     <>
         {entries.map(([k, v]) => {
+            const key = String(Math.random())
             if (isRecursible(v)) {
                 return (
-                    <TreeItem nodeId={String(Math.random())} label={k}>
+                    <TreeItem nodeId={key} key={key} label={k}>
                         <TreeItems entries={Object.entries(v)} />
                     </TreeItem>
                 )
             } else {
                 return (
-                    <TreeItem nodeId={String(Math.random())} label={k}>
+                    <TreeItem nodeId={key} key={key} label={k}>
                         {<Text>{String(v)}</Text>}
                     </TreeItem>
                 )

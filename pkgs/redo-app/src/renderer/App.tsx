@@ -6,7 +6,6 @@ import { ApolloProvider as ApolloHooksProvider } from "@apollo/react-hooks"
 import { ApolloClient } from "apollo-client"
 import { CssBaseline, Theme } from "@material-ui/core"
 import { Root } from "state"
-import { component } from "blocks"
 
 export type AppProps = {
     apolloClient: ApolloClient<Root>

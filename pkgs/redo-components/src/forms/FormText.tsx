@@ -1,10 +1,10 @@
 import React, { FC } from "react"
 import { TextInput, TextInputProps } from "../inputs"
 import { ErrorText } from "../text"
-import { Column } from "../layouts"
 import { useFormContext } from "./FormContext"
 import { FormFieldProps } from "./FormField"
 import { FormActions, Fields } from "./FormContext"
+import { Column } from "../layouts"
 
 export type FormTextProps = FormFieldProps & TextInputProps
 
@@ -54,7 +54,7 @@ export const FormText: FC<FormTextProps> = ({
         touched
     } = useFormContext()
     return (
-        <Column alignItems={fullWidth ? "stretch" : "center"}>
+        <Column style={{ width: "fit-content" }}>
             <TextInput
                 name={name}
                 label={label ? label : name}

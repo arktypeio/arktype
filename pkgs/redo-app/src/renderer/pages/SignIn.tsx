@@ -1,16 +1,22 @@
 import React, { FC } from "react"
 import { Theme } from "@material-ui/core"
-import { makeStyles } from "@material-ui/styles"
-import { FormText, FormSubmit, Column, CardPage, Form } from "redo-components"
-import { SecondarySignUpButton } from "custom"
+import { makeStyles, useTheme } from "@material-ui/styles"
+import {
+    FormText,
+    FormSubmit,
+    Column,
+    Card,
+    Form,
+    Button
+} from "redo-components"
 import gql from "graphql-tag"
 import { SignInInput } from "redo-model"
 import { motion, AnimatePresence } from "framer-motion"
 import Logo from "assets/logo.svg"
 import { useMutation } from "@apollo/react-hooks"
-
 import { store } from "renderer/common"
 import { createValidator, submitForm } from "custom/CustomForm"
+import { Page } from "renderer/state"
 
 const stylize = makeStyles((theme: Theme) => ({
     animatedFields: {
@@ -39,48 +45,70 @@ const validate = createValidator(new SignInInput())
 export const SignIn: FC = () => {
     const [submit] = useMutation<SignInData, SignInInput>(SIGNIN)
     const { animatedFields } = stylize()
+    const theme = useTheme<Theme>()
     return (
-        <Column align="center" justify="center">
-            <CardPage>
-                <Logo />
-                <Form<SignInInput, SignInData>
-                    submit={async fields => {
-                        const result = await submitForm({ submit, fields })
-                        if (result.data && result.data.signIn) {
-                            store.mutate({ token: result.data.signIn.token })
-                        }
-                        return result
-                    }}
-                    validate={validate}
-                >
-                    <Column grow>
-                        <AnimatePresence>
-                            <motion.div
-                                positionTransition
-                                initial={{
-                                    x: -500
-                                }}
-                                animate={{ x: 0 }}
-                                exit={{ x: -500 }}
-                                className={animatedFields}
-                            >
-                                <Column>
-                                    <FormText name="email" autoFocus />
-                                    <FormText type="password" name="password" />
-                                </Column>
-                            </motion.div>
-                        </AnimatePresence>
-                    </Column>
-                    <FormSubmit
-                        responseOptions={{
-                            loading: { hideContent: true }
+        <Column justify="center" align="center">
+            <Card
+                style={{
+                    width: theme.spacing(45),
+                    height: theme.spacing(50),
+                    padding: `${theme.spacing(3)}px ${theme.spacing(5)}px`
+                }}
+            >
+                <Column style={{ height: "100%", width: "100%" }}>
+                    <Logo />
+                    <Form<SignInInput, SignInData>
+                        submit={async fields => {
+                            const result = await submitForm({ submit, fields })
+                            if (result.data && result.data.signIn) {
+                                store.mutate({
+                                    token: result.data.signIn.token
+                                })
+                            }
+                            return result
                         }}
+                        validate={validate}
                     >
-                        Sign in
-                    </FormSubmit>
-                </Form>
-            </CardPage>
-            <SecondarySignUpButton>Need an account?</SecondarySignUpButton>
+                        <Column
+                            grow
+                            justify="space-between"
+                        >
+                            <AnimatePresence>
+                                <motion.div
+                                    positionTransition
+                                    initial={{
+                                        x: -500
+                                    }}
+                                    animate={{ x: 0 }}
+                                    exit={{ x: -500 }}
+                                    className={animatedFields}
+                                >
+                                    <Column>
+                                        <FormText name="email" autoFocus />
+                                        <FormText
+                                            type="password"
+                                            name="password"
+                                        />
+                                    </Column>
+                                </motion.div>
+                            </AnimatePresence>
+                            <FormSubmit
+                                responseOptions={{
+                                    loading: { hideContent: true }
+                                }}
+                            >
+                                Sign in
+                            </FormSubmit>
+                        </Column>
+                    </Form>
+                </Column>
+            </Card>
+            <Button
+                kind="secondary"
+                onClick={() => store.mutate({ page: Page.SignUp })}
+            >
+                Need an account?
+            </Button>
         </Column>
     )
 }

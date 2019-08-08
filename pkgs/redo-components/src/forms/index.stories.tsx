@@ -1,34 +1,43 @@
 import React, { FC } from "react"
 import { storiesOf } from "@storybook/react"
 import { withTheme } from "../storybook"
-import { FormText } from "./"
-import { FormSubmit } from "./FormSubmit"
-import { Form } from "./Form"
+import { FormText, FormSubmit, Form } from "."
+import { Text } from "../text"
+import { Column } from "../layouts"
 
 storiesOf("Form", module)
     .addDecorator(withTheme())
-    .add("FormText", () => <FormTextSample />)
+    .add("Text only", () => <TextOnlyForm />)
 
-const FormTextSample: FC = () => {
+type TextOnlyFormFields = {
+    first: string
+    last: string
+}
+
+const TextOnlyForm: FC = () => {
     return (
-        <Form
-            submit={async () => ({ data: 42 })}
+        <Form<TextOnlyFormFields, string>
+            submit={async ({ first, last }) => ({
+                data: `Hello, ${first} ${last}.`
+            })}
             validate={_ => {
                 return {
-                    Firstname: [],
-                    Lastname: []
+                    first: [],
+                    last: []
                 }
             }}
         >
-            <FormText name="Firstname" />
-            <FormText name="Lastname" />
-            <FormSubmit
-                responseOptions={{
-                    data: { displayAs: data => <p>{data.value}</p> }
-                }}
-            >
-                Submit
-            </FormSubmit>
+            <Column>
+                <FormText name="first" />
+                <FormText name="last" />
+                <FormSubmit
+                    responseOptions={{
+                        data: { displayAs: data => <Text>{data.value}</Text> }
+                    }}
+                >
+                    Submit
+                </FormSubmit>
+            </Column>
         </Form>
     )
 }

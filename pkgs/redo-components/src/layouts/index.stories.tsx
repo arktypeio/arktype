@@ -1,24 +1,121 @@
-import React from "react"
+import React, { FC } from "react"
 import { storiesOf } from "@storybook/react"
-import { action } from "@storybook/addon-actions"
 import { withTheme } from "../storybook"
-import { Row } from "./"
+import { defaultTheme } from "../styles"
+import { Row, Column } from "."
 import { Card } from "../cards"
-import { Column } from "./Column"
+import { Text } from "../text"
 
-storiesOf("Row", module)
-    .addDecorator(withTheme())
+const cards = (
+    <>
+        <Card>One</Card>
+        <Card>Two</Card>
+        <Card>Three</Card>
+    </>
+)
+
+const C: FC = ({ children }) => (
+    <div style={{ height: "95vh", width: "95vw" }}>
+        {children}
+    </div>
+)
+
+storiesOf("Layout", module)
+    .addDecorator(
+        withTheme({
+            ...defaultTheme,
+            overrides: {
+                MuiGrid: {
+                    container: {
+                        border: `solid ${defaultTheme.palette.primary.main}`
+                    }
+                }
+            }
+        })
+    )
     .add("Row of cards", () => (
-        <Row>
-            <Card>Hi! This is a card.</Card>
-            <Card> Second card. </Card>
-            <Card> Third card. </Card>
-        </Row>
+        <C>
+            <Row>{cards}</Row>
+        </C>
     ))
-    .add("Column of cards ", () => (
-        <Column>
-            <Card>Hi! This is a card.</Card>
-            <Card> Second card. </Card>
-            <Card> Third card. </Card>
-        </Column>
+    .add("Column of cards", () => (
+        <C>
+            <Column>{cards}</Column>
+        </C>
+    ))
+    .add("Row of columns", () => (
+        <C>
+            <Row>
+                <Column>{cards}</Column>
+                <Column>{cards}</Column>
+                <Column>{cards}</Column>
+            </Row>
+        </C>
+    ))
+    .add("Row of rows", () => (
+        <C>
+            <Row>
+                <Row>{cards}</Row>
+                <Row>{cards}</Row>
+                <Row>{cards}</Row>
+            </Row>
+        </C>
+    ))
+    .add("Column of rows", () => (
+        <C>
+            <Column>
+                <Row>{cards}</Row>
+                <Row>{cards}</Row>
+                <Row>{cards}</Row>
+            </Column>
+        </C>
+    ))
+    .add("Column of columns", () => (
+        <C>
+            <Column>
+                <Column>{cards}</Column>
+                <Column>{cards}</Column>
+                <Column>{cards}</Column>
+            </Column>
+        </C>
+    ))
+    .add("Page", () => (
+        <C>
+            <Row style={{ height: "100%" }}>
+                <Column width={100}>
+                    Sidebar
+                </Column>
+                <Column grow>
+                    <Row height={100}>Header</Row>
+                    <Row grow>
+                        <Column align="center" justify="space-between">
+                            <p>Left content</p>
+                            {cards}
+                        </Column>
+                        <Column align="center">
+                            <p>Right content</p>
+                            <Row grow justify="center" align="center">
+                                <Card>More content</Card>
+                            </Row>
+                        </Column>
+                    </Row>
+                    <Row height={50}>Footer</Row>
+                </Column>
+            </Row>
+        </C>
+    ))
+    .add("Responsive", () => (
+        <div style={{ height: "100vh", width: "100vw" }}>
+            <Row wrap="wrap">
+                <Row md={4} justify="space-around">
+                    <Card>Try</Card>
+                </Row>
+                <Row md={4} justify="space-around">
+                    <Card>Resizing</Card>
+                </Row>
+                <Row md={4} justify="space-around">
+                    <Card>Your window</Card>
+                </Row>
+            </Row >
+        </div>
     ))

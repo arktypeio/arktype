@@ -2,9 +2,8 @@ import React from "react"
 import { Theme, createStyles } from "@material-ui/core"
 import { component } from "blocks"
 import {
-    PrimaryButton,
+    Button,
     RespondTo,
-    SecondaryButton,
     Row,
     Column,
     Text,
@@ -60,12 +59,13 @@ export const Learner = component({
     return (
         <Column justify="flex-start">
             <Row align="center" justify="flex-start">
-                <SecondaryButton onClick={deactivateLearner} color="secondary">
+                <Button onClick={deactivateLearner} kind="secondary">
                     Back home
-                </SecondaryButton>
+                </Button>
 
                 <RespondTo response={{ loading: false }}>
-                    <PrimaryButton
+                    <Button
+                        kind="primary"
                         onClick={async () => {
                             await saveTest({
                                 variables: {
@@ -79,10 +79,9 @@ export const Learner = component({
                             })
                             resetLearner()
                         }}
-                        color="primary"
                     >
                         Save test
-                    </PrimaryButton>
+                    </Button>
                 </RespondTo>
             </Row>
             <Row>

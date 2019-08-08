@@ -8,27 +8,19 @@ import { AppHeader, HowItWorks, SignUp, SubHeader } from "./components"
 const stylize = makeStyles((theme: Theme) => ({
     content: {
         position: "absolute",
-        padding: theme.spacing(5),
-        top: 0,
-        height: "100vh",
-        width: "100vw",
-        overflow: "hidden"
-    },
-    primary: {
-        maxWidth: theme.spacing(50)
+        padding: theme.spacing(2),
+        top: 0
     }
 }))
 
 export const Content = () => {
-    const { content, primary } = stylize()
+    const { content } = stylize()
     return (
-        <Column className={content} align="center">
-            <Column className={primary} align="center">
-                <AppHeader />
-                <SubHeader />
-                <HowItWorks />
-                <SignUp />
-            </Column>
+        <Column className={content}>
+            <AppHeader />
+            <SubHeader />
+            <HowItWorks />
+            <SignUp />
         </Column>
     )
 }

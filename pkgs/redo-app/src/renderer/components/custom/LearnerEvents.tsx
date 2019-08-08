@@ -25,7 +25,7 @@ export const LearnerEvents: FC<LearnerEventsProps> = ({ events }) => {
         <List className={list}>
             {events.map((e, i) => (
                 <ListItem className={listItem} key={i}>
-                    <LearnerEventCard event={e} />
+                    <LearnerEventCard event={{ ...e, tags: [] }} />
                 </ListItem>
             ))}
         </List>

@@ -8,7 +8,7 @@ export type FormErrors<T extends Fields> = { [K in keyof T]?: string[] }
 
 export type FormActions<T extends Fields, D = any> = {
     validate: (fields: T) => FormErrors<T>
-    submit: (fields: T) => Promise<ResponseState<D>>
+    submit: (fields: T) => Promise<ResponseState<D> | void>
 }
 
 export const useFormContext = useHookFormContext as () => ReturnType<

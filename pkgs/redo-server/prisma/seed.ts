@@ -20,7 +20,7 @@ async function main() {
                         password: "p"
                     }
                 })
-                console.log(`🎉 Created user: ${JSON.stringify(user)} 🎉`)
+                console.log(`🎉\nCreated user: ${JSON.stringify(user, null, 4)}\n🎉`)
             } catch (e) {
                 console.log(
                     `Failed to create user ${firstName} ${lastName}:\n${e}`

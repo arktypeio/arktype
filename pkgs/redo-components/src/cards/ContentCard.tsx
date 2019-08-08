@@ -1,13 +1,10 @@
 import React, { FC } from "react"
-import { Theme, Typography } from "@material-ui/core"
+import { Text } from "../text"
 import { Column, Row } from "../layouts"
-import { createStyles } from "@material-ui/styles"
 import { Card, CardProps } from "./Card"
 
-const styles = (theme: Theme) => createStyles({})
-
 export type ContentCardProps = CardProps & {
-    from: Record<string, string | number>
+    from: Record<string, any>
 }
 
 export const ContentCard: FC<ContentCardProps> = ({ from, children }) => {
@@ -18,15 +15,17 @@ export const ContentCard: FC<ContentCardProps> = ({ from, children }) => {
                     <Column>
                         {Object.entries(from).map(([k, v]) => (
                             <Row justify="center" key={k}>
-                                <Typography variant="body2">{`${k}: ${v}`}</Typography>
+                                <Text variant="body2">{`${k}: ${String(
+                                    v
+                                )}`}</Text>
                             </Row>
                         ))}
                     </Column>
                     {children}
                 </>
             ) : (
-                children
-            )}
+                    children
+                )}
         </Card>
     )
 }
