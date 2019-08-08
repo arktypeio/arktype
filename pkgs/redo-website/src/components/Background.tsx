@@ -1,8 +1,10 @@
-import React from "react"
+import React, { useEffect, createRef, useContext } from "react"
 import { Card, useTheme } from "redo-components"
 
 export const Background = () => {
     const theme = useTheme()
+    const ref = createRef()
+    useEffect(() => {})
     return (
         <div
             style={{
@@ -10,7 +12,8 @@ export const Background = () => {
             }}
         >
             <Card
-                elevation={20}
+                elevation={24}
+                ref={ref}
                 style={{
                     position: "absolute",
                     width: "100%",

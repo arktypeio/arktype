@@ -1,6 +1,6 @@
 export * from "./Background"
 export * from "./AppHeader"
 export * from "./AnimatedLogo"
-export * from "./PreLaunch"
+export * from "./SignUp"
 export * from "./SubHeader"
 export * from "./HowItWorks"

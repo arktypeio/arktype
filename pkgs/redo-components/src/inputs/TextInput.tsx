@@ -20,10 +20,10 @@ const getBorderClass = (state: TextInputState) => {
     return focused
         ? focusedClass
         : error
-            ? errorClass
-            : hovered
-                ? hoveredClass
-                : defaultClass
+        ? errorClass
+        : hovered
+        ? hoveredClass
+        : defaultClass
 }
 
 const useKind = makeKinds<MuiTextFieldProps>()((state: TextInputState) => ({
@@ -52,6 +52,12 @@ export type TextInputProps = MuiTextFieldProps & {
 
 export const TextInput: FC<TextInputProps> = ({
     kind = "outlined",
+    onFocus,
+    onBlur,
+    onError,
+    onReset,
+    onMouseOver,
+    onMouseOut,
     ...rest
 }) => {
     const theme = useTheme<Theme>()
@@ -64,12 +70,30 @@ export const TextInput: FC<TextInputProps> = ({
     return (
         <TextField
             margin="dense"
-            onFocus={() => setState({ ...state, focused: true })}
-            onBlur={() => setState({ ...state, focused: false })}
-            onError={() => setState({ ...state, error: true })}
-            onReset={() => setState({ ...state, error: false })}
-            onMouseOver={() => setState({ ...state, hovered: true })}
-            onMouseOut={() => setState({ ...state, hovered: false })}
+            onFocus={e => {
+                setState({ ...state, focused: true })
+                onFocus && onFocus(e)
+            }}
+            onBlur={e => {
+                setState({ ...state, focused: false })
+                onBlur && onBlur(e)
+            }}
+            onError={e => {
+                setState({ ...state, error: true })
+                onError && onError(e)
+            }}
+            onReset={e => {
+                setState({ ...state, error: false })
+                onReset && onReset(e)
+            }}
+            onMouseOver={e => {
+                setState({ ...state, hovered: true })
+                onMouseOver && onMouseOver(e)
+            }}
+            onMouseOut={e => {
+                setState({ ...state, hovered: false })
+                onMouseOut && onMouseOut(e)
+            }}
             InputLabelProps={{
                 style: {
                     color: state.focused

@@ -1,5 +1,5 @@
 import React, { FC } from "react"
-import { Text, Column } from "redo-components"
+import { Text, Column, Row, HideFor } from "redo-components"
 import { AnimatedLogo } from "./AnimatedLogo"
 import Typist from "react-typist"
 
