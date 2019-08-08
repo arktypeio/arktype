@@ -15,9 +15,7 @@ const cards = (
 )
 
 const C: FC = ({ children }) => (
-    <div style={{ height: "95vh", width: "95vw" }}>
-        {children}
-    </div>
+    <div style={{ height: "95vh", width: "95vw" }}>{children}</div>
 )
 
 storiesOf("Layout", module)
@@ -82,9 +80,7 @@ storiesOf("Layout", module)
     .add("Page", () => (
         <C>
             <Row style={{ height: "100%" }}>
-                <Column width={100}>
-                    Sidebar
-                </Column>
+                <Column width={100}>Sidebar</Column>
                 <Column grow>
                     <Row height={100}>Header</Row>
                     <Row grow>
@@ -116,6 +112,6 @@ storiesOf("Layout", module)
                 <Row md={4} justify="space-around">
                     <Card>Your window</Card>
                 </Row>
-            </Row >
+            </Row>
         </div>
     ))
