@@ -46,6 +46,7 @@ export class BrowserEvent {
     user: User
 }
 
+@ArgsType()
 @InputType()
 export class BrowserEventInput {
     @Field()
@@ -57,7 +58,7 @@ export class BrowserEventInput {
     @Field()
     value: string
 
-    @Field(type => [Tag])
+    @Field(type => [TagInput])
     tags: TagInput[]
 }
 
