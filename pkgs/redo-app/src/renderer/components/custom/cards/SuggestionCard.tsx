@@ -16,32 +16,28 @@ export const SuggestionCard: FC<SuggestionCardProps> = ({
 }) => {
     const theme = useTheme()
     return (
-        <div
+        <Card
             style={{
                 height: theme.spacing(20),
                 width: theme.spacing(20)
             }}
         >
-            <Card>
-                <Column>
-                    <Row justify="center">
-                        <MuiTypography variant="h6" noWrap>
-                            {name}
-                        </MuiTypography>
-                    </Row>
-                    <Row justify="center">
-                        <MuiTypography variant="body2">
-                            {description
-                                ? description
-                                : "This is a description"}
-                        </MuiTypography>
-                    </Row>
-                    <Row justify="space-around">
-                        {type === "test" ? <PlayButton /> : null}
-                        <ViewButton />
-                    </Row>
-                </Column>
-            </Card>
-        </div>
+            <Column>
+                <Row justify="center">
+                    <MuiTypography variant="h6" noWrap>
+                        {name}
+                    </MuiTypography>
+                </Row>
+                <Row justify="center">
+                    <MuiTypography variant="body2">
+                        {description ? description : "This is a description"}
+                    </MuiTypography>
+                </Row>
+                <Row justify="space-around">
+                    {type === "test" ? <PlayButton /> : null}
+                    <ViewButton />
+                </Row>
+            </Column>
+        </Card>
     )
 }

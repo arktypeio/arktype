@@ -5,6 +5,7 @@ import {
     FormText,
     FormSubmit,
     Column,
+    Row,
     Card,
     Form,
     Button
@@ -47,7 +48,7 @@ export const SignIn: FC = () => {
     const { animatedFields } = stylize()
     const theme = useTheme<Theme>()
     return (
-        <Column justify="center" align="center">
+        <Column full justify="center" align="center">
             <Card
                 style={{
                     width: theme.spacing(45),
@@ -55,11 +56,14 @@ export const SignIn: FC = () => {
                     padding: `${theme.spacing(3)}px ${theme.spacing(5)}px`
                 }}
             >
-                <Column style={{ height: "100%", width: "100%" }}>
+                <Column full>
                     <Logo />
                     <Form<SignInInput, SignInData>
                         submit={async fields => {
-                            const result = await submitForm({ submit, fields })
+                            const result = await submitForm({
+                                submit,
+                                fields
+                            })
                             if (result.data && result.data.signIn) {
                                 store.mutate({
                                     token: result.data.signIn.token
@@ -69,12 +73,10 @@ export const SignIn: FC = () => {
                         }}
                         validate={validate}
                     >
-                        <Column
-                            grow
-                            justify="space-between"
-                        >
+                        <Column grow align="center">
                             <AnimatePresence>
                                 <motion.div
+                                    style={{ width: "100%" }}
                                     positionTransition
                                     initial={{
                                         x: -500
@@ -83,9 +85,14 @@ export const SignIn: FC = () => {
                                     exit={{ x: -500 }}
                                     className={animatedFields}
                                 >
-                                    <Column>
-                                        <FormText name="email" autoFocus />
+                                    <Column grow justify="center">
                                         <FormText
+                                            style={{ width: "100%" }}
+                                            name="email"
+                                            autoFocus
+                                        />
+                                        <FormText
+                                            style={{ width: "100%" }}
                                             type="password"
                                             name="password"
                                         />

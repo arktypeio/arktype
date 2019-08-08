@@ -37,7 +37,7 @@ export const SuggestionResultsGrid = component({
             <GridList
                 style={{
                     minHeight: theme.spacing(90),
-                    minWidth: theme.spacing(180),
+                    minWidth: theme.spacing(90),
                     padding: theme.spacing(2)
                 }}
                 cols={4}
