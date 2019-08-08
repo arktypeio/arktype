@@ -9,7 +9,10 @@
         "buildGenerate": "tsc -p tsconfig.generate.json",
         "start": "ts-node-dev --no-notify --respawn --transpileOnly ./src",
         "generateSchema": "npm run buildGenerate && node dist/__generate__/generate.js",
-        "generate": "npm run generateSchema && prisma2 generate && prisma2 lift save --name init && prisma2 lift up",
+        "wipeDb": "rm -rf prisma/dev.db migrations",
+        "seed": "ts-node prisma/seed.ts",
+        "prisma": "npm run generateSchema && prisma2 generate && prisma2 lift save --name init && prisma2 lift up",
+        "generate": "npm run wipeDb && npm run prisma && npm run seed",
         "test": "jest"
     },
     "dependencies": {
@@ -37,7 +40,7 @@
         "@types/node": "12.6.6",
         "fs-extra": "8.1.0",
         "jest": "24.8.0",
-        "prisma2": "2.0.0-preview-2",
+        "prisma2": "2.0.0-preview-5",
         "redo-recommended": "1.0.0",
         "ts-jest": "24.0.2",
         "ts-node": "8.3.0",

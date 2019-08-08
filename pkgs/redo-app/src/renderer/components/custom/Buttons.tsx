@@ -5,16 +5,12 @@ import {
 } from "@material-ui/core"
 import { IconButtonProps as MuiIconButtonProps } from "@material-ui/core/IconButton"
 import { SvgIconProps as MuiSvgIconProps } from "@material-ui/core/SvgIcon"
-import { component } from "blocks"
 import MuiPlayIcon from "@material-ui/icons/PlayArrow"
 import MuiAddIcon from "@material-ui/icons/Add"
 import MuiScheduleIcon from "@material-ui/icons/Schedule"
 import MuiHelpIcon from "@material-ui/icons/Help"
 import MuiAccountIcon from "@material-ui/icons/AccountCircle"
 import MuiViewIcon from "@material-ui/icons/Visibility"
-import { mdiGoogleChrome, mdiFirefox } from "@mdi/js"
-
-type Browser = "CHROME" | "FIREFOX"
 
 export type IconButtonProps = MuiIconButtonProps & {
     Icon: React.ComponentType<MuiSvgIconProps>
@@ -30,27 +26,6 @@ export const IconButton: FC<IconButtonProps> = ({
         <Icon {...iconProps} />
     </MuiIconButton>
 )
-
-export type LaunchBrowserButtonProps = IconButtonProps & {
-    browser: Browser
-}
-
-export const LaunchBrowserButton = component({
-    name: "LaunchBrowserButton",
-    defaultProps: {} as Partial<LaunchBrowserButtonProps>,
-    store: true
-})(({ browser, store, ...rest }) => {
-    return (
-        <IconButton
-            {...rest}
-            onClick={() =>
-                store.mutate({
-                    /*browser: "CHROME"*/
-                })
-            }
-        />
-    )
-})
 
 export const iconButtonFrom = (
     Icon: React.ComponentType<MuiSvgIconProps>,
@@ -94,11 +69,3 @@ export const ViewIcon = MuiViewIcon
 export const ViewButton = iconButtonFrom(ViewIcon)
 export const ScheduleIcon = MuiScheduleIcon
 export const ScheduleButton = iconButtonFrom(ScheduleIcon)
-export const ChromeIcon = svgIconFrom(mdiGoogleChrome)
-export const ChromeButton = () => (
-    <LaunchBrowserButton Icon={ChromeIcon} browser="CHROME" />
-)
-export const FirefoxIcon = svgIconFrom(mdiFirefox)
-export const FirefoxButton = () => (
-    <LaunchBrowserButton Icon={FirefoxIcon} browser="FIREFOX" />
-)

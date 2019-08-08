@@ -7,7 +7,7 @@ import {
     Column,
     Card,
     Form,
-    SecondaryButton
+    Button
 } from "redo-components"
 import gql from "graphql-tag"
 import { SignInInput } from "redo-model"
@@ -47,15 +47,15 @@ export const SignIn: FC = () => {
     const { animatedFields } = stylize()
     const theme = useTheme<Theme>()
     return (
-        <Column css={{ justifyContent: "center", alignItems: "center" }}>
+        <Column justify="center" align="center">
             <Card
-                css={{
+                style={{
                     width: theme.spacing(45),
                     height: theme.spacing(50),
                     padding: `${theme.spacing(3)}px ${theme.spacing(5)}px`
                 }}
             >
-                <Column css={{ height: "100%", width: "100%" }}>
+                <Column style={{ height: "100%", width: "100%" }}>
                     <Logo />
                     <Form<SignInInput, SignInData>
                         submit={async fields => {
@@ -70,10 +70,8 @@ export const SignIn: FC = () => {
                         validate={validate}
                     >
                         <Column
-                            css={{
-                                flexGrow: 1,
-                                justifyContent: "space-between"
-                            }}
+                            grow
+                            justify="space-between"
                         >
                             <AnimatePresence>
                                 <motion.div
@@ -105,11 +103,12 @@ export const SignIn: FC = () => {
                     </Form>
                 </Column>
             </Card>
-            <SecondaryButton
+            <Button
+                kind="secondary"
                 onClick={() => store.mutate({ page: Page.SignUp })}
             >
                 Need an account?
-            </SecondaryButton>
+            </Button>
         </Column>
     )
 }

@@ -28,7 +28,7 @@ module.exports = {
  * The return value is the updated object.
  */
 function readPackage(packageJson, context) {
-    if (packageJson.name === "apollo-cache") {
+    if (["apollo-cache", "apollo-link-context"].includes(packageJson.name)) {
         context.log("Fixing dependencies for apollo-cache...")
         packageJson.peerDependencies = {
             graphql: "^0.11.0 || ^0.12.0 || ^0.13.0 || ^14.0.0"

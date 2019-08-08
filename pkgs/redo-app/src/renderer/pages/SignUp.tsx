@@ -9,7 +9,7 @@ import {
     Row,
     FormSubmit,
     Card,
-    SecondaryButton
+    Button
 } from "redo-components"
 import { SignUpInput } from "redo-model"
 import Logo from "assets/logo.svg"
@@ -57,9 +57,9 @@ export const SignUp: FC = () => {
     const theme = useTheme<Theme>()
     const [submit] = useMutation<SignUpData, SignUpInput>(SIGNUP)
     return (
-        <Column css={{ justifyContent: "center", alignItems: "center" }}>
+        <Column justify="center" align="center">
             <Card
-                css={{
+                style={{
                     width: theme.spacing(45),
                     height: theme.spacing(50),
                     padding: `${theme.spacing(3)}px ${theme.spacing(5)}px`
@@ -108,17 +108,17 @@ export const SignUp: FC = () => {
                             responseOptions={{
                                 loading: { hideContent: true }
                             }}
-                        >
-                            Sign Up
+                        > Sign Up
                         </FormSubmit>
                     </Column>
                 </Form>
             </Card>
-            <SecondaryButton
+            <Button
+                kind="secondary"
                 onClick={() => store.mutate({ page: Page.SignIn })}
             >
                 Back to sign in
-            </SecondaryButton>
+            </Button>
         </Column>
     )
 }

@@ -79,7 +79,7 @@ export const RespondTo = <T extends any = any>({
         return null
     })
     return (
-        <Column>
+        <Column width="fit-content">
             {displayResponseAs}
             {hideChildren ? null : children}
         </Column>
