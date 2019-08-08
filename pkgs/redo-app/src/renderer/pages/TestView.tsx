@@ -36,7 +36,6 @@ export const TestView = () => {
     const { data } = useQuery<TestData>(GET_TESTS)
     return (
         <Column justify="flex-start">
-            <p>This is text.</p>
             <Row>
                 <Button
                     kind="secondary"
