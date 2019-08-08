@@ -72,8 +72,9 @@ export const Learner = component({
                                     name,
                                     tags: tags.map(_ => ({ name: _ })),
                                     steps: events.map(
-                                        ({ __typename, ...inputs }: any) =>
-                                            inputs
+                                        ({ __typename, ...inputs }: any) => {
+                                            return { ...inputs, tags: [] }
+                                        }
                                     )
                                 }
                             })

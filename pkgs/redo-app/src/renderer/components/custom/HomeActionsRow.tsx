@@ -26,6 +26,15 @@ export const HomeActionsRow = component({
                 </Button>
                 <Button
                     kind="secondary"
+                    onClick={() =>
+                        store.mutate({ page: Page.BrowserEventView })
+                    }
+                >
+                    See all browser events
+                </Button>
+
+                <Button
+                    kind="secondary"
                     onClick={() => store.mutate({ page: Page.TagView })}
                 >
                     See all tags

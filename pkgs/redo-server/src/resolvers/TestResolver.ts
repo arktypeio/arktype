@@ -1,7 +1,7 @@
 import { Authorized, Ctx, Mutation, Query, Resolver, Args } from "type-graphql"
 import { Test, TestInput, TagInput } from "redo-model"
 import { Context } from "../context"
-import { createECDH } from "crypto"
+import { createTagsInput } from "./common"
 @Resolver(of => Test)
 export class TestResolver {
     @Authorized()
@@ -10,12 +10,6 @@ export class TestResolver {
         @Args() { name, steps, tags }: TestInput,
         @Ctx() { photon, id }: Context
     ) {
-        const createTagsInput = (tags: TagInput[]) =>
-            tags.map(({ ...fields }) => ({
-                ...fields,
-                user: { connect: { id: id! } }
-            }))
-
         const test = await photon.tests.create({
             data: {
                 name,
@@ -23,11 +17,11 @@ export class TestResolver {
                     create: steps.map(({ tags, ...rest }) => ({
                         ...rest,
                         user: { connect: { id: id! } },
-                        tags: { create: createTagsInput(tags) }
+                        tags: { create: createTagsInput(tags, id!) }
                     }))
                 },
                 tags: {
-                    create: createTagsInput(tags)
+                    create: createTagsInput(tags, id!)
                 },
                 user: { connect: { id: id! } }
             }

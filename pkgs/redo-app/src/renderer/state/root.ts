@@ -4,6 +4,7 @@ import { Handler } from "shapeql"
 
 export enum Page {
     Home = "HOME",
+    BrowserEventView = "BROWSER_EVENT_VIEW",
     TestView = "TEST_VIEW",
     TagView = "TAG_VIEW",
     SignIn = "SIGN_IN",
