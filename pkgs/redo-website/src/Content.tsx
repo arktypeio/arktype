@@ -1,31 +1,24 @@
 import "typeface-ubuntu"
 import React from "react"
-import { Column, useTheme, HideFor, Row } from "redo-components"
+import { Column, HideFor, Row, AppContents } from "redo-components"
 import { AppHeader, HowItWorks, SignUp, SubHeader } from "./components"
 
 export const Content = () => {
-    const theme = useTheme()
     return (
-        <div
-            style={{
-                position: "absolute",
-                padding: theme.spacing(2),
-                top: 0
-            }}
-        >
+        <AppContents>
             <HideFor smDown>
                 <DesktopLayout />
             </HideFor>
             <HideFor mdUp>
                 <MobileLayout />
             </HideFor>
-        </div>
+        </AppContents>
     )
 }
 
 export const MobileLayout = () => (
-    <Column full>
-        <AppHeader style={{ height: 200 }} />
+    <Column>
+        <AppHeader mobile={true} />
         <SubHeader />
         <HowItWorks />
         <SignUp />
