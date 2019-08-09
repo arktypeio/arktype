@@ -78,16 +78,18 @@ storiesOf("Layout", module)
     ))
     .add("Page", () => (
         <C>
-            <Row height="100%">
-                <Column width={100}>Sidebar</Column>
-                <Column grow>
+            <Row full>
+                <Column width={100} full>
+                    Sidebar
+                </Column>
+                <Column grow full>
                     <Row height={100}>Header</Row>
                     <Row grow>
-                        <Column align="center" justify="space-between">
+                        <Column full align="center" justify="space-between">
                             <p>Left content</p>
                             {cards}
                         </Column>
-                        <Column align="center">
+                        <Column full align="center">
                             <p>Right content</p>
                             <Row grow justify="center" align="center">
                                 <Card>More content</Card>
