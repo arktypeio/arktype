@@ -18,10 +18,10 @@ const Step: FC<StepProps> = ({ children }) => {
 
 export const HowItWorks: FC = () => {
     return (
-        <Column>
+        <div>
             <Step>Open the Redo desktop app</Step>
             <Step>Interact with your website</Step>
             <Step>Save your new automated test</Step>
-        </Column>
+        </div>
     )
 }

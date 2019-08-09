@@ -24,8 +24,8 @@ export const Content = () => {
 }
 
 export const MobileLayout = () => (
-    <Column align="center">
-        <AppHeader />
+    <Column full>
+        <AppHeader style={{ height: 200 }} />
         <SubHeader />
         <HowItWorks />
         <SignUp />

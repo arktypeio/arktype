@@ -8,21 +8,19 @@ export const SignUp = () => {
             validate={_ => ({ email: [] })}
             submit={async ({ email }) => track.prelaunchRegister({ email })}
         >
-            <Column>
-                <FormText name="email" />
-                <FormSubmit
-                    responseOptions={{
-                        data: {
-                            displayAs: () => (
-                                <Button disabled>You're in the loop 💌</Button>
-                            ),
-                            hideContent: true
-                        }
-                    }}
-                >
-                    Keep me posted!
-                </FormSubmit>
-            </Column>
+            <FormText name="email" />
+            <FormSubmit
+                responseOptions={{
+                    data: {
+                        displayAs: () => (
+                            <Button disabled>You're in the loop 💌</Button>
+                        ),
+                        hideContent: true
+                    }
+                }}
+            >
+                Keep me posted!
+            </FormSubmit>
         </Form>
     )
 }

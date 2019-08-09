@@ -3,8 +3,6 @@ import { Card, useTheme } from "redo-components"
 
 export const Background = () => {
     const theme = useTheme()
-    const ref = createRef()
-    useEffect(() => {})
     return (
         <div
             style={{
@@ -13,13 +11,13 @@ export const Background = () => {
         >
             <Card
                 elevation={24}
-                ref={ref}
                 style={{
                     position: "absolute",
                     width: "100%",
                     top: -theme.spacing(100),
                     height: theme.spacing(134),
-                    transform: "skewY(-6deg)"
+                    transform: "skewY(-6deg)",
+                    transformOrigin: "left"
                 }}
             />
         </div>
