@@ -75,13 +75,8 @@ export const FormText: FC<FormTextProps> = ({
                 onKeyDown={async (
                     event: React.KeyboardEvent<HTMLDivElement>
                 ) => {
-                    const values = getValues()
-                    if (
-                        event.key === "enter" &&
-                        Object.values(validate(values)).every(
-                            _ => !_ || !_.length
-                        )
-                    ) {
+                    if (event.key === "Enter") {
+                        submit(getValues())
                     }
                 }}
                 {...rest}
