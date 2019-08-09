@@ -3,6 +3,7 @@ import { storiesOf } from "@storybook/react"
 import { action } from "@storybook/addon-actions"
 import { withTheme } from "../storybook"
 import { Button } from "."
+import { withKnobs, text, boolean, number } from "@storybook/addon-knobs"
 
 storiesOf("Button", module)
     .addDecorator(withTheme())
@@ -16,3 +17,4 @@ storiesOf("Button", module)
             I'm subtle 😉
         </Button>
     ))
+    .addDecorator(withKnobs)

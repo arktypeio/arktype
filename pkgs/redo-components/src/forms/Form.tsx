@@ -1,4 +1,4 @@
-import React, { ReactNode } from "react"
+import React, { ReactNode, FC } from "react"
 import useForm, { FormContext } from "react-hook-form"
 import { FormActions, Fields } from "./FormContext"
 
@@ -10,13 +10,25 @@ export const Form = <T extends Fields, D = any>({
     children,
     validate,
     submit
-}: FormProps<T, D>) => (
-    <FormContext
-        validate={validate}
-        submit={submit}
-        touched={[]}
-        {...useForm()}
-    >
-        {children}
-    </FormContext>
-)
+}: FormProps<T, D>) => {
+    const formContext = useForm()
+    return (
+        <FormContext
+            validate={validate}
+            submit={async () => {
+                const values = formContext.getValues()
+                if (
+                    Object.values(validate(values as any)).every(
+                        _ => !_ || !_.length
+                    )
+                ) {
+                    const response = (await submit(values as any)) || {}
+                }
+            }}
+            touched={[]}
+            {...useForm()}
+        >
+            {children}
+        </FormContext>
+    )
+}
