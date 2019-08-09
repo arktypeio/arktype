@@ -1,28 +1,16 @@
 import React from "react"
-import { Theme } from "@material-ui/core/styles"
-import { createStyles } from "@material-ui/styles"
 import { PageRouter } from "pages"
 import { component } from "blocks"
 import { hot } from "react-hot-loader/root"
-
-const styles = (theme: Theme) =>
-    createStyles({
-        content: {
-            display: "flex",
-            padding: theme.spacing(5),
-            height: "100vh",
-            width: "calc(100vw - (100vw - 100%))"
-        }
-    })
+import { AppContents } from "redo-components"
 
 const PossiblyHotContent = component({
-    name: "Content",
-    styles
-})(({ classes }) => {
+    name: "Content"
+})(({}) => {
     return (
-        <div className={classes.content}>
+        <AppContents>
             <PageRouter />
-        </div>
+        </AppContents>
     )
 })
 
