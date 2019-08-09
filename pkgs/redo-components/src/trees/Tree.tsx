@@ -1,10 +1,12 @@
 import React, { FC } from "react"
-import { Text } from "../text"
-import { TreeView as MuiTreeView, TreeItem } from "@material-ui/lab"
+import { TreeItem } from "../trees"
+import { TreeView as MuiTreeView } from "@material-ui/lab"
 import { TreeViewProps as MuiTreeViewProps } from "@material-ui/lab/TreeView"
 import ExpandMoreIcon from "@material-ui/icons/ExpandMore"
 import ChevronRightIcon from "@material-ui/icons/ChevronRight"
 import { isRecursible, ItemOrList, Entry } from "redo-utils"
+import { ModalText, ModalButton } from "../modals"
+import { Row, Column } from "../layouts"
 
 type TreeSource = ItemOrList<Record<string, any>>
 
@@ -48,14 +50,19 @@ const TreeItems: FC<TreeItemsProps> = ({ entries }) => (
             const key = String(Math.random())
             if (isRecursible(v)) {
                 return (
-                    <TreeItem nodeId={key} key={key} label={k}>
-                        <TreeItems entries={Object.entries(v)} />
-                    </TreeItem>
+                    <Row width={20}>
+                        <TreeItem nodeId={key} key={key} label={k}>
+                            <TreeItems entries={Object.entries(v)} />
+                        </TreeItem>
+                        {/* TODO make ModalButton appear when toggled. Requires making
+                        real, ie non-random, keys. */}
+                        <ModalButton>See card</ModalButton>
+                    </Row>
                 )
             } else {
                 return (
                     <TreeItem nodeId={key} key={key} label={k}>
-                        {<Text>{String(v)}</Text>}
+                        {<ModalText>{String(v)}</ModalText>}
                     </TreeItem>
                 )
             }

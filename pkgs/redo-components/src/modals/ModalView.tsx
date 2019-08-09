@@ -1,27 +1,36 @@
 import React, { FC, cloneElement } from "react"
-import { Menu as MuiMenu } from "@material-ui/core"
-import { MenuProps as MuiMenuProps } from "@material-ui/core/Menu"
-import { MenuItem } from "."
+import { Button } from "../buttons"
+import { Card } from "../cards"
+import { Text } from "../text"
+import { useTheme } from "../styles"
+import { Row, Column } from "../layouts"
+import { Dialog } from "@material-ui/core"
+import { DialogProps } from "@material-ui/core/Dialog"
 
-export type ModalViewProps = {}
+export type ModalViewProps = DialogProps & {}
 
-export const ModalView: FC<ModalViewProps> = () => {
-    const [anchor, setAnchor] = React.useState<HTMLElement | null>(null)
+// currently this is specific to tests. That will be abstracted away before PR
+export const ModalView: FC<ModalViewProps> = ({ ...rest }) => {
+    const theme = useTheme()
     return (
-        <>
-            {button}
-            <MuiMenu
-                anchorEl={anchor}
-                open={!!anchor}
-                onClose={() => setAnchor(null)}
-                {...rest}
+        <Dialog {...rest}>
+            <Card
+                style={{
+                    minHeight: theme.spacing(30),
+                    minWidth: theme.spacing(30),
+                    padding: theme.spacing(2)
+                }}
             >
-                {Object.entries(options!).map(([name, onClick]) => (
-                    <MenuItem onClick={onClick} key={name}>
-                        {name}
-                    </MenuItem>
-                ))}
-            </MuiMenu>
-        </>
+                <Row>
+                    <Column>
+                        <Text>Test name</Text>
+                        <Text>Tags go here</Text>
+                    </Column>
+                    <Button kind="primary">Run test</Button>
+                    <Button kind="secondary">Delete test</Button>
+                </Row>
+                <Text>BrowserEvents go here</Text>
+            </Card>
+        </Dialog>
     )
 }
