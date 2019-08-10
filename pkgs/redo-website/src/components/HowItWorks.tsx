@@ -32,7 +32,7 @@ const Step: FC<StepProps> = ({
             }}
             onChange={(_, open) => setChecked(open)}
         >
-            <ExpansionPanelSummary expandIcon={<ExpandMore />} {...rest}>
+            <ExpansionPanelSummary expandIcon={<ExpandMore />} {...rest as any}>
                 <Row align="center">
                     <AnimatedCheckbox checked={checked} />
                     <Text variant="h6">{summary}</Text>
