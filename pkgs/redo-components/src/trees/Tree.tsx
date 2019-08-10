@@ -1,13 +1,21 @@
 import React, { FC } from "react"
 import { TreeItem } from "../trees"
+// if this hack works, need to make a new layout component and not use grid directly
+import { Grid } from "@material-ui/core"
 import { TreeView as MuiTreeView } from "@material-ui/lab"
 import { TreeViewProps as MuiTreeViewProps } from "@material-ui/lab/TreeView"
 import ExpandMoreIcon from "@material-ui/icons/ExpandMore"
 import ChevronRightIcon from "@material-ui/icons/ChevronRight"
+import { makeStyles } from "@material-ui/styles"
 import { isRecursible, ItemOrList, Entry } from "redo-utils"
 import { ModalText, ModalButton } from "../modals"
 import { Row, Column } from "../layouts"
 
+const stylize = makeStyles({
+    content: {
+        width: 10
+    }
+})
 type TreeSource = ItemOrList<Record<string, any>>
 
 export type TreeProps<O extends TreeSource> = MuiTreeViewProps &
@@ -42,30 +50,44 @@ export const Tree = <O extends TreeSource>({
 
 type TreeItemsProps = {
     entries: Entry[]
+    path?: string[]
 }
 
-const TreeItems: FC<TreeItemsProps> = ({ entries }) => (
-    <>
-        {entries.map(([k, v]) => {
-            const key = String(Math.random())
-            if (isRecursible(v)) {
-                return (
-                    <Row width={20}>
-                        <TreeItem nodeId={key} key={key} label={k}>
-                            <TreeItems entries={Object.entries(v)} />
-                        </TreeItem>
-                        {/* TODO make ModalButton appear when toggled. Requires making
-                        real, ie non-random, keys. */}
-                        <ModalButton>See card</ModalButton>
-                    </Row>
-                )
-            } else {
-                return (
-                    <TreeItem nodeId={key} key={key} label={k}>
-                        {<ModalText>{String(v)}</ModalText>}
-                    </TreeItem>
-                )
-            }
-        })}
-    </>
-)
+const TreeItems: FC<TreeItemsProps> = ({ entries, path = [] }) => {
+    const { content } = stylize()
+    return (
+        <>
+            {entries.map(([k, v]) => {
+                const id = String(Math.random())
+                if (isRecursible(v)) {
+                    return (
+                        <Row>
+                            <TreeItem
+                                // classes={{ width: "10" }}
+                                classes={{ content: content }}
+                                nodeId={id}
+                                key={id}
+                                label=""
+                            >
+                                <TreeItems
+                                    path={[...path, String(k)]}
+                                    entries={Object.entries(v)}
+                                />
+                            </TreeItem>
+                            <ModalText>{k}</ModalText>
+                        </Row>
+                    )
+                } else {
+                    return (
+                        <Row>
+                            <TreeItem nodeId={id} key={id} label="">
+                                {<ModalText>{String(v)}</ModalText>}
+                            </TreeItem>
+                            <ModalText>{k}</ModalText>
+                        </Row>
+                    )
+                }
+            })}
+        </>
+    )
+}
