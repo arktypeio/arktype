@@ -1,39 +1,50 @@
 import "typeface-ubuntu"
-import React from "react"
-import { Column, HideFor, Row, AppContents } from "redo-components"
-import { AppHeader, HowItWorks, SignUp, SubHeader } from "./components"
+import { Grid } from "@material-ui/core"
+import React, { useEffect, useRef, useState, FC } from "react"
+import { HideFor, Row, AppContents, Column } from "redo-components"
+import { AppHeader, HowItWorks, SignUp } from "./components"
+import { AppStateContext } from "./AppStateContext"
 
-export const Content = () => {
+export const Content: FC = () => {
+    const ref = useRef<HTMLDivElement>(null)
+    const [contentHeight, setContentHeight] = useState()
+    useEffect(() => {
+        ref.current && setContentHeight(ref.current.clientHeight)
+    })
     return (
-        <AppContents>
-            <HideFor smDown>
-                <DesktopLayout />
-            </HideFor>
-            <HideFor mdUp>
-                <MobileLayout />
-            </HideFor>
-        </AppContents>
+        <AppStateContext.Provider value={{ contentHeight }}>
+            <AppContents>
+                <Grid ref={ref}>
+                    {/* <HideFor smDown>
+                        <DesktopLayout />
+                    </HideFor>
+                    <HideFor mdUp> */}
+                    <MobileLayout />
+                    {/* </HideFor> */}
+                </Grid>
+            </AppContents>
+        </AppStateContext.Provider>
     )
 }
 
-export const MobileLayout = () => (
-    <Column>
+export const MobileLayout: FC = () => (
+    <Column align="center">
         <AppHeader mobile={true} />
-        <SubHeader />
-        <HowItWorks />
-        <SignUp />
+        <Column style={{ maxWidth: 500 }}>
+            <HowItWorks />
+            <SignUp />
+        </Column>
     </Column>
 )
 
-export const DesktopLayout = () => (
-    <Column>
-        <Row height={350}>
+export const DesktopLayout: FC = () => (
+    <>
+        <Row>
             <AppHeader />
-            <SubHeader />
             <HowItWorks />
         </Row>
         <Row>
             <SignUp />
         </Row>
-    </Column>
+    </>
 )

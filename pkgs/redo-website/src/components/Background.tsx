@@ -21,10 +21,10 @@ export const Background: FC<BackgroundProps> = ({ skewBetween }) => {
             style={{
                 position: "absolute",
                 width,
-                height: skewBetween[0],
+                height: skewBetween[0] + 24,
+                top: -24,
                 transform: `skewY(${skewAngle}rad)`,
-                transformOrigin: "left",
-                zIndex: -1
+                transformOrigin: "left"
             }}
         />
     )
