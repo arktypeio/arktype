@@ -1,0 +1,5 @@
+[build]
+  command = "npm install -g @microsoft/rush && rush update && rush build"
+  publish = "pkgs/redo-website/dist"
+[build.environment]
+  NODE_VERSION = "10.16.0"
