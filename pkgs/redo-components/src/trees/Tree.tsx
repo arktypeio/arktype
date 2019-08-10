@@ -10,12 +10,27 @@ import { makeStyles } from "@material-ui/styles"
 import { isRecursible, ItemOrList, Entry } from "redo-utils"
 import { ModalText, ModalButton } from "../modals"
 import { Row, Column } from "../layouts"
+import { Text } from "../text"
+import { Button } from "../buttons"
 
-const stylize = makeStyles({
-    content: {
-        width: 10
-    }
-})
+// const stylize = makeStyles({
+//     content: { width: 0, alignItems: "flex-start" },
+//     label: {},
+//     iconContainer: { marginRight: 0, width: 0, justifyContent: "flex-start" },
+//     root: {
+//         width: 100
+//     },
+//     group: {
+//         marginLeft: 20
+//     }
+// })
+
+// const stylizeTree = makeStyles({
+//     root: {
+//         width: 10
+//     }
+// })
+
 type TreeSource = ItemOrList<Record<string, any>>
 
 export type TreeProps<O extends TreeSource> = MuiTreeViewProps &
@@ -34,6 +49,7 @@ export const Tree = <O extends TreeSource>({
     labelKey,
     ...rest
 }: TreeProps<O>) => {
+    // const { root } = stylizeTree()
     const entries: Entry[] = Array.isArray(from)
         ? from.map(({ [labelKey!]: key, ...rest }) => [key, rest])
         : Object.entries(from)
@@ -41,6 +57,7 @@ export const Tree = <O extends TreeSource>({
         <MuiTreeView
             defaultCollapseIcon={<ExpandMoreIcon />}
             defaultExpandIcon={<ChevronRightIcon />}
+            // classes={{ root: root }}
             {...rest}
         >
             <TreeItems entries={entries} />
@@ -54,7 +71,7 @@ type TreeItemsProps = {
 }
 
 const TreeItems: FC<TreeItemsProps> = ({ entries, path = [] }) => {
-    const { content } = stylize()
+    // const { content, iconContainer, root, label, group } = stylize()
     return (
         <>
             {entries.map(([k, v]) => {
@@ -63,29 +80,27 @@ const TreeItems: FC<TreeItemsProps> = ({ entries, path = [] }) => {
                     return (
                         <Row>
                             <TreeItem
-                                // classes={{ width: "10" }}
-                                classes={{ content: content }}
+                                // classes={{
+                                //     content: content,
+                                //     root: root,
+                                //     label: label,
+                                //     iconContainer: iconContainer,
+                                //     group: group
+                                // }}
                                 nodeId={id}
                                 key={id}
-                                label=""
+                                label={String(k)}
+                                onClick={() => console.log(5)}
                             >
                                 <TreeItems
                                     path={[...path, String(k)]}
                                     entries={Object.entries(v)}
                                 />
                             </TreeItem>
-                            <ModalText>{k}</ModalText>
                         </Row>
                     )
                 } else {
-                    return (
-                        <Row>
-                            <TreeItem nodeId={id} key={id} label="">
-                                {<ModalText>{String(v)}</ModalText>}
-                            </TreeItem>
-                            <ModalText>{k}</ModalText>
-                        </Row>
-                    )
+                    return <Text>{`${String(k)}: ${String(v)}`}</Text>
                 }
             })}
         </>

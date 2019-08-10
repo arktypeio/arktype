@@ -2,6 +2,7 @@ import React from "react"
 import { storiesOf } from "@storybook/react"
 import { withTheme } from "../storybook"
 import { Tree } from "."
+import { Column } from "../layouts"
 
 const src = {
     z: "stuff",
@@ -31,5 +32,3 @@ storiesOf("TreeView", module)
     .add("Input as single object of test data", () => (
         <Tree style={{ width: 200 }} from={src} />
     ))
-
-
