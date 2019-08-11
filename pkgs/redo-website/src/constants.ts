@@ -1,3 +1,14 @@
+export const layout = {
+    header: {
+        height: 250
+    },
+    content: {
+        maxWidth: 600,
+        minWidth: 343,
+        padding: 16
+    }
+}
+
 export const copy = {
     subheader: {
         title: `💡A new way to test`,

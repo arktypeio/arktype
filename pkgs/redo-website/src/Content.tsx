@@ -2,6 +2,7 @@ import "typeface-ubuntu"
 import React, { FC } from "react"
 import { AppContents, Column } from "redo-components"
 import { AppHeader, HowItWorks, SignUp, SubHeader } from "./components"
+import { layout } from "./constants"
 
 export const Content: FC = () => {
     return (
@@ -11,10 +12,9 @@ export const Content: FC = () => {
                 <Column
                     spacing={4}
                     style={{
-                        maxWidth: 600,
-                        padding: 16,
                         position: "absolute",
-                        top: 250
+                        top: layout.header.height,
+                        ...layout.content
                     }}
                 >
                     <SubHeader />

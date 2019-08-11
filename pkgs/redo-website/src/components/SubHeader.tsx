@@ -1,6 +1,6 @@
 import React from "react"
 import { Column, Text, Row } from "redo-components"
-import { copy } from "./Copy"
+import { copy } from "../constants"
 
 export const SubHeader = () => {
     return (
