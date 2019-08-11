@@ -8,7 +8,15 @@ export const Content: FC = () => {
         <AppContents>
             <Column align="center" style={{ overflow: "hidden" }}>
                 <AppHeader mobile={true} />
-                <Column spacing={4} style={{ maxWidth: 500, padding: 16 }}>
+                <Column
+                    spacing={4}
+                    style={{
+                        maxWidth: 600,
+                        padding: 16,
+                        position: "absolute",
+                        top: 250
+                    }}
+                >
                     <SubHeader />
                     <HowItWorks />
                     <SignUp />

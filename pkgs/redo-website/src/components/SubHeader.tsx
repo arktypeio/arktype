@@ -9,8 +9,8 @@ export const SubHeader = () => {
                 <Text variant="h4">{copy.subheader.title}</Text>
                 <Text>{copy.subheader.content}</Text>
                 <Row wrap="wrap">
-                    {copy.subheader.features.map(text => (
-                        <Column xs={6}>
+                    {copy.subheader.features.map((text, index) => (
+                        <Column key={index} xs={6}>
                             <Text>{text}</Text>
                         </Column>
                     ))}

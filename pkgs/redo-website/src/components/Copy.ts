@@ -5,7 +5,7 @@ export const copy = {
             to automate, run, or maintain them. Redo learns how your app works and does
             all that for you.`,
         features: [
-            `✔️ 100 % free`,
+            `✔️ 100% free`,
             `✔️ Open source`,
             `✔️ Developer-first`,
             `✔️ Deterministic & transparent`,
@@ -13,7 +13,7 @@ export const copy = {
         ]
     },
     howItWorks: {
-        title: `🛠How it works`,
+        title: `🔨How it works`,
         steps: [
             {
                 summary: `Install and open Redo`,

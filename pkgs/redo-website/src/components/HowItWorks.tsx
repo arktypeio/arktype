@@ -53,7 +53,7 @@ type StepsProps = {
 const Steps: FC<StepsProps> = ({ children }) => (
     <>
         {children.map((stepProps, index) => (
-            <Step defaultExpanded={index === 0} {...stepProps} />
+            <Step key={index} defaultExpanded={index === 0} {...stepProps} />
         ))}
     </>
 )
