@@ -4,6 +4,7 @@ import MuiButton, {
 } from "@material-ui/core/Button"
 import { makeKinds, KindFrom } from "../common"
 import { Row } from "../layouts"
+import { useTheme } from "../styles"
 
 const useKind = makeKinds<MuiButtonProps>()({
     primary: {
@@ -27,11 +28,17 @@ export const Button: FC<ButtonProps> = ({
     style,
     ...rest
 }) => {
+    console.log(useTheme())
     const { style: kindStyle, ...kindRest } = useKind(kind)
     return (
         <MuiButton
             fullWidth={false}
-            style={{ minWidth: 80, ...kindStyle, ...style }}
+            style={{
+                minWidth: 80,
+                textTransform: "none",
+                ...(kindStyle ? kindStyle : {}),
+                ...(style ? style : {})
+            }}
             {...kindRest}
             {...rest}
         />

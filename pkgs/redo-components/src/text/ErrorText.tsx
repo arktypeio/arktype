@@ -12,13 +12,20 @@ const stylize = makeStyles((theme: Theme) => ({
     }
 }))
 
+//FINISHEDTHING
+
 export type ErrorTextProps = TextProps & {
-    children: string | string[],
+    children: string | string[]
     tooltipPlacement?: ValueFrom<TooltipProps, "placement">
     tooltipProps?: TooltipProps
 }
 
-export const ErrorText: FC<ErrorTextProps> = ({ children, tooltipPlacement, tooltipProps, ...rest }) => {
+export const ErrorText: FC<ErrorTextProps> = ({
+    children,
+    tooltipPlacement,
+    tooltipProps,
+    ...rest
+}) => {
     const { tooltip } = stylize()
     const theme = useTheme()
     const messages = (listify(children) as string[]).filter(
@@ -35,10 +42,15 @@ export const ErrorText: FC<ErrorTextProps> = ({ children, tooltipPlacement, tool
             placement={tooltipPlacement}
             {...tooltipProps}
         >
-            <Text variant="caption" style={{
-                color: theme.palette.error.main,
-                whiteSpace: "pre-line"
-            }} noWrap {...rest}>
+            <Text
+                variant="caption"
+                style={{
+                    color: theme.palette.error.main,
+                    whiteSpace: "pre-line"
+                }}
+                noWrap
+                {...rest}
+            >
                 {messages.length > 1
                     ? `🤯${messages[0]} (and more...)`
                     : `🤔${messages[0]}`}
