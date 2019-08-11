@@ -2,7 +2,7 @@ import React, { FC } from "react"
 import { Text, Column, useTheme } from "redo-components"
 import { AnimatedLogo } from "./AnimatedLogo"
 import { Background } from "./Background"
-import { subheader } from "./Copy"
+import { copy } from "./Copy"
 import Typist from "react-typist"
 
 export type AppHeaderProps = {
@@ -10,8 +10,8 @@ export type AppHeaderProps = {
 }
 
 export const AppHeader: FC<AppHeaderProps> = ({ mobile }) => {
-    const startHeight = mobile ? 375 : 400
-    const endHeight = mobile ? 325 : 200
+    const startHeight = mobile ? 250 : 400
+    const endHeight = mobile ? 200 : 200
     return (
         <Column align="center" height={startHeight}>
             <Background skewBetween={[startHeight, endHeight]} />
@@ -22,24 +22,18 @@ export const AppHeader: FC<AppHeaderProps> = ({ mobile }) => {
                     maxWidth: 500
                 }}
                 justify="space-around"
-                height={endHeight}
+                width="fit-content"
+                align="center"
             >
-                <Column
-                    width="fit-content"
-                    align="center"
-                    style={{ alignSelf: "center" }}
-                >
-                    <AnimatedLogo />
-                    <Text variant="h4" color="primary">
-                        Automated testing
+                <AnimatedLogo />
+                <Text variant="h4" color="primary">
+                    Automated testing
+                </Text>
+                <Typist startDelay={400} cursor={{ show: false }}>
+                    <Text variant="h4" color="secondary">
+                        that builds itself.
                     </Text>
-                    <Typist startDelay={400} cursor={{ show: false }}>
-                        <Text variant="h4" color="secondary">
-                            that builds itself.
-                        </Text>
-                    </Typist>
-                </Column>
-                <Text>{subheader}</Text>
+                </Typist>
             </Column>
         </Column>
     )

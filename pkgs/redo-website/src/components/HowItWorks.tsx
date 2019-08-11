@@ -1,6 +1,6 @@
 import React, { FC, useState } from "react"
 import { Row, Text, Column } from "redo-components"
-import { openDetails, interactDetails, saveDetails } from "./Copy"
+import { copy } from "./Copy"
 import ExpandMore from "@material-ui/icons/ExpandMore"
 import { AnimatedCheckbox } from "./AnimatedCheckbox"
 import ExpansionPanel, {
@@ -11,48 +11,58 @@ import ExpansionPanelDetails from "@material-ui/core/ExpansionPanelDetails"
 
 type StepProps = ExpansionPanelProps & {
     summary: string
-    children: string
+    details: string
 }
 
 const Step: FC<StepProps> = ({
     summary,
-    children,
-    defaultExpanded = false,
+    details,
+    defaultExpanded,
     ...rest
 }) => {
-    const [checked, setChecked] = useState(defaultExpanded)
+    const [expanded, setExpanded] = useState(!!defaultExpanded)
     return (
         <ExpansionPanel
             key={summary}
-            defaultExpanded={defaultExpanded}
             style={{
                 background: "transparent",
                 width: "100%",
                 boxShadow: "unset"
             }}
-            onChange={(_, open) => setChecked(open)}
+            defaultExpanded={defaultExpanded}
+            onChange={(_, open) => setExpanded(open)}
+            {...rest}
         >
-            <ExpansionPanelSummary expandIcon={<ExpandMore />} {...rest as any}>
+            <ExpansionPanelSummary expandIcon={<ExpandMore />}>
                 <Row align="center">
-                    <AnimatedCheckbox checked={checked} />
+                    <AnimatedCheckbox checked={expanded} />
                     <Text variant="h6">{summary}</Text>
                 </Row>
             </ExpansionPanelSummary>
             <ExpansionPanelDetails>
-                <Text>{children}</Text>
+                <Text>{details}</Text>
             </ExpansionPanelDetails>
         </ExpansionPanel>
     )
 }
 
+type StepsProps = {
+    children: StepProps[]
+}
+
+const Steps: FC<StepsProps> = ({ children }) => (
+    <>
+        {children.map((stepProps, index) => (
+            <Step defaultExpanded={index === 0} {...stepProps} />
+        ))}
+    </>
+)
+
 export const HowItWorks: FC = () => {
     return (
-        <Column>
-            <Step summary="Open the Redo desktop app" defaultExpanded={true}>
-                {openDetails}
-            </Step>
-            <Step summary="Interact with your website">{interactDetails}</Step>
-            <Step summary="Save your automated test">{saveDetails}</Step>
+        <Column align="center">
+            <Text variant="h4">{copy.howItWorks.title}</Text>
+            <Steps>{copy.howItWorks.steps}</Steps>
         </Column>
     )
 }

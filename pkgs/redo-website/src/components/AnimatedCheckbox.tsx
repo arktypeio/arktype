@@ -1,35 +1,13 @@
-import React, { FC, useContext, useEffect, useState } from "react"
-import { motion, useMotionValue } from "framer-motion"
+import React, { FC } from "react"
+import { motion } from "framer-motion"
 import { useTheme } from "redo-components"
-import { AppStateContext } from "../AppStateContext"
 
 export type AnimatedCheckBoxProps = {
     checked: boolean
 }
 
 export const AnimatedCheckbox: FC<AnimatedCheckBoxProps> = ({ checked }) => {
-    // const { contentHeight } = useContext(AppStateContext)
     const theme = useTheme()
-    // const calculatePathLength = () => {
-    //     if (!contentHeight) {
-    //         return 0
-    //     }
-    //     const scrollableHeight = contentHeight - window.innerHeight
-    //     const scrollProgress = window.scrollY / scrollableHeight
-    //     if (scrollProgress < scrollRange[0]) {
-    //         return 0
-    //     } else if (scrollProgress > scrollRange[1]) {
-    //         return 1
-    //     } else {
-    //         return (scrollProgress - scrollRange[0]) / scrollRange[1]
-    //     }
-    // }
-    // const pathLength = useMotionValue(calculatePathLength())
-    // useEffect(() => {
-    //     const setPathLength = () => pathLength.set(calculatePathLength())
-    //     window.addEventListener("scroll", setPathLength)
-    //     return () => window.removeEventListener("scroll", setPathLength)
-    // })
     const animationProps = {
         initial: {
             pathLength: 0,

@@ -1,50 +1,19 @@
 import "typeface-ubuntu"
-import { Grid } from "@material-ui/core"
-import React, { useEffect, useRef, useState, FC } from "react"
-import { HideFor, Row, AppContents, Column } from "redo-components"
-import { AppHeader, HowItWorks, SignUp } from "./components"
-import { AppStateContext } from "./AppStateContext"
+import React, { FC } from "react"
+import { AppContents, Column } from "redo-components"
+import { AppHeader, HowItWorks, SignUp, SubHeader } from "./components"
 
 export const Content: FC = () => {
-    const ref = useRef<HTMLDivElement>(null)
-    const [contentHeight, setContentHeight] = useState()
-    useEffect(() => {
-        ref.current && setContentHeight(ref.current.clientHeight)
-    })
     return (
-        <AppStateContext.Provider value={{ contentHeight }}>
-            <AppContents>
-                <Grid ref={ref}>
-                    {/* <HideFor smDown>
-                        <DesktopLayout />
-                    </HideFor>
-                    <HideFor mdUp> */}
-                    <MobileLayout />
-                    {/* </HideFor> */}
-                </Grid>
-            </AppContents>
-        </AppStateContext.Provider>
+        <AppContents>
+            <Column align="center" style={{ overflow: "hidden" }}>
+                <AppHeader mobile={true} />
+                <Column spacing={4} style={{ maxWidth: 500, padding: 16 }}>
+                    <SubHeader />
+                    <HowItWorks />
+                    <SignUp />
+                </Column>
+            </Column>
+        </AppContents>
     )
 }
-
-export const MobileLayout: FC = () => (
-    <Column align="center">
-        <AppHeader mobile={true} />
-        <Column style={{ maxWidth: 500 }}>
-            <HowItWorks />
-            <SignUp />
-        </Column>
-    </Column>
-)
-
-export const DesktopLayout: FC = () => (
-    <>
-        <Row>
-            <AppHeader />
-            <HowItWorks />
-        </Row>
-        <Row>
-            <SignUp />
-        </Row>
-    </>
-)
