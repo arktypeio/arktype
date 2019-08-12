@@ -4,10 +4,10 @@ export const objectActions: Record<string, DisplayAs> = {
     test: {
         actions: ["run", "delete"]
     },
-    browserEvent: {
+    steps: {
         actions: ["delete", "modify"]
     },
-    tag: {
+    tags: {
         actions: ["delete", "View items with this tag"]
     }
 }

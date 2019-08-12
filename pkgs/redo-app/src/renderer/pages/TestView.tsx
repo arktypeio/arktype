@@ -49,7 +49,6 @@ export const TestView = () => {
             {data && data.getTest ? (
                 <Tree
                     displayAs={objectActions}
-                    style={{ width: 200 }}
                     from={data.getTest}
                     labelKey="name"
                 />

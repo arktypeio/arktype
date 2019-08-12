@@ -20,6 +20,11 @@ const src = {
                         tag: { tag: { tag: "h" } }
                     }
                 }
+            },
+            test2: {
+                test: {
+                    tag: "h"
+                }
             }
         }
     }
