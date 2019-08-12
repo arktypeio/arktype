@@ -1,4 +1,4 @@
-import React, { FC } from "react"
+import React, { FC, CSSProperties } from "react"
 import { motion, SVGMotionProps } from "framer-motion"
 import { useTheme } from "redo-components"
 
@@ -19,22 +19,19 @@ const animationProps = (delay: number): SVGMotionProps<SVGPathElement> => {
     }
 }
 
-export const AnimatedLogo: FC = () => {
+export type AnimatedLogoProps = {
+    style?: CSSProperties
+}
+
+export const AnimatedLogo: FC<AnimatedLogoProps> = ({ style }) => {
     const {
         palette: {
             primary: { main },
             secondary: { main: secondary }
         }
     } = useTheme()
-    const theme = useTheme()
     return (
-        <motion.svg
-            style={{
-                maxHeight: theme.spacing(15),
-                maxWidth: theme.spacing(47.55)
-            }}
-            viewBox="0 0 1823 575"
-        >
+        <motion.svg style={style} viewBox="0 0 1823 575">
             <motion.g
                 fill="none"
                 strokeLinecap="round"

@@ -12,6 +12,8 @@ export const makeKinds = <Props>() => <
         ? (kind: Kind) => Partial<Props>
         : (
               kind: Kind,
+              // Boolean expansion is a workaround for:
+              // https://github.com/Microsoft/TypeScript/issues/30029
               options: Options extends boolean ? true | false : Options
           ) => Partial<Props>
 
