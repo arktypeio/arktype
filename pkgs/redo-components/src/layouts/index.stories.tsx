@@ -4,8 +4,6 @@ import { withTheme } from "../storybook"
 import { defaultTheme } from "../styles"
 import { Row, Column } from "."
 import { Card } from "../cards"
-<<<<<<< HEAD
-import { Text } from "../text"
 import { withKnobs, select, boolean, number } from "@storybook/addon-knobs"
 
 const getKnobProps = () => ({
@@ -30,8 +28,6 @@ const getKnobProps = () => ({
         "space-evenly"
     ])
 })
-=======
->>>>>>> master
 
 const cards = (
     <>
@@ -71,47 +67,47 @@ storiesOf("Layout", module)
     ))
     .add("Row of cards", () => (
         <C>
-            <Row>{cards}</Row>
+            <Row {...getKnobProps()}>{cards}</Row>
         </C>
     ))
     .add("Column of cards", () => (
         <C>
-            <Column>{cards}</Column>
+            <Column {...getKnobProps()}>{cards}</Column>
         </C>
     ))
     .add("Row of columns", () => (
         <C>
-            <Row>
-                <Column>{cards}</Column>
-                <Column>{cards}</Column>
-                <Column>{cards}</Column>
+            <Row {...getKnobProps()}>
+                <Column {...getKnobProps()}>{cards}</Column>
+                <Column {...getKnobProps()}>{cards}</Column>
+                <Column {...getKnobProps()}>{cards}</Column>
             </Row>
         </C>
     ))
     .add("Row of rows", () => (
         <C>
             <Row>
-                <Row>{cards}</Row>
-                <Row>{cards}</Row>
-                <Row>{cards}</Row>
+                <Row {...getKnobProps()}>{cards}</Row>
+                <Row {...getKnobProps()}>{cards}</Row>
+                <Row {...getKnobProps()}>{cards}</Row>
             </Row>
         </C>
     ))
     .add("Column of rows", () => (
         <C>
-            <Column>
-                <Row>{cards}</Row>
-                <Row>{cards}</Row>
-                <Row>{cards}</Row>
+            <Column {...getKnobProps()}>
+                <Row {...getKnobProps()}>{cards}</Row>
+                <Row {...getKnobProps()}>{cards}</Row>
+                <Row {...getKnobProps()}>{cards}</Row>
             </Column>
         </C>
     ))
     .add("Column of columns", () => (
         <C>
-            <Column>
-                <Column>{cards}</Column>
-                <Column>{cards}</Column>
-                <Column>{cards}</Column>
+            <Column {...getKnobProps()}>
+                <Column {...getKnobProps()}>{cards}</Column>
+                <Column {...getKnobProps()}>{cards}</Column>
+                <Column {...getKnobProps()}>{cards}</Column>
             </Column>
         </C>
     ))

@@ -3,8 +3,6 @@ import MuiButton, {
     ButtonProps as MuiButtonProps
 } from "@material-ui/core/Button"
 import { makeKinds, KindFrom } from "../common"
-import { Row } from "../layouts"
-import { useTheme } from "../styles"
 
 const useKind = makeKinds<MuiButtonProps>()({
     primary: {

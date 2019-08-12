@@ -46,7 +46,6 @@ type TextInputState = {
     error: boolean
 }
 
-// TODO: Add a kind knob of type "outlined" | "underlined"
 export type TextInputProps = MuiTextFieldProps & {
     kind?: KindFrom<typeof useKind>
 }

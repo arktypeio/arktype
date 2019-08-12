@@ -15,7 +15,3 @@ storiesOf("Card", module)
     .add("Regular card with knobs", () => (
         <Card children={text("children", "hey look text")} />
     ))
-    .add("Regular card with text", () => <Card>Hi! This is a card.</Card>)
-    .add("ContentCard with text", () => (
-        <ContentCard from={{ key: "value", anotherKey: "anotherValue" }} />
-    ))

@@ -1,7 +1,5 @@
 import React from "react"
 import { storiesOf } from "@storybook/react"
-import { action } from "@storybook/addon-actions"
-import { withTheme } from "../storybook"
 import { Button } from "."
 import { withKnobs, select } from "@storybook/addon-knobs"
 import { ThemeProvider } from "@material-ui/styles"

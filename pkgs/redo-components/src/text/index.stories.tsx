@@ -37,8 +37,3 @@ storiesOf("Text", module)
             <ErrorText {...getKnobProps()} />
         </ThemeProvider>
     ))
-    .add("ErrorText", () => (
-        <ThemeProvider theme={defaultTheme}>
-            <ErrorText> This is an ErrorText </ErrorText>
-        </ThemeProvider>
-    ))

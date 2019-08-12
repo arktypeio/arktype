@@ -12,8 +12,6 @@ const stylize = makeStyles((theme: Theme) => ({
     }
 }))
 
-//FINISHEDTHING
-
 export type ErrorTextProps = TextProps & {
     children: string | string[]
     tooltipPlacement?: ValueFrom<TooltipProps, "placement">

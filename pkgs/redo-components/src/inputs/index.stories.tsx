@@ -14,14 +14,3 @@ storiesOf("Text Input", module)
             <TextInput kind={select("kind", ["outlined", "underlined"])} />
         </ThemeProvider>
     ))
-
-    .add("Underlined text input", () => (
-        <ThemeProvider theme={defaultTheme}>
-            <TextInput label="name" kind="underlined" />
-        </ThemeProvider>
-    ))
-    .add("Outlined text input", () => (
-        <ThemeProvider theme={defaultTheme}>
-            <TextInput label="name" kind="outlined" />
-        </ThemeProvider>
-    ))
