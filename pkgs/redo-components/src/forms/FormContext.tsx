@@ -15,6 +15,7 @@ export const useFormContext = useHookFormContext as () => ReturnType<
     typeof useHookFormContext
 > &
     FormActions<Fields> & {
+        submitState: ResponseState
         touched: string[]
         clearError: (name: string) => void
     }
