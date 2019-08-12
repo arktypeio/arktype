@@ -4,6 +4,30 @@ import { withTheme } from "../storybook"
 import { defaultTheme } from "../styles"
 import { Row, Column } from "."
 import { Card } from "../cards"
+import { withKnobs, select, boolean, number } from "@storybook/addon-knobs"
+
+const getKnobProps = () => ({
+    align: select("align", [
+        "stretch",
+        "center",
+        "flex-start",
+        "flex-end",
+        "baseline"
+    ]),
+    grow: boolean("grow", false),
+    height: number("height"),
+    width: number("width"),
+    reverse: boolean("reverse", false),
+    full: boolean("full", false),
+    justify: select("justify", [
+        "flex-start",
+        "center",
+        "flex-end",
+        "space-between",
+        "space-around",
+        "space-evenly"
+    ])
+})
 
 const cards = (
     <>
@@ -18,6 +42,7 @@ const C: FC = ({ children }) => (
 )
 
 storiesOf("Layout", module)
+    .addDecorator(withKnobs)
     .addDecorator(
         withTheme({
             ...defaultTheme,
@@ -30,49 +55,59 @@ storiesOf("Layout", module)
             }
         })
     )
+    .add("Row with knobs", () => (
+        <C>
+            <Row {...getKnobProps()}>{cards}</Row>
+        </C>
+    ))
+    .add("Column with knobs", () => (
+        <C>
+            <Column {...getKnobProps()}>{cards}</Column>
+        </C>
+    ))
     .add("Row of cards", () => (
         <C>
-            <Row>{cards}</Row>
+            <Row {...getKnobProps()}>{cards}</Row>
         </C>
     ))
     .add("Column of cards", () => (
         <C>
-            <Column>{cards}</Column>
+            <Column {...getKnobProps()}>{cards}</Column>
         </C>
     ))
     .add("Row of columns", () => (
         <C>
-            <Row>
-                <Column>{cards}</Column>
-                <Column>{cards}</Column>
-                <Column>{cards}</Column>
+            <Row {...getKnobProps()}>
+                <Column {...getKnobProps()}>{cards}</Column>
+                <Column {...getKnobProps()}>{cards}</Column>
+                <Column {...getKnobProps()}>{cards}</Column>
             </Row>
         </C>
     ))
     .add("Row of rows", () => (
         <C>
             <Row>
-                <Row>{cards}</Row>
-                <Row>{cards}</Row>
-                <Row>{cards}</Row>
+                <Row {...getKnobProps()}>{cards}</Row>
+                <Row {...getKnobProps()}>{cards}</Row>
+                <Row {...getKnobProps()}>{cards}</Row>
             </Row>
         </C>
     ))
     .add("Column of rows", () => (
         <C>
-            <Column>
-                <Row>{cards}</Row>
-                <Row>{cards}</Row>
-                <Row>{cards}</Row>
+            <Column {...getKnobProps()}>
+                <Row {...getKnobProps()}>{cards}</Row>
+                <Row {...getKnobProps()}>{cards}</Row>
+                <Row {...getKnobProps()}>{cards}</Row>
             </Column>
         </C>
     ))
     .add("Column of columns", () => (
         <C>
-            <Column>
-                <Column>{cards}</Column>
-                <Column>{cards}</Column>
-                <Column>{cards}</Column>
+            <Column {...getKnobProps()}>
+                <Column {...getKnobProps()}>{cards}</Column>
+                <Column {...getKnobProps()}>{cards}</Column>
+                <Column {...getKnobProps()}>{cards}</Column>
             </Column>
         </C>
     ))
