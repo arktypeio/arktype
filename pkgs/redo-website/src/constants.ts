@@ -1,3 +1,14 @@
+export const layout = {
+    header: {
+        height: 250
+    },
+    content: {
+        maxWidth: 600,
+        minWidth: 343,
+        padding: 16
+    }
+}
+
 export const copy = {
     subheader: {
         title: `💡A new way to test`,
@@ -5,7 +16,7 @@ export const copy = {
             to automate, run, or maintain them. Redo learns how your app works and does
             all that for you.`,
         features: [
-            `✔️ 100 % free`,
+            `✔️ 100% free`,
             `✔️ Open source`,
             `✔️ Developer-first`,
             `✔️ Deterministic & transparent`,
@@ -13,7 +24,7 @@ export const copy = {
         ]
     },
     howItWorks: {
-        title: `🛠How it works`,
+        title: `🔨How it works`,
         steps: [
             {
                 summary: `Install and open Redo`,
