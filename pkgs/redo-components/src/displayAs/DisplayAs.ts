@@ -1,1 +1,1 @@
-export type DisplayAs = { actions?: string[] }
+export type DisplayAs = { actions?: string[]; steps?: string[] }

@@ -14,9 +14,9 @@ const src = {
             tag: () => {
                 console.log(3)
             },
-            test: {
+            steps: {
                 test: {
-                    test: {
+                    steps: {
                         tag: { tag: { tag: "h" } }
                     }
                 }

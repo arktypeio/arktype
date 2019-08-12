@@ -13,7 +13,11 @@ storiesOf("Modals", module)
         </ModalText>
     ))
     .add("ModalButton", () => (
-        <ModalButton displayAs={objectActions}>
+        <ModalButton
+            open={false}
+            fields={{ value: "step" }}
+            displayAs={objectActions}
+        >
             Click me, I'm a modalView!
         </ModalButton>
     ))

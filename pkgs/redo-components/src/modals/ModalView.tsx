@@ -12,15 +12,19 @@ import { DisplayAs } from "../displayAs"
 export type ModalViewProps = DialogProps & {
     displayAs: DisplayAs
     fields?: Fields
+    contents: Record<string, any>
 }
 
 export const ModalView: FC<ModalViewProps> = ({
     displayAs,
     fields,
+    contents,
     ...rest
 }) => {
     const theme = useTheme()
     const { actions } = displayAs
+    console.log(contents)
+    console.log(contents!.steps)
     return (
         <Dialog {...rest}>
             <Card
@@ -30,13 +34,23 @@ export const ModalView: FC<ModalViewProps> = ({
                     padding: theme.spacing(2)
                 }}
             >
-                <Row>
-                    {actions
-                        ? actions.map(action => (
-                              <Button kind="secondary">{action}</Button>
-                          ))
+                <Column>
+                    <Row>
+                        {actions
+                            ? actions.map(action => (
+                                  <Button kind="secondary">{action}</Button>
+                              ))
+                            : null}
+                    </Row>
+
+                    {contents && contents.steps
+                        ? Object.entries(contents!.steps).map(
+                              ([k, v], index) => (
+                                  <Text key={index}>{JSON.stringify(v)}</Text>
+                              )
+                          )
                         : null}
-                </Row>
+                </Column>
             </Card>
         </Dialog>
     )

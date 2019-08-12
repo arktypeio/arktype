@@ -1,8 +1,8 @@
 import React, { FC, useState } from "react"
-import { ModalView } from "./ModalView"
+import { ModalView, ModalViewProps } from "./ModalView"
 import EditIcon from "@material-ui/icons/Edit"
 import { Button } from "@material-ui/core"
-import IconButton from "@material-ui/core/IconButton"
+import IconButton, { IconButtonProps } from "@material-ui/core/IconButton"
 import { makeStyles } from "@material-ui/styles"
 import { Row } from "../layouts"
 import { DisplayAs } from "../displayAs"
@@ -13,13 +13,15 @@ const stylize = makeStyles({
     }
 })
 
-export type ModalButtonProps = {
-    displayAs: DisplayAs
-}
+export type ModalButtonProps = IconButtonProps &
+    ModalViewProps & {
+        displayAs: DisplayAs
+    }
 
 //use Menu as template to fix design
 export const ModalButton: FC<ModalButtonProps> = ({
     children,
+    contents,
     displayAs,
     ...rest
 }) => {
@@ -36,6 +38,7 @@ export const ModalButton: FC<ModalButtonProps> = ({
                 <EditIcon />
             </IconButton>
             <ModalView
+                contents={contents}
                 displayAs={displayAs}
                 open={open}
                 onClose={() => setOpen(false)}

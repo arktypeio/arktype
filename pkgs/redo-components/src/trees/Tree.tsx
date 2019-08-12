@@ -77,7 +77,11 @@ const TreeItems: FC<TreeItemsProps> = ({
                         {String(k)}
                     </Text>
                     {displayAs[k] ? (
-                        <ModalButton displayAs={displayAs[k]} />
+                        <ModalButton
+                            open={false}
+                            displayAs={displayAs[k]}
+                            contents={v}
+                        />
                     ) : null}
                 </Row>
                 {show ? (
