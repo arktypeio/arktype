@@ -6,6 +6,7 @@ import { store } from "renderer/common"
 import { Page } from "renderer/state"
 
 import gql from "graphql-tag"
+import { objectActions } from "../components/custom"
 
 const GET_TAGS = gql`
     query {
@@ -35,7 +36,12 @@ export const TagView = () => {
                 <HomeActionsRow />
             </Row>
             {data && data.getTag ? (
-                <Tree from={data.getTag} labelKey="name" />
+                <Tree
+                    displayAs={objectActions}
+                    style={{ width: 200 }}
+                    from={data.getTag}
+                    labelKey="name"
+                />
             ) : null}
         </Column>
     )

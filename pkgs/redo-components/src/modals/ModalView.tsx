@@ -6,12 +6,21 @@ import { useTheme } from "../styles"
 import { Row, Column } from "../layouts"
 import { Dialog } from "@material-ui/core"
 import { DialogProps } from "@material-ui/core/Dialog"
+import { Fields } from "../forms"
+import { DisplayAs } from "../displayAs"
 
-export type ModalViewProps = DialogProps & {}
+export type ModalViewProps = DialogProps & {
+    displayAs: DisplayAs
+    fields?: Fields
+}
 
-// currently this is specific to tests. That will be abstracted away before PR
-export const ModalView: FC<ModalViewProps> = ({ ...rest }) => {
+export const ModalView: FC<ModalViewProps> = ({
+    displayAs,
+    fields,
+    ...rest
+}) => {
     const theme = useTheme()
+    const { actions } = displayAs
     return (
         <Dialog {...rest}>
             <Card
@@ -22,14 +31,12 @@ export const ModalView: FC<ModalViewProps> = ({ ...rest }) => {
                 }}
             >
                 <Row>
-                    <Column>
-                        <Text>Test name</Text>
-                        <Text>Tags go here</Text>
-                    </Column>
-                    <Button kind="primary">Run test</Button>
-                    <Button kind="secondary">Delete test</Button>
+                    {actions
+                        ? actions.map(action => (
+                              <Button kind="secondary">{action}</Button>
+                          ))
+                        : null}
                 </Row>
-                <Text>BrowserEvents go here</Text>
             </Card>
         </Dialog>
     )

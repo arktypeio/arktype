@@ -1,4 +1,4 @@
-import React, { FC } from "react"
+import React, { FC, useState } from "react"
 import { TreeItem } from "../trees"
 // if this hack works, need to make a new layout component and not use grid directly
 import { Grid } from "@material-ui/core"
@@ -12,24 +12,24 @@ import { ModalText, ModalButton } from "../modals"
 import { Row, Column } from "../layouts"
 import { Text } from "../text"
 import { Button } from "../buttons"
+import { DisplayAs } from "../displayAs"
 
-// const stylize = makeStyles({
-//     content: { width: 0, alignItems: "flex-start" },
-//     label: {},
-//     iconContainer: { marginRight: 0, width: 0, justifyContent: "flex-start" },
-//     root: {
-//         width: 100
-//     },
-//     group: {
-//         marginLeft: 20
-//     }
-// })
-
-// const stylizeTree = makeStyles({
-//     root: {
-//         width: 10
-//     }
-// })
+const stylize = makeStyles({
+    treeItem: {
+        backgroundColor: "white",
+        "&:hover": { backgroundColor: "#CDCDCD" },
+        paddingLeft: "10px",
+        paddingRight: "10px",
+        paddingBottom: 0,
+        paddingTop: 0
+    },
+    leafItem: {
+        paddingLeft: "10px",
+        paddingRight: "10px",
+        paddingBottom: 0,
+        paddingTop: 0
+    }
+})
 
 type TreeSource = ItemOrList<Record<string, any>>
 
@@ -37,71 +37,75 @@ export type TreeProps<O extends TreeSource> = MuiTreeViewProps &
     (O extends any[]
         ? {
               from: O
+              displayAs: Record<string, DisplayAs>
               labelKey: O extends any[] ? keyof O[number] : never
           }
         : {
               from: O
               labelKey?: never
+              displayAs: Record<string, DisplayAs>
           })
 
 export const Tree = <O extends TreeSource>({
     from,
     labelKey,
+    displayAs,
     ...rest
 }: TreeProps<O>) => {
-    // const { root } = stylizeTree()
     const entries: Entry[] = Array.isArray(from)
         ? from.map(({ [labelKey!]: key, ...rest }) => [key, rest])
         : Object.entries(from)
-    return (
-        <MuiTreeView
-            defaultCollapseIcon={<ExpandMoreIcon />}
-            defaultExpandIcon={<ChevronRightIcon />}
-            // classes={{ root: root }}
-            {...rest}
-        >
-            <TreeItems entries={entries} />
-        </MuiTreeView>
-    )
+    return <TreeItems entries={entries} displayAs={displayAs} />
 }
 
 type TreeItemsProps = {
     entries: Entry[]
     path?: string[]
+    indent?: number
+    displayAs: Record<string, DisplayAs>
 }
 
-const TreeItems: FC<TreeItemsProps> = ({ entries, path = [] }) => {
-    // const { content, iconContainer, root, label, group } = stylize()
+const TreeItems: FC<TreeItemsProps> = ({
+    entries,
+    path = [],
+    indent = 0,
+    displayAs
+}) => {
+    const [show, toggleShow] = useState(false)
+    const { treeItem, leafItem } = stylize()
     return (
         <>
             {entries.map(([k, v]) => {
-                const id = String(Math.random())
-                if (isRecursible(v)) {
-                    return (
+                return isRecursible(v) ? (
+                    <Column style={{ marginLeft: indent * 5 }}>
                         <Row>
-                            <TreeItem
-                                // classes={{
-                                //     content: content,
-                                //     root: root,
-                                //     label: label,
-                                //     iconContainer: iconContainer,
-                                //     group: group
-                                // }}
-                                nodeId={id}
-                                key={id}
-                                label={String(k)}
-                                onClick={() => console.log(5)}
+                            <Text
+                                display="block"
+                                classes={{ root: treeItem }}
+                                onClick={() => toggleShow(!show)}
                             >
-                                <TreeItems
-                                    path={[...path, String(k)]}
-                                    entries={Object.entries(v)}
-                                />
-                            </TreeItem>
+                                {String(k)}
+                            </Text>
+                            {displayAs[k] ? (
+                                <ModalButton displayAs={displayAs[k]} />
+                            ) : null}
                         </Row>
-                    )
-                } else {
-                    return <Text>{`${String(k)}: ${String(v)}`}</Text>
-                }
+                        {show ? (
+                            <TreeItems
+                                path={[...path, String(k)]}
+                                indent={(indent += 1)}
+                                entries={Object.entries(v)}
+                                displayAs={displayAs}
+                            />
+                        ) : null}
+                    </Column>
+                ) : (
+                    <Column style={{ marginLeft: indent * 5 }}>
+                        <Text classes={{ root: leafItem }}>{`${String(
+                            k
+                        )}: ${String(v)}`}</Text>
+                    </Column>
+                )
             })}
         </>
     )

@@ -7,6 +7,7 @@ import { Page } from "renderer/state"
 
 import gql from "graphql-tag"
 import { BrowserEvent, Tag } from "redo-model"
+import { objectActions } from "../components/custom"
 
 const GET_TESTS = gql`
     query {
@@ -35,7 +36,7 @@ type TestData = {
 export const TestView = () => {
     const { data } = useQuery<TestData>(GET_TESTS)
     return (
-        <Column justify="flex-start">
+        <Column justify="flex-start" full>
             <Row>
                 <Button
                     kind="secondary"
@@ -46,7 +47,12 @@ export const TestView = () => {
                 <HomeActionsRow />
             </Row>
             {data && data.getTest ? (
-                <Tree from={data.getTest} labelKey="name" />
+                <Tree
+                    displayAs={objectActions}
+                    style={{ width: 200 }}
+                    from={data.getTest}
+                    labelKey="name"
+                />
             ) : null}
         </Column>
     )

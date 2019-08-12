@@ -3,20 +3,21 @@ import { storiesOf } from "@storybook/react"
 import { withTheme } from "../storybook"
 import { Tree } from "."
 import { Column } from "../layouts"
+import { DisplayAs } from "../displayAs"
 
 const src = {
-    z: "stuff",
-    a: 33,
-    b: {
-        c: true,
-        d: {
-            e: () => {
+    browserEvent: "stuff",
+    tag: 33,
+    test: {
+        tag: true,
+        browserEvent: {
+            tag: () => {
                 console.log(3)
             },
-            f: {
-                g: {
-                    h: {
-                        i: { j: { k: "h" } }
+            test: {
+                test: {
+                    test: {
+                        tag: { tag: { tag: "h" } }
                     }
                 }
             }
@@ -27,8 +28,25 @@ const src = {
 storiesOf("TreeView", module)
     .addDecorator(withTheme())
     .add("Input as array of test data", () => (
-        <Tree style={{ width: 200 }} labelKey="z" from={[src]} />
+        <Tree
+            displayAs={objectActions}
+            style={{ width: 200 }}
+            labelKey="browserEvent"
+            from={[src]}
+        />
     ))
     .add("Input as single object of test data", () => (
-        <Tree style={{ width: 200 }} from={src} />
+        <Tree displayAs={objectActions} style={{ width: 200 }} from={src} />
     ))
+
+export const objectActions: Record<string, DisplayAs> = {
+    test: {
+        actions: ["run", "delete"]
+    },
+    browserEvent: {
+        actions: ["delete", "modify"]
+    },
+    tag: {
+        actions: ["delete", "View items with this tag"]
+    }
+}

@@ -7,6 +7,7 @@ import { Page } from "renderer/state"
 
 import gql from "graphql-tag"
 import { BrowserEvent, Tag } from "redo-model"
+import { objectActions } from "../components/custom"
 
 const GET_BROWSER_EVENTS = gql`
     query {
@@ -44,7 +45,11 @@ export const BrowserEventView = () => {
                 <HomeActionsRow />
             </Row>
             {data && data.getBrowserEvent ? (
-                <Tree from={data.getBrowserEvent} labelKey="value" />
+                <Tree
+                    displayAs={objectActions}
+                    from={data.getBrowserEvent}
+                    labelKey="value"
+                />
             ) : null}
         </Column>
     )
