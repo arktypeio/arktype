@@ -1,7 +1,6 @@
 import { getMetadataStorage } from "type-graphql/dist/metadata/getMetadataStorage"
 import { FieldMetadata } from "type-graphql/dist/metadata/definitions"
 import { ObjectClassMetadata } from "type-graphql/dist/metadata/definitions/object-class-metdata"
-import { TypeValue } from "type-graphql/dist/decorators/types"
 import { join } from "path"
 import { writeFileSync } from "fs"
 
