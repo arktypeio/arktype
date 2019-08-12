@@ -1,4 +1,4 @@
-import React, { CSSProperties } from "react"
+import { CSSProperties } from "react"
 import { GridProps, GridItemsAlignment } from "@material-ui/core/Grid"
 import { ValueFrom } from "redo-utils"
 
