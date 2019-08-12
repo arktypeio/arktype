@@ -1,8 +1,8 @@
 import "reflect-metadata"
 import { Field, ID, ObjectType, InputType, ArgsType } from "type-graphql"
-import { IsNotEmpty } from "class-validator"
+import { IsNotEmpty, IsEmail } from "class-validator"
 import { Expose } from "class-transformer"
-import { EqualsProperty, IsEmail } from "./validators"
+import { EqualsProperty } from "./validators"
 
 @ObjectType()
 export class User {
@@ -132,7 +132,7 @@ export class Session {
 export class SignInInput implements Partial<User> {
     @Field()
     @Expose()
-    @IsEmail({ message: "That doesn't look like a valid email." })
+    @IsEmail({}, { message: "That doesn't look like a valid email." })
     email: string
 
     @Field()
