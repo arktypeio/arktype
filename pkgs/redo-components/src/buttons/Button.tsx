@@ -28,7 +28,6 @@ export const Button: FC<ButtonProps> = ({
     style,
     ...rest
 }) => {
-    console.log(useTheme())
     const { style: kindStyle, ...kindRest } = useKind(kind)
     return (
         <MuiButton
