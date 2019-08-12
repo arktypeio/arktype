@@ -28,6 +28,7 @@
     "@storybook/addon-actions": "5.1.9",
     "@storybook/addon-console": "1.2.1",
     "@storybook/addon-info": "5.1.9",
+    "@storybook/addon-knobs": "5.1.10",
     "@storybook/addon-links": "5.1.9",
     "@storybook/addons": "5.1.9",
     "@storybook/react": "5.1.9",

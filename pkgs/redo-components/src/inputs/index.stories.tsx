@@ -2,12 +2,15 @@ import React from "react"
 import { storiesOf } from "@storybook/react"
 import { withTheme } from "../storybook"
 import { TextInput } from "."
+import { ThemeProvider } from "@material-ui/styles"
+import { defaultTheme } from "../styles"
+import { withKnobs, select } from "@storybook/addon-knobs"
 
 storiesOf("Text Input", module)
     .addDecorator(withTheme())
-    .add("Underlined text input", () => (
-        <TextInput label="name" kind="underlined" />
-    ))
-    .add("Outlined text input", () => (
-        <TextInput label="name" kind="outlined" />
+    .addDecorator(withKnobs)
+    .add("Input with knobs", () => (
+        <ThemeProvider theme={defaultTheme}>
+            <TextInput kind={select("kind", ["outlined", "underlined"])} />
+        </ThemeProvider>
     ))

@@ -51,7 +51,8 @@ export const FormText: FC<FormTextProps> = ({
         getValues,
         setError,
         clearError,
-        touched
+        touched,
+        submit
     } = useFormContext()
     return (
         <>
@@ -70,6 +71,13 @@ export const FormText: FC<FormTextProps> = ({
                         touched,
                         clearError
                     })
+                }}
+                onKeyDown={async (
+                    event: React.KeyboardEvent<HTMLDivElement>
+                ) => {
+                    if (event.key === "Enter") {
+                        submit(getValues())
+                    }
                 }}
                 {...rest}
             />

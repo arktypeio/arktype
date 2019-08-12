@@ -1,5 +1,5 @@
-import React, { useState, FC } from "react"
-import { RespondTo, ResponseState, ResponseOptions } from "../responses"
+import React, { FC } from "react"
+import { RespondTo, ResponseOptions } from "../responses"
 import { Button } from "../buttons"
 import { useFormContext } from "./FormContext"
 
@@ -11,27 +11,10 @@ export const FormSubmit: FC<FormSubmitProps> = <D extends any = any>({
     responseOptions,
     ...rest
 }: FormSubmitProps<D>) => {
-    const { getValues, submit, validate } = useFormContext()
-    const [state, setState] = useState<ResponseState>({})
+    const { submit, submitState } = useFormContext()
     return (
-        <RespondTo response={state} options={responseOptions}>
-            <Button
-                kind="primary"
-                type="submit"
-                onClick={async () => {
-                    const values = getValues()
-                    if (
-                        Object.values(validate(values)).every(
-                            _ => !_ || !_.length
-                        )
-                    ) {
-                        setState({ loading: true })
-                        const response = (await submit(values)) || {}
-                        setState({ ...response, loading: false })
-                    }
-                }}
-                {...rest}
-            />
+        <RespondTo response={submitState} options={responseOptions}>
+            <Button kind="primary" type="submit" onClick={submit} {...rest} />
         </RespondTo>
     )
 }
