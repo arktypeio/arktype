@@ -1,16 +1,21 @@
 import React from "react"
-import { Text, Column } from "redo-components"
+import { Column, Text, Row } from "redo-components"
+import { copy } from "./Copy"
 
 export const SubHeader = () => {
     return (
-        <Column>
-            <Text variant="h4">A new way to test</Text>
-            <Text>
-                Building something great requires good tests, but it shouldn't
-                be your job to automate, run, and maintain them. Redo learns how
-                your app works and creates beautiful tests that run anytime,
-                anywhere and provide results you can rely on.
-            </Text>
-        </Column>
+        <div style={{ padding: 32 }}>
+            <Column align="center" spacing={2}>
+                <Text variant="h4">{copy.subheader.title}</Text>
+                <Text>{copy.subheader.content}</Text>
+                <Row wrap="wrap">
+                    {copy.subheader.features.map(text => (
+                        <Column xs={6}>
+                            <Text>{text}</Text>
+                        </Column>
+                    ))}
+                </Row>
+            </Column>
+        </div>
     )
 }

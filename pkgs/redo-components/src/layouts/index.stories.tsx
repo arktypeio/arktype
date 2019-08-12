@@ -4,7 +4,6 @@ import { withTheme } from "../storybook"
 import { defaultTheme } from "../styles"
 import { Row, Column } from "."
 import { Card } from "../cards"
-import { Text } from "../text"
 
 const cards = (
     <>
@@ -103,7 +102,7 @@ storiesOf("Layout", module)
         </C>
     ))
     .add("Responsive", () => (
-        <div style={{ height: "100vh", width: "100vw" }}>
+        <C>
             <Row wrap="wrap">
                 <Row md={4} justify="space-around">
                     <Card>Try</Card>
@@ -115,5 +114,5 @@ storiesOf("Layout", module)
                     <Card>Your window</Card>
                 </Row>
             </Row>
-        </div>
+        </C>
     ))
