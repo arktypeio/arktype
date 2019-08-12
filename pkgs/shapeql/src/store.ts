@@ -45,8 +45,6 @@ const mutate = <T extends S>(config: StoreConfig<T>) => async <
 >(
     updateMapper: M
 ) => {
-    console.log("Mutating store with value:")
-    console.log(updateMapper)
     const currentCache = queryAll(config)()
     const mutatedCache = updateMap(currentCache, updateMapper as any)
     const changes = diff(currentCache, mutatedCache)

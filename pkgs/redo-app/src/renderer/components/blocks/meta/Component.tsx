@@ -8,7 +8,6 @@ import {
 import { Grid, Theme } from "@material-ui/core"
 import { GridProps as MuiGridProps } from "@material-ui/core/Grid"
 import { store as rootStore } from "renderer/common"
-import { connect, FormikProps } from "formik"
 import { withApollo, graphql, DataProps } from "react-apollo"
 import { ApolloClient } from "apollo-client"
 import { Root } from "state"
@@ -32,8 +31,6 @@ const defaultGridProps: InnerGridProps = {
     item: true
 }
 
-type FormProps<F> = { formik: FormikProps<F> }
-
 export const withGrid = (C: React.ComponentType<any>) => ({
     grid = defaultGridProps,
     ...other
@@ -56,7 +53,6 @@ export interface ComponentArgs<
     GriddedType,
     VariableType,
     DataType,
-    FormType,
     ApolloType,
     StoreType,
     QueryType
@@ -67,7 +63,6 @@ export interface ComponentArgs<
     styles?: StyleType
     defaultVariables?: Partial<VariableType>
     returnedData?: Partial<DataType>
-    form?: FormType
     apollo?: ApolloType
     store?: StoreType
     query?: QueryType
@@ -79,7 +74,6 @@ export const component = <
     GriddedType extends boolean | undefined = undefined,
     VariableType extends Variables | undefined = undefined,
     DataType extends Value | undefined = undefined,
-    FormType extends boolean | undefined = undefined,
     ApolloType extends boolean | undefined = undefined,
     StoreType extends boolean | undefined = undefined,
     QueryType extends Query<Root> | undefined = undefined
@@ -88,7 +82,6 @@ export const component = <
     defaultProps,
     gridded,
     styles,
-    form,
     apollo,
     store,
     query
@@ -98,7 +91,6 @@ export const component = <
     GriddedType,
     VariableType,
     DataType,
-    FormType,
     ApolloType,
     StoreType,
     QueryType
@@ -109,7 +101,6 @@ export const component = <
                 (StyleType extends Styles<PropType>
                     ? StyleProps<PropType, StyleType>
                     : {}) &
-                (FormType extends true ? FormProps<VariableType> : {}) &
                 (ApolloType extends true ? { client: ApolloClient<any> } : {}) &
                 (StoreType extends true ? { store: typeof rootStore } : {}) &
                 (QueryType extends Query<Root>
@@ -129,9 +120,6 @@ export const component = <
     }
     if (gridded) {
         T = withGrid(T)
-    }
-    if (form) {
-        T = connect<PropType, VariableType>(T)
     }
     if (store) {
         T = withStore(T)

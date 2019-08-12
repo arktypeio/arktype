@@ -6,7 +6,7 @@
     "main": "src/index.tsx",
     "scripts": {
         "start": "npm run clean && npm run devServer",
-        "build": "NODE_ENV=production webpack --progress --colors",
+        "build": "NODE_ENV=production webpack",
         "devServer": "NODE_ENV=development webpack-dev-server --config webpack.devServer.config.ts --progress --colors",
         "clean": "rm -rf dist && mkdir dist"
     },
@@ -22,6 +22,7 @@
         "react-dom": "16.8.6",
         "react-typist": "2.0.5",
         "redo-components": "1.0.0",
+        "shapeql": "1.0.0",
         "typeface-roboto": "0.0.54",
         "typeface-ubuntu": "0.0.65",
         "webpack-merge": "4.1.4"

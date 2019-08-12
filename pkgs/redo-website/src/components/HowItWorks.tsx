@@ -1,27 +1,68 @@
-import React, { FC } from "react"
+import React, { FC, useState } from "react"
 import { Row, Text, Column } from "redo-components"
-
+import { copy } from "./Copy"
+import ExpandMore from "@material-ui/icons/ExpandMore"
 import { AnimatedCheckbox } from "./AnimatedCheckbox"
+import ExpansionPanel, {
+    ExpansionPanelProps
+} from "@material-ui/core/ExpansionPanel"
+import ExpansionPanelSummary from "@material-ui/core/ExpansionPanelSummary"
+import ExpansionPanelDetails from "@material-ui/core/ExpansionPanelDetails"
 
-type StepProps = {
-    children: string
+type StepProps = ExpansionPanelProps & {
+    summary: string
+    details: string
 }
 
-const Step: FC<StepProps> = ({ children }) => {
+const Step: FC<StepProps> = ({
+    summary,
+    details,
+    defaultExpanded,
+    ...rest
+}) => {
+    const [expanded, setExpanded] = useState(!!defaultExpanded)
     return (
-        <Row align="center">
-            <AnimatedCheckbox />
-            <Text variant="h5">{children}</Text>
-        </Row>
+        <ExpansionPanel
+            key={summary}
+            style={{
+                background: "transparent",
+                width: "100%",
+                boxShadow: "unset"
+            }}
+            defaultExpanded={defaultExpanded}
+            onChange={(_, open) => setExpanded(open)}
+            {...rest}
+        >
+            <ExpansionPanelSummary expandIcon={<ExpandMore />}>
+                <Row align="center">
+                    <AnimatedCheckbox checked={expanded} />
+                    <Text variant="h6">{summary}</Text>
+                </Row>
+            </ExpansionPanelSummary>
+            <ExpansionPanelDetails>
+                <Text>{details}</Text>
+            </ExpansionPanelDetails>
+        </ExpansionPanel>
     )
 }
 
+type StepsProps = {
+    children: StepProps[]
+}
+
+const Steps: FC<StepsProps> = ({ children }) => (
+    <>
+        {children.map((stepProps, index) => (
+            <Step defaultExpanded={index === 0} {...stepProps} />
+        ))}
+    </>
+)
+
 export const HowItWorks: FC = () => {
     return (
-        <Column>
-            <Step>Open the Redo desktop app</Step>
-            <Step>Interact with your website</Step>
-            <Step>Save your new automated test</Step>
+        <Column align="center">
+            <Text variant="h4">{copy.howItWorks.title}</Text>
+            <Steps>{copy.howItWorks.steps}</Steps>
         </Column>
     )
 }
