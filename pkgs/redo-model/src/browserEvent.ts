@@ -1,6 +1,7 @@
-import { Field, ID, ObjectType, InputType, ArgsType } from "type-graphql"
-import { Tag, TagInput } from "./Tag"
-import { User } from "./User"
+import { Field, ID, ObjectType } from "type-graphql"
+import { InType } from "./common"
+import { Tag, TagInput } from "./tag"
+import { User } from "./user"
 
 @ObjectType()
 export class BrowserEvent {
@@ -23,8 +24,7 @@ export class BrowserEvent {
     user: User
 }
 
-@ArgsType()
-@InputType()
+@InType()
 export class BrowserEventInput {
     @Field()
     type: string

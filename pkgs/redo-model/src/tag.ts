@@ -1,5 +1,6 @@
-import { Field, ID, ObjectType, InputType, ArgsType } from "type-graphql"
-import { User } from "./User"
+import { Field, ID, ObjectType } from "type-graphql"
+import { InType } from "./common"
+import { User } from "./user"
 
 @ObjectType()
 export class Tag {
@@ -13,8 +14,7 @@ export class Tag {
     user: User
 }
 
-@ArgsType()
-@InputType()
+@InType()
 export class TagInput {
     @Field()
     name: string

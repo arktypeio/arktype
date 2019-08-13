@@ -1,7 +1,5 @@
-import "reflect-metadata"
-import { Field, ID, ObjectType, InputType, ArgsType } from "type-graphql"
-import { IsNotEmpty, IsEmail } from "class-validator"
-import { EqualsProperty } from "./validators"
+import { Field, ID, ObjectType } from "type-graphql"
+import { EqualsProperty, Validate, InType } from "./common"
 
 import { Expose } from "class-transformer"
 export const InputField = () => (target: any, propertyKey: string) => {
@@ -30,21 +28,26 @@ export class User {
     lastName: string
 }
 
-@ArgsType()
-@InputType()
+@InType()
 export class SignInInput implements Partial<User> {
     @Field()
-    @IsEmail({}, { message: "That doesn't look like a valid email." })
+    @Validate("isEmail")
     email: string
 
     @Field()
     @IsNotEmpty({ message: "Password is required." })
     password: string
 }
+@InType()
+export class SignUpInput implements Partial<User> {
+    @Field()
+    @Validate("isEmail")
+    email: string
 
-@ArgsType()
-@InputType()
-export class SignUpInput extends SignInInput implements Partial<User> {
+    @Field()
+    @IsNotEmpty({ message: "Password is required." })
+    password: string
+
     @Field()
     @IsNotEmpty({ message: "First name is required." })
     firstName: string

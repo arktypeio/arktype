@@ -1,8 +1,8 @@
 import { Field, ID, ObjectType, InputType, ArgsType } from "type-graphql"
 import { Expose } from "class-transformer"
-import { User } from "./User"
-import { BrowserEvent, BrowserEventInput } from "./BrowserEvent"
-import { Tag, TagInput } from "./Tag"
+import { User } from "./user"
+import { BrowserEvent, BrowserEventInput } from "./browserEvent"
+import { Tag, TagInput } from "./tag"
 
 @ObjectType()
 export class Test {
@@ -23,7 +23,6 @@ export class Test {
 }
 
 @ArgsType()
-@InputType()
 export class TestInput {
     @Field()
     @Expose()

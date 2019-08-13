@@ -1,6 +1,6 @@
 import "reflect-metadata"
 import { Field, ID, ObjectType } from "type-graphql"
-import { User } from "./User"
+import { User } from "./user"
 
 @ObjectType()
 export class Session {
