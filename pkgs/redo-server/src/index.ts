@@ -18,13 +18,26 @@ const serve = async () => {
             id: getUserId(req),
             photon
         }),
+        playground: {
+            tabs: [
+                {
+                    query: "someNew"
+                }
+            ]
+        },
         debug: true,
         formatError: error => {
             console.log(error)
             return error
         },
         formatResponse: (response: any) => {
-            console.log(response)
+            // Don't log spammy queries from graphql playground
+            if (
+                response.data &&
+                !Object.keys(response.data).every(key => key === "__schema")
+            ) {
+                console.log(JSON.stringify(response))
+            }
             return response
         }
     })
