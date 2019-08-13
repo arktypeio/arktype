@@ -43,7 +43,7 @@ export const SIGNUP = gql`
     }
 `
 
-const validate = createValidator(new SignUpInput())
+const validator = new SignUpInput()
 
 export const SignUp: FC = () => {
     const theme = useTheme()
@@ -60,7 +60,7 @@ export const SignUp: FC = () => {
                 <Column full>
                     <Logo />
                     <Form<SignUpInput, SignUpData>
-                        validate={validate}
+                        validator={validator}
                         submit={async fields => {
                             const result = await submitForm({ submit, fields })
                             if (result.data && result.data.signUp) {

@@ -24,8 +24,8 @@ export const ContentCard: FC<ContentCardProps> = ({ from, children }) => {
                     {children}
                 </>
             ) : (
-                    children
-                )}
+                children
+            )}
         </Card>
     )
 }

@@ -33,7 +33,7 @@ type SignInData = {
     }
 }
 
-const validate = createValidator(new SignInInput())
+const validator = new SignInInput()
 
 export const SignIn: FC = () => {
     const [submit] = useMutation<SignInData, SignInInput>(SIGNIN)
@@ -62,7 +62,7 @@ export const SignIn: FC = () => {
                             }
                             return result
                         }}
-                        validate={validate}
+                        validator={validator}
                     >
                         <Column grow align="center">
                             <AnimatePresence>

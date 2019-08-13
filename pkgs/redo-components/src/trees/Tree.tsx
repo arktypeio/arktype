@@ -1,103 +1,84 @@
 import React, { FC, useState } from "react"
 import { TreeViewProps as MuiTreeViewProps } from "@material-ui/lab/TreeView"
-import { makeStyles } from "@material-ui/styles"
 import { isRecursible, ItemOrList, Entry } from "redo-utils"
-import { ModalButton } from "../modals"
 import { Row, Column } from "../layouts"
 import { Text } from "../text"
-import { DisplayAs } from "../displayAs"
 
-const stylize = makeStyles({
-    treeItem: {
-        backgroundColor: "white",
-        "&:hover": { backgroundColor: "#CDCDCD" },
-        paddingLeft: "10px",
-        paddingRight: "10px",
-        paddingBottom: 0,
-        paddingTop: 0
-    },
-    leafItem: {
-        paddingLeft: "10px",
-        paddingRight: "10px",
-        paddingBottom: 0,
-        paddingTop: 0
-    }
-})
+// Should the treeview even include the modal automatically, or should that be configurable? I'm leaning towards making it configurable.
 
 type TreeSource = ItemOrList<Record<string, any>>
 
-export type TreeProps<O extends TreeSource> = MuiTreeViewProps &
-    (O extends any[]
+export type TreeProps<O extends TreeSource> = Omit<
+    MuiTreeViewProps,
+    "children"
+> & {
+    children: O
+    nodeExtras?: JSX.Element | ((key: string, value: any) => JSX.Element)
+} & (O extends any[]
         ? {
-              from: O
-              displayAs: Record<string, DisplayAs>
               labelKey: O extends any[] ? keyof O[number] : never
           }
         : {
-              from: O
               labelKey?: never
-              displayAs: Record<string, DisplayAs>
           })
 
 export const Tree = <O extends TreeSource>({
-    from,
+    children,
     labelKey,
-    displayAs
+    nodeExtras
 }: TreeProps<O>) => {
-    const entries: Entry[] = Array.isArray(from)
-        ? from.map(({ [labelKey!]: key, ...rest }) => [key, rest])
-        : Object.entries(from)
-    return <TreeItems entries={entries} displayAs={displayAs} />
+    const entries: Entry[] = Array.isArray(children)
+        ? children.map(({ [labelKey!]: key, ...rest }) => [key, rest])
+        : Object.entries(children)
+    return <TreeNodes nodeExtras={nodeExtras} entries={entries} />
 }
 
-type TreeItemsProps = {
+type TreeItemsProps = Pick<TreeProps<any>, "nodeExtras"> & {
     entries: Entry[]
     path?: string[]
-    indent?: number
-    displayAs: Record<string, DisplayAs>
+    depth?: number
 }
 
-const TreeItems: FC<TreeItemsProps> = ({
+const TreeNodes: FC<TreeItemsProps> = ({
     entries,
     path = [],
-    indent = 0,
-    displayAs
+    depth = 0,
+    nodeExtras
 }) => {
-    const { treeItem, leafItem } = stylize()
     const TreeNode = ({ k, v }: any) => {
-        const [show, toggleShow] = useState(false)
-        return isRecursible(v) ? (
-            <Column style={{ marginLeft: indent * 5 }}>
+        const [show, setShow] = useState(false)
+        const [hovered, setHovered] = useState(false)
+        const recursible = isRecursible(v)
+        return (
+            <Column style={{ marginLeft: depth * 5 }}>
                 <Row>
                     <Text
-                        display="block"
-                        classes={{ root: treeItem }}
-                        onClick={() => toggleShow(!show)}
+                        style={{
+                            backgroundColor:
+                                hovered && recursible ? "#CDCDCD" : "white",
+                            paddingLeft: 10,
+                            paddingRight: 10
+                        }}
+                        onClick={() => setShow(!show)}
+                        onMouseOver={() => setHovered(true)}
+                        onMouseOut={() => setHovered(false)}
                     >
-                        {String(k)}
+                        {recursible ? String(k) : `${String(k)}: ${String(v)}`}
                     </Text>
-                    {displayAs[k] ? (
-                        <ModalButton
-                            open={false}
-                            displayAs={displayAs[k]}
-                            contents={v}
-                        />
-                    ) : null}
+                    {nodeExtras
+                        ? typeof nodeExtras === "function"
+                            ? nodeExtras(k, v)
+                            : nodeExtras
+                        : null}
                 </Row>
-                {show ? (
-                    <TreeItems
+                {show && recursible ? (
+                    <TreeNodes
                         path={[...path, String(k)]}
-                        indent={(indent += 1)}
+                        depth={depth + 1}
                         entries={Object.entries(v)}
-                        displayAs={displayAs}
+                        nodeExtras={nodeExtras}
                     />
                 ) : null}
-            </Column>
-        ) : (
-            <Column style={{ marginLeft: indent * 5 }}>
-                <Text classes={{ root: leafItem }}>{`${String(k)}: ${String(
-                    v
-                )}`}</Text>
             </Column>
         )
     }

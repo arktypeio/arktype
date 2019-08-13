@@ -1,4 +1,5 @@
 import { DisplayAs } from "redo-components"
+import { Test, TestInput } from "redo-model"
 
 export const objectActions: Record<string, DisplayAs> = {
     test: {
@@ -10,4 +11,11 @@ export const objectActions: Record<string, DisplayAs> = {
     tags: {
         actions: ["delete", "View items with this tag"]
     }
+}
+
+export const TestDisplay = {
+    input: TestInput,
+    data: Test,
+    actions: ["delete", "run"],
+    key: "test"
 }

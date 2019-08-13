@@ -13,18 +13,10 @@ const stylize = makeStyles({
     }
 })
 
-export type ModalButtonProps = IconButtonProps &
-    ModalViewProps & {
-        displayAs: DisplayAs
-    }
+export type ModalButtonProps = IconButtonProps & ModalViewProps
 
 //use Menu as template to fix design
-export const ModalButton: FC<ModalButtonProps> = ({
-    children,
-    contents,
-    displayAs,
-    ...rest
-}) => {
+export const ModalButton: FC<ModalButtonProps> = ({ children, ...rest }) => {
     const [open, setOpen] = useState(false)
     const { sizeSmall } = stylize()
     return (
@@ -37,12 +29,7 @@ export const ModalButton: FC<ModalButtonProps> = ({
             >
                 <EditIcon />
             </IconButton>
-            <ModalView
-                contents={contents}
-                displayAs={displayAs}
-                open={open}
-                onClose={() => setOpen(false)}
-            />
+            <ModalView open={open} onClose={() => setOpen(false)} />
         </Row>
     )
 }

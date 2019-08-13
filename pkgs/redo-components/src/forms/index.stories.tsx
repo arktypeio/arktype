@@ -1,7 +1,7 @@
 import React, { FC } from "react"
 import { storiesOf } from "@storybook/react"
 import { withTheme } from "../storybook"
-import { FormText, FormSubmit, Form } from "."
+import { FormText, FormSubmit, Form, AutoForm } from "."
 import { Text } from "../text"
 import { Column } from "../layouts"
 import { withKnobs, select } from "@storybook/addon-knobs"
@@ -25,7 +25,7 @@ const TextOnlyForm: FC = () => {
                 submit={async ({ first, last }) => ({
                     data: `Hello, ${first} ${last}.`
                 })}
-                validate={_ => {
+                validator={_ => {
                     return {
                         first: [],
                         last: []

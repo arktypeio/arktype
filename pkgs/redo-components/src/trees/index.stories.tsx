@@ -4,6 +4,7 @@ import { withTheme } from "../storybook"
 import { Tree } from "."
 import { Column } from "../layouts"
 import { DisplayAs } from "../displayAs"
+import { Button } from "../buttons"
 
 const src = {
     browserEvent: "stuff",
@@ -33,15 +34,24 @@ const src = {
 storiesOf("TreeView", module)
     .addDecorator(withTheme())
     .add("Input as array of test data", () => (
-        <Tree
-            displayAs={objectActions}
-            style={{ width: 200 }}
-            labelKey="browserEvent"
-            from={[src]}
-        />
+        <Tree labelKey="browserEvent">{[src]}</Tree>
     ))
-    .add("Input as single object of test data", () => (
-        <Tree displayAs={objectActions} style={{ width: 200 }} from={src} />
+    .add("Input as single object of test data", () => <Tree>{src}</Tree>)
+    .add("Input with static nodeExtras", () => (
+        <Tree
+            nodeExtras={<Button onClick={() => console.log("Hey, world!")} />}
+        >
+            {src}
+        </Tree>
+    ))
+    .add("Input with context-aware nodeExtras", () => (
+        <Tree
+            nodeExtras={(key, value) => (
+                <Button onClick={() => console.log(`${key}: ${value}`)} />
+            )}
+        >
+            {src}
+        </Tree>
     ))
 
 export const objectActions: Record<string, DisplayAs> = {
