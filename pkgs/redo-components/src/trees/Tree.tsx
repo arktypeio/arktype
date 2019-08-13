@@ -3,6 +3,7 @@ import { TreeViewProps as MuiTreeViewProps } from "@material-ui/lab/TreeView"
 import { isRecursible, ItemOrList, Entry } from "redo-utils"
 import { Row, Column } from "../layouts"
 import { Text } from "../text"
+import { FormText } from "../forms"
 
 // Should the treeview even include the modal automatically, or should that be configurable? I'm leaning towards making it configurable.
 
@@ -33,13 +34,13 @@ export const Tree = <O extends TreeSource>({
     return <TreeNodes nodeExtras={nodeExtras} entries={entries} />
 }
 
-type TreeItemsProps = Pick<TreeProps<any>, "nodeExtras"> & {
+type TreeNodesProps = Pick<TreeProps<any>, "nodeExtras"> & {
     entries: Entry[]
     path?: string[]
     depth?: number
 }
 
-const TreeNodes: FC<TreeItemsProps> = ({
+const TreeNodes: FC<TreeNodesProps> = ({
     entries,
     path = [],
     depth = 0,

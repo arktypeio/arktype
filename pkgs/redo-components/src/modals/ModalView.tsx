@@ -12,10 +12,10 @@ import { DisplayAs } from "../displayAs"
 
 export type ModalViewProps = DialogProps & {}
 
-export const ModalView: FC<ModalViewProps> = ({ children, ...rest }) => {
+export const ModalView: FC<ModalViewProps> = ({ open, children, ...rest }) => {
     const theme = useTheme()
     return (
-        <Dialog {...rest}>
+        <Dialog open={open} {...rest}>
             <Card
                 style={{
                     minHeight: theme.spacing(30),

@@ -1,6 +1,16 @@
 import React from "react"
 import { HomeActionsRow } from "custom"
-import { Column, Row, Button, Tree } from "redo-components"
+import {
+    Column,
+    Row,
+    Button,
+    Tree,
+    ModalButton,
+    FormText,
+    Form,
+    FormSubmit,
+    Text
+} from "redo-components"
 import { useQuery } from "@apollo/react-hooks"
 import { store } from "renderer/common"
 import { Page } from "renderer/state"
@@ -8,6 +18,7 @@ import { Page } from "renderer/state"
 import gql from "graphql-tag"
 import { BrowserEvent, Tag } from "redo-model"
 import { objectActions } from "../components/custom"
+import { TestInput, Test } from "redo-model"
 
 const GET_TESTS = gql`
     query {
@@ -47,12 +58,44 @@ export const TestView = () => {
                 <HomeActionsRow />
             </Row>
             {data && data.getTest ? (
-                <Tree
-                    displayAs={objectActions}
-                    from={data.getTest}
-                    labelKey="name"
-                />
+                <Tree labelKey="name" nodeExtras={CustomModalButtonConstructor}>
+                    {data.getTest}
+                </Tree>
             ) : null}
         </Column>
     )
+}
+
+// ((key: string, value: any) => JSX.Element)
+
+const CustomModalButtonConstructor = (key: string, value: any) => {
+    const test = {
+        input: TestInput,
+        data: Test,
+        actions: ["delete", "run"],
+        key: "test"
+    }
+    return test.key == key || key == "tags" ? (
+        <ModalButton>
+            <Form>
+                <Row>
+                    <FormText name={key}>{key}</FormText>
+                    <FormSubmit>Change name</FormSubmit>
+                </Row>
+                <Tree nodeExtras={EditableLinks}>{value}</Tree>
+            </Form>
+        </ModalButton>
+    ) : null
+}
+
+const EditableLinks = (key: string, value: any) => {
+    return "test" == key || key == "tags" ? (
+        <ModalButton>
+            <Form>
+                {value.forEach((val: any) => {
+                    return <FormText>{val}</FormText>
+                })}
+            </Form>
+        </ModalButton>
+    ) : null
 }

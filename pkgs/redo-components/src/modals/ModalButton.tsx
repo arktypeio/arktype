@@ -29,7 +29,9 @@ export const ModalButton: FC<ModalButtonProps> = ({ children, ...rest }) => {
             >
                 <EditIcon />
             </IconButton>
-            <ModalView open={open} onClose={() => setOpen(false)} />
+            <ModalView open={open} onClose={() => setOpen(false)}>
+                {children}
+            </ModalView>
         </Row>
     )
 }
