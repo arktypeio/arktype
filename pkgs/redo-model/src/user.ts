@@ -1,5 +1,5 @@
 import { Field, ID, ObjectType } from "type-graphql"
-import { Validate, ValidateUnsubmitted, InType } from "./common"
+import { In, InType } from "./common"
 
 @ObjectType()
 export class User {
@@ -24,18 +24,18 @@ export class User {
 
 @InType()
 export class SignInInput implements Partial<User> {
-    @Validate("email")
+    @In("email")
     email: string
 
-    @Validate("filled")
+    @In("filled")
     password: string
 }
 @InType()
 export class SignUpInput extends SignInInput implements Partial<User> {
-    @Validate("filled")
+    @In("filled")
     firstName: string
 
-    @Validate("filled")
+    @In({ validate: ["filled"] })
     lastName: string
 
     @ValidateUnsubmitted({ matches: "password" })

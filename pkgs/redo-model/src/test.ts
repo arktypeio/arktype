@@ -1,6 +1,7 @@
 import { Field, ID, ObjectType, InputType, ArgsType } from "type-graphql"
-import { Expose } from "class-transformer"
+import { InType, In } from "./common"
 import { User } from "./user"
+
 import { BrowserEvent, BrowserEventInput } from "./browserEvent"
 import { Tag, TagInput } from "./tag"
 
@@ -24,15 +25,12 @@ export class Test {
 
 @ArgsType()
 export class TestInput {
-    @Field()
-    @Expose()
+    @In("filled")
     name: string
 
     @Field(type => [TagInput])
-    @Expose()
     tags: TagInput[]
 
     @Field(type => [BrowserEventInput])
-    @Expose()
     steps: BrowserEventInput[]
 }

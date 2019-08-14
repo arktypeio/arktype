@@ -4,8 +4,7 @@ import {
     ValidationOptions,
     ValidationArguments,
     IsNotEmpty,
-    IsEmail,
-    IsEmpty
+    IsEmail
 } from "class-validator"
 
 export const Matches = <T extends Record<string, any>>(
@@ -44,13 +43,13 @@ const createValidator = <T extends ValidationDecorator>(
 }
 
 class ValidatorMap {
-    email(_: true) {
+    email() {
         return createValidator({
             underlying: IsEmail,
             args: [{}, { message: "That doesn't look like a valid email." }]
         })
     }
-    filled(value: boolean) {
+    filled = () => {
         return createValidator({
             underlying: IsNotEmpty,
             args: [{ message: "It was empty." }]
@@ -68,21 +67,31 @@ export type ValidatorArg =
     | keyof ValidatorMap
     | { [K in keyof ValidatorMap]?: Parameters<ValidatorMap[K]>[0] }
 
-export const ValidateUnsubmitted = (...validators: ValidatorArg[]) => (
-    target: object,
-    key: string
-) => {
-    Object.entries(validators).forEach(([k, v]) =>
-        (ValidatorMap as any)[k](v)(target, key)
-    )
-}
+export type InArgs<F extends boolean> = {
+    validate?: ValidatorArg[]
+    field?: F
+} & (F extends true | undefined
+    ? {
+          type?: Parameters<typeof Field>[0]
+          fieldOptions?: Parameters<typeof Field>[1]
+      }
+    : {})
 
-export const Validate = (...validators: ValidatorArg[]) => (
-    target: object,
-    key: string
-) => {
-    Field()(target, key)
-    ValidateUnsubmitted(...validators)
+export const In = <F extends boolean>({
+    field,
+    validate = [],
+    ...fieldArgs
+}: InArgs<F>) => (target: object, key: string) => {
+    const validatorMap = new ValidatorMap()
+    if (field || field === undefined) {
+        const { type, fieldOptions } = fieldArgs as InArgs<true>
+        Field(type, fieldOptions)(target, key)
+    }
+    validate.forEach(validator =>
+        typeof validator === "string"
+            ? validatorMap[validator]()(target, key)
+            : V
+    )
 }
 
 export const InType = () => (target: any) => {
