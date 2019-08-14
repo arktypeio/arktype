@@ -1,6 +1,6 @@
 import merge from "webpack-merge"
 import { resolve } from "path"
-import { IgnorePlugin } from "webpack"
+import { NormalModuleReplacementPlugin } from "webpack"
 import {
     commonConfig,
     rendererConfig as baseRendererConfig,
@@ -20,7 +20,14 @@ export const browserConfig = merge.smart(injectedWebConfig, {
     output: {
         filename: "browser.js"
     },
-    plugins: [new IgnorePlugin(/fs/)]
+    plugins: [
+        new NormalModuleReplacementPlugin(/type-graphql$/, (resource: any) => {
+            resource.request = resource.request.replace(
+                /type-graphql/,
+                "type-graphql/dist/browser-shim"
+            )
+        })
+    ]
 })
 
 export const rendererConfig = merge.smart(baseRendererConfig, {

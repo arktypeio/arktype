@@ -1,4 +1,5 @@
 import Photon from "@generated/photon"
+import { hash } from "bcrypt"
 const photon = new Photon()
 
 const users = [
@@ -17,10 +18,12 @@ async function main() {
                         email: `${firstName.toLowerCase()}@redo.qa`,
                         firstName,
                         lastName,
-                        password: "p"
+                        password: await hash("redo", 10)
                     }
                 })
-                console.log(`🎉\nCreated user: ${JSON.stringify(user, null, 4)}\n🎉`)
+                console.log(
+                    `🎉\nCreated user: ${JSON.stringify(user, null, 4)}\n🎉`
+                )
             } catch (e) {
                 console.log(
                     `Failed to create user ${firstName} ${lastName}:\n${e}`

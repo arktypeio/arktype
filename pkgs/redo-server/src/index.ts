@@ -4,12 +4,21 @@ import { ApolloServer } from "apollo-server"
 import { buildSchema } from "type-graphql"
 import { authChecker, getUserId } from "./auth"
 import { resolvers } from "./resolvers"
+import { playground } from "./playground"
 import Photon from "@generated/photon"
+import { join } from "path"
 
 const photon = new Photon()
 
 const serve = async () => {
-    const schema = await buildSchema({ resolvers, authChecker })
+    const schema = await buildSchema({
+        resolvers,
+        authChecker,
+        emitSchemaFile: {
+            path: join(__dirname, "playground", "schema.gql"),
+            commentDescriptions: false
+        }
+    })
 
     const server = new ApolloServer({
         schema,
@@ -18,13 +27,20 @@ const serve = async () => {
             id: getUserId(req),
             photon
         }),
+        playground,
         debug: true,
         formatError: error => {
             console.log(error)
             return error
         },
         formatResponse: (response: any) => {
-            console.log(response)
+            // Don't log spammy queries from graphql playground
+            if (
+                response.data &&
+                !Object.keys(response.data).every(key => key === "__schema")
+            ) {
+                console.log(JSON.stringify(response))
+            }
             return response
         }
     })

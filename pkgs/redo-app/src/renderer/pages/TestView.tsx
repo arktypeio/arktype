@@ -37,6 +37,14 @@ const GET_TESTS = gql`
     }
 `
 
+const MODIFY_TEST = gql`
+    mutation signIn($email: String!, $password: String!) {
+        signIn(email: $email, password: $password) {
+            token
+        }
+    }
+`
+
 type TestData = {
     getTest: {
         name: string

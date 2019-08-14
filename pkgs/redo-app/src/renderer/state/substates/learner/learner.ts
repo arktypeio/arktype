@@ -1,5 +1,5 @@
 import { readFileSync, chmodSync, mkdirp } from "fs-extra"
-import { BrowserEventInput } from "renderer/common"
+import { BrowserEventInput } from "redo-model"
 /*Important we use this format as opposed to import { ... } from "puppeteer".
 Puppeteer is actually a class object whose methods rely on this, which will
 be undefined if we use that style of import.*/
@@ -46,7 +46,7 @@ const setMainWindowBounds = (bounds: Partial<Bounds>) => {
 export class Learner {
     @Field()
     active: boolean
-    //TODO: https://trello.com/c/QjInW5CL fix BrowserEventInput type
+
     @Field(type => [BrowserEventInput])
     events: BrowserEventInput[]
 
@@ -175,7 +175,6 @@ const notify = (event: BrowserEventInput) => {
         store.mutate({
             learner: { events: _ => _.concat(event) }
         })
-        console.log(`Notify is working: ${event} `)
     } catch (e) {
         console.log(e)
     }
