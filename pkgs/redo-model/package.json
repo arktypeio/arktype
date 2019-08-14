@@ -11,8 +11,12 @@
     },
     "dependencies": {
         "class-transformer": "0.2.0",
-        "class-validator": "0.9.1",
-        "validate.js": "0.13.1"
+        "class-validator": "0.10.0",
+        "redo-utils": "1.0.0"
+    },
+    "peerDependencies": {
+        "graphql": "14.x.x",
+        "type-graphql": "0.17.x"
     },
     "devDependencies": {
         "graphql": "14.4.2",
@@ -20,9 +24,5 @@
         "reflect-metadata": "0.1.13",
         "type-graphql": "0.17.4",
         "typescript": "3.5.2"
-    },
-    "peerDependencies": {
-        "graphql": "14.x.x",
-        "type-graphql": "0.17.x"
     }
 }
