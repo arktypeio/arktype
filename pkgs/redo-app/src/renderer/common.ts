@@ -13,24 +13,6 @@ const contextLink = setContext(() => ({
     headers: { authorization: `Bearer ${store.query({ token: null }).token}` }
 }))
 
-// @Resolver(of => BrowserEventInput)
-// export class BrowserEventResolver {}
-
-// @Resolver(of => Learner)
-// export class LearnerResolver {}
-
-// @Resolver(of => Bounds)
-// export class BoundsResolver {}
-
-// export const schema = buildSchemaSync({
-//     // resolvers: [BrowserEventResolver, LearnerResolver, BoundsResolver],
-//     skipCheck: true
-// })
-
-// export const typeDefs = printSchema(schema)
-
-// export const resolvers = createResolversMap(schema)
-
 export const cache = new InMemoryCache({ addTypename: false })
 export const client = new ApolloClient({
     link: contextLink.concat(httpLink),
