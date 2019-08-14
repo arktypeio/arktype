@@ -11,7 +11,8 @@
     },
     "dependencies": {
         "class-transformer": "0.2.0",
-        "class-validator": "0.10.0"
+        "class-validator": "0.10.0",
+        "redo-utils": "1.0.0"
     },
     "peerDependencies": {
         "graphql": "14.x.x",

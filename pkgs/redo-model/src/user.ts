@@ -1,11 +1,5 @@
 import { Field, ID, ObjectType } from "type-graphql"
-import { EqualsProperty, Validate, InType } from "./common"
-
-import { Expose } from "class-transformer"
-export const InputField = () => (target: any, propertyKey: string) => {
-    Field()(target, propertyKey)
-    Expose()(target, propertyKey)
-}
+import { Validate, ValidateUnsubmitted, InType } from "./common"
 
 @ObjectType()
 export class User {
@@ -30,34 +24,20 @@ export class User {
 
 @InType()
 export class SignInInput implements Partial<User> {
-    @Field()
-    @Validate("isEmail")
+    @Validate("email")
     email: string
 
-    @Field()
-    @IsNotEmpty({ message: "Password is required." })
+    @Validate("filled")
     password: string
 }
 @InType()
-export class SignUpInput implements Partial<User> {
-    @Field()
-    @Validate("isEmail")
-    email: string
-
-    @Field()
-    @IsNotEmpty({ message: "Password is required." })
-    password: string
-
-    @Field()
-    @IsNotEmpty({ message: "First name is required." })
+export class SignUpInput extends SignInInput implements Partial<User> {
+    @Validate("filled")
     firstName: string
 
-    @Field()
-    @IsNotEmpty({ message: "Last name is required." })
+    @Validate("filled")
     lastName: string
 
-    @EqualsProperty("password", {
-        message: "Those didn't match"
-    })
+    @ValidateUnsubmitted({ matches: "password" })
     confirm: string
 }
