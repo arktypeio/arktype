@@ -10,8 +10,22 @@ import { defaultTheme } from "../styles"
 
 storiesOf("Form", module)
     .addDecorator(withTheme())
-    .add("Text only", () => <TextOnlyForm />)
     .addDecorator(withKnobs)
+    .add("Text only", () => <TextOnlyForm />)
+    .add("AutoForm", () => (
+        <AutoForm<TextOnlyFormFields, string>
+            submit={async ({ first, last }) => ({
+                data: `Hello, ${first} ${last}.`
+            })}
+            validator={_ => {
+                return {
+                    first: [],
+                    last: []
+                }
+            }}
+            contents={{ first: "str", last: "st" }}
+        />
+    ))
 
 type TextOnlyFormFields = {
     first: string

@@ -9,6 +9,7 @@ import {
     FormText,
     Form,
     FormSubmit,
+    AutoForm,
     Text
 } from "redo-components"
 import { useQuery } from "@apollo/react-hooks"
@@ -76,8 +77,15 @@ const CustomModalButtonConstructor = (key: string, value: any) => {
         key: "test"
     }
     return test.key == key || key == "tags" ? (
-        <ModalButton>
-            <Form>
+        <ModalButton open={false}>
+            <Form
+                validator={value}
+                submit={async () => {
+                    const result = await submitForm()
+
+                    return
+                }}
+            >
                 <Row>
                     <FormText name={key}>{key}</FormText>
                     <FormSubmit>Change name</FormSubmit>
@@ -90,12 +98,24 @@ const CustomModalButtonConstructor = (key: string, value: any) => {
 
 const EditableLinks = (key: string, value: any) => {
     return "test" == key || key == "tags" ? (
-        <ModalButton>
-            <Form>
-                {value.forEach((val: any) => {
-                    return <FormText>{val}</FormText>
-                })}
-            </Form>
+        <ModalButton open={false}>
+            <AutoForm
+                validator={value}
+                contents={value}
+                submit={async () => {
+                    const result = await submitForm()
+
+                    return result
+                }}
+            />
         </ModalButton>
     ) : null
 }
+
+const submitForm = () => {}
+
+// {
+//     value.forEach((val: any) => {
+//         return <FormText name={val}>{val}</FormText>
+//     })
+// }

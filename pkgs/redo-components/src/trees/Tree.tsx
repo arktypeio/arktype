@@ -14,7 +14,7 @@ export type TreeProps<O extends TreeSource> = Omit<
     "children"
 > & {
     children: O
-    nodeExtras?: JSX.Element | ((key: string, value: any) => JSX.Element)
+    nodeExtras?: JSX.Element | ((key: string, value: any) => JSX.Element | null)
 } & (O extends any[]
         ? {
               labelKey: O extends any[] ? keyof O[number] : never

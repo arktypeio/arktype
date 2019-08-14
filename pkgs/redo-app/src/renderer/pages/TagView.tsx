@@ -36,12 +36,7 @@ export const TagView = () => {
                 <HomeActionsRow />
             </Row>
             {data && data.getTag ? (
-                <Tree
-                    displayAs={objectActions}
-                    style={{ width: 200 }}
-                    from={data.getTag}
-                    labelKey="name"
-                />
+                <Tree labelKey="name">{data.getTag}</Tree>
             ) : null}
         </Column>
     )

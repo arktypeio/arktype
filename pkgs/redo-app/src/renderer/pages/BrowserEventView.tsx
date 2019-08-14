@@ -45,11 +45,7 @@ export const BrowserEventView = () => {
                 <HomeActionsRow />
             </Row>
             {data && data.getBrowserEvent ? (
-                <Tree
-                    displayAs={objectActions}
-                    from={data.getBrowserEvent}
-                    labelKey="value"
-                />
+                <Tree labelKey="value">{data.getBrowserEvent}</Tree>
             ) : null}
         </Column>
     )

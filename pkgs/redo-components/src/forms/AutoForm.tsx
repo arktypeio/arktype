@@ -10,30 +10,32 @@ import { Row, Column } from "../layouts"
 import { DisplayAs } from "../displayAs"
 import { Text } from "../text"
 
-type AutoFormProps<T extends Fields, D = any> = FormProps<T, D> & {
-    displayAs: DisplayAs
-    fields: T
+type AutoFormProps<T extends Fields, D = any> = Omit<
+    FormProps<T, D>,
+    "children"
+> & {
+    // displayAs: DisplayAs
+    fields?: T
     contents: T
-    children: any
+    children?: any
 }
 
 export const AutoForm = <T extends Fields, D = any>({
-    displayAs,
-    fields,
     contents,
-    children,
     validator,
     submit
 }: AutoFormProps<T, D>) => (
     <Form<T, D> validator={validator} submit={submit}>
         <Column>
-            {contents && contents.steps
-                ? Object.entries(contents!.steps).map(([k, v], index) => (
-                      <FormText name={JSON.stringify(v)} key={index}>
-                          {JSON.stringify(v)}
-                      </FormText>
+            {contents
+                ? Object.entries(contents).map(([k, v], index) => (
+                      <FormText
+                          name={`${JSON.stringify(k)}: ${JSON.stringify(v)} `}
+                          key={index}
+                      />
                   ))
                 : null}
+            <FormSubmit>Submit</FormSubmit>
         </Column>
     </Form>
 )

@@ -37,4 +37,22 @@ export class TestResolver {
         })
         return results
     }
+
+    @Authorized()
+    @Mutation(returns => String)
+    async modifyTest(
+        @Args() { name, tags, id: testId }: Test,
+        @Ctx() { photon, id }: Context
+    ) {
+        const test = await photon.tests.update({
+            data: {
+                name,
+                tags: {
+                    create: createTagsInput(tags, id!)
+                }
+            },
+            where: { id: testId }
+        })
+        return test.id
+    }
 }
