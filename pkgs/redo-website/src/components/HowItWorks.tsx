@@ -1,6 +1,6 @@
 import React, { FC, useState } from "react"
 import { Row, Text, Column } from "redo-components"
-import { copy } from "./Copy"
+import { copy } from "../constants"
 import ExpandMore from "@material-ui/icons/ExpandMore"
 import { AnimatedCheckbox } from "./AnimatedCheckbox"
 import ExpansionPanel, {
@@ -53,7 +53,7 @@ type StepsProps = {
 const Steps: FC<StepsProps> = ({ children }) => (
     <>
         {children.map((stepProps, index) => (
-            <Step defaultExpanded={index === 0} {...stepProps} />
+            <Step key={index} defaultExpanded={index === 0} {...stepProps} />
         ))}
     </>
 )

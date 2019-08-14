@@ -3,7 +3,6 @@ import MuiButton, {
     ButtonProps as MuiButtonProps
 } from "@material-ui/core/Button"
 import { makeKinds, KindFrom } from "../common"
-import { Row } from "../layouts"
 
 const useKind = makeKinds<MuiButtonProps>()({
     primary: {
@@ -31,7 +30,12 @@ export const Button: FC<ButtonProps> = ({
     return (
         <MuiButton
             fullWidth={false}
-            style={{ minWidth: 80, ...kindStyle, ...style }}
+            style={{
+                minWidth: 80,
+                textTransform: "none",
+                ...(kindStyle ? kindStyle : {}),
+                ...(style ? style : {})
+            }}
             {...kindRest}
             {...rest}
         />

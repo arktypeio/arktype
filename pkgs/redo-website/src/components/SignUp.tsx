@@ -7,7 +7,7 @@ import {
     Column,
     Text
 } from "redo-components"
-import { track } from "../Analytics"
+import { track } from "../analytics"
 
 export const SignUp = () => {
     return (

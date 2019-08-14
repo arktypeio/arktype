@@ -2,30 +2,32 @@ import React, { FC } from "react"
 import { Text, Column, useTheme } from "redo-components"
 import { AnimatedLogo } from "./AnimatedLogo"
 import { Background } from "./Background"
-import { copy } from "./Copy"
 import Typist from "react-typist"
+import { layout } from "../constants"
 
 export type AppHeaderProps = {
     mobile?: boolean
 }
 
 export const AppHeader: FC<AppHeaderProps> = ({ mobile }) => {
-    const startHeight = mobile ? 250 : 400
+    const startHeight = mobile ? layout.header.height : 400
     const endHeight = mobile ? 200 : 200
     return (
-        <Column align="center" height={startHeight}>
+        <Column
+            align="center"
+            height={startHeight}
+            style={{ position: "fixed", zIndex: 1 }}
+        >
             <Background skewBetween={[startHeight, endHeight]} />
             <Column
                 style={{
                     zIndex: 1,
-                    padding: useTheme().spacing(2),
-                    maxWidth: 500
+                    ...layout.content
                 }}
                 justify="space-around"
-                width="fit-content"
                 align="center"
             >
-                <AnimatedLogo />
+                <AnimatedLogo style={{ width: 300 }} />
                 <Text variant="h4" color="primary">
                     Automated testing
                 </Text>
