@@ -7492,14 +7492,6 @@ packages:
       graphql: ^0.10.5 || ^0.11.3 || ^0.12.0 || ^0.13.0 || ^14.0.0
     resolution:
       integrity: sha512-6WzlBFC0lWmXJbIVE8OgFgXIP4RJi3OQgTPa0DVMsDXdpRDjTsM1K9wfl5HSYX7R87QAGlvcv2Y4BIZa/ItonA==
-  /graphql-tag/2.10.0_graphql@14.4.2:
-    dependencies:
-      graphql: 14.4.2
-    dev: false
-    peerDependencies:
-      graphql: ^0.9.0 || ^0.10.0 || ^0.11.0 || ^0.12.0 || ^0.13.0 || ^14.0.0
-    resolution:
-      integrity: sha512-9FD6cw976TLLf9WYIUPCaaTpniawIjHWZSwIRZSjrfufJamcXbVVYfN2TWvJYbw0Xf2JjYbl1/f2+wDnBVw3/w==
   /graphql-tag/2.10.1:
     dev: false
     peerDependencies:
@@ -14247,7 +14239,7 @@ packages:
       framer-motion: 1.4.1_react-dom@16.8.6+react@16.8.6
       fs-extra: 8.1.0
       graphql: 14.4.2
-      graphql-tag: 2.10.0_graphql@14.4.2
+      graphql-tag: 2.10.1_graphql@14.4.2
       html-webpack-plugin: 3.2.0_webpack@4.29.6
       isomorphic-ws: 4.0.1
       material-ui-chip-input: 1.0.0_f35c714a02d617073918f9017b0a4e91
@@ -14274,7 +14266,7 @@ packages:
     dev: false
     name: '@rush-temp/redo-app'
     resolution:
-      integrity: sha512-u3kpKVPt8DCvehZh1IwD0xTx3qIzpxbMDxUN9AC7vNkMSRRIQvmaMaRObUJqsb2ufx2IuBNW+uzQTuQ52WRu7w==
+      integrity: sha512-lqelcaBH3L5HsRibpvz7kicUPrKnYnAZPhAMY+of5YXsBbTuC9K5VnlR0mdcFOiUZUA3sgoN/7EfXBDAsKDvdA==
       tarball: 'file:projects/redo-app.tgz'
     version: 0.0.0
   'file:projects/redo-bundle.tgz_6d196698478dde40c00275b1457e23b0':
@@ -14379,7 +14371,7 @@ packages:
     peerDependencies:
       '@types/graphql': '*'
     resolution:
-      integrity: sha512-Tx2RYl0pMNYg0Vgsjz8vSJzutglwScF/hVXLA84KF/j+4daFEw2ayLDCZN1pkJz+QnrTWXsHuitM04MNr0d0TA==
+      integrity: sha512-5EYOg7PLVsRQhIXueLHaEv4sPtOeBhVUkfW9YWfyMp+xzvXVFR3sO+ttYqcBbEbRG5Rf46A2e54yOxppaxxyNA==
       tarball: 'file:projects/redo-model.tgz'
     version: 0.0.0
   'file:projects/redo-recommended.tgz':
@@ -14423,6 +14415,7 @@ packages:
       dotenv: 7.0.0
       fs-extra: 8.1.0
       graphql: 14.4.2
+      graphql-tag: 2.10.1_graphql@14.4.2
       isomorphic-ws: 4.0.1
       jest: 24.8.0
       jsonwebtoken: 8.5.0
@@ -14436,7 +14429,7 @@ packages:
     dev: false
     name: '@rush-temp/redo-server'
     resolution:
-      integrity: sha512-k46Wy5cD+grzcTJ71i6mdy492YSXtRKEbjqG86ZGIhuA46AMcAt3eWiF7lAVpU4zQJCcNa/9wdGoU3rfzEpTFg==
+      integrity: sha512-8slPf6oYm7Df02b97mEEkfVADQlWud7MIbtn7IFaqPPkYQOoR1tPmMofSm+2sG5JhRKUY2OzNu9INqETtWrCRg==
       tarball: 'file:projects/redo-server.tgz'
     version: 0.0.0
   'file:projects/redo-utils.tgz':
@@ -14504,7 +14497,7 @@ packages:
       class-transformer: 0.2.0
       deepmerge: 3.2.1
       graphql: 14.4.2
-      graphql-tag: 2.10.0_graphql@14.4.2
+      graphql-tag: 2.10.1_graphql@14.4.2
       isomorphic-fetch: 2.2.1
       jest: 24.8.0
       moize: 5.4.4
@@ -14519,7 +14512,7 @@ packages:
       react: '*'
       react-dom: '*'
     resolution:
-      integrity: sha512-JcjW1iz641lfsxRR6J40Z/njaTVwZ8lvnIOwx8giKYbbsQlEAjZssQFANq8Gw2teqFT0QRELNliO4tYkyW1Zbw==
+      integrity: sha512-pjMQ1d6TyzL1QdThaR0O0Jnnj/gT5iV686aUGmHeZtvCQW2Yw20CGOCJFlCWnv5Y/4QsfdVF5yrft2vCDkVm3w==
       tarball: 'file:projects/shapeql.tgz'
     version: 0.0.0
 registry: ''

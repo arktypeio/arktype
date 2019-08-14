@@ -16,7 +16,7 @@ export class SessionResolver {
         const hashedPassword = await hash(password, 10)
         if (await findUser({ query: { where: { email } }, photon })) {
             throw new Error(
-                "Someone's already using that email. If it's you, try signing in instead!"
+                "Someone's already using that email. If it's you, try signin in instead!"
             )
         }
         const user = await photon.users.create({
