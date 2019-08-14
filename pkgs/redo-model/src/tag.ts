@@ -1,21 +1,20 @@
-import { Field, ID, ObjectType } from "type-graphql"
-import { InType } from "./common"
+import { InField, InType, OutType, OutField, ID } from "./common"
 import { User } from "./user"
 
-@ObjectType()
+@OutType()
 export class Tag {
-    @Field(type => ID)
+    @OutField({ type: as => ID })
     readonly id: string
 
-    @Field({ description: "String @unique" })
+    @OutField({ schemaSuffix: "String @unique" })
     name: string
 
-    @Field()
+    @OutField()
     user: User
 }
 
 @InType()
 export class TagInput {
-    @Field()
+    @InField()
     name: string
 }

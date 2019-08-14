@@ -1,15 +1,14 @@
-import "reflect-metadata"
-import { Field, ID, ObjectType } from "type-graphql"
+import { OutType, OutField, ID } from "./common"
 import { User } from "./user"
 
-@ObjectType()
+@OutType()
 export class Session {
-    @Field(type => ID)
+    @OutField({ type: as => ID })
     readonly id: string
 
-    @Field()
+    @OutField()
     token: string
 
-    @Field()
+    @OutField()
     user: User
 }

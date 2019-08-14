@@ -34,10 +34,12 @@ export const generateSchema = ({
     const data = getMetadataStorage()
     data.build()
     const { objectTypes } = data
-    const models = objectTypes.reduce(
-        (modelString, obj) => `${modelString}${schemifyObject(obj)}`,
-        ""
-    )
+    const models = objectTypes
+        .filter(({ name }) => !name.startsWith("LocalOnly"))
+        .reduce(
+            (modelString, obj) => `${modelString}${schemifyObject(obj)}`,
+            ""
+        )
     writeFileSync(atPath, `${baseSchema}${models}`)
 }
 

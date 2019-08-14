@@ -1,43 +1,43 @@
-import { Field, ID, ObjectType } from "type-graphql"
-import { In, InType } from "./common"
+import { InField, InType, OutType, OutField, ID } from "./common"
 
-@ObjectType()
+@OutType()
 export class User {
-    @Field(type => ID)
+    @OutField({ type: as => ID })
     readonly id: string
 
-    @Field({ description: "String @unique" })
+    @OutField({ schemaSuffix: "String @unique" })
     email: string
 
-    @Field()
+    @OutField()
     password: string
 
-    @Field(type => [String])
+    @OutField({ type: as => [String] })
     roles: string[]
 
-    @Field()
+    @OutField()
     firstName: string
 
-    @Field()
+    @OutField()
     lastName: string
 }
 
 @InType()
 export class SignInInput implements Partial<User> {
-    @In("email")
+    @InField({ validate: ["filled"] })
     email: string
 
-    @In("filled")
+    @InField({ validate: ["filled"] })
     password: string
 }
+
 @InType()
 export class SignUpInput extends SignInInput implements Partial<User> {
-    @In("filled")
+    @InField({ validate: ["filled"] })
     firstName: string
 
-    @In({ validate: ["filled"] })
+    @InField({ validate: ["filled"] })
     lastName: string
 
-    @ValidateUnsubmitted({ matches: "password" })
+    @InField({ submitted: false, validate: [{ matches: "password" }] })
     confirm: string
 }

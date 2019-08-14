@@ -1,40 +1,38 @@
-import { Field, ID, ObjectType } from "type-graphql"
-import { InType } from "./common"
+import { InField, InType, OutType, OutField, ID } from "./common"
 import { Tag, TagInput } from "./tag"
 import { User } from "./user"
 
-@ObjectType()
+@OutType()
 export class BrowserEvent {
-    @Field(type => ID)
+    @OutField({ type: as => ID })
     readonly id: string
 
-    @Field()
+    @OutField()
     type: string
 
-    @Field()
+    @OutField()
     selector: string
 
-    @Field()
+    @OutField()
     value: string
 
-    @Field(type => [Tag])
+    @OutField({ type: as => [Tag] })
     tags: Tag[]
 
-    @Field()
+    @OutField()
     user: User
 }
-
 @InType()
 export class BrowserEventInput {
-    @Field()
+    @InField()
     type: string
 
-    @Field()
+    @InField()
     selector: string
 
-    @Field()
+    @InField()
     value: string
 
-    @Field(type => [TagInput])
+    @InField({ type: as => [TagInput] })
     tags: TagInput[]
 }
