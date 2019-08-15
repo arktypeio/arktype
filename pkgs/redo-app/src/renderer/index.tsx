@@ -1,6 +1,5 @@
 import "dotenv/config"
 import "reflect-metadata"
-import "typeface-ubuntu"
 import React from "react"
 import ReactDOM from "react-dom"
 import { client, store } from "./common"
