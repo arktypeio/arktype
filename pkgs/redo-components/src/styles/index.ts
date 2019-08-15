@@ -1,3 +1,4 @@
+import "./typefaceUbuntu.css"
 import createMuiTheme, {
     ThemeOptions
 } from "@material-ui/core/styles/createMuiTheme"
@@ -6,7 +7,6 @@ export { makeStyles } from "@material-ui/styles"
 
 export const defaultConfig: ThemeOptions = {
     palette: {
-        type: "light",
         primary: {
             main: "#2979ff"
         },

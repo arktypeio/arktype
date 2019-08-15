@@ -1,0 +1,44 @@
+/* ubuntu-300normal - latin */
+@font-face {
+    font-family: "Ubuntu";
+    font-style: normal;
+    font-display: swap;
+    font-weight: 300;
+    src: local("Ubuntu Light "), local("Ubuntu-Light"),
+        url("../node_modules/typeface-ubuntu/files/ubuntu-latin-300.woff")
+            format("woff");
+}
+
+/* ubuntu-400normal - latin */
+@font-face {
+    font-family: "Ubuntu";
+    font-style: normal;
+    font-display: swap;
+    font-weight: 400;
+    src: local("Ubuntu Regular "), local("Ubuntu-Regular"),
+        url("../node_modules/typeface-ubuntu/files/ubuntu-latin-400.woff")
+            format("woff"),
+        format("woff");
+}
+
+/* ubuntu-500normal - latin */
+@font-face {
+    font-family: "Ubuntu";
+    font-style: normal;
+    font-display: swap;
+    font-weight: 500;
+    src: local("Ubuntu Medium "), local("Ubuntu-Medium"),
+        url("../node_modules/typeface-ubuntu/files/ubuntu-latin-500.woff")
+            format("woff");
+}
+
+/* ubuntu-700normal - latin */
+@font-face {
+    font-family: "Ubuntu";
+    font-style: normal;
+    font-display: swap;
+    font-weight: 700;
+    src: local("Ubuntu Bold "), local("Ubuntu-Bold"),
+        url("../node_modules/typeface-ubuntu/files/ubuntu-latin-700.woff")
+            format("woff");
+}

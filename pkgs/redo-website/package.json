@@ -23,8 +23,6 @@
         "react-typist": "2.0.5",
         "redo-components": "1.0.0",
         "shapeql": "1.0.0",
-        "typeface-roboto": "0.0.54",
-        "typeface-ubuntu": "0.0.65",
         "webpack-merge": "4.1.4"
     },
     "devDependencies": {
