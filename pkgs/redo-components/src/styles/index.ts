@@ -1,4 +1,3 @@
-import "./fonts"
 import createMuiTheme, {
     ThemeOptions
 } from "@material-ui/core/styles/createMuiTheme"
