@@ -11,6 +11,12 @@ storiesOf("Text Input", module)
     .addDecorator(withKnobs)
     .add("Input with knobs", () => (
         <ThemeProvider theme={defaultTheme}>
-            <TextInput kind={select("kind", ["outlined", "underlined"])} />
+            <TextInput
+                kind={select(
+                    "kind",
+                    { outlined: "outlined", underlined: "underlined" },
+                    "outlined"
+                )}
+            />
         </ThemeProvider>
     ))

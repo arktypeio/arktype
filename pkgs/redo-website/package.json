@@ -6,7 +6,7 @@
     "main": "src/index.tsx",
     "scripts": {
         "start": "npm run clean && npm run devServer",
-        "build": "NODE_ENV=production webpack",
+        "build": "npm run clean && NODE_ENV=production webpack",
         "devServer": "NODE_ENV=development webpack-dev-server --config webpack.devServer.config.ts --progress --colors",
         "clean": "rm -rf dist && mkdir dist"
     },
@@ -38,7 +38,6 @@
         "ts-node": "8.3.0",
         "typescript": "3.5.2",
         "webpack": "4.29.6",
-        "webpack-cli": "3.3.0",
-        "webpack-dev-server": "3.7.2"
+        "webpack-cli": "3.3.0"
     }
 }

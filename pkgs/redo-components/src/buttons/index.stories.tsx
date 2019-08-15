@@ -11,7 +11,13 @@ storiesOf("Button", module)
     .add("button with knobs", () => {
         return (
             <ThemeProvider theme={defaultTheme}>
-                <Button kind={select("kind", ["primary", "secondary"])}>
+                <Button
+                    kind={select(
+                        "kind",
+                        { primary: "primary", secondary: "secondary" },
+                        "primary"
+                    )}
+                >
                     This says stuff!
                 </Button>
             </ThemeProvider>
