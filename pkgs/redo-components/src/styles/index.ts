@@ -6,7 +6,6 @@ export { makeStyles } from "@material-ui/styles"
 
 export const defaultConfig: ThemeOptions = {
     palette: {
-        type: "light",
         primary: {
             main: "#2979ff"
         },

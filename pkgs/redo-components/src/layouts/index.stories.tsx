@@ -7,26 +7,34 @@ import { Card } from "../cards"
 import { withKnobs, select, boolean, number } from "@storybook/addon-knobs"
 
 const getKnobProps = () => ({
-    align: select("align", [
-        "stretch",
-        "center",
-        "flex-start",
-        "flex-end",
-        "baseline"
-    ]),
+    align: select(
+        "align",
+        {
+            stretch: "stretch",
+            center: "center",
+            "flex-start": "flex-start",
+            "flex-end": "flex-end",
+            baseline: "baseline"
+        },
+        "flex-start"
+    ),
     grow: boolean("grow", false),
-    height: number("height"),
-    width: number("width"),
+    height: number("height", undefined as any),
+    width: number("width", undefined as any),
     reverse: boolean("reverse", false),
     full: boolean("full", false),
-    justify: select("justify", [
-        "flex-start",
-        "center",
-        "flex-end",
-        "space-between",
-        "space-around",
-        "space-evenly"
-    ])
+    justify: select(
+        "justify",
+        {
+            "flex-start": "flex-start",
+            center: "center",
+            "flex-end": "flex-end",
+            "space-between": "space-between",
+            "space-around": "space-around",
+            "space-evenly": "space-evenly"
+        },
+        "flex-start"
+    )
 })
 
 const cards = (
