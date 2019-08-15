@@ -4,7 +4,6 @@ import { CardProps as MuiCardProps } from "@material-ui/core/Card"
 
 export type CardProps = MuiCardProps
 
-// TODO: Add children knob of type string
 export const Card: FC<CardProps> = ({ style, ...rest }) => {
     return (
         <MuiCard

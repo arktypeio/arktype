@@ -11,19 +11,15 @@ export type RowOrColumnProps = Omit<GridProps, "direction"> & {
     full?: boolean
 }
 
-export const toGridProps = (
+// @ts-ignore: Erroneous error related to pnpm
+// https://github.com/microsoft/TypeScript/issues/29221
+export const toGridProps: (
     direction: "row" | "column",
-    {
-        align,
-        grow,
-        height,
-        width,
-        reverse,
-        style,
-        full,
-        ...rest
-    }: RowOrColumnProps
-): GridProps => ({
+    props: RowOrColumnProps
+) => GridProps = (
+    direction,
+    { align, grow, height, width, reverse, style, full, ...rest }
+) => ({
     container: true,
     item: true,
     wrap: "nowrap",

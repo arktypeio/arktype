@@ -7,10 +7,9 @@
     "main": "dist/index.js",
     "types": "dist/index.d.ts",
     "scripts": {
-        "start": "npm run storybook",
-        "build": "rm -rf dist && tsc",
-        "storybook": "start-storybook -p 6006",
-        "build-storybook": "build-storybook",
+        "start": "start-storybook -p 6006",
+        "build": "npm run clean && tsc && cp -r assets dist",
+        "clean": "rm -rf dist && mkdir dist",
         "test": "jest"
     },
     "dependencies": {
@@ -26,15 +25,16 @@
     },
     "devDependencies": {
         "@babel/core": "7.5.5",
-        "@storybook/addon-actions": "5.1.9",
+        "@storybook/addon-actions": "5.2.0-beta.30",
         "@storybook/addon-console": "1.2.1",
-        "@storybook/addon-info": "5.1.9",
-        "@storybook/addon-knobs": "5.1.10",
-        "@storybook/addon-links": "5.1.9",
-        "@storybook/addon-storyshots": "5.1.10",
-        "@storybook/addons": "5.1.9",
-        "@storybook/react": "5.1.9",
+        "@storybook/addon-info": "5.2.0-beta.30",
+        "@storybook/addon-knobs": "5.2.0-beta.30",
+        "@storybook/addon-links": "5.2.0-beta.30",
+        "@storybook/addon-storyshots": "5.2.0-beta.30",
+        "@storybook/addons": "5.2.0-beta.30",
+        "@storybook/react": "5.2.0-beta.30",
         "@types/jest": "24.0.13",
+        "@types/node": "12.6.6",
         "@types/react": "16.8.8",
         "@types/react-dom": "16.8.3",
         "@types/storybook__react": "4.0.2",
@@ -49,5 +49,8 @@
         "storybook-addon-material-ui": "0.9.0-alpha.20",
         "ts-jest": "24.0.2",
         "typescript": "3.5.2"
+    },
+    "peerDependencies": {
+        "typeface-ubuntu": "0.0.65"
     }
 }

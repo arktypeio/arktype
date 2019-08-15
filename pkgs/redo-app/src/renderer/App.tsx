@@ -1,3 +1,4 @@
+import "typeface-ubuntu"
 import React, { FC } from "react"
 import { Content } from "./Content"
 import { ThemeProvider } from "@material-ui/styles"
