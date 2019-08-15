@@ -23,7 +23,7 @@
         "react-typist": "2.0.5",
         "redo-components": "1.0.0",
         "shapeql": "1.0.0",
-        "webpack-merge": "4.1.4"
+        "typeface-ubuntu": "0.0.65"
     },
     "devDependencies": {
         "@types/analytics-node": "3.1.1",
@@ -38,6 +38,8 @@
         "ts-node": "8.3.0",
         "typescript": "3.5.2",
         "webpack": "4.29.6",
-        "webpack-cli": "3.3.0"
+        "webpack-cli": "3.3.0",
+        "webpack-dev-server": "3.7.2",
+        "webpack-merge": "4.1.4"
     }
 }
