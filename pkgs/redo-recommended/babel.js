@@ -38,6 +38,12 @@ const plugins = [
     require("babel-plugin-transform-typescript-metadata")
 ]
 
+const env = {
+    test: {
+        plugins: [require("babel-plugin-require-context-hook")]
+    }
+}
+
 module.exports = declare((api, opts) => {
-    return { plugins, presets }
+    return { plugins, presets, env }
 })
