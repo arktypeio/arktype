@@ -36,6 +36,7 @@ const plugins = [
     ],
     require("@babel/plugin-proposal-object-rest-spread"),
     require("babel-plugin-transform-typescript-metadata"),
+    require("babel-plugin-macros"),
     require("react-hot-loader/babel")
 ]
 
