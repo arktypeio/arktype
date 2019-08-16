@@ -1,4 +1,5 @@
 import { configure } from "@storybook/react"
+import "@storybook/addon-console"
 
 // @ts-ignore
 const req = require.context("../src", true, /.stories.tsx$/)

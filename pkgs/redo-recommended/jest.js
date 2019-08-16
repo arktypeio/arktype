@@ -7,7 +7,7 @@ module.exports = {
     roots: ["<rootDir>/src"],
     setupFiles: [join(__dirname, "jest.setup.js")],
     transform: {
-        "^.+\\.ts$": "ts-jest"
+        "^.+\\.tsx?$": "ts-jest"
     },
     globals: {
         "ts-jest": {
