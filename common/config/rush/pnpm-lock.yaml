@@ -20,7 +20,7 @@ dependencies:
   '@medv/finder': 1.1.1
   '@rush-temp/redo-app': 'file:projects/redo-app.tgz'
   '@rush-temp/redo-bundle': 'file:projects/redo-bundle.tgz_6d196698478dde40c00275b1457e23b0'
-  '@rush-temp/redo-components': 'file:projects/redo-components.tgz_webpack@4.29.6'
+  '@rush-temp/redo-components': 'file:projects/redo-components.tgz_e66909430cd2d3f9c1a6d732dc054ce0'
   '@rush-temp/redo-model': 'file:projects/redo-model.tgz_@types+graphql@14.2.2'
   '@rush-temp/redo-recommended': 'file:projects/redo-recommended.tgz'
   '@rush-temp/redo-server': 'file:projects/redo-server.tgz'
@@ -60,6 +60,8 @@ dependencies:
   apollo-link-http: 1.5.15
   apollo-server: 2.7.0
   babel-loader: 8.0.6_@babel+core@7.5.5+webpack@4.29.6
+  babel-plugin-macros: 2.6.1
+  babel-plugin-require-context-hook: 1.0.0
   babel-plugin-transform-typescript-metadata: 0.2.2
   babel-runtime: 6.26.0
   bcrypt: 3.0.6
@@ -96,7 +98,7 @@ dependencies:
   react-svg-loader: 3.0.3
   react-typist: 2.0.5_react-dom@16.8.6+react@16.8.6
   reflect-metadata: 0.1.13
-  require-context.macro: 1.1.1
+  require-context.macro: 1.1.1_babel-plugin-macros@2.6.1
   storybook-addon-material-ui: 0.9.0-alpha.20_e2ea9552175edabdc204f5975cbcda8c
   style-loader: 0.23.1
   ts-jest: 24.0.2_jest@24.8.0
@@ -3898,6 +3900,10 @@ packages:
       '@babel/plugin-syntax-jsx': ^7.2.0
     resolution:
       integrity: sha512-Pst1RWjUIiV0Ykv1ODSeceCBsFOP2Y4dusjq7/XkjuzJdvS9CjpkPMUIoO4MLlvp5PiLCeMlsOC7faEUA0gm3Q==
+  /babel-plugin-require-context-hook/1.0.0:
+    dev: false
+    resolution:
+      integrity: sha512-EMZD1563QUqLhzrqcThk759RhuNVX/ZJdrtGK6drwzgvnR+ARjWyXIHPbu+tUNaMGtPz/gQeAM2M6VUw2UiUeA==
   /babel-plugin-syntax-jsx/6.18.0:
     dev: false
     resolution:
@@ -11696,9 +11702,10 @@ packages:
       node: '>= 4'
     resolution:
       integrity: sha512-NAqBSrijGLZdM0WZNsInLJpkJokL72XYjUpnB0iwsRgxh7dB6COrHnTBNwN0E+lHDAJzu7kLAkDeY08z2/A0hg==
-  /require-context.macro/1.1.1:
+  /require-context.macro/1.1.1_babel-plugin-macros@2.6.1:
     dependencies:
       '@types/webpack-env': 1.14.0
+      babel-plugin-macros: 2.6.1
     dev: false
     peerDependencies:
       babel-plugin-macros: ^2.4.2
@@ -13989,6 +13996,7 @@ packages:
       '@types/webpack': 4.4.26
       '@types/webpack-merge': 4.1.3
       babel-loader: 8.0.6_@babel+core@7.5.5+webpack@4.29.6
+      babel-plugin-macros: 2.6.1
       babel-plugin-transform-typescript-metadata: 0.2.2
       clean-webpack-plugin: 2.0.2_webpack@4.29.6
       copy-webpack-plugin: 5.0.3_webpack@4.29.6
@@ -14014,10 +14022,10 @@ packages:
       react-dom: '*'
       typescript: '*'
     resolution:
-      integrity: sha512-l2FIXzrsmkXFjVipPPtudU46gsOJmRkWxWSBPv9zELSLIsalwvqx7oWjRrqQ/i+D0J36n7FcSxYMgeXeQ2WTmg==
+      integrity: sha512-wticUoQLNKCHVzLgTf9cgqh+TkyCwPekiPz4apLqoce8SgCgsmuBK1n5pZBrXkeG8ZKFs1BkuiOMeQEWz77nKA==
       tarball: 'file:projects/redo-bundle.tgz'
     version: 0.0.0
-  'file:projects/redo-components.tgz_webpack@4.29.6':
+  'file:projects/redo-components.tgz_e66909430cd2d3f9c1a6d732dc054ce0':
     dependencies:
       '@babel/core': 7.5.5
       '@babel/runtime-corejs3': 7.5.5
@@ -14048,7 +14056,7 @@ packages:
       react-docgen-typescript-loader: 3.1.0_typescript@3.5.2+webpack@4.29.6
       react-dom: 16.8.6_react@16.8.6
       react-hook-form: 3.18.8_react-dom@16.8.6+react@16.8.6
-      require-context.macro: 1.1.1
+      require-context.macro: 1.1.1_babel-plugin-macros@2.6.1
       storybook-addon-material-ui: 0.9.0-alpha.20_e2ea9552175edabdc204f5975cbcda8c
       ts-jest: 24.0.2_jest@24.8.0
       typeface-ubuntu: 0.0.65
@@ -14057,6 +14065,7 @@ packages:
     id: 'file:projects/redo-components.tgz'
     name: '@rush-temp/redo-components'
     peerDependencies:
+      babel-plugin-macros: '*'
       webpack: '*'
     resolution:
       integrity: sha512-aBv3mTGqLHXz1eoCdtdEZgTzIZ3e+0y9N2B4QYdC8cFT9I0yfgHVyyNuIi4dauNAwobYQ4HEDuL2rXtfgZuuiA==
@@ -14092,6 +14101,7 @@ packages:
       '@babel/preset-typescript': 7.3.3_@babel+core@7.5.5
       '@types/jest': 24.0.13
       '@types/node': 12.6.6
+      babel-plugin-require-context-hook: 1.0.0
       babel-plugin-transform-typescript-metadata: 0.2.2
       reflect-metadata: 0.1.13
     dev: false
@@ -14100,7 +14110,7 @@ packages:
       '@babel/core': 7.5.5
       '@babel/runtime-corejs3': 7.5.5
     resolution:
-      integrity: sha512-ZriuKxbQryhpvH5uWSrBHvBavEwnNgwSmpow81ajnWhZ+v3F2eNLuBTQLFvEdT4Uvp6+vWoSMtHq5if8MUHQcA==
+      integrity: sha512-H/YjolYsJaiJkwl0zta0uGWW1lUzSU4B/hypeLsdCGeQvqSsNAdiBM3TtzTXSx5bc5cYy5o7uGwcYBc7z5f+qA==
       tarball: 'file:projects/redo-recommended.tgz'
     version: 0.0.0
   'file:projects/redo-server.tgz':
@@ -14278,6 +14288,8 @@ specifiers:
   apollo-link-http: 1.5.15
   apollo-server: 2.7.0
   babel-loader: 8.0.6
+  babel-plugin-macros: 2.6.1
+  babel-plugin-require-context-hook: 1.0.0
   babel-plugin-transform-typescript-metadata: 0.2.2
   babel-runtime: 6.26.0
   bcrypt: 3.0.6

@@ -18,6 +18,7 @@
         "@babel/preset-react": "7.0.0",
         "@babel/preset-typescript": "7.3.3",
         "babel-plugin-transform-typescript-metadata": "0.2.2",
+        "babel-plugin-require-context-hook": "1.0.0",
         "reflect-metadata": "0.1.13"
     },
     "devDependencies": {

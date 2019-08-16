@@ -3,7 +3,7 @@ const { join } = require("path")
 module.exports = {
     clearMocks: true,
     moduleFileExtensions: ["ts", "tsx", "js", "jsx", "mjs", "json"],
-    testRegex: "(/__tests__/.*\\.(test|spec))\\.[jt]sx?$",
+    testRegex: "/__tests__/.*\\.test\\.(j|t)sx?$",
     roots: ["<rootDir>/src"],
     setupFiles: [join(__dirname, "jest.setup.js")],
     transform: {
