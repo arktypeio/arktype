@@ -52,6 +52,7 @@ type Mutation {
   signUp(email: String!, password: String!, firstName: String!, lastName: String!): Session!
   signIn(email: String!, password: String!): Session!
   submitTest(name: String!, tags: [TagInput!]!, steps: [BrowserEventInput!]!): String!
+  modifyTest(id: String!, name: String!, tags: [TagInput!]!, steps: [BrowserEventInput!]!): String!
   submitTag(name: String!): String!
   submitBrowserEvent(type: String!, selector: String!, value: String!, tags: [TagInput!]!): String!
 }
@@ -60,6 +61,7 @@ type Query {
   me: User!
   getTest: [Test!]!
   getTag: [Tag!]!
+  getBrowserEvent: [BrowserEvent!]!
 }
 
 type Session {

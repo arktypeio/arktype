@@ -1,4 +1,12 @@
-import { Authorized, Ctx, Mutation, Query, Resolver, Args } from "type-graphql"
+import {
+    Authorized,
+    Ctx,
+    Mutation,
+    Query,
+    Resolver,
+    Args,
+    Arg
+} from "type-graphql"
 import { Test, TestInput, TagInput } from "redo-model"
 import { Context } from "../context"
 import { createTagsInput } from "./common"
@@ -38,15 +46,25 @@ export class TestResolver {
         return results
     }
 
+    // modifyTest should take in everything in TestInput and the id of the test.
+    // Then, update the test with the new fields. And return the test id.
     @Authorized()
     @Mutation(returns => String)
     async modifyTest(
-        @Args() { name, tags, id: testId }: Test,
+        @Args() { name, steps, tags }: TestInput,
+        @Arg("id") testId: string,
         @Ctx() { photon, id }: Context
     ) {
         const test = await photon.tests.update({
             data: {
                 name,
+                steps: {
+                    create: steps.map(({ tags, ...rest }) => ({
+                        ...rest,
+                        user: { connect: { id: id! } },
+                        tags: { create: createTagsInput(tags, id!) }
+                    }))
+                },
                 tags: {
                     create: createTagsInput(tags, id!)
                 }

@@ -5,21 +5,30 @@ import {
     Row,
     Button,
     Tree,
-    ModalButton,
     FormText,
     Form,
     FormSubmit,
     AutoForm,
-    Text
+    Text,
+    ModalView
 } from "redo-components"
 import { useQuery } from "@apollo/react-hooks"
 import { store } from "renderer/common"
 import { Page } from "renderer/state"
 
 import gql from "graphql-tag"
-import { BrowserEvent, Tag } from "redo-model"
-import { objectActions } from "../components/custom"
+import {
+    BrowserEvent,
+    Tag,
+    metadata,
+    MetadataKey,
+    Metadata,
+    TypeAction
+} from "redo-model"
 import { TestInput, Test } from "redo-model"
+import { actionToButton } from "../components/custom/ActionButtons"
+import { ValueFrom } from "redo-utils"
+import { ObjectView } from "../components/custom/ObjectView"
 
 const GET_TESTS = gql`
     query {
@@ -67,7 +76,24 @@ export const TestView = () => {
                 <HomeActionsRow />
             </Row>
             {data && data.getTest ? (
-                <Tree labelKey="name" nodeExtras={CustomModalButtonConstructor}>
+                <Tree
+                    labelKey="name"
+                    nodeExtras={(key, value) =>
+                        key in metadata ? (
+                            <ModalView>
+                                {{
+                                    toggle: <Button>Open modal</Button>,
+                                    content: (
+                                        <ObjectView
+                                            type={key as MetadataKey}
+                                            value={value}
+                                        />
+                                    )
+                                }}
+                            </ModalView>
+                        ) : null
+                    }
+                >
                     {data.getTest}
                 </Tree>
             ) : null}
@@ -75,55 +101,53 @@ export const TestView = () => {
     )
 }
 
-// ((key: string, value: any) => JSX.Element)
-
-const CustomModalButtonConstructor = (key: string, value: any) => {
-    const test = {
-        input: TestInput,
-        data: Test,
-        actions: ["delete", "run"],
-        key: "test"
-    }
-    return test.key == key || key == "tags" ? (
-        <ModalButton open={false}>
-            <Form
-                validator={value}
-                submit={async () => {
-                    const result = await submitForm()
-
-                    return
-                }}
-            >
-                <Row>
-                    <FormText name={key}>{key}</FormText>
-                    <FormSubmit>Change name</FormSubmit>
-                </Row>
-                <Tree nodeExtras={EditableLinks}>{value}</Tree>
-            </Form>
-        </ModalButton>
-    ) : null
+type CustomProps = {
+    key: MetadataKey
+    value: object
 }
 
-const EditableLinks = (key: string, value: any) => {
-    return "test" == key || key == "tags" ? (
-        <ModalButton open={false}>
-            <AutoForm
-                validator={value}
-                contents={value}
-                submit={async () => {
-                    const result = await submitForm()
+// const Custom = ({ key, value }: CustomProps) => (
+//     <ModalButton open={false}>
+//         <Form
+//             validator={value}
+//             submit={async () => {
+//                 const result = await submitForm()
 
-                    return result
-                }}
-            />
-        </ModalButton>
-    ) : null
-}
+//                 return result
+//             }}
+//         >
+//             {Object.entries(actionToButton).map(([k, button]) =>
+//                 metadata[key].actions.includes(k as TypeAction) ? button : null
+//             )}
+//             <Row>
+//                 <FormText name={key}>{key}</FormText>
+//                 <FormSubmit>Save changes</FormSubmit>
+//             </Row>
+//             <Tree nodeExtras={EditableLinks}>{value as object}</Tree>
+//         </Form>
+//     </ModalButton>
+// )
 
-const submitForm = () => {}
+// const EditableLinks = (key: string, value: any) => {
+//     return "test" == key || key == "tags" ? (
+//         <ModalButton open={false}>
+//             <AutoForm
+//                 validator={value}
+//                 contents={value}
+//                 submit={async () => {
+//                     const result = await submitForm()
 
-// {
-//     value.forEach((val: any) => {
-//         return <FormText name={val}>{val}</FormText>
-//     })
+//                     return result
+//                 }}
+//             />
+//         </ModalButton>
+//     ) : null
 // }
+
+// const submitForm = () => {}
+
+// // {
+// //     value.forEach((val: any) => {
+// //         return <FormText name={val}>{val}</FormText>
+// //     })
+// // }

@@ -1,5 +1,5 @@
 import { Authorized, Ctx, Mutation, Query, Resolver, Args } from "type-graphql"
-import { Test, TestInput, BrowserEvent, BrowserEventInput } from "redo-model"
+import { BrowserEvent, BrowserEventInput } from "redo-model"
 import { Context } from "../context"
 import { createTagsInput } from "./common"
 @Resolver(of => BrowserEvent)

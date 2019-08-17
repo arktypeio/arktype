@@ -23,7 +23,7 @@ storiesOf("Form", module)
                     last: []
                 }
             }}
-            contents={{ first: "str", last: "st" }}
+            contents={{ first: "Sarthak", last: "Agrawal" }}
         />
     ))
 

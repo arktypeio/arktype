@@ -2,7 +2,15 @@ import React from "react"
 import { useEffect } from "react"
 import { Page } from "state"
 import { component } from "blocks"
-import { Home, Learner, SignIn, SignUp, TestView, TagView, BrowserEventView } from "."
+import {
+    Home,
+    Learner,
+    SignIn,
+    SignUp,
+    TestView,
+    TagView,
+    BrowserEventView
+} from "."
 
 type NameToPage = { [_ in NonNullable<Page>]: JSX.Element }
 
