@@ -7,7 +7,7 @@ import { Button } from "../buttons"
 storiesOf("Menu", module)
     .addDecorator(withTheme())
     .add("Basic", () => (
-        <Menu id="MenuID">
+        <Menu>
             {{
                 toggle: <Button>Open</Button>,
                 options: {
