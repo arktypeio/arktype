@@ -7,7 +7,7 @@
     "scripts": {
         "start": "npm run clean && npm run devServer",
         "build": "npm run clean && NODE_ENV=production webpack",
-        "devServer": "NODE_ENV=development webpack-dev-server --config webpack.devServer.config.ts --progress --colors",
+        "devServer": "NODE_ENV=development webpack-dev-server --progress --colors",
         "clean": "rm -rf dist && mkdir dist"
     },
     "dependencies": {
