@@ -9,7 +9,7 @@ storiesOf("Menu", module)
     .add("Basic", () => (
         <Menu>
             {{
-                toggle: <Button>Open menu</Button>,
+                toggle: <Button>Open</Button>,
                 options: {
                     Logout: () => console.log("out"),
                     Login: () => console.log("in")
