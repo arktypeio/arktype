@@ -12,13 +12,16 @@ export type MenuProps = Partial<MuiMenuProps> & {
 
 export const Menu: FC<MenuProps> = ({
     children: { toggle, options },
+    id,
     ...rest
 }) => {
     const [anchor, setAnchor] = React.useState<HTMLElement | null>(null)
     const button = cloneElement(toggle, {
         onClick: (e: React.MouseEvent<HTMLButtonElement>) =>
-            setAnchor(e.currentTarget)
+            setAnchor(e.currentTarget),
+        id
     })
+    console.log(button)
     return (
         <>
             {button}

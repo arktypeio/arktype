@@ -7,9 +7,9 @@ import { Button } from "../buttons"
 storiesOf("Menu", module)
     .addDecorator(withTheme())
     .add("Basic", () => (
-        <Menu>
+        <Menu id="MenuID">
             {{
-                toggle: <Button>Open menu</Button>,
+                toggle: <Button>Open</Button>,
                 options: {
                     Logout: () => console.log("out"),
                     Login: () => console.log("in")
