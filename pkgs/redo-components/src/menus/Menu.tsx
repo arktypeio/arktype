@@ -20,7 +20,7 @@ export const Menu: FC<MenuProps> = ({
             setAnchor(e.currentTarget)
     })
     return (
-        <>
+        <div>
             {button}
             <MuiMenu
                 anchorEl={anchor}
@@ -34,6 +34,6 @@ export const Menu: FC<MenuProps> = ({
                     </MenuItem>
                 ))}
             </MuiMenu>
-        </>
+        </div>
     )
 }

@@ -20,62 +20,48 @@ let clickButton: ReturnType<typeof createClickButton>
 
 let clickMenuItem: ReturnType<typeof createClickMenuItem>
 
-let clickBackground: ReturnType<typeof createClickBackground>
-
 const createClickMenuItem = (element: ReactWrapper) => (index: number) =>
     element
         .find(MenuItem)
         .at(index)
         .simulate("click")
 
-const createClickBackground = (element: ReactWrapper) => () =>
-    element.find("#root").simulate("click")
-
-const expectLength = (length: number) =>
-    expect(element.find(MenuItem).length).toBe(length)
+const getVisibleOptionCount = () => element.find(MenuItem).length
 
 describe("menu", () => {
     beforeEach(() => {
         element = mount(
-            <div id="root">
-                <Menu>
-                    {{
-                        toggle: <Button>Open</Button>,
-                        options
-                    }}
-                </Menu>
-            </div>
+            <Menu>
+                {{
+                    toggle: <Button>Open</Button>,
+                    options
+                }}
+            </Menu>
         )
         clickButton = createClickButton(element)
         clickMenuItem = createClickMenuItem(element)
-        clickBackground = createClickBackground(element)
     })
 
     test("closed by default", () => {
-        expectLength(0)
-    })
-    test("example", () => {
-        clickButton()
-        clickMenuItem(0)
+        expect(getVisibleOptionCount()).toBe(0)
     })
     test("opens when clicked", () => {
         clickButton()
         expect(element.find(MenuItem).length).toBeGreaterThan(0)
     })
-    test("closes when clicked away", () => {
-        clickButton()
-        clickBackground()
-        expectLength(0)
-    })
     test("displays all options", () => {
         clickButton()
-        expect(element.find(MenuItem).length).toBe(Object.keys(options).length)
+        const menuItems = element.find(MenuItem)
+        const expectedOptions = Object.keys(options)
+        expect(menuItems.length).toBe(expectedOptions.length)
+        menuItems.forEach((item, index) => {
+            expect(item.text()).toBe(expectedOptions[index])
+        })
     })
     test("each option responds to click", () => {
         clickButton()
         Object.values(options).forEach((option, clickIndex, allOptions) => {
             clickMenuItem(clickIndex)
-
             expect(
                 allOptions.every(
                     (option, validateIndex) =>
@@ -88,7 +74,6 @@ describe("menu", () => {
     test("closes after option click", () => {
         clickButton()
         clickMenuItem(0)
-
-        expectLength(0)
+        expect(getVisibleOptionCount()).toBe(0)
     })
 })
