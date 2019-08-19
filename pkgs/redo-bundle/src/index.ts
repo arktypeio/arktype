@@ -34,6 +34,7 @@ export const makeConfig = (
 
 const commonOptions: Configuration = {
     mode: env,
+    context: __dirname,
     devtool: isDev() ? "inline-source-map" : "source-map",
     node: {
         __dirname: false,
@@ -50,7 +51,7 @@ const commonOptions: Configuration = {
         rules: [
             {
                 test: /\.(j|t)sx?$/,
-                loader: require("babel-loader"),
+                loader: "babel-loader",
                 exclude: /node_modules/
             },
             {
@@ -73,7 +74,7 @@ const webOptions: Configuration = merge.smart(commonOptions, {
                 test: /\.svg$/,
                 use: [
                     {
-                        loader: require("babel-loader")
+                        loader: "babel-loader"
                     },
                     {
                         loader: "react-svg-loader",
@@ -131,7 +132,7 @@ const rendererOptions: Configuration = merge.smart(webOptions, {
 const devServerOptions = {
     resolve: {
         alias: {
-            "react-dom": require("@hot-loader/react-dom")
+            "react-dom": "@hot-loader/react-dom"
         }
     },
     entry: [

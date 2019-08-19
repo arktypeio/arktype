@@ -35,12 +35,14 @@ const plugins = [
     require("babel-plugin-transform-typescript-metadata")
 ]
 
+const reactHotLoader = require("react-hot-loader/babel")
+
 module.exports = declare((api, opts) => {
     if (opts.node) {
         presets[0][1].targets = { node: "current" }
     }
     if (opts.hotReloading) {
-        plugins.push(require("react-hot-loader/babel"))
+        plugins.push(reactHotLoader)
     }
     return { plugins, presets }
 })

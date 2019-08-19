@@ -1,3 +1,3 @@
 module.exports = {
-    presets: ["redo"]
+    presets: [["redo", { node: true, hotReloading: true }]]
 }
