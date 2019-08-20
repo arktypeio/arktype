@@ -12,7 +12,7 @@ import {
 import { ValueFrom } from "redo-utils"
 
 export const env = process.env.NODE_ENV as any
-export const isDev = () => env === "development"
+export const isDev = env === "development"
 export type BaseName = keyof typeof baseOptions
 
 export type BaseConfigOptions = {
@@ -24,18 +24,19 @@ export type BaseConfigOptions = {
 export const makeConfig = (
     { base, entry, devServer }: BaseConfigOptions,
     merged: Partial<Configuration>[] = []
-) =>
-    merge.smart(
+) => {
+    return merge.smart(
         baseOptions[base],
         { entry },
         devServer ? devServerOptions : {},
         ...merged
     )
+}
 
 const commonOptions: Configuration = {
     mode: env,
-    context: __dirname,
-    devtool: isDev() ? "inline-source-map" : "source-map",
+    devtool: isDev ? "inline-source-map" : "source-map",
+    context: resolve(__dirname, ".."),
     node: {
         __dirname: false,
         __filename: false

@@ -5,7 +5,10 @@ const presets = [
         require("@babel/preset-env"),
         {
             useBuiltIns: "usage",
-            corejs: 3
+            corejs: 3,
+            targets: {
+                node: "current"
+            }
         }
     ],
     require("@babel/preset-typescript"),
@@ -35,14 +38,14 @@ const plugins = [
     require("babel-plugin-transform-typescript-metadata")
 ]
 
-const reactHotLoader = require("react-hot-loader/babel")
+const reactHotLoaderPlugin = require("react-hot-loader/babel")
 
 module.exports = declare((api, opts) => {
-    if (opts.node) {
-        presets[0][1].targets = { node: "current" }
-    }
+    // if (opts.node) {
+    //     presets[0][1].targets = { node: "current" }
+    // }
     if (opts.hotReloading) {
-        plugins.push(reactHotLoader)
+        plugins.push(reactHotLoaderPlugin)
     }
-    return { plugins, presets }
+    return { presets, plugins }
 })

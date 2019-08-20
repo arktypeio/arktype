@@ -8,12 +8,13 @@
     "types": "dist/index.d.ts",
     "scripts": {
         "start": "start-storybook -p 6006",
-        "build": "npm run clean && tsc && cp -r assets dist",
+        "build": "npm run clean && babel src -d dist --extensions '.ts,.tsx' --ignore 'src/**/__tests__/*' --source-maps inline",
         "clean": "rm -rf dist && mkdir dist",
         "test": "jest"
     },
     "dependencies": {
         "@babel/runtime-corejs3": "7.5.5",
+        "core-js": "3.1.4",
         "@material-ui/core": "4.2.1",
         "@material-ui/icons": "4.2.1",
         "@material-ui/lab": "4.0.0-alpha.22",
@@ -25,6 +26,7 @@
         "typeface-ubuntu": "0.0.65"
     },
     "devDependencies": {
+        "@babel/cli": "7.5.5",
         "@babel/core": "7.5.5",
         "@storybook/addon-actions": "5.2.0-beta.30",
         "@storybook/addon-console": "1.2.1",

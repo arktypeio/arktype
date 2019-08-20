@@ -7,7 +7,7 @@
     "main": "dist/index.js",
     "types": "dist/index.d.ts",
     "scripts": {
-        "build": "rm -rf dist && tsc"
+        "build": "rm -rf dist && babel src -d dist --extensions '.ts,.tsx' --ignore 'src/**/__tests__/*' --source-maps inline"
     },
     "dependencies": {
         "class-transformer": "0.2.0",
@@ -17,9 +17,11 @@
         "core-js": "3.1.4"
     },
     "devDependencies": {
+        "@babel/cli": "7.5.5",
         "@types/fs-extra": "8.0.0",
         "@types/node": "12.6.6",
         "redo-recommended": "1.0.0",
-        "typescript": "3.5.2"
+        "typescript": "3.5.2",
+        "babel-preset-redo": "1.0.0"
     }
 }
