@@ -5,10 +5,9 @@ module.exports = ({ config }) => {
             {
                 loader: require.resolve("babel-loader"),
                 options: {
-                    presets: [require.resolve("redo-bundle/babel.js")]
+                    presets: [require.resolve("babel-preset-redo")]
                 }
-            },
-            require.resolve("react-docgen-typescript-loader")
+            }
         ]
     })
 

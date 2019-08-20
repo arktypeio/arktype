@@ -1,14 +1,10 @@
 {
+    "extends": "./node_modules/redo-recommended/tsconfig.base",
     "compilerOptions": {
-        "target": "es2016",
-        "module": "commonjs",
-        "lib": ["dom", "esnext"],
-        "jsx": "react",
-        "rootDir": "./src",
-        "strict": true,
-        "incremental": true,
-        "experimentalDecorators": true,
-        "allowSyntheticDefaultImports": true,
-        "esModuleInterop": true
-    }
+        "baseUrl": "src",
+        "outDir": "dist",
+        "declaration": true
+    },
+    "include": ["src"],
+    "exclude": ["node_modules", "**/__tests__"]
 }

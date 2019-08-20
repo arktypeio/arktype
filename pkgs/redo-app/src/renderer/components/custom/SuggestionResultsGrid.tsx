@@ -18,7 +18,8 @@ export const SuggestionResultsGrid = component({
     name: "SuggestionResultsGrid",
     defaultProps: {} as Partial<SuggestionResultsGridProps>,
     query: { cardFilter: null }
-})(({ suggestions, data: { cardFilter } }) => {
+})(({ suggestions, data }) => {
+    const { cardFilter } = data
     const theme = useTheme()
     const suggestionCards = suggestions
         .filter(({ name, description }) =>

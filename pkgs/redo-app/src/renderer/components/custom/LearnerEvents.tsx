@@ -1,8 +1,7 @@
 import React, { FC } from "react"
 import { List, ListItem } from "@material-ui/core"
 import { LearnerEventCard } from "custom"
-//TODO: https://trello.com/c/QjInW5CL fix BrowserEventInput type
-import { BrowserEventInput } from "renderer/common"
+import { BrowserEventInput } from "redo-model"
 import { useTheme } from "redo-components"
 
 export type LearnerEventsProps = {

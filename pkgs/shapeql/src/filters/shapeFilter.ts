@@ -14,7 +14,9 @@ export type ShapeFilter<O, S> = {
 export const shapeFilter = <O, S>(o: O, shape: S): ShapeFilter<O, S> => {
     if (!isRecursible(o) || !isRecursible(shape)) {
         throw Error(
-            `Can't shapeFilter non-objects. Parameters '${o}' and '${shape}' were of types ${typeof o} and ${typeof shape}.`
+            `Can't shapeFilter non-objects. Parameters '${o}' and '${JSON.stringify(
+                shape
+            )}' were of types ${typeof o} and ${typeof shape}.`
         )
     }
     const recurse = (o: O, shape: S): ShapeFilter<O, S> =>

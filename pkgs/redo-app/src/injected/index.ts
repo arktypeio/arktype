@@ -1,5 +1,5 @@
 import finder from "@medv/finder"
-import { BrowserEventInput } from "renderer/common"
+import { BrowserEventInput } from "redo-model"
 
 export const watchPage = async () => {
     const browserWindow: Window & {
@@ -16,11 +16,11 @@ export const watchPage = async () => {
         browserWindow.addEventListener(
             event,
             async (e: Event) => {
-                // TODO https://trello.com/c/QjInW5CL
                 const browserEvent: BrowserEventInput = {
                     type: e.type,
                     selector: "",
-                    value: ""
+                    value: "",
+                    tags: []
                 }
                 if (e.target) {
                     const target = e.target as HTMLElement

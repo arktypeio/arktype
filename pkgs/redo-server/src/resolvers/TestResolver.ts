@@ -1,7 +1,7 @@
 import { Authorized, Ctx, Mutation, Query, Resolver, Args } from "type-graphql"
 import { Test, TestInput, TagInput } from "redo-model"
 import { Context } from "../context"
-import { createECDH } from "crypto"
+
 @Resolver(of => Test)
 export class TestResolver {
     @Authorized()
