@@ -85,7 +85,7 @@ const useColors = makeKinds<TextInputColors>()(() => {
             },
             text: text.primary
         },
-        appBar: {
+        light: {
             border: {
                 base: common.white,
                 hovered: secondary.light,
