@@ -25,7 +25,7 @@ dependencies:
   '@rush-temp/redo-model': 'file:projects/redo-model.tgz_@types+graphql@14.2.2'
   '@rush-temp/redo-recommended': 'file:projects/redo-recommended.tgz'
   '@rush-temp/redo-server': 'file:projects/redo-server.tgz'
-  '@rush-temp/redo-utils': 'file:projects/redo-utils.tgz'
+  '@rush-temp/redo-utils': 'file:projects/redo-utils.tgz_@babel+core@7.5.5'
   '@rush-temp/redo-website': 'file:projects/redo-website.tgz'
   '@rush-temp/shapeql': 'file:projects/shapeql.tgz_9e19865677ed1a330f426b149a324972'
   '@storybook/addon-actions': 5.2.0-beta.30_react-dom@16.8.6
@@ -14366,11 +14366,12 @@ packages:
       react: '*'
       react-dom: '*'
     resolution:
-      integrity: sha512-44kyrx10aKxCqrgJ26SI3tAXJunWZfzCMEdE7SW0m/sWyPtGsgRQjdIBl8Pe3p/EmLy2pXtUUAdUsPaDN6OzgQ==
+      integrity: sha512-DJH9oK3QE3AWyc85cg2AyVLxlNa+EJoOQTJRPjzgdazXznYAgEBVg9ueJcBENGRxRHQWtzki/tyGngLTsxT5rw==
       tarball: 'file:projects/redo-bundle.tgz'
     version: 0.0.0
   'file:projects/redo-components.tgz_e66909430cd2d3f9c1a6d732dc054ce0':
     dependencies:
+      '@babel/cli': 7.5.5_@babel+core@7.5.5
       '@babel/core': 7.5.5
       '@babel/runtime-corejs3': 7.5.5
       '@material-ui/core': 4.2.1_react-dom@16.8.6+react@16.8.6
@@ -14396,6 +14397,7 @@ packages:
       babel-loader: 8.0.6_@babel+core@7.5.5+webpack@4.29.6
       babel-plugin-require-context-hook: 1.0.0
       babel-runtime: 6.26.0
+      core-js: 3.1.4
       core-js-pure: 3.1.4
       deepmerge: 3.2.1
       enzyme: 3.10.0
@@ -14417,7 +14419,7 @@ packages:
       babel-plugin-macros: '*'
       webpack: '*'
     resolution:
-      integrity: sha512-laRqfu2v9Rn0Un/+3kCW0BODw7xWldogjLW8F8q8ibIDIGU7jkPgEr7yKr6GwpnBNH8xPdnbxtTb/A8P6ctzbQ==
+      integrity: sha512-Dr4K578Dpom4RLoYM/d4wOPxiCezZ3E4lSC4iY/8kijUeWlrJeZHmYcRx/8/Em7rDGXa0KQpsGJtPONh+NJkvg==
       tarball: 'file:projects/redo-components.tgz'
     version: 0.0.0
   'file:projects/redo-model.tgz_@types+graphql@14.2.2':
@@ -14478,8 +14480,9 @@ packages:
       integrity: sha512-8slPf6oYm7Df02b97mEEkfVADQlWud7MIbtn7IFaqPPkYQOoR1tPmMofSm+2sG5JhRKUY2OzNu9INqETtWrCRg==
       tarball: 'file:projects/redo-server.tgz'
     version: 0.0.0
-  'file:projects/redo-utils.tgz':
+  'file:projects/redo-utils.tgz_@babel+core@7.5.5':
     dependencies:
+      '@babel/cli': 7.5.5_@babel+core@7.5.5
       '@babel/runtime-corejs3': 7.5.5
       '@types/fs-extra': 8.0.0
       '@types/node': 12.6.6
@@ -14489,9 +14492,12 @@ packages:
       moize: 5.4.4
       typescript: 3.5.2
     dev: false
+    id: 'file:projects/redo-utils.tgz'
     name: '@rush-temp/redo-utils'
+    peerDependencies:
+      '@babel/core': '*'
     resolution:
-      integrity: sha512-jVgip6KaahN7QsmJlE40lItHQ8ut+ucFAiEjAVnGWP35jPQYA53fDKYTSVxFtnYUivvFQ0qw2WcWAftjnhfEUw==
+      integrity: sha512-hymtzTIN8//f8JRTEnReT/1ybdL7oqMpVN1nHCElodJehpSqlyGOVWjnt5MvpHArt/EB/Uw5oEooI7pezmyy+A==
       tarball: 'file:projects/redo-utils.tgz'
     version: 0.0.0
   'file:projects/redo-website.tgz':
@@ -14508,7 +14514,6 @@ packages:
       '@types/react-typist': 2.0.0
       '@types/webpack-merge': 4.1.3
       analytics-node: 3.4.0-beta.1
-      core-js: 3.1.4
       framer-motion: 1.4.1_react-dom@16.8.6+react@16.8.6
       react: 16.8.6
       react-dom: 16.8.6_react@16.8.6
@@ -14524,7 +14529,7 @@ packages:
     dev: false
     name: '@rush-temp/redo-website'
     resolution:
-      integrity: sha512-I6hZT98NwXeieDGGEcOjESb9DCxikUCO+QzZ+xD94AKr8yCYy5Rdj/URJsctYzunQElbGD09dCLf0l4B2lqKKg==
+      integrity: sha512-2fifh+SNK702p23yjpolVlcgceHpOzZ3iCQtZmQSfpY4Izhg/CS2sUpOk6sgCkEqax2zDAwhOSI/FSdXlf9naw==
       tarball: 'file:projects/redo-website.tgz'
     version: 0.0.0
   'file:projects/shapeql.tgz_9e19865677ed1a330f426b149a324972':

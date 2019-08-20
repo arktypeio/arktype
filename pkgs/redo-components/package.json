@@ -8,7 +8,7 @@
     "types": "dist/index.d.ts",
     "scripts": {
         "start": "start-storybook -p 6006",
-        "build": "npm run clean && babel src -d dist --extensions '.ts,.tsx' --ignore 'src/**/__tests__/*' --source-maps inline",
+        "build": "npm run clean && tsc --emitDeclarationOnly && babel src -d dist --extensions '.ts,.tsx' --ignore 'src/**/__tests__/*' --source-maps inline",
         "clean": "rm -rf dist && mkdir dist",
         "test": "jest"
     },
