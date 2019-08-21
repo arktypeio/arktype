@@ -1,10 +1,9 @@
 import React, { FC } from "react"
 import { storiesOf } from "@storybook/react"
-import { withTheme } from "../storybook"
-import { defaultTheme } from "../styles"
-import { Row, Column } from "."
-import { Card } from "../cards"
 import { withKnobs, select, boolean, number } from "@storybook/addon-knobs"
+import { defaultTheme, ThemeProvider } from "../styles"
+import { Card } from "../cards"
+import { Row, Column } from "."
 
 const getKnobProps = () => ({
     align: select(
@@ -46,13 +45,8 @@ const cards = (
 )
 
 const C: FC = ({ children }) => (
-    <div style={{ height: "95vh", width: "95vw" }}>{children}</div>
-)
-
-storiesOf("Layout", module)
-    .addDecorator(withKnobs)
-    .addDecorator(
-        withTheme({
+    <ThemeProvider
+        theme={{
             ...defaultTheme,
             overrides: {
                 MuiGrid: {
@@ -61,24 +55,20 @@ storiesOf("Layout", module)
                     }
                 }
             }
-        })
-    )
-    .add("Row with knobs", () => (
+        }}
+    >
+        <div style={{ height: "95vh", width: "95vw" }}>{children}</div>
+    </ThemeProvider>
+)
+
+storiesOf("Layout", module)
+    .addDecorator(withKnobs)
+    .add("Row", () => (
         <C>
             <Row {...getKnobProps()}>{cards}</Row>
         </C>
     ))
-    .add("Column with knobs", () => (
-        <C>
-            <Column {...getKnobProps()}>{cards}</Column>
-        </C>
-    ))
-    .add("Row of cards", () => (
-        <C>
-            <Row {...getKnobProps()}>{cards}</Row>
-        </C>
-    ))
-    .add("Column of cards", () => (
+    .add("Column", () => (
         <C>
             <Column {...getKnobProps()}>{cards}</Column>
         </C>

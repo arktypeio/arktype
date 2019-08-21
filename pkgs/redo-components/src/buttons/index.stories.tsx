@@ -8,20 +8,17 @@ import { AccountCircle } from "@material-ui/icons"
 
 storiesOf("Button", module)
     .addDecorator(withKnobs)
-
-    .add("button", () => {
+    .add("Standard", () => {
         return (
-            <ThemeProvider theme={defaultTheme}>
-                <Button
-                    kind={select(
-                        "kind",
-                        { primary: "primary", secondary: "secondary" },
-                        "primary"
-                    )}
-                >
-                    This says stuff!
-                </Button>
-            </ThemeProvider>
+            <Button
+                kind={select(
+                    "kind",
+                    { primary: "primary", secondary: "secondary" },
+                    "primary"
+                )}
+            >
+                This says stuff!
+            </Button>
         )
     })
     .add("IconButton", () => {

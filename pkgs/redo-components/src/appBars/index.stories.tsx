@@ -9,12 +9,10 @@ import { Text } from "../text"
 
 storiesOf("AppBar", module).add("basic", () => {
     return (
-        <ThemeProvider theme={defaultTheme}>
-            <AppBar>
-                <Text>Admiral AppBar</Text>
-                <TextInput kind="underlined" colorTemplate="light" />
-                <AccountCircle onClick={() => console.log("clicked")} />
-            </AppBar>
-        </ThemeProvider>
+        <AppBar>
+            <Text>Admiral AppBar</Text>
+            <TextInput kind="underlined" colorTemplate="light" />
+            <AccountCircle onClick={() => console.log("clicked")} />
+        </AppBar>
     )
 })
