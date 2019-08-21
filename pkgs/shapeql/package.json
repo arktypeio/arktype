@@ -7,8 +7,7 @@
     "main": "dist/index.js",
     "types": "dist/index.d.ts",
     "scripts": {
-        "build": "npm run clean && tsc",
-        "clean": "rm -rf dist && mkdir dist",
+        "build": "redo-build",
         "test": "jest"
     },
     "dependencies": {

@@ -7,6 +7,9 @@
     "scripts": {
         "build": ""
     },
+    "bin": {
+        "redo-build": "./redoBuild.js"
+    },
     "dependencies": {
         "@babel/cli": "7.5.5",
         "@babel/helper-plugin-utils": "7.0.0",
@@ -17,8 +20,9 @@
         "@babel/preset-env": "7.5.5",
         "@babel/preset-react": "7.0.0",
         "@babel/preset-typescript": "7.3.3",
-        "babel-plugin-transform-typescript-metadata": "0.2.2",
         "babel-plugin-require-context-hook": "1.0.0",
+        "babel-plugin-transform-typescript-metadata": "0.2.2",
+        "execa": "~2.0.4",
         "react-hot-loader": "4.12.8"
     },
     "peerDependencies": {
