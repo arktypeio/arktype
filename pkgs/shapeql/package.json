@@ -20,7 +20,8 @@
         "deepmerge": "3.2.1",
         "moize": "5.4.4",
         "redo-utils": "1.0.0",
-        "reflect-metadata": "0.1.13"
+        "reflect-metadata": "0.1.13",
+        "@babel/runtime-corejs3": "7.5.5"
     },
     "peerDependencies": {
         "graphql": "14.x.x",

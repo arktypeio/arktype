@@ -3,7 +3,7 @@ import { makeConfig } from "redo-bundle"
 
 const isDev = process.env.NODE_ENV === "development"
 
-const config = makeConfig(
+export default makeConfig(
     {
         base: "web",
         entry: [resolve(__dirname, "src", "index.tsx")],
@@ -21,5 +21,3 @@ const config = makeConfig(
           ]
         : undefined
 )
-console.log(JSON.stringify(config, null, 4))
-module.exports = [config]

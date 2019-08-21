@@ -1,20 +1,8 @@
-import { spawn } from "child_process"
-import merge from "webpack-merge"
-import { devServerConfig } from "redo-bundle/webpack.base"
-import { rendererConfig } from "./webpack.common"
+import { resolve } from "path"
+import { makeConfig } from "redo-bundle"
 
-const rendererDevServerConfig = merge.smart(devServerConfig, rendererConfig, {
-    devServer: {
-        after() {
-            spawn("npm", ["run", "electron"], {
-                shell: true,
-                env: process.env,
-                stdio: "inherit"
-            })
-                .on("close", code => process.exit(code))
-                .on("error", spawnError => console.error(spawnError))
-        }
-    }
-} as any)
-
-module.exports = [rendererDevServerConfig]
+export default makeConfig({
+    base: "renderer",
+    entry: resolve(__dirname, "src", "renderer", "index.tsx"),
+    devServer: true
+})

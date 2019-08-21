@@ -1,6 +1,22 @@
-import { isDev } from "redo-bundle/webpack.base"
-import { mainConfig, rendererConfig, browserConfig } from "./webpack.common"
+import { resolve } from "path"
+import { makeConfig, isDev } from "redo-bundle"
 
-module.exports = isDev()
-    ? [mainConfig, browserConfig]
-    : [mainConfig, rendererConfig, browserConfig]
+const mainConfig = makeConfig({
+    base: "main",
+    entry: resolve(__dirname, "src", "main", "index.ts")
+})
+
+const rendererConfig = makeConfig({
+    base: "renderer",
+    entry: resolve(__dirname, "src", "renderer", "index.tsx")
+})
+
+const injectedConfig = makeConfig({
+    base: "injected",
+    entry: [resolve(__dirname, "src", "injected", "index.ts")]
+})
+
+// renderer config is consumed through devServer during development
+module.exports = isDev
+    ? [mainConfig, injectedConfig]
+    : [mainConfig, rendererConfig, injectedConfig]

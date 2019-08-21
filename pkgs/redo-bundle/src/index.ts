@@ -1,4 +1,5 @@
 import { resolve } from "path"
+import { spawn } from "child_process"
 import HtmlWebpackPlugin from "html-webpack-plugin"
 import { TsconfigPathsPlugin } from "tsconfig-paths-webpack-plugin"
 import merge from "webpack-merge"
@@ -7,31 +8,13 @@ import {
     IgnorePlugin,
     NamedModulesPlugin,
     HotModuleReplacementPlugin,
-    NoEmitOnErrorsPlugin
+    NoEmitOnErrorsPlugin,
+    NormalModuleReplacementPlugin
 } from "webpack"
-import { ValueFrom } from "redo-utils"
+import { listify } from "redo-utils"
 
 export const env = process.env.NODE_ENV as any
 export const isDev = env === "development"
-export type BaseName = keyof typeof baseOptions
-
-export type BaseConfigOptions = {
-    base: BaseName
-    entry: ValueFrom<Configuration, "entry">
-    devServer?: boolean
-}
-
-export const makeConfig = (
-    { base, entry, devServer }: BaseConfigOptions,
-    merged: Partial<Configuration>[] = []
-) => {
-    return merge.smart(
-        baseOptions[base],
-        { entry },
-        devServer ? devServerOptions : {},
-        ...merged
-    )
-}
 
 const commonOptions: Configuration = {
     mode: env,
@@ -64,7 +47,7 @@ const commonOptions: Configuration = {
     }
 }
 
-const webOptions: Configuration = merge.smart(commonOptions, {
+const webOptions = merge.smart(commonOptions, {
     module: {
         rules: [
             {
@@ -101,24 +84,28 @@ const webOptions: Configuration = merge.smart(commonOptions, {
         new IgnorePlugin(/\/iconv-loader$/),
         new HtmlWebpackPlugin({
             template: resolve(__dirname, "template.html")
+        }),
+        new NormalModuleReplacementPlugin(/type-graphql$/, (resource: any) => {
+            resource.request = resource.request.replace(
+                /type-graphql/,
+                "type-graphql/dist/browser-shim"
+            )
         })
     ]
 })
 
-const injectableOptions: Configuration = merge.smart(webOptions, {
-    module: {
-        rules: [
-            {
-                test: /\.(j|t)sx?$/,
-                loader: "ts-loader",
-                exclude: /node_modules/
-            }
-        ]
+const mainOptions = merge.smart(commonOptions, {
+    target: "electron-main",
+    output: {
+        filename: "main.js"
     }
 })
 
-const rendererOptions: Configuration = merge.smart(webOptions, {
+const rendererOptions = merge.smart(webOptions, {
     target: "electron-renderer",
+    output: {
+        filename: "renderer.js"
+    },
     resolve: {
         /*
     Override default value ["browser"] since we have enabled node integration
@@ -127,6 +114,32 @@ const rendererOptions: Configuration = merge.smart(webOptions, {
     "browser" field in its package.json that breaks our ability to import it.
     */
         aliasFields: []
+    },
+    devServer: {
+        after() {
+            spawn("npm", ["run", "electron"], {
+                shell: true,
+                env: process.env,
+                stdio: "inherit"
+            })
+                .on("close", code => process.exit(code))
+                .on("error", spawnError => console.error(spawnError))
+        }
+    }
+} as Configuration)
+
+const injectedOptions = merge.smart(webOptions, {
+    output: {
+        filename: "injected.js"
+    },
+    module: {
+        rules: [
+            {
+                test: /\.(j|t)sx?$/,
+                loader: "ts-loader",
+                exclude: /node_modules/
+            }
+        ]
     }
 })
 
@@ -156,6 +169,27 @@ const devServerOptions = {
 const baseOptions = {
     common: commonOptions,
     web: webOptions,
-    injectable: injectableOptions,
-    renderer: rendererOptions
+    injected: injectedOptions,
+    renderer: rendererOptions,
+    main: mainOptions
+}
+
+export type BaseName = keyof typeof baseOptions
+
+export type BaseConfigOptions = {
+    base: BaseName
+    entry: string | string[]
+    devServer?: boolean
+}
+
+export const makeConfig = (
+    { base, entry, devServer }: BaseConfigOptions,
+    merged: Partial<Configuration>[] = []
+) => {
+    return merge.smart(
+        baseOptions[base],
+        { entry: listify(entry) },
+        devServer ? devServerOptions : {},
+        ...merged
+    )
 }
