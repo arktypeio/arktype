@@ -84,13 +84,13 @@ const webOptions = merge.smart(commonOptions, {
         new IgnorePlugin(/\/iconv-loader$/),
         new HtmlWebpackPlugin({
             template: resolve(__dirname, "template.html")
-        }),
-        new NormalModuleReplacementPlugin(/type-graphql$/, (resource: any) => {
-            resource.request = resource.request.replace(
-                /type-graphql/,
-                "type-graphql/dist/browser-shim"
-            )
         })
+        // new NormalModuleReplacementPlugin(/type-graphql$/, (resource: any) => {
+        //     resource.request = resource.request.replace(
+        //         /type-graphql/,
+        //         "type-graphql/dist/browser-shim"
+        //     )
+        // })
     ]
 })
 
@@ -162,7 +162,9 @@ const devServerOptions = {
     devServer: {
         historyApiFallback: true,
         hot: true,
-        writeToDisk: true
+        writeToDisk: true,
+        host: "0.0.0.0",
+        useLocalIp: true
     }
 } as Configuration
 

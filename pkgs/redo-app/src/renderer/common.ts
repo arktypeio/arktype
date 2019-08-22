@@ -1,10 +1,7 @@
-import { ApolloClient, Resolvers } from "apollo-client"
+import { ApolloClient } from "apollo-client"
 import { InMemoryCache } from "apollo-cache-inmemory"
 import { createHttpLink } from "apollo-link-http"
-import { Root, Learner, Bounds, rootHandler } from "state"
-import { buildSchemaSync, Resolver } from "type-graphql"
-import { createResolversMap } from "type-graphql/dist/utils/createResolversMap"
-import { printSchema } from "graphql"
+import { Root, rootHandler } from "state"
 import { createStore } from "shapeql"
 import { setContext } from "apollo-link-context"
 

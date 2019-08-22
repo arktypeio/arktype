@@ -29,6 +29,7 @@
         "type-graphql": "0.17.x"
     },
     "devDependencies": {
+        "@babel/cli": "7.5.5",
         "@types/graphql": "14.2.2",
         "@types/jest": "24.0.13",
         "@types/node": "12.6.6",

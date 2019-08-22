@@ -39,22 +39,18 @@ export type LearnerProps = {}
 export const Learner = component({
     name: "Learner",
     defaultProps: {} as Partial<LearnerProps>,
-    styles,
-    query: {
+    styles
+})(() => {
+    const {
+        learner: { events, chromiumInstalling, testName: name, testTags: tags }
+    } = store.query({
         learner: {
             events: null,
             chromiumInstalling: null,
             testName: null,
             testTags: null
         }
-    }
-})(({ data }) => {
-    const {
-        events,
-        testTags: tags,
-        testName: name,
-        chromiumInstalling
-    } = data.learner!
+    })
     const [saveTest] = useMutation(SAVETEST)
     return (
         <Column justify="flex-start">

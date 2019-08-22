@@ -3,6 +3,7 @@ import { GridList, GridListTile } from "@material-ui/core"
 import { component } from "blocks"
 import { SuggestionCard } from "custom"
 import { Card, useTheme } from "redo-components"
+import { store } from "../../common"
 
 export type SuggestionData = {
     name: string
@@ -16,9 +17,9 @@ export type SuggestionResultsGridProps = {
 
 export const SuggestionResultsGrid = component({
     name: "SuggestionResultsGrid",
-    defaultProps: {} as Partial<SuggestionResultsGridProps>,
-    query: { cardFilter: null }
-})(({ suggestions, data: { cardFilter } }) => {
+    defaultProps: {} as Partial<SuggestionResultsGridProps>
+})(({ suggestions }) => {
+    const { cardFilter } = store.query({ cardFilter: null })
     const theme = useTheme()
     const suggestionCards = suggestions
         .filter(({ name, description }) =>

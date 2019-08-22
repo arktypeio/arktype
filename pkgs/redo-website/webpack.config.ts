@@ -13,8 +13,6 @@ export default makeConfig(
         ? [
               {
                   devServer: {
-                      host: "0.0.0.0",
-                      useLocalIp: true,
                       open: true
                   }
               } as any

@@ -221,7 +221,7 @@ packages:
     dev: false
     hasBin: true
     optionalDependencies:
-      chokidar: 2.1.6
+      chokidar: 2.1.8
     peerDependencies:
       '@babel/core': ^7.0.0-0
     resolution:
@@ -1803,7 +1803,7 @@ packages:
       react: 16.8.6
       semver: 6.3.0
       shallow-equal: 1.2.0
-      store2: 2.8.0
+      store2: 2.9.0
       telejson: 2.2.2
       util-deprecate: 1.0.2
     dev: false
@@ -2088,7 +2088,7 @@ packages:
       regenerator-runtime: 0.13.3
       resolve-from: 5.0.0
       semver: 6.3.0
-      store2: 2.8.0
+      store2: 2.9.0
       telejson: 2.2.2
       util-deprecate: 1.0.2
     dev: false
@@ -4597,7 +4597,7 @@ packages:
       node: '>= 0.6'
     resolution:
       integrity: sha512-0td5ijfUPuubwLUu0OBoe98gZj8C/AA+RW3v67GPlGOrvxWjZmBXiBCRU+I8VEiNyJzjth40POfHiz2RB3gImA==
-  /chokidar/2.1.6:
+  /chokidar/2.1.8:
     dependencies:
       anymatch: 2.0.0
       async-each: 1.0.3
@@ -4614,7 +4614,7 @@ packages:
     optionalDependencies:
       fsevents: 1.2.9
     resolution:
-      integrity: sha512-V2jUo67OKkc6ySiRpJrjlpJKl9kDuG+Xb8VgsGzb+aEouhgS1D0weyPU4lEzdAcsCAvrih2J2BqyXqHWvVLw5g==
+      integrity: sha512-ZmZUazfOzf0Nve7duiCKD23PFSCs4JPoYyccjUFF3aQkQadqBhfzhjkwBH2mNOG9cTBwhamM37EIsIkZw3nRgg==
   /chownr/1.1.2:
     dev: false
     resolution:
@@ -6684,7 +6684,7 @@ packages:
     dependencies:
       babel-code-frame: 6.26.0
       chalk: 2.4.2
-      chokidar: 2.1.6
+      chokidar: 2.1.8
       micromatch: 3.1.10
       minimatch: 3.0.4
       semver: 5.7.1
@@ -6700,7 +6700,7 @@ packages:
     dependencies:
       babel-code-frame: 6.26.0
       chalk: 2.4.2
-      chokidar: 2.1.6
+      chokidar: 2.1.8
       micromatch: 3.1.10
       minimatch: 3.0.4
       semver: 5.7.1
@@ -12706,10 +12706,10 @@ packages:
       node: '>=0.10.0'
     resolution:
       integrity: sha1-NbCYdbT/SfJqd35QmzCQoyJr8ks=
-  /store2/2.8.0:
+  /store2/2.9.0:
     dev: false
     resolution:
-      integrity: sha512-FBJpcOEZQLZBIGL4Yp7W5RgZ0ejaURmcfUjIpyOb64BpI8z/iJXw7zd/NTBeq304dVMxuWVDZEUUCGn7llaVrA==
+      integrity: sha512-JmK+95jLX2zAP75DVAJ1HAziQ6f+f495h4P9ez2qbmxazN6fE7doWlitqx9hj2YohH3kOi6RVksJe1UH0sJfPw==
   /storybook-addon-material-ui/0.9.0-alpha.20_e2ea9552175edabdc204f5975cbcda8c:
     dependencies:
       '@emotion/core': 10.0.16_react@16.8.6
@@ -13827,7 +13827,7 @@ packages:
       integrity: sha512-rpJyN222KWIvHJ/F53XSZv0Zl/accqHR8et1kpaMTD/fLCRxtV8iX8czMzY7sVZupTI3zcUTg8eycS2kNF9l6w==
   /watchpack/1.6.0:
     dependencies:
-      chokidar: 2.1.6
+      chokidar: 2.1.8
       graceful-fs: 4.2.2
       neo-async: 2.6.1
     dev: false
@@ -13897,7 +13897,7 @@ packages:
     dependencies:
       ansi-html: 0.0.7
       bonjour: 3.5.0
-      chokidar: 2.1.6
+      chokidar: 2.1.8
       compression: 1.7.4
       connect-history-api-fallback: 1.6.0
       debug: 4.1.1
@@ -14596,6 +14596,7 @@ packages:
   'file:projects/shapeql.tgz_9e19865677ed1a330f426b149a324972':
     dependencies:
       '@apollo/react-hooks': 3.0.0_0e293131b3c3e66d1e0d4d592c075a2c
+      '@babel/runtime-corejs3': 7.5.5
       '@types/graphql': 14.2.2
       '@types/jest': 24.0.13
       '@types/node': 12.6.6
@@ -14622,7 +14623,7 @@ packages:
       react: '*'
       react-dom: '*'
     resolution:
-      integrity: sha512-th8SFFIKmC0frnYhaTXhRoPtkqHUVCXaOL/Illia5HeaIDmAKdVxhagxZhD6QKsZhxj/j6t7OqY1NupSCxEjtA==
+      integrity: sha512-MN6RtprVtQE3KwVwaPSsenU5LGPtyee4/QqosU0SbN6tatSMxp6ZEXqJleEne0ESakbamaArqfREDjJWkxLvRQ==
       tarball: 'file:projects/shapeql.tgz'
     version: 0.0.0
 specifiers:
