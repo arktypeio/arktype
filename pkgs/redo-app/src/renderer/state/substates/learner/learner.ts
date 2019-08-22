@@ -111,7 +111,7 @@ const start = async () => {
     })
     const page = (await browser.pages())[0]
     await page.exposeFunction("notify", notify)
-    const browserJs = readFileSync("dist/browser.js", "utf-8")
+    const browserJs = readFileSync("dist/injected.js", "utf-8")
     await page.evaluateOnNewDocument(browserJs)
     await page.goto("https://google.com")
     browser.on("disconnected", () => {

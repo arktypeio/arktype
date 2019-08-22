@@ -7,7 +7,7 @@ import { app, BrowserWindow, screen } from "electron"
 
 let mainWindow: BrowserWindow | null
 
-const isDev = () => process.env.NODE_ENV === "development"
+const isDev = process.env.NODE_ENV === "development"
 
 const installExtensions = () => {
     // const extensions = {
@@ -47,7 +47,7 @@ const createWindow = async () => {
         mainWindow = null
     })
     await mainWindow.loadURL(
-        isDev() ? `http://localhost:8080/` : `file://${__dirname}/index.html`
+        isDev ? `http://localhost:8080/` : `file://${__dirname}/index.html`
     )
     mainWindow.webContents.openDevTools()
 }

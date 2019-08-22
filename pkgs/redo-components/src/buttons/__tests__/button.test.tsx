@@ -7,12 +7,7 @@ configure({ adapter: new Adapter() })
 
 test("Button gets clicked", () => {
     const onClick = jest.fn()
-    const element = shallow(
-        <div>
-            <Button onClick={onClick}>Click me!</Button>
-        </div>
-    )
-    console.log(element)
-    element.find(Button).simulate("click")
+    const element = shallow(<Button onClick={onClick}>Click me!</Button>)
+    element.simulate("click")
     expect(onClick).toBeCalled()
 })
