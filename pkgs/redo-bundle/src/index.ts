@@ -8,8 +8,7 @@ import {
     IgnorePlugin,
     NamedModulesPlugin,
     HotModuleReplacementPlugin,
-    NoEmitOnErrorsPlugin,
-    NormalModuleReplacementPlugin
+    NoEmitOnErrorsPlugin
 } from "webpack"
 import { listify } from "redo-utils"
 
@@ -85,12 +84,6 @@ const webOptions = merge.smart(commonOptions, {
         new HtmlWebpackPlugin({
             template: resolve(__dirname, "template.html")
         })
-        // new NormalModuleReplacementPlugin(/type-graphql$/, (resource: any) => {
-        //     resource.request = resource.request.replace(
-        //         /type-graphql/,
-        //         "type-graphql/dist/browser-shim"
-        //     )
-        // })
     ]
 })
 
@@ -146,6 +139,12 @@ const injectedOptions = merge.smart(webOptions, {
 const devServerOptions = {
     resolve: {
         alias: {
+            "react-hot-loader": resolve(
+                __dirname,
+                "..",
+                "node_modules",
+                "react-hot-loader"
+            ),
             "react-dom": "@hot-loader/react-dom"
         }
     },

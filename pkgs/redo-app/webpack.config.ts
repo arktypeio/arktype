@@ -17,6 +17,6 @@ const injectedConfig = makeConfig({
 })
 
 // renderer config is consumed through devServer during development
-module.exports = isDev
+export default (isDev
     ? [mainConfig, injectedConfig]
-    : [mainConfig, rendererConfig, injectedConfig]
+    : [mainConfig, rendererConfig, injectedConfig])

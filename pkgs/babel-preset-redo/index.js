@@ -41,11 +41,9 @@ const plugins = [
 const reactHotLoaderPlugin = require("react-hot-loader/babel")
 
 module.exports = declare((api, opts) => {
-    // if (opts.node) {
-    //     presets[0][1].targets = { node: "current" }
-    // }
-    if (opts.hotReloading) {
+    if (opts.hot) {
         plugins.push(reactHotLoaderPlugin)
+        console.log("🔥 Hot reloading is enabled in redo babel 🔥")
     }
     return { presets, plugins }
 })

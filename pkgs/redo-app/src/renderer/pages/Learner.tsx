@@ -1,5 +1,4 @@
 import React from "react"
-import { Theme, createStyles } from "@material-ui/core"
 import { component } from "blocks"
 import {
     Button,
@@ -15,14 +14,7 @@ import { CircularProgress } from "@material-ui/core"
 import gql from "graphql-tag"
 import { useMutation } from "@apollo/react-hooks"
 import ChipInput from "material-ui-chip-input"
-import { store } from "renderer/common"
-
-const styles = (theme: Theme) =>
-    createStyles({
-        events: {
-            flexGrow: 1
-        }
-    })
+import { store } from "../common"
 
 const SAVETEST = gql`
     mutation submitTest(
@@ -39,18 +31,21 @@ export type LearnerProps = {}
 export const Learner = component({
     name: "Learner",
     defaultProps: {} as Partial<LearnerProps>,
-    styles
-})(() => {
-    const {
-        learner: { events, chromiumInstalling, testName: name, testTags: tags }
-    } = store.query({
+    query: {
         learner: {
             events: null,
             chromiumInstalling: null,
             testName: null,
             testTags: null
         }
-    })
+    }
+})(({ data }) => {
+    const {
+        events,
+        chromiumInstalling,
+        testName: name,
+        testTags: tags
+    } = data.learner!
     const [saveTest] = useMutation(SAVETEST)
     return (
         <Column justify="flex-start">
