@@ -1,10 +1,7 @@
 import React from "react"
-import { mount, configure, ReactWrapper } from "enzyme"
-import Adapter from "enzyme-adapter-react-16"
+import { mount, ReactWrapper } from "enzyme"
 import { Menu, MenuItem } from ".."
 import { Button } from "../../buttons"
-
-configure({ adapter: new Adapter() })
 
 const options = {
     option1: jest.fn(),

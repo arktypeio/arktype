@@ -1,10 +1,8 @@
 import React from "react"
 import { storiesOf } from "@storybook/react"
-import { withTheme } from "../storybook"
-import { ErrorText } from "."
-import { ThemeProvider } from "@material-ui/styles"
-import { defaultTheme } from "../styles"
 import { withKnobs, text, object, select } from "@storybook/addon-knobs"
+import { defaultTheme } from "../styles"
+import { ErrorText } from "."
 
 const getKnobProps = () => {
     const textChildren = text("children", "this says stuff")

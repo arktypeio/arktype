@@ -1,15 +1,12 @@
 import React, { FC } from "react"
 import { storiesOf } from "@storybook/react"
-import { withTheme } from "../storybook"
-import { FormText, FormSubmit, Form } from "."
+import { withKnobs } from "@storybook/addon-knobs"
+import { T } from "../styles"
 import { Text } from "../text"
 import { Column } from "../layouts"
-import { withKnobs, select } from "@storybook/addon-knobs"
-import { ThemeProvider } from "@material-ui/styles"
-import { defaultTheme } from "../styles"
+import { Form, FormText, FormSubmit } from "."
 
 storiesOf("Form", module)
-    .addDecorator(withTheme())
     .add("Text only", () => <TextOnlyForm />)
     .addDecorator(withKnobs)
 
@@ -20,7 +17,7 @@ type TextOnlyFormFields = {
 
 const TextOnlyForm: FC = () => {
     return (
-        <ThemeProvider theme={defaultTheme}>
+        <T>
             <Form<TextOnlyFormFields, string>
                 submit={async ({ first, last }) => ({
                     data: `Hello, ${first} ${last}.`
@@ -46,6 +43,6 @@ const TextOnlyForm: FC = () => {
                     </FormSubmit>
                 </Column>
             </Form>
-        </ThemeProvider>
+        </T>
     )
 }

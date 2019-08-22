@@ -44,7 +44,6 @@
         "@types/storybook__addon-storyshots": "5.1.1",
         "@types/storybook__react": "4.0.2",
         "babel-loader": "8.0.6",
-        "babel-plugin-require-context-hook": "1.0.0",
         "babel-runtime": "6.26.0",
         "core-js-pure": "3.1.4",
         "enzyme": "3.10.0",
@@ -55,9 +54,6 @@
         "redo-bundle": "1.0.0",
         "redo-recommended": "1.0.0",
         "redo-utils": "1.0.0",
-        "require-context.macro": "1.1.1",
-        "storybook-addon-material-ui": "0.9.0-alpha.20",
-        "ts-jest": "24.0.2",
         "typescript": "3.5.2"
     }
 }
