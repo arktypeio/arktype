@@ -8,6 +8,7 @@ import { validateSync } from "class-validator"
 
 export type FormProps<T extends Fields, D = any> = FormActions<T, D> & {
     children: ReactNode
+    staticValues?: any
 }
 
 export const createValidator = <T extends Fields>(against: T) => (
@@ -35,7 +36,8 @@ export const createValidator = <T extends Fields>(against: T) => (
 export const Form = <T extends Fields, D = any>({
     children,
     validator,
-    submit
+    submit,
+    staticValues
 }: FormProps<T, D>) => {
     const formContext = useForm()
     const [submitState, setSubmitState] = useState<ResponseState>({})
@@ -45,10 +47,13 @@ export const Form = <T extends Fields, D = any>({
             : createValidator<T>(validator)
     return (
         <FormContext
-            validator={validate}
+            validate={validate}
             submit={async () => {
-                const values = formContext.getValues()
-
+                const values = {
+                    ...formContext.getValues(),
+                    ...staticValues
+                }
+                console.log(values)
                 if (
                     Object.values(validate(values as any)).every(
                         _ => !_ || !_.length

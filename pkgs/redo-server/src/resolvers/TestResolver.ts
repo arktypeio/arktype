@@ -22,10 +22,9 @@ export class TestResolver {
             data: {
                 name,
                 steps: {
-                    create: steps.map(({ tags, ...rest }) => ({
-                        ...rest,
-                        user: { connect: { id: id! } },
-                        tags: { create: createTagsInput(tags, id!) }
+                    create: steps.map(step => ({
+                        ...step,
+                        user: { connect: { id: id! } }
                     }))
                 },
                 tags: {
@@ -49,7 +48,7 @@ export class TestResolver {
     // modifyTest should take in everything in TestInput and the id of the test.
     // Then, update the test with the new fields. And return the test id.
     @Authorized()
-    @Mutation(returns => String)
+    @Mutation(returns => [String])
     async modifyTest(
         @Args() { name, steps, tags }: TestInput,
         @Arg("id") testId: string,
@@ -59,10 +58,9 @@ export class TestResolver {
             data: {
                 name,
                 steps: {
-                    create: steps.map(({ tags, ...rest }) => ({
-                        ...rest,
-                        user: { connect: { id: id! } },
-                        tags: { create: createTagsInput(tags, id!) }
+                    create: steps.map(step => ({
+                        ...step,
+                        user: { connect: { id: id! } }
                     }))
                 },
                 tags: {
@@ -71,6 +69,6 @@ export class TestResolver {
             },
             where: { id: testId }
         })
-        return test.id
+        return [test.id, test.name]
     }
 }

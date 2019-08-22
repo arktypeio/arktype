@@ -7,7 +7,7 @@ export class BrowserEventResolver {
     @Authorized()
     @Mutation(returns => String)
     async submitBrowserEvent(
-        @Args() { type, selector, value, tags }: BrowserEventInput,
+        @Args() { type, selector, value }: BrowserEventInput,
         @Ctx() { photon, id }: Context
     ) {
         const test = await photon.browserEvents.create({
@@ -15,7 +15,6 @@ export class BrowserEventResolver {
                 type,
                 selector,
                 value,
-                tags: { create: createTagsInput(tags, id!) },
                 user: { connect: { id: id! } }
             }
         })
@@ -26,7 +25,7 @@ export class BrowserEventResolver {
     async getBrowserEvent(@Ctx() { photon, id }: Context) {
         const results = await photon.browserEvents.findMany({
             where: { user: { id: id! } },
-            include: { tags: true, user: true }
+            include: { user: true }
         })
         return results
     }

@@ -47,9 +47,10 @@ const TreeNodes: FC<TreeNodesProps> = ({
     nodeExtras
 }) => {
     const TreeNode = ({ k, v }: any) => {
-        const [show, setShow] = useState(false)
-        const [hovered, setHovered] = useState(false)
+        const [state, setState] = useState({ show: false, hovered: false })
+        const { show, hovered } = state
         const recursible = isRecursible(v)
+        console.log(`${k}: ${show},  ${hovered}`)
         return (
             <Column style={{ marginLeft: depth * 5 }}>
                 <Row>
@@ -60,9 +61,13 @@ const TreeNodes: FC<TreeNodesProps> = ({
                             paddingLeft: 10,
                             paddingRight: 10
                         }}
-                        onClick={() => setShow(!show)}
-                        onMouseOver={() => setHovered(true)}
-                        onMouseOut={() => setHovered(false)}
+                        onClick={() => setState({ ...state, show: !show })}
+                        onMouseOver={() =>
+                            setState({ ...state, hovered: true })
+                        }
+                        onMouseOut={() =>
+                            setState({ ...state, hovered: false })
+                        }
                     >
                         {recursible ? String(k) : `${String(k)}: ${String(v)}`}
                     </Text>

@@ -78,8 +78,8 @@ export const TestView = () => {
             {data && data.getTest ? (
                 <Tree
                     labelKey="name"
-                    nodeExtras={(key, value) =>
-                        key in metadata ? (
+                    nodeExtras={(key: string, value: any) => {
+                        return key in metadata ? (
                             <ModalView>
                                 {{
                                     toggle: <Button>Open modal</Button>,
@@ -92,7 +92,7 @@ export const TestView = () => {
                                 }}
                             </ModalView>
                         ) : null
-                    }
+                    }}
                 >
                     {data.getTest}
                 </Tree>

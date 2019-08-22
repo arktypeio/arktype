@@ -52,12 +52,10 @@ export const testMetadata: TypeMetadata = {
             mutation modifyTest(
                 $id: String!
                 $name: String!
-                $tags: TagInput!
-                $steps: BrowserEventInput!
+                $tags: [TagInput!]!
+                $steps: [BrowserEventInput!]!
             ) {
-                modifyTest(id: $id, name: $name, tags: $tags, steps: $steps) {
-                    id
-                }
+                modifyTest(id: $id, name: $name, tags: $tags, steps: $steps)
             }
         `
     },
