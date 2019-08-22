@@ -5,8 +5,9 @@
     "private": true,
     "version": "1.0.0",
     "scripts": {
-        "start": "npm run clean && npm run build && npm run devServer",
-        "build": "npm run clean && NODE_ENV=production webpack",
+        "build": " NODE_ENV=production npm run clean && webpack",
+        "start": "NODE_ENV=development npm run clean && npm run devBuild && npm run devServer",
+        "devBuild": "NODE_ENV=development webpack",
         "devServer": "NODE_ENV=development webpack-dev-server --config webpack.devServer.config.ts --progress --colors",
         "electron": "electron --remote-debugging-port=9223 ./dist/main.js",
         "clean": "rm -rf dist && mkdir dist"
@@ -39,7 +40,7 @@
         "material-ui-chip-input": "1.0.0",
         "puppeteer": "1.17.0",
         "react": "16.8.6",
-        "react-apollo": "2.5.8",
+        "react-apollo": "3.0.1",
         "react-dom": "16.8.6",
         "redo-model": "1.0.0",
         "redo-utils": "1.0.0",
@@ -64,6 +65,7 @@
         "@types/webpack-merge": "4.1.3",
         "html-webpack-plugin": "3.2.0",
         "react-hot-loader": "4.12.8",
+        "babel-preset-redo": "1.0.0",
         "redo-bundle": "1.0.0",
         "redo-components": "1.0.0",
         "redo-recommended": "1.0.0",

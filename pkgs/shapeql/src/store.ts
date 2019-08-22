@@ -37,7 +37,7 @@ const initialize = <T extends S>(config: StoreConfig<T>) => async (
     values: Initialization<T>
 ) => {
     await config.client.clearStore()
-    await write(config)(values)
+    write(config)(values)
 }
 
 const mutate = <T extends S>(config: StoreConfig<T>) => async <

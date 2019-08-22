@@ -4,11 +4,11 @@ const presets = [
     [
         require("@babel/preset-env"),
         {
+            useBuiltIns: "usage",
+            corejs: 3,
             targets: {
                 node: "current"
-            },
-            useBuiltIns: "usage",
-            corejs: 3
+            }
         }
     ],
     require("@babel/preset-typescript"),
@@ -35,11 +35,15 @@ const plugins = [
         }
     ],
     require("@babel/plugin-proposal-object-rest-spread"),
-    require("babel-plugin-transform-typescript-metadata"),
-    require("babel-plugin-macros"),
-    require("react-hot-loader/babel")
+    require("babel-plugin-transform-typescript-metadata")
 ]
 
+const reactHotLoaderPlugin = require("react-hot-loader/babel")
+
 module.exports = declare((api, opts) => {
+    if (opts.hot) {
+        plugins.push(reactHotLoaderPlugin)
+        console.log("🔥 Hot reloading is enabled in redo babel 🔥")
+    }
     return { presets, plugins }
 })
