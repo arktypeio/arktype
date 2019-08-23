@@ -1,7 +1,6 @@
 import React from "react"
 import { storiesOf } from "@storybook/react"
 import { withKnobs, object, text } from "@storybook/addon-knobs"
-import { T } from "../styles"
 import { ContentCard, Card } from "."
 
 storiesOf("Card", module)

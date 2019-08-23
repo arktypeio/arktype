@@ -1,7 +1,6 @@
 import React from "react"
 import { storiesOf } from "@storybook/react"
 import { withKnobs, text, object, select } from "@storybook/addon-knobs"
-import { defaultTheme } from "../styles"
 import { ErrorText } from "."
 
 const getKnobProps = () => {
@@ -34,8 +33,4 @@ const getKnobProps = () => {
 
 storiesOf("Text", module)
     .addDecorator(withKnobs)
-    .add("ErrorText with knobs", () => (
-        <ThemeProvider theme={defaultTheme}>
-            <ErrorText {...getKnobProps()} />
-        </ThemeProvider>
-    ))
+    .add("ErrorText", () => <ErrorText {...getKnobProps()} />)
