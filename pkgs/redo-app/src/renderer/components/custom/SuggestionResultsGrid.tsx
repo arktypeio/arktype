@@ -1,8 +1,7 @@
 import React from "react"
-import { GridList, GridListTile } from "@material-ui/core"
 import { component } from "blocks"
 import { SuggestionCard } from "custom"
-import { Card, useTheme } from "redo-components"
+import { Card, useTheme, Row } from "redo-components"
 
 export type SuggestionData = {
     name: string
@@ -21,6 +20,7 @@ export const SuggestionResultsGrid = component({
 })(({ suggestions, data }) => {
     const { cardFilter } = data
     const theme = useTheme()
+
     const suggestionCards = suggestions
         .filter(({ name, description }) =>
             name
@@ -29,22 +29,33 @@ export const SuggestionResultsGrid = component({
                 .includes(cardFilter!.toLowerCase())
         )
         .map(({ name, type, description }) => (
-            <GridListTile key={name}>
+            <div
+                key={name}
+                style={{
+                    width: theme.spacing(25),
+                    height: theme.spacing(25)
+                }}
+            >
                 <SuggestionCard {...{ name, type, description }} />
-            </GridListTile>
+            </div>
         ))
     return (
-        <Card>
-            <GridList
+        <Card
+            style={{
+                width: "100%",
+                height: "100%"
+            }}
+        >
+            <Row
+                wrap="wrap"
                 style={{
-                    minHeight: theme.spacing(90),
-                    minWidth: theme.spacing(90),
+                    height: "100%",
+                    width: "100%",
                     padding: theme.spacing(2)
                 }}
-                cols={4}
             >
                 {suggestionCards}
-            </GridList>
+            </Row>
         </Card>
     )
 })

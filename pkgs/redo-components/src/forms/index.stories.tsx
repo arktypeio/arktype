@@ -19,10 +19,10 @@ const TextOnlyForm: FC = () => (
         submit={async ({ first, last }) => ({
             data: `Hello, ${first} ${last}.`
         })}
-        validate={_ => {
+        validate={({ first, last }) => {
             return {
-                first: [],
-                last: []
+                first: first ? [] : ["We need this!"],
+                last: last ? [] : ["We need this!"]
             }
         }}
     >
