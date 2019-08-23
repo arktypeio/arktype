@@ -43,20 +43,12 @@ export const SuggestionResultsGrid = component({
     let rowNumber = 1
     let columnNumber = suggestionCards.length
     let cardsRowWidth = theme.spacing(25) * suggestionCards.length
-    console.log(`Screen width: ${screen.width}`)
-    console.log(`cardsRowWidth: ${cardsRowWidth}`)
     while (cardsRowWidth > screen.width) {
         rowNumber++
-        console.log("Row number increased")
-        console.log(`Current rowNumber: ${rowNumber}`)
         columnNumber /= rowNumber
         columnNumber = Math.floor(columnNumber)
-        console.log(`Current columnNumber: ${columnNumber}`)
         cardsRowWidth /= rowNumber
-        console.log(`Current cardsRowWidth: ${cardsRowWidth}`)
     }
-    console.log(`out of while statement columnNumber:${columnNumber} `)
-
     return (
         <Card
             style={{
@@ -69,9 +61,6 @@ export const SuggestionResultsGrid = component({
                     height: "100%",
                     width: "100%",
                     padding: theme.spacing(2)
-
-                    // height: "100%",
-                    // width: "100%"
                 }}
                 cols={columnNumber}
             >

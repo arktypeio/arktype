@@ -5,7 +5,13 @@ import { suggestionData } from "custom/FakeSuggestions"
 
 export const Home: FC = () => {
     return (
-        <Column justify="center" full={true}>
+        <Column
+            justify="center"
+            full={true}
+            style={{
+                padding: 16
+            }}
+        >
             <HomeActionsRow />
             <SuggestionResultsGrid suggestions={suggestionData} />
         </Column>
