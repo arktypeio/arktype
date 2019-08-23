@@ -101,7 +101,7 @@ dependencies:
   react-hook-form: 3.18.8_react-dom@16.8.6+react@16.8.6
   react-hot-loader: 4.12.8_react-dom@16.8.6+react@16.8.6
   react-svg-loader: 3.0.3
-  react-test-renderer: 16.9.0_react@16.8.6
+  react-test-renderer: 16.8.6_react@16.8.6
   react-typist: 2.0.5_react-dom@16.8.6+react@16.8.6
   reflect-metadata: 0.1.13
   style-loader: 0.23.1
@@ -11690,6 +11690,18 @@ packages:
       react: '>= 0.14.0'
     resolution:
       integrity: sha512-G2bkZxmF3VOa4atEdXIDSfwwCqjw6ZQX5znfTaHcErA1WqHIS0o6DaSCDKFPVaOMXQEB9Hf1UySYQvuJmV8CXg==
+  /react-test-renderer/16.8.6_react@16.8.6:
+    dependencies:
+      object-assign: 4.1.1
+      prop-types: 15.7.2
+      react: 16.8.6
+      react-is: 16.9.0
+      scheduler: 0.13.6
+    dev: false
+    peerDependencies:
+      react: ^16.0.0
+    resolution:
+      integrity: sha512-H2srzU5IWYT6cZXof6AhUcx/wEyJddQ8l7cLM/F7gDXYyPr4oq+vCIxJYXVGhId1J706sqziAjuOEjyNkfgoEw==
   /react-test-renderer/16.9.0_react@16.8.6:
     dependencies:
       object-assign: 4.1.1
@@ -14456,7 +14468,7 @@ packages:
     dev: false
     name: '@rush-temp/redo-app'
     resolution:
-      integrity: sha512-oSknE2zp2mHfxsH58JPbFsBmbjyXC9h/1VyQ+VmdbDuFolPeR8O1G/FXTgKvLI9dGXbkWct8AhnReb4IUyTRuQ==
+      integrity: sha512-/jMLxdSg7l3CAG7LtoYdPRg2TeqKQjl+7y/AO238q9Uls2rb+dxntGHF0XxaS+ngHsnLXSOh9nFMnmUXGFtu2g==
       tarball: 'file:projects/redo-app.tgz'
     version: 0.0.0
   'file:projects/redo-bundle.tgz_787bbe83c726763abc906d76ffcb5127':
@@ -14532,7 +14544,7 @@ packages:
       react-docgen-typescript-loader: 3.1.0_typescript@3.5.2+webpack@4.29.6
       react-dom: 16.8.6_react@16.8.6
       react-hook-form: 3.18.8_react-dom@16.8.6+react@16.8.6
-      react-test-renderer: 16.9.0_react@16.8.6
+      react-test-renderer: 16.8.6_react@16.8.6
       typeface-ubuntu: 0.0.65
       typescript: 3.5.2
     dev: false
@@ -14541,7 +14553,7 @@ packages:
     peerDependencies:
       webpack: '*'
     resolution:
-      integrity: sha512-p+aLWGkYSghCIoKh82uDXNr8vBfYff5jaPi93XM98fjae5X2LaFVyoysXzMdwH0Gs3TDMCIdV6K+kpvRq7PGMA==
+      integrity: sha512-kk7axiyAqe8V1eCtOk6k7W1S/KzGwF1uayhE2QuLytLpfGqowdoX1zRPU0v7ap+tvbKJNs0gFryVx/09rEYJMg==
       tarball: 'file:projects/redo-components.tgz'
     version: 0.0.0
   'file:projects/redo-model.tgz_65c0dfd175c238c933bdb5d3330aeeaa':
@@ -14654,7 +14666,7 @@ packages:
     dev: false
     name: '@rush-temp/redo-website'
     resolution:
-      integrity: sha512-2fifh+SNK702p23yjpolVlcgceHpOzZ3iCQtZmQSfpY4Izhg/CS2sUpOk6sgCkEqax2zDAwhOSI/FSdXlf9naw==
+      integrity: sha512-WIUdDmfaRys9G6DjMiTx76hvwUEmp3/tqaqg6CnLtBtHNubAmFbAYKtGCpFml82+bGXJc2hdkIedyjC22J4tjw==
       tarball: 'file:projects/redo-website.tgz'
     version: 0.0.0
   'file:projects/shapeql.tgz_46b12d11340a10975f47e2ff824828aa':
@@ -14796,7 +14808,7 @@ specifiers:
   react-hook-form: 3.18.8
   react-hot-loader: 4.12.8
   react-svg-loader: 3.0.3
-  react-test-renderer: 16.9.0
+  react-test-renderer: 16.8.6
   react-typist: 2.0.5
   reflect-metadata: 0.1.13
   style-loader: 0.23.1

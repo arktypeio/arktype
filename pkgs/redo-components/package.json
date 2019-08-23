@@ -51,7 +51,7 @@
         "enzyme-adapter-react-16": "1.14.0",
         "jest": "24.8.0",
         "react-docgen-typescript-loader": "3.1.0",
-        "react-test-renderer": "16.9.0",
+        "react-test-renderer": "16.8.6",
         "redo-bundle": "1.0.0",
         "redo-recommended": "1.0.0",
         "redo-utils": "1.0.0",
