@@ -28,6 +28,7 @@ dependencies:
   '@rush-temp/redo-utils': 'file:projects/redo-utils.tgz_@babel+core@7.5.5'
   '@rush-temp/redo-website': 'file:projects/redo-website.tgz'
   '@rush-temp/shapeql': 'file:projects/shapeql.tgz_46b12d11340a10975f47e2ff824828aa'
+  '@rush-temp/test': 'file:projects/test.tgz_@babel+core@7.5.5'
   '@storybook/addon-actions': 5.2.0-beta.30_react-dom@16.8.6
   '@storybook/addon-console': 1.2.1_bbdf7d57517e8b7d6528c507813dc8ca
   '@storybook/addon-info': 5.2.0-beta.30_react-dom@16.8.6
@@ -48,7 +49,7 @@ dependencies:
   '@types/jest': 24.0.13
   '@types/jsonwebtoken': 8.3.2
   '@types/node': 12.6.6
-  '@types/puppeteer': 1.12.4
+  '@types/puppeteer': 1.19.1
   '@types/react': 16.8.8
   '@types/react-dom': 16.8.3
   '@types/react-typist': 2.0.0
@@ -93,7 +94,7 @@ dependencies:
   material-ui-chip-input: 1.0.0_f35c714a02d617073918f9017b0a4e91
   moize: 5.4.4
   prisma2: 2.0.0-preview-5
-  puppeteer: 1.17.0
+  puppeteer: 1.19.0
   react: 16.8.6
   react-apollo: 3.0.1_b720375b53182f320d4afb2879b9016a
   react-docgen-typescript-loader: 3.1.0_typescript@3.5.2+webpack@4.29.6
@@ -2087,7 +2088,7 @@ packages:
       fs-extra: 8.1.0
       global: 4.4.0
       html-webpack-plugin: 4.0.0-beta.8_webpack@4.39.2
-      inquirer: 6.5.1
+      inquirer: 6.5.2
       interpret: 1.2.0
       ip: 1.1.5
       json5: 2.1.0
@@ -2599,6 +2600,12 @@ packages:
     dev: false
     resolution:
       integrity: sha512-aaGbJaJ9TuF9vZfTeoh876sBa+rYJWPwtsmHmYr28pGr42ewJnkDTq2aeSKEmS39SqUdkwLj73y/d7rBSp7mDQ==
+  /@types/puppeteer/1.19.1:
+    dependencies:
+      '@types/node': 12.6.6
+    dev: false
+    resolution:
+      integrity: sha512-ReWZvoEfMiJIA3AG+eM+nCx5GKrU2ANVYY5TC0nbpeiTCtnJbcqnmBbR8TkXMBTvLBYcuTOAELbTcuX73siDNQ==
   /@types/q/1.5.2:
     dev: false
     resolution:
@@ -2721,12 +2728,12 @@ packages:
     dev: false
     resolution:
       integrity: sha512-vs8LjgEZUQTBxotXbMf8s4jgykozkqjv6P0JRi+1BLh0n7LQUkMXfvsoPb5U/dBL1ay5Lu0c46G6FRmAZBhAUA==
-  /@types/ws/6.0.2:
+  /@types/ws/6.0.3:
     dependencies:
       '@types/node': 12.6.6
     dev: false
     resolution:
-      integrity: sha512-22XiR1ox9LftTaAtn/c5JCninwc7moaqbkJfaDUb7PkaUitcf5vbTZHdq9dxSMviCm9C3W85rzB8e6yNR70apQ==
+      integrity: sha512-yBTM0P05Tx9iXGq00BbJPo37ox68R5vaGTXivs6RGh/BQ6QP5zqZDGWdAO6JbRE/iR1l80xeGAwCQS2nMV9S/w==
   /@types/yargs-parser/13.0.0:
     dev: false
     resolution:
@@ -3082,14 +3089,6 @@ packages:
       node: '>=4'
     resolution:
       integrity: sha512-cBhpre4ma+U0T1oM5fXg7Dy1Jw7zzwv7lt/GoCpr+hDQJoYnKVPLL4dCvSEFMmQurOQvSrwT7SL/DAlhBI97RQ==
-  /ansi-escapes/4.2.1:
-    dependencies:
-      type-fest: 0.5.2
-    dev: false
-    engines:
-      node: '>=8'
-    resolution:
-      integrity: sha512-Cg3ymMAdN10wOk/VYfLV7KCQyv7EDirJ64500sU7n9UlmioEtDuU5Gd+hj73hXSU/ex7tHJSssmyftDdkMLO8Q==
   /ansi-html/0.0.7:
     dev: false
     engines:
@@ -3386,7 +3385,7 @@ packages:
     dependencies:
       '@apollographql/apollo-tools': 0.3.7
       '@apollographql/graphql-playground-html': 1.6.24
-      '@types/ws': 6.0.2
+      '@types/ws': 6.0.3
       apollo-cache-control: 0.8.0
       apollo-datasource: 0.6.0
       apollo-engine-reporting: 1.4.0
@@ -3417,7 +3416,7 @@ packages:
     dependencies:
       '@apollographql/apollo-tools': 0.3.7
       '@apollographql/graphql-playground-html': 1.6.24
-      '@types/ws': 6.0.2
+      '@types/ws': 6.0.3
       apollo-cache-control: 0.8.0_graphql@14.4.2
       apollo-datasource: 0.6.0
       apollo-engine-reporting: 1.4.0
@@ -4851,14 +4850,6 @@ packages:
       node: '>=4'
     resolution:
       integrity: sha1-s12sN2R5+sw+lHR9QdDQ9SOP/LU=
-  /cli-cursor/3.1.0:
-    dependencies:
-      restore-cursor: 3.1.0
-    dev: false
-    engines:
-      node: '>=8'
-    resolution:
-      integrity: sha512-I/zHAwsKf9FqGoXM4WWRACob9+SNukZTd94DWF57E4toouRulbCxcUh6RKUEOQlYTHJnzkPMySvPNaaSLNfLZw==
   /cli-table3/0.5.1:
     dependencies:
       object-assign: 4.1.1
@@ -5989,10 +5980,6 @@ packages:
     dev: false
     resolution:
       integrity: sha512-CwBLREIQ7LvYFB0WyRvwhq5N5qPhc6PMjD6bYggFlI5YyDgl+0vxq5VHbMOFqLg7hfWzmu8T5Z1QofhmTIhItA==
-  /emoji-regex/8.0.0:
-    dev: false
-    resolution:
-      integrity: sha512-MSjYzcWNOA0ewAHpz0MxpYFvwg6yjy1NG3xteoqz644VCo/RPgnr1/GGt+ic3iJTzQ8Eu3TdM14SawnVUmGE6A==
   /emojis-list/2.1.0:
     dev: false
     engines:
@@ -6085,7 +6072,7 @@ packages:
       react: 16.8.6
       react-dom: 16.8.6_react@16.8.6
       react-is: 16.9.0
-      react-test-renderer: 16.9.0_react@16.8.6
+      react-test-renderer: 16.8.6_react@16.8.6
       semver: 5.7.1
     dev: false
     peerDependencies:
@@ -6611,14 +6598,6 @@ packages:
       node: '>=4'
     resolution:
       integrity: sha1-OrGi0qYsi/tDGgyUy3l6L84nyWI=
-  /figures/3.0.0:
-    dependencies:
-      escape-string-regexp: 1.0.5
-    dev: false
-    engines:
-      node: '>=8'
-    resolution:
-      integrity: sha512-HKri+WoWoUgr83pehn/SIgLOMZ9nAWC6dcGj26RY2R4F50u4+RTUz0RCrUlOV3nKRAICW1UGzyb+kcX2qK1S/g==
   /file-loader/3.0.1_webpack@4.29.6:
     dependencies:
       loader-utils: 1.2.3
@@ -6969,7 +6948,7 @@ packages:
       integrity: sha512-yhlQgA6mnOJUKOsRUFsgJdQCvkKhcz8tlZG5HBQfReYZy46OwLcY+Zia0mtdHsOo9y/hP+CxMN0TU9QxoOtG4g==
   /fs-minipass/1.2.6:
     dependencies:
-      minipass: 2.3.5
+      minipass: 2.4.0
     dev: false
     resolution:
       integrity: sha512-crhvyXcMejjv3Z5d2Fa9sf5xLYVCF5O1c71QxbVnbLsmYMBEvDAftewesN/HhY03YRoA7zOMxjNGrF5svGaaeQ==
@@ -7897,26 +7876,26 @@ packages:
       node: '>=6.0.0'
     resolution:
       integrity: sha512-scfHejeG/lVZSpvCXpsB4j/wQNPM5JC8kiElOI0OUTwmc1RTpXr4H32/HOlQHcZiYl2z2VElwuCVDRG8vFmbnA==
-  /inquirer/6.5.1:
+  /inquirer/6.5.2:
     dependencies:
-      ansi-escapes: 4.2.1
+      ansi-escapes: 3.2.0
       chalk: 2.4.2
-      cli-cursor: 3.1.0
+      cli-cursor: 2.1.0
       cli-width: 2.2.0
       external-editor: 3.1.0
-      figures: 3.0.0
+      figures: 2.0.0
       lodash: 4.17.15
-      mute-stream: 0.0.8
+      mute-stream: 0.0.7
       run-async: 2.3.0
       rxjs: 6.5.2
-      string-width: 4.1.0
+      string-width: 2.1.1
       strip-ansi: 5.2.0
       through: 2.3.8
     dev: false
     engines:
       node: '>=6.0.0'
     resolution:
-      integrity: sha512-uxNHBeQhRXIoHWTSNYUFhQVrHYFThIt6IVo2fFmSe8aBwdR3/w6b58hJpiL/fMukFkvGzjg+hSxFtwvVmKZmXw==
+      integrity: sha512-cntlB5ghuB0iuO65Ovoi8ogLHiWGs/5yNrtUcKjFhSSiVeAIVpD7koaSU9RM8mpXw5YDi9RdYXGQMaOURB7ycQ==
   /internal-ip/4.3.0:
     dependencies:
       default-gateway: 4.2.0
@@ -8135,12 +8114,6 @@ packages:
       node: '>=4'
     resolution:
       integrity: sha1-o7MKXE8ZkYMWeqq5O+764937ZU8=
-  /is-fullwidth-code-point/3.0.0:
-    dev: false
-    engines:
-      node: '>=8'
-    resolution:
-      integrity: sha512-zymm5+u+sCsSWyD9qNaejV3DFvhCKclKdizYaJUuHA83RLjb7nSuGnddCHGv0hk+KY7BMAlsWeK4Ueg6EV6XQg==
   /is-function/1.0.1:
     dev: false
     resolution:
@@ -9569,10 +9542,10 @@ packages:
       node: '>=6'
     resolution:
       integrity: sha512-qX2bG48pTqYRVmDB37rn/6PT7LcR8T7oAX3bf99u1Tt1nzxYfxkgqDwUwolPlXweM0XzBOBFzSx4kfp7KP1s/w==
-  /memoize-one/5.1.0:
+  /memoize-one/5.1.1:
     dev: false
     resolution:
-      integrity: sha512-p3tPVJNrjOkJ0vk0FRn6yv898qlQZct1rsQAXuwK9X5brNVajPv/y13ytrUByzSS8olyzeqCLX8BKEWmTmXa1A==
+      integrity: sha512-HKeeBpWvqiVJD57ZUAsJNm71eHTykffzcLZVYWiVfQeI1rJtuEaS7hQiEpWfVVk18donPwJEcFKIkCmPJNOhHA==
   /memoizerific/1.11.3:
     dependencies:
       map-or-similar: 1.5.0
@@ -9764,16 +9737,16 @@ packages:
     dev: false
     resolution:
       integrity: sha1-o1AIsg9BOD7sH7kU9M1d95omQoQ=
-  /minipass/2.3.5:
+  /minipass/2.4.0:
     dependencies:
       safe-buffer: 5.2.0
       yallist: 3.0.3
     dev: false
     resolution:
-      integrity: sha512-Gi1W4k059gyRbyVUZQ4mEqLm0YIUiGYfvxhF6SIlk3ui1WVxMTGfGdQ2SInh3PDrRTVvPKgULkpJtT4RH10+VA==
+      integrity: sha512-6PmOuSP4NnZXzs2z6rbwzLJu/c5gdzYg1mRI/WIYdx45iiX7T+a4esOzavD6V/KmBzAaopFSTZPZcUx73bqKWA==
   /minizlib/1.2.1:
     dependencies:
-      minipass: 2.3.5
+      minipass: 2.4.0
     dev: false
     resolution:
       integrity: sha512-7+4oTUOWKg7AuL3vloEWekXY2/D20cevzsrNT2kGWm+39J9hGTCBv8VI5Pm5lXZ/o3/mdR4f8rflAPhnQb8mPA==
@@ -9870,10 +9843,6 @@ packages:
     dev: false
     resolution:
       integrity: sha1-MHXOk7whuPq0PhvE2n6BFe0ee6s=
-  /mute-stream/0.0.8:
-    dev: false
-    resolution:
-      integrity: sha512-nnbWWOkoWyUsTjKrhgD0dcz22mdkSnpYqbEjIm2nhwhuxlSkpywJmBo8h0ZqJdkp73mb90SssHkN4rsRaBAfAA==
   /nan/2.13.2:
     dev: false
     resolution:
@@ -11184,7 +11153,7 @@ packages:
       node: '>=6'
     resolution:
       integrity: sha512-XRsRjdf+j5ml+y/6GKHPZbrF/8p2Yga0JPtdqTIY2Xe5ohJPD9saDJJLPvp9+NSBprVvevdXZybnj2cv8OEd0A==
-  /puppeteer/1.17.0:
+  /puppeteer/1.19.0:
     dependencies:
       debug: 4.1.1
       extract-zip: 1.6.7
@@ -11199,7 +11168,7 @@ packages:
       node: '>=6.4.0'
     requiresBuild: true
     resolution:
-      integrity: sha512-3EXZSximCzxuVKpIHtyec8Wm2dWZn1fc5tQi34qWfiUgubEVYHjUvr0GOJojqf3mifI6oyKnCdrGxaOI+lWReA==
+      integrity: sha512-2S6E6ygpoqcECaagDbBopoSOPDv0pAZvTbnBgUY+6hq0/XDFDOLEMNlHF/SKJlzcaZ9ckiKjKDuueWI3FN/WXw==
   /q/1.5.1:
     dev: false
     engines:
@@ -11625,7 +11594,7 @@ packages:
       '@emotion/core': 10.0.16_react@16.8.6
       '@emotion/css': 10.0.14
       classnames: 2.2.6
-      memoize-one: 5.1.0
+      memoize-one: 5.1.1
       prop-types: 15.7.2
       raf: 3.4.1
       react: 16.8.6
@@ -11702,18 +11671,6 @@ packages:
       react: ^16.0.0
     resolution:
       integrity: sha512-H2srzU5IWYT6cZXof6AhUcx/wEyJddQ8l7cLM/F7gDXYyPr4oq+vCIxJYXVGhId1J706sqziAjuOEjyNkfgoEw==
-  /react-test-renderer/16.9.0_react@16.8.6:
-    dependencies:
-      object-assign: 4.1.1
-      prop-types: 15.7.2
-      react: 16.8.6
-      react-is: 16.9.0
-      scheduler: 0.15.0
-    dev: false
-    peerDependencies:
-      react: ^16.0.0
-    resolution:
-      integrity: sha512-R62stB73qZyhrJo7wmCW9jgl/07ai+YzvouvCXIJLBkRlRqLx4j9RqcLEAfNfU3OxTGucqR2Whmn3/Aad6L3hQ==
   /react-textarea-autosize/7.1.0_react@16.8.6:
     dependencies:
       '@babel/runtime': 7.5.5
@@ -12216,15 +12173,6 @@ packages:
       node: '>=4'
     resolution:
       integrity: sha1-n37ih/gv0ybU/RYpI9YhKe7g368=
-  /restore-cursor/3.1.0:
-    dependencies:
-      onetime: 5.1.0
-      signal-exit: 3.0.2
-    dev: false
-    engines:
-      node: '>=8'
-    resolution:
-      integrity: sha512-l+sSefzHpj5qimhFSE5a8nufZYAM3sBSVMAPtYkmC+4EH2anSGaEMXSD0izRQbu9nfyQ9y5JrVmp7E8oZrUjvA==
   /ret/0.1.15:
     dev: false
     engines:
@@ -12336,13 +12284,6 @@ packages:
     dev: false
     resolution:
       integrity: sha512-IWnObHt413ucAYKsD9J1QShUKkbKLQQHdxRyw73sw4FN26iWr3DY/H34xGPe4nmL1DwXyWmSWmMrA9TfQbE/XQ==
-  /scheduler/0.15.0:
-    dependencies:
-      loose-envify: 1.4.0
-      object-assign: 4.1.1
-    dev: false
-    resolution:
-      integrity: sha512-xAefmSfN6jqAa7Kuq7LIJY0bwAPG3xlCj0HMEBQk1lxYiDKZscY2xJ5U/61ZTrYbmNQbXa+gc7czPkVo11tnCg==
   /schema-utils/1.0.0:
     dependencies:
       ajv: 6.10.2
@@ -12900,16 +12841,6 @@ packages:
       node: '>=6'
     resolution:
       integrity: sha512-vafcv6KjVZKSgz06oM/H6GDBrAtz8vdhQakGjFIvNrHA6y3HCF1CInLy+QLq8dTJPQ1b+KDUqDFctkdRW44e1w==
-  /string-width/4.1.0:
-    dependencies:
-      emoji-regex: 8.0.0
-      is-fullwidth-code-point: 3.0.0
-      strip-ansi: 5.2.0
-    dev: false
-    engines:
-      node: '>=8'
-    resolution:
-      integrity: sha512-NrX+1dVVh+6Y9dnQ19pR0pP4FiEIlUvdTGn8pw6CKTNq5sgib2nIhmUNT5TAmhWmvKr3WcxBcP3E8nWezuipuQ==
   /string.prototype.matchall/3.0.1:
     dependencies:
       define-properties: 1.1.3
@@ -13173,7 +13104,7 @@ packages:
     dependencies:
       chownr: 1.1.2
       fs-minipass: 1.2.6
-      minipass: 2.3.5
+      minipass: 2.4.0
       minizlib: 1.2.1
       mkdirp: 0.5.1
       safe-buffer: 5.2.0
@@ -14425,11 +14356,9 @@ packages:
       '@types/fs-extra': 8.0.0
       '@types/graphql': 14.2.2
       '@types/node': 12.6.6
-      '@types/puppeteer': 1.12.4
+      '@types/puppeteer': 1.19.1
       '@types/react': 16.8.8
       '@types/react-dom': 16.8.3
-      '@types/webpack': 4.4.26
-      '@types/webpack-merge': 4.1.3
       apollo-cache-inmemory: 1.6.2_graphql@14.4.2
       apollo-client: 2.6.3_graphql@14.4.2
       apollo-link-context: 1.0.18_graphql@14.4.2
@@ -14445,10 +14374,9 @@ packages:
       fs-extra: 8.1.0
       graphql: 14.4.2
       graphql-tag: 2.10.1_graphql@14.4.2
-      html-webpack-plugin: 3.2.0_webpack@4.29.6
       isomorphic-ws: 4.0.1
       material-ui-chip-input: 1.0.0_f35c714a02d617073918f9017b0a4e91
-      puppeteer: 1.17.0
+      puppeteer: 1.19.0
       react: 16.8.6
       react-apollo: 3.0.1_0e293131b3c3e66d1e0d4d592c075a2c
       react-dom: 16.8.6_react@16.8.6
@@ -14464,11 +14392,10 @@ packages:
       webpack: 4.29.6_webpack@4.29.6
       webpack-cli: 3.3.0_webpack@4.29.6
       webpack-dev-server: 3.7.2_webpack@4.29.6
-      webpack-merge: 4.1.4
     dev: false
     name: '@rush-temp/redo-app'
     resolution:
-      integrity: sha512-/jMLxdSg7l3CAG7LtoYdPRg2TeqKQjl+7y/AO238q9Uls2rb+dxntGHF0XxaS+ngHsnLXSOh9nFMnmUXGFtu2g==
+      integrity: sha512-XdrX6CvCEyBZ6mVnrpeP+TGepNxPDhROizV4W/2QCDv+F60xVNGTjWGHD9uMJw+HCAT3fBQkyYTszswcUgRWNg==
       tarball: 'file:projects/redo-app.tgz'
     version: 0.0.0
   'file:projects/redo-bundle.tgz_787bbe83c726763abc906d76ffcb5127':
@@ -14649,7 +14576,6 @@ packages:
       '@types/react': 16.8.8
       '@types/react-dom': 16.8.3
       '@types/react-typist': 2.0.0
-      '@types/webpack-merge': 4.1.3
       analytics-node: 3.4.0-beta.1
       framer-motion: 1.4.1_react-dom@16.8.6+react@16.8.6
       react: 16.8.6
@@ -14662,7 +14588,6 @@ packages:
       webpack: 4.29.6_webpack@4.29.6
       webpack-cli: 3.3.0_webpack@4.29.6
       webpack-dev-server: 3.7.2_webpack@4.29.6
-      webpack-merge: 4.1.4
     dev: false
     name: '@rush-temp/redo-website'
     resolution:
@@ -14704,6 +14629,23 @@ packages:
       integrity: sha512-I8j2Ny2fBg3PFztSCJGSNkzw0R0fuo7shenBF+ylhqdUbo1WsmQMs1vQNWs7KIfBSZYLLFk4695DlYCw9WWFFQ==
       tarball: 'file:projects/shapeql.tgz'
     version: 0.0.0
+  'file:projects/test.tgz_@babel+core@7.5.5':
+    dependencies:
+      '@babel/cli': 7.5.5_@babel+core@7.5.5
+      '@babel/runtime-corejs3': 7.5.5
+      '@types/jest': 24.0.13
+      '@types/puppeteer': 1.19.1
+      jest: 24.8.0
+      puppeteer: 1.19.0
+    dev: false
+    id: 'file:projects/test.tgz'
+    name: '@rush-temp/test'
+    peerDependencies:
+      '@babel/core': '*'
+    resolution:
+      integrity: sha512-RjwG/A1E9N8g9gmMJLoovxQ3dLfOMnUjAaNnUf6rCTIYaZp4IQwboXCS1W5U1Vemwq/kVusjberYogyKoJTl3w==
+      tarball: 'file:projects/test.tgz'
+    version: 0.0.0
 registry: ''
 specifiers:
   '@apollo/react-hooks': 3.0.0
@@ -14735,6 +14677,7 @@ specifiers:
   '@rush-temp/redo-utils': 'file:./projects/redo-utils.tgz'
   '@rush-temp/redo-website': 'file:./projects/redo-website.tgz'
   '@rush-temp/shapeql': 'file:./projects/shapeql.tgz'
+  '@rush-temp/test': 'file:./projects/test.tgz'
   '@storybook/addon-actions': 5.2.0-beta.30
   '@storybook/addon-console': 1.2.1
   '@storybook/addon-info': 5.2.0-beta.30
@@ -14755,7 +14698,7 @@ specifiers:
   '@types/jest': 24.0.13
   '@types/jsonwebtoken': 8.3.2
   '@types/node': 12.6.6
-  '@types/puppeteer': 1.12.4
+  '@types/puppeteer': 1.19.1
   '@types/react': 16.8.8
   '@types/react-dom': 16.8.3
   '@types/react-typist': 2.0.0
@@ -14800,7 +14743,7 @@ specifiers:
   material-ui-chip-input: 1.0.0
   moize: 5.4.4
   prisma2: 2.0.0-preview-5
-  puppeteer: 1.17.0
+  puppeteer: 1.19.0
   react: 16.8.6
   react-apollo: 3.0.1
   react-docgen-typescript-loader: 3.1.0
