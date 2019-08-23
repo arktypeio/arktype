@@ -21,6 +21,7 @@ export const SuggestionResultsGrid = component({
 })(({ suggestions, data }) => {
     const { cardFilter } = data
     const theme = useTheme()
+
     const suggestionCards = suggestions
         .filter(({ name, description }) =>
             name
@@ -29,10 +30,33 @@ export const SuggestionResultsGrid = component({
                 .includes(cardFilter!.toLowerCase())
         )
         .map(({ name, type, description }) => (
-            <GridListTile key={name}>
+            <GridListTile
+                key={name}
+                style={{
+                    width: theme.spacing(25),
+                    height: theme.spacing(25)
+                }}
+            >
                 <SuggestionCard {...{ name, type, description }} />
             </GridListTile>
         ))
+    let rowNumber = 1
+    let columnNumber = suggestionCards.length
+    let cardsRowWidth = theme.spacing(25) * suggestionCards.length
+    console.log(`Screen width: ${screen.width}`)
+    console.log(`cardsRowWidth: ${cardsRowWidth}`)
+    while (cardsRowWidth > screen.width) {
+        rowNumber++
+        console.log("Row number increased")
+        console.log(`Current rowNumber: ${rowNumber}`)
+        columnNumber /= rowNumber
+        columnNumber = Math.floor(columnNumber)
+        console.log(`Current columnNumber: ${columnNumber}`)
+        cardsRowWidth /= rowNumber
+        console.log(`Current cardsRowWidth: ${cardsRowWidth}`)
+    }
+    console.log(`out of while statement columnNumber:${columnNumber} `)
+
     return (
         <Card
             style={{
@@ -42,13 +66,14 @@ export const SuggestionResultsGrid = component({
         >
             <GridList
                 style={{
-                    minHeight: "100%",
-                    //theme.spacing(90),
-                    minWidth: "100%"
-                    // theme.spacing(90),
-                    //  padding: theme.spacing(2)
+                    height: "100%",
+                    width: "100%",
+                    padding: theme.spacing(2)
+
+                    // height: "100%",
+                    // width: "100%"
                 }}
-                cols={4}
+                cols={columnNumber}
             >
                 {suggestionCards}
             </GridList>
