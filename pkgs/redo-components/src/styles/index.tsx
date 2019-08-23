@@ -1,8 +1,10 @@
+import React, { FC } from "react"
 import createMuiTheme, {
     ThemeOptions
 } from "@material-ui/core/styles/createMuiTheme"
+import { ThemeProvider } from "@material-ui/styles"
 import { useTheme as useMuiTheme } from "@material-ui/styles"
-export { makeStyles } from "@material-ui/styles"
+export { makeStyles, ThemeProvider } from "@material-ui/styles"
 
 export const defaultConfig: ThemeOptions = {
     palette: {
@@ -21,7 +23,12 @@ export const defaultConfig: ThemeOptions = {
     }
 }
 
+export const makeTheme = createMuiTheme
 export const defaultTheme = createMuiTheme(defaultConfig)
+export const DefaultTheme: FC = ({ children }) => (
+    <ThemeProvider theme={defaultTheme}>{children}</ThemeProvider>
+)
+export const T = DefaultTheme
 export type Theme = typeof defaultTheme
 export const useTheme = () => useMuiTheme<typeof defaultTheme>()
 export const usePalette = () => useTheme().palette

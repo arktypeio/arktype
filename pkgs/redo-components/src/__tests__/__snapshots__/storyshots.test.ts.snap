@@ -1,0 +1,2846 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`Storyshots Button Standard 1`] = `
+<div>
+  <button
+    className="MuiButtonBase-root MuiButton-root MuiButton-contained MuiButton-containedPrimary"
+    disabled={false}
+    onBlur={[Function]}
+    onDragLeave={[Function]}
+    onFocus={[Function]}
+    onKeyDown={[Function]}
+    onKeyUp={[Function]}
+    onMouseDown={[Function]}
+    onMouseLeave={[Function]}
+    onMouseUp={[Function]}
+    onTouchEnd={[Function]}
+    onTouchMove={[Function]}
+    onTouchStart={[Function]}
+    style={
+      Object {
+        "minWidth": 80,
+        "textTransform": "none",
+      }
+    }
+    tabIndex={0}
+    type="button"
+  >
+    <span
+      className="MuiButton-label"
+    >
+      This says stuff!
+    </span>
+  </button>
+</div>
+`;
+
+exports[`Storyshots Card ContentCard with knobs 1`] = `
+<div>
+  <div
+    className="MuiPaper-root MuiPaper-elevation1 MuiCard-root MuiPaper-rounded"
+    style={
+      Object {
+        "padding": 8,
+        "width": "fit-content",
+      }
+    }
+  >
+    <div
+      className="MuiGrid-root MuiGrid-container MuiGrid-item MuiGrid-direction-xs-column MuiGrid-wrap-xs-nowrap MuiGrid-align-items-xs-flex-start"
+      style={
+        Object {
+          "flexGrow": undefined,
+          "height": undefined,
+          "width": undefined,
+        }
+      }
+    >
+      <div
+        className="MuiGrid-root MuiGrid-container MuiGrid-item MuiGrid-wrap-xs-nowrap MuiGrid-align-items-xs-flex-start MuiGrid-justify-xs-center"
+        style={
+          Object {
+            "flexGrow": undefined,
+            "height": undefined,
+            "width": undefined,
+          }
+        }
+      >
+        <p
+          className="MuiTypography-root MuiTypography-body2"
+        >
+          key: value
+        </p>
+      </div>
+      <div
+        className="MuiGrid-root MuiGrid-container MuiGrid-item MuiGrid-wrap-xs-nowrap MuiGrid-align-items-xs-flex-start MuiGrid-justify-xs-center"
+        style={
+          Object {
+            "flexGrow": undefined,
+            "height": undefined,
+            "width": undefined,
+          }
+        }
+      >
+        <p
+          className="MuiTypography-root MuiTypography-body2"
+        >
+          anotherKey: anotherValue
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+`;
+
+exports[`Storyshots Card Regular card with knobs 1`] = `
+<div>
+  <div
+    className="MuiPaper-root MuiPaper-elevation1 MuiCard-root MuiPaper-rounded"
+    style={
+      Object {
+        "padding": 8,
+        "width": "fit-content",
+      }
+    }
+  >
+    hey look text
+  </div>
+</div>
+`;
+
+exports[`Storyshots Form Text only 1`] = `
+<div>
+  <div
+    className="MuiGrid-root MuiGrid-container MuiGrid-item MuiGrid-direction-xs-column MuiGrid-wrap-xs-nowrap MuiGrid-align-items-xs-flex-start"
+    style={
+      Object {
+        "flexGrow": undefined,
+        "height": undefined,
+        "width": 200,
+      }
+    }
+  >
+    <div
+      className="MuiFormControl-root MuiTextField-root MuiFormControl-marginDense"
+      onError={[Function]}
+      onKeyDown={[Function]}
+      onMouseOut={[Function]}
+      onMouseOver={[Function]}
+      onReset={[Function]}
+    >
+      <label
+        className="MuiFormLabel-root MuiInputLabel-root MuiInputLabel-formControl MuiInputLabel-animated MuiInputLabel-marginDense MuiInputLabel-outlined"
+        data-shrink={false}
+        style={
+          Object {
+            "color": "rgb(83, 147, 255)",
+          }
+        }
+      >
+        first
+      </label>
+      <div
+        className="MuiInputBase-root MuiOutlinedInput-root MuiInputBase-formControl MuiInputBase-marginDense MuiOutlinedInput-marginDense"
+        onClick={[Function]}
+      >
+        <fieldset
+          aria-hidden={true}
+          className="PrivateNotchedOutline-root-383 MuiOutlinedInput-notchedOutline makeStyles-defaultClass-323"
+          style={
+            Object {
+              "paddingLeft": 8,
+            }
+          }
+        >
+          <legend
+            className="PrivateNotchedOutline-legend-384"
+            style={
+              Object {
+                "width": 0.01,
+              }
+            }
+          >
+            <span
+              dangerouslySetInnerHTML={
+                Object {
+                  "__html": "&#8203;",
+                }
+              }
+            />
+          </legend>
+        </fieldset>
+        <input
+          aria-invalid={false}
+          className="MuiInputBase-input MuiOutlinedInput-input MuiInputBase-inputMarginDense MuiOutlinedInput-inputMarginDense"
+          disabled={false}
+          name="first"
+          onBlur={[Function]}
+          onChange={[Function]}
+          onFocus={[Function]}
+          required={false}
+          type="text"
+        />
+      </div>
+    </div>
+    <div
+      className="MuiFormControl-root MuiTextField-root MuiFormControl-marginDense"
+      onError={[Function]}
+      onKeyDown={[Function]}
+      onMouseOut={[Function]}
+      onMouseOver={[Function]}
+      onReset={[Function]}
+    >
+      <label
+        className="MuiFormLabel-root MuiInputLabel-root MuiInputLabel-formControl MuiInputLabel-animated MuiInputLabel-marginDense MuiInputLabel-outlined"
+        data-shrink={false}
+        style={
+          Object {
+            "color": "rgb(83, 147, 255)",
+          }
+        }
+      >
+        last
+      </label>
+      <div
+        className="MuiInputBase-root MuiOutlinedInput-root MuiInputBase-formControl MuiInputBase-marginDense MuiOutlinedInput-marginDense"
+        onClick={[Function]}
+      >
+        <fieldset
+          aria-hidden={true}
+          className="PrivateNotchedOutline-root-383 MuiOutlinedInput-notchedOutline makeStyles-defaultClass-323"
+          style={
+            Object {
+              "paddingLeft": 8,
+            }
+          }
+        >
+          <legend
+            className="PrivateNotchedOutline-legend-384"
+            style={
+              Object {
+                "width": 0.01,
+              }
+            }
+          >
+            <span
+              dangerouslySetInnerHTML={
+                Object {
+                  "__html": "&#8203;",
+                }
+              }
+            />
+          </legend>
+        </fieldset>
+        <input
+          aria-invalid={false}
+          className="MuiInputBase-input MuiOutlinedInput-input MuiInputBase-inputMarginDense MuiOutlinedInput-inputMarginDense"
+          disabled={false}
+          name="last"
+          onBlur={[Function]}
+          onChange={[Function]}
+          onFocus={[Function]}
+          required={false}
+          type="text"
+        />
+      </div>
+    </div>
+    <button
+      className="MuiButtonBase-root MuiButton-root MuiButton-contained MuiButton-containedPrimary"
+      disabled={false}
+      onBlur={[Function]}
+      onClick={[Function]}
+      onDragLeave={[Function]}
+      onFocus={[Function]}
+      onKeyDown={[Function]}
+      onKeyUp={[Function]}
+      onMouseDown={[Function]}
+      onMouseLeave={[Function]}
+      onMouseUp={[Function]}
+      onTouchEnd={[Function]}
+      onTouchMove={[Function]}
+      onTouchStart={[Function]}
+      style={
+        Object {
+          "minWidth": 80,
+          "textTransform": "none",
+        }
+      }
+      tabIndex={0}
+      type="submit"
+    >
+      <span
+        className="MuiButton-label"
+      >
+        Submit
+      </span>
+    </button>
+  </div>
+</div>
+`;
+
+exports[`Storyshots Input Text 1`] = `
+<div>
+  <div
+    className="MuiFormControl-root MuiTextField-root MuiFormControl-marginDense"
+    onError={[Function]}
+    onMouseOut={[Function]}
+    onMouseOver={[Function]}
+    onReset={[Function]}
+  >
+    <div
+      className="MuiInputBase-root MuiOutlinedInput-root MuiInputBase-formControl MuiInputBase-marginDense MuiOutlinedInput-marginDense"
+      onClick={[Function]}
+    >
+      <fieldset
+        aria-hidden={true}
+        className="PrivateNotchedOutline-root-456 MuiOutlinedInput-notchedOutline makeStyles-defaultClass-415"
+        style={
+          Object {
+            "paddingLeft": 8,
+          }
+        }
+      >
+        <legend
+          className="PrivateNotchedOutline-legend-457"
+          style={
+            Object {
+              "width": 0.01,
+            }
+          }
+        >
+          <span
+            dangerouslySetInnerHTML={
+              Object {
+                "__html": "&#8203;",
+              }
+            }
+          />
+        </legend>
+      </fieldset>
+      <input
+        aria-invalid={false}
+        className="MuiInputBase-input MuiOutlinedInput-input MuiInputBase-inputMarginDense MuiOutlinedInput-inputMarginDense"
+        disabled={false}
+        onBlur={[Function]}
+        onChange={[Function]}
+        onFocus={[Function]}
+        required={false}
+        type="text"
+      />
+    </div>
+  </div>
+</div>
+`;
+
+exports[`Storyshots Layout Column 1`] = `
+<div>
+  <div
+    style={
+      Object {
+        "height": "95vh",
+        "width": "95vw",
+      }
+    }
+  >
+    <div
+      className="MuiGrid-root-589 MuiGrid-container-590 MuiGrid-item-591 MuiGrid-direction-xs-column-593 MuiGrid-wrap-xs-nowrap-596 MuiGrid-align-items-xs-flex-start-599"
+      style={
+        Object {
+          "flexGrow": undefined,
+          "height": undefined,
+          "width": undefined,
+        }
+      }
+    >
+      <div
+        className="MuiPaper-root-693 MuiPaper-elevation1-696 MuiCard-root-692 MuiPaper-rounded-694"
+        style={
+          Object {
+            "padding": 8,
+            "width": "fit-content",
+          }
+        }
+      >
+        One
+      </div>
+      <div
+        className="MuiPaper-root-693 MuiPaper-elevation1-696 MuiCard-root-692 MuiPaper-rounded-694"
+        style={
+          Object {
+            "padding": 8,
+            "width": "fit-content",
+          }
+        }
+      >
+        Two
+      </div>
+      <div
+        className="MuiPaper-root-693 MuiPaper-elevation1-696 MuiCard-root-692 MuiPaper-rounded-694"
+        style={
+          Object {
+            "padding": 8,
+            "width": "fit-content",
+          }
+        }
+      >
+        Three
+      </div>
+    </div>
+  </div>
+</div>
+`;
+
+exports[`Storyshots Layout Column of columns 1`] = `
+<div>
+  <div
+    style={
+      Object {
+        "height": "95vh",
+        "width": "95vw",
+      }
+    }
+  >
+    <div
+      className="MuiGrid-root-1113 MuiGrid-container-1114 MuiGrid-item-1115 MuiGrid-direction-xs-column-1117 MuiGrid-wrap-xs-nowrap-1120 MuiGrid-align-items-xs-flex-start-1123"
+      style={
+        Object {
+          "flexGrow": undefined,
+          "height": undefined,
+          "width": undefined,
+        }
+      }
+    >
+      <div
+        className="MuiGrid-root-1113 MuiGrid-container-1114 MuiGrid-item-1115 MuiGrid-direction-xs-column-1117 MuiGrid-wrap-xs-nowrap-1120 MuiGrid-align-items-xs-flex-start-1123"
+        style={
+          Object {
+            "flexGrow": undefined,
+            "height": undefined,
+            "width": undefined,
+          }
+        }
+      >
+        <div
+          className="MuiPaper-root-1217 MuiPaper-elevation1-1220 MuiCard-root-1216 MuiPaper-rounded-1218"
+          style={
+            Object {
+              "padding": 8,
+              "width": "fit-content",
+            }
+          }
+        >
+          One
+        </div>
+        <div
+          className="MuiPaper-root-1217 MuiPaper-elevation1-1220 MuiCard-root-1216 MuiPaper-rounded-1218"
+          style={
+            Object {
+              "padding": 8,
+              "width": "fit-content",
+            }
+          }
+        >
+          Two
+        </div>
+        <div
+          className="MuiPaper-root-1217 MuiPaper-elevation1-1220 MuiCard-root-1216 MuiPaper-rounded-1218"
+          style={
+            Object {
+              "padding": 8,
+              "width": "fit-content",
+            }
+          }
+        >
+          Three
+        </div>
+      </div>
+      <div
+        className="MuiGrid-root-1113 MuiGrid-container-1114 MuiGrid-item-1115 MuiGrid-direction-xs-column-1117 MuiGrid-wrap-xs-nowrap-1120 MuiGrid-align-items-xs-flex-start-1123"
+        style={
+          Object {
+            "flexGrow": undefined,
+            "height": undefined,
+            "width": undefined,
+          }
+        }
+      >
+        <div
+          className="MuiPaper-root-1217 MuiPaper-elevation1-1220 MuiCard-root-1216 MuiPaper-rounded-1218"
+          style={
+            Object {
+              "padding": 8,
+              "width": "fit-content",
+            }
+          }
+        >
+          One
+        </div>
+        <div
+          className="MuiPaper-root-1217 MuiPaper-elevation1-1220 MuiCard-root-1216 MuiPaper-rounded-1218"
+          style={
+            Object {
+              "padding": 8,
+              "width": "fit-content",
+            }
+          }
+        >
+          Two
+        </div>
+        <div
+          className="MuiPaper-root-1217 MuiPaper-elevation1-1220 MuiCard-root-1216 MuiPaper-rounded-1218"
+          style={
+            Object {
+              "padding": 8,
+              "width": "fit-content",
+            }
+          }
+        >
+          Three
+        </div>
+      </div>
+      <div
+        className="MuiGrid-root-1113 MuiGrid-container-1114 MuiGrid-item-1115 MuiGrid-direction-xs-column-1117 MuiGrid-wrap-xs-nowrap-1120 MuiGrid-align-items-xs-flex-start-1123"
+        style={
+          Object {
+            "flexGrow": undefined,
+            "height": undefined,
+            "width": undefined,
+          }
+        }
+      >
+        <div
+          className="MuiPaper-root-1217 MuiPaper-elevation1-1220 MuiCard-root-1216 MuiPaper-rounded-1218"
+          style={
+            Object {
+              "padding": 8,
+              "width": "fit-content",
+            }
+          }
+        >
+          One
+        </div>
+        <div
+          className="MuiPaper-root-1217 MuiPaper-elevation1-1220 MuiCard-root-1216 MuiPaper-rounded-1218"
+          style={
+            Object {
+              "padding": 8,
+              "width": "fit-content",
+            }
+          }
+        >
+          Two
+        </div>
+        <div
+          className="MuiPaper-root-1217 MuiPaper-elevation1-1220 MuiCard-root-1216 MuiPaper-rounded-1218"
+          style={
+            Object {
+              "padding": 8,
+              "width": "fit-content",
+            }
+          }
+        >
+          Three
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+`;
+
+exports[`Storyshots Layout Column of rows 1`] = `
+<div>
+  <div
+    style={
+      Object {
+        "height": "95vh",
+        "width": "95vw",
+      }
+    }
+  >
+    <div
+      className="MuiGrid-root-982 MuiGrid-container-983 MuiGrid-item-984 MuiGrid-direction-xs-column-986 MuiGrid-wrap-xs-nowrap-989 MuiGrid-align-items-xs-flex-start-992"
+      style={
+        Object {
+          "flexGrow": undefined,
+          "height": undefined,
+          "width": undefined,
+        }
+      }
+    >
+      <div
+        className="MuiGrid-root-982 MuiGrid-container-983 MuiGrid-item-984 MuiGrid-wrap-xs-nowrap-989 MuiGrid-align-items-xs-flex-start-992"
+        style={
+          Object {
+            "flexGrow": undefined,
+            "height": undefined,
+            "width": undefined,
+          }
+        }
+      >
+        <div
+          className="MuiPaper-root-1086 MuiPaper-elevation1-1089 MuiCard-root-1085 MuiPaper-rounded-1087"
+          style={
+            Object {
+              "padding": 8,
+              "width": "fit-content",
+            }
+          }
+        >
+          One
+        </div>
+        <div
+          className="MuiPaper-root-1086 MuiPaper-elevation1-1089 MuiCard-root-1085 MuiPaper-rounded-1087"
+          style={
+            Object {
+              "padding": 8,
+              "width": "fit-content",
+            }
+          }
+        >
+          Two
+        </div>
+        <div
+          className="MuiPaper-root-1086 MuiPaper-elevation1-1089 MuiCard-root-1085 MuiPaper-rounded-1087"
+          style={
+            Object {
+              "padding": 8,
+              "width": "fit-content",
+            }
+          }
+        >
+          Three
+        </div>
+      </div>
+      <div
+        className="MuiGrid-root-982 MuiGrid-container-983 MuiGrid-item-984 MuiGrid-wrap-xs-nowrap-989 MuiGrid-align-items-xs-flex-start-992"
+        style={
+          Object {
+            "flexGrow": undefined,
+            "height": undefined,
+            "width": undefined,
+          }
+        }
+      >
+        <div
+          className="MuiPaper-root-1086 MuiPaper-elevation1-1089 MuiCard-root-1085 MuiPaper-rounded-1087"
+          style={
+            Object {
+              "padding": 8,
+              "width": "fit-content",
+            }
+          }
+        >
+          One
+        </div>
+        <div
+          className="MuiPaper-root-1086 MuiPaper-elevation1-1089 MuiCard-root-1085 MuiPaper-rounded-1087"
+          style={
+            Object {
+              "padding": 8,
+              "width": "fit-content",
+            }
+          }
+        >
+          Two
+        </div>
+        <div
+          className="MuiPaper-root-1086 MuiPaper-elevation1-1089 MuiCard-root-1085 MuiPaper-rounded-1087"
+          style={
+            Object {
+              "padding": 8,
+              "width": "fit-content",
+            }
+          }
+        >
+          Three
+        </div>
+      </div>
+      <div
+        className="MuiGrid-root-982 MuiGrid-container-983 MuiGrid-item-984 MuiGrid-wrap-xs-nowrap-989 MuiGrid-align-items-xs-flex-start-992"
+        style={
+          Object {
+            "flexGrow": undefined,
+            "height": undefined,
+            "width": undefined,
+          }
+        }
+      >
+        <div
+          className="MuiPaper-root-1086 MuiPaper-elevation1-1089 MuiCard-root-1085 MuiPaper-rounded-1087"
+          style={
+            Object {
+              "padding": 8,
+              "width": "fit-content",
+            }
+          }
+        >
+          One
+        </div>
+        <div
+          className="MuiPaper-root-1086 MuiPaper-elevation1-1089 MuiCard-root-1085 MuiPaper-rounded-1087"
+          style={
+            Object {
+              "padding": 8,
+              "width": "fit-content",
+            }
+          }
+        >
+          Two
+        </div>
+        <div
+          className="MuiPaper-root-1086 MuiPaper-elevation1-1089 MuiCard-root-1085 MuiPaper-rounded-1087"
+          style={
+            Object {
+              "padding": 8,
+              "width": "fit-content",
+            }
+          }
+        >
+          Three
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+`;
+
+exports[`Storyshots Layout Page 1`] = `
+<div>
+  <div
+    style={
+      Object {
+        "height": "95vh",
+        "width": "95vw",
+      }
+    }
+  >
+    <div
+      className="MuiGrid-root-1244 MuiGrid-container-1245 MuiGrid-item-1246 MuiGrid-wrap-xs-nowrap-1251 MuiGrid-align-items-xs-flex-start-1254"
+      style={
+        Object {
+          "flexGrow": undefined,
+          "height": "100%",
+          "width": undefined,
+        }
+      }
+    >
+      <div
+        className="MuiGrid-root-1244 MuiGrid-container-1245 MuiGrid-item-1246 MuiGrid-direction-xs-column-1248 MuiGrid-wrap-xs-nowrap-1251 MuiGrid-align-items-xs-flex-start-1254"
+        style={
+          Object {
+            "flexGrow": undefined,
+            "height": "100%",
+            "width": 100,
+          }
+        }
+      >
+        Sidebar
+      </div>
+      <div
+        className="MuiGrid-root-1244 MuiGrid-container-1245 MuiGrid-item-1246 MuiGrid-direction-xs-column-1248 MuiGrid-wrap-xs-nowrap-1251 MuiGrid-align-items-xs-flex-start-1254"
+        style={
+          Object {
+            "flexGrow": 1,
+            "height": "100%",
+            "width": undefined,
+          }
+        }
+      >
+        <div
+          className="MuiGrid-root-1244 MuiGrid-container-1245 MuiGrid-item-1246 MuiGrid-wrap-xs-nowrap-1251 MuiGrid-align-items-xs-flex-start-1254"
+          style={
+            Object {
+              "flexGrow": undefined,
+              "height": 100,
+              "width": undefined,
+            }
+          }
+        >
+          Header
+        </div>
+        <div
+          className="MuiGrid-root-1244 MuiGrid-container-1245 MuiGrid-item-1246 MuiGrid-wrap-xs-nowrap-1251 MuiGrid-align-items-xs-flex-start-1254"
+          style={
+            Object {
+              "flexGrow": 1,
+              "height": undefined,
+              "width": undefined,
+            }
+          }
+        >
+          <div
+            className="MuiGrid-root-1244 MuiGrid-container-1245 MuiGrid-item-1246 MuiGrid-direction-xs-column-1248 MuiGrid-wrap-xs-nowrap-1251 MuiGrid-align-items-xs-center-1253 MuiGrid-justify-xs-space-between-1264"
+            style={
+              Object {
+                "flexGrow": undefined,
+                "height": "100%",
+                "width": undefined,
+              }
+            }
+          >
+            <p>
+              Left content
+            </p>
+            <div
+              className="MuiPaper-root-1348 MuiPaper-elevation1-1351 MuiCard-root-1347 MuiPaper-rounded-1349"
+              style={
+                Object {
+                  "padding": 8,
+                  "width": "fit-content",
+                }
+              }
+            >
+              One
+            </div>
+            <div
+              className="MuiPaper-root-1348 MuiPaper-elevation1-1351 MuiCard-root-1347 MuiPaper-rounded-1349"
+              style={
+                Object {
+                  "padding": 8,
+                  "width": "fit-content",
+                }
+              }
+            >
+              Two
+            </div>
+            <div
+              className="MuiPaper-root-1348 MuiPaper-elevation1-1351 MuiCard-root-1347 MuiPaper-rounded-1349"
+              style={
+                Object {
+                  "padding": 8,
+                  "width": "fit-content",
+                }
+              }
+            >
+              Three
+            </div>
+          </div>
+          <div
+            className="MuiGrid-root-1244 MuiGrid-container-1245 MuiGrid-item-1246 MuiGrid-direction-xs-column-1248 MuiGrid-wrap-xs-nowrap-1251 MuiGrid-align-items-xs-center-1253"
+            style={
+              Object {
+                "flexGrow": undefined,
+                "height": "100%",
+                "width": undefined,
+              }
+            }
+          >
+            <p>
+              Right content
+            </p>
+            <div
+              className="MuiGrid-root-1244 MuiGrid-container-1245 MuiGrid-item-1246 MuiGrid-wrap-xs-nowrap-1251 MuiGrid-align-items-xs-center-1253 MuiGrid-justify-xs-center-1262"
+              style={
+                Object {
+                  "flexGrow": 1,
+                  "height": undefined,
+                  "width": undefined,
+                }
+              }
+            >
+              <div
+                className="MuiPaper-root-1348 MuiPaper-elevation1-1351 MuiCard-root-1347 MuiPaper-rounded-1349"
+                style={
+                  Object {
+                    "padding": 8,
+                    "width": "fit-content",
+                  }
+                }
+              >
+                More content
+              </div>
+            </div>
+          </div>
+        </div>
+        <div
+          className="MuiGrid-root-1244 MuiGrid-container-1245 MuiGrid-item-1246 MuiGrid-wrap-xs-nowrap-1251 MuiGrid-align-items-xs-flex-start-1254"
+          style={
+            Object {
+              "flexGrow": undefined,
+              "height": 50,
+              "width": undefined,
+            }
+          }
+        >
+          Footer
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+`;
+
+exports[`Storyshots Layout Responsive 1`] = `
+<div>
+  <div
+    style={
+      Object {
+        "height": "95vh",
+        "width": "95vw",
+      }
+    }
+  >
+    <div
+      className="MuiGrid-root-1375 MuiGrid-container-1376 MuiGrid-item-1377 MuiGrid-align-items-xs-flex-start-1385"
+      style={
+        Object {
+          "flexGrow": undefined,
+          "height": undefined,
+          "width": undefined,
+        }
+      }
+    >
+      <div
+        className="MuiGrid-root-1375 MuiGrid-container-1376 MuiGrid-item-1377 MuiGrid-wrap-xs-nowrap-1382 MuiGrid-align-items-xs-flex-start-1385 MuiGrid-justify-xs-space-around-1396 MuiGrid-grid-md-4-1441"
+        style={
+          Object {
+            "flexGrow": undefined,
+            "height": undefined,
+            "width": undefined,
+          }
+        }
+      >
+        <div
+          className="MuiPaper-root-1479 MuiPaper-elevation1-1482 MuiCard-root-1478 MuiPaper-rounded-1480"
+          style={
+            Object {
+              "padding": 8,
+              "width": "fit-content",
+            }
+          }
+        >
+          Try
+        </div>
+      </div>
+      <div
+        className="MuiGrid-root-1375 MuiGrid-container-1376 MuiGrid-item-1377 MuiGrid-wrap-xs-nowrap-1382 MuiGrid-align-items-xs-flex-start-1385 MuiGrid-justify-xs-space-around-1396 MuiGrid-grid-md-4-1441"
+        style={
+          Object {
+            "flexGrow": undefined,
+            "height": undefined,
+            "width": undefined,
+          }
+        }
+      >
+        <div
+          className="MuiPaper-root-1479 MuiPaper-elevation1-1482 MuiCard-root-1478 MuiPaper-rounded-1480"
+          style={
+            Object {
+              "padding": 8,
+              "width": "fit-content",
+            }
+          }
+        >
+          Resizing
+        </div>
+      </div>
+      <div
+        className="MuiGrid-root-1375 MuiGrid-container-1376 MuiGrid-item-1377 MuiGrid-wrap-xs-nowrap-1382 MuiGrid-align-items-xs-flex-start-1385 MuiGrid-justify-xs-space-around-1396 MuiGrid-grid-md-4-1441"
+        style={
+          Object {
+            "flexGrow": undefined,
+            "height": undefined,
+            "width": undefined,
+          }
+        }
+      >
+        <div
+          className="MuiPaper-root-1479 MuiPaper-elevation1-1482 MuiCard-root-1478 MuiPaper-rounded-1480"
+          style={
+            Object {
+              "padding": 8,
+              "width": "fit-content",
+            }
+          }
+        >
+          Your window
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+`;
+
+exports[`Storyshots Layout Row 1`] = `
+<div>
+  <div
+    style={
+      Object {
+        "height": "95vh",
+        "width": "95vw",
+      }
+    }
+  >
+    <div
+      className="MuiGrid-root-458 MuiGrid-container-459 MuiGrid-item-460 MuiGrid-wrap-xs-nowrap-465 MuiGrid-align-items-xs-flex-start-468"
+      style={
+        Object {
+          "flexGrow": undefined,
+          "height": undefined,
+          "width": undefined,
+        }
+      }
+    >
+      <div
+        className="MuiPaper-root-562 MuiPaper-elevation1-565 MuiCard-root-561 MuiPaper-rounded-563"
+        style={
+          Object {
+            "padding": 8,
+            "width": "fit-content",
+          }
+        }
+      >
+        One
+      </div>
+      <div
+        className="MuiPaper-root-562 MuiPaper-elevation1-565 MuiCard-root-561 MuiPaper-rounded-563"
+        style={
+          Object {
+            "padding": 8,
+            "width": "fit-content",
+          }
+        }
+      >
+        Two
+      </div>
+      <div
+        className="MuiPaper-root-562 MuiPaper-elevation1-565 MuiCard-root-561 MuiPaper-rounded-563"
+        style={
+          Object {
+            "padding": 8,
+            "width": "fit-content",
+          }
+        }
+      >
+        Three
+      </div>
+    </div>
+  </div>
+</div>
+`;
+
+exports[`Storyshots Layout Row of columns 1`] = `
+<div>
+  <div
+    style={
+      Object {
+        "height": "95vh",
+        "width": "95vw",
+      }
+    }
+  >
+    <div
+      className="MuiGrid-root-720 MuiGrid-container-721 MuiGrid-item-722 MuiGrid-wrap-xs-nowrap-727 MuiGrid-align-items-xs-flex-start-730"
+      style={
+        Object {
+          "flexGrow": undefined,
+          "height": undefined,
+          "width": undefined,
+        }
+      }
+    >
+      <div
+        className="MuiGrid-root-720 MuiGrid-container-721 MuiGrid-item-722 MuiGrid-direction-xs-column-724 MuiGrid-wrap-xs-nowrap-727 MuiGrid-align-items-xs-flex-start-730"
+        style={
+          Object {
+            "flexGrow": undefined,
+            "height": undefined,
+            "width": undefined,
+          }
+        }
+      >
+        <div
+          className="MuiPaper-root-824 MuiPaper-elevation1-827 MuiCard-root-823 MuiPaper-rounded-825"
+          style={
+            Object {
+              "padding": 8,
+              "width": "fit-content",
+            }
+          }
+        >
+          One
+        </div>
+        <div
+          className="MuiPaper-root-824 MuiPaper-elevation1-827 MuiCard-root-823 MuiPaper-rounded-825"
+          style={
+            Object {
+              "padding": 8,
+              "width": "fit-content",
+            }
+          }
+        >
+          Two
+        </div>
+        <div
+          className="MuiPaper-root-824 MuiPaper-elevation1-827 MuiCard-root-823 MuiPaper-rounded-825"
+          style={
+            Object {
+              "padding": 8,
+              "width": "fit-content",
+            }
+          }
+        >
+          Three
+        </div>
+      </div>
+      <div
+        className="MuiGrid-root-720 MuiGrid-container-721 MuiGrid-item-722 MuiGrid-direction-xs-column-724 MuiGrid-wrap-xs-nowrap-727 MuiGrid-align-items-xs-flex-start-730"
+        style={
+          Object {
+            "flexGrow": undefined,
+            "height": undefined,
+            "width": undefined,
+          }
+        }
+      >
+        <div
+          className="MuiPaper-root-824 MuiPaper-elevation1-827 MuiCard-root-823 MuiPaper-rounded-825"
+          style={
+            Object {
+              "padding": 8,
+              "width": "fit-content",
+            }
+          }
+        >
+          One
+        </div>
+        <div
+          className="MuiPaper-root-824 MuiPaper-elevation1-827 MuiCard-root-823 MuiPaper-rounded-825"
+          style={
+            Object {
+              "padding": 8,
+              "width": "fit-content",
+            }
+          }
+        >
+          Two
+        </div>
+        <div
+          className="MuiPaper-root-824 MuiPaper-elevation1-827 MuiCard-root-823 MuiPaper-rounded-825"
+          style={
+            Object {
+              "padding": 8,
+              "width": "fit-content",
+            }
+          }
+        >
+          Three
+        </div>
+      </div>
+      <div
+        className="MuiGrid-root-720 MuiGrid-container-721 MuiGrid-item-722 MuiGrid-direction-xs-column-724 MuiGrid-wrap-xs-nowrap-727 MuiGrid-align-items-xs-flex-start-730"
+        style={
+          Object {
+            "flexGrow": undefined,
+            "height": undefined,
+            "width": undefined,
+          }
+        }
+      >
+        <div
+          className="MuiPaper-root-824 MuiPaper-elevation1-827 MuiCard-root-823 MuiPaper-rounded-825"
+          style={
+            Object {
+              "padding": 8,
+              "width": "fit-content",
+            }
+          }
+        >
+          One
+        </div>
+        <div
+          className="MuiPaper-root-824 MuiPaper-elevation1-827 MuiCard-root-823 MuiPaper-rounded-825"
+          style={
+            Object {
+              "padding": 8,
+              "width": "fit-content",
+            }
+          }
+        >
+          Two
+        </div>
+        <div
+          className="MuiPaper-root-824 MuiPaper-elevation1-827 MuiCard-root-823 MuiPaper-rounded-825"
+          style={
+            Object {
+              "padding": 8,
+              "width": "fit-content",
+            }
+          }
+        >
+          Three
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+`;
+
+exports[`Storyshots Layout Row of rows 1`] = `
+<div>
+  <div
+    style={
+      Object {
+        "height": "95vh",
+        "width": "95vw",
+      }
+    }
+  >
+    <div
+      className="MuiGrid-root-851 MuiGrid-container-852 MuiGrid-item-853 MuiGrid-wrap-xs-nowrap-858 MuiGrid-align-items-xs-flex-start-861"
+      style={
+        Object {
+          "flexGrow": undefined,
+          "height": undefined,
+          "width": undefined,
+        }
+      }
+    >
+      <div
+        className="MuiGrid-root-851 MuiGrid-container-852 MuiGrid-item-853 MuiGrid-wrap-xs-nowrap-858 MuiGrid-align-items-xs-flex-start-861"
+        style={
+          Object {
+            "flexGrow": undefined,
+            "height": undefined,
+            "width": undefined,
+          }
+        }
+      >
+        <div
+          className="MuiPaper-root-955 MuiPaper-elevation1-958 MuiCard-root-954 MuiPaper-rounded-956"
+          style={
+            Object {
+              "padding": 8,
+              "width": "fit-content",
+            }
+          }
+        >
+          One
+        </div>
+        <div
+          className="MuiPaper-root-955 MuiPaper-elevation1-958 MuiCard-root-954 MuiPaper-rounded-956"
+          style={
+            Object {
+              "padding": 8,
+              "width": "fit-content",
+            }
+          }
+        >
+          Two
+        </div>
+        <div
+          className="MuiPaper-root-955 MuiPaper-elevation1-958 MuiCard-root-954 MuiPaper-rounded-956"
+          style={
+            Object {
+              "padding": 8,
+              "width": "fit-content",
+            }
+          }
+        >
+          Three
+        </div>
+      </div>
+      <div
+        className="MuiGrid-root-851 MuiGrid-container-852 MuiGrid-item-853 MuiGrid-wrap-xs-nowrap-858 MuiGrid-align-items-xs-flex-start-861"
+        style={
+          Object {
+            "flexGrow": undefined,
+            "height": undefined,
+            "width": undefined,
+          }
+        }
+      >
+        <div
+          className="MuiPaper-root-955 MuiPaper-elevation1-958 MuiCard-root-954 MuiPaper-rounded-956"
+          style={
+            Object {
+              "padding": 8,
+              "width": "fit-content",
+            }
+          }
+        >
+          One
+        </div>
+        <div
+          className="MuiPaper-root-955 MuiPaper-elevation1-958 MuiCard-root-954 MuiPaper-rounded-956"
+          style={
+            Object {
+              "padding": 8,
+              "width": "fit-content",
+            }
+          }
+        >
+          Two
+        </div>
+        <div
+          className="MuiPaper-root-955 MuiPaper-elevation1-958 MuiCard-root-954 MuiPaper-rounded-956"
+          style={
+            Object {
+              "padding": 8,
+              "width": "fit-content",
+            }
+          }
+        >
+          Three
+        </div>
+      </div>
+      <div
+        className="MuiGrid-root-851 MuiGrid-container-852 MuiGrid-item-853 MuiGrid-wrap-xs-nowrap-858 MuiGrid-align-items-xs-flex-start-861"
+        style={
+          Object {
+            "flexGrow": undefined,
+            "height": undefined,
+            "width": undefined,
+          }
+        }
+      >
+        <div
+          className="MuiPaper-root-955 MuiPaper-elevation1-958 MuiCard-root-954 MuiPaper-rounded-956"
+          style={
+            Object {
+              "padding": 8,
+              "width": "fit-content",
+            }
+          }
+        >
+          One
+        </div>
+        <div
+          className="MuiPaper-root-955 MuiPaper-elevation1-958 MuiCard-root-954 MuiPaper-rounded-956"
+          style={
+            Object {
+              "padding": 8,
+              "width": "fit-content",
+            }
+          }
+        >
+          Two
+        </div>
+        <div
+          className="MuiPaper-root-955 MuiPaper-elevation1-958 MuiCard-root-954 MuiPaper-rounded-956"
+          style={
+            Object {
+              "padding": 8,
+              "width": "fit-content",
+            }
+          }
+        >
+          Three
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+`;
+
+exports[`Storyshots Menu Basic 1`] = `
+<div>
+  <div>
+    <button
+      className="MuiButtonBase-root MuiButton-root MuiButton-contained MuiButton-containedPrimary"
+      disabled={false}
+      onBlur={[Function]}
+      onClick={[Function]}
+      onDragLeave={[Function]}
+      onFocus={[Function]}
+      onKeyDown={[Function]}
+      onKeyUp={[Function]}
+      onMouseDown={[Function]}
+      onMouseLeave={[Function]}
+      onMouseUp={[Function]}
+      onTouchEnd={[Function]}
+      onTouchMove={[Function]}
+      onTouchStart={[Function]}
+      style={
+        Object {
+          "minWidth": 80,
+          "textTransform": "none",
+        }
+      }
+      tabIndex={0}
+      type="button"
+    >
+      <span
+        className="MuiButton-label"
+      >
+        Open
+      </span>
+    </button>
+  </div>
+</div>
+`;
+
+exports[`Storyshots Response Data updates 1`] = `
+<div>
+  <p
+    className="MuiTypography-root MuiTypography-body1"
+  >
+    
+  </p>
+  <div
+    className="MuiCircularProgress-root MuiCircularProgress-colorPrimary MuiCircularProgress-indeterminate"
+    role="progressbar"
+    style={
+      Object {
+        "height": 40,
+        "width": 40,
+      }
+    }
+  >
+    <svg
+      className="MuiCircularProgress-svg"
+      viewBox="22 22 44 44"
+    >
+      <circle
+        className="MuiCircularProgress-circle MuiCircularProgress-circleIndeterminate"
+        cx={44}
+        cy={44}
+        fill="none"
+        r={20.2}
+        strokeWidth={3.6}
+        style={Object {}}
+      />
+    </svg>
+  </div>
+  <span
+    aria-describedby={null}
+    className="MuiTypography-root MuiTypography-caption MuiTypography-noWrap"
+    onBlur={[Function]}
+    onFocus={[Function]}
+    onMouseLeave={[Function]}
+    onMouseOver={[Function]}
+    onTouchEnd={[Function]}
+    onTouchStart={[Function]}
+    style={
+      Object {
+        "color": "#f44336",
+        "whiteSpace": "pre-line",
+      }
+    }
+    title={null}
+  >
+    🤔error 1
+  </span>
+  <span
+    aria-describedby={null}
+    className="MuiTypography-root MuiTypography-caption MuiTypography-noWrap"
+    onBlur={[Function]}
+    onFocus={[Function]}
+    onMouseLeave={[Function]}
+    onMouseOver={[Function]}
+    onTouchEnd={[Function]}
+    onTouchStart={[Function]}
+    style={
+      Object {
+        "color": "#f44336",
+        "whiteSpace": "pre-line",
+      }
+    }
+    title={null}
+  >
+    🤔error 2
+  </span>
+  <div
+    className="MuiFormControl-root MuiTextField-root MuiFormControl-marginDense"
+    onError={[Function]}
+    onMouseOut={[Function]}
+    onMouseOver={[Function]}
+    onReset={[Function]}
+  >
+    <div
+      className="MuiInputBase-root MuiOutlinedInput-root MuiInputBase-formControl MuiInputBase-marginDense MuiOutlinedInput-marginDense"
+      onClick={[Function]}
+    >
+      <fieldset
+        aria-hidden={true}
+        className="PrivateNotchedOutline-root-1631 MuiOutlinedInput-notchedOutline makeStyles-defaultClass-1590"
+        style={
+          Object {
+            "paddingLeft": 8,
+          }
+        }
+      >
+        <legend
+          className="PrivateNotchedOutline-legend-1632"
+          style={
+            Object {
+              "width": 0.01,
+            }
+          }
+        >
+          <span
+            dangerouslySetInnerHTML={
+              Object {
+                "__html": "&#8203;",
+              }
+            }
+          />
+        </legend>
+      </fieldset>
+      <input
+        aria-invalid={false}
+        className="MuiInputBase-input MuiOutlinedInput-input MuiInputBase-inputMarginDense MuiOutlinedInput-inputMarginDense"
+        disabled={false}
+        onBlur={[Function]}
+        onChange={[Function]}
+        onFocus={[Function]}
+        required={false}
+        type="text"
+        value=""
+      />
+    </div>
+  </div>
+</div>
+`;
+
+exports[`Storyshots Text ErrorText 1`] = `
+<div>
+  <span
+    aria-describedby={null}
+    className="MuiTypography-root MuiTypography-caption MuiTypography-noWrap"
+    onBlur={[Function]}
+    onFocus={[Function]}
+    onMouseLeave={[Function]}
+    onMouseOver={[Function]}
+    onTouchEnd={[Function]}
+    onTouchStart={[Function]}
+    style={
+      Object {
+        "color": "#f44336",
+        "whiteSpace": "pre-line",
+      }
+    }
+    title={null}
+    toolTipPlacement="bottom"
+  >
+    🤔this says stuff
+  </span>
+</div>
+`;
+
+exports[`Storyshots TreeView Input as array of test data 1`] = `
+<div>
+  <ul
+    className="MuiTreeView-root"
+    role="tree"
+    style={
+      Object {
+        "width": 200,
+      }
+    }
+  >
+    <li
+      aria-expanded={false}
+      className="MuiTreeItem-root"
+      onFocus={[Function]}
+      onKeyDown={[Function]}
+      role="treeitem"
+      tabIndex={-1}
+    >
+      <div
+        className="MuiTreeItem-content"
+        onClick={[Function]}
+      >
+        <div
+          className="MuiTreeItem-iconContainer"
+        >
+          <svg
+            aria-hidden="true"
+            className="MuiSvgIcon-root"
+            focusable="false"
+            role="presentation"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"
+            />
+          </svg>
+        </div>
+        <p
+          className="MuiTypography-root MuiTreeItem-label MuiTypography-body1"
+        >
+          stuff
+        </p>
+      </div>
+      <ul
+        className="MuiCollapse-container MuiTreeItem-group MuiCollapse-hidden"
+        role="group"
+        style={
+          Object {
+            "minHeight": "0px",
+          }
+        }
+      >
+        <div
+          className="MuiCollapse-wrapper"
+        >
+          <div
+            className="MuiCollapse-wrapperInner"
+          >
+            <li
+              aria-expanded={false}
+              className="MuiTreeItem-root"
+              onFocus={[Function]}
+              onKeyDown={[Function]}
+              role="treeitem"
+              tabIndex={-1}
+            >
+              <div
+                className="MuiTreeItem-content"
+                onClick={[Function]}
+              >
+                <div
+                  className="MuiTreeItem-iconContainer"
+                >
+                  <svg
+                    aria-hidden="true"
+                    className="MuiSvgIcon-root"
+                    focusable="false"
+                    role="presentation"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"
+                    />
+                  </svg>
+                </div>
+                <p
+                  className="MuiTypography-root MuiTreeItem-label MuiTypography-body1"
+                >
+                  a
+                </p>
+              </div>
+              <ul
+                className="MuiCollapse-container MuiTreeItem-group MuiCollapse-hidden"
+                role="group"
+                style={
+                  Object {
+                    "minHeight": "0px",
+                  }
+                }
+              >
+                <div
+                  className="MuiCollapse-wrapper"
+                >
+                  <div
+                    className="MuiCollapse-wrapperInner"
+                  >
+                    <p
+                      className="MuiTypography-root MuiTypography-body1"
+                    >
+                      33
+                    </p>
+                  </div>
+                </div>
+              </ul>
+            </li>
+            <li
+              aria-expanded={false}
+              className="MuiTreeItem-root"
+              onFocus={[Function]}
+              onKeyDown={[Function]}
+              role="treeitem"
+              tabIndex={-1}
+            >
+              <div
+                className="MuiTreeItem-content"
+                onClick={[Function]}
+              >
+                <div
+                  className="MuiTreeItem-iconContainer"
+                >
+                  <svg
+                    aria-hidden="true"
+                    className="MuiSvgIcon-root"
+                    focusable="false"
+                    role="presentation"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"
+                    />
+                  </svg>
+                </div>
+                <p
+                  className="MuiTypography-root MuiTreeItem-label MuiTypography-body1"
+                >
+                  b
+                </p>
+              </div>
+              <ul
+                className="MuiCollapse-container MuiTreeItem-group MuiCollapse-hidden"
+                role="group"
+                style={
+                  Object {
+                    "minHeight": "0px",
+                  }
+                }
+              >
+                <div
+                  className="MuiCollapse-wrapper"
+                >
+                  <div
+                    className="MuiCollapse-wrapperInner"
+                  >
+                    <li
+                      aria-expanded={false}
+                      className="MuiTreeItem-root"
+                      onFocus={[Function]}
+                      onKeyDown={[Function]}
+                      role="treeitem"
+                      tabIndex={-1}
+                    >
+                      <div
+                        className="MuiTreeItem-content"
+                        onClick={[Function]}
+                      >
+                        <div
+                          className="MuiTreeItem-iconContainer"
+                        >
+                          <svg
+                            aria-hidden="true"
+                            className="MuiSvgIcon-root"
+                            focusable="false"
+                            role="presentation"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"
+                            />
+                          </svg>
+                        </div>
+                        <p
+                          className="MuiTypography-root MuiTreeItem-label MuiTypography-body1"
+                        >
+                          c
+                        </p>
+                      </div>
+                      <ul
+                        className="MuiCollapse-container MuiTreeItem-group MuiCollapse-hidden"
+                        role="group"
+                        style={
+                          Object {
+                            "minHeight": "0px",
+                          }
+                        }
+                      >
+                        <div
+                          className="MuiCollapse-wrapper"
+                        >
+                          <div
+                            className="MuiCollapse-wrapperInner"
+                          >
+                            <p
+                              className="MuiTypography-root MuiTypography-body1"
+                            >
+                              true
+                            </p>
+                          </div>
+                        </div>
+                      </ul>
+                    </li>
+                    <li
+                      aria-expanded={false}
+                      className="MuiTreeItem-root"
+                      onFocus={[Function]}
+                      onKeyDown={[Function]}
+                      role="treeitem"
+                      tabIndex={-1}
+                    >
+                      <div
+                        className="MuiTreeItem-content"
+                        onClick={[Function]}
+                      >
+                        <div
+                          className="MuiTreeItem-iconContainer"
+                        >
+                          <svg
+                            aria-hidden="true"
+                            className="MuiSvgIcon-root"
+                            focusable="false"
+                            role="presentation"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"
+                            />
+                          </svg>
+                        </div>
+                        <p
+                          className="MuiTypography-root MuiTreeItem-label MuiTypography-body1"
+                        >
+                          d
+                        </p>
+                      </div>
+                      <ul
+                        className="MuiCollapse-container MuiTreeItem-group MuiCollapse-hidden"
+                        role="group"
+                        style={
+                          Object {
+                            "minHeight": "0px",
+                          }
+                        }
+                      >
+                        <div
+                          className="MuiCollapse-wrapper"
+                        >
+                          <div
+                            className="MuiCollapse-wrapperInner"
+                          >
+                            <li
+                              aria-expanded={false}
+                              className="MuiTreeItem-root"
+                              onFocus={[Function]}
+                              onKeyDown={[Function]}
+                              role="treeitem"
+                              tabIndex={-1}
+                            >
+                              <div
+                                className="MuiTreeItem-content"
+                                onClick={[Function]}
+                              >
+                                <div
+                                  className="MuiTreeItem-iconContainer"
+                                >
+                                  <svg
+                                    aria-hidden="true"
+                                    className="MuiSvgIcon-root"
+                                    focusable="false"
+                                    role="presentation"
+                                    viewBox="0 0 24 24"
+                                  >
+                                    <path
+                                      d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"
+                                    />
+                                  </svg>
+                                </div>
+                                <p
+                                  className="MuiTypography-root MuiTreeItem-label MuiTypography-body1"
+                                >
+                                  e
+                                </p>
+                              </div>
+                              <ul
+                                className="MuiCollapse-container MuiTreeItem-group MuiCollapse-hidden"
+                                role="group"
+                                style={
+                                  Object {
+                                    "minHeight": "0px",
+                                  }
+                                }
+                              >
+                                <div
+                                  className="MuiCollapse-wrapper"
+                                >
+                                  <div
+                                    className="MuiCollapse-wrapperInner"
+                                  >
+                                    <p
+                                      className="MuiTypography-root MuiTypography-body1"
+                                    >
+                                      () =&gt; {
+        console.log(3);
+      }
+                                    </p>
+                                  </div>
+                                </div>
+                              </ul>
+                            </li>
+                            <li
+                              aria-expanded={false}
+                              className="MuiTreeItem-root"
+                              onFocus={[Function]}
+                              onKeyDown={[Function]}
+                              role="treeitem"
+                              tabIndex={-1}
+                            >
+                              <div
+                                className="MuiTreeItem-content"
+                                onClick={[Function]}
+                              >
+                                <div
+                                  className="MuiTreeItem-iconContainer"
+                                >
+                                  <svg
+                                    aria-hidden="true"
+                                    className="MuiSvgIcon-root"
+                                    focusable="false"
+                                    role="presentation"
+                                    viewBox="0 0 24 24"
+                                  >
+                                    <path
+                                      d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"
+                                    />
+                                  </svg>
+                                </div>
+                                <p
+                                  className="MuiTypography-root MuiTreeItem-label MuiTypography-body1"
+                                >
+                                  f
+                                </p>
+                              </div>
+                              <ul
+                                className="MuiCollapse-container MuiTreeItem-group MuiCollapse-hidden"
+                                role="group"
+                                style={
+                                  Object {
+                                    "minHeight": "0px",
+                                  }
+                                }
+                              >
+                                <div
+                                  className="MuiCollapse-wrapper"
+                                >
+                                  <div
+                                    className="MuiCollapse-wrapperInner"
+                                  >
+                                    <li
+                                      aria-expanded={false}
+                                      className="MuiTreeItem-root"
+                                      onFocus={[Function]}
+                                      onKeyDown={[Function]}
+                                      role="treeitem"
+                                      tabIndex={-1}
+                                    >
+                                      <div
+                                        className="MuiTreeItem-content"
+                                        onClick={[Function]}
+                                      >
+                                        <div
+                                          className="MuiTreeItem-iconContainer"
+                                        >
+                                          <svg
+                                            aria-hidden="true"
+                                            className="MuiSvgIcon-root"
+                                            focusable="false"
+                                            role="presentation"
+                                            viewBox="0 0 24 24"
+                                          >
+                                            <path
+                                              d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"
+                                            />
+                                          </svg>
+                                        </div>
+                                        <p
+                                          className="MuiTypography-root MuiTreeItem-label MuiTypography-body1"
+                                        >
+                                          g
+                                        </p>
+                                      </div>
+                                      <ul
+                                        className="MuiCollapse-container MuiTreeItem-group MuiCollapse-hidden"
+                                        role="group"
+                                        style={
+                                          Object {
+                                            "minHeight": "0px",
+                                          }
+                                        }
+                                      >
+                                        <div
+                                          className="MuiCollapse-wrapper"
+                                        >
+                                          <div
+                                            className="MuiCollapse-wrapperInner"
+                                          >
+                                            <li
+                                              aria-expanded={false}
+                                              className="MuiTreeItem-root"
+                                              onFocus={[Function]}
+                                              onKeyDown={[Function]}
+                                              role="treeitem"
+                                              tabIndex={-1}
+                                            >
+                                              <div
+                                                className="MuiTreeItem-content"
+                                                onClick={[Function]}
+                                              >
+                                                <div
+                                                  className="MuiTreeItem-iconContainer"
+                                                >
+                                                  <svg
+                                                    aria-hidden="true"
+                                                    className="MuiSvgIcon-root"
+                                                    focusable="false"
+                                                    role="presentation"
+                                                    viewBox="0 0 24 24"
+                                                  >
+                                                    <path
+                                                      d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"
+                                                    />
+                                                  </svg>
+                                                </div>
+                                                <p
+                                                  className="MuiTypography-root MuiTreeItem-label MuiTypography-body1"
+                                                >
+                                                  h
+                                                </p>
+                                              </div>
+                                              <ul
+                                                className="MuiCollapse-container MuiTreeItem-group MuiCollapse-hidden"
+                                                role="group"
+                                                style={
+                                                  Object {
+                                                    "minHeight": "0px",
+                                                  }
+                                                }
+                                              >
+                                                <div
+                                                  className="MuiCollapse-wrapper"
+                                                >
+                                                  <div
+                                                    className="MuiCollapse-wrapperInner"
+                                                  >
+                                                    <li
+                                                      aria-expanded={false}
+                                                      className="MuiTreeItem-root"
+                                                      onFocus={[Function]}
+                                                      onKeyDown={[Function]}
+                                                      role="treeitem"
+                                                      tabIndex={-1}
+                                                    >
+                                                      <div
+                                                        className="MuiTreeItem-content"
+                                                        onClick={[Function]}
+                                                      >
+                                                        <div
+                                                          className="MuiTreeItem-iconContainer"
+                                                        >
+                                                          <svg
+                                                            aria-hidden="true"
+                                                            className="MuiSvgIcon-root"
+                                                            focusable="false"
+                                                            role="presentation"
+                                                            viewBox="0 0 24 24"
+                                                          >
+                                                            <path
+                                                              d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"
+                                                            />
+                                                          </svg>
+                                                        </div>
+                                                        <p
+                                                          className="MuiTypography-root MuiTreeItem-label MuiTypography-body1"
+                                                        >
+                                                          i
+                                                        </p>
+                                                      </div>
+                                                      <ul
+                                                        className="MuiCollapse-container MuiTreeItem-group MuiCollapse-hidden"
+                                                        role="group"
+                                                        style={
+                                                          Object {
+                                                            "minHeight": "0px",
+                                                          }
+                                                        }
+                                                      >
+                                                        <div
+                                                          className="MuiCollapse-wrapper"
+                                                        >
+                                                          <div
+                                                            className="MuiCollapse-wrapperInner"
+                                                          >
+                                                            <li
+                                                              aria-expanded={false}
+                                                              className="MuiTreeItem-root"
+                                                              onFocus={[Function]}
+                                                              onKeyDown={[Function]}
+                                                              role="treeitem"
+                                                              tabIndex={-1}
+                                                            >
+                                                              <div
+                                                                className="MuiTreeItem-content"
+                                                                onClick={[Function]}
+                                                              >
+                                                                <div
+                                                                  className="MuiTreeItem-iconContainer"
+                                                                >
+                                                                  <svg
+                                                                    aria-hidden="true"
+                                                                    className="MuiSvgIcon-root"
+                                                                    focusable="false"
+                                                                    role="presentation"
+                                                                    viewBox="0 0 24 24"
+                                                                  >
+                                                                    <path
+                                                                      d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"
+                                                                    />
+                                                                  </svg>
+                                                                </div>
+                                                                <p
+                                                                  className="MuiTypography-root MuiTreeItem-label MuiTypography-body1"
+                                                                >
+                                                                  j
+                                                                </p>
+                                                              </div>
+                                                              <ul
+                                                                className="MuiCollapse-container MuiTreeItem-group MuiCollapse-hidden"
+                                                                role="group"
+                                                                style={
+                                                                  Object {
+                                                                    "minHeight": "0px",
+                                                                  }
+                                                                }
+                                                              >
+                                                                <div
+                                                                  className="MuiCollapse-wrapper"
+                                                                >
+                                                                  <div
+                                                                    className="MuiCollapse-wrapperInner"
+                                                                  >
+                                                                    <li
+                                                                      aria-expanded={false}
+                                                                      className="MuiTreeItem-root"
+                                                                      onFocus={[Function]}
+                                                                      onKeyDown={[Function]}
+                                                                      role="treeitem"
+                                                                      tabIndex={-1}
+                                                                    >
+                                                                      <div
+                                                                        className="MuiTreeItem-content"
+                                                                        onClick={[Function]}
+                                                                      >
+                                                                        <div
+                                                                          className="MuiTreeItem-iconContainer"
+                                                                        >
+                                                                          <svg
+                                                                            aria-hidden="true"
+                                                                            className="MuiSvgIcon-root"
+                                                                            focusable="false"
+                                                                            role="presentation"
+                                                                            viewBox="0 0 24 24"
+                                                                          >
+                                                                            <path
+                                                                              d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"
+                                                                            />
+                                                                          </svg>
+                                                                        </div>
+                                                                        <p
+                                                                          className="MuiTypography-root MuiTreeItem-label MuiTypography-body1"
+                                                                        >
+                                                                          k
+                                                                        </p>
+                                                                      </div>
+                                                                      <ul
+                                                                        className="MuiCollapse-container MuiTreeItem-group MuiCollapse-hidden"
+                                                                        role="group"
+                                                                        style={
+                                                                          Object {
+                                                                            "minHeight": "0px",
+                                                                          }
+                                                                        }
+                                                                      >
+                                                                        <div
+                                                                          className="MuiCollapse-wrapper"
+                                                                        >
+                                                                          <div
+                                                                            className="MuiCollapse-wrapperInner"
+                                                                          >
+                                                                            <p
+                                                                              className="MuiTypography-root MuiTypography-body1"
+                                                                            >
+                                                                              h
+                                                                            </p>
+                                                                          </div>
+                                                                        </div>
+                                                                      </ul>
+                                                                    </li>
+                                                                  </div>
+                                                                </div>
+                                                              </ul>
+                                                            </li>
+                                                          </div>
+                                                        </div>
+                                                      </ul>
+                                                    </li>
+                                                  </div>
+                                                </div>
+                                              </ul>
+                                            </li>
+                                          </div>
+                                        </div>
+                                      </ul>
+                                    </li>
+                                  </div>
+                                </div>
+                              </ul>
+                            </li>
+                          </div>
+                        </div>
+                      </ul>
+                    </li>
+                  </div>
+                </div>
+              </ul>
+            </li>
+          </div>
+        </div>
+      </ul>
+    </li>
+  </ul>
+</div>
+`;
+
+exports[`Storyshots TreeView Input as single object of test data 1`] = `
+<div>
+  <ul
+    className="MuiTreeView-root"
+    role="tree"
+    style={
+      Object {
+        "width": 200,
+      }
+    }
+  >
+    <li
+      aria-expanded={false}
+      className="MuiTreeItem-root"
+      onFocus={[Function]}
+      onKeyDown={[Function]}
+      role="treeitem"
+      tabIndex={-1}
+    >
+      <div
+        className="MuiTreeItem-content"
+        onClick={[Function]}
+      >
+        <div
+          className="MuiTreeItem-iconContainer"
+        >
+          <svg
+            aria-hidden="true"
+            className="MuiSvgIcon-root"
+            focusable="false"
+            role="presentation"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"
+            />
+          </svg>
+        </div>
+        <p
+          className="MuiTypography-root MuiTreeItem-label MuiTypography-body1"
+        >
+          z
+        </p>
+      </div>
+      <ul
+        className="MuiCollapse-container MuiTreeItem-group MuiCollapse-hidden"
+        role="group"
+        style={
+          Object {
+            "minHeight": "0px",
+          }
+        }
+      >
+        <div
+          className="MuiCollapse-wrapper"
+        >
+          <div
+            className="MuiCollapse-wrapperInner"
+          >
+            <p
+              className="MuiTypography-root MuiTypography-body1"
+            >
+              stuff
+            </p>
+          </div>
+        </div>
+      </ul>
+    </li>
+    <li
+      aria-expanded={false}
+      className="MuiTreeItem-root"
+      onFocus={[Function]}
+      onKeyDown={[Function]}
+      role="treeitem"
+      tabIndex={-1}
+    >
+      <div
+        className="MuiTreeItem-content"
+        onClick={[Function]}
+      >
+        <div
+          className="MuiTreeItem-iconContainer"
+        >
+          <svg
+            aria-hidden="true"
+            className="MuiSvgIcon-root"
+            focusable="false"
+            role="presentation"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"
+            />
+          </svg>
+        </div>
+        <p
+          className="MuiTypography-root MuiTreeItem-label MuiTypography-body1"
+        >
+          a
+        </p>
+      </div>
+      <ul
+        className="MuiCollapse-container MuiTreeItem-group MuiCollapse-hidden"
+        role="group"
+        style={
+          Object {
+            "minHeight": "0px",
+          }
+        }
+      >
+        <div
+          className="MuiCollapse-wrapper"
+        >
+          <div
+            className="MuiCollapse-wrapperInner"
+          >
+            <p
+              className="MuiTypography-root MuiTypography-body1"
+            >
+              33
+            </p>
+          </div>
+        </div>
+      </ul>
+    </li>
+    <li
+      aria-expanded={false}
+      className="MuiTreeItem-root"
+      onFocus={[Function]}
+      onKeyDown={[Function]}
+      role="treeitem"
+      tabIndex={-1}
+    >
+      <div
+        className="MuiTreeItem-content"
+        onClick={[Function]}
+      >
+        <div
+          className="MuiTreeItem-iconContainer"
+        >
+          <svg
+            aria-hidden="true"
+            className="MuiSvgIcon-root"
+            focusable="false"
+            role="presentation"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"
+            />
+          </svg>
+        </div>
+        <p
+          className="MuiTypography-root MuiTreeItem-label MuiTypography-body1"
+        >
+          b
+        </p>
+      </div>
+      <ul
+        className="MuiCollapse-container MuiTreeItem-group MuiCollapse-hidden"
+        role="group"
+        style={
+          Object {
+            "minHeight": "0px",
+          }
+        }
+      >
+        <div
+          className="MuiCollapse-wrapper"
+        >
+          <div
+            className="MuiCollapse-wrapperInner"
+          >
+            <li
+              aria-expanded={false}
+              className="MuiTreeItem-root"
+              onFocus={[Function]}
+              onKeyDown={[Function]}
+              role="treeitem"
+              tabIndex={-1}
+            >
+              <div
+                className="MuiTreeItem-content"
+                onClick={[Function]}
+              >
+                <div
+                  className="MuiTreeItem-iconContainer"
+                >
+                  <svg
+                    aria-hidden="true"
+                    className="MuiSvgIcon-root"
+                    focusable="false"
+                    role="presentation"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"
+                    />
+                  </svg>
+                </div>
+                <p
+                  className="MuiTypography-root MuiTreeItem-label MuiTypography-body1"
+                >
+                  c
+                </p>
+              </div>
+              <ul
+                className="MuiCollapse-container MuiTreeItem-group MuiCollapse-hidden"
+                role="group"
+                style={
+                  Object {
+                    "minHeight": "0px",
+                  }
+                }
+              >
+                <div
+                  className="MuiCollapse-wrapper"
+                >
+                  <div
+                    className="MuiCollapse-wrapperInner"
+                  >
+                    <p
+                      className="MuiTypography-root MuiTypography-body1"
+                    >
+                      true
+                    </p>
+                  </div>
+                </div>
+              </ul>
+            </li>
+            <li
+              aria-expanded={false}
+              className="MuiTreeItem-root"
+              onFocus={[Function]}
+              onKeyDown={[Function]}
+              role="treeitem"
+              tabIndex={-1}
+            >
+              <div
+                className="MuiTreeItem-content"
+                onClick={[Function]}
+              >
+                <div
+                  className="MuiTreeItem-iconContainer"
+                >
+                  <svg
+                    aria-hidden="true"
+                    className="MuiSvgIcon-root"
+                    focusable="false"
+                    role="presentation"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"
+                    />
+                  </svg>
+                </div>
+                <p
+                  className="MuiTypography-root MuiTreeItem-label MuiTypography-body1"
+                >
+                  d
+                </p>
+              </div>
+              <ul
+                className="MuiCollapse-container MuiTreeItem-group MuiCollapse-hidden"
+                role="group"
+                style={
+                  Object {
+                    "minHeight": "0px",
+                  }
+                }
+              >
+                <div
+                  className="MuiCollapse-wrapper"
+                >
+                  <div
+                    className="MuiCollapse-wrapperInner"
+                  >
+                    <li
+                      aria-expanded={false}
+                      className="MuiTreeItem-root"
+                      onFocus={[Function]}
+                      onKeyDown={[Function]}
+                      role="treeitem"
+                      tabIndex={-1}
+                    >
+                      <div
+                        className="MuiTreeItem-content"
+                        onClick={[Function]}
+                      >
+                        <div
+                          className="MuiTreeItem-iconContainer"
+                        >
+                          <svg
+                            aria-hidden="true"
+                            className="MuiSvgIcon-root"
+                            focusable="false"
+                            role="presentation"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"
+                            />
+                          </svg>
+                        </div>
+                        <p
+                          className="MuiTypography-root MuiTreeItem-label MuiTypography-body1"
+                        >
+                          e
+                        </p>
+                      </div>
+                      <ul
+                        className="MuiCollapse-container MuiTreeItem-group MuiCollapse-hidden"
+                        role="group"
+                        style={
+                          Object {
+                            "minHeight": "0px",
+                          }
+                        }
+                      >
+                        <div
+                          className="MuiCollapse-wrapper"
+                        >
+                          <div
+                            className="MuiCollapse-wrapperInner"
+                          >
+                            <p
+                              className="MuiTypography-root MuiTypography-body1"
+                            >
+                              () =&gt; {
+        console.log(3);
+      }
+                            </p>
+                          </div>
+                        </div>
+                      </ul>
+                    </li>
+                    <li
+                      aria-expanded={false}
+                      className="MuiTreeItem-root"
+                      onFocus={[Function]}
+                      onKeyDown={[Function]}
+                      role="treeitem"
+                      tabIndex={-1}
+                    >
+                      <div
+                        className="MuiTreeItem-content"
+                        onClick={[Function]}
+                      >
+                        <div
+                          className="MuiTreeItem-iconContainer"
+                        >
+                          <svg
+                            aria-hidden="true"
+                            className="MuiSvgIcon-root"
+                            focusable="false"
+                            role="presentation"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"
+                            />
+                          </svg>
+                        </div>
+                        <p
+                          className="MuiTypography-root MuiTreeItem-label MuiTypography-body1"
+                        >
+                          f
+                        </p>
+                      </div>
+                      <ul
+                        className="MuiCollapse-container MuiTreeItem-group MuiCollapse-hidden"
+                        role="group"
+                        style={
+                          Object {
+                            "minHeight": "0px",
+                          }
+                        }
+                      >
+                        <div
+                          className="MuiCollapse-wrapper"
+                        >
+                          <div
+                            className="MuiCollapse-wrapperInner"
+                          >
+                            <li
+                              aria-expanded={false}
+                              className="MuiTreeItem-root"
+                              onFocus={[Function]}
+                              onKeyDown={[Function]}
+                              role="treeitem"
+                              tabIndex={-1}
+                            >
+                              <div
+                                className="MuiTreeItem-content"
+                                onClick={[Function]}
+                              >
+                                <div
+                                  className="MuiTreeItem-iconContainer"
+                                >
+                                  <svg
+                                    aria-hidden="true"
+                                    className="MuiSvgIcon-root"
+                                    focusable="false"
+                                    role="presentation"
+                                    viewBox="0 0 24 24"
+                                  >
+                                    <path
+                                      d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"
+                                    />
+                                  </svg>
+                                </div>
+                                <p
+                                  className="MuiTypography-root MuiTreeItem-label MuiTypography-body1"
+                                >
+                                  g
+                                </p>
+                              </div>
+                              <ul
+                                className="MuiCollapse-container MuiTreeItem-group MuiCollapse-hidden"
+                                role="group"
+                                style={
+                                  Object {
+                                    "minHeight": "0px",
+                                  }
+                                }
+                              >
+                                <div
+                                  className="MuiCollapse-wrapper"
+                                >
+                                  <div
+                                    className="MuiCollapse-wrapperInner"
+                                  >
+                                    <li
+                                      aria-expanded={false}
+                                      className="MuiTreeItem-root"
+                                      onFocus={[Function]}
+                                      onKeyDown={[Function]}
+                                      role="treeitem"
+                                      tabIndex={-1}
+                                    >
+                                      <div
+                                        className="MuiTreeItem-content"
+                                        onClick={[Function]}
+                                      >
+                                        <div
+                                          className="MuiTreeItem-iconContainer"
+                                        >
+                                          <svg
+                                            aria-hidden="true"
+                                            className="MuiSvgIcon-root"
+                                            focusable="false"
+                                            role="presentation"
+                                            viewBox="0 0 24 24"
+                                          >
+                                            <path
+                                              d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"
+                                            />
+                                          </svg>
+                                        </div>
+                                        <p
+                                          className="MuiTypography-root MuiTreeItem-label MuiTypography-body1"
+                                        >
+                                          h
+                                        </p>
+                                      </div>
+                                      <ul
+                                        className="MuiCollapse-container MuiTreeItem-group MuiCollapse-hidden"
+                                        role="group"
+                                        style={
+                                          Object {
+                                            "minHeight": "0px",
+                                          }
+                                        }
+                                      >
+                                        <div
+                                          className="MuiCollapse-wrapper"
+                                        >
+                                          <div
+                                            className="MuiCollapse-wrapperInner"
+                                          >
+                                            <li
+                                              aria-expanded={false}
+                                              className="MuiTreeItem-root"
+                                              onFocus={[Function]}
+                                              onKeyDown={[Function]}
+                                              role="treeitem"
+                                              tabIndex={-1}
+                                            >
+                                              <div
+                                                className="MuiTreeItem-content"
+                                                onClick={[Function]}
+                                              >
+                                                <div
+                                                  className="MuiTreeItem-iconContainer"
+                                                >
+                                                  <svg
+                                                    aria-hidden="true"
+                                                    className="MuiSvgIcon-root"
+                                                    focusable="false"
+                                                    role="presentation"
+                                                    viewBox="0 0 24 24"
+                                                  >
+                                                    <path
+                                                      d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"
+                                                    />
+                                                  </svg>
+                                                </div>
+                                                <p
+                                                  className="MuiTypography-root MuiTreeItem-label MuiTypography-body1"
+                                                >
+                                                  i
+                                                </p>
+                                              </div>
+                                              <ul
+                                                className="MuiCollapse-container MuiTreeItem-group MuiCollapse-hidden"
+                                                role="group"
+                                                style={
+                                                  Object {
+                                                    "minHeight": "0px",
+                                                  }
+                                                }
+                                              >
+                                                <div
+                                                  className="MuiCollapse-wrapper"
+                                                >
+                                                  <div
+                                                    className="MuiCollapse-wrapperInner"
+                                                  >
+                                                    <li
+                                                      aria-expanded={false}
+                                                      className="MuiTreeItem-root"
+                                                      onFocus={[Function]}
+                                                      onKeyDown={[Function]}
+                                                      role="treeitem"
+                                                      tabIndex={-1}
+                                                    >
+                                                      <div
+                                                        className="MuiTreeItem-content"
+                                                        onClick={[Function]}
+                                                      >
+                                                        <div
+                                                          className="MuiTreeItem-iconContainer"
+                                                        >
+                                                          <svg
+                                                            aria-hidden="true"
+                                                            className="MuiSvgIcon-root"
+                                                            focusable="false"
+                                                            role="presentation"
+                                                            viewBox="0 0 24 24"
+                                                          >
+                                                            <path
+                                                              d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"
+                                                            />
+                                                          </svg>
+                                                        </div>
+                                                        <p
+                                                          className="MuiTypography-root MuiTreeItem-label MuiTypography-body1"
+                                                        >
+                                                          j
+                                                        </p>
+                                                      </div>
+                                                      <ul
+                                                        className="MuiCollapse-container MuiTreeItem-group MuiCollapse-hidden"
+                                                        role="group"
+                                                        style={
+                                                          Object {
+                                                            "minHeight": "0px",
+                                                          }
+                                                        }
+                                                      >
+                                                        <div
+                                                          className="MuiCollapse-wrapper"
+                                                        >
+                                                          <div
+                                                            className="MuiCollapse-wrapperInner"
+                                                          >
+                                                            <li
+                                                              aria-expanded={false}
+                                                              className="MuiTreeItem-root"
+                                                              onFocus={[Function]}
+                                                              onKeyDown={[Function]}
+                                                              role="treeitem"
+                                                              tabIndex={-1}
+                                                            >
+                                                              <div
+                                                                className="MuiTreeItem-content"
+                                                                onClick={[Function]}
+                                                              >
+                                                                <div
+                                                                  className="MuiTreeItem-iconContainer"
+                                                                >
+                                                                  <svg
+                                                                    aria-hidden="true"
+                                                                    className="MuiSvgIcon-root"
+                                                                    focusable="false"
+                                                                    role="presentation"
+                                                                    viewBox="0 0 24 24"
+                                                                  >
+                                                                    <path
+                                                                      d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"
+                                                                    />
+                                                                  </svg>
+                                                                </div>
+                                                                <p
+                                                                  className="MuiTypography-root MuiTreeItem-label MuiTypography-body1"
+                                                                >
+                                                                  k
+                                                                </p>
+                                                              </div>
+                                                              <ul
+                                                                className="MuiCollapse-container MuiTreeItem-group MuiCollapse-hidden"
+                                                                role="group"
+                                                                style={
+                                                                  Object {
+                                                                    "minHeight": "0px",
+                                                                  }
+                                                                }
+                                                              >
+                                                                <div
+                                                                  className="MuiCollapse-wrapper"
+                                                                >
+                                                                  <div
+                                                                    className="MuiCollapse-wrapperInner"
+                                                                  >
+                                                                    <p
+                                                                      className="MuiTypography-root MuiTypography-body1"
+                                                                    >
+                                                                      h
+                                                                    </p>
+                                                                  </div>
+                                                                </div>
+                                                              </ul>
+                                                            </li>
+                                                          </div>
+                                                        </div>
+                                                      </ul>
+                                                    </li>
+                                                  </div>
+                                                </div>
+                                              </ul>
+                                            </li>
+                                          </div>
+                                        </div>
+                                      </ul>
+                                    </li>
+                                  </div>
+                                </div>
+                              </ul>
+                            </li>
+                          </div>
+                        </div>
+                      </ul>
+                    </li>
+                  </div>
+                </div>
+              </ul>
+            </li>
+          </div>
+        </div>
+      </ul>
+    </li>
+  </ul>
+</div>
+`;
