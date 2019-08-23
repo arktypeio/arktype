@@ -5,7 +5,7 @@ import { suggestionData } from "custom/FakeSuggestions"
 
 export const Home: FC = () => {
     return (
-        <Column justify="flex-start">
+        <Column justify="center" full={true}>
             <HomeActionsRow />
             <SuggestionResultsGrid suggestions={suggestionData} />
         </Column>

@@ -34,12 +34,19 @@ export const SuggestionResultsGrid = component({
             </GridListTile>
         ))
     return (
-        <Card>
+        <Card
+            style={{
+                width: "100%",
+                height: "100%"
+            }}
+        >
             <GridList
                 style={{
-                    minHeight: theme.spacing(90),
-                    minWidth: theme.spacing(90),
-                    padding: theme.spacing(2)
+                    minHeight: "100%",
+                    //theme.spacing(90),
+                    minWidth: "100%"
+                    // theme.spacing(90),
+                    //  padding: theme.spacing(2)
                 }}
                 cols={4}
             >

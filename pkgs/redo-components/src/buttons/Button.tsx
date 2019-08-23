@@ -21,11 +21,7 @@ export type ButtonProps = MuiButtonProps & {
     kind?: KindFrom<typeof useKind>
 }
 
-export const Button: FC<ButtonProps> = ({
-    kind = "primary",
-    style,
-    ...rest
-}) => {
+export function Button({ kind = "primary", style, ...rest }: ButtonProps) {
     const { style: kindStyle, ...kindRest } = useKind(kind)
     return (
         <MuiButton
@@ -41,3 +37,20 @@ export const Button: FC<ButtonProps> = ({
         />
     )
 }
+
+// const Button: FC<ButtonProps> = ({ kind = "primary", style, ...rest }) => {
+//     const { style: kindStyle, ...kindRest } = useKind(kind)
+//     return (
+//         <MuiButton
+//             fullWidth={false}
+//             style={{
+//                 minWidth: 80,
+//                 textTransform: "none",
+//                 ...(kindStyle ? kindStyle : {}),
+//                 ...(style ? style : {})
+//             }}
+//             {...kindRest}
+//             {...rest}
+//         />
+//     )
+// }

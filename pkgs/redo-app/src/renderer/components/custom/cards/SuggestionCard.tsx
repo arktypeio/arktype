@@ -18,22 +18,24 @@ export const SuggestionCard: FC<SuggestionCardProps> = ({
     return (
         <Card
             style={{
-                height: theme.spacing(20),
-                width: theme.spacing(20)
+                height: "auto",
+                width: "auto"
+                //   height: theme.spacing(20),
+                //  width: theme.spacing(20)
             }}
         >
-            <Column>
-                <Row justify="center">
-                    <MuiTypography variant="h6" noWrap>
+            <Column full={true} justify="space-around">
+                <Row justify="center" align="center">
+                    <MuiTypography variant="h6" noWrap align="center">
                         {name}
                     </MuiTypography>
                 </Row>
-                <Row justify="center">
-                    <MuiTypography variant="body2">
+                <Row justify="center" align="center">
+                    <MuiTypography variant="body2" align="center">
                         {description ? description : "This is a description"}
                     </MuiTypography>
                 </Row>
-                <Row justify="space-around">
+                <Row justify="center" align="center">
                     {type === "test" ? <PlayButton /> : null}
                     <ViewButton />
                 </Row>
