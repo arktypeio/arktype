@@ -14,16 +14,15 @@ type TextOnlyFormFields = {
     last: string
 }
 
-<<<<<<< Updated upstream
 const TextOnlyForm: FC = () => (
     <Form<TextOnlyFormFields, string>
         submit={async ({ first, last }) => ({
             data: `Hello, ${first} ${last}.`
         })}
-        validate={_ => {
+        validate={({ first, last }) => {
             return {
-                first: [],
-                last: []
+                first: first ? [] : ["We need this!"],
+                last: last ? [] : ["We need this!"]
             }
         }}
     >
@@ -34,19 +33,6 @@ const TextOnlyForm: FC = () => (
                 responseOptions={{
                     data: {
                         displayAs: data => <Text>{data.value}</Text>
-=======
-const TextOnlyForm: FC = () => {
-    return (
-        <ThemeProvider theme={defaultTheme}>
-            <Form<TextOnlyFormFields, string>
-                submit={async ({ first, last }) => ({
-                    data: `Hello, ${first} ${last}.`
-                })}
-                validate={({ first, last }) => {
-                    return {
-                        first: first ? [] : ["We need this!"],
-                        last: last ? [] : ["We need this!"]
->>>>>>> Stashed changes
                     }
                 }}
             >
