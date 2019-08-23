@@ -1,10 +1,8 @@
 import React from "react"
-import { mount, configure, ReactWrapper } from "enzyme"
-import Adapter from "enzyme-adapter-react-16"
-import { Menu, MenuItem } from ".."
+import { mount, ReactWrapper } from "enzyme"
+import { Menu as MuiMenu } from "@material-ui/core"
 import { Button } from "../../buttons"
-
-configure({ adapter: new Adapter() })
+import { Menu, MenuItem } from ".."
 
 const options = {
     option1: jest.fn(),
@@ -73,7 +71,8 @@ describe("menu", () => {
     })
     test("closes after option click", () => {
         clickButton()
+        expect(element.find(MuiMenu).props().open).toBe(true)
         clickMenuItem(0)
-        expect(getVisibleOptionCount()).toBe(0)
+        expect(element.find(MuiMenu).props().open).toBe(false)
     })
 })

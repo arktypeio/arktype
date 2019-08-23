@@ -7,19 +7,16 @@ import { defaultTheme } from "../styles"
 
 storiesOf("Button", module)
     .addDecorator(withKnobs)
-
-    .add("button with knobs", () => {
+    .add("Standard", () => {
         return (
-            <ThemeProvider theme={defaultTheme}>
-                <Button
-                    kind={select(
-                        "kind",
-                        { primary: "primary", secondary: "secondary" },
-                        "primary"
-                    )}
-                >
-                    This says stuff!
-                </Button>
-            </ThemeProvider>
+            <Button
+                kind={select(
+                    "kind",
+                    { primary: "primary", secondary: "secondary" },
+                    "primary"
+                )}
+            >
+                This says stuff!
+            </Button>
         )
     })

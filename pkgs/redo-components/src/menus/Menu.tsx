@@ -29,7 +29,13 @@ export const Menu: FC<MenuProps> = ({
                 {...rest}
             >
                 {Object.entries(options).map(([name, onClick]) => (
-                    <MenuItem onClick={onClick} key={name}>
+                    <MenuItem
+                        onClick={() => {
+                            onClick()
+                            setAnchor(null)
+                        }}
+                        key={name}
+                    >
                         {name}
                     </MenuItem>
                 ))}

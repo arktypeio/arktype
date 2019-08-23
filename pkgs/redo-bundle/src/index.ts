@@ -10,7 +10,7 @@ import {
     HotModuleReplacementPlugin,
     NoEmitOnErrorsPlugin
 } from "webpack"
-import { listify, fromEntries } from "redo-utils"
+import { listify } from "redo-utils"
 import ForkTsCheckerWebpackPlugin from "fork-ts-checker-webpack-plugin"
 
 const getMode = () =>
