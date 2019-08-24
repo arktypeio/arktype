@@ -1,16 +1,24 @@
-import { Authorized, Ctx, Mutation, Query, Resolver, Args } from "type-graphql"
-import { BrowserEvent, BrowserEventInput } from "redo-model"
+import {
+    Authorized,
+    Ctx,
+    Mutation,
+    Query,
+    Resolver,
+    Args,
+    Arg
+} from "type-graphql"
+import { BrowserEvent, BrowserEventInput, BrowserEventUpdate } from "redo-model"
 import { Context } from "../context"
-import { createTagsInput } from "./common"
+
 @Resolver(of => BrowserEvent)
 export class BrowserEventResolver {
     @Authorized()
     @Mutation(returns => String)
-    async submitBrowserEvent(
+    async createBrowserEvent(
         @Args() { type, selector, value }: BrowserEventInput,
         @Ctx() { photon, id }: Context
     ) {
-        const test = await photon.browserEvents.create({
+        const browserEvent = await photon.browserEvents.create({
             data: {
                 type,
                 selector,
@@ -18,8 +26,9 @@ export class BrowserEventResolver {
                 user: { connect: { id: id! } }
             }
         })
-        return test.id
+        return browserEvent.id
     }
+
     @Authorized()
     @Query(returns => [BrowserEvent])
     async getBrowserEvent(@Ctx() { photon, id }: Context) {
@@ -28,5 +37,26 @@ export class BrowserEventResolver {
             include: { user: true }
         })
         return results
+    }
+
+    @Authorized()
+    @Mutation(returns => String)
+    async updateBrowserEvent(
+        @Args() { type, selector, value }: BrowserEventUpdate,
+        @Arg("id") browserEventId: string,
+        @Ctx() { photon, id }: Context
+    ) {
+        const browserEvent = await photon.browserEvents.update({
+            data: {
+                type,
+                selector,
+                value,
+                user: { connect: { id: id! } }
+            },
+            where: {
+                id: browserEventId
+            }
+        })
+        return browserEvent.id
     }
 }

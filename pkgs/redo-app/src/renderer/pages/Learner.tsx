@@ -17,12 +17,12 @@ import ChipInput from "material-ui-chip-input"
 import { store } from "../common"
 
 const SAVETEST = gql`
-    mutation submitTest(
+    mutation createTest(
         $name: String!
         $tags: [TagInput!]!
         $steps: [BrowserEventInput!]!
     ) {
-        submitTest(name: $name, tags: $tags, steps: $steps)
+        createTest(name: $name, tags: $tags, steps: $steps)
     }
 `
 

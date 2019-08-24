@@ -19,27 +19,30 @@ const contents = gql`
         }
     }
 
-    mutation submitTest {
-        submitTest(
+    mutation createTest {
+        createTest(
             name: "Test Something"
             tags: [{ name: "BAT" }, { name: "short" }]
-            steps: [
-                {
-                    type: "set"
-                    selector: "#someId"
-                    value: "someText"
-                    tags: []
-                }
-            ]
+            steps: [{ type: "set", selector: "#someId", value: "someText" }]
+        )
+    }
+
+    mutation updateTest {
+        updateTest(
+            name: "NewName"
+            id: ""
+            tags: [{ name: "BAT" }, { name: "short" }]
+            steps: [{ type: "set", selector: "#someId", value: "someText" }]
         )
     }
 
     query getTest {
         getTest {
+            name
+            id
             user {
                 email
             }
-            name
             tags {
                 name
             }
@@ -52,6 +55,14 @@ const contents = gql`
                 id
             }
             name
+        }
+    }
+
+    query getBrowserEvent {
+        getBrowserEvent {
+            selector
+            type
+            value
         }
     }
 `

@@ -1,23 +1,17 @@
 import React, { FC, cloneElement, useState } from "react"
-import { Button } from "../buttons"
 import { Card } from "../cards"
-import { Text } from "../text"
-import { Form, FormText, FormSubmit, createValidator } from "../forms"
 import { useTheme } from "../styles"
-import { Row, Column } from "../layouts"
 import { Dialog } from "@material-ui/core"
 import { DialogProps } from "@material-ui/core/Dialog"
-import { Fields } from "../forms"
-import { DisplayAs } from "../displayAs"
 
-export type ModalViewProps = Omit<Partial<DialogProps>, "open"> & {
+export type ModalProps = Omit<Partial<DialogProps>, "open"> & {
     children: {
         toggle: JSX.Element
-        content: JSX.Element[] | JSX.Element
+        content: JSX.Element
     }
 }
 
-export const ModalView: FC<ModalViewProps> = ({
+export const Modal: FC<ModalProps> = ({
     children: { toggle, content },
     ...rest
 }) => {
