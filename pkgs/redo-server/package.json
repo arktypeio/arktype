@@ -9,7 +9,7 @@
         "buildGenerate": "tsc -p tsconfig.generate.json",
         "start": "ts-node-dev --no-notify --respawn --transpileOnly ./src",
         "generateSchema": "npm run buildGenerate && node dist/__generate__/generate.js",
-        "wipeDb": "rm -rf prisma/dev.db migrations",
+        "wipeDb": "rm -rf prisma/dev.db prisma/migrations",
         "seed": "ts-node prisma/seed.ts",
         "prisma": "npm run generateSchema && prisma2 generate && prisma2 lift save --name init && prisma2 lift up",
         "generate": "npm run wipeDb && npm run prisma && npm run seed",

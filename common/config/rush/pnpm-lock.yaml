@@ -2594,12 +2594,6 @@ packages:
     dev: false
     resolution:
       integrity: sha512-CFzn9idOEpHrgdw8JsoTkaDDyRWk1jrzIV8djzcgpq0y9tG4B4lFT+Nxh52DVpDXV+n4+NPNv7M1Dj5uMp6XFg==
-  /@types/puppeteer/1.12.4:
-    dependencies:
-      '@types/node': 12.6.6
-    dev: false
-    resolution:
-      integrity: sha512-aaGbJaJ9TuF9vZfTeoh876sBa+rYJWPwtsmHmYr28pGr42ewJnkDTq2aeSKEmS39SqUdkwLj73y/d7rBSp7mDQ==
   /@types/puppeteer/1.19.1:
     dependencies:
       '@types/node': 12.6.6
@@ -2673,7 +2667,7 @@ packages:
       integrity: sha512-l42BggppR6zLmpfU6fq9HEa2oGPEI8yrSPL3GITjfRInppYFahObbIQOQK3UGxEnyQpltZLaPe75046NOZQikw==
   /@types/storybook__addon-storyshots/5.1.1:
     dependencies:
-      '@types/puppeteer': 1.12.4
+      '@types/puppeteer': 1.19.1
       '@types/react': 16.8.8
       '@types/storybook__react': 4.0.2
     dev: false
@@ -4479,7 +4473,7 @@ packages:
   /browserslist/4.6.6:
     dependencies:
       caniuse-lite: 1.0.30000989
-      electron-to-chromium: 1.3.237
+      electron-to-chromium: 1.3.238
       node-releases: 1.1.28
     dev: false
     hasBin: true
@@ -5942,10 +5936,10 @@ packages:
     hasBin: true
     resolution:
       integrity: sha512-FjEWG9Jb/ppK/2zToP+U5dds114fM1ZOJqMAR4aXXL5CvyPE9fiqBK/9YcwC9poIFQTEJk/EM/zyRwziziRZrg==
-  /electron-to-chromium/1.3.237:
+  /electron-to-chromium/1.3.238:
     dev: false
     resolution:
-      integrity: sha512-SPAFjDr/7iiVK2kgTluwxela6eaWjjFkS9rO/iYpB/KGXgccUom5YC7OIf19c8m8GGptWxLU0Em8xM64A/N7Fg==
+      integrity: sha512-k+s6EIiSTgfOm7WiMlGBMMMtBQXSui8OfLN1sXU3RohJOuLGVq0lVm7hXyDIDBcbPM0MeZabAdIPQOSEZT3ZLg==
   /electron/5.0.2:
     dependencies:
       '@types/node': 10.14.16
@@ -13142,7 +13136,7 @@ packages:
       schema-utils: 1.0.0
       serialize-javascript: 1.8.0
       source-map: 0.6.1
-      terser: 4.2.0
+      terser: 4.2.1
       webpack: 4.29.6_webpack@4.29.6
       webpack-sources: 1.4.3
       worker-farm: 1.7.0
@@ -13161,7 +13155,7 @@ packages:
       schema-utils: 1.0.0
       serialize-javascript: 1.8.0
       source-map: 0.6.1
-      terser: 4.2.0
+      terser: 4.2.1
       webpack: 4.39.2_webpack@4.39.2
       webpack-sources: 1.4.3
       worker-farm: 1.7.0
@@ -13172,7 +13166,7 @@ packages:
       webpack: ^4.0.0
     resolution:
       integrity: sha512-ZXmmfiwtCLfz8WKZyYUuuHf3dMYEjg8NrjHMb0JqHVHVOSkzp3cW2/XG1fP3tRhqEqSzMwzzRQGtAPbs4Cncxg==
-  /terser/4.2.0:
+  /terser/4.2.1:
     dependencies:
       commander: 2.20.0
       source-map: 0.6.1
@@ -13182,7 +13176,7 @@ packages:
       node: '>=6.0.0'
     hasBin: true
     resolution:
-      integrity: sha512-6lPt7lZdZ/13icQJp8XasFOwZjFJkxFFIb/N1fhYEQNoNI3Ilo3KABZ9OocZvZoB39r6SiIk/0+v/bt8nZoSeA==
+      integrity: sha512-cGbc5utAcX4a9+2GGVX4DsenG6v0x3glnDi5hx8816X1McEAwPlPgRtXPJzSBsbpILxZ8MQMT0KvArLuE0HP5A==
   /test-exclude/5.2.3:
     dependencies:
       glob: 7.1.4
@@ -14461,6 +14455,8 @@ packages:
       '@types/storybook__react': 4.0.2
       babel-loader: 8.0.6_@babel+core@7.5.5+webpack@4.29.6
       babel-runtime: 6.26.0
+      class-transformer: 0.2.0
+      class-validator: 0.10.0
       core-js: 3.1.4
       core-js-pure: 3.1.4
       deepmerge: 3.2.1
@@ -14480,7 +14476,7 @@ packages:
     peerDependencies:
       webpack: '*'
     resolution:
-      integrity: sha512-kk7axiyAqe8V1eCtOk6k7W1S/KzGwF1uayhE2QuLytLpfGqowdoX1zRPU0v7ap+tvbKJNs0gFryVx/09rEYJMg==
+      integrity: sha512-oF+eUPZR98WCuNPUeZG9Q6ul1EXqg7LFpmmx+CujpRmPpS98obqZZitM+4NXp5uJ99Z3AALj81O/1/qLkTDspQ==
       tarball: 'file:projects/redo-components.tgz'
     version: 0.0.0
   'file:projects/redo-model.tgz_65c0dfd175c238c933bdb5d3330aeeaa':
@@ -14490,6 +14486,7 @@ packages:
       class-transformer: 0.2.0
       class-validator: 0.10.0
       graphql: 14.4.2
+      graphql-tag: 2.10.1_graphql@14.4.2
       reflect-metadata: 0.1.13
       type-graphql: 0.17.4_0e03e0594630b7e21c2ca22fa525a8b1
       typescript: 3.5.2
@@ -14500,7 +14497,7 @@ packages:
       '@babel/core': '*'
       '@types/graphql': '*'
     resolution:
-      integrity: sha512-KfpTZaJr8dAuEQkT/OXmwCqoJH+TPIYDhbKMQuRHjMMAZMrTjjUo14vrjNDBNCOSWrH85DEiYAWslcH6bwvnGQ==
+      integrity: sha512-9e/WK59RNlYNXDUg7hxJ+5crWsT7CEEQGi3SCqbyPQXjtFm5MlyEM++j0mz+J77yUThWhTQHeZYporDphzVnIg==
       tarball: 'file:projects/redo-model.tgz'
     version: 0.0.0
   'file:projects/redo-recommended.tgz':
@@ -14643,7 +14640,7 @@ packages:
     peerDependencies:
       '@babel/core': '*'
     resolution:
-      integrity: sha512-RjwG/A1E9N8g9gmMJLoovxQ3dLfOMnUjAaNnUf6rCTIYaZp4IQwboXCS1W5U1Vemwq/kVusjberYogyKoJTl3w==
+      integrity: sha512-+1lRovko8WuvEKYqU+dcMSUpjPVqgNFV9IGbnftfJeQIfSYVMYREBlCwr6vp+qPScfgxYifIGkASGeSYY4xBZA==
       tarball: 'file:projects/test.tgz'
     version: 0.0.0
 registry: ''

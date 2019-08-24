@@ -3,11 +3,11 @@
         "scope": "typescriptreact",
         "prefix": "component",
         "body": [
-            "import React, {FC} from \"react\"",
+            "import React from \"react\"",
             "",
             "export type ${TM_FILENAME_BASE}Props = {}",
             "",
-            "export const ${TM_FILENAME_BASE}: FC<${TM_FILENAME_BASE}Props> = ({}) => {",
+            "export const ${TM_FILENAME_BASE} = ({}: ${TM_FILENAME_BASE}Props) => {",
             "    return ${0:<>}</>",
             "}"
         ],

@@ -1,5 +1,5 @@
 import Photon, { FindOneUserArgs } from "@generated/photon"
-import { TagInput } from "redo-model";
+import { TagInput } from "redo-model"
 
 type FindUserOptions = {
     photon: Photon
@@ -16,7 +16,7 @@ export const findUser = async ({ query, photon }: FindUserOptions) => {
 }
 
 export const createTagsInput = (tags: TagInput[], id: string) =>
-            tags.map(({ ...fields }) => ({
-                ...fields,
-                user: { connect: { id} }
-            }))
+    tags.map(({ ...fields }) => ({
+        ...fields,
+        user: { connect: { id } }
+    }))

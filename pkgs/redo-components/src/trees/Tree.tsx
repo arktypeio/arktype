@@ -17,6 +17,7 @@ export type TreeProps<O extends TreeSource> = Omit<
     nodeExtras?:
         | JSX.Element
         | ((key: string, value: any, path: string[]) => JSX.Element | null)
+    hideKeys?: (keyof O)[]
 } & (O extends any[]
         ? {
               labelKey: keyof O[number]
@@ -28,7 +29,8 @@ export type TreeProps<O extends TreeSource> = Omit<
 export const Tree = <O extends TreeSource>({
     children,
     labelKey,
-    nodeExtras
+    nodeExtras,
+    hideKeys
 }: TreeProps<O>) => {
     const entries: Entry[] = Array.isArray(children)
         ? children.map(({ [labelKey!]: key, ...rest }) => [key, rest])
@@ -39,18 +41,25 @@ export const Tree = <O extends TreeSource>({
             path={[]}
             nodeExtras={nodeExtras}
             labelKey={labelKey}
+            hideKeys={hideKeys}
         />
     )
 }
 
-type TreeNodesProps = Pick<TreeProps<any>, "nodeExtras" | "labelKey"> & {
+type TreeNodesProps = Pick<
+    TreeProps<any>,
+    "nodeExtras" | "labelKey" | "hideKeys"
+> & {
     entries: Entry[]
     path: string[]
 }
 
-const TreeNode = ({ entries, path, nodeExtras }: TreeNodesProps) => (
+const TreeNode = ({ entries, path, nodeExtras, hideKeys }: TreeNodesProps) => (
     <>
         {entries.map(([k, v]) => {
+            if (hideKeys && hideKeys.includes(k)) {
+                return null
+            }
             const [show, setShow] = useState(false)
             const recursible = isRecursible(v)
             // Offsets Icon width to make non-recursible and recursible text aligned
@@ -59,7 +68,7 @@ const TreeNode = ({ entries, path, nodeExtras }: TreeNodesProps) => (
                 left: recursible ? 0 : 48
             } as const
             return (
-                <>
+                <div key={k}>
                     <Row
                         align="center"
                         style={{
@@ -96,9 +105,10 @@ const TreeNode = ({ entries, path, nodeExtras }: TreeNodesProps) => (
                             entries={Object.entries(v)}
                             path={[...path, String(k)]}
                             nodeExtras={nodeExtras}
+                            hideKeys={hideKeys}
                         />
                     ) : null}
-                </>
+                </div>
             )
         })}
     </>
