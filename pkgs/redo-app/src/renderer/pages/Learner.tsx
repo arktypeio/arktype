@@ -49,9 +49,15 @@ export const Learner = component({
     const [saveTest] = useMutation(SAVETEST)
     return (
         <Column justify="flex-start">
-            <Row align="center" justify="flex-start">
-                <RedoAppBar>{["close"]}</RedoAppBar>
-
+            <RedoAppBar>{["close"]}</RedoAppBar>
+            <Row>
+                <TextInput
+                    value={name}
+                    placeholder="Test Name"
+                    onChange={e =>
+                        store.mutate({ learner: { testName: e.target.value } })
+                    }
+                />
                 <RespondTo response={{ loading: false }}>
                     <Button
                         kind="primary"
@@ -61,8 +67,9 @@ export const Learner = component({
                                     name,
                                     tags: tags.map(_ => ({ name: _ })),
                                     steps: events.map(
-                                        ({ __typename, ...inputs }: any) =>
-                                            inputs
+                                        ({ __typename, ...inputs }: any) => {
+                                            return { ...inputs }
+                                        }
                                     )
                                 }
                             })
@@ -72,15 +79,6 @@ export const Learner = component({
                         Save test
                     </Button>
                 </RespondTo>
-            </Row>
-            <Row>
-                <TextInput
-                    value={name}
-                    placeholder="Test Name"
-                    onChange={e =>
-                        store.mutate({ learner: { testName: e.target.value } })
-                    }
-                />
             </Row>
             {/* TODO Chip input should be moved to redo components as part of: https://trello.com/c/eVo1vyZj */}
             <Row>
@@ -125,4 +123,3 @@ export const Learner = component({
         </Column>
     )
 })
-

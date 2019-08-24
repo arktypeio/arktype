@@ -4,6 +4,7 @@ import { Handler } from "shapeql"
 
 export enum Page {
     Home = "HOME",
+    BrowserEventView = "BROWSER_EVENT_VIEW",
     TestView = "TEST_VIEW",
     TagView = "TAG_VIEW",
     SignIn = "SIGN_IN",
@@ -36,7 +37,7 @@ export const rootHandler: Handler<Root> = {
 
 export const initialRoot: Root = {
     learner: learnerInitial,
-    token: "fake",
+    token: "",
     page: Page.Home,
     cardFilter: ""
 }

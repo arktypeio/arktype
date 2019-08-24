@@ -16,9 +16,6 @@ export class BrowserEvent {
     @OutField()
     value: string
 
-    @OutField({ type: as => [Tag] })
-    tags: Tag[]
-
     @OutField()
     user: User
 }
@@ -32,7 +29,4 @@ export class BrowserEventInput {
 
     @InField()
     value: string
-
-    @InField({ type: as => [TagInput] })
-    tags: TagInput[]
 }

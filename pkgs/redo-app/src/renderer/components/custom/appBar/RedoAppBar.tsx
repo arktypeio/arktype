@@ -5,13 +5,12 @@ import { SearchBar } from "./SearchBar"
 import { HomeButton } from "./HomeButton"
 import { NewTestButton } from "./NewTestButton"
 import { AccountSection } from "./AccountSection"
-import {CloseLearnerButton} from "./CloseLearnerButton"
-import { ScheduleButton } from "./ScheduleButton"
+import { CloseLearnerButton } from "./CloseLearnerButton"
 
 const leftItems = {
     home: <HomeButton />,
     newTest: <NewTestButton />,
-    close: <CloseLearnerButton/>
+    close: <CloseLearnerButton />
 }
 type LeftKey = keyof typeof leftItems
 const centerItems = {
@@ -29,8 +28,8 @@ export type ItemKey = LeftKey | CenterKey | RightKey
 
 export const RedoAppBar = ({ children }: RedoAppBarProps) => (
     <AppBar>
-        {[leftItems, centerItems, rightItems].map(group => (
-            <div>
+        {[leftItems, centerItems, rightItems].map((group, index) => (
+            <div key={index}>
                 <Row>
                     {children
                         .filter(key => key in group)
