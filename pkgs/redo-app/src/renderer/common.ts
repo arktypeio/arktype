@@ -10,7 +10,7 @@ const contextLink = setContext(() => ({
     headers: { authorization: `Bearer ${store.query({ token: null }).token}` }
 }))
 
-export const cache = new InMemoryCache({ addTypename: false })
+export const cache = new InMemoryCache()
 export const client = new ApolloClient({
     link: contextLink.concat(httpLink),
     cache

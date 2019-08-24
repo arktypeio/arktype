@@ -28,6 +28,7 @@ dependencies:
   '@rush-temp/redo-utils': 'file:projects/redo-utils.tgz_@babel+core@7.5.5'
   '@rush-temp/redo-website': 'file:projects/redo-website.tgz'
   '@rush-temp/shapeql': 'file:projects/shapeql.tgz_46b12d11340a10975f47e2ff824828aa'
+  '@rush-temp/test': 'file:projects/test.tgz_@babel+core@7.5.5'
   '@storybook/addon-actions': 5.2.0-beta.30_react-dom@16.8.6
   '@storybook/addon-console': 1.2.1_bbdf7d57517e8b7d6528c507813dc8ca
   '@storybook/addon-info': 5.2.0-beta.30_react-dom@16.8.6
@@ -48,7 +49,7 @@ dependencies:
   '@types/jest': 24.0.13
   '@types/jsonwebtoken': 8.3.2
   '@types/node': 12.6.6
-  '@types/puppeteer': 1.12.4
+  '@types/puppeteer': 1.19.1
   '@types/react': 16.8.8
   '@types/react-dom': 16.8.3
   '@types/react-typist': 2.0.0
@@ -93,7 +94,7 @@ dependencies:
   material-ui-chip-input: 1.0.0_f35c714a02d617073918f9017b0a4e91
   moize: 5.4.4
   prisma2: 2.0.0-preview-5
-  puppeteer: 1.17.0
+  puppeteer: 1.19.0
   react: 16.8.6
   react-apollo: 3.0.1_b720375b53182f320d4afb2879b9016a
   react-docgen-typescript-loader: 3.1.0_typescript@3.5.2+webpack@4.29.6
@@ -2593,12 +2594,12 @@ packages:
     dev: false
     resolution:
       integrity: sha512-CFzn9idOEpHrgdw8JsoTkaDDyRWk1jrzIV8djzcgpq0y9tG4B4lFT+Nxh52DVpDXV+n4+NPNv7M1Dj5uMp6XFg==
-  /@types/puppeteer/1.12.4:
+  /@types/puppeteer/1.19.1:
     dependencies:
       '@types/node': 12.6.6
     dev: false
     resolution:
-      integrity: sha512-aaGbJaJ9TuF9vZfTeoh876sBa+rYJWPwtsmHmYr28pGr42ewJnkDTq2aeSKEmS39SqUdkwLj73y/d7rBSp7mDQ==
+      integrity: sha512-ReWZvoEfMiJIA3AG+eM+nCx5GKrU2ANVYY5TC0nbpeiTCtnJbcqnmBbR8TkXMBTvLBYcuTOAELbTcuX73siDNQ==
   /@types/q/1.5.2:
     dev: false
     resolution:
@@ -2666,7 +2667,7 @@ packages:
       integrity: sha512-l42BggppR6zLmpfU6fq9HEa2oGPEI8yrSPL3GITjfRInppYFahObbIQOQK3UGxEnyQpltZLaPe75046NOZQikw==
   /@types/storybook__addon-storyshots/5.1.1:
     dependencies:
-      '@types/puppeteer': 1.12.4
+      '@types/puppeteer': 1.19.1
       '@types/react': 16.8.8
       '@types/storybook__react': 4.0.2
     dev: false
@@ -4472,7 +4473,7 @@ packages:
   /browserslist/4.6.6:
     dependencies:
       caniuse-lite: 1.0.30000989
-      electron-to-chromium: 1.3.237
+      electron-to-chromium: 1.3.238
       node-releases: 1.1.28
     dev: false
     hasBin: true
@@ -5935,10 +5936,10 @@ packages:
     hasBin: true
     resolution:
       integrity: sha512-FjEWG9Jb/ppK/2zToP+U5dds114fM1ZOJqMAR4aXXL5CvyPE9fiqBK/9YcwC9poIFQTEJk/EM/zyRwziziRZrg==
-  /electron-to-chromium/1.3.237:
+  /electron-to-chromium/1.3.238:
     dev: false
     resolution:
-      integrity: sha512-SPAFjDr/7iiVK2kgTluwxela6eaWjjFkS9rO/iYpB/KGXgccUom5YC7OIf19c8m8GGptWxLU0Em8xM64A/N7Fg==
+      integrity: sha512-k+s6EIiSTgfOm7WiMlGBMMMtBQXSui8OfLN1sXU3RohJOuLGVq0lVm7hXyDIDBcbPM0MeZabAdIPQOSEZT3ZLg==
   /electron/5.0.2:
     dependencies:
       '@types/node': 10.14.16
@@ -8613,6 +8614,9 @@ packages:
       node: '>=6'
     peerDependencies:
       jest-resolve: '*'
+    peerDependenciesMeta:
+      jest-resolve:
+        optional: true
     resolution:
       integrity: sha512-pgFw2tm54fzgYvc/OHrnysABEObZCUNFnhjoRjaVOCN8NYc032/gVjPaHD4Aq6ApkSieWtfKAFQtmDKAmhupnQ==
   /jest-regex-util/24.9.0:
@@ -11143,7 +11147,7 @@ packages:
       node: '>=6'
     resolution:
       integrity: sha512-XRsRjdf+j5ml+y/6GKHPZbrF/8p2Yga0JPtdqTIY2Xe5ohJPD9saDJJLPvp9+NSBprVvevdXZybnj2cv8OEd0A==
-  /puppeteer/1.17.0:
+  /puppeteer/1.19.0:
     dependencies:
       debug: 4.1.1
       extract-zip: 1.6.7
@@ -11158,7 +11162,7 @@ packages:
       node: '>=6.4.0'
     requiresBuild: true
     resolution:
-      integrity: sha512-3EXZSximCzxuVKpIHtyec8Wm2dWZn1fc5tQi34qWfiUgubEVYHjUvr0GOJojqf3mifI6oyKnCdrGxaOI+lWReA==
+      integrity: sha512-2S6E6ygpoqcECaagDbBopoSOPDv0pAZvTbnBgUY+6hq0/XDFDOLEMNlHF/SKJlzcaZ9ckiKjKDuueWI3FN/WXw==
   /q/1.5.1:
     dev: false
     engines:
@@ -13132,7 +13136,7 @@ packages:
       schema-utils: 1.0.0
       serialize-javascript: 1.8.0
       source-map: 0.6.1
-      terser: 4.2.0
+      terser: 4.2.1
       webpack: 4.29.6_webpack@4.29.6
       webpack-sources: 1.4.3
       worker-farm: 1.7.0
@@ -13151,7 +13155,7 @@ packages:
       schema-utils: 1.0.0
       serialize-javascript: 1.8.0
       source-map: 0.6.1
-      terser: 4.2.0
+      terser: 4.2.1
       webpack: 4.39.2_webpack@4.39.2
       webpack-sources: 1.4.3
       worker-farm: 1.7.0
@@ -13162,7 +13166,7 @@ packages:
       webpack: ^4.0.0
     resolution:
       integrity: sha512-ZXmmfiwtCLfz8WKZyYUuuHf3dMYEjg8NrjHMb0JqHVHVOSkzp3cW2/XG1fP3tRhqEqSzMwzzRQGtAPbs4Cncxg==
-  /terser/4.2.0:
+  /terser/4.2.1:
     dependencies:
       commander: 2.20.0
       source-map: 0.6.1
@@ -13172,7 +13176,7 @@ packages:
       node: '>=6.0.0'
     hasBin: true
     resolution:
-      integrity: sha512-6lPt7lZdZ/13icQJp8XasFOwZjFJkxFFIb/N1fhYEQNoNI3Ilo3KABZ9OocZvZoB39r6SiIk/0+v/bt8nZoSeA==
+      integrity: sha512-cGbc5utAcX4a9+2GGVX4DsenG6v0x3glnDi5hx8816X1McEAwPlPgRtXPJzSBsbpILxZ8MQMT0KvArLuE0HP5A==
   /test-exclude/5.2.3:
     dependencies:
       glob: 7.1.4
@@ -13445,6 +13449,9 @@ packages:
       node: '>=6'
     peerDependencies:
       typescript: '*'
+    peerDependenciesMeta:
+      typescript:
+        optional: true
     resolution:
       integrity: sha512-f5Knjh7XCyRIzoC/z1Su1yLLRrPrFCgtUAh/9fCSP6NKbATwpOL1+idQVXQokK9GRFURn/jYPGPfegIctwunoA==
   /tsconfig-paths-webpack-plugin/3.2.0:
@@ -14324,7 +14331,7 @@ packages:
       react: '*'
       react-dom: '*'
     resolution:
-      integrity: sha512-pinYvnszrFpBd9C+nXeCFZwdXZpx5EiRLJ3ziSpXUO01bKkKRUSSMI6CE6kRe4UR84yMUMprQS+cUKdWEhsGQg==
+      integrity: sha512-Vtk2BRu+dUQwpyV76wYiSEF/L1X19g7aLo9Qe6t6PcdwyUEJMPusiH4pOPk2ZCKQkqHGh2+t+wPpqQWH/2BeoQ==
       tarball: 'file:projects/babel-preset-redo.tgz'
     version: 0.0.0
   'file:projects/redo-app.tgz':
@@ -14343,7 +14350,7 @@ packages:
       '@types/fs-extra': 8.0.0
       '@types/graphql': 14.2.2
       '@types/node': 12.6.6
-      '@types/puppeteer': 1.12.4
+      '@types/puppeteer': 1.19.1
       '@types/react': 16.8.8
       '@types/react-dom': 16.8.3
       apollo-cache-inmemory: 1.6.2_graphql@14.4.2
@@ -14363,7 +14370,7 @@ packages:
       graphql-tag: 2.10.1_graphql@14.4.2
       isomorphic-ws: 4.0.1
       material-ui-chip-input: 1.0.0_f35c714a02d617073918f9017b0a4e91
-      puppeteer: 1.17.0
+      puppeteer: 1.19.0
       react: 16.8.6
       react-apollo: 3.0.1_0e293131b3c3e66d1e0d4d592c075a2c
       react-dom: 16.8.6_react@16.8.6
@@ -14382,7 +14389,7 @@ packages:
     dev: false
     name: '@rush-temp/redo-app'
     resolution:
-      integrity: sha512-7halm+Hk8O/XsJLLwEF0wPB/0uYT4eSdIs+VxSr5ieTYYMGg5fSqerCed+uqeizdpNfv0KZB7gJkMZSdVIsLwA==
+      integrity: sha512-XdrX6CvCEyBZ6mVnrpeP+TGepNxPDhROizV4W/2QCDv+F60xVNGTjWGHD9uMJw+HCAT3fBQkyYTszswcUgRWNg==
       tarball: 'file:projects/redo-app.tgz'
     version: 0.0.0
   'file:projects/redo-bundle.tgz_787bbe83c726763abc906d76ffcb5127':
@@ -14418,7 +14425,7 @@ packages:
       react: '*'
       react-dom: '*'
     resolution:
-      integrity: sha512-WDYIr9jQrxOBMOvr8mGLD69nUBX6ckhviDsohQ2vQZiz14S9Knfd23syluFDbTUEtTeWdYYx0WQqXtOylcc4ww==
+      integrity: sha512-JkFkRGPrwLotaNLwZf+OTj6b619c1MNpgYVi8jSb1Gyd2OXDuwhoOzGrv+3ZpZwT8yguy7WS9NiRE/eOIyv4wg==
       tarball: 'file:projects/redo-bundle.tgz'
     version: 0.0.0
   'file:projects/redo-components.tgz_webpack@4.29.6':
@@ -14469,7 +14476,7 @@ packages:
     peerDependencies:
       webpack: '*'
     resolution:
-      integrity: sha512-361dhX3w7eW4YR8dcPYQTpGZ0ZE/b6Worj1HsUK8EwyJB49lM8CRJaZEgii77o1dRnLK7TSJP2BamKVG7ZHB2g==
+      integrity: sha512-oF+eUPZR98WCuNPUeZG9Q6ul1EXqg7LFpmmx+CujpRmPpS98obqZZitM+4NXp5uJ99Z3AALj81O/1/qLkTDspQ==
       tarball: 'file:projects/redo-components.tgz'
     version: 0.0.0
   'file:projects/redo-model.tgz_65c0dfd175c238c933bdb5d3330aeeaa':
@@ -14490,14 +14497,14 @@ packages:
       '@babel/core': '*'
       '@types/graphql': '*'
     resolution:
-      integrity: sha512-d5CvOOZkUZHFV+5DOFw8XlnlUMywHGi1DsruIKQA8skSzvkGemaqbwZv7N5r8xLmxtcj10pVHhX+0/wvbPSV8w==
+      integrity: sha512-9e/WK59RNlYNXDUg7hxJ+5crWsT7CEEQGi3SCqbyPQXjtFm5MlyEM++j0mz+J77yUThWhTQHeZYporDphzVnIg==
       tarball: 'file:projects/redo-model.tgz'
     version: 0.0.0
   'file:projects/redo-recommended.tgz':
     dev: false
     name: '@rush-temp/redo-recommended'
     resolution:
-      integrity: sha512-oGYIlXUioalwOd4hvQ6HNsQrGp7G+gQwKdj6uIh4iddCdtPexG1YtfkPZ2iofEk9UfLfdE6ZH+0VFNZ20CVWDg==
+      integrity: sha512-bpceas8k6OMQFSdAmwdLLCIVZvBRdbq/X+LPTxIopx4abTTvaN801Put+BO6gS+JattUyHdE7PSk09jtV6rIQw==
       tarball: 'file:projects/redo-recommended.tgz'
     version: 0.0.0
   'file:projects/redo-server.tgz':
@@ -14531,7 +14538,7 @@ packages:
     dev: false
     name: '@rush-temp/redo-server'
     resolution:
-      integrity: sha512-v0cG6+ohhcTGESYy5fLvE+AlgIl3ZP0PZUtkIfXQy8YG7fHFm5vRuLmtmWEwsfLk/Nu2fJtY8VExiCQQE+jNdg==
+      integrity: sha512-8slPf6oYm7Df02b97mEEkfVADQlWud7MIbtn7IFaqPPkYQOoR1tPmMofSm+2sG5JhRKUY2OzNu9INqETtWrCRg==
       tarball: 'file:projects/redo-server.tgz'
     version: 0.0.0
   'file:projects/redo-utils.tgz_@babel+core@7.5.5':
@@ -14551,7 +14558,7 @@ packages:
     peerDependencies:
       '@babel/core': '*'
     resolution:
-      integrity: sha512-jhS/MP2IliYw/KkCWbzFnOBxb0IG3bZ+0+BJ9d6BZfzizCJDRXFhDP03R+MUcwNoYvzB3QnknBGM+L8BQU1GKw==
+      integrity: sha512-hymtzTIN8//f8JRTEnReT/1ybdL7oqMpVN1nHCElodJehpSqlyGOVWjnt5MvpHArt/EB/Uw5oEooI7pezmyy+A==
       tarball: 'file:projects/redo-utils.tgz'
     version: 0.0.0
   'file:projects/redo-website.tgz':
@@ -14581,7 +14588,7 @@ packages:
     dev: false
     name: '@rush-temp/redo-website'
     resolution:
-      integrity: sha512-V4dccOU1OgjZDGcCGLLrhMX4zCmUWUd/zRfmA7WJibYUj6CFnnWe8yzpGMwyTtWcrjFcSpLqf6rLL7vznQDNXA==
+      integrity: sha512-WIUdDmfaRys9G6DjMiTx76hvwUEmp3/tqaqg6CnLtBtHNubAmFbAYKtGCpFml82+bGXJc2hdkIedyjC22J4tjw==
       tarball: 'file:projects/redo-website.tgz'
     version: 0.0.0
   'file:projects/shapeql.tgz_46b12d11340a10975f47e2ff824828aa':
@@ -14616,9 +14623,27 @@ packages:
       react: '*'
       react-dom: '*'
     resolution:
-      integrity: sha512-/hKYUZbLwwcw5IzJ3RTswZScmmNxvrMKoywpzIQliURKYtsTWnOJFu6CWUb8us14laxSXgMGLlVHdKlHL5IaZg==
+      integrity: sha512-I8j2Ny2fBg3PFztSCJGSNkzw0R0fuo7shenBF+ylhqdUbo1WsmQMs1vQNWs7KIfBSZYLLFk4695DlYCw9WWFFQ==
       tarball: 'file:projects/shapeql.tgz'
     version: 0.0.0
+  'file:projects/test.tgz_@babel+core@7.5.5':
+    dependencies:
+      '@babel/cli': 7.5.5_@babel+core@7.5.5
+      '@babel/runtime-corejs3': 7.5.5
+      '@types/jest': 24.0.13
+      '@types/puppeteer': 1.19.1
+      jest: 24.8.0
+      puppeteer: 1.19.0
+    dev: false
+    id: 'file:projects/test.tgz'
+    name: '@rush-temp/test'
+    peerDependencies:
+      '@babel/core': '*'
+    resolution:
+      integrity: sha512-+1lRovko8WuvEKYqU+dcMSUpjPVqgNFV9IGbnftfJeQIfSYVMYREBlCwr6vp+qPScfgxYifIGkASGeSYY4xBZA==
+      tarball: 'file:projects/test.tgz'
+    version: 0.0.0
+registry: ''
 specifiers:
   '@apollo/react-hooks': 3.0.0
   '@babel/cli': 7.5.5
@@ -14649,6 +14674,7 @@ specifiers:
   '@rush-temp/redo-utils': 'file:./projects/redo-utils.tgz'
   '@rush-temp/redo-website': 'file:./projects/redo-website.tgz'
   '@rush-temp/shapeql': 'file:./projects/shapeql.tgz'
+  '@rush-temp/test': 'file:./projects/test.tgz'
   '@storybook/addon-actions': 5.2.0-beta.30
   '@storybook/addon-console': 1.2.1
   '@storybook/addon-info': 5.2.0-beta.30
@@ -14669,7 +14695,7 @@ specifiers:
   '@types/jest': 24.0.13
   '@types/jsonwebtoken': 8.3.2
   '@types/node': 12.6.6
-  '@types/puppeteer': 1.12.4
+  '@types/puppeteer': 1.19.1
   '@types/react': 16.8.8
   '@types/react-dom': 16.8.3
   '@types/react-typist': 2.0.0
@@ -14714,7 +14740,7 @@ specifiers:
   material-ui-chip-input: 1.0.0
   moize: 5.4.4
   prisma2: 2.0.0-preview-5
-  puppeteer: 1.17.0
+  puppeteer: 1.19.0
   react: 16.8.6
   react-apollo: 3.0.1
   react-docgen-typescript-loader: 3.1.0

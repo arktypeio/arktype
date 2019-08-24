@@ -1,5 +1,5 @@
 {
-    "extends": "./node_modules/redo-recommended/tsconfig.base",
+    "extends": "redo-recommended/tsconfig.base",
     "compilerOptions": {
         "baseUrl": "src",
         "outDir": "dist",

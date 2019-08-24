@@ -1,0 +1,27 @@
+{
+    "name": "@re-do/test",
+    "version": "0.0.1",
+    "author": "redo.qa",
+    "description": "Delightful web testing that writes itself 🖋",
+    "private": true,
+    "main": "dist/index.js",
+    "types": "dist/index.d.ts",
+    "scripts": {
+        "build": "redo-build",
+        "test": "jest"
+    },
+    "dependencies": {
+        "@babel/runtime-corejs3": "7.5.5",
+        "puppeteer": "1.19.0",
+        "redo-model": "1.0.0",
+        "redo-utils": "1.0.0"
+    },
+    "devDependencies": {
+        "@babel/cli": "7.5.5",
+        "@types/jest": "24.0.13",
+        "@types/puppeteer": "1.19.1",
+        "babel-preset-redo": "1.0.0",
+        "jest": "24.8.0",
+        "redo-recommended": "1.0.0"
+    }
+}

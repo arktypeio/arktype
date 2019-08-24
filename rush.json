@@ -47,6 +47,10 @@
         {
             "packageName": "babel-preset-redo",
             "projectFolder": "pkgs/babel-preset-redo"
+        },
+        {
+            "packageName": "@re-do/test",
+            "projectFolder": "pkgs/test"
         }
     ]
 }

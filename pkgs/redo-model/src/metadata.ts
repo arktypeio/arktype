@@ -1,8 +1,8 @@
-import { testMetadata, tagMetadata } from "."
+import { browserEventMetadata, testMetadata } from "."
 
 export const metadata = {
     test: testMetadata,
-    tags: tagMetadata
+    browserEvent: browserEventMetadata
 }
 
 export type Metadata = typeof metadata
