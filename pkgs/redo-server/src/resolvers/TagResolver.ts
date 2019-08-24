@@ -1,11 +1,19 @@
-import { Authorized, Ctx, Mutation, Query, Resolver, Args } from "type-graphql"
+import {
+    Authorized,
+    Ctx,
+    Mutation,
+    Query,
+    Resolver,
+    Args,
+    Arg
+} from "type-graphql"
 import { Tag, TagInput } from "redo-model"
 import { Context } from "../context"
 @Resolver(of => Tag)
 export class TagResolver {
     @Authorized()
     @Mutation(returns => String)
-    async submitTag(
+    async createTag(
         @Args() { name }: TagInput,
         @Ctx() { photon, id }: Context
     ) {

@@ -5,7 +5,7 @@ import { ContentCard, Card } from "."
 
 storiesOf("Card", module)
     .addDecorator(withKnobs)
-    .add("ContentCard with knobs", () => (
+    .add("ContentCard", () => (
         <ContentCard
             from={object("from", {
                 key: "value",
@@ -13,6 +13,4 @@ storiesOf("Card", module)
             })}
         />
     ))
-    .add("Regular card with knobs", () => (
-        <Card children={text("children", "hey look text")} />
-    ))
+    .add("Standard", () => <Card children={text("children", "I am a card!")} />)

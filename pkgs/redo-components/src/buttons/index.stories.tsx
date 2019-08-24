@@ -1,9 +1,10 @@
 import React from "react"
 import { storiesOf } from "@storybook/react"
-import { Button } from "."
+import { Button, IconButton } from "."
 import { withKnobs, select } from "@storybook/addon-knobs"
 import { ThemeProvider } from "@material-ui/styles"
 import { defaultTheme } from "../styles"
+import { AccountCircle } from "@material-ui/icons"
 
 storiesOf("Button", module)
     .addDecorator(withKnobs)
@@ -20,3 +21,6 @@ storiesOf("Button", module)
             </Button>
         )
     })
+    .add("IconButton", () => (
+        <IconButton Icon={AccountCircle} onClick={() => console.log("Hello")} />
+    ))

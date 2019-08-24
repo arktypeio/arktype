@@ -7,6 +7,7 @@ import {
     IsEmail
 } from "class-validator"
 export { ID, ObjectType } from "type-graphql"
+import { Class } from "redo-utils"
 
 export const Matches = <T extends Record<string, any>>(
     other: keyof T,
@@ -151,3 +152,21 @@ export const OutField = ({ schemaSuffix, type, options }: OutArgs = {}) => (
         target,
         key
     })
+
+export type TypeMetadata = {
+    inType: Class<any>
+    outType: Class<any>
+    gql: {
+        get: any
+        create?: any
+        update?: any
+        delete?: any
+    }
+    actions?: TypeAction[]
+}
+
+export enum TypeAction {
+    Delete = "DELETE",
+    Update = "UPDATE",
+    Run = "RUN"
+}

@@ -1,43 +1,57 @@
-import React, { FC } from "react"
+import React from "react"
 import { storiesOf } from "@storybook/react"
 import { withKnobs } from "@storybook/addon-knobs"
 import { Text } from "../text"
 import { Column } from "../layouts"
-import { Form, FormText, FormSubmit } from "."
+import { AutoForm, Form, FormText, FormSubmit } from "."
+import { ValueFrom } from "redo-utils"
+import { FormProps } from "./Form"
+import { FormSubmitProps } from "./FormSubmit"
 
-storiesOf("Form", module)
-    .add("Text only", () => <TextOnlyForm />)
-    .addDecorator(withKnobs)
-
-type TextOnlyFormFields = {
+type HelloFormFields = {
     first: string
     last: string
 }
 
-const TextOnlyForm: FC = () => (
-    <Form<TextOnlyFormFields, string>
-        submit={async ({ first, last }) => ({
-            data: `Hello, ${first} ${last}.`
-        })}
-        validate={({ first, last }) => {
-            return {
-                first: first ? [] : ["We need this!"],
-                last: last ? [] : ["We need this!"]
-            }
-        }}
-    >
-        <Column width={200}>
+const submit: ValueFrom<FormProps<HelloFormFields, string>, "submit"> = async ({
+    first,
+    last
+}) => ({
+    data: `Hello, ${first} ${last}.`
+})
+
+const validator: ValueFrom<FormProps<HelloFormFields, string>, "validator"> = ({
+    first,
+    last
+}) => ({
+    first: first ? [] : ["We need this!"],
+    last: last ? [] : ["We need this!"]
+})
+
+const responseOptions: ValueFrom<FormSubmitProps, "responseOptions"> = {
+    data: {
+        displayAs: data => <Text>{data.value}</Text>
+    }
+}
+
+storiesOf("Form", module)
+    .addDecorator(withKnobs)
+    .add("Standard", () => <HelloForm />)
+    .add("AutoForm", () => (
+        <AutoForm<HelloFormFields, string>
+            submit={submit}
+            validator={validator}
+            contents={{ first: "Sarthak", last: "Agrawal" }}
+            submitProps={{ responseOptions }}
+        />
+    ))
+
+const HelloForm = () => (
+    <Form<HelloFormFields, string> submit={submit} validator={validator}>
+        <Column>
             <FormText name="first" />
             <FormText name="last" />
-            <FormSubmit
-                responseOptions={{
-                    data: {
-                        displayAs: data => <Text>{data.value}</Text>
-                    }
-                }}
-            >
-                Submit
-            </FormSubmit>
+            <FormSubmit responseOptions={responseOptions}>Submit</FormSubmit>
         </Column>
     </Form>
 )
