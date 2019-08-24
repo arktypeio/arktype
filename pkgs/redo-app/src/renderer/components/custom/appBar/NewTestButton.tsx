@@ -1,6 +1,5 @@
 import React, { FC } from "react"
-import { Add } from "@material-ui/icons"
-import { IconButton } from "redo-components"
+import { IconButton, Icons } from "redo-components"
 import { store } from "renderer/common"
 
 export type NewTestButtonProps = {}
@@ -8,7 +7,7 @@ export type NewTestButtonProps = {}
 export const NewTestButton: FC<NewTestButtonProps> = ({}) => {
     return (
         <IconButton
-            Icon={Add}
+            Icon={Icons.add}
             style={{ color: "white" }}
             onClick={() =>
                 store.mutate({
