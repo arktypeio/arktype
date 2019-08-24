@@ -3,6 +3,7 @@ import { TreeViewProps as MuiTreeViewProps } from "@material-ui/lab/TreeView"
 import { isRecursible, ItemOrList, Entry } from "redo-utils"
 import { Row, Column } from "../layouts"
 import { Text } from "../text"
+import { Button } from "@material-ui/core"
 import { FormText } from "../forms"
 
 // Should the treeview even include the modal automatically, or should that be configurable? I'm leaning towards making it configurable.
@@ -14,10 +15,12 @@ export type TreeProps<O extends TreeSource> = Omit<
     "children"
 > & {
     children: O
-    nodeExtras?: JSX.Element | ((key: string, value: any) => JSX.Element | null)
+    nodeExtras?:
+        | JSX.Element
+        | ((key: string, value: any, path: string[]) => JSX.Element | null)
 } & (O extends any[]
         ? {
-              labelKey: O extends any[] ? keyof O[number] : never
+              labelKey: keyof O[number]
           }
         : {
               labelKey?: never
@@ -31,10 +34,16 @@ export const Tree = <O extends TreeSource>({
     const entries: Entry[] = Array.isArray(children)
         ? children.map(({ [labelKey!]: key, ...rest }) => [key, rest])
         : Object.entries(children)
-    return <TreeNodes nodeExtras={nodeExtras} entries={entries} />
+    return (
+        <TreeNodes
+            nodeExtras={nodeExtras}
+            entries={entries}
+            labelKey={labelKey}
+        />
+    )
 }
 
-type TreeNodesProps = Pick<TreeProps<any>, "nodeExtras"> & {
+type TreeNodesProps = Pick<TreeProps<any>, "nodeExtras" | "labelKey"> & {
     entries: Entry[]
     path?: string[]
     depth?: number
@@ -44,13 +53,20 @@ const TreeNodes: FC<TreeNodesProps> = ({
     entries,
     path = [],
     depth = 0,
-    nodeExtras
+    nodeExtras,
+    labelKey
 }) => {
-    const TreeNode = ({ k, v }: any) => {
+    type TreeNodeProps = {
+        k: any
+        v: Record<string, any> | string
+    }
+
+    const TreeNode = ({ k, v }: TreeNodeProps) => {
         const [state, setState] = useState({ show: false, hovered: false })
         const { show, hovered } = state
         const recursible = isRecursible(v)
-        console.log(`${k}: ${show},  ${hovered}`)
+        const useLabelKey =
+            typeof v === "string" ? false : Object.entries(v).keys()
         return (
             <Column style={{ marginLeft: depth * 5 }}>
                 <Row>
@@ -73,7 +89,7 @@ const TreeNodes: FC<TreeNodesProps> = ({
                     </Text>
                     {nodeExtras
                         ? typeof nodeExtras === "function"
-                            ? nodeExtras(k, v)
+                            ? nodeExtras(k, v, path)
                             : nodeExtras
                         : null}
                 </Row>
@@ -81,17 +97,19 @@ const TreeNodes: FC<TreeNodesProps> = ({
                     <TreeNodes
                         path={[...path, String(k)]}
                         depth={depth + 1}
-                        entries={Object.entries(v)}
+                        entries={Array.isArray(v) ? v : Object.entries(v)}
                         nodeExtras={nodeExtras}
                     />
                 ) : null}
             </Column>
         )
     }
+    // I want code that determines if entries is an array of tuples of number, any
 
     return (
         <>
             {entries.map(([k, v]) => {
+                console.log(entries)
                 return <TreeNode k={k} v={v} />
             })}
         </>

@@ -21,7 +21,7 @@ import { getDiffieHellman } from "crypto"
 // fields based on the type of data. (the fields will be all the input types given by,
 // fox ex, testMetadata). Second column will be action buttons, with Update last.
 
-const GET_ID = gql`
+const GET_TESTID = gql`
     query getTest {
         getTest {
             id
@@ -30,21 +30,27 @@ const GET_ID = gql`
     }
 `
 
+const GET_TAGID = gql`
+    query getTag {
+        getTag {
+            id
+            name
+        }
+    }
+`
+
 export type ObjectViewProps = {
-    type: MetadataKey
     value: Record<string, any>
+    type: MetadataKey
+    key: string
     // metadata: Metadata -- figure this out without user input
 }
 
 // data.getTest[0].name
-const getId = (
-    type: MetadataKey,
-    data: Record<string, Record<string, any>>
-) => {
-    for (let key in data) {
-        console.log("data[key].id is: " + data[key].id)
-        if ((Object.values(data[key]) as any).includes(type)) {
-            return data[key].id
+const getId = (type: MetadataKey, data: Record<string, any>) => {
+    for (let k in data) {
+        if ((Object.values(data[k]) as any).includes(type)) {
+            return data[k].id
         }
     }
 }
@@ -57,11 +63,24 @@ const getId = (
 // }
 
 // this will be where the hook exists
-export const ObjectView: FC<ObjectViewProps> = ({ type, value }) => {
+export const ObjectView: FC<ObjectViewProps> = ({ type, value, key }) => {
     //TODO Fix these types from any
     const [submit] = useMutation<ModifyTestReturnType, any>(metadata[type].gql
         .update as any)
-    const { loading, error, data } = useQuery(GET_ID)
+    let query
+    switch (type) {
+        case "test":
+            query = useQuery(GET_TESTID)
+            break
+        case "tags":
+            query = useQuery(GET_TAGID)
+            break
+    }
+    // case "steps":
+    //         query = useQuery(GET_ID3)
+    //         break
+    const { data, loading } = (query as any)!
+
     // const transformedValue = Object.entries(value).map(([k, v]) => {
     //     return { [k]: JSON.stringify(v) }
     // })
@@ -79,10 +98,20 @@ export const ObjectView: FC<ObjectViewProps> = ({ type, value }) => {
 
     // we take in a record of string to any, and we want to output an object that lists the names of fields as keys and the values in those field as values
     // We want to display a ModalView when the value is an object. Otherwise, have it be part of the autoform.
-    console.log(data)
+    let objectData
+    switch (type) {
+        case "test":
+            objectData = data.getTest
+            break
+        case "tags":
+            objectData = data.getTag
+            break
+    }
+    console.log(objectData)
+    console.log(getId(type, objectData))
     const transformedValue: Record<string, any> = {
-        id: loading ? undefined : getId(type, data.getTest),
-        name: type,
+        id: loading ? undefined : getId(type, objectData),
+        name: key,
         ...fromEntries(
             Object.entries(value).map(([k, v]) =>
                 isRecursible(v) ? [k, v] : [k, JSON.stringify(v)]
@@ -110,6 +139,8 @@ export const ObjectView: FC<ObjectViewProps> = ({ type, value }) => {
             ([k, v]: [string, any]) => !Object.keys(staticFields).includes(k)
         )
     )
+    console.log(mutableFields)
+    console.log(staticFields)
     const AutoFormInputType = metadata[type].inType
     return (
         <Row>
@@ -123,8 +154,9 @@ export const ObjectView: FC<ObjectViewProps> = ({ type, value }) => {
                                 toggle: <Button>{k}</Button>,
                                 content: (
                                     <ObjectView
-                                        type={k as MetadataKey}
+                                        key={k}
                                         value={v}
+                                        type={k as MetadataKey}
                                     />
                                 )
                             }}
@@ -132,14 +164,12 @@ export const ObjectView: FC<ObjectViewProps> = ({ type, value }) => {
                     )}
                     validator={new metadata[type].inType()}
                     submit={async (fields: any) => {
-                        console.log("Submit is running")
                         console.log(fields)
-                        console.log(submit)
+                        // console.log(submit)
                         const result = await submitForm({
                             submit,
                             fields
                         })
-                        console.log(result)
                         return result
                     }}
                 />

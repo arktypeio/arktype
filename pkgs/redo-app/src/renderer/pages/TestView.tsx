@@ -45,7 +45,7 @@ const GET_TESTS = gql`
         }
     }
 `
-
+// this doesn't work yet. Fix!
 const MODIFY_TEST = gql`
     mutation signIn($email: String!, $password: String!) {
         signIn(email: $email, password: $password) {
@@ -78,15 +78,17 @@ export const TestView = () => {
             {data && data.getTest ? (
                 <Tree
                     labelKey="name"
-                    nodeExtras={(key: string, value: any) => {
-                        return key in metadata ? (
+                    nodeExtras={(key: string, value: any, path: string[]) => {
+                        const type = path.slice(-1)[0]
+                        return type in metadata ? (
                             <ModalView>
                                 {{
                                     toggle: <Button>Open modal</Button>,
                                     content: (
                                         <ObjectView
-                                            type={key as MetadataKey}
                                             value={value}
+                                            key={key}
+                                            type={type as MetadataKey}
                                         />
                                     )
                                 }}

@@ -51,6 +51,7 @@ type Mutation {
   submitTest(name: String!, tags: [TagInput!]!, steps: [BrowserEventInput!]!): String!
   modifyTest(id: String!, name: String!, tags: [TagInput!]!, steps: [BrowserEventInput!]!): [String!]!
   submitTag(name: String!): String!
+  modifyTag(id: String!, name: String!): String!
   submitBrowserEvent(type: String!, selector: String!, value: String!): String!
 }
 

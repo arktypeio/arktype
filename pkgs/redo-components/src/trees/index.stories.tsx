@@ -15,13 +15,14 @@ const src = {
             tag: () => {
                 console.log(3)
             },
-            steps: {
-                test: {
-                    steps: {
-                        tag: { tag: { tag: "h" } }
-                    }
-                }
-            },
+            tags: [
+                { name: "tag" },
+                { name: "3g" },
+                { name: "dfph" },
+                { name: "dwpj" },
+                { name: "4jj" }
+            ],
+
             test2: {
                 test: {
                     tag: "h"
