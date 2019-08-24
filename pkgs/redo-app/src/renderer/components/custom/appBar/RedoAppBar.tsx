@@ -1,17 +1,17 @@
-import React from "react"
+import React, { CSSProperties } from "react"
 import { Row } from "redo-components"
-import { AppBar } from "redo-components"
+import { AppBar, AppBarProps } from "redo-components"
 import { SearchBar } from "./SearchBar"
 import { HomeButton } from "./HomeButton"
 import { NewTestButton } from "./NewTestButton"
 import { AccountSection } from "./AccountSection"
-import {CloseLearnerButton} from "./CloseLearnerButton"
+import { CloseLearnerButton } from "./CloseLearnerButton"
 import { ScheduleButton } from "./ScheduleButton"
 
 const leftItems = {
     home: <HomeButton />,
     newTest: <NewTestButton />,
-    close: <CloseLearnerButton/>
+    close: <CloseLearnerButton />
 }
 type LeftKey = keyof typeof leftItems
 const centerItems = {
@@ -24,11 +24,13 @@ const rightItems = {
 }
 type RightKey = keyof typeof rightItems
 
-export type RedoAppBarProps = { children: ItemKey[] }
+export type RedoAppBarProps = Omit<AppBarProps, "children"> & {
+    children: ItemKey[]
+}
 export type ItemKey = LeftKey | CenterKey | RightKey
 
-export const RedoAppBar = ({ children }: RedoAppBarProps) => (
-    <AppBar>
+export const RedoAppBar = ({ children, ...rest }: RedoAppBarProps) => (
+    <AppBar {...rest}>
         {[leftItems, centerItems, rightItems].map(group => (
             <div>
                 <Row>
