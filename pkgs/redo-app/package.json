@@ -12,7 +12,7 @@
         "devServer": "NODE_ENV=development webpack-dev-server --config webpack.devServer.config.ts --progress --colors",
         "electron": "electron --remote-debugging-port=9223 ./dist/main.js",
         "clean": "rm -rf dist && mkdir dist",
-        "dist": "npm run build && electron-builder -mw"
+        "dist": "npm run build && electron-builder -l"
     },
     "build": {
         "appId": "com.redo.redo-app",
@@ -30,10 +30,7 @@
             "target": "nsis"
         },
         "linux": {
-            "target": [
-                "deb",
-                "tar.gz"
-            ]
+            "target": "tar.gz"
         }
     },
     "dependencies": {
