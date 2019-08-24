@@ -8614,9 +8614,6 @@ packages:
       node: '>=6'
     peerDependencies:
       jest-resolve: '*'
-    peerDependenciesMeta:
-      jest-resolve:
-        optional: true
     resolution:
       integrity: sha512-pgFw2tm54fzgYvc/OHrnysABEObZCUNFnhjoRjaVOCN8NYc032/gVjPaHD4Aq6ApkSieWtfKAFQtmDKAmhupnQ==
   /jest-regex-util/24.9.0:
@@ -13449,9 +13446,6 @@ packages:
       node: '>=6'
     peerDependencies:
       typescript: '*'
-    peerDependenciesMeta:
-      typescript:
-        optional: true
     resolution:
       integrity: sha512-f5Knjh7XCyRIzoC/z1Su1yLLRrPrFCgtUAh/9fCSP6NKbATwpOL1+idQVXQokK9GRFURn/jYPGPfegIctwunoA==
   /tsconfig-paths-webpack-plugin/3.2.0:
@@ -14643,7 +14637,6 @@ packages:
       integrity: sha512-+1lRovko8WuvEKYqU+dcMSUpjPVqgNFV9IGbnftfJeQIfSYVMYREBlCwr6vp+qPScfgxYifIGkASGeSYY4xBZA==
       tarball: 'file:projects/test.tgz'
     version: 0.0.0
-registry: ''
 specifiers:
   '@apollo/react-hooks': 3.0.0
   '@babel/cli': 7.5.5

@@ -38,9 +38,8 @@ export const rootHandler: Handler<Root> = {
 
 export const initialRoot: Root = {
     learner: learnerInitial,
-    token:
-        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJjanpwdzgzZjIwMDAyOTVoNjY3Y2ZjMWIwIiwiaWF0IjoxNTY2NjcyNjY0fQ.jHn6fA8Xo00kRlp8zRLfH-mxeEVGhtUA5B3O4EVt8_w",
-    page: Page.Detail,
+    token: "",
+    page: Page.Home,
     cardFilter: "",
     detailView: ""
 }
