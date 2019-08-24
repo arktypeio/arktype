@@ -8,7 +8,6 @@ type BrowserEvent {
   type: String!
   selector: String!
   value: String!
-  tags: [Tag!]!
   user: User!
 }
 
@@ -16,14 +15,12 @@ input BrowserEventInput {
   type: String!
   selector: String!
   value: String!
-  tags: [TagInput!]!
 }
 
 type LocalOnlyBrowserEventInput {
   type: String!
   selector: String!
   value: String!
-  tags: [LocalOnlyTagInput!]!
 }
 
 type LocalOnlySignInInput {
@@ -53,7 +50,7 @@ type Mutation {
   signIn(email: String!, password: String!): Session!
   submitTest(name: String!, tags: [TagInput!]!, steps: [BrowserEventInput!]!): String!
   submitTag(name: String!): String!
-  submitBrowserEvent(type: String!, selector: String!, value: String!, tags: [TagInput!]!): String!
+  submitBrowserEvent(type: String!, selector: String!, value: String!): String!
 }
 
 type Query {
