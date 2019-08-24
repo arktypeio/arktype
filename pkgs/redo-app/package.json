@@ -12,25 +12,25 @@
         "devServer": "NODE_ENV=development webpack-dev-server --config webpack.devServer.config.ts --progress --colors",
         "electron": "electron --remote-debugging-port=9223 ./dist/main.js",
         "clean": "rm -rf dist && mkdir dist",
-        "dist": "npm run build && electron-builder -l"
+        "dist": "npm run build && electron-builder -mwl"
     },
     "build": {
         "appId": "com.redo.redo-app",
         "files": [
             "./dist/**/*",
+            "./dist/injected.js",
             "!./dist/mac",
             "!./dist/linux-unpacked",
             "!./dist/win-unpacked"
         ],
+        "linux": {
+            "target": "zip"
+        },
         "mac": {
-            "category": "public.app-category.developer-tools",
-            "target": "dmg"
+            "target": "zip"
         },
         "win": {
-            "target": "nsis"
-        },
-        "linux": {
-            "target": "tar.gz"
+            "target": "zip"
         }
     },
     "dependencies": {
