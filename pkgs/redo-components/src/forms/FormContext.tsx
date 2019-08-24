@@ -7,7 +7,8 @@ export type Fields = Record<string, any>
 export type FormErrors<T extends Fields> = { [K in keyof T]?: string[] }
 
 export type FormActions<T extends Fields, D = any> = {
-    validate: (fields: T) => FormErrors<T>
+    validator: ((fields: T) => FormErrors<T>) | T
+    validate?: (fields: T) => FormErrors<T>
     submit: (fields: T) => Promise<ResponseState<D> | void>
 }
 

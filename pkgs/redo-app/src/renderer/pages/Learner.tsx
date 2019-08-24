@@ -9,7 +9,7 @@ import {
     TextInput
 } from "redo-components"
 import { deactivateLearner, resetLearner } from "state"
-import { LearnerEvents } from "custom"
+import { LearnerEvents, RedoAppBar } from "custom"
 import { CircularProgress } from "@material-ui/core"
 import gql from "graphql-tag"
 import { useMutation } from "@apollo/react-hooks"
@@ -17,12 +17,12 @@ import ChipInput from "material-ui-chip-input"
 import { store } from "../common"
 
 const SAVETEST = gql`
-    mutation submitTest(
+    mutation createTest(
         $name: String!
         $tags: [TagInput!]!
         $steps: [BrowserEventInput!]!
     ) {
-        submitTest(name: $name, tags: $tags, steps: $steps)
+        createTest(name: $name, tags: $tags, steps: $steps)
     }
 `
 
@@ -49,58 +49,40 @@ export const Learner = component({
     const [saveTest] = useMutation(SAVETEST)
     return (
         <Column justify="flex-start">
-            <Row align="center" justify="flex-start">
-                <Button onClick={deactivateLearner} kind="secondary">
-                    Back home
-                </Button>
-
-                <RespondTo response={{ loading: false }}>
-                    <Button
-                        kind="primary"
-                        onClick={async () => {
-                            await saveTest({
-                                variables: {
-                                    name,
-                                    tags: tags.map(_ => ({ name: _ })),
-                                    steps: events.map(
-                                        ({ __typename, ...inputs }: any) =>
-                                            inputs
-                                    )
+            <div style={{ zIndex: 1, position: "fixed" }}>
+                <RedoAppBar>{["close"]}</RedoAppBar>
+                <Row>
+                    <TextInput
+                        value={name}
+                        placeholder="Test Name"
+                        onChange={e =>
+                            store.mutate({
+                                learner: { testName: e.target.value }
+                            })
+                        }
+                    />
+                </Row>
+                {/* TODO Chip input should be moved to redo components as part of: https://trello.com/c/eVo1vyZj */}
+                <Row>
+                    <ChipInput
+                        value={tags}
+                        placeholder="Add Tags"
+                        onAdd={(chip: string) =>
+                            store.mutate({
+                                learner: { testTags: _ => [..._, chip] }
+                            })
+                        }
+                        onDelete={(chip: string) => {
+                            store.mutate({
+                                learner: {
+                                    testTags: _ =>
+                                        _.filter(current => current !== chip)
                                 }
                             })
-                            resetLearner()
                         }}
-                    >
-                        Save test
-                    </Button>
-                </RespondTo>
-            </Row>
-            <Row>
-                <TextInput
-                    value={name}
-                    placeholder="Test name"
-                    onChange={e =>
-                        store.mutate({ learner: { testName: e.target.value } })
-                    }
-                />
-                {/* TODO Chip input should be moved to redo components as part of: https://trello.com/c/eVo1vyZj */}
-                <ChipInput
-                    value={tags}
-                    onAdd={(chip: string) =>
-                        store.mutate({
-                            learner: { testTags: _ => [..._, chip] }
-                        })
-                    }
-                    onDelete={(chip: string) => {
-                        store.mutate({
-                            learner: {
-                                testTags: _ =>
-                                    _.filter(current => current !== chip)
-                            }
-                        })
-                    }}
-                />
-            </Row>
+                    />
+                </Row>
+            </div>
 
             <RespondTo
                 response={{ loading: chromiumInstalling }}
@@ -121,6 +103,29 @@ export const Learner = component({
             >
                 <LearnerEvents events={events} />
             </RespondTo>
+            <Row>
+                <RespondTo response={{ loading: false }}>
+                    <Button
+                        kind="primary"
+                        style={{ bottom: 0, position: "fixed", zIndex: 1 }}
+                        onClick={async () => {
+                            await saveTest({
+                                variables: {
+                                    name,
+                                    tags: tags.map(_ => ({ name: _ })),
+                                    steps: events.map(
+                                        ({ __typename, ...inputs }: any) =>
+                                            inputs
+                                    )
+                                }
+                            })
+                            resetLearner()
+                        }}
+                    >
+                        Save test
+                    </Button>
+                </RespondTo>
+            </Row>
         </Column>
     )
 })
