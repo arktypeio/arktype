@@ -4,6 +4,7 @@ import { Column, Row, Tree } from "redo-components"
 import { useQuery } from "@apollo/react-hooks"
 
 import gql from "graphql-tag"
+import { objectActions } from "../components/custom"
 
 const GET_TAGS = gql`
     query {
@@ -22,12 +23,10 @@ type TagData = {
 export const TagView = () => {
     const { data } = useQuery<TagData>(GET_TAGS)
     return (
-        <Column justify="flex-start">
-            <Row>
-                <RedoAppBar>{["home", "search", "account"]}</RedoAppBar>
-            </Row>
+        <Column>
+            <RedoAppBar>{["home", "search", "account"]}</RedoAppBar>
             {data && data.getTag ? (
-                <Tree from={data.getTag} labelKey="name" />
+                <Tree labelKey="name">{data.getTag}</Tree>
             ) : null}
         </Column>
     )

@@ -19,8 +19,7 @@ export const watchPage = async () => {
                 const browserEvent: BrowserEventInput = {
                     type: e.type,
                     selector: "",
-                    value: "",
-                    tags: []
+                    value: ""
                 }
                 if (e.target) {
                     const target = e.target as HTMLElement
