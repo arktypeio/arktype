@@ -2,15 +2,7 @@ import React from "react"
 import { useEffect } from "react"
 import { Page } from "state"
 import { component } from "blocks"
-import {
-    Home,
-    Learner,
-    SignIn,
-    SignUp,
-    TestView,
-    TagView,
-    BrowserEventView
-} from "."
+import { Home, Learner, SignIn, SignUp, TreeView } from "."
 
 type NameToPage = { [_ in NonNullable<Page>]: JSX.Element }
 
@@ -19,9 +11,7 @@ export const Pages: NameToPage = {
     SIGN_IN: <SignIn />,
     SIGN_UP: <SignUp />,
     LEARNER: <Learner />,
-    TEST_VIEW: <TestView />,
-    TAG_VIEW: <TagView />,
-    BROWSER_EVENT_VIEW: <BrowserEventView />
+    TREE_VIEW: <TreeView />
 }
 
 const UnauthedPages = [Page.SignIn, Page.SignUp]

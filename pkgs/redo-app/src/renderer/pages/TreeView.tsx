@@ -1,9 +1,9 @@
 import React from "react"
-import { Button, ModalView } from "redo-components"
+import { ModalView } from "redo-components"
 import { RedoAppBar } from "custom"
-import { Column, Tree } from "redo-components"
+import { Column, Tree, IconButton } from "redo-components"
+import OpenInNew from "@material-ui/icons/OpenInNew"
 import { useQuery } from "@apollo/react-hooks"
-
 import gql from "graphql-tag"
 import { BrowserEvent, Tag, metadata, MetadataKey } from "redo-model"
 import { ObjectView } from "../components/custom/ObjectView"
@@ -40,7 +40,9 @@ type TestData = {
     }[]
 }
 
-export const TestView = () => {
+export type TreeViewProps = {}
+
+export const TreeView = ({  }: TreeViewProps) => {
     const { data } = useQuery<TestData>(GET_TESTS)
     return (
         <Column justify="center">
@@ -49,16 +51,16 @@ export const TestView = () => {
                 <Tree
                     labelKey="name"
                     nodeExtras={(key: string, value: any, path: string[]) => {
-                        const type = path.slice(-1)[0]
-                        return type in metadata ? (
+                        const objectType = path.slice(-1)[0]
+                        return objectType in metadata ? (
                             <ModalView>
                                 {{
-                                    toggle: <Button>Open modal</Button>,
+                                    toggle: <IconButton Icon={OpenInNew} />,
                                     content: (
                                         <ObjectView
                                             value={value}
                                             key={key}
-                                            type={type as MetadataKey}
+                                            type={objectType as MetadataKey}
                                         />
                                     )
                                 }}

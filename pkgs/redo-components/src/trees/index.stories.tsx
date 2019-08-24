@@ -1,66 +1,75 @@
 import React from "react"
 import { storiesOf } from "@storybook/react"
 import { Tree } from "."
-import { Column } from "../layouts"
-import { DisplayAs } from "../displayAs"
-import { Button } from "../buttons"
+import { IconButton } from "../buttons"
+import { Icons } from "../icons"
+import { Modal } from "../modals"
+import { Text } from "../text"
 
 const src = {
-    browserEvent: "stuff",
-    tag: 33,
-    test: {
-        tag: true,
-        browserEvent: {
-            tag: () => {
-                console.log(3)
-            },
-            tags: [
-                { name: "tag" },
-                { name: "3g" },
-                { name: "dfph" },
-                { name: "dwpj" },
-                { name: "4jj" }
-            ],
-
-            test2: {
-                test: {
-                    tag: "h"
+    username: "ssalbdivad",
+    metadata: {
+        fileCount: 9801,
+        isAdmin: true
+    },
+    docs: {
+        work: {
+            tpsReports: ["Report1.txt", "Report2.txt", "Report3.txt"],
+            notes: {
+                meetings: {
+                    standup: "standup.md",
+                    retro: "retro.md"
                 }
             }
-        }
+        },
+        play: [],
+        other: "JacksADullBoy.txt"
+    },
+    music: {
+        britney: ["oops.mp3", "iDidIt.mp3", "again.mp3"]
+    },
+    videos: {
+        howRedoGotStarted: "https://www.youtube.com/watch?v=oHg5SJYRHA0"
     }
 }
 
 storiesOf("TreeView", module)
-    .add("Input as array of test data", () => (
-        <Tree labelKey="browserEvent">{[src]}</Tree>
-    ))
-    .add("Input as single object of test data", () => <Tree>{src}</Tree>)
-    .add("Input with static nodeExtras", () => (
+    .add("from an array", () => <Tree labelKey="username">{[src]}</Tree>)
+    .add("from an object", () => <Tree>{src}</Tree>)
+    .add("with static extras", () => (
         <Tree
-            nodeExtras={<Button onClick={() => console.log("Hey, world!")} />}
+            nodeExtras={
+                <IconButton
+                    Icon={Icons.add}
+                    onClick={() =>
+                        console.log(
+                            "If a tree falls in the console, and no one is around to hear it..."
+                        )
+                    }
+                />
+            }
         >
             {src}
         </Tree>
     ))
-    .add("Input with context-aware nodeExtras", () => (
+    .add("with context-aware extras", () => (
         <Tree
-            nodeExtras={(key, value) => (
-                <Button onClick={() => console.log(`${key}: ${value}`)} />
+            nodeExtras={(key, value, path) => (
+                <Modal>
+                    {{
+                        toggle: <IconButton Icon={Icons.openModal} />,
+                        content: (
+                            <>
+                                <Text>{`This modal was created when you clicked on "${key}" at ${JSON.stringify(
+                                    path
+                                )}, which has the following value:`}</Text>
+                                <Text>{JSON.stringify(value)}</Text>
+                            </>
+                        )
+                    }}
+                </Modal>
             )}
         >
             {src}
         </Tree>
     ))
-
-export const objectActions: Record<string, DisplayAs> = {
-    test: {
-        actions: ["run", "delete"]
-    },
-    browserEvent: {
-        actions: ["delete", "modify"]
-    },
-    tag: {
-        actions: ["delete", "View items with this tag"]
-    }
-}
