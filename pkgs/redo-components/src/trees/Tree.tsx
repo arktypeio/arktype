@@ -6,8 +6,6 @@ import { Text } from "../text"
 import { Button } from "@material-ui/core"
 import { FormText } from "../forms"
 
-// Should the treeview even include the modal automatically, or should that be configurable? I'm leaning towards making it configurable.
-
 type TreeSource = ItemOrList<Record<string, any>>
 
 export type TreeProps<O extends TreeSource> = Omit<
@@ -65,8 +63,6 @@ const TreeNodes: FC<TreeNodesProps> = ({
         const [state, setState] = useState({ show: false, hovered: false })
         const { show, hovered } = state
         const recursible = isRecursible(v)
-        const useLabelKey =
-            typeof v === "string" ? false : Object.entries(v).keys()
         return (
             <Column style={{ marginLeft: depth * 5 }}>
                 <Row>
@@ -97,7 +93,7 @@ const TreeNodes: FC<TreeNodesProps> = ({
                     <TreeNodes
                         path={[...path, String(k)]}
                         depth={depth + 1}
-                        entries={Array.isArray(v) ? v : Object.entries(v)}
+                        entries={Object.entries(v)}
                         nodeExtras={nodeExtras}
                     />
                 ) : null}
@@ -110,8 +106,19 @@ const TreeNodes: FC<TreeNodesProps> = ({
         <>
             {entries.map(([k, v]) => {
                 console.log(entries)
-                return <TreeNode k={k} v={v} />
+                console.log(v)
+                //TODO find a more robust way of handling arrays in tree.
+                const { name } = isNumeric(k) ? v : false
+                return name ? (
+                    <TreeNode k={name} v={v} />
+                ) : (
+                    <TreeNode k={k} v={v} />
+                )
             })}
         </>
     )
+}
+// this is copied from Stack Overflow
+function isNumeric(input: any) {
+    return input - 0 == input && ("" + input).trim().length > 0
 }

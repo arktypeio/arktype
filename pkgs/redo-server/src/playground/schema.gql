@@ -4,137 +4,115 @@
 # -----------------------------------------------
 
 type BrowserEvent {
-    id: ID!
-    type: String!
-    selector: String!
-    value: String!
-    user: User!
+  id: ID!
+  type: String!
+  selector: String!
+  value: String!
+  user: User!
 }
 
 input BrowserEventInput {
-    type: String!
-    selector: String!
-    value: String!
+  type: String!
+  selector: String!
+  value: String!
 }
 
 type LocalOnlyBrowserEventInput {
-    type: String!
-    selector: String!
-    value: String!
+  type: String!
+  selector: String!
+  value: String!
 }
 
 type LocalOnlySignInInput {
-    email: String!
-    password: String!
+  email: String!
+  password: String!
 }
 
 type LocalOnlySignUpInput {
-    email: String!
-    password: String!
-    firstName: String!
-    lastName: String!
+  email: String!
+  password: String!
+  firstName: String!
+  lastName: String!
 }
 
 type LocalOnlyTagInput {
-    name: String!
+  name: String!
 }
 
 type LocalOnlyTestInput {
-    name: String!
-    tags: [LocalOnlyTagInput!]!
-    steps: [LocalOnlyBrowserEventInput!]!
+  name: String!
+  tags: [LocalOnlyTagInput!]!
+  steps: [LocalOnlyBrowserEventInput!]!
 }
 
 type Mutation {
-    signUp(
-        email: String!
-        password: String!
-        firstName: String!
-        lastName: String!
-    ): Session!
-    signIn(email: String!, password: String!): Session!
-    submitTest(
-        name: String!
-        tags: [TagInput!]!
-        steps: [BrowserEventInput!]!
-    ): String!
-    modifyTest(
-        id: String!
-        name: String!
-        tags: [TagInput!]!
-        steps: [BrowserEventInput!]!
-    ): [String!]!
-    submitTag(name: String!): String!
-    modifyTag(id: String!, name: String!): String!
-    submitBrowserEvent(
-        type: String!
-        selector: String!
-        value: String!
-    ): String!
+  signUp(email: String!, password: String!, firstName: String!, lastName: String!): Session!
+  signIn(email: String!, password: String!): Session!
+  submitTest(name: String!, tags: [TagInput!]!, steps: [BrowserEventInput!]!): String!
+  modifyTest(id: String!, name: String!, tags: [TagInput!]!, steps: [BrowserEventInput!]!): [String!]!
+  submitTag(name: String!): String!
+  modifyTag(id: String!, name: String!): String!
+  submitBrowserEvent(type: String!, selector: String!, value: String!): String!
 }
 
 type Query {
-    me: User!
-    getTest: [Test!]!
-    getTag: [Tag!]!
-    getBrowserEvent: [BrowserEvent!]!
+  me: User!
+  getTest: [Test!]!
+  getTag: [Tag!]!
+  getBrowserEvent: [BrowserEvent!]!
 }
 
 type Session {
-    id: ID!
-    token: String!
-    user: User!
+  id: ID!
+  token: String!
+  user: User!
 }
 
 input SignInInput {
-    email: String!
-    password: String!
+  email: String!
+  password: String!
 }
 
 input SignUpInput {
-    email: String!
-    password: String!
-    firstName: String!
-    lastName: String!
+  email: String!
+  password: String!
+  firstName: String!
+  lastName: String!
 }
 
 type Tag {
-    id: ID!
+  id: ID!
 
-    """
-    String @unique
-    """
-    name: String!
-    user: User!
+  """String @unique"""
+  name: String!
+  user: User!
 }
 
 input TagInput {
-    name: String!
+  name: String!
 }
 
 type Test {
-    id: ID!
-    user: User!
-    name: String!
-    tags: [Tag!]!
-    steps: [BrowserEvent!]!
+  id: ID!
+  user: User!
+  name: String!
+  tags: [Tag!]!
+  steps: [BrowserEvent!]!
 }
 
 input TestInput {
-    name: String!
-    tags: [TagInput!]!
-    steps: [BrowserEventInput!]!
+  name: String!
+  tags: [TagInput!]!
+  steps: [BrowserEventInput!]!
 }
 
 type User {
-    id: ID!
+  id: ID!
 
-    """
-    String @unique
-    """
-    email: String!
-    password: String!
-    roles: [String!]!
-    firstName: String!
-    lastName: String!
+  """String @unique"""
+  email: String!
+  password: String!
+  roles: [String!]!
+  firstName: String!
+  lastName: String!
 }

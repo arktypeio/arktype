@@ -61,7 +61,7 @@ export const SignUp: FC = () => {
                     <Logo />
                     <Form<SignUpInput, SignUpData>
                         validator={validator}
-                        submit={async fields => {
+                        submit={async (fields: any) => {
                             const result = await submitForm({ submit, fields })
                             if (result.data && result.data.signUp) {
                                 store.mutate({

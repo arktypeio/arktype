@@ -125,15 +125,6 @@ export const ObjectView: FC<ObjectViewProps> = ({ type, value, key }) => {
                   isRecursible(v) || k === "id" ? [k, v] : undefined
               )
           )
-    // const mutableFields = {
-    //     ...Object.keys(transformedValue)
-    //         .filter(entry => true) //entry in Object.keys(staticFields))
-    //         .map(key => {
-    //             return {
-    //                 [[transformedValue[key]][0]]: transformedValue[key][1]
-    //             }
-    //         })
-    // }
     const mutableFields = fromEntries(
         Object.entries(transformedValue).filter(
             ([k, v]: [string, any]) => !Object.keys(staticFields).includes(k)
