@@ -1,62 +1,42 @@
 import React from "react"
-import { component } from "blocks"
-import { AddButton, ScheduleButton, AccountButton, HelpButton } from "custom"
-import { Row, Menu, Button, useTheme } from "redo-components"
-import { SearchInput } from "../SearchInput"
-import { Page } from "renderer/state"
+import { Row } from "redo-components"
 import { AppBar } from "redo-components"
-import { IconButton } from "../Buttons"
-import {
-    Person,
-    HelpOutline,
-    Schedule,
-    Add,
-    MoreVert
-} from "@material-ui/icons"
 import { SearchBar } from "./SearchBar"
+import { HomeButton } from "./HomeButton"
+import { NewTestButton } from "./NewTestButton"
+import { AccountSection } from "./AccountSection"
+import {CloseLearnerButton} from "./CloseLearnerButton"
+import { ScheduleButton } from "./ScheduleButton"
 
-export const RedoAppBar = component({
-    store: true
-})(({ store }) => {
-    const theme = useTheme()
-    return (
-        <AppBar>
+const leftItems = {
+    home: <HomeButton />,
+    newTest: <NewTestButton />,
+    close: <CloseLearnerButton/>
+}
+type LeftKey = keyof typeof leftItems
+const centerItems = {
+    search: <SearchBar />
+}
+type CenterKey = keyof typeof centerItems
+
+const rightItems = {
+    account: <AccountSection />
+}
+type RightKey = keyof typeof rightItems
+
+export type RedoAppBarProps = { children: ItemKey[] }
+export type ItemKey = LeftKey | CenterKey | RightKey
+
+export const RedoAppBar = ({ children }: RedoAppBarProps) => (
+    <AppBar>
+        {[leftItems, centerItems, rightItems].map(group => (
             <div>
                 <Row>
-                    <IconButton
-                        Icon={Add}
-                        style={{ color: "white" }}
-                        onClick={() =>
-                            store.mutate({
-                                learner: { active: true }
-                            })
-                        }
-                    />
-                    <IconButton Icon={Schedule} style={{ color: "white" }} />
+                    {children
+                        .filter(key => key in group)
+                        .map(key => (group as any)[key])}
                 </Row>
             </div>
-
-            <SearchBar />
-
-            <div>
-                <Row>
-                    <IconButton Icon={HelpOutline} style={{ color: "white" }} />
-
-                    <Menu>
-                        {{
-                            toggle: (
-                                <IconButton
-                                    Icon={Person}
-                                    style={{ color: "white" }}
-                                />
-                            ),
-                            options: {
-                                Logout: () => store.mutate({ token: "" })
-                            }
-                        }}
-                    </Menu>
-                </Row>
-            </div>
-        </AppBar>
-    )
-})
+        ))}
+    </AppBar>
+)

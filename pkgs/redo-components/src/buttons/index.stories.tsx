@@ -21,10 +21,6 @@ storiesOf("Button", module)
             </Button>
         )
     })
-    .add("IconButton", () => {
-        return (
-            <ThemeProvider theme={defaultTheme}>
-                <IconButton Icon={AccountCircle} />
-            </ThemeProvider>
-        )
-    })
+    .add("IconButton", () => (
+        <IconButton Icon={AccountCircle} onClick={() => console.log("Hello")} />
+    ))
