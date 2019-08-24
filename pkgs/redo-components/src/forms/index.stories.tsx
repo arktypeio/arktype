@@ -1,15 +1,12 @@
 import React, { FC } from "react"
 import { storiesOf } from "@storybook/react"
-import { withTheme } from "../storybook"
-import { FormText, FormSubmit, Form, AutoForm } from "."
+import { withKnobs } from "@storybook/addon-knobs"
 import { Text } from "../text"
 import { Column } from "../layouts"
-import { withKnobs, select } from "@storybook/addon-knobs"
-import { ThemeProvider } from "@material-ui/styles"
-import { defaultTheme } from "../styles"
+import { AutoForm, Form, FormText, FormSubmit } from "."
 
 storiesOf("Form", module)
-    .addDecorator(withTheme())
+    .add("Text only", () => <TextOnlyForm />)
     .addDecorator(withKnobs)
     .add("Text only", () => <TextOnlyForm />)
     .add("AutoForm", () => (
@@ -32,34 +29,30 @@ type TextOnlyFormFields = {
     last: string
 }
 
-const TextOnlyForm: FC = () => {
-    return (
-        <ThemeProvider theme={defaultTheme}>
-            <Form<TextOnlyFormFields, string>
-                submit={async ({ first, last }) => ({
-                    data: `Hello, ${first} ${last}.`
-                })}
-                validator={_ => {
-                    return {
-                        first: [],
-                        last: []
+const TextOnlyForm: FC = () => (
+    <Form<TextOnlyFormFields, string>
+        submit={async ({ first, last }) => ({
+            data: `Hello, ${first} ${last}.`
+        })}
+        validator={({ first, last }) => {
+            return {
+                first: first ? [] : ["We need this!"],
+                last: last ? [] : ["We need this!"]
+            }
+        }}
+    >
+        <Column width={200}>
+            <FormText name="first" />
+            <FormText name="last" />
+            <FormSubmit
+                responseOptions={{
+                    data: {
+                        displayAs: data => <Text>{data.value}</Text>
                     }
                 }}
             >
-                <Column width={200}>
-                    <FormText name="first" />
-                    <FormText name="last" />
-                    <FormSubmit
-                        responseOptions={{
-                            data: {
-                                displayAs: data => <Text>{data.value}</Text>
-                            }
-                        }}
-                    >
-                        Submit
-                    </FormSubmit>
-                </Column>
-            </Form>
-        </ThemeProvider>
-    )
-}
+                Submit
+            </FormSubmit>
+        </Column>
+    </Form>
+)

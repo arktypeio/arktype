@@ -1,4 +1,3 @@
-import "typeface-ubuntu"
 import React, { FC } from "react"
 import { AppContents, Column } from "redo-components"
 import { AppHeader, HowItWorks, SignUp, SubHeader } from "./components"

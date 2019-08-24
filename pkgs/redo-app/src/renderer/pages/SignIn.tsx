@@ -1,11 +1,10 @@
 import React, { FC } from "react"
 import { Theme } from "@material-ui/core"
-import { makeStyles, useTheme } from "@material-ui/styles"
+import { useTheme } from "@material-ui/styles"
 import {
     FormText,
     FormSubmit,
     Column,
-    Row,
     Card,
     Form,
     Button

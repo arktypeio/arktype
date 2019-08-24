@@ -1,16 +1,16 @@
 import React from "react"
-import { storiesOf } from "@storybook/react"
-import { withTheme } from "../storybook"
-import { TextInput } from "."
-import { ThemeProvider } from "@material-ui/styles"
-import { defaultTheme } from "../styles"
 import { withKnobs, select } from "@storybook/addon-knobs"
+import { storiesOf } from "@storybook/react"
+import { TextInput } from "."
 
-storiesOf("Text Input", module)
-    .addDecorator(withTheme())
+storiesOf("Input", module)
     .addDecorator(withKnobs)
-    .add("Input with knobs", () => (
-        <ThemeProvider theme={defaultTheme}>
-            <TextInput kind={select("kind", ["outlined", "underlined"])} />
-        </ThemeProvider>
+    .add("Text", () => (
+        <TextInput
+            kind={select(
+                "kind",
+                { outlined: "outlined", underlined: "underlined" },
+                "outlined"
+            )}
+        />
     ))

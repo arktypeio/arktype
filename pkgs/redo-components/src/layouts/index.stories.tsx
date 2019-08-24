@@ -1,32 +1,39 @@
 import React, { FC } from "react"
 import { storiesOf } from "@storybook/react"
-import { withTheme } from "../storybook"
-import { defaultTheme } from "../styles"
-import { Row, Column } from "."
-import { Card } from "../cards"
 import { withKnobs, select, boolean, number } from "@storybook/addon-knobs"
+import { defaultTheme, ThemeProvider } from "../styles"
+import { Card } from "../cards"
+import { Row, Column } from "."
 
 const getKnobProps = () => ({
-    align: select("align", [
-        "stretch",
-        "center",
-        "flex-start",
-        "flex-end",
-        "baseline"
-    ]),
+    align: select(
+        "align",
+        {
+            stretch: "stretch",
+            center: "center",
+            "flex-start": "flex-start",
+            "flex-end": "flex-end",
+            baseline: "baseline"
+        },
+        "flex-start"
+    ),
     grow: boolean("grow", false),
-    height: number("height"),
-    width: number("width"),
+    height: number("height", undefined as any),
+    width: number("width", undefined as any),
     reverse: boolean("reverse", false),
     full: boolean("full", false),
-    justify: select("justify", [
-        "flex-start",
-        "center",
-        "flex-end",
-        "space-between",
-        "space-around",
-        "space-evenly"
-    ])
+    justify: select(
+        "justify",
+        {
+            "flex-start": "flex-start",
+            center: "center",
+            "flex-end": "flex-end",
+            "space-between": "space-between",
+            "space-around": "space-around",
+            "space-evenly": "space-evenly"
+        },
+        "flex-start"
+    )
 })
 
 const cards = (
@@ -38,13 +45,8 @@ const cards = (
 )
 
 const C: FC = ({ children }) => (
-    <div style={{ height: "95vh", width: "95vw" }}>{children}</div>
-)
-
-storiesOf("Layout", module)
-    .addDecorator(withKnobs)
-    .addDecorator(
-        withTheme({
+    <ThemeProvider
+        theme={{
             ...defaultTheme,
             overrides: {
                 MuiGrid: {
@@ -53,24 +55,20 @@ storiesOf("Layout", module)
                     }
                 }
             }
-        })
-    )
-    .add("Row with knobs", () => (
+        }}
+    >
+        <div style={{ height: "95vh", width: "95vw" }}>{children}</div>
+    </ThemeProvider>
+)
+
+storiesOf("Layout", module)
+    .addDecorator(withKnobs)
+    .add("Row", () => (
         <C>
             <Row {...getKnobProps()}>{cards}</Row>
         </C>
     ))
-    .add("Column with knobs", () => (
-        <C>
-            <Column {...getKnobProps()}>{cards}</Column>
-        </C>
-    ))
-    .add("Row of cards", () => (
-        <C>
-            <Row {...getKnobProps()}>{cards}</Row>
-        </C>
-    ))
-    .add("Column of cards", () => (
+    .add("Column", () => (
         <C>
             <Column {...getKnobProps()}>{cards}</Column>
         </C>

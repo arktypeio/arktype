@@ -1,6 +1,5 @@
 import React from "react"
 import { storiesOf } from "@storybook/react"
-import { withTheme } from "../storybook"
 import { Tree } from "."
 import { Column } from "../layouts"
 import { DisplayAs } from "../displayAs"
@@ -33,7 +32,6 @@ const src = {
 }
 
 storiesOf("TreeView", module)
-    .addDecorator(withTheme())
     .add("Input as array of test data", () => (
         <Tree labelKey="browserEvent">{[src]}</Tree>
     ))

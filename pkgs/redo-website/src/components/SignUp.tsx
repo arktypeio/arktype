@@ -14,7 +14,7 @@ export const SignUp = () => {
         <Column align="center">
             <Text variant="h4">🚀Launching 8/24</Text>
             <Form<{ email: string }>
-                validate={_ => ({ email: [] })}
+                validator={_ => ({ email: [] })}
                 submit={async ({ email }) => track.prelaunchRegister({ email })}
             >
                 <FormText name="email" />

@@ -20,7 +20,7 @@ export const Menu: FC<MenuProps> = ({
             setAnchor(e.currentTarget)
     })
     return (
-        <>
+        <div>
             {button}
             <MuiMenu
                 anchorEl={anchor}
@@ -28,12 +28,18 @@ export const Menu: FC<MenuProps> = ({
                 onClose={() => setAnchor(null)}
                 {...rest}
             >
-                {Object.entries(options!).map(([name, onClick]) => (
-                    <MenuItem onClick={onClick} key={name}>
+                {Object.entries(options).map(([name, onClick]) => (
+                    <MenuItem
+                        onClick={() => {
+                            onClick()
+                            setAnchor(null)
+                        }}
+                        key={name}
+                    >
                         {name}
                     </MenuItem>
                 ))}
             </MuiMenu>
-        </>
+        </div>
     )
 }

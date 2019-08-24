@@ -65,7 +65,7 @@ type TestData = {
 export const TestView = () => {
     const { data } = useQuery<TestData>(GET_TESTS)
     return (
-        <Column justify="flex-start" full>
+        <Column justify="center">
             <Row>
                 <Button
                     kind="secondary"
