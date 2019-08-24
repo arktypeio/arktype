@@ -1,33 +1,11 @@
 import React from "react"
-import { HomeActionsRow } from "custom"
-import {
-    Column,
-    Row,
-    Button,
-    Tree,
-    FormText,
-    Form,
-    FormSubmit,
-    AutoForm,
-    Text,
-    ModalView
-} from "redo-components"
+import { Button, ModalView } from "redo-components"
+import { RedoAppBar } from "custom"
+import { Column, Tree } from "redo-components"
 import { useQuery } from "@apollo/react-hooks"
-import { store } from "renderer/common"
-import { Page } from "renderer/state"
 
 import gql from "graphql-tag"
-import {
-    BrowserEvent,
-    Tag,
-    metadata,
-    MetadataKey,
-    Metadata,
-    TypeAction
-} from "redo-model"
-import { TestInput, Test } from "redo-model"
-import { actionToButton } from "../components/custom/ActionButtons"
-import { ValueFrom } from "redo-utils"
+import { BrowserEvent, Tag, metadata, MetadataKey } from "redo-model"
 import { ObjectView } from "../components/custom/ObjectView"
 
 const GET_TESTS = gql`
@@ -66,15 +44,7 @@ export const TestView = () => {
     const { data } = useQuery<TestData>(GET_TESTS)
     return (
         <Column justify="center">
-            <Row>
-                <Button
-                    kind="secondary"
-                    onClick={() => store.mutate({ page: Page.Home })}
-                >
-                    Home
-                </Button>
-                <HomeActionsRow />
-            </Row>
+            <RedoAppBar>{["home", "search", "account"]}</RedoAppBar>
             {data && data.getTest ? (
                 <Tree
                     labelKey="name"

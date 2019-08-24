@@ -1,6 +1,6 @@
 export * from "./cards"
 export * from "./Buttons"
-export * from "./HomeActionsRow"
+export * from "./appBar/RedoAppBar"
 export * from "./SuggestionResultsGrid"
 export * from "./LearnerEvents"
 export * from "./ObjectActions"
