@@ -2,11 +2,11 @@ import { test as t } from "../test"
 
 describe("test", () => {
     test("works", async () => {
-        t({
+        await t({
             type: "click",
-            selector: ".MuiExpansionPanelSummary-expandIcon",
+            selector: ".MuiButton-label",
             value: "",
             tags: []
         })
-    })
+    }, 60000)
 })

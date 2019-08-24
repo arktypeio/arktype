@@ -3,18 +3,20 @@ import { BrowserEventInput } from "redo-model"
 import { ValueFrom } from "redo-utils"
 
 export const test = async (...steps: BrowserEventInput[]) => {
-    const browser = await p.launch({ headless: false })
+    const browser = await p.launch({ headless: false, slowMo: 250 })
     const page = await browser.newPage()
     await page.goto("https://redo.qa")
     await page.screenshot({ path: "before.png" })
-    steps.forEach(step => redo(step, page))
+    for (const step of steps) {
+        await redo(step, page)
+    }
     await page.screenshot({ path: "after.png" })
     await browser.close()
     return true
 }
 
-export const redo = (step: BrowserEventInput, page: Page) => {
-    stepTypes[step.type](step, page)
+export const redo = async (step: BrowserEventInput, page: Page) => {
+    await stepTypes[step.type](step, page)
 }
 
 export const click = async ({ selector }: BrowserEventInput, page: Page) => {
