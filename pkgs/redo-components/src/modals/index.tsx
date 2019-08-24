@@ -1,1 +1,1 @@
-export * from "./ModalView"
+export * from "./Modal"

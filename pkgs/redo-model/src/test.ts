@@ -26,6 +26,18 @@ export class TestInput {
     steps: BrowserEventInput[]
 }
 
+@InType()
+export class TestUpdate {
+    @InField({ validate: ["filled"], options: { nullable: true } })
+    name?: string
+
+    @InField({ type: as => [TagInput], options: { nullable: true } })
+    tags?: TagInput[]
+
+    @InField({ type: as => [BrowserEventInput], options: { nullable: true } })
+    steps?: BrowserEventInput[]
+}
+
 @OutType()
 export class Test {
     @OutField({ type: as => ID })
@@ -44,27 +56,36 @@ export class Test {
     steps: BrowserEvent[]
 }
 
-// put GQL queries in the metadata
 export const testMetadata: TypeMetadata = {
-    actions: [TypeAction.Run, TypeAction.Delete],
+    actions: [TypeAction.Run, TypeAction.Update, TypeAction.Delete],
     gql: {
+        get: gql`
+            query {
+                getTest {
+                    id
+                    name
+                    steps {
+                        type
+                        selector
+                        value
+                    }
+                    tags {
+                        name
+                    }
+                }
+            }
+        `,
         update: gql`
-            mutation modifyTest(
+            mutation updateTest(
                 $id: String!
-                $name: String!
-                $tags: [TagInput!]!
-                $steps: [BrowserEventInput!]!
+                $name: String
+                $tags: [TagInput!]
+                $steps: [BrowserEventInput!]
             ) {
-                modifyTest(id: $id, name: $name, tags: $tags, steps: $steps)
+                updateTest(id: $id, name: $name, tags: $tags, steps: $steps)
             }
         `
     },
     inType: TestInput,
     outType: Test
-}
-
-export type ModifyTestReturnType = {
-    data: {
-        modifyTest: string
-    }
 }

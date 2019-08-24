@@ -4,9 +4,7 @@ import { Handler } from "shapeql"
 
 export enum Page {
     Home = "HOME",
-    BrowserEventView = "BROWSER_EVENT_VIEW",
-    TestView = "TEST_VIEW",
-    TagView = "TAG_VIEW",
+    Detail = "DETAIL",
     SignIn = "SIGN_IN",
     SignUp = "SIGN_UP",
     Learner = "LEARNER"
@@ -29,6 +27,9 @@ export class Root {
 
     @Field()
     cardFilter: string
+
+    @Field()
+    detailView: string
 }
 
 export const rootHandler: Handler<Root> = {
@@ -37,7 +38,9 @@ export const rootHandler: Handler<Root> = {
 
 export const initialRoot: Root = {
     learner: learnerInitial,
-    token: "",
-    page: Page.Home,
-    cardFilter: ""
+    token:
+        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJjanpwdzgzZjIwMDAyOTVoNjY3Y2ZjMWIwIiwiaWF0IjoxNTY2NjcyNjY0fQ.jHn6fA8Xo00kRlp8zRLfH-mxeEVGhtUA5B3O4EVt8_w",
+    page: Page.Detail,
+    cardFilter: "",
+    detailView: ""
 }

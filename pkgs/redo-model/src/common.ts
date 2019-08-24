@@ -154,14 +154,18 @@ export const OutField = ({ schemaSuffix, type, options }: OutArgs = {}) => (
     })
 
 export type TypeMetadata = {
-    gql: Record<string, string>
-    actions: TypeAction[]
     inType: Class<any>
     outType: Class<any>
+    gql: {
+        get: any
+        create?: any
+        update?: any
+        delete?: any
+    }
+    actions?: TypeAction[]
 }
 
 export enum TypeAction {
-    Create = "CREATE",
     Delete = "DELETE",
     Update = "UPDATE",
     Run = "RUN"

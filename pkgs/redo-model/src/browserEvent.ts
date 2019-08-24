@@ -1,5 +1,13 @@
-import { InField, InType, OutType, OutField, ID } from "./common"
-import { Tag, TagInput } from "./tag"
+import gql from "graphql-tag"
+import {
+    InField,
+    InType,
+    OutType,
+    OutField,
+    ID,
+    TypeMetadata,
+    TypeAction
+} from "./common"
 import { User } from "./user"
 
 @OutType()
@@ -29,4 +37,33 @@ export class BrowserEventInput {
 
     @InField()
     value: string
+}
+
+@InType()
+export class BrowserEventUpdate {
+    @InField({ options: { nullable: true } })
+    type?: string
+
+    @InField({ options: { nullable: true } })
+    selector?: string
+
+    @InField({ options: { nullable: true } })
+    value?: string
+}
+
+export const browserEventMetadata: TypeMetadata = {
+    inType: BrowserEventInput,
+    outType: BrowserEvent,
+    actions: [TypeAction.Update, TypeAction.Delete],
+    gql: {
+        get: gql`
+            query {
+                getBrowserEvent {
+                    selector
+                    type
+                    value
+                }
+            }
+        `
+    }
 }

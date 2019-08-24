@@ -53,10 +53,9 @@ export const Form = <T extends Fields, D = any>({
                     ...formContext.getValues(),
                     ...staticValues
                 }
-                console.log(values)
                 if (
                     Object.values(validate(values as any)).every(
-                        _ => !_ || !_.length
+                        errors => !errors || !errors.length
                     )
                 ) {
                     setSubmitState({ loading: true })

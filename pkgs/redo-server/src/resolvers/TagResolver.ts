@@ -13,7 +13,7 @@ import { Context } from "../context"
 export class TagResolver {
     @Authorized()
     @Mutation(returns => String)
-    async submitTag(
+    async createTag(
         @Args() { name }: TagInput,
         @Ctx() { photon, id }: Context
     ) {
@@ -33,22 +33,5 @@ export class TagResolver {
             include: { user: true }
         })
         return results
-    }
-    @Authorized()
-    @Mutation(returns => String)
-    async modifyTag(
-        @Args() { name }: TagInput,
-        @Arg("id") tagId: string,
-        @Ctx() { photon, id }: Context
-    ) {
-        const tag = await photon.tags.update({
-            data: {
-                name
-            },
-            where: {
-                id: tagId
-            }
-        })
-        return tag.id
     }
 }

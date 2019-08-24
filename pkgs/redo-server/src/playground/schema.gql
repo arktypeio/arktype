@@ -17,10 +17,22 @@ input BrowserEventInput {
   value: String!
 }
 
+input BrowserEventUpdate {
+  type: String
+  selector: String
+  value: String
+}
+
 type LocalOnlyBrowserEventInput {
   type: String!
   selector: String!
   value: String!
+}
+
+type LocalOnlyBrowserEventUpdate {
+  type: String
+  selector: String
+  value: String
 }
 
 type LocalOnlySignInInput {
@@ -45,14 +57,20 @@ type LocalOnlyTestInput {
   steps: [LocalOnlyBrowserEventInput!]!
 }
 
+type LocalOnlyTestUpdate {
+  name: String
+  tags: [LocalOnlyTagInput!]
+  steps: [LocalOnlyBrowserEventInput!]
+}
+
 type Mutation {
   signUp(email: String!, password: String!, firstName: String!, lastName: String!): Session!
   signIn(email: String!, password: String!): Session!
-  submitTest(name: String!, tags: [TagInput!]!, steps: [BrowserEventInput!]!): String!
-  modifyTest(id: String!, name: String!, tags: [TagInput!]!, steps: [BrowserEventInput!]!): [String!]!
-  submitTag(name: String!): String!
-  modifyTag(id: String!, name: String!): String!
-  submitBrowserEvent(type: String!, selector: String!, value: String!): String!
+  createTest(name: String!, tags: [TagInput!]!, steps: [BrowserEventInput!]!): String!
+  updateTest(id: String!, name: String, tags: [TagInput!], steps: [BrowserEventInput!]): String!
+  createTag(name: String!): String!
+  createBrowserEvent(type: String!, selector: String!, value: String!): String!
+  updateBrowserEvent(id: String!, type: String, selector: String, value: String): String!
 }
 
 type Query {
@@ -104,6 +122,12 @@ input TestInput {
   name: String!
   tags: [TagInput!]!
   steps: [BrowserEventInput!]!
+}
+
+input TestUpdate {
+  name: String
+  tags: [TagInput!]
+  steps: [BrowserEventInput!]
 }
 
 type User {
