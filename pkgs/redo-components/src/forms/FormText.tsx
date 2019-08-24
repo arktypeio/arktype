@@ -22,7 +22,7 @@ const updateFieldErrors = ({
     values,
     touched
 }: UpdateFieldErrorsOptions) => {
-    const validationResult = validate(values)
+    const validationResult = validate!(values)
     Object.keys(values)
         .filter(input => touched.includes(input))
         .forEach(key => {

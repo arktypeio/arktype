@@ -17,12 +17,12 @@ import ChipInput from "material-ui-chip-input"
 import { store } from "../common"
 
 const SAVETEST = gql`
-    mutation submitTest(
+    mutation createTest(
         $name: String!
         $tags: [TagInput!]!
         $steps: [BrowserEventInput!]!
     ) {
-        submitTest(name: $name, tags: $tags, steps: $steps)
+        createTest(name: $name, tags: $tags, steps: $steps)
     }
 `
 
@@ -51,7 +51,7 @@ export const Learner = component({
         <Column justify="flex-start">
             <div style={{ zIndex: 1, position: "fixed" }}>
                 <RedoAppBar>{["close"]}</RedoAppBar>
-                <Row align="center" justify="flex-start">
+                <Row>
                     <TextInput
                         value={name}
                         placeholder="Test Name"
