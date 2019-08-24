@@ -2741,6 +2741,18 @@ packages:
     dev: false
     resolution:
       integrity: sha512-te5lMAWii1uEJ4FwLjzdlbw3+n0FZNOvFXHxQDKeT0dilh7HOzdMzV2TrJVUzq8ep7J4Na8OUYPRLSQkJHAlrg==
+  /@usulpro/color-picker/1.1.3_react@16.8.6:
+    dependencies:
+      babel-runtime: 6.26.0
+      prop-types: 15.7.2
+      react: 16.8.6
+    dev: false
+    engines:
+      npm: ^3.0.0
+    peerDependencies:
+      react: ^0.14.7 || ^15.0.0 || ^16.0.0
+    resolution:
+      integrity: sha512-kYckQ5FA7R1dTzDIU9CLmEMSc1tEjjn5XKf8SNqaS7aZv6yMMffkCE8JKQZJlfLBjobmesqkc7TEN0XLPcX4jw==
   /@webassemblyjs/ast/1.8.5:
     dependencies:
       '@webassemblyjs/helper-module-context': 1.8.5
@@ -5062,6 +5074,13 @@ packages:
       '0': node >= 0.8
     resolution:
       integrity: sha512-27HBghJxjiZtIk3Ycvn/4kbJk/1uZuJFfuPEns6LaEvpvG1f0hTea8lilrouyo9mVc2GWdcEZ8OLoGmSADlrCw==
+  /config-chain/1.1.12:
+    dependencies:
+      ini: 1.3.5
+      proto-list: 1.2.4
+    dev: false
+    resolution:
+      integrity: sha512-a1eOIcu8+7lUInge4Rpf/n4Krkf3Dd9lqhljRzII1/Zno/kRtUWnznPO3jOKBmTEktkt3fkxisUcivoj0ebzoA==
   /connect-history-api-fallback/1.6.0:
     dev: false
     engines:
@@ -5924,6 +5943,16 @@ packages:
     dev: false
     resolution:
       integrity: sha512-nagl3RYrbNv6kQkeJIpt6NJZy8twLB/2vtz6yN9Z4vRKHN4/QZJIEbqohALSgwKdnksuY3k5Addp5lg8sVoVcQ==
+  /editorconfig/0.15.3:
+    dependencies:
+      commander: 2.20.0
+      lru-cache: 4.1.5
+      semver: 5.7.1
+      sigmund: 1.0.1
+    dev: false
+    hasBin: true
+    resolution:
+      integrity: sha512-M9wIMFx96vq0R4F+gRpY3o2exzb8hEj/n9S8unZtHSvYjibBp/iMufSzvmOcV/laG0ZtuTVGtiJggPOSW2r93g==
   /ee-first/1.1.1:
     dev: false
     resolution:
@@ -8843,6 +8872,17 @@ packages:
     dev: false
     resolution:
       integrity: sha1-uEF7dQZho5K+4sJTfGiyqdSXfNU=
+  /js-beautify/1.10.2:
+    dependencies:
+      config-chain: 1.1.12
+      editorconfig: 0.15.3
+      glob: 7.1.4
+      mkdirp: 0.5.1
+      nopt: 4.0.1
+    dev: false
+    hasBin: true
+    resolution:
+      integrity: sha512-ZtBYyNUYJIsBWERnQP0rPN9KjkrDfJcMjuVGcvXOUJrD1zmOGwhRwQ4msG+HJ+Ni/FA7+sRQEMYVzdTQDvnzvQ==
   /js-levenshtein/1.1.6:
     dev: false
     engines:
@@ -11092,6 +11132,10 @@ packages:
     dev: false
     resolution:
       integrity: sha512-N2moasZmjn2mjVGIWpaqz5qnz6QyeQSGgGvMtl81gA9cPTWa6wpesRSe/quNnOjUHpvSH1oZx0pdz0EEckLFnA==
+  /proto-list/1.2.4:
+    dev: false
+    resolution:
+      integrity: sha1-IS1b/hMYMGpCD2QCuOJv85ZHqEk=
   /protobufjs/6.8.8:
     dependencies:
       '@protobufjs/aspromise': 1.1.2
@@ -11573,6 +11617,17 @@ packages:
       react: ^0.14.9 || ^15.3.0 || ^16.0.0-rc || ^16.0
     resolution:
       integrity: sha512-3+K4CD13iE4lQQ2WlF8PuV5htfmTRLH6MDnfndHM6LuBRszuXnuyIfE7nhSKt8AzRBZ50bu0sAhkNMeS5pxQQA==
+  /react-inspector/2.3.1_react@16.8.6:
+    dependencies:
+      babel-runtime: 6.26.0
+      is-dom: 1.1.0
+      prop-types: 15.7.2
+      react: 16.8.6
+    dev: false
+    peerDependencies:
+      react: ^0.14.0 || ^15.0.0 || ^16.0.0
+    resolution:
+      integrity: sha512-tUUK7t3KWgZEIUktOYko5Ic/oYwvjEvQUFAGC1UeMeDaQ5za2yZFtItJa2RTwBJB//NxPr000WQK6sEbqC6y0Q==
   /react-inspector/3.0.2_react@16.8.6:
     dependencies:
       babel-runtime: 6.26.0
@@ -12142,6 +12197,14 @@ packages:
       node: '>= 4'
     resolution:
       integrity: sha512-NAqBSrijGLZdM0WZNsInLJpkJokL72XYjUpnB0iwsRgxh7dB6COrHnTBNwN0E+lHDAJzu7kLAkDeY08z2/A0hg==
+  /require-context.macro/1.1.1:
+    dependencies:
+      '@types/webpack-env': 1.14.0
+    dev: false
+    peerDependencies:
+      babel-plugin-macros: ^2.4.2
+    resolution:
+      integrity: sha512-l1XH5HruDyG+Iwo5pz39EGbOFVtoYQt8cl7mJ6KJFWzARNJnpb+XUui+jBQUGlJ8SJOdx+QDh784e8b42PxLXA==
   /require-directory/2.1.1:
     dev: false
     engines:
@@ -12540,6 +12603,10 @@ packages:
     dev: false
     resolution:
       integrity: sha512-vFwSUfQvqybiICwZY5+DAWIPLKsWO31Q91JSKl3UYv+K5c2QRPzn0qzec6QPu1Qc9eHYItiP3NdJqNVqetYAww==
+  /sigmund/1.0.1:
+    dev: false
+    resolution:
+      integrity: sha1-P/IfGYytIXX587eBhT/ZTQ0ZtZA=
   /signal-exit/3.0.2:
     dev: false
     resolution:
@@ -12822,6 +12889,29 @@ packages:
     dev: false
     resolution:
       integrity: sha512-JmK+95jLX2zAP75DVAJ1HAziQ6f+f495h4P9ez2qbmxazN6fE7doWlitqx9hj2YohH3kOi6RVksJe1UH0sJfPw==
+  /storybook-addon-material-ui/0.9.0-alpha.20_e2ea9552175edabdc204f5975cbcda8c:
+    dependencies:
+      '@emotion/core': 10.0.16_react@16.8.6
+      '@emotion/styled': 10.0.15_250d29f7f45af125cdefce1a8bc454fc
+      '@material-ui/core': 4.2.1_react-dom@16.8.6+react@16.8.6
+      '@storybook/addons': 5.2.0-beta.30_react-dom@16.8.6
+      '@storybook/react': 5.2.0-beta.30_74b9b0d99c1272f45a2827fcfa1b3669
+      '@usulpro/color-picker': 1.1.3_react@16.8.6
+      global: 4.4.0
+      js-beautify: 1.10.2
+      react: 16.8.6
+      react-dom: 16.8.6_react@16.8.6
+      react-inspector: 2.3.1_react@16.8.6
+    dev: false
+    peerDependencies:
+      '@material-ui/core': ^1.0.0 || ^3.0.0 || ^4.0.0
+      '@storybook/addons': ^3.0.0 || ^4.0.0 || ^5.0.0
+      '@storybook/react': ^3.0.0 || ^4.0.0 || ^5.0.0
+      prop-types: ^15.5.8
+      react: ^16.0.0
+      react-dom: ^16.0.0
+    resolution:
+      integrity: sha512-1pUKZ5Y6Xrz73V2KmjsnayfHDdjrUJLpljQnd7B843lwSluBKatdTkjn9aBooPXC91+TViK+WGmAGlNEKoxDcQ==
   /stream-browserify/2.0.2:
     dependencies:
       inherits: 2.0.4
@@ -14533,6 +14623,7 @@ packages:
       '@types/storybook__addon-storyshots': 5.1.1
       '@types/storybook__react': 4.0.2
       babel-loader: 8.0.6_@babel+core@7.5.5+webpack@4.29.6
+      babel-plugin-require-context-hook: 1.0.0
       babel-runtime: 6.26.0
       core-js: 3.1.4
       core-js-pure: 3.1.4
@@ -14545,6 +14636,9 @@ packages:
       react-dom: 16.8.6_react@16.8.6
       react-hook-form: 3.18.8_react-dom@16.8.6+react@16.8.6
       react-test-renderer: 16.8.6_react@16.8.6
+      require-context.macro: 1.1.1
+      storybook-addon-material-ui: 0.9.0-alpha.20_e2ea9552175edabdc204f5975cbcda8c
+      ts-jest: 24.0.2_jest@24.8.0
       typeface-ubuntu: 0.0.65
       typescript: 3.5.2
     dev: false

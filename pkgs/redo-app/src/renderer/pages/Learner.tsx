@@ -9,7 +9,7 @@ import {
     TextInput
 } from "redo-components"
 import { deactivateLearner, resetLearner } from "state"
-import { LearnerEvents } from "custom"
+import { LearnerEvents, RedoAppBar } from "custom"
 import { CircularProgress } from "@material-ui/core"
 import gql from "graphql-tag"
 import { useMutation } from "@apollo/react-hooks"
@@ -50,9 +50,7 @@ export const Learner = component({
     return (
         <Column justify="flex-start">
             <Row align="center" justify="flex-start">
-                <Button onClick={deactivateLearner} kind="secondary">
-                    Back home
-                </Button>
+                <RedoAppBar>{["close"]}</RedoAppBar>
 
                 <RespondTo response={{ loading: false }}>
                     <Button
@@ -78,14 +76,17 @@ export const Learner = component({
             <Row>
                 <TextInput
                     value={name}
-                    placeholder="Test name"
+                    placeholder="Test Name"
                     onChange={e =>
                         store.mutate({ learner: { testName: e.target.value } })
                     }
                 />
-                {/* TODO Chip input should be moved to redo components as part of: https://trello.com/c/eVo1vyZj */}
+            </Row>
+            {/* TODO Chip input should be moved to redo components as part of: https://trello.com/c/eVo1vyZj */}
+            <Row>
                 <ChipInput
                     value={tags}
+                    placeholder="Add Tags"
                     onAdd={(chip: string) =>
                         store.mutate({
                             learner: { testTags: _ => [..._, chip] }
@@ -124,3 +125,4 @@ export const Learner = component({
         </Column>
     )
 })
+
