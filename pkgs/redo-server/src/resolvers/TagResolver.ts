@@ -1,4 +1,12 @@
-import { Authorized, Ctx, Mutation, Query, Resolver, Args } from "type-graphql"
+import {
+    Authorized,
+    Ctx,
+    Mutation,
+    Query,
+    Resolver,
+    Args,
+    Arg
+} from "type-graphql"
 import { Tag, TagInput } from "redo-model"
 import { Context } from "../context"
 @Resolver(of => Tag)
@@ -25,5 +33,22 @@ export class TagResolver {
             include: { user: true }
         })
         return results
+    }
+    @Authorized()
+    @Mutation(returns => String)
+    async modifyTag(
+        @Args() { name }: TagInput,
+        @Arg("id") tagId: string,
+        @Ctx() { photon, id }: Context
+    ) {
+        const tag = await photon.tags.update({
+            data: {
+                name
+            },
+            where: {
+                id: tagId
+            }
+        })
+        return tag.id
     }
 }

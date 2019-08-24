@@ -9,7 +9,7 @@ import {
     TextInput
 } from "redo-components"
 import { deactivateLearner, resetLearner } from "state"
-import { LearnerEvents } from "custom"
+import { LearnerEvents, RedoAppBar } from "custom"
 import { CircularProgress } from "@material-ui/core"
 import gql from "graphql-tag"
 import { useMutation } from "@apollo/react-hooks"
@@ -49,11 +49,15 @@ export const Learner = component({
     const [saveTest] = useMutation(SAVETEST)
     return (
         <Column justify="flex-start">
-            <Row align="center" justify="flex-start">
-                <Button onClick={deactivateLearner} kind="secondary">
-                    Back home
-                </Button>
-
+            <RedoAppBar>{["close"]}</RedoAppBar>
+            <Row>
+                <TextInput
+                    value={name}
+                    placeholder="Test Name"
+                    onChange={e =>
+                        store.mutate({ learner: { testName: e.target.value } })
+                    }
+                />
                 <RespondTo response={{ loading: false }}>
                     <Button
                         kind="primary"
@@ -63,8 +67,9 @@ export const Learner = component({
                                     name,
                                     tags: tags.map(_ => ({ name: _ })),
                                     steps: events.map(
-                                        ({ __typename, ...inputs }: any) =>
-                                            inputs
+                                        ({ __typename, ...inputs }: any) => {
+                                            return { ...inputs }
+                                        }
                                     )
                                 }
                             })
@@ -75,17 +80,11 @@ export const Learner = component({
                     </Button>
                 </RespondTo>
             </Row>
+            {/* TODO Chip input should be moved to redo components as part of: https://trello.com/c/eVo1vyZj */}
             <Row>
-                <TextInput
-                    value={name}
-                    placeholder="Test name"
-                    onChange={e =>
-                        store.mutate({ learner: { testName: e.target.value } })
-                    }
-                />
-                {/* TODO Chip input should be moved to redo components as part of: https://trello.com/c/eVo1vyZj */}
                 <ChipInput
                     value={tags}
+                    placeholder="Add Tags"
                     onAdd={(chip: string) =>
                         store.mutate({
                             learner: { testTags: _ => [..._, chip] }

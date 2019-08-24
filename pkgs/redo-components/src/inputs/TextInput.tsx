@@ -1,44 +1,101 @@
 import React, { FC, useState } from "react"
-import { Theme } from "@material-ui/core"
-import { useTheme } from "@material-ui/styles"
+import { useTheme, Theme, usePalette } from "../styles"
 import { BaseTextFieldProps as MuiTextFieldProps } from "@material-ui/core/TextField"
 import { TextField } from "@material-ui/core"
 import { makeStyles } from "@material-ui/styles"
 import { makeKinds, KindFrom } from "../common"
 
 // Mui's theme overrides these styles unless !important is specified
-const stylize = makeStyles((theme: Theme) => ({
-    defaultClass: { borderColor: `${theme.palette.primary.dark} !important` },
-    errorClass: { borderColor: `${theme.palette.error.main} !important` },
-    focusedClass: { borderColor: `${theme.palette.secondary.main} !important` },
-    hoveredClass: { borderColor: `${theme.palette.primary.light} !important` }
-}))
+const getBorderStyles = (color: string) => ({
+    borderColor: `${color} !important`,
+    "&:after": { borderColor: `${color} !important` },
+    "&:before": { borderColor: `${color} !important` }
+})
 
-const getBorderClass = (state: TextInputState) => {
-    const { defaultClass, errorClass, focusedClass, hoveredClass } = stylize()
-    const { focused, hovered, error } = state
-    return focused
-        ? focusedClass
-        : error
-        ? errorClass
-        : hovered
-        ? hoveredClass
-        : defaultClass
+const stylize = makeStyles(() => {
+    return {
+        baseClass: ({ border: { base } }: TextInputColors) =>
+            getBorderStyles(base),
+        errorClass: ({ border: { error } }: TextInputColors) =>
+            getBorderStyles(error),
+        focusedClass: ({ border: { focused } }: TextInputColors) =>
+            getBorderStyles(focused),
+        hoveredClass: ({ border: { hovered } }: TextInputColors) =>
+            getBorderStyles(hovered),
+        textClass: ({ text }: TextInputColors) => ({
+            color: text
+        })
+    }
+})
+
+type UseKindOptions = {
+    state: TextInputState
+    colors: TextInputColors
 }
 
-const useKind = makeKinds<MuiTextFieldProps>()((state: TextInputState) => ({
-    outlined: {
-        variant: "outlined",
-        InputProps: {
-            classes: {
-                notchedOutline: getBorderClass(state)
+const useKind = makeKinds<MuiTextFieldProps>()(
+    ({ state, colors }: UseKindOptions) => {
+        const {
+            baseClass,
+            errorClass,
+            focusedClass,
+            hoveredClass,
+            textClass
+        } = stylize(colors)
+        const { focused, hovered, error } = state
+        const borderClass = focused
+            ? focusedClass
+            : error
+            ? errorClass
+            : hovered
+            ? hoveredClass
+            : baseClass
+        return {
+            outlined: {
+                variant: "outlined",
+                InputProps: {
+                    classes: {
+                        root: textClass,
+                        notchedOutline: borderClass
+                    }
+                }
+            },
+            underlined: {
+                variant: "standard",
+                InputProps: {
+                    classes: {
+                        root: textClass,
+                        underline: borderClass
+                    }
+                }
             }
         }
-    },
-    underlined: {
-        variant: "standard"
     }
-}))
+)
+
+const useColors = makeKinds<TextInputColors>()(() => {
+    const { primary, secondary, error, common, text } = usePalette()
+    return {
+        standard: {
+            border: {
+                base: primary.dark,
+                hovered: primary.light,
+                error: error.main,
+                focused: secondary.main
+            },
+            text: text.primary
+        },
+        light: {
+            border: {
+                base: common.white,
+                hovered: secondary.light,
+                error: error.main,
+                focused: secondary.main
+            },
+            text: common.white
+        }
+    }
+})
 
 type TextInputState = {
     focused: boolean
@@ -46,12 +103,30 @@ type TextInputState = {
     error: boolean
 }
 
+type BorderColors = {
+    focused: string
+    hovered: string
+    error: string
+    base: string
+}
+
+type TextInputColors = {
+    border: BorderColors
+    text: string
+}
+
 export type TextInputProps = MuiTextFieldProps & {
     kind?: KindFrom<typeof useKind>
+    colorTemplate?: KindFrom<typeof useColors>
+    borderColors?: Partial<BorderColors>
+    textColor?: string
 }
 
 export const TextInput: FC<TextInputProps> = ({
     kind = "outlined",
+    colorTemplate = "standard",
+    borderColors = {},
+    textColor,
     onFocus,
     onBlur,
     onError,
@@ -60,13 +135,22 @@ export const TextInput: FC<TextInputProps> = ({
     onMouseOut,
     ...rest
 }) => {
-    const theme = useTheme<Theme>()
+    const { primary } = usePalette()
     const [state, setState] = useState({
         focused: false,
         error: false,
         hovered: false
     })
-    const kindProps = useKind(kind, state)
+    const { border: paletteBorderColors, text: paletteTextColor } = useColors(
+        colorTemplate
+    )
+    const kindProps = useKind(kind, {
+        state,
+        colors: {
+            border: { ...paletteBorderColors, ...borderColors } as BorderColors,
+            text: textColor ? textColor : paletteTextColor!
+        }
+    })
     return (
         <TextField
             margin="dense"
@@ -96,9 +180,7 @@ export const TextInput: FC<TextInputProps> = ({
             }}
             InputLabelProps={{
                 style: {
-                    color: state.focused
-                        ? theme.palette.primary.dark
-                        : theme.palette.primary.light
+                    color: state.focused ? primary.dark : primary.light
                 }
             }}
             {...kindProps as any}

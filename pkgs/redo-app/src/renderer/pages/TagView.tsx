@@ -1,11 +1,10 @@
 import React from "react"
-import { HomeActionsRow } from "custom"
-import { Column, Row, Button, Tree } from "redo-components"
+import { RedoAppBar } from "custom"
+import { Column, Row, Tree } from "redo-components"
 import { useQuery } from "@apollo/react-hooks"
-import { store } from "renderer/common"
-import { Page } from "renderer/state"
 
 import gql from "graphql-tag"
+import { objectActions } from "../components/custom"
 
 const GET_TAGS = gql`
     query {
@@ -24,18 +23,10 @@ type TagData = {
 export const TagView = () => {
     const { data } = useQuery<TagData>(GET_TAGS)
     return (
-        <Column justify="flex-start">
-            <Row>
-                <Button
-                    kind="secondary"
-                    onClick={() => store.mutate({ page: Page.Home })}
-                >
-                    Home
-                </Button>
-                <HomeActionsRow />
-            </Row>
+        <Column>
+            <RedoAppBar>{["home", "search", "account"]}</RedoAppBar>
             {data && data.getTag ? (
-                <Tree from={data.getTag} labelKey="name" />
+                <Tree labelKey="name">{data.getTag}</Tree>
             ) : null}
         </Column>
     )

@@ -1,4 +1,4 @@
-import React from "react"
+import React, { CSSProperties } from "react"
 import { component } from "blocks"
 import { SuggestionCard } from "custom"
 import { Card, useTheme, Row } from "redo-components"
@@ -11,13 +11,14 @@ export type SuggestionData = {
 
 export type SuggestionResultsGridProps = {
     suggestions: SuggestionData[]
+    style?: CSSProperties
 }
 
 export const SuggestionResultsGrid = component({
     name: "SuggestionResultsGrid",
     defaultProps: {} as Partial<SuggestionResultsGridProps>,
     query: { cardFilter: null }
-})(({ suggestions, data }) => {
+})(({ suggestions, data, style }) => {
     const { cardFilter } = data
     const theme = useTheme()
 
@@ -43,7 +44,8 @@ export const SuggestionResultsGrid = component({
         <Card
             style={{
                 width: "100%",
-                height: "100%"
+                height: "100%",
+                ...style
             }}
         >
             <Row
