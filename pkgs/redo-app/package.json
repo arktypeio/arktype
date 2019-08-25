@@ -4,13 +4,34 @@
     "author": "Redo",
     "private": true,
     "version": "1.0.0",
+    "main": "dist/main.js",
     "scripts": {
-        "build": " NODE_ENV=production npm run clean && webpack",
+        "build": "NODE_ENV=production npm run clean && webpack",
         "start": "NODE_ENV=development npm run clean && npm run devBuild && npm run devServer",
         "devBuild": "NODE_ENV=development webpack",
         "devServer": "NODE_ENV=development webpack-dev-server --config webpack.devServer.config.ts --progress --colors",
         "electron": "electron --remote-debugging-port=9223 ./dist/main.js",
-        "clean": "rm -rf dist && mkdir dist"
+        "clean": "rm -rf dist && mkdir dist",
+        "dist": "npm run build && electron-builder -mwl"
+    },
+    "build": {
+        "appId": "com.redo.redo-app",
+        "files": [
+            "./dist/**/*",
+            "./dist/injected.js",
+            "!./dist/mac",
+            "!./dist/linux-unpacked",
+            "!./dist/win-unpacked"
+        ],
+        "linux": {
+            "target": "zip"
+        },
+        "mac": {
+            "target": "zip"
+        },
+        "win": {
+            "target": "zip"
+        }
     },
     "dependencies": {
         "@apollo/react-hooks": "3.0.0",
@@ -30,7 +51,6 @@
         "core-js": "3.1.4",
         "deepmerge": "3.2.1",
         "dotenv": "7.0.0",
-        "electron": "5.0.2",
         "formik": "1.5.1",
         "framer-motion": "1.4.1",
         "fs-extra": "8.1.0",
@@ -62,6 +82,8 @@
         "@types/react": "16.8.8",
         "@types/react-dom": "16.8.3",
         "babel-preset-redo": "1.0.0",
+        "electron": "5.0.2",
+        "electron-builder": "21.2.0",
         "react-hot-loader": "4.12.8",
         "redo-bundle": "1.0.0",
         "redo-components": "1.0.0",
