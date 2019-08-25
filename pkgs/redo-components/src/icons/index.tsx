@@ -7,6 +7,11 @@ import schedule from "@material-ui/icons/Schedule"
 import run from "@material-ui/icons/PlayArrow"
 import edit from "@material-ui/icons/Edit"
 import trash from "@material-ui/icons/Delete"
+import back from "@material-ui/icons/ArrowBack"
+import help from "@material-ui/icons/HelpOutline"
+import account from "@material-ui/icons/Person"
+import dropdown from "@material-ui/icons/MoreVert"
+import view from "@material-ui/icons/RemoveRedEye"
 
 export const Icons = {
     add,
@@ -17,5 +22,10 @@ export const Icons = {
     openModal,
     run,
     schedule,
-    trash
+    trash,
+    back,
+    help,
+    account,
+    dropdown,
+    view
 }
