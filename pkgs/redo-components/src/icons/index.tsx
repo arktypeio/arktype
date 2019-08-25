@@ -11,6 +11,7 @@ import back from "@material-ui/icons/ArrowBack"
 import help from "@material-ui/icons/HelpOutline"
 import account from "@material-ui/icons/Person"
 import dropdown from "@material-ui/icons/MoreVert"
+import view from "@material-ui/icons/RemoveRedEye"
 
 export const Icons = {
     add,
@@ -25,5 +26,6 @@ export const Icons = {
     back,
     help,
     account,
-    dropdown
+    dropdown,
+    view
 }
