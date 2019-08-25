@@ -5,7 +5,7 @@ import { Card, useTheme, Row } from "redo-components"
 
 export type SuggestionData = {
     name: string
-    type: string
+    kind: string
     description?: string
 }
 
@@ -29,7 +29,7 @@ export const SuggestionResultsGrid = component({
                 .toLowerCase()
                 .includes(cardFilter!.toLowerCase())
         )
-        .map(({ name, type, description }) => (
+        .map(({ name, kind: kind, description }) => (
             <div
                 key={name}
                 style={{
@@ -37,7 +37,7 @@ export const SuggestionResultsGrid = component({
                     height: theme.spacing(25)
                 }}
             >
-                <SuggestionCard {...{ name, type, description }} />
+                <SuggestionCard {...{ name, kind, description }} />
             </div>
         ))
     return (
@@ -51,7 +51,6 @@ export const SuggestionResultsGrid = component({
             <Row
                 wrap="wrap"
                 style={{
-                    height: "100%",
                     width: "100%",
                     padding: theme.spacing(2)
                 }}

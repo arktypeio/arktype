@@ -25,6 +25,7 @@ export class TagResolver {
         })
         return tag.id
     }
+
     @Authorized()
     @Query(returns => [Tag])
     async getTag(@Ctx() { photon, id }: Context) {

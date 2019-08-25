@@ -29,7 +29,7 @@ export const SearchBar: FC<SearchBarProps> = ({}) => {
                     options: {
                         Tests: () => store.mutate({ page: Page.Detail }),
                         Tags: () => store.mutate({ page: Page.Detail }),
-                        BrowserEvents: () => store.mutate({ page: Page.Detail })
+                        Steps: () => store.mutate({ page: Page.Detail })
                     }
                 }}
             </Menu>

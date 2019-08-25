@@ -1,11 +1,11 @@
 import React, { FC } from "react"
 import { List, ListItem } from "@material-ui/core"
 import { LearnerEventCard } from "custom"
-import { BrowserEventInput } from "redo-model"
+import { StepInput } from "redo-model"
 import { useTheme } from "redo-components"
 
 export type LearnerEventsProps = {
-    events: BrowserEventInput[]
+    events: StepInput[]
 }
 
 export const LearnerEvents: FC<LearnerEventsProps> = ({ events }) => {

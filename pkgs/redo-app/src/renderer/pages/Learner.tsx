@@ -20,7 +20,7 @@ const SAVETEST = gql`
     mutation createTest(
         $name: String!
         $tags: [TagInput!]!
-        $steps: [BrowserEventInput!]!
+        $steps: [StepInput!]!
     ) {
         createTest(name: $name, tags: $tags, steps: $steps)
     }

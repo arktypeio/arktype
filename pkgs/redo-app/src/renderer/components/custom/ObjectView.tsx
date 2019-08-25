@@ -1,13 +1,6 @@
 import React, { FC } from "react"
-import {
-    Modal,
-    Button,
-    Column,
-    AutoForm,
-    Row,
-    IconButton
-} from "redo-components"
-import { MetadataKey, Metadata, metadata, TestInput } from "redo-model"
+import { Column, AutoForm, Row, IconButton } from "redo-components"
+import { MetadataKey, metadata } from "redo-model"
 import { submitForm } from "custom/CustomForm"
 import gql from "graphql-tag"
 import { useMutation, useQuery } from "@apollo/react-hooks"

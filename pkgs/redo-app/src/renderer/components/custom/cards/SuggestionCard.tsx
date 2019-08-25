@@ -5,13 +5,13 @@ import { Column, Card, Row, useTheme } from "redo-components"
 
 export type SuggestionCardProps = {
     name: string
-    type: string
+    kind: string
     description?: string
 }
 
 export const SuggestionCard: FC<SuggestionCardProps> = ({
     name,
-    type,
+    kind,
     description
 }) => {
     const theme = useTheme()
@@ -28,13 +28,16 @@ export const SuggestionCard: FC<SuggestionCardProps> = ({
                         {name}
                     </MuiTypography>
                 </Row>
+                {description ? (
+                    <Row full={true} justify="center" align="center">
+                        <MuiTypography variant="body2" align="center">
+                            {description}
+                        </MuiTypography>
+                    </Row>
+                ) : null}
+
                 <Row full={true} justify="center" align="center">
-                    <MuiTypography variant="body2" align="center">
-                        {description ? description : "This is a description"}
-                    </MuiTypography>
-                </Row>
-                <Row full={true} justify="center" align="center">
-                    {type === "test" ? <PlayButton /> : null}
+                    {kind === "test" ? <PlayButton /> : null}
                     <ViewButton />
                 </Row>
             </Column>

@@ -11,9 +11,6 @@ export class User {
     @OutField()
     password: string
 
-    @OutField({ type: as => [String] })
-    roles: string[]
-
     @OutField()
     firstName: string
 
