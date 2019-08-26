@@ -1,6 +1,5 @@
 [build]
   command = "NODE_ENV=production && npm install -g @microsoft/rush@5.11.1 && rush update && rush build --to redo-website"
   publish = "pkgs/redo-website/dist"
-  functions = "pkgs/redo-server/functions"
 [build.environment]
   NODE_VERSION = "10.16.0"

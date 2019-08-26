@@ -20,8 +20,6 @@ export const baseSchema = `datasource db {
 
 generator photon {
   provider = "photonjs"
-  platforms = ["native", "linux-glibc-libssl1.0.1"]
-  output    = "../functions/generated/photon"
 }
 
 `
