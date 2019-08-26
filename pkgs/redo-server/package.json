@@ -16,7 +16,7 @@
         "test": "jest"
     },
     "dependencies": {
-        "apollo-server": "2.7.0",
+        "apollo-server-lambda": "2.7.0",
         "bcrypt": "3.0.6",
         "class-transformer": "0.2.0",
         "class-validator": "0.10.0",

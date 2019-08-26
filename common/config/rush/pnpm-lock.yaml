@@ -62,7 +62,7 @@ dependencies:
   apollo-client: 2.6.3
   apollo-link-context: 1.0.18
   apollo-link-http: 1.5.15
-  apollo-server: 2.7.0
+  apollo-server-lambda: 2.7.0
   babel-loader: 8.0.6_@babel+core@7.5.5+webpack@4.29.6
   babel-plugin-require-context-hook: 1.0.0
   babel-plugin-transform-typescript-metadata: 0.2.2
@@ -3497,28 +3497,6 @@ packages:
       graphql: ^0.12.0 || ^0.13.0 || ^14.0.0
     resolution:
       integrity: sha512-errZvnh0vUQChecT7M4A/h94dnBSRL213dNxpM5ueMypaLYgnp4hiCTWIEaooo9E4yMGd1qA6WaNbLDG2+bjcg==
-  /apollo-server-express/2.7.0:
-    dependencies:
-      '@apollographql/graphql-playground-html': 1.6.24
-      '@types/accepts': 1.3.5
-      '@types/body-parser': 1.17.0
-      '@types/cors': 2.8.6
-      '@types/express': 4.17.0
-      accepts: 1.3.7
-      apollo-server-core: 2.7.0
-      apollo-server-types: 0.2.0
-      body-parser: 1.19.0
-      cors: 2.8.5
-      graphql-subscriptions: 1.1.0
-      graphql-tools: 4.0.5
-      type-is: 1.6.18
-    dev: false
-    engines:
-      node: '>=6'
-    peerDependencies:
-      graphql: ^0.12.0 || ^0.13.0 || ^14.0.0
-    resolution:
-      integrity: sha512-TIOaLyuxD8xIECXjbPfS9HUWgHCKsG3rR4WuTpTreVEB08EsGeg+VcNGn0hmUnch18fPXTciBHWCv/fFV/YhMg==
   /apollo-server-express/2.7.0_graphql@14.4.2:
     dependencies:
       '@apollographql/graphql-playground-html': 1.6.24
@@ -3542,6 +3520,35 @@ packages:
       graphql: ^0.12.0 || ^0.13.0 || ^14.0.0
     resolution:
       integrity: sha512-TIOaLyuxD8xIECXjbPfS9HUWgHCKsG3rR4WuTpTreVEB08EsGeg+VcNGn0hmUnch18fPXTciBHWCv/fFV/YhMg==
+  /apollo-server-lambda/2.7.0:
+    dependencies:
+      '@apollographql/graphql-playground-html': 1.6.24
+      apollo-server-core: 2.7.0
+      apollo-server-env: 2.4.0
+      apollo-server-types: 0.2.0
+      graphql-tools: 4.0.5
+    dev: false
+    engines:
+      node: '>=6'
+    peerDependencies:
+      graphql: ^0.12.0 || ^0.13.0 || ^14.0.0
+    resolution:
+      integrity: sha512-h/HzcEBbyUn7V4yYm3+GE3r+jWAHPcVw5AI1AQGWpP8+HHx8ggMmmJ3rf+EuMK4AT2uiBii4mWyCQBpbjGNiHw==
+  /apollo-server-lambda/2.7.0_graphql@14.4.2:
+    dependencies:
+      '@apollographql/graphql-playground-html': 1.6.24
+      apollo-server-core: 2.7.0_graphql@14.4.2
+      apollo-server-env: 2.4.0
+      apollo-server-types: 0.2.0_graphql@14.4.2
+      graphql: 14.4.2
+      graphql-tools: 4.0.5_graphql@14.4.2
+    dev: false
+    engines:
+      node: '>=6'
+    peerDependencies:
+      graphql: ^0.12.0 || ^0.13.0 || ^14.0.0
+    resolution:
+      integrity: sha512-h/HzcEBbyUn7V4yYm3+GE3r+jWAHPcVw5AI1AQGWpP8+HHx8ggMmmJ3rf+EuMK4AT2uiBii4mWyCQBpbjGNiHw==
   /apollo-server-plugin-base/0.6.0:
     dependencies:
       apollo-server-types: 0.2.0
@@ -3588,18 +3595,6 @@ packages:
       graphql: ^0.12.0 || ^0.13.0 || ^14.0.0
     resolution:
       integrity: sha512-5dgiyXsM90vnfmdXO1ixHvsLn0d9NP4tWufmr3ZmjKv00r4JAQNUaUdgOSGbRIKoHELQGwxUuTySTZ/tYfGaNQ==
-  /apollo-server/2.7.0:
-    dependencies:
-      apollo-server-core: 2.7.0
-      apollo-server-express: 2.7.0
-      express: 4.17.1
-      graphql-subscriptions: 1.1.0
-      graphql-tools: 4.0.5
-    dev: false
-    peerDependencies:
-      graphql: ^0.12.0 || ^0.13.0 || ^14.0.0
-    resolution:
-      integrity: sha512-UKYROQqcwSgIjUEjaxAllRJQFTa3flPY+fV5Q0Kz2e3XE5QomEkuNBmO54IefIOr8LllhRU9246WmMHRuwun+w==
   /apollo-server/2.7.0_graphql@14.4.2:
     dependencies:
       apollo-server-core: 2.7.0_graphql@14.4.2
@@ -14833,7 +14828,7 @@ packages:
       react: '*'
       react-dom: '*'
     resolution:
-      integrity: sha512-Vtk2BRu+dUQwpyV76wYiSEF/L1X19g7aLo9Qe6t6PcdwyUEJMPusiH4pOPk2ZCKQkqHGh2+t+wPpqQWH/2BeoQ==
+      integrity: sha512-pinYvnszrFpBd9C+nXeCFZwdXZpx5EiRLJ3ziSpXUO01bKkKRUSSMI6CE6kRe4UR84yMUMprQS+cUKdWEhsGQg==
       tarball: 'file:projects/babel-preset-redo.tgz'
     version: 0.0.0
   'file:projects/redo-app.tgz':
@@ -14892,7 +14887,7 @@ packages:
     dev: false
     name: '@rush-temp/redo-app'
     resolution:
-      integrity: sha512-CRa2FUh/0yOHWQQ1f15NVnzdIv4ljz0XqLb8JnMiY8Y7Au4UeQKt8qjvu4P9CSeIACcWVU1C+FQHPPO2Dsc+jQ==
+      integrity: sha512-LhnZstKmN4ZQsFjL2c7PLcwx5DFYcxPzR3OMVY+r+DwiW3YWTkhQVlfIahVYGeNnO7QGjplKTpzbYPavug++HA==
       tarball: 'file:projects/redo-app.tgz'
     version: 0.0.0
   'file:projects/redo-bundle.tgz_787bbe83c726763abc906d76ffcb5127':
@@ -14928,7 +14923,7 @@ packages:
       react: '*'
       react-dom: '*'
     resolution:
-      integrity: sha512-JkFkRGPrwLotaNLwZf+OTj6b619c1MNpgYVi8jSb1Gyd2OXDuwhoOzGrv+3ZpZwT8yguy7WS9NiRE/eOIyv4wg==
+      integrity: sha512-WDYIr9jQrxOBMOvr8mGLD69nUBX6ckhviDsohQ2vQZiz14S9Knfd23syluFDbTUEtTeWdYYx0WQqXtOylcc4ww==
       tarball: 'file:projects/redo-bundle.tgz'
     version: 0.0.0
   'file:projects/redo-components.tgz_webpack@4.29.6':
@@ -14979,7 +14974,7 @@ packages:
     peerDependencies:
       webpack: '*'
     resolution:
-      integrity: sha512-oF+eUPZR98WCuNPUeZG9Q6ul1EXqg7LFpmmx+CujpRmPpS98obqZZitM+4NXp5uJ99Z3AALj81O/1/qLkTDspQ==
+      integrity: sha512-361dhX3w7eW4YR8dcPYQTpGZ0ZE/b6Worj1HsUK8EwyJB49lM8CRJaZEgii77o1dRnLK7TSJP2BamKVG7ZHB2g==
       tarball: 'file:projects/redo-components.tgz'
     version: 0.0.0
   'file:projects/redo-model.tgz_65c0dfd175c238c933bdb5d3330aeeaa':
@@ -15000,14 +14995,14 @@ packages:
       '@babel/core': '*'
       '@types/graphql': '*'
     resolution:
-      integrity: sha512-9e/WK59RNlYNXDUg7hxJ+5crWsT7CEEQGi3SCqbyPQXjtFm5MlyEM++j0mz+J77yUThWhTQHeZYporDphzVnIg==
+      integrity: sha512-d5CvOOZkUZHFV+5DOFw8XlnlUMywHGi1DsruIKQA8skSzvkGemaqbwZv7N5r8xLmxtcj10pVHhX+0/wvbPSV8w==
       tarball: 'file:projects/redo-model.tgz'
     version: 0.0.0
   'file:projects/redo-recommended.tgz':
     dev: false
     name: '@rush-temp/redo-recommended'
     resolution:
-      integrity: sha512-bpceas8k6OMQFSdAmwdLLCIVZvBRdbq/X+LPTxIopx4abTTvaN801Put+BO6gS+JattUyHdE7PSk09jtV6rIQw==
+      integrity: sha512-oGYIlXUioalwOd4hvQ6HNsQrGp7G+gQwKdj6uIh4iddCdtPexG1YtfkPZ2iofEk9UfLfdE6ZH+0VFNZ20CVWDg==
       tarball: 'file:projects/redo-recommended.tgz'
     version: 0.0.0
   'file:projects/redo-server.tgz':
@@ -15020,6 +15015,7 @@ packages:
       '@types/jsonwebtoken': 8.3.2
       '@types/node': 12.6.6
       apollo-server: 2.7.0_graphql@14.4.2
+      apollo-server-lambda: 2.7.0_graphql@14.4.2
       bcrypt: 3.0.6
       class-transformer: 0.2.0
       class-validator: 0.10.0
@@ -15041,7 +15037,7 @@ packages:
     dev: false
     name: '@rush-temp/redo-server'
     resolution:
-      integrity: sha512-8slPf6oYm7Df02b97mEEkfVADQlWud7MIbtn7IFaqPPkYQOoR1tPmMofSm+2sG5JhRKUY2OzNu9INqETtWrCRg==
+      integrity: sha512-fBOyRqmEpMovh6aQu9YEwzDyFDZB8dGdYfML6+L/ALyGF/TUCbG/CrJCKkOY0sDH5wDzq+vbOkZgQDVjBHcdMQ==
       tarball: 'file:projects/redo-server.tgz'
     version: 0.0.0
   'file:projects/redo-utils.tgz_@babel+core@7.5.5':
@@ -15061,7 +15057,7 @@ packages:
     peerDependencies:
       '@babel/core': '*'
     resolution:
-      integrity: sha512-hymtzTIN8//f8JRTEnReT/1ybdL7oqMpVN1nHCElodJehpSqlyGOVWjnt5MvpHArt/EB/Uw5oEooI7pezmyy+A==
+      integrity: sha512-jhS/MP2IliYw/KkCWbzFnOBxb0IG3bZ+0+BJ9d6BZfzizCJDRXFhDP03R+MUcwNoYvzB3QnknBGM+L8BQU1GKw==
       tarball: 'file:projects/redo-utils.tgz'
     version: 0.0.0
   'file:projects/redo-website.tgz':
@@ -15091,7 +15087,7 @@ packages:
     dev: false
     name: '@rush-temp/redo-website'
     resolution:
-      integrity: sha512-WIUdDmfaRys9G6DjMiTx76hvwUEmp3/tqaqg6CnLtBtHNubAmFbAYKtGCpFml82+bGXJc2hdkIedyjC22J4tjw==
+      integrity: sha512-V4dccOU1OgjZDGcCGLLrhMX4zCmUWUd/zRfmA7WJibYUj6CFnnWe8yzpGMwyTtWcrjFcSpLqf6rLL7vznQDNXA==
       tarball: 'file:projects/redo-website.tgz'
     version: 0.0.0
   'file:projects/shapeql.tgz_46b12d11340a10975f47e2ff824828aa':
@@ -15126,7 +15122,7 @@ packages:
       react: '*'
       react-dom: '*'
     resolution:
-      integrity: sha512-I8j2Ny2fBg3PFztSCJGSNkzw0R0fuo7shenBF+ylhqdUbo1WsmQMs1vQNWs7KIfBSZYLLFk4695DlYCw9WWFFQ==
+      integrity: sha512-/hKYUZbLwwcw5IzJ3RTswZScmmNxvrMKoywpzIQliURKYtsTWnOJFu6CWUb8us14laxSXgMGLlVHdKlHL5IaZg==
       tarball: 'file:projects/shapeql.tgz'
     version: 0.0.0
   'file:projects/test.tgz_@babel+core@7.5.5':
@@ -15143,7 +15139,7 @@ packages:
     peerDependencies:
       '@babel/core': '*'
     resolution:
-      integrity: sha512-+1lRovko8WuvEKYqU+dcMSUpjPVqgNFV9IGbnftfJeQIfSYVMYREBlCwr6vp+qPScfgxYifIGkASGeSYY4xBZA==
+      integrity: sha512-fLwYjwkJJbmMD3GsdbxE2GD5KXHv9Imwv2ZnwoUwiKaGw8YF0vErUzv8YidZ72mKptYezpjiYP22PrURvzYvVQ==
       tarball: 'file:projects/test.tgz'
     version: 0.0.0
 registry: ''
@@ -15211,7 +15207,7 @@ specifiers:
   apollo-client: 2.6.3
   apollo-link-context: 1.0.18
   apollo-link-http: 1.5.15
-  apollo-server: 2.7.0
+  apollo-server-lambda: 2.7.0
   babel-loader: 8.0.6
   babel-plugin-require-context-hook: 1.0.0
   babel-plugin-transform-typescript-metadata: 0.2.2

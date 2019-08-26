@@ -1,6 +1,6 @@
 import "dotenv/config"
 import "reflect-metadata"
-import { ApolloServer } from "apollo-server"
+import { ApolloServer } from "apollo-server-lambda"
 import { buildSchema } from "type-graphql"
 import { authChecker, getUserId } from "./auth"
 import { resolvers } from "./resolvers"
