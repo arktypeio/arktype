@@ -11,12 +11,12 @@ import {
 import { User } from "./user"
 
 @OutType()
-export class BrowserEvent {
+export class Step {
     @OutField({ type: as => ID })
     readonly id: string
 
     @OutField()
-    type: string
+    key: string
 
     @OutField()
     selector: string
@@ -27,10 +27,11 @@ export class BrowserEvent {
     @OutField()
     user: User
 }
+
 @InType()
-export class BrowserEventInput {
+export class StepInput {
     @InField()
-    type: string
+    key: string
 
     @InField()
     selector: string
@@ -40,9 +41,9 @@ export class BrowserEventInput {
 }
 
 @InType()
-export class BrowserEventUpdate {
+export class StepUpdate {
     @InField({ options: { nullable: true } })
-    type?: string
+    key?: string
 
     @InField({ options: { nullable: true } })
     selector?: string
@@ -51,16 +52,16 @@ export class BrowserEventUpdate {
     value?: string
 }
 
-export const browserEventMetadata: TypeMetadata = {
-    inType: BrowserEventInput,
-    outType: BrowserEvent,
+export const stepMetadata: TypeMetadata = {
+    inType: StepInput,
+    outType: Step,
     actions: [TypeAction.Update, TypeAction.Delete],
     gql: {
         get: gql`
             query {
-                getBrowserEvent {
+                getStep {
+                    key
                     selector
-                    type
                     value
                 }
             }

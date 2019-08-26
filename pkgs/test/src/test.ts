@@ -1,5 +1,5 @@
 import p, { Page, Browser } from "puppeteer"
-import { ValueFrom, ValueOf } from "redo-utils"
+import { ValueOf } from "redo-utils"
 
 export const test = async (...steps: Step[]) => {
     const browser = await p.launch({ headless: false, slowMo: 250 })
@@ -19,10 +19,6 @@ export type Context = {
     page: Page
 }
 
-export type Selector = {
-    css: string
-}
-
 export type RedoArgs = {
     step: Step
     context: Context
@@ -33,14 +29,11 @@ export const redo = async ({ step: [type, args], context }: RedoArgs) => {
 }
 
 export type ClickArgs = {
-    selector: Selector
+    selector: string
 }
 
-export const click = async (
-    { selector: { css } }: ClickArgs,
-    { page }: Context
-) => {
-    await page.click(css)
+export const click = async ({ selector }: ClickArgs, { page }: Context) => {
+    await page.click(selector)
 }
 
 export type GoArgs = {
@@ -51,15 +44,12 @@ export const go = async ({ url }: GoArgs, { page }: Context) =>
     await page.goto(url)
 
 export type SetArgs = {
-    selector: Selector
+    selector: string
     value: string
 }
 
-export const set = async (
-    { selector: { css }, value }: SetArgs,
-    { page }: Context
-) => {
-    await page.type(css, value)
+export const set = async ({ selector, value }: SetArgs, { page }: Context) => {
+    await page.type(selector, value)
 }
 
 export type ScreenshotArgs = {}
@@ -68,7 +58,6 @@ export const screenshot = async (args: ScreenshotArgs, { page }: Context) => {
     await page.screenshot()
 }
 
-// TODO: Update BrowserEventInput type in redo-model
 export const stepTypes = {
     click,
     go,

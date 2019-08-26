@@ -1,9 +1,9 @@
 import finder from "@medv/finder"
-import { BrowserEventInput } from "redo-model"
+import { StepInput } from "redo-model"
 
 export const watchPage = async () => {
     const browserWindow: Window & {
-        notify: (e: BrowserEventInput) => void
+        notify: (e: StepInput) => void
     } = window as any
     const events = {
         CLICK: "click",
@@ -16,23 +16,23 @@ export const watchPage = async () => {
         browserWindow.addEventListener(
             event,
             async (e: Event) => {
-                const browserEvent: BrowserEventInput = {
-                    type: e.type,
+                const step: StepInput = {
+                    key: e.type,
                     selector: "",
                     value: ""
                 }
                 if (e.target) {
                     const target = e.target as HTMLElement
-                    browserEvent.selector = finder(target as HTMLElement)
+                    step.selector = finder(target as HTMLElement)
                     switch (e.type) {
                         case "change":
                             if (e.target) {
                                 const inputTarget = target as HTMLInputElement
-                                browserEvent.value = inputTarget.value
+                                step.value = inputTarget.value
                             }
                     }
                 }
-                browserWindow.notify(browserEvent)
+                browserWindow.notify(step)
             },
             true
         )

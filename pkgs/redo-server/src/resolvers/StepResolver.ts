@@ -7,32 +7,32 @@ import {
     Args,
     Arg
 } from "type-graphql"
-import { BrowserEvent, BrowserEventInput, BrowserEventUpdate } from "redo-model"
+import { Step, StepInput, StepUpdate } from "redo-model"
 import { Context } from "../context"
 
-@Resolver(of => BrowserEvent)
-export class BrowserEventResolver {
+@Resolver(of => Step)
+export class StepResolver {
     @Authorized()
     @Mutation(returns => String)
-    async createBrowserEvent(
-        @Args() { type, selector, value }: BrowserEventInput,
+    async createStep(
+        @Args() { key, selector, value }: StepInput,
         @Ctx() { photon, id }: Context
     ) {
-        const browserEvent = await photon.browserEvents.create({
+        const step = await photon.steps.create({
             data: {
-                type,
+                key,
                 selector,
                 value,
                 user: { connect: { id: id! } }
             }
         })
-        return browserEvent.id
+        return step.id
     }
 
     @Authorized()
-    @Query(returns => [BrowserEvent])
-    async getBrowserEvent(@Ctx() { photon, id }: Context) {
-        const results = await photon.browserEvents.findMany({
+    @Query(returns => [Step])
+    async getSteps(@Ctx() { photon, id }: Context) {
+        const results = await photon.steps.findMany({
             where: { user: { id: id! } },
             include: { user: true }
         })
@@ -41,22 +41,22 @@ export class BrowserEventResolver {
 
     @Authorized()
     @Mutation(returns => String)
-    async updateBrowserEvent(
-        @Args() { type, selector, value }: BrowserEventUpdate,
-        @Arg("id") browserEventId: string,
+    async updateStep(
+        @Args() { key, selector, value }: StepUpdate,
+        @Arg("id") stepId: string,
         @Ctx() { photon, id }: Context
     ) {
-        const browserEvent = await photon.browserEvents.update({
+        const step = await photon.steps.update({
             data: {
-                type,
+                key,
                 selector,
                 value,
                 user: { connect: { id: id! } }
             },
             where: {
-                id: browserEventId
+                id: stepId
             }
         })
-        return browserEvent.id
+        return step.id
     }
 }
