@@ -153,9 +153,9 @@ export const OutField = ({ schemaSuffix, type, options }: OutArgs = {}) => (
         key
     })
 
-export type TypeMetadata = {
-    inType: Class<any>
-    outType: Class<any>
+export type TypeMetadata<InType, OutType> = {
+    inType: Class<InType>
+    outType: Class<OutType>
     gql: {
         get: any
         create?: any
@@ -163,7 +163,12 @@ export type TypeMetadata = {
         delete?: any
     }
     actions?: TypeAction[]
+    labelKey?: keyof OutType
 }
+
+export const createTypeMetadata = <InType, OutType>(
+    metadata: TypeMetadata<InType, OutType>
+) => metadata
 
 export enum TypeAction {
     Delete = "DELETE",

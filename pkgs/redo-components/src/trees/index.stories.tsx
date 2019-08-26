@@ -35,7 +35,6 @@ const src = {
 
 storiesOf("TreeView", module)
     .add("from an object", () => <Tree>{src}</Tree>)
-    .add("from an array", () => <Tree labelKey="username">{[src]}</Tree>)
     .add("with hideKeys", () => <Tree hideKeys={["metadata"]}>{src}</Tree>)
     .add("with static extras", () => (
         <Tree

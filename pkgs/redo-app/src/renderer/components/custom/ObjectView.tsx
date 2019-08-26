@@ -9,7 +9,6 @@ import { actionToIcon } from "./ActionButtons"
 import { excludeKeys } from "shapeql"
 
 export type ObjectViewProps = {
-    name: string
     value: Record<string, any>
     path: string[]
     metaKey: MetadataKey
@@ -26,10 +25,9 @@ type FieldEntries = [string, any][]
 
 type SortedEntries = [FieldEntries, FieldEntries]
 
-export const ObjectView = ({ name, metaKey, value, path }: ObjectViewProps) => {
+export const ObjectView = ({ metaKey, value, path }: ObjectViewProps) => {
     const [submitUpdate] = useMutation(metadata[metaKey].gql.update)
     const [mutableFields, staticFields] = Object.entries({
-        name,
         ...value
     }).reduce(
         ([mutableFields, staticFields], [k, v]) =>

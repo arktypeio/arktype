@@ -12,15 +12,20 @@ const welcomeSuggestion: SuggestionData = {
 }
 
 export const Home = () => {
-    const { data } = useQuery<{ getTest: Test[] }>(metadata.test.gql.get, {
-        fetchPolicy: "no-cache"
-    })
+    const { data, loading } = useQuery<{ getTest: Test[] }>(
+        metadata.test.gql.get,
+        {
+            fetchPolicy: "no-cache"
+        }
+    )
     return (
         <Column justify="center" full={true}>
             <RedoAppBar>{["newTest", "search", "account"]}</RedoAppBar>
             <SuggestionResultsGrid
                 suggestions={
-                    data && data.getTest && data.getTest.length > 0
+                    loading
+                        ? []
+                        : data && data.getTest && data.getTest.length > 0
                         ? data.getTest.map(({ name, tags }) => ({
                               name,
                               kind: "test",

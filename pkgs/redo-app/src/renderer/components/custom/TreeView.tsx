@@ -9,45 +9,31 @@ export type TreeViewProps = {
     metaKey: MetadataKey
 }
 
-export const metaKeyToQueryName = (key: string) =>
+const metaKeyToQueryName = (key: string) =>
     `get${key.charAt(0).toUpperCase()}${key.slice(1)}`
 
-export const extractMetaKey = (
-    key: string,
-    value: any,
-    path: string[]
-): MetadataKey | undefined => {
-    console.log(key, value, path)
-    // @ts-ignore
-    if (
-        value &&
-        value.__typename &&
-        value.__typename.toLowerCase() in metadata
-    ) {
-        return value.__typename.toLowerCase() as MetadataKey
-    } else if (
-        Array.isArray(value) &&
-        value.length &&
-        value[0].__typename &&
-        value[0].__typename.toLowerCase() in metadata
-    ) {
-        return value[0].__typename.toLowerCase() as MetadataKey
-    }
-    return undefined
-}
+const getMetadataKey = (value: any) =>
+    value
+        ? value.__typename
+            ? value.__typename.toLowerCase() in metadata
+                ? (value.__typename.toLowerCase() as MetadataKey)
+                : undefined
+            : undefined
+        : undefined
 
 export const TreeView = ({ metaKey }: TreeViewProps) => {
-    const { data } = useQuery(metadata[metaKey].gql.get)
+    const { data } = useQuery(metadata[metaKey].gql.get, {
+        fetchPolicy: "no-cache"
+    })
     const result = data ? data[metaKeyToQueryName(metaKey)] : undefined
     return (
         <Column justify="center">
             <RedoAppBar>{["home", "search", "account"]}</RedoAppBar>
             {result ? (
                 <Tree
-                    labelKey="name"
                     hideKeys={["__typename", "id"]}
-                    nodeExtras={(key: string, value: any, path: string[]) => {
-                        const metaKey = extractMetaKey(key, value, path)
+                    nodeExtras={(key, value, path) => {
+                        const metaKey = getMetadataKey(value)
                         return metaKey && metadata[metaKey].gql.update ? (
                             <Modal>
                                 {{
@@ -57,7 +43,6 @@ export const TreeView = ({ metaKey }: TreeViewProps) => {
                                     content: (
                                         <ObjectView
                                             value={value}
-                                            name={key}
                                             path={path}
                                             metaKey={metaKey}
                                         />
