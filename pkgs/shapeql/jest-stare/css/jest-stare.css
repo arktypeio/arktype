@@ -1,0 +1,145 @@
+html {
+  position: relative;
+  min-height: 100%;
+}
+body {
+  margin-bottom: 60px;
+}
+.footer {
+  position: absolute;
+  bottom: 0;
+  width: 100%;
+  height: 60px;
+  line-height: 60px; /* Vertically center the text there */
+  background-color: #f5f5f5;
+}
+
+body > .container {
+  padding: 60px 15px 0;
+}
+
+.footer > .container {
+  padding-right: 15px;
+  padding-left: 15px;
+}
+
+code {
+  font-size: 80%;
+}
+
+.text-white-50 { color: rgba(255, 255, 255, .5); }
+
+.bg-green { background-color: var(--green); }
+
+.border-bottom { border-bottom: 1px solid #e5e5e5; }
+
+.box-shadow { box-shadow: 0 .25rem .75rem rgba(0, 0, 0, .05); }
+
+.overflow-auto { overflow: auto; /* Fixes long line breaking flow */ }
+
+.lh-100 { line-height: 1; }
+.lh-125 { line-height: 1.25; }
+.lh-150 { line-height: 1.5; }
+
+.onoff-switch {
+    position: relative; width: 90px;
+    -webkit-user-select:none; -moz-user-select:none; -ms-user-select: none;
+}
+.onoff-switch-label {
+    display: block; overflow: hidden; cursor: pointer;
+    border: 2px solid #999999; border-radius: 20px;
+}
+
+/* need to reuse more of this */
+.passoff-switch-checkbox {
+    display: none;
+}
+.passoff-switch-inner {
+    display: block; width: 200%; margin-left: -100%;
+    transition: margin 0.3s ease-in 0s;
+}
+.passoff-switch-inner:before, .passoff-switch-inner:after {
+    display: block; float: left; width: 50%; height: 30px; padding: 0; line-height: 30px;
+    font-size: 14px; color: white; font-family: Trebuchet, Arial, sans-serif; font-weight: bold;
+    box-sizing: border-box;
+}
+.passoff-switch-inner:before {
+    content: "PASS";
+    padding-left: 10px;
+    background-color: #28a745; color: #FFFFFF;
+}
+.passoff-switch-inner:after {
+    content: "PASS";
+    padding-right: 10px;
+    background-color: #EEEEEE; color: #999999;
+    text-align: right;
+}
+.passoff-switch-switch {
+    display: block; width: 18px; margin: 6px;
+    background: #FFFFFF;
+    position: absolute; top: 0; bottom: 0;
+    right: 56px;
+    border: 2px solid #999999; border-radius: 20px;
+    transition: all 0.3s ease-in 0s; 
+}
+.passoff-switch-checkbox:checked + .onoff-switch-label .passoff-switch-inner {
+    margin-left: 0;
+}
+.passoff-switch-checkbox:checked + .onoff-switch-label .passoff-switch-switch {
+    right: 0px; 
+}
+
+/* resuse more of this */
+.failoff-switch-checkbox {
+    display: none;
+}
+.failoff-switch-inner {
+    display: block; width: 200%; margin-left: -100%;
+    transition: margin 0.3s ease-in 0s;
+}
+.failoff-switch-inner:before, .failoff-switch-inner:after {
+    display: block; float: left; width: 50%; height: 30px; padding: 0; line-height: 30px;
+    font-size: 14px; color: white; font-family: Trebuchet, Arial, sans-serif; font-weight: bold;
+    box-sizing: border-box;
+}
+.failoff-switch-inner:before {
+    content: "FAIL";
+    padding-left: 10px;
+    background-color: #dc3545; color: #FFFFFF;
+}
+.failoff-switch-inner:after {
+    content: "FAIL";
+    padding-right: 10px;
+    background-color: #EEEEEE; color: #999999;
+    text-align: right;
+}
+.failoff-switch-switch {
+    display: block; width: 18px; margin: 6px;
+    background: #FFFFFF;
+    position: absolute; top: 0; bottom: 0;
+    right: 56px;
+    border: 2px solid #999999; border-radius: 20px;
+    transition: all 0.3s ease-in 0s; 
+}
+.failoff-switch-checkbox:checked + .onoff-switch-label .failoff-switch-inner {
+    margin-left: 0;
+}
+.failoff-switch-checkbox:checked + .onoff-switch-label .failoff-switch-switch {
+    right: 0px; 
+}
+
+.image-snapshot-diff {
+    border: 1px solid #ddd;
+    background-color: #f7f7f7;
+    padding: 5px 10px;
+}
+.image-snapshot-diff span {
+    display: block;
+    margin-bottom: 10px;
+    font-size: 15px;
+}
+
+.image-snapshot-diff img {
+    max-width: 100%;
+    max-height: 300px;
+}
