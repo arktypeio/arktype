@@ -1,8 +1,6 @@
 import React, { FC } from "react"
-import { Menu } from "redo-components"
-import { IconButton } from "redo-components"
+import { IconButton, Icons, Menu } from "redo-components"
 import { SearchInput } from "../SearchInput"
-import { MoreVert } from "@material-ui/icons"
 import { Page } from "renderer/state"
 import { store } from "renderer/common"
 
@@ -22,7 +20,7 @@ export const SearchBar: FC<SearchBarProps> = ({}) => {
                 {{
                     toggle: (
                         <IconButton
-                            Icon={MoreVert}
+                            Icon={Icons.dropdown}
                             style={{ color: "white" }}
                         />
                     ),

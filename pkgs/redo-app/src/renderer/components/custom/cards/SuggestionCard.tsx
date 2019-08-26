@@ -1,7 +1,6 @@
 import React, { FC } from "react"
 import { Typography as MuiTypography } from "@material-ui/core"
-import { PlayButton, ViewButton } from "custom"
-import { Column, Card, Row, useTheme } from "redo-components"
+import { Column, Card, Row, useTheme, Icons } from "redo-components"
 
 export type SuggestionCardProps = {
     name: string
@@ -37,8 +36,8 @@ export const SuggestionCard: FC<SuggestionCardProps> = ({
                 ) : null}
 
                 <Row full={true} justify="center" align="center">
-                    {kind === "test" ? <PlayButton /> : null}
-                    <ViewButton />
+                    {kind === "test" ? <Icons.run /> : null}
+                    <Icons.view />
                 </Row>
             </Column>
         </Card>
