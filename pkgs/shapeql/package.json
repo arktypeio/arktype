@@ -20,7 +20,7 @@
         "class-transformer": "0.2.0",
         "deepmerge": "3.2.1",
         "moize": "5.4.4",
-        "redo-utils": "1.0.0",
+        "@re-do/utils": "0.0.1",
         "reflect-metadata": "0.1.13"
     },
     "peerDependencies": {
@@ -41,7 +41,7 @@
         "graphql-tag": "2.10.1",
         "isomorphic-fetch": "2.2.1",
         "jest": "24.8.0",
-        "redo-recommended": "1.0.0",
+        "@re-do/recommended": "0.0.1",
         "ts-jest": "24.0.2",
         "type-graphql": "0.17.4",
         "typescript": "3.5.2"
