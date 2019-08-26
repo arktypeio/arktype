@@ -24,10 +24,9 @@ export function getUserId(req: any) {
     }
 }
 
-export const authChecker: AuthChecker<Context> = async (
-    { context: { photon, id } },
-    roles
-) => {
+export const authChecker: AuthChecker<Context> = async ({
+    context: { photon, id }
+}) => {
     if (!id) {
         return false
     }
@@ -35,8 +34,5 @@ export const authChecker: AuthChecker<Context> = async (
     if (!user) {
         return false
     }
-    return (
-        roles.length === 0 ||
-        user.roles.some((role: string) => roles.includes(role))
-    )
+    return true
 }

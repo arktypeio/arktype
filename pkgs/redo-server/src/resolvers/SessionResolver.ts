@@ -24,8 +24,7 @@ export class SessionResolver {
                 email,
                 password: hashedPassword,
                 firstName,
-                lastName,
-                roles: { set: ["user"] }
+                lastName
             }
         })
         return {

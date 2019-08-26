@@ -8,7 +8,7 @@ import {
     TypeAction
 } from "./common"
 import { User } from "./user"
-import { BrowserEvent, BrowserEventInput } from "./browserEvent"
+import { Step, StepInput } from "./step"
 import { Tag, TagInput } from "./tag"
 import gql from "graphql-tag"
 
@@ -22,8 +22,8 @@ export class TestInput {
     tags: TagInput[]
 
     // TODO: Add validation https://trello.com/c/Bs3ypPLs
-    @InField({ type: as => [BrowserEventInput] })
-    steps: BrowserEventInput[]
+    @InField({ type: as => [StepInput] })
+    steps: StepInput[]
 }
 
 @InType()
@@ -34,8 +34,8 @@ export class TestUpdate {
     @InField({ type: as => [TagInput], options: { nullable: true } })
     tags?: TagInput[]
 
-    @InField({ type: as => [BrowserEventInput], options: { nullable: true } })
-    steps?: BrowserEventInput[]
+    @InField({ type: as => [StepInput], options: { nullable: true } })
+    steps?: StepInput[]
 }
 
 @OutType()
@@ -52,8 +52,8 @@ export class Test {
     @OutField({ type: as => [Tag] })
     tags: Tag[]
 
-    @OutField({ type: as => [BrowserEvent] })
-    steps: BrowserEvent[]
+    @OutField({ type: as => [Step] })
+    steps: Step[]
 }
 
 export const testMetadata: TypeMetadata = {
@@ -65,7 +65,7 @@ export const testMetadata: TypeMetadata = {
                     id
                     name
                     steps {
-                        type
+                        key
                         selector
                         value
                     }
@@ -80,7 +80,7 @@ export const testMetadata: TypeMetadata = {
                 $id: String!
                 $name: String
                 $tags: [TagInput!]
-                $steps: [BrowserEventInput!]
+                $steps: [StepInput!]
             ) {
                 updateTest(id: $id, name: $name, tags: $tags, steps: $steps)
             }
