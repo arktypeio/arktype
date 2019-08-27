@@ -10,7 +10,7 @@ import { store } from "renderer/common"
 import { ObjectType, Field } from "type-graphql"
 import { remote, Rectangle } from "electron"
 import { handle } from "shapeql"
-import { isDeepStrictEqual } from "@re-do/util"
+import { isDeepStrictEqual } from "util"
 import { join } from "path"
 import { homedir } from "os"
 
