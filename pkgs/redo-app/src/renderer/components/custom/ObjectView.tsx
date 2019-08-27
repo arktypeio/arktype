@@ -10,7 +10,7 @@ import { excludeKeys } from "shapeql"
 
 export type ObjectViewProps = {
     value: Record<string, any>
-    path: string[]
+    path: string
     metaKey: MetadataKey
 }
 const getId = (type: MetadataKey, data: Record<string, any>) => {
