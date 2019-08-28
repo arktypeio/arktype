@@ -1,0 +1,4 @@
+[build]
+  functions = "lambda-build" 
+[build.environment]
+  NODE_VERSION = "10.16.0"

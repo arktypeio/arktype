@@ -13,11 +13,14 @@
         "seed": "ts-node prisma/seed.ts",
         "prisma": "npm run generateSchema && prisma2 generate && prisma2 lift save --name init && prisma2 lift up",
         "generate": "npm run wipeDb && npm run prisma && npm run seed",
-        "test": "jest"
+        "test": "jest",
+        "buildLambda": "webpack --progress --colors",
+        "netlify": "netlify-lambda serve lambda"
     },
     "dependencies": {
         "@apollographql/graphql-playground-html": "1.6.24",
-        "apollo-server-lambda": "2.7.0",
+        "apollo-server-lambda": "2.9.0",
+        "@babel/runtime-corejs3": "7.5.5",
         "bcrypt": "3.0.6",
         "class-transformer": "0.2.0",
         "class-validator": "0.10.0",
@@ -31,8 +34,10 @@
         "@re-do/utils": "0.0.1",
         "reflect-metadata": "0.1.13",
         "type-graphql": "0.17.4",
+        "netlify-cli": "2.12.0",
+        "netlify-lambda": "1.6.3",
         "iterall": "1.2.2",
-        "apollo-server-core": "2.7.0",
+        "apollo-server-core": "2.9.0",
         "apollo-engine-reporting-protobuf": "0.4.0",
         "apollo-server-env": "2.4.1",
         "apollo-server-types": "0.2.1",
@@ -46,7 +51,8 @@
         "protobufjs": "6.8.8",
         "ts-invariant": "0.4.4",
         "zen-observable-ts": "0.8.19",
-        "zen-observable": "0.8.14"
+        "zen-observable": "0.8.14",
+        "aws-sdk": "2.518.0"
     },
     "devDependencies": {
         "@types/bcrypt": "3.0.0",
@@ -60,9 +66,13 @@
         "jest": "24.8.0",
         "prisma2": "2.0.0-preview-5",
         "@re-do/recommended": "0.0.1",
+        "babel-preset-redo": "1.0.0",
+        "@re-do/bundle": "0.0.1",
         "ts-jest": "24.0.2",
         "ts-node": "8.3.0",
         "ts-node-dev": "1.0.0-pre.40",
-        "typescript": "3.5.2"
+        "typescript": "3.5.2",
+        "webpack": "4.29.6",
+        "webpack-cli": "3.3.0"
     }
 }

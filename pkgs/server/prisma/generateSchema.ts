@@ -19,8 +19,7 @@ export const baseSchema = `datasource db {
 }
 
 generator photon {
-  provider = "photonjs"
-  platforms = ["native"] 
+  provider  = "photonjs"
 }
 
 `

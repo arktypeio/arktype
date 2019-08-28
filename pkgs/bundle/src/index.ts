@@ -57,6 +57,20 @@ const getCommonConfig = ({ entries, tsconfig }: ConfigArgs): Configuration => ({
     plugins: [new ForkTsCheckerWebpackPlugin({ tsconfig })]
 })
 
+const getNodeConfig = (args: ConfigArgs): Configuration =>
+    merge.smart(getCommonConfig(args), {
+        target: "node",
+        module: {
+            rules: [
+                {
+                    test: /\.(j|t)sx?$/,
+                    loader: "ts-loader",
+                    exclude: /node_modules/
+                }
+            ]
+        }
+    })
+
 const getWebConfig = (args: ConfigArgs): Configuration =>
     merge.smart(getCommonConfig(args), {
         module: {
@@ -197,7 +211,8 @@ const baseOptions = {
     web: getWebConfig,
     injected: getInjectedConfig,
     renderer: getRendererConfig,
-    main: getMainConfig
+    main: getMainConfig,
+    node: getNodeConfig
 }
 
 export type BaseName = keyof typeof baseOptions
