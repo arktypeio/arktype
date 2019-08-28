@@ -17,6 +17,7 @@ export const extractMetaKey = (
     value: any,
     path: string[]
 ): MetadataKey | undefined => {
+    console.log(key, value, path)
     // @ts-ignore
     if (
         value &&

@@ -64,7 +64,7 @@ export class TestResolver {
                       }
                     : undefined,
                 tags: {
-                    create: tags ? createTagsInput(tags, id!) : tags
+                    create: tags ? createTagsInput(tags, id!) : undefined
                 }
             },
             where: { id: testId }

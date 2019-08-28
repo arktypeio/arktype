@@ -1,9 +1,9 @@
 import React, { FC } from "react"
-import { BrowserEventInput } from "@re-do/model"
+import { StepInput } from "@re-do/model"
 import { ContentCard } from "@re-do/components"
 
 export type LearnerEventCardProps = {
-    event: BrowserEventInput
+    event: StepInput
 }
 
 export const LearnerEventCard: FC<LearnerEventCardProps> = ({ event }) => (

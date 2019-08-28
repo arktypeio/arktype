@@ -23,7 +23,7 @@ const contents = gql`
         createTest(
             name: "Test Something"
             tags: [{ name: "BAT" }, { name: "short" }]
-            steps: [{ type: "set", selector: "#someId", value: "someText" }]
+            steps: [{ key: "set", selector: "#someId", value: "someText" }]
         )
     }
 
@@ -32,7 +32,7 @@ const contents = gql`
             name: "NewName"
             id: ""
             tags: [{ name: "BAT" }, { name: "short" }]
-            steps: [{ type: "set", selector: "#someId", value: "someText" }]
+            steps: [{ key: "set", selector: "#someId", value: "someText" }]
         )
     }
 
@@ -58,10 +58,10 @@ const contents = gql`
         }
     }
 
-    query getBrowserEvent {
-        getBrowserEvent {
+    query getSteps {
+        getSteps {
+            key
             selector
-            type
             value
         }
     }

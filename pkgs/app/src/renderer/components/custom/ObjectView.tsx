@@ -1,16 +1,8 @@
-import React, { FC } from "react"
-import {
-    Modal,
-    Button,
-    Column,
-    AutoForm,
-    Row,
-    IconButton
-} from "@re-do/components"
-import { MetadataKey, Metadata, metadata, TestInput } from "@re-do/model"
+import React from "react"
+import { Column, AutoForm, Row, IconButton } from "@re-do/components"
+import { MetadataKey, metadata } from "@re-do/model"
 import { submitForm } from "custom/CustomForm"
-import gql from "graphql-tag"
-import { useMutation, useQuery } from "@apollo/react-hooks"
+import { useMutation } from "@apollo/react-hooks"
 import { isRecursible, fromEntries } from "@re-do/utils"
 import { actionToIcon } from "./ActionButtons"
 import { excludeKeys } from "shapeql"
