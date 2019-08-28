@@ -24,13 +24,14 @@
             "!./dist/win-unpacked"
         ],
         "linux": {
-            "target": "zip"
+            "target": "deb"
         },
         "mac": {
-            "target": "zip"
+            "target": "dmg",
+            "category": "public.app-category.developer-tools"
         },
         "win": {
-            "target": "zip"
+            "target": "nsis"
         }
     },
     "dependencies": {

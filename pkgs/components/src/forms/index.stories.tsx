@@ -7,6 +7,7 @@ import { AutoForm, Form, FormText, FormSubmit } from "."
 import { ValueFrom } from "@re-do/utils"
 import { FormProps } from "./Form"
 import { FormSubmitProps } from "./FormSubmit"
+import { Card } from "../cards"
 
 type HelloFormFields = {
     first: string
@@ -47,11 +48,17 @@ storiesOf("Form", module)
     ))
 
 const HelloForm = () => (
-    <Form<HelloFormFields, string> submit={submit} validator={validator}>
-        <Column>
+    <Card
+        style={{
+            width: 400,
+            height: 400
+        }}
+    >
+        <Form<HelloFormFields, string> submit={submit} validator={validator}>
             <FormText name="first" />
             <FormText name="last" />
             <FormSubmit responseOptions={responseOptions}>Submit</FormSubmit>
-        </Column>
-    </Form>
+        </Form>
+    </Card>
 )
+// I think the reason the layout looks funny is that space-between aligns things based on the top, not the center?

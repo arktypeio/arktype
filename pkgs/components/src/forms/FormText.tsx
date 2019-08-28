@@ -4,7 +4,7 @@ import { ErrorText } from "../text"
 import { useFormContext } from "./FormContext"
 import { FormFieldProps } from "./FormField"
 import { FormActions, Fields } from "./FormContext"
-import { Column } from "../layouts"
+import { Column, Row } from "../layouts"
 
 export type FormTextProps = FormFieldProps & TextInputProps
 
@@ -56,34 +56,42 @@ export const FormText: FC<FormTextProps> = ({
     } = useFormContext()
     return (
         <>
-            <TextInput
-                name={name}
-                label={label ? label : name}
-                inputRef={register}
-                onBlur={() => {
-                    if (!touched.includes(name)) {
-                        touched.push(name)
-                    }
-                    updateFieldErrors({
-                        setError,
-                        validate,
-                        values: getValues(),
-                        touched,
-                        clearError
-                    })
-                }}
-                onKeyDown={async (
-                    event: React.KeyboardEvent<HTMLDivElement>
-                ) => {
-                    if (event.key === "Enter") {
-                        submit(getValues())
-                    }
-                }}
-                {...rest}
-            />
-            {errors[name] && errors[name].message ? (
-                <ErrorText>{errors[name].message.split("\n")}</ErrorText>
-            ) : null}
+            <Column height={70} width={200} align="center" justify="flex-start">
+                <TextInput
+                    name={name}
+                    label={label ? label : name}
+                    inputRef={register}
+                    onBlur={() => {
+                        if (!touched.includes(name)) {
+                            touched.push(name)
+                        }
+                        updateFieldErrors({
+                            setError,
+                            validate,
+                            values: getValues(),
+                            touched,
+                            clearError
+                        })
+                    }}
+                    onKeyDown={async (
+                        event: React.KeyboardEvent<HTMLDivElement>
+                    ) => {
+                        if (event.key === "Enter") {
+                            submit(getValues())
+                        }
+                    }}
+                    {...rest}
+                />
+
+                {errors[name] && errors[name].message ? (
+                    <Row full={true} justify="flex-start">
+                        <ErrorText>
+                            {errors[name].message.split("\n")}
+                        </ErrorText>
+                    </Row>
+                ) : null}
+            </Column>
         </>
     )
 }
+//change the bit that says null
