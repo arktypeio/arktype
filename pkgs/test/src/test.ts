@@ -1,5 +1,5 @@
 import p, { Page, Browser } from "puppeteer"
-import { ValueOf } from "redo-utils"
+import { ValueOf } from "@re-do/utils"
 
 export const test = async (...steps: Step[]) => {
     const browser = await p.launch({ headless: false, slowMo: 250 })

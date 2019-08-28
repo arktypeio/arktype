@@ -1,5 +1,5 @@
 import gql from "graphql-tag"
-import { NonRecursible, Shape as S, Class, Unlisted } from "redo-utils"
+import { NonRecursible, Shape as S, Class, Unlisted } from "@re-do/utils"
 import { shapeFilter, DeepUpdate } from "./filters"
 import { metamorph } from "./filters/metamorph"
 

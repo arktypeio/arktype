@@ -1,5 +1,5 @@
 import { isDeepStrictEqual } from "util"
-import { isRecursible, fromEntries, DeepPartial } from "redo-utils"
+import { isRecursible, fromEntries, DeepPartial } from "@re-do/utils"
 
 const diffable = (o: any) => isRecursible(o) && !Array.isArray(o)
 
