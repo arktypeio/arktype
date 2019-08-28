@@ -51,9 +51,9 @@ export const Learner = component({
     const [saveTest] = useMutation(SAVETEST)
     return (
         <>
-            <AppBar>
-                <Column>
-                    <Row justify="center">
+            <div style={{ height: 90 }}>
+                <AppBar style={{ height: 90 }}>
+                    <Column align="center">
                         <TextInput
                             value={name}
                             placeholder="Test Name"
@@ -65,9 +65,7 @@ export const Learner = component({
                                 })
                             }
                         />
-                    </Row>
-                    {/* TODO Chip input should be moved to redo components as part of: https://trello.com/c/eVo1vyZj */}
-                    <Row justify="center">
+                        {/* TODO Chip input should be moved to redo components as part of: https://trello.com/c/eVo1vyZj */}
                         <ChipInput
                             value={tags}
                             placeholder="Add Tags"
@@ -87,29 +85,30 @@ export const Learner = component({
                                 })
                             }}
                         />
-                    </Row>
-                </Column>
-            </AppBar>
-
-            <RespondTo
-                response={{ loading: chromiumInstalling }}
-                options={{
-                    loading: {
-                        displayAs: ({ value }) =>
-                            value ? (
-                                <>
-                                    <CircularProgress />
-                                    <Text align="center">
-                                        Downloading Chrome
-                                    </Text>
-                                </>
-                            ) : null,
-                        hideContent: false
-                    }
-                }}
-            >
-                <LearnerEvents events={events} />
-            </RespondTo>
+                    </Column>
+                </AppBar>
+            </div>
+            <div>
+                <RespondTo
+                    response={{ loading: chromiumInstalling }}
+                    options={{
+                        loading: {
+                            displayAs: ({ value }) =>
+                                value ? (
+                                    <>
+                                        <CircularProgress />
+                                        <Text align="center">
+                                            Downloading Chrome
+                                        </Text>
+                                    </>
+                                ) : null,
+                            hideContent: false
+                        }
+                    }}
+                >
+                    <LearnerEvents events={events} />
+                </RespondTo>
+            </div>
             <AppBar
                 style={{
                     bottom: 0,
@@ -123,7 +122,6 @@ export const Learner = component({
                     style={{ color: "white" }}
                     onClick={deactivateLearner}
                 >
-                    {" "}
                     Cancel Test
                 </Button>
 

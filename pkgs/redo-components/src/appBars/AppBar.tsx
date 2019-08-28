@@ -7,7 +7,7 @@ export type AppBarProps = RowProps
 
 export const AppBar: FC<AppBarProps> = ({ children, ...rest }) => {
     return (
-        <MuiAppBar position="fixed" style={{zIndex: 1}}>
+        <MuiAppBar>
             <Row align="center" justify="space-between" {...rest}>
                 {children}
             </Row>
