@@ -65,3 +65,6 @@ dist
 # Rush files
 common/temp/**
 package-deps.json
+
+# OS files
+.DS_Store
