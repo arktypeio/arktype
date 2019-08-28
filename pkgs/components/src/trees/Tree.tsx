@@ -7,13 +7,25 @@ import { IconButton } from "../buttons"
 
 type TreeSource = Record<string, any>
 
+export type TreeNodeContext<T = any> = {
+    key: string
+    value: T
+    path: string
+}
+
+export type TreeNodeTransform<T = any> = (
+    context: TreeNodeContext
+) => TreeNodeTransformation<T>
+
+export type TreeNodeTransformation<T = any> = {
+    entry?: [string, T]
+    render?: JSX.Element | null
+    extras?: JSX.Element
+}
+
 export type TreeProps<O extends TreeSource> = {
     children: O
-    nodeExtras?:
-        | JSX.Element
-        | ((key: string, value: any, path: string) => JSX.Element | null)
-    transform?: (treeSource: any) => any
-    hideKeys?: string[]
+    transform?: TreeNodeTransform
 }
 
 type NodeProps = {
@@ -23,29 +35,37 @@ type NodeProps = {
 
 export const Tree = <O extends TreeSource>({
     children,
-    nodeExtras,
-    transform,
-    hideKeys
+    transform
 }: TreeProps<O>) => {
     const [expandedPaths, setExpandedPaths] = useState<Record<string, boolean>>(
         {}
     )
     const Node = ({ source, parentPath }: NodeProps) => (
         <>
-            {Object.entries(source).map(([k, v]) => {
-                if (hideKeys && hideKeys.includes(k)) {
-                    return null
+            {Object.entries(source).map(([key, value]) => {
+                const path = `${parentPath}${String(key)}/`
+                const context = { key, value, path }
+                const {
+                    entry: [renderKey, renderValue],
+                    render: renderAs,
+                    extras: renderWith
+                } = {
+                    entry: [key, value],
+                    render: undefined,
+                    extras: undefined,
+                    ...(transform ? transform(context) : undefined)
                 }
-                const value = transform ? transform(v) : v
-                const path = `${parentPath}${String(k)}/`
-                const recursible = isRecursible(value)
+                if (renderAs !== undefined) {
+                    return renderAs
+                }
+                const recursible = isRecursible(renderValue)
                 // Offsets Icon width to make non-recursible and recursible text aligned
                 const leafStyles = {
                     position: "relative",
                     left: recursible ? 0 : 48
                 } as const
                 return (
-                    <div key={k}>
+                    <div key={renderKey}>
                         <Row
                             align="center"
                             style={{
@@ -74,30 +94,28 @@ export const Tree = <O extends TreeSource>({
                                 ) : null}
                                 <Text style={leafStyles}>
                                     {recursible
-                                        ? String(k)
-                                        : `${String(k)}: ${String(value)}`}
+                                        ? String(renderKey)
+                                        : `${String(renderKey)}: ${String(
+                                              renderValue
+                                          )}`}
                                 </Text>
                             </Row>
-                            <div style={leafStyles}>
-                                {nodeExtras
-                                    ? typeof nodeExtras === "function"
-                                        ? nodeExtras(k, value, path)
-                                        : nodeExtras
-                                    : null}
-                            </div>
+                            <div style={leafStyles}>{renderWith}</div>
                         </Row>
                         {expandedPaths[path] && recursible ? (
-                            <Node source={value} parentPath={path} />
+                            <Node source={renderValue} parentPath={path} />
                         ) : null}
                     </div>
                 )
             })}
         </>
     )
-    return (
-        <Node
-            source={transform ? transform(children) : children}
-            parentPath={""}
-        />
-    )
+    const initialTransform = transform
+        ? transform({ key: "", value: children, path: "" })
+        : undefined
+    const initialValue =
+        initialTransform && initialTransform.entry
+            ? initialTransform.entry[1]
+            : children
+    return <Node source={initialValue} parentPath={""} />
 }
