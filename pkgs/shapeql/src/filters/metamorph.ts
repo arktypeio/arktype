@@ -1,7 +1,7 @@
 import { getMetadataStorage } from "type-graphql/dist/metadata/getMetadataStorage"
 import { ObjectClassMetadata } from "type-graphql/dist/metadata/definitions/object-class-metdata"
 import { FieldMetadata } from "type-graphql/dist/metadata/definitions"
-import { Class, memoize, objectify } from "redo-utils"
+import { Class, memoize, objectify } from "@re-do/utils"
 
 export const getMetadata: typeof getMetadataStorage = memoize(() => {
     const metadata = getMetadataStorage()

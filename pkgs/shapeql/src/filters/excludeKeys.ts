@@ -1,4 +1,4 @@
-import { Key, NonRecursible } from "redo-utils"
+import { Key, NonRecursible } from "@re-do/utils"
 import { filter } from "./filter"
 
 export type ExcludedByKeys<O, K extends Key[]> = Pick<
