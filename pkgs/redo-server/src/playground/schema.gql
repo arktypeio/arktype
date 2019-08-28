@@ -3,38 +3,6 @@
 # !!!   DO NOT MODIFY THIS FILE BY YOURSELF   !!!
 # -----------------------------------------------
 
-type BrowserEvent {
-  id: ID!
-  type: String!
-  selector: String!
-  value: String!
-  user: User!
-}
-
-input BrowserEventInput {
-  type: String!
-  selector: String!
-  value: String!
-}
-
-input BrowserEventUpdate {
-  type: String
-  selector: String
-  value: String
-}
-
-type LocalOnlyBrowserEventInput {
-  type: String!
-  selector: String!
-  value: String!
-}
-
-type LocalOnlyBrowserEventUpdate {
-  type: String
-  selector: String
-  value: String
-}
-
 type LocalOnlySignInInput {
   email: String!
   password: String!
@@ -47,6 +15,18 @@ type LocalOnlySignUpInput {
   lastName: String!
 }
 
+type LocalOnlyStepInput {
+  key: String!
+  selector: String!
+  value: String!
+}
+
+type LocalOnlyStepUpdate {
+  key: String
+  selector: String
+  value: String
+}
+
 type LocalOnlyTagInput {
   name: String!
 }
@@ -54,30 +34,30 @@ type LocalOnlyTagInput {
 type LocalOnlyTestInput {
   name: String!
   tags: [LocalOnlyTagInput!]!
-  steps: [LocalOnlyBrowserEventInput!]!
+  steps: [LocalOnlyStepInput!]!
 }
 
 type LocalOnlyTestUpdate {
   name: String
   tags: [LocalOnlyTagInput!]
-  steps: [LocalOnlyBrowserEventInput!]
+  steps: [LocalOnlyStepInput!]
 }
 
 type Mutation {
   signUp(email: String!, password: String!, firstName: String!, lastName: String!): Session!
   signIn(email: String!, password: String!): Session!
-  createTest(name: String!, tags: [TagInput!]!, steps: [BrowserEventInput!]!): String!
-  updateTest(id: String!, name: String, tags: [TagInput!], steps: [BrowserEventInput!]): String!
+  createTest(name: String!, tags: [TagInput!]!, steps: [StepInput!]!): String!
+  updateTest(id: String!, name: String, tags: [TagInput!], steps: [StepInput!]): String!
   createTag(name: String!): String!
-  createBrowserEvent(type: String!, selector: String!, value: String!): String!
-  updateBrowserEvent(id: String!, type: String, selector: String, value: String): String!
+  createStep(key: String!, selector: String!, value: String!): String!
+  updateStep(id: String!, key: String, selector: String, value: String): String!
 }
 
 type Query {
   me: User!
   getTest: [Test!]!
   getTag: [Tag!]!
-  getBrowserEvent: [BrowserEvent!]!
+  getSteps: [Step!]!
 }
 
 type Session {
@@ -98,6 +78,26 @@ input SignUpInput {
   lastName: String!
 }
 
+type Step {
+  id: ID!
+  key: String!
+  selector: String!
+  value: String!
+  user: User!
+}
+
+input StepInput {
+  key: String!
+  selector: String!
+  value: String!
+}
+
+input StepUpdate {
+  key: String
+  selector: String
+  value: String
+}
+
 type Tag {
   id: ID!
 
@@ -115,19 +115,19 @@ type Test {
   user: User!
   name: String!
   tags: [Tag!]!
-  steps: [BrowserEvent!]!
+  steps: [Step!]!
 }
 
 input TestInput {
   name: String!
   tags: [TagInput!]!
-  steps: [BrowserEventInput!]!
+  steps: [StepInput!]!
 }
 
 input TestUpdate {
   name: String
   tags: [TagInput!]
-  steps: [BrowserEventInput!]
+  steps: [StepInput!]
 }
 
 type User {
@@ -136,7 +136,6 @@ type User {
   """String @unique"""
   email: String!
   password: String!
-  roles: [String!]!
   firstName: String!
   lastName: String!
 }
