@@ -7,5 +7,12 @@ export default makeConfig(
         entry: resolve(__dirname, "src", "lambda.ts"),
         tsconfig: resolve(__dirname, "tsconfig.json")
     },
-    [{ output: { path: resolve(__dirname, "lambda"), filename: "index.js" } }]
+    [
+        {
+            output: {
+                path: resolve(__dirname, "dist", "__lambda__"),
+                filename: "index.js"
+            }
+        }
+    ]
 )
