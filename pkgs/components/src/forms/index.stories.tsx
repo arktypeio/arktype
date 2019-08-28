@@ -34,9 +34,19 @@ const responseOptions: ValueFrom<FormSubmitProps, "responseOptions"> = {
     }
 }
 
+const reverse = (s: string) => [...s].reverse().join("")
+
 storiesOf("Form", module)
     .addDecorator(withKnobs)
     .add("Standard", () => <HelloForm />)
+    .add("With transform", () => (
+        <HelloForm
+            transformValues={values => ({
+                first: reverse(values.first),
+                last: reverse(values.last)
+            })}
+        />
+    ))
     .add("AutoForm", () => (
         <AutoForm<HelloFormFields, string>
             submit={submit}
@@ -46,8 +56,12 @@ storiesOf("Form", module)
         />
     ))
 
-const HelloForm = () => (
-    <Form<HelloFormFields, string> submit={submit} validator={validator}>
+const HelloForm = (props?: Partial<FormProps<HelloFormFields, string>>) => (
+    <Form<HelloFormFields, string>
+        submit={submit}
+        validator={validator}
+        {...props}
+    >
         <Column>
             <FormText name="first" />
             <FormText name="last" />
