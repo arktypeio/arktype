@@ -1,5 +1,5 @@
 import { resolve } from "path"
-import { makeConfig, isDev } from "../bundle"
+import { makeConfig, isDev } from "@re-do/bundle"
 
 export default makeConfig(
     {
