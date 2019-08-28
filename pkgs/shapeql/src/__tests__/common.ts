@@ -1,5 +1,5 @@
 import { ObjectType, Field } from "type-graphql"
-import { DeepRequired } from "redo-utils"
+import { DeepRequired } from "@re-do/utils"
 
 @ObjectType()
 export class B {

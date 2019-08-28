@@ -1,4 +1,4 @@
-import { ValueFrom, DeepPartial, isRecursible, fromEntries } from "redo-utils"
+import { ValueFrom, DeepPartial, isRecursible, fromEntries } from "@re-do/utils"
 
 export type FilterFunction = Parameters<ValueFrom<Array<any>, "filter">>[0]
 

@@ -9,40 +9,40 @@
     },
     "projects": [
         {
-            "packageName": "redo-recommended",
-            "projectFolder": "pkgs/redo-recommended"
+            "packageName": "@re-do/recommended",
+            "projectFolder": "pkgs/recommended"
         },
         {
-            "packageName": "redo-utils",
-            "projectFolder": "pkgs/redo-utils"
+            "packageName": "@re-do/utils",
+            "projectFolder": "pkgs/utils"
         },
         {
             "packageName": "shapeql",
             "projectFolder": "pkgs/shapeql"
         },
         {
-            "packageName": "redo-model",
-            "projectFolder": "pkgs/redo-model"
+            "packageName": "@re-do/model",
+            "projectFolder": "pkgs/model"
         },
         {
-            "packageName": "redo-app",
-            "projectFolder": "pkgs/redo-app"
+            "packageName": "@re-do/app",
+            "projectFolder": "pkgs/app"
         },
         {
-            "packageName": "redo-server",
-            "projectFolder": "pkgs/redo-server"
+            "packageName": "@re-do/server",
+            "projectFolder": "pkgs/server"
         },
         {
-            "packageName": "redo-components",
-            "projectFolder": "pkgs/redo-components"
+            "packageName": "@re-do/components",
+            "projectFolder": "pkgs/components"
         },
         {
-            "packageName": "redo-website",
-            "projectFolder": "pkgs/redo-website"
+            "packageName": "@re-do/website",
+            "projectFolder": "pkgs/website"
         },
         {
-            "packageName": "redo-bundle",
-            "projectFolder": "pkgs/redo-bundle"
+            "packageName": "@re-do/bundle",
+            "projectFolder": "pkgs/bundle"
         },
         {
             "packageName": "babel-preset-redo",

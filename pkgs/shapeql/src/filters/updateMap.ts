@@ -1,4 +1,4 @@
-import { isRecursible, fromEntries, ValueOf, NonRecursible } from "redo-utils"
+import { isRecursible, fromEntries, ValueOf, NonRecursible } from "@re-do/utils"
 
 export type UpdateFunction<T> = (value: T) => T
 
