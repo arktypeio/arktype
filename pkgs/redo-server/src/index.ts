@@ -10,7 +10,7 @@ import { join } from "path"
 
 const photon = new Photon()
 
-const serve = async () => {
+export const serve = async () => {
     const schema = await buildSchema({
         resolvers,
         authChecker,
@@ -45,8 +45,10 @@ const serve = async () => {
         }
     })
 
-    const { url } = await server.listen({ port: process.env.PORT })
-    console.log(`Redo's Apollo server is up and running at ${url}.`)
+    return server.createHandler()
+
+    // const { url } = await server.listen({ port: process.env.PORT })
+    // console.log(`Redo's Apollo server is up and running at ${url}.`)
 }
 
-serve()
+export const handler = serve()
