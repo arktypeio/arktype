@@ -98,9 +98,7 @@ export const SignUp: FC = () => {
                                                 label="last"
                                             />
                                         </Row>
-
                                         <FormText name="email" />
-
                                         <Row>
                                             <FormText
                                                 type="password"

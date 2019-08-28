@@ -5,8 +5,8 @@ import {
     OutType,
     OutField,
     ID,
-    TypeMetadata,
-    TypeAction
+    TypeAction,
+    createTypeMetadata
 } from "./common"
 import { User } from "./user"
 
@@ -52,7 +52,7 @@ export class StepUpdate {
     value?: string
 }
 
-export const stepMetadata: TypeMetadata = {
+export const stepMetadata = createTypeMetadata({
     inType: StepInput,
     outType: Step,
     actions: [TypeAction.Update, TypeAction.Delete],
@@ -65,6 +65,21 @@ export const stepMetadata: TypeMetadata = {
                     value
                 }
             }
+        `,
+        update: gql`
+            mutation updateStep(
+                $id: String!
+                $key: String
+                $selector: String
+                $value: String
+            ) {
+                updateStep(
+                    id: $id
+                    key: $key
+                    selector: $selector
+                    value: $value
+                )
+            }
         `
     }
-}
+})
