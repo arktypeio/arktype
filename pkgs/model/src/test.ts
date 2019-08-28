@@ -4,8 +4,8 @@ import {
     OutType,
     OutField,
     ID,
-    TypeMetadata,
-    TypeAction
+    TypeAction,
+    createTypeMetadata
 } from "./common"
 import { User } from "./user"
 import { Step, StepInput } from "./step"
@@ -56,7 +56,9 @@ export class Test {
     steps: Step[]
 }
 
-export const testMetadata: TypeMetadata = {
+export const testMetadata = createTypeMetadata({
+    inType: TestInput,
+    outType: Test,
     actions: [TypeAction.Run, TypeAction.Update, TypeAction.Delete],
     gql: {
         get: gql`
@@ -86,6 +88,5 @@ export const testMetadata: TypeMetadata = {
             }
         `
     },
-    inType: TestInput,
-    outType: Test
-}
+    labelKey: "name"
+})

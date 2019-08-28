@@ -20,7 +20,7 @@ export class User {
 
 @InType()
 export class SignInInput implements Partial<User> {
-    @InField({ validate: ["filled"] })
+    @InField({ validate: ["email"] })
     email: string
 
     @InField({ validate: ["filled"] })
