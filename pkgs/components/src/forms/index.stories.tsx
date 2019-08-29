@@ -7,7 +7,6 @@ import { AutoForm, Form, FormText, FormSubmit } from "."
 import { ValueFrom } from "@re-do/utils"
 import { FormProps } from "./Form"
 import { FormSubmitProps } from "./FormSubmit"
-import { Card } from "../cards"
 
 type HelloFormFields = {
     first: string
@@ -58,15 +57,19 @@ storiesOf("Form", module)
     ))
 
 const HelloForm = (props?: Partial<FormProps<HelloFormFields, string>>) => (
-    <Form<HelloFormFields, string>
-        submit={submit}
-        validator={validator}
-        {...props}
-    >
-        <Column>
-            <FormText name="first" />
-            <FormText name="last" />
-            <FormSubmit responseOptions={responseOptions}>Submit</FormSubmit>
-        </Column>
-    </Form>
+    <div style={{ width: 200 }}>
+        <Form<HelloFormFields, string>
+            submit={submit}
+            validator={validator}
+            {...props}
+        >
+            <Column align="center">
+                <FormText name="first" />
+                <FormText name="last" />
+                <FormSubmit responseOptions={responseOptions}>
+                    Submit
+                </FormSubmit>
+            </Column>
+        </Form>
+    </div>
 )

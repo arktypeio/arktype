@@ -84,9 +84,9 @@ export const SignIn: FC = () => {
                                     }}
                                 >
                                     <Column
-                                        full={true}
+                                        full
                                         justify="center"
-                                        align="center"
+                                        align="stretch"
                                     >
                                         <FormText name="email" autoFocus />
                                         <FormText
