@@ -21,6 +21,7 @@
         "class-validator": "0.10.0",
         "core-js": "3.1.4",
         "deepmerge": "3.2.1",
+        "material-ui-chip-input": "1.0.0",
         "react": "16.8.6",
         "react-dom": "16.8.6",
         "react-hook-form": "3.18.8",
@@ -55,6 +56,7 @@
         "react-docgen-typescript-loader": "3.1.0",
         "react-test-renderer": "16.8.6",
         "@re-do/bundle": "0.0.1",
+        "@re-do/model": "0.0.1",
         "@re-do/recommended": "0.0.1",
         "@re-do/utils": "0.0.1",
         "typescript": "3.5.2"
