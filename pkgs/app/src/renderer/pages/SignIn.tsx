@@ -77,7 +77,11 @@ export const SignIn: FC = () => {
                                         height: "100%"
                                     }}
                                 >
-                                    <Column justify="center" align="center">
+                                    <Column
+                                        full={true}
+                                        justify="center"
+                                        align="center"
+                                    >
                                         <FormText name="email" autoFocus />
                                         <FormText
                                             type="password"

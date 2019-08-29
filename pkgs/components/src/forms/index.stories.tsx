@@ -54,11 +54,18 @@ const HelloForm = () => (
             height: 400
         }}
     >
-        <Form<HelloFormFields, string> submit={submit} validator={validator}>
-            <FormText name="first" />
-            <FormText name="last" />
-            <FormSubmit responseOptions={responseOptions}>Submit</FormSubmit>
-        </Form>
+        <Column full={true} justify="center">
+            <Form<HelloFormFields, string>
+                submit={submit}
+                validator={validator}
+            >
+                <FormText name="first" />
+                <FormText name="last" />
+                <FormSubmit responseOptions={responseOptions}>
+                    Submit
+                </FormSubmit>
+            </Form>
+        </Column>
     </Card>
 )
 // I think the reason the layout looks funny is that space-between aligns things based on the top, not the center?

@@ -56,7 +56,7 @@ export const FormText: FC<FormTextProps> = ({
     } = useFormContext()
     return (
         <>
-            <Column height={70} width={200} align="center" justify="flex-start">
+            <Column height={70} width={200} align="center">
                 <TextInput
                     name={name}
                     label={label ? label : name}
