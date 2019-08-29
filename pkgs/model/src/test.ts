@@ -12,6 +12,24 @@ import { Step, StepInput } from "./step"
 import { Tag, TagInput } from "./tag"
 import gql from "graphql-tag"
 
+@OutType()
+export class Test {
+    @OutField({ type: as => ID })
+    readonly id: string
+
+    @OutField({ type: as => User })
+    user: User
+
+    @OutField({ unique: true })
+    name: string
+
+    @OutField({ type: as => [Tag] })
+    tags: Tag[]
+
+    @OutField({ type: as => [Step] })
+    steps: Step[]
+}
+
 @InType()
 export class TestInput {
     @InField({ validate: ["filled"] })
@@ -36,24 +54,6 @@ export class TestUpdate {
 
     @InField({ type: as => [StepInput], options: { nullable: true } })
     steps?: StepInput[]
-}
-
-@OutType()
-export class Test {
-    @OutField({ type: as => ID })
-    readonly id: string
-
-    @OutField()
-    user: User
-
-    @OutField({ unique: true })
-    name: string
-
-    @OutField({ type: as => [Tag] })
-    tags: Tag[]
-
-    @OutField({ type: as => [Step] })
-    steps: Step[]
 }
 
 export const testMetadata = createTypeMetadata({

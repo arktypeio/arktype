@@ -8,7 +8,7 @@ import {
     Text,
     TextInput
 } from "@re-do/components"
-import { deactivateLearner, resetLearner } from "state"
+import { resetLearner } from "state"
 import { LearnerEvents, RedoAppBar } from "custom"
 import { CircularProgress } from "@material-ui/core"
 import gql from "graphql-tag"

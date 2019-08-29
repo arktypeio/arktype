@@ -18,7 +18,7 @@ export class Tag {
     @OutField({ unique: true })
     name: string
 
-    @OutField()
+    @OutField({ type: as => User })
     user: User
 }
 

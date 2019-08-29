@@ -24,7 +24,7 @@ export class Step {
     @OutField()
     value: string
 
-    @OutField()
+    @OutField({ type: as => User })
     user: User
 }
 

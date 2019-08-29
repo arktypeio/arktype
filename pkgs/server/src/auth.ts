@@ -10,7 +10,7 @@ interface Token {
 export function getUserId(req: any) {
     const auth = req.headers.authorization
     if (!auth) {
-        return null
+        return ""
     }
     const token = auth.replace("Bearer ", "")
     try {
@@ -18,7 +18,7 @@ export function getUserId(req: any) {
         return verifiedToken.userId
     } catch (e) {
         if (e instanceof JsonWebTokenError) {
-            return null
+            return ""
         }
         throw e
     }

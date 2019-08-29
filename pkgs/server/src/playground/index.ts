@@ -24,7 +24,9 @@ const contents = gql`
             name: "Test Something"
             tags: [{ name: "BAT" }, { name: "short" }]
             steps: [{ action: "set", selector: "#someId", value: "someText" }]
-        )
+        ) {
+            id
+        }
     }
 
     mutation updateTest($id: String!) {
@@ -33,16 +35,22 @@ const contents = gql`
             name: "NewName"
             tags: [{ name: "BAT" }, { name: "short" }]
             steps: [{ action: "set", selector: "#someId", value: "someText" }]
-        )
+        ) {
+            id
+        }
     }
 
     mutation createTag {
-        createTag(name: "SomeFeature")
+        createTag(name: "SomeFeature") {
+            id
+            name
+        }
     }
 
     query getTests {
         getTests {
             id
+            name
             tags {
                 name
             }
@@ -67,6 +75,40 @@ const contents = gql`
             action
             selector
             value
+        }
+    }
+
+    query me {
+        me {
+            id
+            email
+            password
+            firstName
+            lastName
+            tags {
+                id
+                name
+            }
+            steps {
+                id
+                action
+                selector
+                value
+            }
+            tests {
+                id
+                name
+                tags {
+                    id
+                    name
+                }
+                steps {
+                    id
+                    action
+                    selector
+                    value
+                }
+            }
         }
     }
 `

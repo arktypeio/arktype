@@ -12,7 +12,7 @@ import { Context } from "../context"
 @Resolver(of => Tag)
 export class TagResolver {
     @Authorized()
-    @Mutation(returns => String)
+    @Mutation(returns => Tag)
     async createTag(
         @Args() { name }: TagInput,
         @Ctx() { photon, id }: Context
@@ -26,17 +26,21 @@ export class TagResolver {
             },
             create: {
                 name,
-                user: { connect: { id: id! } }
+                user: { connect: { id } }
+            },
+            include: {
+                user: true
             }
         })
-        return tag.id
+        return tag
     }
 
     @Authorized()
     @Query(returns => [Tag])
     async getTags(@Ctx() { photon, id }: Context) {
         const results = await photon.tags.findMany({
-            where: { user: { id: id! } }
+            where: { user: { id } },
+            include: { user: true }
         })
         return results
     }

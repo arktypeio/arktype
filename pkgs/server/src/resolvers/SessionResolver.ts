@@ -29,7 +29,16 @@ export class SessionResolver {
                 email,
                 password: hashedPassword,
                 firstName,
-                lastName
+                lastName,
+                tags: {
+                    create: []
+                },
+                steps: {
+                    create: []
+                },
+                tests: {
+                    create: []
+                }
             }
         })
         return {
