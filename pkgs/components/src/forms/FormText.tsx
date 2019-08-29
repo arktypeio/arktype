@@ -55,42 +55,37 @@ export const FormText: FC<FormTextProps> = ({
         submit
     } = useFormContext()
     return (
-        <>
-            <Column height={70} width={200} align="center">
-                <TextInput
-                    name={name}
-                    label={label ? label : name}
-                    inputRef={register}
-                    onBlur={() => {
-                        if (!touched.includes(name)) {
-                            touched.push(name)
-                        }
-                        updateFieldErrors({
-                            setError,
-                            validate,
-                            values: getValues(),
-                            touched,
-                            clearError
-                        })
-                    }}
-                    onKeyDown={async (
-                        event: React.KeyboardEvent<HTMLDivElement>
-                    ) => {
-                        if (event.key === "Enter") {
-                            submit(getValues())
-                        }
-                    }}
-                    {...rest}
-                />
-
+        <Column align="stretch">
+            <TextInput
+                name={name}
+                label={label ? label : name}
+                inputRef={register}
+                onBlur={() => {
+                    if (!touched.includes(name)) {
+                        touched.push(name)
+                    }
+                    updateFieldErrors({
+                        setError,
+                        validate,
+                        values: getValues(),
+                        touched,
+                        clearError
+                    })
+                }}
+                onKeyDown={async (
+                    event: React.KeyboardEvent<HTMLDivElement>
+                ) => {
+                    if (event.key === "Enter") {
+                        submit(getValues())
+                    }
+                }}
+                {...rest}
+            />
+            <div style={{ height: 20 }}>
                 {errors[name] && errors[name].message ? (
-                    <Row full={true} justify="flex-start">
-                        <ErrorText>
-                            {errors[name].message.split("\n")}
-                        </ErrorText>
-                    </Row>
+                    <ErrorText>{errors[name].message.split("\n")}</ErrorText>
                 ) : null}
-            </Column>
-        </>
+            </div>
+        </Column>
     )
 }

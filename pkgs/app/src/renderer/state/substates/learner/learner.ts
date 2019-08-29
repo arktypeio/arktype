@@ -15,6 +15,7 @@ import { join } from "path"
 import { homedir } from "os"
 
 const BROWSER_WINDOW_TITLEBAR_SIZE = 35
+const DEFAULT_LEARNER_WIDTH = 300
 
 @ObjectType()
 export class Bounds implements Rectangle {
@@ -92,11 +93,11 @@ const start = async () => {
     // Use size and position from the Redo app to launch browser
     const lastMainWindowBounds = getMainWindowBounds()
     const { height, width, x, y } = lastMainWindowBounds
-    const newMainWindowBounds = { height, width: width / 5, x, y }
+    const newMainWindowBounds = { height, width: DEFAULT_LEARNER_WIDTH, x, y }
     const browserBounds = {
         height: height + BROWSER_WINDOW_TITLEBAR_SIZE,
-        width: (width * 4) / 5,
-        x: x + width / 5,
+        width: width - DEFAULT_LEARNER_WIDTH,
+        x: x + DEFAULT_LEARNER_WIDTH,
         y: y - BROWSER_WINDOW_TITLEBAR_SIZE
     }
     setMainWindowBounds(newMainWindowBounds)
