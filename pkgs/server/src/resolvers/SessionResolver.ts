@@ -14,7 +14,12 @@ export class SessionResolver {
         @Ctx() { photon }: Context
     ) {
         const hashedPassword = await hash(password, 10)
-        if (await findUser({ query: { where: { email } }, photon })) {
+        if (
+            await findUser({
+                query: { where: { email: email ? email.toLowerCase() : "" } },
+                photon
+            })
+        ) {
             throw new Error(
                 "Someone's already using that email. If it's you, try signin instead!"
             )
@@ -38,7 +43,10 @@ export class SessionResolver {
         @Args() { email, password }: SignInInput,
         @Ctx() { photon }: Context
     ) {
-        const user = await findUser({ query: { where: { email } }, photon })
+        const user = await findUser({
+            query: { where: { email: email ? email.toLowerCase() : "" } },
+            photon
+        })
         if (!user) {
             throw new Error("We don't recognize that email.")
         }

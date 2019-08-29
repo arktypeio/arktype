@@ -47,7 +47,7 @@ const src = {
 
 storiesOf("TreeView", module)
     .add("basic", () => <Tree>{src}</Tree>)
-    .add("with hiddenKeys", () => (
+    .add("with hidden keys", () => (
         <Tree
             transform={({ key }) =>
                 key === "metadata" ? { render: null } : { render: undefined }
