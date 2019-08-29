@@ -7,7 +7,6 @@ import { AutoForm, Form, FormText, FormSubmit } from "."
 import { ValueFrom } from "@re-do/utils"
 import { FormProps } from "./Form"
 import { FormSubmitProps } from "./FormSubmit"
-import { Card } from "../cards"
 
 type HelloFormFields = {
     first: string
@@ -25,11 +24,7 @@ const validator: ValueFrom<FormProps<HelloFormFields, string>, "validator"> = ({
     first,
     last
 }) => ({
-    first: first
-        ? []
-        : [
-              "This is really a very extremely long ErrorText, let's see if it gets truncated by noWrap!"
-          ],
+    first: first ? [] : ["We need this!"],
     last: last ? [] : ["We need this!"]
 })
 
