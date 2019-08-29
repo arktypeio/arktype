@@ -27,7 +27,8 @@
             "target": "zip"
         },
         "mac": {
-            "target": "zip"
+            "target": "zip",
+            "category": "public.app-category.developer-tools"
         },
         "win": {
             "target": "zip"

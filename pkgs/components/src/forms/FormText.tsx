@@ -4,7 +4,7 @@ import { ErrorText } from "../text"
 import { useFormContext } from "./FormContext"
 import { FormFieldProps } from "./FormField"
 import { FormActions, Fields } from "./FormContext"
-import { Column } from "../layouts"
+import { Column, Row } from "../layouts"
 
 export type FormTextProps = FormFieldProps & TextInputProps
 
@@ -55,7 +55,7 @@ export const FormText: FC<FormTextProps> = ({
         submit
     } = useFormContext()
     return (
-        <>
+        <Column align="stretch">
             <TextInput
                 name={name}
                 label={label ? label : name}
@@ -81,9 +81,11 @@ export const FormText: FC<FormTextProps> = ({
                 }}
                 {...rest}
             />
-            {errors[name] && errors[name].message ? (
-                <ErrorText>{errors[name].message.split("\n")}</ErrorText>
-            ) : null}
-        </>
+            <div style={{ height: 20 }}>
+                {errors[name] && errors[name].message ? (
+                    <ErrorText>{errors[name].message.split("\n")}</ErrorText>
+                ) : null}
+            </div>
+        </Column>
     )
 }
