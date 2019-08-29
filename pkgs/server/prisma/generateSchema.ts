@@ -14,7 +14,7 @@ export const defaultPath = join(
 
 export const baseSchema = `datasource db {
   provider = "mysql"
-  url      = "{user:'root', password: '', host:'http://localhost', database:'test', port: '3306'}"
+  url      = "tutorial-db.cluster-cif8hvycf3mq.us-east-1.rds.amazonaws.com:3306"
   default  = true
 }
 
@@ -23,6 +23,8 @@ generator photon {
 }
 
 `
+
+//{user:'root', password: '', host:'http://localhost', database:'test', port: '3306'} mysql sample url. This doens't work.
 
 export type GenerateSchemaOptions = {
     atPath?: string
