@@ -9,7 +9,9 @@ import {
     TextInput,
     AppBar,
     AppBarProps,
-    usePalette
+    usePalette,
+    Icons,
+    IconButton
 } from "@re-do/components"
 import { deactivateLearner, resetLearner } from "state"
 import { LearnerEvents, RedoAppBar } from "custom"
@@ -116,23 +118,20 @@ export const Learner = component({
                     style={{
                         bottom: 0,
                         position: "fixed",
-                        backgroundColor: primary.main,
-                        padding: 8
+                        backgroundColor: primary.main
                     }}
                     justify="space-around"
-                    muiAppBarProps={{ elevation: 20 }}
                 >
-                    <Button
-                        kind="primary"
+                    <IconButton
+                        Icon={Icons.close}
                         style={{ color: "white" }}
                         onClick={deactivateLearner}
-                    >
-                        Cancel Test
-                    </Button>
+                    />
 
                     <RespondTo response={{ loading: false }}>
-                        <Button
-                            kind="primary"
+                        <IconButton
+                            Icon={Icons.save}
+                            style={{ color: "white" }}
                             onClick={async () => {
                                 await saveTest({
                                     variables: {
@@ -146,9 +145,7 @@ export const Learner = component({
                                 })
                                 resetLearner()
                             }}
-                        >
-                            Save test
-                        </Button>
+                        />
                     </RespondTo>
                 </AppBar>
             </div>
