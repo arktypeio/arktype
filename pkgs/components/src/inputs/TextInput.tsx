@@ -183,7 +183,7 @@ export const TextInput: FC<TextInputProps> = ({
                     color: state.focused ? primary.dark : primary.light
                 }
             }}
-            {...kindProps as any}
+            {...(kindProps as any)}
             {...rest}
         />
     )
