@@ -13,8 +13,8 @@ import { LearnerEvents, RedoAppBar } from "custom"
 import { CircularProgress } from "@material-ui/core"
 import gql from "graphql-tag"
 import { useMutation } from "@apollo/react-hooks"
-import ChipInput from "material-ui-chip-input"
 import { store } from "../common"
+import ChipInput from "@re-do/components"
 
 const SAVETEST = gql`
     mutation createTest(
@@ -60,26 +60,6 @@ export const Learner = component({
                                 learner: { testName: e.target.value }
                             })
                         }
-                    />
-                </Row>
-                {/* TODO Chip input should be moved to redo components as part of: https://trello.com/c/eVo1vyZj */}
-                <Row>
-                    <ChipInput
-                        value={tags}
-                        placeholder="Add Tags"
-                        onAdd={(chip: string) =>
-                            store.mutate({
-                                learner: { testTags: _ => [..._, chip] }
-                            })
-                        }
-                        onDelete={(chip: string) => {
-                            store.mutate({
-                                learner: {
-                                    testTags: _ =>
-                                        _.filter(current => current !== chip)
-                                }
-                            })
-                        }}
                     />
                 </Row>
             </div>

@@ -60,7 +60,6 @@
         "graphql": "14.4.2",
         "graphql-tag": "2.10.1",
         "isomorphic-ws": "4.0.1",
-        "material-ui-chip-input": "1.0.0",
         "puppeteer": "1.19.0",
         "react": "16.8.6",
         "react-apollo": "3.0.1",

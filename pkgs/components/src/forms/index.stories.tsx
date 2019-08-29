@@ -25,7 +25,11 @@ const validator: ValueFrom<FormProps<HelloFormFields, string>, "validator"> = ({
     first,
     last
 }) => ({
-    first: first ? [] : ["We need this!"],
+    first: first
+        ? []
+        : [
+              "This is really a very extremely long ErrorText, let's see if it gets truncated by noWrap!"
+          ],
     last: last ? [] : ["We need this!"]
 })
 
