@@ -15,6 +15,6 @@ services:
                     connector: mysql
                     host: "127.0.0.1"
                     port: 3306
-                    user: __YOUR_MYSQL_USER__
-                    password: __YOUR_MYSQL_PASSWORD__
+                    user: root
+                    password: 
                     migrations: true

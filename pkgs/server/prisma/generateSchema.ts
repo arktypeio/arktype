@@ -14,7 +14,7 @@ export const defaultPath = join(
 
 export const baseSchema = `datasource db {
   provider = "mysql"
-  url      = "mysql:http://127.0.0.1:3306/"
+  url      = "{user:'root', password: '', host:'http://localhost', database:'test', port: '3306'}"
   default  = true
 }
 
