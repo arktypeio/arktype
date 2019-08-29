@@ -1,8 +1,9 @@
-import { stepMetadata, testMetadata } from "."
+import { stepMetadata, testMetadata, tagMetadata } from "."
 
 export const metadata = {
     test: testMetadata,
-    step: stepMetadata
+    step: stepMetadata,
+    tag: tagMetadata
 }
 
 export type Metadata = typeof metadata

@@ -17,8 +17,14 @@ export class TagResolver {
         @Args() { name }: TagInput,
         @Ctx() { photon, id }: Context
     ) {
-        const tag = await photon.tags.create({
-            data: {
+        const tag = await photon.tags.upsert({
+            update: {
+                name
+            },
+            where: {
+                name
+            },
+            create: {
                 name,
                 user: { connect: { id: id! } }
             }
@@ -28,10 +34,9 @@ export class TagResolver {
 
     @Authorized()
     @Query(returns => [Tag])
-    async getTag(@Ctx() { photon, id }: Context) {
+    async getTags(@Ctx() { photon, id }: Context) {
         const results = await photon.tags.findMany({
-            where: { user: { id: id! } },
-            include: { user: true }
+            where: { user: { id: id! } }
         })
         return results
     }

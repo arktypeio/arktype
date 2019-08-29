@@ -5,7 +5,7 @@ export class User {
     @OutField({ type: as => ID })
     readonly id: string
 
-    @OutField({ schemaSuffix: "String @unique" })
+    @OutField({ unique: true })
     email: string
 
     @OutField()

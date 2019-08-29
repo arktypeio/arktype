@@ -37,7 +37,7 @@ export class TestResolver {
     }
     @Authorized()
     @Query(returns => [Test])
-    async getTest(@Ctx() { photon, id }: Context) {
+    async getTests(@Ctx() { photon, id }: Context) {
         const results = await photon.tests.findMany({
             where: { user: { id: id! } },
             include: { steps: true, user: true, tags: true }

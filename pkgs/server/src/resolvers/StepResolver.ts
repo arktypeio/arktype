@@ -15,12 +15,12 @@ export class StepResolver {
     @Authorized()
     @Mutation(returns => String)
     async createStep(
-        @Args() { key, selector, value }: StepInput,
+        @Args() { action, selector, value }: StepInput,
         @Ctx() { photon, id }: Context
     ) {
         const step = await photon.steps.create({
             data: {
-                key,
+                action,
                 selector,
                 value,
                 user: { connect: { id: id! } }
@@ -42,13 +42,13 @@ export class StepResolver {
     @Authorized()
     @Mutation(returns => String)
     async updateStep(
-        @Args() { key, selector, value }: StepUpdate,
+        @Args() { action, selector, value }: StepUpdate,
         @Arg("id") stepId: string,
         @Ctx() { photon, id }: Context
     ) {
         const step = await photon.steps.update({
             data: {
-                key,
+                action,
                 selector,
                 value,
                 user: { connect: { id: id! } }

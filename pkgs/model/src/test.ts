@@ -46,7 +46,7 @@ export class Test {
     @OutField()
     user: User
 
-    @OutField()
+    @OutField({ unique: true })
     name: string
 
     @OutField({ type: as => [Tag] })
@@ -87,6 +87,5 @@ export const testMetadata = createTypeMetadata({
                 updateTest(id: $id, name: $name, tags: $tags, steps: $steps)
             }
         `
-    },
-    labelKey: "name"
+    }
 })

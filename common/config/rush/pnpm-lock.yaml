@@ -85,6 +85,7 @@ dependencies:
   file-loader: 3.0.1_webpack@4.29.6
   fork-ts-checker-webpack-plugin: 1.3.3
   formik: 1.5.1_react@16.8.6
+  framer-motion: 1.6.5_react-dom@16.8.6+react@16.8.6
   fs-extra: 8.1.0
   html-webpack-plugin: 3.2.0_webpack@4.29.6
   isomorphic-fetch: 2.2.1
@@ -93,7 +94,7 @@ dependencies:
   jsonwebtoken: 8.5.0
   material-ui-chip-input: 1.0.0_f35c714a02d617073918f9017b0a4e91
   moize: 5.4.4
-  prisma2: 2.0.0-preview-5
+  prisma2: 2.0.0-preview-8
   puppeteer: 1.19.0
   react: 16.8.6
   react-apollo: 3.0.1_b720375b53182f320d4afb2879b9016a
@@ -11341,12 +11342,12 @@ packages:
       node: '>= 0.8'
     resolution:
       integrity: sha1-t+PqQkNaTJsnWdmeDyAesZWALuE=
-  /prisma2/2.0.0-preview-5:
+  /prisma2/2.0.0-preview-8:
     dev: false
     hasBin: true
     requiresBuild: true
     resolution:
-      integrity: sha512-TPPNjbLPZN43JgjNY7LRMQ5LGalvv70ZWx000A2qRf5Zsp76eYXykrYoJ/ylx8Lj9w8evdHx4OV8jViYTCdnCw==
+      integrity: sha512-S4pugLblxQ1zKWi8Jd9kwJbbMqm1bSa0zIQ9/mDuI33ISykVWgYuXEwQ/IJEg02ObU87f6CYVig9ftLiIeR2hw==
   /prismjs/1.17.1:
     dev: false
     optionalDependencies:
@@ -15043,7 +15044,7 @@ packages:
       isomorphic-ws: 4.0.1
       jest: 24.8.0
       jsonwebtoken: 8.5.0
-      prisma2: 2.0.0-preview-5
+      prisma2: 2.0.0-preview-8
       reflect-metadata: 0.1.13
       ts-jest: 24.0.2_jest@24.8.0
       ts-node: 8.3.0_typescript@3.5.2
@@ -15053,7 +15054,7 @@ packages:
     dev: false
     name: '@rush-temp/server'
     resolution:
-      integrity: sha512-J/fMmi7mdNeoyXYONQQTktNqNQ5kPvASkKsUmxpoBtNkR+uWUosh7uqdUR4xV/1Eh+eNLkVwF8pYCoL/NeaAIQ==
+      integrity: sha512-Vw3ql0ioaNs6FMXVotgxItzAJtCKjmgaQ5INDIrQo9l4WFZQJI9cUD3Rg26JyT4QhJB8qqjlGKunNA7QhxQC2A==
       tarball: 'file:projects/server.tgz'
     version: 0.0.0
   'file:projects/shapeql.tgz_46b12d11340a10975f47e2ff824828aa':
@@ -15246,6 +15247,7 @@ specifiers:
   file-loader: 3.0.1
   fork-ts-checker-webpack-plugin: 1.3.3
   formik: 1.5.1
+  framer-motion: 1.6.5
   fs-extra: 8.1.0
   html-webpack-plugin: 3.2.0
   isomorphic-fetch: 2.2.1
@@ -15254,7 +15256,7 @@ specifiers:
   jsonwebtoken: 8.5.0
   material-ui-chip-input: 1.0.0
   moize: 5.4.4
-  prisma2: 2.0.0-preview-5
+  prisma2: 2.0.0-preview-8
   puppeteer: 1.19.0
   react: 16.8.6
   react-apollo: 3.0.1

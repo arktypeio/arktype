@@ -16,7 +16,7 @@ export class Step {
     readonly id: string
 
     @OutField()
-    key: string
+    action: string
 
     @OutField()
     selector: string
@@ -31,7 +31,7 @@ export class Step {
 @InType()
 export class StepInput {
     @InField()
-    key: string
+    action: string
 
     @InField()
     selector: string
@@ -43,7 +43,7 @@ export class StepInput {
 @InType()
 export class StepUpdate {
     @InField({ options: { nullable: true } })
-    key?: string
+    action?: string
 
     @InField({ options: { nullable: true } })
     selector?: string

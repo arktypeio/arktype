@@ -23,44 +23,48 @@ const contents = gql`
         createTest(
             name: "Test Something"
             tags: [{ name: "BAT" }, { name: "short" }]
-            steps: [{ key: "set", selector: "#someId", value: "someText" }]
+            steps: [{ action: "set", selector: "#someId", value: "someText" }]
         )
     }
 
-    mutation updateTest {
+    mutation updateTest($id: String!) {
         updateTest(
+            id: $id
             name: "NewName"
-            id: ""
             tags: [{ name: "BAT" }, { name: "short" }]
-            steps: [{ key: "set", selector: "#someId", value: "someText" }]
+            steps: [{ action: "set", selector: "#someId", value: "someText" }]
         )
     }
 
-    query getTest {
-        getTest {
-            name
+    mutation createTag {
+        createTag(name: "SomeFeature")
+    }
+
+    query getTests {
+        getTests {
             id
-            user {
-                email
-            }
             tags {
                 name
+            }
+            steps {
+                action
+                selector
+                value
             }
         }
     }
 
-    query getTag {
-        getTag {
-            user {
-                id
-            }
+    query getTags {
+        getTags {
+            id
             name
         }
     }
 
     query getSteps {
         getSteps {
-            key
+            id
+            action
             selector
             value
         }
