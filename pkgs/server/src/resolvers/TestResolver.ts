@@ -16,8 +16,9 @@ export class TestResolver {
     @Mutation(returns => Test)
     async createTest(
         @Args() { name, steps, tags }: TestInput,
-        @Ctx() { photon, id }: Context
+        @Ctx() context: Context
     ) {
+        const { photon, id } = context
         const test = await photon.tests.create({
             data: {
                 name,
@@ -27,9 +28,7 @@ export class TestResolver {
                         user: { connect: { id } }
                     }))
                 },
-                tags: {
-                    create: []
-                },
+                tags: await createTagConnector(tags, context),
                 user: { connect: { id } }
             },
             include: { tags: true, steps: true }

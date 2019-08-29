@@ -32,9 +32,12 @@ export const createTagConnector = async (
     { photon, id }: Context
 ) => {
     const existing = (await photon.tags.findMany({
-        where: { user: { id } }
+        where: { user: { id } },
+        select: {
+            name: true
+        }
     })).map(_ => _.name)
-    const [used, unused] = split(tags, ({ name }) => name in existing)
+    const [used, unused] = split(tags, ({ name }) => existing.includes(name))
     for (const { name } of unused) {
         await photon.tags.create({ data: { name, user: { connect: { id } } } })
     }

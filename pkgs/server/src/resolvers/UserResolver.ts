@@ -9,7 +9,11 @@ export class UserResolver {
     async me(@Ctx() { photon, id }: Context) {
         return photon.users.findOne({
             where: { id },
-            include: { tags: true, tests: true, steps: true }
+            include: {
+                tags: true,
+                tests: { include: { tags: true, steps: true } },
+                steps: true
+            }
         })
     }
 }
