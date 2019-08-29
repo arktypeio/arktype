@@ -1,12 +1,14 @@
 import React from "react"
 import { component } from "blocks"
 import {
-    Button,
     RespondTo,
-    Row,
     Column,
     Text,
-    TextInput
+    TextInput,
+    AppBar,
+    usePalette,
+    Icons,
+    IconButton
 } from "@re-do/components"
 import { deactivateLearner, resetLearner } from "state"
 import { LearnerEvents, RedoAppBar } from "custom"
@@ -47,85 +49,104 @@ export const Learner = component({
         testTags: tags
     } = data.learner!
     const [saveTest] = useMutation(SAVETEST)
+    const { primary } = usePalette()
+    const height = 90
     return (
-        <Column justify="flex-start">
-            <div style={{ zIndex: 1, position: "fixed" }}>
-                <RedoAppBar>{["close"]}</RedoAppBar>
-                <Row>
-                    <TextInput
-                        value={name}
-                        placeholder="Test Name"
-                        onChange={e =>
-                            store.mutate({
-                                learner: { testName: e.target.value }
-                            })
-                        }
-                    />
-                </Row>
-                {/* TODO Chip input should be moved to redo components as part of: https://trello.com/c/eVo1vyZj */}
-                <Row>
-                    <ChipInput
-                        value={tags}
-                        placeholder="Add Tags"
-                        onAdd={(chip: string) =>
-                            store.mutate({
-                                learner: { testTags: _ => [..._, chip] }
-                            })
-                        }
-                        onDelete={(chip: string) => {
-                            store.mutate({
-                                learner: {
-                                    testTags: _ =>
-                                        _.filter(current => current !== chip)
-                                }
-                            })
-                        }}
-                    />
-                </Row>
+        <>
+            <div style={{ height }}>
+                <AppBar style={{ height }} align="center">
+                    <Column align="center">
+                        <TextInput
+                            value={name}
+                            placeholder="Test Name"
+                            colorTemplate="light"
+                            kind="underlined"
+                            onChange={e =>
+                                store.mutate({
+                                    learner: { testName: e.target.value }
+                                })
+                            }
+                        />
+                        {/* TODO Chip input should be moved to redo components as part of: https://trello.com/c/eVo1vyZj */}
+                        <ChipInput
+                            value={tags}
+                            placeholder="Add Tags"
+                            onAdd={(chip: string) =>
+                                store.mutate({
+                                    learner: { testTags: _ => [..._, chip] }
+                                })
+                            }
+                            onDelete={(chip: string) => {
+                                store.mutate({
+                                    learner: {
+                                        testTags: _ =>
+                                            _.filter(
+                                                current => current !== chip
+                                            )
+                                    }
+                                })
+                            }}
+                        />
+                    </Column>
+                </AppBar>
             </div>
-
-            <RespondTo
-                response={{ loading: chromiumInstalling }}
-                options={{
-                    loading: {
-                        displayAs: ({ value }) =>
-                            value ? (
-                                <>
-                                    <CircularProgress />
-                                    <Text align="center">
-                                        Downloading Chrome
-                                    </Text>
-                                </>
-                            ) : null,
-                        hideContent: false
-                    }
-                }}
-            >
-                <LearnerEvents events={events} />
-            </RespondTo>
-            <Row>
-                <RespondTo response={{ loading: false }}>
-                    <Button
-                        kind="primary"
-                        style={{ bottom: 0, position: "fixed", zIndex: 1 }}
-                        onClick={async () => {
-                            await saveTest({
-                                variables: {
-                                    name,
-                                    tags: tags.map(_ => ({ name: _ })),
-                                    steps: events.map(
-                                        ({ __typename, ...inputs }: any) =>
-                                            inputs
-                                    )
-                                }
-                            })
-                            resetLearner()
-                        }}
-                    >
-                        Save test
-                    </Button>
+            <div>
+                <RespondTo
+                    response={{ loading: chromiumInstalling }}
+                    options={{
+                        loading: {
+                            displayAs: ({ value }) =>
+                                value ? (
+                                    <>
+                                        <CircularProgress />
+                                        <Text align="center">
+                                            Downloading Chrome
+                                        </Text>
+                                    </>
+                                ) : null,
+                            hideContent: false
+                        }
+                    }}
+                >
+                    <LearnerEvents events={events} />
                 </RespondTo>
-            </Row>
-        </Column>
+            </div>
+            <div>
+                <AppBar
+                    style={{
+                        bottom: 0,
+                        position: "fixed",
+                        backgroundColor: primary.main
+                    }}
+                    justify="space-around"
+                >
+                    <IconButton
+                        Icon={Icons.close}
+                        style={{ color: "white" }}
+                        onClick={deactivateLearner}
+                    />
+
+                    <RespondTo response={{ loading: false }}>
+                        <IconButton
+                            Icon={Icons.save}
+                            style={{ color: "white" }}
+                            onClick={async () => {
+                                await saveTest({
+                                    variables: {
+                                        name,
+                                        tags: tags.map(_ => ({ name: _ })),
+                                        steps: events.map(
+                                            ({ __typename, ...inputs }: any) =>
+                                                inputs
+                                        )
+                                    }
+                                })
+                                resetLearner()
+                            }}
+                        />
+                    </RespondTo>
+                </AppBar>
+            </div>
+        </>
     )
 })
