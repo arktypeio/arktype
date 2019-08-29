@@ -70,6 +70,12 @@ export const SignUp: FC = () => {
                             }
                             return result
                         }}
+                        transformValues={values => ({
+                            ...values,
+                            email: values.email
+                                ? values.email.toLowerCase()
+                                : ""
+                        })}
                     >
                         <Column grow align="center">
                             <AnimatePresence>
@@ -98,9 +104,7 @@ export const SignUp: FC = () => {
                                                 label="last"
                                             />
                                         </Row>
-
                                         <FormText name="email" />
-
                                         <Row>
                                             <FormText
                                                 type="password"
