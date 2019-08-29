@@ -1,115 +1,121 @@
-import React, { FC, useState } from "react"
-import { TreeViewProps as MuiTreeViewProps } from "@material-ui/lab/TreeView"
-import { isRecursible, ItemOrList } from "@re-do/utils"
-import { Row, Column } from "../layouts"
+import React, { useState } from "react"
+import { isRecursible } from "@re-do/utils"
+import { Row } from "../layouts"
 import { Text } from "../text"
 import { Icons } from "../icons"
 import { IconButton } from "../buttons"
 
-type TreeSource = ItemOrList<Record<string, any>>
-type Entry = [string, any]
+type TreeSource = Record<string, any>
 
-export type TreeProps<O extends TreeSource> = Omit<
-    MuiTreeViewProps,
-    "children"
-> & {
+export type TreeNodeContext<T = any> = {
+    key: string
+    value: T
+    path: string
+}
+
+export type TreeNodeTransform<T = any> = (
+    context: TreeNodeContext
+) => TreeNodeTransformation<T>
+
+export type TreeNodeTransformation<T = any> = {
+    entry?: [string, T]
+    render?: JSX.Element | null
+    extras?: JSX.Element
+}
+
+export type TreeProps<O extends TreeSource> = {
     children: O
-    nodeExtras?:
-        | JSX.Element
-        | ((key: string, value: any, path: string[]) => JSX.Element | null)
-    hideKeys?: (keyof O)[]
-} & (O extends any[]
-        ? {
-              labelKey: keyof O[number]
-          }
-        : {
-              labelKey?: never
-          })
+    transform?: TreeNodeTransform
+}
+
+type NodeProps = {
+    source: any
+    parentPath: string
+}
 
 export const Tree = <O extends TreeSource>({
     children,
-    labelKey,
-    nodeExtras,
-    hideKeys
+    transform
 }: TreeProps<O>) => {
-    const entries: Entry[] = Array.isArray(children)
-        ? children.map(({ [labelKey!]: key, ...rest }) => [key, rest])
-        : Object.entries(children)
-    return (
-        <TreeNode
-            entries={entries}
-            path={[]}
-            nodeExtras={nodeExtras}
-            labelKey={labelKey}
-            hideKeys={hideKeys}
-        />
+    const [expandedPaths, setExpandedPaths] = useState<Record<string, boolean>>(
+        {}
     )
-}
-
-type TreeNodesProps = Pick<
-    TreeProps<any>,
-    "nodeExtras" | "labelKey" | "hideKeys"
-> & {
-    entries: Entry[]
-    path: string[]
-}
-
-const TreeNode = ({ entries, path, nodeExtras, hideKeys }: TreeNodesProps) => (
-    <>
-        {entries.map(([k, v]) => {
-            if (hideKeys && hideKeys.includes(k)) {
-                return null
-            }
-            const [show, setShow] = useState(false)
-            const recursible = isRecursible(v)
-            // Offsets Icon width to make non-recursible and recursible text aligned
-            const leafStyles = {
-                position: "relative",
-                left: recursible ? 0 : 48
-            } as const
-            return (
-                <div key={k}>
-                    <Row
-                        align="center"
-                        style={{
-                            position: "relative",
-                            left: path.length * 32
-                        }}
-                    >
+    const Node = ({ source, parentPath }: NodeProps) => (
+        <>
+            {Object.entries(source).map(([key, value]) => {
+                const path = `${parentPath}${String(key)}/`
+                const context = { key, value, path }
+                const {
+                    entry: [renderKey, renderValue],
+                    render: renderAs,
+                    extras: renderWith
+                } = {
+                    entry: [key, value],
+                    render: undefined,
+                    extras: undefined,
+                    ...(transform ? transform(context) : undefined)
+                }
+                if (renderAs !== undefined) {
+                    return renderAs
+                }
+                const recursible = isRecursible(renderValue)
+                // Offsets Icon width to make non-recursible and recursible text aligned
+                const leafStyles = {
+                    position: "relative",
+                    left: recursible ? 0 : 48
+                } as const
+                return (
+                    <div key={renderKey}>
                         <Row
                             align="center"
-                            width="fit-content"
-                            onClick={() => setShow(!show)}
+                            style={{
+                                position: "relative",
+                                left: (path.split("/").length - 1) * 32
+                            }}
                         >
-                            {recursible ? (
-                                <IconButton
-                                    Icon={show ? Icons.collapse : Icons.expand}
-                                />
-                            ) : null}
-                            <Text style={leafStyles}>
-                                {recursible
-                                    ? String(k)
-                                    : `${String(k)}: ${String(v)}`}
-                            </Text>
+                            <Row
+                                align="center"
+                                width="fit-content"
+                                onClick={() =>
+                                    setExpandedPaths({
+                                        ...expandedPaths,
+                                        [path]: !expandedPaths[path]
+                                    })
+                                }
+                            >
+                                {recursible ? (
+                                    <IconButton
+                                        Icon={
+                                            expandedPaths[path]
+                                                ? Icons.collapse
+                                                : Icons.expand
+                                        }
+                                    />
+                                ) : null}
+                                <Text style={leafStyles}>
+                                    {recursible
+                                        ? String(renderKey)
+                                        : `${String(renderKey)}: ${String(
+                                              renderValue
+                                          )}`}
+                                </Text>
+                            </Row>
+                            <div style={leafStyles}>{renderWith}</div>
                         </Row>
-                        <div style={leafStyles}>
-                            {nodeExtras
-                                ? typeof nodeExtras === "function"
-                                    ? nodeExtras(k, v, path)
-                                    : nodeExtras
-                                : null}
-                        </div>
-                    </Row>
-                    {show && recursible ? (
-                        <TreeNode
-                            entries={Object.entries(v)}
-                            path={[...path, String(k)]}
-                            nodeExtras={nodeExtras}
-                            hideKeys={hideKeys}
-                        />
-                    ) : null}
-                </div>
-            )
-        })}
-    </>
-)
+                        {expandedPaths[path] && recursible ? (
+                            <Node source={renderValue} parentPath={path} />
+                        ) : null}
+                    </div>
+                )
+            })}
+        </>
+    )
+    const initialTransform = transform
+        ? transform({ key: "", value: children, path: "" })
+        : undefined
+    const initialValue =
+        initialTransform && initialTransform.entry
+            ? initialTransform.entry[1]
+            : children
+    return <Node source={initialValue} parentPath={""} />
+}

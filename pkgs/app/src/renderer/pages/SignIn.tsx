@@ -49,6 +49,7 @@ export const SignIn: FC = () => {
                 <Column full>
                     <Logo />
                     <Form<SignInInput, SignInData>
+                        validator={validator}
                         submit={async fields => {
                             const result = await submitForm({
                                 submit,
@@ -61,7 +62,12 @@ export const SignIn: FC = () => {
                             }
                             return result
                         }}
-                        validator={validator}
+                        transformValues={values => ({
+                            ...values,
+                            email: values.email
+                                ? values.email.toLowerCase()
+                                : ""
+                        })}
                     >
                         <Column grow align="center">
                             <AnimatePresence>

@@ -34,7 +34,6 @@ export const SuggestionCard: FC<SuggestionCardProps> = ({
                         </MuiTypography>
                     </Row>
                 ) : null}
-
                 <Row full={true} justify="center" align="center">
                     {kind === "test" ? <Icons.run /> : null}
                     <Icons.view />
