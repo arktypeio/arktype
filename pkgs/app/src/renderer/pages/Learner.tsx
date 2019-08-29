@@ -8,14 +8,14 @@ import {
     AppBar,
     usePalette,
     Icons,
-    IconButton
+    IconButton,
+    ChipInput
 } from "@re-do/components"
 import { deactivateLearner, resetLearner } from "state"
-import { LearnerEvents, RedoAppBar } from "custom"
+import { LearnerEvents } from "custom"
 import { CircularProgress } from "@material-ui/core"
 import gql from "graphql-tag"
 import { useMutation } from "@apollo/react-hooks"
-import ChipInput from "material-ui-chip-input"
 import { store } from "../common"
 
 const SAVETEST = gql`
@@ -67,7 +67,6 @@ export const Learner = component({
                                 })
                             }
                         />
-                        {/* TODO Chip input should be moved to redo components as part of: https://trello.com/c/eVo1vyZj */}
                         <ChipInput
                             value={tags}
                             placeholder="Add Tags"
