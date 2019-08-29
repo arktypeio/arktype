@@ -12,6 +12,8 @@ import help from "@material-ui/icons/HelpOutline"
 import account from "@material-ui/icons/Person"
 import dropdown from "@material-ui/icons/MoreVert"
 import view from "@material-ui/icons/RemoveRedEye"
+import save from "@material-ui/icons/Done"
+import close from "@material-ui/icons/Close"
 
 export const Icons = {
     add,
@@ -27,5 +29,7 @@ export const Icons = {
     help,
     account,
     dropdown,
-    view
+    view,
+    save,
+    close
 }
