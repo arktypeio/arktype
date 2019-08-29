@@ -1,14 +1,11 @@
 import React from "react"
 import { component } from "blocks"
 import {
-    Button,
     RespondTo,
-    Row,
     Column,
     Text,
     TextInput,
     AppBar,
-    AppBarProps,
     usePalette,
     Icons,
     IconButton
@@ -53,10 +50,11 @@ export const Learner = component({
     } = data.learner!
     const [saveTest] = useMutation(SAVETEST)
     const { primary } = usePalette()
+    const height = 90
     return (
         <>
-            <div style={{ height: 90 }}>
-                <AppBar style={{ height: 90 }}>
+            <div style={{ height }}>
+                <AppBar style={{ height }} align="center">
                     <Column align="center">
                         <TextInput
                             value={name}
