@@ -63,11 +63,10 @@ export const testMetadata = createTypeMetadata({
     gql: {
         get: gql`
             query {
-                getTest {
-                    id
+                getTests {
                     name
                     steps {
-                        key
+                        action
                         selector
                         value
                     }
@@ -84,7 +83,9 @@ export const testMetadata = createTypeMetadata({
                 $tags: [TagInput!]
                 $steps: [StepInput!]
             ) {
-                updateTest(id: $id, name: $name, tags: $tags, steps: $steps)
+                updateTest(id: $id, name: $name, tags: $tags, steps: $steps) {
+                    id
+                }
             }
         `
     }

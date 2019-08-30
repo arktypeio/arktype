@@ -59,8 +59,8 @@ export const stepMetadata = createTypeMetadata({
     gql: {
         get: gql`
             query {
-                getStep {
-                    key
+                getSteps {
+                    action
                     selector
                     value
                 }
@@ -69,16 +69,18 @@ export const stepMetadata = createTypeMetadata({
         update: gql`
             mutation updateStep(
                 $id: String!
-                $key: String
+                $action: String
                 $selector: String
                 $value: String
             ) {
                 updateStep(
                     id: $id
-                    key: $key
+                    action: $action
                     selector: $selector
                     value: $value
-                )
+                ) {
+                    id
+                }
             }
         `
     }

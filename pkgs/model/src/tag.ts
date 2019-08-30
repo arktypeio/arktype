@@ -34,7 +34,7 @@ export const tagMetadata = createTypeMetadata({
     gql: {
         get: gql`
             query {
-                getTag {
+                getTags {
                     id
                     name
                 }

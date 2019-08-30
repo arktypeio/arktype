@@ -24,7 +24,7 @@ const SAVETEST = gql`
         $tags: [TagInput!]!
         $steps: [StepInput!]!
     ) {
-        createTest(name: $name, tags: $tags, steps: $steps)
+        createTest(name: $name, tags: $tags, steps: $steps) {}
     }
 `
 
