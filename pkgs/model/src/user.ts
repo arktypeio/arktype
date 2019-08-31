@@ -1,11 +1,14 @@
 import { InField, InType, OutType, OutField, ID } from "./common"
+import { Tag } from "./tag"
+import { Test } from "./test"
+import { Step } from "./step"
 
 @OutType()
 export class User {
     @OutField({ type: as => ID })
     readonly id: string
 
-    @OutField({ schemaSuffix: "String @unique" })
+    @OutField({ unique: true })
     email: string
 
     @OutField()
@@ -16,6 +19,15 @@ export class User {
 
     @OutField()
     lastName: string
+
+    @OutField({ type: as => [Tag] })
+    tags: Tag[]
+
+    @OutField({ type: as => [Test] })
+    tests: Tag[]
+
+    @OutField({ type: as => [Step] })
+    steps: Step[]
 }
 
 @InType()

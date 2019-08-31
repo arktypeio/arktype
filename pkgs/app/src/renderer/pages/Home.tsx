@@ -12,7 +12,7 @@ const welcomeSuggestion: SuggestionData = {
 }
 
 export const Home = () => {
-    const { data, loading } = useQuery<{ getTest: Test[] }>(
+    const { data, loading } = useQuery<{ getTests: Test[] }>(
         metadata.test.gql.get,
         {
             fetchPolicy: "no-cache"
@@ -25,8 +25,8 @@ export const Home = () => {
                 suggestions={
                     loading
                         ? []
-                        : data && data.getTest && data.getTest.length > 0
-                        ? data.getTest.map(({ name, tags }) => ({
+                        : data && data.getTests && data.getTests.length > 0
+                        ? data.getTests.map(({ name, tags }) => ({
                               name,
                               kind: "test",
                               description: JSON.stringify(tags)

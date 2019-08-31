@@ -17,7 +17,7 @@ export const watchPage = async () => {
             event,
             async (e: Event) => {
                 const step: StepInput = {
-                    key: e.type,
+                    action: e.type,
                     selector: "",
                     value: ""
                 }

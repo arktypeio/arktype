@@ -137,18 +137,25 @@ export const OutType = () => (target: any) => {
 }
 
 export type OutArgs = {
+    unique?: boolean
     schemaSuffix?: string
 } & FieldArgs
 
-export const OutField = ({ schemaSuffix, type, options }: OutArgs = {}) => (
-    target: object,
-    key: string
-) =>
+export const OutField = ({
+    schemaSuffix,
+    unique,
+    type,
+    options
+}: OutArgs = {}) => (target: object, key: string) =>
     decorateField({
         type,
-        options: schemaSuffix
-            ? { ...options, description: schemaSuffix }
-            : options,
+        options:
+            schemaSuffix || unique
+                ? {
+                      ...options,
+                      description: schemaSuffix ? schemaSuffix : "@unique"
+                  }
+                : options,
         target,
         key
     })
@@ -163,7 +170,6 @@ export type TypeMetadata<InType, OutType> = {
         delete?: any
     }
     actions?: TypeAction[]
-    labelKey?: keyof OutType
 }
 
 export const createTypeMetadata = <InType, OutType>(
