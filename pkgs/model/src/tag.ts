@@ -1,4 +1,13 @@
-import { InField, InType, OutType, OutField, ID } from "./common"
+import gql from "graphql-tag"
+import {
+    InField,
+    InType,
+    OutType,
+    OutField,
+    ID,
+    createTypeMetadata,
+    TypeAction
+} from "./common"
 import { User } from "./user"
 
 @OutType()
@@ -6,10 +15,10 @@ export class Tag {
     @OutField({ type: as => ID })
     readonly id: string
 
-    @OutField({ schemaSuffix: "String @unique" })
+    @OutField({ unique: true })
     name: string
 
-    @OutField()
+    @OutField({ type: as => User })
     user: User
 }
 
@@ -18,3 +27,18 @@ export class TagInput {
     @InField()
     name: string
 }
+
+export const tagMetadata = createTypeMetadata({
+    inType: TagInput,
+    outType: Tag,
+    gql: {
+        get: gql`
+            query {
+                getTags {
+                    id
+                    name
+                }
+            }
+        `
+    }
+})

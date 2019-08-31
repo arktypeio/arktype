@@ -16,7 +16,7 @@ export class Step {
     readonly id: string
 
     @OutField()
-    key: string
+    action: string
 
     @OutField()
     selector: string
@@ -24,14 +24,14 @@ export class Step {
     @OutField()
     value: string
 
-    @OutField()
+    @OutField({ type: as => User })
     user: User
 }
 
 @InType()
 export class StepInput {
     @InField()
-    key: string
+    action: string
 
     @InField()
     selector: string
@@ -43,7 +43,7 @@ export class StepInput {
 @InType()
 export class StepUpdate {
     @InField({ options: { nullable: true } })
-    key?: string
+    action?: string
 
     @InField({ options: { nullable: true } })
     selector?: string
@@ -59,8 +59,8 @@ export const stepMetadata = createTypeMetadata({
     gql: {
         get: gql`
             query {
-                getStep {
-                    key
+                getSteps {
+                    action
                     selector
                     value
                 }
@@ -69,16 +69,18 @@ export const stepMetadata = createTypeMetadata({
         update: gql`
             mutation updateStep(
                 $id: String!
-                $key: String
+                $action: String
                 $selector: String
                 $value: String
             ) {
                 updateStep(
                     id: $id
-                    key: $key
+                    action: $action
                     selector: $selector
                     value: $value
-                )
+                ) {
+                    id
+                }
             }
         `
     }

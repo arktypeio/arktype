@@ -1,5 +1,6 @@
 import Photon, { FindOneUserArgs } from "@generated/photon"
 import { TagInput } from "@re-do/model"
+import { Context } from "../context"
 
 type FindUserOptions = {
     photon: Photon
@@ -15,8 +16,30 @@ export const findUser = async ({ query, photon }: FindUserOptions) => {
     }
 }
 
-export const createTagsInput = (tags: TagInput[], id: string) =>
-    tags.map(({ ...fields }) => ({
-        ...fields,
-        user: { connect: { id } }
-    }))
+type SplitResult<T> = [T[], T[]]
+
+const split = <T>(list: T[], by: (item: T) => boolean) =>
+    list.reduce(
+        (sorted, item) =>
+            (by(item)
+                ? [[...sorted[0], item], sorted[1]]
+                : [sorted[0], [...sorted[1], item]]) as SplitResult<T>,
+        [[], []] as SplitResult<T>
+    )
+
+export const createTagConnector = async (
+    tags: TagInput[],
+    { photon, id }: Context
+) => {
+    const existing = (await photon.tags.findMany({
+        where: { user: { id } },
+        select: {
+            name: true
+        }
+    })).map(_ => _.name)
+    const [used, unused] = split(tags, ({ name }) => existing.includes(name))
+    for (const { name } of unused) {
+        await photon.tags.create({ data: { name, user: { connect: { id } } } })
+    }
+    return { connect: tags.map(({ name }) => ({ name })) }
+}
