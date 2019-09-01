@@ -1,4 +1,4 @@
-import React, { FC } from "react"
+import React from "react"
 import { Tooltip } from "@material-ui/core"
 import { TooltipProps } from "@material-ui/core/Tooltip"
 import { listify, ValueFrom } from "@re-do/utils"
@@ -18,12 +18,12 @@ export type ErrorTextProps = TextProps & {
     tooltipProps?: TooltipProps
 }
 
-export const ErrorText: FC<ErrorTextProps> = ({
+export const ErrorText = ({
     children,
     tooltipPlacement,
     tooltipProps,
     ...rest
-}) => {
+}: ErrorTextProps) => {
     const { tooltip } = stylize()
     const theme = useTheme()
     const messages = (listify(children) as string[]).filter(

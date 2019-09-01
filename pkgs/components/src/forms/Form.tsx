@@ -1,20 +1,27 @@
-import React, { ReactNode, useState } from "react"
-import useForm, { FormContext } from "react-hook-form"
-import { FormActions, Fields } from "./FormContext"
-import { ResponseState } from "../responses"
-import { FormErrors } from "../forms"
+import React, { useState } from "react"
 import { plainToClassFromExist } from "class-transformer"
 import { validateSync } from "class-validator"
+import useReactHookForm, {
+    FormContext as ReactHookFormContext
+} from "react-hook-form"
+import { Column, ColumnProps } from "../layouts"
+import { Fields, CustomContext, ResponseState, FormErrors } from "./FormContext"
 
-export type FormProps<T extends Fields, D = any> = FormActions<T, D> & {
-    children: ReactNode
+export type FormProps<T extends Fields, D = any> = {
+    children: JSX.Element | ((state: ResponseState<D>) => JSX.Element)
+    submit: (fields: T) => Promise<ResponseState<D> | void>
+    validator?: ((fields: T) => FormErrors<T>) | T
     staticValues?: any
     transformValues?: (fields: T) => T
+    columnProps?: ColumnProps
 }
 
-export const createValidator = <T extends Fields>(against: T) => (
-    values: T
-) => {
+export const createValidator = <T extends Fields>(
+    getValues: () => T,
+    against: T,
+    transformValues?: (fields: T) => T
+) => () => {
+    const values = transformValues ? transformValues(getValues()) : getValues()
     // Translate class-validator style errors to a map of fields to error string arrays.
     const classValidatorErrors = validateSync(
         plainToClassFromExist(against, values)
@@ -37,40 +44,74 @@ export const createValidator = <T extends Fields>(against: T) => (
 export const Form = <T extends Fields, D = any>({
     children,
     validator,
-    submit,
+    submit: submitValid,
     staticValues,
-    transformValues
+    transformValues,
+    columnProps
 }: FormProps<T, D>) => {
-    const formContext = useForm()
+    const formContext = useReactHookForm<T>()
     const [submitState, setSubmitState] = useState<ResponseState>({})
-    const validate =
-        typeof validator === "function"
-            ? (validator as ((fields: T) => FormErrors<T>))
-            : createValidator<T>(validator)
-    return (
-        <FormContext
-            validate={validate}
-            submit={async () => {
-                let values = {
-                    ...formContext.getValues(),
-                    ...staticValues
-                } as T
-                values = transformValues ? transformValues(values) : values
+    const touched: Array<keyof T> = []
+    const validate = validator
+        ? typeof validator === "function"
+            ? () =>
+                  (validator as (fields: Fields) => FormErrors<T>)(
+                      formContext.getValues()
+                  )
+            : createValidator<T>(
+                  formContext.getValues as () => T,
+                  validator,
+                  transformValues
+              )
+        : () => ({} as FormErrors<T>)
+    const updateErrors = () => {
+        const validationResult = validate()
+        Object.keys(validationResult)
+            .filter(input => touched.includes(input))
+            .forEach(key => {
                 if (
-                    Object.values(validate(values)).every(
-                        errors => !errors || !errors.length
-                    )
+                    key in validationResult &&
+                    validationResult[key] &&
+                    validationResult[key]!.length
                 ) {
-                    setSubmitState({ loading: true })
-                    const response = (await submit(values)) || {}
-                    setSubmitState({ ...response, loading: false })
+                    formContext.setError(
+                        key,
+                        "error",
+                        validationResult[key]!.join("\n")
+                    )
+                } else {
+                    formContext.clearError(key)
                 }
-            }}
-            submitState={submitState}
-            touched={[]}
-            {...formContext}
-        >
-            {children}
-        </FormContext>
+            })
+    }
+    const submit = async () => {
+        let values = {
+            ...formContext.getValues(),
+            ...staticValues
+        } as T
+        if (
+            Object.values(validate()).every(errors => !errors || !errors.length)
+        ) {
+            values = transformValues ? transformValues(values) : values
+            setSubmitState({ loading: true })
+            const response = (await submitValid(values)) || {}
+            setSubmitState({ ...response, loading: false })
+        }
+    }
+    const customContext: CustomContext<T, D> = {
+        validate,
+        submit,
+        submitState,
+        touched,
+        updateErrors
+    }
+    return (
+        <ReactHookFormContext {...formContext} {...customContext}>
+            <Column align="stretch" full {...columnProps}>
+                {typeof children === "function"
+                    ? children(submitState)
+                    : children}
+            </Column>
+        </ReactHookFormContext>
     )
 }

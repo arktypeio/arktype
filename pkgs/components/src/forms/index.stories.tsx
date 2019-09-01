@@ -1,12 +1,11 @@
 import React from "react"
 import { storiesOf } from "@storybook/react"
 import { withKnobs } from "@storybook/addon-knobs"
-import { Text } from "../text"
-import { Column } from "../layouts"
-import { AutoForm, Form, FormText, FormSubmit } from "."
 import { ValueFrom } from "@re-do/utils"
-import { FormProps } from "./Form"
-import { FormSubmitProps } from "./FormSubmit"
+import { Text, ErrorText } from "../text"
+import { Spinner } from "../progress"
+import { Button } from "../buttons"
+import { AutoForm, Form, FormText, FormSubmit, FormProps } from "."
 
 type HelloFormFields = {
     first: string
@@ -28,13 +27,9 @@ const validator: ValueFrom<FormProps<HelloFormFields, string>, "validator"> = ({
     last: last ? [] : ["We need this!"]
 })
 
-const responseOptions: ValueFrom<FormSubmitProps, "responseOptions"> = {
-    data: {
-        displayAs: data => <Text>{data.value}</Text>
-    }
-}
-
 const reverse = (s: string) => [...s].reverse().join("")
+
+const width = 200
 
 storiesOf("Form", module)
     .addDecorator(withKnobs)
@@ -49,27 +44,37 @@ storiesOf("Form", module)
     ))
     .add("AutoForm", () => (
         <AutoForm<HelloFormFields, string>
-            submit={submit}
+            submit={async ({ first, last }) =>
+                console.log(`Hello, ${first} ${last}.`)
+            }
             validator={validator}
-            contents={{ first: "Sarthak", last: "Agrawal" }}
-            submitProps={{ responseOptions }}
+            contents={{ first: "Reed", last: "Doe" }}
+            columnProps={{ width }}
         />
     ))
 
 const HelloForm = (props?: Partial<FormProps<HelloFormFields, string>>) => (
-    <div style={{ width: 200 }}>
-        <Form<HelloFormFields, string>
-            submit={submit}
-            validator={validator}
-            {...props}
-        >
-            <Column align="center">
+    <Form<HelloFormFields, string>
+        submit={submit}
+        validator={validator}
+        columnProps={{ width }}
+        {...props}
+    >
+        {({ data, loading, errors }) => (
+            <>
                 <FormText name="first" />
                 <FormText name="last" />
-                <FormSubmit responseOptions={responseOptions}>
-                    Submit
-                </FormSubmit>
-            </Column>
-        </Form>
-    </div>
+                {loading ? (
+                    <Spinner />
+                ) : (
+                    <FormSubmit>
+                        <Button>Submit</Button>
+                    </FormSubmit>
+                )}
+
+                {data ? <Text>{data}</Text> : null}
+                {errors ? <ErrorText>{errors}</ErrorText> : null}
+            </>
+        )}
+    </Form>
 )
