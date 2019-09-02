@@ -51,21 +51,23 @@ const schemifyObject = ({ name, fields = [] }: ObjectClassMetadata) => {
     return `model ${name} {\n${fieldLines}}\n\n`
 }
 
-const defaultTypeDescriptions = {
+const defaultTypeSuffixes = {
     ID: "String @default(cuid()) @id @unique"
 }
 
 const schemifyField = (field: FieldMetadata) => {
     const { description, name } = field
-    const suffix = description ? description : getFieldSuffix(field)
+    const suffix = description
+        ? description === "@unique"
+            ? `${getFieldSuffix(field)} @unique`
+            : description
+        : getFieldSuffix(field)
     return `${name} ${suffix}`
 }
 
 const getFieldSuffix = ({ getType, typeOptions: { array } }: FieldMetadata) => {
     const schemaType: string = `${(getType() as any).name}${array ? "[]" : ""}`
-    return schemaType in defaultTypeDescriptions
-        ? defaultTypeDescriptions[
-              schemaType as keyof typeof defaultTypeDescriptions
-          ]
+    return schemaType in defaultTypeSuffixes
+        ? defaultTypeSuffixes[schemaType as keyof typeof defaultTypeSuffixes]
         : schemaType
 }

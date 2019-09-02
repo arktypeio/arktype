@@ -13,50 +13,56 @@ import { Context } from "../context"
 @Resolver(of => Step)
 export class StepResolver {
     @Authorized()
-    @Mutation(returns => String)
+    @Mutation(returns => Step)
     async createStep(
-        @Args() { key, selector, value }: StepInput,
+        @Args() { action, selector, value }: StepInput,
         @Ctx() { photon, id }: Context
     ) {
         const step = await photon.steps.create({
             data: {
-                key,
+                action,
                 selector,
                 value,
-                user: { connect: { id: id! } }
+                user: { connect: { id } }
+            },
+            include: {
+                user: true
             }
         })
-        return step.id
+        return step
     }
 
     @Authorized()
     @Query(returns => [Step])
     async getSteps(@Ctx() { photon, id }: Context) {
-        const results = await photon.steps.findMany({
-            where: { user: { id: id! } },
+        const steps = await photon.steps.findMany({
+            where: { user: { id } },
             include: { user: true }
         })
-        return results
+        return steps
     }
 
     @Authorized()
-    @Mutation(returns => String)
+    @Mutation(returns => Step)
     async updateStep(
-        @Args() { key, selector, value }: StepUpdate,
+        @Args() { action, selector, value }: StepUpdate,
         @Arg("id") stepId: string,
         @Ctx() { photon, id }: Context
     ) {
         const step = await photon.steps.update({
             data: {
-                key,
+                action,
                 selector,
                 value,
-                user: { connect: { id: id! } }
+                user: { connect: { id } }
             },
             where: {
                 id: stepId
+            },
+            include: {
+                user: true
             }
         })
-        return step.id
+        return step
     }
 }

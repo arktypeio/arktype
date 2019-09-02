@@ -85,6 +85,7 @@ dependencies:
   file-loader: 3.0.1_webpack@4.29.6
   fork-ts-checker-webpack-plugin: 1.3.3
   formik: 1.5.1_react@16.8.6
+  framer-motion: 1.6.5_react-dom@16.8.6+react@16.8.6
   fs-extra: 8.1.0
   html-webpack-plugin: 3.2.0_webpack@4.29.6
   isomorphic-fetch: 2.2.1
@@ -93,7 +94,7 @@ dependencies:
   jsonwebtoken: 8.5.0
   material-ui-chip-input: 1.0.0_f35c714a02d617073918f9017b0a4e91
   moize: 5.4.4
-  prisma2: 2.0.0-preview-5
+  prisma2: 2.0.0-preview-8
   puppeteer: 1.19.0
   react: 16.8.6
   react-apollo: 3.0.1_b720375b53182f320d4afb2879b9016a
@@ -7491,7 +7492,7 @@ packages:
       graphql: ^0.12.0 || ^0.13.0 || ^14.0.0
     resolution:
       integrity: sha512-zV9RefkusIXqi9ZJtl7IJ5ecjDKdb7PLAb5E3CmxX3OK1GwNCIubp0vE7Fp4fXlCUKgTB1Woubs0zj71JT8o0A==
-  /graphql-query-complexity/0.2.3_graphql@14.4.2:
+  /graphql-query-complexity/0.3.0_graphql@14.4.2:
     dependencies:
       graphql: 14.4.2
       lodash.get: 4.4.2
@@ -7499,7 +7500,7 @@ packages:
     peerDependencies:
       graphql: ^0.13.0 || ^14.0.0
     resolution:
-      integrity: sha512-XLvEsqGTJmJmgof8u5NjIkBHL75b4Inw1F8JQ3jGRBhr3hVFx6aWOTL7C2aknp1uIh8dRmqwzrb9gas2NLHnfA==
+      integrity: sha512-JVqHT81Eh9O17iOjs1r1qzsh5YY2upfA3zoUsQGggT4d+1hajWitk4GQQY5SZtq5eul7y6jMsM9qRUSOAKhDJQ==
   /graphql-subscriptions/1.1.0:
     dependencies:
       iterall: 1.2.2
@@ -11341,12 +11342,12 @@ packages:
       node: '>= 0.8'
     resolution:
       integrity: sha1-t+PqQkNaTJsnWdmeDyAesZWALuE=
-  /prisma2/2.0.0-preview-5:
+  /prisma2/2.0.0-preview-8:
     dev: false
     hasBin: true
     requiresBuild: true
     resolution:
-      integrity: sha512-TPPNjbLPZN43JgjNY7LRMQ5LGalvv70ZWx000A2qRf5Zsp76eYXykrYoJ/ylx8Lj9w8evdHx4OV8jViYTCdnCw==
+      integrity: sha512-S4pugLblxQ1zKWi8Jd9kwJbbMqm1bSa0zIQ9/mDuI33ISykVWgYuXEwQ/IJEg02ObU87f6CYVig9ftLiIeR2hw==
   /prismjs/1.17.1:
     dev: false
     optionalDependencies:
@@ -13986,7 +13987,7 @@ packages:
       node: '>=8'
     resolution:
       integrity: sha512-q+MB8nYR1KDLrgr4G5yemftpMC7/QLqVndBmEEdqzmNj5dcFOO4Oo8qlwZE3ULT3+Zim1F8Kq4cBnikNhlCMlg==
-  /type-graphql/0.17.4_0e03e0594630b7e21c2ca22fa525a8b1:
+  /type-graphql/0.17.5_0e03e0594630b7e21c2ca22fa525a8b1:
     dependencies:
       '@types/glob': 7.1.1
       '@types/graphql': 14.2.2
@@ -13995,7 +13996,7 @@ packages:
       class-validator: 0.10.0
       glob: 7.1.4
       graphql: 14.4.2
-      graphql-query-complexity: 0.2.3_graphql@14.4.2
+      graphql-query-complexity: 0.3.0_graphql@14.4.2
       graphql-subscriptions: 1.1.0_graphql@14.4.2
       semver: 6.3.0
       tslib: 1.10.0
@@ -14007,7 +14008,7 @@ packages:
       graphql: ^14.1.1
     requiresBuild: true
     resolution:
-      integrity: sha512-vrY0wVRo3EsnTMGcEdkieP/a5dgsSibWBlA0lT8/gBh/M9R72H2R6YtwdlfUMPDxRIVo6KdHh7cHNzn19bQbpw==
+      integrity: sha512-wscr63K0j9UKcX/nBTySamLd7nMZeYKmADk8A9sVmcPh+clNJUAw96784dg2VZn/sUdmN1y2AeKzmTjCfVB5sA==
   /type-is/1.6.18:
     dependencies:
       media-typer: 0.3.0
@@ -14866,7 +14867,7 @@ packages:
       ts-node: 8.3.0_typescript@3.5.2
       tsconfig-paths: 3.7.0
       tsconfig-paths-webpack-plugin: 3.2.0
-      type-graphql: 0.17.4_0e03e0594630b7e21c2ca22fa525a8b1
+      type-graphql: 0.17.5_0e03e0594630b7e21c2ca22fa525a8b1
       typeface-ubuntu: 0.0.65
       typescript: 3.5.2
       validate.js: 0.13.1
@@ -14876,7 +14877,7 @@ packages:
     dev: false
     name: '@rush-temp/app'
     resolution:
-      integrity: sha512-PO8um1rjrsGpFEBFm7xomRgUpwapoEsJKeGGPa72fMmpbW1Dj9VjI2St6O15MO0Hbk1t2cxCy0LJlLtqru4bYg==
+      integrity: sha512-ijZztV2kYcD4X4SRFpPBgT70o9jl+1OWBleLi3bN4DvFEkEzj66L+4xkqPFyJrmE5FBQkF2TycbL/0nTZpFIjw==
       tarball: 'file:projects/app.tgz'
     version: 0.0.0
   'file:projects/babel-preset-redo.tgz_react-dom@16.8.6+react@16.8.6':
@@ -15003,7 +15004,7 @@ packages:
       graphql: 14.4.2
       graphql-tag: 2.10.1_graphql@14.4.2
       reflect-metadata: 0.1.13
-      type-graphql: 0.17.4_0e03e0594630b7e21c2ca22fa525a8b1
+      type-graphql: 0.17.5_0e03e0594630b7e21c2ca22fa525a8b1
       typescript: 3.5.2
     dev: false
     id: 'file:projects/model.tgz'
@@ -15012,7 +15013,7 @@ packages:
       '@babel/core': '*'
       '@types/graphql': '*'
     resolution:
-      integrity: sha512-Ytfef19g6a8f/K3IL7SyHg2fepEaCATHHQsMklc30NPC9DukBH298sMyERPepUMIgF9ulh5iu/Qi5A4HoqK1XA==
+      integrity: sha512-8ePyltlfD2Djl7KJNOpZYbS+Z+5XVenn4TGXrNKsB6/1L89raTarOqsZfC3iu7yYGKsokE8/YEHpJIpKjalIJQ==
       tarball: 'file:projects/model.tgz'
     version: 0.0.0
   'file:projects/recommended.tgz':
@@ -15043,17 +15044,17 @@ packages:
       isomorphic-ws: 4.0.1
       jest: 24.8.0
       jsonwebtoken: 8.5.0
-      prisma2: 2.0.0-preview-5
+      prisma2: 2.0.0-preview-8
       reflect-metadata: 0.1.13
       ts-jest: 24.0.2_jest@24.8.0
       ts-node: 8.3.0_typescript@3.5.2
       ts-node-dev: 1.0.0-pre.40_typescript@3.5.2
-      type-graphql: 0.17.4_0e03e0594630b7e21c2ca22fa525a8b1
+      type-graphql: 0.17.5_0e03e0594630b7e21c2ca22fa525a8b1
       typescript: 3.5.2
     dev: false
     name: '@rush-temp/server'
     resolution:
-      integrity: sha512-J/fMmi7mdNeoyXYONQQTktNqNQ5kPvASkKsUmxpoBtNkR+uWUosh7uqdUR4xV/1Eh+eNLkVwF8pYCoL/NeaAIQ==
+      integrity: sha512-3uxLsotBCuZ3TYZiYPNawvGxy9QQ84eSwWm/i7BSWE/FkILGENQj4a+bojmsszwGqMfdLgjBIwWLZuRwdD0sNQ==
       tarball: 'file:projects/server.tgz'
     version: 0.0.0
   'file:projects/shapeql.tgz_46b12d11340a10975f47e2ff824828aa':
@@ -15077,7 +15078,7 @@ packages:
       moize: 5.4.4
       reflect-metadata: 0.1.13
       ts-jest: 24.0.2_jest@24.8.0
-      type-graphql: 0.17.4_0e03e0594630b7e21c2ca22fa525a8b1
+      type-graphql: 0.17.5_0e03e0594630b7e21c2ca22fa525a8b1
       typescript: 3.5.2
     dev: false
     id: 'file:projects/shapeql.tgz'
@@ -15088,7 +15089,7 @@ packages:
       react: '*'
       react-dom: '*'
     resolution:
-      integrity: sha512-PmPwDXnfg4YpHN6f13oE0uNEFqBoQvoL1UmoVCHSTMzaxZ9yJdNv338Xp8qqVh7cXTJqOveRrdJxeI7upABYhA==
+      integrity: sha512-sNlBrhCxJ/ZtvYZPFeaTBmkHjJbiq+iUBNQwMecFsdKww30qhukyCp4qP/mGSJ9hmffvNO2wZocV3iAug71uyQ==
       tarball: 'file:projects/shapeql.tgz'
     version: 0.0.0
   'file:projects/test.tgz_@babel+core@7.5.5':
@@ -15246,6 +15247,7 @@ specifiers:
   file-loader: 3.0.1
   fork-ts-checker-webpack-plugin: 1.3.3
   formik: 1.5.1
+  framer-motion: 1.6.5
   fs-extra: 8.1.0
   html-webpack-plugin: 3.2.0
   isomorphic-fetch: 2.2.1
@@ -15254,7 +15256,7 @@ specifiers:
   jsonwebtoken: 8.5.0
   material-ui-chip-input: 1.0.0
   moize: 5.4.4
-  prisma2: 2.0.0-preview-5
+  prisma2: 2.0.0-preview-8
   puppeteer: 1.19.0
   react: 16.8.6
   react-apollo: 3.0.1

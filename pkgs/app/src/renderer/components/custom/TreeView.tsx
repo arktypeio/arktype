@@ -14,7 +14,7 @@ import { ObjectView } from "./ObjectView"
 import { RedoAppBar } from "./appBar"
 
 const metaKeyToQueryName = (key: string) =>
-    `get${key.charAt(0).toUpperCase()}${key.slice(1)}`
+    `get${key.charAt(0).toUpperCase()}${key.slice(1)}s`
 
 const getMetadataKey = (value: any) =>
     value
@@ -74,6 +74,7 @@ export const TreeView = ({ metaKey }: TreeViewProps) => {
         fetchPolicy: "no-cache"
     })
     const result = data ? data[metaKeyToQueryName(metaKey)] : undefined
+    console.log(result)
     return (
         <Column justify="center">
             <RedoAppBar>{["home", "search", "account"]}</RedoAppBar>

@@ -23,46 +23,92 @@ const contents = gql`
         createTest(
             name: "Test Something"
             tags: [{ name: "BAT" }, { name: "short" }]
-            steps: [{ key: "set", selector: "#someId", value: "someText" }]
-        )
-    }
-
-    mutation updateTest {
-        updateTest(
-            name: "NewName"
-            id: ""
-            tags: [{ name: "BAT" }, { name: "short" }]
-            steps: [{ key: "set", selector: "#someId", value: "someText" }]
-        )
-    }
-
-    query getTest {
-        getTest {
-            name
+            steps: [{ action: "set", selector: "#someId", value: "someText" }]
+        ) {
             id
-            user {
-                email
-            }
+        }
+    }
+
+    mutation updateTest($id: String!) {
+        updateTest(
+            id: $id
+            name: "NewName"
+            tags: [{ name: "BAT" }, { name: "short" }]
+            steps: [{ action: "set", selector: "#someId", value: "someText" }]
+        ) {
+            id
+        }
+    }
+
+    mutation createTag {
+        createTag(name: "SomeFeature") {
+            id
+            name
+        }
+    }
+
+    query getTests {
+        getTests {
+            id
+            name
             tags {
                 name
+            }
+            steps {
+                action
+                selector
+                value
             }
         }
     }
 
-    query getTag {
-        getTag {
-            user {
-                id
-            }
+    query getTags {
+        getTags {
+            id
             name
         }
     }
 
     query getSteps {
         getSteps {
-            key
+            id
+            action
             selector
             value
+        }
+    }
+
+    query me {
+        me {
+            id
+            email
+            password
+            firstName
+            lastName
+            tags {
+                id
+                name
+            }
+            steps {
+                id
+                action
+                selector
+                value
+            }
+            tests {
+                id
+                name
+                tags {
+                    id
+                    name
+                }
+                steps {
+                    id
+                    action
+                    selector
+                    value
+                }
+            }
         }
     }
 `
