@@ -1,7 +1,7 @@
 import React, { CSSProperties } from "react"
 import { component } from "blocks"
 import { SuggestionCard } from "custom"
-import { Card, useTheme, Row } from "@re-do/components"
+import { Card, Row } from "@re-do/components"
 
 export type SuggestionData = {
     name: string
@@ -20,8 +20,6 @@ export const SuggestionResultsGrid = component({
     query: { cardFilter: null }
 })(({ suggestions, data, style }) => {
     const { cardFilter } = data
-    const theme = useTheme()
-
     const suggestionCards = suggestions
         .filter(({ name, description }) =>
             name
@@ -33,8 +31,8 @@ export const SuggestionResultsGrid = component({
             <div
                 key={name}
                 style={{
-                    width: theme.spacing(25),
-                    height: theme.spacing(25)
+                    width: 200,
+                    height: 200
                 }}
             >
                 <SuggestionCard {...{ name, kind, description }} />
@@ -52,7 +50,7 @@ export const SuggestionResultsGrid = component({
                 wrap="wrap"
                 style={{
                     width: "100%",
-                    padding: theme.spacing(2)
+                    padding: 16
                 }}
             >
                 {suggestionCards}

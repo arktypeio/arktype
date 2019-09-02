@@ -23,7 +23,8 @@ export type CustomContext<T extends Fields, D = any> = {
     updateErrors: () => void
     submit: () => Promise<ResponseState<D> | void>
     submitState: ResponseState<D>
-    touched: Array<keyof T>
+    touched: Readonly<Array<keyof T>>
+    setTouched: (_: Array<keyof T>) => any
 }
 
 export type FullContext<T extends Fields, D = any> = BaseContext &

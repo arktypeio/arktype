@@ -13,7 +13,7 @@ type SignUpData = {
     }
 }
 
-export const SIGNUP = gql`
+const SIGNUP = gql`
     mutation signUp(
         $firstName: String!
         $lastName: String!

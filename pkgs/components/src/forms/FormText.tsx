@@ -13,7 +13,14 @@ export const FormText = ({
     onKeyDown,
     ...rest
 }: FormTextProps) => {
-    const { register, errors, updateErrors, touched, submit } = useFormContext()
+    const {
+        register,
+        errors,
+        updateErrors,
+        touched,
+        setTouched,
+        submit
+    } = useFormContext()
     return (
         <div>
             <TextInput
@@ -23,7 +30,7 @@ export const FormText = ({
                 onBlur={event => {
                     onBlur && onBlur(event)
                     if (!touched.includes(name)) {
-                        touched.push(name)
+                        setTouched([...touched, name])
                     }
                     updateErrors()
                 }}

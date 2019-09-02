@@ -51,7 +51,7 @@ export const Form = <T extends Fields, D = any>({
 }: FormProps<T, D>) => {
     const formContext = useReactHookForm<T>()
     const [submitState, setSubmitState] = useState<ResponseState>({})
-    const touched: Array<keyof T> = []
+    const [touched, setTouched] = useState<Array<keyof T>>([])
     const validate = validator
         ? typeof validator === "function"
             ? () =>
@@ -66,23 +66,17 @@ export const Form = <T extends Fields, D = any>({
         : () => ({} as FormErrors<T>)
     const updateErrors = () => {
         const validationResult = validate()
-        Object.keys(validationResult)
-            .filter(input => touched.includes(input))
-            .forEach(key => {
-                if (
-                    key in validationResult &&
-                    validationResult[key] &&
-                    validationResult[key]!.length
-                ) {
-                    formContext.setError(
-                        key,
-                        "error",
-                        validationResult[key]!.join("\n")
-                    )
-                } else {
-                    formContext.clearError(key)
-                }
-            })
+        touched.forEach(key => {
+            if (validationResult[key] && validationResult[key]!.length) {
+                formContext.setError(
+                    key,
+                    "error",
+                    validationResult[key]!.join("\n")
+                )
+            } else {
+                formContext.clearError(key)
+            }
+        })
     }
     const submit = async () => {
         let values = {
@@ -103,6 +97,7 @@ export const Form = <T extends Fields, D = any>({
         submit,
         submitState,
         touched,
+        setTouched,
         updateErrors
     }
     return (

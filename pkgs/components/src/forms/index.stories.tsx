@@ -1,6 +1,8 @@
+import "reflect-metadata"
 import React from "react"
 import { storiesOf } from "@storybook/react"
 import { withKnobs } from "@storybook/addon-knobs"
+import { IsIn } from "class-validator"
 import { ValueFrom } from "@re-do/utils"
 import { Text, ErrorText } from "../text"
 import { Spinner } from "../progress"
@@ -31,6 +33,16 @@ const reverse = (s: string) => [...s].reverse().join("")
 
 const width = 200
 
+class HelloValidator {
+    @IsIn(["David", "Savannah"])
+    first: string
+
+    @IsIn(["Blass", "Bosse"])
+    last: string
+}
+
+const helloClassValidator = new HelloValidator()
+
 storiesOf("Form", module)
     .addDecorator(withKnobs)
     .add("Standard", () => <HelloForm />)
@@ -41,6 +53,9 @@ storiesOf("Form", module)
                 last: reverse(values.last)
             })}
         />
+    ))
+    .add("With class validator", () => (
+        <HelloForm validator={helloClassValidator} />
     ))
     .add("AutoForm", () => (
         <AutoForm<HelloFormFields, string>

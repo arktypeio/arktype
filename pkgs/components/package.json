@@ -25,6 +25,7 @@
         "react": "16.8.6",
         "react-dom": "16.8.6",
         "react-hook-form": "3.18.8",
+        "reflect-metadata": "0.1.13",
         "typeface-ubuntu": "0.0.65"
     },
     "devDependencies": {
