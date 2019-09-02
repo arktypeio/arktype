@@ -54,7 +54,7 @@ export const Learner = component({
     const { primary } = usePalette()
 
     return (
-        <>
+        <Column full>
             <AppBar height={90} align="center">
                 <Column align="center">
                     <TextInput
@@ -123,7 +123,6 @@ export const Learner = component({
                     style={{ color: "white" }}
                     onClick={deactivateLearner}
                 />
-
                 <RespondTo response={{ loading: false }}>
                     <IconButton
                         Icon={Icons.save}
@@ -144,6 +143,6 @@ export const Learner = component({
                     />
                 </RespondTo>
             </AppBar>
-        </>
+        </Column>
     )
 })
