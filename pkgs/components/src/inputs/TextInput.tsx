@@ -151,40 +151,40 @@ export const TextInput: FC<TextInputProps> = ({
             text: textColor ? textColor : paletteTextColor!
         }
     })
-    return (
-        <TextField
-            margin="dense"
-            onFocus={e => {
-                setState({ ...state, focused: true })
-                onFocus && onFocus(e)
-            }}
-            onBlur={e => {
-                setState({ ...state, focused: false })
-                onBlur && onBlur(e)
-            }}
-            onError={e => {
-                setState({ ...state, error: true })
-                onError && onError(e)
-            }}
-            onReset={e => {
-                setState({ ...state, error: false })
-                onReset && onReset(e)
-            }}
-            onMouseOver={e => {
-                setState({ ...state, hovered: true })
-                onMouseOver && onMouseOver(e)
-            }}
-            onMouseOut={e => {
-                setState({ ...state, hovered: false })
-                onMouseOut && onMouseOut(e)
-            }}
-            InputLabelProps={{
-                style: {
-                    color: state.focused ? primary.dark : primary.light
-                }
-            }}
-            {...(kindProps as any)}
-            {...rest}
-        />
-    )
+    const inputProps: MuiTextFieldProps = {
+        margin: "dense",
+        onFocus: e => {
+            setState({ ...state, focused: true })
+            onFocus && onFocus(e)
+        },
+        onBlur: e => {
+            setState({ ...state, focused: false })
+            onBlur && onBlur(e)
+        },
+        onError: e => {
+            setState({ ...state, error: true })
+            onError && onError(e)
+        },
+        onReset: e => {
+            setState({ ...state, error: false })
+            onReset && onReset(e)
+        },
+        onMouseOver: e => {
+            setState({ ...state, hovered: true })
+            onMouseOver && onMouseOver(e)
+        },
+        onMouseOut: e => {
+            setState({ ...state, hovered: false })
+            onMouseOut && onMouseOut(e)
+        },
+        InputLabelProps: {
+            style: {
+                color: state.focused ? primary.dark : primary.light
+            }
+        },
+        ...kindProps,
+        ...rest
+    }
+    // @ts-ignore
+    return <TextField {...inputProps} />
 }

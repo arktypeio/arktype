@@ -50,45 +50,42 @@ export const Learner = component({
     } = data.learner!
     const [saveTest] = useMutation(SAVETEST)
     const { primary } = usePalette()
-    const height = 90
+
     return (
         <>
-            <div style={{ height }}>
-                <AppBar style={{ height }} align="center">
-                    <Column align="center">
-                        <TextInput
-                            value={name}
-                            placeholder="Test Name"
-                            colorTemplate="light"
-                            kind="underlined"
-                            onChange={e =>
-                                store.mutate({
-                                    learner: { testName: e.target.value }
-                                })
-                            }
-                        />
-                        <ChipInput
-                            value={tags}
-                            placeholder="Add Tags"
-                            onAdd={(chip: string) =>
-                                store.mutate({
-                                    learner: { testTags: _ => [..._, chip] }
-                                })
-                            }
-                            onDelete={(chip: string) => {
-                                store.mutate({
-                                    learner: {
-                                        testTags: _ =>
-                                            _.filter(
-                                                current => current !== chip
-                                            )
-                                    }
-                                })
-                            }}
-                        />
-                    </Column>
-                </AppBar>
-            </div>
+            <AppBar height={90} align="center">
+                <Column align="center">
+                    <TextInput
+                        value={name}
+                        placeholder="Test Name"
+                        colorTemplate="light"
+                        kind="underlined"
+                        onChange={e =>
+                            store.mutate({
+                                learner: { testName: e.target.value }
+                            })
+                        }
+                    />
+                    <ChipInput
+                        value={tags}
+                        placeholder="Add Tags"
+                        onAdd={(chip: string) =>
+                            store.mutate({
+                                learner: { testTags: _ => [..._, chip] }
+                            })
+                        }
+                        onDelete={(chip: string) => {
+                            store.mutate({
+                                learner: {
+                                    testTags: _ =>
+                                        _.filter(current => current !== chip)
+                                }
+                            })
+                        }}
+                    />
+                </Column>
+            </AppBar>
+
             <div>
                 <RespondTo
                     response={{ loading: chromiumInstalling }}
@@ -110,42 +107,41 @@ export const Learner = component({
                     <LearnerEvents events={events} />
                 </RespondTo>
             </div>
-            <div>
-                <AppBar
-                    style={{
-                        bottom: 0,
-                        position: "fixed",
-                        backgroundColor: primary.main
-                    }}
-                    justify="space-around"
-                >
-                    <IconButton
-                        Icon={Icons.close}
-                        style={{ color: "white" }}
-                        onClick={deactivateLearner}
-                    />
 
-                    <RespondTo response={{ loading: false }}>
-                        <IconButton
-                            Icon={Icons.save}
-                            style={{ color: "white" }}
-                            onClick={async () => {
-                                await saveTest({
-                                    variables: {
-                                        name,
-                                        tags: tags.map(_ => ({ name: _ })),
-                                        steps: events.map(
-                                            ({ __typename, ...inputs }: any) =>
-                                                inputs
-                                        )
-                                    }
-                                })
-                                resetLearner()
-                            }}
-                        />
-                    </RespondTo>
-                </AppBar>
-            </div>
+            <AppBar
+                style={{
+                    bottom: 0,
+                    position: "fixed",
+                    backgroundColor: primary.main
+                }}
+                justify="space-around"
+            >
+                <IconButton
+                    Icon={Icons.close}
+                    style={{ color: "white" }}
+                    onClick={deactivateLearner}
+                />
+
+                <RespondTo response={{ loading: false }}>
+                    <IconButton
+                        Icon={Icons.save}
+                        style={{ color: "white" }}
+                        onClick={async () => {
+                            await saveTest({
+                                variables: {
+                                    name,
+                                    tags: tags.map(_ => ({ name: _ })),
+                                    steps: events.map(
+                                        ({ __typename, ...inputs }: any) =>
+                                            inputs
+                                    )
+                                }
+                            })
+                            resetLearner()
+                        }}
+                    />
+                </RespondTo>
+            </AppBar>
         </>
     )
 })

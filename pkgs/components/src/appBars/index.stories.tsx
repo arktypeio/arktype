@@ -7,10 +7,22 @@ import { Text } from "../text"
 
 storiesOf("AppBar", module).add("basic", () => {
     return (
-        <AppBar>
-            <Text>Admiral AppBar</Text>
-            <TextInput kind="underlined" colorTemplate="light" />
-            <Icons.account onClick={() => console.log("clicked")} />
-        </AppBar>
+        <>
+            <AppBar>
+                <Text>Admiral AppBar</Text>
+                <TextInput kind="underlined" colorTemplate="light" />
+                <Icons.account onClick={() => console.log("clicked")} />
+            </AppBar>
+            <p>This is content.</p>
+            <p>This is content.</p>
+            <p>This is content.</p>
+            <p>This is content.</p>
+            <p>This is content.</p>
+            <p>This is content.</p>
+            <p>This is content.</p>
+            <p>This is content.</p>
+            <p>This is content.</p>
+            <div style={{ height: 2000 }} />
+        </>
     )
 })
