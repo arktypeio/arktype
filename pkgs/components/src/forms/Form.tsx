@@ -8,7 +8,10 @@ import { Column, ColumnProps } from "../layouts"
 import { Fields, CustomContext, ResponseState, FormErrors } from "./FormContext"
 
 export type FormProps<T extends Fields, D = any> = {
-    children: JSX.Element | ((state: ResponseState<D>) => JSX.Element)
+    children:
+        | JSX.Element
+        | JSX.Element[]
+        | ((state: ResponseState<D>) => JSX.Element)
     submit: (fields: T) => Promise<ResponseState<D> | void>
     validator?: ((fields: T) => FormErrors<T>) | T
     staticValues?: any
@@ -102,7 +105,7 @@ export const Form = <T extends Fields, D = any>({
     }
     return (
         <ReactHookFormContext {...formContext} {...customContext}>
-            <Column align="stretch" full {...columnProps}>
+            <Column align="center" full {...columnProps}>
                 {typeof children === "function"
                     ? children(submitState)
                     : children}

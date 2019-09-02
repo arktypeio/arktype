@@ -45,17 +45,11 @@ export const SignIn = () => {
                 email: formatEmail(email)
             })}
         >
-            <>
-                <FormText name="email" autoFocus />
-                <FormText type="password" name="password" />
-                <FormSubmit>
-                    <Button
-                        style={{ display: "flex", justifySelf: "flex-end" }}
-                    >
-                        Sign in
-                    </Button>
-                </FormSubmit>
-            </>
+            <FormText name="email" autoFocus />
+            <FormText type="password" name="password" />
+            <FormSubmit>
+                <Button>Sign in</Button>
+            </FormSubmit>
         </Form>
     )
 }

@@ -7,6 +7,7 @@ import { ValueFrom } from "@re-do/utils"
 import { Text, ErrorText } from "../text"
 import { Spinner } from "../progress"
 import { Button } from "../buttons"
+import { Row } from "../layouts"
 import { AutoForm, Form, FormText, FormSubmit, FormProps } from "."
 
 type HelloFormFields = {
@@ -57,6 +58,7 @@ storiesOf("Form", module)
     .add("With class validator", () => (
         <HelloForm validator={helloClassValidator} />
     ))
+    .add("Two column", () => <HelloForm testAsRow />)
     .add("AutoForm", () => (
         <AutoForm<HelloFormFields, string>
             submit={async ({ first, last }) =>
@@ -68,7 +70,12 @@ storiesOf("Form", module)
         />
     ))
 
-const HelloForm = (props?: Partial<FormProps<HelloFormFields, string>>) => (
+const HelloForm = ({
+    testAsRow,
+    ...props
+}: Partial<FormProps<HelloFormFields, string>> & {
+    testAsRow?: boolean
+}) => (
     <Form<HelloFormFields, string>
         submit={submit}
         validator={validator}
@@ -77,8 +84,17 @@ const HelloForm = (props?: Partial<FormProps<HelloFormFields, string>>) => (
     >
         {({ data, loading, errors }) => (
             <>
-                <FormText name="first" />
-                <FormText name="last" />
+                {testAsRow ? (
+                    <Row spacing={1}>
+                        <FormText name="first" />
+                        <FormText name="last" />
+                    </Row>
+                ) : (
+                    <>
+                        <FormText name="first" />
+                        <FormText name="last" />
+                    </>
+                )}
                 {loading ? (
                     <Spinner />
                 ) : (
@@ -86,7 +102,6 @@ const HelloForm = (props?: Partial<FormProps<HelloFormFields, string>>) => (
                         <Button>Submit</Button>
                     </FormSubmit>
                 )}
-
                 {data ? <Text>{data}</Text> : null}
                 {errors ? <ErrorText>{errors}</ErrorText> : null}
             </>

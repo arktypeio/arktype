@@ -12,24 +12,24 @@ import { track } from "../analytics"
 export const SignUp = () => {
     return (
         <Column align="center">
-            <Text variant="h4">🚀Launching 8/24</Text>
+            <Text variant="h4">🚀Launching soon</Text>
             <Form<{ email: string }>
                 validator={_ => ({ email: [] })}
                 submit={async ({ email }) => track.prelaunchRegister({ email })}
+                columnProps={{ align: "center" }}
             >
-                <FormText name="email" />
-                <FormSubmit
-                    responseOptions={{
-                        data: {
-                            displayAs: () => (
+                {({ data }) => (
+                    <>
+                        <FormText name="email" />
+                        <FormSubmit>
+                            {data ? (
                                 <Button disabled>You're in the loop 💌</Button>
-                            ),
-                            hideContent: true
-                        }
-                    }}
-                >
-                    Keep me posted!
-                </FormSubmit>
+                            ) : (
+                                <Button>Keep me posted!</Button>
+                            )}
+                        </FormSubmit>
+                    </>
+                )}
             </Form>
         </Column>
     )

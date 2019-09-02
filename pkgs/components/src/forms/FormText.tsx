@@ -3,6 +3,7 @@ import { TextInput, TextInputProps } from "../inputs"
 import { ErrorText } from "../text"
 import { useFormContext } from "./FormContext"
 import { FormFieldProps } from "./FormField"
+import { Column } from "../layouts"
 
 export type FormTextProps = FormFieldProps & TextInputProps
 
@@ -22,7 +23,7 @@ export const FormText = ({
         submit
     } = useFormContext()
     return (
-        <div>
+        <Column>
             <TextInput
                 name={name}
                 label={label ? label : name}
@@ -45,6 +46,6 @@ export const FormText = ({
                     <ErrorText>{errors[name].message.split("\n")}</ErrorText>
                 ) : null}
             </div>
-        </div>
+        </Column>
     )
 }

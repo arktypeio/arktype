@@ -52,20 +52,18 @@ export const SignUp = () => {
                 email: formatEmail(email)
             })}
         >
-            <>
-                <Row>
-                    <FormText name="firstName" label="first" autoFocus />
-                    <FormText name="lastName" label="last" />
-                </Row>
-                <FormText name="email" />
-                <Row>
-                    <FormText type="password" name="password" />
-                    <FormText type="password" name="confirm" />
-                </Row>
-                <FormSubmit>
-                    <Button>Sign up</Button>
-                </FormSubmit>
-            </>
+            <Row>
+                <FormText name="firstName" label="first" autoFocus />
+                <FormText name="lastName" label="last" />
+            </Row>
+            <FormText name="email" />
+            <Row>
+                <FormText type="password" name="password" />
+                <FormText type="password" name="confirm" />
+            </Row>
+            <FormSubmit>
+                <Button>Sign up</Button>
+            </FormSubmit>
         </Form>
     )
 }
