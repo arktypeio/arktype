@@ -14,4 +14,4 @@ storiesOf("Input", module)
             )}
         />
     ))
-    .add("Chip", () => <ChipInput />)
+    .add("Chip", () => <TextInput chip />)

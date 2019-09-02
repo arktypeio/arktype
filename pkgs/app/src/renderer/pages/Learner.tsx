@@ -110,14 +110,7 @@ export const Learner = component({
                 </RespondTo>
             </div>
 
-            <AppBar
-                style={{
-                    bottom: 0,
-                    position: "fixed",
-                    backgroundColor: primary.main
-                }}
-                justify="space-around"
-            >
+            <AppBar kind="bottom" justify="space-around">
                 <IconButton
                     Icon={Icons.close}
                     style={{ color: "white" }}

@@ -4,6 +4,9 @@ import { BaseTextFieldProps as MuiTextFieldProps } from "@material-ui/core/TextF
 import { TextField } from "@material-ui/core"
 import { makeStyles } from "@material-ui/styles"
 import { makeKinds, KindFrom } from "../common"
+import MuiChipInput, {
+    Props as MuiChipInputProps
+} from "material-ui-chip-input"
 
 // Mui's theme overrides these styles unless !important is specified
 const getBorderStyles = (color: string) => ({
@@ -120,6 +123,7 @@ export type TextInputProps = MuiTextFieldProps & {
     colorTemplate?: KindFrom<typeof useColors>
     borderColors?: Partial<BorderColors>
     textColor?: string
+    chip?: boolean
 }
 
 export const TextInput: FC<TextInputProps> = ({
@@ -133,6 +137,7 @@ export const TextInput: FC<TextInputProps> = ({
     onReset,
     onMouseOver,
     onMouseOut,
+    chip,
     ...rest
 }) => {
     const { primary } = usePalette()
@@ -185,6 +190,12 @@ export const TextInput: FC<TextInputProps> = ({
         ...kindProps,
         ...rest
     }
-    // @ts-ignore
-    return <TextField {...inputProps} />
+
+    return chip ? (
+        // @ts-ignore
+        <MuiChipInput InputProps={inputProps} />
+    ) : (
+        // @ts-ignore
+        <TextField {...inputProps} />
+    )
 }
