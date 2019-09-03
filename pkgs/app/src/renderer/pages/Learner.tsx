@@ -51,8 +51,6 @@ export const Learner = component({
         testTags: tags
     } = data.learner!
     const [saveTest, saveTestResult] = useMutation(SAVETEST)
-    const { primary } = usePalette()
-
     return (
         <Column full>
             <AppBar height={90} align="center">

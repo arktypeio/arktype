@@ -1,7 +1,7 @@
 import React from "react"
 import { withKnobs, select } from "@storybook/addon-knobs"
 import { storiesOf } from "@storybook/react"
-import { TextInput, ChipInput } from "."
+import { TextInput } from "."
 
 storiesOf("Input", module)
     .addDecorator(withKnobs)
@@ -14,4 +14,4 @@ storiesOf("Input", module)
             )}
         />
     ))
-    .add("Chip", () => <TextInput chip />)
+    .add("Chip", () => <TextInput chip colorTemplate="light" />)
