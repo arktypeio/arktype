@@ -1,9 +1,9 @@
-import React, { FC } from "react"
+import React from "react"
 import { Tooltip } from "@material-ui/core"
 import { TooltipProps } from "@material-ui/core/Tooltip"
 import { listify, ValueFrom } from "@re-do/utils"
 import { Text, TextProps } from "./Text"
-import { useTheme, makeStyles, Theme } from "../styles"
+import { usePalette, makeStyles, Theme } from "../styles"
 
 const stylize = makeStyles((theme: Theme) => ({
     tooltip: {
@@ -18,14 +18,14 @@ export type ErrorTextProps = TextProps & {
     tooltipProps?: TooltipProps
 }
 
-export const ErrorText: FC<ErrorTextProps> = ({
+export const ErrorText = ({
     children,
     tooltipPlacement,
     tooltipProps,
     ...rest
-}) => {
+}: ErrorTextProps) => {
     const { tooltip } = stylize()
-    const theme = useTheme()
+    const { error } = usePalette()
     const messages = (listify(children) as string[]).filter(
         child => !!child.trim()
     )
@@ -35,24 +35,35 @@ export const ErrorText: FC<ErrorTextProps> = ({
                 tooltip
             }}
             title={messages.map((message, index) => (
-                <ErrorText key={index}>{`${message}\n`}</ErrorText>
+                <Text
+                    key={index}
+                    variant="caption"
+                    style={{ color: error.main }}
+                >{`🤔${message}\n`}</Text>
             ))}
             placement={tooltipPlacement}
             {...tooltipProps}
         >
-            <Text
-                variant="caption"
+            <div
                 style={{
-                    color: theme.palette.error.main,
-                    whiteSpace: "pre-line"
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    width: "100%"
                 }}
-                noWrap
-                {...rest}
             >
-                {messages.length > 1
-                    ? `🤯${messages[0]} (and more...)`
-                    : `🤔${messages[0]}`}
-            </Text>
+                <Text
+                    variant="caption"
+                    style={{
+                        color: error.main
+                    }}
+                    noWrap
+                    {...rest}
+                >
+                    {messages.length > 1
+                        ? `🤯${messages[0]} (and more...)`
+                        : `🤔${messages[0]}`}
+                </Text>
+            </div>
         </Tooltip>
     )
 }

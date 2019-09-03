@@ -74,7 +74,6 @@ export const TreeView = ({ metaKey }: TreeViewProps) => {
         fetchPolicy: "no-cache"
     })
     const result = data ? data[metaKeyToQueryName(metaKey)] : undefined
-    console.log(result)
     return (
         <Column justify="center">
             <RedoAppBar>{["home", "search", "account"]}</RedoAppBar>

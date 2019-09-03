@@ -1,20 +1,20 @@
-import React, { FC } from "react"
-import { RespondTo, ResponseOptions } from "../responses"
-import { Button } from "../buttons"
+import React, { cloneElement, MouseEvent, CSSProperties } from "react"
 import { useFormContext } from "./FormContext"
 
-export type FormSubmitProps<D = any> = {
-    responseOptions?: ResponseOptions<D>
+export type FormSubmitProps = {
+    children: JSX.Element
 }
 
-export const FormSubmit: FC<FormSubmitProps> = <D extends any = any>({
-    responseOptions,
-    ...rest
-}: FormSubmitProps<D>) => {
-    const { submit, submitState } = useFormContext()
-    return (
-        <RespondTo response={submitState} options={responseOptions}>
-            <Button kind="primary" type="submit" onClick={submit} {...rest} />
-        </RespondTo>
-    )
+export const FormSubmit = ({ children, ...rest }: FormSubmitProps) => {
+    const { submit } = useFormContext()
+    const onClick = (e: MouseEvent) => {
+        children.props.onClick && children.props.onClick(e)
+        submit()
+    }
+    return cloneElement(children, {
+        style: { alignSelf: "center", ...children.props.style },
+        ...rest,
+        onClick,
+        type: "submit"
+    })
 }

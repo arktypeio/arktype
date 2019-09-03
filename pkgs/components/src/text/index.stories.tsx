@@ -34,3 +34,13 @@ const getKnobProps = () => {
 storiesOf("Text", module)
     .addDecorator(withKnobs)
     .add("ErrorText", () => <ErrorText {...getKnobProps()} />)
+    .add("Long ErrorText", () => (
+        <div style={{ width: 200 }}>
+            <ErrorText>
+                {[
+                    "This very long error message should be truncated",
+                    "This even longer error message should display in full in the tooltip"
+                ]}
+            </ErrorText>
+        </div>
+    ))
