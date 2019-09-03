@@ -1,44 +1,44 @@
 {
-    "name": "@re-do/website",
-    "version": "0.0.1",
-    "description": "Redo's landing page",
-    "author": "redo.qa",
-    "main": "src/index.tsx",
-    "scripts": {
-        "start": "npm run clean && npm run devServer",
-        "build": "npm run clean && NODE_ENV=production webpack",
-        "devServer": "NODE_ENV=development webpack-dev-server --progress --colors",
-        "clean": "rm -rf dist && mkdir dist"
-    },
-    "dependencies": {
-        "@babel/runtime-corejs3": "7.5.5",
-        "@hot-loader/react-dom": "16.8.6",
-        "@material-ui/core": "4.2.1",
-        "@material-ui/icons": "4.2.1",
-        "@material-ui/styles": "4.2.1",
-        "@re-do/components": "0.0.1",
-        "analytics-node": "3.4.0-beta.1",
-        "framer-motion": "1.6.5",
-        "react": "16.8.6",
-        "react-dom": "16.8.6",
-        "react-typist": "2.0.5",
-        "shapeql": "1.0.0",
-        "typeface-ubuntu": "0.0.65"
-    },
-    "devDependencies": {
-        "@re-do/bundle": "0.0.1",
-        "@re-do/recommended": "0.0.1",
-        "@types/analytics-node": "3.1.1",
-        "@types/node": "12.6.6",
-        "@types/react": "16.8.8",
-        "@types/react-dom": "16.8.3",
-        "@types/react-typist": "2.0.0",
-        "babel-preset-redo": "1.0.0",
-        "react-hot-loader": "4.12.8",
-        "ts-node": "8.3.0",
-        "typescript": "3.6.2",
-        "webpack": "4.29.6",
-        "webpack-cli": "3.3.0",
-        "webpack-dev-server": "3.7.2"
-    }
+  "name": "@re-do/website",
+  "version": "0.0.1",
+  "description": "Redo's landing page",
+  "author": "redo.qa",
+  "main": "src/index.tsx",
+  "scripts": {
+    "start": "npm run clean && npm run devServer",
+    "build": "npm run clean && NODE_ENV=production webpack",
+    "devServer": "NODE_ENV=development webpack-dev-server --progress --colors",
+    "clean": "rm -rf dist && mkdir dist"
+  },
+  "dependencies": {
+    "@babel/runtime-corejs3": "7.5.5",
+    "@hot-loader/react-dom": "16.8.6",
+    "@material-ui/core": "4.2.1",
+    "@material-ui/icons": "4.2.1",
+    "@material-ui/styles": "4.2.1",
+    "@re-do/components": "0.0.1",
+    "analytics-node": "3.4.0-beta.1",
+    "framer-motion": "1.6.5",
+    "react": "16.8.6",
+    "react-dom": "16.8.6",
+    "react-typist": "2.0.5",
+    "shapeql": "1.0.0",
+    "typeface-ubuntu": "0.0.65"
+  },
+  "devDependencies": {
+    "@re-do/bundle": "0.0.1",
+    "@re-do/recommended": "0.0.1",
+    "@types/analytics-node": "3.1.1",
+    "@types/node": "12.6.6",
+    "@types/react": "16.8.8",
+    "@types/react-dom": "16.8.3",
+    "@types/react-typist": "2.0.0",
+    "babel-preset-redo": "1.0.0",
+    "react-hot-loader": "4.12.8",
+    "ts-node": "8.3.0",
+    "typescript": "3.6.2",
+    "webpack": "4.29.6",
+    "webpack-cli": "3.3.0",
+    "webpack-dev-server": "3.7.2"
+  }
 }

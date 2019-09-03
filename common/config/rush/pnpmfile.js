@@ -29,7 +29,7 @@ module.exports = {
  */
 function readPackage(packageJson, context) {
     if (["apollo-cache", "apollo-link-context"].includes(packageJson.name)) {
-        context.log("Fixing dependencies for apollo-cache...")
+        context.log(`Fixing dependencies for ${packageJson.name}...`)
         packageJson.peerDependencies = {
             graphql: "^0.11.0 || ^0.12.0 || ^0.13.0 || ^14.0.0"
         }

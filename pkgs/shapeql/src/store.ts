@@ -13,7 +13,7 @@ import {
 } from "./shapeql"
 
 const queryAll = <T extends S>({ rootClass, client }: StoreConfig<T>) => () =>
-    query({ rootClass, client })(rootQuery(rootClass) as Query<T>) as T
+    query({ rootClass, client })(rootQuery(rootClass) as any) as T
 
 const query = <T extends S, Q extends Query<T>>({
     rootClass,

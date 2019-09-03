@@ -23,7 +23,9 @@ export type DeepNonNullableObjects<T> = {
 export type DeepShapeOf<T> = T & DeepNonNullableObjects<T>
 
 // More flexible gqlesque query type that will retrieve all keys nulled object types
-export type DeepNull<T> = { [P in keyof T]?: DeepNull<T[P]> | null }
+export type DeepNull<T> = {
+    [P in keyof T]?: T[P] extends NonRecursible ? null : DeepNull<T[P]> | null
+}
 
 // Represents a gql query that will retrieve all nested fields
 export type RootQuery<T> = {
