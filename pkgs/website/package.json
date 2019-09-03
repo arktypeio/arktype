@@ -23,7 +23,7 @@
         "react-dom": "16.8.6",
         "react-typist": "2.0.5",
         "shapeql": "1.0.0",
-        "typeface-ubuntu": "0.0.65"
+      "typeface-ubuntu": "0.0.65"
     },
     "devDependencies": {
         "@re-do/bundle": "0.0.1",
