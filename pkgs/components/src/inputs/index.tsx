@@ -1,2 +1,2 @@
-export * from "./TextInput"
 export * from "./ChipInput"
+export * from "./TextInput"
