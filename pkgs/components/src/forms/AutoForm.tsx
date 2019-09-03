@@ -1,5 +1,7 @@
 import React from "react"
-import { Column, ColumnProps } from "../layouts"
+import { Button } from "../buttons"
+import { Spinner } from "../progress"
+import { ErrorText } from "../text"
 import {
     Form,
     FormText,
@@ -15,24 +17,31 @@ type AutoFormProps<T extends Fields, D = any> = Omit<
     "children"
 > & {
     contents: T
-    columnProps?: ColumnProps
-    submitProps?: FormSubmitProps
     textProps?: FormTextProps
+    submitProps?: FormSubmitProps
 }
 
 export const AutoForm = <T extends Fields, D = any>({
     contents,
-    columnProps,
     submitProps,
     textProps,
     ...rest
 }: AutoFormProps<T, D>) => (
     <Form<T, D> {...rest}>
-        <Column {...columnProps}>
-            {Object.entries(contents).map(([k, v], index) => (
-                <FormText name={k} key={index} {...textProps} />
-            ))}
-            <FormSubmit {...submitProps}>Submit</FormSubmit>
-        </Column>
+        {({ loading, errors }) => (
+            <>
+                {Object.entries(contents).map(([k, v], index) => (
+                    <FormText name={k} key={index} {...textProps} value={v} />
+                ))}
+                {loading ? (
+                    <Spinner />
+                ) : (
+                    <FormSubmit {...submitProps}>
+                        <Button>Submit</Button>
+                    </FormSubmit>
+                )}
+                {errors ? <ErrorText>{errors}</ErrorText> : null}
+            </>
+        )}
     </Form>
 )
