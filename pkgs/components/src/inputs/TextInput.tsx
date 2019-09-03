@@ -1,12 +1,9 @@
 import React, { FC, useState } from "react"
-import { usePalette, Theme } from "../styles"
+import { usePalette } from "../styles"
 import { BaseTextFieldProps as MuiTextFieldProps } from "@material-ui/core/TextField"
 import { TextField } from "@material-ui/core"
 import { makeStyles } from "@material-ui/styles"
 import { makeKinds, KindFrom } from "../common"
-import MuiChipInput, {
-    Props as MuiChipInputProps
-} from "material-ui-chip-input"
 
 // Mui's theme overrides these styles unless !important is specified
 const getBorderStyles = (color: string) => ({
@@ -30,17 +27,6 @@ const stylize = makeStyles(() => {
         })
     }
 })
-
-const stylizeChip = makeStyles((theme: Theme) => ({
-    chipClass: ({ colorTemplate }: Pick<TextInputProps, "colorTemplate">) => ({
-        margin: 4,
-        color: colorTemplate === "light" ? "black" : "white",
-        backgroundColor:
-            colorTemplate === "light"
-                ? theme.palette.background.paper
-                : theme.palette.primary.light
-    })
-}))
 
 type UseKindOptions = {
     state: TextInputState
@@ -131,15 +117,7 @@ type TextInputColors = {
     text: string
 }
 
-export type TextInputProps = MuiTextFieldProps & {
-    kind?: KindFrom<typeof useKind>
-    colorTemplate?: ColorTemplate
-    borderColors?: Partial<BorderColors>
-    textColor?: string
-    chip?: boolean
-}
-
-export const TextInput: FC<TextInputProps> = ({
+export const useTextFieldProps = ({
     kind = "outlined",
     colorTemplate = "standard",
     borderColors = {},
@@ -150,11 +128,9 @@ export const TextInput: FC<TextInputProps> = ({
     onReset,
     onMouseOver,
     onMouseOut,
-    chip,
     ...rest
-}: TextInputProps) => {
+}: TextInputProps): MuiTextFieldProps => {
     const { primary } = usePalette()
-    const { chipClass } = stylizeChip({ colorTemplate })
     const [state, setState] = useState({
         focused: false,
         error: false,
@@ -170,7 +146,7 @@ export const TextInput: FC<TextInputProps> = ({
             text: textColor ? textColor : paletteTextColor!
         }
     })
-    const textFieldProps: MuiTextFieldProps = {
+    return {
         margin: "dense",
         onFocus: e => {
             setState({ ...state, focused: true })
@@ -204,18 +180,17 @@ export const TextInput: FC<TextInputProps> = ({
         ...kindProps,
         ...rest
     }
+}
 
-    return chip ? (
-        <MuiChipInput
-            // Enter and Space, respectively
-            newChipKeyCodes={[13, 32]}
-            // @ts-ignore
-            {...textFieldProps}
-            // @ts-ignore
-            classes={{ ...textFieldProps.classes, chip: chipClass }}
-        />
-    ) : (
-        // @ts-ignore
-        <TextField {...textFieldProps} />
-    )
+export type TextInputProps = MuiTextFieldProps & {
+    kind?: KindFrom<typeof useKind>
+    colorTemplate?: ColorTemplate
+    borderColors?: Partial<BorderColors>
+    textColor?: string
+}
+
+export const TextInput: FC<TextInputProps> = (props: TextInputProps) => {
+    const textFieldProps = useTextFieldProps(props)
+    // @ts-ignore
+    return <TextField {...textFieldProps} />
 }

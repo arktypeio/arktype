@@ -2,7 +2,7 @@ import React from "react"
 import { storiesOf } from "@storybook/react"
 import { AppBar, AppBarProps } from "."
 import { Icons } from "../icons"
-import { TextInput } from "../inputs"
+import { TextInput, ChipInput } from "../inputs"
 import { Text } from "../text"
 
 storiesOf("AppBar", module)
@@ -38,7 +38,7 @@ const TestAppBar = (props: AppBarProps) => (
     <AppBar {...props}>
         <Text>Admiral AppBar</Text>
         <TextInput kind="underlined" colorTemplate="light" />
-        <TextInput chip colorTemplate="light" />
+        <ChipInput colorTemplate="light" />
         <Icons.account onClick={() => console.log("clicked")} />
     </AppBar>
 )

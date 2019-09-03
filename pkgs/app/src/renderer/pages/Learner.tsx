@@ -6,7 +6,6 @@ import {
     Spinner,
     TextInput,
     AppBar,
-    usePalette,
     Icons,
     IconButton,
     ChipInput,
@@ -53,7 +52,7 @@ export const Learner = component({
     const [saveTest, saveTestResult] = useMutation(SAVETEST)
     return (
         <Column full>
-            <AppBar height={90} align="center">
+            <AppBar height={120} align="center">
                 <Column align="center">
                     <TextInput
                         value={name}
@@ -68,6 +67,7 @@ export const Learner = component({
                     />
                     <ChipInput
                         value={tags}
+                        colorTemplate="light"
                         placeholder="Add Tags"
                         onAdd={(chip: string) =>
                             store.mutate({
@@ -122,7 +122,7 @@ export const Learner = component({
                                     }
                                 })
                                 await resetLearner()
-                                await store.mutate({ page: Page.Home })
+                                await deactivateLearner()
                             }}
                         />
                         {saveTestResult.error ? (
