@@ -1,6 +1,4 @@
-import { Fields, FormErrors, ResponseState } from "@re-do/components"
-import { plainToClassFromExist } from "class-transformer"
-import { validateSync } from "class-validator"
+import { Fields, SubmissionState } from "@re-do/components"
 import { MutationHookOptions, MutationTuple } from "@apollo/react-hooks"
 import { OperationVariables } from "apollo-client"
 import { DocumentNode } from "graphql"
@@ -9,28 +7,6 @@ export type UseMutation<TData = any, TVariables = OperationVariables> = (
     mutation: DocumentNode,
     options?: MutationHookOptions<TData, TVariables>
 ) => MutationTuple<TData, TVariables>
-
-export const createValidator = <T extends Fields>(against: T) => (
-    values: T
-) => {
-    // Translate class-validator style errors to a map of fields to error string arrays.
-    const classValidatorErrors = validateSync(
-        plainToClassFromExist(against, values)
-    )
-    return classValidatorErrors.reduce(
-        (errors, current) => {
-            return {
-                ...errors,
-                ...{
-                    ...{
-                        [current.property]: Object.values(current.constraints)
-                    }
-                }
-            }
-        },
-        {} as FormErrors<T>
-    )
-}
 
 export type SubmitFormOptions<
     T extends Fields,
@@ -46,8 +22,8 @@ export const submitForm = async <
 >({
     submit,
     fields
-}: SubmitFormOptions<T, D>): Promise<ResponseState<D>> => {
-    const result = {} as ResponseState<D>
+}: SubmitFormOptions<T, D>): Promise<SubmissionState<D>> => {
+    const result = {} as SubmissionState<D>
     try {
         const submitResult = await submit({ variables: fields })
         if (submitResult && submitResult.data) {

@@ -1,5 +1,5 @@
 import Analytics from "analytics-node"
-import { ResponseState } from "@re-do/components"
+import { SubmissionState } from "@re-do/components"
 
 const client = new Analytics(
     process.env.NODE_ENV === "production"
@@ -13,7 +13,7 @@ type TrackOptions = {
 
 const prelaunchRegister = async ({
     email
-}: TrackOptions): Promise<ResponseState<{}>> => {
+}: TrackOptions): Promise<SubmissionState<{}>> => {
     client.track({
         event: "Prelaunch User Registered",
         anonymousId: "?",

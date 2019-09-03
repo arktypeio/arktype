@@ -1,19 +1,19 @@
 import React from "react"
 import { component } from "blocks"
 import {
-    RespondTo,
     Column,
     Text,
+    Spinner,
     TextInput,
     AppBar,
     usePalette,
     Icons,
     IconButton,
-    ChipInput
+    ChipInput,
+    ErrorText
 } from "@re-do/components"
-import { deactivateLearner, resetLearner } from "state"
+import { deactivateLearner, resetLearner, Page } from "state"
 import { LearnerEvents } from "custom"
-import { CircularProgress } from "@material-ui/core"
 import gql from "graphql-tag"
 import { useMutation } from "@apollo/react-hooks"
 import { store } from "../common"
@@ -50,7 +50,7 @@ export const Learner = component({
         testName: name,
         testTags: tags
     } = data.learner!
-    const [saveTest] = useMutation(SAVETEST)
+    const [saveTest, saveTestResult] = useMutation(SAVETEST)
     const { primary } = usePalette()
     const height = 90
     return (
@@ -92,25 +92,14 @@ export const Learner = component({
                 </AppBar>
             </div>
             <div>
-                <RespondTo
-                    response={{ loading: chromiumInstalling }}
-                    options={{
-                        loading: {
-                            displayAs: ({ value }) =>
-                                value ? (
-                                    <>
-                                        <CircularProgress />
-                                        <Text align="center">
-                                            Downloading Chrome
-                                        </Text>
-                                    </>
-                                ) : null,
-                            hideContent: false
-                        }
-                    }}
-                >
+                {chromiumInstalling ? (
+                    <Column align="center">
+                        <Spinner />
+                        <Text>Getting things ready...</Text>
+                    </Column>
+                ) : (
                     <LearnerEvents events={events} />
-                </RespondTo>
+                )}
             </div>
             <div>
                 <AppBar
@@ -126,26 +115,37 @@ export const Learner = component({
                         style={{ color: "white" }}
                         onClick={deactivateLearner}
                     />
-
-                    <RespondTo response={{ loading: false }}>
-                        <IconButton
-                            Icon={Icons.save}
-                            style={{ color: "white" }}
-                            onClick={async () => {
-                                await saveTest({
-                                    variables: {
-                                        name,
-                                        tags: tags.map(_ => ({ name: _ })),
-                                        steps: events.map(
-                                            ({ __typename, ...inputs }: any) =>
-                                                inputs
-                                        )
-                                    }
-                                })
-                                resetLearner()
-                            }}
-                        />
-                    </RespondTo>
+                    {saveTestResult.loading ? (
+                        <Spinner />
+                    ) : (
+                        <>
+                            <IconButton
+                                Icon={Icons.save}
+                                style={{ color: "white" }}
+                                onClick={async () => {
+                                    await saveTest({
+                                        variables: {
+                                            name,
+                                            tags: tags.map(_ => ({ name: _ })),
+                                            steps: events.map(
+                                                ({
+                                                    __typename,
+                                                    ...inputs
+                                                }: any) => inputs
+                                            )
+                                        }
+                                    })
+                                    await resetLearner()
+                                    await store.mutate({ page: Page.Home })
+                                }}
+                            />
+                            {saveTestResult.error ? (
+                                <ErrorText>
+                                    {saveTestResult.error.message}
+                                </ErrorText>
+                            ) : null}
+                        </>
+                    )}
                 </AppBar>
             </div>
         </>

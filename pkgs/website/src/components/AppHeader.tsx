@@ -1,6 +1,5 @@
 import React, { FC } from "react"
-import { Text, Column, useTheme } from "@re-do/components"
-import { AnimatedLogo } from "./AnimatedLogo"
+import { Text, Column, AnimatedLogo } from "@re-do/components"
 import { Background } from "./Background"
 import Typist from "react-typist"
 import { layout } from "../constants"
