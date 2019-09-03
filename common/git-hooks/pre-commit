@@ -3,7 +3,7 @@
 # exit with non-zero status after issuing an appropriate message if
 # it wants to stop the commit.
 
-COMMAND=common/temp/node_modules/.bin/pretty-quick
+COMMAND=common/temp/node_modules/.bin/pretty-quick --no-restage
 
 echo --------------------------------------------
 echo Starting Git hook: pre-commit
