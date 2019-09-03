@@ -6,7 +6,6 @@ import {
     Spinner,
     TextInput,
     AppBar,
-    usePalette,
     Icons,
     IconButton,
     ChipInput,
@@ -51,46 +50,42 @@ export const Learner = component({
         testTags: tags
     } = data.learner!
     const [saveTest, saveTestResult] = useMutation(SAVETEST)
-    const { primary } = usePalette()
-    const height = 90
     return (
-        <>
-            <div style={{ height }}>
-                <AppBar style={{ height }} align="center">
-                    <Column align="center">
-                        <TextInput
-                            value={name}
-                            placeholder="Test Name"
-                            colorTemplate="light"
-                            kind="underlined"
-                            onChange={e =>
-                                store.mutate({
-                                    learner: { testName: e.target.value }
-                                })
-                            }
-                        />
-                        <ChipInput
-                            value={tags}
-                            placeholder="Add Tags"
-                            onAdd={(chip: string) =>
-                                store.mutate({
-                                    learner: { testTags: _ => [..._, chip] }
-                                })
-                            }
-                            onDelete={(chip: string) => {
-                                store.mutate({
-                                    learner: {
-                                        testTags: _ =>
-                                            _.filter(
-                                                current => current !== chip
-                                            )
-                                    }
-                                })
-                            }}
-                        />
-                    </Column>
-                </AppBar>
-            </div>
+        <Column full>
+            <AppBar height={120} align="center">
+                <Column align="center">
+                    <TextInput
+                        value={name}
+                        placeholder="Test Name"
+                        colorTemplate="light"
+                        kind="underlined"
+                        onChange={e =>
+                            store.mutate({
+                                learner: { testName: e.target.value }
+                            })
+                        }
+                    />
+                    <ChipInput
+                        value={tags}
+                        colorTemplate="light"
+                        placeholder="Add Tags"
+                        onAdd={(chip: string) =>
+                            store.mutate({
+                                learner: { testTags: _ => [..._, chip] }
+                            })
+                        }
+                        onDelete={(chip: string) => {
+                            store.mutate({
+                                learner: {
+                                    testTags: _ =>
+                                        _.filter(current => current !== chip)
+                                }
+                            })
+                        }}
+                    />
+                </Column>
+            </AppBar>
+
             <div>
                 {chromiumInstalling ? (
                     <Column align="center">
@@ -101,53 +96,43 @@ export const Learner = component({
                     <LearnerEvents events={events} />
                 )}
             </div>
-            <div>
-                <AppBar
-                    style={{
-                        bottom: 0,
-                        position: "fixed",
-                        backgroundColor: primary.main
-                    }}
-                    justify="space-around"
-                >
-                    <IconButton
-                        Icon={Icons.close}
-                        style={{ color: "white" }}
-                        onClick={deactivateLearner}
-                    />
-                    {saveTestResult.loading ? (
-                        <Spinner />
-                    ) : (
-                        <>
-                            <IconButton
-                                Icon={Icons.save}
-                                style={{ color: "white" }}
-                                onClick={async () => {
-                                    await saveTest({
-                                        variables: {
-                                            name,
-                                            tags: tags.map(_ => ({ name: _ })),
-                                            steps: events.map(
-                                                ({
-                                                    __typename,
-                                                    ...inputs
-                                                }: any) => inputs
-                                            )
-                                        }
-                                    })
-                                    await resetLearner()
-                                    await store.mutate({ page: Page.Home })
-                                }}
-                            />
-                            {saveTestResult.error ? (
-                                <ErrorText>
-                                    {saveTestResult.error.message}
-                                </ErrorText>
-                            ) : null}
-                        </>
-                    )}
-                </AppBar>
-            </div>
-        </>
+
+            <AppBar kind="bottom" justify="space-around">
+                <IconButton
+                    Icon={Icons.close}
+                    style={{ color: "white" }}
+                    onClick={deactivateLearner}
+                />
+                {saveTestResult.loading ? (
+                    <Spinner />
+                ) : (
+                    <>
+                        <IconButton
+                            Icon={Icons.save}
+                            style={{ color: "white" }}
+                            onClick={async () => {
+                                await saveTest({
+                                    variables: {
+                                        name,
+                                        tags: tags.map(_ => ({ name: _ })),
+                                        steps: events.map(
+                                            ({ __typename, ...inputs }: any) =>
+                                                inputs
+                                        )
+                                    }
+                                })
+                                await resetLearner()
+                                await deactivateLearner()
+                            }}
+                        />
+                        {saveTestResult.error ? (
+                            <ErrorText>
+                                {saveTestResult.error.message}
+                            </ErrorText>
+                        ) : null}
+                    </>
+                )}
+            </AppBar>
+        </Column>
     )
 })

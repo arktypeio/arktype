@@ -1,5 +1,5 @@
 import React, { FC, useState } from "react"
-import { useTheme, Theme, usePalette } from "../styles"
+import { usePalette } from "../styles"
 import { BaseTextFieldProps as MuiTextFieldProps } from "@material-ui/core/TextField"
 import { TextField } from "@material-ui/core"
 import { makeStyles } from "@material-ui/styles"
@@ -97,6 +97,8 @@ const useColors = makeKinds<TextInputColors>()(() => {
     }
 })
 
+type ColorTemplate = KindFrom<typeof useColors>
+
 type TextInputState = {
     focused: boolean
     hovered: boolean
@@ -115,14 +117,7 @@ type TextInputColors = {
     text: string
 }
 
-export type TextInputProps = MuiTextFieldProps & {
-    kind?: KindFrom<typeof useKind>
-    colorTemplate?: KindFrom<typeof useColors>
-    borderColors?: Partial<BorderColors>
-    textColor?: string
-}
-
-export const TextInput: FC<TextInputProps> = ({
+export const useTextFieldProps = ({
     kind = "outlined",
     colorTemplate = "standard",
     borderColors = {},
@@ -134,7 +129,7 @@ export const TextInput: FC<TextInputProps> = ({
     onMouseOver,
     onMouseOut,
     ...rest
-}) => {
+}: TextInputProps): MuiTextFieldProps => {
     const { primary } = usePalette()
     const [state, setState] = useState({
         focused: false,
@@ -151,40 +146,51 @@ export const TextInput: FC<TextInputProps> = ({
             text: textColor ? textColor : paletteTextColor!
         }
     })
-    return (
-        <TextField
-            margin="dense"
-            onFocus={e => {
-                setState({ ...state, focused: true })
-                onFocus && onFocus(e)
-            }}
-            onBlur={e => {
-                setState({ ...state, focused: false })
-                onBlur && onBlur(e)
-            }}
-            onError={e => {
-                setState({ ...state, error: true })
-                onError && onError(e)
-            }}
-            onReset={e => {
-                setState({ ...state, error: false })
-                onReset && onReset(e)
-            }}
-            onMouseOver={e => {
-                setState({ ...state, hovered: true })
-                onMouseOver && onMouseOver(e)
-            }}
-            onMouseOut={e => {
-                setState({ ...state, hovered: false })
-                onMouseOut && onMouseOut(e)
-            }}
-            InputLabelProps={{
-                style: {
-                    color: state.focused ? primary.dark : primary.light
-                }
-            }}
-            {...(kindProps as any)}
-            {...rest}
-        />
-    )
+    return {
+        margin: "dense",
+        onFocus: e => {
+            setState({ ...state, focused: true })
+            onFocus && onFocus(e)
+        },
+        onBlur: e => {
+            setState({ ...state, focused: false })
+            onBlur && onBlur(e)
+        },
+        onError: e => {
+            setState({ ...state, error: true })
+            onError && onError(e)
+        },
+        onReset: e => {
+            setState({ ...state, error: false })
+            onReset && onReset(e)
+        },
+        onMouseOver: e => {
+            setState({ ...state, hovered: true })
+            onMouseOver && onMouseOver(e)
+        },
+        onMouseOut: e => {
+            setState({ ...state, hovered: false })
+            onMouseOut && onMouseOut(e)
+        },
+        InputLabelProps: {
+            style: {
+                color: state.focused ? primary.dark : primary.light
+            }
+        },
+        ...kindProps,
+        ...rest
+    }
+}
+
+export type TextInputProps = MuiTextFieldProps & {
+    kind?: KindFrom<typeof useKind>
+    colorTemplate?: ColorTemplate
+    borderColors?: Partial<BorderColors>
+    textColor?: string
+}
+
+export const TextInput: FC<TextInputProps> = (props: TextInputProps) => {
+    const textFieldProps = useTextFieldProps(props)
+    // @ts-ignore
+    return <TextField {...textFieldProps} />
 }
