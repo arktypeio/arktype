@@ -1,2 +1,2 @@
 export const formatEmail = (email: string | undefined) =>
-    email ? email.toLowerCase() : ""
+    email ? email.trim().toLowerCase() : ""

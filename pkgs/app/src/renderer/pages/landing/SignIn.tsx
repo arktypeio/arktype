@@ -1,5 +1,5 @@
 import React from "react"
-import { FormText, FormSubmit, Form, Button } from "@re-do/components"
+import { FormText, FormSubmit, Form, Button, Column } from "@re-do/components"
 import gql from "graphql-tag"
 import { SignInInput } from "@re-do/model"
 import { useMutation } from "@apollo/react-hooks"
@@ -40,13 +40,21 @@ export const SignIn = () => {
                 }
                 return result
             }}
-            transformValues={({ email, ...rest }) => ({
-                ...rest,
-                email: formatEmail(email)
-            })}
+            transformValues={({ email, ...rest }) => {
+                return {
+                    ...rest,
+                    email: formatEmail(email)
+                }
+            }}
         >
-            <FormText name="email" autoFocus />
-            <FormText type="password" name="password" />
+            <Column justify="center" grow>
+                <FormText name="email" tooltipPlacement="right" autoFocus />
+                <FormText
+                    type="password"
+                    tooltipPlacement="right"
+                    name="password"
+                />
+            </Column>
             <FormSubmit>
                 <Button>Sign in</Button>
             </FormSubmit>

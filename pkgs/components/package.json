@@ -21,6 +21,7 @@
         "class-validator": "0.10.0",
         "core-js": "3.1.4",
         "deepmerge": "3.2.1",
+        "framer-motion": "1.6.5",
         "material-ui-chip-input": "1.0.0",
         "react": "16.8.6",
         "react-dom": "16.8.6",

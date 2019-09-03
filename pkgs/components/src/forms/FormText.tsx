@@ -1,27 +1,23 @@
 import React from "react"
 import { TextInput, TextInputProps } from "../inputs"
-import { ErrorText } from "../text"
+import { ErrorText, ErrorTextProps } from "../text"
 import { useFormContext } from "./FormContext"
 import { FormFieldProps } from "./FormField"
 import { Column } from "../layouts"
 
-export type FormTextProps = FormFieldProps & TextInputProps
+export type FormTextProps = FormFieldProps &
+    TextInputProps &
+    Pick<ErrorTextProps, "tooltipPlacement">
 
 export const FormText = ({
     name,
     label,
     onBlur,
     onKeyDown,
+    tooltipPlacement,
     ...rest
 }: FormTextProps) => {
-    const {
-        register,
-        errors,
-        updateErrors,
-        touched,
-        setTouched,
-        submit
-    } = useFormContext()
+    const { register, errors, handleBlur, submit } = useFormContext()
     return (
         <Column>
             <TextInput
@@ -30,10 +26,7 @@ export const FormText = ({
                 inputRef={register}
                 onBlur={event => {
                     onBlur && onBlur(event)
-                    if (!touched.includes(name)) {
-                        setTouched([...touched, name])
-                    }
-                    updateErrors()
+                    handleBlur(name)
                 }}
                 onKeyDown={event => {
                     onKeyDown && onKeyDown(event)
@@ -43,7 +36,9 @@ export const FormText = ({
             />
             <div style={{ height: 20 }}>
                 {errors[name] && errors[name].message ? (
-                    <ErrorText>{errors[name].message.split("\n")}</ErrorText>
+                    <ErrorText tooltipPlacement={tooltipPlacement}>
+                        {errors[name].message.split("\n")}
+                    </ErrorText>
                 ) : null}
             </div>
         </Column>

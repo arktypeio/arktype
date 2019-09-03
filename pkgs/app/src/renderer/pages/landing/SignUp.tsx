@@ -1,7 +1,14 @@
 import React from "react"
 import gql from "graphql-tag"
 import { useMutation } from "@apollo/react-hooks"
-import { Form, FormText, Row, FormSubmit, Button } from "@re-do/components"
+import {
+    Form,
+    FormText,
+    Row,
+    FormSubmit,
+    Button,
+    Column
+} from "@re-do/components"
 import { SignUpInput } from "@re-do/model"
 import { store } from "renderer/common"
 import { submitForm } from "custom/CustomForm"
@@ -52,15 +59,34 @@ export const SignUp = () => {
                 email: formatEmail(email)
             })}
         >
-            <Row>
-                <FormText name="firstName" label="first" autoFocus />
-                <FormText name="lastName" label="last" />
-            </Row>
-            <FormText name="email" />
-            <Row>
-                <FormText type="password" name="password" />
-                <FormText type="password" name="confirm" />
-            </Row>
+            <Column justify="center" grow>
+                <Row spacing={1}>
+                    <FormText
+                        name="firstName"
+                        label="first"
+                        tooltipPlacement="left"
+                        autoFocus
+                    />
+                    <FormText
+                        name="lastName"
+                        label="last"
+                        tooltipPlacement="right"
+                    />
+                </Row>
+                <FormText name="email" tooltipPlacement="right" />
+                <Row spacing={1}>
+                    <FormText
+                        type="password"
+                        name="password"
+                        tooltipPlacement="left"
+                    />
+                    <FormText
+                        type="password"
+                        name="confirm"
+                        tooltipPlacement="right"
+                    />
+                </Row>
+            </Column>
             <FormSubmit>
                 <Button>Sign up</Button>
             </FormSubmit>

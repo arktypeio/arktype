@@ -1,4 +1,4 @@
-import { Fields, ResponseState } from "@re-do/components"
+import { Fields, SubmissionState } from "@re-do/components"
 import { MutationHookOptions, MutationTuple } from "@apollo/react-hooks"
 import { OperationVariables } from "apollo-client"
 import { DocumentNode } from "graphql"
@@ -22,8 +22,8 @@ export const submitForm = async <
 >({
     submit,
     fields
-}: SubmitFormOptions<T, D>): Promise<ResponseState<D>> => {
-    const result = {} as ResponseState<D>
+}: SubmitFormOptions<T, D>): Promise<SubmissionState<D>> => {
+    const result = {} as SubmissionState<D>
     try {
         const submitResult = await submit({ variables: fields })
         if (submitResult && submitResult.data) {
