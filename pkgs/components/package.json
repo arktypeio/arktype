@@ -32,6 +32,10 @@
     "devDependencies": {
         "@babel/cli": "7.5.5",
         "@babel/core": "7.5.5",
+        "@re-do/bundle": "0.0.1",
+        "@re-do/model": "0.0.1",
+        "@re-do/recommended": "0.0.1",
+        "@re-do/utils": "0.0.1",
         "@storybook/addon-actions": "5.2.0-beta.30",
         "@storybook/addon-console": "1.2.1",
         "@storybook/addon-info": "5.2.0-beta.30",
@@ -57,10 +61,6 @@
         "jest": "24.8.0",
         "react-docgen-typescript-loader": "3.1.0",
         "react-test-renderer": "16.8.6",
-        "@re-do/bundle": "0.0.1",
-        "@re-do/model": "0.0.1",
-        "@re-do/recommended": "0.0.1",
-        "@re-do/utils": "0.0.1",
-        "typescript": "3.5.2"
+        "typescript": "3.6.2"
     }
 }
