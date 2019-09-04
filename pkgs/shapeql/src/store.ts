@@ -1,5 +1,7 @@
 import { isDeepStrictEqual } from "util"
 import { ApolloClient } from "apollo-client"
+import { InMemoryCache } from "apollo-cache-inmemory"
+import { createHttpLink } from "apollo-link-http"
 import { Shape as S, DeepPartial, Class } from "@re-do/utils"
 import { ShapeFilter, excludeKeys, updateMap, diff } from "./filters"
 import {
@@ -79,10 +81,12 @@ export type StoreConfig<T extends S> = {
     handler?: Handler<T>
 }
 
-export const createStore = <T extends S>(config: StoreConfig<T>) => ({
-    query: query(config),
-    mutate: mutate(config),
-    initialize: initialize(config),
-    queryAll: queryAll(config),
-    write: write(config)
-})
+export const createStore = <T extends S>(config: StoreConfig<T>) => {
+    return {
+        query: query(config),
+        mutate: mutate(config),
+        initialize: initialize(config),
+        queryAll: queryAll(config),
+        write: write(config)
+    }
+}

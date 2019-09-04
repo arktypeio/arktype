@@ -1,0 +1,16 @@
+{
+    "Component": {
+        "scope": "typescriptreact",
+        "prefix": "component",
+        "body": [
+            "import React from \"react\"",
+            "",
+            "export type ${TM_FILENAME_BASE}Props = {}",
+            "",
+            "export const ${TM_FILENAME_BASE} = ({}: ${TM_FILENAME_BASE}Props) => {",
+            "    return ${0:<>}</>",
+            "}"
+        ],
+        "description": "Create a Redo component"
+    }
+}
