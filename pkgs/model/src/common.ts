@@ -56,7 +56,7 @@ class ValidatorMap {
     filled = () =>
         createValidator({
             underlying: IsNotEmpty,
-            args: [{ message: `${this.key} is required` }]
+            args: [{ message: "That's required" }]
         })
 
     matches = (other: string) =>
@@ -90,8 +90,8 @@ export const InField = <F extends boolean>(
     validate.forEach(validator =>
         typeof validator === "string"
             ? (validatorMap[validator] as any)()(target, key)
-            : Object.entries(validator).forEach(([key, validateArgs]) =>
-                  (validatorMap[key as keyof ValidatorMap] as any)(
+            : Object.entries(validator).forEach(([validateKey, validateArgs]) =>
+                  (validatorMap[validateKey as keyof ValidatorMap] as any)(
                       validateArgs
                   )(target, key)
               )

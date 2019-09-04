@@ -2,14 +2,14 @@ import React from "react"
 import { useEffect } from "react"
 import { Page } from "state"
 import { component } from "blocks"
-import { Home, Learner, SignIn, SignUp, Detail, Results } from "."
+import { Home, Learner, Detail, Landing, Results } from "."
 
 type NameToPage = { [_ in NonNullable<Page>]: JSX.Element }
 
 export const Pages: NameToPage = {
     HOME: <Home />,
-    SIGN_IN: <SignIn />,
-    SIGN_UP: <SignUp />,
+    SIGN_IN: <Landing page={Page.SignIn} />,
+    SIGN_UP: <Landing page={Page.SignUp} />,
     LEARNER: <Learner />,
     DETAIL: <Detail />,
     RESULTS: <Results />

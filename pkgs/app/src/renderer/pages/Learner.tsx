@@ -1,19 +1,18 @@
 import React from "react"
 import { component } from "blocks"
 import {
-    RespondTo,
     Column,
     Text,
+    Spinner,
     TextInput,
     AppBar,
-    usePalette,
     Icons,
     IconButton,
-    ChipInput
+    ChipInput,
+    ErrorText
 } from "@re-do/components"
-import { deactivateLearner, resetLearner } from "state"
+import { deactivateLearner, resetLearner, Page } from "state"
 import { LearnerEvents } from "custom"
-import { CircularProgress } from "@material-ui/core"
 import gql from "graphql-tag"
 import { useMutation } from "@apollo/react-hooks"
 import { store } from "../common"
@@ -50,84 +49,64 @@ export const Learner = component({
         testName: name,
         testTags: tags
     } = data.learner!
-    const [saveTest] = useMutation(SAVETEST)
-    const { primary } = usePalette()
-    const height = 90
+    const [saveTest, saveTestResult] = useMutation(SAVETEST)
     return (
-        <>
-            <div style={{ height }}>
-                <AppBar style={{ height }} align="center">
-                    <Column align="center">
-                        <TextInput
-                            value={name}
-                            placeholder="Test Name"
-                            colorTemplate="light"
-                            kind="underlined"
-                            onChange={e =>
-                                store.mutate({
-                                    learner: { testName: e.target.value }
-                                })
-                            }
-                        />
-                        <ChipInput
-                            value={tags}
-                            placeholder="Add Tags"
-                            onAdd={(chip: string) =>
-                                store.mutate({
-                                    learner: { testTags: _ => [..._, chip] }
-                                })
-                            }
-                            onDelete={(chip: string) => {
-                                store.mutate({
-                                    learner: {
-                                        testTags: _ =>
-                                            _.filter(
-                                                current => current !== chip
-                                            )
-                                    }
-                                })
-                            }}
-                        />
-                    </Column>
-                </AppBar>
-            </div>
-            <div>
-                <RespondTo
-                    response={{ loading: chromiumInstalling }}
-                    options={{
-                        loading: {
-                            displayAs: ({ value }) =>
-                                value ? (
-                                    <>
-                                        <CircularProgress />
-                                        <Text align="center">
-                                            Downloading Chrome
-                                        </Text>
-                                    </>
-                                ) : null,
-                            hideContent: false
+        <Column full>
+            <AppBar height={120} align="center">
+                <Column align="center">
+                    <TextInput
+                        value={name}
+                        placeholder="Test Name"
+                        colorTemplate="light"
+                        kind="underlined"
+                        onChange={e =>
+                            store.mutate({
+                                learner: { testName: e.target.value }
+                            })
                         }
-                    }}
-                >
-                    <LearnerEvents events={events} />
-                </RespondTo>
-            </div>
-            <div>
-                <AppBar
-                    style={{
-                        bottom: 0,
-                        position: "fixed",
-                        backgroundColor: primary.main
-                    }}
-                    justify="space-around"
-                >
-                    <IconButton
-                        Icon={Icons.close}
-                        style={{ color: "white" }}
-                        onClick={deactivateLearner}
                     />
+                    <ChipInput
+                        value={tags}
+                        colorTemplate="light"
+                        placeholder="Add Tags"
+                        onAdd={(chip: string) =>
+                            store.mutate({
+                                learner: { testTags: _ => [..._, chip] }
+                            })
+                        }
+                        onDelete={(chip: string) => {
+                            store.mutate({
+                                learner: {
+                                    testTags: _ =>
+                                        _.filter(current => current !== chip)
+                                }
+                            })
+                        }}
+                    />
+                </Column>
+            </AppBar>
 
-                    <RespondTo response={{ loading: false }}>
+            <div>
+                {chromiumInstalling ? (
+                    <Column align="center">
+                        <Spinner />
+                        <Text>Getting things ready...</Text>
+                    </Column>
+                ) : (
+                    <LearnerEvents events={events} />
+                )}
+            </div>
+
+            <AppBar kind="bottom" justify="space-around">
+                <IconButton
+                    Icon={Icons.close}
+                    style={{ color: "white" }}
+                    onClick={deactivateLearner}
+                />
+                {saveTestResult.loading ? (
+                    <Spinner />
+                ) : (
+                    <>
                         <IconButton
                             Icon={Icons.save}
                             style={{ color: "white" }}
@@ -142,12 +121,18 @@ export const Learner = component({
                                         )
                                     }
                                 })
-                                resetLearner()
+                                await resetLearner()
+                                await deactivateLearner()
                             }}
                         />
-                    </RespondTo>
-                </AppBar>
-            </div>
-        </>
+                        {saveTestResult.error ? (
+                            <ErrorText>
+                                {saveTestResult.error.message}
+                            </ErrorText>
+                        ) : null}
+                    </>
+                )}
+            </AppBar>
+        </Column>
     )
 })
