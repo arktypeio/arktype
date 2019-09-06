@@ -1,7 +1,5 @@
 import { isDeepStrictEqual } from "util"
 import { ApolloClient } from "apollo-client"
-import { InMemoryCache } from "apollo-cache-inmemory"
-import { createHttpLink } from "apollo-link-http"
 import { Shape as S, DeepPartial, Class } from "@re-do/utils"
 import { ShapeFilter, excludeKeys, updateMap, diff } from "./filters"
 import {
