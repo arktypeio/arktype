@@ -24,5 +24,8 @@ export const ShapeQlProvider = <T extends any>({
     apolloClientOptions
 }: ShapeQlContextProps<T>) => {
     const client = createClient(apolloClientOptions)
+    // TODO: Create a custom ShapeQL context, use ApolloContext implementation as reference
     return <ApolloProvider client={client}>{children}</ApolloProvider>
 }
+
+const useQuery = () => {}
