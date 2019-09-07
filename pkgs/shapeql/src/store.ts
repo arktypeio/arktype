@@ -1,5 +1,7 @@
 import { isDeepStrictEqual } from "util"
 import { ApolloClient } from "apollo-client"
+import { InMemoryCache, InMemoryCacheConfig } from "apollo-cache-inmemory"
+import { createHttpLink, HttpLink } from "apollo-link-http"
 import { Shape as S, DeepPartial, Class } from "@re-do/utils"
 import { ShapeFilter, excludeKeys, updateMap, diff } from "./filters"
 import {
@@ -12,35 +14,39 @@ import {
     withTypeNames
 } from "./shapeql"
 
-const queryAll = <T extends S>({ rootClass, client }: StoreConfig<T>) => () =>
-    query({ rootClass, client })(rootQuery(rootClass) as any) as T
+const queryAll = <T extends S>({
+    rootClass,
+    apolloClient: client
+}: ShapeQlContextValue<T>) => () =>
+    query({ rootClass, apolloClient: client })(rootQuery(rootClass) as any) as T
 
 const query = <T extends S, Q extends Query<T>>({
     rootClass,
-    client
-}: StoreConfig<T>) => (q: Q) =>
+    apolloClient: client
+}: ShapeQlContextValue<T>) => (q: Q) =>
     excludeKeys(
         client.readQuery({ query: shapeql(rootClass)(q) }),
         ["__typename"],
         true
     ) as ShapeFilter<T, Q>
 
-const write = <T extends S>({ rootClass, client }: StoreConfig<T>) => (
-    values: ShapedMutation<T>
-) => {
+const write = <T extends S>({
+    rootClass,
+    apolloClient: client
+}: ShapeQlContextValue<T>) => (values: ShapedMutation<T>) => {
     client.writeData({
         data: withTypeNames(values, rootClass as any)
     })
 }
 
-const initialize = <T extends S>(config: StoreConfig<T>) => async (
+const initialize = <T extends S>(config: ShapeQlContextValue<T>) => async (
     values: Initialization<T>
 ) => {
-    await config.client.clearStore()
+    await config.apolloClient.clearStore()
     write(config)(values)
 }
 
-const mutate = <T extends S>(config: StoreConfig<T>) => async <
+const mutate = <T extends S>(config: ShapeQlContextValue<T>) => async <
     M extends Mutation<T>
 >(
     updateMapper: M
@@ -73,13 +79,40 @@ export const handle = <T extends S, C extends DeepPartial<T>>(
     }
 }
 
-export type StoreConfig<T extends S> = {
+export type ShapeQlContextValue<T extends S> = {
     rootClass: Class<T>
-    client: ApolloClient<T>
+    apolloClient: ApolloClient<T>
     handler?: Handler<T>
 }
 
-export const createStore = <T extends S>(config: StoreConfig<T>) => {
+type ClientOptions = {
+    link?: HttpLink.Options
+    cache?: InMemoryCacheConfig
+}
+
+const createApolloClient = ({ link, cache }: ClientOptions) =>
+    new ApolloClient({
+        link: createHttpLink(link),
+        cache: new InMemoryCache(cache)
+    })
+
+type CreateClientArgs<T extends S> = Omit<ShapeQlContextValue<T>, "client"> & {
+    apolloClient: ApolloClient<T> | ClientOptions
+}
+
+export const createClient = <T extends S>({
+    rootClass,
+    apolloClient,
+    handler
+}: CreateClientArgs<T>) => {
+    const config = {
+        rootClass,
+        handler,
+        apolloClient:
+            apolloClient instanceof ApolloClient
+                ? apolloClient
+                : (createApolloClient(apolloClient) as ApolloClient<T>)
+    }
     return {
         query: query(config),
         mutate: mutate(config),
