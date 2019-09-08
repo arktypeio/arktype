@@ -1,27 +1,24 @@
 import React, { ReactNode, createContext, useContext } from "react"
-import { ApolloClient } from "apollo-client"
-import { ShapeQlContextValue } from "../store"
+import { useQuery as useApolloQuery } from "@apollo/react-hooks"
+import { ShapeQl } from "../client"
+import { Shape as S } from "@re-do/utils"
+import { Query } from "../shapeql"
 
 // @ts-ignore
-const ShapeQlContext = createContext<ShapeQlContextValue>()
+const ShapeQlContext = createContext<ShapeQl>()
 
-export const ShapeQlProvider = <T extends any>({
+export type ShapeQlProviderProps<T extends S> = {
+    children: ReactNode
+    client: ShapeQl<T>
+}
+
+export const ShapeQlProvider = <T extends S>({
     children,
     client
 }: ShapeQlProviderProps<T>) => (
-    <ShapeQlContext.Provider
-        value={{
-            client:
-                client instanceof ApolloClient ? client : createClient(client)
-        }}
-    >
-        {children}
-    </ShapeQlContext.Provider>
+    <ShapeQlContext.Provider value={client}>{children}</ShapeQlContext.Provider>
 )
 
-const useQuery = () => {
-    const { client } = useContext(ShapeQlContext)
-    if (!client) {
-        throw new Error("Can't use ShapeQL hooks outside of a ShapeQlProvider.")
-    }
+export class ShapeQlHooks<T extends S> extends ShapeQl<T> {
+    useQuery(query: Query<T>) {}
 }
