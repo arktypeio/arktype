@@ -3,7 +3,7 @@ import { InMemoryCache } from "apollo-cache-inmemory"
 import { HttpLink } from "apollo-link-http"
 import gql from "graphql-tag"
 import "isomorphic-fetch"
-import { createStore, Handler } from "../store"
+import { LocalShape, Handler } from "../shape"
 import {
     Root,
     initialRoot,
@@ -17,10 +17,7 @@ const client = new ApolloClient<Root>({
     link: new HttpLink()
 })
 
-const store = createStore({
-    rootClass: Root,
-    client
-})
+const shape = new LocalShape({ root: Root, client })
 
 const cHandler = jest.fn()
 const bing = jest.fn()
@@ -30,15 +27,15 @@ const handler: Handler<Root> = {
     b: bing,
     d: dHandler
 }
-const storeWithSideEffects = createStore({
-    rootClass: Root,
-    client,
+const shapeWithSideEffects = new LocalShape({
+    root: Root,
+    client: client,
     handler
 })
 
 describe("initialization", () => {
     test("doesn't crash", async () => {
-        await store.initialize(initialRoot)
+        await shape.initialize(initialRoot)
     })
 })
 
@@ -47,23 +44,23 @@ describe("queries", () => {
         client.writeData({ data: initialRootWithTypeNames })
     })
     test("handle shallow", () => {
-        expect(store.query({ b: null })).toStrictEqual({ b: false })
+        expect(shape.query({ b: null })).toStrictEqual({ b: false })
     })
     test("handle deep", () => {
-        expect(store.query({ a: null })).toStrictEqual({ a: initialA })
+        expect(shape.query({ a: null })).toStrictEqual({ a: initialA })
     })
     test("handle object arrays", () => {
-        expect(store.query({ d: null })).toStrictEqual({
+        expect(shape.query({ d: null })).toStrictEqual({
             d: [initialA, initialA]
         })
     })
     test("handle filtered object within array", () => {
-        expect(store.query({ d: { a: null } })).toStrictEqual({
+        expect(shape.query({ d: { a: null } })).toStrictEqual({
             d: [{ a: 0 }, { a: 0 }]
         })
     })
     test("don't include extraneous keys", () => {
-        expect(store.query({ a: { a: null } })).toStrictEqual({
+        expect(shape.query({ a: { a: null } })).toStrictEqual({
             a: { a: initialA.a }
         })
     })
@@ -74,7 +71,7 @@ describe("mutations", () => {
         client.writeData({ data: initialRootWithTypeNames })
     })
     test("handles shallow", async () => {
-        await store.mutate({ c: value => value + "suffix" })
+        await shape.mutate({ c: value => value + "suffix" })
         expect(
             client.readQuery({
                 query: gql`
@@ -86,7 +83,7 @@ describe("mutations", () => {
         ).toStrictEqual({ c: initialRoot.c + "suffix" })
     })
     test("handles deep", async () => {
-        await store.mutate({ a: { b: { a: value => value.concat([1]) } } })
+        await shape.mutate({ a: { b: { a: value => value.concat([1]) } } })
         expect(
             client.readQuery({
                 query: gql`
@@ -110,7 +107,7 @@ describe("mutations", () => {
         })
     })
     test("handles object arrays", async () => {
-        await store.mutate({ d: value => value.concat(initialA) })
+        await shape.mutate({ d: value => value.concat(initialA) })
         expect(
             client.readQuery({
                 query: gql`
@@ -133,7 +130,7 @@ describe("mutations", () => {
         })
     })
     test("sets array value", async () => {
-        await store.mutate({ d: [] })
+        await shape.mutate({ d: [] })
         expect(
             client.readQuery({
                 query: gql`
@@ -153,21 +150,21 @@ describe("mutations", () => {
     })
 
     test("doesn't update extraneous keys", async () => {
-        const expected = store.queryAll()
+        const expected = shape.queryAll()
         expected.a.b.a = [0, 1]
-        await store.mutate({ a: { b: { a: value => value.concat([1]) } } })
-        expect(store.queryAll()).toStrictEqual(expected)
+        await shape.mutate({ a: { b: { a: value => value.concat([1]) } } })
+        expect(shape.queryAll()).toStrictEqual(expected)
     })
     test("handle side effects", async () => {
-        await storeWithSideEffects.mutate({ b: true })
+        await shapeWithSideEffects.mutate({ b: true })
         expect(bing).toBeCalledWith(true)
     })
     test("handles array side effects", async () => {
-        await storeWithSideEffects.mutate({ d: _ => _.concat(initialA) })
+        await shapeWithSideEffects.mutate({ d: _ => _.concat(initialA) })
         expect(dHandler).toBeCalledWith([initialA, initialA, initialA])
     })
     test("doesn't trigger extraneous side effects", async () => {
-        await storeWithSideEffects.mutate({
+        await shapeWithSideEffects.mutate({
             b: current => current,
             c: current => current + "new"
         })

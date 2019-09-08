@@ -17,12 +17,6 @@ import {
 export type Handle<T> = (change: DeepPartial<T>) => Promise<any>
 export type Handler<T extends S> = { [P in keyof T]?: Handle<T[P]> }
 
-export type ShapeQlContextValue<T extends S> = {
-    rootClass: Class<T>
-    underlying: ApolloClient<T>
-    handler?: Handler<T>
-}
-
 type ClientOptions = {
     link?: HttpLink.Options
     cache?: InMemoryCacheConfig
@@ -34,32 +28,51 @@ const createApolloClient = ({ link, cache }: ClientOptions) =>
         cache: new InMemoryCache(cache)
     })
 
-type CreateClientArgs<T extends S> = Omit<ShapeQlContextValue<T>, "client"> & {
-    underlying: ApolloClient<T> | ClientOptions
+type ShapeArgs<T extends S, L extends S> = {
+    root: Class<T>
+    client?: ApolloClient<T> | ClientOptions
+    local?: {
+        root: Class<L>
+        handler?: Handler<L>
+    }
 }
 
-export class ShapeQl<T extends S> {
-    private rootClass: Class<T>
-    private underlying: ApolloClient<T>
-    private handler?: Handler<T>
+export class Shape<T extends S, L extends S> {
+    private root: Class<T>
+    private client: ApolloClient<T>
+    private local?: LocalShape
 
-    constructor({ rootClass, underlying, handler }: CreateClientArgs<T>) {
-        this.rootClass = rootClass
+    constructor({ root, client, local }: ShapeArgs<T, L>) {}
+}
+
+type StoreArgs<T extends S> = {
+    root: Class<T>
+    client?: ApolloClient<T> | ClientOptions
+    handler?: Handler<T>
+}
+
+export class LocalShape<T extends S> {
+    public root: Class<T>
+    public client: ApolloClient<T>
+    public handler?: Handler<T>
+
+    constructor({ root, client = {}, handler }: StoreArgs<T>) {
+        this.root = root
         this.handler = handler
-        this.underlying =
-            underlying instanceof ApolloClient
-                ? underlying
-                : (createApolloClient(underlying) as ApolloClient<T>)
+        this.client =
+            client instanceof ApolloClient
+                ? client
+                : (createApolloClient(client) as ApolloClient<T>)
     }
 
     queryAll() {
-        return this.query(rootQuery(this.rootClass) as any) as T
+        return this.query(rootQuery(this.root) as any) as T
     }
 
     query<Q extends Query<T>>(q: Q) {
         return excludeKeys(
-            this.underlying.readQuery({
-                query: shapeql(this.rootClass)(q)
+            this.client.readQuery({
+                query: shapeql(this.root)(q)
             }),
             ["__typename"],
             true
@@ -67,13 +80,13 @@ export class ShapeQl<T extends S> {
     }
 
     write(values: ShapedMutation<T>) {
-        this.underlying.writeData({
-            data: withTypeNames(values, this.rootClass as any)
+        this.client.writeData({
+            data: withTypeNames(values, this.root as any)
         })
     }
 
     async initialize(values: Initialization<T>) {
-        await this.underlying.clearStore()
+        await this.client.clearStore()
         this.write(values)
     }
 

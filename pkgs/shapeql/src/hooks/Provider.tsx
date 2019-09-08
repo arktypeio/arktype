@@ -1,15 +1,17 @@
 import React, { ReactNode, createContext, useContext } from "react"
+import { ApolloClient } from "apollo-client"
 import { useQuery as useApolloQuery } from "@apollo/react-hooks"
-import { ShapeQl } from "../client"
-import { Shape as S } from "@re-do/utils"
-import { Query } from "../shapeql"
+import { LocalShape } from "../shape"
+import { Shape as S, Class } from "@re-do/utils"
+import { Query, shapeql } from "../shapeql"
+import { ShapeFilter } from "../filters"
 
 // @ts-ignore
-const ShapeQlContext = createContext<ShapeQl>()
+const ShapeQlContext = createContext<LocalShape>()
 
 export type ShapeQlProviderProps<T extends S> = {
     children: ReactNode
-    client: ShapeQl<T>
+    client: LocalShape<T>
 }
 
 export const ShapeQlProvider = <T extends S>({
@@ -18,7 +20,3 @@ export const ShapeQlProvider = <T extends S>({
 }: ShapeQlProviderProps<T>) => (
     <ShapeQlContext.Provider value={client}>{children}</ShapeQlContext.Provider>
 )
-
-export class ShapeQlHooks<T extends S> extends ShapeQl<T> {
-    useQuery(query: Query<T>) {}
-}

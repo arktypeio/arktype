@@ -1,3 +1,3 @@
 export * from "./filters"
-export * from "./client"
+export * from "./shape"
 export * from "./shapeql"
