@@ -29,7 +29,7 @@ const createApolloClient = ({ link, cache }: ClientOptions) =>
     })
 
 type ShapeArgs<T extends S, L extends S> = {
-    root: Class<T>
+    root?: Class<T>
     client?: ApolloClient<T> | ClientOptions
     local?: {
         root: Class<L>
@@ -38,31 +38,50 @@ type ShapeArgs<T extends S, L extends S> = {
 }
 
 export class Shape<T extends S, L extends S> {
-    private root: Class<T>
-    private client: ApolloClient<T>
-    private local?: LocalShape
+    private client: ApolloClient<any>
+    private _root?: Class<T>
+    private local?: LocalShape<L>
 
-    constructor({ root, client, local }: ShapeArgs<T, L>) {}
+    constructor({ root, client = {}, local }: ShapeArgs<T, L>) {
+        this._root = root
+        this.client =
+            client instanceof ApolloClient
+                ? client
+                : (createApolloClient(client) as ApolloClient<T>)
+        this.local = local
+            ? new LocalShape<L>({ client: this.client, ...local })
+            : undefined
+    }
+
+    private getRoot() {
+        if (!this._root) {
+            throw new Error(
+                "You must pass a 'root' class when instantiating a ShapeQL Shape to use it with your server."
+            )
+        }
+        return this._root
+    }
+
+    async query<Q extends Query<T>>(q: Q) {
+        return this.client.query(shapeql(this.getRoot())(q))
+    }
 }
 
-type StoreArgs<T extends S> = {
+type LocalShapeArgs<T extends S> = {
     root: Class<T>
-    client?: ApolloClient<T> | ClientOptions
+    client: ApolloClient<any>
     handler?: Handler<T>
 }
 
 export class LocalShape<T extends S> {
     public root: Class<T>
-    public client: ApolloClient<T>
+    public client: ApolloClient<any>
     public handler?: Handler<T>
 
-    constructor({ root, client = {}, handler }: StoreArgs<T>) {
+    constructor({ root, client, handler }: LocalShapeArgs<T>) {
         this.root = root
+        this.client = client
         this.handler = handler
-        this.client =
-            client instanceof ApolloClient
-                ? client
-                : (createApolloClient(client) as ApolloClient<T>)
     }
 
     queryAll() {
