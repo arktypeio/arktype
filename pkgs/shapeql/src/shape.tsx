@@ -1,4 +1,9 @@
 import React, { ReactNode, createContext } from "react"
+import { ApolloQueryResult } from "apollo-boost"
+import {
+    useQuery as useApolloQuery,
+    QueryHookOptions as ApolloQueryHookOptions
+} from "@apollo/react-hooks"
 import {
     getApolloClient,
     ApolloClientOrOptions,
@@ -7,6 +12,7 @@ import {
 import { DeepPartial, Class } from "@re-do/utils"
 import { shapeql, Query } from "./shapeql"
 import { Store, StoreArgs } from "./store"
+import { excludeKeys, ShapeFilter } from "./filters"
 
 export type Handle<T> = (change: DeepPartial<T>) => Promise<any>
 export type Handler<T> = { [P in keyof T]?: Handle<T[P]> }
@@ -60,3 +66,22 @@ export const ShapeProvider = <T, L>({
 }: ShapeProviderProps<T, L>) => (
     <ShapeContext.Provider value={shape}> {children} </ShapeContext.Provider>
 )
+
+export class ShapeWithHooks<T> extends Store<T> {
+    hooks = {
+        useQuery: <Q extends Query<T>, R extends ShapeFilter<T, Q>>(
+            q: Q,
+            options?: ApolloQueryHookOptions<R>
+        ) => {
+            const result = useApolloQuery<R>(shapeql(this.root)(q), options)
+            if (result.data) {
+                result.data = (excludeKeys(
+                    result.data,
+                    ["__typename"],
+                    true
+                ) as any) as R
+            }
+            return (result as any) as ApolloQueryResult<R>
+        }
+    }
+}
