@@ -13,24 +13,30 @@ export const SignUp = () => {
     return (
         <Column align="center">
             <Text variant="h4">🚀Launching soon</Text>
-            <Form<{ email: string }>
-                validator={_ => ({ email: [] })}
-                submit={async ({ email }) => track.prelaunchRegister({ email })}
-                columnProps={{ align: "center" }}
-            >
-                {({ data }) => (
-                    <>
-                        <FormText name="email" />
-                        <FormSubmit>
-                            {data ? (
-                                <Button disabled>You're in the loop 💌</Button>
-                            ) : (
-                                <Button>Keep me posted!</Button>
-                            )}
-                        </FormSubmit>
-                    </>
-                )}
-            </Form>
+            <div text-align="center">
+                <Form<{ email: string }>
+                    validator={_ => ({ email: [] })}
+                    submit={async ({ email }) =>
+                        track.prelaunchRegister({ email })
+                    }
+                    columnProps={{ align: "center" }}
+                >
+                    {({ data }) => (
+                        <>
+                            <FormText name="email" />
+                            <FormSubmit>
+                                {data ? (
+                                    <Button disabled>
+                                        You're in the loop 💌
+                                    </Button>
+                                ) : (
+                                    <Button>Keep me posted!</Button>
+                                )}
+                            </FormSubmit>
+                        </>
+                    )}
+                </Form>
+            </div>
         </Column>
     )
 }
