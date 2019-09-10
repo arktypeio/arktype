@@ -1,4 +1,4 @@
-import { isRecursible, fromEntries, deepMap } from "@re-do/utils"
+import { fromEntries, deepMap } from "@re-do/utils"
 
 const arrayConvertable = (o: any) =>
     o &&

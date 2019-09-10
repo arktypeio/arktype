@@ -1,9 +1,6 @@
-import { ApolloClient } from "apollo-client"
-import { InMemoryCache } from "apollo-cache-inmemory"
-import { HttpLink } from "apollo-link-http"
+import React from "react"
+import { act } from "react-dom/test-utils"
 import gql from "graphql-tag"
-import "isomorphic-fetch"
-import { createStore, Handler } from "../store"
 import {
     Root,
     initialRoot,
@@ -11,16 +8,19 @@ import {
     initialA,
     initialAWithTypeNames
 } from "./common"
+import {
+    Store,
+    Handler,
+    StoreProvider,
+    StoreConsumer,
+    StoreWithHooks
+} from "../store"
+import { getApolloClient } from "../getApolloClient"
+import { mount } from "enzyme"
 
-const client = new ApolloClient<Root>({
-    cache: new InMemoryCache() as any,
-    link: new HttpLink()
-})
+const client = getApolloClient()
 
-const store = createStore({
-    rootClass: Root,
-    client
-})
+const store = new Store({ root: Root, client })
 
 const cHandler = jest.fn()
 const bing = jest.fn()
@@ -30,8 +30,8 @@ const handler: Handler<Root> = {
     b: bing,
     d: dHandler
 }
-const storeWithSideEffects = createStore({
-    rootClass: Root,
+const sideEffectStore = new Store({
+    root: Root,
     client,
     handler
 })
@@ -86,7 +86,9 @@ describe("mutations", () => {
         ).toStrictEqual({ c: initialRoot.c + "suffix" })
     })
     test("handles deep", async () => {
-        await store.mutate({ a: { b: { a: value => value.concat([1]) } } })
+        await store.mutate({
+            a: { b: { a: value => value.concat([1]) } }
+        })
         expect(
             client.readQuery({
                 query: gql`
@@ -155,23 +157,79 @@ describe("mutations", () => {
     test("doesn't update extraneous keys", async () => {
         const expected = store.queryAll()
         expected.a.b.a = [0, 1]
-        await store.mutate({ a: { b: { a: value => value.concat([1]) } } })
+        await store.mutate({
+            a: { b: { a: value => value.concat([1]) } }
+        })
         expect(store.queryAll()).toStrictEqual(expected)
     })
     test("handle side effects", async () => {
-        await storeWithSideEffects.mutate({ b: true })
+        await sideEffectStore.mutate({ b: true })
         expect(bing).toBeCalledWith(true)
     })
     test("handles array side effects", async () => {
-        await storeWithSideEffects.mutate({ d: _ => _.concat(initialA) })
+        await sideEffectStore.mutate({
+            d: _ => _.concat(initialA)
+        })
         expect(dHandler).toBeCalledWith([initialA, initialA, initialA])
     })
     test("doesn't trigger extraneous side effects", async () => {
-        await storeWithSideEffects.mutate({
+        await sideEffectStore.mutate({
             b: current => current,
             c: current => current + "new"
         })
         expect(cHandler).toHaveBeenCalled()
         expect(bing).not.toHaveBeenCalled()
+    })
+})
+
+describe("StoreContext", () => {
+    beforeEach(() => {
+        client.writeData({ data: initialRootWithTypeNames })
+    })
+    it("provides a store and consumes data", () => {
+        let value: Root
+        mount(
+            <StoreProvider store={store}>
+                <StoreConsumer>
+                    {data => {
+                        value = data
+                        return null
+                    }}
+                </StoreConsumer>
+            </StoreProvider>
+        )
+        expect(value).toStrictEqual(store.queryAll())
+    })
+})
+
+const storeWithHooks = new StoreWithHooks({ root: Root, client })
+
+type ResultCheckerProps = {
+    passTo: jest.Mock
+}
+
+const QueryChecker = ({ passTo }: ResultCheckerProps) =>
+    passTo(storeWithHooks.hooks.useQuery({ b: null }))
+
+const checkResult = jest.fn(() => null)
+
+describe("useQuery", () => {
+    it("can execute a query", () => {
+        mount(
+            <StoreProvider store={storeWithHooks}>
+                <QueryChecker passTo={checkResult} />
+            </StoreProvider>
+        )
+        expect(checkResult).toBeCalledWith({ b: false })
+    })
+    it("rerenders on store updates", async () => {
+        mount(
+            <StoreProvider store={storeWithHooks}>
+                <QueryChecker passTo={checkResult} />
+            </StoreProvider>
+        )
+        await act(async () => await storeWithHooks.mutate({ b: true }))
+        expect(checkResult).toBeCalledTimes(2)
+        expect(checkResult).lastCalledWith({ b: true })
     })
 })

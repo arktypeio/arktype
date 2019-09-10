@@ -3,7 +3,6 @@
     "version": "0.0.1",
     "author": "redo.qa",
     "description": "Redo's server",
-    "private": true,
     "scripts": {
         "build": "npm run generate && tsc",
         "buildGenerate": "tsc -p tsconfig.generate.json",
@@ -46,6 +45,6 @@
         "ts-jest": "24.0.2",
         "ts-node": "8.3.0",
         "ts-node-dev": "1.0.0-pre.40",
-        "typescript": "3.5.2"
+        "typescript": "3.6.2"
     }
 }

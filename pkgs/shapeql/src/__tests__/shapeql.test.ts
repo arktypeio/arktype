@@ -86,6 +86,3 @@ test("deep nested queries", () => {
         `
     )
 })
-test("this will always fail", () => {
-    expect(true).toBeFalsy()
-})
