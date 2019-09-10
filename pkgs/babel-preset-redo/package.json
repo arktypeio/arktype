@@ -3,7 +3,6 @@
     "version": "0.0.1",
     "author": "redo.qa",
     "description": "Shared babel configuration for Redo packages",
-    "private": true,
     "scripts": {
         "build": ""
     },
