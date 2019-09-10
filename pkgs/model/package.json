@@ -22,7 +22,7 @@
     "devDependencies": {
         "@babel/cli": "7.5.5",
         "@re-do/recommended": "0.0.1",
-        "babel-preset-redo": "1.0.0",
+        "babel-preset-redo": "0.0.1",
         "graphql": "14.4.2",
         "reflect-metadata": "0.1.13",
         "type-graphql": "0.17.5",

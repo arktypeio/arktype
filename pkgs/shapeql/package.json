@@ -39,7 +39,7 @@
         "apollo-cache-inmemory": "1.6.2",
         "apollo-client": "2.6.3",
         "apollo-link-http": "1.5.15",
-        "babel-preset-redo": "1.0.0",
+        "babel-preset-redo": "0.0.1",
         "graphql": "14.4.2",
         "graphql-tag": "2.10.1",
         "isomorphic-fetch": "2.2.1",

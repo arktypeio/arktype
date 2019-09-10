@@ -20,7 +20,7 @@
         "@re-do/recommended": "0.0.1",
         "@types/fs-extra": "8.0.0",
         "@types/node": "12.6.6",
-        "babel-preset-redo": "1.0.0",
+        "babel-preset-redo": "0.0.1",
         "typescript": "3.6.2"
     }
 }

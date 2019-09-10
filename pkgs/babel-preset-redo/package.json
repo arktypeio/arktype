@@ -1,6 +1,6 @@
 {
     "name": "babel-preset-redo",
-    "version": "1.0.0",
+    "version": "0.0.1",
     "author": "redo.qa",
     "description": "Shared babel configuration for Redo packages",
     "private": true,
