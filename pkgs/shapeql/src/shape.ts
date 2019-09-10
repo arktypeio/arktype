@@ -28,32 +28,48 @@ const createApolloClient = ({ link, cache }: ClientOptions) =>
         cache: new InMemoryCache(cache)
     })
 
-type ShapeArgs<T extends S, L extends S> = {
+type ShapeArgs<T> = {
     root?: Class<T>
     client?: ApolloClient<T> | ClientOptions
-    local?: {
-        root: Class<L>
-        handler?: Handler<L>
-    }
+}
+
+type ShapeArgsWithLocal<T extends S, L extends S> = ShapeArgs<T> & {
+    local: LocalShapeConfig<L>
 }
 
 export class Shape<T extends S, L extends S> {
     private client: ApolloClient<any>
     private _root?: Class<T>
-    private local?: LocalShape<L>
+    private _locally?: LocalShape<L>
 
-    constructor({ root, client = {}, local }: ShapeArgs<T, L>) {
+    constructor({
+        root,
+        client = {},
+        ...rest
+    }: ShapeArgs<T> | ShapeArgsWithLocal<T, L>) {
         this._root = root
         this.client =
             client instanceof ApolloClient
                 ? client
                 : (createApolloClient(client) as ApolloClient<T>)
-        this.local = local
-            ? new LocalShape<L>({ client: this.client, ...local })
-            : undefined
+        if ("local" in rest) {
+            this._locally = new LocalShape<L>({
+                client: this.client,
+                ...rest.local
+            })
+        }
     }
 
-    private getRoot() {
+    get locally() {
+        if (!this._locally) {
+            throw new Error(
+                "You must pass a 'local' config when instantiating a ShapeQL Shape to use it for state management."
+            )
+        }
+        return this._locally
+    }
+
+    get root() {
         if (!this._root) {
             throw new Error(
                 "You must pass a 'root' class when instantiating a ShapeQL Shape to use it with your server."
@@ -63,17 +79,20 @@ export class Shape<T extends S, L extends S> {
     }
 
     async query<Q extends Query<T>>(q: Q) {
-        return this.client.query(shapeql(this.getRoot())(q))
+        return this.client.query(shapeql(this.root)(q))
     }
 }
 
-type LocalShapeArgs<T extends S> = {
+type LocalShapeConfig<T extends S> = {
     root: Class<T>
-    client: ApolloClient<any>
     handler?: Handler<T>
 }
 
-export class LocalShape<T extends S> {
+type LocalShapeArgs<T extends S> = LocalShapeConfig<T> & {
+    client: ApolloClient<any>
+}
+
+class LocalShape<T extends S> {
     public root: Class<T>
     public client: ApolloClient<any>
     public handler?: Handler<T>
