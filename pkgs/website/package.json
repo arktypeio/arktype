@@ -22,7 +22,7 @@
         "react": "16.9.0",
         "react-dom": "16.9.0",
         "react-typist": "2.0.5",
-        "shapeql": "1.0.0",
+        "shapeql": "0.0.1",
         "typeface-ubuntu": "0.0.65"
     },
     "devDependencies": {

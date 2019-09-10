@@ -9,17 +9,14 @@ import {
     ApolloClientOrOptions,
     ApolloClient
 } from "./getApolloClient"
-import { DeepPartial, Class } from "@re-do/utils"
+import { Class } from "@re-do/utils"
 import { shapeql, Query } from "./shapeql"
 import { Store, StoreArgs } from "./store"
 import { excludeKeys, ShapeFilter } from "./filters"
 
-export type Handle<T> = (change: DeepPartial<T>) => Promise<any>
-export type Handler<T> = { [P in keyof T]?: Handle<T[P]> }
-
 type ShapeArgs<T, L> = {
     root: Class<T>
-    client: ApolloClientOrOptions<T>
+    client?: ApolloClientOrOptions<T>
     store?: StoreArgs<L>
 }
 

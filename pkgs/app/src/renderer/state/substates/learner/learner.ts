@@ -1,18 +1,18 @@
 import { readFileSync, chmodSync, mkdirp } from "fs-extra"
-import { StepInput } from "@re-do/model"
 /*Important we use this format as opposed to import { ... } from "puppeteer".
 Puppeteer is actually a class object whose methods rely on this, which will
 be undefined if we use that style of import.*/
 // TODO: Figure out how to import puppeteer using import { ... } from "puppeteer"
 // this functionality worked previously but broke when switching to babel
 import p from "puppeteer"
-import { store } from "renderer/common"
 import { ObjectType, Field } from "type-graphql"
 import { remote, Rectangle } from "electron"
-import { handle } from "shapeql"
 import { isDeepStrictEqual } from "util"
 import { join } from "path"
 import { homedir } from "os"
+import { createHandle } from "shapeql"
+import { StepInput } from "@re-do/model"
+import { store } from "renderer/common"
 
 const BROWSER_WINDOW_TITLEBAR_SIZE = 35
 const DEFAULT_LEARNER_WIDTH = 300
@@ -67,7 +67,7 @@ export class Learner {
     chromiumInstalling: boolean
 }
 
-export const handleLearner = handle({
+export const handleLearner = createHandle<Learner>({
     active: async _ => await (_ ? start() : stop())
 })
 

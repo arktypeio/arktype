@@ -3,7 +3,6 @@
     "version": "0.0.1",
     "author": "redo.qa",
     "description": "Redo's server",
-    "private": true,
     "scripts": {
         "build": "npm run generate && tsc",
         "buildGenerate": "tsc -p tsconfig.generate.json",

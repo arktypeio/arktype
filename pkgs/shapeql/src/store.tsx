@@ -2,7 +2,11 @@ import React, { ReactNode, createContext, useContext, useState } from "react"
 import { isDeepStrictEqual } from "util"
 import { DeepPartial, Class } from "@re-do/utils"
 import { ShapeFilter, excludeKeys, updateMap, diff } from "./filters"
-import { ApolloClient } from "./getApolloClient"
+import {
+    ApolloClient,
+    ApolloClientOrOptions,
+    getApolloClient
+} from "./getApolloClient"
 import {
     shapeql,
     ShapedMutation,
@@ -18,20 +22,32 @@ export type Handler<T> = { [P in keyof T]?: Handle<T[P]> }
 
 export type StoreArgs<T> = {
     root: Class<T>
-    client: ApolloClient
+    client?: ApolloClientOrOptions<T>
     handler?: Handler<T>
+}
+
+export const createHandle = <T extends any>(handler: Handler<T>) => async (
+    changes: DeepPartial<T>
+) => {
+    for (const k in changes) {
+        if (k in handler) {
+            const handleKey = (handler as any)[k] as Handle<any>
+            const keyChanges = (changes as any)[k] as DeepPartial<any>
+            await handleKey(keyChanges)
+        }
+    }
 }
 
 export class Store<T> {
     protected root: Class<T>
     protected client: ApolloClient
-    protected handler?: Handler<T>
+    protected handle?: Handle<T>
     public onChanges?: (changes: DeepPartial<T>) => any
 
     constructor({ root, client, handler }: StoreArgs<T>) {
         this.root = root
-        this.client = client
-        this.handler = handler
+        this.client = getApolloClient(client)
+        this.handle = handler ? createHandle<T>(handler) : undefined
     }
 
     queryAll() {
@@ -59,29 +75,14 @@ export class Store<T> {
         this.write(values)
     }
 
-    async handle<C extends DeepPartial<T>>(changes: C) {
-        if (!this.handler) {
-            return
-        }
-        for (const k in changes) {
-            if (k in this.handler) {
-                const handle = (this.handler as any)[k] as Handle<any>
-                const change = (changes as any)[k] as DeepPartial<any>
-                await handle(change)
-            }
-        }
-    }
-
     async mutate<M extends Mutation<T>>(updateMapper: M) {
         const currentCache = this.queryAll()
         const mutatedCache = updateMap(currentCache, updateMapper as any)
         const changes = diff(currentCache, mutatedCache)
         if (!isDeepStrictEqual(changes, {})) {
             this.write(mutatedCache)
-            await this.handle(changes)
-            if (this.onChanges) {
-                this.onChanges(changes)
-            }
+            this.handle && (await this.handle(changes))
+            this.onChanges && this.onChanges(changes)
         }
     }
 }

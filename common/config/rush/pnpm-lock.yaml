@@ -2989,13 +2989,13 @@ packages:
       acorn: ^6.0.0
     resolution:
       integrity: sha512-d3OEjQV4ROpoflsnUA8HozoIR504TFxNivYEUi6uwz0IYhBkTDXGuWlNdMtybRt3nqVx/L6XqMt0FxkXuWKZhw==
-  /acorn-globals/4.3.3:
+  /acorn-globals/4.3.4:
     dependencies:
       acorn: 6.3.0
       acorn-walk: 6.2.0
     dev: false
     resolution:
-      integrity: sha512-vkR40VwS2SYO98AIeFvzWWh+xyc2qi9s7OoXSFEGIP/rOJKzjnhykaZJNnHdoq4BL2gGxI5EZOU16z896EYnOQ==
+      integrity: sha512-clfQEh21R+D0leSbUdWf3OcfqyaCSAQ8Ryq00bofSekfr9W8u1jyYZo6ir0xu9Gtcf7BjcHJpnbZH7JOCpP60A==
   /acorn-walk/6.2.0:
     dev: false
     engines:
@@ -3215,7 +3215,7 @@ packages:
       apollo-cache-inmemory: 1.6.3_graphql@14.4.2
       apollo-client: 2.6.4_graphql@14.4.2
       apollo-link: 1.2.13_graphql@14.4.2
-      apollo-link-error: 1.1.12
+      apollo-link-error: 1.1.12_graphql@14.4.2
       apollo-link-http: 1.5.15_graphql@14.4.2
       graphql: 14.4.2
       graphql-tag: 2.10.1_graphql@14.4.2
@@ -3239,7 +3239,7 @@ packages:
       integrity: sha512-BBnfUmSWRws5dRSDD+R56RLJCE9v6xQuob+i/1Ju9EX4LZszU5JKVmxEvnkJ1bk/BkihjoQXTnP6fJCnt6fCmA==
   /apollo-cache-control/0.8.0_graphql@14.4.2:
     dependencies:
-      apollo-server-env: 2.4.0
+      apollo-server-env: 2.4.0_graphql@14.4.2
       graphql: 14.4.2
       graphql-extensions: 0.8.0_graphql@14.4.2
     dev: false
@@ -3387,12 +3387,37 @@ packages:
     dev: false
     engines:
       node: '>=6'
+    peerDependencies:
+      graphql: ^0.11.0 || ^0.12.0 || ^0.13.0 || ^14.0.0
+    resolution:
+      integrity: sha512-DOzzYWEOReYRu2vWPKEulqlTb9Xjg67sjVCzve5MXa7GUXjfr8IKioljvfoBMlqm/PpbJVk2ci4n5NIFqoYsrQ==
+  /apollo-datasource/0.6.0_graphql@14.4.2:
+    dependencies:
+      apollo-server-caching: 0.5.0_graphql@14.4.2
+      apollo-server-env: 2.4.0_graphql@14.4.2
+      graphql: 14.4.2
+    dev: false
+    engines:
+      node: '>=6'
+    peerDependencies:
+      graphql: ^0.11.0 || ^0.12.0 || ^0.13.0 || ^14.0.0
     resolution:
       integrity: sha512-DOzzYWEOReYRu2vWPKEulqlTb9Xjg67sjVCzve5MXa7GUXjfr8IKioljvfoBMlqm/PpbJVk2ci4n5NIFqoYsrQ==
   /apollo-engine-reporting-protobuf/0.4.0:
     dependencies:
       protobufjs: 6.8.8
     dev: false
+    peerDependencies:
+      graphql: ^0.11.0 || ^0.12.0 || ^0.13.0 || ^14.0.0
+    resolution:
+      integrity: sha512-cXHZSienkis8v4RhqB3YG3DkaksqLpcxApRLTpRMs7IXNozgV7CUPYGFyFBEra1ZFgUyHXx4G9MpelV+n2cCfA==
+  /apollo-engine-reporting-protobuf/0.4.0_graphql@14.4.2:
+    dependencies:
+      graphql: 14.4.2
+      protobufjs: 6.8.8
+    dev: false
+    peerDependencies:
+      graphql: ^0.11.0 || ^0.12.0 || ^0.13.0 || ^14.0.0
     resolution:
       integrity: sha512-cXHZSienkis8v4RhqB3YG3DkaksqLpcxApRLTpRMs7IXNozgV7CUPYGFyFBEra1ZFgUyHXx4G9MpelV+n2cCfA==
   /apollo-engine-reporting/1.4.0:
@@ -3406,6 +3431,24 @@ packages:
     dev: false
     engines:
       node: '>=6.0'
+    peerDependencies:
+      graphql: ^0.11.0 || ^0.12.0 || ^0.13.0 || ^14.0.0
+    resolution:
+      integrity: sha512-NMiO3h1cuEBt6QZNGHxivwuyZQnoU/2MMx0gUA8Gyy1ERBhK6P235qoMnvoi34rLmqJuyGPX6tXcab8MpMIzYQ==
+  /apollo-engine-reporting/1.4.0_graphql@14.4.2:
+    dependencies:
+      apollo-engine-reporting-protobuf: 0.4.0_graphql@14.4.2
+      apollo-graphql: 0.3.3_graphql@14.4.2
+      apollo-server-env: 2.4.0_graphql@14.4.2
+      apollo-server-types: 0.2.0_graphql@14.4.2
+      async-retry: 1.2.3
+      graphql: 14.4.2
+      graphql-extensions: 0.8.0_graphql@14.4.2
+    dev: false
+    engines:
+      node: '>=6.0'
+    peerDependencies:
+      graphql: ^0.11.0 || ^0.12.0 || ^0.13.0 || ^14.0.0
     resolution:
       integrity: sha512-NMiO3h1cuEBt6QZNGHxivwuyZQnoU/2MMx0gUA8Gyy1ERBhK6P235qoMnvoi34rLmqJuyGPX6tXcab8MpMIzYQ==
   /apollo-env/0.5.1:
@@ -3416,11 +3459,38 @@ packages:
     dev: false
     engines:
       node: '>=8'
+    peerDependencies:
+      graphql: ^0.11.0 || ^0.12.0 || ^0.13.0 || ^14.0.0
+    resolution:
+      integrity: sha512-fndST2xojgSdH02k5hxk1cbqA9Ti8RX4YzzBoAB4oIe1Puhq7+YlhXGXfXB5Y4XN0al8dLg+5nAkyjNAR2qZTw==
+  /apollo-env/0.5.1_graphql@14.4.2:
+    dependencies:
+      core-js: 3.1.4
+      graphql: 14.4.2
+      node-fetch: 2.6.0
+      sha.js: 2.4.11
+    dev: false
+    engines:
+      node: '>=8'
+    peerDependencies:
+      graphql: ^0.11.0 || ^0.12.0 || ^0.13.0 || ^14.0.0
     resolution:
       integrity: sha512-fndST2xojgSdH02k5hxk1cbqA9Ti8RX4YzzBoAB4oIe1Puhq7+YlhXGXfXB5Y4XN0al8dLg+5nAkyjNAR2qZTw==
   /apollo-graphql/0.3.3:
     dependencies:
       apollo-env: 0.5.1
+      lodash.sortby: 4.7.0
+    dev: false
+    engines:
+      node: '>=6'
+    peerDependencies:
+      graphql: ^14.2.1
+    resolution:
+      integrity: sha512-t3CO/xIDVsCG2qOvx2MEbuu4b/6LzQjcBBwiVnxclmmFyAxYCIe7rpPlnLHSq7HyOMlCWDMozjoeWfdqYSaLqQ==
+  /apollo-graphql/0.3.3_graphql@14.4.2:
+    dependencies:
+      apollo-env: 0.5.1_graphql@14.4.2
+      graphql: 14.4.2
       lodash.sortby: 4.7.0
     dev: false
     engines:
@@ -3454,6 +3524,19 @@ packages:
       apollo-link-http-common: 0.2.15
       tslib: 1.10.0
     dev: false
+    peerDependencies:
+      graphql: ^0.11.0 || ^0.12.0 || ^0.13.0 || ^14.0.0
+    resolution:
+      integrity: sha512-psNmHyuy3valGikt/XHJfe0pKJnRX19tLLs6P6EHRxg+6q6JMXNVLYPaQBkL0FkwdTCB0cbFJAGRYCBviG8TDA==
+  /apollo-link-error/1.1.12_graphql@14.4.2:
+    dependencies:
+      apollo-link: 1.2.13_graphql@14.4.2
+      apollo-link-http-common: 0.2.15_graphql@14.4.2
+      graphql: 14.4.2
+      tslib: 1.10.0
+    dev: false
+    peerDependencies:
+      graphql: ^0.11.0 || ^0.12.0 || ^0.13.0 || ^14.0.0
     resolution:
       integrity: sha512-psNmHyuy3valGikt/XHJfe0pKJnRX19tLLs6P6EHRxg+6q6JMXNVLYPaQBkL0FkwdTCB0cbFJAGRYCBviG8TDA==
   /apollo-link-http-common/0.2.15:
@@ -3527,6 +3610,19 @@ packages:
     dev: false
     engines:
       node: '>=6'
+    peerDependencies:
+      graphql: ^0.11.0 || ^0.12.0 || ^0.13.0 || ^14.0.0
+    resolution:
+      integrity: sha512-l7ieNCGxUaUAVAAp600HjbUJxVaxjJygtPV0tPTe1Q3HkPy6LEWoY6mNHV7T268g1hxtPTxcdRu7WLsJrg7ufw==
+  /apollo-server-caching/0.5.0_graphql@14.4.2:
+    dependencies:
+      graphql: 14.4.2
+      lru-cache: 5.1.1
+    dev: false
+    engines:
+      node: '>=6'
+    peerDependencies:
+      graphql: ^0.11.0 || ^0.12.0 || ^0.13.0 || ^14.0.0
     resolution:
       integrity: sha512-l7ieNCGxUaUAVAAp600HjbUJxVaxjJygtPV0tPTe1Q3HkPy6LEWoY6mNHV7T268g1hxtPTxcdRu7WLsJrg7ufw==
   /apollo-server-core/2.7.0:
@@ -3566,11 +3662,11 @@ packages:
       '@apollographql/graphql-playground-html': 1.6.24
       '@types/ws': 6.0.3
       apollo-cache-control: 0.8.0_graphql@14.4.2
-      apollo-datasource: 0.6.0
-      apollo-engine-reporting: 1.4.0
-      apollo-engine-reporting-protobuf: 0.4.0
-      apollo-server-caching: 0.5.0
-      apollo-server-env: 2.4.0
+      apollo-datasource: 0.6.0_graphql@14.4.2
+      apollo-engine-reporting: 1.4.0_graphql@14.4.2
+      apollo-engine-reporting-protobuf: 0.4.0_graphql@14.4.2
+      apollo-server-caching: 0.5.0_graphql@14.4.2
+      apollo-server-env: 2.4.0_graphql@14.4.2
       apollo-server-errors: 2.3.1_graphql@14.4.2
       apollo-server-plugin-base: 0.6.0_graphql@14.4.2
       apollo-server-types: 0.2.0_graphql@14.4.2
@@ -3599,6 +3695,20 @@ packages:
     dev: false
     engines:
       node: '>=6'
+    peerDependencies:
+      graphql: ^0.11.0 || ^0.12.0 || ^0.13.0 || ^14.0.0
+    resolution:
+      integrity: sha512-7ispR68lv92viFeu5zsRUVGP+oxsVI3WeeBNniM22Cx619maBUwcYTIC3+Y3LpXILhLZCzA1FASZwusgSlyN9w==
+  /apollo-server-env/2.4.0_graphql@14.4.2:
+    dependencies:
+      graphql: 14.4.2
+      node-fetch: 2.6.0
+      util.promisify: 1.0.0
+    dev: false
+    engines:
+      node: '>=6'
+    peerDependencies:
+      graphql: ^0.11.0 || ^0.12.0 || ^0.13.0 || ^14.0.0
     resolution:
       integrity: sha512-7ispR68lv92viFeu5zsRUVGP+oxsVI3WeeBNniM22Cx619maBUwcYTIC3+Y3LpXILhLZCzA1FASZwusgSlyN9w==
   /apollo-server-errors/2.3.1:
@@ -3699,9 +3809,9 @@ packages:
       integrity: sha512-5dgiyXsM90vnfmdXO1ixHvsLn0d9NP4tWufmr3ZmjKv00r4JAQNUaUdgOSGbRIKoHELQGwxUuTySTZ/tYfGaNQ==
   /apollo-server-types/0.2.0_graphql@14.4.2:
     dependencies:
-      apollo-engine-reporting-protobuf: 0.4.0
-      apollo-server-caching: 0.5.0
-      apollo-server-env: 2.4.0
+      apollo-engine-reporting-protobuf: 0.4.0_graphql@14.4.2
+      apollo-server-caching: 0.5.0_graphql@14.4.2
+      apollo-server-env: 2.4.0_graphql@14.4.2
       graphql: 14.4.2
     dev: false
     engines:
@@ -3748,7 +3858,7 @@ packages:
       integrity: sha512-cNOtOlyZ56iJRsCjnxjM1V0SnQ2ZZttuyoeOejdat6llPfk5bfYTVOKMjdbSfDvU33LS9g9sqNJCT0MwrEPFKQ==
   /apollo-tracing/0.8.0_graphql@14.4.2:
     dependencies:
-      apollo-server-env: 2.4.0
+      apollo-server-env: 2.4.0_graphql@14.4.2
       graphql: 14.4.2
       graphql-extensions: 0.8.0_graphql@14.4.2
     dev: false
@@ -4206,7 +4316,7 @@ packages:
       integrity: sha512-2EMA2P8Vp7lG0RAzr4HXqtYwacfMErOuv1U3wrvxHX6rD1sV6xS3WXG3r8TRQ2r6w8OhvSdWt+z41hQNwNm3Xw==
   /babel-plugin-macros/2.6.1:
     dependencies:
-      '@babel/runtime': 7.5.5
+      '@babel/runtime': 7.6.0
       cosmiconfig: 5.2.1
       resolve: 1.12.0
     dev: false
@@ -7638,7 +7748,7 @@ packages:
   /graphql-extensions/0.8.0_graphql@14.4.2:
     dependencies:
       '@apollographql/apollo-tools': 0.3.7
-      apollo-server-env: 2.4.0
+      apollo-server-env: 2.4.0_graphql@14.4.2
       apollo-server-types: 0.2.0_graphql@14.4.2
       graphql: 14.4.2
     dev: false
@@ -9305,7 +9415,7 @@ packages:
     dependencies:
       abab: 2.0.1
       acorn: 5.7.3
-      acorn-globals: 4.3.3
+      acorn-globals: 4.3.4
       array-equal: 1.0.0
       cssom: 0.3.8
       cssstyle: 1.4.0
@@ -15092,7 +15202,7 @@ packages:
     dev: false
     name: '@rush-temp/app'
     resolution:
-      integrity: sha512-x6X8Rq7+TQNt7B0HzF0MUr6XvAtP1oMbqakmRtZlr9IwAm9tbbEGp/V+SR1Y0YfQjpd0zYo2Y6J/qIL1bvvE+A==
+      integrity: sha512-RwwtfaQd6IFcZSShmyXvbp2zIFc6U0EniW044UDezzHnwge1aYfsZJWaJZAnWNBR8nnZNRNShPxSqc38rm7HBw==
       tarball: 'file:projects/app.tgz'
     version: 0.0.0
   'file:projects/babel-preset-redo.tgz_react-dom@16.9.0+react@16.9.0':
@@ -15378,7 +15488,7 @@ packages:
     dev: false
     name: '@rush-temp/website'
     resolution:
-      integrity: sha512-paABhisgY6tIGbjNje8xWu/f1pOfmp58YZnP5t/eeRSj/X9fDci/im8S2n2/0RP/3zFmuLijyGzTqMGQt1EGDg==
+      integrity: sha512-vhu08LxefzK0wsrpCYIlVPZty3JsdSSu8b2OUBuS/BuVZWDpBkJvAK/rV6Wv5gwmToywoAUdLneceQeBX7xVdg==
       tarball: 'file:projects/website.tgz'
     version: 0.0.0
 specifiers:

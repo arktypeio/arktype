@@ -1,9 +1,8 @@
 {
     "name": "shapeql",
-    "version": "1.0.0",
+    "version": "0.0.1",
     "author": "redo.qa",
     "description": "Build 💪-typed GraphQL from simple shapes🔷",
-    "private": true,
     "main": "dist/index.js",
     "types": "dist/index.d.ts",
     "scripts": {

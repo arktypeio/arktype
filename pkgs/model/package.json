@@ -3,7 +3,6 @@
     "version": "0.0.1",
     "author": "redo.qa",
     "description": "Shared types that model Redo",
-    "private": true,
     "main": "dist/index.js",
     "types": "dist/index.d.ts",
     "scripts": {
