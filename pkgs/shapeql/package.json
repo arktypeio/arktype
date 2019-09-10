@@ -1,6 +1,6 @@
 {
     "name": "shapeql",
-    "version": "0.0.2",
+    "version": "0.0.3",
     "author": "redo.qa",
     "description": "Build 💪-typed GraphQL from simple shapes🔷",
     "main": "dist/index.js",
@@ -19,11 +19,12 @@
         "moize": "5.4.4",
         "react": "16.9.0",
         "react-dom": "16.9.0",
-        "reflect-metadata": "0.1.13"
+        "reflect-metadata": "0.1.13",
+        "isomorphic-fetch": "2.2.1",
+        "graphql-tag": "2.10.1"
     },
     "peerDependencies": {
         "graphql": "14.x.x",
-        "graphql-tag": "2.x.x",
         "type-graphql": "0.17.x"
     },
     "devDependencies": {
@@ -42,7 +43,6 @@
         "babel-preset-redo": "0.0.1",
         "graphql": "14.4.2",
         "graphql-tag": "2.10.1",
-        "isomorphic-fetch": "2.2.1",
         "jest": "24.8.0",
         "type-graphql": "0.17.5",
         "typescript": "3.6.2",

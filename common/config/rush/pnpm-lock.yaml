@@ -88,6 +88,7 @@ dependencies:
     formik: 1.5.1_react@16.9.0
     framer-motion: 1.6.5_react-dom@16.9.0+react@16.9.0
     fs-extra: 8.1.0
+    graphql-tag: 2.10.1
     html-webpack-plugin: 3.2.0_webpack@4.39.3
     isomorphic-fetch: 2.2.1
     isomorphic-ws: 4.0.1
@@ -109,6 +110,7 @@ dependencies:
     react-test-renderer: 16.8.6_react@16.9.0
     react-typist: 2.0.5_react-dom@16.9.0+react@16.9.0
     reflect-metadata: 0.1.13
+    shapeql: 0.0.1
     style-loader: 0.23.1
     ts-jest: 24.0.2_jest@24.8.0
     ts-loader: 6.0.1_typescript@3.6.2
@@ -4321,7 +4323,7 @@ packages:
             integrity: sha512-2EMA2P8Vp7lG0RAzr4HXqtYwacfMErOuv1U3wrvxHX6rD1sV6xS3WXG3r8TRQ2r6w8OhvSdWt+z41hQNwNm3Xw==
     /babel-plugin-macros/2.6.1:
         dependencies:
-            "@babel/runtime": 7.6.0
+            "@babel/runtime": 7.5.5
             cosmiconfig: 5.2.1
             resolve: 1.12.0
         dev: false
@@ -13167,6 +13169,10 @@ packages:
         dev: false
         resolution:
             integrity: sha512-y0m1JoUZSlPAjXVtPPW70aZWfIL/dSP7AFkRnniLCrK/8MDKog3TySTBmckD+RObVxH0v4Tox67+F14PdED2oQ==
+    /shapeql/0.0.1:
+        dev: false
+        resolution:
+            integrity: sha512-R+BQcHlrczfuFVXCantg7BfV9BY+T3nY9+sapFE2wXyjDjgji17lEmwMbsLpqaeDNPInOlKnexJLuuBghmXJGQ==
     /shebang-command/1.2.0:
         dependencies:
             shebang-regex: 1.0.0
@@ -15106,6 +15112,7 @@ packages:
             react-dom: 16.9.0_react@16.9.0
             react-hot-loader: 4.12.8_react-dom@16.9.0+react@16.9.0
             reflect-metadata: 0.1.13
+            shapeql: 0.0.1
             ts-node: 8.3.0_typescript@3.6.2
             tsconfig-paths: 3.7.0
             tsconfig-paths-webpack-plugin: 3.2.0
@@ -15119,7 +15126,7 @@ packages:
         dev: false
         name: "@rush-temp/app"
         resolution:
-            integrity: sha512-02As/SnK++jhxl/CL0P4aV+/Yl0W4cSCccjXn08reIlw25f/2TFcymziR5SuMnKdRrCUa3kdNy4IWiUkQYHZLg==
+            integrity: sha512-cG1lIcMyeO32FOYM/kRNM7KODPz+3WHv1n/q/X7yGug0nQDYphdDZWA+Y/Ef8xj/qP8M2fjPJMb26dSSYf8QxA==
             tarball: "file:projects/app.tgz"
         version: 0.0.0
     "file:projects/babel-preset-redo.tgz_react-dom@16.9.0+react@16.9.0":
@@ -15396,6 +15403,7 @@ packages:
             react-dom: 16.9.0_react@16.9.0
             react-hot-loader: 4.12.8_react-dom@16.9.0+react@16.9.0
             react-typist: 2.0.5_react-dom@16.9.0+react@16.9.0
+            shapeql: 0.0.1
             ts-node: 8.3.0_typescript@3.6.2
             typeface-ubuntu: 0.0.65
             typescript: 3.6.2
@@ -15405,7 +15413,7 @@ packages:
         dev: false
         name: "@rush-temp/website"
         resolution:
-            integrity: sha512-eYFmVrMyZM+sBv1vPtCQU6llptOGAk02mzRd2suuSgMcVUwYgZXEB5wmR6p5qPtewYykBTzoTuWWqx7SPiYR8Q==
+            integrity: sha512-63wfCj2ApoW5dgmfH/gfAS+/KiMO20TCG83ckRwc8C426rSH8gOsyL6MecAqOWkXT3szICxCj9+VRxezC6eSxQ==
             tarball: "file:projects/website.tgz"
         version: 0.0.0
 specifiers:
@@ -15498,6 +15506,7 @@ specifiers:
     formik: 1.5.1
     framer-motion: 1.6.5
     fs-extra: 8.1.0
+    graphql-tag: 2.10.1
     html-webpack-plugin: 3.2.0
     isomorphic-fetch: 2.2.1
     isomorphic-ws: 4.0.1
@@ -15519,6 +15528,7 @@ specifiers:
     react-test-renderer: 16.8.6
     react-typist: 2.0.5
     reflect-metadata: 0.1.13
+    shapeql: 0.0.1
     style-loader: 0.23.1
     ts-jest: 24.0.2
     ts-loader: 6.0.1
