@@ -1,5 +1,4 @@
 import React from "react"
-import { component } from "blocks"
 import {
     Column,
     Text,
@@ -11,11 +10,11 @@ import {
     ChipInput,
     ErrorText
 } from "@re-do/components"
-import { deactivateLearner, resetLearner, Page } from "state"
+import { deactivateLearner, resetLearner } from "state"
 import { LearnerEvents } from "custom"
 import gql from "graphql-tag"
 import { useMutation } from "@apollo/react-hooks"
-import { store } from "../common"
+import { store } from "renderer/common"
 
 const SAVETEST = gql`
     mutation createTest(
@@ -29,26 +28,20 @@ const SAVETEST = gql`
     }
 `
 
-export type LearnerProps = {}
-
-export const Learner = component({
-    name: "Learner",
-    defaultProps: {} as Partial<LearnerProps>,
-    query: {
+export const Learner = () => {
+    const {
+        events,
+        chromiumInstalling,
+        testName: name,
+        testTags: tags
+    } = store.hooks.useQuery({
         learner: {
             events: null,
             chromiumInstalling: null,
             testName: null,
             testTags: null
         }
-    }
-})(({ data }) => {
-    const {
-        events,
-        chromiumInstalling,
-        testName: name,
-        testTags: tags
-    } = data.learner!
+    }).learner
     const [saveTest, saveTestResult] = useMutation(SAVETEST)
     return (
         <Column full>
@@ -135,4 +128,4 @@ export const Learner = component({
             </AppBar>
         </Column>
     )
-})
+}

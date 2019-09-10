@@ -23,8 +23,8 @@
         "deepmerge": "3.2.1",
         "framer-motion": "1.6.5",
         "material-ui-chip-input": "1.0.0",
-        "react": "16.8.6",
-        "react-dom": "16.8.6",
+        "react": "16.9.0",
+        "react-dom": "16.9.0",
         "react-hook-form": "3.18.8",
         "reflect-metadata": "0.1.13",
         "typeface-ubuntu": "0.0.65"
@@ -32,6 +32,10 @@
     "devDependencies": {
         "@babel/cli": "7.5.5",
         "@babel/core": "7.5.5",
+        "@re-do/bundle": "0.0.1",
+        "@re-do/model": "0.0.1",
+        "@re-do/recommended": "0.0.1",
+        "@re-do/utils": "0.0.1",
         "@storybook/addon-actions": "5.2.0-beta.30",
         "@storybook/addon-console": "1.2.1",
         "@storybook/addon-info": "5.2.0-beta.30",
@@ -44,12 +48,12 @@
         "@types/enzyme-adapter-react-16": "1.0.5",
         "@types/jest": "24.0.13",
         "@types/node": "12.6.6",
-        "@types/react": "16.8.8",
-        "@types/react-dom": "16.8.3",
+        "@types/react": "16.9.2",
+        "@types/react-dom": "16.9.0",
         "@types/storybook__addon-storyshots": "5.1.1",
         "@types/storybook__react": "4.0.2",
         "babel-loader": "8.0.6",
-        "babel-preset-redo": "1.0.0",
+        "babel-preset-redo": "0.0.1",
         "babel-runtime": "6.26.0",
         "core-js-pure": "3.1.4",
         "enzyme": "3.10.0",
@@ -57,10 +61,6 @@
         "jest": "24.8.0",
         "react-docgen-typescript-loader": "3.1.0",
         "react-test-renderer": "16.8.6",
-        "@re-do/bundle": "0.0.1",
-        "@re-do/model": "0.0.1",
-        "@re-do/recommended": "0.0.1",
-        "@re-do/utils": "0.0.1",
-        "typescript": "3.5.2"
+        "typescript": "3.6.2"
     }
 }

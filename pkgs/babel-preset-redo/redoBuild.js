@@ -13,23 +13,31 @@ const run = async (cmd, args) => {
 }
 
 const build = async () => {
-    console.log(`redo-build🔨: Building ${pkg}...`)
-    console.log(`redo-build🔨: Transpiling ${pkg}...`)
-    await run("babel", [
-        "src",
-        "-d",
-        "dist",
-        "--extensions",
-        ".ts,.tsx",
-        "--ignore",
-        "src/**/__tests__/*",
-        "--source-maps",
-        "inline",
-        "--delete-dir-on-start"
-    ])
-    console.log(`redo-build🔨: Compiling types for ${pkg}...`)
-    await run("tsc", ["--emitDeclarationOnly"])
-    console.log(`redo-build🔨: Finished building ${pkg}.`)
+    try {
+        console.log(`redo-build🔨: Building ${pkg}...`)
+        console.log(`redo-build🔨: Transpiling ${pkg}...`)
+        await run("babel", [
+            "src",
+            "-d",
+            "dist",
+            "--extensions",
+            ".ts,.tsx",
+            "--ignore",
+            "src/**/__tests__/*",
+            "--source-maps",
+            "inline",
+            "--delete-dir-on-start"
+        ])
+        console.log(`redo-build🔨: Compiling types for ${pkg}...`)
+        await run("tsc", ["--emitDeclarationOnly"])
+        console.log(`redo-build🔨: Finished building ${pkg}.`)
+    } catch (e) {
+        console.log(
+            "redo-build🔨:❗️Build failed due to the following error:❗️"
+        )
+        console.log(e)
+        process.exit(1)
+    }
 }
 
 build()

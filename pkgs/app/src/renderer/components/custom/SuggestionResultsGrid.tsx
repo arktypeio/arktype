@@ -1,6 +1,6 @@
 import React, { CSSProperties } from "react"
-import { component } from "blocks"
 import { SuggestionCard } from "custom"
+import { store } from "renderer/common"
 import { Card, Row } from "@re-do/components"
 
 export type SuggestionData = {
@@ -14,20 +14,19 @@ export type SuggestionResultsGridProps = {
     style?: CSSProperties
 }
 
-export const SuggestionResultsGrid = component({
-    name: "SuggestionResultsGrid",
-    defaultProps: {} as Partial<SuggestionResultsGridProps>,
-    query: { cardFilter: null }
-})(({ suggestions, data, style }) => {
-    const { cardFilter } = data
+export const SuggestionResultsGrid = ({
+    suggestions,
+    style
+}: SuggestionResultsGridProps) => {
+    const { cardFilter } = store.hooks.useQuery({ cardFilter: null })
     const suggestionCards = suggestions
         .filter(({ name, description }) =>
             name
                 .concat(description ? description : "")
                 .toLowerCase()
-                .includes(cardFilter!.toLowerCase())
+                .includes(cardFilter.toLowerCase())
         )
-        .map(({ name, kind: kind, description }) => (
+        .map(({ name, kind, description }) => (
             <div
                 key={name}
                 style={{
@@ -57,4 +56,4 @@ export const SuggestionResultsGrid = component({
             </Row>
         </Card>
     )
-})
+}

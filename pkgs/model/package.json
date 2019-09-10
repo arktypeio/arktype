@@ -1,32 +1,31 @@
 {
-  "name": "@re-do/model",
-  "version": "0.0.1",
-  "author": "redo.qa",
-  "description": "Shared types that model Redo",
-  "private": true,
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
-  "scripts": {
-    "build": "redo-build"
-  },
-  "dependencies": {
-    "@babel/runtime-corejs3": "7.5.5",
-    "@re-do/utils": "0.0.1",
-    "class-transformer": "0.2.0",
-    "class-validator": "0.10.0",
-    "graphql-tag": "2.10.1"
-  },
-  "peerDependencies": {
-    "graphql": "14.x.x",
-    "type-graphql": "0.17.x"
-  },
-  "devDependencies": {
-    "@babel/cli": "7.5.5",
-    "@re-do/recommended": "0.0.1",
-    "babel-preset-redo": "1.0.0",
-    "graphql": "14.4.2",
-    "reflect-metadata": "0.1.13",
-    "type-graphql": "0.17.5",
-    "typescript": "3.5.2"
-  }
+    "name": "@re-do/model",
+    "version": "0.0.1",
+    "author": "redo.qa",
+    "description": "Shared types that model Redo",
+    "main": "dist/index.js",
+    "types": "dist/index.d.ts",
+    "scripts": {
+        "build": "redo-build"
+    },
+    "dependencies": {
+        "@babel/runtime-corejs3": "7.5.5",
+        "@re-do/utils": "0.0.1",
+        "class-transformer": "0.2.0",
+        "class-validator": "0.10.0",
+        "graphql-tag": "2.10.1"
+    },
+    "peerDependencies": {
+        "graphql": "14.x.x",
+        "type-graphql": "0.17.x"
+    },
+    "devDependencies": {
+        "@babel/cli": "7.5.5",
+        "@re-do/recommended": "0.0.1",
+        "babel-preset-redo": "0.0.1",
+        "graphql": "14.4.2",
+        "reflect-metadata": "0.1.13",
+        "type-graphql": "0.17.5",
+        "typescript": "3.6.2"
+    }
 }
