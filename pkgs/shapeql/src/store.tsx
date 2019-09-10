@@ -1,4 +1,4 @@
-import React, { ReactNode, createContext, useContext } from "react"
+import React, { ReactNode, createContext, useContext, useState } from "react"
 import { isDeepStrictEqual } from "util"
 import { DeepPartial, Class } from "@re-do/utils"
 import { ShapeFilter, excludeKeys, updateMap, diff } from "./filters"
@@ -26,6 +26,7 @@ export class Store<T> {
     protected root: Class<T>
     protected client: ApolloClient
     protected handler?: Handler<T>
+    public onChanges?: (changes: DeepPartial<T>) => any
 
     constructor({ root, client, handler }: StoreArgs<T>) {
         this.root = root
@@ -78,9 +79,14 @@ export class Store<T> {
         if (!isDeepStrictEqual(changes, {})) {
             this.write(mutatedCache)
             await this.handle(changes)
+            if (this.onChanges) {
+                this.onChanges(changes)
+            }
         }
     }
+}
 
+export class StoreWithHooks<T> extends Store<T> {
     hooks = {
         useQuery: <Q extends Query<T>>(q: Q) => {
             useContext(StoreContext)
@@ -89,7 +95,7 @@ export class Store<T> {
     }
 }
 
-const StoreContext = createContext<Store<any>>({} as any)
+const StoreContext = createContext<any>({} as any)
 
 export type StoreProviderProps<T> = {
     children: ReactNode
@@ -99,8 +105,12 @@ export type StoreProviderProps<T> = {
 export const StoreProvider = <T extends any>({
     children,
     store
-}: StoreProviderProps<T>) => (
-    <StoreContext.Provider value={store}> {children} </StoreContext.Provider>
-)
+}: StoreProviderProps<T>) => {
+    const [data, setData] = useState(store.queryAll())
+    store.onChanges = changes => setData(store.queryAll())
+    return (
+        <StoreContext.Provider value={data}>{children}</StoreContext.Provider>
+    )
+}
 
 export const StoreConsumer = StoreContext.Consumer

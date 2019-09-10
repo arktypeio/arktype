@@ -1,4 +1,5 @@
 import React from "react"
+import { act } from "react-dom/test-utils"
 import gql from "graphql-tag"
 import {
     Root,
@@ -7,7 +8,13 @@ import {
     initialA,
     initialAWithTypeNames
 } from "./common"
-import { Store, Handler, StoreProvider, StoreConsumer } from "../store"
+import {
+    Store,
+    Handler,
+    StoreProvider,
+    StoreConsumer,
+    StoreWithHooks
+} from "../store"
 import { getApolloClient } from "../getApolloClient"
 import { mount } from "enzyme"
 
@@ -179,43 +186,50 @@ describe("StoreContext", () => {
     beforeEach(() => {
         client.writeData({ data: initialRootWithTypeNames })
     })
-    it("provides and consumes a store", () => {
-        const useStore = jest.fn<any, [Store<any>]>()
+    it("provides a store and consumes data", () => {
+        let value: Root
         mount(
             <StoreProvider store={store}>
-                <StoreConsumer>{useStore}</StoreConsumer>
+                <StoreConsumer>
+                    {data => {
+                        value = data
+                        return null
+                    }}
+                </StoreConsumer>
             </StoreProvider>
         )
-        expect(useStore).toBeCalledWith(store)
+        expect(value).toStrictEqual(store.queryAll())
     })
 })
+
+const storeWithHooks = new StoreWithHooks({ root: Root, client })
 
 type ResultCheckerProps = {
     passTo: jest.Mock
 }
 
 const QueryChecker = ({ passTo }: ResultCheckerProps) =>
-    passTo(store.hooks.useQuery({ b: null }))
+    passTo(storeWithHooks.hooks.useQuery({ b: null }))
 
 const checkResult = jest.fn(() => null)
 
 describe("useQuery", () => {
     it("can execute a query", () => {
         mount(
-            <StoreProvider store={store}>
+            <StoreProvider store={storeWithHooks}>
                 <QueryChecker passTo={checkResult} />
             </StoreProvider>
         )
         expect(checkResult).toBeCalledWith({ b: false })
     })
-    it("rerenders on store updates", () => {
+    it("rerenders on store updates", async () => {
         mount(
-            <StoreProvider store={store}>
+            <StoreProvider store={storeWithHooks}>
                 <QueryChecker passTo={checkResult} />
             </StoreProvider>
         )
-        client.writeData({ data: { b: true } })
+        await act(async () => await storeWithHooks.mutate({ b: true }))
         expect(checkResult).toBeCalledTimes(2)
-        expect(checkResult).toHaveBeenLastCalledWith({ b: true })
+        expect(checkResult).lastCalledWith({ b: true })
     })
 })
