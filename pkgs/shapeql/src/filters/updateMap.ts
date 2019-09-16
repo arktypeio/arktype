@@ -11,10 +11,7 @@ export type DeepUpdate<T> = {
         : DeepUpdate<T[P]>
 }
 
-export const updateMap = <T extends object>(
-    current: T,
-    updater: DeepUpdate<T>
-): T => {
+export const updateMap = <T>(current: T, updater: DeepUpdate<T>): T => {
     return fromEntries(
         Object.entries(current).map(([k, v]) => {
             if (k in updater) {

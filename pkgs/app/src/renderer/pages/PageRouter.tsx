@@ -1,7 +1,6 @@
-import React from "react"
-import { useEffect } from "react"
+import React, { useEffect } from "react"
 import { Page } from "state"
-import { component } from "blocks"
+import { store } from "renderer/common"
 import { Home, Learner, Detail, Landing, Results } from "."
 
 type NameToPage = { [_ in NonNullable<Page>]: JSX.Element }
@@ -39,12 +38,12 @@ const route = (requested: Page, authed: boolean, learnerActive: boolean) => {
     return redirected
 }
 
-export const PageRouter = component({
-    name: "PageRouter",
-    query: { token: null, page: null, learner: { active: null } },
-    store: true
-})(({ store, data }) => {
-    const { page, token, learner } = data
+export const PageRouter = () => {
+    const { page, token, learner } = store.hooks.useQuery({
+        page: null,
+        token: null,
+        learner: null
+    })
     const redirected = route(page!, !!token, learner!.active)
     useEffect(() => {
         if (redirected !== page) {
@@ -52,4 +51,4 @@ export const PageRouter = component({
         }
     })
     return Pages[redirected]
-})
+}

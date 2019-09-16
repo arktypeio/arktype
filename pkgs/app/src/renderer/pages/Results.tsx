@@ -2,6 +2,7 @@ import React from "react"
 import { Column, Tree } from "@re-do/components"
 import { RedoAppBar } from "renderer/components/custom"
 import { fromEntries } from "@re-do/utils"
+import MaterialTable from "material-table"
 
 const signInSteps = [
     {

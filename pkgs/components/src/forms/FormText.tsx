@@ -19,7 +19,7 @@ export const FormText = ({
 }: FormTextProps) => {
     const { register, errors, handleBlur, submit } = useFormContext()
     return (
-        <Column>
+        <Column align="center">
             <TextInput
                 name={name}
                 label={label ? label : name}

@@ -31,7 +31,7 @@ export type MetamorphOptions = {
     shallow?: boolean
 }
 
-export const metamorph = <T extends object>(
+export const metamorph = <T>(
     objectToMorph: T,
     classWithMetadata: Class<T>,
     { objectMorph, iterateArrays = true, shallow = false }: MetamorphOptions

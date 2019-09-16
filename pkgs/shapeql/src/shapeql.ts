@@ -23,7 +23,9 @@ export type DeepNonNullableObjects<T> = {
 export type DeepShapeOf<T> = T & DeepNonNullableObjects<T>
 
 // More flexible gqlesque query type that will retrieve all keys nulled object types
-export type DeepNull<T> = { [P in keyof T]?: DeepNull<T[P]> | null }
+export type DeepNull<T> = {
+    [P in keyof T]?: T[P] extends NonRecursible ? null : DeepNull<T[P]> | null
+}
 
 // Represents a gql query that will retrieve all nested fields
 export type RootQuery<T> = {
@@ -32,22 +34,21 @@ export type RootQuery<T> = {
         : RootQuery<Unlisted<T[P]>>
 }
 
-export type Query<T extends S> = DeepNull<RootQuery<T>>
+export type Query<T> = DeepNull<RootQuery<T>>
 
-export type ShapedQuery<T extends S> = DeepNullShapeOf<RootQuery<T>>
+export type ShapedQuery<T> = DeepNullShapeOf<RootQuery<T>>
 
-export type Initialization<T extends S> = DeepShapeOf<T>
+export type Initialization<T> = DeepShapeOf<T>
 
 // Flexible mutation object that allows either values or functions mapping updates
-export type Mutation<T extends S> = DeepUpdate<T>
+export type Mutation<T> = DeepUpdate<T>
 
-export type ShapedMutation<T extends S> = Partial<Initialization<T>>
+export type ShapedMutation<T> = Partial<Initialization<T>>
 
-export const shapeql = <T extends S, Q extends Query<T>>(root: Class<T>) => (
-    query: Q
-) => toGql(shapeQuery(root)(query))
+export const shapeql = <T, Q extends Query<T>>(root: Class<T>) => (query: Q) =>
+    toGql(shapeQuery(root)(query))
 
-export const toGql = <T extends S>(query: ShapedQuery<T>) =>
+export const toGql = <T>(query: ShapedQuery<T>) =>
     gql(
         JSON.stringify(query, null, 4)
             .replace(/"/g, "")
@@ -55,11 +56,11 @@ export const toGql = <T extends S>(query: ShapedQuery<T>) =>
             .replace(/null/g, "")
     )
 
-export type RootQueryOptions<T extends S> = {
+export type RootQueryOptions<T> = {
     rootClass: Class<T>
 }
 
-export const rootQuery = <T extends S>(rootClass: Class<T>) =>
+export const rootQuery = <T>(rootClass: Class<T>) =>
     metamorph(new rootClass(), rootClass, {
         objectMorph: (obj, metadata) => {
             if (metadata) {
@@ -74,7 +75,7 @@ export const rootQuery = <T extends S>(rootClass: Class<T>) =>
         iterateArrays: false
     }) as RootQuery<T>
 
-export const withTypeNames = <T extends S>(
+export const withTypeNames = <T>(
     sourceObject: T,
     classWithMetadata: Class<T>
 ) => {
@@ -89,6 +90,5 @@ export const withTypeNames = <T extends S>(
     }) as T
 }
 
-const shapeQuery = <T extends S, Q extends Query<T>>(rootClass: Class<T>) => (
-    query: Q
-) => (shapeFilter(rootQuery(rootClass), query) as any) as ShapedQuery<T>
+const shapeQuery = <T, Q extends Query<T>>(rootClass: Class<T>) => (query: Q) =>
+    (shapeFilter(rootQuery(rootClass), query) as any) as ShapedQuery<T>

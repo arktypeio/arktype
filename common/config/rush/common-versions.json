@@ -1,5 +1,8 @@
 {
     "$schema": "https://developer.microsoft.com/json-schemas/rush/v5/common-versions.schema.json",
-    "preferredVersions": {},
-    "allowedAlternativeVersions": {}
+    "allowedAlternativeVersions": {},
+    "preferredVersions": {
+        "prettier": "1.15.1",
+        "pretty-quick": "1.8.0"
+    }
 }

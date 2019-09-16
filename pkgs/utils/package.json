@@ -3,25 +3,24 @@
     "version": "0.0.1",
     "author": "redo.qa",
     "description": "Common utilities consumed by Redo",
-    "private": true,
     "main": "dist/index.js",
     "types": "dist/index.d.ts",
     "scripts": {
         "build": "redo-build"
     },
     "dependencies": {
-        "class-transformer": "0.2.0",
-        "fs-extra": "8.1.0",
-        "moize": "5.4.4",
         "@babel/runtime-corejs3": "7.5.5",
-        "core-js": "3.1.4"
+        "class-transformer": "0.2.0",
+        "core-js": "3.1.4",
+        "fs-extra": "8.1.0",
+        "moize": "5.4.4"
     },
     "devDependencies": {
         "@babel/cli": "7.5.5",
+        "@re-do/recommended": "0.0.1",
         "@types/fs-extra": "8.0.0",
         "@types/node": "12.6.6",
-        "@re-do/recommended": "0.0.1",
-        "typescript": "3.5.2",
-        "babel-preset-redo": "1.0.0"
+        "babel-preset-redo": "0.0.1",
+        "typescript": "3.6.2"
     }
 }
