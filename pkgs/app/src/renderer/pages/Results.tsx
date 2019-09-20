@@ -1,8 +1,7 @@
 import React from "react"
-import { Column, Tree } from "@re-do/components"
+import { Column, Table } from "@re-do/components"
 import { RedoAppBar } from "renderer/components/custom"
 import { fromEntries } from "@re-do/utils"
-import MaterialTable from "material-table"
 
 const signInSteps = [
     {
@@ -86,6 +85,12 @@ const fakeResultsData = fromEntries(
 export const Results = () => (
     <Column full={true}>
         <RedoAppBar>{["newTest", "home", "search", "account"]}</RedoAppBar>
-        <Tree>{fakeResultsData}</Tree>
+        <Table
+            columns={[
+                { title: "Test Name", field: "name" },
+                { title: "Date Created", field: "date" }
+            ]}
+            data={[{ name: "Sign-in", date: "9/01/19" }]}
+        />
     </Column>
 )

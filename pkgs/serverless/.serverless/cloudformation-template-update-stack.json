@@ -1,318 +1,288 @@
 {
-  "AWSTemplateFormatVersion": "2010-09-09",
-  "Description": "The AWS CloudFormation template for this Serverless application",
-  "Resources": {
-    "ServerlessDeploymentBucket": {
-      "Type": "AWS::S3::Bucket",
-      "Properties": {
-        "BucketEncryption": {
-          "ServerSideEncryptionConfiguration": [
-            {
-              "ServerSideEncryptionByDefault": {
-                "SSEAlgorithm": "AES256"
-              }
-            }
-          ]
-        }
-      }
-    },
-    "ServerLogGroup": {
-      "Type": "AWS::Logs::LogGroup",
-      "Properties": {
-        "LogGroupName": "/aws/lambda/p2-bins-production-server"
-      }
-    },
-    "IamRoleLambdaExecution": {
-      "Type": "AWS::IAM::Role",
-      "Properties": {
-        "AssumeRolePolicyDocument": {
-          "Version": "2012-10-17",
-          "Statement": [
-            {
-              "Effect": "Allow",
-              "Principal": {
-                "Service": [
-                  "lambda.amazonaws.com"
-                ]
-              },
-              "Action": [
-                "sts:AssumeRole"
-              ]
-            }
-          ]
-        },
-        "Policies": [
-          {
-            "PolicyName": {
-              "Fn::Join": [
-                "-",
-                [
-                  "production",
-                  "p2-bins",
-                  "lambda"
-                ]
-              ]
-            },
-            "PolicyDocument": {
-              "Version": "2012-10-17",
-              "Statement": [
-                {
-                  "Effect": "Allow",
-                  "Action": [
-                    "logs:CreateLogStream"
-                  ],
-                  "Resource": [
-                    {
-                      "Fn::Sub": "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/p2-bins-production*:*"
-                    }
-                  ]
-                },
-                {
-                  "Effect": "Allow",
-                  "Action": [
-                    "logs:PutLogEvents"
-                  ],
-                  "Resource": [
-                    {
-                      "Fn::Sub": "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/p2-bins-production*:*:*"
-                    }
-                  ]
+    "AWSTemplateFormatVersion": "2010-09-09",
+    "Description": "The AWS CloudFormation template for this Serverless application",
+    "Resources": {
+        "ServerlessDeploymentBucket": {
+            "Type": "AWS::S3::Bucket",
+            "Properties": {
+                "BucketEncryption": {
+                    "ServerSideEncryptionConfiguration": [
+                        {
+                            "ServerSideEncryptionByDefault": {
+                                "SSEAlgorithm": "AES256"
+                            }
+                        }
+                    ]
                 }
-              ]
             }
-          }
-        ],
-        "Path": "/",
-        "RoleName": {
-          "Fn::Join": [
-            "-",
-            [
-              "p2-bins",
-              "production",
-              {
-                "Ref": "AWS::Region"
-              },
-              "lambdaRole"
-            ]
-          ]
         },
-        "ManagedPolicyArns": [
-          {
-            "Fn::Join": [
-              "",
-              [
-                "arn:",
-                {
-                  "Ref": "AWS::Partition"
+        "ServerLogGroup": {
+            "Type": "AWS::Logs::LogGroup",
+            "Properties": {
+                "LogGroupName": "/aws/lambda/p2-bins-production-server"
+            }
+        },
+        "IamRoleLambdaExecution": {
+            "Type": "AWS::IAM::Role",
+            "Properties": {
+                "AssumeRolePolicyDocument": {
+                    "Version": "2012-10-17",
+                    "Statement": [
+                        {
+                            "Effect": "Allow",
+                            "Principal": {
+                                "Service": ["lambda.amazonaws.com"]
+                            },
+                            "Action": ["sts:AssumeRole"]
+                        }
+                    ]
                 },
-                ":iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole"
-              ]
-            ]
-          }
-        ]
-      }
-    },
-    "ServerLambdaFunction": {
-      "Type": "AWS::Lambda::Function",
-      "Properties": {
-        "Code": {
-          "S3Bucket": {
-            "Ref": "ServerlessDeploymentBucket"
-          },
-          "S3Key": "serverless/p2-bins/production/1567628990260-2019-09-04T20:29:50.260Z/p2-bins.zip"
+                "Policies": [
+                    {
+                        "PolicyName": {
+                            "Fn::Join": [
+                                "-",
+                                ["production", "p2-bins", "lambda"]
+                            ]
+                        },
+                        "PolicyDocument": {
+                            "Version": "2012-10-17",
+                            "Statement": [
+                                {
+                                    "Effect": "Allow",
+                                    "Action": ["logs:CreateLogStream"],
+                                    "Resource": [
+                                        {
+                                            "Fn::Sub": "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/p2-bins-production*:*"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "Effect": "Allow",
+                                    "Action": ["logs:PutLogEvents"],
+                                    "Resource": [
+                                        {
+                                            "Fn::Sub": "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/p2-bins-production*:*:*"
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    }
+                ],
+                "Path": "/",
+                "RoleName": {
+                    "Fn::Join": [
+                        "-",
+                        [
+                            "p2-bins",
+                            "production",
+                            {
+                                "Ref": "AWS::Region"
+                            },
+                            "lambdaRole"
+                        ]
+                    ]
+                },
+                "ManagedPolicyArns": [
+                    {
+                        "Fn::Join": [
+                            "",
+                            [
+                                "arn:",
+                                {
+                                    "Ref": "AWS::Partition"
+                                },
+                                ":iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole"
+                            ]
+                        ]
+                    }
+                ]
+            }
         },
-        "FunctionName": "p2-bins-production-server",
-        "Handler": "server.handler",
-        "MemorySize": 1024,
-        "Role": {
-          "Fn::GetAtt": [
-            "IamRoleLambdaExecution",
-            "Arn"
-          ]
+        "ServerLambdaFunction": {
+            "Type": "AWS::Lambda::Function",
+            "Properties": {
+                "Code": {
+                    "S3Bucket": {
+                        "Ref": "ServerlessDeploymentBucket"
+                    },
+                    "S3Key": "serverless/p2-bins/production/1567628990260-2019-09-04T20:29:50.260Z/p2-bins.zip"
+                },
+                "FunctionName": "p2-bins-production-server",
+                "Handler": "server.handler",
+                "MemorySize": 1024,
+                "Role": {
+                    "Fn::GetAtt": ["IamRoleLambdaExecution", "Arn"]
+                },
+                "Runtime": "nodejs10.x",
+                "Timeout": 60,
+                "Environment": {
+                    "Variables": {
+                        "NODE_ENV": "production",
+                        "DB_NAME": "main",
+                        "DB_USER": "root",
+                        "DB_PASSWORD": "WfJoXIC7YJ3k16lJCFyg",
+                        "DB_HOST": "redo-prod.cluster-cif8hvycf3mq.us-east-1.rds.amazonaws.com",
+                        "DB_PORT": 3306,
+                        "MYSQL_URL": "mysql://root:WfJoXIC7YJ3k16lJCFyg@redo-prod.cluster-cif8hvycf3mq.us-east-1.rds.amazonaws.com:3306/main"
+                    }
+                },
+                "VpcConfig": {
+                    "SecurityGroupIds": ["sg-81298ef2"],
+                    "SubnetIds": [
+                        "subnet-fdcc6899",
+                        "subnet-ce570bc2",
+                        "subnet-b335dff8",
+                        "subnet-cf0633e3",
+                        "subnet-0498623b",
+                        "subnet-a73e10fd"
+                    ]
+                }
+            },
+            "DependsOn": ["ServerLogGroup", "IamRoleLambdaExecution"]
         },
-        "Runtime": "nodejs10.x",
-        "Timeout": 60,
-        "Environment": {
-          "Variables": {
-            "NODE_ENV": "production",
-            "DB_NAME": "main",
-            "DB_USER": "root",
-            "DB_PASSWORD": "WfJoXIC7YJ3k16lJCFyg",
-            "DB_HOST": "redo-prod.cluster-cif8hvycf3mq.us-east-1.rds.amazonaws.com",
-            "DB_PORT": 3306,
-            "MYSQL_URL": "mysql://root:WfJoXIC7YJ3k16lJCFyg@redo-prod.cluster-cif8hvycf3mq.us-east-1.rds.amazonaws.com:3306/main"
-          }
+        "ServerLambdaVersion70RoiLqkoZ48T4mJU1jf5GI7tbXVSGPdRf09nOcU": {
+            "Type": "AWS::Lambda::Version",
+            "DeletionPolicy": "Retain",
+            "Properties": {
+                "FunctionName": {
+                    "Ref": "ServerLambdaFunction"
+                },
+                "CodeSha256": "Ni8CwBYMfqkul+dDC+XYSSLMMoWGUKCYS6QgdQR4qyw="
+            }
         },
-        "VpcConfig": {
-          "SecurityGroupIds": [
-            "sg-81298ef2"
-          ],
-          "SubnetIds": [
-            "subnet-fdcc6899",
-            "subnet-ce570bc2",
-            "subnet-b335dff8",
-            "subnet-cf0633e3",
-            "subnet-0498623b",
-            "subnet-a73e10fd"
-          ]
+        "ApiGatewayRestApi": {
+            "Type": "AWS::ApiGateway::RestApi",
+            "Properties": {
+                "Name": "production-p2-bins",
+                "EndpointConfiguration": {
+                    "Types": ["EDGE"]
+                }
+            }
+        },
+        "ApiGatewayMethodGet": {
+            "Type": "AWS::ApiGateway::Method",
+            "Properties": {
+                "HttpMethod": "GET",
+                "RequestParameters": {},
+                "ResourceId": {
+                    "Fn::GetAtt": ["ApiGatewayRestApi", "RootResourceId"]
+                },
+                "RestApiId": {
+                    "Ref": "ApiGatewayRestApi"
+                },
+                "ApiKeyRequired": false,
+                "AuthorizationType": "NONE",
+                "Integration": {
+                    "IntegrationHttpMethod": "POST",
+                    "Type": "AWS_PROXY",
+                    "Uri": {
+                        "Fn::Join": [
+                            "",
+                            [
+                                "arn:",
+                                {
+                                    "Ref": "AWS::Partition"
+                                },
+                                ":apigateway:",
+                                {
+                                    "Ref": "AWS::Region"
+                                },
+                                ":lambda:path/2015-03-31/functions/",
+                                {
+                                    "Fn::GetAtt": [
+                                        "ServerLambdaFunction",
+                                        "Arn"
+                                    ]
+                                },
+                                "/invocations"
+                            ]
+                        ]
+                    }
+                },
+                "MethodResponses": []
+            }
+        },
+        "ApiGatewayDeployment1567628976819": {
+            "Type": "AWS::ApiGateway::Deployment",
+            "Properties": {
+                "RestApiId": {
+                    "Ref": "ApiGatewayRestApi"
+                },
+                "StageName": "production"
+            },
+            "DependsOn": ["ApiGatewayMethodGet"]
+        },
+        "ServerLambdaPermissionApiGateway": {
+            "Type": "AWS::Lambda::Permission",
+            "Properties": {
+                "FunctionName": {
+                    "Fn::GetAtt": ["ServerLambdaFunction", "Arn"]
+                },
+                "Action": "lambda:InvokeFunction",
+                "Principal": "apigateway.amazonaws.com",
+                "SourceArn": {
+                    "Fn::Join": [
+                        "",
+                        [
+                            "arn:",
+                            {
+                                "Ref": "AWS::Partition"
+                            },
+                            ":execute-api:",
+                            {
+                                "Ref": "AWS::Region"
+                            },
+                            ":",
+                            {
+                                "Ref": "AWS::AccountId"
+                            },
+                            ":",
+                            {
+                                "Ref": "ApiGatewayRestApi"
+                            },
+                            "/*/*"
+                        ]
+                    ]
+                }
+            }
         }
-      },
-      "DependsOn": [
-        "ServerLogGroup",
-        "IamRoleLambdaExecution"
-      ]
     },
-    "ServerLambdaVersion70RoiLqkoZ48T4mJU1jf5GI7tbXVSGPdRf09nOcU": {
-      "Type": "AWS::Lambda::Version",
-      "DeletionPolicy": "Retain",
-      "Properties": {
-        "FunctionName": {
-          "Ref": "ServerLambdaFunction"
+    "Outputs": {
+        "ServerlessDeploymentBucketName": {
+            "Value": {
+                "Ref": "ServerlessDeploymentBucket"
+            }
         },
-        "CodeSha256": "Ni8CwBYMfqkul+dDC+XYSSLMMoWGUKCYS6QgdQR4qyw="
-      }
-    },
-    "ApiGatewayRestApi": {
-      "Type": "AWS::ApiGateway::RestApi",
-      "Properties": {
-        "Name": "production-p2-bins",
-        "EndpointConfiguration": {
-          "Types": [
-            "EDGE"
-          ]
+        "ServerLambdaFunctionQualifiedArn": {
+            "Description": "Current Lambda function version",
+            "Value": {
+                "Ref": "ServerLambdaVersion70RoiLqkoZ48T4mJU1jf5GI7tbXVSGPdRf09nOcU"
+            }
+        },
+        "ServiceEndpoint": {
+            "Description": "URL of the service endpoint",
+            "Value": {
+                "Fn::Join": [
+                    "",
+                    [
+                        "https://",
+                        {
+                            "Ref": "ApiGatewayRestApi"
+                        },
+                        ".execute-api.",
+                        {
+                            "Ref": "AWS::Region"
+                        },
+                        ".",
+                        {
+                            "Ref": "AWS::URLSuffix"
+                        },
+                        "/production"
+                    ]
+                ]
+            }
         }
-      }
-    },
-    "ApiGatewayMethodGet": {
-      "Type": "AWS::ApiGateway::Method",
-      "Properties": {
-        "HttpMethod": "GET",
-        "RequestParameters": {},
-        "ResourceId": {
-          "Fn::GetAtt": [
-            "ApiGatewayRestApi",
-            "RootResourceId"
-          ]
-        },
-        "RestApiId": {
-          "Ref": "ApiGatewayRestApi"
-        },
-        "ApiKeyRequired": false,
-        "AuthorizationType": "NONE",
-        "Integration": {
-          "IntegrationHttpMethod": "POST",
-          "Type": "AWS_PROXY",
-          "Uri": {
-            "Fn::Join": [
-              "",
-              [
-                "arn:",
-                {
-                  "Ref": "AWS::Partition"
-                },
-                ":apigateway:",
-                {
-                  "Ref": "AWS::Region"
-                },
-                ":lambda:path/2015-03-31/functions/",
-                {
-                  "Fn::GetAtt": [
-                    "ServerLambdaFunction",
-                    "Arn"
-                  ]
-                },
-                "/invocations"
-              ]
-            ]
-          }
-        },
-        "MethodResponses": []
-      }
-    },
-    "ApiGatewayDeployment1567628976819": {
-      "Type": "AWS::ApiGateway::Deployment",
-      "Properties": {
-        "RestApiId": {
-          "Ref": "ApiGatewayRestApi"
-        },
-        "StageName": "production"
-      },
-      "DependsOn": [
-        "ApiGatewayMethodGet"
-      ]
-    },
-    "ServerLambdaPermissionApiGateway": {
-      "Type": "AWS::Lambda::Permission",
-      "Properties": {
-        "FunctionName": {
-          "Fn::GetAtt": [
-            "ServerLambdaFunction",
-            "Arn"
-          ]
-        },
-        "Action": "lambda:InvokeFunction",
-        "Principal": "apigateway.amazonaws.com",
-        "SourceArn": {
-          "Fn::Join": [
-            "",
-            [
-              "arn:",
-              {
-                "Ref": "AWS::Partition"
-              },
-              ":execute-api:",
-              {
-                "Ref": "AWS::Region"
-              },
-              ":",
-              {
-                "Ref": "AWS::AccountId"
-              },
-              ":",
-              {
-                "Ref": "ApiGatewayRestApi"
-              },
-              "/*/*"
-            ]
-          ]
-        }
-      }
     }
-  },
-  "Outputs": {
-    "ServerlessDeploymentBucketName": {
-      "Value": {
-        "Ref": "ServerlessDeploymentBucket"
-      }
-    },
-    "ServerLambdaFunctionQualifiedArn": {
-      "Description": "Current Lambda function version",
-      "Value": {
-        "Ref": "ServerLambdaVersion70RoiLqkoZ48T4mJU1jf5GI7tbXVSGPdRf09nOcU"
-      }
-    },
-    "ServiceEndpoint": {
-      "Description": "URL of the service endpoint",
-      "Value": {
-        "Fn::Join": [
-          "",
-          [
-            "https://",
-            {
-              "Ref": "ApiGatewayRestApi"
-            },
-            ".execute-api.",
-            {
-              "Ref": "AWS::Region"
-            },
-            ".",
-            {
-              "Ref": "AWS::URLSuffix"
-            },
-            "/production"
-          ]
-        ]
-      }
-    }
-  }
 }
