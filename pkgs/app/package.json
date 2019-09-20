@@ -44,6 +44,7 @@
         "@medv/finder": "1.1.1",
         "@re-do/model": "0.0.1",
         "@re-do/utils": "0.0.1",
+        "@re-do/test": "0.0.1",
         "apollo-cache-inmemory": "1.6.2",
         "apollo-client": "2.6.3",
         "apollo-link-context": "1.0.18",

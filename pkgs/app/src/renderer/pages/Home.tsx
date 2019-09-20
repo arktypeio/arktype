@@ -6,7 +6,7 @@ import { RedoAppBar, SuggestionResultsGrid, SuggestionData } from "custom"
 
 const welcomeSuggestion: SuggestionData = {
     name: "👆Hey there!",
-    kind: "Onboarding",
+    kind: "other",
     description:
         "Looks like you don't have any tests yet. Click up here to create one!"
 }

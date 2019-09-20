@@ -2,6 +2,7 @@ import { InField, InType, OutType, OutField, ID } from "./common"
 import { Tag } from "./tag"
 import { Test } from "./test"
 import { Step } from "./step"
+import { Selector } from "./selector"
 
 @OutType()
 export class User {
@@ -28,6 +29,9 @@ export class User {
 
     @OutField({ type: as => [Step] })
     steps: Step[]
+
+    @OutField({ type: as => [Selector] })
+    selectors: Selector[]
 }
 
 @InType()

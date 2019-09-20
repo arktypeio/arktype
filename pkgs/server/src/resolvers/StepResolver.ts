@@ -21,12 +21,18 @@ export class StepResolver {
         const step = await photon.steps.create({
             data: {
                 action,
-                selector,
+                selector: {
+                    create: {
+                        css: selector.css,
+                        user: { connect: { id } }
+                    }
+                },
                 value,
                 user: { connect: { id } }
             },
             include: {
-                user: true
+                user: true,
+                selector: true
             }
         })
         return step
@@ -37,7 +43,7 @@ export class StepResolver {
     async getSteps(@Ctx() { photon, id }: Context) {
         const steps = await photon.steps.findMany({
             where: { user: { id } },
-            include: { user: true }
+            include: { user: true, selector: true }
         })
         return steps
     }
@@ -52,7 +58,14 @@ export class StepResolver {
         const step = await photon.steps.update({
             data: {
                 action,
-                selector,
+                selector: selector
+                    ? {
+                          create: {
+                              css: selector.css,
+                              user: { connect: { id } }
+                          }
+                      }
+                    : undefined,
                 value,
                 user: { connect: { id } }
             },
@@ -60,7 +73,8 @@ export class StepResolver {
                 id: stepId
             },
             include: {
-                user: true
+                user: true,
+                selector: true
             }
         })
         return step

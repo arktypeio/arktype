@@ -7,7 +7,7 @@ import {
     Args,
     Arg
 } from "type-graphql"
-import { Test, TestInput, TestUpdate } from "@re-do/model"
+import { Test, TestInput, TestUpdate, Selector } from "@re-do/model"
 import { Context } from "../context"
 import { createTagConnector } from "./common"
 @Resolver(of => Test)
@@ -25,13 +25,19 @@ export class TestResolver {
                 steps: {
                     create: steps.map(step => ({
                         ...step,
+                        selector: {
+                            create: {
+                                css: step.selector.css,
+                                user: { connect: { id } }
+                            }
+                        },
                         user: { connect: { id } }
                     }))
                 },
                 tags: await createTagConnector(tags, context),
                 user: { connect: { id } }
             },
-            include: { tags: true, steps: true }
+            include: { tags: true, steps: { include: { selector: true } } }
         })
         return test
     }
@@ -40,7 +46,11 @@ export class TestResolver {
     async getTests(@Ctx() { photon, id }: Context) {
         const tests = await photon.tests.findMany({
             where: { user: { id } },
-            include: { steps: true, user: true, tags: true }
+            include: {
+                steps: { include: { selector: true } },
+                user: true,
+                tags: true
+            }
         })
         return tests
     }
@@ -60,6 +70,14 @@ export class TestResolver {
                     ? {
                           create: steps.map(step => ({
                               ...step,
+                              selector: {
+                                  create: {
+                                      css: step.selector.css,
+                                      user: {
+                                          connect: { id }
+                                      }
+                                  }
+                              },
                               user: { connect: { id } }
                           }))
                       }
@@ -67,7 +85,7 @@ export class TestResolver {
                 tags: tags ? await createTagConnector(tags, context) : undefined
             },
             where: { id: testId },
-            include: { tags: true, steps: true }
+            include: { tags: true, steps: { include: { selector: true } } }
         })
         return test
     }

@@ -21,6 +21,7 @@
         "@types/puppeteer": "1.19.1",
         "babel-preset-redo": "0.0.1",
         "jest": "24.8.0",
-        "@re-do/recommended": "0.0.1"
+        "@re-do/recommended": "0.0.1",
+        "typescript": "3.6.2"
     }
 }

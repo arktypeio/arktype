@@ -11,8 +11,16 @@ export class UserResolver {
             where: { id },
             include: {
                 tags: true,
-                tests: { include: { tags: true, steps: true } },
-                steps: true
+                tests: {
+                    include: {
+                        tags: true,
+                        steps: { include: { selector: true } }
+                    }
+                },
+                steps: {
+                    include: { selector: true }
+                },
+                selectors: true
             }
         })
     }

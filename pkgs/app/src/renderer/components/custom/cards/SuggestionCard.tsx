@@ -1,18 +1,18 @@
-import React, { FC } from "react"
-import { Typography as MuiTypography } from "@material-ui/core"
-import { Column, Card, Row, useTheme, Icons } from "@re-do/components"
+import React from "react"
+import { test } from "@re-do/test"
+import { Column, Card, Row, useTheme, Text } from "@re-do/components"
 
 export type SuggestionCardProps = {
     name: string
-    kind: string
     description?: string
+    extras?: JSX.Element[]
 }
 
-export const SuggestionCard: FC<SuggestionCardProps> = ({
+export const SuggestionCard = ({
     name,
-    kind,
-    description
-}) => {
+    description,
+    extras
+}: SuggestionCardProps) => {
     const theme = useTheme()
     return (
         <Card
@@ -23,20 +23,19 @@ export const SuggestionCard: FC<SuggestionCardProps> = ({
         >
             <Column full={true} justify="space-around">
                 <Row full={true} justify="center" align="center">
-                    <MuiTypography variant="h6" noWrap align="center">
+                    <Text variant="h6" noWrap align="center">
                         {name}
-                    </MuiTypography>
+                    </Text>
                 </Row>
                 {description ? (
                     <Row full={true} justify="center" align="center">
-                        <MuiTypography variant="body2" align="center">
+                        <Text variant="body2" align="center">
                             {description}
-                        </MuiTypography>
+                        </Text>
                     </Row>
                 ) : null}
                 <Row full={true} justify="center" align="center">
-                    {kind === "test" ? <Icons.run /> : null}
-                    <Icons.view />
+                    {extras}
                 </Row>
             </Column>
         </Card>

@@ -9,6 +9,7 @@ import {
     createTypeMetadata
 } from "./common"
 import { User } from "./user"
+import { Selector, SelectorInput, SelectorUpdate } from "./selector"
 
 @OutType()
 export class Step {
@@ -19,7 +20,7 @@ export class Step {
     action: string
 
     @OutField()
-    selector: string
+    selector: Selector
 
     @OutField()
     value: string
@@ -34,7 +35,7 @@ export class StepInput {
     action: string
 
     @InField()
-    selector: string
+    selector: SelectorInput
 
     @InField()
     value: string
@@ -46,7 +47,7 @@ export class StepUpdate {
     action?: string
 
     @InField({ options: { nullable: true } })
-    selector?: string
+    selector?: SelectorInput
 
     @InField({ options: { nullable: true } })
     value?: string
@@ -61,7 +62,9 @@ export const stepMetadata = createTypeMetadata({
             query {
                 getSteps {
                     action
-                    selector
+                    selector {
+                        css
+                    }
                     value
                 }
             }
@@ -70,7 +73,7 @@ export const stepMetadata = createTypeMetadata({
             mutation updateStep(
                 $id: String!
                 $action: String
-                $selector: String
+                $selector: SelectorInput
                 $value: String
             ) {
                 updateStep(

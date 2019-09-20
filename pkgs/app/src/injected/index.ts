@@ -18,12 +18,14 @@ export const watchPage = async () => {
             async (e: Event) => {
                 const step: StepInput = {
                     action: e.type,
-                    selector: "",
+                    selector: {
+                        css: ""
+                    },
                     value: ""
                 }
                 if (e.target) {
                     const target = e.target as HTMLElement
-                    step.selector = finder(target as HTMLElement)
+                    step.selector = { css: finder(target as HTMLElement) }
                     switch (e.type) {
                         case "change":
                             if (e.target) {

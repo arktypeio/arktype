@@ -7,8 +7,6 @@
             "*": ["*"],
             "state": ["renderer/state"],
             "state/*": ["renderer/state/*"],
-            "blocks": ["renderer/components/blocks"],
-            "blocks/*": ["renderer/components/blocks/*"],
             "renderer/*": ["renderer/*"],
             "custom": ["renderer/components/custom"],
             "custom/*": ["renderer/components/custom/*"],

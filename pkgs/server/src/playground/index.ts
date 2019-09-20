@@ -23,7 +23,13 @@ const contents = gql`
         createTest(
             name: "Test Something"
             tags: [{ name: "BAT" }, { name: "short" }]
-            steps: [{ action: "set", selector: "#someId", value: "someText" }]
+            steps: [
+                {
+                    action: "set"
+                    selector: { css: "#someId" }
+                    value: "someText"
+                }
+            ]
         ) {
             id
         }
@@ -34,7 +40,13 @@ const contents = gql`
             id: $id
             name: "NewName"
             tags: [{ name: "BAT" }, { name: "short" }]
-            steps: [{ action: "set", selector: "#someId", value: "someText" }]
+            steps: [
+                {
+                    action: "set"
+                    selector: { css: "#someId" }
+                    value: "someText"
+                }
+            ]
         ) {
             id
         }
@@ -56,7 +68,9 @@ const contents = gql`
             }
             steps {
                 action
-                selector
+                selector {
+                    css
+                }
                 value
             }
         }
@@ -73,7 +87,9 @@ const contents = gql`
         getSteps {
             id
             action
-            selector
+            selector {
+                css
+            }
             value
         }
     }
@@ -92,7 +108,9 @@ const contents = gql`
             steps {
                 id
                 action
-                selector
+                selector {
+                    css
+                }
                 value
             }
             tests {
@@ -105,7 +123,9 @@ const contents = gql`
                 steps {
                     id
                     action
-                    selector
+                    selector {
+                        css
+                    }
                     value
                 }
             }

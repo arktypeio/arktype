@@ -1,8 +1,9 @@
 import p, { Page, Browser } from "puppeteer"
 import { ValueOf } from "@re-do/utils"
+import { SelectorInput } from "@re-do/model"
 
 export const test = async (...steps: Step[]) => {
-    const browser = await p.launch({ headless: false, slowMo: 250 })
+    const browser = await p.launch({ headless: false, slowMo: 50 })
     const page = await browser.newPage()
     await page.goto("https://redo.qa")
     await page.screenshot({ path: "before.png" })
@@ -29,11 +30,11 @@ export const redo = async ({ step: [type, args], context }: RedoArgs) => {
 }
 
 export type ClickArgs = {
-    selector: string
+    selector: SelectorInput
 }
 
 export const click = async ({ selector }: ClickArgs, { page }: Context) => {
-    await page.click(selector)
+    await page.click(selector.css)
 }
 
 export type GoArgs = {
@@ -44,12 +45,12 @@ export const go = async ({ url }: GoArgs, { page }: Context) =>
     await page.goto(url)
 
 export type SetArgs = {
-    selector: string
+    selector: SelectorInput
     value: string
 }
 
 export const set = async ({ selector, value }: SetArgs, { page }: Context) => {
-    await page.type(selector, value)
+    await page.type(selector.css, value)
 }
 
 export type ScreenshotArgs = {}

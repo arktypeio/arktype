@@ -67,7 +67,9 @@ export const testMetadata = createTypeMetadata({
                     name
                     steps {
                         action
-                        selector
+                        selector {
+                            css
+                        }
                         value
                     }
                     tags {
