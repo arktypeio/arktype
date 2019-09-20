@@ -57,40 +57,46 @@ const fakeResultsDataRaw = [
         source: "Sign In",
         passed: true,
         steps: signInSteps
-    },
-    {
-        source: "New User Tests",
-        result: {
-            passed: 1,
-            total: 2
-        },
-        tests: [
-            { name: "Sign In", result: { passed: true }, steps: signInSteps },
-            {
-                name: "Sign Up",
-                result: {
-                    passed: false,
-                    error: "Couldn't find #confirmPassword."
-                },
-                steps: signUpSteps
-            }
-        ]
     }
+    // {
+    //     source: "New User Tests",
+    //     result: {
+    //         passed: 1,
+    //         total: 2
+    //     },
+    //     tests: [
+    //         { name: "Sign In", result: { passed: true }, steps: signInSteps },
+    //         {
+    //             name: "Sign Up",
+    //             result: {
+    //                 passed: false,
+    //                 error: "Couldn't find #confirmPassword."
+    //             },
+    //             steps: signUpSteps
+    //         }
+    //     ]
+    // }
 ]
-
-const fakeResultsData = fromEntries(
-    fakeResultsDataRaw.map(({ source, ...rest }) => [source, rest])
-)
+type TestResultsData = typeof fakeResultsDataRaw
+const toTableData = (data: TestResultsData) => {
+    return data.map(result => ({
+        source: result.source,
+        passed: JSON.stringify(result.passed),
+        steps: JSON.stringify(result.steps)
+    }))
+}
 
 export const Results = () => (
     <Column full={true}>
         <RedoAppBar>{["newTest", "home", "search", "account"]}</RedoAppBar>
         <Table
             columns={[
-                { title: "Test Name", field: "name" },
-                { title: "Date Created", field: "date" }
+                { title: "Test Name", field: "source" },
+                { title: "Passed", field: "passed" },
+                { title: "Sign-in Steps", field: "steps" }
             ]}
-            data={[{ name: "Sign-in", date: "9/01/19" }]}
+            data={toTableData(fakeResultsDataRaw)}
+            title="Test Results"
         />
     </Column>
 )
