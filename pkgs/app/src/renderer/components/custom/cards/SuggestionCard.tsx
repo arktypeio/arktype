@@ -1,15 +1,28 @@
 import React from "react"
-import { test } from "@re-do/test"
+import { Icons, IconButton } from "@re-do/components"
 import { Column, Card, Row, useTheme, Text } from "@re-do/components"
+
+type SuggestionKind = "test" | "other"
 
 export type SuggestionCardProps = {
     name: string
+    kind: SuggestionKind
     description?: string
     extras?: JSX.Element[]
 }
 
+export const getSuggestionExtras = (): SuggestionExtras => {
+    return {
+        test: [<IconButton Icon={Icons.run} onClick={() => {}} />],
+        other: []
+    }
+}
+
+type SuggestionExtras = { [K in SuggestionKind]: JSX.Element[] }
+
 export const SuggestionCard = ({
     name,
+    kind,
     description,
     extras
 }: SuggestionCardProps) => {
