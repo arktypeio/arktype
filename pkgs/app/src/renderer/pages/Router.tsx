@@ -37,7 +37,7 @@ const route = (requested: Page, authed: boolean, learnerActive: boolean) => {
     return redirected
 }
 
-export const PageRouter = () => {
+export const Router = () => {
     const { page, token, learner } = store.hooks.useQuery({
         page: null,
         token: null,

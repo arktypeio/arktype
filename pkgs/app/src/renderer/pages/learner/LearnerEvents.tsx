@@ -1,6 +1,6 @@
 import React, { FC } from "react"
 import { List, ListItem } from "@material-ui/core"
-import { LearnerEventCard } from "custom"
+import { StepCard } from "./StepCard"
 import { StepInput } from "@re-do/model"
 import { useTheme } from "@re-do/components"
 
@@ -19,7 +19,7 @@ export const LearnerEvents: FC<LearnerEventsProps> = ({ events }) => {
         >
             {events.map((e, i) => (
                 <ListItem style={{ padding: theme.spacing(2) }} key={i}>
-                    <LearnerEventCard event={{ ...e }} />
+                    <StepCard event={{ ...e }} />
                 </ListItem>
             ))}
         </List>

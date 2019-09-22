@@ -1,11 +1,11 @@
 import React, { FC } from "react"
-import { PageRouter } from "pages"
+import { Router } from "pages"
 import { hot } from "react-hot-loader/root"
 import { AppContents } from "@re-do/components"
 
 const PossiblyHotContent: FC = () => (
     <AppContents>
-        <PageRouter />
+        <Router />
     </AppContents>
 )
 

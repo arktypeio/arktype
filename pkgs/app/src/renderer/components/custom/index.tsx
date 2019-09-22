@@ -1,5 +1,4 @@
-export * from "./cards"
-export * from "./appBar/RedoAppBar"
+export * from "../cards"
+export * from "../appBar/RedoAppBar"
 export * from "./SuggestionResultsGrid"
-export * from "./LearnerEvents"
 export * from "./TreeView"

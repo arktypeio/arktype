@@ -1,6 +1,6 @@
-export * from "./Home"
-export * from "./Learner"
+export * from "./home"
+export * from "./learner"
 export * from "./landing"
-export * from "./Detail"
+export * from "./detail"
 // Should always be the last export
-export * from "./PageRouter"
+export * from "./Router"
