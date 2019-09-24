@@ -11,7 +11,7 @@ import {
     ErrorText
 } from "@re-do/components"
 import { deactivateLearner, resetLearner } from "state"
-import { LearnerEvents } from "custom"
+import { LearnerEvents } from "./StepCards"
 import gql from "graphql-tag"
 import { useMutation } from "@apollo/react-hooks"
 import { store } from "renderer/common"
@@ -78,7 +78,6 @@ export const Learner = () => {
                     />
                 </Column>
             </AppBar>
-
             <div>
                 {chromiumInstalling ? (
                     <Column align="center">
@@ -86,10 +85,9 @@ export const Learner = () => {
                         <Text>Getting things ready...</Text>
                     </Column>
                 ) : (
-                    <LearnerEvents events={events} />
+                    <LearnerEvents steps={events} />
                 )}
             </div>
-
             <AppBar kind="bottom" justify="space-around">
                 <IconButton
                     Icon={Icons.close}

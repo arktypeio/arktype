@@ -35,11 +35,9 @@ export class TestInput {
     @InField({ validate: ["filled"] })
     name: string
 
-    // TODO: Add validation https://trello.com/c/Bs3ypPLs
     @InField({ type: as => [TagInput] })
     tags: TagInput[]
 
-    // TODO: Add validation https://trello.com/c/Bs3ypPLs
     @InField({ type: as => [StepInput] })
     steps: StepInput[]
 }
@@ -59,7 +57,8 @@ export class TestUpdate {
 export const testMetadata = createTypeMetadata({
     inType: TestInput,
     outType: Test,
-    actions: [TypeAction.Run, TypeAction.Update, TypeAction.Delete],
+    mutations: [TypeAction.Update, TypeAction.Delete],
+    actions: [],
     gql: {
         get: gql`
             query {

@@ -10,8 +10,8 @@ import {
     TreeNodeTransform
 } from "@re-do/components"
 import { metadata, MetadataKey, Test } from "@re-do/model"
-import { ObjectView } from "../ObjectView"
-import { RedoAppBar } from "../appBar"
+import { ObjectView } from "./ObjectView"
+import { RedoAppBar } from "./appBar"
 
 const metaKeyToQueryName = (key: string) =>
     `get${key.charAt(0).toUpperCase()}${key.slice(1)}s`

@@ -5,12 +5,10 @@ import { SearchBar } from "./SearchBar"
 import { HomeButton } from "./HomeButton"
 import { NewTestButton } from "./NewTestButton"
 import { AccountSection } from "./AccountSection"
-import { CloseLearnerButton } from "./CloseLearnerButton"
 
 const leftItems = {
     home: HomeButton,
-    newTest: NewTestButton,
-    close: CloseLearnerButton
+    newTest: NewTestButton
 }
 type LeftKey = keyof typeof leftItems
 const centerItems = {

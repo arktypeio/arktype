@@ -4,7 +4,7 @@ import gql from "graphql-tag"
 import { SignInInput } from "@re-do/model"
 import { useMutation } from "@apollo/react-hooks"
 import { store } from "renderer/common"
-import { submitForm } from "custom/CustomForm"
+import { submitForm } from "renderer/components/CustomForm"
 import { formatEmail } from "./common"
 
 const SIGNIN = gql`

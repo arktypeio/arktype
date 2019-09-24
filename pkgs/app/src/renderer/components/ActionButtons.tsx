@@ -1,5 +1,5 @@
 import React from "react"
-import { IconButton, Icons } from "@re-do/components"
+import { Icons } from "@re-do/components"
 import { TypeAction } from "@re-do/model"
 
 type ActionToButton = { [_ in NonNullable<TypeAction>]: React.ComponentType }

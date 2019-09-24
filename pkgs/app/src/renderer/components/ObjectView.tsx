@@ -1,7 +1,7 @@
 import React from "react"
 import { Column, AutoForm, Row, IconButton } from "@re-do/components"
 import { MetadataKey, metadata, Test } from "@re-do/model"
-import { submitForm } from "custom/CustomForm"
+import { submitForm } from "renderer/components/CustomForm"
 import { useMutation } from "@apollo/react-hooks"
 import { isRecursible, fromEntries } from "@re-do/utils"
 import { actionToIcon } from "./ActionButtons"

@@ -1,5 +1,5 @@
 import React, { FC } from "react"
-import { TreeView } from "custom"
+import { TreeView } from "renderer/components"
 
 export type DetailProps = {}
 

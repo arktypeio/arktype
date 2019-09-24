@@ -1,6 +1,6 @@
 import React, { FC } from "react"
 import { IconButton, Icons, Menu } from "@re-do/components"
-import { SearchInput } from "../custom/SearchInput"
+import { SearchInput } from "./SearchInput"
 import { Page } from "renderer/state"
 import { store } from "renderer/common"
 

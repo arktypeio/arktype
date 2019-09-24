@@ -11,7 +11,7 @@ import {
 } from "@re-do/components"
 import { SignUpInput } from "@re-do/model"
 import { store } from "renderer/common"
-import { submitForm } from "custom/CustomForm"
+import { submitForm } from "renderer/components/CustomForm"
 import { formatEmail } from "./common"
 
 type SignUpData = {

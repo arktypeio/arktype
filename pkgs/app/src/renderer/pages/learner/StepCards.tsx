@@ -5,10 +5,10 @@ import { StepInput } from "@re-do/model"
 import { useTheme } from "@re-do/components"
 
 export type LearnerEventsProps = {
-    events: StepInput[]
+    steps: StepInput[]
 }
 
-export const LearnerEvents: FC<LearnerEventsProps> = ({ events }) => {
+export const LearnerEvents: FC<LearnerEventsProps> = ({ steps }) => {
     const theme = useTheme()
     return (
         <List
@@ -17,7 +17,7 @@ export const LearnerEvents: FC<LearnerEventsProps> = ({ events }) => {
                 width: "100%"
             }}
         >
-            {events.map((e, i) => (
+            {steps.map((e, i) => (
                 <ListItem style={{ padding: theme.spacing(2) }} key={i}>
                     <StepCard event={{ ...e }} />
                 </ListItem>
