@@ -170,6 +170,7 @@ export type TypeMetadata<InType, OutType> = {
         delete?: any
     }
     actions?: TypeAction[]
+    mutations?: Mutation[]
 }
 
 export const createTypeMetadata = <InType, OutType>(
@@ -180,4 +181,10 @@ export enum TypeAction {
     Delete = "DELETE",
     Update = "UPDATE",
     Run = "RUN"
+}
+
+export enum Mutation {
+    Create = "CREATE",
+    Update = "UPDATE",
+    Delete = "DELETE"
 }

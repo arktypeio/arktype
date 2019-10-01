@@ -7,11 +7,13 @@ import {
     Args,
     Arg
 } from "type-graphql"
-import { Test, TestInput, TestUpdate, Selector } from "@re-do/model"
+import { Test, TestInput, TestUpdate } from "@re-do/model"
+import { ResolverOf } from "./Resolver"
 import { Context } from "../context"
 import { createTagConnector } from "./common"
+
 @Resolver(of => Test)
-export class TestResolver {
+export class TestResolver extends ResolverOf(Test) {
     @Authorized()
     @Mutation(returns => Test)
     async createTest(
@@ -41,6 +43,7 @@ export class TestResolver {
         })
         return test
     }
+
     @Authorized()
     @Query(returns => [Test])
     async getTests(@Ctx() { photon, id }: Context) {

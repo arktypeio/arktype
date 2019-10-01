@@ -41,7 +41,7 @@
         "@types/node": "12.6.6",
         "fs-extra": "8.1.0",
         "jest": "24.8.0",
-        "prisma2": "2.0.0-preview-8",
+        "prisma2": "2.0.0-preview-12",
         "ts-jest": "24.0.2",
         "ts-node": "8.3.0",
         "ts-node-dev": "1.0.0-pre.40",

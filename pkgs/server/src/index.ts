@@ -5,7 +5,7 @@ import { buildSchema } from "type-graphql"
 import { authChecker, getUserId } from "./auth"
 import { resolvers } from "./resolvers"
 import { playground } from "./playground"
-import Photon from "@generated/photon"
+import { Photon } from "@generated/photon"
 import { join } from "path"
 
 const photon = new Photon()

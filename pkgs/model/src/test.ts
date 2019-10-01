@@ -5,6 +5,7 @@ import {
     OutField,
     ID,
     TypeAction,
+    Mutation,
     createTypeMetadata
 } from "./common"
 import { User } from "./user"
@@ -57,7 +58,7 @@ export class TestUpdate {
 export const testMetadata = createTypeMetadata({
     inType: TestInput,
     outType: Test,
-    mutations: [TypeAction.Update, TypeAction.Delete],
+    mutations: [Mutation.Update, Mutation.Delete],
     actions: [],
     gql: {
         get: gql`

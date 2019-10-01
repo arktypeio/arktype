@@ -5,8 +5,7 @@ import {
     OutType,
     OutField,
     ID,
-    createTypeMetadata,
-    TypeAction
+    createTypeMetadata
 } from "./common"
 import { User } from "./user"
 

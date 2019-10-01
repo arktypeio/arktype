@@ -1,4 +1,4 @@
-import Photon from "@generated/photon"
+import { Photon } from "@generated/photon"
 import { hash } from "bcrypt"
 const photon = new Photon()
 

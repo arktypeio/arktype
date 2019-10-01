@@ -1,4 +1,4 @@
-import Photon, { FindOneUserArgs } from "@generated/photon"
+import { Photon, FindOneUserArgs } from "@generated/photon"
 import { TagInput } from "@re-do/model"
 import { Context } from "../context"
 
