@@ -51,6 +51,10 @@
         {
             "packageName": "@re-do/test",
             "projectFolder": "pkgs/test"
+        },
+        {
+            "packageName": "example",
+            "projectFolder": "pkgs/nexus"
         }
     ]
 }
