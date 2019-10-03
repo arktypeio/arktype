@@ -16,7 +16,7 @@ export class StepResolver {
     @Mutation(returns => Step)
     async createStep(
         @Args() { action, selector, value }: StepInput,
-        @Ctx() { photon, id }: Context
+        @Ctx() { photon, userId: id }: Context
     ) {
         const step = await photon.steps.create({
             data: {
@@ -40,7 +40,7 @@ export class StepResolver {
 
     @Authorized()
     @Query(returns => [Step])
-    async getSteps(@Ctx() { photon, id }: Context) {
+    async getSteps(@Ctx() { photon, userId: id }: Context) {
         const steps = await photon.steps.findMany({
             where: { user: { id } },
             include: { user: true, selector: true }
@@ -53,7 +53,7 @@ export class StepResolver {
     async updateStep(
         @Args() { action, selector, value }: StepUpdate,
         @Arg("id") stepId: string,
-        @Ctx() { photon, id }: Context
+        @Ctx() { photon, userId: id }: Context
     ) {
         const step = await photon.steps.update({
             data: {

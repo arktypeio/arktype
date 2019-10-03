@@ -24,7 +24,7 @@ const serve = async () => {
         schema,
         context: ({ req }: any) => ({
             ...req,
-            id: getUserId(req),
+            userId: getUserId(req),
             photon
         }),
         playground,

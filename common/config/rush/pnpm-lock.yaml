@@ -98,7 +98,7 @@ dependencies:
   moize: 5.4.4
   prettier: 1.15.1
   pretty-quick: 1.8.0_prettier@1.15.1
-  prisma2: 2.0.0-preview-12
+  prisma2: 2.0.0-preview-13.2
   puppeteer: 1.19.0
   react: 16.9.0
   react-apollo: 3.0.1_fe1fb281105c3ff236c48deaf59fe3fd
@@ -11618,12 +11618,12 @@ packages:
       prettier: '>=1.8.0'
     resolution:
       integrity: sha512-qV25sQF/ivJpdZ5efwemQYkQJa7sp3HqT/Vf/7z5vGYMcq1VrT2lDpFKAxJPf6219N1YAdR8mGkIhPAZ1odTmQ==
-  /prisma2/2.0.0-preview-12:
+  /prisma2/2.0.0-preview-13.2:
     dev: false
     hasBin: true
     requiresBuild: true
     resolution:
-      integrity: sha512-IZ6oXNo+uBpN9AuT/eSrIWsanbEk+eYNdcJyeaOZsG1OmiC/iPsRZpJAH1e/29uPwFAi9CgD4YBuVq82X0KICg==
+      integrity: sha512-9zODuCOoDhUHpFVWYgcKAWa7Blie4UIfkwH2gCTs/7IfWyca2zng+XyJuNcm5Yp5f1JyZ5EEvIe0ysZdZNcsBQ==
   /prismjs/1.17.1:
     dev: false
     optionalDependencies:
@@ -15273,7 +15273,7 @@ packages:
       isomorphic-ws: 4.0.1
       jest: 24.8.0
       jsonwebtoken: 8.5.0
-      prisma2: 2.0.0-preview-12
+      prisma2: 2.0.0-preview-13.2
       reflect-metadata: 0.1.13
       ts-jest: 24.0.2_jest@24.8.0
       ts-node: 8.3.0_typescript@3.6.2
@@ -15283,7 +15283,7 @@ packages:
     dev: false
     name: '@rush-temp/server'
     resolution:
-      integrity: sha512-LTrPfmGiNY/gP2AB3eeJwL7gwz1rMa0OeiAVLaGBaa+Fo+aohxHCy/YxASyoKEkTebTYWDGErZ8Eu6TaADyy8Q==
+      integrity: sha512-S9uksFu12dnXB2ClMdz/D1pa+mN4y97qO4wv6kbIiO5ItIP9hruSd9zcqevV5xoAJi0EEHu5wJxwjju9BL6lpQ==
       tarball: 'file:projects/server.tgz'
     version: 0.0.0
   'file:projects/shapeql.tgz_@babel+core@7.5.5':
@@ -15494,7 +15494,7 @@ specifiers:
   moize: 5.4.4
   prettier: 1.15.1
   pretty-quick: 1.8.0
-  prisma2: 2.0.0-preview-12
+  prisma2: 2.0.0-preview-13.2
   puppeteer: 1.19.0
   react: 16.9.0
   react-apollo: 3.0.1

@@ -16,7 +16,7 @@ export class SelectorResolver {
     @Mutation(returns => Selector)
     async createSelector(
         @Args() { css }: SelectorInput,
-        @Ctx() { photon, id }: Context
+        @Ctx() { photon, userId: id }: Context
     ) {
         const selector = await photon.selectors.create({
             data: {
@@ -32,7 +32,7 @@ export class SelectorResolver {
 
     @Authorized()
     @Query(returns => [Selector])
-    async getSelectors(@Ctx() { photon, id }: Context) {
+    async getSelectors(@Ctx() { photon, userId: id }: Context) {
         const selectors = await photon.selectors.findMany({
             where: { user: { id } },
             include: { user: true }
@@ -45,7 +45,7 @@ export class SelectorResolver {
     async updateSelector(
         @Args() { css }: SelectorUpdate,
         @Arg("id") selectorId: string,
-        @Ctx() { photon, id }: Context
+        @Ctx() { photon, userId: id }: Context
     ) {
         const selector = await photon.selectors.update({
             data: {

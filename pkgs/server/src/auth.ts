@@ -25,12 +25,12 @@ export function getUserId(req: any) {
 }
 
 export const authChecker: AuthChecker<Context> = async ({
-    context: { photon, id }
+    context: { photon, userId }
 }) => {
-    if (!id) {
+    if (!userId) {
         return false
     }
-    const user = await photon.users.findOne({ where: { id } })
+    const user = await photon.users.findOne({ where: { id: userId } })
     if (!user) {
         return false
     }

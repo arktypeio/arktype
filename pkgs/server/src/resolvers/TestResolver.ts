@@ -8,19 +8,23 @@ import {
     Arg
 } from "type-graphql"
 import { Test, TestInput, TestUpdate } from "@re-do/model"
-import { ResolverOf } from "./Resolver"
+import { resolver } from "./Resolver"
 import { Context } from "../context"
 import { createTagConnector } from "./common"
 
 @Resolver(of => Test)
-export class TestResolver extends ResolverOf(Test) {
+export class TestResolver extends resolver({
+    inType: TestInput,
+    outType: Test,
+    upType: TestUpdate
+}) {
     @Authorized()
     @Mutation(returns => Test)
     async createTest(
         @Args() { name, steps, tags }: TestInput,
         @Ctx() context: Context
     ) {
-        const { photon, id } = context
+        const { photon, userId: id } = context
         const test = await photon.tests.create({
             data: {
                 name,
@@ -45,27 +49,13 @@ export class TestResolver extends ResolverOf(Test) {
     }
 
     @Authorized()
-    @Query(returns => [Test])
-    async getTests(@Ctx() { photon, id }: Context) {
-        const tests = await photon.tests.findMany({
-            where: { user: { id } },
-            include: {
-                steps: { include: { selector: true } },
-                user: true,
-                tags: true
-            }
-        })
-        return tests
-    }
-
-    @Authorized()
     @Mutation(returns => Test)
     async updateTest(
         @Args() { name, steps, tags }: TestUpdate,
         @Arg("id") testId: string,
         @Ctx() context: Context
     ) {
-        const { photon, id } = context
+        const { photon, userId: id } = context
         const test = await photon.tests.update({
             data: {
                 name,

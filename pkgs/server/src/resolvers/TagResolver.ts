@@ -15,7 +15,7 @@ export class TagResolver {
     @Mutation(returns => Tag)
     async createTag(
         @Args() { name }: TagInput,
-        @Ctx() { photon, id }: Context
+        @Ctx() { photon, userId: id }: Context
     ) {
         const tag = await photon.tags.upsert({
             update: {
@@ -37,7 +37,7 @@ export class TagResolver {
 
     @Authorized()
     @Query(returns => [Tag])
-    async getTags(@Ctx() { photon, id }: Context) {
+    async getTags(@Ctx() { photon, userId: id }: Context) {
         const results = await photon.tags.findMany({
             where: { user: { id } },
             include: { user: true }

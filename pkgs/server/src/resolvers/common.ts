@@ -29,7 +29,7 @@ const split = <T>(list: T[], by: (item: T) => boolean) =>
 
 export const createTagConnector = async (
     tags: TagInput[],
-    { photon, id }: Context
+    { photon, userId: id }: Context
 ) => {
     const existing = (await photon.tags.findMany({
         where: { user: { id } },

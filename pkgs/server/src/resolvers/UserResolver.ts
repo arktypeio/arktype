@@ -6,7 +6,7 @@ import { Context } from "../context"
 export class UserResolver {
     @Authorized()
     @Query(returns => User)
-    async me(@Ctx() { photon, id }: Context) {
+    async me(@Ctx() { photon, userId: id }: Context) {
         return photon.users.findOne({
             where: { id },
             include: {
