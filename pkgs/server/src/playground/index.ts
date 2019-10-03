@@ -36,18 +36,7 @@ const contents = gql`
     }
 
     mutation updateTest($id: String!) {
-        updateTest(
-            id: $id
-            name: "NewName"
-            tags: [{ name: "BAT" }, { name: "short" }]
-            steps: [
-                {
-                    action: "set"
-                    selector: { css: "#someId" }
-                    value: "someText"
-                }
-            ]
-        ) {
+        updateTest(id: $id, test: { name: "NewName" }) {
             id
         }
     }
@@ -59,20 +48,10 @@ const contents = gql`
         }
     }
 
-    query getTests {
-        getTests {
+    query tests {
+        tests {
             id
             name
-            tags {
-                name
-            }
-            steps {
-                action
-                selector {
-                    css
-                }
-                value
-            }
         }
     }
 

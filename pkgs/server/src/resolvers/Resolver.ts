@@ -63,8 +63,8 @@ export const resolver = <In, Out extends ObjectWithId, Up>({
         }
 
         @Authorized()
-        @Mutation(returns => outType, { name: `update${outType.name}2` })
-        protected async update(
+        @Mutation(returns => outType, { name: `update${outType.name}` })
+        protected async updateOne(
             @Args() { id }: ById,
             @Arg(name, type => upType) data: Up,
             @Ctx() { photon, userId }: Context
