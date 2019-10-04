@@ -48,38 +48,38 @@ export class TestResolver extends resolver({
         return test
     }
 
-    @Authorized()
-    @Mutation(returns => Test)
-    async updateTest(
-        @Args() { name, steps, tags }: TestUpdate,
-        @Arg("id") testId: string,
-        @Ctx() context: Context
-    ) {
-        const { photon, userId: id } = context
-        const test = await photon.tests.update({
-            data: {
-                name,
-                steps: steps
-                    ? {
-                          create: steps.map(step => ({
-                              ...step,
-                              selector: {
-                                  create: {
-                                      css: step.selector.css,
-                                      user: {
-                                          connect: { id }
-                                      }
-                                  }
-                              },
-                              user: { connect: { id } }
-                          }))
-                      }
-                    : undefined,
-                tags: tags ? await createTagConnector(tags, context) : undefined
-            },
-            where: { id: testId },
-            include: { tags: true, steps: { include: { selector: true } } }
-        })
-        return test
-    }
+    // @Authorized()
+    // @Mutation(returns => Test)
+    // async updateTest(
+    //     @Args() { name, steps, tags }: TestUpdate,
+    //     @Arg("id") testId: string,
+    //     @Ctx() context: Context
+    // ) {
+    //     const { photon, userId: id } = context
+    //     const test = await photon.tests.update({
+    //         data: {
+    //             name,
+    //             steps: steps
+    //                 ? {
+    //                       create: steps.map(step => ({
+    //                           ...step,
+    //                           selector: {
+    //                               create: {
+    //                                   css: step.selector.css,
+    //                                   user: {
+    //                                       connect: { id }
+    //                                   }
+    //                               }
+    //                           },
+    //                           user: { connect: { id } }
+    //                       }))
+    //                   }
+    //                 : undefined,
+    //             tags: tags ? await createTagConnector(tags, context) : undefined
+    //         },
+    //         where: { id: testId },
+    //         include: { tags: true, steps: { include: { selector: true } } }
+    //     })
+    //     return test
+    // }
 }
