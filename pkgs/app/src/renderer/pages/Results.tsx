@@ -1,7 +1,6 @@
 import React from "react"
 import { Column, Table } from "@re-do/components"
 import { RedoAppBar } from "renderer/components/custom"
-import { fromEntries } from "@re-do/utils"
 
 const signInSteps = [
     {
@@ -55,35 +54,79 @@ const signUpSteps = [
 const fakeResultsDataRaw = [
     {
         source: "Sign In",
-        passed: true,
+        result: { passed: true },
         steps: signInSteps
+    },
+
+    {
+        source: "New User Tests",
+        result: {
+            passed: 1,
+            total: 2
+        },
+        tests: [
+            { source: "Sign In", result: { passed: true }, steps: signInSteps },
+            {
+                source: "Sign Up",
+                result: {
+                    passed: false,
+                    error: "Couldn't find #confirmPassword."
+                },
+                steps: signUpSteps
+            }
+        ]
     }
-    // {
-    //     source: "New User Tests",
-    //     result: {
-    //         passed: 1,
-    //         total: 2
-    //     },
-    //     tests: [
-    //         { name: "Sign In", result: { passed: true }, steps: signInSteps },
-    //         {
-    //             name: "Sign Up",
-    //             result: {
-    //                 passed: false,
-    //                 error: "Couldn't find #confirmPassword."
-    //             },
-    //             steps: signUpSteps
-    //         }
-    //     ]
-    // }
 ]
-type TestResultsData = typeof fakeResultsDataRaw
-const toTableData = (data: TestResultsData) => {
-    return data.map(result => ({
-        source: result.source,
-        passed: JSON.stringify(result.passed),
-        steps: JSON.stringify(result.steps)
-    }))
+type Step = {
+    action: string
+    selector: string
+    value?: string
+}
+type TestResult = {
+    source: string
+    result: { passed: boolean }
+    steps: Step[]
+}
+type SuiteResult = {
+    source: string
+    result: { passed: number; total: number }
+    tests: TestResult[]
+}
+
+type TestResultsData = (TestResult | SuiteResult)[]
+
+const toSuiteData = (result: SuiteResult, rowId: number) => {
+    let rows = [
+        {
+            id: rowId,
+            source: result.source,
+            passed: JSON.stringify(result.result)
+        }
+    ]
+    rows = rows.concat(
+        result.tests.map((testResult, testIndex) =>
+            toTestData(testResult, rowId + testIndex + 1, rowId)
+        )
+    )
+    return rows
+}
+const toTestData = (result: TestResult, rowId: number, parentId?: number) => ({
+    id: rowId,
+    source: result.source,
+    passed: JSON.stringify(result.result.passed),
+    parentId
+})
+
+const toTableData = (testResultsData: TestResultsData) => {
+    let tableData: any[] = []
+    testResultsData.forEach(result => {
+        tableData = tableData.concat(
+            "tests" in result
+                ? toSuiteData(result, tableData.length)
+                : toTestData(result, tableData.length)
+        )
+    })
+    return tableData
 }
 
 export const Results = () => (
@@ -97,6 +140,11 @@ export const Results = () => (
             ]}
             data={toTableData(fakeResultsDataRaw)}
             title="Test Results"
+            parentChildData={(row, rows) => {
+                const result = rows.find(a => a.id === row.parentId)
+                console.log(result)
+                return result
+            }}
         />
     </Column>
 )
