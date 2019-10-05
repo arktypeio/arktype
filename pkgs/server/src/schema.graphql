@@ -7,10 +7,11 @@ type Query {
 }
 
 type Tag {
-  id: Int!
+  id: ID!
   name: String!
 }
 
 input TagWhereUniqueInput {
-  id: Int
+  id: ID
+  name: String
 }
