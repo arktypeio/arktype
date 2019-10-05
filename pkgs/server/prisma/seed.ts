@@ -2,12 +2,7 @@ import { Photon } from "@generated/photon"
 import { hash } from "bcrypt"
 const photon = new Photon()
 
-const users = [
-    ["Rebecca", "Baron"],
-    ["Sarthak", "Agrawal"],
-    ["David", "Blass"],
-    ["Savannah", "Bosse"]
-]
+const users = [["David", "Blass"], ["Savannah", "Bosse"]]
 
 async function main() {
     try {

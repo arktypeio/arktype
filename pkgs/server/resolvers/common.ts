@@ -1,6 +1,6 @@
 import { Photon, FindOneUserArgs } from "@generated/photon"
 import { TagInput } from "@re-do/model"
-import { Context } from "../context"
+import { Context } from "../src/context"
 
 type FindUserOptions = {
     photon: Photon

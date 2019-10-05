@@ -1,6 +1,6 @@
 import { Authorized, Ctx, Query, Resolver } from "type-graphql"
 import { User } from "@re-do/model"
-import { Context } from "../context"
+import { Context } from "../src/context"
 
 @Resolver(of => User)
 export class UserResolver {

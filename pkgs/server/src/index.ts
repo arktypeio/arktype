@@ -1,25 +1,14 @@
 import "dotenv/config"
 import "reflect-metadata"
 import { ApolloServer } from "apollo-server"
-import { buildSchema } from "type-graphql"
-import { authChecker, getUserId } from "./auth"
-import { resolvers } from "./resolvers"
+import { getUserId } from "./auth"
+import { schema } from "./schema"
 import { playground } from "./playground"
 import { Photon } from "@generated/photon"
-import { join } from "path"
 
 const photon = new Photon()
 
 const serve = async () => {
-    const schema = await buildSchema({
-        resolvers,
-        authChecker,
-        emitSchemaFile: {
-            path: join(__dirname, "playground", "schema.gql"),
-            commentDescriptions: false
-        }
-    })
-
     const server = new ApolloServer({
         schema,
         context: ({ req }: any) => ({
@@ -44,7 +33,6 @@ const serve = async () => {
             return response
         }
     })
-
     const { url } = await server.listen({ port: process.env.PORT })
     console.log(`Redo's Apollo server is up and running at ${url}.`)
 }

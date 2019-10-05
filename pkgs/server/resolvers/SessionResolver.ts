@@ -2,8 +2,8 @@ import { Ctx, Mutation, Resolver, Args } from "type-graphql"
 import { hash, compare } from "bcrypt"
 import { sign } from "jsonwebtoken"
 import { Session, SignInInput, SignUpInput } from "@re-do/model"
-import { APP_SECRET } from "../utils"
-import { Context } from "../context"
+import { APP_SECRET } from "../src/utils"
+import { Context } from "../src/context"
 import { findUser } from "./common"
 
 @Resolver(of => Session)
