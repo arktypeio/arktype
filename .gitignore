@@ -57,7 +57,6 @@ temp
 generated
 **/server/src/playground/schema.gql
 **/prisma/migrations
-**/prisma/schema.prisma
 **/prisma/dev.db
 
 # Build output

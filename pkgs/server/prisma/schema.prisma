@@ -1,0 +1,46 @@
+datasource db {
+  provider = "sqlite"
+  url      = "file:dev.db"
+  default  = true
+}
+
+generator photon {
+  provider = "photonjs"
+}
+
+model Tag {
+  id   Int    @id
+  name String
+  user User
+  @@unique([name, user])
+}
+
+model Selector {
+  id   Int    @id
+  css  String
+  step Step
+}
+
+model Step {
+  id       Int      @id
+  action   String
+  selector Selector
+  value    String
+  test     Test
+}
+
+model Test {
+  id   Int    @id
+  name String
+  user User
+  tags Tag[]
+  @@unique([name, user])
+}
+
+model User {
+  id        Int    @id
+  email     String @unique
+  password  String
+  firstName String
+  lastName  String
+}
