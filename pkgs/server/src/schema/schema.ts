@@ -1,10 +1,15 @@
 import { join } from "path"
 import { makeSchema } from "nexus"
 import { nexusPrismaPlugin } from "nexus-prisma"
+import { Selector } from "./selector"
+import { Step } from "./step"
 import { Tag } from "./tag"
+import { Test } from "./test"
+import { User } from "./user"
 import { Query } from "./query"
+import { Mutation } from "./mutation"
 
-const appTypes = [Tag, Query]
+const appTypes = [Step, User, Test, Selector, Tag, Query, Mutation]
 const nexusPrismaTypes = nexusPrismaPlugin({
     types: appTypes,
     outputs: {

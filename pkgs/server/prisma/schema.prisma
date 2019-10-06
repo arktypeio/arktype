@@ -16,9 +16,8 @@ model Tag {
 }
 
 model Selector {
-  id   Int    @id
-  css  String
-  step Step
+  id  Int    @id
+  css String
 }
 
 model Step {
@@ -26,21 +25,25 @@ model Step {
   action   String
   selector Selector
   value    String
-  test     Test
 }
 
 model Test {
-  id   Int    @id
-  name String
-  user User
-  tags Tag[]
+  id    Int    @id
+  user  User
+  name  String
+  steps Step[]
+  tags  Tag[]
   @@unique([name, user])
 }
 
 model User {
-  id        Int    @id
-  email     String @unique
+  id        Int        @id
+  email     String     @unique
   password  String
   firstName String
   lastName  String
+  selectors Selector[]
+  steps     Step[]
+  tests     Test[]
+  tags      Tag[]
 }

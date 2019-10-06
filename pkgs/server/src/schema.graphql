@@ -2,16 +2,159 @@
 ### Do not make changes to this file directly
 
 
+type Mutation {
+  createOneTag(data: TagCreateInput!): Tag!
+}
+
 type Query {
   tag(where: TagWhereUniqueInput!): Tag
 }
 
+type Selector {
+  css: String!
+  id: Int!
+}
+
+input SelectorCreateManyWithoutSelectorsInput {
+  connect: [SelectorWhereUniqueInput!]
+  create: [SelectorCreateWithoutUserInput!]
+}
+
+input SelectorCreateOneWithoutSelectorInput {
+  connect: SelectorWhereUniqueInput
+  create: SelectorCreateWithoutStepInput
+}
+
+input SelectorCreateWithoutStepInput {
+  css: String!
+  user: UserCreateOneWithoutUserInput
+}
+
+input SelectorCreateWithoutUserInput {
+  css: String!
+  step: StepCreateOneWithoutStepInput
+}
+
+input SelectorWhereUniqueInput {
+  id: Int
+}
+
+type Step {
+  action: String!
+  id: Int!
+  selector: Selector!
+  value: String!
+}
+
+input StepCreateManyWithoutStepsInput {
+  connect: [StepWhereUniqueInput!]
+  create: [StepCreateWithoutUserInput!]
+}
+
+input StepCreateOneWithoutStepInput {
+  connect: StepWhereUniqueInput
+  create: StepCreateWithoutSelectorInput
+}
+
+input StepCreateWithoutSelectorInput {
+  action: String!
+  test: TestCreateOneWithoutTestInput
+  user: UserCreateOneWithoutUserInput
+  value: String!
+}
+
+input StepCreateWithoutUserInput {
+  action: String!
+  selector: SelectorCreateOneWithoutSelectorInput!
+  test: TestCreateOneWithoutTestInput
+  value: String!
+}
+
+input StepWhereUniqueInput {
+  id: Int
+}
+
 type Tag {
-  id: ID!
+  id: Int!
   name: String!
 }
 
+input TagCreateInput {
+  name: String!
+  test: TestCreateOneWithoutTestInput
+  user: UserCreateOneWithoutUserInput!
+}
+
+input TagCreateManyWithoutTagsInput {
+  connect: [TagWhereUniqueInput!]
+  create: [TagCreateWithoutTestInput!]
+}
+
+input TagCreateWithoutTestInput {
+  name: String!
+  user: UserCreateOneWithoutUserInput!
+}
+
 input TagWhereUniqueInput {
-  id: ID
-  name: String
+  id: Int
+}
+
+type Test {
+  id: Int!
+  name: String!
+  steps(after: String, before: String, first: Int, last: Int, skip: Int): [Step!]
+  tags(after: String, before: String, first: Int, last: Int, skip: Int): [Tag!]
+}
+
+input TestCreateManyWithoutTestsInput {
+  connect: [TestWhereUniqueInput!]
+  create: [TestCreateWithoutUserInput!]
+}
+
+input TestCreateOneWithoutTestInput {
+  connect: TestWhereUniqueInput
+  create: TestCreateWithoutStepsInput
+}
+
+input TestCreateWithoutStepsInput {
+  name: String!
+  tags: TagCreateManyWithoutTagsInput
+  user: UserCreateOneWithoutUserInput!
+}
+
+input TestCreateWithoutUserInput {
+  name: String!
+  steps: StepCreateManyWithoutStepsInput
+  tags: TagCreateManyWithoutTagsInput
+}
+
+input TestWhereUniqueInput {
+  id: Int
+}
+
+type User {
+  firstName: String!
+  id: Int!
+  lastName: String!
+  password: String!
+}
+
+input UserCreateOneWithoutUserInput {
+  connect: UserWhereUniqueInput
+  create: UserCreateWithoutTagsInput
+}
+
+input UserCreateWithoutTagsInput {
+  email: String!
+  firstName: String!
+  lastName: String!
+  password: String!
+  selectors: SelectorCreateManyWithoutSelectorsInput
+  steps: StepCreateManyWithoutStepsInput
+  tests: TestCreateManyWithoutTestsInput
+}
+
+input UserWhereUniqueInput {
+  email: String
+  id: Int
 }
