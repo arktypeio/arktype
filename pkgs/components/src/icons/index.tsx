@@ -14,6 +14,7 @@ import dropdown from "@material-ui/icons/MoreVert"
 import view from "@material-ui/icons/RemoveRedEye"
 import save from "@material-ui/icons/Done"
 import close from "@material-ui/icons/Close"
+import blog from "@material-ui/icons/ChatBubble"
 
 export const Icons = {
     add,
@@ -31,5 +32,6 @@ export const Icons = {
     dropdown,
     view,
     save,
-    close
+    close,
+    blog
 }

@@ -52,6 +52,7 @@ dependencies:
     "@types/puppeteer": 1.19.1
     "@types/react": 16.9.2
     "@types/react-dom": 16.9.0
+    "@types/react-router-dom": 5.1.0
     "@types/react-typist": 2.0.0
     "@types/storybook__addon-storyshots": 5.1.1
     "@types/storybook__react": 4.0.2
@@ -106,11 +107,11 @@ dependencies:
     react-dom: 16.9.0_react@16.9.0
     react-hook-form: 3.18.8_react-dom@16.9.0+react@16.9.0
     react-hot-loader: 4.12.8_react-dom@16.9.0+react@16.9.0
+    react-router-dom: 5.1.2_react@16.9.0
     react-svg-loader: 3.0.3
     react-test-renderer: 16.8.6_react@16.9.0
     react-typist: 2.0.5_react-dom@16.9.0+react@16.9.0
     reflect-metadata: 0.1.13
-    shapeql: 0.0.1
     style-loader: 0.23.1
     ts-jest: 24.0.2_jest@24.8.0
     ts-loader: 6.0.1_typescript@3.6.2
@@ -1304,6 +1305,12 @@ packages:
         dev: false
         resolution:
             integrity: sha512-89eSBLJsxNxOERC0Op4vd+0Bqm6wRMqMbFtV3i0/fbaWw/mJ8Q3eBvgX0G4SyrOOLCtbu98HspF8o09MRT+KzQ==
+    /@babel/runtime/7.6.2:
+        dependencies:
+            regenerator-runtime: 0.13.3
+        dev: false
+        resolution:
+            integrity: sha512-EXxN64agfUqqIGeEjI5dL5z0Sw0ZwWo1mLTi4mQowCZ42O59b7DRpZAnTC6OqdF28wMBMFKNb/4uFGrVaigSpg==
     /@babel/template/7.6.0:
         dependencies:
             "@babel/code-frame": 7.5.5
@@ -2680,6 +2687,21 @@ packages:
         dev: false
         resolution:
             integrity: sha512-OL2lk7LYGjxn4b0efW3Pvf2KBVP0y1v3wip1Bp7nA79NkOpElH98q3WdCEdDj93b2b0zaeBG9DvriuKjIK5xDA==
+    /@types/react-router-dom/5.1.0:
+        dependencies:
+            "@types/history": 4.7.3
+            "@types/react": 16.9.2
+            "@types/react-router": 5.1.1
+        dev: false
+        resolution:
+            integrity: sha512-YCh8r71pL5p8qDwQf59IU13hFy/41fDQG/GeOI3y+xmD4o0w3vEPxE8uBe+dvOgMoDl0W1WUZsWH0pxc1mcZyQ==
+    /@types/react-router/5.1.1:
+        dependencies:
+            "@types/history": 4.7.3
+            "@types/react": 16.9.2
+        dev: false
+        resolution:
+            integrity: sha512-S7SlFAPb7ZKr6HHMW0kLHGcz8pyJSL0UdM+JtlWthDqKUWwr7E6oPXuHgkofDI8dKCm16slg8K8VCf5pZJquaA==
     /@types/react-syntax-highlighter/10.1.0:
         dependencies:
             "@types/react": 16.9.2
@@ -8001,6 +8023,17 @@ packages:
         dev: false
         resolution:
             integrity: sha1-5tnb5Xy+/mB1HwKvM2GVhwyQwB4=
+    /history/4.10.1:
+        dependencies:
+            "@babel/runtime": 7.6.2
+            loose-envify: 1.4.0
+            resolve-pathname: 3.0.0
+            tiny-invariant: 1.0.6
+            tiny-warning: 1.0.3
+            value-equal: 1.0.1
+        dev: false
+        resolution:
+            integrity: sha512-36nwAD620w12kuzPAsyINPWJqlNbij+hpK1k9XRloDtym8mxzGYl2c17LnV6IAGB2Dmg4tEa7G7DlawS0+qjew==
     /hmac-drbg/1.0.1:
         dependencies:
             hash.js: 1.1.7
@@ -8015,7 +8048,7 @@ packages:
             integrity: sha512-rqcy4pJo55FTTLWt+bU8ukscqHeE/e9KWvsOW2b/a3afxQZhwkQdT1rPPCJ0rYXdj4vNcasY8zHTH+jF/qStxw==
     /hoist-non-react-statics/3.3.0:
         dependencies:
-            react-is: 16.9.0
+            react-is: 16.10.2
         dev: false
         resolution:
             integrity: sha512-0XsbTXxgiaCDYDIWFcwkmerZPSwywfUqYmwT4jzewKTQSWoE6FCMoUVOeBJWK3E/CrWbxRG3m5GzY4lnIwGRBA==
@@ -9177,6 +9210,9 @@ packages:
             node: ">=6"
         peerDependencies:
             jest-resolve: "*"
+        peerDependenciesMeta:
+            jest-resolve:
+                optional: true
         resolution:
             integrity: sha512-pgFw2tm54fzgYvc/OHrnysABEObZCUNFnhjoRjaVOCN8NYc032/gVjPaHD4Aq6ApkSieWtfKAFQtmDKAmhupnQ==
     /jest-regex-util/24.9.0:
@@ -10305,6 +10341,19 @@ packages:
         dev: false
         resolution:
             integrity: sha1-e9KC4/WELtKVu3SM3Z8f+iyCRoU=
+    /mini-create-react-context/0.3.2_prop-types@15.7.2+react@16.9.0:
+        dependencies:
+            "@babel/runtime": 7.6.2
+            gud: 1.0.0
+            prop-types: 15.7.2
+            react: 16.9.0
+            tiny-warning: 1.0.3
+        dev: false
+        peerDependencies:
+            prop-types: ^15.0.0
+            react: ^0.14.0 || ^15.0.0 || ^16.0.0
+        resolution:
+            integrity: sha512-2v+OeetEyliMt5VHMXsBhABoJ0/M4RCe7fatd/fBy6SMiKazUSEt3gxxypfnk2SHMkdBYvorHRoQxuGoiwbzAw==
     /mini-css-extract-plugin/0.7.0_webpack@4.39.3:
         dependencies:
             loader-utils: 1.2.3
@@ -11291,6 +11340,12 @@ packages:
         dev: false
         resolution:
             integrity: sha1-32BBeABfUi8V60SQ5yR6G/qmf4w=
+    /path-to-regexp/1.7.0:
+        dependencies:
+            isarray: 0.0.1
+        dev: false
+        resolution:
+            integrity: sha1-Wf3g9DW62suhA6hOnTvGTpa5k30=
     /path-type/1.1.0:
         dependencies:
             graceful-fs: 4.2.2
@@ -11721,7 +11776,7 @@ packages:
         dependencies:
             loose-envify: 1.4.0
             object-assign: 4.1.1
-            react-is: 16.9.0
+            react-is: 16.10.2
         dev: false
         resolution:
             integrity: sha512-8QQikdH7//R2vurIJSutZ1smHYTcLpRWEOlHnzcWHmBYrOGUysKwSsrC89BCiFj3CbrfJ/nXFdJepOVrY1GCHQ==
@@ -12223,6 +12278,10 @@ packages:
             react: ^16.8.4
         resolution:
             integrity: sha512-PSR8xDoGFN8R3LKmq1NT+hBBwhxjd9Qwz8yKY+5NXY/CHpxXHm01CVabxzI7zFwFav/M3JoC/Z0Ro2kSX6Ef2Q==
+    /react-is/16.10.2:
+        dev: false
+        resolution:
+            integrity: sha512-INBT1QEgtcCCgvccr5/86CfD71fw9EPmDxgiJX4I2Ddr6ZsV6iFXsuby+qWJPtmNuMY0zByTsG4468P7nHuNWA==
     /react-is/16.9.0:
         dev: false
         resolution:
@@ -12257,6 +12316,39 @@ packages:
             react: 0.14.x || ^15.0.0 || ^16.0.0
         resolution:
             integrity: sha512-9AcQB29V+WrBKk6X7p0eojd1f25/oJajVdMZkywIoAV6Ag7hzE1Mhyeup2Q1QnvFRtGQFQvtqfhlEoDAPfKAVA==
+    /react-router-dom/5.1.2_react@16.9.0:
+        dependencies:
+            "@babel/runtime": 7.6.2
+            history: 4.10.1
+            loose-envify: 1.4.0
+            prop-types: 15.7.2
+            react: 16.9.0
+            react-router: 5.1.2_react@16.9.0
+            tiny-invariant: 1.0.6
+            tiny-warning: 1.0.3
+        dev: false
+        peerDependencies:
+            react: ">=15"
+        resolution:
+            integrity: sha512-7BPHAaIwWpZS074UKaw1FjVdZBSVWEk8IuDXdB+OkLb8vd/WRQIpA4ag9WQk61aEfQs47wHyjWUoUGGZxpQXew==
+    /react-router/5.1.2_react@16.9.0:
+        dependencies:
+            "@babel/runtime": 7.6.2
+            history: 4.10.1
+            hoist-non-react-statics: 3.3.0
+            loose-envify: 1.4.0
+            mini-create-react-context: 0.3.2_prop-types@15.7.2+react@16.9.0
+            path-to-regexp: 1.7.0
+            prop-types: 15.7.2
+            react: 16.9.0
+            react-is: 16.10.2
+            tiny-invariant: 1.0.6
+            tiny-warning: 1.0.3
+        dev: false
+        peerDependencies:
+            react: ">=15"
+        resolution:
+            integrity: sha512-yjEuMFy1ONK246B+rsa0cUam5OeAQ8pyclRDgpxuSCrAlJ1qN9uZ5IgyKC7gQg0w8OM50NXHEegPh/ks9YuR2A==
     /react-select/3.0.4_react-dom@16.9.0+react@16.9.0:
         dependencies:
             "@babel/runtime": 7.6.0
@@ -12849,6 +12941,10 @@ packages:
             node: ">=8"
         resolution:
             integrity: sha512-qYg9KP24dD5qka9J47d0aVky0N+b4fTU89LN9iDnjB5waksiC49rvMB0PrUJQGoTmH50XPiqOvAjDfaijGxYZw==
+    /resolve-pathname/3.0.0:
+        dev: false
+        resolution:
+            integrity: sha512-C7rARubxI8bXFNB/hqcp/4iUeIXJhJZvFPFPiSPRnhU5UPxzMFIl+2E6yY6c4k9giDJAhtV+enfA+G89N6Csng==
     /resolve-url/0.2.1:
         dev: false
         resolution:
@@ -13987,6 +14083,10 @@ packages:
         optional: true
         resolution:
             integrity: sha512-NB6Dk1A9xgQPMoGqC5CVXn123gWyte215ONT5Pp5a0yt4nlEoO1ZWeCwpncaekPHXO60i47ihFnZPiRPjRMq4Q==
+    /tiny-invariant/1.0.6:
+        dev: false
+        resolution:
+            integrity: sha512-FOyLWWVjG+aC0UqG76V53yAWdXfH8bO6FNmyZOuUrzDzK8DI3/JRY25UD7+g49JWM1LXwymsKERB+DzI0dTEQA==
     /tiny-warning/1.0.3:
         dev: false
         resolution:
@@ -14207,6 +14307,9 @@ packages:
             node: ">=6"
         peerDependencies:
             typescript: "*"
+        peerDependenciesMeta:
+            typescript:
+                optional: true
         resolution:
             integrity: sha512-1J/vefLC+BWSo+qe8OnJQfWTYRS6ingxjwqmHMqaMxXMj7kFtKLgAaYW3JeX3mktjgUL+etlU8/B4VUAUI9QGw==
     /tsconfig-paths-webpack-plugin/3.2.0:
@@ -14592,6 +14695,10 @@ packages:
             node: ">= 0.10"
         resolution:
             integrity: sha512-qiQ5ktdO7CD6C/5/mYV4jku/7qnqzjrxb3C/Q5wR3vGGinHTgJZN/TdFT3ZX4vXhX2R1PXx42fB1cn5W+uJ4lg==
+    /value-equal/1.0.1:
+        dev: false
+        resolution:
+            integrity: sha512-NOJ6JZCAWr0zlxZt+xqCHNTEKOsrks2HQd4MqhP1qy4z1SkbEP467eNx6TgDKXMvUOb+OENfJCZwM+16n7fRfw==
     /vary/1.1.2:
         dev: false
         engines:
@@ -15126,7 +15233,7 @@ packages:
         dev: false
         name: "@rush-temp/app"
         resolution:
-            integrity: sha512-cG1lIcMyeO32FOYM/kRNM7KODPz+3WHv1n/q/X7yGug0nQDYphdDZWA+Y/Ef8xj/qP8M2fjPJMb26dSSYf8QxA==
+            integrity: sha512-axX+uaXu7rATVK5mIbIN56GRL7GnNM4VgevnPqYM4+yrVIdL/8biPRvrWIZT2UNoWYFc2+ljzsT/5JVnn6HQtQ==
             tarball: "file:projects/app.tgz"
         version: 0.0.0
     "file:projects/babel-preset-redo.tgz_react-dom@16.9.0+react@16.9.0":
@@ -15396,12 +15503,14 @@ packages:
             "@types/node": 12.6.6
             "@types/react": 16.9.2
             "@types/react-dom": 16.9.0
+            "@types/react-router-dom": 5.1.0
             "@types/react-typist": 2.0.0
             analytics-node: 3.4.0-beta.1
             framer-motion: 1.6.5_react-dom@16.9.0+react@16.9.0
             react: 16.9.0
             react-dom: 16.9.0_react@16.9.0
             react-hot-loader: 4.12.8_react-dom@16.9.0+react@16.9.0
+            react-router-dom: 5.1.2_react@16.9.0
             react-typist: 2.0.5_react-dom@16.9.0+react@16.9.0
             shapeql: 0.0.1
             ts-node: 8.3.0_typescript@3.6.2
@@ -15413,9 +15522,10 @@ packages:
         dev: false
         name: "@rush-temp/website"
         resolution:
-            integrity: sha512-63wfCj2ApoW5dgmfH/gfAS+/KiMO20TCG83ckRwc8C426rSH8gOsyL6MecAqOWkXT3szICxCj9+VRxezC6eSxQ==
+            integrity: sha512-kmsO1asVy+UlEylFraVQfULmB0gFtf32pqtYlFy1bhV1YfyeUS1eOnsll57l8QcV4e35uKaWAXKzDrwnyUt9UQ==
             tarball: "file:projects/website.tgz"
         version: 0.0.0
+registry: ""
 specifiers:
     "@apollo/react-hooks": 3.0.0
     "@babel/cli": 7.5.5
@@ -15470,6 +15580,7 @@ specifiers:
     "@types/puppeteer": 1.19.1
     "@types/react": 16.9.2
     "@types/react-dom": 16.9.0
+    "@types/react-router-dom": 5.1.0
     "@types/react-typist": 2.0.0
     "@types/storybook__addon-storyshots": 5.1.1
     "@types/storybook__react": 4.0.2
@@ -15524,11 +15635,11 @@ specifiers:
     react-dom: 16.9.0
     react-hook-form: 3.18.8
     react-hot-loader: 4.12.8
+    react-router-dom: 5.1.2
     react-svg-loader: 3.0.3
     react-test-renderer: 16.8.6
     react-typist: 2.0.5
     reflect-metadata: 0.1.13
-    shapeql: 0.0.1
     style-loader: 0.23.1
     ts-jest: 24.0.2
     ts-loader: 6.0.1

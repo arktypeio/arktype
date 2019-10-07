@@ -1,14 +1,22 @@
-import React, { FC } from "react"
-import { Text, Column, AnimatedLogo } from "@re-do/components"
-import { Background } from "./Background"
+import React from "react"
 import Typist from "react-typist"
+import { Link } from "react-router-dom"
+import {
+    Text,
+    Column,
+    AnimatedLogo,
+    Row,
+    IconButton,
+    Icons
+} from "@re-do/components"
+import { Background } from "./Background"
 import { layout } from "../constants"
 
 export type AppHeaderProps = {
     mobile?: boolean
 }
 
-export const AppHeader: FC<AppHeaderProps> = ({ mobile }) => {
+export const AppHeader = ({ mobile }: AppHeaderProps) => {
     const startHeight = mobile ? layout.header.height : 400
     const endHeight = mobile ? 200 : 200
     return (
@@ -35,6 +43,14 @@ export const AppHeader: FC<AppHeaderProps> = ({ mobile }) => {
                         that builds itself.
                     </Text>
                 </Typist>
+                <Row justify="space-around">
+                    <Link to="/">
+                        <IconButton color="primary" Icon={Icons.home} />
+                    </Link>
+                    <Link to="/blog">
+                        <IconButton color="primary" Icon={Icons.blog} />
+                    </Link>
+                </Row>
             </Column>
         </Column>
     )

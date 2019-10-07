@@ -1,25 +1,28 @@
-import React, { FC } from "react"
+import React from "react"
 import { AppContents, Column } from "@re-do/components"
-import { AppHeader, HowItWorks, SignUp, SubHeader } from "./components"
+import { AppHeader } from "./components"
+import { BrowserRouter as Router, Route } from "react-router-dom"
 import { layout } from "./constants"
+import { Home, Blog } from "./pages"
 
-export const Content: FC = () => {
+export const Content = () => {
     return (
         <AppContents>
             <Column align="center" style={{ overflow: "hidden" }}>
-                <AppHeader mobile={true} />
-                <Column
-                    spacing={4}
-                    style={{
-                        position: "absolute",
-                        top: layout.header.height,
-                        ...layout.content
-                    }}
-                >
-                    <SubHeader />
-                    <HowItWorks />
-                    <SignUp />
-                </Column>
+                <Router>
+                    <AppHeader mobile={true} />
+                    <Column
+                        spacing={4}
+                        style={{
+                            position: "absolute",
+                            top: layout.header.height,
+                            ...layout.content
+                        }}
+                    >
+                        <Route exact path="/" component={Home} />
+                        <Route path="/blog" component={Blog} />
+                    </Column>
+                </Router>
             </Column>
         </AppContents>
     )
