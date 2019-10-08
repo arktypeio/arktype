@@ -1,14 +1,6 @@
 import React from "react"
 import Typist from "react-typist"
-import { Link } from "react-router-dom"
-import {
-    Text,
-    Column,
-    AnimatedLogo,
-    Row,
-    IconButton,
-    Icons
-} from "@re-do/components"
+import { Text, Column, AnimatedLogo, Row, Link } from "@re-do/components"
 import { Background } from "./Background"
 import { layout } from "../constants"
 
@@ -17,8 +9,8 @@ export type AppHeaderProps = {
 }
 
 export const AppHeader = ({ mobile }: AppHeaderProps) => {
-    const startHeight = mobile ? layout.header.height : 400
-    const endHeight = mobile ? 200 : 200
+    const startHeight = layout.header.contentHeight + layout.header.slantHeight
+    const endHeight = layout.header.contentHeight
     return (
         <Column
             align="center"
@@ -44,11 +36,11 @@ export const AppHeader = ({ mobile }: AppHeaderProps) => {
                     </Text>
                 </Typist>
                 <Row justify="space-around">
-                    <Link to="/">
-                        <IconButton color="primary" Icon={Icons.home} />
+                    <Link to="/" variant="h6">
+                        Home
                     </Link>
-                    <Link to="/blog">
-                        <IconButton color="primary" Icon={Icons.blog} />
+                    <Link to="/blog" variant="h6">
+                        Blog
                     </Link>
                 </Row>
             </Column>

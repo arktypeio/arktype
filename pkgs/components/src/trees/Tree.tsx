@@ -88,7 +88,7 @@ export const Tree = <O extends TreeSource>({
                                         Icon={
                                             expandedPaths[path]
                                                 ? Icons.collapse
-                                                : Icons.expand
+                                                : Icons.expandRight
                                         }
                                     />
                                 ) : null}

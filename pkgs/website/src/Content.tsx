@@ -15,7 +15,9 @@ export const Content = () => {
                         spacing={4}
                         style={{
                             position: "absolute",
-                            top: layout.header.height,
+                            top:
+                                layout.header.contentHeight +
+                                layout.header.slantHeight,
                             ...layout.content
                         }}
                     >

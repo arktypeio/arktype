@@ -13,9 +13,8 @@
     "dependencies": {
         "@babel/runtime-corejs3": "7.5.5",
         "@hot-loader/react-dom": "16.8.6",
-        "@material-ui/core": "4.2.1",
-        "@material-ui/icons": "4.2.1",
-        "@material-ui/styles": "4.2.1",
+        "@material-ui/core": "4.5.0",
+        "@material-ui/styles": "4.5.0",
         "@re-do/components": "0.0.1",
         "analytics-node": "3.4.0-beta.1",
         "framer-motion": "1.6.5",
