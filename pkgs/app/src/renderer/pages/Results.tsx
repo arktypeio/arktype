@@ -1,5 +1,5 @@
 import React from "react"
-import { Column, Table } from "@re-do/components"
+import { Column, Table, ThemeProvider } from "@re-do/components"
 import { RedoAppBar } from "renderer/components/custom"
 
 const signInSteps = [
@@ -130,12 +130,12 @@ const toTableData = (testResultsData: TestResultsData) => {
 }
 
 export const Results = () => (
-    <Column full={true}>
+    <Column>
         <RedoAppBar>{["newTest", "home", "search", "account"]}</RedoAppBar>
         <Table
             columns={[
                 { title: "Test Name", field: "source" },
-                { title: "Passed", field: "passed" },
+                { title: "Results", field: "passed" },
                 { title: "Sign-in Steps", field: "steps" }
             ]}
             data={toTableData(fakeResultsDataRaw)}

@@ -4,6 +4,12 @@ import { tableIcons } from "./Icons"
 
 export type TableProps = MaterialTableProps<any> & {}
 
-export const Table = ({ ...rest }: TableProps) => {
-    return <MaterialTable icons={tableIcons} {...rest} />
+export const Table = ({ style, ...rest }: TableProps) => {
+    return (
+        <MaterialTable
+            style={{ width: "100%", ...style }}
+            icons={tableIcons}
+            {...rest}
+        />
+    )
 }
