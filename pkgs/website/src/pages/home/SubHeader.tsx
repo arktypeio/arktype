@@ -1,6 +1,6 @@
 import React from "react"
 import { Column, Text, Row } from "@re-do/components"
-import { copy } from "../constants"
+import { copy } from "../../constants"
 
 export const SubHeader = () => {
     return (

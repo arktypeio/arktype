@@ -1,6 +1,6 @@
 import React, { useState } from "react"
 import { Row, Text, Column, Icons } from "@re-do/components"
-import { copy } from "../constants"
+import { copy } from "../../constants"
 // import ExpandMore from "@material-ui/icons/ExpandMore"
 import { AnimatedCheckbox } from "./AnimatedCheckbox"
 import ExpansionPanel, {

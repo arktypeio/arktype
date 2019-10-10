@@ -7,7 +7,7 @@ import {
     Column,
     Text
 } from "@re-do/components"
-import { track } from "../analytics"
+import { track } from "../../analytics"
 
 export const SignUp = () => {
     return (

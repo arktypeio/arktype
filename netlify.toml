@@ -3,3 +3,6 @@
   publish = "pkgs/website/dist"
 [build.environment]
   NODE_VERSION = "10.16.0"
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
