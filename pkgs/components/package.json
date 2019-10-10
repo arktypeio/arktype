@@ -17,6 +17,7 @@
         "@material-ui/icons": "4.4.3",
         "@material-ui/lab": "4.0.0-alpha.28",
         "@material-ui/styles": "4.5.0",
+        "material-table": "1.50.0",
         "class-transformer": "0.2.0",
         "class-validator": "0.10.0",
         "core-js": "3.1.4",

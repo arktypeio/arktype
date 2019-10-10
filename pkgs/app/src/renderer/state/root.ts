@@ -7,7 +7,8 @@ export enum Page {
     Detail = "DETAIL",
     SignIn = "SIGN_IN",
     SignUp = "SIGN_UP",
-    Learner = "LEARNER"
+    Learner = "LEARNER",
+    Results = "RESULTS"
 }
 
 registerEnumType(Page, {

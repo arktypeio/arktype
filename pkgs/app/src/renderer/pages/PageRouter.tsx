@@ -1,7 +1,7 @@
 import React, { useEffect } from "react"
 import { Page } from "state"
 import { store } from "renderer/common"
-import { Home, Learner, Detail, Landing } from "."
+import { Home, Learner, Detail, Landing, Results } from "."
 
 type NameToPage = { [_ in NonNullable<Page>]: JSX.Element }
 
@@ -10,7 +10,8 @@ export const Pages: NameToPage = {
     SIGN_IN: <Landing page={Page.SignIn} />,
     SIGN_UP: <Landing page={Page.SignUp} />,
     LEARNER: <Learner />,
-    DETAIL: <Detail />
+    DETAIL: <Detail />,
+    RESULTS: <Results />
 }
 
 const UnauthedPages = [Page.SignIn, Page.SignUp]

@@ -39,5 +39,11 @@ function readPackage(packageJson, context) {
             graphql: "^0.11.0 || ^0.12.0 || ^0.13.0 || ^14.0.0"
         }
     }
+    if (packageJson.name === "material-table") {
+        console.log(
+            "Adding @babel/runtime as a dependency for material-table..."
+        )
+        packageJson.dependencies["@babel/runtime"] = "7.5.5"
+    }
     return packageJson
 }
