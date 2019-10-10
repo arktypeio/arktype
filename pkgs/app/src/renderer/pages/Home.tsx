@@ -20,7 +20,9 @@ export const Home = () => {
     )
     return (
         <Column justify="center" full={true}>
-            <RedoAppBar>{["newTest", "search", "account"]}</RedoAppBar>
+            <RedoAppBar>
+                {["newTest", "results", "search", "account"]}
+            </RedoAppBar>
             <SuggestionResultsGrid
                 suggestions={
                     loading

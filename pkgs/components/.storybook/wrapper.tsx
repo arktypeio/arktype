@@ -6,10 +6,6 @@ export const withWrapper = makeDecorator({
     name: "withWrapper",
     parameterName: "wrapper",
     wrapper: (getStory, context, { parameters }) => {
-        return (
-            <div>
-                <DefaultTheme>{getStory(context)}</DefaultTheme>
-            </div>
-        )
+        return <DefaultTheme>{getStory(context)}</DefaultTheme>
     }
 })
