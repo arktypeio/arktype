@@ -4,7 +4,6 @@
     "description": "Redo's landing page",
     "author": "redo.qa",
     "main": "src/index.tsx",
-    "homepage": "/",
     "scripts": {
         "start": "npm run clean && npm run devServer",
         "build": "npm run clean && NODE_ENV=production webpack",
