@@ -26,12 +26,13 @@ const PostContent = () => {
 }
 
 export const Blog = () => {
+    console.log("Routing to blog")
     return (
         <Switch>
-            <Route path="/blog/:title/">
+            <Route path="/blog/:title">
                 <PostContent />
             </Route>
-            <Route path="/blog/">
+            <Route path="/blog">
                 <Card style={{ height: "100%", width: "100%" }}>
                     <Column
                         style={{
