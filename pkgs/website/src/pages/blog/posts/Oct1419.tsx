@@ -22,14 +22,20 @@ export const Oct1419: PostData = {
                 can define the next paradigm for end-to-end UI testing and that
                 the experience I had was exceptionally relevant to that problem.
             </Text>
+            <br />
             <Text>
                 Second, for years my personal happiness has been tied up in my
                 belief that I am doing the most I can do to help others. More
-                recently, I learned about Effective Altruism, which reinforced
-                that connection as well as the idea that “earning to give”
-                (optimizing your career decisions around making extra money you
-                can donate) could be a viable path to maximizing my impact.
+                recently, I learned about{" "}
+                <a href="https://www.effectivealtruism.org/">
+                    Effective Altruism
+                </a>
+                , which reinforced that connection as well as the idea that
+                “earning to give” (optimizing your career decisions around
+                making extra money you can donate) could be a viable path to
+                maximizing my impact.
             </Text>
+            <br />
             <Text>
                 I often try to make decisions based on what I imagine I’d want
                 to have done in retrospect at some point in the future, and
@@ -49,6 +55,7 @@ export const Oct1419: PostData = {
                 spectacularly clear. It was simply that for the first time in my
                 life, I often just felt totally miserable.
             </Text>
+            <br />
             <Text>
                 At first, I didn’t want to acknowledge it. How was it possible
                 that given the chance to do something I’d been working towards
@@ -60,6 +67,7 @@ export const Oct1419: PostData = {
                 relief, but it just felt like there was this weight in my chest
                 that was always there.
             </Text>
+            <br />
             <Text>
                 Eventually, I knew I had to take a step back from the 100-hour
                 weeks I’d been putting in since June and figure out what was
@@ -70,6 +78,7 @@ export const Oct1419: PostData = {
                 the urgency of my desire to realize my vision led to the most
                 painful experiences I’ve ever had.
             </Text>
+            <br />
             <Text>
                 Luckily, my wife Savannah has been an amazing support through
                 all of this and helped me maintain my belief in the tractability
@@ -79,6 +88,7 @@ export const Oct1419: PostData = {
                 Back Again” story-- yet. However, I do have some hypotheses I’m
                 interested in testing.
             </Text>
+            <br />
             <Text>
                 As a solo founder, I’ve been able to bypass many of the
                 trickiest issues that most early-stage startup teams have to
@@ -94,6 +104,7 @@ export const Oct1419: PostData = {
                 expending on a daily basis, and I’m hoping this blog will be one
                 of them.
             </Text>
+            <br />
             <Text>
                 So what do founding a startup and global warming have in common?
                 They’re bad times to be an island. Were the references to
@@ -101,6 +112,7 @@ export const Oct1419: PostData = {
                 you’re either full of resentment or just here because of the
                 post’s title, you’re free to go.
             </Text>
+            <br />
             <Text>
                 For the rest of you, each day, I plan to post a brief update on
                 the company’s progress since the previous day and goals for

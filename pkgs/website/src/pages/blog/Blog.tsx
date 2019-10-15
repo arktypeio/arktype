@@ -13,7 +13,7 @@ import { posts } from "./posts"
 import { PostData } from "./common"
 
 const getUrlSuffix = (post: PostData) =>
-    post.title.replace(" ", "-").toLowerCase()
+    post.title.replace(/\s/g, "-").toLowerCase()
 
 const PostContent = () => {
     const { title } = useParams()
@@ -29,12 +29,12 @@ export const Blog = () => {
     console.log(useHistory())
     console.log(useLocation())
     return (
-        <Card style={{ height: "100%", width: "100%" }}>
-            <Switch>
-                <Route path="/blog/:title">
-                    <PostContent />
-                </Route>
-                <Route path="/blog">
+        <Switch>
+            <Route path="/blog/:title">
+                <PostContent />
+            </Route>
+            <Route path="/blog">
+                <Card style={{ height: "100%", width: "100%" }}>
                     <Column
                         style={{
                             padding: 16
@@ -48,8 +48,8 @@ export const Blog = () => {
                             />
                         ))}
                     </Column>
-                </Route>
-            </Switch>
-        </Card>
+                </Card>
+            </Route>
+        </Switch>
     )
 }
