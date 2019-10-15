@@ -25,7 +25,7 @@ export const Inner = () => {
         >
             <Switch>
                 <Route exact path="/" component={Home} />
-                <Route path="/blog" component={Blog} />
+                <Route path="/blog/" component={Blog} />
             </Switch>
         </Column>
     )
