@@ -1,5 +1,11 @@
 import React from "react"
-import { Route, Switch, useParams } from "react-router-dom"
+import {
+    Route,
+    Switch,
+    useParams,
+    useLocation,
+    useHistory
+} from "react-router-dom"
 import { Card, Column, ErrorText } from "@re-do/components"
 import { PostSummary } from "./PostSummary"
 import { Post } from "./Post"
@@ -20,6 +26,8 @@ const PostContent = () => {
 }
 
 export const Blog = () => {
+    console.log(useHistory())
+    console.log(useLocation())
     return (
         <Card style={{ height: "100%", width: "100%" }}>
             <Switch>
