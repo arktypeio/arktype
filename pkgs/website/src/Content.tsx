@@ -12,8 +12,6 @@ import { layout } from "./constants"
 import { Home, Blog } from "./pages"
 
 export const Inner = () => {
-    console.log(useHistory())
-    console.log(useLocation())
     return (
         <Column
             spacing={4}

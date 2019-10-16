@@ -26,7 +26,6 @@ const PostContent = () => {
 }
 
 export const Blog = () => {
-    console.log("Routing to blog")
     return (
         <Switch>
             <Route path="/blog/:title">
