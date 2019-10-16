@@ -8,13 +8,7 @@ export default makeConfig(
         tsconfig: resolve(__dirname, "tsconfig.json"),
         devServer: isDev()
     },
-
     [
-        {
-            output: {
-                publicPath: "/"
-            }
-        },
         isDev()
             ? ({
                   devServer: {

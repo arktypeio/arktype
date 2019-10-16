@@ -1,3 +1,3 @@
-import { Oct1519 } from "./Oct1519"
+import { Oct1619 } from "./Oct1619"
 
-export const posts = [Oct1519]
+export const posts = [Oct1619]

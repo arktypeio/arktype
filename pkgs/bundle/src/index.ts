@@ -91,6 +91,9 @@ const getWebConfig = (args: ConfigArgs): Configuration =>
                 }
             ]
         },
+        output: {
+            publicPath: "/"
+        },
         resolve: {
             alias: {
                 "react-hot-loader": resolve(
