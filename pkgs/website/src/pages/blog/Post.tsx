@@ -1,6 +1,7 @@
 import React from "react"
 import { PostData } from "./common"
-import { Text, Row } from "@re-do/components"
+import { Text, Row, Column, AppBar } from "@re-do/components"
+import { ContactInfo } from "../../components"
 
 export type PostProps = {
     data: PostData
@@ -8,20 +9,18 @@ export type PostProps = {
 
 export const Post = ({ data }: PostProps) => {
     return (
-        <>
+        <Column align="center">
             <Text variant="h4">{data.title}</Text>
-            <Text>
-                <i>{data.caption}</i>
-            </Text>
             <Row justify="space-between">
                 <Text>
-                    <i>David Blass</i>
+                    <i>by David Blass</i>
                 </Text>
                 <Text>
                     <i>{data.date}</i>
                 </Text>
             </Row>
+            <br />
             {data.content}
-        </>
+        </Column>
     )
 }

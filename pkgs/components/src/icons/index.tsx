@@ -1,3 +1,4 @@
+import React from "react"
 import add from "@material-ui/icons/Add"
 import collapse from "@material-ui/icons/ExpandMore"
 import expandRight from "@material-ui/icons/ChevronRight"
@@ -16,6 +17,16 @@ import view from "@material-ui/icons/RemoveRedEye"
 import save from "@material-ui/icons/Done"
 import close from "@material-ui/icons/Close"
 import blog from "@material-ui/icons/ChatBubble"
+import linkedIn from "@material-ui/icons/LinkedIn"
+import email from "@material-ui/icons/Email"
+import { mdiGithubBox } from "@mdi/js"
+import SvgIcon, { SvgIconProps } from "@material-ui/core/SvgIcon"
+
+const gitHub = (props: SvgIconProps) => (
+    <SvgIcon {...props}>
+        <path d={mdiGithubBox} />
+    </SvgIcon>
+)
 
 export const Icons = {
     add,
@@ -35,5 +46,8 @@ export const Icons = {
     view,
     save,
     close,
-    blog
+    blog,
+    email,
+    linkedIn,
+    gitHub
 }

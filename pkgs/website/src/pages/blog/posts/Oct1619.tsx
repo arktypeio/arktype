@@ -6,7 +6,7 @@ export const Oct1619: PostData = {
     title: "What founding a startup and global warming have in common",
     date: "October 16, 2019",
     caption:
-        "Some things I've learned about my self from my first few months as a startup founder and why this blog exists",
+        "Stuff I learned about my self from my first few months as a startup founder",
     content: (
         <>
             <Text>
@@ -27,7 +27,7 @@ export const Oct1619: PostData = {
                 Second, for years my personal happiness has been tied up in my
                 belief that I am doing the most I can do to help others. More
                 recently, I learned about{" "}
-                <a href="https://www.effectivealtruism.org/">
+                <a href="https://www.effectivealtruism.org/" target="_blank">
                     Effective Altruism
                 </a>
                 , which reinforced that connection as well as the idea that

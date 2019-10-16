@@ -1,16 +1,11 @@
 import React from "react"
-import {
-    Route,
-    Switch,
-    useParams,
-    useLocation,
-    useHistory
-} from "react-router-dom"
+import { Route, Switch, useParams } from "react-router-dom"
 import { Card, Column, ErrorText } from "@re-do/components"
 import { PostSummary } from "./PostSummary"
 import { Post } from "./Post"
 import { posts } from "./posts"
 import { PostData } from "./common"
+import { ContactInfo } from "../../components"
 
 const getUrlSuffix = (post: PostData) =>
     post.title.replace(/\s/g, "-").toLowerCase()
@@ -27,27 +22,30 @@ const PostContent = () => {
 
 export const Blog = () => {
     return (
-        <Switch>
-            <Route path="/blog/:title">
-                <PostContent />
-            </Route>
-            <Route path="/blog">
-                <Card style={{ height: "100%", width: "100%" }}>
-                    <Column
-                        style={{
-                            padding: 16
-                        }}
-                    >
-                        {posts.map(post => (
-                            <PostSummary
-                                key={post.title}
-                                post={post}
-                                linksTo={`/blog/${getUrlSuffix(post)}`}
-                            />
-                        ))}
-                    </Column>
-                </Card>
-            </Route>
-        </Switch>
+        <>
+            <Switch>
+                <Route path="/blog/:title">
+                    <PostContent />
+                </Route>
+                <Route path="/blog">
+                    <Card style={{ height: "100%", width: "100%" }}>
+                        <Column
+                            style={{
+                                padding: 16
+                            }}
+                        >
+                            {posts.map(post => (
+                                <PostSummary
+                                    key={post.title}
+                                    post={post}
+                                    linksTo={`/blog/${getUrlSuffix(post)}`}
+                                />
+                            ))}
+                        </Column>
+                    </Card>
+                </Route>
+            </Switch>
+            <ContactInfo />
+        </>
     )
 }
