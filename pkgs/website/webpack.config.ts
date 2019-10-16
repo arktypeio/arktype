@@ -8,13 +8,19 @@ export default makeConfig(
         tsconfig: resolve(__dirname, "tsconfig.json"),
         devServer: isDev()
     },
-    isDev()
-        ? [
-              {
+
+    [
+        {
+            output: {
+                publicPath: "/"
+            }
+        },
+        isDev()
+            ? ({
                   devServer: {
                       open: true
                   }
-              } as any
-          ]
-        : undefined
+              } as any)
+            : undefined
+    ]
 )
