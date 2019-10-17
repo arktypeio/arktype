@@ -3,15 +3,11 @@ import { Text, Row, Icons, IconButton, AppBar } from "@re-do/components"
 
 export const ContactInfo = () => {
     return (
-        <AppBar
-            justify="space-evenly"
-            kind="bottom"
-            style={{ background: "white" }}
-        >
+        <AppBar justify="center" kind="bottom" style={{ background: "white" }}>
             <Text color="primary">
                 <i>Hearing from you would make my day!</i>
             </Text>
-            <div style={{ display: "flex" }}>
+            <div style={{ display: "flex", padding: 16 }}>
                 <Icons.email color="primary" />
                 <Text color="textPrimary">david@redo.qa</Text>
             </div>
