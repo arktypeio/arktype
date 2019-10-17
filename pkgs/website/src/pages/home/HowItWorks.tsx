@@ -1,7 +1,7 @@
-import React, { FC, useState } from "react"
-import { Row, Text, Column } from "@re-do/components"
-import { copy } from "../constants"
-import ExpandMore from "@material-ui/icons/ExpandMore"
+import React, { useState } from "react"
+import { Row, Text, Column, Icons } from "@re-do/components"
+import { copy } from "../../constants"
+// import ExpandMore from "@material-ui/icons/ExpandMore"
 import { AnimatedCheckbox } from "./AnimatedCheckbox"
 import ExpansionPanel, {
     ExpansionPanelProps
@@ -14,12 +14,7 @@ type StepProps = ExpansionPanelProps & {
     details: string
 }
 
-const Step: FC<StepProps> = ({
-    summary,
-    details,
-    defaultExpanded,
-    ...rest
-}) => {
+const Step = ({ summary, details, defaultExpanded, ...rest }: StepProps) => {
     const [expanded, setExpanded] = useState(!!defaultExpanded)
     return (
         <ExpansionPanel
@@ -33,7 +28,7 @@ const Step: FC<StepProps> = ({
             onChange={(_, open) => setExpanded(open)}
             {...rest}
         >
-            <ExpansionPanelSummary expandIcon={<ExpandMore />}>
+            <ExpansionPanelSummary expandIcon={<Icons.expandDown />}>
                 <Row align="center">
                     <AnimatedCheckbox checked={expanded} />
                     <Text variant="h6">{summary}</Text>
@@ -50,7 +45,7 @@ type StepsProps = {
     children: StepProps[]
 }
 
-const Steps: FC<StepsProps> = ({ children }) => (
+const Steps = ({ children }: StepsProps) => (
     <>
         {children.map((stepProps, index) => (
             <Step key={index} defaultExpanded={index === 0} {...stepProps} />
@@ -58,7 +53,7 @@ const Steps: FC<StepsProps> = ({ children }) => (
     </>
 )
 
-export const HowItWorks: FC = () => {
+export const HowItWorks = () => {
     return (
         <Column align="center">
             <Text variant="h4">{copy.howItWorks.title}</Text>
