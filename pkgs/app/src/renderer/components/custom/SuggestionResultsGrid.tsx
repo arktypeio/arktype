@@ -48,7 +48,6 @@ export const SuggestionResultsGrid = ({
             <Row
                 wrap="wrap"
                 style={{
-                    width: "100%",
                     padding: 16
                 }}
             >

@@ -1,16 +1,16 @@
-import React, { FC } from "react"
-import { Text, Column, AnimatedLogo } from "@re-do/components"
-import { Background } from "./Background"
+import React from "react"
 import Typist from "react-typist"
+import { Text, Column, AnimatedLogo, Row, Link } from "@re-do/components"
+import { Background } from "./Background"
 import { layout } from "../constants"
 
 export type AppHeaderProps = {
     mobile?: boolean
 }
 
-export const AppHeader: FC<AppHeaderProps> = ({ mobile }) => {
-    const startHeight = mobile ? layout.header.height : 400
-    const endHeight = mobile ? 200 : 200
+export const AppHeader = ({ mobile }: AppHeaderProps) => {
+    const startHeight = layout.header.contentHeight + layout.header.slantHeight
+    const endHeight = layout.header.contentHeight
     return (
         <Column
             align="center"
@@ -35,6 +35,14 @@ export const AppHeader: FC<AppHeaderProps> = ({ mobile }) => {
                         that builds itself.
                     </Text>
                 </Typist>
+                <Row justify="space-around">
+                    <Link to="/" variant="h6">
+                        Home
+                    </Link>
+                    <Link to="/blog" variant="h6">
+                        Blog
+                    </Link>
+                </Row>
             </Column>
         </Column>
     )

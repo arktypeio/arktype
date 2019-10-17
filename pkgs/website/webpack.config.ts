@@ -8,13 +8,13 @@ export default makeConfig(
         tsconfig: resolve(__dirname, "tsconfig.json"),
         devServer: isDev()
     },
-    isDev()
-        ? [
-              {
+    [
+        isDev()
+            ? ({
                   devServer: {
                       open: true
                   }
-              } as any
-          ]
-        : undefined
+              } as any)
+            : undefined
+    ]
 )
