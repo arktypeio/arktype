@@ -18,10 +18,7 @@ export const ContactInfo = () => {
                 >
                     <IconButton Icon={Icons.linkedIn} color="primary" />
                 </a>
-                <a
-                    href="https://www.linkedin.com/in/ssalbdivad/"
-                    target="_blank"
-                >
+                <a href="https://github.com/ssalbdivad" target="_blank">
                     <IconButton Icon={Icons.gitHub} color="primary" />
                 </a>
             </div>
