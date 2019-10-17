@@ -1,6 +1,7 @@
 export const layout = {
     header: {
-        height: 250
+        contentHeight: 225,
+        slantHeight: 64
     },
     content: {
         maxWidth: 600,

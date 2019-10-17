@@ -1,9 +1,12 @@
 import React, { FC, useState } from "react"
 import { usePalette } from "../styles"
-import { BaseTextFieldProps as MuiTextFieldProps } from "@material-ui/core/TextField"
+import { StandardTextFieldProps as BaseMuiTextFieldProps } from "@material-ui/core/TextField"
 import { TextField } from "@material-ui/core"
 import { makeStyles } from "@material-ui/styles"
 import { makeKinds, KindFrom } from "../common"
+
+// Create a type definition that allows us to use different variants
+type MuiTextFieldProps = Omit<BaseMuiTextFieldProps, "variant">
 
 // Mui's theme overrides these styles unless !important is specified
 const getBorderStyles = (color: string) => ({
@@ -182,7 +185,7 @@ export const useTextFieldProps = ({
     }
 }
 
-export type TextInputProps = MuiTextFieldProps & {
+export type TextInputProps = Omit<MuiTextFieldProps, "variant"> & {
     kind?: KindFrom<typeof useKind>
     colorTemplate?: ColorTemplate
     borderColors?: Partial<BorderColors>
