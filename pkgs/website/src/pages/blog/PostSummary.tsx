@@ -1,22 +1,25 @@
 import React from "react"
 import { Card, Text, Row, Link } from "@re-do/components"
-import { PostData } from "./common"
+import { PostData, dateToString } from "./common"
 
 export type PostSummaryProps = {
     post: PostData
     linksTo: string
 }
 
-export const PostSummary = ({ linksTo, post }: PostSummaryProps) => {
+export const PostSummary = ({
+    linksTo,
+    post: { title, date, caption }
+}: PostSummaryProps) => {
     return (
         <Card style={{ width: "100%" }}>
             <Row justify="space-between" align="baseline">
                 <Link to={linksTo}>
-                    <Text variant="h5">{post.title}</Text>
+                    <Text variant="h5">{title}</Text>
                 </Link>
-                <Text>{post.date}</Text>
+                <Text>{dateToString(date)}</Text>
             </Row>
-            <Text>{post.caption}</Text>
+            <Text>{caption}</Text>
         </Card>
     )
 }
