@@ -19,8 +19,6 @@ export const Inner = () => {
             style={{
                 position: "absolute",
                 top: headerHeight,
-                height:
-                    window.screenY - headerHeight - layout.contactInfo.height,
                 ...layout.content
             }}
         >
