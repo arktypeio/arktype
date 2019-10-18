@@ -1,9 +1,11 @@
 import "isomorphic-fetch"
-import ApolloClient, { ApolloClientOptions } from "apollo-boost"
+import ApolloBoostClient, { ApolloClientOptions } from "apollo-boost"
 
-export type ApolloClientOrOptions<T> = ApolloClient<T> | ApolloClientOptions<T>
+export type ApolloClientOrOptions<T> =
+    | ApolloBoostClient<T>
+    | ApolloClientOptions<T>
 
 export const getApolloClient = <T>(from?: ApolloClientOrOptions<T>) =>
-    from instanceof ApolloClient ? from : new ApolloClient(from)
+    from instanceof ApolloBoostClient ? from : new ApolloBoostClient(from)
 
-export type ApolloClient = ApolloClient<any>
+export type ApolloClient = ApolloBoostClient<any>
