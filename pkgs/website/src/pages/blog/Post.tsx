@@ -1,26 +1,25 @@
 import React from "react"
-import { PostData } from "./common"
-import { Text, Row, Column, AppBar } from "@re-do/components"
-import { ContactInfo } from "../../components"
+import { PostData, dateToString } from "./common"
+import { Text, Row, Column } from "@re-do/components"
 
 export type PostProps = {
     data: PostData
 }
 
-export const Post = ({ data }: PostProps) => {
+export const Post = ({ data: { title, date, content } }: PostProps) => {
     return (
         <Column align="center">
-            <Text variant="h4">{data.title}</Text>
+            <Text variant="h4">{title}</Text>
             <Row justify="space-between">
                 <Text>
                     <i>by David Blass</i>
                 </Text>
                 <Text>
-                    <i>{data.date}</i>
+                    <i>{dateToString(date)}</i>
                 </Text>
             </Row>
             <br />
-            {data.content}
+            {content}
         </Column>
     )
 }

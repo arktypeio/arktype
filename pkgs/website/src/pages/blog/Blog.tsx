@@ -1,14 +1,12 @@
 import React from "react"
 import { Route, Switch, useParams } from "react-router-dom"
-import { Card, Column, ErrorText } from "@re-do/components"
-import { PostSummary } from "./PostSummary"
+import { ErrorText, Column } from "@re-do/components"
 import { Post } from "./Post"
-import { posts } from "./posts"
-import { PostData } from "./common"
+import { posts } from "./content"
+import { getUrlSuffix } from "./common"
 import { ContactInfo } from "../../components"
-
-const getUrlSuffix = (post: PostData) =>
-    post.title.replace(/\s/g, "-").toLowerCase()
+import { PostViewer } from "./PostViewer"
+import { UpdateViewer } from "./UpdateViewer"
 
 const PostContent = () => {
     const { title } = useParams()
@@ -28,21 +26,11 @@ export const Blog = () => {
                     <PostContent />
                 </Route>
                 <Route path="/blog">
-                    <Card style={{ height: "100%", width: "100%" }}>
-                        <Column
-                            style={{
-                                padding: 16
-                            }}
-                        >
-                            {posts.map(post => (
-                                <PostSummary
-                                    key={post.title}
-                                    post={post}
-                                    linksTo={`/blog/${getUrlSuffix(post)}`}
-                                />
-                            ))}
-                        </Column>
-                    </Card>
+                    <Column justify="space-between">
+                        <PostViewer />
+                        <div style={{ height: 24 }} />
+                        <UpdateViewer />
+                    </Column>
                 </Route>
             </Switch>
             <ContactInfo />

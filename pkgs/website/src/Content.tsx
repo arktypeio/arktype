@@ -12,12 +12,13 @@ import { layout } from "./constants"
 import { Home, Blog } from "./pages"
 
 export const Inner = () => {
+    const headerHeight = layout.header.contentHeight + layout.header.slantHeight
     return (
         <Column
             spacing={4}
             style={{
                 position: "absolute",
-                top: layout.header.contentHeight + layout.header.slantHeight,
+                top: headerHeight,
                 ...layout.content
             }}
         >
