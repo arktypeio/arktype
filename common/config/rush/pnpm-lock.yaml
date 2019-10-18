@@ -52,6 +52,7 @@ dependencies:
     "@types/jest": 24.0.13
     "@types/jsonwebtoken": 8.3.2
     "@types/node": 12.6.6
+    "@types/node-uuid": 0.0.28
     "@types/puppeteer": 1.19.1
     "@types/react": 16.9.2
     "@types/react-dom": 16.9.0
@@ -68,6 +69,7 @@ dependencies:
     apollo-link-context: 1.0.18
     apollo-link-http: 1.5.15
     apollo-server: 2.7.0
+    axios: 0.19.0
     babel-loader: 8.0.6_@babel+core@7.5.5+webpack@4.39.3
     babel-plugin-require-context-hook: 1.0.0
     babel-plugin-transform-typescript-metadata: 0.2.2
@@ -102,6 +104,7 @@ dependencies:
     material-table: 1.50.0_ae44185a12718063e7b106fb9d464758
     material-ui-chip-input: 1.0.0_ae44185a12718063e7b106fb9d464758
     moize: 5.4.4
+    node-uuid: 1.4.8
     prettier: 1.15.1
     pretty-quick: 1.8.0_prettier@1.15.1
     prisma2: 2.0.0-preview-8
@@ -4166,6 +4169,12 @@ packages:
         dev: false
         resolution:
             integrity: sha512-tHq6qdbT9U1IRSGf14CL0pUlULksvY9OZ+5eEgl1N7t+OA3tGvNpxJCzuKQlsNgCVwbAs670L1vcVQi8j9HjnA==
+    /@types/node-uuid/0.0.28:
+        dependencies:
+            "@types/node": 12.6.6
+        dev: false
+        resolution:
+            integrity: sha1-QWVbXOY7LzN0xOgmtN0h5ykFjj0=
     /@types/node/10.14.22:
         dev: false
         resolution:
@@ -5792,6 +5801,13 @@ packages:
         dev: false
         resolution:
             integrity: sha512-0BfJq4NSfQXd+SkFdrvFbG7addhYSBA2mQwISr46pD6E5iqkWg02RAs8vyTT/j0RTnoYmeXauBuSv1qKwR179g==
+    /axios/0.19.0:
+        dependencies:
+            follow-redirects: 1.5.10
+            is-buffer: 2.0.4
+        dev: false
+        resolution:
+            integrity: sha512-1uvKqKQta3KBxIz14F2v06AEHZ/dIoeKfbTRkK1E5oqjDnuEerLmYTgJB5AiQZHJcljpg1TuRzdjDR06qNk0DQ==
     /babel-code-frame/6.26.0:
         dependencies:
             chalk: 1.1.3
@@ -11166,6 +11182,9 @@ packages:
             node: ">=6"
         peerDependencies:
             jest-resolve: "*"
+        peerDependenciesMeta:
+            jest-resolve:
+                optional: true
         resolution:
             integrity: sha512-pgFw2tm54fzgYvc/OHrnysABEObZCUNFnhjoRjaVOCN8NYc032/gVjPaHD4Aq6ApkSieWtfKAFQtmDKAmhupnQ==
     /jest-regex-util/24.9.0:
@@ -12854,6 +12873,12 @@ packages:
         dev: false
         resolution:
             integrity: sha512-ggXhX6QGyJSjj3r+6ml2LqqC28XOWmKtpb+a15/Zpr9V3yoNazxJNlcQDS9bYaid5FReEWHEgToH1mwoUceWwg==
+    /node-uuid/1.4.8:
+        deprecated: Use uuid module instead
+        dev: false
+        hasBin: true
+        resolution:
+            integrity: sha1-sEDrCSOWivq/jTL7HxfxFn/auQc=
     /nopt/3.0.6:
         dependencies:
             abbrev: 1.1.1
@@ -16856,6 +16881,9 @@ packages:
             node: ">=6"
         peerDependencies:
             typescript: "*"
+        peerDependenciesMeta:
+            typescript:
+                optional: true
         resolution:
             integrity: sha512-1J/vefLC+BWSo+qe8OnJQfWTYRS6ingxjwqmHMqaMxXMj7kFtKLgAaYW3JeX3mktjgUL+etlU8/B4VUAUI9QGw==
     /tsconfig-paths-webpack-plugin/3.2.0:
@@ -17164,6 +17192,9 @@ packages:
         peerDependencies:
             file-loader: "*"
             webpack: ^4.0.0
+        peerDependenciesMeta:
+            file-loader:
+                optional: true
         resolution:
             integrity: sha512-G8nk3np8ZAnwhHXas1JxJEwJyQdqFXAKJehfgZ/XrC48volFBRtO+FIKtF2u0Ma3bw+4vnDVjHPAQYlF9p2vsw==
     /url-parse-lax/3.0.0:
@@ -18160,12 +18191,15 @@ packages:
             "@material-ui/styles": 4.5.0_react-dom@16.9.0+react@16.9.0
             "@types/analytics-node": 3.1.1
             "@types/node": 12.6.6
+            "@types/node-uuid": 0.0.28
             "@types/react": 16.9.2
             "@types/react-dom": 16.9.0
             "@types/react-router-dom": 5.1.0
             "@types/react-typist": 2.0.0
             analytics-node: 3.4.0-beta.1
+            axios: 0.19.0
             framer-motion: 1.6.5_react-dom@16.9.0+react@16.9.0
+            node-uuid: 1.4.8
             react: 16.9.0
             react-dom: 16.9.0_react@16.9.0
             react-hot-loader: 4.12.8_react-dom@16.9.0+react@16.9.0
@@ -18180,9 +18214,10 @@ packages:
         dev: false
         name: "@rush-temp/website"
         resolution:
-            integrity: sha512-SsGrbJ39sdOBsmHlI5g+qzpy/fN948IpxFg2LY0DrGz6azbwX03VgNjtrnYqvBoJ1HSEzNxbnq6O6VTcyjwulg==
+            integrity: sha512-JvFBuZlXnn9ZICCk+svYEz4sWQ0cykerI2UcTcuTIAYxgl4a8MI4TZt53Ad0LUit3mNjlEUl8IRhOOBXHOB5MQ==
             tarball: "file:projects/website.tgz"
         version: 0.0.0
+registry: ""
 specifiers:
     "@apollo/react-hooks": 3.0.0
     "@babel/cli": 7.5.5
@@ -18237,6 +18272,7 @@ specifiers:
     "@types/jest": 24.0.13
     "@types/jsonwebtoken": 8.3.2
     "@types/node": 12.6.6
+    "@types/node-uuid": 0.0.28
     "@types/puppeteer": 1.19.1
     "@types/react": 16.9.2
     "@types/react-dom": 16.9.0
@@ -18253,6 +18289,7 @@ specifiers:
     apollo-link-context: 1.0.18
     apollo-link-http: 1.5.15
     apollo-server: 2.7.0
+    axios: 0.19.0
     babel-loader: 8.0.6
     babel-plugin-require-context-hook: 1.0.0
     babel-plugin-transform-typescript-metadata: 0.2.2
@@ -18287,6 +18324,7 @@ specifiers:
     material-table: 1.50.0
     material-ui-chip-input: 1.0.0
     moize: 5.4.4
+    node-uuid: 1.4.8
     prettier: 1.15.1
     pretty-quick: 1.8.0
     prisma2: 2.0.0-preview-8
