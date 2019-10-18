@@ -40,10 +40,16 @@ function readPackage(packageJson, context) {
         }
     }
     if (packageJson.name === "material-table") {
-        console.log(
+        context.log(
             "Adding @babel/runtime as a dependency for material-table..."
         )
         packageJson.dependencies["@babel/runtime"] = "7.5.5"
+    }
+    if (packageJson.name === "@material-ui/pickers") {
+        context.log(
+            "Adding prop-types as a dependency for @material-ui/pickers..."
+        )
+        packageJson.dependencies["prop-types"] = "15.7.2"
     }
     return packageJson
 }
