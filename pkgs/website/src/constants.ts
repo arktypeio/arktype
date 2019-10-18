@@ -7,6 +7,9 @@ export const layout = {
         maxWidth: 600,
         minWidth: 343,
         padding: 16
+    },
+    contactInfo: {
+        height: 45
     }
 }
 

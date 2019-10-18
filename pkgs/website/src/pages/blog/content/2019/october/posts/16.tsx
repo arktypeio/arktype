@@ -1,10 +1,10 @@
 import React from "react"
 import { Text } from "@re-do/components"
-import { PostData } from "../common"
+import { PostData } from "../../../../common"
 
-export const Oct1619: PostData = {
+export const oct162019: PostData = {
     title: "What founding a startup and global warming have in common",
-    date: "October 16, 2019",
+    date: new Date(2019, 9, 16),
     caption:
         "Stuff I learned about my self from my first few months as a startup founder",
     content: (
