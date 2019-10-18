@@ -26,8 +26,9 @@ export const Blog = () => {
                     <PostContent />
                 </Route>
                 <Route path="/blog">
-                    <Column justify="space-between" full>
+                    <Column justify="space-between">
                         <PostViewer />
+                        <div style={{ height: 24 }} />
                         <UpdateViewer />
                     </Column>
                 </Route>
