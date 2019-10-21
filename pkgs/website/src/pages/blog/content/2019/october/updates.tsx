@@ -13,5 +13,11 @@ export const october2019Updates: UpdateData[] = [
             "integrate landing page analytics with MailChimp": true,
             "finish new type model on test-execution branch": false
         }
+    },
+    {
+        date: new Date(2019, 9, 21),
+        goals: {
+            "finish new type model on test-execution branch": false
+        }
     }
 ]
