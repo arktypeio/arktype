@@ -3,16 +3,30 @@
 
 
 type Mutation {
+  createOneSelector(data: SelectorCreateInput!): Selector!
+  createOneStep(data: StepCreateInput!): Step!
   createOneTag(data: TagCreateInput!): Tag!
+  createOneTest(data: TestCreateInput!): Test!
+  createOneUser(data: UserCreateInput!): User!
 }
 
 type Query {
+  selector(where: SelectorWhereUniqueInput!): Selector
+  step(where: StepWhereUniqueInput!): Step
   tag(where: TagWhereUniqueInput!): Tag
+  test(where: TestWhereUniqueInput!): Test
+  user(where: UserWhereUniqueInput!): User
 }
 
 type Selector {
   css: String!
   id: Int!
+}
+
+input SelectorCreateInput {
+  css: String!
+  steps: StepCreateManyWithoutStepsInput
+  user: UserCreateOneWithoutUserInput
 }
 
 input SelectorCreateManyWithoutSelectorsInput {
@@ -22,17 +36,17 @@ input SelectorCreateManyWithoutSelectorsInput {
 
 input SelectorCreateOneWithoutSelectorInput {
   connect: SelectorWhereUniqueInput
-  create: SelectorCreateWithoutStepInput
+  create: SelectorCreateWithoutStepsInput
 }
 
-input SelectorCreateWithoutStepInput {
+input SelectorCreateWithoutStepsInput {
   css: String!
   user: UserCreateOneWithoutUserInput
 }
 
 input SelectorCreateWithoutUserInput {
   css: String!
-  step: StepCreateOneWithoutStepInput
+  steps: StepCreateManyWithoutStepsInput
 }
 
 input SelectorWhereUniqueInput {
@@ -46,27 +60,23 @@ type Step {
   value: String!
 }
 
-input StepCreateManyWithoutStepsInput {
-  connect: [StepWhereUniqueInput!]
-  create: [StepCreateWithoutUserInput!]
+input StepCreateInput {
+  action: String!
+  selector: SelectorCreateOneWithoutSelectorInput!
+  test: TestCreateOneWithoutTestInput
+  user: UserCreateOneWithoutUserInput
+  value: String!
 }
 
-input StepCreateOneWithoutStepInput {
-  connect: StepWhereUniqueInput
-  create: StepCreateWithoutSelectorInput
+input StepCreateManyWithoutStepsInput {
+  connect: [StepWhereUniqueInput!]
+  create: [StepCreateWithoutSelectorInput!]
 }
 
 input StepCreateWithoutSelectorInput {
   action: String!
   test: TestCreateOneWithoutTestInput
   user: UserCreateOneWithoutUserInput
-  value: String!
-}
-
-input StepCreateWithoutUserInput {
-  action: String!
-  selector: SelectorCreateOneWithoutSelectorInput!
-  test: TestCreateOneWithoutTestInput
   value: String!
 }
 
@@ -102,8 +112,15 @@ input TagWhereUniqueInput {
 type Test {
   id: Int!
   name: String!
-  steps(after: String, before: String, first: Int, last: Int, skip: Int): [Step!]
-  tags(after: String, before: String, first: Int, last: Int, skip: Int): [Tag!]
+  steps(after: String, before: String, first: Int, last: Int, skip: Int): [Step!]!
+  tags(after: String, before: String, first: Int, last: Int, skip: Int): [Tag!]!
+}
+
+input TestCreateInput {
+  name: String!
+  steps: StepCreateManyWithoutStepsInput
+  tags: TagCreateManyWithoutTagsInput
+  user: UserCreateOneWithoutUserInput!
 }
 
 input TestCreateManyWithoutTestsInput {
@@ -137,6 +154,17 @@ type User {
   id: Int!
   lastName: String!
   password: String!
+}
+
+input UserCreateInput {
+  email: String!
+  firstName: String!
+  lastName: String!
+  password: String!
+  selectors: SelectorCreateManyWithoutSelectorsInput
+  steps: StepCreateManyWithoutStepsInput
+  tags: TagCreateManyWithoutTagsInput
+  tests: TestCreateManyWithoutTestsInput
 }
 
 input UserCreateOneWithoutUserInput {

@@ -9,20 +9,10 @@ import { User } from "./user"
 import { Query } from "./query"
 import { Mutation } from "./mutation"
 
-const appTypes = [Step, User, Test, Selector, Tag, Query, Mutation]
-const nexusPrismaTypes = nexusPrismaPlugin({
-    types: appTypes,
-    outputs: {
-        typegen: join(
-            __dirname,
-            "../../node_modules/@types/__nexus-typegen__nexus-prisma/index.d.ts"
-        )
-    }
-})
-const allTypes = [appTypes, nexusPrismaTypes]
+const types = [Step, User, Test, Selector, Tag, Query, Mutation]
 
 export const schema = makeSchema({
-    types: allTypes,
+    types,
     outputs: {
         typegen: join(
             __dirname,
@@ -37,5 +27,15 @@ export const schema = makeSchema({
                 alias: "photon"
             }
         ]
-    }
+    },
+    plugins: [
+        nexusPrismaPlugin({
+            outputs: {
+                typegen: join(
+                    __dirname,
+                    "../../node_modules/@types/__nexus-typegen__nexus-prisma/index.d.ts"
+                )
+            }
+        })
+    ]
 })

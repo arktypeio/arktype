@@ -21,6 +21,8 @@
         "@babel/preset-typescript": "7.6.0",
         "babel-plugin-require-context-hook": "1.0.0",
         "babel-plugin-transform-typescript-metadata": "0.2.2",
+        "@babel/plugin-proposal-nullish-coalescing-operator": "7.4.4",
+        "@babel/plugin-proposal-optional-chaining": "7.6.0",
         "execa": "3.2.0",
         "react-hot-loader": "4.12.15"
     },
