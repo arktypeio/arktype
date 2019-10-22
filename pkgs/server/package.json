@@ -11,7 +11,8 @@
         "prisma": "prisma2 generate && npm run generateSchema && prisma2 lift save --name init && prisma2 lift up",
         "generate": "npm run wipeDb && npm run prisma && npm run seed",
         "clean": "rm -rf dist",
-        "generateSchema": "ts-node --transpile-only src/schema"
+        "generateSchema": "ts-node --transpile-only src/schema && npm run copySchema",
+        "copySchema": "cp -r node_modules/@types/__nexus-typegen__nexus-core/index.d.ts ../model"
     },
     "dependencies": {
         "@re-do/model": "0.0.1",
