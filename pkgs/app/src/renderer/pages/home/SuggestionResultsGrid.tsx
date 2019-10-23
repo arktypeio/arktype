@@ -1,10 +1,9 @@
-import React, { CSSProperties } from "react"
+import React from "react"
 import { SuggestionCard } from "./SuggestionCard"
 import { store } from "renderer/common"
 import { Card, Row } from "@re-do/components"
 import { useQuery } from "@apollo/react-hooks"
-import { metadata, Test } from "@re-do/model"
-import { test } from "@re-do/test"
+import { NexusGenAllTypes } from "@re-do/model"
 
 const welcomeSuggestion = {
     name: "👆Hey there!",
@@ -15,12 +14,11 @@ const welcomeSuggestion = {
 
 const useValues = () => {
     const { cardFilter } = store.hooks.useQuery({ cardFilter: null })
-    const { data, loading } = useQuery<{ getTests: Test[] }>(
-        metadata.test.gql.get,
-        {
-            fetchPolicy: "no-cache"
-        }
-    )
+    const { data, loading } = useQuery<{
+        getTests: NexusGenAllTypes["Test"][]
+    }>(metadata.test.gql.get, {
+        fetchPolicy: "no-cache"
+    })
     return loading
         ? []
         : data && data.getTests && data.getTests.length > 0

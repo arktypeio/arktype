@@ -4,16 +4,15 @@
     "author": "redo.qa",
     "description": "Redo's server",
     "scripts": {
-        "build": "npm run generate && tsc",
+        "build": "npm run generate && npm run buildModel && tsc",
         "start": "ts-node-dev --no-notify --respawn --transpileOnly src/index",
         "wipeDb": "rm -rf prisma/dev.db prisma/migrations",
         "seed": "ts-node prisma/seed.ts",
         "prisma": "prisma2 generate && npm run generateSchema && prisma2 lift save --name init && prisma2 lift up",
         "generate": "npm run wipeDb && npm run prisma && npm run seed",
         "clean": "rm -rf dist",
-        "generateSchema": "ts-node --transpile-only src/schema && npm run copySchema && npm run copyPhoton",
-        "copySchema": "cp -r node_modules/@types/__nexus-typegen__nexus-core/index.d.ts ../model",
-        "copyPhoton": "mkdir ../model && cp -r node_modules/@generated ../model/node_modules"
+        "generateSchema": "ts-node --transpile-only src/schema",
+        "buildModel": "ts-node buildModel"
     },
     "dependencies": {
         "@re-do/model": "0.0.1",

@@ -5,5 +5,8 @@
     "description": "Shared types that model Redo",
     "scripts": {
         "build": ""
+    },
+    "dependencies": {
+        "nexus": "0.12.0-beta.14"
     }
 }

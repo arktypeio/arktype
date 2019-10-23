@@ -1,6 +1,6 @@
 import React from "react"
 import { Column, Card, Row, Text, Icons, IconButton } from "@re-do/components"
-import { Test } from "@re-do/model"
+import { NexusGenAllTypes } from "@re-do/model"
 import { ValueFrom } from "@re-do/utils"
 
 class Other {
@@ -50,7 +50,7 @@ export const SuggestionCard = <T extends SuggestionKind>({
                 </Row>
                 <Row full={true} justify="center" align="center">
                     <Text variant="body2" align="center">
-                        {kind === "test" ? value : }
+                        {kind === "test" ? value : "Test"}
                     </Text>
                 </Row>
                 <Row full={true} justify="center" align="center">
