@@ -17,7 +17,13 @@ export const october2019Updates: UpdateData[] = [
     {
         date: new Date(2019, 9, 21),
         goals: {
-            "finish new type model on test-execution branch": false
+            "finish new type model on test-execution branch": true
+        }
+    },
+    {
+        date: new Date(2019, 9, 22),
+        goals: {
+            "integrate new type model with app": false
         }
     }
 ]
