@@ -12,7 +12,7 @@
         "generate": "npm run wipeDb && npm run prisma && npm run seed",
         "clean": "rm -rf dist",
         "generateSchema": "ts-node --transpile-only src/schema",
-        "buildModel": "ts-node buildModel"
+        "buildModel": "ts-node buildModel && npx prettier --write ../model/index.d.ts"
     },
     "dependencies": {
         "@re-do/model": "0.0.1",

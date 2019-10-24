@@ -1,4 +1,4 @@
-import { copyFileSync, copySync, readFileSync, writeFileSync } from "fs-extra"
+import { copySync, readFileSync, writeFileSync } from "fs-extra"
 import { join } from "path"
 
 const modelDir = join(__dirname, "..", "model")
