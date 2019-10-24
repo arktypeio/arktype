@@ -9,12 +9,10 @@ class Other {
     description: string
 }
 
-const suggestionKinds = {
-    test: Test,
+type SuggestionKinds = {
+    test: NexusGenAllTypes["Test"]
     other: Other
 }
-
-type SuggestionKinds = typeof suggestionKinds
 
 type SuggestionKind = keyof SuggestionKinds
 

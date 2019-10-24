@@ -34,7 +34,7 @@ const serve = async () => {
         }
     })
     const { url } = await server.listen({ port: process.env.PORT })
-    console.log(`Redo's Apollo server is up and running at ${url}.`)
+    console.log(`Redo's Apollo server is up and running at ${url} 🚀`)
 }
 
 serve()
