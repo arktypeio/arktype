@@ -25,11 +25,36 @@ const prismaTypegenFileContents = readFileSync(prismaTypegenFile)
     .toString()
     .replace("@generated/photon", "./@generated/photon")
 // Store contents of core typegen file without photon import so that it can be merged with the prisma typegen file
-const coreTypegenFileContents = readFileSync(coreTypegenFile)
+const coreTypegenFileLines = readFileSync(coreTypegenFile)
     .toString()
     .split("\n")
     .slice(8)
-    .join("\n")
+const modelDefinitionStartIndex = coreTypegenFileLines.findIndex(
+    line => line === "export interface NexusGenRootTypes {"
+)
+const modelDefinitionEndIndex = coreTypegenFileLines.findIndex(
+    (line, index) => index > modelDefinitionStartIndex && line === "}"
+)
+const builtIns = [
+    "Query",
+    "Mutation",
+    "String",
+    "Int",
+    "Float",
+    "Boolean",
+    "ID"
+]
+const modelTypes = coreTypegenFileLines
+    .slice(modelDefinitionStartIndex + 1, modelDefinitionEndIndex)
+    .map(line => line.replace(/\s/g, "").split(":"))
+    .filter(([name]) => !builtIns.includes(name))
+    .forEach(([name, definition]) =>
+        coreTypegenFileLines.push(`export type ${name} = ${definition}`)
+    )
+
+const coreTypegenFileContents = coreTypegenFileLines.join("\n")
+
+console.log(JSON.stringify(modelTypes, null, 4))
 
 writeFileSync(
     modelTypesFile,

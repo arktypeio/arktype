@@ -146,8 +146,9 @@ type GetKind<Name extends any> = IsEnum<Name> extends true
     : IsObject<Name> extends true
     ? "Object"
     : IsInputObject<Name> extends true
-    ? "InputObject" // FIXME should be `never`, but GQL objects named differently
-    : // than backing type fall into this branch
+    ? "InputObject"
+    : // FIXME should be `never`, but GQL objects named differently
+      // than backing type fall into this branch
       "Object"
 
 type NexusPrismaFields<ModelName extends keyof NexusPrismaTypes> = {
@@ -648,10 +649,15 @@ export interface NexusGenFieldTypes {
     Query: {
         // field return type
         selector: NexusGenRootTypes["Selector"] | null // Selector
+        selectors: NexusGenRootTypes["Selector"][] // [Selector!]!
         step: NexusGenRootTypes["Step"] | null // Step
+        steps: NexusGenRootTypes["Step"][] // [Step!]!
         tag: NexusGenRootTypes["Tag"] | null // Tag
+        tags: NexusGenRootTypes["Tag"][] // [Tag!]!
         test: NexusGenRootTypes["Test"] | null // Test
+        tests: NexusGenRootTypes["Test"][] // [Test!]!
         user: NexusGenRootTypes["User"] | null // User
+        users: NexusGenRootTypes["User"][] // [User!]!
     }
     Selector: {
         // field return type
@@ -714,21 +720,61 @@ export interface NexusGenArgTypes {
             // args
             where: NexusGenInputs["SelectorWhereUniqueInput"] // SelectorWhereUniqueInput!
         }
+        selectors: {
+            // args
+            after?: string | null // String
+            before?: string | null // String
+            first?: number | null // Int
+            last?: number | null // Int
+            skip?: number | null // Int
+        }
         step: {
             // args
             where: NexusGenInputs["StepWhereUniqueInput"] // StepWhereUniqueInput!
+        }
+        steps: {
+            // args
+            after?: string | null // String
+            before?: string | null // String
+            first?: number | null // Int
+            last?: number | null // Int
+            skip?: number | null // Int
         }
         tag: {
             // args
             where: NexusGenInputs["TagWhereUniqueInput"] // TagWhereUniqueInput!
         }
+        tags: {
+            // args
+            after?: string | null // String
+            before?: string | null // String
+            first?: number | null // Int
+            last?: number | null // Int
+            skip?: number | null // Int
+        }
         test: {
             // args
             where: NexusGenInputs["TestWhereUniqueInput"] // TestWhereUniqueInput!
         }
+        tests: {
+            // args
+            after?: string | null // String
+            before?: string | null // String
+            first?: number | null // Int
+            last?: number | null // Int
+            skip?: number | null // Int
+        }
         user: {
             // args
             where: NexusGenInputs["UserWhereUniqueInput"] // UserWhereUniqueInput!
+        }
+        users: {
+            // args
+            after?: string | null // String
+            before?: string | null // String
+            first?: number | null // Int
+            last?: number | null // Int
+            skip?: number | null // Int
         }
     }
     Test: {
@@ -828,3 +874,8 @@ export interface NexusGenTypes {
     abstractTypes: NexusGenTypes["interfaceNames"] | NexusGenTypes["unionNames"]
     abstractResolveReturn: NexusGenAbstractResolveReturnTypes
 }
+export type Selector = photon.Selector
+export type Step = photon.Step
+export type Tag = photon.Tag
+export type Test = photon.Test
+export type User = photon.User
