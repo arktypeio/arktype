@@ -32,5 +32,19 @@ export const october2019Updates: UpdateData[] = [
             "integrate new type model with app": false,
             "UI mockup for test execution": false
         }
+    },
+    {
+        date: new Date(2019, 9, 25),
+        goals: {
+            "integrate new type model with app": false,
+            "UI mockup for test execution": false
+        }
+    },
+    {
+        date: new Date(2019, 9, 26),
+        goals: {
+            "integrate new type model with app": false,
+            "UI mockup for test execution": false
+        }
     }
 ]
