@@ -141,5 +141,90 @@ export const october2019Posts: PostData[] = [
                 </Text>
             </>
         )
+    },
+    {
+        title: "Time for a Redo",
+        date: new Date(2019, 9, 28),
+        caption: "How the way we test our software is holding it back",
+        content: (
+            <>
+                <Text>
+                    When an engineer writes or updates code, there is some
+                    chance the changes work exactly as intended in every
+                    situation and a much higher chance something is broken.
+                    Luckily, there is an expectation that new code is tested
+                    before being released to users. Sometimes, testing is fast
+                    and easy; if you're building a button that changes colors
+                    when you click on it, you can have a very high degree of
+                    confidence as to whether or not it's working in a minute or
+                    less. Over time, the amount a team needs to test scales sort
+                    of like this:
+                </Text>
+                <br />
+                <Text>
+                    <i>Complexity × Update frequency = Testing required</i>
+                </Text>
+                <br />
+                <Text>
+                    So just limit those two factors and you're in the clear
+                    right? Well, yes, so long as you're building something small
+                    and predictable. If you just want to throw together a
+                    personal website, testing probably won't be a big problem
+                    for you. However, if you're building a product that needs to
+                    grow and evolve to meet the needs of your users, complexity
+                    is bound to go up. Historically, companies could compensate
+                    by only updating big products like Microsoft Word once a
+                    year. They'd still have a lot to test, but if they only had
+                    to do it annually it wasn't such a big deal. That paradigm
+                    would be short-lived, however, as just a few years later the
+                    internet would fundamentally and irrevocably change the way
+                    software was consumed.
+                </Text>
+                <br />
+                <Text>
+                    Full disclosure, I was in elementary school at this point
+                    and too preoccupied with building the ultimate Magic the
+                    Gathering deck and learning obscure baseball statics to
+                    notice or care that any of this was happening, so this is
+                    all second-hand. On the plus side, I'm starting to think
+                    it's possible I've actually become less nerdy over time, if
+                    only just.
+                </Text>
+                <br />
+                <Text>
+                    Anyways, the internet. Companies start to realize they can
+                    get a big advantage by updating their software in real time
+                    as they learn more about what their customers want. If
+                    Company A can release a critical feature its users need
+                    within a week of receiving feedback while Company B's users
+                    are stuck waiting a full year, Company A will have a huge
+                    advantage, even if the initial version of the product they
+                    release is significantly worse. So subscriptions providing
+                    access to frequent updates (
+                    <a
+                        href="https://en.wikipedia.org/wiki/Software_as_a_service"
+                        target="_blank"
+                    >
+                        SAAS
+                    </a>
+                    ) displaced one-time purchases as the standard for
+                    delivering software and we all lived happily ever after.
+                    Only problem is, SAAS apps are:
+                </Text>
+                <br />
+                <Text>
+                    1) Complex
+                    <br />
+                    2) Updated frequently
+                    <br />
+                </Text>
+                <br />
+                <Text>
+                    So, if you recall how we determine the amount of time a team
+                    needs to spend testing, we've put ourselves firmly in "a
+                    lot" territory.
+                </Text>
+            </>
+        )
     }
 ]
