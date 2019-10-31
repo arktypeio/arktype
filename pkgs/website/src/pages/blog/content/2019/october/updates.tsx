@@ -52,5 +52,12 @@ export const october2019Updates: UpdateData[] = [
         goals: {
             "second blog post": true
         }
+    },
+    {
+        date: new Date(2019, 9, 31),
+        goals: {
+            "integrate new type model with app": false,
+            "UI mockup for test execution": false
+        }
     }
 ]
