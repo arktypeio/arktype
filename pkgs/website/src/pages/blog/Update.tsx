@@ -1,6 +1,6 @@
 import React from "react"
 import { Text, Row, Column, ErrorText } from "@re-do/components"
-import { UpdateData, dateToString } from "./common"
+import { UpdateData } from "./common"
 
 export type UpdateProps = {
     yesterday?: UpdateData
