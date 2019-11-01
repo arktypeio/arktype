@@ -1,5 +1,5 @@
 import React from "react"
-import { Card, Column, Text } from "@re-do/components"
+import { Card, Text } from "@re-do/components"
 import { posts } from "./content"
 import { PostSummary } from "./PostSummary"
 import { getUrlSuffix } from "./common"
