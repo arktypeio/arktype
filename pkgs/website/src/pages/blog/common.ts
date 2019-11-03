@@ -11,6 +11,9 @@ export type UpdateData = {
 }
 
 export const getUrlSuffix = (post: PostData) =>
-    post.title.replace(/\s/g, "-").toLowerCase()
+    post.title
+        .toLowerCase()
+        .replace(/\s/g, "-")
+        .replace(/[^0-9a-z\-]/g, "")
 
 export const dateToString = (date: Date) => date.toLocaleDateString()
