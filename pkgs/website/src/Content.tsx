@@ -1,15 +1,26 @@
-import React from "react"
+import React, { useEffect } from "react"
 import { AppContents, Column } from "@re-do/components"
 import { AppHeader } from "./components"
 import {
     BrowserRouter as Router,
     Route,
     Switch,
-    useHistory,
     useLocation
 } from "react-router-dom"
 import { layout } from "./constants"
 import { Home, Blog } from "./pages"
+
+// See https://reacttraining.com/react-router/web/guides/scroll-restoration
+export const ScrollToTop = () => {
+    const { pathname } = useLocation()
+    useEffect(
+        () => {
+            window.scrollTo(0, 0)
+        },
+        [pathname]
+    )
+    return null
+}
 
 export const Inner = () => {
     const headerHeight = layout.header.contentHeight + layout.header.slantHeight
@@ -35,6 +46,7 @@ export const Content = () => {
         <AppContents>
             <Column align="center" style={{ overflow: "hidden" }}>
                 <Router>
+                    <ScrollToTop />
                     <AppHeader mobile={true} />
                     <Inner />
                 </Router>

@@ -6,11 +6,16 @@ export type PostProps = {
     data: PostData
 }
 
+const horizontalPadding: React.CSSProperties = {
+    paddingLeft: 16,
+    paddingRight: 16
+}
+
 export const Post = ({ data: { title, date, content } }: PostProps) => {
     return (
         <Column align="center">
             <Text variant="h4">{title}</Text>
-            <Row justify="space-between">
+            <Row justify="space-between" style={horizontalPadding}>
                 <Text>
                     <i>by David Blass</i>
                 </Text>
@@ -19,7 +24,7 @@ export const Post = ({ data: { title, date, content } }: PostProps) => {
                 </Text>
             </Row>
             <br />
-            {content}
+            <Column style={horizontalPadding}>{content}</Column>
         </Column>
     )
 }

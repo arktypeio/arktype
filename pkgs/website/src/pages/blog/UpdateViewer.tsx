@@ -31,7 +31,7 @@ const UpdateForDate = (props: UpdateForDateProps) => {
 }
 
 export const UpdateViewer = () => {
-    const [date, setDate] = useState(updates[updates.length - 1].date)
+    const [date, setDate] = useState(new Date())
     return (
         <Card style={{ padding: 16, width: "100%" }}>
             <Row align="baseline">
