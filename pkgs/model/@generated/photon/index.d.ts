@@ -1514,16 +1514,16 @@ export declare type User = {
     id: number;
     email: string;
     password: string;
-    firstName: string;
-    lastName: string;
+    first: string;
+    last: string;
 };
-export declare type UserScalars = 'id' | 'email' | 'password' | 'firstName' | 'lastName';
+export declare type UserScalars = 'id' | 'email' | 'password' | 'first' | 'last';
 export declare type UserSelect = {
     id?: boolean;
     email?: boolean;
     password?: boolean;
-    firstName?: boolean;
-    lastName?: boolean;
+    first?: boolean;
+    last?: boolean;
     selectors?: boolean | FindManySelectorSelectArgsOptional;
     steps?: boolean | FindManyStepSelectArgsOptional;
     tests?: boolean | FindManyTestSelectArgsOptional;
@@ -1539,8 +1539,8 @@ declare type UserDefault = {
     id: true;
     email: true;
     password: true;
-    firstName: true;
-    lastName: true;
+    first: true;
+    last: true;
 };
 declare type UserGetSelectPayload<S extends boolean | UserSelect> = S extends true ? User : S extends UserSelect ? {
     [P in CleanupNever<MergeTruthyValues<{}, S>>]: P extends UserScalars ? User[P] : P extends 'selectors' ? Array<SelectorGetSelectPayload<ExtractFindManySelectorSelectArgs<S[P]>>> : P extends 'steps' ? Array<StepGetSelectPayload<ExtractFindManyStepSelectArgs<S[P]>>> : P extends 'tests' ? Array<TestGetSelectPayload<ExtractFindManyTestSelectArgs<S[P]>>> : P extends 'tags' ? Array<TagGetSelectPayload<ExtractFindManyTagSelectArgs<S[P]>>> : never;
@@ -1914,8 +1914,8 @@ export declare type UserWhereInput = {
     id?: number | IntFilter | null;
     email?: string | StringFilter | null;
     password?: string | StringFilter | null;
-    firstName?: string | StringFilter | null;
-    lastName?: string | StringFilter | null;
+    first?: string | StringFilter | null;
+    last?: string | StringFilter | null;
     selectors?: SelectorFilter | null;
     steps?: StepFilter | null;
     tests?: TestFilter | null;
@@ -1996,8 +1996,8 @@ export declare type TestCreateManyWithoutTestsInput = {
 export declare type UserCreateWithoutTagsInput = {
     email: string;
     password: string;
-    firstName: string;
-    lastName: string;
+    first: string;
+    last: string;
     selectors?: SelectorCreateManyWithoutSelectorsInput | null;
     steps?: StepCreateManyWithoutStepsInput | null;
     tests?: TestCreateManyWithoutTestsInput | null;
@@ -2014,8 +2014,8 @@ export declare type TagCreateInput = {
 export declare type UserCreateWithoutTestsInput = {
     email: string;
     password: string;
-    firstName: string;
-    lastName: string;
+    first: string;
+    last: string;
     selectors?: SelectorCreateManyWithoutSelectorsInput | null;
     steps?: StepCreateManyWithoutStepsInput | null;
     tags?: TagCreateManyWithoutTagsInput | null;
@@ -2037,8 +2037,8 @@ export declare type StepCreateWithoutUserInput = {
 export declare type UserCreateWithoutSelectorsInput = {
     email: string;
     password: string;
-    firstName: string;
-    lastName: string;
+    first: string;
+    last: string;
     steps?: StepCreateManyWithoutStepsInput | null;
     tests?: TestCreateManyWithoutTestsInput | null;
     tags?: TagCreateManyWithoutTagsInput | null;
@@ -2052,8 +2052,8 @@ export declare type StepCreateWithoutTestInput = {
 export declare type UserCreateWithoutStepsInput = {
     email: string;
     password: string;
-    firstName: string;
-    lastName: string;
+    first: string;
+    last: string;
     selectors?: SelectorCreateManyWithoutSelectorsInput | null;
     tests?: TestCreateManyWithoutTestsInput | null;
     tags?: TagCreateManyWithoutTagsInput | null;
@@ -2129,8 +2129,8 @@ export declare type UserUpdateWithoutStepsDataInput = {
     id?: number | null;
     email?: string | null;
     password?: string | null;
-    firstName?: string | null;
-    lastName?: string | null;
+    first?: string | null;
+    last?: string | null;
     selectors?: SelectorUpdateManyWithoutUserInput | null;
     tests?: TestUpdateManyWithoutUserInput | null;
     tags?: TagUpdateManyWithoutUserInput | null;
@@ -2263,8 +2263,8 @@ export declare type UserUpdateWithoutSelectorsDataInput = {
     id?: number | null;
     email?: string | null;
     password?: string | null;
-    firstName?: string | null;
-    lastName?: string | null;
+    first?: string | null;
+    last?: string | null;
     steps?: StepUpdateManyWithoutUserInput | null;
     tests?: TestUpdateManyWithoutUserInput | null;
     tags?: TagUpdateManyWithoutUserInput | null;
@@ -2327,8 +2327,8 @@ export declare type UserUpdateWithoutTestsDataInput = {
     id?: number | null;
     email?: string | null;
     password?: string | null;
-    firstName?: string | null;
-    lastName?: string | null;
+    first?: string | null;
+    last?: string | null;
     selectors?: SelectorUpdateManyWithoutUserInput | null;
     steps?: StepUpdateManyWithoutUserInput | null;
     tags?: TagUpdateManyWithoutUserInput | null;
@@ -2433,8 +2433,8 @@ export declare type UserUpdateWithoutTagsDataInput = {
     id?: number | null;
     email?: string | null;
     password?: string | null;
-    firstName?: string | null;
-    lastName?: string | null;
+    first?: string | null;
+    last?: string | null;
     selectors?: SelectorUpdateManyWithoutUserInput | null;
     steps?: StepUpdateManyWithoutUserInput | null;
     tests?: TestUpdateManyWithoutUserInput | null;
@@ -2514,8 +2514,8 @@ export declare type TestUpdateManyMutationInput = {
 export declare type UserCreateInput = {
     email: string;
     password: string;
-    firstName: string;
-    lastName: string;
+    first: string;
+    last: string;
     selectors?: SelectorCreateManyWithoutSelectorsInput | null;
     steps?: StepCreateManyWithoutStepsInput | null;
     tests?: TestCreateManyWithoutTestsInput | null;
@@ -2525,8 +2525,8 @@ export declare type UserUpdateInput = {
     id?: number | null;
     email?: string | null;
     password?: string | null;
-    firstName?: string | null;
-    lastName?: string | null;
+    first?: string | null;
+    last?: string | null;
     selectors?: SelectorUpdateManyWithoutUserInput | null;
     steps?: StepUpdateManyWithoutUserInput | null;
     tests?: TestUpdateManyWithoutUserInput | null;
@@ -2536,8 +2536,8 @@ export declare type UserUpdateManyMutationInput = {
     id?: number | null;
     email?: string | null;
     password?: string | null;
-    firstName?: string | null;
-    lastName?: string | null;
+    first?: string | null;
+    last?: string | null;
 };
 export declare type IntFilter = {
     equals?: number | null;
@@ -2603,8 +2603,8 @@ export declare type UserOrderByInput = {
     id?: OrderByArg | null;
     email?: OrderByArg | null;
     password?: OrderByArg | null;
-    firstName?: OrderByArg | null;
-    lastName?: OrderByArg | null;
+    first?: OrderByArg | null;
+    last?: OrderByArg | null;
 };
 /**
  * Batch Payload for updateMany & deleteMany

@@ -4,110 +4,22 @@ import gql from "graphql-tag"
 const contents = gql`
     mutation signUp {
         signUp(
-            email: "oder@redo.qa"
-            password: "redo"
-            firstName: "Reed"
-            lastName: "Doe"
-        ) {
-            token
-        }
+            data: {
+                email: "reed@redo.qa"
+                password: "redo"
+                first: "Reed"
+                last: "Doe"
+            }
+        )
     }
 
     mutation signIn {
-        signIn(email: "oder@redo.qa", password: "redo") {
-            token
-        }
+        signIn(data: { email: "oder@redo.qa", password: "redo" })
     }
 
-    mutation createTest {
-        createTest(
-            name: "Test Something"
-            tags: [{ name: "BAT" }, { name: "short" }]
-            steps: [
-                {
-                    action: "set"
-                    selector: { css: "#someId" }
-                    value: "someText"
-                }
-            ]
-        ) {
-            id
-        }
-    }
-
-    mutation updateTest($id: String!) {
-        updateTest(id: $id, test: { name: "NewName" }) {
-            id
-        }
-    }
-
-    mutation createTag {
-        createTag(name: "SomeFeature") {
-            id
-            name
-        }
-    }
-
-    query tests {
-        tests {
-            id
-            name
-        }
-    }
-
-    query getTags {
-        getTags {
-            id
-            name
-        }
-    }
-
-    query getSteps {
-        getSteps {
-            id
-            action
-            selector {
-                css
-            }
-            value
-        }
-    }
-
-    query me {
-        me {
-            id
+    query users {
+        users {
             email
-            password
-            firstName
-            lastName
-            tags {
-                id
-                name
-            }
-            steps {
-                id
-                action
-                selector {
-                    css
-                }
-                value
-            }
-            tests {
-                id
-                name
-                tags {
-                    id
-                    name
-                }
-                steps {
-                    id
-                    action
-                    selector {
-                        css
-                    }
-                    value
-                }
-            }
         }
     }
 `

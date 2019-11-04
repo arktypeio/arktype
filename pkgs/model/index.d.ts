@@ -250,8 +250,8 @@ interface NexusPrismaInputs {
                 | "id"
                 | "email"
                 | "password"
-                | "firstName"
-                | "lastName"
+                | "first"
+                | "last"
                 | "selectors"
                 | "steps"
                 | "tests"
@@ -259,7 +259,7 @@ interface NexusPrismaInputs {
                 | "AND"
                 | "OR"
                 | "NOT"
-            ordering: "id" | "email" | "password" | "firstName" | "lastName"
+            ordering: "id" | "email" | "password" | "first" | "last"
         }
     }
     Tag: {}
@@ -411,8 +411,8 @@ interface NexusPrismaTypes {
         id: "Int"
         email: "String"
         password: "String"
-        firstName: "String"
-        lastName: "String"
+        first: "String"
+        last: "String"
         selectors: "Selector"
         steps: "Step"
         tests: "Test"
@@ -482,6 +482,13 @@ export interface NexusGenInputs {
     SignInInput: {
         // input type
         email: string // String!
+        password: string // String!
+    }
+    SignUpInput: {
+        // input type
+        email: string // String!
+        first: string // String!
+        last: string // String!
         password: string // String!
     }
     StepCreateInput: {
@@ -564,8 +571,8 @@ export interface NexusGenInputs {
     UserCreateInput: {
         // input type
         email: string // String!
-        firstName: string // String!
-        lastName: string // String!
+        first: string // String!
+        last: string // String!
         password: string // String!
         selectors?:
             | NexusGenInputs["SelectorCreateManyWithoutSelectorsInput"]
@@ -582,8 +589,8 @@ export interface NexusGenInputs {
     UserCreateWithoutTagsInput: {
         // input type
         email: string // String!
-        firstName: string // String!
-        lastName: string // String!
+        first: string // String!
+        last: string // String!
         password: string // String!
         selectors?:
             | NexusGenInputs["SelectorCreateManyWithoutSelectorsInput"]
@@ -623,6 +630,7 @@ export interface NexusGenAllTypes extends NexusGenRootTypes {
     SelectorCreateWithoutUserInput: NexusGenInputs["SelectorCreateWithoutUserInput"]
     SelectorWhereUniqueInput: NexusGenInputs["SelectorWhereUniqueInput"]
     SignInInput: NexusGenInputs["SignInInput"]
+    SignUpInput: NexusGenInputs["SignUpInput"]
     StepCreateInput: NexusGenInputs["StepCreateInput"]
     StepCreateManyWithoutStepsInput: NexusGenInputs["StepCreateManyWithoutStepsInput"]
     StepCreateWithoutSelectorInput: NexusGenInputs["StepCreateWithoutSelectorInput"]
@@ -652,6 +660,7 @@ export interface NexusGenFieldTypes {
         createOneTest: NexusGenRootTypes["Test"] // Test!
         createOneUser: NexusGenRootTypes["User"] // User!
         signIn: string // String!
+        signUp: string // String!
     }
     Query: {
         // field return type
@@ -692,9 +701,9 @@ export interface NexusGenFieldTypes {
     }
     User: {
         // field return type
-        firstName: string // String!
+        first: string // String!
         id: number // Int!
-        lastName: string // String!
+        last: string // String!
         password: string // String!
     }
 }
@@ -724,6 +733,10 @@ export interface NexusGenArgTypes {
         signIn: {
             // args
             data: NexusGenInputs["SignInInput"] // SignInInput!
+        }
+        signUp: {
+            // args
+            data: NexusGenInputs["SignUpInput"] // SignUpInput!
         }
     }
     Query: {
@@ -829,6 +842,7 @@ export type NexusGenInputNames =
     | "SelectorCreateWithoutUserInput"
     | "SelectorWhereUniqueInput"
     | "SignInInput"
+    | "SignUpInput"
     | "StepCreateInput"
     | "StepCreateManyWithoutStepsInput"
     | "StepCreateWithoutSelectorInput"
@@ -857,7 +871,7 @@ export type NexusGenScalarNames = "Boolean" | "Float" | "ID" | "Int" | "String"
 export type NexusGenUnionNames = never
 
 export interface NexusGenTypes {
-    context: {}
+    context: Context.Context
     inputTypes: NexusGenInputs
     rootTypes: NexusGenRootTypes
     argTypes: NexusGenArgTypes

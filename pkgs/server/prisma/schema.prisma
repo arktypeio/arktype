@@ -40,8 +40,8 @@ model User {
   id        Int        @id
   email     String     @unique
   password  String
-  firstName String
-  lastName  String
+  first     String
+  last      String
   selectors Selector[]
   steps     Step[]
   tests     Test[]
