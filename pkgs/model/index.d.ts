@@ -479,6 +479,11 @@ export interface NexusGenInputs {
         // input type
         id?: number | null // Int
     }
+    SignInInput: {
+        // input type
+        email: string // String!
+        password: string // String!
+    }
     StepCreateInput: {
         // input type
         action: string // String!
@@ -617,6 +622,7 @@ export interface NexusGenAllTypes extends NexusGenRootTypes {
     SelectorCreateWithoutStepsInput: NexusGenInputs["SelectorCreateWithoutStepsInput"]
     SelectorCreateWithoutUserInput: NexusGenInputs["SelectorCreateWithoutUserInput"]
     SelectorWhereUniqueInput: NexusGenInputs["SelectorWhereUniqueInput"]
+    SignInInput: NexusGenInputs["SignInInput"]
     StepCreateInput: NexusGenInputs["StepCreateInput"]
     StepCreateManyWithoutStepsInput: NexusGenInputs["StepCreateManyWithoutStepsInput"]
     StepCreateWithoutSelectorInput: NexusGenInputs["StepCreateWithoutSelectorInput"]
@@ -645,6 +651,7 @@ export interface NexusGenFieldTypes {
         createOneTag: NexusGenRootTypes["Tag"] // Tag!
         createOneTest: NexusGenRootTypes["Test"] // Test!
         createOneUser: NexusGenRootTypes["User"] // User!
+        signIn: string // String!
     }
     Query: {
         // field return type
@@ -713,6 +720,10 @@ export interface NexusGenArgTypes {
         createOneUser: {
             // args
             data: NexusGenInputs["UserCreateInput"] // UserCreateInput!
+        }
+        signIn: {
+            // args
+            data: NexusGenInputs["SignInInput"] // SignInInput!
         }
     }
     Query: {
@@ -817,6 +828,7 @@ export type NexusGenInputNames =
     | "SelectorCreateWithoutStepsInput"
     | "SelectorCreateWithoutUserInput"
     | "SelectorWhereUniqueInput"
+    | "SignInInput"
     | "StepCreateInput"
     | "StepCreateManyWithoutStepsInput"
     | "StepCreateWithoutSelectorInput"
