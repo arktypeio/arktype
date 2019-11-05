@@ -22,6 +22,28 @@ const contents = gql`
             email
         }
     }
+
+    mutation createStep {
+        createOneStep(
+            data: {
+                action: "click"
+                value: ""
+                selector: { create: { css: "#id" } }
+            }
+        ) {
+            id
+        }
+    }
+
+    query steps {
+        steps {
+            action
+            value
+            selector {
+                css
+            }
+        }
+    }
 `
 
 export const playground = {

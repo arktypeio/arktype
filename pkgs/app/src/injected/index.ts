@@ -1,5 +1,5 @@
 import finder from "@medv/finder"
-import { StepInput } from "@re-do/model"
+import { Step } from "@re-do/model"
 
 export const watchPage = async () => {
     const browserWindow: Window & {
@@ -16,10 +16,12 @@ export const watchPage = async () => {
         browserWindow.addEventListener(
             event,
             async (e: Event) => {
-                const step: StepInput = {
+                const step: NexusGenInputs["StepCreateInput"] = {
                     action: e.type,
                     selector: {
-                        css: ""
+                        create: {
+                            css: ""
+                        }
                     },
                     value: ""
                 }

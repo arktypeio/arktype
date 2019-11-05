@@ -10,6 +10,7 @@ import {
     ChipInput,
     ErrorText
 } from "@re-do/components"
+import { NexusGenInputs, NexusGenFieldTypes, Test } from "@re-do/model"
 import { deactivateLearner, resetLearner } from "state"
 import { LearnerEvents } from "./StepCards"
 import gql from "graphql-tag"
@@ -17,12 +18,8 @@ import { useMutation } from "@apollo/react-hooks"
 import { store } from "renderer/common"
 
 const SAVETEST = gql`
-    mutation createTest(
-        $name: String!
-        $tags: [TagInput!]!
-        $steps: [StepInput!]!
-    ) {
-        createTest(name: $name, tags: $tags, steps: $steps) {
+    mutation createTest($data: TestCreateInput!) {
+        createOneTest(data: $data) {
             id
         }
     }
@@ -42,7 +39,10 @@ export const Learner = () => {
             testTags: null
         }
     }).learner
-    const [saveTest, saveTestResult] = useMutation(SAVETEST)
+    const [saveTest, saveTestResult] = useMutation<
+        NexusGenFieldTypes["Mutation"]["createOneTest"],
+        NexusGenInputs["TestCreateInput"]
+    >(SAVETEST)
     return (
         <Column full>
             <AppBar height={120} align="center">
@@ -105,11 +105,15 @@ export const Learner = () => {
                                 await saveTest({
                                     variables: {
                                         name,
-                                        tags: tags.map(_ => ({ name: _ })),
-                                        steps: events.map(
-                                            ({ __typename, ...inputs }: any) =>
-                                                inputs
-                                        )
+                                        tags: {
+                                            create: tags.map(_ => ({ name: _ }))
+                                        },
+                                        // steps: events.map(
+                                        //     ({ __typename, ...inputs }: any) =>
+                                        //         inputs
+                                        // ),
+                                        steps: {} as any,
+                                        user: {} as any
                                     }
                                 })
                                 await resetLearner()
