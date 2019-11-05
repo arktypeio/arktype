@@ -701,6 +701,7 @@ export interface NexusGenFieldTypes {
     }
     User: {
         // field return type
+        email: string // String!
         first: string // String!
         id: number // Int!
         last: string // String!

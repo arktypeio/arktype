@@ -1,14 +1,13 @@
-import React, { FC } from "react"
+import React from "react"
 import { List, ListItem } from "@material-ui/core"
 import { StepCard } from "./StepCard"
-import { StepInput } from "@re-do/model"
 import { useTheme } from "@re-do/components"
 
 export type LearnerEventsProps = {
     steps: StepInput[]
 }
 
-export const LearnerEvents: FC<LearnerEventsProps> = ({ steps }) => {
+export const LearnerEvents = ({ steps }: LearnerEventsProps) => {
     const theme = useTheme()
     return (
         <List

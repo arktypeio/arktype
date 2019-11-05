@@ -23,12 +23,19 @@ const contents = gql`
         }
     }
 
-    mutation createStep {
-        createOneStep(
+    mutation createTest {
+        createOneTest(
             data: {
-                action: "click"
-                value: ""
-                selector: { create: { css: "#id" } }
+                name: "Test Something"
+                steps: {
+                    create: [
+                        {
+                            action: "click"
+                            value: ""
+                            selector: { create: { css: "#id" } }
+                        }
+                    ]
+                }
             }
         ) {
             id

@@ -1,7 +1,6 @@
 import React from "react"
 import { Column, Card, Row, Text, Icons, IconButton } from "@re-do/components"
 import { NexusGenAllTypes } from "@re-do/model"
-import gql from "graphql-tag"
 import { ValueFrom } from "@re-do/utils"
 
 class Other {
@@ -34,6 +33,7 @@ export const SuggestionCard = <T extends SuggestionKind>({
     kind,
     value
 }: SuggestionCardProps<T>) => {
+    const extras = getSuggestionExtras()
     return (
         <Card
             style={{

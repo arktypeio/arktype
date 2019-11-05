@@ -21,13 +21,30 @@ export const SignUpInput = inputObjectType({
     }
 })
 
+export const CreateStepInput = inputObjectType({
+    name: "CreateStepInput",
+    definition(t) {
+        t.string("name", { required: true })
+        t.field("steps", { type: "Step", required: true })
+    }
+})
+
+export const CreateTestInput = inputObjectType({
+    name: "CreateTestInput",
+    definition(t) {
+        t.string("name", { required: true })
+        t.field("steps", { type: "Step", required: true })
+    }
+})
+
 export const Mutation = mutationType({
     definition(t) {
-        t.crud.createOneTag()
-        t.crud.createOneSelector()
-        t.crud.createOneUser()
-        t.crud.createOneTest()
-        t.crud.createOneStep()
+        t.field("createTest", {
+            type: "Test",
+            args: {
+                data: arg({})
+            }
+        })
         t.field("signIn", {
             type: "String",
             args: {

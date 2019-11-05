@@ -1,6 +1,6 @@
 import React from "react"
-import { Column, Table, ThemeProvider } from "@re-do/components"
-import { RedoAppBar } from "renderer/components/custom"
+import { Column, Table } from "@re-do/components"
+import { RedoAppBar } from "renderer/components"
 
 const signInSteps = [
     {
