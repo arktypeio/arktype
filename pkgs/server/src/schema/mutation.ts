@@ -3,7 +3,7 @@ import { compare, hash } from "bcrypt"
 import { sign } from "jsonwebtoken"
 import { APP_SECRET, ifExists } from "../utils"
 
-export const SignInInput = inputObjectType({
+const SignInInput = inputObjectType({
     name: "SignInInput",
     definition(t) {
         t.string("email", { required: true })
@@ -11,7 +11,7 @@ export const SignInInput = inputObjectType({
     }
 })
 
-export const SignUpInput = inputObjectType({
+const SignUpInput = inputObjectType({
     name: "SignUpInput",
     definition(t) {
         t.string("email", { required: true })
@@ -21,28 +21,95 @@ export const SignUpInput = inputObjectType({
     }
 })
 
-export const CreateStepInput = inputObjectType({
-    name: "CreateStepInput",
+const CreateSelectorInput = inputObjectType({
+    name: "CreateSelectorInput",
     definition(t) {
-        t.string("name", { required: true })
-        t.field("steps", { type: "Step", required: true })
+        t.string("css", { required: true })
     }
 })
 
-export const CreateTestInput = inputObjectType({
+const CreateTagInput = inputObjectType({
+    name: "CreateTagInput",
+    definition(t) {
+        t.string("name", { required: true })
+    }
+})
+
+const CreateStepInput = inputObjectType({
+    name: "CreateStepInput",
+    definition(t) {
+        t.string("action", { required: true })
+        t.field("selector", { type: "CreateSelectorInput", required: true })
+        t.string("value", { required: true })
+    }
+})
+
+const CreateTestInput = inputObjectType({
     name: "CreateTestInput",
     definition(t) {
         t.string("name", { required: true })
-        t.field("steps", { type: "Step", required: true })
+        t.field("tags", { type: "CreateTagInput", list: true })
+        t.field("steps", {
+            type: "CreateStepInput",
+            required: true,
+            list: true
+        })
     }
 })
 
-export const Mutation = mutationType({
+const Mutation = mutationType({
     definition(t) {
         t.field("createTest", {
             type: "Test",
             args: {
-                data: arg({})
+                data: arg({ type: CreateTestInput, required: true })
+            },
+            resolve: async (
+                _,
+                { data: { name, steps, tags } },
+                { photon, userId }
+            ) => {
+                if (!userId) {
+                    throw new Error("You need to be logged in to do that!")
+                }
+                const stepIds: number[] = []
+                for (const step of steps) {
+                    const result = await photon.steps.create({
+                        data: {
+                            action: step.action,
+                            value: step.value,
+                            selector: {
+                                create: {
+                                    css: step.selector.css
+                                }
+                            }
+                        }
+                    })
+                    stepIds.push(result.id)
+                }
+
+                const test = await photon.tests.create({
+                    data: {
+                        name,
+                        steps: {
+                            connect: stepIds.map(id => ({ id }))
+                        },
+                        user: {
+                            connect: {
+                                id: userId
+                            }
+                        },
+                        tags: tags
+                            ? {
+                                  create: tags.map(tag => ({
+                                      user: { connect: { id: userId } },
+                                      ...tag
+                                  }))
+                              }
+                            : undefined
+                    }
+                })
+                return test
             }
         })
         t.field("signIn", {
@@ -109,3 +176,11 @@ export const Mutation = mutationType({
             })
     }
 })
+
+export const mutationTypes = [
+    CreateSelectorInput,
+    CreateStepInput,
+    CreateTagInput,
+    CreateTestInput,
+    Mutation
+]

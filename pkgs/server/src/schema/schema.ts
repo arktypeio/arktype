@@ -7,9 +7,9 @@ import { Tag } from "./tag"
 import { Test } from "./test"
 import { User } from "./user"
 import { Query } from "./query"
-import { Mutation } from "./mutation"
+import { mutationTypes } from "./mutation"
 
-const types = [Step, User, Test, Selector, Tag, Query, Mutation]
+const types = [Step, User, Test, Selector, Tag, Query, ...mutationTypes]
 
 export const schema = makeSchema({
     types,

@@ -19,7 +19,7 @@ const serve = async () => {
         playground,
         debug: true,
         formatError: error => {
-            console.log(JSON.stringify(error, null, 4))
+            console.log(error)
             return error
         },
         formatResponse: (response: any) => {
@@ -28,7 +28,7 @@ const serve = async () => {
                 response.data &&
                 !Object.keys(response.data).every(key => key === "__schema")
             ) {
-                console.log(JSON.stringify(response))
+                console.log(JSON.stringify(response, null, 4))
             }
             return response
         }

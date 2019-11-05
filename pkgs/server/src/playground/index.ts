@@ -14,31 +14,12 @@ const contents = gql`
     }
 
     mutation signIn {
-        signIn(data: { email: "oder@redo.qa", password: "redo" })
+        signIn(data: { email: "reed@redo.qa", password: "redo" })
     }
 
     query users {
         users {
             email
-        }
-    }
-
-    mutation createTest {
-        createOneTest(
-            data: {
-                name: "Test Something"
-                steps: {
-                    create: [
-                        {
-                            action: "click"
-                            value: ""
-                            selector: { create: { css: "#id" } }
-                        }
-                    ]
-                }
-            }
-        ) {
-            id
         }
     }
 
@@ -49,6 +30,20 @@ const contents = gql`
             selector {
                 css
             }
+        }
+    }
+
+    mutation createTest {
+        createTest(
+            data: {
+                name: "Test 1"
+                steps: [
+                    { action: "Click", value: "", selector: { css: "#id" } }
+                ]
+                tags: [{ name: "fast" }, { name: "easy" }]
+            }
+        ) {
+            id
         }
     }
 `

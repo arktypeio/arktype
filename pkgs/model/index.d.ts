@@ -449,31 +449,25 @@ declare global {
 }
 
 export interface NexusGenInputs {
-    SelectorCreateInput: {
+    CreateSelectorInput: {
         // input type
         css: string // String!
-        steps?: NexusGenInputs["StepCreateManyWithoutStepsInput"] | null // StepCreateManyWithoutStepsInput
-        user?: NexusGenInputs["UserCreateOneWithoutUserInput"] | null // UserCreateOneWithoutUserInput
     }
-    SelectorCreateManyWithoutSelectorsInput: {
+    CreateStepInput: {
         // input type
-        connect?: NexusGenInputs["SelectorWhereUniqueInput"][] | null // [SelectorWhereUniqueInput!]
-        create?: NexusGenInputs["SelectorCreateWithoutUserInput"][] | null // [SelectorCreateWithoutUserInput!]
+        action: string // String!
+        selector: NexusGenInputs["CreateSelectorInput"] // CreateSelectorInput!
+        value: string // String!
     }
-    SelectorCreateOneWithoutSelectorInput: {
+    CreateTagInput: {
         // input type
-        connect?: NexusGenInputs["SelectorWhereUniqueInput"] | null // SelectorWhereUniqueInput
-        create?: NexusGenInputs["SelectorCreateWithoutStepsInput"] | null // SelectorCreateWithoutStepsInput
+        name: string // String!
     }
-    SelectorCreateWithoutStepsInput: {
+    CreateTestInput: {
         // input type
-        css: string // String!
-        user?: NexusGenInputs["UserCreateOneWithoutUserInput"] | null // UserCreateOneWithoutUserInput
-    }
-    SelectorCreateWithoutUserInput: {
-        // input type
-        css: string // String!
-        steps?: NexusGenInputs["StepCreateManyWithoutStepsInput"] | null // StepCreateManyWithoutStepsInput
+        name: string // String!
+        steps: NexusGenInputs["CreateStepInput"][] // [CreateStepInput!]!
+        tags?: NexusGenInputs["CreateTagInput"][] | null // [CreateTagInput!]
     }
     SelectorWhereUniqueInput: {
         // input type
@@ -491,112 +485,17 @@ export interface NexusGenInputs {
         last: string // String!
         password: string // String!
     }
-    StepCreateInput: {
-        // input type
-        action: string // String!
-        selector: NexusGenInputs["SelectorCreateOneWithoutSelectorInput"] // SelectorCreateOneWithoutSelectorInput!
-        test?: NexusGenInputs["TestCreateOneWithoutTestInput"] | null // TestCreateOneWithoutTestInput
-        user?: NexusGenInputs["UserCreateOneWithoutUserInput"] | null // UserCreateOneWithoutUserInput
-        value: string // String!
-    }
-    StepCreateManyWithoutStepsInput: {
-        // input type
-        connect?: NexusGenInputs["StepWhereUniqueInput"][] | null // [StepWhereUniqueInput!]
-        create?: NexusGenInputs["StepCreateWithoutSelectorInput"][] | null // [StepCreateWithoutSelectorInput!]
-    }
-    StepCreateWithoutSelectorInput: {
-        // input type
-        action: string // String!
-        test?: NexusGenInputs["TestCreateOneWithoutTestInput"] | null // TestCreateOneWithoutTestInput
-        user?: NexusGenInputs["UserCreateOneWithoutUserInput"] | null // UserCreateOneWithoutUserInput
-        value: string // String!
-    }
     StepWhereUniqueInput: {
         // input type
         id?: number | null // Int
-    }
-    TagCreateInput: {
-        // input type
-        name: string // String!
-        test?: NexusGenInputs["TestCreateOneWithoutTestInput"] | null // TestCreateOneWithoutTestInput
-        user: NexusGenInputs["UserCreateOneWithoutUserInput"] // UserCreateOneWithoutUserInput!
-    }
-    TagCreateManyWithoutTagsInput: {
-        // input type
-        connect?: NexusGenInputs["TagWhereUniqueInput"][] | null // [TagWhereUniqueInput!]
-        create?: NexusGenInputs["TagCreateWithoutTestInput"][] | null // [TagCreateWithoutTestInput!]
-    }
-    TagCreateWithoutTestInput: {
-        // input type
-        name: string // String!
-        user: NexusGenInputs["UserCreateOneWithoutUserInput"] // UserCreateOneWithoutUserInput!
     }
     TagWhereUniqueInput: {
         // input type
         id?: number | null // Int
     }
-    TestCreateInput: {
-        // input type
-        name: string // String!
-        steps?: NexusGenInputs["StepCreateManyWithoutStepsInput"] | null // StepCreateManyWithoutStepsInput
-        tags?: NexusGenInputs["TagCreateManyWithoutTagsInput"] | null // TagCreateManyWithoutTagsInput
-        user: NexusGenInputs["UserCreateOneWithoutUserInput"] // UserCreateOneWithoutUserInput!
-    }
-    TestCreateManyWithoutTestsInput: {
-        // input type
-        connect?: NexusGenInputs["TestWhereUniqueInput"][] | null // [TestWhereUniqueInput!]
-        create?: NexusGenInputs["TestCreateWithoutUserInput"][] | null // [TestCreateWithoutUserInput!]
-    }
-    TestCreateOneWithoutTestInput: {
-        // input type
-        connect?: NexusGenInputs["TestWhereUniqueInput"] | null // TestWhereUniqueInput
-        create?: NexusGenInputs["TestCreateWithoutStepsInput"] | null // TestCreateWithoutStepsInput
-    }
-    TestCreateWithoutStepsInput: {
-        // input type
-        name: string // String!
-        tags?: NexusGenInputs["TagCreateManyWithoutTagsInput"] | null // TagCreateManyWithoutTagsInput
-        user: NexusGenInputs["UserCreateOneWithoutUserInput"] // UserCreateOneWithoutUserInput!
-    }
-    TestCreateWithoutUserInput: {
-        // input type
-        name: string // String!
-        steps?: NexusGenInputs["StepCreateManyWithoutStepsInput"] | null // StepCreateManyWithoutStepsInput
-        tags?: NexusGenInputs["TagCreateManyWithoutTagsInput"] | null // TagCreateManyWithoutTagsInput
-    }
     TestWhereUniqueInput: {
         // input type
         id?: number | null // Int
-    }
-    UserCreateInput: {
-        // input type
-        email: string // String!
-        first: string // String!
-        last: string // String!
-        password: string // String!
-        selectors?:
-            | NexusGenInputs["SelectorCreateManyWithoutSelectorsInput"]
-            | null // SelectorCreateManyWithoutSelectorsInput
-        steps?: NexusGenInputs["StepCreateManyWithoutStepsInput"] | null // StepCreateManyWithoutStepsInput
-        tags?: NexusGenInputs["TagCreateManyWithoutTagsInput"] | null // TagCreateManyWithoutTagsInput
-        tests?: NexusGenInputs["TestCreateManyWithoutTestsInput"] | null // TestCreateManyWithoutTestsInput
-    }
-    UserCreateOneWithoutUserInput: {
-        // input type
-        connect?: NexusGenInputs["UserWhereUniqueInput"] | null // UserWhereUniqueInput
-        create?: NexusGenInputs["UserCreateWithoutTagsInput"] | null // UserCreateWithoutTagsInput
-    }
-    UserCreateWithoutTagsInput: {
-        // input type
-        email: string // String!
-        first: string // String!
-        last: string // String!
-        password: string // String!
-        selectors?:
-            | NexusGenInputs["SelectorCreateManyWithoutSelectorsInput"]
-            | null // SelectorCreateManyWithoutSelectorsInput
-        steps?: NexusGenInputs["StepCreateManyWithoutStepsInput"] | null // StepCreateManyWithoutStepsInput
-        tests?: NexusGenInputs["TestCreateManyWithoutTestsInput"] | null // TestCreateManyWithoutTestsInput
     }
     UserWhereUniqueInput: {
         // input type
@@ -623,42 +522,23 @@ export interface NexusGenRootTypes {
 }
 
 export interface NexusGenAllTypes extends NexusGenRootTypes {
-    SelectorCreateInput: NexusGenInputs["SelectorCreateInput"]
-    SelectorCreateManyWithoutSelectorsInput: NexusGenInputs["SelectorCreateManyWithoutSelectorsInput"]
-    SelectorCreateOneWithoutSelectorInput: NexusGenInputs["SelectorCreateOneWithoutSelectorInput"]
-    SelectorCreateWithoutStepsInput: NexusGenInputs["SelectorCreateWithoutStepsInput"]
-    SelectorCreateWithoutUserInput: NexusGenInputs["SelectorCreateWithoutUserInput"]
+    CreateSelectorInput: NexusGenInputs["CreateSelectorInput"]
+    CreateStepInput: NexusGenInputs["CreateStepInput"]
+    CreateTagInput: NexusGenInputs["CreateTagInput"]
+    CreateTestInput: NexusGenInputs["CreateTestInput"]
     SelectorWhereUniqueInput: NexusGenInputs["SelectorWhereUniqueInput"]
     SignInInput: NexusGenInputs["SignInInput"]
     SignUpInput: NexusGenInputs["SignUpInput"]
-    StepCreateInput: NexusGenInputs["StepCreateInput"]
-    StepCreateManyWithoutStepsInput: NexusGenInputs["StepCreateManyWithoutStepsInput"]
-    StepCreateWithoutSelectorInput: NexusGenInputs["StepCreateWithoutSelectorInput"]
     StepWhereUniqueInput: NexusGenInputs["StepWhereUniqueInput"]
-    TagCreateInput: NexusGenInputs["TagCreateInput"]
-    TagCreateManyWithoutTagsInput: NexusGenInputs["TagCreateManyWithoutTagsInput"]
-    TagCreateWithoutTestInput: NexusGenInputs["TagCreateWithoutTestInput"]
     TagWhereUniqueInput: NexusGenInputs["TagWhereUniqueInput"]
-    TestCreateInput: NexusGenInputs["TestCreateInput"]
-    TestCreateManyWithoutTestsInput: NexusGenInputs["TestCreateManyWithoutTestsInput"]
-    TestCreateOneWithoutTestInput: NexusGenInputs["TestCreateOneWithoutTestInput"]
-    TestCreateWithoutStepsInput: NexusGenInputs["TestCreateWithoutStepsInput"]
-    TestCreateWithoutUserInput: NexusGenInputs["TestCreateWithoutUserInput"]
     TestWhereUniqueInput: NexusGenInputs["TestWhereUniqueInput"]
-    UserCreateInput: NexusGenInputs["UserCreateInput"]
-    UserCreateOneWithoutUserInput: NexusGenInputs["UserCreateOneWithoutUserInput"]
-    UserCreateWithoutTagsInput: NexusGenInputs["UserCreateWithoutTagsInput"]
     UserWhereUniqueInput: NexusGenInputs["UserWhereUniqueInput"]
 }
 
 export interface NexusGenFieldTypes {
     Mutation: {
         // field return type
-        createOneSelector: NexusGenRootTypes["Selector"] // Selector!
-        createOneStep: NexusGenRootTypes["Step"] // Step!
-        createOneTag: NexusGenRootTypes["Tag"] // Tag!
-        createOneTest: NexusGenRootTypes["Test"] // Test!
-        createOneUser: NexusGenRootTypes["User"] // User!
+        createTest: NexusGenRootTypes["Test"] // Test!
         signIn: string // String!
         signUp: string // String!
     }
@@ -711,25 +591,9 @@ export interface NexusGenFieldTypes {
 
 export interface NexusGenArgTypes {
     Mutation: {
-        createOneSelector: {
+        createTest: {
             // args
-            data: NexusGenInputs["SelectorCreateInput"] // SelectorCreateInput!
-        }
-        createOneStep: {
-            // args
-            data: NexusGenInputs["StepCreateInput"] // StepCreateInput!
-        }
-        createOneTag: {
-            // args
-            data: NexusGenInputs["TagCreateInput"] // TagCreateInput!
-        }
-        createOneTest: {
-            // args
-            data: NexusGenInputs["TestCreateInput"] // TestCreateInput!
-        }
-        createOneUser: {
-            // args
-            data: NexusGenInputs["UserCreateInput"] // UserCreateInput!
+            data: NexusGenInputs["CreateTestInput"] // CreateTestInput!
         }
         signIn: {
             // args
@@ -836,31 +700,16 @@ export type NexusGenObjectNames =
     | "User"
 
 export type NexusGenInputNames =
-    | "SelectorCreateInput"
-    | "SelectorCreateManyWithoutSelectorsInput"
-    | "SelectorCreateOneWithoutSelectorInput"
-    | "SelectorCreateWithoutStepsInput"
-    | "SelectorCreateWithoutUserInput"
+    | "CreateSelectorInput"
+    | "CreateStepInput"
+    | "CreateTagInput"
+    | "CreateTestInput"
     | "SelectorWhereUniqueInput"
     | "SignInInput"
     | "SignUpInput"
-    | "StepCreateInput"
-    | "StepCreateManyWithoutStepsInput"
-    | "StepCreateWithoutSelectorInput"
     | "StepWhereUniqueInput"
-    | "TagCreateInput"
-    | "TagCreateManyWithoutTagsInput"
-    | "TagCreateWithoutTestInput"
     | "TagWhereUniqueInput"
-    | "TestCreateInput"
-    | "TestCreateManyWithoutTestsInput"
-    | "TestCreateOneWithoutTestInput"
-    | "TestCreateWithoutStepsInput"
-    | "TestCreateWithoutUserInput"
     | "TestWhereUniqueInput"
-    | "UserCreateInput"
-    | "UserCreateOneWithoutUserInput"
-    | "UserCreateWithoutTagsInput"
     | "UserWhereUniqueInput"
 
 export type NexusGenEnumNames = never

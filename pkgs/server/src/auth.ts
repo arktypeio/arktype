@@ -4,13 +4,13 @@ import { Context } from "./context"
 import { APP_SECRET } from "./utils"
 
 interface Token {
-    userId: string
+    userId: number
 }
 
-export function getUserId(req: any) {
+export const getUserId = (req: any) => {
     const auth = req.headers.authorization
     if (!auth) {
-        return ""
+        return 0
     }
     const token = auth.replace("Bearer ", "")
     try {
@@ -18,7 +18,7 @@ export function getUserId(req: any) {
         return verifiedToken.userId
     } catch (e) {
         if (e instanceof JsonWebTokenError) {
-            return ""
+            return 0
         }
         throw e
     }
