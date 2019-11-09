@@ -41,7 +41,7 @@ dependencies:
     "@storybook/addon-links": 5.2.4_react-dom@16.10.2+react@16.10.2
     "@storybook/addon-storyshots": 5.2.4_jest@24.9.0+react-dom@16.10.2
     "@storybook/addons": 5.2.4_react-dom@16.10.2
-    "@storybook/react": 5.2.4_4c0b19c852a1b5018235980d3c7aa021
+    "@storybook/react": 5.2.4_ef37875dd3680a7e61d5391c3cbfdbfe
     "@types/analytics-node": 3.1.1
     "@types/bcrypt": 3.0.0
     "@types/dotenv": 6.1.1
@@ -112,7 +112,7 @@ dependencies:
     puppeteer: 1.20.0
     react: 16.10.2
     react-apollo: 3.1.3_0da30d076673fc46fef221f4cebaa2c4
-    react-docgen-typescript-loader: 3.3.0_84c56a64071aff6fad0f860be2af9fdd
+    react-docgen-typescript-loader: 3.3.0_typescript@3.7.2+webpack@4.41.2
     react-dom: 16.10.2_react@16.10.2
     react-hook-form: 3.24.1_react-dom@16.10.2+react@16.10.2
     react-hot-loader: 4.12.15_react-dom@16.10.2+react@16.10.2
@@ -123,13 +123,13 @@ dependencies:
     reflect-metadata: 0.1.13
     style-loader: 1.0.0_webpack@4.41.2
     ts-jest: 24.1.0_jest@24.9.0
-    ts-loader: 6.2.0_typescript@3.7.0-beta
-    ts-node: 8.4.1_typescript@3.7.0-beta
-    ts-node-dev: 1.0.0-pre.43_typescript@3.7.0-beta
+    ts-loader: 6.2.0_typescript@3.7.2
+    ts-node: 8.4.1_typescript@3.7.2
+    ts-node-dev: 1.0.0-pre.43_typescript@3.7.2
     tsconfig-paths: 3.9.0
     tsconfig-paths-webpack-plugin: 3.2.0
     typeface-ubuntu: 0.0.65
-    typescript: 3.7.0-beta
+    typescript: 3.7.2
     uuid: 3.3.3
     validate.js: 0.13.1
     webpack: 4.41.2_webpack@4.41.2
@@ -2910,7 +2910,7 @@ packages:
         dev: false
         resolution:
             integrity: sha512-nQknCmaz2S2HW6PSGcuFzve7Y1Js2Cb268vUG0ZMNtJZwFawqYc+KSQHqmOY0pVm8dyROTcWCudPA0k+hk6N5Q==
-    /@storybook/core/5.2.4_4c0b19c852a1b5018235980d3c7aa021:
+    /@storybook/core/5.2.4_ef37875dd3680a7e61d5391c3cbfdbfe:
         dependencies:
             "@babel/plugin-proposal-class-properties": 7.5.5_@babel+core@7.6.4
             "@babel/plugin-proposal-object-rest-spread": 7.6.2_@babel+core@7.6.4
@@ -2960,7 +2960,7 @@ packages:
             lazy-universal-dotenv: 3.0.1
             node-fetch: 2.6.0
             open: 6.4.0
-            pnp-webpack-plugin: 1.4.3_typescript@3.7.0-beta
+            pnp-webpack-plugin: 1.4.3_typescript@3.7.2
             postcss-flexbugs-fixes: 4.1.0
             postcss-loader: 3.0.0
             pretty-hrtime: 1.0.3
@@ -3002,14 +3002,14 @@ packages:
         dev: false
         resolution:
             integrity: sha512-4OOzce02IAfrRv+Y7h3icyw6WIuDekpWF2eYjgYVVvAJYklCEwgeBTBCY0/2TJjPPTBDPUKHVP1Bdz3Vpci9pA==
-    /@storybook/react/5.2.4_4c0b19c852a1b5018235980d3c7aa021:
+    /@storybook/react/5.2.4_ef37875dd3680a7e61d5391c3cbfdbfe:
         dependencies:
             "@babel/core": 7.6.4
             "@babel/plugin-transform-react-constant-elements": 7.6.3_@babel+core@7.6.4
             "@babel/preset-flow": 7.0.0_@babel+core@7.6.4
             "@babel/preset-react": 7.6.3_@babel+core@7.6.4
             "@storybook/addons": 5.2.4_react-dom@16.10.2
-            "@storybook/core": 5.2.4_4c0b19c852a1b5018235980d3c7aa021
+            "@storybook/core": 5.2.4_ef37875dd3680a7e61d5391c3cbfdbfe
             "@storybook/node-logger": 5.2.4
             "@svgr/webpack": 4.3.3
             "@types/webpack-env": 1.14.1
@@ -10199,6 +10199,9 @@ packages:
             node: ">=6"
         peerDependencies:
             jest-resolve: "*"
+        peerDependenciesMeta:
+            jest-resolve:
+                optional: true
         resolution:
             integrity: sha512-pgFw2tm54fzgYvc/OHrnysABEObZCUNFnhjoRjaVOCN8NYc032/gVjPaHD4Aq6ApkSieWtfKAFQtmDKAmhupnQ==
     /jest-regex-util/24.9.0:
@@ -12545,9 +12548,9 @@ packages:
         dev: false
         resolution:
             integrity: sha512-2qHaIQr2VLRFoxe2nASzsV6ef4yOOH+Fi9FBOVH6cqeSgUnoyySPZkxzLuzd+RYOQTRpROA0ztTMqxROKSb/nA==
-    /pnp-webpack-plugin/1.4.3_typescript@3.7.0-beta:
+    /pnp-webpack-plugin/1.4.3_typescript@3.7.2:
         dependencies:
-            ts-pnp: 1.1.4_typescript@3.7.0-beta
+            ts-pnp: 1.1.4_typescript@3.7.2
         dev: false
         engines:
             node: ">=6"
@@ -13234,12 +13237,12 @@ packages:
             node: ">=8.10"
         resolution:
             integrity: sha512-X2KYF/lIGyGwP/F/oXgGDF24nxDA2KC4b7AFto+eqzc/t838gpSGiaU8trTqHXOohuLxxc5qi1eDzsl9ucPDpg==
-    /react-docgen-typescript-loader/3.3.0_84c56a64071aff6fad0f860be2af9fdd:
+    /react-docgen-typescript-loader/3.3.0_typescript@3.7.2+webpack@4.41.2:
         dependencies:
             "@webpack-contrib/schema-utils": 1.0.0-beta.0_webpack@4.41.2
             loader-utils: 1.2.3
             react-docgen-typescript: 1.15.1
-            typescript: 3.7.0-beta
+            typescript: 3.7.2
         dev: false
         peerDependencies:
             typescript: "*"
@@ -15444,14 +15447,14 @@ packages:
             jest: ">=24 <25"
         resolution:
             integrity: sha512-HEGfrIEAZKfu1pkaxB9au17b1d9b56YZSqz5eCVE8mX68+5reOvlM93xGOzzCREIov9mdH7JBG+s0UyNAqr0tQ==
-    /ts-loader/6.2.0_typescript@3.7.0-beta:
+    /ts-loader/6.2.0_typescript@3.7.2:
         dependencies:
             chalk: 2.4.2
             enhanced-resolve: 4.1.1
             loader-utils: 1.2.3
             micromatch: 4.0.2
             semver: 6.3.0
-            typescript: 3.7.0-beta
+            typescript: 3.7.2
         dev: false
         engines:
             node: ">=8.6"
@@ -15459,7 +15462,7 @@ packages:
             typescript: "*"
         resolution:
             integrity: sha512-Da8h3fD+HiZ9GvZJydqzk3mTC9nuOKYlJcpuk+Zv6Y1DPaMvBL+56GRzZFypx2cWrZFMsQr869+Ua2slGoLxvQ==
-    /ts-node-dev/1.0.0-pre.43_typescript@3.7.0-beta:
+    /ts-node-dev/1.0.0-pre.43_typescript@3.7.2:
         dependencies:
             dateformat: 1.0.12
             dynamic-dedupe: 0.3.0
@@ -15471,7 +15474,7 @@ packages:
             rimraf: 2.7.1
             source-map-support: 0.5.13
             tree-kill: 1.2.1
-            ts-node: 8.4.1_typescript@3.7.0-beta
+            ts-node: 8.4.1_typescript@3.7.2
             tsconfig: 7.0.0
         dev: false
         engines:
@@ -15481,13 +15484,13 @@ packages:
             typescript: "*"
         resolution:
             integrity: sha512-vtFeqKNMcRdE0R00RZRMM2v7V6HadJSllJ7o1PPUc797cTyKLW2k4UsdbNaxoDEQ9PU2HIc2M+SawgM6ONh4ig==
-    /ts-node/8.4.1_typescript@3.7.0-beta:
+    /ts-node/8.4.1_typescript@3.7.2:
         dependencies:
             arg: 4.1.1
             diff: 4.0.1
             make-error: 1.3.5
             source-map-support: 0.5.13
-            typescript: 3.7.0-beta
+            typescript: 3.7.2
             yn: 3.1.1
         dev: false
         engines:
@@ -15497,14 +15500,17 @@ packages:
             typescript: ">=2.0"
         resolution:
             integrity: sha512-5LpRN+mTiCs7lI5EtbXmF/HfMeCjzt7DH9CZwtkr6SywStrNQC723wG+aOWFiLNn7zT3kD/RnFqi3ZUfr4l5Qw==
-    /ts-pnp/1.1.4_typescript@3.7.0-beta:
+    /ts-pnp/1.1.4_typescript@3.7.2:
         dependencies:
-            typescript: 3.7.0-beta
+            typescript: 3.7.2
         dev: false
         engines:
             node: ">=6"
         peerDependencies:
             typescript: "*"
+        peerDependenciesMeta:
+            typescript:
+                optional: true
         resolution:
             integrity: sha512-1J/vefLC+BWSo+qe8OnJQfWTYRS6ingxjwqmHMqaMxXMj7kFtKLgAaYW3JeX3mktjgUL+etlU8/B4VUAUI9QGw==
     /tsconfig-paths-webpack-plugin/3.2.0:
@@ -15630,13 +15636,13 @@ packages:
         dev: false
         resolution:
             integrity: sha512-v+s/216IINmqQoO3Y9+bKDn9OgrasPtRLWaVSmjRBljFDkFndmQjHcsLZrv0r89aSeqzxlBvKwZIigFh8pZO9Q==
-    /typescript/3.7.0-beta:
+    /typescript/3.7.2:
         dev: false
         engines:
             node: ">=4.2.0"
         hasBin: true
         resolution:
-            integrity: sha512-4jyCX+IQamrPJxgkABPq9xf+hUN+GWHVxoj+oey1TadCPa4snQl1RKwUba+1dyzYCamwlCxKvZQ3TjyWLhMGBA==
+            integrity: sha512-ml7V7JfiN2Xwvcer+XAf2csGO1bPBdRbFCkYBczNZggrBZ9c7G3riSUeJmqEU5uOtXNPMhE3n+R4FA/3YOAWOQ==
     /ua-parser-js/0.7.20:
         dev: false
         resolution:
@@ -15804,6 +15810,9 @@ packages:
         peerDependencies:
             file-loader: "*"
             webpack: ^4.0.0
+        peerDependenciesMeta:
+            file-loader:
+                optional: true
         resolution:
             integrity: sha512-G8nk3np8ZAnwhHXas1JxJEwJyQdqFXAKJehfgZ/XrC48volFBRtO+FIKtF2u0Ma3bw+4vnDVjHPAQYlF9p2vsw==
     /url-parse-lax/3.0.0:
@@ -16457,12 +16466,12 @@ packages:
             react-dom: 16.10.2_react@16.10.2
             react-hot-loader: 4.12.15_react-dom@16.10.2+react@16.10.2
             reflect-metadata: 0.1.13
-            ts-node: 8.4.1_typescript@3.7.0-beta
+            ts-node: 8.4.1_typescript@3.7.2
             tsconfig-paths: 3.9.0
             tsconfig-paths-webpack-plugin: 3.2.0
             type-graphql: 0.17.5_2f992e2e424a491fbdc3cbc9f3788f13
             typeface-ubuntu: 0.0.65
-            typescript: 3.7.0-beta
+            typescript: 3.7.2
             validate.js: 0.13.1
             webpack: 4.41.2_webpack@4.41.2
             webpack-cli: 3.3.9_webpack@4.41.2
@@ -16470,7 +16479,7 @@ packages:
         dev: false
         name: "@rush-temp/app"
         resolution:
-            integrity: sha512-nppEuAyCnHkkp0TK+QKmgYZOkZbCT+ffbUK3KVMBRWBa1WHID81Qh6O0AfKj7V5DbHlwIF/zGp91SYaR+TM96g==
+            integrity: sha512-2k+wmxDvR5CpLybV6fiWldH1ESIq8f7anWJF05fCSwJkoAcPjt/ScHt0U1pRbrWkRVMeANSAACkeDeey5kJrRw==
             tarball: "file:projects/app.tgz"
         version: 0.0.0
     "file:projects/babel-preset-redo.tgz_react-dom@16.10.2+react@16.10.2":
@@ -16521,10 +16530,10 @@ packages:
             react-hot-loader: 4.12.15_react-dom@16.10.2+react@16.10.2
             react-svg-loader: 3.0.3
             style-loader: 1.0.0_webpack@4.41.2
-            ts-loader: 6.2.0_typescript@3.7.0-beta
-            ts-node: 8.4.1_typescript@3.7.0-beta
+            ts-loader: 6.2.0_typescript@3.7.2
+            ts-node: 8.4.1_typescript@3.7.2
             tsconfig-paths-webpack-plugin: 3.2.0
-            typescript: 3.7.0-beta
+            typescript: 3.7.2
             webpack: 4.41.2_webpack@4.41.2
             webpack-dev-server: 3.8.2_webpack@4.41.2
             webpack-merge: 4.2.2
@@ -16536,7 +16545,7 @@ packages:
             react: "*"
             react-dom: "*"
         resolution:
-            integrity: sha512-Tn3BrUtgxZMQzf1arvtYB0i7Q15XBP/2OXNxeNnbmdsSktXwcwHzH5QuZvOzTZMR8QJabf4VA1FsO1DutHihsg==
+            integrity: sha512-8xfug5DssFhyhzcklHD6vRSugUFnhPxlehWridUrAGj3NEFzldB98oIpKX0+SfGJTtRv29qA+q2xuDg9rRRcLw==
             tarball: "file:projects/bundle.tgz"
         version: 0.0.0
     "file:projects/components.tgz_webpack@4.41.2":
@@ -16559,7 +16568,7 @@ packages:
             "@storybook/addon-links": 5.2.4_react-dom@16.10.2+react@16.10.2
             "@storybook/addon-storyshots": 5.2.4_jest@24.9.0+react-dom@16.10.2
             "@storybook/addons": 5.2.4_react-dom@16.10.2
-            "@storybook/react": 5.2.4_4c0b19c852a1b5018235980d3c7aa021
+            "@storybook/react": 5.2.4_ef37875dd3680a7e61d5391c3cbfdbfe
             "@types/enzyme": 3.10.3
             "@types/enzyme-adapter-react-16": 1.0.5
             "@types/jest": 24.0.19
@@ -16584,21 +16593,21 @@ packages:
             material-table: 1.52.0_39308cd9abdc21fdf3cff7bab06e1917
             material-ui-chip-input: 1.0.0_39308cd9abdc21fdf3cff7bab06e1917
             react: 16.10.2
-            react-docgen-typescript-loader: 3.3.0_84c56a64071aff6fad0f860be2af9fdd
+            react-docgen-typescript-loader: 3.3.0_typescript@3.7.2+webpack@4.41.2
             react-dom: 16.10.2_react@16.10.2
             react-hook-form: 3.24.1_react-dom@16.10.2+react@16.10.2
             react-router-dom: 5.1.2_react@16.10.2
             react-test-renderer: 16.10.2_react@16.10.2
             reflect-metadata: 0.1.13
             typeface-ubuntu: 0.0.65
-            typescript: 3.7.0-beta
+            typescript: 3.7.2
         dev: false
         id: "file:projects/components.tgz"
         name: "@rush-temp/components"
         peerDependencies:
             webpack: "*"
         resolution:
-            integrity: sha512-Wse7U4mu2q2PQ8OefEl9ksHIkwtc7k6oq1a2F9xjKnOHh9IQIcSGVcCL6cZy1oSCEtHuyFV2TeyPlyryF8eO6A==
+            integrity: sha512-B2SHffSftXhxF3NCQ2IJdaf7lwWBdIDfxuJtk3hvyG+es3Utiqr0gbR46SpimMnQOzUWsnmjRJt1k9MrhHfkOg==
             tarball: "file:projects/components.tgz"
         version: 0.0.0
     "file:projects/model.tgz":
@@ -16643,14 +16652,14 @@ packages:
             prisma2: 2.0.0-preview014.2
             reflect-metadata: 0.1.13
             ts-jest: 24.1.0_jest@24.9.0
-            ts-node: 8.4.1_typescript@3.7.0-beta
-            ts-node-dev: 1.0.0-pre.43_typescript@3.7.0-beta
+            ts-node: 8.4.1_typescript@3.7.2
+            ts-node-dev: 1.0.0-pre.43_typescript@3.7.2
             type-graphql: 0.17.5_2f992e2e424a491fbdc3cbc9f3788f13
-            typescript: 3.7.0-beta
+            typescript: 3.7.2
         dev: false
         name: "@rush-temp/server"
         resolution:
-            integrity: sha512-31neubN/0/1rSqub2M7uPgZQh0XH5IECUsNV7QV77o1X6PbT9R6iJr3wV0p4bSWtytRGcQxFxEkZy6tLfqfoqA==
+            integrity: sha512-c9MwTxawYSIKddSI0wAMYm3PTFjt77DE05/pUftvoHlckMDYOhs+f6nta8N448/6O/kWFrxUxFlHkWRgpTC8DA==
             tarball: "file:projects/server.tgz"
         version: 0.0.0
     "file:projects/shapeql.tgz_@babel+core@7.6.4":
@@ -16682,14 +16691,14 @@ packages:
             react-dom: 16.10.2_react@16.10.2
             reflect-metadata: 0.1.13
             type-graphql: 0.17.5_2f992e2e424a491fbdc3cbc9f3788f13
-            typescript: 3.7.0-beta
+            typescript: 3.7.2
         dev: false
         id: "file:projects/shapeql.tgz"
         name: "@rush-temp/shapeql"
         peerDependencies:
             "@babel/core": "*"
         resolution:
-            integrity: sha512-1+2/LM7pFy8r8P7WYpugNJjQjYNWZSs0P3uKn+9qG2SVEXpYyCauFGEAw0p2tce5xfp6bcWfguo5Cri04L0CUg==
+            integrity: sha512-l7vTLBXvRYjrEmbWVvjS7n+Zoql/ANUjPAmwxLAvEMaUmyow4G75+z+TM8UjBYOZPDnrlRcJizI3Zov+xdaQRQ==
             tarball: "file:projects/shapeql.tgz"
         version: 0.0.0
     "file:projects/test.tgz_@babel+core@7.6.4":
@@ -16700,14 +16709,14 @@ packages:
             "@types/puppeteer": 1.20.2
             jest: 24.9.0
             puppeteer: 1.20.0
-            typescript: 3.7.0-beta
+            typescript: 3.7.2
         dev: false
         id: "file:projects/test.tgz"
         name: "@rush-temp/test"
         peerDependencies:
             "@babel/core": "*"
         resolution:
-            integrity: sha512-neJNi529Z5muK5A+kKhORYy6qR3RD3iuALGemUFWckYvXnvnIMT/HLz2bpn7+BqrsOBMMGamFyB0IZdVkEwtrA==
+            integrity: sha512-NFuTjRAwu5zmQ/SovjQsed0VZePJWCGnvZWXSY/lEYRFguw6QYYMKBm3ZSp0KzyuYFUXhq51OBgAPP0mTPzcaQ==
             tarball: "file:projects/test.tgz"
         version: 0.0.0
     "file:projects/utils.tgz_@babel+core@7.6.4":
@@ -16720,14 +16729,14 @@ packages:
             core-js: 3.3.2
             fs-extra: 8.1.0
             moize: 5.4.4
-            typescript: 3.7.0-beta
+            typescript: 3.7.2
         dev: false
         id: "file:projects/utils.tgz"
         name: "@rush-temp/utils"
         peerDependencies:
             "@babel/core": "*"
         resolution:
-            integrity: sha512-K75Kc+UQScvaXCZbNu7rYbAZczYRcbHSKNkXhUHpGzqdx+0kW8/6gC/xR10PItLGf8iZLucVjhtjC0C6RJ4x8A==
+            integrity: sha512-/4mKgyDGVMzgtmYwlqQcbndQSqOwsIg5u1JiNVJlhQeDm8g+IIL6RN2WLa+YvxzyeFMPSUzjZ920hJ8wtv2Gxg==
             tarball: "file:projects/utils.tgz"
         version: 0.0.0
     "file:projects/website.tgz":
@@ -16750,9 +16759,9 @@ packages:
             react-hot-loader: 4.12.15_react-dom@16.10.2+react@16.10.2
             react-router-dom: 5.1.2_react@16.10.2
             react-typist: 2.0.5_react-dom@16.10.2+react@16.10.2
-            ts-node: 8.4.1_typescript@3.7.0-beta
+            ts-node: 8.4.1_typescript@3.7.2
             typeface-ubuntu: 0.0.65
-            typescript: 3.7.0-beta
+            typescript: 3.7.2
             uuid: 3.3.3
             webpack: 4.41.2_webpack@4.41.2
             webpack-cli: 3.3.9_webpack@4.41.2
@@ -16760,9 +16769,10 @@ packages:
         dev: false
         name: "@rush-temp/website"
         resolution:
-            integrity: sha512-8G6b/gfQixzBs1Ip7E9gI4dp58OUfj5C9eQArQwmfEyBQ+YE8IizYjnUu03CbxzIvVXuH0HK8toqUlo/bzlCLQ==
+            integrity: sha512-DK3qOfSnr0TUrD818YQqXVmROlXwqt/gCIooyCYtEH88/y6GclfqnpZKihuWqhiSkSQnmQwQpKnORsbUushvfg==
             tarball: "file:projects/website.tgz"
         version: 0.0.0
+registry: ""
 specifiers:
     "@apollo/react-hooks": 3.1.3
     "@babel/cli": 7.6.4
@@ -16894,7 +16904,7 @@ specifiers:
     tsconfig-paths: 3.9.0
     tsconfig-paths-webpack-plugin: 3.2.0
     typeface-ubuntu: 0.0.65
-    typescript: 3.7.0-beta
+    typescript: 3.7.2
     uuid: 3.3.3
     validate.js: 0.13.1
     webpack: 4.41.2

@@ -59,6 +59,7 @@ const CreateTestInput = inputObjectType({
 
 const Mutation = mutationType({
     definition(t) {
+        t.crud.createOneSelector()
         t.field("createTest", {
             type: "Test",
             args: {
