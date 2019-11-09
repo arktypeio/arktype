@@ -39,5 +39,17 @@ export const november2019Updates: UpdateData[] = [
         goals: {
             "merge test-execution branch": false
         }
+    },
+    {
+        date: new Date(2019, 10, 8),
+        goals: {
+            "finish input type generation change": false
+        }
+    },
+    {
+        date: new Date(2019, 10, 9),
+        goals: {
+            "merge test-execution branch": false
+        }
     }
 ]
