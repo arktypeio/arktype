@@ -69,5 +69,12 @@ export const november2019Updates: UpdateData[] = [
         goals: {
             "finish input type generation change": false
         }
+    },
+    {
+        date: new Date(2019, 10, 14),
+        goals: {
+            "finish input type generation change": false,
+            "merge test-execution branch": false
+        }
     }
 ]
