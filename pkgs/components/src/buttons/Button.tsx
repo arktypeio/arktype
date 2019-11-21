@@ -1,4 +1,4 @@
-import React, { FC } from "react"
+import React from "react"
 import MuiButton, {
     ButtonProps as MuiButtonProps
 } from "@material-ui/core/Button"
@@ -21,11 +21,7 @@ export type ButtonProps = MuiButtonProps & {
     kind?: KindFrom<typeof useKind>
 }
 
-export const Button: FC<ButtonProps> = ({
-    kind = "primary",
-    style,
-    ...rest
-}) => {
+export const Button = ({ kind = "primary", style, ...rest }: ButtonProps) => {
     const { style: kindStyle, ...kindRest } = useKind(kind)
     return (
         <MuiButton

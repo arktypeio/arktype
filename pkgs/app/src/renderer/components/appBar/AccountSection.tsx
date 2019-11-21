@@ -1,10 +1,8 @@
-import React, { FC } from "react"
+import React from "react"
 import { IconButton, Menu, Icons } from "@re-do/components"
 import { store } from "renderer/common"
 
-export type AccountSectionProps = {}
-
-export const AccountSection: FC<AccountSectionProps> = ({}) => {
+export const AccountSection = ({}) => {
     return (
         <>
             <IconButton Icon={Icons.help} style={{ color: "white" }} />

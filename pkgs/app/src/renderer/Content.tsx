@@ -1,9 +1,9 @@
-import React, { FC } from "react"
+import React from "react"
 import { Router } from "pages"
 import { hot } from "react-hot-loader/root"
 import { AppContents } from "@re-do/components"
 
-const PossiblyHotContent: FC = () => (
+const PossiblyHotContent = () => (
     <AppContents>
         <Router />
     </AppContents>

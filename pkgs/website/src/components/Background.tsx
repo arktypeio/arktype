@@ -1,11 +1,11 @@
-import React, { useEffect, useState, FC } from "react"
+import React, { useEffect, useState } from "react"
 import { Card } from "@re-do/components"
 
 export type BackgroundProps = {
     skewBetween: [number, number]
 }
 
-export const Background: FC<BackgroundProps> = ({ skewBetween }) => {
+export const Background = ({ skewBetween }: BackgroundProps) => {
     const [width, setWidth] = useState(window.innerWidth)
     useEffect(() => {
         const handleResize = () => setWidth(window.innerWidth)

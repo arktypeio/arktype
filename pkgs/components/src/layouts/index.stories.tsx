@@ -1,4 +1,4 @@
-import React, { FC } from "react"
+import React from "react"
 import { storiesOf } from "@storybook/react"
 import { withKnobs, select, boolean, number } from "@storybook/addon-knobs"
 import { defaultTheme, ThemeProvider } from "../styles"
@@ -44,7 +44,7 @@ const cards = (
     </>
 )
 
-const C: FC = ({ children }) => (
+const C = ({ children }: any) => (
     <ThemeProvider
         theme={{
             ...defaultTheme,

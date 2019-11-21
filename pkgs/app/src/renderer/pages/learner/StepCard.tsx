@@ -1,5 +1,5 @@
-import React, { FC } from "react"
-import { StepInput, Step } from "@re-do/model"
+import React from "react"
+import { StepInput } from "@re-do/model"
 import { ContentCard } from "@re-do/components"
 
 export type StepCardProps = {

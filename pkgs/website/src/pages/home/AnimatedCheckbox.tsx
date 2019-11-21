@@ -1,4 +1,4 @@
-import React, { FC } from "react"
+import React from "react"
 import { motion } from "framer-motion"
 import { useTheme } from "@re-do/components"
 
@@ -6,7 +6,7 @@ export type AnimatedCheckBoxProps = {
     checked: boolean
 }
 
-export const AnimatedCheckbox: FC<AnimatedCheckBoxProps> = ({ checked }) => {
+export const AnimatedCheckbox = ({ checked }: AnimatedCheckBoxProps) => {
     const theme = useTheme()
     const animationProps = {
         initial: {

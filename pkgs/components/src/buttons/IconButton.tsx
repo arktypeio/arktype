@@ -1,11 +1,11 @@
-import React, { FC } from "react"
+import React from "react"
 import MuiIconButton, {
     IconButtonProps as MuiIconButtonProps
 } from "@material-ui/core/IconButton"
 
 export type IconButtonProps = MuiIconButtonProps & { Icon: React.ComponentType }
 
-export const IconButton: FC<IconButtonProps> = ({ Icon, ...rest }) => {
+export const IconButton = ({ Icon, ...rest }: IconButtonProps) => {
     return (
         <MuiIconButton {...rest}>
             <Icon />

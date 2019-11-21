@@ -1,11 +1,9 @@
-import React, { FC } from "react"
+import React from "react"
 import { IconButton, Icons } from "@re-do/components"
 import { store } from "renderer/common"
 import { Page } from "renderer/state"
 
-export type HomeButtonProps = {}
-
-export const HomeButton: FC<HomeButtonProps> = ({}) => (
+export const HomeButton = () => (
     <IconButton
         Icon={Icons.home}
         style={{ color: "white" }}
