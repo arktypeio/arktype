@@ -106,5 +106,11 @@ export const november2019Updates: UpdateData[] = [
         goals: {
             "nexus-prisma pull request": false
         }
+    },
+    {
+        date: new Date(2019, 10, 22),
+        goals: {
+            "nexus-prisma pull request": false
+        }
     }
 ]
