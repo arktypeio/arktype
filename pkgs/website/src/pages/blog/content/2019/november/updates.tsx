@@ -110,7 +110,19 @@ export const november2019Updates: UpdateData[] = [
     {
         date: new Date(2019, 10, 22),
         goals: {
-            "nexus-prisma pull request": false
+            "nexus-prisma pull request": true
+        }
+    },
+    {
+        date: new Date(2019, 10, 23),
+        goals: {
+            "update server types for test execution": false
+        }
+    },
+    {
+        date: new Date(2019, 10, 24),
+        goals: {
+            "merge test execution branch": false
         }
     }
 ]
