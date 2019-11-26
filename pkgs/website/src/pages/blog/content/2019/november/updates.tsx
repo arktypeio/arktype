@@ -124,5 +124,17 @@ export const november2019Updates: UpdateData[] = [
         goals: {
             "merge test execution branch": false
         }
+    },
+    {
+        date: new Date(2019, 10, 26),
+        goals: {
+            "update server types for test execution": false
+        }
+    },
+    {
+        date: new Date(2019, 10, 27),
+        goals: {
+            "merge test execution branch": false
+        }
     }
 ]
