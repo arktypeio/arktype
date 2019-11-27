@@ -1,6 +1,6 @@
 import { join } from "path"
 import { makeSchema } from "nexus"
-import { nexusPrismaPlugin } from "nexus-prisma"
+import { nexusPrismaPlugin } from "redo-nexus-prisma"
 import { Selector } from "./selector"
 import { Step } from "./step"
 import { Tag } from "./tag"

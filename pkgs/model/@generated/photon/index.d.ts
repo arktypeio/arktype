@@ -88,8 +88,8 @@ export declare type Tag = {
 export declare type TagScalars = 'id' | 'name';
 export declare type TagSelect = {
     id?: boolean;
-    name?: boolean;
     user?: boolean | UserSelectArgsOptional;
+    name?: boolean;
     test?: boolean | TestSelectArgsOptional;
 };
 export declare type TagInclude = {
@@ -443,23 +443,23 @@ export declare type Selector = {
 export declare type SelectorScalars = 'id' | 'css';
 export declare type SelectorSelect = {
     id?: boolean;
+    user?: boolean | UserSelectArgsOptional;
     css?: boolean;
     steps?: boolean | FindManyStepSelectArgsOptional;
-    user?: boolean | UserSelectArgsOptional;
 };
 export declare type SelectorInclude = {
-    steps?: boolean | FindManyStepIncludeArgsOptional;
     user?: boolean | UserIncludeArgsOptional;
+    steps?: boolean | FindManyStepIncludeArgsOptional;
 };
 declare type SelectorDefault = {
     id: true;
     css: true;
 };
 declare type SelectorGetSelectPayload<S extends boolean | SelectorSelect> = S extends true ? Selector : S extends SelectorSelect ? {
-    [P in CleanupNever<MergeTruthyValues<{}, S>>]: P extends SelectorScalars ? Selector[P] : P extends 'steps' ? Array<StepGetSelectPayload<ExtractFindManyStepSelectArgs<S[P]>>> : P extends 'user' ? UserGetSelectPayload<ExtractUserSelectArgs<S[P]>> : never;
+    [P in CleanupNever<MergeTruthyValues<{}, S>>]: P extends SelectorScalars ? Selector[P] : P extends 'user' ? UserGetSelectPayload<ExtractUserSelectArgs<S[P]>> : P extends 'steps' ? Array<StepGetSelectPayload<ExtractFindManyStepSelectArgs<S[P]>>> : never;
 } : never;
 declare type SelectorGetIncludePayload<S extends boolean | SelectorInclude> = S extends true ? Selector : S extends SelectorInclude ? {
-    [P in CleanupNever<MergeTruthyValues<SelectorDefault, S>>]: P extends SelectorScalars ? Selector[P] : P extends 'steps' ? Array<StepGetIncludePayload<ExtractFindManyStepIncludeArgs<S[P]>>> : P extends 'user' ? UserGetIncludePayload<ExtractUserIncludeArgs<S[P]>> : never;
+    [P in CleanupNever<MergeTruthyValues<SelectorDefault, S>>]: P extends SelectorScalars ? Selector[P] : P extends 'user' ? UserGetIncludePayload<ExtractUserIncludeArgs<S[P]>> : P extends 'steps' ? Array<StepGetIncludePayload<ExtractFindManyStepIncludeArgs<S[P]>>> : never;
 } : never;
 export interface SelectorDelegate {
     <T extends FindManySelectorArgs>(args?: Subset<T, FindManySelectorArgs>): T extends FindManySelectorArgsRequired ? 'Please either choose `select` or `include`' : T extends FindManySelectorSelectArgs ? Promise<Array<SelectorGetSelectPayload<ExtractFindManySelectorSelectArgs<T>>>> : T extends FindManySelectorIncludeArgs ? Promise<Array<SelectorGetIncludePayload<ExtractFindManySelectorIncludeArgs<T>>>> : Promise<Array<Selector>>;
@@ -486,8 +486,8 @@ export declare class SelectorClient<T> implements Promise<T> {
     private _requestPromise?;
     constructor(_dmmf: DMMFClass, _fetcher: PhotonFetcher, _queryType: 'query' | 'mutation', _rootField: string, _clientMethod: string, _args: any, _path: string[], _isList?: boolean);
     readonly [Symbol.toStringTag]: 'PhotonPromise';
-    steps<T extends FindManyStepArgs = {}>(args?: Subset<T, FindManyStepArgs>): T extends FindManyStepArgsRequired ? 'Please either choose `select` or `include`' : T extends FindManyStepSelectArgs ? Promise<Array<StepGetSelectPayload<ExtractFindManyStepSelectArgs<T>>>> : T extends FindManyStepIncludeArgs ? Promise<Array<StepGetIncludePayload<ExtractFindManyStepIncludeArgs<T>>>> : Promise<Array<Step>>;
     user<T extends UserArgs = {}>(args?: Subset<T, UserArgs>): T extends FindOneUserArgsRequired ? 'Please either choose `select` or `include`' : T extends UserSelectArgs ? Promise<UserGetSelectPayload<ExtractUserSelectArgs<T>>> : T extends UserIncludeArgs ? Promise<UserGetIncludePayload<ExtractUserIncludeArgs<T>>> : UserClient<User>;
+    steps<T extends FindManyStepArgs = {}>(args?: Subset<T, FindManyStepArgs>): T extends FindManyStepArgsRequired ? 'Please either choose `select` or `include`' : T extends FindManyStepSelectArgs ? Promise<Array<StepGetSelectPayload<ExtractFindManyStepSelectArgs<T>>>> : T extends FindManyStepIncludeArgs ? Promise<Array<StepGetIncludePayload<ExtractFindManyStepIncludeArgs<T>>>> : Promise<Array<Step>>;
     private readonly _document;
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
@@ -799,16 +799,16 @@ export declare type Step = {
 export declare type StepScalars = 'id' | 'action' | 'value';
 export declare type StepSelect = {
     id?: boolean;
+    user?: boolean | UserSelectArgsOptional;
     action?: boolean;
     selector?: boolean | SelectorSelectArgsOptional;
     value?: boolean;
     test?: boolean | TestSelectArgsOptional;
-    user?: boolean | UserSelectArgsOptional;
 };
 export declare type StepInclude = {
+    user?: boolean | UserIncludeArgsOptional;
     selector?: boolean | SelectorIncludeArgsOptional;
     test?: boolean | TestIncludeArgsOptional;
-    user?: boolean | UserIncludeArgsOptional;
 };
 declare type StepDefault = {
     id: true;
@@ -816,10 +816,10 @@ declare type StepDefault = {
     value: true;
 };
 declare type StepGetSelectPayload<S extends boolean | StepSelect> = S extends true ? Step : S extends StepSelect ? {
-    [P in CleanupNever<MergeTruthyValues<{}, S>>]: P extends StepScalars ? Step[P] : P extends 'selector' ? SelectorGetSelectPayload<ExtractSelectorSelectArgs<S[P]>> : P extends 'test' ? TestGetSelectPayload<ExtractTestSelectArgs<S[P]>> : P extends 'user' ? UserGetSelectPayload<ExtractUserSelectArgs<S[P]>> : never;
+    [P in CleanupNever<MergeTruthyValues<{}, S>>]: P extends StepScalars ? Step[P] : P extends 'user' ? UserGetSelectPayload<ExtractUserSelectArgs<S[P]>> : P extends 'selector' ? SelectorGetSelectPayload<ExtractSelectorSelectArgs<S[P]>> : P extends 'test' ? TestGetSelectPayload<ExtractTestSelectArgs<S[P]>> : never;
 } : never;
 declare type StepGetIncludePayload<S extends boolean | StepInclude> = S extends true ? Step : S extends StepInclude ? {
-    [P in CleanupNever<MergeTruthyValues<StepDefault, S>>]: P extends StepScalars ? Step[P] : P extends 'selector' ? SelectorGetIncludePayload<ExtractSelectorIncludeArgs<S[P]>> : P extends 'test' ? TestGetIncludePayload<ExtractTestIncludeArgs<S[P]>> : P extends 'user' ? UserGetIncludePayload<ExtractUserIncludeArgs<S[P]>> : never;
+    [P in CleanupNever<MergeTruthyValues<StepDefault, S>>]: P extends StepScalars ? Step[P] : P extends 'user' ? UserGetIncludePayload<ExtractUserIncludeArgs<S[P]>> : P extends 'selector' ? SelectorGetIncludePayload<ExtractSelectorIncludeArgs<S[P]>> : P extends 'test' ? TestGetIncludePayload<ExtractTestIncludeArgs<S[P]>> : never;
 } : never;
 export interface StepDelegate {
     <T extends FindManyStepArgs>(args?: Subset<T, FindManyStepArgs>): T extends FindManyStepArgsRequired ? 'Please either choose `select` or `include`' : T extends FindManyStepSelectArgs ? Promise<Array<StepGetSelectPayload<ExtractFindManyStepSelectArgs<T>>>> : T extends FindManyStepIncludeArgs ? Promise<Array<StepGetIncludePayload<ExtractFindManyStepIncludeArgs<T>>>> : Promise<Array<Step>>;
@@ -846,9 +846,9 @@ export declare class StepClient<T> implements Promise<T> {
     private _requestPromise?;
     constructor(_dmmf: DMMFClass, _fetcher: PhotonFetcher, _queryType: 'query' | 'mutation', _rootField: string, _clientMethod: string, _args: any, _path: string[], _isList?: boolean);
     readonly [Symbol.toStringTag]: 'PhotonPromise';
+    user<T extends UserArgs = {}>(args?: Subset<T, UserArgs>): T extends FindOneUserArgsRequired ? 'Please either choose `select` or `include`' : T extends UserSelectArgs ? Promise<UserGetSelectPayload<ExtractUserSelectArgs<T>>> : T extends UserIncludeArgs ? Promise<UserGetIncludePayload<ExtractUserIncludeArgs<T>>> : UserClient<User>;
     selector<T extends SelectorArgs = {}>(args?: Subset<T, SelectorArgs>): T extends FindOneSelectorArgsRequired ? 'Please either choose `select` or `include`' : T extends SelectorSelectArgs ? Promise<SelectorGetSelectPayload<ExtractSelectorSelectArgs<T>>> : T extends SelectorIncludeArgs ? Promise<SelectorGetIncludePayload<ExtractSelectorIncludeArgs<T>>> : SelectorClient<Selector>;
     test<T extends TestArgs = {}>(args?: Subset<T, TestArgs>): T extends FindOneTestArgsRequired ? 'Please either choose `select` or `include`' : T extends TestSelectArgs ? Promise<TestGetSelectPayload<ExtractTestSelectArgs<T>>> : T extends TestIncludeArgs ? Promise<TestGetIncludePayload<ExtractTestIncludeArgs<T>>> : TestClient<Test>;
-    user<T extends UserArgs = {}>(args?: Subset<T, UserArgs>): T extends FindOneUserArgsRequired ? 'Please either choose `select` or `include`' : T extends UserSelectArgs ? Promise<UserGetSelectPayload<ExtractUserSelectArgs<T>>> : T extends UserIncludeArgs ? Promise<UserGetIncludePayload<ExtractUserIncludeArgs<T>>> : UserClient<User>;
     private readonly _document;
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
@@ -1524,16 +1524,16 @@ export declare type UserSelect = {
     password?: boolean;
     first?: boolean;
     last?: boolean;
+    tags?: boolean | FindManyTagSelectArgsOptional;
     selectors?: boolean | FindManySelectorSelectArgsOptional;
     steps?: boolean | FindManyStepSelectArgsOptional;
     tests?: boolean | FindManyTestSelectArgsOptional;
-    tags?: boolean | FindManyTagSelectArgsOptional;
 };
 export declare type UserInclude = {
+    tags?: boolean | FindManyTagIncludeArgsOptional;
     selectors?: boolean | FindManySelectorIncludeArgsOptional;
     steps?: boolean | FindManyStepIncludeArgsOptional;
     tests?: boolean | FindManyTestIncludeArgsOptional;
-    tags?: boolean | FindManyTagIncludeArgsOptional;
 };
 declare type UserDefault = {
     id: true;
@@ -1543,10 +1543,10 @@ declare type UserDefault = {
     last: true;
 };
 declare type UserGetSelectPayload<S extends boolean | UserSelect> = S extends true ? User : S extends UserSelect ? {
-    [P in CleanupNever<MergeTruthyValues<{}, S>>]: P extends UserScalars ? User[P] : P extends 'selectors' ? Array<SelectorGetSelectPayload<ExtractFindManySelectorSelectArgs<S[P]>>> : P extends 'steps' ? Array<StepGetSelectPayload<ExtractFindManyStepSelectArgs<S[P]>>> : P extends 'tests' ? Array<TestGetSelectPayload<ExtractFindManyTestSelectArgs<S[P]>>> : P extends 'tags' ? Array<TagGetSelectPayload<ExtractFindManyTagSelectArgs<S[P]>>> : never;
+    [P in CleanupNever<MergeTruthyValues<{}, S>>]: P extends UserScalars ? User[P] : P extends 'tags' ? Array<TagGetSelectPayload<ExtractFindManyTagSelectArgs<S[P]>>> : P extends 'selectors' ? Array<SelectorGetSelectPayload<ExtractFindManySelectorSelectArgs<S[P]>>> : P extends 'steps' ? Array<StepGetSelectPayload<ExtractFindManyStepSelectArgs<S[P]>>> : P extends 'tests' ? Array<TestGetSelectPayload<ExtractFindManyTestSelectArgs<S[P]>>> : never;
 } : never;
 declare type UserGetIncludePayload<S extends boolean | UserInclude> = S extends true ? User : S extends UserInclude ? {
-    [P in CleanupNever<MergeTruthyValues<UserDefault, S>>]: P extends UserScalars ? User[P] : P extends 'selectors' ? Array<SelectorGetIncludePayload<ExtractFindManySelectorIncludeArgs<S[P]>>> : P extends 'steps' ? Array<StepGetIncludePayload<ExtractFindManyStepIncludeArgs<S[P]>>> : P extends 'tests' ? Array<TestGetIncludePayload<ExtractFindManyTestIncludeArgs<S[P]>>> : P extends 'tags' ? Array<TagGetIncludePayload<ExtractFindManyTagIncludeArgs<S[P]>>> : never;
+    [P in CleanupNever<MergeTruthyValues<UserDefault, S>>]: P extends UserScalars ? User[P] : P extends 'tags' ? Array<TagGetIncludePayload<ExtractFindManyTagIncludeArgs<S[P]>>> : P extends 'selectors' ? Array<SelectorGetIncludePayload<ExtractFindManySelectorIncludeArgs<S[P]>>> : P extends 'steps' ? Array<StepGetIncludePayload<ExtractFindManyStepIncludeArgs<S[P]>>> : P extends 'tests' ? Array<TestGetIncludePayload<ExtractFindManyTestIncludeArgs<S[P]>>> : never;
 } : never;
 export interface UserDelegate {
     <T extends FindManyUserArgs>(args?: Subset<T, FindManyUserArgs>): T extends FindManyUserArgsRequired ? 'Please either choose `select` or `include`' : T extends FindManyUserSelectArgs ? Promise<Array<UserGetSelectPayload<ExtractFindManyUserSelectArgs<T>>>> : T extends FindManyUserIncludeArgs ? Promise<Array<UserGetIncludePayload<ExtractFindManyUserIncludeArgs<T>>>> : Promise<Array<User>>;
@@ -1573,10 +1573,10 @@ export declare class UserClient<T> implements Promise<T> {
     private _requestPromise?;
     constructor(_dmmf: DMMFClass, _fetcher: PhotonFetcher, _queryType: 'query' | 'mutation', _rootField: string, _clientMethod: string, _args: any, _path: string[], _isList?: boolean);
     readonly [Symbol.toStringTag]: 'PhotonPromise';
+    tags<T extends FindManyTagArgs = {}>(args?: Subset<T, FindManyTagArgs>): T extends FindManyTagArgsRequired ? 'Please either choose `select` or `include`' : T extends FindManyTagSelectArgs ? Promise<Array<TagGetSelectPayload<ExtractFindManyTagSelectArgs<T>>>> : T extends FindManyTagIncludeArgs ? Promise<Array<TagGetIncludePayload<ExtractFindManyTagIncludeArgs<T>>>> : Promise<Array<Tag>>;
     selectors<T extends FindManySelectorArgs = {}>(args?: Subset<T, FindManySelectorArgs>): T extends FindManySelectorArgsRequired ? 'Please either choose `select` or `include`' : T extends FindManySelectorSelectArgs ? Promise<Array<SelectorGetSelectPayload<ExtractFindManySelectorSelectArgs<T>>>> : T extends FindManySelectorIncludeArgs ? Promise<Array<SelectorGetIncludePayload<ExtractFindManySelectorIncludeArgs<T>>>> : Promise<Array<Selector>>;
     steps<T extends FindManyStepArgs = {}>(args?: Subset<T, FindManyStepArgs>): T extends FindManyStepArgsRequired ? 'Please either choose `select` or `include`' : T extends FindManyStepSelectArgs ? Promise<Array<StepGetSelectPayload<ExtractFindManyStepSelectArgs<T>>>> : T extends FindManyStepIncludeArgs ? Promise<Array<StepGetIncludePayload<ExtractFindManyStepIncludeArgs<T>>>> : Promise<Array<Step>>;
     tests<T extends FindManyTestArgs = {}>(args?: Subset<T, FindManyTestArgs>): T extends FindManyTestArgsRequired ? 'Please either choose `select` or `include`' : T extends FindManyTestSelectArgs ? Promise<Array<TestGetSelectPayload<ExtractFindManyTestSelectArgs<T>>>> : T extends FindManyTestIncludeArgs ? Promise<Array<TestGetIncludePayload<ExtractFindManyTestIncludeArgs<T>>>> : Promise<Array<Test>>;
-    tags<T extends FindManyTagArgs = {}>(args?: Subset<T, FindManyTagArgs>): T extends FindManyTagArgsRequired ? 'Please either choose `select` or `include`' : T extends FindManyTagSelectArgs ? Promise<Array<TagGetSelectPayload<ExtractFindManyTagSelectArgs<T>>>> : T extends FindManyTagIncludeArgs ? Promise<Array<TagGetIncludePayload<ExtractFindManyTagIncludeArgs<T>>>> : Promise<Array<Tag>>;
     private readonly _document;
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
@@ -1897,9 +1897,9 @@ export declare type StepWhereInput = {
     AND?: Enumerable<StepWhereInput> | null;
     OR?: Enumerable<StepWhereInput> | null;
     NOT?: Enumerable<StepWhereInput> | null;
+    user?: UserWhereInput | null;
     selector?: SelectorWhereInput | null;
     test?: TestWhereInput | null;
-    user?: UserWhereInput | null;
 };
 export declare type SelectorWhereInput = {
     id?: number | IntFilter | null;
@@ -1916,10 +1916,10 @@ export declare type UserWhereInput = {
     password?: string | StringFilter | null;
     first?: string | StringFilter | null;
     last?: string | StringFilter | null;
+    tags?: TagFilter | null;
     selectors?: SelectorFilter | null;
     steps?: StepFilter | null;
     tests?: TestFilter | null;
-    tags?: TagFilter | null;
     AND?: Enumerable<UserWhereInput> | null;
     OR?: Enumerable<UserWhereInput> | null;
     NOT?: Enumerable<UserWhereInput> | null;
@@ -1969,8 +1969,8 @@ export declare type TestCreateOneWithoutTestInput = {
 export declare type StepCreateWithoutSelectorInput = {
     action: string;
     value: string;
+    user: UserCreateOneWithoutUserInput;
     test?: TestCreateOneWithoutTestInput | null;
-    user?: UserCreateOneWithoutUserInput | null;
 };
 export declare type StepCreateManyWithoutStepsInput = {
     create?: Enumerable<StepCreateWithoutSelectorInput> | null;
@@ -2011,18 +2011,36 @@ export declare type TagCreateInput = {
     user: UserCreateOneWithoutUserInput;
     test?: TestCreateOneWithoutTestInput | null;
 };
+export declare type UserCreateWithoutStepsInput = {
+    email: string;
+    password: string;
+    first: string;
+    last: string;
+    tags?: TagCreateManyWithoutTagsInput | null;
+    selectors?: SelectorCreateManyWithoutSelectorsInput | null;
+    tests?: TestCreateManyWithoutTestsInput | null;
+};
+export declare type TagCreateWithoutUserInput = {
+    name: string;
+    test?: TestCreateOneWithoutTestInput | null;
+};
+export declare type TestCreateWithoutTagsInput = {
+    name: string;
+    user: UserCreateOneWithoutUserInput;
+    steps?: StepCreateManyWithoutStepsInput | null;
+};
 export declare type UserCreateWithoutTestsInput = {
     email: string;
     password: string;
     first: string;
     last: string;
+    tags?: TagCreateManyWithoutTagsInput | null;
     selectors?: SelectorCreateManyWithoutSelectorsInput | null;
     steps?: StepCreateManyWithoutStepsInput | null;
-    tags?: TagCreateManyWithoutTagsInput | null;
 };
 export declare type SelectorCreateWithoutStepsInput = {
     css: string;
-    user?: UserCreateOneWithoutUserInput | null;
+    user: UserCreateOneWithoutUserInput;
 };
 export declare type SelectorCreateOneWithoutSelectorInput = {
     create?: SelectorCreateWithoutStepsInput | null;
@@ -2039,120 +2057,22 @@ export declare type UserCreateWithoutSelectorsInput = {
     password: string;
     first: string;
     last: string;
+    tags?: TagCreateManyWithoutTagsInput | null;
     steps?: StepCreateManyWithoutStepsInput | null;
     tests?: TestCreateManyWithoutTestsInput | null;
-    tags?: TagCreateManyWithoutTagsInput | null;
 };
 export declare type StepCreateWithoutTestInput = {
     action: string;
     value: string;
-    selector: SelectorCreateOneWithoutSelectorInput;
-    user?: UserCreateOneWithoutUserInput | null;
-};
-export declare type UserCreateWithoutStepsInput = {
-    email: string;
-    password: string;
-    first: string;
-    last: string;
-    selectors?: SelectorCreateManyWithoutSelectorsInput | null;
-    tests?: TestCreateManyWithoutTestsInput | null;
-    tags?: TagCreateManyWithoutTagsInput | null;
-};
-export declare type TagCreateWithoutUserInput = {
-    name: string;
-    test?: TestCreateOneWithoutTestInput | null;
-};
-export declare type TestCreateWithoutTagsInput = {
-    name: string;
     user: UserCreateOneWithoutUserInput;
-    steps?: StepCreateManyWithoutStepsInput | null;
-};
-export declare type TestUpdateWithoutTagsDataInput = {
-    id?: number | null;
-    name?: string | null;
-    user?: UserUpdateOneRequiredWithoutTestsInput | null;
-    steps?: StepUpdateManyWithoutTestInput | null;
-};
-export declare type TestUpsertWithoutTagsInput = {
-    update: TestUpdateWithoutTagsDataInput;
-    create: TestCreateWithoutTagsInput;
-};
-export declare type TestUpdateOneWithoutTagsInput = {
-    create?: TestCreateWithoutTagsInput | null;
-    connect?: TestWhereUniqueInput | null;
-    disconnect?: boolean | null;
-    delete?: boolean | null;
-    update?: TestUpdateWithoutTagsDataInput | null;
-    upsert?: TestUpsertWithoutTagsInput | null;
-};
-export declare type TagUpdateWithoutUserDataInput = {
-    id?: number | null;
-    name?: string | null;
-    test?: TestUpdateOneWithoutTagsInput | null;
-};
-export declare type TagUpdateWithWhereUniqueWithoutUserInput = {
-    where: TagWhereUniqueInput;
-    data: TagUpdateWithoutUserDataInput;
-};
-export declare type TagScalarWhereInput = {
-    id?: number | IntFilter | null;
-    name?: string | StringFilter | null;
-    AND?: Enumerable<TagScalarWhereInput> | null;
-    OR?: Enumerable<TagScalarWhereInput> | null;
-    NOT?: Enumerable<TagScalarWhereInput> | null;
-};
-export declare type TagUpdateManyDataInput = {
-    id?: number | null;
-    name?: string | null;
-};
-export declare type TagUpdateManyWithWhereNestedInput = {
-    where: TagScalarWhereInput;
-    data: TagUpdateManyDataInput;
-};
-export declare type TagUpsertWithWhereUniqueWithoutUserInput = {
-    where: TagWhereUniqueInput;
-    update: TagUpdateWithoutUserDataInput;
-    create: TagCreateWithoutUserInput;
-};
-export declare type TagUpdateManyWithoutUserInput = {
-    create?: Enumerable<TagCreateWithoutUserInput> | null;
-    connect?: Enumerable<TagWhereUniqueInput> | null;
-    set?: Enumerable<TagWhereUniqueInput> | null;
-    disconnect?: Enumerable<TagWhereUniqueInput> | null;
-    delete?: Enumerable<TagWhereUniqueInput> | null;
-    update?: Enumerable<TagUpdateWithWhereUniqueWithoutUserInput> | null;
-    updateMany?: Enumerable<TagUpdateManyWithWhereNestedInput> | null;
-    deleteMany?: Enumerable<TagScalarWhereInput> | null;
-    upsert?: Enumerable<TagUpsertWithWhereUniqueWithoutUserInput> | null;
-};
-export declare type UserUpdateWithoutStepsDataInput = {
-    id?: number | null;
-    email?: string | null;
-    password?: string | null;
-    first?: string | null;
-    last?: string | null;
-    selectors?: SelectorUpdateManyWithoutUserInput | null;
-    tests?: TestUpdateManyWithoutUserInput | null;
-    tags?: TagUpdateManyWithoutUserInput | null;
-};
-export declare type UserUpsertWithoutStepsInput = {
-    update: UserUpdateWithoutStepsDataInput;
-    create: UserCreateWithoutStepsInput;
-};
-export declare type UserUpdateOneWithoutStepsInput = {
-    create?: UserCreateWithoutStepsInput | null;
-    connect?: UserWhereUniqueInput | null;
-    disconnect?: boolean | null;
-    delete?: boolean | null;
-    update?: UserUpdateWithoutStepsDataInput | null;
-    upsert?: UserUpsertWithoutStepsInput | null;
+    selector: SelectorCreateOneWithoutSelectorInput;
 };
 export declare type StepUpdateWithoutTestDataInput = {
     id?: number | null;
     action?: string | null;
     value?: string | null;
+    user?: UserUpdateOneRequiredWithoutStepsInput | null;
     selector?: SelectorUpdateOneRequiredWithoutStepsInput | null;
-    user?: UserUpdateOneWithoutStepsInput | null;
 };
 export declare type StepUpdateWithWhereUniqueWithoutTestInput = {
     where: StepWhereUniqueInput;
@@ -2199,6 +2119,21 @@ export declare type TagUpdateWithoutTestDataInput = {
 export declare type TagUpdateWithWhereUniqueWithoutTestInput = {
     where: TagWhereUniqueInput;
     data: TagUpdateWithoutTestDataInput;
+};
+export declare type TagScalarWhereInput = {
+    id?: number | IntFilter | null;
+    name?: string | StringFilter | null;
+    AND?: Enumerable<TagScalarWhereInput> | null;
+    OR?: Enumerable<TagScalarWhereInput> | null;
+    NOT?: Enumerable<TagScalarWhereInput> | null;
+};
+export declare type TagUpdateManyDataInput = {
+    id?: number | null;
+    name?: string | null;
+};
+export declare type TagUpdateManyWithWhereNestedInput = {
+    where: TagScalarWhereInput;
+    data: TagUpdateManyDataInput;
 };
 export declare type TagUpsertWithWhereUniqueWithoutTestInput = {
     where: TagWhereUniqueInput;
@@ -2265,26 +2200,24 @@ export declare type UserUpdateWithoutSelectorsDataInput = {
     password?: string | null;
     first?: string | null;
     last?: string | null;
+    tags?: TagUpdateManyWithoutUserInput | null;
     steps?: StepUpdateManyWithoutUserInput | null;
     tests?: TestUpdateManyWithoutUserInput | null;
-    tags?: TagUpdateManyWithoutUserInput | null;
 };
 export declare type UserUpsertWithoutSelectorsInput = {
     update: UserUpdateWithoutSelectorsDataInput;
     create: UserCreateWithoutSelectorsInput;
 };
-export declare type UserUpdateOneWithoutSelectorsInput = {
+export declare type UserUpdateOneRequiredWithoutSelectorsInput = {
     create?: UserCreateWithoutSelectorsInput | null;
     connect?: UserWhereUniqueInput | null;
-    disconnect?: boolean | null;
-    delete?: boolean | null;
     update?: UserUpdateWithoutSelectorsDataInput | null;
     upsert?: UserUpsertWithoutSelectorsInput | null;
 };
 export declare type SelectorUpdateWithoutStepsDataInput = {
     id?: number | null;
     css?: string | null;
-    user?: UserUpdateOneWithoutSelectorsInput | null;
+    user?: UserUpdateOneRequiredWithoutSelectorsInput | null;
 };
 export declare type SelectorUpsertWithoutStepsInput = {
     update: SelectorUpdateWithoutStepsDataInput;
@@ -2295,6 +2228,24 @@ export declare type SelectorUpdateOneRequiredWithoutStepsInput = {
     connect?: SelectorWhereUniqueInput | null;
     update?: SelectorUpdateWithoutStepsDataInput | null;
     upsert?: SelectorUpsertWithoutStepsInput | null;
+};
+export declare type TestUpdateWithoutStepsDataInput = {
+    id?: number | null;
+    name?: string | null;
+    user?: UserUpdateOneRequiredWithoutTestsInput | null;
+    tags?: TagUpdateManyWithoutTestInput | null;
+};
+export declare type TestUpsertWithoutStepsInput = {
+    update: TestUpdateWithoutStepsDataInput;
+    create: TestCreateWithoutStepsInput;
+};
+export declare type TestUpdateOneWithoutStepsInput = {
+    create?: TestCreateWithoutStepsInput | null;
+    connect?: TestWhereUniqueInput | null;
+    disconnect?: boolean | null;
+    delete?: boolean | null;
+    update?: TestUpdateWithoutStepsDataInput | null;
+    upsert?: TestUpsertWithoutStepsInput | null;
 };
 export declare type StepUpdateWithoutUserDataInput = {
     id?: number | null;
@@ -2329,9 +2280,9 @@ export declare type UserUpdateWithoutTestsDataInput = {
     password?: string | null;
     first?: string | null;
     last?: string | null;
+    tags?: TagUpdateManyWithoutUserInput | null;
     selectors?: SelectorUpdateManyWithoutUserInput | null;
     steps?: StepUpdateManyWithoutUserInput | null;
-    tags?: TagUpdateManyWithoutUserInput | null;
 };
 export declare type UserUpsertWithoutTestsInput = {
     update: UserUpdateWithoutTestsDataInput;
@@ -2343,30 +2294,75 @@ export declare type UserUpdateOneRequiredWithoutTestsInput = {
     update?: UserUpdateWithoutTestsDataInput | null;
     upsert?: UserUpsertWithoutTestsInput | null;
 };
-export declare type TestUpdateWithoutStepsDataInput = {
+export declare type TestUpdateWithoutTagsDataInput = {
     id?: number | null;
     name?: string | null;
     user?: UserUpdateOneRequiredWithoutTestsInput | null;
-    tags?: TagUpdateManyWithoutTestInput | null;
+    steps?: StepUpdateManyWithoutTestInput | null;
 };
-export declare type TestUpsertWithoutStepsInput = {
-    update: TestUpdateWithoutStepsDataInput;
-    create: TestCreateWithoutStepsInput;
+export declare type TestUpsertWithoutTagsInput = {
+    update: TestUpdateWithoutTagsDataInput;
+    create: TestCreateWithoutTagsInput;
 };
-export declare type TestUpdateOneWithoutStepsInput = {
-    create?: TestCreateWithoutStepsInput | null;
+export declare type TestUpdateOneWithoutTagsInput = {
+    create?: TestCreateWithoutTagsInput | null;
     connect?: TestWhereUniqueInput | null;
     disconnect?: boolean | null;
     delete?: boolean | null;
-    update?: TestUpdateWithoutStepsDataInput | null;
-    upsert?: TestUpsertWithoutStepsInput | null;
+    update?: TestUpdateWithoutTagsDataInput | null;
+    upsert?: TestUpsertWithoutTagsInput | null;
+};
+export declare type TagUpdateWithoutUserDataInput = {
+    id?: number | null;
+    name?: string | null;
+    test?: TestUpdateOneWithoutTagsInput | null;
+};
+export declare type TagUpdateWithWhereUniqueWithoutUserInput = {
+    where: TagWhereUniqueInput;
+    data: TagUpdateWithoutUserDataInput;
+};
+export declare type TagUpsertWithWhereUniqueWithoutUserInput = {
+    where: TagWhereUniqueInput;
+    update: TagUpdateWithoutUserDataInput;
+    create: TagCreateWithoutUserInput;
+};
+export declare type TagUpdateManyWithoutUserInput = {
+    create?: Enumerable<TagCreateWithoutUserInput> | null;
+    connect?: Enumerable<TagWhereUniqueInput> | null;
+    set?: Enumerable<TagWhereUniqueInput> | null;
+    disconnect?: Enumerable<TagWhereUniqueInput> | null;
+    delete?: Enumerable<TagWhereUniqueInput> | null;
+    update?: Enumerable<TagUpdateWithWhereUniqueWithoutUserInput> | null;
+    updateMany?: Enumerable<TagUpdateManyWithWhereNestedInput> | null;
+    deleteMany?: Enumerable<TagScalarWhereInput> | null;
+    upsert?: Enumerable<TagUpsertWithWhereUniqueWithoutUserInput> | null;
+};
+export declare type UserUpdateWithoutStepsDataInput = {
+    id?: number | null;
+    email?: string | null;
+    password?: string | null;
+    first?: string | null;
+    last?: string | null;
+    tags?: TagUpdateManyWithoutUserInput | null;
+    selectors?: SelectorUpdateManyWithoutUserInput | null;
+    tests?: TestUpdateManyWithoutUserInput | null;
+};
+export declare type UserUpsertWithoutStepsInput = {
+    update: UserUpdateWithoutStepsDataInput;
+    create: UserCreateWithoutStepsInput;
+};
+export declare type UserUpdateOneRequiredWithoutStepsInput = {
+    create?: UserCreateWithoutStepsInput | null;
+    connect?: UserWhereUniqueInput | null;
+    update?: UserUpdateWithoutStepsDataInput | null;
+    upsert?: UserUpsertWithoutStepsInput | null;
 };
 export declare type StepUpdateWithoutSelectorDataInput = {
     id?: number | null;
     action?: string | null;
     value?: string | null;
+    user?: UserUpdateOneRequiredWithoutStepsInput | null;
     test?: TestUpdateOneWithoutStepsInput | null;
-    user?: UserUpdateOneWithoutStepsInput | null;
 };
 export declare type StepUpdateWithWhereUniqueWithoutSelectorInput = {
     where: StepWhereUniqueInput;
@@ -2461,14 +2457,14 @@ export declare type TagUpdateManyMutationInput = {
 };
 export declare type SelectorCreateInput = {
     css: string;
+    user: UserCreateOneWithoutUserInput;
     steps?: StepCreateManyWithoutStepsInput | null;
-    user?: UserCreateOneWithoutUserInput | null;
 };
 export declare type SelectorUpdateInput = {
     id?: number | null;
     css?: string | null;
+    user?: UserUpdateOneRequiredWithoutSelectorsInput | null;
     steps?: StepUpdateManyWithoutSelectorInput | null;
-    user?: UserUpdateOneWithoutSelectorsInput | null;
 };
 export declare type SelectorUpdateManyMutationInput = {
     id?: number | null;
@@ -2477,17 +2473,17 @@ export declare type SelectorUpdateManyMutationInput = {
 export declare type StepCreateInput = {
     action: string;
     value: string;
+    user: UserCreateOneWithoutUserInput;
     selector: SelectorCreateOneWithoutSelectorInput;
     test?: TestCreateOneWithoutTestInput | null;
-    user?: UserCreateOneWithoutUserInput | null;
 };
 export declare type StepUpdateInput = {
     id?: number | null;
     action?: string | null;
     value?: string | null;
+    user?: UserUpdateOneRequiredWithoutStepsInput | null;
     selector?: SelectorUpdateOneRequiredWithoutStepsInput | null;
     test?: TestUpdateOneWithoutStepsInput | null;
-    user?: UserUpdateOneWithoutStepsInput | null;
 };
 export declare type StepUpdateManyMutationInput = {
     id?: number | null;
@@ -2516,10 +2512,10 @@ export declare type UserCreateInput = {
     password: string;
     first: string;
     last: string;
+    tags?: TagCreateManyWithoutTagsInput | null;
     selectors?: SelectorCreateManyWithoutSelectorsInput | null;
     steps?: StepCreateManyWithoutStepsInput | null;
     tests?: TestCreateManyWithoutTestsInput | null;
-    tags?: TagCreateManyWithoutTagsInput | null;
 };
 export declare type UserUpdateInput = {
     id?: number | null;
@@ -2527,10 +2523,10 @@ export declare type UserUpdateInput = {
     password?: string | null;
     first?: string | null;
     last?: string | null;
+    tags?: TagUpdateManyWithoutUserInput | null;
     selectors?: SelectorUpdateManyWithoutUserInput | null;
     steps?: StepUpdateManyWithoutUserInput | null;
     tests?: TestUpdateManyWithoutUserInput | null;
-    tags?: TagUpdateManyWithoutUserInput | null;
 };
 export declare type UserUpdateManyMutationInput = {
     id?: number | null;

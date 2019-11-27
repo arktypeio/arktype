@@ -7,6 +7,6 @@
         "build": ""
     },
     "dependencies": {
-        "nexus": "0.12.0-beta.14"
+        "nexus": "0.12.0-rc.5"
     }
 }

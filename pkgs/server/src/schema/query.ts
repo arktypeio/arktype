@@ -1,7 +1,7 @@
 import { queryType } from "nexus"
 
 export const Query = queryType({
-    definition(t) {
+    definition: t => {
         t.crud.tag()
         t.crud.tags()
         t.crud.selector()

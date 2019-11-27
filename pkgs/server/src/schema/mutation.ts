@@ -5,112 +5,42 @@ import { APP_SECRET, ifExists } from "../utils"
 
 const SignInInput = inputObjectType({
     name: "SignInInput",
-    definition(t) {
-        t.string("email", { required: true })
-        t.string("password", { required: true })
+    nonNullDefaults: { input: true },
+    definition: t => {
+        t.string("email")
+        t.string("password")
     }
 })
 
 const SignUpInput = inputObjectType({
     name: "SignUpInput",
-    definition(t) {
-        t.string("email", { required: true })
-        t.string("password", { required: true })
-        t.string("first", { required: true })
-        t.string("last", { required: true })
-    }
-})
-
-const CreateSelectorInput = inputObjectType({
-    name: "CreateSelectorInput",
-    definition(t) {
-        t.string("css", { required: true })
-    }
-})
-
-const CreateTagInput = inputObjectType({
-    name: "CreateTagInput",
-    definition(t) {
-        t.string("name", { required: true })
-    }
-})
-
-const CreateStepInput = inputObjectType({
-    name: "CreateStepInput",
-    definition(t) {
-        t.string("action", { required: true })
-        t.field("selector", { type: "CreateSelectorInput", required: true })
-        t.string("value", { required: true })
-    }
-})
-
-const CreateTestInput = inputObjectType({
-    name: "CreateTestInput",
-    definition(t) {
-        t.string("name", { required: true })
-        t.field("tags", { type: "CreateTagInput", list: true })
-        t.field("steps", {
-            type: "CreateStepInput",
-            required: true,
-            list: true
-        })
+    nonNullDefaults: { input: true },
+    definition: t => {
+        t.string("email")
+        t.string("password")
+        t.string("first")
+        t.string("last")
     }
 })
 
 const Mutation = mutationType({
-    definition(t) {
-        t.crud.createOneSelector()
-        t.field("createTest", {
-            type: "Test",
-            args: {
-                data: arg({ type: CreateTestInput, required: true })
-            },
-            resolve: async (
-                _,
-                { data: { name, steps, tags } },
-                { photon, userId }
-            ) => {
-                if (!userId) {
-                    throw new Error("You need to be logged in to do that!")
-                }
-                const stepIds: number[] = []
-                for (const step of steps) {
-                    const result = await photon.steps.create({
-                        data: {
-                            action: step.action,
-                            value: step.value,
-                            selector: {
-                                create: {
-                                    css: step.selector.css
-                                }
-                            }
-                        }
-                    })
-                    stepIds.push(result.id)
-                }
-
-                const test = await photon.tests.create({
-                    data: {
-                        name,
-                        steps: {
-                            connect: stepIds.map(id => ({ id }))
-                        },
-                        user: {
-                            connect: {
-                                id: userId
-                            }
-                        },
-                        tags: tags
-                            ? {
-                                  create: tags.map(tag => ({
-                                      user: { connect: { id: userId } },
-                                      ...tag
-                                  }))
-                              }
-                            : undefined
+    definition: t => {
+        t.crud.createOneStep({
+            contextArgs: {
+                user: ({ userId }) => ({
+                    connect: {
+                        id: userId
                     }
                 })
-                return test
+            }
+        })
+        t.crud.createOneTest({
+            contextArgs: {
+                user: ({ userId }) => ({
+                    connect: {
+                        id: userId
+                    }
+                })
             }
         })
         t.field("signIn", {
@@ -178,10 +108,4 @@ const Mutation = mutationType({
     }
 })
 
-export const mutationTypes = [
-    CreateSelectorInput,
-    CreateStepInput,
-    CreateTagInput,
-    CreateTestInput,
-    Mutation
-]
+export const mutationTypes = [Mutation]

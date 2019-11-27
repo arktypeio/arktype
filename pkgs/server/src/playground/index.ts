@@ -17,33 +17,32 @@ const contents = gql`
         signIn(data: { email: "reed@redo.qa", password: "redo" })
     }
 
-    query users {
-        users {
-            email
-        }
-    }
-
-    query steps {
-        steps {
-            action
-            value
-            selector {
-                css
-            }
-        }
-    }
-
     mutation createTest {
-        createTest(
+        createOneTest(
             data: {
                 name: "Test 1"
-                steps: [
-                    { action: "Click", value: "", selector: { css: "#id" } }
-                ]
-                tags: [{ name: "fast" }, { name: "easy" }]
+                steps: { create: { action: "click", value: "something" } }
             }
         ) {
             id
+        }
+    }
+
+    query getTests {
+        tests {
+            name
+            id
+            steps {
+                id
+                action
+                value
+                selector {
+                    css
+                }
+            }
+            tags {
+                name
+            }
         }
     }
 `

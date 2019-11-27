@@ -10,18 +10,20 @@ generator photon {
 
 model Tag {
   id   Int    @id
-  name String
   user User
+  name String
   @@unique([name, user])
 }
 
 model Selector {
-  id  Int    @id
-  css String
+  id   Int    @id
+  user User
+  css  String
 }
 
 model Step {
   id       Int      @id
+  user     User
   action   String
   selector Selector
   value    String
@@ -37,13 +39,9 @@ model Test {
 }
 
 model User {
-  id        Int        @id
-  email     String     @unique
-  password  String
-  first     String
-  last      String
-  selectors Selector[]
-  steps     Step[]
-  tests     Test[]
-  tags      Tag[]
+  id       Int    @id
+  email    String @unique
+  password String
+  first    String
+  last     String
 }
