@@ -44,7 +44,7 @@ const builtIns = [
     "Boolean",
     "ID"
 ]
-const modelTypes = coreTypegenFileLines
+coreTypegenFileLines
     .slice(modelDefinitionStartIndex + 1, modelDefinitionEndIndex)
     .map(line => line.replace(/\s/g, "").split(":"))
     .filter(([name]) => !builtIns.includes(name))
@@ -53,8 +53,6 @@ const modelTypes = coreTypegenFileLines
     )
 
 const coreTypegenFileContents = coreTypegenFileLines.join("\n")
-
-console.log(JSON.stringify(modelTypes, null, 4))
 
 writeFileSync(
     modelTypesFile,

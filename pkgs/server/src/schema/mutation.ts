@@ -25,15 +25,6 @@ const SignUpInput = inputObjectType({
 
 const Mutation = mutationType({
     definition: t => {
-        t.crud.createOneStep({
-            contextArgs: {
-                user: ({ userId }) => ({
-                    connect: {
-                        id: userId
-                    }
-                })
-            }
-        })
         t.crud.createOneTest({
             contextArgs: {
                 user: ({ userId }) => ({

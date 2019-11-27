@@ -121,6 +121,8 @@ dependencies:
     react-typist: 2.0.5_react-dom@16.10.2+react@16.10.2
     redo-nexus-prisma: 0.5.2-5_prisma2@2.0.0-preview014.2
     reflect-metadata: 0.1.13
+    source-map: 0.7.3
+    source-map-support: 0.5.16
     style-loader: 1.0.0_webpack@4.41.2
     ts-jest: 24.1.0_jest@24.9.0
     ts-loader: 6.2.0_typescript@3.7.2
@@ -14808,6 +14810,13 @@ packages:
         dev: false
         resolution:
             integrity: sha512-SHSKFHadjVA5oR4PPqhtAVdcBWwRYVd6g6cAXnIbRiIwc2EhPrTuKUBdSLvlEKyIP3GCf89fltvcZiP9MMFA1w==
+    /source-map-support/0.5.16:
+        dependencies:
+            buffer-from: 1.1.1
+            source-map: 0.6.1
+        dev: false
+        resolution:
+            integrity: sha512-efyLRJDr68D9hBBNIPWFjhpFzURh+KJykQwvMyW5UiZzYwoF6l4YMMDIJJEyFWxWCqfyxLzz6tSfUFR+kXXsVQ==
     /source-map-url/0.4.0:
         dev: false
         resolution:
@@ -16894,6 +16903,8 @@ packages:
             prisma2: 2.0.0-preview014.2
             redo-nexus-prisma: 0.5.2-5_585c0449356a3101e384f71c6346232b
             reflect-metadata: 0.1.13
+            source-map: 0.7.3
+            source-map-support: 0.5.16
             ts-jest: 24.1.0_jest@24.9.0
             ts-node: 8.4.1_typescript@3.7.2
             ts-node-dev: 1.0.0-pre.43_typescript@3.7.2
@@ -16902,7 +16913,7 @@ packages:
         dev: false
         name: "@rush-temp/server"
         resolution:
-            integrity: sha512-v9bjJ/c6ik9Hs2qW/p9nBtAfUTFZa0GIEN5mE5zwShPDlyoaKbydBldbXOgtI3hs3GnwTpG1Qj5OxF7LskTIvw==
+            integrity: sha512-Xc7U0r+2JIie2r2Qkdq2IG45uLXewYhqfdT1Q1GGMsz6JmejfKAxbi2FYzj53kkAC9Lu62JqVZmyVK+d3bOCiA==
             tarball: "file:projects/server.tgz"
         version: 0.0.0
     "file:projects/shapeql.tgz_@babel+core@7.6.4":
@@ -17139,6 +17150,8 @@ specifiers:
     react-typist: 2.0.5
     redo-nexus-prisma: 0.5.2-5
     reflect-metadata: 0.1.13
+    source-map: 0.7.3
+    source-map-support: 0.5.16
     style-loader: 1.0.0
     ts-jest: 24.1.0
     ts-loader: 6.2.0

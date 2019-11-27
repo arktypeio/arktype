@@ -453,11 +453,6 @@ declare global {
 }
 
 export interface NexusGenInputs {
-    SelectorCreateInput: {
-        // input type
-        css: string // String!
-        steps?: NexusGenInputs["StepCreateManyWithoutStepsInput"] | null // StepCreateManyWithoutStepsInput
-    }
     SelectorCreateManyWithoutSelectorsInput: {
         // input type
         connect?: NexusGenInputs["SelectorWhereUniqueInput"][] | null // [SelectorWhereUniqueInput!]
@@ -588,7 +583,6 @@ export interface NexusGenRootTypes {
 }
 
 export interface NexusGenAllTypes extends NexusGenRootTypes {
-    SelectorCreateInput: NexusGenInputs["SelectorCreateInput"]
     SelectorCreateManyWithoutSelectorsInput: NexusGenInputs["SelectorCreateManyWithoutSelectorsInput"]
     SelectorCreateWithoutUserInput: NexusGenInputs["SelectorCreateWithoutUserInput"]
     SelectorWhereUniqueInput: NexusGenInputs["SelectorWhereUniqueInput"]
@@ -614,7 +608,6 @@ export interface NexusGenAllTypes extends NexusGenRootTypes {
 export interface NexusGenFieldTypes {
     Mutation: {
         // field return type
-        createOneSelector: NexusGenRootTypes["Selector"] // Selector!
         createOneTest: NexusGenRootTypes["Test"] // Test!
         signIn: string // String!
         signUp: string // String!
@@ -672,10 +665,6 @@ export interface NexusGenFieldTypes {
 
 export interface NexusGenArgTypes {
     Mutation: {
-        createOneSelector: {
-            // args
-            data: NexusGenInputs["SelectorCreateInput"] // SelectorCreateInput!
-        }
         createOneTest: {
             // args
             data: NexusGenInputs["TestCreateInput"] // TestCreateInput!
@@ -819,7 +808,6 @@ export type NexusGenObjectNames =
     | "User"
 
 export type NexusGenInputNames =
-    | "SelectorCreateInput"
     | "SelectorCreateManyWithoutSelectorsInput"
     | "SelectorCreateWithoutUserInput"
     | "SelectorWhereUniqueInput"
