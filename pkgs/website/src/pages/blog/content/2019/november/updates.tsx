@@ -128,7 +128,7 @@ export const november2019Updates: UpdateData[] = [
     {
         date: new Date(2019, 10, 26),
         goals: {
-            "update server types for test execution": false
+            "update server types for test execution": true
         }
     },
     {
