@@ -1,4 +1,4 @@
-import React, { FC } from "react"
+import React from "react"
 import createMuiTheme, {
     ThemeOptions
 } from "@material-ui/core/styles/createMuiTheme"
@@ -25,7 +25,7 @@ export const defaultConfig: ThemeOptions = {
 
 export const makeTheme = createMuiTheme
 export const defaultTheme = createMuiTheme(defaultConfig)
-export const DefaultTheme: FC = ({ children }) => (
+export const DefaultTheme = ({ children }: any) => (
     <ThemeProvider theme={defaultTheme}>{children}</ThemeProvider>
 )
 export const T = DefaultTheme

@@ -1,8 +1,6 @@
-import React, { FC } from "react"
+import React from "react"
 import { IconButton, Icons } from "@re-do/components"
 
-export type ScheduleButtonProps = {}
-
-export const ScheduleButton: FC<ScheduleButtonProps> = ({}) => {
+export const ScheduleButton = ({}) => {
     return <IconButton Icon={Icons.schedule} style={{ color: "white" }} />
 }

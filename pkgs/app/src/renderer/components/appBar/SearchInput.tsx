@@ -1,4 +1,4 @@
-import React, { FC } from "react"
+import React from "react"
 import { TextInput, TextInputProps } from "@re-do/components"
 import { store } from "renderer/common"
 
@@ -9,7 +9,7 @@ const onChange = async (event: React.ChangeEvent<HTMLInputElement>) =>
         cardFilter: event.target.value
     })
 
-export const SearchInput: FC<SearchInputProps> = ({ ...rest }) => (
+export const SearchInput = ({ ...rest }: SearchInputProps) => (
     <TextInput
         kind="underlined"
         colorTemplate="light"

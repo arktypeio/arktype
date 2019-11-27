@@ -1,4 +1,4 @@
-import React, { FC, cloneElement, useState } from "react"
+import React, { cloneElement, useState } from "react"
 import { Card } from "../cards"
 import { useTheme } from "../styles"
 import { Dialog } from "@material-ui/core"
@@ -11,10 +11,10 @@ export type ModalProps = Omit<Partial<DialogProps>, "open"> & {
     }
 }
 
-export const Modal: FC<ModalProps> = ({
+export const Modal = ({
     children: { toggle, content },
     ...rest
-}) => {
+}: ModalProps) => {
     const theme = useTheme()
     const [state, setState] = useState(false)
     const button = cloneElement(toggle, {

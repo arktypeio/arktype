@@ -1,10 +1,10 @@
-import React, { FC } from "react"
+import React from "react"
 import { IconButton, Icons } from "@re-do/components"
 import { store } from "renderer/common"
 
 export type NewTestButtonProps = {}
 
-export const NewTestButton: FC<NewTestButtonProps> = ({}) => {
+export const NewTestButton = () => {
     return (
         <IconButton
             Icon={Icons.add}
