@@ -136,5 +136,12 @@ export const november2019Updates: UpdateData[] = [
         goals: {
             "merge test execution branch": false
         }
+    },
+    {
+        date: new Date(2019, 10, 29),
+        goals: {
+            "finish recursive context args": false,
+            "integrate app with new model": false
+        }
     }
 ]
