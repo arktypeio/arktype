@@ -143,5 +143,12 @@ export const november2019Updates: UpdateData[] = [
             "finish recursive context args": false,
             "integrate app with new model": false
         }
+    },
+    {
+        date: new Date(2019, 10, 30),
+        goals: {
+            "finish recursive context args": false,
+            "integrate app with new model": false
+        }
     }
 ]
