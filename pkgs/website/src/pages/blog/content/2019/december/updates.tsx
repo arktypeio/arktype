@@ -18,7 +18,8 @@ export const december2019Updates: UpdateData[] = [
     {
         date: new Date(2019, 11, 3),
         goals: {
-            "finalize context args PR": false
+            "finalize context args PR": false,
+            "working server with context args": false
         }
     }
 ]
