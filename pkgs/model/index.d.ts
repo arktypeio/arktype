@@ -453,16 +453,6 @@ declare global {
 }
 
 export interface NexusGenInputs {
-    SelectorCreateManyWithoutSelectorsInput: {
-        // input type
-        connect?: NexusGenInputs["SelectorWhereUniqueInput"][] | null // [SelectorWhereUniqueInput!]
-        create?: NexusGenInputs["SelectorCreateWithoutUserInput"][] | null // [SelectorCreateWithoutUserInput!]
-    }
-    SelectorCreateWithoutUserInput: {
-        // input type
-        css: string // String!
-        steps?: NexusGenInputs["StepCreateManyWithoutStepsInput"] | null // StepCreateManyWithoutStepsInput
-    }
     SelectorWhereUniqueInput: {
         // input type
         id?: number | null // Int
@@ -488,7 +478,6 @@ export interface NexusGenInputs {
         // input type
         action: string // String!
         test?: NexusGenInputs["TestCreateOneWithoutTestInput"] | null // TestCreateOneWithoutTestInput
-        user: NexusGenInputs["UserCreateOneWithoutUserInput"] // UserCreateOneWithoutUserInput!
         value: string // String!
     }
     StepWhereUniqueInput: {
@@ -503,7 +492,6 @@ export interface NexusGenInputs {
     TagCreateWithoutTestInput: {
         // input type
         name: string // String!
-        user: NexusGenInputs["UserCreateOneWithoutUserInput"] // UserCreateOneWithoutUserInput!
     }
     TagWhereUniqueInput: {
         // input type
@@ -515,11 +503,6 @@ export interface NexusGenInputs {
         steps?: NexusGenInputs["StepCreateManyWithoutStepsInput"] | null // StepCreateManyWithoutStepsInput
         tags?: NexusGenInputs["TagCreateManyWithoutTagsInput"] | null // TagCreateManyWithoutTagsInput
     }
-    TestCreateManyWithoutTestsInput: {
-        // input type
-        connect?: NexusGenInputs["TestWhereUniqueInput"][] | null // [TestWhereUniqueInput!]
-        create?: NexusGenInputs["TestCreateWithoutUserInput"][] | null // [TestCreateWithoutUserInput!]
-    }
     TestCreateOneWithoutTestInput: {
         // input type
         connect?: NexusGenInputs["TestWhereUniqueInput"] | null // TestWhereUniqueInput
@@ -529,34 +512,10 @@ export interface NexusGenInputs {
         // input type
         name: string // String!
         tags?: NexusGenInputs["TagCreateManyWithoutTagsInput"] | null // TagCreateManyWithoutTagsInput
-        user: NexusGenInputs["UserCreateOneWithoutUserInput"] // UserCreateOneWithoutUserInput!
-    }
-    TestCreateWithoutUserInput: {
-        // input type
-        name: string // String!
-        steps?: NexusGenInputs["StepCreateManyWithoutStepsInput"] | null // StepCreateManyWithoutStepsInput
-        tags?: NexusGenInputs["TagCreateManyWithoutTagsInput"] | null // TagCreateManyWithoutTagsInput
     }
     TestWhereUniqueInput: {
         // input type
         id?: number | null // Int
-    }
-    UserCreateOneWithoutUserInput: {
-        // input type
-        connect?: NexusGenInputs["UserWhereUniqueInput"] | null // UserWhereUniqueInput
-        create?: NexusGenInputs["UserCreateWithoutTagsInput"] | null // UserCreateWithoutTagsInput
-    }
-    UserCreateWithoutTagsInput: {
-        // input type
-        email: string // String!
-        first: string // String!
-        last: string // String!
-        password: string // String!
-        selectors?:
-            | NexusGenInputs["SelectorCreateManyWithoutSelectorsInput"]
-            | null // SelectorCreateManyWithoutSelectorsInput
-        steps?: NexusGenInputs["StepCreateManyWithoutStepsInput"] | null // StepCreateManyWithoutStepsInput
-        tests?: NexusGenInputs["TestCreateManyWithoutTestsInput"] | null // TestCreateManyWithoutTestsInput
     }
     UserWhereUniqueInput: {
         // input type
@@ -583,8 +542,6 @@ export interface NexusGenRootTypes {
 }
 
 export interface NexusGenAllTypes extends NexusGenRootTypes {
-    SelectorCreateManyWithoutSelectorsInput: NexusGenInputs["SelectorCreateManyWithoutSelectorsInput"]
-    SelectorCreateWithoutUserInput: NexusGenInputs["SelectorCreateWithoutUserInput"]
     SelectorWhereUniqueInput: NexusGenInputs["SelectorWhereUniqueInput"]
     SignInInput: NexusGenInputs["SignInInput"]
     SignUpInput: NexusGenInputs["SignUpInput"]
@@ -595,13 +552,9 @@ export interface NexusGenAllTypes extends NexusGenRootTypes {
     TagCreateWithoutTestInput: NexusGenInputs["TagCreateWithoutTestInput"]
     TagWhereUniqueInput: NexusGenInputs["TagWhereUniqueInput"]
     TestCreateInput: NexusGenInputs["TestCreateInput"]
-    TestCreateManyWithoutTestsInput: NexusGenInputs["TestCreateManyWithoutTestsInput"]
     TestCreateOneWithoutTestInput: NexusGenInputs["TestCreateOneWithoutTestInput"]
     TestCreateWithoutStepsInput: NexusGenInputs["TestCreateWithoutStepsInput"]
-    TestCreateWithoutUserInput: NexusGenInputs["TestCreateWithoutUserInput"]
     TestWhereUniqueInput: NexusGenInputs["TestWhereUniqueInput"]
-    UserCreateOneWithoutUserInput: NexusGenInputs["UserCreateOneWithoutUserInput"]
-    UserCreateWithoutTagsInput: NexusGenInputs["UserCreateWithoutTagsInput"]
     UserWhereUniqueInput: NexusGenInputs["UserWhereUniqueInput"]
 }
 
@@ -808,8 +761,6 @@ export type NexusGenObjectNames =
     | "User"
 
 export type NexusGenInputNames =
-    | "SelectorCreateManyWithoutSelectorsInput"
-    | "SelectorCreateWithoutUserInput"
     | "SelectorWhereUniqueInput"
     | "SignInInput"
     | "SignUpInput"
@@ -820,13 +771,9 @@ export type NexusGenInputNames =
     | "TagCreateWithoutTestInput"
     | "TagWhereUniqueInput"
     | "TestCreateInput"
-    | "TestCreateManyWithoutTestsInput"
     | "TestCreateOneWithoutTestInput"
     | "TestCreateWithoutStepsInput"
-    | "TestCreateWithoutUserInput"
     | "TestWhereUniqueInput"
-    | "UserCreateOneWithoutUserInput"
-    | "UserCreateWithoutTagsInput"
     | "UserWhereUniqueInput"
 
 export type NexusGenEnumNames = never

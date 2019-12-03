@@ -119,10 +119,8 @@ dependencies:
     react-svg-loader: 3.0.3
     react-test-renderer: 16.10.2_react@16.10.2
     react-typist: 2.0.5_react-dom@16.10.2+react@16.10.2
-    redo-nexus-prisma: 0.5.2-5_prisma2@2.0.0-preview014.2
+    redo-nexus-prisma: 0.5.2-8_prisma2@2.0.0-preview014.2
     reflect-metadata: 0.1.13
-    source-map: 0.7.3
-    source-map-support: 0.5.16
     style-loader: 1.0.0_webpack@4.41.2
     ts-jest: 24.1.0_jest@24.9.0
     ts-loader: 6.2.0_typescript@3.7.2
@@ -2549,7 +2547,7 @@ packages:
         dev: false
         resolution:
             integrity: sha512-UhGXL1uOydm/ilS6rQ/dXSIRqmq6ZD8RJ0TOeYrmhbpdAF0Ef18EG6nFBL7hO2z+DKa2bSC9WNq7vnPmLXcL1g==
-    /@prisma/fetch-engine/0.3.32:
+    /@prisma/fetch-engine/0.3.33:
         dependencies:
             "@prisma/get-platform": 0.1.23
             chalk: 3.0.0
@@ -2564,7 +2562,7 @@ packages:
             progress: 2.0.3
         dev: false
         resolution:
-            integrity: sha512-7PknacfmA4RqpmcOSdQ0D5Tpt83JpIlU6PF85ZIY3xJD5wdZDOmrdDg3Svvn6MoP3DhsFBAohjV+dA8Yz6sK2Q==
+            integrity: sha512-sUlQKBadqyF9O8DU0poice8S7ftCBtWG/etorGbNPl+Lzj9KfMgv3bR70bn5Bvsa4+DIeScjLOlE8j/UifQeXA==
     /@prisma/fetch-engine/0.3.4:
         dependencies:
             "@prisma/get-platform": 0.1.2
@@ -2658,7 +2656,7 @@ packages:
         dependencies:
             "@prisma/cli": 0.1.29
             "@prisma/engine-core": 0.0.98
-            "@prisma/fetch-engine": 0.3.32
+            "@prisma/fetch-engine": 0.3.33
             "@prisma/generator-helper": 0.0.14
             "@prisma/get-platform": 0.1.23
             chalk: 2.4.2
@@ -13116,6 +13114,10 @@ packages:
         dev: false
         resolution:
             integrity: sha512-HZzqCGPecFLyoRj5HLfuDSKYTJkAfB5thKBIkRHtGjWwY7p1dAyveIbXIq4tO0KYfDF2tHqPUgY9SDnGm00uFw==
+    /psl/1.5.0:
+        dev: false
+        resolution:
+            integrity: sha512-4vqUjKi2huMu1OJiLhi3jN6jeeKvMZdI1tYgi/njW5zV52jNLgSAZSdN16m9bJFe61/cT8ulmw4qFitV9QRsEA==
     /public-encrypt/4.0.3:
         dependencies:
             bn.js: 4.11.8
@@ -14011,7 +14013,7 @@ packages:
             node: ">=0.10.0"
         resolution:
             integrity: sha1-z5Fqsf1fHxbfsggi3W7H9zDCr94=
-    /redo-nexus-prisma/0.5.2-5_585c0449356a3101e384f71c6346232b:
+    /redo-nexus-prisma/0.5.2-8_585c0449356a3101e384f71c6346232b:
         dependencies:
             "@prisma/photon": 0.2.177_prisma2@2.0.0-preview014.2
             "@prisma/sdk": 0.0.23
@@ -14024,8 +14026,8 @@ packages:
             graphql: "*"
             prisma2: "*"
         resolution:
-            integrity: sha512-gAKLwsd/umFcIx6sl6tvCPpL7WHkbj/CKuflwcWs7VwOIrZZoE2hGU/YqTfqFExS3G1+KKUWg/H+5XQB3BKmAg==
-    /redo-nexus-prisma/0.5.2-5_prisma2@2.0.0-preview014.2:
+            integrity: sha512-jHjiJtKii7mzFljKO3HfIvy4Z/k1Oj/+G/AmPJUWTyoSj0BWMHdGFQIpqt6SmS210o8M40/9xJXOKJzbHpwztw==
+    /redo-nexus-prisma/0.5.2-8_prisma2@2.0.0-preview014.2:
         dependencies:
             "@prisma/photon": 0.2.177_prisma2@2.0.0-preview014.2
             "@prisma/sdk": 0.0.23
@@ -14038,7 +14040,7 @@ packages:
             graphql: "*"
             prisma2: "*"
         resolution:
-            integrity: sha512-gAKLwsd/umFcIx6sl6tvCPpL7WHkbj/CKuflwcWs7VwOIrZZoE2hGU/YqTfqFExS3G1+KKUWg/H+5XQB3BKmAg==
+            integrity: sha512-jHjiJtKii7mzFljKO3HfIvy4Z/k1Oj/+G/AmPJUWTyoSj0BWMHdGFQIpqt6SmS210o8M40/9xJXOKJzbHpwztw==
     /redux/4.0.4:
         dependencies:
             loose-envify: 1.4.0
@@ -15635,7 +15637,7 @@ packages:
             integrity: sha512-Q5srk/4vDM54WJsJio3XNn6K2sCG+CQ8G5Wz6bZhRZoAe/+TxjWB/GlFAnYEbkYVlON9FMk/fE3h2RLpPXo4lQ==
     /tough-cookie/2.5.0:
         dependencies:
-            psl: 1.4.0
+            psl: 1.5.0
             punycode: 2.1.1
         dev: false
         engines:
@@ -16901,7 +16903,7 @@ packages:
             nexus: 0.12.0-rc.5_graphql@14.5.8
             nexus-prisma: 0.5.0
             prisma2: 2.0.0-preview014.2
-            redo-nexus-prisma: 0.5.2-5_585c0449356a3101e384f71c6346232b
+            redo-nexus-prisma: 0.5.2-8_585c0449356a3101e384f71c6346232b
             reflect-metadata: 0.1.13
             source-map: 0.7.3
             source-map-support: 0.5.16
@@ -16913,7 +16915,7 @@ packages:
         dev: false
         name: "@rush-temp/server"
         resolution:
-            integrity: sha512-Xc7U0r+2JIie2r2Qkdq2IG45uLXewYhqfdT1Q1GGMsz6JmejfKAxbi2FYzj53kkAC9Lu62JqVZmyVK+d3bOCiA==
+            integrity: sha512-/fEK5IHveVobo/V7KGCHniuH1QEVr0zqwEzRkYa202IunADcV1/3KZMVW50ZGLYIH9xch+LSFqlkIXzJ9VyMhw==
             tarball: "file:projects/server.tgz"
         version: 0.0.0
     "file:projects/shapeql.tgz_@babel+core@7.6.4":
@@ -17148,10 +17150,8 @@ specifiers:
     react-svg-loader: 3.0.3
     react-test-renderer: 16.10.2
     react-typist: 2.0.5
-    redo-nexus-prisma: 0.5.2-5
+    redo-nexus-prisma: 0.5.2-8
     reflect-metadata: 0.1.13
-    source-map: 0.7.3
-    source-map-support: 0.5.16
     style-loader: 1.0.0
     ts-jest: 24.1.0
     ts-loader: 6.2.0

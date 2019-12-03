@@ -39,6 +39,13 @@ export const schema = makeSchema({
                     __dirname,
                     "../../node_modules/@types/__nexus-typegen__nexus-prisma/index.d.ts"
                 )
+            },
+            contextArgs: {
+                user: ({ userId }) => ({
+                    connect: {
+                        id: userId
+                    }
+                })
             }
         })
     ]
