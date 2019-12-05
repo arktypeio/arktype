@@ -232,9 +232,9 @@ interface NexusPrismaInputs {
                 | "AND"
                 | "OR"
                 | "NOT"
-                | "user"
                 | "selector"
                 | "test"
+                | "user"
             ordering: "id" | "action" | "value"
         }
         tests: {
@@ -276,9 +276,9 @@ interface NexusPrismaInputs {
                 | "AND"
                 | "OR"
                 | "NOT"
-                | "user"
                 | "selector"
                 | "test"
+                | "user"
             ordering: "id" | "action" | "value"
         }
     }
@@ -292,9 +292,9 @@ interface NexusPrismaInputs {
                 | "AND"
                 | "OR"
                 | "NOT"
-                | "user"
                 | "selector"
                 | "test"
+                | "user"
             ordering: "id" | "action" | "value"
         }
         tags: {
@@ -311,9 +311,9 @@ interface NexusPrismaInputs {
                 | "AND"
                 | "OR"
                 | "NOT"
-                | "user"
                 | "selector"
                 | "test"
+                | "user"
             ordering: "id" | "action" | "value"
         }
         selectors: {
@@ -392,17 +392,17 @@ interface NexusPrismaTypes {
     }
     Selector: {
         id: "Int"
-        user: "User"
         css: "String"
         steps: "Step"
+        user: "User"
     }
     Step: {
         id: "Int"
-        user: "User"
         action: "String"
         selector: "Selector"
         value: "String"
         test: "Test"
+        user: "User"
     }
     Test: {
         id: "Int"

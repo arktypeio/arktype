@@ -16,14 +16,12 @@ model Tag {
 }
 
 model Selector {
-  id   Int    @id
-  user User
-  css  String
+  id  Int    @id
+  css String
 }
 
 model Step {
   id       Int      @id
-  user     User
   action   String
   selector Selector
   value    String
