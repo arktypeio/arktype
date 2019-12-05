@@ -27,5 +27,12 @@ export const december2019Updates: UpdateData[] = [
         goals: {
             "working server with context args": false
         }
+    },
+    {
+        date: new Date(2019, 11, 5),
+        goals: {
+            "working server with context args": false,
+            "integrate updated server with app": false
+        }
     }
 ]
