@@ -2,7 +2,7 @@ import p, { Page, Browser } from "puppeteer"
 import { ValueOf } from "@re-do/utils"
 import { NexusGenInputs } from "@re-do/model"
 
-type SelectorInput = NexusGenInputs["SelectorCreateInput"]
+type SelectorInput = NexusGenInputs["SelectorCreateWithoutStepsInput"]
 
 export const test = async (...steps: Step[]) => {
     const browser = await p.launch({ headless: false, slowMo: 50 })

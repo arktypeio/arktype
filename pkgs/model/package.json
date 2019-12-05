@@ -3,6 +3,7 @@
     "version": "0.0.1",
     "author": "redo.qa",
     "description": "Shared types that model Redo",
+    "types": "index.d.ts",
     "scripts": {
         "build": ""
     },
