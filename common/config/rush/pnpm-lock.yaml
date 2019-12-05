@@ -23,6 +23,7 @@ dependencies:
     "@material-ui/styles": 4.5.0_react-dom@16.10.2+react@16.10.2
     "@mdi/js": 4.5.95
     "@medv/finder": 1.1.2
+    "@prisma/photon": 2.0.0-preview017.2_prisma2@2.0.0-preview017.2
     "@rush-temp/app": "file:projects/app.tgz"
     "@rush-temp/babel-preset-redo": "file:projects/babel-preset-redo.tgz_react-dom@16.10.2+react@16.10.2"
     "@rush-temp/bundle": "file:projects/bundle.tgz_06b0ba4fdf0f0c5aaf41218256e8c607"
@@ -107,7 +108,7 @@ dependencies:
     nexus: 0.12.0-rc.5
     prettier: 1.15.1
     pretty-quick: 1.8.0_prettier@1.15.1
-    prisma2: 2.0.0-preview014.2
+    prisma2: 2.0.0-preview017.2
     puppeteer: 1.20.0
     react: 16.10.2
     react-apollo: 3.1.3_0da30d076673fc46fef221f4cebaa2c4
@@ -119,7 +120,7 @@ dependencies:
     react-svg-loader: 3.0.3
     react-test-renderer: 16.10.2_react@16.10.2
     react-typist: 2.0.5_react-dom@16.10.2+react@16.10.2
-    redo-nexus-prisma: 0.5.2-8_prisma2@2.0.0-preview014.2
+    redo-nexus-prisma: 0.6.1_bd288df15111f9636b69435770b69597
     reflect-metadata: 0.1.13
     style-loader: 1.0.0_webpack@4.41.2
     ts-jest: 24.1.0_jest@24.9.0
@@ -2547,22 +2548,6 @@ packages:
         dev: false
         resolution:
             integrity: sha512-UhGXL1uOydm/ilS6rQ/dXSIRqmq6ZD8RJ0TOeYrmhbpdAF0Ef18EG6nFBL7hO2z+DKa2bSC9WNq7vnPmLXcL1g==
-    /@prisma/fetch-engine/0.3.33:
-        dependencies:
-            "@prisma/get-platform": 0.1.23
-            chalk: 3.0.0
-            debug: 4.1.1
-            find-cache-dir: 3.1.0
-            htmlparser2: 4.0.0
-            http-proxy-agent: 2.1.0
-            https-proxy-agent: 3.0.1
-            make-dir: 3.0.0
-            node-fetch: 2.6.0
-            p-retry: 4.2.0
-            progress: 2.0.3
-        dev: false
-        resolution:
-            integrity: sha512-sUlQKBadqyF9O8DU0poice8S7ftCBtWG/etorGbNPl+Lzj9KfMgv3bR70bn5Bvsa4+DIeScjLOlE8j/UifQeXA==
     /@prisma/fetch-engine/0.3.4:
         dependencies:
             "@prisma/get-platform": 0.1.2
@@ -2643,32 +2628,15 @@ packages:
         requiresBuild: true
         resolution:
             integrity: sha512-iFjjmEhXdNPighbj4t1joJXOgto1QEbOpZ0vP88SwnHIL1b6B0vEhFElkbt9y97kRlS8kM6RwZeaYszRShcUJA==
-    /@prisma/photon/0.2.177_prisma2@2.0.0-preview014.2:
+    /@prisma/photon/2.0.0-preview017.2_prisma2@2.0.0-preview017.2:
         dependencies:
-            prisma2: 2.0.0-preview014.2
+            prisma2: 2.0.0-preview017.2
         dev: false
         peerDependencies:
             prisma2: "*"
         requiresBuild: true
         resolution:
-            integrity: sha512-tKSYrjScfB1KEeFYXJ6TEM+mfBaUe2Cd+xja93ANCBzuH1NYzkpcNLhMjEzE6DGwL/puku2MziDU4RsJINheNg==
-    /@prisma/sdk/0.0.23:
-        dependencies:
-            "@prisma/cli": 0.1.29
-            "@prisma/engine-core": 0.0.98
-            "@prisma/fetch-engine": 0.3.33
-            "@prisma/generator-helper": 0.0.14
-            "@prisma/get-platform": 0.1.23
-            chalk: 2.4.2
-            execa: 2.1.0
-            flat-map-polyfill: 0.3.8
-            p-map: 3.0.0
-            prisma-datamodel: 1.36.0-test.2
-            temp-write: 4.0.0
-        dev: false
-        requiresBuild: true
-        resolution:
-            integrity: sha512-LiH8I7Fc9egEbVeBBP0VwtslgYhdmIBu6t8T9qajD+H4N+m45/it0nKbxIcxSPWl5o0IwakHHXyt+2cyjxaOEQ==
+            integrity: sha512-cWAmYKYpMh0o33yGMpjs8KoDjTGwJ4M/kR+0ACDMSWocc3Rote0EZcGSL4AsJ2u5TrT9yLymECHDiAzDdDcTjQ==
     /@protobufjs/aspromise/1.1.2:
         dev: false
         resolution:
@@ -7218,13 +7186,6 @@ packages:
         dev: false
         resolution:
             integrity: sha512-sK3ujri04WyjwQXVoK4PU3y8ula1stq10GJZpqHIUgoGZdsGzAGu65BnU3d08aTVSvO7mGPZUc0wTEDL+qGE0Q==
-    /dom-serializer/0.2.2:
-        dependencies:
-            domelementtype: 2.0.1
-            entities: 2.0.0
-        dev: false
-        resolution:
-            integrity: sha512-2/xPb3ORsQ42nHYiSunXkDjPLBaEj/xTwUO4B7XCZQTRk7EBtTOPaygh10YAAh2OI1Qrp6NWfpAhzswj0ydt9g==
     /dom-walk/0.1.1:
         dev: false
         resolution:
@@ -7256,14 +7217,6 @@ packages:
         dev: false
         resolution:
             integrity: sha512-JiK04h0Ht5u/80fdLMCEmV4zkNh2BcoMFBmZ/91WtYZ8qVXSKjiw7fXMgFPnHcSZgOo3XdinHvmnDUeMf5R4wA==
-    /domhandler/3.0.0:
-        dependencies:
-            domelementtype: 2.0.1
-        dev: false
-        engines:
-            node: ">= 4"
-        resolution:
-            integrity: sha512-eKLdI5v9m67kbXQbJSNn1zjh0SDzvzWVWtX+qEI3eMjZw8daH9k8rlj1FZY9memPwjiskQFbe7vHVVJIAqoEhw==
     /domutils/1.5.1:
         dependencies:
             dom-serializer: 0.2.1
@@ -7278,14 +7231,6 @@ packages:
         dev: false
         resolution:
             integrity: sha512-Lgd2XcJ/NjEw+7tFvfKxOzCYKZsdct5lczQ2ZaQY8Djz7pfAD3Gbp8ySJWtreII/vDlMVmxwa6pHmdxIYgttDg==
-    /domutils/2.0.0:
-        dependencies:
-            dom-serializer: 0.2.2
-            domelementtype: 2.0.1
-            domhandler: 3.0.0
-        dev: false
-        resolution:
-            integrity: sha512-n5SelJ1axbO636c2yUtOGia/IcJtVtlhQbFiVDBZHKV5ReJO1ViX7sFEemtuyoAnBxk5meNSYgA8V4s0271efg==
     /dot-prop/4.2.0:
         dependencies:
             is-obj: 1.0.1
@@ -8231,16 +8176,6 @@ packages:
             node: ">=8"
         resolution:
             integrity: sha512-t7ulV1fmbxh5G9l/492O1p5+EBbr3uwpt6odhFTMc+nWyhmbloe+ja9BZ8pIBtqFWhOmCWVjx+pTW4zDkFoclw==
-    /find-cache-dir/3.1.0:
-        dependencies:
-            commondir: 1.0.1
-            make-dir: 3.0.0
-            pkg-dir: 4.2.0
-        dev: false
-        engines:
-            node: ">=8"
-        resolution:
-            integrity: sha512-zw+EFiNBNPgI2NTrKkDd1xd7q0cs6wr/iWnr/oUkI0yF9K9GqQ+riIt4aiyFaaqpaWbxPrJXHI+QvmNUQbX+0Q==
     /find-root/1.1.0:
         dev: false
         resolution:
@@ -8810,10 +8745,6 @@ packages:
         dev: false
         resolution:
             integrity: sha512-IItsdsea19BoLC7ELy13q1iJFNmd7ofZH5+X/pJr90/nRoPEX0DJo1dHDbgtYWOhJhcCgMDTOw84RZ72q6lB+Q==
-    /graceful-fs/4.2.3:
-        dev: false
-        resolution:
-            integrity: sha512-a30VEBm4PEdx1dRB7MFK7BejejvCvBronbLjht+sHuGYj8PHs7M/5Z+rt5lw551vZ7yfTCj4Vuyy3mSJytDWRQ==
     /graphql-extensions/0.10.4:
         dependencies:
             "@apollographql/apollo-tools": 0.4.0
@@ -9262,15 +9193,6 @@ packages:
         dev: false
         resolution:
             integrity: sha512-IgieNijUMbkDovyoKObU1DUhm1iwNYE/fuifEoEHfd1oZKZDaONBSkal7Y01shxsM49R4XaMdGez3WnF9UfiCQ==
-    /htmlparser2/4.0.0:
-        dependencies:
-            domelementtype: 2.0.1
-            domhandler: 3.0.0
-            domutils: 2.0.0
-            entities: 2.0.0
-        dev: false
-        resolution:
-            integrity: sha512-cChwXn5Vam57fyXajDtPXL1wTYc8JtLbr2TN76FYu05itVVVealxLowe2B3IEznJG4p9HAYn/0tJaRlGuEglFQ==
     /http-cache-semantics/4.0.3:
         dev: false
         resolution:
@@ -9372,15 +9294,6 @@ packages:
             node: ">= 4.5.0"
         resolution:
             integrity: sha512-Ytgnz23gm2DVftnzqRRz2dOXZbGd2uiajSw/95bPp6v53zPRspQjLm/AfBgqbJ2qfeRXWIOMVLpp86+/5yX39Q==
-    /https-proxy-agent/3.0.1:
-        dependencies:
-            agent-base: 4.3.0
-            debug: 3.2.6
-        dev: false
-        engines:
-            node: ">= 4.5.0"
-        resolution:
-            integrity: sha512-+ML2Rbh6DAuee7d07tYGEKOEi2voWPUGan+ExdPbPW6Z3svq+JCqr0v8WmKPOkz1vOVykPCBSuobe7G8GJUtVg==
     /human-signals/1.1.1:
         dev: false
         engines:
@@ -12414,15 +12327,6 @@ packages:
             node: ">=8"
         resolution:
             integrity: sha512-oepllyG9gX1qH4Sm20YAKxg1GA7L7puhvGnTfimi31P07zSIj7SDV6YtuAx9nbJF51DES+2CIIRkXs8GKqWJxA==
-    /p-retry/4.2.0:
-        dependencies:
-            "@types/retry": 0.12.0
-            retry: 0.12.0
-        dev: false
-        engines:
-            node: ">=8"
-        resolution:
-            integrity: sha512-jPH38/MRh263KKcq0wBNOGFJbm+U6784RilTmHjB/HM9kH9V8WlCpVUcdOmip9cjXOh6MxZ5yk1z2SjDUJfWmA==
     /p-try/1.0.0:
         dev: false
         engines:
@@ -12967,12 +12871,12 @@ packages:
         dev: false
         resolution:
             integrity: sha512-CxTIb9cuRKr1lHIuduFVGYaZpciY0rsgz28eauXs5qAWX11bkPz345wnF2TKZ6LarJ7J5DjVF5fP2DEDseZwvA==
-    /prisma2/2.0.0-preview014.2:
+    /prisma2/2.0.0-preview017.2:
         dev: false
         hasBin: true
         requiresBuild: true
         resolution:
-            integrity: sha512-/AyU6C2xnAYHuJMVYRBFwXp2BJ7UGXet5C7YcN1sU9p0Rv8VXAauSS+SMjyP0RmYEjJPtiU8FqbYWyx4xLTsLg==
+            integrity: sha512-xT8uB1Afxk64yk35BvfTw2+LBywzca8DuSTEob08VmJ41tKHtXGbaWIJRA75dAXDMWEGvW+Y4749rKJge3n8rA==
     /prismjs/1.17.1:
         dev: false
         optionalDependencies:
@@ -14013,34 +13917,32 @@ packages:
             node: ">=0.10.0"
         resolution:
             integrity: sha1-z5Fqsf1fHxbfsggi3W7H9zDCr94=
-    /redo-nexus-prisma/0.5.2-8_585c0449356a3101e384f71c6346232b:
+    /redo-nexus-prisma/0.6.1_3d439f4e0f24d46582a80975993b2eea:
         dependencies:
-            "@prisma/photon": 0.2.177_prisma2@2.0.0-preview014.2
-            "@prisma/sdk": 0.0.23
+            "@prisma/photon": 2.0.0-preview017.2_prisma2@2.0.0-preview017.2
             camelcase: 5.3.1
             fs-extra: 8.1.0
             nexus: 0.12.0-rc.5_graphql@14.5.8
             pluralize: 8.0.0
         dev: false
         peerDependencies:
+            "@prisma/photon": ^2.0.0-alpha.351
             graphql: "*"
-            prisma2: "*"
         resolution:
-            integrity: sha512-jHjiJtKii7mzFljKO3HfIvy4Z/k1Oj/+G/AmPJUWTyoSj0BWMHdGFQIpqt6SmS210o8M40/9xJXOKJzbHpwztw==
-    /redo-nexus-prisma/0.5.2-8_prisma2@2.0.0-preview014.2:
+            integrity: sha512-w0+Ub2aPEgwEkT0BctYdFndkP/7n609BlmS99A0knSF/FH2CmpaJbQIRaJzHwck60nHR9AaBpzQzngEZZ4wpaw==
+    /redo-nexus-prisma/0.6.1_bd288df15111f9636b69435770b69597:
         dependencies:
-            "@prisma/photon": 0.2.177_prisma2@2.0.0-preview014.2
-            "@prisma/sdk": 0.0.23
+            "@prisma/photon": 2.0.0-preview017.2_prisma2@2.0.0-preview017.2
             camelcase: 5.3.1
             fs-extra: 8.1.0
             nexus: 0.12.0-rc.5
             pluralize: 8.0.0
         dev: false
         peerDependencies:
+            "@prisma/photon": ^2.0.0-alpha.351
             graphql: "*"
-            prisma2: "*"
         resolution:
-            integrity: sha512-jHjiJtKii7mzFljKO3HfIvy4Z/k1Oj/+G/AmPJUWTyoSj0BWMHdGFQIpqt6SmS210o8M40/9xJXOKJzbHpwztw==
+            integrity: sha512-w0+Ub2aPEgwEkT0BctYdFndkP/7n609BlmS99A0knSF/FH2CmpaJbQIRaJzHwck60nHR9AaBpzQzngEZZ4wpaw==
     /redux/4.0.4:
         dependencies:
             loose-envify: 1.4.0
@@ -15394,12 +15296,6 @@ packages:
         dev: false
         resolution:
             integrity: sha512-gUOh6wox1zJjbGMg+e26NquZcp/F18EbIaqVvjiGqikRqVB4fYEAM8Nyin8smgwX30XhaRBOg+kCj4vInmvwAg==
-    /temp-dir/1.0.0:
-        dev: false
-        engines:
-            node: ">=4"
-        resolution:
-            integrity: sha1-CnwOom06Oa+n4OvqnB/AvE2qAR0=
     /temp-file/3.3.4:
         dependencies:
             async-exit-hook: 2.0.1
@@ -15407,18 +15303,6 @@ packages:
         dev: false
         resolution:
             integrity: sha512-qSZ5W5q54iyGnP8cNl49RE0jTJc5CrzNocux5APD5yIxcgonoMuMSbsZfaZy8rTGCYo0Xz6ySVv3adagZ8gffg==
-    /temp-write/4.0.0:
-        dependencies:
-            graceful-fs: 4.2.3
-            is-stream: 2.0.0
-            make-dir: 3.0.0
-            temp-dir: 1.0.0
-            uuid: 3.3.3
-        dev: false
-        engines:
-            node: ">=8"
-        resolution:
-            integrity: sha512-HIeWmj77uOOHb0QX7siN3OtwV3CTntquin6TNVg6SHOqCP3hYKmox90eeFOGaY1MqJ9WYDDjkyZrW6qS5AWpbw==
     /term-size/1.2.0:
         dependencies:
             execa: 0.7.0
@@ -16881,6 +16765,7 @@ packages:
         version: 0.0.0
     "file:projects/server.tgz":
         dependencies:
+            "@prisma/photon": 2.0.0-preview017.2_prisma2@2.0.0-preview017.2
             "@types/bcrypt": 3.0.0
             "@types/dotenv": 6.1.1
             "@types/fs-extra": 8.0.1
@@ -16902,8 +16787,8 @@ packages:
             jsonwebtoken: 8.5.1
             nexus: 0.12.0-rc.5_graphql@14.5.8
             nexus-prisma: 0.5.0
-            prisma2: 2.0.0-preview014.2
-            redo-nexus-prisma: 0.5.2-8_585c0449356a3101e384f71c6346232b
+            prisma2: 2.0.0-preview017.2
+            redo-nexus-prisma: 0.6.1_3d439f4e0f24d46582a80975993b2eea
             reflect-metadata: 0.1.13
             source-map: 0.7.3
             source-map-support: 0.5.16
@@ -16915,7 +16800,7 @@ packages:
         dev: false
         name: "@rush-temp/server"
         resolution:
-            integrity: sha512-/fEK5IHveVobo/V7KGCHniuH1QEVr0zqwEzRkYa202IunADcV1/3KZMVW50ZGLYIH9xch+LSFqlkIXzJ9VyMhw==
+            integrity: sha512-SO3PxXYneYXh8pbLyW+/R7i0F5KfCML5GZY4XzBFKYooRo1PqwkNlqlflcbkRzzP8r6gWwD1JNN2hhb5gaCcYw==
             tarball: "file:projects/server.tgz"
         version: 0.0.0
     "file:projects/shapeql.tgz_@babel+core@7.6.4":
@@ -17054,6 +16939,7 @@ specifiers:
     "@material-ui/styles": 4.5.0
     "@mdi/js": 4.5.95
     "@medv/finder": 1.1.2
+    "@prisma/photon": 2.0.0-preview017.2
     "@rush-temp/app": "file:./projects/app.tgz"
     "@rush-temp/babel-preset-redo": "file:./projects/babel-preset-redo.tgz"
     "@rush-temp/bundle": "file:./projects/bundle.tgz"
@@ -17138,7 +17024,7 @@ specifiers:
     nexus: 0.12.0-rc.5
     prettier: 1.15.1
     pretty-quick: 1.8.0
-    prisma2: 2.0.0-preview014.2
+    prisma2: 2.0.0-preview017.2
     puppeteer: 1.20.0
     react: 16.10.2
     react-apollo: 3.1.3
@@ -17150,7 +17036,7 @@ specifiers:
     react-svg-loader: 3.0.3
     react-test-renderer: 16.10.2
     react-typist: 2.0.5
-    redo-nexus-prisma: 0.5.2-8
+    redo-nexus-prisma: 0.6.1
     reflect-metadata: 0.1.13
     style-loader: 1.0.0
     ts-jest: 24.1.0

@@ -1,4 +1,4 @@
-import * as photon from "./@generated/photon"
+import * as photon from "@prisma/photon"
 import { core } from "nexus"
 // Types helpers
 type IsModelNameExistsInGraphQLTypes<
@@ -256,9 +256,9 @@ interface NexusPrismaInputs {
                 | "password"
                 | "first"
                 | "last"
-                | "tags"
-                | "selectors"
                 | "steps"
+                | "selectors"
+                | "tags"
                 | "tests"
                 | "AND"
                 | "OR"
@@ -303,14 +303,6 @@ interface NexusPrismaInputs {
         }
     }
     User: {
-        tags: {
-            filtering: "id" | "name" | "AND" | "OR" | "NOT" | "user" | "test"
-            ordering: "id" | "name"
-        }
-        selectors: {
-            filtering: "id" | "css" | "steps" | "AND" | "OR" | "NOT" | "user"
-            ordering: "id" | "css"
-        }
         steps: {
             filtering:
                 | "id"
@@ -323,6 +315,14 @@ interface NexusPrismaInputs {
                 | "selector"
                 | "test"
             ordering: "id" | "action" | "value"
+        }
+        selectors: {
+            filtering: "id" | "css" | "steps" | "AND" | "OR" | "NOT" | "user"
+            ordering: "id" | "css"
+        }
+        tags: {
+            filtering: "id" | "name" | "AND" | "OR" | "NOT" | "user" | "test"
+            ordering: "id" | "name"
         }
         tests: {
             filtering:
@@ -417,9 +417,9 @@ interface NexusPrismaTypes {
         password: "String"
         first: "String"
         last: "String"
-        tags: "Tag"
-        selectors: "Selector"
         steps: "Step"
+        selectors: "Selector"
+        tags: "Tag"
         tests: "Test"
     }
 }
@@ -453,6 +453,15 @@ declare global {
 }
 
 export interface NexusGenInputs {
+    SelectorCreateOneWithoutSelectorInput: {
+        // input type
+        connect?: NexusGenInputs["SelectorWhereUniqueInput"] | null // SelectorWhereUniqueInput
+        create?: NexusGenInputs["SelectorCreateWithoutStepsInput"] | null // SelectorCreateWithoutStepsInput
+    }
+    SelectorCreateWithoutStepsInput: {
+        // input type
+        css: string // String!
+    }
     SelectorWhereUniqueInput: {
         // input type
         id?: number | null // Int
@@ -472,11 +481,12 @@ export interface NexusGenInputs {
     StepCreateManyWithoutStepsInput: {
         // input type
         connect?: NexusGenInputs["StepWhereUniqueInput"][] | null // [StepWhereUniqueInput!]
-        create?: NexusGenInputs["StepCreateWithoutSelectorInput"][] | null // [StepCreateWithoutSelectorInput!]
+        create?: NexusGenInputs["StepCreateWithoutUserInput"][] | null // [StepCreateWithoutUserInput!]
     }
-    StepCreateWithoutSelectorInput: {
+    StepCreateWithoutUserInput: {
         // input type
         action: string // String!
+        selector: NexusGenInputs["SelectorCreateOneWithoutSelectorInput"] // SelectorCreateOneWithoutSelectorInput!
         test?: NexusGenInputs["TestCreateOneWithoutTestInput"] | null // TestCreateOneWithoutTestInput
         value: string // String!
     }
@@ -542,11 +552,13 @@ export interface NexusGenRootTypes {
 }
 
 export interface NexusGenAllTypes extends NexusGenRootTypes {
+    SelectorCreateOneWithoutSelectorInput: NexusGenInputs["SelectorCreateOneWithoutSelectorInput"]
+    SelectorCreateWithoutStepsInput: NexusGenInputs["SelectorCreateWithoutStepsInput"]
     SelectorWhereUniqueInput: NexusGenInputs["SelectorWhereUniqueInput"]
     SignInInput: NexusGenInputs["SignInInput"]
     SignUpInput: NexusGenInputs["SignUpInput"]
     StepCreateManyWithoutStepsInput: NexusGenInputs["StepCreateManyWithoutStepsInput"]
-    StepCreateWithoutSelectorInput: NexusGenInputs["StepCreateWithoutSelectorInput"]
+    StepCreateWithoutUserInput: NexusGenInputs["StepCreateWithoutUserInput"]
     StepWhereUniqueInput: NexusGenInputs["StepWhereUniqueInput"]
     TagCreateManyWithoutTagsInput: NexusGenInputs["TagCreateManyWithoutTagsInput"]
     TagCreateWithoutTestInput: NexusGenInputs["TagCreateWithoutTestInput"]
@@ -638,8 +650,8 @@ export interface NexusGenArgTypes {
         }
         selectors: {
             // args
-            after?: string | null // String
-            before?: string | null // String
+            after?: number | null // Int
+            before?: number | null // Int
             first?: number | null // Int
             last?: number | null // Int
             skip?: number | null // Int
@@ -650,8 +662,8 @@ export interface NexusGenArgTypes {
         }
         steps: {
             // args
-            after?: string | null // String
-            before?: string | null // String
+            after?: number | null // Int
+            before?: number | null // Int
             first?: number | null // Int
             last?: number | null // Int
             skip?: number | null // Int
@@ -662,8 +674,8 @@ export interface NexusGenArgTypes {
         }
         tags: {
             // args
-            after?: string | null // String
-            before?: string | null // String
+            after?: number | null // Int
+            before?: number | null // Int
             first?: number | null // Int
             last?: number | null // Int
             skip?: number | null // Int
@@ -674,8 +686,8 @@ export interface NexusGenArgTypes {
         }
         tests: {
             // args
-            after?: string | null // String
-            before?: string | null // String
+            after?: number | null // Int
+            before?: number | null // Int
             first?: number | null // Int
             last?: number | null // Int
             skip?: number | null // Int
@@ -686,8 +698,8 @@ export interface NexusGenArgTypes {
         }
         users: {
             // args
-            after?: string | null // String
-            before?: string | null // String
+            after?: number | null // Int
+            before?: number | null // Int
             first?: number | null // Int
             last?: number | null // Int
             skip?: number | null // Int
@@ -696,16 +708,16 @@ export interface NexusGenArgTypes {
     Test: {
         steps: {
             // args
-            after?: string | null // String
-            before?: string | null // String
+            after?: number | null // Int
+            before?: number | null // Int
             first?: number | null // Int
             last?: number | null // Int
             skip?: number | null // Int
         }
         tags: {
             // args
-            after?: string | null // String
-            before?: string | null // String
+            after?: number | null // Int
+            before?: number | null // Int
             first?: number | null // Int
             last?: number | null // Int
             skip?: number | null // Int
@@ -714,32 +726,32 @@ export interface NexusGenArgTypes {
     User: {
         selectors: {
             // args
-            after?: string | null // String
-            before?: string | null // String
+            after?: number | null // Int
+            before?: number | null // Int
             first?: number | null // Int
             last?: number | null // Int
             skip?: number | null // Int
         }
         steps: {
             // args
-            after?: string | null // String
-            before?: string | null // String
+            after?: number | null // Int
+            before?: number | null // Int
             first?: number | null // Int
             last?: number | null // Int
             skip?: number | null // Int
         }
         tags: {
             // args
-            after?: string | null // String
-            before?: string | null // String
+            after?: number | null // Int
+            before?: number | null // Int
             first?: number | null // Int
             last?: number | null // Int
             skip?: number | null // Int
         }
         tests: {
             // args
-            after?: string | null // String
-            before?: string | null // String
+            after?: number | null // Int
+            before?: number | null // Int
             first?: number | null // Int
             last?: number | null // Int
             skip?: number | null // Int
@@ -761,11 +773,13 @@ export type NexusGenObjectNames =
     | "User"
 
 export type NexusGenInputNames =
+    | "SelectorCreateOneWithoutSelectorInput"
+    | "SelectorCreateWithoutStepsInput"
     | "SelectorWhereUniqueInput"
     | "SignInInput"
     | "SignUpInput"
     | "StepCreateManyWithoutStepsInput"
-    | "StepCreateWithoutSelectorInput"
+    | "StepCreateWithoutUserInput"
     | "StepWhereUniqueInput"
     | "TagCreateManyWithoutTagsInput"
     | "TagCreateWithoutTestInput"

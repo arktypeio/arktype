@@ -4,7 +4,7 @@ import { ApolloServer } from "apollo-server"
 import { getUserId } from "./auth"
 import { schema } from "./schema"
 import { playground } from "./playground"
-import { Photon } from "@generated/photon"
+import { Photon } from "@prisma/photon"
 
 const photon = new Photon()
 

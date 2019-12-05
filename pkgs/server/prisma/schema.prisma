@@ -39,9 +39,13 @@ model Test {
 }
 
 model User {
-  id       Int    @id
-  email    String @unique
-  password String
-  first    String
-  last     String
+  id        Int        @id
+  email     String     @unique
+  password  String
+  first     String
+  last      String
+  steps     Step[]
+  selectors Selector[]
+  tags      Tag[]
+  tests     Test[]
 }

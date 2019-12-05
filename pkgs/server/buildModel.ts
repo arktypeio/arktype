@@ -1,11 +1,11 @@
-import { copySync, readFileSync, writeFileSync } from "fs-extra"
+import { readFileSync, writeFileSync, symlinkSync, existsSync } from "fs-extra"
 import { join } from "path"
 
 const modelDir = join(__dirname, "..", "model")
 const modelTypesFile = join(modelDir, "index.d.ts")
-const modelPhotonTypegenDir = join(modelDir, "@generated")
+const modelPhotonTypegenDir = join(modelDir, "@prisma")
 const serverDependenciesDir = join(__dirname, "node_modules")
-const photonTypegenDir = join(serverDependenciesDir, "@generated")
+const photonTypegenDir = join(serverDependenciesDir, "@prisma")
 const coreTypegenFile = join(
     serverDependenciesDir,
     "@types",
@@ -19,7 +19,10 @@ const prismaTypegenFile = join(
     "index.d.ts"
 )
 
-copySync(photonTypegenDir, modelPhotonTypegenDir)
+if (!existsSync(modelPhotonTypegenDir)) {
+    symlinkSync(photonTypegenDir, modelPhotonTypegenDir)
+}
+
 // Import photon types from root directory instead of node_modules
 const prismaTypegenFileContents = readFileSync(prismaTypegenFile)
     .toString()

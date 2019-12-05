@@ -21,7 +21,13 @@ const contents = gql`
         createOneTest(
             data: {
                 name: "Test 1"
-                steps: { create: { action: "click", value: "something" } }
+                steps: {
+                    create: {
+                        action: "click"
+                        value: "something"
+                        selector: { create: { css: "#someId" } }
+                    }
+                }
             }
         ) {
             id

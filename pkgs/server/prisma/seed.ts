@@ -1,8 +1,11 @@
-import { Photon } from "@generated/photon"
+import { Photon } from "@prisma/photon"
 import { hash } from "bcrypt"
 const photon = new Photon()
 
-const users = [["David", "Blass"], ["Savannah", "Bosse"]]
+const users = [
+    ["David", "Blass"],
+    ["Savannah", "Bosse"]
+]
 
 async function main() {
     try {
