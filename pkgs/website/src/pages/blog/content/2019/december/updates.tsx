@@ -23,7 +23,7 @@ export const december2019Updates: UpdateData[] = [
         }
     },
     {
-        date: new Date(2019, 11, 3),
+        date: new Date(2019, 11, 4),
         goals: {
             "working server with context args": false
         }
