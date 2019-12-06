@@ -862,23 +862,18 @@ declare global {
     > {}
     interface NexusGenPluginSchemaConfig {}
 }
-export type Selector = DeepExcludedByKeys<
-    Unprismafy<photon.SelectorCreateInput>,
-    ["user"]
+export type Selector = Unprismafy<
+    DeepExcludedByKeys<photon.SelectorCreateInput, ["user"]>
 >
-export type Step = DeepExcludedByKeys<
-    Unprismafy<photon.StepCreateInput>,
-    ["user"]
+export type Step = Unprismafy<
+    DeepExcludedByKeys<photon.StepCreateInput, ["user"]>
 >
-export type Tag = DeepExcludedByKeys<
-    Unprismafy<photon.TagCreateInput>,
-    ["user"]
+export type Tag = Unprismafy<
+    DeepExcludedByKeys<photon.TagCreateInput, ["user"]>
 >
-export type Test = DeepExcludedByKeys<
-    Unprismafy<photon.TestCreateInput>,
-    ["user"]
+export type Test = Unprismafy<
+    DeepExcludedByKeys<photon.TestCreateInput, ["user"]>
 >
-export type User = DeepExcludedByKeys<
-    Unprismafy<photon.UserCreateInput>,
-    ["user"]
+export type User = Unprismafy<
+    DeepExcludedByKeys<photon.UserCreateInput, ["user"]>
 >

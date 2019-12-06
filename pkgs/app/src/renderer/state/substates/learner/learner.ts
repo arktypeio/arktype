@@ -11,7 +11,7 @@ import { isDeepStrictEqual } from "util"
 import { join } from "path"
 import { homedir } from "os"
 import { createHandle } from "shapeql"
-import { StepInput } from "@re-do/model"
+import { Step } from "@re-do/model"
 import { store } from "renderer/common"
 
 const BROWSER_WINDOW_TITLEBAR_SIZE = 35
@@ -48,8 +48,8 @@ export class Learner {
     @Field()
     active: boolean
 
-    @Field(type => [StepInput])
-    events: StepInput[]
+    @Field(type => [Step])
+    events: Step[]
 
     @Field()
     lastConnectedEndpoint: string
@@ -171,7 +171,7 @@ export const resetLearner = async () => {
     })
 }
 
-const notify = (event: StepInput) => {
+const notify = (event: Step) => {
     try {
         store.mutate({
             learner: { events: _ => _.concat(event) }

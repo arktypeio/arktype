@@ -83,16 +83,17 @@ const builtIns = [
     "ID"
 ]
 
-
 const coreTypeDefs = coreTypegenFileLines
     .slice(modelDefinitionStartIndex + 1, modelDefinitionEndIndex)
     .map(line => line.replace(/(\s|;)/g, "").split(":"))
     .filter(([name]) => !builtIns.includes(name))
-    .map(([name, definition]) =>
-        // Unprismafy comes from modelTypeUtils and recursively removes {create, connect} objects from inputs
-        // DeepExcludedByKeys is to remove ContextArgs types that aren't part of the input
-        `export type ${name} = DeepExcludedByKeys<Unprismafy<${definition}CreateInput>, ["user"]>`
-    ).join("\n")
+    .map(
+        ([name, definition]) =>
+            // Unprismafy comes from modelTypeUtils and recursively removes {create, connect} objects from inputs
+            // DeepExcludedByKeys is to remove ContextArgs types that aren't part of the input
+            `export type ${name} = Unprismafy<DeepExcludedByKeys<${definition}CreateInput, ["user"]>>`
+    )
+    .join("\n")
 
 const coreTypegenFileContents = coreTypegenFileLines.join("\n")
 
