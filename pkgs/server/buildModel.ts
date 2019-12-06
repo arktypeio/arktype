@@ -31,6 +31,7 @@ const prismaTypegenFile = join(
     "index.d.ts"
 )
 const contextDefinitionFile = join(__dirname, "src", "context.ts")
+const modelTypeUtilsFile = join(__dirname, "prisma", "modelTypeUtils.ts")
 
 removeSync(modelPhotonTypegenDir)
 mkdirpSync(join(modelPhotonTypegenDir, "runtime"))
@@ -64,6 +65,8 @@ const contextFileContents = readFileSync(contextDefinitionFile)
     // We're copying the definition to a file in which photon is "photon.Photon", so we need to change the
     .replace("Photon", "photon.Photon")
 
+const modelTypeUtilsFileContents = readFileSync(modelTypeUtilsFile).toString()
+
 const modelDefinitionStartIndex = coreTypegenFileLines.findIndex(
     line => line === "export interface NexusGenRootTypes {"
 )
@@ -79,17 +82,21 @@ const builtIns = [
     "Boolean",
     "ID"
 ]
-coreTypegenFileLines
+
+
+const coreTypeDefs = coreTypegenFileLines
     .slice(modelDefinitionStartIndex + 1, modelDefinitionEndIndex)
-    .map(line => line.replace(/\s/g, "").split(":"))
+    .map(line => line.replace(/(\s|;)/g, "").split(":"))
     .filter(([name]) => !builtIns.includes(name))
-    .forEach(([name, definition]) =>
-        coreTypegenFileLines.push(`export type ${name} = ${definition}`)
-    )
+    .map(([name, definition]) =>
+        // Unprismafy comes from modelTypeUtils and recursively removes {create, connect} objects from inputs
+        // DeepExcludedByKeys is to remove ContextArgs types that aren't part of the input
+        `export type ${name} = DeepExcludedByKeys<Unprismafy<${definition}CreateInput>, ["user"]>`
+    ).join("\n")
 
 const coreTypegenFileContents = coreTypegenFileLines.join("\n")
 
 writeFileSync(
     modelTypesFile,
-    `${prismaTypegenFileContents}\n${contextFileContents}\n${coreTypegenFileContents}`
+    `${prismaTypegenFileContents}\n${contextFileContents}\n${modelTypeUtilsFileContents}\n${coreTypegenFileContents}\n${coreTypeDefs}`
 )

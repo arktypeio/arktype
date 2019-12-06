@@ -19,9 +19,7 @@ export const watchPage = async () => {
                 const step: Step = {
                     action: e.type,
                     selector: {
-                        create: {
-                            css: ""
-                        }
+                        css: ""
                     },
                     value: ""
                 }

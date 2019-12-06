@@ -1,5 +1,5 @@
 import gql from "graphql-tag"
-import { NonRecursible, Shape as S, Class, Unlisted } from "@re-do/utils"
+import { NonRecursible, Class, Unlisted } from "@re-do/utils"
 import { shapeFilter, DeepUpdate } from "./filters"
 import { metamorph } from "./filters/metamorph"
 
@@ -15,8 +15,8 @@ export type ExcludeByValue<T, V> = Pick<
 
 export type DeepNonNullableObjects<T> = {
     [P in keyof ExcludeByValue<T, NonRecursible>]-?: P extends keyof T
-        ? NonNullable<DeepNonNullableObjects<T[P]>>
-        : never
+    ? NonNullable<DeepNonNullableObjects<T[P]>>
+    : never
 }
 
 // Mirrors the shape of a cache write by deeply disallowing null/undefined objects
@@ -30,8 +30,8 @@ export type DeepNull<T> = {
 // Represents a gql query that will retrieve all nested fields
 export type RootQuery<T> = {
     [P in keyof T]-?: Unlisted<T[P]> extends NonRecursible
-        ? null
-        : RootQuery<Unlisted<T[P]>>
+    ? null
+    : RootQuery<Unlisted<T[P]>>
 }
 
 export type Query<T> = DeepNull<RootQuery<T>>
@@ -83,9 +83,9 @@ export const withTypeNames = <T>(
         objectMorph: (obj, metadata) =>
             metadata
                 ? {
-                      ...obj,
-                      __typename: metadata.name
-                  }
+                    ...obj,
+                    __typename: metadata.name
+                }
                 : obj
     }) as T
 }

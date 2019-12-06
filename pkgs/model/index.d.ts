@@ -447,6 +447,25 @@ export interface Context {
     userId: number
 }
 
+type PrismaCreationType = {
+    create?: object
+    connect?: object
+}
+type Unprismafy<T extends object> = {
+    [K in keyof T]: T[K] extends object
+        ? Unprismafy<T[K] extends PrismaCreationType ? T[K]["create"] : T[K]>
+        : T[K]
+}
+type Key = string | number
+type Primitive = string | number | boolean | symbol
+type NonRecursible = Primitive | Function | null | undefined
+type ExcludedByKeys<O, K extends Key[]> = Pick<O, Exclude<keyof O, K[number]>>
+type DeepExcludedByKeys<O, K extends Key[]> = {
+    [P in keyof ExcludedByKeys<O, K>]: O[P] extends NonRecursible | any[]
+        ? O[P]
+        : DeepExcludedByKeys<O[P], K>
+}
+
 declare global {
     interface NexusGenCustomOutputProperties<TypeName extends string> {
         crud: NexusPrisma<TypeName, "crud">
@@ -843,8 +862,23 @@ declare global {
     > {}
     interface NexusGenPluginSchemaConfig {}
 }
-export type Selector = photon.Selector
-export type Step = photon.Step
-export type Tag = photon.Tag
-export type Test = photon.Test
-export type User = photon.User
+export type Selector = DeepExcludedByKeys<
+    Unprismafy<photon.SelectorCreateInput>,
+    ["user"]
+>
+export type Step = DeepExcludedByKeys<
+    Unprismafy<photon.StepCreateInput>,
+    ["user"]
+>
+export type Tag = DeepExcludedByKeys<
+    Unprismafy<photon.TagCreateInput>,
+    ["user"]
+>
+export type Test = DeepExcludedByKeys<
+    Unprismafy<photon.TestCreateInput>,
+    ["user"]
+>
+export type User = DeepExcludedByKeys<
+    Unprismafy<photon.UserCreateInput>,
+    ["user"]
+>
