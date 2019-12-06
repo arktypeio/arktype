@@ -1,4 +1,4 @@
-import * as photon from "@prisma/photon"
+import * as photon from "./@prisma/photon"
 import { core } from "nexus"
 // Types helpers
 type IsModelNameExistsInGraphQLTypes<
@@ -441,6 +441,12 @@ declare global {
     > = GetNexusPrisma<TypeName, ModelOrCrud>
 }
 
+export interface Context {
+    photon: photon.Photon
+    req: any
+    userId: number
+}
+
 declare global {
     interface NexusGenCustomOutputProperties<TypeName extends string> {
         crud: NexusPrisma<TypeName, "crud">
@@ -799,7 +805,7 @@ export type NexusGenScalarNames = "Boolean" | "Float" | "ID" | "Int" | "String"
 export type NexusGenUnionNames = never
 
 export interface NexusGenTypes {
-    context: Context.Context
+    context: Context
     inputTypes: NexusGenInputs
     rootTypes: NexusGenRootTypes
     argTypes: NexusGenArgTypes

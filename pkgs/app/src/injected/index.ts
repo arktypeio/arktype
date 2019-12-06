@@ -3,7 +3,7 @@ import { Step } from "@re-do/model"
 
 export const watchPage = async () => {
     const browserWindow: Window & {
-        notify: (e: StepInput) => void
+        notify: (e: Step) => void
     } = window as any
     const events = {
         CLICK: "click",
@@ -16,7 +16,7 @@ export const watchPage = async () => {
         browserWindow.addEventListener(
             event,
             async (e: Event) => {
-                const step: NexusGenInputs["StepCreateInput"] = {
+                const step: Step = {
                     action: e.type,
                     selector: {
                         create: {

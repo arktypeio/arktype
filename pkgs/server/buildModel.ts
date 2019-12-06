@@ -1,11 +1,23 @@
-import { readFileSync, writeFileSync, symlinkSync, existsSync } from "fs-extra"
+import {
+    readFileSync,
+    writeFileSync,
+    removeSync,
+    copySync,
+    mkdirpSync
+} from "fs-extra"
 import { join } from "path"
 
 const modelDir = join(__dirname, "..", "model")
 const modelTypesFile = join(modelDir, "index.d.ts")
-const modelPhotonTypegenDir = join(modelDir, "@prisma")
+const modelPhotonTypegenDir = join(modelDir, "@prisma", "photon")
 const serverDependenciesDir = join(__dirname, "node_modules")
-const photonTypegenDir = join(serverDependenciesDir, "@prisma")
+const photonTypegenDir = join(serverDependenciesDir, "@prisma", "photon")
+const photonTypegenFilesToCopy = [
+    "index.d.ts",
+    "runtime/index.d.ts",
+    "runtime/dmmf-types.d.ts"
+]
+
 const coreTypegenFile = join(
     serverDependenciesDir,
     "@types",
@@ -18,20 +30,40 @@ const prismaTypegenFile = join(
     "__nexus-typegen__nexus-prisma",
     "index.d.ts"
 )
+const contextDefinitionFile = join(__dirname, "src", "context.ts")
 
-if (!existsSync(modelPhotonTypegenDir)) {
-    symlinkSync(photonTypegenDir, modelPhotonTypegenDir)
-}
+removeSync(modelPhotonTypegenDir)
+mkdirpSync(join(modelPhotonTypegenDir, "runtime"))
+
+photonTypegenFilesToCopy.forEach(file => {
+    copySync(join(photonTypegenDir, file), join(modelPhotonTypegenDir, file), {
+        dereference: true
+    })
+})
 
 // Import photon types from root directory instead of node_modules
 const prismaTypegenFileContents = readFileSync(prismaTypegenFile)
     .toString()
-    .replace("@generated/photon", "./@generated/photon")
+    .replace("@prisma/photon", "./@prisma/photon")
 // Store contents of core typegen file without photon import so that it can be merged with the prisma typegen file
 const coreTypegenFileLines = readFileSync(coreTypegenFile)
     .toString()
+    // The original prisma file's context definition comes from an ('import * as Context')
+    // We're copying the definition directly into the file it's referenced in, so we don't want the "Context" prefix
+    .replace("Context.Context", "Context")
     .split("\n")
     .slice(8)
+
+// Store context type definition without photon import so that it can be merged with the prisma typegen file
+const contextFileContents = readFileSync(contextDefinitionFile)
+    .toString()
+    .split("\n")
+    .slice(1)
+    .join("\n")
+    // In our original Context definition, Photon is destructured from an import
+    // We're copying the definition to a file in which photon is "photon.Photon", so we need to change the
+    .replace("Photon", "photon.Photon")
+
 const modelDefinitionStartIndex = coreTypegenFileLines.findIndex(
     line => line === "export interface NexusGenRootTypes {"
 )
@@ -59,5 +91,5 @@ const coreTypegenFileContents = coreTypegenFileLines.join("\n")
 
 writeFileSync(
     modelTypesFile,
-    prismaTypegenFileContents + coreTypegenFileContents
+    `${prismaTypegenFileContents}\n${contextFileContents}\n${coreTypegenFileContents}`
 )
