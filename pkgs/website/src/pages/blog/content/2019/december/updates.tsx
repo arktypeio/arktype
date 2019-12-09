@@ -45,7 +45,13 @@ export const december2019Updates: UpdateData[] = [
     {
         date: new Date(2019, 11, 8),
         goals: {
-            "start updating ShapeQL to work without metadata": false
+            "start updating ShapeQL to work without metadata": true
+        }
+    },
+    {
+        date: new Date(2019, 11, 9),
+        goals: {
+            "finish removing metadata dependency from ShapeQL": false
         }
     }
 ]
