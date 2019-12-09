@@ -41,5 +41,11 @@ export const december2019Updates: UpdateData[] = [
             "update ShapeQL to work without metadata": false,
             "merge test-execution branch": false
         }
+    },
+    {
+        date: new Date(2019, 11, 8),
+        goals: {
+            "start updating ShapeQL to work without metadata": false
+        }
     }
 ]
