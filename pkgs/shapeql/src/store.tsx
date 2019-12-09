@@ -1,28 +1,21 @@
 import React, { ReactNode, createContext, useContext, useState } from "react"
 import { isDeepStrictEqual } from "util"
 import { DeepPartial, Class } from "@re-do/utils"
-import { ShapeFilter, excludeKeys, updateMap, diff } from "./filters"
-import {
-    ApolloClient,
-    ApolloClientOrOptions,
-    getApolloClient
-} from "./getApolloClient"
+import { ShapeFilter, updateMap, diff, shapeFilter } from "./filters"
 import {
     shapeql,
     ShapedMutation,
     Initialization,
     Mutation,
     Query,
-    rootQuery,
-    withTypeNames
+    rootQuery
 } from "./shapeql"
 
 export type Handle<T> = (change: DeepPartial<T>) => Promise<any>
 export type Handler<T> = { [P in keyof T]?: Handle<T[P]> }
 
 export type StoreArgs<T> = {
-    root: Class<T>
-    client?: ApolloClientOrOptions<T>
+    initial: T
     handler?: Handler<T>
 }
 
@@ -39,14 +32,12 @@ export const createHandle = <T extends any>(handler: Handler<T>) => async (
 }
 
 export class Store<T> {
-    protected root: Class<T>
-    protected client: ApolloClient
+    protected data: T
     protected handle?: Handle<T>
     public onChanges?: (changes: DeepPartial<T>) => any
 
-    constructor({ root, client, handler }: StoreArgs<T>) {
-        this.root = root
-        this.client = getApolloClient(client)
+    constructor({ initial, handler }: StoreArgs<T>) {
+        this.data = initial
         this.handle = handler ? createHandle<T>(handler) : undefined
     }
 
@@ -55,24 +46,13 @@ export class Store<T> {
     }
 
     query<Q extends Query<T>>(q: Q) {
-        return excludeKeys(
-            this.client.readQuery({
-                query: shapeql(this.root)(q)
-            }),
-            ["__typename"],
-            true
-        ) as ShapeFilter<T, Q>
+        return shapeFilter(this.data, q)
     }
 
     write(values: ShapedMutation<T>) {
         this.client.writeData({
-            data: withTypeNames(values, this.root as any)
+            data: values
         })
-    }
-
-    async initialize(values: Initialization<T>) {
-        await this.client.clearStore()
-        this.write(values)
     }
 
     async mutate<M extends Mutation<T>>(updateMapper: M) {

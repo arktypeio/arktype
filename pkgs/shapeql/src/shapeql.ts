@@ -1,7 +1,6 @@
 import gql from "graphql-tag"
-import { NonRecursible, Class, Unlisted } from "@re-do/utils"
+import { NonRecursible, Unlisted, fromEntries, isRecursible } from "@re-do/utils"
 import { shapeFilter, DeepUpdate } from "./filters"
-import { metamorph } from "./filters/metamorph"
 
 // Mirrors the shape of a gql query by using nulls to represent values to retrieve
 export type DeepNullShapeOf<T> = {
@@ -45,7 +44,7 @@ export type Mutation<T> = DeepUpdate<T>
 
 export type ShapedMutation<T> = Partial<Initialization<T>>
 
-export const shapeql = <T, Q extends Query<T>>(root: Class<T>) => (query: Q) =>
+export const shapeql = <T, Q extends Query<T>>(root: T) => (query: Q) =>
     toGql(shapeQuery(root)(query))
 
 export const toGql = <T>(query: ShapedQuery<T>) =>
@@ -56,39 +55,18 @@ export const toGql = <T>(query: ShapedQuery<T>) =>
             .replace(/null/g, "")
     )
 
-export type RootQueryOptions<T> = {
-    rootClass: Class<T>
+
+export const rootQuery = <T>(root: T) => {
+    fromEntries(Object.entries(root).map(([k, v]) => {
+        if (Array.isArray(v)) {
+            return [k, rootQuery(v[0])]
+        }
+        if (isRecursible(v)) {
+            return [k, rootQuery(v)]
+        }
+        return [k, true]
+    })) as RootQuery<T>
 }
 
-export const rootQuery = <T>(rootClass: Class<T>) =>
-    metamorph(new rootClass(), rootClass, {
-        objectMorph: (obj, metadata) => {
-            if (metadata) {
-                try {
-                    return new (metadata.target as any)()
-                } catch {
-                    return null
-                }
-            }
-            return null
-        },
-        iterateArrays: false
-    }) as RootQuery<T>
-
-export const withTypeNames = <T>(
-    sourceObject: T,
-    classWithMetadata: Class<T>
-) => {
-    return metamorph(sourceObject, classWithMetadata, {
-        objectMorph: (obj, metadata) =>
-            metadata
-                ? {
-                    ...obj,
-                    __typename: metadata.name
-                }
-                : obj
-    }) as T
-}
-
-const shapeQuery = <T, Q extends Query<T>>(rootClass: Class<T>) => (query: Q) =>
-    (shapeFilter(rootQuery(rootClass), query) as any) as ShapedQuery<T>
+const shapeQuery = <T, Q extends Query<T>>(root: T) => (query: Q) =>
+    (shapeFilter(rootQuery(root), query) as any) as ShapedQuery<T>
