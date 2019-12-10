@@ -51,7 +51,14 @@ export const december2019Updates: UpdateData[] = [
     {
         date: new Date(2019, 11, 9),
         goals: {
-            "finish removing metadata dependency from ShapeQL": false
+            "finish removing metadata dependency from ShapeQL": true
+        }
+    },
+    {
+        date: new Date(2019, 11, 10),
+        goals: {
+            "Fix failing react-statelessly test": false,
+            "Integrate statelessly and model with app": false
         }
     }
 ]
