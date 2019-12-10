@@ -1,6 +1,6 @@
 {
-    "name": "unstately",
-    "version": "0.0.3",
+    "name": "statelessly",
+    "version": "0.0.1",
     "author": "redo.qa",
     "description": "💪-typed state management with simple shapes🔷",
     "main": "dist/index.js",

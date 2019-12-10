@@ -17,8 +17,12 @@
             "projectFolder": "pkgs/utils"
         },
         {
-            "packageName": "unstately",
-            "projectFolder": "pkgs/unstately"
+            "packageName": "statelessly",
+            "projectFolder": "pkgs/statelessly"
+        },
+        {
+            "packageName": "react-statelessly",
+            "projectFolder": "pkgs/react-statelessly"
         },
         {
             "packageName": "@re-do/model",

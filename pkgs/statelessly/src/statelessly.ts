@@ -13,8 +13,8 @@ export type ExcludeByValue<T, V> = Pick<
 
 export type DeepNonNullableObjects<T> = {
     [P in keyof ExcludeByValue<T, NonRecursible>]-?: P extends keyof T
-        ? NonNullable<DeepNonNullableObjects<T[P]>>
-        : never
+    ? NonNullable<DeepNonNullableObjects<T[P]>>
+    : never
 }
 
 // More flexible gqlesque query type that will retrieve all keys nulled object types
@@ -25,8 +25,8 @@ export type DeepNull<T> = {
 // Represents a gql query that will retrieve all nested fields
 export type Query<T> = {
     [P in keyof T]?: Unlisted<T[P]> extends NonRecursible
-        ? null
-        : Query<Unlisted<T[P]>> | null
+    ? null
+    : Query<Unlisted<T[P]>> | null
 }
 
 export type Update<T> = DeepUpdate<T>

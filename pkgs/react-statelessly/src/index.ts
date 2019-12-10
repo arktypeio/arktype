@@ -1,4 +1,4 @@
 export * from "./filters"
 // export * from "./shape"
 export * from "./store"
-export * from "./unstately"
+export * from "./statelessly"
