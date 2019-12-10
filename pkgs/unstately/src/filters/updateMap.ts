@@ -2,12 +2,12 @@ import { isRecursible, fromEntries, ValueOf, NonRecursible } from "@re-do/utils"
 
 export type UpdateFunction<T> = (value: T) => T
 
-export type Update<T> = T | UpdateFunction<T>
+export type ShallowUpdate<T> = T | UpdateFunction<T>
 
 // TODO: Expand to be able to update each item in an array
 export type DeepUpdate<T> = {
     [P in keyof T]?: T[P] extends NonRecursible | any[]
-        ? Update<T[P]>
+        ? ShallowUpdate<T[P]>
         : DeepUpdate<T[P]>
 }
 

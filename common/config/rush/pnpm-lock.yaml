@@ -31,8 +31,8 @@ dependencies:
     "@rush-temp/model": "file:projects/model.tgz"
     "@rush-temp/recommended": "file:projects/recommended.tgz"
     "@rush-temp/server": "file:projects/server.tgz"
-    "@rush-temp/shapeql": "file:projects/shapeql.tgz_@babel+core@7.6.4"
     "@rush-temp/test": "file:projects/test.tgz_@babel+core@7.6.4"
+    "@rush-temp/unstately": "file:projects/unstately.tgz_@babel+core@7.6.4"
     "@rush-temp/utils": "file:projects/utils.tgz_@babel+core@7.6.4"
     "@rush-temp/website": "file:projects/website.tgz"
     "@storybook/addon-actions": 5.2.4_react-dom@16.10.2
@@ -116,11 +116,13 @@ dependencies:
     react-dom: 16.10.2_react@16.10.2
     react-hook-form: 3.24.1_react-dom@16.10.2+react@16.10.2
     react-hot-loader: 4.12.15_react-dom@16.10.2+react@16.10.2
+    react-redux: 7.1.3_react@16.10.2+redux@4.0.4
     react-router-dom: 5.1.2_react@16.10.2
     react-svg-loader: 3.0.3
     react-test-renderer: 16.10.2_react@16.10.2
     react-typist: 2.0.5_react-dom@16.10.2+react@16.10.2
     redo-nexus-prisma: 0.6.1_bd288df15111f9636b69435770b69597
+    redux: 4.0.4
     reflect-metadata: 0.1.13
     style-loader: 1.0.0_webpack@4.41.2
     ts-jest: 24.1.0_jest@24.9.0
@@ -2062,6 +2064,12 @@ packages:
         dev: false
         resolution:
             integrity: sha512-r24eVUUr0QqNZa+qrImUk8fn5SPhHq+IfYvIoIMg0do3GdK9sMdiLKP3GYVVaxpPKORgm8KRKaNTEhAjgIpLMw==
+    /@babel/runtime/7.7.6:
+        dependencies:
+            regenerator-runtime: 0.13.3
+        dev: false
+        resolution:
+            integrity: sha512-BWAJxpNVa0QlE5gZdWjSxXtemZyZ9RmrmVozxt3NUXeZhVIJ5ANyqmMc0JDrivBZyxUuQvFxlvH4OWWOogGfUw==
     /@babel/template/7.7.4:
         dependencies:
             "@babel/code-frame": 7.5.5
@@ -10058,6 +10066,9 @@ packages:
             node: ">=6"
         peerDependencies:
             jest-resolve: "*"
+        peerDependenciesMeta:
+            jest-resolve:
+                optional: true
         resolution:
             integrity: sha512-pgFw2tm54fzgYvc/OHrnysABEObZCUNFnhjoRjaVOCN8NYc032/gVjPaHD4Aq6ApkSieWtfKAFQtmDKAmhupnQ==
     /jest-regex-util/24.9.0:
@@ -13196,7 +13207,7 @@ packages:
             integrity: sha512-kLTfa9z8n+0jJvRVal9+vIuirg41rObg4Bbrvv/ZfsGPQDN9reyVVSxqnHF1ZNgXgV7x11PeUfd5ItF8DZnqhg==
     /react-redux/7.1.3_react@16.10.2+redux@4.0.4:
         dependencies:
-            "@babel/runtime": 7.7.4
+            "@babel/runtime": 7.7.6
             hoist-non-react-statics: 3.3.1
             invariant: 2.2.4
             loose-envify: 1.4.0
@@ -16223,7 +16234,7 @@ packages:
         dev: false
         name: "@rush-temp/app"
         resolution:
-            integrity: sha512-2k+wmxDvR5CpLybV6fiWldH1ESIq8f7anWJF05fCSwJkoAcPjt/ScHt0U1pRbrWkRVMeANSAACkeDeey5kJrRw==
+            integrity: sha512-ZVhdyiAV0El6VdmH/hTj0fdV9ToZe7yr4MvpncNUa/q264yOo53qTgpa84tUuEpUzqhknQ2K62NNWjBrhNwjuA==
             tarball: "file:projects/app.tgz"
         version: 0.0.0
     "file:projects/babel-preset-redo.tgz_react-dom@16.10.2+react@16.10.2":
@@ -16407,7 +16418,25 @@ packages:
             integrity: sha512-SO3PxXYneYXh8pbLyW+/R7i0F5KfCML5GZY4XzBFKYooRo1PqwkNlqlflcbkRzzP8r6gWwD1JNN2hhb5gaCcYw==
             tarball: "file:projects/server.tgz"
         version: 0.0.0
-    "file:projects/shapeql.tgz_@babel+core@7.6.4":
+    "file:projects/test.tgz_@babel+core@7.6.4":
+        dependencies:
+            "@babel/cli": 7.6.4_@babel+core@7.6.4
+            "@babel/runtime-corejs3": 7.6.3
+            "@types/jest": 24.0.19
+            "@types/puppeteer": 1.20.2
+            jest: 24.9.0
+            puppeteer: 1.20.0
+            typescript: 3.7.2
+        dev: false
+        id: "file:projects/test.tgz"
+        name: "@rush-temp/test"
+        peerDependencies:
+            "@babel/core": "*"
+        resolution:
+            integrity: sha512-NFuTjRAwu5zmQ/SovjQsed0VZePJWCGnvZWXSY/lEYRFguw6QYYMKBm3ZSp0KzyuYFUXhq51OBgAPP0mTPzcaQ==
+            tarball: "file:projects/test.tgz"
+        version: 0.0.0
+    "file:projects/unstately.tgz_@babel+core@7.6.4":
         dependencies:
             "@apollo/react-hooks": 3.1.3_31d1a7b54e6a7ee3dbc3accc4d0f8a97
             "@babel/cli": 7.6.4_@babel+core@7.6.4
@@ -16434,35 +16463,19 @@ packages:
             moize: 5.4.4
             react: 16.10.2
             react-dom: 16.10.2_react@16.10.2
+            react-redux: 7.1.3_react@16.10.2+redux@4.0.4
+            redux: 4.0.4
             reflect-metadata: 0.1.13
             type-graphql: 0.17.5_2f992e2e424a491fbdc3cbc9f3788f13
             typescript: 3.7.2
         dev: false
-        id: "file:projects/shapeql.tgz"
-        name: "@rush-temp/shapeql"
+        id: "file:projects/unstately.tgz"
+        name: "@rush-temp/unstately"
         peerDependencies:
             "@babel/core": "*"
         resolution:
-            integrity: sha512-l7vTLBXvRYjrEmbWVvjS7n+Zoql/ANUjPAmwxLAvEMaUmyow4G75+z+TM8UjBYOZPDnrlRcJizI3Zov+xdaQRQ==
-            tarball: "file:projects/shapeql.tgz"
-        version: 0.0.0
-    "file:projects/test.tgz_@babel+core@7.6.4":
-        dependencies:
-            "@babel/cli": 7.6.4_@babel+core@7.6.4
-            "@babel/runtime-corejs3": 7.6.3
-            "@types/jest": 24.0.19
-            "@types/puppeteer": 1.20.2
-            jest: 24.9.0
-            puppeteer: 1.20.0
-            typescript: 3.7.2
-        dev: false
-        id: "file:projects/test.tgz"
-        name: "@rush-temp/test"
-        peerDependencies:
-            "@babel/core": "*"
-        resolution:
-            integrity: sha512-NFuTjRAwu5zmQ/SovjQsed0VZePJWCGnvZWXSY/lEYRFguw6QYYMKBm3ZSp0KzyuYFUXhq51OBgAPP0mTPzcaQ==
-            tarball: "file:projects/test.tgz"
+            integrity: sha512-uL4YG30JY1oPklq2om5A2/NN4IwEDGlEo5lwlWv+uCCkqhd6sVg87mAwpKIA37XtKk1JkLJwVqL2bv8Q+lTVTg==
+            tarball: "file:projects/unstately.tgz"
         version: 0.0.0
     "file:projects/utils.tgz_@babel+core@7.6.4":
         dependencies:
@@ -16514,9 +16527,10 @@ packages:
         dev: false
         name: "@rush-temp/website"
         resolution:
-            integrity: sha512-DK3qOfSnr0TUrD818YQqXVmROlXwqt/gCIooyCYtEH88/y6GclfqnpZKihuWqhiSkSQnmQwQpKnORsbUushvfg==
+            integrity: sha512-+qsQCh7TgifywH0Zc5azosV9WbWIGTWUCRSqM6KksmZcCyMGAcOxmso2CMUhGasCEM0K2QdbzU62ZCltwxgkeA==
             tarball: "file:projects/website.tgz"
         version: 0.0.0
+registry: ""
 specifiers:
     "@apollo/react-hooks": 3.1.3
     "@babel/cli": 7.6.4
@@ -16550,8 +16564,8 @@ specifiers:
     "@rush-temp/model": "file:./projects/model.tgz"
     "@rush-temp/recommended": "file:./projects/recommended.tgz"
     "@rush-temp/server": "file:./projects/server.tgz"
-    "@rush-temp/shapeql": "file:./projects/shapeql.tgz"
     "@rush-temp/test": "file:./projects/test.tgz"
+    "@rush-temp/unstately": "file:./projects/unstately.tgz"
     "@rush-temp/utils": "file:./projects/utils.tgz"
     "@rush-temp/website": "file:./projects/website.tgz"
     "@storybook/addon-actions": 5.2.4
@@ -16635,11 +16649,13 @@ specifiers:
     react-dom: 16.10.2
     react-hook-form: 3.24.1
     react-hot-loader: 4.12.15
+    react-redux: 7.1.3
     react-router-dom: 5.1.2
     react-svg-loader: 3.0.3
     react-test-renderer: 16.10.2
     react-typist: 2.0.5
     redo-nexus-prisma: 0.6.1
+    redux: 4.0.4
     reflect-metadata: 0.1.13
     style-loader: 1.0.0
     ts-jest: 24.1.0

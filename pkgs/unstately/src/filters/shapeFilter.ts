@@ -10,7 +10,6 @@ export type ShapeFilter<O, S> = {
         : O[P]
 }
 
-// TODO: Update to deal with arrays
 export const shapeFilter = <O, S>(o: O, shape: S): ShapeFilter<O, S> => {
     if (!isRecursible(o) || !isRecursible(shape)) {
         throw Error(

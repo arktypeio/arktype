@@ -21,6 +21,7 @@ const contents = gql`
         createOneTest(
             data: {
                 name: "Test 1"
+                tags: { create: [{ name: "critical" }] }
                 steps: {
                     create: {
                         action: "click"

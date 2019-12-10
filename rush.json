@@ -17,8 +17,8 @@
             "projectFolder": "pkgs/utils"
         },
         {
-            "packageName": "shapeql",
-            "projectFolder": "pkgs/shapeql"
+            "packageName": "unstately",
+            "projectFolder": "pkgs/unstately"
         },
         {
             "packageName": "@re-do/model",
