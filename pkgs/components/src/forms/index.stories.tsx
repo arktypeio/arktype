@@ -36,10 +36,10 @@ const width = 200
 
 class HelloValidator {
     @IsIn(["David", "Savannah"])
-    first: string
+    first!: string
 
     @IsIn(["Blass", "Bosse"])
-    last: string
+    last!: string
 }
 
 const helloClassValidator = new HelloValidator()
@@ -76,35 +76,35 @@ const HelloForm = ({
 }: Partial<FormProps<HelloFormFields, string>> & {
     testAsRow?: boolean
 }) => (
-    <Form<HelloFormFields, string>
-        submit={submit}
-        validator={validator}
-        columnProps={{ width }}
-        {...props}
-    >
-        {({ data, loading, errors }) => (
-            <>
-                {testAsRow ? (
-                    <Row spacing={1}>
-                        <FormText name="first" />
-                        <FormText name="last" />
-                    </Row>
-                ) : (
-                    <>
-                        <FormText name="first" />
-                        <FormText name="last" />
-                    </>
-                )}
-                {loading ? (
-                    <Spinner />
-                ) : (
-                    <FormSubmit>
-                        <Button>Submit</Button>
-                    </FormSubmit>
-                )}
-                {data ? <Text>{data}</Text> : null}
-                {errors ? <ErrorText>{errors}</ErrorText> : null}
-            </>
-        )}
-    </Form>
-)
+        <Form<HelloFormFields, string>
+            submit={submit}
+            validator={validator}
+            columnProps={{ width }}
+            {...props}
+        >
+            {({ data, loading, errors }) => (
+                <>
+                    {testAsRow ? (
+                        <Row spacing={1}>
+                            <FormText name="first" />
+                            <FormText name="last" />
+                        </Row>
+                    ) : (
+                            <>
+                                <FormText name="first" />
+                                <FormText name="last" />
+                            </>
+                        )}
+                    {loading ? (
+                        <Spinner />
+                    ) : (
+                            <FormSubmit>
+                                <Button>Submit</Button>
+                            </FormSubmit>
+                        )}
+                    {data ? <Text>{data}</Text> : null}
+                    {errors ? <ErrorText>{errors}</ErrorText> : null}
+                </>
+            )}
+        </Form>
+    )

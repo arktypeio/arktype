@@ -1,8 +1,7 @@
-import React, { ReactNode, createContext, useContext, useState } from "react"
 import { isDeepStrictEqual } from "util"
-import { createStore as createReduxStore } from "redux"
+import { createStore as createReduxStore, Store as ReduxStore } from "redux"
 import { DeepPartial } from "@re-do/utils"
-import { updateMap, diff, shapeFilter } from "./filters"
+import { updateMap, diff, shapeFilter, ShapeFilter } from "./filters"
 import { Update, Query } from "./statelessly"
 
 export type Handle<T> = (change: DeepPartial<T>) => Promise<any>
@@ -30,7 +29,17 @@ type UpdateAction<T> = {
     data: Update<T>
 }
 
-export const createStore = <T,>({ initial, handler }: StoreArgs<T>) => {
+export type Store<T> = {
+    getContents: () => T
+    query: <Q extends Query<T>>(q: Q) => ShapeFilter<T, Q>
+    update: <M extends Update<T>>(data: M) => void
+    underlying: ReduxStore<T, UpdateAction<T>>
+}
+
+export const createStore = <T,>({
+    initial,
+    handler
+}: StoreArgs<T>): Store<T> => {
     const handle = handler ? createHandle<T>(handler) : undefined
     const rootReducer = (state: any, { type, data }: UpdateAction<T>) => {
         if (type !== "UPDATE") {
@@ -45,38 +54,9 @@ export const createStore = <T,>({ initial, handler }: StoreArgs<T>) => {
     }
     const redux = createReduxStore(rootReducer, initial)
     return {
-        getAll: (): T => redux.getState(),
-        get: <Q extends Query<T>>(q: Q) => shapeFilter(redux.getState(), q),
-        update: <M extends Update<T>>(data: M) =>
-            redux.dispatch({ type: "UPDATE", data })
+        getContents: () => redux.getState(),
+        query: q => shapeFilter(redux.getState(), q),
+        update: data => redux.dispatch({ type: "UPDATE", data }),
+        underlying: redux
     }
 }
-
-export class StoreWithHooks<T> extends Store<T> {
-    hooks = {
-        useQuery: <Q extends Query<T>>(q: Q) => {
-            useContext(StoreContext)
-            return this.query(q)
-        }
-    }
-}
-
-const StoreContext = createContext<any>({} as any)
-
-export type StoreProviderProps<T> = {
-    children: ReactNode
-    store: Store<T>
-}
-
-export const StoreProvider = <T extends any>({
-    children,
-    store
-}: StoreProviderProps<T>) => {
-    const [data, setData] = useState(store.queryAll())
-    store.onChanges = changes => setData(store.queryAll())
-    return (
-        <StoreContext.Provider value={data}>{children}</StoreContext.Provider>
-    )
-}
-
-export const StoreConsumer = StoreContext.Consumer

@@ -1,64 +1,63 @@
 import React from "react"
 import { act } from "react-dom/test-utils"
+import { createStore } from "statelessly"
 import { Root, initialRoot, initialA } from "./common"
-import {
-    createStore,
-    Handler
-    // StoreProvider,
-    // StoreConsumer,
-    // StoreWithHooks
-} from "../store"
+import { createHooks, StatelessProvider, StatelessConsumer } from "../context"
 import { mount } from "enzyme"
 
 let store = createStore({ initial: initialRoot })
+let hooks = createHooks(store)
 
 describe("StoreContext", () => {
     beforeEach(() => {
-        client.writeData({ data: initialRootWithTypeNames })
+        store = createStore({ initial: initialRoot })
     })
     it("provides a store and consumes data", () => {
         let value: Root
         mount(
-            <StoreProvider store={store}>
-                <StoreConsumer>
+            <StatelessProvider store={store}>
+                <StatelessConsumer>
                     {data => {
                         value = data
                         return null
                     }}
-                </StoreConsumer>
-            </StoreProvider>
+                </StatelessConsumer>
+            </StatelessProvider>
         )
-        expect(value).toStrictEqual(store.queryAll())
+        expect(value).toStrictEqual(store.getContents())
     })
 })
-
-const storeWithHooks = new StoreWithHooks({ root: Root, client })
 
 type ResultCheckerProps = {
     passTo: jest.Mock
 }
 
 const QueryChecker = ({ passTo }: ResultCheckerProps) =>
-    passTo(storeWithHooks.hooks.useQuery({ b: null }))
+    passTo(hooks.useQuery({ b: null }))
 
-const checkResult = jest.fn(() => null)
+const checkResult = jest.fn(_ => {
+    console.log(_)
+})
 
 describe("useQuery", () => {
+    beforeEach(() => {
+        store = createStore({ initial: initialRoot })
+    })
     it("can execute a query", () => {
         mount(
-            <StoreProvider store={storeWithHooks}>
+            <StatelessProvider store={store}>
                 <QueryChecker passTo={checkResult} />
-            </StoreProvider>
+            </StatelessProvider>
         )
         expect(checkResult).toBeCalledWith({ b: false })
     })
     it("rerenders on store updates", async () => {
         mount(
-            <StoreProvider store={storeWithHooks}>
+            <StatelessProvider store={store}>
                 <QueryChecker passTo={checkResult} />
-            </StoreProvider>
+            </StatelessProvider>
         )
-        await act(async () => await storeWithHooks.mutate({ b: true }))
+        store.update({ b: true })
         expect(checkResult).toBeCalledTimes(2)
         expect(checkResult).lastCalledWith({ b: true })
     })

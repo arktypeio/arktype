@@ -10,7 +10,7 @@
                 "${workspaceRoot}/node_modules/jest/bin/jest.js",
                 "--config",
                 "${workspaceRoot}/jest.config.js",
-                "--runInBand",
+                "--runInBand"
             ],
             "console": "integratedTerminal"
         },
