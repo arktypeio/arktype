@@ -5,32 +5,43 @@
             "type": "node",
             "request": "launch",
             "name": "Jest All",
-            "program": "${workspaceFolder}/node_modules/.bin/jest",
-            "args": ["--runInBand"],
-            "console": "integratedTerminal",
-            "internalConsoleOptions": "neverOpen",
-            "disableOptimisticBPs": true,
-            "windows": {
-                "program": "${workspaceFolder}/node_modules/jest/bin/jest"
-            },
-            "outFiles": ["${workspaceFolder}/dist"]
+            "args": [
+                "--inspect-brk",
+                "${workspaceRoot}/node_modules/jest/bin/jest.js",
+                "--config",
+                "${workspaceRoot}/jest.config.js",
+                "--runInBand"
+            ],
+            "console": "integratedTerminal"
         },
         {
             "type": "node",
             "request": "launch",
             "name": "Jest Current File",
-            "program": "${workspaceFolder}/node_modules/.bin/jest",
             "args": [
+                "--inspect-brk",
+                "${workspaceRoot}/node_modules/jest/bin/jest.js",
                 "${fileBasenameNoExtension}",
                 "--config",
-                "jest.config.js"
+                "${workspaceRoot}/jest.config.js",
+                "--runInBand"
             ],
-            "console": "integratedTerminal",
-            "internalConsoleOptions": "neverOpen",
-            "disableOptimisticBPs": true,
-            "windows": {
-                "program": "${workspaceFolder}/node_modules/jest/bin/jest"
-            }
+            "console": "integratedTerminal"
+        },
+        {
+            "type": "node",
+            "request": "launch",
+            "name": "Jest Highlighted Test",
+            "args": [
+                "--inspect-brk",
+                "${workspaceRoot}/node_modules/jest/bin/jest.js",
+                "-t",
+                "${selectedText}",
+                "--config",
+                "${workspaceRoot}/jest.config.js",
+                "--runInBand"
+            ],
+            "console": "integratedTerminal"
         }
     ]
 }

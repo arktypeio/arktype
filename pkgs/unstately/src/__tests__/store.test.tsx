@@ -52,7 +52,7 @@ describe("queries", () => {
     })
 })
 
-describe("mutations", () => {
+describe("updates", () => {
     beforeEach(() => {
         store = createStore({ initial: initialRoot })
         sideEffectStore = createStore({ initial: initialRoot, handler })
