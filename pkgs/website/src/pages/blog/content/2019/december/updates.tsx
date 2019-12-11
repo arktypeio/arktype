@@ -60,5 +60,12 @@ export const december2019Updates: UpdateData[] = [
             "Fix failing react-statelessly test": false,
             "Integrate statelessly and model with app": false
         }
+    },
+    {
+        date: new Date(2019, 11, 11),
+        goals: {
+            "Fix failing react-statelessly test": false,
+            "Integrate statelessly and model with app": false
+        }
     }
 ]
