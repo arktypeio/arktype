@@ -52,11 +52,11 @@ export const createStore = <T,>({
         }
         return updatedState
     }
-    const redux = createReduxStore(rootReducer, initial)
+    const reduxStore = createReduxStore(rootReducer, initial)
     return {
-        getContents: () => redux.getState(),
-        query: q => shapeFilter(redux.getState(), q),
-        update: data => redux.dispatch({ type: "UPDATE", data }),
-        underlying: redux
+        getContents: () => reduxStore.getState(),
+        query: q => shapeFilter(reduxStore.getState(), q),
+        update: data => reduxStore.dispatch({ type: "UPDATE", data }),
+        underlying: reduxStore
     }
 }

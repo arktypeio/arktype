@@ -1,12 +1,11 @@
 import React from "react"
-import { act } from "react-dom/test-utils"
-import { createStore } from "statelessly"
-import { Root, initialRoot, initialA } from "./common"
+import { createStore, Store } from "statelessly"
+import { Root, initialRoot } from "./common"
 import { createHooks, StatelessProvider, StatelessConsumer } from "../context"
 import { mount } from "enzyme"
 
-let store = createStore({ initial: initialRoot })
-let hooks = createHooks(store)
+let store: Store<Root>
+let hooks: ReturnType<typeof createHooks>
 
 describe("StoreContext", () => {
     beforeEach(() => {
@@ -33,15 +32,17 @@ type ResultCheckerProps = {
 }
 
 const QueryChecker = ({ passTo }: ResultCheckerProps) =>
+    // TODO: Fix type hints on hooks
     passTo(hooks.useQuery({ b: null }))
 
 const checkResult = jest.fn(_ => {
-    console.log(_)
+    return null
 })
 
 describe("useQuery", () => {
     beforeEach(() => {
         store = createStore({ initial: initialRoot })
+        hooks = createHooks(store)
     })
     it("can execute a query", () => {
         mount(

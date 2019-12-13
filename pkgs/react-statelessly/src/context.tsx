@@ -17,8 +17,7 @@ export type StoreProviderProps<T> = {
 }
 
 const InnerStatelessProvider = <T extends any>({
-    children,
-    store
+    children
 }: StoreProviderProps<T>) => {
     const data = useSelector(state => state)
     return (
