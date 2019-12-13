@@ -71,9 +71,28 @@ export const december2019Updates: UpdateData[] = [
     {
         date: new Date(2019, 11, 12),
         goals: {
-            "Fix failing react-statelessly test": false,
+            "Fix failing react-statelessly test": true,
             "Merge test execution branch": false,
             "Update nexus-prisma PR": true
+        }
+    },
+    {
+        date: new Date(2019, 11, 13),
+        goals: {
+            "Fixing new failing statelessly test": false,
+            "Integrate statelessly and model with app": false
+        }
+    },
+    {
+        date: new Date(2019, 11, 14),
+        goals: {
+            "Fix debuggers across all packages": false
+        }
+    },
+    {
+        date: new Date(2019, 11, 15),
+        goals: {
+            "Merge test execution branch": false
         }
     }
 ]
