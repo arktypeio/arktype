@@ -40,8 +40,8 @@ export const schema = makeSchema({
                     "../../node_modules/@types/__nexus-typegen__nexus-prisma/index.d.ts"
                 )
             },
-            contextArgs: {
-                user: ({ userId }) => ({
+            computedInputs: {
+                user: ({ ctx: { userId } }) => ({
                     connect: {
                         id: userId
                     }

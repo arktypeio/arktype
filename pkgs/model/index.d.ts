@@ -65,7 +65,40 @@ type GetNexusPrismaInput<
         : never
     : never
 
-type ContextArgs = Record<string, (ctx: any) => any>
+/**
+ *  Represents arguments required by Photon that will
+ *  be derived from a request's input (root, args, and context)
+ *  and omitted from the GraphQL API. The object itself maps the
+ *  names of these args to a function that takes an object representing
+ *  the request's input and returns the value to pass to the photon
+ *  arg of the same name.
+ */
+type ComputedInputs<
+    MethodName extends MutationMethodName | null = null
+> = Record<string, (params: MutationResolverParams<MethodName>) => any>
+
+type MutationResolverParams<
+    MethodName extends MutationMethodName | null = null
+> = {
+    root: any
+    // 'args' will be typed according to its corresponding mutation's input type for resolver-level computedInputs.
+    // 'args' will be typed as 'any' for global computedInputs.
+    args: MethodName extends null
+        ? any
+        : MutationResolverArgsParam<
+              // Second conditional type is redundant but required due to a TS bug
+              MethodName extends null ? never : MethodName
+          >
+    ctx: Context
+}
+
+type MutationResolverArgsParam<
+    MethodName extends MutationMethodName
+> = core.GetGen<"argTypes">["Mutation"][MethodName]
+
+type MutationMethodName = keyof core.GetGen<"argTypes">["Mutation"]
+
+type Context = core.GetGen<"context">
 
 type NexusPrismaRelationOpts<
     ModelName extends any,
@@ -79,11 +112,11 @@ type NexusPrismaRelationOpts<
 > extends never
     ? {
           alias?: string
-          contextArgs?: ContextArgs
+          computedInputs?: ComputedInputs<MethodName>
       } & DynamicRequiredType<ReturnType>
     : {
           alias?: string
-          contextArgs?: ContextArgs
+          computedInputs?: ComputedInputs<MethodName>
           filtering?:
               | boolean
               | Partial<
