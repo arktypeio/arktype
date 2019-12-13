@@ -89,7 +89,7 @@
         "react-hot-loader": "4.12.15",
         "ts-node": "8.4.1",
         "tsconfig-paths-webpack-plugin": "3.2.0",
-        "typescript": "3.7.2",
+        "typescript": "3.7.3",
         "webpack": "4.41.2",
         "webpack-cli": "3.3.9",
         "webpack-dev-server": "3.8.2"
