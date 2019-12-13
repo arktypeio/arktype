@@ -73,7 +73,7 @@ export const december2019Updates: UpdateData[] = [
         goals: {
             "Fix failing react-statelessly test": false,
             "Merge test execution branch": false,
-            "Update nexus-prisma PR": false
+            "Update nexus-prisma PR": true
         }
     }
 ]
