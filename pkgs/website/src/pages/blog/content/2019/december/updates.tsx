@@ -92,6 +92,13 @@ export const december2019Updates: UpdateData[] = [
     {
         date: new Date(2019, 11, 15),
         goals: {
+            "Fixing new failing statelessly test": false,
+            "Integrate statelessly and model with app": false
+        }
+    },
+    {
+        date: new Date(2019, 11, 16),
+        goals: {
             "Merge test execution branch": false
         }
     }
