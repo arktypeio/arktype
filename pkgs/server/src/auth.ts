@@ -1,6 +1,4 @@
 import { verify, JsonWebTokenError } from "jsonwebtoken"
-import { AuthChecker } from "type-graphql"
-import { Context } from "./context"
 import { APP_SECRET } from "./utils"
 
 interface Token {
@@ -22,17 +20,4 @@ export const getUserId = (req: any) => {
         }
         throw e
     }
-}
-
-export const authChecker: AuthChecker<Context> = async ({
-    context: { photon, userId }
-}) => {
-    if (!userId) {
-        return false
-    }
-    const user = await photon.users.findOne({ where: { id: userId } })
-    if (!user) {
-        return false
-    }
-    return true
 }

@@ -1,6 +1,5 @@
-import { Learner, learnerInitial, handleLearner } from "./substates"
-import { ObjectType, Field, registerEnumType } from "type-graphql"
-import { Handler } from "shapeql"
+import { Learner, learnerInitial, handleLearner } from "./learner"
+import { Handler } from "react-statelessly"
 
 export enum Page {
     Home = "HOME",
@@ -11,25 +10,11 @@ export enum Page {
     Results = "RESULTS"
 }
 
-registerEnumType(Page, {
-    name: "Page"
-})
-
-@ObjectType()
-export class Root {
-    @Field(type => Learner)
+export type Root = {
     learner: Learner
-
-    @Field()
     token: string
-
-    @Field()
     page: Page
-
-    @Field()
     cardFilter: string
-
-    @Field()
     detailView: string
 }
 

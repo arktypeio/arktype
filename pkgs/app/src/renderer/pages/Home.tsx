@@ -1,7 +1,7 @@
 import React from "react"
 import { useQuery } from "@apollo/react-hooks"
 import { Column } from "@re-do/components"
-import { metadata, Test } from "@re-do/model"
+import { Test } from "@re-do/model"
 import { RedoAppBar, SuggestionResultsGrid, SuggestionData } from "custom"
 
 const welcomeSuggestion: SuggestionData = {
@@ -12,12 +12,9 @@ const welcomeSuggestion: SuggestionData = {
 }
 
 export const Home = () => {
-    const { data, loading } = useQuery<{ getTests: Test[] }>(
-        metadata.test.gql.get,
-        {
-            fetchPolicy: "no-cache"
-        }
-    )
+    const { data, loading } = useQuery<{ getTests: Test[] }>({
+        fetchPolicy: "no-cache"
+    })
     return (
         <Column justify="center" full={true}>
             <RedoAppBar>

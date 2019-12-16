@@ -5,7 +5,7 @@ import { ApolloProvider } from "react-apollo"
 import { ApolloProvider as ApolloHooksProvider } from "@apollo/react-hooks"
 import { ApolloClient } from "apollo-client"
 import { CssBaseline, Theme } from "@material-ui/core"
-import { StoreProvider } from "shapeql"
+import { StatelessProvider } from "react-statelessly"
 import { Root } from "state"
 import { Content } from "./Content"
 import { store } from "./common"
@@ -18,12 +18,12 @@ export type AppProps = {
 export const App = ({ apolloClient, theme }: AppProps) => (
     <ApolloProvider client={apolloClient}>
         <ApolloHooksProvider client={apolloClient}>
-            <StoreProvider store={store}>
+            <StatelessProvider store={store}>
                 <ThemeProvider theme={theme}>
                     <CssBaseline />
                     <Content />
                 </ThemeProvider>
-            </StoreProvider>
+            </StatelessProvider>
         </ApolloHooksProvider>
     </ApolloProvider>
 )

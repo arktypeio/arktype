@@ -39,10 +39,10 @@ const route = (requested: Page, authed: boolean, learnerActive: boolean) => {
 }
 
 export const Router = () => {
-    const { page, token, learner } = store.hooks.useQuery({
-        page: null,
-        token: null,
-        learner: null
+    const { page, token, learner } = store.useQuery({
+        page: true,
+        token: true,
+        learner: true
     })
     const redirected = route(page!, !!token, learner!.active)
     useEffect(() => {

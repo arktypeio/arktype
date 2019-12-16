@@ -7,24 +7,18 @@ import { store } from "renderer/common"
 import { submitForm } from "renderer/components/CustomForm"
 import { formatEmail } from "./common"
 
-const SIGNIN = gql`
-    mutation signIn($email: String!, $password: String!) {
-        signIn(email: $email, password: $password) {
-            token
-        }
-    }
-`
-
 type SignInData = {
-    signIn: {
-        token: string
-    }
+    signIn: string
 }
 
 const validator = new SignInInput()
 
 export const SignIn = () => {
-    const [submit] = useMutation<SignInData, SignInInput>(SIGNIN)
+    const [submit] = useMutation<SignInData, SignInInput>(gql`
+        mutation signIn($email: String!, $password: String!) {
+            signIn(data: { email: $email, password: $password })
+        }
+    `)
     return (
         <Form<SignInInput, SignInData>
             validator={validator}
@@ -35,7 +29,7 @@ export const SignIn = () => {
                 })
                 if (result.data && result.data.signIn) {
                     store.mutate({
-                        token: result.data.signIn.token
+                        token: result.data.signIn
                     })
                 }
                 return result

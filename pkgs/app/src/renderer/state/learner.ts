@@ -5,30 +5,21 @@ be undefined if we use that style of import.*/
 // TODO: Figure out how to import puppeteer using import { ... } from "puppeteer"
 // this functionality worked previously but broke when switching to babel
 import p from "puppeteer"
-import { ObjectType, Field } from "type-graphql"
 import { remote, Rectangle } from "electron"
 import { isDeepStrictEqual } from "util"
 import { join } from "path"
 import { homedir } from "os"
-import { createHandle } from "shapeql"
+import { createHandle } from "react-statelessly"
 import { Step } from "@re-do/model"
 import { store } from "renderer/common"
 
 const BROWSER_WINDOW_TITLEBAR_SIZE = 35
 const DEFAULT_LEARNER_WIDTH = 300
 
-@ObjectType()
-export class Bounds implements Rectangle {
-    @Field()
+export type Bounds = {
     height: number
-
-    @Field()
     width: number
-
-    @Field()
     x: number
-
-    @Field()
     y: number
 }
 
@@ -43,27 +34,13 @@ const setMainWindowBounds = (bounds: Partial<Bounds>) => {
     remote.getCurrentWindow().setBounds(bounds as Rectangle)
 }
 
-@ObjectType()
-export class Learner {
-    @Field()
+export type Learner = {
     active: boolean
-
-    @Field(type => [Step])
     events: Step[]
-
-    @Field()
     lastConnectedEndpoint: string
-
-    @Field()
     testName: string
-
-    @Field(type => [String])
     testTags: string[]
-
-    @Field()
     lastMainWindowBounds: Bounds
-
-    @Field()
     chromiumInstalling: boolean
 }
 
@@ -130,7 +107,7 @@ const stop = async () => {
     const {
         learner: { lastConnectedEndpoint, lastMainWindowBounds }
     } = store.query({
-        learner: { lastConnectedEndpoint: null, lastMainWindowBounds: null }
+        learner: { lastConnectedEndpoint: true, lastMainWindowBounds: true }
     })
     if (lastConnectedEndpoint) {
         try {

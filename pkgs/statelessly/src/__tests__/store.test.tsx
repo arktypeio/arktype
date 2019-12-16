@@ -1,14 +1,5 @@
-import React from "react"
-import { act } from "react-dom/test-utils"
 import { Root, initialRoot, initialA } from "./common"
-import {
-    createStore,
-    Handler
-    // StoreProvider,
-    // StoreConsumer,
-    // StoreWithHooks
-} from "../store"
-import { mount } from "enzyme"
+import { createStore, Handler } from "../store"
 
 let store = createStore({ initial: initialRoot })
 
@@ -30,23 +21,23 @@ describe("queries", () => {
         store = createStore({ initial: initialRoot })
     })
     test("handle shallow", () => {
-        expect(store.get({ b: null })).toStrictEqual({ b: false })
+        expect(store.query({ b: true })).toStrictEqual({ b: false })
     })
     test("handle deep", () => {
-        expect(store.get({ a: null })).toStrictEqual({ a: initialA })
+        expect(store.query({ a: true })).toStrictEqual({ a: initialA })
     })
     test("handle object arrays", () => {
-        expect(store.get({ d: null })).toStrictEqual({
+        expect(store.query({ d: true })).toStrictEqual({
             d: [initialA, initialA]
         })
     })
     test("handle filtered object within array", () => {
-        expect(store.get({ d: { a: null } })).toStrictEqual({
+        expect(store.query({ d: { a: true } })).toStrictEqual({
             d: [{ a: 0 }, { a: 0 }]
         })
     })
     test("don't include extraneous keys", () => {
-        expect(store.get({ a: { a: null } })).toStrictEqual({
+        expect(store.query({ a: { a: true } })).toStrictEqual({
             a: { a: initialA.a }
         })
     })
@@ -58,17 +49,17 @@ describe("updates", () => {
         sideEffectStore = createStore({ initial: initialRoot, handler })
     })
     test("handles shallow", () => {
-        store.update({ c: value => value + "suffix" })
-        expect(store.getAll()).toStrictEqual({
+        store.mutate({ c: value => value + "suffix" })
+        expect(store.getState()).toStrictEqual({
             ...initialRoot,
             c: initialRoot.c + "suffix"
         })
     })
     test("handles deep", () => {
-        store.update({
+        store.mutate({
             a: { b: { a: value => value.concat([1]) } }
         })
-        expect(store.getAll()).toStrictEqual({
+        expect(store.getState()).toStrictEqual({
             ...initialRoot,
             a: {
                 ...initialRoot.a,
@@ -80,41 +71,41 @@ describe("updates", () => {
         })
     })
     test("handles object arrays", () => {
-        store.update({ d: value => value.concat(initialA) })
-        expect(store.getAll()).toStrictEqual({
+        store.mutate({ d: value => value.concat(initialA) })
+        expect(store.getState()).toStrictEqual({
             ...initialRoot,
             d: [initialA, initialA, initialA]
         })
     })
     test("sets array value", async () => {
-        store.update({ d: [] })
-        expect(store.getAll()).toStrictEqual({
+        store.mutate({ d: [] })
+        expect(store.getState()).toStrictEqual({
             ...initialRoot,
             d: []
         })
     })
 
     test("doesn't update extraneous keys", () => {
-        store.update({
+        store.mutate({
             a: { b: { a: value => value.concat([1]) } }
         })
-        expect(store.getAll()).toStrictEqual({
+        expect(store.getState()).toStrictEqual({
             ...initialRoot,
             a: { ...initialA, b: { ...initialA.b, a: [0, 1] } }
         })
     })
     test("handle side effects", () => {
-        sideEffectStore.update({ b: true })
+        sideEffectStore.mutate({ b: true })
         expect(bing).toBeCalledWith(true)
     })
     test("handles array side effects", () => {
-        sideEffectStore.update({
+        sideEffectStore.mutate({
             d: _ => _.concat(initialA)
         })
         expect(dHandler).toBeCalledWith([initialA, initialA, initialA])
     })
     test("doesn't trigger extraneous side effects", () => {
-        sideEffectStore.update({
+        sideEffectStore.mutate({
             b: current => current,
             c: current => current + "new"
         })
@@ -122,55 +113,3 @@ describe("updates", () => {
         expect(bing).not.toHaveBeenCalled()
     })
 })
-
-// describe("StoreContext", () => {
-//     beforeEach(() => {
-//         client.writeData({ data: initialRootWithTypeNames })
-//     })
-//     it("provides a store and consumes data", () => {
-//         let value: Root
-//         mount(
-//             <StoreProvider store={store}>
-//                 <StoreConsumer>
-//                     {data => {
-//                         value = data
-//                         return null
-//                     }}
-//                 </StoreConsumer>
-//             </StoreProvider>
-//         )
-//         expect(value).toStrictEqual(store.queryAll())
-//     })
-// })
-
-// const storeWithHooks = new StoreWithHooks({ root: Root, client })
-
-// type ResultCheckerProps = {
-//     passTo: jest.Mock
-// }
-
-// const QueryChecker = ({ passTo }: ResultCheckerProps) =>
-//     passTo(storeWithHooks.hooks.useQuery({ b: null }))
-
-// const checkResult = jest.fn(() => null)
-
-// describe("useQuery", () => {
-//     it("can execute a query", () => {
-//         mount(
-//             <StoreProvider store={storeWithHooks}>
-//                 <QueryChecker passTo={checkResult} />
-//             </StoreProvider>
-//         )
-//         expect(checkResult).toBeCalledWith({ b: false })
-//     })
-//     it("rerenders on store updates", async () => {
-//         mount(
-//             <StoreProvider store={storeWithHooks}>
-//                 <QueryChecker passTo={checkResult} />
-//             </StoreProvider>
-//         )
-//         await act(async () => await storeWithHooks.mutate({ b: true }))
-//         expect(checkResult).toBeCalledTimes(2)
-//         expect(checkResult).lastCalledWith({ b: true })
-//     })
-// })

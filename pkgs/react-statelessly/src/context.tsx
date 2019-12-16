@@ -1,15 +1,8 @@
-import React, { ReactNode, createContext, useContext, useState } from "react"
+import React, { ReactNode, createContext } from "react"
 import { Provider as ReduxProvider, useSelector } from "react-redux"
-import { Update, Query, Store } from "statelessly"
+import { Store } from "./utils"
 
-export const createHooks = <T extends any>(store: Store<T>) => ({
-    useQuery: <Q extends Query<T>>(q: Q) => {
-        useContext(StatelessContext)
-        return store.query(q)
-    }
-})
-
-const StatelessContext = createContext<any>({} as any)
+export const StatelessContext = createContext<any>({} as any)
 
 export type StoreProviderProps<T> = {
     children: ReactNode
