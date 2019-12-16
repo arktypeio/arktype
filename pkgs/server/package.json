@@ -12,7 +12,7 @@
         "generate": "npm run wipeDb && npm run prisma && npm run seed",
         "clean": "rm -rf dist",
         "generateSchema": "ts-node --transpile-only src/schema",
-        "buildModel": "ts-node buildModel && npx prettier --write ../model/src/model.d.ts"
+        "buildModel": "ts-node buildModel && npx prettier --write ../model/src/model.ts"
     },
     "dependencies": {
         "@prisma/photon": "2.0.0-preview017.2",

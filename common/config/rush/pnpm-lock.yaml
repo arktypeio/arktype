@@ -65,6 +65,7 @@ dependencies:
     "@types/storybook__addon-storyshots": 5.1.1
     "@types/storybook__react": 4.0.2
     "@types/uuid": 3.4.5
+    "@types/validator": 12.0.1
     "@types/webpack": 4.39.3
     "@types/webpack-merge": 4.1.5
     analytics-node: 3.4.0-beta.1
@@ -3604,6 +3605,10 @@ packages:
         dev: false
         resolution:
             integrity: sha512-GKF2VnEkMmEeEGvoo03ocrP9ySMuX1ypKazIYMlsjfslfBMhOAtC5dmEWKdJioW4lJN7MZRS88kalTsVClyQ9w==
+    /@types/validator/12.0.1:
+        dev: false
+        resolution:
+            integrity: sha512-l57fIANZLMe8DArz+SDb+7ATXnDm15P7u2wHBw5mb0aSMd+UuvmvhouBF2hdLgQPDMJ39sh9g2MJO4GkZ0VAdQ==
     /@types/webpack-env/1.14.1:
         dev: false
         resolution:
@@ -15945,6 +15950,7 @@ packages:
             "@babel/runtime-corejs3": 7.6.3
             "@types/jest": 24.0.19
             "@types/node": 12.11.1
+            "@types/validator": 12.0.1
             jest: 24.9.0
             nexus: 0.12.0-rc.5_graphql@14.5.8
             typescript: 3.7.3
@@ -15956,7 +15962,7 @@ packages:
             "@babel/core": "*"
             graphql: "*"
         resolution:
-            integrity: sha512-tTivLiqeLMzBop0tvK9WEHkFkl2nZ+qrQJA7IBeP+rb2Rc3+OetmzA0+7/XCdL5OfGQpCPmoFzW3wiP0zjyNiw==
+            integrity: sha512-0G4u3OjCZsgHE2B8XgRIJprmxUmldkN7Dqj5ajwc2oAnRff4aLVyBak9+hYqexfktgIUgHWGCrLobzQI0uQk8A==
             tarball: "file:projects/model.tgz"
         version: 0.0.0
     "file:projects/react-statelessly.tgz_@babel+core@7.6.4":
@@ -16187,6 +16193,7 @@ specifiers:
     "@types/storybook__addon-storyshots": 5.1.1
     "@types/storybook__react": 4.0.2
     "@types/uuid": 3.4.5
+    "@types/validator": 12.0.1
     "@types/webpack": 4.39.3
     "@types/webpack-merge": 4.1.5
     analytics-node: 3.4.0-beta.1

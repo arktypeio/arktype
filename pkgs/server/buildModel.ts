@@ -8,7 +8,7 @@ import {
 import { join } from "path"
 
 const modelDir = join(__dirname, "..", "model")
-const modelTypesFile = join(modelDir, "src", "model.d.ts")
+const modelTypesFile = join(modelDir, "src", "model.ts")
 const modelPhotonTypegenDir = join(modelDir, "@prisma", "photon")
 const serverDependenciesDir = join(__dirname, "node_modules")
 const photonTypegenDir = join(serverDependenciesDir, "@prisma", "photon")
@@ -42,10 +42,15 @@ photonTypegenFilesToCopy.forEach(file => {
     })
 })
 
-// Import photon types from root directory instead of node_modules
 const prismaTypegenFileContents = readFileSync(prismaTypegenFile)
     .toString()
-    .replace("@prisma/photon", "./@prisma/photon")
+    // Import photon types from root directory instead of node_modules
+    .replace("@prisma/photon", "../@prisma/photon")
+    // Remove Context definition so we can import it from contextDefinitionFile
+    .replace(/type Context.*/g, "")
+    // Template strings in Conditional types cause a compilation issue
+    .replace(/`/g, '"')
+
 // Store contents of core typegen file without photon import so that it can be merged with the prisma typegen file
 const coreTypegenFileLines = readFileSync(coreTypegenFile)
     .toString()
@@ -83,10 +88,12 @@ const builtIns = [
     "ID"
 ]
 
-const coreTypeDefs = coreTypegenFileLines
+const coreTypes = coreTypegenFileLines
     .slice(modelDefinitionStartIndex + 1, modelDefinitionEndIndex)
     .map(line => line.replace(/(\s|;)/g, "").split(":"))
     .filter(([name]) => !builtIns.includes(name))
+
+const coreTypeDefLines = coreTypes
     .map(
         ([name, definition]) =>
             // Unprismafy comes from modelTypeUtils and recursively removes {create, connect} objects from inputs
@@ -95,9 +102,13 @@ const coreTypeDefs = coreTypegenFileLines
     )
     .join("\n")
 
+const coreTypeModelLines = `export type Model = {\n${coreTypes
+    .map(([name]) => `${name}: ${name}`)
+    .join("\n")}\n}`
+
 const coreTypegenFileContents = coreTypegenFileLines.join("\n")
 
 writeFileSync(
     modelTypesFile,
-    `${prismaTypegenFileContents}\n${contextFileContents}\n${modelTypeUtilsFileContents}\n${coreTypegenFileContents}\n${coreTypeDefs}`
+    `${prismaTypegenFileContents}\n${contextFileContents}\n${modelTypeUtilsFileContents}\n${coreTypegenFileContents}\n${coreTypeDefLines}\n${coreTypeModelLines}`
 )

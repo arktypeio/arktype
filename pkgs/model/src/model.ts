@@ -1,4 +1,4 @@
-import * as photon from "./@prisma/photon"
+import * as photon from "../@prisma/photon"
 import { core } from "nexus"
 // Types helpers
 type IsModelNameExistsInGraphQLTypes<
@@ -23,7 +23,7 @@ type RootObjectTypes = Pick<
 >
 
 /**
- * Determine if `B` is a subset (or equivalent to) of `A`.
+ * Determine if "B" is a subset (or equivalent to) of "A".
  */
 type IsSubset<A, B> = keyof A extends never ? false : B extends A ? true : false
 
@@ -46,7 +46,7 @@ type GetSubsetTypes<ModelName extends any> = keyof OmitByValue<
 type SubsetTypes<ModelName extends any> = GetSubsetTypes<
     ModelName
 > extends never
-    ? `ERROR: No subset types are available. Please make sure that one of your GraphQL type is a subset of your t.model('<ModelName>')`
+    ? "ERROR: No subset types are available. Please make sure that one of your GraphQL type is a subset of your t.model('<ModelName>')"
     : GetSubsetTypes<ModelName>
 
 type DynamicRequiredType<
@@ -98,14 +98,12 @@ type MutationResolverArgsParam<
 
 type MutationMethodName = keyof core.GetGen<"argTypes">["Mutation"]
 
-type Context = core.GetGen<"context">
-
 type NexusPrismaRelationOpts<
     ModelName extends any,
     MethodName extends any,
     ReturnType extends any
 > = GetNexusPrismaInput<
-    // If GetNexusPrismaInput returns never, it means there are no filtering/ordering args for it. So just use `alias` and `type`
+    // If GetNexusPrismaInput returns never, it means there are no filtering/ordering args for it. So just use "alias" and "type"
     ModelName,
     MethodName,
     "filtering"
@@ -163,15 +161,15 @@ type Kind = "Enum" | "Object" | "Scalar" | "InputObject"
  * Helper to safely reference a Kind type. For example instead of the following
  * which would admit a typo:
  *
- * ```ts
+ * """ts
  * type Foo = Bar extends 'scalar' ? ...
- * ```
+ * """
  *
  * You can do this which guarantees a correct reference:
  *
- * ```ts
+ * """ts
  * type Foo = Bar extends AKind<'Scalar'> ? ...
- * ```
+ * """
  *
  */
 type AKind<T extends Kind> = T
@@ -184,7 +182,7 @@ type GetKind<Name extends any> = IsEnum<Name> extends true
     ? "Object"
     : IsInputObject<Name> extends true
     ? "InputObject"
-    : // FIXME should be `never`, but GQL objects named differently
+    : // FIXME should be "never", but GQL objects named differently
       // than backing type fall into this branch
       "Object"
 
@@ -484,7 +482,7 @@ type PrismaCreationType = {
     create?: object
     connect?: object
 }
-type Unprismafy<T extends object> = {
+type Unprismafy<T> = {
     [K in keyof T]: T[K] extends object
         ? Unprismafy<T[K] extends PrismaCreationType ? T[K]["create"] : T[K]>
         : T[K]
@@ -910,3 +908,10 @@ export type Test = Unprismafy<
 export type User = Unprismafy<
     DeepExcludedByKeys<photon.UserCreateInput, ["user"]>
 >
+export type Model = {
+    Selector: Selector
+    Step: Step
+    Tag: Tag
+    Test: Test
+    User: User
+}
