@@ -21,7 +21,7 @@
         "@material-ui/styles": "4.5.0",
         "@mdi/js": "4.5.95",
         "class-transformer": "0.2.3",
-        "class-validator": "0.10.2",
+        "class-validator": "0.11.0",
         "core-js": "3.3.2",
         "date-fns": "2.5.1",
         "deepmerge": "4.1.1",

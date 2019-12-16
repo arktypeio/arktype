@@ -8,7 +8,7 @@ import {
 import { join } from "path"
 
 const modelDir = join(__dirname, "..", "model")
-const modelTypesFile = join(modelDir, "index.d.ts")
+const modelTypesFile = join(modelDir, "src", "model.d.ts")
 const modelPhotonTypegenDir = join(modelDir, "@prisma", "photon")
 const serverDependenciesDir = join(__dirname, "node_modules")
 const photonTypegenDir = join(serverDependenciesDir, "@prisma", "photon")

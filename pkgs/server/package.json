@@ -12,7 +12,7 @@
         "generate": "npm run wipeDb && npm run prisma && npm run seed",
         "clean": "rm -rf dist",
         "generateSchema": "ts-node --transpile-only src/schema",
-        "buildModel": "ts-node buildModel && npx prettier --write ../model/index.d.ts"
+        "buildModel": "ts-node buildModel && npx prettier --write ../model/src/model.d.ts"
     },
     "dependencies": {
         "@prisma/photon": "2.0.0-preview017.2",
@@ -20,7 +20,6 @@
         "@re-do/utils": "0.0.1",
         "apollo-server": "2.9.6",
         "bcrypt": "3.0.6",
-        "class-validator": "0.10.2",
         "deepmerge": "4.1.1",
         "dotenv": "8.2.0",
         "graphql": "14.5.8",

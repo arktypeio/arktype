@@ -49,7 +49,7 @@
         "apollo-link-context": "1.0.19",
         "apollo-link-http": "1.5.16",
         "class-transformer": "0.2.3",
-        "class-validator": "0.10.2",
+        "class-validator": "0.11.0",
         "core-js": "3.3.2",
         "deepmerge": "4.1.1",
         "dotenv": "8.2.0",
