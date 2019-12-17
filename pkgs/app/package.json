@@ -65,6 +65,7 @@
         "react-dom": "16.10.2",
         "reflect-metadata": "0.1.13",
         "react-statelessly": "0.0.1",
+        "statelessly": "0.0.1",
         "tsconfig-paths": "3.9.0",
         "type-graphql": "0.17.5",
         "typeface-ubuntu": "0.0.65",

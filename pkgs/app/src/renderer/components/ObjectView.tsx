@@ -4,8 +4,7 @@ import { MetadataKey, metadata, Test } from "@re-do/model"
 import { submitForm } from "renderer/components/CustomForm"
 import { useMutation } from "@apollo/react-hooks"
 import { isRecursible, fromEntries } from "@re-do/utils"
-import { actionToIcon } from "./ActionButtons"
-import { excludeKeys } from "shapeql"
+import { excludeKeys } from "statelessly"
 
 export type ObjectViewProps = {
     value: Record<string, any>

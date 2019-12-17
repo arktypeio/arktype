@@ -17,7 +17,8 @@ export const schema = makeSchema({
         typegen: join(
             __dirname,
             "../../node_modules/@types/__nexus-typegen__nexus-core/index.d.ts"
-        )
+        ),
+        schema: join(__dirname, "..", "..", "schema.gql")
     },
     typegenAutoConfig: {
         contextType: "Context.Context",
