@@ -2,7 +2,7 @@ import { join } from "path"
 import { readFileSync } from "fs-extra"
 import gql from "graphql-tag"
 import { download } from "@prisma/fetch-engine"
-import { make } from ".."
+import { gqlize } from ".."
 
 beforeAll(
     async () =>
@@ -23,9 +23,10 @@ beforeAll(
 
 describe("Plugin", () => {
     it("can be built", async () => {
-        const mutations = make({
+        const mutations = gqlize({
             schema: gql(readFileSync(join(__dirname, "schema.gql")).toString())
         })
+        console.warn(mutations)
         expect(mutations).toBeTruthy()
     }, 9999999)
 })

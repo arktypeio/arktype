@@ -24,12 +24,13 @@ dependencies:
     "@mdi/js": 4.5.95
     "@medv/finder": 1.1.2
     "@prisma/fetch-engine": 0.3.37
+    "@prisma/photon": 2.0.0-preview017.2_prisma2@2.0.0-preview017.2
     "@rush-temp/app": "file:projects/app.tgz"
     "@rush-temp/babel-preset-redo": "file:projects/babel-preset-redo.tgz_react-dom@16.10.2+react@16.10.2"
     "@rush-temp/bundle": "file:projects/bundle.tgz_06b0ba4fdf0f0c5aaf41218256e8c607"
     "@rush-temp/components": "file:projects/components.tgz_webpack@4.41.2"
+    "@rush-temp/gqlize": "file:projects/gqlize.tgz_@babel+core@7.6.4"
     "@rush-temp/model": "file:projects/model.tgz_@babel+core@7.6.4"
-    "@rush-temp/prismatically": "file:projects/prismatically.tgz_@babel+core@7.6.4+graphql@14.5.8"
     "@rush-temp/react-statelessly": "file:projects/react-statelessly.tgz_@babel+core@7.6.4"
     "@rush-temp/recommended": "file:projects/recommended.tgz"
     "@rush-temp/server": "file:projects/server.tgz"
@@ -125,7 +126,7 @@ dependencies:
     react-svg-loader: 3.0.3
     react-test-renderer: 16.10.2_react@16.10.2
     react-typist: 2.0.5_react-dom@16.10.2+react@16.10.2
-    redo-nexus-prisma: 0.6.1-3_graphql@14.5.8
+    redo-nexus-prisma: 0.6.1-3_3d439f4e0f24d46582a80975993b2eea
     redux: 4.0.4
     reflect-metadata: 0.1.13
     style-loader: 1.0.0_webpack@4.41.2
@@ -13356,19 +13357,6 @@ packages:
             "@prisma/photon": 2.0.0-preview017.2_prisma2@2.0.0-preview017.2
             camelcase: 5.3.1
             fs-extra: 8.1.0
-            graphql: 14.5.8
-            nexus: 0.12.0-rc.5_graphql@14.5.8
-            pluralize: 8.0.0
-        dev: false
-        peerDependencies:
-            "@prisma/photon": ^2.0.0-alpha.351
-            graphql: "*"
-        resolution:
-            integrity: sha512-J2LVzbdhSopBNyzf37GsEwWYW3k0uLpOCdtdzbKOn1wZvvAA95MF0fxYTiLaFDJ1JZpSQuTSN0TS9StXtNhIUg==
-    /redo-nexus-prisma/0.6.1-3_graphql@14.5.8:
-        dependencies:
-            camelcase: 5.3.1
-            fs-extra: 8.1.0
             nexus: 0.12.0-rc.5_graphql@14.5.8
             pluralize: 8.0.0
         dev: false
@@ -16106,6 +16094,32 @@ packages:
             integrity: sha512-keahTO+r7GCNWQ5ycrOPV5dn1BOjYcXvgNlL2yNUXy7MEjJ91jeXuylQXWlxkICS77KtlCxNyrL1iEZndc9bBQ==
             tarball: "file:projects/components.tgz"
         version: 0.0.0
+    "file:projects/gqlize.tgz_@babel+core@7.6.4":
+        dependencies:
+            "@babel/cli": 7.6.4_@babel+core@7.6.4
+            "@babel/runtime-corejs3": 7.6.3
+            "@prisma/fetch-engine": 0.3.37
+            "@prisma/photon": 2.0.0-preview017.2_prisma2@2.0.0-preview017.2
+            "@types/fs-extra": 8.0.1
+            "@types/jest": 24.0.19
+            "@types/node": 12.11.1
+            fs-extra: 8.1.0
+            graphql: 14.5.8
+            graphql-tag: 2.10.1_graphql@14.5.8
+            jest: 24.9.0
+            nexus: 0.12.0-rc.5_graphql@14.5.8
+            prisma2: 2.0.0-preview017.2
+            redo-nexus-prisma: 0.6.1-3_3d439f4e0f24d46582a80975993b2eea
+            typescript: 3.7.3
+        dev: false
+        id: "file:projects/gqlize.tgz"
+        name: "@rush-temp/gqlize"
+        peerDependencies:
+            "@babel/core": "*"
+        resolution:
+            integrity: sha512-c6Nj/G8aRHjt6zE4vQzIJSBi+mIrOZwwi8I1gY4YP1V3WgO6QO8t5cv5TLDU0LZAErhWTfIklO3hafVph4WLLA==
+            tarball: "file:projects/gqlize.tgz"
+        version: 0.0.0
     "file:projects/model.tgz_@babel+core@7.6.4":
         dependencies:
             "@babel/cli": 7.6.4_@babel+core@7.6.4
@@ -16127,29 +16141,6 @@ packages:
         resolution:
             integrity: sha512-SyhA02M5mHhzvMoPqtbHAkMWJFQ8/ym57oWseTKAqK41ThB+d0MrZZlJOAFT2sf0VaV7NMFP3rE4l3G8MPktew==
             tarball: "file:projects/model.tgz"
-        version: 0.0.0
-    "file:projects/prismatically.tgz_@babel+core@7.6.4+graphql@14.5.8":
-        dependencies:
-            "@babel/cli": 7.6.4_@babel+core@7.6.4
-            "@babel/runtime-corejs3": 7.6.3
-            "@prisma/fetch-engine": 0.3.37
-            "@prisma/photon": 2.0.0-preview017.2_prisma2@2.0.0-preview017.2
-            "@types/jest": 24.0.19
-            "@types/node": 12.11.1
-            jest: 24.9.0
-            nexus: 0.12.0-rc.5_graphql@14.5.8
-            prisma2: 2.0.0-preview017.2
-            redo-nexus-prisma: 0.6.1-3_3d439f4e0f24d46582a80975993b2eea
-            typescript: 3.7.3
-        dev: false
-        id: "file:projects/prismatically.tgz"
-        name: "@rush-temp/prismatically"
-        peerDependencies:
-            "@babel/core": "*"
-            graphql: "*"
-        resolution:
-            integrity: sha512-E1+oyTzDPXJyDvXnrxclTaIwnguOlN74gbHzokuQyioCBxSfHRxs6HJb3ULfkaB74Cs/RiIPKd0gAq76iGKA1g==
-            tarball: "file:projects/prismatically.tgz"
         version: 0.0.0
     "file:projects/react-statelessly.tgz_@babel+core@7.6.4":
         dependencies:
@@ -16337,12 +16328,13 @@ specifiers:
     "@mdi/js": 4.5.95
     "@medv/finder": 1.1.2
     "@prisma/fetch-engine": 0.3.37
+    "@prisma/photon": 2.0.0-preview017.2
     "@rush-temp/app": "file:./projects/app.tgz"
     "@rush-temp/babel-preset-redo": "file:./projects/babel-preset-redo.tgz"
     "@rush-temp/bundle": "file:./projects/bundle.tgz"
     "@rush-temp/components": "file:./projects/components.tgz"
+    "@rush-temp/gqlize": "file:./projects/gqlize.tgz"
     "@rush-temp/model": "file:./projects/model.tgz"
-    "@rush-temp/prismatically": "file:./projects/prismatically.tgz"
     "@rush-temp/react-statelessly": "file:./projects/react-statelessly.tgz"
     "@rush-temp/recommended": "file:./projects/recommended.tgz"
     "@rush-temp/server": "file:./projects/server.tgz"
