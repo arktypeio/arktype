@@ -101,5 +101,12 @@ export const december2019Updates: UpdateData[] = [
         goals: {
             "Merge test execution branch": false
         }
+    },
+    {
+        date: new Date(2019, 11, 17),
+        goals: {
+            "Integrate prismatically with app": false,
+            "Begin UI/CLI execution work": false
+        }
     }
 ]
