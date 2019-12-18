@@ -108,5 +108,11 @@ export const december2019Updates: UpdateData[] = [
             "Integrate prismatically with app": false,
             "Begin UI/CLI execution work": false
         }
+    },
+    {
+        date: new Date(2019, 11, 18),
+        goals: {
+            "Integrate gqlize with app": false
+        }
     }
 ]
