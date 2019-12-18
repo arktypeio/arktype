@@ -24,7 +24,10 @@ beforeAll(
 describe("Plugin", () => {
     it("can be built", async () => {
         const mutations = gqlize({
-            schema: gql(readFileSync(join(__dirname, "schema.gql")).toString())
+            schema: gql(readFileSync(join(__dirname, "schema.gql")).toString()),
+            ignoreKeys: ["create"],
+            omitKeys: ["connect"],
+            maxDepth: 2
         })
         console.warn(mutations)
         expect(mutations).toBeTruthy()

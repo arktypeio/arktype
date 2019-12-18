@@ -1,13 +1,15 @@
 import { isDeepStrictEqual } from "util"
 import { createStore as createReduxStore, Store as ReduxStore } from "redux"
-import { DeepPartial, NonRecursible, Unlisted } from "@re-do/utils"
 import {
+    DeepPartial,
+    NonRecursible,
+    Unlisted,
     updateMap,
     diff,
     shapeFilter,
     ShapeFilter,
     DeepUpdate
-} from "./filters"
+} from "@re-do/utils"
 
 export type Store<T> = {
     underlying: ReduxStore<T, MutationAction<T>>
@@ -16,7 +18,7 @@ export type Store<T> = {
     mutate: <M extends Mutation<T>>(data: M) => void
 }
 
-export const createStore = <T,>({
+export const createStore = <T>({
     initial,
     handler
 }: StoreArgs<T>): Store<T> => {

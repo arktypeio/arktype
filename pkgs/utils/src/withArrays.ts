@@ -1,4 +1,4 @@
-import { fromEntries, deepMap } from "@re-do/utils"
+import { fromEntries, deepMap } from "./common"
 
 const arrayConvertable = (o: any) =>
     o &&

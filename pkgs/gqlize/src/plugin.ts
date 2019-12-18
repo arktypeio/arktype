@@ -6,91 +6,193 @@ import {
     InputObjectTypeDefinitionNode,
     TypeNode
 } from "graphql"
-import gql from "graphql-tag"
+import { split } from "@re-do/utils"
 
-const scalarNames = ["Int", "Float", "String", "ID", "Boolean"]
-
-const isScalar = (typeName: string) => scalarNames.includes(typeName)
-
-const getTypeName = (node: TypeNode): string =>
-    node.kind === "NamedType" ? node.name.value : getTypeName(node.type)
-
-type BaseConversionArgs = {
+type GqlizeArgs = {
     schema: DocumentNode
-    maxDepth: number
+    maxDepth?: number
+    ignoreKeys?: string[]
+    omitKeys?: string[]
 }
 
-type WithOptionalKeys<T extends object, Keys extends keyof T> = Omit<T, Keys> &
-    { [K in Keys]?: T[K] }
+type GqlizeConfig = Required<GqlizeArgs>
 
-type GqlizeArgs = WithOptionalKeys<BaseConversionArgs, "maxDepth">
+const withDefaults = (args: GqlizeArgs): GqlizeConfig => ({
+    maxDepth: 1,
+    ignoreKeys: [],
+    omitKeys: [],
+    ...args
+})
 
-export const gqlize = ({ schema, maxDepth = 2 }: GqlizeArgs) => {
-    return gqlizeMutations({ schema, maxDepth })
+export const gqlize = (args: GqlizeArgs) => {
+    return gqlizeMutations(withDefaults(args))
 }
 
-type GqlizeMutationsArgs = BaseConversionArgs
-
-const gqlizeMutations = ({ schema, maxDepth }: GqlizeMutationsArgs) => {
-    const mutationType = schema.definitions.find(
+const gqlizeMutations = (config: GqlizeConfig) => {
+    const mutationType = config.schema.definitions.find(
         _ => _.kind === "ObjectTypeDefinition" && _.name.value === "Mutation"
     ) as ObjectTypeDefinitionNode | undefined
     return mutationType?.fields
-        ?.map(mutation => gqlizeMutation({ mutation, schema, maxDepth }))
+        ?.map(mutation => gqlizeMutation({ config, mutation }))
         .join("\n")
 }
 
-const getInputObjectDefinition = (typeName: string, schema: DocumentNode) =>
+const getInputObjectDefinition = (type: TypeNode, schema: DocumentNode) =>
     (schema.definitions.find(
         def =>
             def.kind === "InputObjectTypeDefinition" &&
-            def.name.value === typeName
+            def.name.value === getTypeName(type)
     ) as any) as InputObjectTypeDefinitionNode
 
-type GqlizeMutationArgs = BaseConversionArgs & {
+type GqlizeMutationArgs = {
     mutation: FieldDefinitionNode
+    config: GqlizeConfig
 }
 
-const gqlizeMutation = ({ mutation, schema, maxDepth }: GqlizeMutationArgs) =>
-    `mutation ${mutation.name.value}${
+const gqlizeMutation = ({ mutation, config }: GqlizeMutationArgs) => {
+    const transformedFields = transformFields({
+        fields: mutation.arguments as NestableField[],
+        config
+    })
+    return `mutation ${mutation.name.value}${
         mutation.arguments
             ? inputFieldsToVariables({
-                  fields: mutation.arguments,
-                  schema,
-                  maxDepth
+                  fields: transformedFields,
+                  config
               })
             : ""
     } {
     ${mutation.name.value}
 }`
+}
 
-type InputFieldsToVariablesArgs = BaseConversionArgs & {
-    fields: readonly InputValueDefinitionNode[]
+type InputFieldsToVariablesArgs = {
+    fields: NestableField[]
+    config: GqlizeConfig
+    path?: string[]
+    variableMap?: Record<string, string>
 }
 
 const inputFieldsToVariables = (args: InputFieldsToVariablesArgs) =>
-    `(${inputFieldsToVarStrings(args).join(", ")})`
+    `(${Object.entries(inputFieldsToVariableMap(args))
+        .reduce(
+            (variables, [name, type]) => [...variables, `$${name}: ${type}`],
+            [] as string[]
+        )
+        .join(", ")})`
 
-const inputFieldsToVarStrings = ({
-    fields,
-    schema,
-    maxDepth
-}: InputFieldsToVariablesArgs): string[] => {
-    return fields.reduce((varStrings, field) => {
-        const typeName = getTypeName(field.type)
-        if (isScalar(typeName) || maxDepth === 0) {
-            return [...varStrings, `$${field.name.value}: ${typeName}`]
-        }
-        const inputType = getInputObjectDefinition(typeName, schema)
-        return [
-            ...varStrings,
-            ...inputFieldsToVarStrings({
-                fields: inputType.fields!,
-                schema,
-                maxDepth: maxDepth - 1
-            })
-        ]
-    }, [] as string[])
+const getVariableName = (
+    field: InputValueDefinitionNode,
+    path: string[],
+    taken: string[]
+) => {
+    let name = field.name.value
+    let nextParentIndex = path.length - 1
+    while (taken.includes(name)) {
+        name = `${path[nextParentIndex]}${name
+            .charAt(0)
+            .toUpperCase()}${name.slice(1)}`
+        nextParentIndex--
+    }
+    return name
 }
 
-const makeMutationReturn = () => {}
+const inputFieldsToVariableMap = ({
+    fields,
+    config,
+    variableMap = {},
+    path = []
+}: InputFieldsToVariablesArgs): Record<string, string> => {
+    const [variableFields, recursibleFields] =
+        path.length < config.maxDepth
+            ? split(fields, _ => isScalar(_.type))
+            : [fields, []]
+    const newVariables = variableFields.reduce(
+        (newVariables, field) => ({
+            ...newVariables,
+            [getVariableName(
+                field,
+                path,
+                Object.keys({ ...variableMap, ...newVariables })
+            )]: getTypeName(field.type)
+        }),
+        {} as Record<string, string>
+    )
+    return recursibleFields.reduce(
+        (updatedVariableMap, field) =>
+            inputFieldsToVariableMap({
+                fields: field.fields!,
+                config,
+                variableMap: updatedVariableMap,
+                path: [...path, field.name.value]
+            }),
+        { ...variableMap, ...newVariables }
+    )
+}
+
+const scalarNames = ["Int", "Float", "String", "ID", "Boolean"]
+
+const getTypeName = (node: TypeNode): string =>
+    node.kind === "NamedType" ? node.name.value : getTypeName(node.type)
+
+const isScalar = (node: TypeNode) => scalarNames.includes(getTypeName(node))
+
+type TransformFieldsArgs = {
+    fields: NestableField[]
+    config: GqlizeConfig
+}
+
+type NestableField = InputValueDefinitionNode & {
+    fields?: NestableField[]
+}
+
+const transformFields = ({
+    fields,
+    config
+}: TransformFieldsArgs): NestableField[] => {
+    const { omitKeys, ignoreKeys, schema } = config
+    const [fieldsToRemove, fieldsToKeep] = split(
+        fields as InputValueDefinitionNode[],
+        field =>
+            !isScalar(field.type) &&
+            ((omitKeys.includes(field.name.value) ||
+                ignoreKeys.includes(field.name.value)) as boolean)
+    )
+    const modifiedFields = fieldsToKeep.map(fieldToKeep =>
+        isScalar(fieldToKeep.type)
+            ? fieldToKeep
+            : {
+                  ...fieldToKeep,
+                  fields: transformFields({
+                      fields: getInputObjectDefinition(fieldToKeep.type, schema)
+                          .fields! as NestableField[],
+                      config
+                  })
+              }
+    )
+    const replacementFields = fieldsToRemove.reduce(
+        (replacementFields, fieldToRemove) => {
+            if (omitKeys.includes(fieldToRemove.name.value)) {
+                // If we're omitting the key, we don't need to recurse or find its value
+                return replacementFields
+            } else if (ignoreKeys.includes(fieldToRemove.name.value)) {
+                const fieldType = getInputObjectDefinition(
+                    fieldToRemove.type,
+                    schema
+                )
+                return [
+                    ...replacementFields,
+                    ...transformFields({
+                        fields: fieldType.fields! as NestableField[],
+                        config
+                    })
+                ]
+            } else {
+                // Default case; should never happen
+                return replacementFields
+            }
+        },
+        [] as NestableField[]
+    )
+    return [...modifiedFields, ...replacementFields]
+}

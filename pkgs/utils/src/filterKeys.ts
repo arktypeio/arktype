@@ -1,4 +1,4 @@
-import { Key, NonRecursible } from "@re-do/utils"
+import { Key, NonRecursible } from "./common"
 import { filter } from "./filter"
 
 export type FilteredByKeys<O, K extends Key[]> = Pick<

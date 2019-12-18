@@ -1,4 +1,4 @@
-import { isRecursible, fromEntries, Unlisted } from "@re-do/utils"
+import { isRecursible, fromEntries, Unlisted } from "./common"
 
 export type ShapeFilter<O, S> = {
     [P in S extends object
