@@ -18,16 +18,15 @@ beforeAll(
                 )
             },
             showProgress: true
-        })
+        }),
+    10 * 1000
 )
 
-describe("Plugin", () => {
-    it("can be built", async () => {
+describe("gqlize", () => {
+    it("doesn't crash", async () => {
         const mutations = gqlize({
             schema: gql(readFileSync(join(__dirname, "schema.gql")).toString()),
-            ignoreKeys: ["create"],
-            omitKeys: ["connect"],
-            maxDepth: 2
+            upfilterKeys: ["create"]
         })
         console.warn(mutations)
         expect(mutations).toBeTruthy()
