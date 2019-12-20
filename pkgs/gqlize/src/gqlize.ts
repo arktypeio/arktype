@@ -6,7 +6,7 @@ import {
     InputObjectTypeDefinitionNode,
     TypeNode
 } from "graphql"
-import { camelCase, transformSubstring } from "@re-do/utils"
+import { camelCase } from "@re-do/utils"
 
 type GqlizeArgs = {
     schema: DocumentNode
@@ -41,6 +41,13 @@ const getInputObjectDefinition = (type: TypeNode, schema: DocumentNode) =>
             def.kind === "InputObjectTypeDefinition" &&
             def.name.value === getTypeName(type)
     ) as any) as InputObjectTypeDefinitionNode
+
+const getObjectDefinition = (type: TypeNode, schema: DocumentNode) =>
+    (schema.definitions.find(
+        def =>
+            def.kind === "ObjectTypeDefinition" &&
+            def.name.value === getTypeName(type)
+    ) as any) as ObjectTypeDefinitionNode
 
 type GqlizeMutationArgs = {
     mutation: FieldDefinitionNode
@@ -82,7 +89,7 @@ const gqlizeMutation = ({ mutation, config }: GqlizeMutationArgs) => {
         mutation.arguments ? variableMapToString(vars) : ""
     } {
     ${mutation.name.value}${args}
-}`
+}${gqlizeMutationReturn({ mutation, config })}`
 }
 
 type VariableMap = Record<string, string>
@@ -114,6 +121,21 @@ const getVariableName = (
         name = camelCase(nameParts)
     }
     return name
+}
+
+const gqlizeMutationReturn = ({ mutation, config }: GqlizeMutationArgs) => {
+    if (isScalar(mutation.type)) {
+        return ""
+    } else {
+        const returnType = getObjectDefinition(mutation.type, config.schema)
+        const gqlizedReturn = returnType.fields?.reduce((gqlized, field) => {
+            if (isScalar(field.type)) {
+                return `${gqlized}\n${field.name.value}`
+            }
+            return gqlized
+        }, "{")
+        return `${gqlizedReturn}\n}`
+    }
 }
 
 const getVariableType = (field: InputValueDefinitionNode) => {
@@ -171,19 +193,15 @@ const gqlizeField = ({
         path.names,
         Object.keys(vars)
     )
-    if (
-        isScalar(field.type) ||
-        isList(field.type) ||
-        path.names.length > config.maxDepth
-    ) {
-        // TODO: Need to account for upfilter if not scalar if list or reached max depth
-        return {
-            vars: {
-                ...vars,
-                [candidateVariableName]: getVariableType(field)
-            },
-            args: `${field.name.value}: $${candidateVariableName}`
-        }
+    const candidateResult: GqlizedFieldData = {
+        vars: {
+            ...vars,
+            [candidateVariableName]: getVariableType(field)
+        },
+        args: `${field.name.value}: $${candidateVariableName}`
+    }
+    if (isScalar(field.type)) {
+        return candidateResult
     }
     const fieldTypeDef = getInputObjectDefinition(field.type, config.schema)
     if (!fieldTypeDef.fields) {
@@ -194,6 +212,19 @@ const gqlizeField = ({
             config.upfilterKeys.includes(name.value)
         )
     const upfilteredField = getUpfilteredField(fieldTypeDef)
+    // TODO: Fix this mess
+    if (
+        isList(field.type) ||
+        (upfilteredField && isList(upfilteredField.type)) ||
+        path.names.length > config.maxDepth
+    ) {
+        if (upfilteredField) {
+            candidateResult.vars[candidateVariableName] = getVariableType(
+                upfilteredField
+            )
+        }
+        return candidateResult
+    }
     if (upfilteredField) {
         const { vars: upfilteredVars, args: upfilteredArgs } = gqlizeField({
             field: upfilteredField,
