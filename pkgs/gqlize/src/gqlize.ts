@@ -88,8 +88,8 @@ const gqlizeMutation = ({ mutation, config }: GqlizeMutationArgs) => {
     return `mutation ${mutation.name.value}${
         mutation.arguments ? variableMapToString(vars) : ""
     } {
-    ${mutation.name.value}${args}
-}${gqlizeMutationReturn({ mutation, config })}`
+    ${mutation.name.value}${args}${gqlizeMutationReturn({ mutation, config })}
+}`
 }
 
 type VariableMap = Record<string, string>
@@ -140,11 +140,11 @@ const gqlizeMutationReturn = ({ mutation, config }: GqlizeMutationArgs) => {
 
 const getVariableType = (field: InputValueDefinitionNode) => {
     let variableType = getTypeName(field.type)
-    if (isList(field.type)) {
-        variableType = `[${variableType}]`
-    }
     if (isNonNull(field.type)) {
         variableType = `${variableType}!`
+    }
+    if (isList(field.type)) {
+        variableType = `[${variableType}]`
     }
     return variableType
 }
@@ -165,7 +165,7 @@ const hasNodeKind = (node: TypeNode, kind: string): boolean =>
         ? true
         : node.kind === "NamedType"
         ? false
-        : isList(node.type)
+        : hasNodeKind(node.type, kind)
 
 type GqlizeFieldArgs = {
     field: InputValueDefinitionNode
@@ -212,7 +212,6 @@ const gqlizeField = ({
             config.upfilterKeys.includes(name.value)
         )
     const upfilteredField = getUpfilteredField(fieldTypeDef)
-    // TODO: Fix this mess
     if (
         isList(field.type) ||
         (upfilteredField && isList(upfilteredField.type)) ||
@@ -222,6 +221,7 @@ const gqlizeField = ({
             candidateResult.vars[candidateVariableName] = getVariableType(
                 upfilteredField
             )
+            candidateResult.args = `${field.name.value}: {${upfilteredField.name.value}: $${candidateVariableName}}`
         }
         return candidateResult
     }
