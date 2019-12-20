@@ -118,7 +118,13 @@ export const december2019Updates: UpdateData[] = [
     {
         date: new Date(2019, 11, 19),
         goals: {
-            "Integrate gqlize with app": false
+            "Integrate gqlize with app": true
+        }
+    },
+    {
+        date: new Date(2019, 11, 20),
+        goals: {
+            "Merge test-execution branch": false
         }
     }
 ]
