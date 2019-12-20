@@ -811,12 +811,12 @@ export declare type StepSelect = {
     action?: boolean;
     selector?: boolean | SelectorSelectArgsOptional;
     value?: boolean;
-    test?: boolean | TestSelectArgsOptional;
+    tests?: boolean | FindManyTestSelectArgsOptional;
     user?: boolean | UserSelectArgsOptional;
 };
 export declare type StepInclude = {
     selector?: boolean | SelectorIncludeArgsOptional;
-    test?: boolean | TestIncludeArgsOptional;
+    tests?: boolean | FindManyTestIncludeArgsOptional;
     user?: boolean | UserIncludeArgsOptional;
 };
 declare type StepDefault = {
@@ -825,10 +825,10 @@ declare type StepDefault = {
     value: true;
 };
 declare type StepGetSelectPayload<S extends boolean | StepSelect> = S extends true ? Step : S extends StepSelect ? {
-    [P in CleanupNever<MergeTruthyValues<{}, S>>]: P extends StepScalars ? Step[P] : P extends 'selector' ? SelectorGetSelectPayload<ExtractSelectorSelectArgs<S[P]>> : P extends 'test' ? TestGetSelectPayload<ExtractTestSelectArgs<S[P]>> | null : P extends 'user' ? UserGetSelectPayload<ExtractUserSelectArgs<S[P]>> | null : never;
+    [P in CleanupNever<MergeTruthyValues<{}, S>>]: P extends StepScalars ? Step[P] : P extends 'selector' ? SelectorGetSelectPayload<ExtractSelectorSelectArgs<S[P]>> : P extends 'tests' ? Array<TestGetSelectPayload<ExtractFindManyTestSelectArgs<S[P]>>> : P extends 'user' ? UserGetSelectPayload<ExtractUserSelectArgs<S[P]>> | null : never;
 } : never;
 declare type StepGetIncludePayload<S extends boolean | StepInclude> = S extends true ? Step : S extends StepInclude ? {
-    [P in CleanupNever<MergeTruthyValues<StepDefault, S>>]: P extends StepScalars ? Step[P] : P extends 'selector' ? SelectorGetIncludePayload<ExtractSelectorIncludeArgs<S[P]>> : P extends 'test' ? TestGetIncludePayload<ExtractTestIncludeArgs<S[P]>> | null : P extends 'user' ? UserGetIncludePayload<ExtractUserIncludeArgs<S[P]>> | null : never;
+    [P in CleanupNever<MergeTruthyValues<StepDefault, S>>]: P extends StepScalars ? Step[P] : P extends 'selector' ? SelectorGetIncludePayload<ExtractSelectorIncludeArgs<S[P]>> : P extends 'tests' ? Array<TestGetIncludePayload<ExtractFindManyTestIncludeArgs<S[P]>>> : P extends 'user' ? UserGetIncludePayload<ExtractUserIncludeArgs<S[P]>> | null : never;
 } : never;
 export interface StepDelegate {
     <T extends FindManyStepArgs>(args?: Subset<T, FindManyStepArgs>): T extends FindManyStepArgsRequired ? 'Please either choose `select` or `include`' : T extends FindManyStepSelectArgs ? Promise<Array<StepGetSelectPayload<ExtractFindManyStepSelectArgs<T>>>> : T extends FindManyStepIncludeArgs ? Promise<Array<StepGetIncludePayload<ExtractFindManyStepIncludeArgs<T>>>> : Promise<Array<Step>>;
@@ -856,7 +856,7 @@ export declare class StepClient<T> implements Promise<T> {
     constructor(_dmmf: DMMFClass, _fetcher: PhotonFetcher, _queryType: 'query' | 'mutation', _rootField: string, _clientMethod: string, _args: any, _path: string[], _isList?: boolean);
     readonly [Symbol.toStringTag]: 'PhotonPromise';
     selector<T extends SelectorArgs = {}>(args?: Subset<T, SelectorArgs>): T extends FindOneSelectorArgsRequired ? 'Please either choose `select` or `include`' : T extends SelectorSelectArgs ? Promise<SelectorGetSelectPayload<ExtractSelectorSelectArgs<T>> | null> : T extends SelectorIncludeArgs ? Promise<SelectorGetIncludePayload<ExtractSelectorIncludeArgs<T>> | null> : SelectorClient<Selector | null>;
-    test<T extends TestArgs = {}>(args?: Subset<T, TestArgs>): T extends FindOneTestArgsRequired ? 'Please either choose `select` or `include`' : T extends TestSelectArgs ? Promise<TestGetSelectPayload<ExtractTestSelectArgs<T>> | null> : T extends TestIncludeArgs ? Promise<TestGetIncludePayload<ExtractTestIncludeArgs<T>> | null> : TestClient<Test | null>;
+    tests<T extends FindManyTestArgs = {}>(args?: Subset<T, FindManyTestArgs>): T extends FindManyTestArgsRequired ? 'Please either choose `select` or `include`' : T extends FindManyTestSelectArgs ? Promise<Array<TestGetSelectPayload<ExtractFindManyTestSelectArgs<T>>>> : T extends FindManyTestIncludeArgs ? Promise<Array<TestGetIncludePayload<ExtractFindManyTestIncludeArgs<T>>>> : Promise<Array<Test>>;
     user<T extends UserArgs = {}>(args?: Subset<T, UserArgs>): T extends FindOneUserArgsRequired ? 'Please either choose `select` or `include`' : T extends UserSelectArgs ? Promise<UserGetSelectPayload<ExtractUserSelectArgs<T>> | null> : T extends UserIncludeArgs ? Promise<UserGetIncludePayload<ExtractUserIncludeArgs<T>> | null> : UserClient<User | null>;
     private get _document();
     /**
@@ -1912,11 +1912,11 @@ export declare type StepWhereInput = {
     id?: number | IntFilter | null;
     action?: string | StringFilter | null;
     value?: string | StringFilter | null;
+    tests?: TestFilter | null;
     AND?: Enumerable<StepWhereInput> | null;
     OR?: Enumerable<StepWhereInput> | null;
     NOT?: Enumerable<StepWhereInput> | null;
     selector?: SelectorWhereInput | null;
-    test?: TestWhereInput | null;
     user?: UserWhereInput | null;
 };
 export declare type UserWhereInput = {
@@ -1979,15 +1979,15 @@ export declare type TestCreateWithoutStepsInput = {
     user: UserCreateOneWithoutUserInput;
     tags?: TagCreateManyWithoutTagsInput | null;
 };
-export declare type TestCreateOneWithoutTestInput = {
-    create?: TestCreateWithoutStepsInput | null;
-    connect?: TestWhereUniqueInput | null;
+export declare type TestCreateManyWithoutTestsInput = {
+    create?: Enumerable<TestCreateWithoutStepsInput> | null;
+    connect?: Enumerable<TestWhereUniqueInput> | null;
 };
 export declare type StepCreateWithoutUserInput = {
     action: string;
     value: string;
     selector: SelectorCreateOneWithoutSelectorInput;
-    test?: TestCreateOneWithoutTestInput | null;
+    tests?: TestCreateManyWithoutTestsInput | null;
 };
 export declare type StepCreateManyWithoutStepsInput = {
     create?: Enumerable<StepCreateWithoutUserInput> | null;
@@ -2001,15 +2001,6 @@ export declare type SelectorCreateManyWithoutSelectorsInput = {
     create?: Enumerable<SelectorCreateWithoutUserInput> | null;
     connect?: Enumerable<SelectorWhereUniqueInput> | null;
 };
-export declare type TestCreateWithoutUserInput = {
-    name: string;
-    steps?: StepCreateManyWithoutStepsInput | null;
-    tags?: TagCreateManyWithoutTagsInput | null;
-};
-export declare type TestCreateManyWithoutTestsInput = {
-    create?: Enumerable<TestCreateWithoutUserInput> | null;
-    connect?: Enumerable<TestWhereUniqueInput> | null;
-};
 export declare type UserCreateWithoutTagsInput = {
     email: string;
     password: string;
@@ -2022,6 +2013,15 @@ export declare type UserCreateWithoutTagsInput = {
 export declare type UserCreateOneWithoutUserInput = {
     create?: UserCreateWithoutTagsInput | null;
     connect?: UserWhereUniqueInput | null;
+};
+export declare type TestCreateWithoutTagsInput = {
+    name: string;
+    user: UserCreateOneWithoutUserInput;
+    steps?: StepCreateManyWithoutStepsInput | null;
+};
+export declare type TestCreateOneWithoutTestInput = {
+    create?: TestCreateWithoutTagsInput | null;
+    connect?: TestWhereUniqueInput | null;
 };
 export declare type TagCreateInput = {
     name: string;
@@ -2041,11 +2041,6 @@ export declare type TagCreateWithoutUserInput = {
     name: string;
     test?: TestCreateOneWithoutTestInput | null;
 };
-export declare type TestCreateWithoutTagsInput = {
-    name: string;
-    user: UserCreateOneWithoutUserInput;
-    steps?: StepCreateManyWithoutStepsInput | null;
-};
 export declare type UserCreateWithoutTestsInput = {
     email: string;
     password: string;
@@ -2058,7 +2053,7 @@ export declare type UserCreateWithoutTestsInput = {
 export declare type StepCreateWithoutSelectorInput = {
     action: string;
     value: string;
-    test?: TestCreateOneWithoutTestInput | null;
+    tests?: TestCreateManyWithoutTestsInput | null;
     user?: UserCreateOneWithoutUserInput | null;
 };
 export declare type TagUpdateWithoutTestDataInput = {
@@ -2107,86 +2102,9 @@ export declare type TestUpdateWithoutStepsDataInput = {
     user?: UserUpdateOneRequiredWithoutTestsInput | null;
     tags?: TagUpdateManyWithoutTestInput | null;
 };
-export declare type TestUpsertWithoutStepsInput = {
-    update: TestUpdateWithoutStepsDataInput;
-    create: TestCreateWithoutStepsInput;
-};
-export declare type TestUpdateOneWithoutStepsInput = {
-    create?: TestCreateWithoutStepsInput | null;
-    connect?: TestWhereUniqueInput | null;
-    disconnect?: boolean | null;
-    delete?: boolean | null;
-    update?: TestUpdateWithoutStepsDataInput | null;
-    upsert?: TestUpsertWithoutStepsInput | null;
-};
-export declare type UserCreateWithoutStepsInput = {
-    email: string;
-    password: string;
-    first: string;
-    last: string;
-    selectors?: SelectorCreateManyWithoutSelectorsInput | null;
-    tags?: TagCreateManyWithoutTagsInput | null;
-    tests?: TestCreateManyWithoutTestsInput | null;
-};
-export declare type StepCreateWithoutTestInput = {
-    action: string;
-    value: string;
-    selector: SelectorCreateOneWithoutSelectorInput;
-    user?: UserCreateOneWithoutUserInput | null;
-};
-export declare type StepUpdateWithoutTestDataInput = {
-    id?: number | null;
-    action?: string | null;
-    value?: string | null;
-    selector?: SelectorUpdateOneRequiredWithoutStepsInput | null;
-    user?: UserUpdateOneWithoutStepsInput | null;
-};
-export declare type StepUpdateWithWhereUniqueWithoutTestInput = {
-    where: StepWhereUniqueInput;
-    data: StepUpdateWithoutTestDataInput;
-};
-export declare type StepScalarWhereInput = {
-    id?: number | IntFilter | null;
-    action?: string | StringFilter | null;
-    value?: string | StringFilter | null;
-    AND?: Enumerable<StepScalarWhereInput> | null;
-    OR?: Enumerable<StepScalarWhereInput> | null;
-    NOT?: Enumerable<StepScalarWhereInput> | null;
-};
-export declare type StepUpdateManyDataInput = {
-    id?: number | null;
-    action?: string | null;
-    value?: string | null;
-};
-export declare type StepUpdateManyWithWhereNestedInput = {
-    where: StepScalarWhereInput;
-    data: StepUpdateManyDataInput;
-};
-export declare type StepUpsertWithWhereUniqueWithoutTestInput = {
-    where: StepWhereUniqueInput;
-    update: StepUpdateWithoutTestDataInput;
-    create: StepCreateWithoutTestInput;
-};
-export declare type StepUpdateManyWithoutTestInput = {
-    create?: Enumerable<StepCreateWithoutTestInput> | null;
-    connect?: Enumerable<StepWhereUniqueInput> | null;
-    set?: Enumerable<StepWhereUniqueInput> | null;
-    disconnect?: Enumerable<StepWhereUniqueInput> | null;
-    delete?: Enumerable<StepWhereUniqueInput> | null;
-    update?: Enumerable<StepUpdateWithWhereUniqueWithoutTestInput> | null;
-    updateMany?: Enumerable<StepUpdateManyWithWhereNestedInput> | null;
-    deleteMany?: Enumerable<StepScalarWhereInput> | null;
-    upsert?: Enumerable<StepUpsertWithWhereUniqueWithoutTestInput> | null;
-};
-export declare type TestUpdateWithoutUserDataInput = {
-    id?: number | null;
-    name?: string | null;
-    steps?: StepUpdateManyWithoutTestInput | null;
-    tags?: TagUpdateManyWithoutTestInput | null;
-};
-export declare type TestUpdateWithWhereUniqueWithoutUserInput = {
+export declare type TestUpdateWithWhereUniqueWithoutStepsInput = {
     where: TestWhereUniqueInput;
-    data: TestUpdateWithoutUserDataInput;
+    data: TestUpdateWithoutStepsDataInput;
 };
 export declare type TestScalarWhereInput = {
     id?: number | IntFilter | null;
@@ -2204,6 +2122,97 @@ export declare type TestUpdateManyDataInput = {
 export declare type TestUpdateManyWithWhereNestedInput = {
     where: TestScalarWhereInput;
     data: TestUpdateManyDataInput;
+};
+export declare type TestUpsertWithWhereUniqueWithoutStepsInput = {
+    where: TestWhereUniqueInput;
+    update: TestUpdateWithoutStepsDataInput;
+    create: TestCreateWithoutStepsInput;
+};
+export declare type TestUpdateManyWithoutStepsInput = {
+    create?: Enumerable<TestCreateWithoutStepsInput> | null;
+    connect?: Enumerable<TestWhereUniqueInput> | null;
+    set?: Enumerable<TestWhereUniqueInput> | null;
+    disconnect?: Enumerable<TestWhereUniqueInput> | null;
+    delete?: Enumerable<TestWhereUniqueInput> | null;
+    update?: Enumerable<TestUpdateWithWhereUniqueWithoutStepsInput> | null;
+    updateMany?: Enumerable<TestUpdateManyWithWhereNestedInput> | null;
+    deleteMany?: Enumerable<TestScalarWhereInput> | null;
+    upsert?: Enumerable<TestUpsertWithWhereUniqueWithoutStepsInput> | null;
+};
+export declare type UserCreateWithoutStepsInput = {
+    email: string;
+    password: string;
+    first: string;
+    last: string;
+    selectors?: SelectorCreateManyWithoutSelectorsInput | null;
+    tags?: TagCreateManyWithoutTagsInput | null;
+    tests?: TestCreateManyWithoutTestsInput | null;
+};
+export declare type TestCreateWithoutUserInput = {
+    name: string;
+    steps?: StepCreateManyWithoutStepsInput | null;
+    tags?: TagCreateManyWithoutTagsInput | null;
+};
+export declare type StepCreateWithoutTestsInput = {
+    action: string;
+    value: string;
+    selector: SelectorCreateOneWithoutSelectorInput;
+    user?: UserCreateOneWithoutUserInput | null;
+};
+export declare type StepUpdateWithoutTestsDataInput = {
+    id?: number | null;
+    action?: string | null;
+    value?: string | null;
+    selector?: SelectorUpdateOneRequiredWithoutStepsInput | null;
+    user?: UserUpdateOneWithoutStepsInput | null;
+};
+export declare type StepUpdateWithWhereUniqueWithoutTestsInput = {
+    where: StepWhereUniqueInput;
+    data: StepUpdateWithoutTestsDataInput;
+};
+export declare type StepScalarWhereInput = {
+    id?: number | IntFilter | null;
+    action?: string | StringFilter | null;
+    value?: string | StringFilter | null;
+    tests?: TestFilter | null;
+    AND?: Enumerable<StepScalarWhereInput> | null;
+    OR?: Enumerable<StepScalarWhereInput> | null;
+    NOT?: Enumerable<StepScalarWhereInput> | null;
+};
+export declare type StepUpdateManyDataInput = {
+    id?: number | null;
+    action?: string | null;
+    value?: string | null;
+};
+export declare type StepUpdateManyWithWhereNestedInput = {
+    where: StepScalarWhereInput;
+    data: StepUpdateManyDataInput;
+};
+export declare type StepUpsertWithWhereUniqueWithoutTestsInput = {
+    where: StepWhereUniqueInput;
+    update: StepUpdateWithoutTestsDataInput;
+    create: StepCreateWithoutTestsInput;
+};
+export declare type StepUpdateManyWithoutTestsInput = {
+    create?: Enumerable<StepCreateWithoutTestsInput> | null;
+    connect?: Enumerable<StepWhereUniqueInput> | null;
+    set?: Enumerable<StepWhereUniqueInput> | null;
+    disconnect?: Enumerable<StepWhereUniqueInput> | null;
+    delete?: Enumerable<StepWhereUniqueInput> | null;
+    update?: Enumerable<StepUpdateWithWhereUniqueWithoutTestsInput> | null;
+    updateMany?: Enumerable<StepUpdateManyWithWhereNestedInput> | null;
+    deleteMany?: Enumerable<StepScalarWhereInput> | null;
+    upsert?: Enumerable<StepUpsertWithWhereUniqueWithoutTestsInput> | null;
+};
+export declare type TestUpdateWithoutUserDataInput = {
+    id?: number | null;
+    name?: string | null;
+    steps?: StepUpdateManyWithoutTestsInput | null;
+    tags?: TagUpdateManyWithoutTestInput | null;
+};
+export declare type TestUpdateWithWhereUniqueWithoutUserInput = {
+    where: TestWhereUniqueInput;
+    data: TestUpdateWithoutUserDataInput;
 };
 export declare type TestUpsertWithWhereUniqueWithoutUserInput = {
     where: TestWhereUniqueInput;
@@ -2247,7 +2256,7 @@ export declare type StepUpdateWithoutSelectorDataInput = {
     id?: number | null;
     action?: string | null;
     value?: string | null;
-    test?: TestUpdateOneWithoutStepsInput | null;
+    tests?: TestUpdateManyWithoutStepsInput | null;
     user?: UserUpdateOneWithoutStepsInput | null;
 };
 export declare type StepUpdateWithWhereUniqueWithoutSelectorInput = {
@@ -2335,7 +2344,7 @@ export declare type TestUpdateWithoutTagsDataInput = {
     id?: number | null;
     name?: string | null;
     user?: UserUpdateOneRequiredWithoutTestsInput | null;
-    steps?: StepUpdateManyWithoutTestInput | null;
+    steps?: StepUpdateManyWithoutTestsInput | null;
 };
 export declare type TestUpsertWithoutTagsInput = {
     update: TestUpdateWithoutTagsDataInput;
@@ -2416,7 +2425,7 @@ export declare type StepUpdateWithoutUserDataInput = {
     action?: string | null;
     value?: string | null;
     selector?: SelectorUpdateOneRequiredWithoutStepsInput | null;
-    test?: TestUpdateOneWithoutStepsInput | null;
+    tests?: TestUpdateManyWithoutStepsInput | null;
 };
 export declare type StepUpdateWithWhereUniqueWithoutUserInput = {
     where: StepWhereUniqueInput;
@@ -2487,7 +2496,7 @@ export declare type StepCreateInput = {
     action: string;
     value: string;
     selector: SelectorCreateOneWithoutSelectorInput;
-    test?: TestCreateOneWithoutTestInput | null;
+    tests?: TestCreateManyWithoutTestsInput | null;
     user?: UserCreateOneWithoutUserInput | null;
 };
 export declare type StepUpdateInput = {
@@ -2495,7 +2504,7 @@ export declare type StepUpdateInput = {
     action?: string | null;
     value?: string | null;
     selector?: SelectorUpdateOneRequiredWithoutStepsInput | null;
-    test?: TestUpdateOneWithoutStepsInput | null;
+    tests?: TestUpdateManyWithoutStepsInput | null;
     user?: UserUpdateOneWithoutStepsInput | null;
 };
 export declare type StepUpdateManyMutationInput = {
@@ -2513,7 +2522,7 @@ export declare type TestUpdateInput = {
     id?: number | null;
     name?: string | null;
     user?: UserUpdateOneRequiredWithoutTestsInput | null;
-    steps?: StepUpdateManyWithoutTestInput | null;
+    steps?: StepUpdateManyWithoutTestsInput | null;
     tags?: TagUpdateManyWithoutTestInput | null;
 };
 export declare type TestUpdateManyMutationInput = {
@@ -2581,15 +2590,15 @@ export declare type TagFilter = {
     some?: TagWhereInput | null;
     none?: TagWhereInput | null;
 };
-export declare type SelectorFilter = {
-    every?: SelectorWhereInput | null;
-    some?: SelectorWhereInput | null;
-    none?: SelectorWhereInput | null;
-};
 export declare type TestFilter = {
     every?: TestWhereInput | null;
     some?: TestWhereInput | null;
     none?: TestWhereInput | null;
+};
+export declare type SelectorFilter = {
+    every?: SelectorWhereInput | null;
+    some?: SelectorWhereInput | null;
+    none?: SelectorWhereInput | null;
 };
 export declare type TagOrderByInput = {
     id?: OrderByArg | null;
@@ -2600,13 +2609,13 @@ export declare type StepOrderByInput = {
     action?: OrderByArg | null;
     value?: OrderByArg | null;
 };
-export declare type SelectorOrderByInput = {
-    id?: OrderByArg | null;
-    css?: OrderByArg | null;
-};
 export declare type TestOrderByInput = {
     id?: OrderByArg | null;
     name?: OrderByArg | null;
+};
+export declare type SelectorOrderByInput = {
+    id?: OrderByArg | null;
+    css?: OrderByArg | null;
 };
 export declare type UserOrderByInput = {
     id?: OrderByArg | null;

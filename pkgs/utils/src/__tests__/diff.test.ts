@@ -1,4 +1,4 @@
-import { diff } from "../diff"
+import { diff } from ".."
 import { o } from "./common"
 
 const updated = Object.freeze({

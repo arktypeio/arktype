@@ -1,4 +1,4 @@
-import { withArrays } from "../withArrays"
+import { withArrays } from ".."
 
 const o = Object.freeze({
     a: {

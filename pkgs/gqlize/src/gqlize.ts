@@ -6,6 +6,7 @@ import {
     InputObjectTypeDefinitionNode,
     TypeNode
 } from "graphql"
+import { camelCase, transformSubstring } from "@re-do/utils"
 
 type GqlizeArgs = {
     schema: DocumentNode
@@ -16,7 +17,7 @@ type GqlizeArgs = {
 type GqlizeConfig = Required<GqlizeArgs>
 
 const withDefaults = (args: GqlizeArgs): GqlizeConfig => ({
-    maxDepth: 1,
+    maxDepth: 2,
     upfilterKeys: [],
     ...args
 })
@@ -47,13 +48,17 @@ type GqlizeMutationArgs = {
 }
 
 const gqlizeMutation = ({ mutation, config }: GqlizeMutationArgs) => {
+    const returnTypeName = getTypeName(mutation.type)
     const { vars, args } = mutation.arguments
         ? mutation.arguments.reduce(
               ({ vars, args }, mutationArg, index) => {
                   const { vars: newVars, args: newArgs } = gqlizeField({
                       field: mutationArg,
                       config,
-                      path: [],
+                      path: {
+                          names: [returnTypeName.toLowerCase()],
+                          types: [returnTypeName]
+                      },
                       vars: {}
                   })
                   return {
@@ -103,12 +108,10 @@ const getVariableName = (
     taken: string[]
 ) => {
     let name = field.name.value
-    let nextParentIndex = path.length - 2
-    while (taken.includes(name)) {
-        name = `${path[nextParentIndex]}${name
-            .charAt(0)
-            .toUpperCase()}${name.slice(1)}`
-        nextParentIndex--
+    let nameParts = [name]
+    for (let tries = 0; taken.includes(name); tries++) {
+        nameParts = [path[tries], ...nameParts]
+        name = camelCase(nameParts)
     }
     return name
 }
@@ -117,6 +120,9 @@ const getVariableType = (field: InputValueDefinitionNode) => {
     let variableType = getTypeName(field.type)
     if (isList(field.type)) {
         variableType = `[${variableType}]`
+    }
+    if (isNonNull(field.type)) {
+        variableType = `${variableType}!`
     }
     return variableType
 }
@@ -142,7 +148,10 @@ const hasNodeKind = (node: TypeNode, kind: string): boolean =>
 type GqlizeFieldArgs = {
     field: InputValueDefinitionNode
     config: GqlizeConfig
-    path: string[]
+    path: {
+        names: string[]
+        types: string[]
+    }
     vars: VariableMap
 }
 
@@ -159,10 +168,15 @@ const gqlizeField = ({
 }: GqlizeFieldArgs): GqlizedFieldData => {
     const candidateVariableName = getVariableName(
         field,
-        path,
+        path.names,
         Object.keys(vars)
     )
-    if (isScalar(field.type) || path.length > config.maxDepth) {
+    if (
+        isScalar(field.type) ||
+        isList(field.type) ||
+        path.names.length > config.maxDepth
+    ) {
+        // TODO: Need to account for upfilter if not scalar if list or reached max depth
         return {
             vars: {
                 ...vars,
@@ -194,29 +208,13 @@ const gqlizeField = ({
     }
     return fieldTypeDef.fields.reduce(
         (updatedResult, nestedField, index) => {
-            if (!isNonNull(nestedField.type)) {
-                const nestedFieldTypeDef = getInputObjectDefinition(
-                    nestedField.type,
-                    config.schema
-                )
-                if (
-                    !(
-                        (
-                            nestedFieldTypeDef &&
-                            // TODO: Fix upfiltering to happen early enough
-                            getUpfilteredField(nestedFieldTypeDef)
-                        )
-                        // Probably at the field inspection level
-                    )
-                )
-                    // For now, the default is to ignore non-nullable types
-                    return updatedResult
-            }
-            const name = nestedField.name.value
             const nestedResult = gqlizeField({
                 field: nestedField,
                 config,
-                path: [...path, name],
+                path: {
+                    names: [...path.names, nestedField.name.value],
+                    types: [...path.types, getTypeName(nestedField.type)]
+                },
                 vars: updatedResult.vars
             })
             return {

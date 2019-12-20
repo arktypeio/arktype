@@ -5,7 +5,9 @@ export type ShapeFilter<O, S> = {
         ? Extract<keyof O, keyof S>
         : keyof O]: O[P] extends object
         ? O[P] extends Array<any>
-            ? Array<ShapeFilter<Unlisted<O[P]>, S>>
+            ? Unlisted<O[P]> extends object
+                ? Array<ShapeFilter<Unlisted<O[P]>, S>>
+                : O[P]
             : ShapeFilter<O[P], P extends keyof S ? S[P] : undefined>
         : O[P]
 }

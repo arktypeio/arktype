@@ -25,6 +25,7 @@ model Step {
   action   String
   selector Selector
   value    String
+  tests    Test[]
 }
 
 model Test {

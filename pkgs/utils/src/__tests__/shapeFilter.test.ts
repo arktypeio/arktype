@@ -1,4 +1,4 @@
-import { shapeFilter } from "../shapeFilter"
+import { shapeFilter } from ".."
 import { o } from "./common"
 
 const filter = {

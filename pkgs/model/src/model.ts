@@ -260,11 +260,11 @@ interface NexusPrismaInputs {
                 | "id"
                 | "action"
                 | "value"
+                | "tests"
                 | "AND"
                 | "OR"
                 | "NOT"
                 | "selector"
-                | "test"
                 | "user"
             ordering: "id" | "action" | "value"
         }
@@ -304,27 +304,40 @@ interface NexusPrismaInputs {
                 | "id"
                 | "action"
                 | "value"
+                | "tests"
                 | "AND"
                 | "OR"
                 | "NOT"
                 | "selector"
-                | "test"
                 | "user"
             ordering: "id" | "action" | "value"
         }
     }
-    Step: {}
+    Step: {
+        tests: {
+            filtering:
+                | "id"
+                | "name"
+                | "steps"
+                | "tags"
+                | "AND"
+                | "OR"
+                | "NOT"
+                | "user"
+            ordering: "id" | "name"
+        }
+    }
     Test: {
         steps: {
             filtering:
                 | "id"
                 | "action"
                 | "value"
+                | "tests"
                 | "AND"
                 | "OR"
                 | "NOT"
                 | "selector"
-                | "test"
                 | "user"
             ordering: "id" | "action" | "value"
         }
@@ -339,11 +352,11 @@ interface NexusPrismaInputs {
                 | "id"
                 | "action"
                 | "value"
+                | "tests"
                 | "AND"
                 | "OR"
                 | "NOT"
                 | "selector"
-                | "test"
                 | "user"
             ordering: "id" | "action" | "value"
         }
@@ -432,7 +445,7 @@ interface NexusPrismaTypes {
         action: "String"
         selector: "Selector"
         value: "String"
-        test: "Test"
+        tests: "Test"
         user: "User"
     }
     Test: {
@@ -543,7 +556,7 @@ export interface NexusGenInputs {
         // input type
         action: string // String!
         selector: NexusGenInputs["SelectorCreateOneWithoutSelectorInput"] // SelectorCreateOneWithoutSelectorInput!
-        test?: NexusGenInputs["TestCreateOneWithoutTestInput"] | null // TestCreateOneWithoutTestInput
+        tests?: NexusGenInputs["TestCreateManyWithoutTestsInput"] | null // TestCreateManyWithoutTestsInput
         value: string // String!
     }
     StepWhereUniqueInput: {
@@ -569,10 +582,10 @@ export interface NexusGenInputs {
         steps?: NexusGenInputs["StepCreateManyWithoutStepsInput"] | null // StepCreateManyWithoutStepsInput
         tags?: NexusGenInputs["TagCreateManyWithoutTagsInput"] | null // TagCreateManyWithoutTagsInput
     }
-    TestCreateOneWithoutTestInput: {
+    TestCreateManyWithoutTestsInput: {
         // input type
-        connect?: NexusGenInputs["TestWhereUniqueInput"] | null // TestWhereUniqueInput
-        create?: NexusGenInputs["TestCreateWithoutStepsInput"] | null // TestCreateWithoutStepsInput
+        connect?: NexusGenInputs["TestWhereUniqueInput"][] | null // [TestWhereUniqueInput!]
+        create?: NexusGenInputs["TestCreateWithoutStepsInput"][] | null // [TestCreateWithoutStepsInput!]
     }
     TestCreateWithoutStepsInput: {
         // input type
@@ -620,7 +633,7 @@ export interface NexusGenAllTypes extends NexusGenRootTypes {
     TagCreateWithoutTestInput: NexusGenInputs["TagCreateWithoutTestInput"]
     TagWhereUniqueInput: NexusGenInputs["TagWhereUniqueInput"]
     TestCreateInput: NexusGenInputs["TestCreateInput"]
-    TestCreateOneWithoutTestInput: NexusGenInputs["TestCreateOneWithoutTestInput"]
+    TestCreateManyWithoutTestsInput: NexusGenInputs["TestCreateManyWithoutTestsInput"]
     TestCreateWithoutStepsInput: NexusGenInputs["TestCreateWithoutStepsInput"]
     TestWhereUniqueInput: NexusGenInputs["TestWhereUniqueInput"]
     UserWhereUniqueInput: NexusGenInputs["UserWhereUniqueInput"]
@@ -841,7 +854,7 @@ export type NexusGenInputNames =
     | "TagCreateWithoutTestInput"
     | "TagWhereUniqueInput"
     | "TestCreateInput"
-    | "TestCreateOneWithoutTestInput"
+    | "TestCreateManyWithoutTestsInput"
     | "TestCreateWithoutStepsInput"
     | "TestWhereUniqueInput"
     | "UserWhereUniqueInput"

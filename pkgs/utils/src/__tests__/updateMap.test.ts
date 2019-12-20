@@ -1,4 +1,4 @@
-import { updateMap, DeepUpdate } from "../updateMap"
+import { updateMap, DeepUpdate } from ".."
 import { o } from "./common"
 
 const map: DeepUpdate<typeof o> = {

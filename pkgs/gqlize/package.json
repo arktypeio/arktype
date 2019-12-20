@@ -20,15 +20,12 @@
     },
     "devDependencies": {
         "@babel/cli": "7.6.4",
-        "@prisma/fetch-engine": "0.3.37",
-        "@prisma/photon": "2.0.0-preview017.2",
         "@re-do/recommended": "0.0.1",
         "@types/fs-extra": "8.0.1",
         "@types/jest": "24.0.19",
         "@types/node": "12.11.1",
         "babel-preset-redo": "0.0.1",
         "jest": "24.9.0",
-        "prisma2": "2.0.0-preview017.2",
         "typescript": "3.7.3"
     }
 }

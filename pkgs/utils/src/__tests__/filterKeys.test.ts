@@ -1,4 +1,4 @@
-import { filterKeys } from "../filterKeys"
+import { filterKeys } from ".."
 import { o } from "./common"
 
 test("doesn't modify objects", () => {
