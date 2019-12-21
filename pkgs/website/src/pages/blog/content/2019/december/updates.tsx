@@ -126,5 +126,12 @@ export const december2019Updates: UpdateData[] = [
         goals: {
             "Merge test-execution branch": false
         }
+    },
+    {
+        date: new Date(2019, 11, 21),
+        goals: {
+            "Merge test-execution branch": false,
+            "Begin AWS work": false
+        }
     }
 ]
