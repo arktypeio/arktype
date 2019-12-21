@@ -23,16 +23,22 @@ const withDefaults = (args: GqlizeArgs): GqlizeConfig => ({
 })
 
 export const gqlize = (args: GqlizeArgs) => {
-    return gqlizeMutations(withDefaults(args))
+    return { mutate: gqlizeMutations(withDefaults(args)) }
 }
 
 const gqlizeMutations = (config: GqlizeConfig) => {
     const mutationType = config.schema.definitions.find(
         _ => _.kind === "ObjectTypeDefinition" && _.name.value === "Mutation"
     ) as ObjectTypeDefinitionNode | undefined
-    return mutationType?.fields
-        ?.map(mutation => gqlizeMutation({ config, mutation }))
-        .join("\n")
+    return mutationType?.fields?.reduce(
+        (mutations, mutation) => ({
+            ...mutations,
+            [mutation.name.value]: {
+                gql: gqlizeMutation({ config, mutation })
+            }
+        }),
+        {}
+    )
 }
 
 const getInputObjectDefinition = (type: TypeNode, schema: DocumentNode) =>
@@ -85,12 +91,28 @@ const gqlizeMutation = ({ mutation, config }: GqlizeMutationArgs) => {
               }
           )
         : { vars: {}, args: "" }
-    return `mutation ${mutation.name.value}${
-        mutation.arguments ? variableMapToString(vars) : ""
-    } {
-    ${mutation.name.value}${args}${gqlizeMutationReturn({ mutation, config })}
-}`
+    return getMutationString({
+        name: mutation.name.value,
+        result: gqlizeMutationReturn({ mutation, config }),
+        vars: mutation.arguments ? variableMapToString(vars) : "",
+        args: mutation.arguments ? args : ""
+    })
 }
+
+type GetMutationStringOptions = {
+    name: string
+    result: string
+    vars?: string
+    args?: string
+}
+
+const getMutationString = ({
+    name,
+    result,
+    vars = "",
+    args = ""
+}: GetMutationStringOptions) =>
+    `mutation ${name}${vars}{${name}${args}${result}}`
 
 type VariableMap = Record<string, string>
 
@@ -130,11 +152,11 @@ const gqlizeMutationReturn = ({ mutation, config }: GqlizeMutationArgs) => {
         const returnType = getObjectDefinition(mutation.type, config.schema)
         const gqlizedReturn = returnType.fields?.reduce((gqlized, field) => {
             if (isScalar(field.type)) {
-                return `${gqlized}\n${field.name.value}`
+                return `${gqlized} ${field.name.value}`
             }
             return gqlized
         }, "{")
-        return `${gqlizedReturn}\n}`
+        return `${gqlizedReturn}}`
     }
 }
 

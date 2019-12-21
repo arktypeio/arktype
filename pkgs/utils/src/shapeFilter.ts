@@ -1,5 +1,6 @@
-import { isRecursible, fromEntries, Unlisted } from "./common"
+import { isRecursible, fromEntries, Unlisted, NonRecursible } from "./common"
 
+// TODO: Convert to look more like DeepFilterKeys?
 export type ShapeFilter<O, S> = {
     [P in S extends object
         ? Extract<keyof O, keyof S>

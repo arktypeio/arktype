@@ -51,5 +51,13 @@ function readPackage(packageJson, context) {
         )
         packageJson.dependencies["prop-types"] = "15.7.2"
     }
+    if (packageJson.name.startsWith("@graphql-codegen/")) {
+        context.log(
+            `Adding change-case as a peer dependency for ${packageJson.name}...`
+        )
+        packageJson.dependencies["change-case"] = "4.1.1"
+        packageJson.dependencies["@graphql-toolkit/common"] = "0.7.4"
+        packageJson.dependencies["auto-bind"] = "4.0.0"
+    }
     return packageJson
 }

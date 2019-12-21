@@ -181,10 +181,8 @@ type GetKind<Name extends any> = IsEnum<Name> extends true
     : IsObject<Name> extends true
     ? "Object"
     : IsInputObject<Name> extends true
-    ? "InputObject"
-    : // FIXME should be "never", but GQL objects named differently
-      // than backing type fall into this branch
-      "Object"
+    ? "InputObject" // FIXME should be "never", but GQL objects named differently // than backing type fall into this branch
+    : "Object"
 
 type NexusPrismaFields<ModelName extends keyof NexusPrismaTypes> = {
     [MethodName in keyof NexusPrismaTypes[ModelName]]: NexusPrismaMethod<
@@ -489,25 +487,6 @@ export interface Context {
     photon: photon.Photon
     req: any
     userId: number
-}
-
-type PrismaCreationType = {
-    create?: object
-    connect?: object
-}
-type Unprismafy<T> = {
-    [K in keyof T]: T[K] extends object
-        ? Unprismafy<T[K] extends PrismaCreationType ? T[K]["create"] : T[K]>
-        : T[K]
-}
-type Key = string | number
-type Primitive = string | number | boolean | symbol
-type NonRecursible = Primitive | Function | null | undefined
-type ExcludedByKeys<O, K extends Key[]> = Pick<O, Exclude<keyof O, K[number]>>
-type DeepExcludedByKeys<O, K extends Key[]> = {
-    [P in keyof ExcludedByKeys<O, K>]: O[P] extends NonRecursible | any[]
-        ? O[P]
-        : DeepExcludedByKeys<O[P], K>
 }
 
 declare global {
@@ -906,6 +885,94 @@ declare global {
     > {}
     interface NexusGenPluginSchemaConfig {}
 }
+
+type PrismaCreationType = {
+    create?: object
+    connect?: object
+}
+export type Unlisted<T> = T extends (infer V)[] ? V : T
+
+type Unprismafy<T> = {
+    [K in keyof T]: NonNullable<T[K]> extends object
+        ? Unprismafy<T[K] extends PrismaCreationType ? T[K]["create"] : T[K]>
+        : T[K]
+}
+
+// type FilterUp<T, UpfilteredKey> = {
+//     [K in keyof T]: undefined extends T[K]
+//         ?
+//               | FilterUp<
+//                     UpfilteredKey extends keyof NonNullable<T[K]>
+//                         ? NonNullable<T[K]>[UpfilteredKey]
+//                         : NonNullable<T[K]>,
+//                     UpfilteredKey
+//                 >
+//               | undefined
+//               | null
+//         : FilterUp<
+//               UpfilteredKey extends keyof T[K] ? T[K][UpfilteredKey] : T[K],
+//               UpfilteredKey
+//           >
+// }
+
+type S = true | false extends true ? "" : {}
+
+type CreateTest = {
+    name: string
+    steps?: CreateStep[]
+    user: string
+}
+
+type CreateStep = {
+    user: string
+    connect: {
+        user: string
+        replace: string
+    }
+}
+
+type Result = DeepExcludedByKeys<CreateStep, ["user"]>
+
+type Result2 = DeepExcludedByKeys<CreateStep[], ["user"]>
+
+const r: Result = {
+    connect: {
+        replace: ""
+    }
+}
+
+type New = DeepExcludedByKeys<CreateTest, ["user"]>
+
+const t: New = {
+    name: "",
+    steps: [{ connect: { replace: "" } }]
+}
+
+const x: FilterUp<CreateTest, "connect"> = {
+    name: "",
+    steps: [{ replace: "", user: "" }],
+    user: ""
+}
+
+type TestWorks = FilterUp<photon.TestCreateInput, "create">
+
+const test2: DeepExcludedByKeys<TestWorks, ["user"]> = {
+    name: "",
+    steps: [
+        {
+            action: "click",
+            value: "",
+            selector: {
+                css: ""
+            }
+        }
+    ]
+}
+
+type Key = string | number
+type Primitive = string | number | boolean | symbol
+type NonRecursible = Primitive | Function | null | undefined
+
 export type Selector = Unprismafy<
     DeepExcludedByKeys<photon.SelectorCreateInput, ["user"]>
 >
@@ -918,6 +985,7 @@ export type Tag = Unprismafy<
 export type Test = Unprismafy<
     DeepExcludedByKeys<photon.TestCreateInput, ["user"]>
 >
+
 export type User = Unprismafy<
     DeepExcludedByKeys<photon.UserCreateInput, ["user"]>
 >

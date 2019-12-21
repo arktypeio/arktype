@@ -1,16 +1,24 @@
-import { Key, NonRecursible } from "./common"
+import { Key, NonRecursible, Unlisted } from "./common"
 import { filter } from "./filter"
 
-export type ExcludedByKeys<O, K extends Key[]> = Pick<
-    O,
-    Exclude<keyof O, K[number]>
->
+type ExcludedByKeys<O, K extends Key[]> = Pick<O, Exclude<keyof O, K[number]>>
 
-export type DeepExcludedByKeys<O, K extends Key[]> = {
-    [P in keyof ExcludedByKeys<O, K>]: O[P] extends NonRecursible | any[]
-        ? O[P]
-        : DeepExcludedByKeys<O[P], K>
-}
+type DeepExcludedByKeys<O, K extends Key[]> = O extends NonRecursible
+    ? O
+    : {
+          [P in keyof ExcludedByKeys<O, K>]: Array<any> extends O[P]
+              ?
+                    | Array<
+                          DeepExcludedByKeys<
+                              Unlisted<Exclude<O[P], NonRecursible>>,
+                              K
+                          >
+                      >
+                    | Extract<O[P], NonRecursible>
+              :
+                    | DeepExcludedByKeys<Exclude<O[P], NonRecursible>, K>
+                    | Extract<O[P], NonRecursible>
+      }
 
 export const excludeKeys = <O, K extends Key[], D extends boolean = false>(
     o: O,

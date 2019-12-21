@@ -70,3 +70,33 @@ export const split = <T>(list: T[], by: (item: T) => boolean) =>
                 : [sorted[0], [...sorted[1], item]]) as SplitResult<T>,
         [[], []] as SplitResult<T>
     )
+
+export type FilterUp<T, UpfilteredKey> = {
+    [K in keyof T]: T[K] extends NonRecursible
+        ? T[K]
+        : Array<any> extends T[K]
+        ?
+              | Array<
+                    FilterUp<
+                        UpfilteredKey extends keyof Exclude<
+                            Unlisted<T[K]>,
+                            NonRecursible
+                        >
+                            ? Exclude<
+                                  Unlisted<T[K]>,
+                                  NonRecursible
+                              >[UpfilteredKey]
+                            : Exclude<Unlisted<T[K]>, NonRecursible>,
+                        UpfilteredKey
+                    >
+                >
+              | Extract<T[K], NonRecursible>
+        :
+              | FilterUp<
+                    UpfilteredKey extends keyof Exclude<T[K], NonRecursible>
+                        ? Exclude<T[K], NonRecursible>[UpfilteredKey]
+                        : Exclude<T[K], NonRecursible>,
+                    UpfilteredKey
+                >
+              | Extract<T[K], NonRecursible>
+}
