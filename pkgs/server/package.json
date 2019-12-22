@@ -4,15 +4,14 @@
     "author": "redo.qa",
     "description": "Redo's server",
     "scripts": {
-        "build": "npm run generate && npm run buildModel && tsc",
+        "build": "tsc",
         "start": "ts-node-dev --no-notify --respawn --transpileOnly src/index",
         "wipeDb": "rm -rf prisma/dev.db prisma/migrations",
         "seed": "ts-node prisma/seed.ts",
         "prisma": "prisma2 generate && npm run generateSchema && prisma2 lift save --name init && prisma2 lift up",
         "generate": "npm run wipeDb && npm run prisma && npm run seed",
         "clean": "rm -rf dist",
-        "generateSchema": "ts-node --transpile-only src/schema",
-        "buildModel": "ts-node buildModel && npx prettier --write ../model/src/model.ts"
+        "generateSchema": "ts-node --transpile-only src/schema && cp schema.gql ../model"
     },
     "dependencies": {
         "@re-do/model": "0.0.1",
@@ -26,7 +25,7 @@
         "isomorphic-ws": "4.0.1",
         "jsonwebtoken": "8.5.1",
         "nexus": "0.12.0-rc.5",
-        "redo-nexus-prisma": "0.6.1-3"
+        "redo-nexus-prisma": "0.6.1-8"
     },
     "devDependencies": {
         "@prisma/photon": "2.0.0-preview017.2",
@@ -41,8 +40,8 @@
         "fs-extra": "8.1.0",
         "jest": "24.9.0",
         "prisma2": "2.0.0-preview017.2",
-        "ts-node": "8.4.1",
+        "ts-node": "8.5.4",
         "ts-node-dev": "1.0.0-pre.43",
-        "typescript": "3.7.3"
+        "typescript": "3.7.4"
     }
 }

@@ -3,7 +3,7 @@
 
 
 type Mutation {
-  createOneTest(data: TestCreateInput!): Test!
+  createOneTest(data: TestCreateCreateOnlyInput!): Test!
   signIn(data: SignInInput!): String!
   signUp(data: SignUpInput!): String!
 }
@@ -26,12 +26,7 @@ type Selector {
   id: Int!
 }
 
-input SelectorCreateOneWithoutSelectorInput {
-  connect: SelectorWhereUniqueInput
-  create: SelectorCreateWithoutStepsInput
-}
-
-input SelectorCreateWithoutStepsInput {
+input SelectorCreateWithoutStepsCreateOnlyInput {
   css: String!
 }
 
@@ -58,15 +53,10 @@ type Step {
   value: String!
 }
 
-input StepCreateManyWithoutStepsInput {
-  connect: [StepWhereUniqueInput!]
-  create: [StepCreateWithoutUserInput!]
-}
-
-input StepCreateWithoutUserInput {
+input StepCreateWithoutUserCreateOnlyInput {
   action: String!
-  selector: SelectorCreateOneWithoutSelectorInput!
-  tests: TestCreateManyWithoutTestsInput
+  selector: SelectorCreateWithoutStepsCreateOnlyInput
+  tests: [TestCreateWithoutStepsCreateOnlyInput!]
   value: String!
 }
 
@@ -79,12 +69,7 @@ type Tag {
   name: String!
 }
 
-input TagCreateManyWithoutTagsInput {
-  connect: [TagWhereUniqueInput!]
-  create: [TagCreateWithoutTestInput!]
-}
-
-input TagCreateWithoutTestInput {
+input TagCreateWithoutTestCreateOnlyInput {
   name: String!
 }
 
@@ -99,20 +84,15 @@ type Test {
   tags(after: Int, before: Int, first: Int, last: Int, skip: Int): [Tag!]!
 }
 
-input TestCreateInput {
+input TestCreateCreateOnlyInput {
   name: String!
-  steps: StepCreateManyWithoutStepsInput
-  tags: TagCreateManyWithoutTagsInput
+  steps: [StepCreateWithoutUserCreateOnlyInput!]
+  tags: [TagCreateWithoutTestCreateOnlyInput!]
 }
 
-input TestCreateManyWithoutTestsInput {
-  connect: [TestWhereUniqueInput!]
-  create: [TestCreateWithoutStepsInput!]
-}
-
-input TestCreateWithoutStepsInput {
+input TestCreateWithoutStepsCreateOnlyInput {
   name: String!
-  tags: TagCreateManyWithoutTagsInput
+  tags: [TagCreateWithoutTestCreateOnlyInput!]
 }
 
 input TestWhereUniqueInput {

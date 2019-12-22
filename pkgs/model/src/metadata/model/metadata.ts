@@ -1,11 +1,18 @@
-import { Model } from "../../model"
 import {} from "validator"
 import { DocumentNode } from "graphql"
-import gql from "graphql-tag"
+import { Selector, Step, Tag, Test, User } from "../../model"
+
+export type Model = {
+    Selector: Selector
+    Step: Step
+    Tag: Tag
+    Test: Test
+    User: User
+}
 
 /** Map each core model type to a validation function returning an object
  *  that maps any of its keys to validation error messages */
-type ModelValidator<ModelType extends keyof Model> = (
+export type ModelValidator<ModelType extends keyof Model> = (
     data: Model[ModelType]
 ) => { [K in keyof Model[ModelType]]?: string }
 

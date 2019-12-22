@@ -1,998 +1,269 @@
-import * as photon from "../@prisma/photon"
-import { core } from "nexus"
-// Types helpers
-type IsModelNameExistsInGraphQLTypes<
-    ReturnType extends any
-> = ReturnType extends core.GetGen<"objectNames"> ? true : false
-
-type NexusPrismaScalarOpts = {
-    alias?: string
-}
-
-type Pagination = {
-    first?: boolean
-    last?: boolean
-    before?: boolean
-    after?: boolean
-    skip?: boolean
-}
-
-type RootObjectTypes = Pick<
-    core.GetGen<"rootTypes">,
-    core.GetGen<"objectNames">
->
-
-/**
- * Determine if "B" is a subset (or equivalent to) of "A".
- */
-type IsSubset<A, B> = keyof A extends never ? false : B extends A ? true : false
-
-type OmitByValue<T, ValueType> = Pick<
-    T,
-    { [Key in keyof T]: T[Key] extends ValueType ? never : Key }[keyof T]
->
-
-type GetSubsetTypes<ModelName extends any> = keyof OmitByValue<
-    {
-        [P in keyof RootObjectTypes]: ModelName extends keyof ModelTypes
-            ? IsSubset<RootObjectTypes[P], ModelTypes[ModelName]> extends true
-                ? RootObjectTypes[P]
-                : never
-            : never
-    },
-    never
->
-
-type SubsetTypes<ModelName extends any> = GetSubsetTypes<
-    ModelName
-> extends never
-    ? "ERROR: No subset types are available. Please make sure that one of your GraphQL type is a subset of your t.model('<ModelName>')"
-    : GetSubsetTypes<ModelName>
-
-type DynamicRequiredType<
-    ReturnType extends any
-> = IsModelNameExistsInGraphQLTypes<ReturnType> extends true
-    ? { type?: SubsetTypes<ReturnType> }
-    : { type: SubsetTypes<ReturnType> }
-
-type GetNexusPrismaInput<
-    ModelName extends any,
-    MethodName extends any,
-    InputName extends "filtering" | "ordering"
-> = ModelName extends keyof NexusPrismaInputs
-    ? MethodName extends keyof NexusPrismaInputs[ModelName]
-        ? NexusPrismaInputs[ModelName][MethodName][InputName]
-        : never
-    : never
-
-/**
- *  Represents arguments required by Photon that will
- *  be derived from a request's input (root, args, and context)
- *  and omitted from the GraphQL API. The object itself maps the
- *  names of these args to a function that takes an object representing
- *  the request's input and returns the value to pass to the photon
- *  arg of the same name.
- */
-type ComputedInputs<
-    MethodName extends MutationMethodName | null = null
-> = Record<string, (params: MutationResolverParams<MethodName>) => any>
-
-type MutationResolverParams<
-    MethodName extends MutationMethodName | null = null
-> = {
-    root: any
-    // 'args' will be typed according to its corresponding mutation's input type for resolver-level computedInputs.
-    // 'args' will be typed as 'any' for global computedInputs.
-    args: MethodName extends null
-        ? any
-        : MutationResolverArgsParam<
-              // Second conditional type is redundant but required due to a TS bug
-              MethodName extends null ? never : MethodName
-          >
-    ctx: Context
-}
-
-type MutationResolverArgsParam<
-    MethodName extends MutationMethodName
-> = core.GetGen<"argTypes">["Mutation"][MethodName]
-
-type MutationMethodName = keyof core.GetGen<"argTypes">["Mutation"]
-
-type NexusPrismaRelationOpts<
-    ModelName extends any,
-    MethodName extends any,
-    ReturnType extends any
-> = GetNexusPrismaInput<
-    // If GetNexusPrismaInput returns never, it means there are no filtering/ordering args for it. So just use "alias" and "type"
-    ModelName,
-    MethodName,
-    "filtering"
-> extends never
-    ? {
-          alias?: string
-          computedInputs?: ComputedInputs<MethodName>
-      } & DynamicRequiredType<ReturnType>
-    : {
-          alias?: string
-          computedInputs?: ComputedInputs<MethodName>
-          filtering?:
-              | boolean
-              | Partial<
-                    Record<
-                        GetNexusPrismaInput<ModelName, MethodName, "filtering">,
-                        boolean
-                    >
-                >
-          ordering?:
-              | boolean
-              | Partial<
-                    Record<
-                        GetNexusPrismaInput<ModelName, MethodName, "ordering">,
-                        boolean
-                    >
-                >
-          pagination?: boolean | Pagination
-      } & DynamicRequiredType<ReturnType>
-
-type IsScalar<TypeName extends any> = TypeName extends core.GetGen<
-    "scalarNames"
->
-    ? true
-    : false
-
-type IsObject<Name extends any> = Name extends core.GetGen<"objectNames">
-    ? true
-    : false
-
-type IsEnum<Name extends any> = Name extends core.GetGen<"enumNames">
-    ? true
-    : false
-
-type IsInputObject<Name extends any> = Name extends core.GetGen<"inputNames">
-    ? true
-    : false
-
-/**
- * The kind that a GraphQL type may be.
- */
-type Kind = "Enum" | "Object" | "Scalar" | "InputObject"
-
-/**
- * Helper to safely reference a Kind type. For example instead of the following
- * which would admit a typo:
- *
- * """ts
- * type Foo = Bar extends 'scalar' ? ...
- * """
- *
- * You can do this which guarantees a correct reference:
- *
- * """ts
- * type Foo = Bar extends AKind<'Scalar'> ? ...
- * """
- *
- */
-type AKind<T extends Kind> = T
-
-type GetKind<Name extends any> = IsEnum<Name> extends true
-    ? "Enum"
-    : IsScalar<Name> extends true
-    ? "Scalar"
-    : IsObject<Name> extends true
-    ? "Object"
-    : IsInputObject<Name> extends true
-    ? "InputObject" // FIXME should be "never", but GQL objects named differently // than backing type fall into this branch
-    : "Object"
-
-type NexusPrismaFields<ModelName extends keyof NexusPrismaTypes> = {
-    [MethodName in keyof NexusPrismaTypes[ModelName]]: NexusPrismaMethod<
-        ModelName,
-        MethodName,
-        GetKind<NexusPrismaTypes[ModelName][MethodName]> // Is the return type a scalar?
-    >
-}
-
-type NexusPrismaMethod<
-    ModelName extends keyof NexusPrismaTypes,
-    MethodName extends keyof NexusPrismaTypes[ModelName],
-    ThisKind extends Kind,
-    ReturnType extends any = NexusPrismaTypes[ModelName][MethodName]
-> = ThisKind extends AKind<"Enum">
-    ? () => NexusPrismaFields<ModelName>
-    : ThisKind extends AKind<"Scalar">
-    ? (opts?: NexusPrismaScalarOpts) => NexusPrismaFields<ModelName> // Return optional scalar opts
-    : IsModelNameExistsInGraphQLTypes<ReturnType> extends true // If model name has a mapped graphql types
-    ? (
-          opts?: NexusPrismaRelationOpts<ModelName, MethodName, ReturnType>
-      ) => NexusPrismaFields<ModelName> // Then make opts optional
-    : (
-          opts: NexusPrismaRelationOpts<ModelName, MethodName, ReturnType>
-      ) => NexusPrismaFields<ModelName> // Else force use input the related graphql type -> { type: '...' }
-
-type GetNexusPrismaMethod<
-    TypeName extends string
-> = TypeName extends keyof NexusPrismaMethods
-    ? NexusPrismaMethods[TypeName]
-    : <CustomTypeName extends keyof ModelTypes>(
-          typeName: CustomTypeName
-      ) => NexusPrismaMethods[CustomTypeName]
-
-type GetNexusPrisma<
-    TypeName extends string,
-    ModelOrCrud extends "model" | "crud"
-> = ModelOrCrud extends "model"
-    ? TypeName extends "Mutation"
-        ? never
-        : TypeName extends "Query"
-        ? never
-        : GetNexusPrismaMethod<TypeName>
-    : ModelOrCrud extends "crud"
-    ? TypeName extends "Mutation"
-        ? GetNexusPrismaMethod<TypeName>
-        : TypeName extends "Query"
-        ? GetNexusPrismaMethod<TypeName>
-        : never
-    : never
-
-// Generated
-interface ModelTypes {
-    Tag: photon.Tag
-    Selector: photon.Selector
-    Step: photon.Step
-    Test: photon.Test
-    User: photon.User
-}
-
-interface NexusPrismaInputs {
-    Query: {
-        tags: {
-            filtering: "id" | "name" | "AND" | "OR" | "NOT" | "user" | "test"
-            ordering: "id" | "name"
-        }
-        selectors: {
-            filtering: "id" | "css" | "steps" | "AND" | "OR" | "NOT" | "user"
-            ordering: "id" | "css"
-        }
-        steps: {
-            filtering:
-                | "id"
-                | "action"
-                | "value"
-                | "tests"
-                | "AND"
-                | "OR"
-                | "NOT"
-                | "selector"
-                | "user"
-            ordering: "id" | "action" | "value"
-        }
-        tests: {
-            filtering:
-                | "id"
-                | "name"
-                | "steps"
-                | "tags"
-                | "AND"
-                | "OR"
-                | "NOT"
-                | "user"
-            ordering: "id" | "name"
-        }
-        users: {
-            filtering:
-                | "id"
-                | "email"
-                | "password"
-                | "first"
-                | "last"
-                | "steps"
-                | "selectors"
-                | "tags"
-                | "tests"
-                | "AND"
-                | "OR"
-                | "NOT"
-            ordering: "id" | "email" | "password" | "first" | "last"
-        }
-    }
-    Tag: {}
-    Selector: {
-        steps: {
-            filtering:
-                | "id"
-                | "action"
-                | "value"
-                | "tests"
-                | "AND"
-                | "OR"
-                | "NOT"
-                | "selector"
-                | "user"
-            ordering: "id" | "action" | "value"
-        }
-    }
-    Step: {
-        tests: {
-            filtering:
-                | "id"
-                | "name"
-                | "steps"
-                | "tags"
-                | "AND"
-                | "OR"
-                | "NOT"
-                | "user"
-            ordering: "id" | "name"
-        }
-    }
-    Test: {
-        steps: {
-            filtering:
-                | "id"
-                | "action"
-                | "value"
-                | "tests"
-                | "AND"
-                | "OR"
-                | "NOT"
-                | "selector"
-                | "user"
-            ordering: "id" | "action" | "value"
-        }
-        tags: {
-            filtering: "id" | "name" | "AND" | "OR" | "NOT" | "user" | "test"
-            ordering: "id" | "name"
-        }
-    }
-    User: {
-        steps: {
-            filtering:
-                | "id"
-                | "action"
-                | "value"
-                | "tests"
-                | "AND"
-                | "OR"
-                | "NOT"
-                | "selector"
-                | "user"
-            ordering: "id" | "action" | "value"
-        }
-        selectors: {
-            filtering: "id" | "css" | "steps" | "AND" | "OR" | "NOT" | "user"
-            ordering: "id" | "css"
-        }
-        tags: {
-            filtering: "id" | "name" | "AND" | "OR" | "NOT" | "user" | "test"
-            ordering: "id" | "name"
-        }
-        tests: {
-            filtering:
-                | "id"
-                | "name"
-                | "steps"
-                | "tags"
-                | "AND"
-                | "OR"
-                | "NOT"
-                | "user"
-            ordering: "id" | "name"
-        }
-    }
-}
-
-interface NexusPrismaTypes {
-    Query: {
-        tag: "Tag"
-        tags: "Tag"
-        selector: "Selector"
-        selectors: "Selector"
-        step: "Step"
-        steps: "Step"
-        test: "Test"
-        tests: "Test"
-        user: "User"
-        users: "User"
-    }
-    Mutation: {
-        createOneTag: "Tag"
-        updateOneTag: "Tag"
-        updateManyTag: "BatchPayload"
-        deleteOneTag: "Tag"
-        deleteManyTag: "BatchPayload"
-        upsertOneTag: "Tag"
-        createOneSelector: "Selector"
-        updateOneSelector: "Selector"
-        updateManySelector: "BatchPayload"
-        deleteOneSelector: "Selector"
-        deleteManySelector: "BatchPayload"
-        upsertOneSelector: "Selector"
-        createOneStep: "Step"
-        updateOneStep: "Step"
-        updateManyStep: "BatchPayload"
-        deleteOneStep: "Step"
-        deleteManyStep: "BatchPayload"
-        upsertOneStep: "Step"
-        createOneTest: "Test"
-        updateOneTest: "Test"
-        updateManyTest: "BatchPayload"
-        deleteOneTest: "Test"
-        deleteManyTest: "BatchPayload"
-        upsertOneTest: "Test"
-        createOneUser: "User"
-        updateOneUser: "User"
-        updateManyUser: "BatchPayload"
-        deleteOneUser: "User"
-        deleteManyUser: "BatchPayload"
-        upsertOneUser: "User"
-    }
-    Tag: {
-        id: "Int"
-        user: "User"
-        name: "String"
-        test: "Test"
-    }
-    Selector: {
-        id: "Int"
-        css: "String"
-        steps: "Step"
-        user: "User"
-    }
-    Step: {
-        id: "Int"
-        action: "String"
-        selector: "Selector"
-        value: "String"
-        tests: "Test"
-        user: "User"
-    }
-    Test: {
-        id: "Int"
-        user: "User"
-        name: "String"
-        steps: "Step"
-        tags: "Tag"
-    }
-    User: {
-        id: "Int"
-        email: "String"
-        password: "String"
-        first: "String"
-        last: "String"
-        steps: "Step"
-        selectors: "Selector"
-        tags: "Tag"
-        tests: "Test"
-    }
-}
-
-interface NexusPrismaMethods {
-    Tag: NexusPrismaFields<"Tag">
-    Selector: NexusPrismaFields<"Selector">
-    Step: NexusPrismaFields<"Step">
-    Test: NexusPrismaFields<"Test">
-    User: NexusPrismaFields<"User">
-    Query: NexusPrismaFields<"Query">
-    Mutation: NexusPrismaFields<"Mutation">
-}
-
-declare global {
-    type NexusPrisma<
-        TypeName extends string,
-        ModelOrCrud extends "model" | "crud"
-    > = GetNexusPrisma<TypeName, ModelOrCrud>
-}
-
-export interface Context {
-    photon: photon.Photon
-    req: any
-    userId: number
-}
-
-declare global {
-    interface NexusGenCustomOutputProperties<TypeName extends string> {
-        crud: NexusPrisma<TypeName, "crud">
-        model: NexusPrisma<TypeName, "model">
-    }
-}
-
-declare global {
-    interface NexusGen extends NexusGenTypes {}
-}
-
-export interface NexusGenInputs {
-    SelectorCreateOneWithoutSelectorInput: {
-        // input type
-        connect?: NexusGenInputs["SelectorWhereUniqueInput"] | null // SelectorWhereUniqueInput
-        create?: NexusGenInputs["SelectorCreateWithoutStepsInput"] | null // SelectorCreateWithoutStepsInput
-    }
-    SelectorCreateWithoutStepsInput: {
-        // input type
-        css: string // String!
-    }
-    SelectorWhereUniqueInput: {
-        // input type
-        id?: number | null // Int
-    }
-    SignInInput: {
-        // input type
-        email: string // String!
-        password: string // String!
-    }
-    SignUpInput: {
-        // input type
-        email: string // String!
-        first: string // String!
-        last: string // String!
-        password: string // String!
-    }
-    StepCreateManyWithoutStepsInput: {
-        // input type
-        connect?: NexusGenInputs["StepWhereUniqueInput"][] | null // [StepWhereUniqueInput!]
-        create?: NexusGenInputs["StepCreateWithoutUserInput"][] | null // [StepCreateWithoutUserInput!]
-    }
-    StepCreateWithoutUserInput: {
-        // input type
-        action: string // String!
-        selector: NexusGenInputs["SelectorCreateOneWithoutSelectorInput"] // SelectorCreateOneWithoutSelectorInput!
-        tests?: NexusGenInputs["TestCreateManyWithoutTestsInput"] | null // TestCreateManyWithoutTestsInput
-        value: string // String!
-    }
-    StepWhereUniqueInput: {
-        // input type
-        id?: number | null // Int
-    }
-    TagCreateManyWithoutTagsInput: {
-        // input type
-        connect?: NexusGenInputs["TagWhereUniqueInput"][] | null // [TagWhereUniqueInput!]
-        create?: NexusGenInputs["TagCreateWithoutTestInput"][] | null // [TagCreateWithoutTestInput!]
-    }
-    TagCreateWithoutTestInput: {
-        // input type
-        name: string // String!
-    }
-    TagWhereUniqueInput: {
-        // input type
-        id?: number | null // Int
-    }
-    TestCreateInput: {
-        // input type
-        name: string // String!
-        steps?: NexusGenInputs["StepCreateManyWithoutStepsInput"] | null // StepCreateManyWithoutStepsInput
-        tags?: NexusGenInputs["TagCreateManyWithoutTagsInput"] | null // TagCreateManyWithoutTagsInput
-    }
-    TestCreateManyWithoutTestsInput: {
-        // input type
-        connect?: NexusGenInputs["TestWhereUniqueInput"][] | null // [TestWhereUniqueInput!]
-        create?: NexusGenInputs["TestCreateWithoutStepsInput"][] | null // [TestCreateWithoutStepsInput!]
-    }
-    TestCreateWithoutStepsInput: {
-        // input type
-        name: string // String!
-        tags?: NexusGenInputs["TagCreateManyWithoutTagsInput"] | null // TagCreateManyWithoutTagsInput
-    }
-    TestWhereUniqueInput: {
-        // input type
-        id?: number | null // Int
-    }
-    UserWhereUniqueInput: {
-        // input type
-        email?: string | null // String
-        id?: number | null // Int
-    }
-}
-
-export interface NexusGenEnums {}
-
-export interface NexusGenRootTypes {
-    Mutation: {}
-    Query: {}
-    Selector: photon.Selector
-    Step: photon.Step
-    Tag: photon.Tag
-    Test: photon.Test
-    User: photon.User
-    String: string
-    Int: number
-    Float: number
-    Boolean: boolean
-    ID: string
-}
-
-export interface NexusGenAllTypes extends NexusGenRootTypes {
-    SelectorCreateOneWithoutSelectorInput: NexusGenInputs["SelectorCreateOneWithoutSelectorInput"]
-    SelectorCreateWithoutStepsInput: NexusGenInputs["SelectorCreateWithoutStepsInput"]
-    SelectorWhereUniqueInput: NexusGenInputs["SelectorWhereUniqueInput"]
-    SignInInput: NexusGenInputs["SignInInput"]
-    SignUpInput: NexusGenInputs["SignUpInput"]
-    StepCreateManyWithoutStepsInput: NexusGenInputs["StepCreateManyWithoutStepsInput"]
-    StepCreateWithoutUserInput: NexusGenInputs["StepCreateWithoutUserInput"]
-    StepWhereUniqueInput: NexusGenInputs["StepWhereUniqueInput"]
-    TagCreateManyWithoutTagsInput: NexusGenInputs["TagCreateManyWithoutTagsInput"]
-    TagCreateWithoutTestInput: NexusGenInputs["TagCreateWithoutTestInput"]
-    TagWhereUniqueInput: NexusGenInputs["TagWhereUniqueInput"]
-    TestCreateInput: NexusGenInputs["TestCreateInput"]
-    TestCreateManyWithoutTestsInput: NexusGenInputs["TestCreateManyWithoutTestsInput"]
-    TestCreateWithoutStepsInput: NexusGenInputs["TestCreateWithoutStepsInput"]
-    TestWhereUniqueInput: NexusGenInputs["TestWhereUniqueInput"]
-    UserWhereUniqueInput: NexusGenInputs["UserWhereUniqueInput"]
-}
-
-export interface NexusGenFieldTypes {
-    Mutation: {
-        // field return type
-        createOneTest: NexusGenRootTypes["Test"] // Test!
-        signIn: string // String!
-        signUp: string // String!
-    }
-    Query: {
-        // field return type
-        selector: NexusGenRootTypes["Selector"] | null // Selector
-        selectors: NexusGenRootTypes["Selector"][] // [Selector!]!
-        step: NexusGenRootTypes["Step"] | null // Step
-        steps: NexusGenRootTypes["Step"][] // [Step!]!
-        tag: NexusGenRootTypes["Tag"] | null // Tag
-        tags: NexusGenRootTypes["Tag"][] // [Tag!]!
-        test: NexusGenRootTypes["Test"] | null // Test
-        tests: NexusGenRootTypes["Test"][] // [Test!]!
-        user: NexusGenRootTypes["User"] | null // User
-        users: NexusGenRootTypes["User"][] // [User!]!
-    }
-    Selector: {
-        // field return type
-        css: string // String!
-        id: number // Int!
-    }
-    Step: {
-        // field return type
-        action: string // String!
-        id: number // Int!
-        selector: NexusGenRootTypes["Selector"] // Selector!
-        value: string // String!
-    }
-    Tag: {
-        // field return type
-        id: number // Int!
-        name: string // String!
-    }
-    Test: {
-        // field return type
-        id: number // Int!
-        name: string // String!
-        steps: NexusGenRootTypes["Step"][] // [Step!]!
-        tags: NexusGenRootTypes["Tag"][] // [Tag!]!
-    }
-    User: {
-        // field return type
-        email: string // String!
-        first: string // String!
-        id: number // Int!
-        last: string // String!
-        password: string // String!
-        selectors: NexusGenRootTypes["Selector"][] // [Selector!]!
-        steps: NexusGenRootTypes["Step"][] // [Step!]!
-        tags: NexusGenRootTypes["Tag"][] // [Tag!]!
-        tests: NexusGenRootTypes["Test"][] // [Test!]!
-    }
-}
-
-export interface NexusGenArgTypes {
-    Mutation: {
-        createOneTest: {
-            // args
-            data: NexusGenInputs["TestCreateInput"] // TestCreateInput!
-        }
-        signIn: {
-            // args
-            data: NexusGenInputs["SignInInput"] // SignInInput!
-        }
-        signUp: {
-            // args
-            data: NexusGenInputs["SignUpInput"] // SignUpInput!
-        }
-    }
-    Query: {
-        selector: {
-            // args
-            where: NexusGenInputs["SelectorWhereUniqueInput"] // SelectorWhereUniqueInput!
-        }
-        selectors: {
-            // args
-            after?: number | null // Int
-            before?: number | null // Int
-            first?: number | null // Int
-            last?: number | null // Int
-            skip?: number | null // Int
-        }
-        step: {
-            // args
-            where: NexusGenInputs["StepWhereUniqueInput"] // StepWhereUniqueInput!
-        }
-        steps: {
-            // args
-            after?: number | null // Int
-            before?: number | null // Int
-            first?: number | null // Int
-            last?: number | null // Int
-            skip?: number | null // Int
-        }
-        tag: {
-            // args
-            where: NexusGenInputs["TagWhereUniqueInput"] // TagWhereUniqueInput!
-        }
-        tags: {
-            // args
-            after?: number | null // Int
-            before?: number | null // Int
-            first?: number | null // Int
-            last?: number | null // Int
-            skip?: number | null // Int
-        }
-        test: {
-            // args
-            where: NexusGenInputs["TestWhereUniqueInput"] // TestWhereUniqueInput!
-        }
-        tests: {
-            // args
-            after?: number | null // Int
-            before?: number | null // Int
-            first?: number | null // Int
-            last?: number | null // Int
-            skip?: number | null // Int
-        }
-        user: {
-            // args
-            where: NexusGenInputs["UserWhereUniqueInput"] // UserWhereUniqueInput!
-        }
-        users: {
-            // args
-            after?: number | null // Int
-            before?: number | null // Int
-            first?: number | null // Int
-            last?: number | null // Int
-            skip?: number | null // Int
-        }
-    }
-    Test: {
-        steps: {
-            // args
-            after?: number | null // Int
-            before?: number | null // Int
-            first?: number | null // Int
-            last?: number | null // Int
-            skip?: number | null // Int
-        }
-        tags: {
-            // args
-            after?: number | null // Int
-            before?: number | null // Int
-            first?: number | null // Int
-            last?: number | null // Int
-            skip?: number | null // Int
-        }
-    }
-    User: {
-        selectors: {
-            // args
-            after?: number | null // Int
-            before?: number | null // Int
-            first?: number | null // Int
-            last?: number | null // Int
-            skip?: number | null // Int
-        }
-        steps: {
-            // args
-            after?: number | null // Int
-            before?: number | null // Int
-            first?: number | null // Int
-            last?: number | null // Int
-            skip?: number | null // Int
-        }
-        tags: {
-            // args
-            after?: number | null // Int
-            before?: number | null // Int
-            first?: number | null // Int
-            last?: number | null // Int
-            skip?: number | null // Int
-        }
-        tests: {
-            // args
-            after?: number | null // Int
-            before?: number | null // Int
-            first?: number | null // Int
-            last?: number | null // Int
-            skip?: number | null // Int
-        }
-    }
-}
-
-export interface NexusGenAbstractResolveReturnTypes {}
-
-export interface NexusGenInheritedFields {}
-
-export type NexusGenObjectNames =
-    | "Mutation"
-    | "Query"
-    | "Selector"
-    | "Step"
-    | "Tag"
-    | "Test"
-    | "User"
-
-export type NexusGenInputNames =
-    | "SelectorCreateOneWithoutSelectorInput"
-    | "SelectorCreateWithoutStepsInput"
-    | "SelectorWhereUniqueInput"
-    | "SignInInput"
-    | "SignUpInput"
-    | "StepCreateManyWithoutStepsInput"
-    | "StepCreateWithoutUserInput"
-    | "StepWhereUniqueInput"
-    | "TagCreateManyWithoutTagsInput"
-    | "TagCreateWithoutTestInput"
-    | "TagWhereUniqueInput"
-    | "TestCreateInput"
-    | "TestCreateManyWithoutTestsInput"
-    | "TestCreateWithoutStepsInput"
-    | "TestWhereUniqueInput"
-    | "UserWhereUniqueInput"
-
-export type NexusGenEnumNames = never
-
-export type NexusGenInterfaceNames = never
-
-export type NexusGenScalarNames = "Boolean" | "Float" | "ID" | "Int" | "String"
-
-export type NexusGenUnionNames = never
-
-export interface NexusGenTypes {
-    context: Context
-    inputTypes: NexusGenInputs
-    rootTypes: NexusGenRootTypes
-    argTypes: NexusGenArgTypes
-    fieldTypes: NexusGenFieldTypes
-    allTypes: NexusGenAllTypes
-    inheritedFields: NexusGenInheritedFields
-    objectNames: NexusGenObjectNames
-    inputNames: NexusGenInputNames
-    enumNames: NexusGenEnumNames
-    interfaceNames: NexusGenInterfaceNames
-    scalarNames: NexusGenScalarNames
-    unionNames: NexusGenUnionNames
-    allInputTypes:
-        | NexusGenTypes["inputNames"]
-        | NexusGenTypes["enumNames"]
-        | NexusGenTypes["scalarNames"]
-    allOutputTypes:
-        | NexusGenTypes["objectNames"]
-        | NexusGenTypes["enumNames"]
-        | NexusGenTypes["unionNames"]
-        | NexusGenTypes["interfaceNames"]
-        | NexusGenTypes["scalarNames"]
-    allNamedTypes:
-        | NexusGenTypes["allInputTypes"]
-        | NexusGenTypes["allOutputTypes"]
-    abstractTypes: NexusGenTypes["interfaceNames"] | NexusGenTypes["unionNames"]
-    abstractResolveReturn: NexusGenAbstractResolveReturnTypes
-}
-
-declare global {
-    interface NexusGenPluginTypeConfig<TypeName extends string> {}
-    interface NexusGenPluginFieldConfig<
-        TypeName extends string,
-        FieldName extends string
-    > {}
-    interface NexusGenPluginSchemaConfig {}
-}
-
-type PrismaCreationType = {
-    create?: object
-    connect?: object
-}
-export type Unlisted<T> = T extends (infer V)[] ? V : T
-
-type Unprismafy<T> = {
-    [K in keyof T]: NonNullable<T[K]> extends object
-        ? Unprismafy<T[K] extends PrismaCreationType ? T[K]["create"] : T[K]>
-        : T[K]
-}
-
-// type FilterUp<T, UpfilteredKey> = {
-//     [K in keyof T]: undefined extends T[K]
-//         ?
-//               | FilterUp<
-//                     UpfilteredKey extends keyof NonNullable<T[K]>
-//                         ? NonNullable<T[K]>[UpfilteredKey]
-//                         : NonNullable<T[K]>,
-//                     UpfilteredKey
-//                 >
-//               | undefined
-//               | null
-//         : FilterUp<
-//               UpfilteredKey extends keyof T[K] ? T[K][UpfilteredKey] : T[K],
-//               UpfilteredKey
-//           >
-// }
-
-type S = true | false extends true ? "" : {}
-
-type CreateTest = {
-    name: string
-    steps?: CreateStep[]
-    user: string
-}
-
-type CreateStep = {
-    user: string
-    connect: {
-        user: string
-        replace: string
-    }
-}
-
-type Result = DeepExcludedByKeys<CreateStep, ["user"]>
-
-type Result2 = DeepExcludedByKeys<CreateStep[], ["user"]>
-
-const r: Result = {
-    connect: {
-        replace: ""
-    }
-}
-
-type New = DeepExcludedByKeys<CreateTest, ["user"]>
-
-const t: New = {
-    name: "",
-    steps: [{ connect: { replace: "" } }]
-}
-
-const x: FilterUp<CreateTest, "connect"> = {
-    name: "",
-    steps: [{ replace: "", user: "" }],
-    user: ""
-}
-
-type TestWorks = FilterUp<photon.TestCreateInput, "create">
-
-const test2: DeepExcludedByKeys<TestWorks, ["user"]> = {
-    name: "",
-    steps: [
-        {
-            action: "click",
-            value: "",
-            selector: {
-                css: ""
-            }
-        }
-    ]
-}
-
-type Key = string | number
-type Primitive = string | number | boolean | symbol
-type NonRecursible = Primitive | Function | null | undefined
-
-export type Selector = Unprismafy<
-    DeepExcludedByKeys<photon.SelectorCreateInput, ["user"]>
->
-export type Step = Unprismafy<
-    DeepExcludedByKeys<photon.StepCreateInput, ["user"]>
->
-export type Tag = Unprismafy<
-    DeepExcludedByKeys<photon.TagCreateInput, ["user"]>
->
-export type Test = Unprismafy<
-    DeepExcludedByKeys<photon.TestCreateInput, ["user"]>
->
-
-export type User = Unprismafy<
-    DeepExcludedByKeys<photon.UserCreateInput, ["user"]>
->
-export type Model = {
-    Selector: Selector
-    Step: Step
-    Tag: Tag
-    Test: Test
-    User: User
-}
+export type Maybe<T> = T | null;
+/** All built-in and custom scalars, mapped to their actual values */
+export type Scalars = {
+  ID: string,
+  String: string,
+  Boolean: boolean,
+  Int: number,
+  Float: number,
+};
+
+export type Mutation = {
+   __typename?: 'Mutation',
+  createOneTest: Test,
+  signIn: Scalars['String'],
+  signUp: Scalars['String'],
+};
+
+
+export type MutationCreateOneTestArgs = {
+  data: TestCreateCreateOnlyInput
+};
+
+
+export type MutationSignInArgs = {
+  data: SignInInput
+};
+
+
+export type MutationSignUpArgs = {
+  data: SignUpInput
+};
+
+export type Query = {
+   __typename?: 'Query',
+  selector?: Maybe<Selector>,
+  selectors: Array<Selector>,
+  step?: Maybe<Step>,
+  steps: Array<Step>,
+  tag?: Maybe<Tag>,
+  tags: Array<Tag>,
+  test?: Maybe<Test>,
+  tests: Array<Test>,
+  user?: Maybe<User>,
+  users: Array<User>,
+};
+
+
+export type QuerySelectorArgs = {
+  where: SelectorWhereUniqueInput
+};
+
+
+export type QuerySelectorsArgs = {
+  after?: Maybe<Scalars['Int']>,
+  before?: Maybe<Scalars['Int']>,
+  first?: Maybe<Scalars['Int']>,
+  last?: Maybe<Scalars['Int']>,
+  skip?: Maybe<Scalars['Int']>
+};
+
+
+export type QueryStepArgs = {
+  where: StepWhereUniqueInput
+};
+
+
+export type QueryStepsArgs = {
+  after?: Maybe<Scalars['Int']>,
+  before?: Maybe<Scalars['Int']>,
+  first?: Maybe<Scalars['Int']>,
+  last?: Maybe<Scalars['Int']>,
+  skip?: Maybe<Scalars['Int']>
+};
+
+
+export type QueryTagArgs = {
+  where: TagWhereUniqueInput
+};
+
+
+export type QueryTagsArgs = {
+  after?: Maybe<Scalars['Int']>,
+  before?: Maybe<Scalars['Int']>,
+  first?: Maybe<Scalars['Int']>,
+  last?: Maybe<Scalars['Int']>,
+  skip?: Maybe<Scalars['Int']>
+};
+
+
+export type QueryTestArgs = {
+  where: TestWhereUniqueInput
+};
+
+
+export type QueryTestsArgs = {
+  after?: Maybe<Scalars['Int']>,
+  before?: Maybe<Scalars['Int']>,
+  first?: Maybe<Scalars['Int']>,
+  last?: Maybe<Scalars['Int']>,
+  skip?: Maybe<Scalars['Int']>
+};
+
+
+export type QueryUserArgs = {
+  where: UserWhereUniqueInput
+};
+
+
+export type QueryUsersArgs = {
+  after?: Maybe<Scalars['Int']>,
+  before?: Maybe<Scalars['Int']>,
+  first?: Maybe<Scalars['Int']>,
+  last?: Maybe<Scalars['Int']>,
+  skip?: Maybe<Scalars['Int']>
+};
+
+export type Selector = {
+   __typename?: 'Selector',
+  css: Scalars['String'],
+  id: Scalars['Int'],
+};
+
+export type SelectorCreateWithoutStepsCreateOnlyInput = {
+  css: Scalars['String'],
+};
+
+export type SelectorWhereUniqueInput = {
+  id?: Maybe<Scalars['Int']>,
+};
+
+export type SignInInput = {
+  email: Scalars['String'],
+  password: Scalars['String'],
+};
+
+export type SignUpInput = {
+  email: Scalars['String'],
+  first: Scalars['String'],
+  last: Scalars['String'],
+  password: Scalars['String'],
+};
+
+export type Step = {
+   __typename?: 'Step',
+  action: Scalars['String'],
+  id: Scalars['Int'],
+  selector: Selector,
+  value: Scalars['String'],
+};
+
+export type StepCreateWithoutUserCreateOnlyInput = {
+  action: Scalars['String'],
+  selector?: Maybe<SelectorCreateWithoutStepsCreateOnlyInput>,
+  tests?: Maybe<Array<TestCreateWithoutStepsCreateOnlyInput>>,
+  value: Scalars['String'],
+};
+
+export type StepWhereUniqueInput = {
+  id?: Maybe<Scalars['Int']>,
+};
+
+export type Tag = {
+   __typename?: 'Tag',
+  id: Scalars['Int'],
+  name: Scalars['String'],
+};
+
+export type TagCreateWithoutTestCreateOnlyInput = {
+  name: Scalars['String'],
+};
+
+export type TagWhereUniqueInput = {
+  id?: Maybe<Scalars['Int']>,
+};
+
+export type Test = {
+   __typename?: 'Test',
+  id: Scalars['Int'],
+  name: Scalars['String'],
+  steps: Array<Step>,
+  tags: Array<Tag>,
+};
+
+
+export type TestStepsArgs = {
+  after?: Maybe<Scalars['Int']>,
+  before?: Maybe<Scalars['Int']>,
+  first?: Maybe<Scalars['Int']>,
+  last?: Maybe<Scalars['Int']>,
+  skip?: Maybe<Scalars['Int']>
+};
+
+
+export type TestTagsArgs = {
+  after?: Maybe<Scalars['Int']>,
+  before?: Maybe<Scalars['Int']>,
+  first?: Maybe<Scalars['Int']>,
+  last?: Maybe<Scalars['Int']>,
+  skip?: Maybe<Scalars['Int']>
+};
+
+export type TestCreateCreateOnlyInput = {
+  name: Scalars['String'],
+  steps?: Maybe<Array<StepCreateWithoutUserCreateOnlyInput>>,
+  tags?: Maybe<Array<TagCreateWithoutTestCreateOnlyInput>>,
+};
+
+export type TestCreateWithoutStepsCreateOnlyInput = {
+  name: Scalars['String'],
+  tags?: Maybe<Array<TagCreateWithoutTestCreateOnlyInput>>,
+};
+
+export type TestWhereUniqueInput = {
+  id?: Maybe<Scalars['Int']>,
+};
+
+export type User = {
+   __typename?: 'User',
+  email: Scalars['String'],
+  first: Scalars['String'],
+  id: Scalars['Int'],
+  last: Scalars['String'],
+  password: Scalars['String'],
+  selectors: Array<Selector>,
+  steps: Array<Step>,
+  tags: Array<Tag>,
+  tests: Array<Test>,
+};
+
+
+export type UserSelectorsArgs = {
+  after?: Maybe<Scalars['Int']>,
+  before?: Maybe<Scalars['Int']>,
+  first?: Maybe<Scalars['Int']>,
+  last?: Maybe<Scalars['Int']>,
+  skip?: Maybe<Scalars['Int']>
+};
+
+
+export type UserStepsArgs = {
+  after?: Maybe<Scalars['Int']>,
+  before?: Maybe<Scalars['Int']>,
+  first?: Maybe<Scalars['Int']>,
+  last?: Maybe<Scalars['Int']>,
+  skip?: Maybe<Scalars['Int']>
+};
+
+
+export type UserTagsArgs = {
+  after?: Maybe<Scalars['Int']>,
+  before?: Maybe<Scalars['Int']>,
+  first?: Maybe<Scalars['Int']>,
+  last?: Maybe<Scalars['Int']>,
+  skip?: Maybe<Scalars['Int']>
+};
+
+
+export type UserTestsArgs = {
+  after?: Maybe<Scalars['Int']>,
+  before?: Maybe<Scalars['Int']>,
+  first?: Maybe<Scalars['Int']>,
+  last?: Maybe<Scalars['Int']>,
+  skip?: Maybe<Scalars['Int']>
+};
+
+export type UserWhereUniqueInput = {
+  email?: Maybe<Scalars['String']>,
+  id?: Maybe<Scalars['Int']>,
+};

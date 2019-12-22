@@ -1,27 +1,27 @@
 {
-  "name": "@re-do/test",
-  "version": "0.0.1",
-  "author": "redo.qa",
-  "description": "Delightful web testing that writes itself 🖋",
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
-  "scripts": {
-    "build": "redo-build",
-    "test": "jest"
-  },
-  "dependencies": {
-    "@babel/runtime-corejs3": "7.6.3",
-    "@re-do/model": "0.0.1",
-    "@re-do/utils": "0.0.1",
-    "puppeteer": "1.20.0"
-  },
-  "devDependencies": {
-    "@babel/cli": "7.6.4",
-    "@re-do/recommended": "0.0.1",
-    "@types/jest": "24.0.19",
-    "@types/puppeteer": "1.20.2",
-    "babel-preset-redo": "0.0.1",
-    "jest": "24.9.0",
-    "typescript": "3.7.3"
-  }
+    "name": "@re-do/test",
+    "version": "0.0.1",
+    "author": "redo.qa",
+    "description": "Delightful web testing that writes itself 🖋",
+    "main": "dist/index.js",
+    "types": "dist/index.d.ts",
+    "scripts": {
+        "build": "redo-build",
+        "test": "jest"
+    },
+    "dependencies": {
+        "@babel/runtime-corejs3": "7.6.3",
+        "@re-do/model": "0.0.1",
+        "@re-do/utils": "0.0.1",
+        "puppeteer": "1.20.0"
+    },
+    "devDependencies": {
+        "@babel/cli": "7.6.4",
+        "@re-do/recommended": "0.0.1",
+        "@types/jest": "24.0.19",
+        "@types/puppeteer": "1.20.2",
+        "babel-preset-redo": "0.0.1",
+        "jest": "24.9.0",
+        "typescript": "3.7.4"
+    }
 }

@@ -7,23 +7,32 @@ import {
     TypeNode
 } from "graphql"
 import { camelCase } from "@re-do/utils"
+import { readFileSync } from "fs-extra"
+import gql from "graphql-tag"
 
 type GqlizeArgs = {
-    schema: DocumentNode
+    schema: DocumentNode | string
     maxDepth?: number
-    upfilterKeys?: string[]
 }
 
-type GqlizeConfig = Required<GqlizeArgs>
+type GqlizeConfig = {
+    schema: DocumentNode
+    maxDepth: number
+}
 
-const withDefaults = (args: GqlizeArgs): GqlizeConfig => ({
-    maxDepth: 2,
-    upfilterKeys: [],
-    ...args
-})
+const getConfig = ({ maxDepth, schema }: GqlizeArgs): GqlizeConfig => {
+    return {
+        maxDepth: maxDepth ?? 2,
+        schema:
+            typeof schema === "string"
+                ? (gql(readFileSync(schema).toString()) as DocumentNode)
+                : schema
+    }
+}
 
 export const gqlize = (args: GqlizeArgs) => {
-    return { mutate: gqlizeMutations(withDefaults(args)) }
+    const config = getConfig(args)
+    return `${gqlizeMutations(config)}`
 }
 
 const gqlizeMutations = (config: GqlizeConfig) => {
@@ -31,13 +40,9 @@ const gqlizeMutations = (config: GqlizeConfig) => {
         _ => _.kind === "ObjectTypeDefinition" && _.name.value === "Mutation"
     ) as ObjectTypeDefinitionNode | undefined
     return mutationType?.fields?.reduce(
-        (mutations, mutation) => ({
-            ...mutations,
-            [mutation.name.value]: {
-                gql: gqlizeMutation({ config, mutation })
-            }
-        }),
-        {}
+        (mutations, mutation) =>
+            mutations + gqlizeMutation({ config, mutation }) + "\n",
+        ""
     )
 }
 
@@ -210,54 +215,27 @@ const gqlizeField = ({
     path,
     vars
 }: GqlizeFieldArgs): GqlizedFieldData => {
-    const candidateVariableName = getVariableName(
-        field,
-        path.names,
-        Object.keys(vars)
-    )
-    const candidateResult: GqlizedFieldData = {
-        vars: {
-            ...vars,
-            [candidateVariableName]: getVariableType(field)
-        },
-        args: `${field.name.value}: $${candidateVariableName}`
-    }
-    if (isScalar(field.type)) {
-        return candidateResult
+    if (
+        isScalar(field.type) ||
+        isList(field.type) ||
+        path.names.length > config.maxDepth
+    ) {
+        const variableName = getVariableName(
+            field,
+            path.names,
+            Object.keys(vars)
+        )
+        return {
+            vars: {
+                ...vars,
+                [variableName]: getVariableType(field)
+            },
+            args: `${field.name.value}: $${variableName}`
+        }
     }
     const fieldTypeDef = getInputObjectDefinition(field.type, config.schema)
     if (!fieldTypeDef.fields) {
         throw new Error(`Couldn't locate fields for type ${field.type}.`)
-    }
-    const getUpfilteredField = (baseField: InputObjectTypeDefinitionNode) =>
-        baseField.fields?.find(({ name }) =>
-            config.upfilterKeys.includes(name.value)
-        )
-    const upfilteredField = getUpfilteredField(fieldTypeDef)
-    if (
-        isList(field.type) ||
-        (upfilteredField && isList(upfilteredField.type)) ||
-        path.names.length > config.maxDepth
-    ) {
-        if (upfilteredField) {
-            candidateResult.vars[candidateVariableName] = getVariableType(
-                upfilteredField
-            )
-            candidateResult.args = `${field.name.value}: {${upfilteredField.name.value}: $${candidateVariableName}}`
-        }
-        return candidateResult
-    }
-    if (upfilteredField) {
-        const { vars: upfilteredVars, args: upfilteredArgs } = gqlizeField({
-            field: upfilteredField,
-            config,
-            path,
-            vars
-        })
-        return {
-            vars: upfilteredVars,
-            args: `${field.name.value}: {${upfilteredArgs}}`
-        }
     }
     return fieldTypeDef.fields.reduce(
         (updatedResult, nestedField, index) => {

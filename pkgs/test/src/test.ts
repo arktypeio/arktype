@@ -1,8 +1,6 @@
 import p, { Page, Browser } from "puppeteer"
 import { ValueOf } from "@re-do/utils"
-import { NexusGenInputs } from "@re-do/model"
-
-type SelectorInput = NexusGenInputs["SelectorCreateWithoutStepsInput"]
+import { SelectorCreateWithoutStepsCreateOnlyInput as SelectorInput } from "@re-do/model"
 
 export const test = async (...steps: Step[]) => {
     const browser = await p.launch({ headless: false, slowMo: 50 })

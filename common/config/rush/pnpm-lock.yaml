@@ -1,4 +1,5 @@
 dependencies:
+    "@apollo/client": 3.0.0-beta.16_graphql@14.5.8+react@16.10.2
     "@apollo/react-hooks": 3.1.3_31d1a7b54e6a7ee3dbc3accc4d0f8a97
     "@babel/cli": 7.6.4_@babel+core@7.6.4
     "@babel/core": 7.6.4
@@ -16,6 +17,7 @@ dependencies:
     "@babel/runtime-corejs3": 7.6.3
     "@date-io/date-fns": 1.3.11_date-fns@2.5.1
     "@graphql-codegen/core": 1.9.1_graphql@14.5.8
+    "@graphql-codegen/plugin-helpers": 1.9.1_graphql@14.5.8
     "@graphql-codegen/typescript": 1.9.1_4a3ec2775b38acf4387c4d3c26d2b1c8
     "@graphql-codegen/typescript-operations": 1.9.1_4a3ec2775b38acf4387c4d3c26d2b1c8
     "@graphql-codegen/typescript-react-apollo": 1.9.1_a71ebdcca7a0430541f2eb7e7e3ac8a1
@@ -32,8 +34,8 @@ dependencies:
     "@rush-temp/babel-preset-redo": "file:projects/babel-preset-redo.tgz_react-dom@16.10.2+react@16.10.2"
     "@rush-temp/bundle": "file:projects/bundle.tgz_06b0ba4fdf0f0c5aaf41218256e8c607"
     "@rush-temp/components": "file:projects/components.tgz_webpack@4.41.2"
-    "@rush-temp/gqlize": "file:projects/gqlize.tgz_43738f828fcd7c83a512f3eb92913755"
-    "@rush-temp/model": "file:projects/model.tgz_@babel+core@7.6.4"
+    "@rush-temp/gqlize": "file:projects/gqlize.tgz_@babel+core@7.6.4"
+    "@rush-temp/model": "file:projects/model.tgz_58b5a9a5f9071e55ffa8ba65d5ea2017"
     "@rush-temp/react-statelessly": "file:projects/react-statelessly.tgz_@babel+core@7.6.4"
     "@rush-temp/recommended": "file:projects/recommended.tgz"
     "@rush-temp/server": "file:projects/server.tgz"
@@ -120,7 +122,7 @@ dependencies:
     puppeteer: 1.20.0
     react: 16.10.2
     react-apollo: 3.1.3_31d1a7b54e6a7ee3dbc3accc4d0f8a97
-    react-docgen-typescript-loader: 3.3.0_typescript@3.7.3+webpack@4.41.2
+    react-docgen-typescript-loader: 3.3.0_typescript@3.7.4+webpack@4.41.2
     react-dom: 16.10.2_react@16.10.2
     react-hook-form: 3.24.1_react-dom@16.10.2+react@16.10.2
     react-hot-loader: 4.12.15_react-dom@16.10.2+react@16.10.2
@@ -129,18 +131,18 @@ dependencies:
     react-svg-loader: 3.0.3
     react-test-renderer: 16.10.2_react@16.10.2
     react-typist: 2.0.5_react-dom@16.10.2+react@16.10.2
-    redo-nexus-prisma: 0.6.1-3_3d439f4e0f24d46582a80975993b2eea
+    redo-nexus-prisma: 0.6.1-8_3d439f4e0f24d46582a80975993b2eea
     redux: 4.0.4
     reflect-metadata: 0.1.13
     style-loader: 1.0.0_webpack@4.41.2
-    ts-loader: 6.2.0_typescript@3.7.3
-    ts-node: 8.4.1_typescript@3.7.3
-    ts-node-dev: 1.0.0-pre.43_typescript@3.7.3
+    ts-loader: 6.2.0_typescript@3.7.4
+    ts-node: 8.5.4_typescript@3.7.4
+    ts-node-dev: 1.0.0-pre.43_typescript@3.7.4
     tsconfig-paths: 3.9.0
     tsconfig-paths-webpack-plugin: 3.2.0
     type-graphql: 0.17.5_2f992e2e424a491fbdc3cbc9f3788f13
     typeface-ubuntu: 0.0.65
-    typescript: 3.7.3
+    typescript: 3.7.4
     uuid: 3.3.3
     validate.js: 0.13.1
     validator: 12.1.0
@@ -154,6 +156,28 @@ packages:
         dev: false
         resolution:
             integrity: sha512-GLyWIFBbGvpKPGo55JyRZAo4lVbnBiD52cKlw/0Vt+wnmKvWJkpZvsjVoaIolyBXDeAQKSicRtqFNPem9w0WYA==
+    /@apollo/client/3.0.0-beta.16_graphql@14.5.8+react@16.10.2:
+        dependencies:
+            "@types/zen-observable": 0.8.0
+            "@wry/equality": 0.1.9
+            fast-json-stable-stringify: 2.1.0
+            graphql: 14.5.8
+            graphql-tag: 2.10.1_graphql@14.5.8
+            optimism: 0.11.4
+            react: 16.10.2
+            symbol-observable: 1.2.0
+            ts-invariant: 0.4.4
+            tslib: 1.10.0
+            zen-observable: 0.8.15
+        dev: false
+        peerDependencies:
+            graphql: ^14.5.4
+            react: ^16.8.0
+        peerDependenciesMeta:
+            react:
+                optional: true
+        resolution:
+            integrity: sha512-g5cIMnTwvUCpO4SlBXKXH3vsKI7ie355KC4rZ2Gthon4lZ9GbSf1W8i77ihARElNdybrSuzEVBpenNi+XumVcg==
     /@apollo/protobufjs/1.0.3:
         dependencies:
             "@protobufjs/aspromise": 1.1.2
@@ -2210,6 +2234,7 @@ packages:
             "@graphql-codegen/plugin-helpers": 1.9.1_graphql@14.5.8
             "@graphql-toolkit/common": 0.7.4_graphql@14.5.8
             "@graphql-toolkit/schema-merging": 0.7.4_graphql@14.5.8
+            auto-bind: 4.0.0
             change-case: 4.1.1
             graphql: 14.5.8
             tslib: 1.10.0
@@ -2221,7 +2246,8 @@ packages:
     /@graphql-codegen/plugin-helpers/1.9.1_graphql@14.5.8:
         dependencies:
             "@graphql-toolkit/common": 0.7.4_graphql@14.5.8
-            change-case: 3.1.0
+            auto-bind: 4.0.0
+            change-case: 4.1.1
             common-tags: 1.8.0
             graphql: 14.5.8
             import-from: 3.0.0
@@ -2237,6 +2263,7 @@ packages:
           "@graphql-codegen/typescript": 1.9.1_4a3ec2775b38acf4387c4d3c26d2b1c8
           "@graphql-codegen/visitor-plugin-common": 1.9.1_4a3ec2775b38acf4387c4d3c26d2b1c8
           "@graphql-toolkit/common": 0.7.4_graphql@14.5.8
+          auto-bind: 4.0.0
           change-case: 4.1.1
           tslib: 1.10.0
       dev: false
@@ -2250,6 +2277,7 @@ packages:
           "@graphql-codegen/plugin-helpers": 1.9.1_graphql@14.5.8
           "@graphql-codegen/visitor-plugin-common": 1.9.1_4a3ec2775b38acf4387c4d3c26d2b1c8
           "@graphql-toolkit/common": 0.7.4_graphql@14.5.8
+          auto-bind: 4.0.0
           change-case: 4.1.1
           graphql-tag: 2.10.1_graphql@14.5.8
           tslib: 1.10.0
@@ -3990,6 +4018,12 @@ packages:
         dev: false
         resolution:
             integrity: sha512-LrKVLove/zw6h2Md/KZyWxIkFM6AoyKp71OqpH9Hiip1csjPVoD3tPxlbQUNxEnHENks3UGgNpSBCAfq9KWuag==
+    /@wry/context/0.5.0:
+        dependencies:
+            tslib: 1.10.0
+        dev: false
+        resolution:
+            integrity: sha512-yW5XFrWbRvv2/f86+g0YAfko7671SQg7Epn8lYjux4MZmIvtPvK2ts+vG1QAPu2w6GuBioEJknRa7K2LFj2kQw==
     /@wry/equality/0.1.9:
         dependencies:
             tslib: 1.10.0
@@ -4840,6 +4874,12 @@ packages:
                 optional: true
         resolution:
             integrity: sha512-v0A231a/lfOo6kxQtmEkdBfTApvC21aJYukA8pkKnoTvVqh3Wmm7/Rwy4GBCHTTHVoLVA5qsBDDvf1XY1nIV2g==
+    /auto-bind/4.0.0:
+        dev: false
+        engines:
+            node: ">=8"
+        resolution:
+            integrity: sha512-Hdw8qdNiqdJ8LqT0iK0sVzkFbzg6fhnQqqfWhBDxcHZvU75+B+ayzTy8x+k5Ix0Y92XOhOUlx74ps+bA6BeYMQ==
     /autoprefixer/9.7.3:
         dependencies:
             browserslist: 4.8.2
@@ -5808,29 +5848,6 @@ packages:
             node: ">=4"
         resolution:
             integrity: sha512-Mti+f9lpJNcwF4tWV8/OrTTtF1gZi+f8FqlyAdouralcFWFQWF2+NgCHShjkCb+IFBLq9buZwE1xckQU4peSuQ==
-    /change-case/3.1.0:
-        dependencies:
-            camel-case: 3.0.0
-            constant-case: 2.0.0
-            dot-case: 2.1.1
-            header-case: 1.0.1
-            is-lower-case: 1.1.3
-            is-upper-case: 1.1.2
-            lower-case: 1.1.4
-            lower-case-first: 1.0.2
-            no-case: 2.3.2
-            param-case: 2.1.1
-            pascal-case: 2.0.1
-            path-case: 2.1.1
-            sentence-case: 2.1.1
-            snake-case: 2.1.0
-            swap-case: 1.1.2
-            title-case: 2.1.1
-            upper-case: 1.1.3
-            upper-case-first: 1.1.2
-        dev: false
-        resolution:
-            integrity: sha512-2AZp7uJZbYEzRPsFoa+ijKdvp9zsrnnt6+yFokfwEpeJm0xuJDVoxiRCAaTzyJND8GJkofo2IcKWaUZ/OECVzw==
     /change-case/4.1.1:
         dependencies:
             camel-case: 4.1.1
@@ -6243,13 +6260,6 @@ packages:
         dev: false
         resolution:
             integrity: sha1-PXz0Rk22RG6mRL9LOVB/mFEAjo4=
-    /constant-case/2.0.0:
-        dependencies:
-            snake-case: 2.1.0
-            upper-case: 1.1.3
-        dev: false
-        resolution:
-            integrity: sha1-QXV2TTidP6nI7NKRhu1gBSQ7akY=
     /constant-case/3.0.3:
         dependencies:
             no-case: 3.0.3
@@ -7084,12 +7094,6 @@ packages:
         dev: false
         resolution:
             integrity: sha512-Lgd2XcJ/NjEw+7tFvfKxOzCYKZsdct5lczQ2ZaQY8Djz7pfAD3Gbp8ySJWtreII/vDlMVmxwa6pHmdxIYgttDg==
-    /dot-case/2.1.1:
-        dependencies:
-            no-case: 2.3.2
-        dev: false
-        resolution:
-            integrity: sha1-NNzzf1Co6TwrO8qLt/uRVcfaO+4=
     /dot-case/3.0.3:
         dependencies:
             no-case: 3.0.3
@@ -8853,13 +8857,6 @@ packages:
         hasBin: true
         resolution:
             integrity: sha512-F/1DnUGPopORZi0ni+CvrCgHQ5FyEAHRLSApuYWMmrbSwoN2Mn/7k+Gl38gJnR7yyDZk6WLXwiGod1JOWNDKGw==
-    /header-case/1.0.1:
-        dependencies:
-            no-case: 2.3.2
-            upper-case: 1.1.3
-        dev: false
-        resolution:
-            integrity: sha1-lTWXMZfBRLCWE81l0xfvGZY70C0=
     /header-case/2.0.3:
         dependencies:
             capital-case: 1.0.3
@@ -9599,12 +9596,6 @@ packages:
             node: ">=4"
         resolution:
             integrity: sha1-Df2Y9akRFxbdU13aZJL2e/PSWoA=
-    /is-lower-case/1.1.3:
-        dependencies:
-            lower-case: 1.1.4
-        dev: false
-        resolution:
-            integrity: sha1-fhR75HaNxGbbO/shzGCzHmrWk5M=
     /is-map/2.0.0:
         dev: false
         resolution:
@@ -9759,12 +9750,6 @@ packages:
         dev: false
         resolution:
             integrity: sha1-5HnICFjfDBsR3dppQPlgEfzaSpo=
-    /is-upper-case/1.1.2:
-        dependencies:
-            upper-case: 1.1.3
-        dev: false
-        resolution:
-            integrity: sha1-jQsfp+eTOh5YSDYA7H2WYcuvdW8=
     /is-utf8/0.2.1:
         dev: false
         resolution:
@@ -10903,12 +10888,6 @@ packages:
             node: ">=0.10.0"
         resolution:
             integrity: sha1-W0b4AUft7leIcPCG0Eghz5mOVR8=
-    /lower-case-first/1.0.2:
-        dependencies:
-            lower-case: 1.1.4
-        dev: false
-        resolution:
-            integrity: sha1-5dp8JvKacHO+AtUrrJmA5ZIq36E=
     /lower-case/1.1.4:
         dev: false
         resolution:
@@ -11984,6 +11963,12 @@ packages:
         dev: false
         resolution:
             integrity: sha512-9A5pqGoQk49H6Vhjb9kPgAeeECfUDF6aIICbMDL23kDLStBn1MWk3YvcZ4xWF9CsSf6XEgvRLkXy4xof/56vVw==
+    /optimism/0.11.4:
+        dependencies:
+            "@wry/context": 0.5.0
+        dev: false
+        resolution:
+            integrity: sha512-a9dQJt/dvrxhkEGK/l1U+T4zJ9OyIOWGnRrbjxy8+mWHVR3C3phmKlRuh2YKkSVjTf8G1kVFVEqL9+s4E77wsg==
     /optimist/0.6.1:
         dependencies:
             minimist: 0.0.10
@@ -12287,13 +12272,6 @@ packages:
             node: ">= 0.8"
         resolution:
             integrity: sha512-CiyeOxFT/JZyN5m0z9PfXw4SCBJ6Sygz1Dpl0wqjlhDEGGBP1GnsUVEL0p63hoG1fcj3fHynXi9NYO4nWOL+qQ==
-    /pascal-case/2.0.1:
-        dependencies:
-            camel-case: 3.0.0
-            upper-case-first: 1.1.2
-        dev: false
-        resolution:
-            integrity: sha1-LVeNNFX2YNpl7KGO+VtODekSdh4=
     /pascal-case/3.1.1:
         dependencies:
             no-case: 3.0.3
@@ -12311,12 +12289,6 @@ packages:
         dev: false
         resolution:
             integrity: sha512-BapA40NHICOS+USX9SN4tyhq+A2RrN/Ws5F0Z5aMHDp98Fl86lX8Oti8B7uN93L4Ifv4fHOEA+pQw87gmMO/lQ==
-    /path-case/2.1.1:
-        dependencies:
-            no-case: 2.3.2
-        dev: false
-        resolution:
-            integrity: sha1-lLgDfDctP+KQbkZbtF4l0ibo7qU=
     /path-case/3.0.3:
         dependencies:
             dot-case: 3.0.3
@@ -13139,12 +13111,12 @@ packages:
             node: ">=8.10"
         resolution:
             integrity: sha512-X2KYF/lIGyGwP/F/oXgGDF24nxDA2KC4b7AFto+eqzc/t838gpSGiaU8trTqHXOohuLxxc5qi1eDzsl9ucPDpg==
-    /react-docgen-typescript-loader/3.3.0_typescript@3.7.3+webpack@4.41.2:
+    /react-docgen-typescript-loader/3.3.0_typescript@3.7.4+webpack@4.41.2:
         dependencies:
             "@webpack-contrib/schema-utils": 1.0.0-beta.0_webpack@4.41.2
             loader-utils: 1.2.3
             react-docgen-typescript: 1.16.1
-            typescript: 3.7.3
+            typescript: 3.7.4
         dev: false
         peerDependencies:
             typescript: "*"
@@ -13748,7 +13720,7 @@ packages:
             node: ">=0.10.0"
         resolution:
             integrity: sha1-z5Fqsf1fHxbfsggi3W7H9zDCr94=
-    /redo-nexus-prisma/0.6.1-3_3d439f4e0f24d46582a80975993b2eea:
+    /redo-nexus-prisma/0.6.1-8_3d439f4e0f24d46582a80975993b2eea:
         dependencies:
             "@prisma/photon": 2.0.0-preview017.2_prisma2@2.0.0-preview017.2
             camelcase: 5.3.1
@@ -13760,7 +13732,7 @@ packages:
             "@prisma/photon": ^2.0.0-alpha.351
             graphql: "*"
         resolution:
-            integrity: sha512-J2LVzbdhSopBNyzf37GsEwWYW3k0uLpOCdtdzbKOn1wZvvAA95MF0fxYTiLaFDJ1JZpSQuTSN0TS9StXtNhIUg==
+            integrity: sha512-+3d909DeEHztPFt9lX8u3PVoqK2QfMVL2H+aKtPVgkh7ATFqQRRvc+pC2fFzBKduziVjmR+LIUKHrnidKHH1LA==
     /redux/4.0.4:
         dependencies:
             loose-envify: 1.4.0
@@ -14294,13 +14266,6 @@ packages:
             node: ">= 0.8.0"
         resolution:
             integrity: sha512-BsVKsiGcQMFwT8UxypobUKyv7irCNRHk1T0G680vk88yf6LBByGcZJOTJCrTP2xVN6yI+XjPJcNuE3V4fT9sAg==
-    /sentence-case/2.1.1:
-        dependencies:
-            no-case: 2.3.2
-            upper-case-first: 1.1.2
-        dev: false
-        resolution:
-            integrity: sha1-H24t2jnBaL+S0T+G1KkYkz9mftQ=
     /sentence-case/3.0.3:
         dependencies:
             no-case: 3.0.3
@@ -14508,12 +14473,6 @@ packages:
             node: ">=6"
         resolution:
             integrity: sha512-ZYKh3Wh2z1PpEXWr0MpSBZ0V6mZHAQfYevttO11c51CaWjGTaadiKZ+wVt1PbMlDV5qhMFslpZCemhwOK7C89A==
-    /snake-case/2.1.0:
-        dependencies:
-            no-case: 2.3.2
-        dev: false
-        resolution:
-            integrity: sha1-Qb2xtz8w7GagTU4srRt2OH1NbZ8=
     /snake-case/3.0.3:
         dependencies:
             dot-case: 3.0.3
@@ -15078,13 +15037,6 @@ packages:
         hasBin: true
         resolution:
             integrity: sha512-yhy/sQYxR5BkC98CY7o31VGsg014AKLEPxdfhora76l36hD9Rdy5NZA/Ocn6yayNPgSamYdtX2rFJdcv07AYVw==
-    /swap-case/1.1.2:
-        dependencies:
-            lower-case: 1.1.4
-            upper-case: 1.1.3
-        dev: false
-        resolution:
-            integrity: sha1-w5IDpFhzhfrTyFCgvRvK+ggZdOM=
     /symbol-observable/1.2.0:
         dev: false
         engines:
@@ -15258,13 +15210,6 @@ packages:
         dev: false
         resolution:
             integrity: sha1-9PrTM0R7wLB9TcjpIJ2POaisd+g=
-    /title-case/2.1.1:
-        dependencies:
-            no-case: 2.3.2
-            upper-case: 1.1.3
-        dev: false
-        resolution:
-            integrity: sha1-PhJyFtpY0rxb7PE3q5Ha46fNj6o=
     /tmp/0.0.33:
         dependencies:
             os-tmpdir: 1.0.2
@@ -15396,14 +15341,14 @@ packages:
         dev: false
         resolution:
             integrity: sha512-uEtWkFM/sdZvRNNDL3Ehu4WVpwaulhwQszV8mrtcdeE8nN00BV9mAmQ88RkrBhFgl9gMgvjJLAQcZbnPXI9mlA==
-    /ts-loader/6.2.0_typescript@3.7.3:
+    /ts-loader/6.2.0_typescript@3.7.4:
         dependencies:
             chalk: 2.4.2
             enhanced-resolve: 4.1.1
             loader-utils: 1.2.3
             micromatch: 4.0.2
             semver: 6.3.0
-            typescript: 3.7.3
+            typescript: 3.7.4
         dev: false
         engines:
             node: ">=8.6"
@@ -15411,7 +15356,7 @@ packages:
             typescript: "*"
         resolution:
             integrity: sha512-Da8h3fD+HiZ9GvZJydqzk3mTC9nuOKYlJcpuk+Zv6Y1DPaMvBL+56GRzZFypx2cWrZFMsQr869+Ua2slGoLxvQ==
-    /ts-node-dev/1.0.0-pre.43_typescript@3.7.3:
+    /ts-node-dev/1.0.0-pre.43_typescript@3.7.4:
         dependencies:
             dateformat: 1.0.12
             dynamic-dedupe: 0.3.0
@@ -15423,7 +15368,7 @@ packages:
             rimraf: 2.7.1
             source-map-support: 0.5.16
             tree-kill: 1.2.2
-            ts-node: 8.4.1_typescript@3.7.3
+            ts-node: 8.4.1_typescript@3.7.4
             tsconfig: 7.0.0
         dev: false
         engines:
@@ -15433,13 +15378,13 @@ packages:
             typescript: "*"
         resolution:
             integrity: sha512-vtFeqKNMcRdE0R00RZRMM2v7V6HadJSllJ7o1PPUc797cTyKLW2k4UsdbNaxoDEQ9PU2HIc2M+SawgM6ONh4ig==
-    /ts-node/8.4.1_typescript@3.7.3:
+    /ts-node/8.4.1_typescript@3.7.4:
         dependencies:
             arg: 4.1.2
             diff: 4.0.1
             make-error: 1.3.5
             source-map-support: 0.5.16
-            typescript: 3.7.3
+            typescript: 3.7.4
             yn: 3.1.1
         dev: false
         engines:
@@ -15449,6 +15394,22 @@ packages:
             typescript: ">=2.0"
         resolution:
             integrity: sha512-5LpRN+mTiCs7lI5EtbXmF/HfMeCjzt7DH9CZwtkr6SywStrNQC723wG+aOWFiLNn7zT3kD/RnFqi3ZUfr4l5Qw==
+    /ts-node/8.5.4_typescript@3.7.4:
+        dependencies:
+            arg: 4.1.2
+            diff: 4.0.1
+            make-error: 1.3.5
+            source-map-support: 0.5.16
+            typescript: 3.7.4
+            yn: 3.1.1
+        dev: false
+        engines:
+            node: ">=4.2.0"
+        hasBin: true
+        peerDependencies:
+            typescript: ">=2.0"
+        resolution:
+            integrity: sha512-izbVCRV68EasEPQ8MSIGBNK9dc/4sYJJKYA+IarMQct1RtEot6Xp0bXuClsbUSnKpg50ho+aOAx8en5c+y4OFw==
     /ts-pnp/1.1.5:
         dev: false
         engines:
@@ -15579,13 +15540,13 @@ packages:
         dev: false
         resolution:
             integrity: sha512-v+s/216IINmqQoO3Y9+bKDn9OgrasPtRLWaVSmjRBljFDkFndmQjHcsLZrv0r89aSeqzxlBvKwZIigFh8pZO9Q==
-    /typescript/3.7.3:
+    /typescript/3.7.4:
         dev: false
         engines:
             node: ">=4.2.0"
         hasBin: true
         resolution:
-            integrity: sha512-Mcr/Qk7hXqFBXMN7p7Lusj1ktCBydylfQM/FZCk5glCNQJrCUKPkMHdo9R0MTFWsC/4kPFvDS0fDPvukfCkFsw==
+            integrity: sha512-A25xv5XCtarLwXpcDNZzCGvW2D1S3/bACratYBx2sax8PefsFhlYmkQicKHvpYflFS8if4zne5zT5kpJ7pzuvw==
     /ua-parser-js/0.7.20:
         dev: false
         resolution:
@@ -15731,12 +15692,6 @@ packages:
             node: ">=8"
         resolution:
             integrity: sha512-grrmrB6Zb8DUiyDIaeRTBCkgISYUgETNe7NglEbVsrLWXeESnlCSP50WfRSj/GmzMPl6Uchj24S/p80nP/ZQrQ==
-    /upper-case-first/1.1.2:
-        dependencies:
-            upper-case: 1.1.3
-        dev: false
-        resolution:
-            integrity: sha1-XXm+3P8UQZUY/S7bCgUHybaFkRU=
     /upper-case-first/2.0.1:
         dependencies:
             tslib: 1.10.0
@@ -16465,12 +16420,12 @@ packages:
             react-dom: 16.10.2_react@16.10.2
             react-hot-loader: 4.12.15_react-dom@16.10.2+react@16.10.2
             reflect-metadata: 0.1.13
-            ts-node: 8.4.1_typescript@3.7.3
+            ts-node: 8.5.4_typescript@3.7.4
             tsconfig-paths: 3.9.0
             tsconfig-paths-webpack-plugin: 3.2.0
             type-graphql: 0.17.5_2f992e2e424a491fbdc3cbc9f3788f13
             typeface-ubuntu: 0.0.65
-            typescript: 3.7.3
+            typescript: 3.7.4
             validate.js: 0.13.1
             webpack: 4.41.2_webpack@4.41.2
             webpack-cli: 3.3.9_webpack@4.41.2
@@ -16478,7 +16433,7 @@ packages:
         dev: false
         name: "@rush-temp/app"
         resolution:
-            integrity: sha512-5oKhZzUpEftG7Uq8TNEjPOUXaivsorajZ3pwSlwN5Wz/tlRmLcDZbdCCz5+3kemCg3s43B/siTCoP+QPHcBTFg==
+            integrity: sha512-GuaP2ItLSNonoUhd4uFyg0DMkccFOzALAEyKcLu2Ev+Q7ETfVO/mJjTDLiF+c/wDHqfHGaAnLPjsWQMYyLWxQw==
             tarball: "file:projects/app.tgz"
         version: 0.0.0
     "file:projects/babel-preset-redo.tgz_react-dom@16.10.2+react@16.10.2":
@@ -16529,10 +16484,10 @@ packages:
             react-hot-loader: 4.12.15_react-dom@16.10.2+react@16.10.2
             react-svg-loader: 3.0.3
             style-loader: 1.0.0_webpack@4.41.2
-            ts-loader: 6.2.0_typescript@3.7.3
-            ts-node: 8.4.1_typescript@3.7.3
+            ts-loader: 6.2.0_typescript@3.7.4
+            ts-node: 8.5.4_typescript@3.7.4
             tsconfig-paths-webpack-plugin: 3.2.0
-            typescript: 3.7.3
+            typescript: 3.7.4
             webpack: 4.41.2_webpack@4.41.2
             webpack-dev-server: 3.8.2_webpack@4.41.2
             webpack-merge: 4.2.2
@@ -16544,7 +16499,7 @@ packages:
             react: "*"
             react-dom: "*"
         resolution:
-            integrity: sha512-CS4LF+rrlKAPSLvETHUDz+tC1qWsHEvQptChWHBwlUKiwnmH7vNrbic3by2l0h45qJ43EGmvBx6tIBzUNa79aQ==
+            integrity: sha512-BK9Osu9HACHgg9ihZ+8uS+6baQuBa6lVuonA9Z6KIIKDfaFoh6/hhEAVAgLlDpu/Jh7Lg42cuMtQcs8rIunCeQ==
             tarball: "file:projects/bundle.tgz"
         version: 0.0.0
     "file:projects/components.tgz_webpack@4.41.2":
@@ -16592,31 +16547,27 @@ packages:
             material-table: 1.52.0_39308cd9abdc21fdf3cff7bab06e1917
             material-ui-chip-input: 1.0.0_39308cd9abdc21fdf3cff7bab06e1917
             react: 16.10.2
-            react-docgen-typescript-loader: 3.3.0_typescript@3.7.3+webpack@4.41.2
+            react-docgen-typescript-loader: 3.3.0_typescript@3.7.4+webpack@4.41.2
             react-dom: 16.10.2_react@16.10.2
             react-hook-form: 3.24.1_react-dom@16.10.2+react@16.10.2
             react-router-dom: 5.1.2_react@16.10.2
             react-test-renderer: 16.10.2_react@16.10.2
             reflect-metadata: 0.1.13
             typeface-ubuntu: 0.0.65
-            typescript: 3.7.3
+            typescript: 3.7.4
         dev: false
         id: "file:projects/components.tgz"
         name: "@rush-temp/components"
         peerDependencies:
             webpack: "*"
         resolution:
-            integrity: sha512-keahTO+r7GCNWQ5ycrOPV5dn1BOjYcXvgNlL2yNUXy7MEjJ91jeXuylQXWlxkICS77KtlCxNyrL1iEZndc9bBQ==
+            integrity: sha512-t7uHstqvErRrp7ESYuNB2SwPFl/D1GR0WqOez9gzTJ7jXjdp2Og45OZDl73jVhTeD/FqDVBJ4LGiMZL/FvtCow==
             tarball: "file:projects/components.tgz"
         version: 0.0.0
-    "file:projects/gqlize.tgz_43738f828fcd7c83a512f3eb92913755":
+    "file:projects/gqlize.tgz_@babel+core@7.6.4":
         dependencies:
             "@babel/cli": 7.6.4_@babel+core@7.6.4
             "@babel/runtime-corejs3": 7.6.3
-            "@graphql-codegen/core": 1.9.1_graphql@14.5.8
-            "@graphql-codegen/typescript": 1.9.1_4a3ec2775b38acf4387c4d3c26d2b1c8
-            "@graphql-codegen/typescript-operations": 1.9.1_4a3ec2775b38acf4387c4d3c26d2b1c8
-            "@graphql-codegen/typescript-react-apollo": 1.9.1_a71ebdcca7a0430541f2eb7e7e3ac8a1
             "@types/fs-extra": 8.0.1
             "@types/jest": 24.0.19
             "@types/node": 12.11.1
@@ -16624,40 +16575,47 @@ packages:
             graphql: 14.5.8
             graphql-tag: 2.10.1_graphql@14.5.8
             jest: 24.9.0
-            nexus: 0.12.0-rc.5_graphql@14.5.8
-            redo-nexus-prisma: 0.6.1-3_3d439f4e0f24d46582a80975993b2eea
-            typescript: 3.7.3
+            typescript: 3.7.4
         dev: false
         id: "file:projects/gqlize.tgz"
         name: "@rush-temp/gqlize"
         peerDependencies:
             "@babel/core": "*"
-            "@prisma/photon": "*"
-            "@types/react": "*"
         resolution:
-            integrity: sha512-EM9UmsiK1JfLCmkq65L6bMVaXGeOgKxqdoMEHDhpwk9vJDubTVwxd2mp3ntDfi8l4VjTWJ4JYonKhCRAmtAvFQ==
+            integrity: sha512-ZlgN3YnP9Uee03eTjzxWKZ/ia8/1y1sHZNaEGQ14+fTmQwmtkg669iJI5N+xcrjXfu5RNvUVYU7KsdnCuVQWiw==
             tarball: "file:projects/gqlize.tgz"
         version: 0.0.0
-    "file:projects/model.tgz_@babel+core@7.6.4":
+    "file:projects/model.tgz_58b5a9a5f9071e55ffa8ba65d5ea2017":
         dependencies:
+            "@apollo/client": 3.0.0-beta.16_graphql@14.5.8+react@16.10.2
             "@babel/cli": 7.6.4_@babel+core@7.6.4
             "@babel/runtime-corejs3": 7.6.3
+            "@graphql-codegen/core": 1.9.1_graphql@14.5.8
+            "@graphql-codegen/plugin-helpers": 1.9.1_graphql@14.5.8
+            "@graphql-codegen/typescript": 1.9.1_4a3ec2775b38acf4387c4d3c26d2b1c8
+            "@graphql-codegen/typescript-operations": 1.9.1_4a3ec2775b38acf4387c4d3c26d2b1c8
+            "@graphql-codegen/typescript-react-apollo": 1.9.1_a71ebdcca7a0430541f2eb7e7e3ac8a1
+            "@types/fs-extra": 8.0.1
             "@types/jest": 24.0.19
             "@types/node": 12.11.1
             "@types/validator": 12.0.1
+            fs-extra: 8.1.0
             graphql: 14.5.8
             graphql-tag: 2.10.1_graphql@14.5.8
             jest: 24.9.0
             nexus: 0.12.0-rc.5_graphql@14.5.8
-            typescript: 3.7.3
+            ts-node: 8.5.4_typescript@3.7.4
+            typescript: 3.7.4
             validator: 12.1.0
         dev: false
         id: "file:projects/model.tgz"
         name: "@rush-temp/model"
         peerDependencies:
             "@babel/core": "*"
+            "@types/react": "*"
+            react: "*"
         resolution:
-            integrity: sha512-SyhA02M5mHhzvMoPqtbHAkMWJFQ8/ym57oWseTKAqK41ThB+d0MrZZlJOAFT2sf0VaV7NMFP3rE4l3G8MPktew==
+            integrity: sha512-YJQQtZfGO/vD2J+9WDwzsI/AyYJmWdp4IAdqtaNbWzyoyohbX3/5sJL3AScCP/tfUnkxFRsDyAtaf/5cRt/ybA==
             tarball: "file:projects/model.tgz"
         version: 0.0.0
     "file:projects/react-statelessly.tgz_@babel+core@7.6.4":
@@ -16678,14 +16636,14 @@ packages:
             react-dom: 16.10.2_react@16.10.2
             react-redux: 7.1.3_react@16.10.2+redux@4.0.4
             redux: 4.0.4
-            typescript: 3.7.3
+            typescript: 3.7.4
         dev: false
         id: "file:projects/react-statelessly.tgz"
         name: "@rush-temp/react-statelessly"
         peerDependencies:
             "@babel/core": "*"
         resolution:
-            integrity: sha512-+7yyzrN6Trznz10lu/JIHucbOxiLGGPZvnG0z7adDv0lDx+nIhur/U5BP5dqR6NYldDBKME9aF3Fxoyo0kUkCg==
+            integrity: sha512-ui64oUNg2KIBI0ClqD1rYCFDcZRNqWJawH1MPY6qSb47lIlwoRliQBA/WCAxPEN3wb0OKZ1cZKTfTgZUHURJFA==
             tarball: "file:projects/react-statelessly.tgz"
         version: 0.0.0
     "file:projects/recommended.tgz":
@@ -16717,14 +16675,14 @@ packages:
             jsonwebtoken: 8.5.1
             nexus: 0.12.0-rc.5_graphql@14.5.8
             prisma2: 2.0.0-preview017.2
-            redo-nexus-prisma: 0.6.1-3_3d439f4e0f24d46582a80975993b2eea
-            ts-node: 8.4.1_typescript@3.7.3
-            ts-node-dev: 1.0.0-pre.43_typescript@3.7.3
-            typescript: 3.7.3
+            redo-nexus-prisma: 0.6.1-8_3d439f4e0f24d46582a80975993b2eea
+            ts-node: 8.5.4_typescript@3.7.4
+            ts-node-dev: 1.0.0-pre.43_typescript@3.7.4
+            typescript: 3.7.4
         dev: false
         name: "@rush-temp/server"
         resolution:
-            integrity: sha512-40yxiLUjgx1DuQZp55cBIO4mrNXooBFsDZ9SfYmO/L5hu2A0zk5DU4xdyKYoxXDTHCGLCihjkf9Mi22lHuOgcw==
+            integrity: sha512-nx/MKSztIM+gbMKI/mfAhvRDzPjgdJfRsETD0nI5jNoxbkbZ0EKOhA3K99hdRxWrdRpMRkg7cgcw0BdU6TeLBg==
             tarball: "file:projects/server.tgz"
         version: 0.0.0
     "file:projects/statelessly.tgz_@babel+core@7.6.4":
@@ -16738,14 +16696,14 @@ packages:
             jest: 24.9.0
             moize: 5.4.4
             redux: 4.0.4
-            typescript: 3.7.3
+            typescript: 3.7.4
         dev: false
         id: "file:projects/statelessly.tgz"
         name: "@rush-temp/statelessly"
         peerDependencies:
             "@babel/core": "*"
         resolution:
-            integrity: sha512-bjjp0Z7TmWoDnphZxQaZQlBZXx4+IuANy0HYGQOOWTk4S8M+lE+eGkYAX80VudBrsHqww9hbKLOFZ0/LhrVMqw==
+            integrity: sha512-Tkpl7GATmfa9t6QX4tEiTZwB0Dw0I18ucmYeKaoYSoO85UVLAfidK1dvAbNAoGhqrIgVHZJGcx4hgSoloRZV8w==
             tarball: "file:projects/statelessly.tgz"
         version: 0.0.0
     "file:projects/test.tgz_@babel+core@7.6.4":
@@ -16756,14 +16714,14 @@ packages:
             "@types/puppeteer": 1.20.2
             jest: 24.9.0
             puppeteer: 1.20.0
-            typescript: 3.7.3
+            typescript: 3.7.4
         dev: false
         id: "file:projects/test.tgz"
         name: "@rush-temp/test"
         peerDependencies:
             "@babel/core": "*"
         resolution:
-            integrity: sha512-7g1T0u02RAAWBjtk3VG+RSwbgGTuzPQG76/9H6dXWrGmoO0/N8zd+ezb2LtbYKBvsiQIsnbFAgBExINt18/93A==
+            integrity: sha512-mKZigrDvHJup8uUMklcKjNi1u3tO6AFWD3qWygpmJCDHi1G5Vbw0fwh7wLhFr//U+2Q4Yrp/meswj9r64GxR3g==
             tarball: "file:projects/test.tgz"
         version: 0.0.0
     "file:projects/utils.tgz_@babel+core@7.6.4":
@@ -16778,14 +16736,14 @@ packages:
             fs-extra: 8.1.0
             jest: 24.9.0
             moize: 5.4.4
-            typescript: 3.7.3
+            typescript: 3.7.4
         dev: false
         id: "file:projects/utils.tgz"
         name: "@rush-temp/utils"
         peerDependencies:
             "@babel/core": "*"
         resolution:
-            integrity: sha512-2fWBmtY+JTwXUQ6TXhaS4DEoLZPJrlyYHQ+cx+s/wYC2syUb6Bdft33Jgqjanbrq/pMnf+RO2IWz/OsIF8AoUQ==
+            integrity: sha512-DH0SYT/8i/AZnHE9sDXVb0zDCwGfjPo/cp6jK0cyrcLJs+gXFEqpPTtLEkvJ6MO5Z1mUXMt0oCy/vxWXFTzvAA==
             tarball: "file:projects/utils.tgz"
         version: 0.0.0
     "file:projects/website.tgz":
@@ -16808,9 +16766,9 @@ packages:
             react-hot-loader: 4.12.15_react-dom@16.10.2+react@16.10.2
             react-router-dom: 5.1.2_react@16.10.2
             react-typist: 2.0.5_react-dom@16.10.2+react@16.10.2
-            ts-node: 8.4.1_typescript@3.7.3
+            ts-node: 8.5.4_typescript@3.7.4
             typeface-ubuntu: 0.0.65
-            typescript: 3.7.3
+            typescript: 3.7.4
             uuid: 3.3.3
             webpack: 4.41.2_webpack@4.41.2
             webpack-cli: 3.3.9_webpack@4.41.2
@@ -16818,11 +16776,12 @@ packages:
         dev: false
         name: "@rush-temp/website"
         resolution:
-            integrity: sha512-2qQKH5Mxt4mNdfzUA6ztCDTYYkC2otvHPOfVP39NLqTeh37+SvJbJbkiv2hDDOovNAUk0ugC862hQVEgPRwlBA==
+            integrity: sha512-yZBFzaUE7OK3ReuGuvq7NoIoYHMR9CQTLkAw0Rg8se5+6t/FYiVckt/qXuU7ebsjeWgakI9iTJSXBqXNcykNIw==
             tarball: "file:projects/website.tgz"
         version: 0.0.0
 registry: ""
 specifiers:
+    "@apollo/client": 3.0.0-beta.16
     "@apollo/react-hooks": 3.1.3
     "@babel/cli": 7.6.4
     "@babel/core": 7.6.4
@@ -16840,6 +16799,7 @@ specifiers:
     "@babel/runtime-corejs3": 7.6.3
     "@date-io/date-fns": 1.3.11
     "@graphql-codegen/core": 1.9.1
+    "@graphql-codegen/plugin-helpers": 1.9.1
     "@graphql-codegen/typescript": 1.9.1
     "@graphql-codegen/typescript-operations": 1.9.1
     "@graphql-codegen/typescript-react-apollo": 1.9.1
@@ -16953,18 +16913,18 @@ specifiers:
     react-svg-loader: 3.0.3
     react-test-renderer: 16.10.2
     react-typist: 2.0.5
-    redo-nexus-prisma: 0.6.1-3
+    redo-nexus-prisma: 0.6.1-8
     redux: 4.0.4
     reflect-metadata: 0.1.13
     style-loader: 1.0.0
     ts-loader: 6.2.0
-    ts-node: 8.4.1
+    ts-node: 8.5.4
     ts-node-dev: 1.0.0-pre.43
     tsconfig-paths: 3.9.0
     tsconfig-paths-webpack-plugin: 3.2.0
     type-graphql: 0.17.5
     typeface-ubuntu: 0.0.65
-    typescript: 3.7.3
+    typescript: 3.7.4
     uuid: 3.3.3
     validate.js: 0.13.1
     validator: 12.1.0

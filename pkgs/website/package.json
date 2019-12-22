@@ -37,8 +37,8 @@
     "@types/uuid": "3.4.5",
     "babel-preset-redo": "0.0.1",
     "react-hot-loader": "4.12.15",
-    "ts-node": "8.4.1",
-    "typescript": "3.7.3",
+    "ts-node": "8.5.4",
+    "typescript": "3.7.4",
     "webpack": "4.41.2",
     "webpack-cli": "3.3.9",
     "webpack-dev-server": "3.8.2"
