@@ -129,7 +129,7 @@ dependencies:
     react-svg-loader: 3.0.3
     react-test-renderer: 16.10.2_react@16.10.2
     react-typist: 2.0.5_react-dom@16.10.2+react@16.10.2
-    redo-nexus-prisma: 0.6.1-3_3d439f4e0f24d46582a80975993b2eea
+    redo-nexus-prisma: 0.6.1-8_3d439f4e0f24d46582a80975993b2eea
     redux: 4.0.4
     reflect-metadata: 0.1.13
     style-loader: 1.0.0_webpack@4.41.2
@@ -2210,6 +2210,7 @@ packages:
             "@graphql-codegen/plugin-helpers": 1.9.1_graphql@14.5.8
             "@graphql-toolkit/common": 0.7.4_graphql@14.5.8
             "@graphql-toolkit/schema-merging": 0.7.4_graphql@14.5.8
+            auto-bind: 4.0.0
             change-case: 4.1.1
             graphql: 14.5.8
             tslib: 1.10.0
@@ -2221,6 +2222,7 @@ packages:
     /@graphql-codegen/plugin-helpers/1.9.1_graphql@14.5.8:
         dependencies:
             "@graphql-toolkit/common": 0.7.4_graphql@14.5.8
+            auto-bind: 4.0.0
             change-case: 3.1.0
             common-tags: 1.8.0
             graphql: 14.5.8
@@ -2237,6 +2239,7 @@ packages:
           "@graphql-codegen/typescript": 1.9.1_4a3ec2775b38acf4387c4d3c26d2b1c8
           "@graphql-codegen/visitor-plugin-common": 1.9.1_4a3ec2775b38acf4387c4d3c26d2b1c8
           "@graphql-toolkit/common": 0.7.4_graphql@14.5.8
+          auto-bind: 4.0.0
           change-case: 4.1.1
           tslib: 1.10.0
       dev: false
@@ -2250,6 +2253,7 @@ packages:
           "@graphql-codegen/plugin-helpers": 1.9.1_graphql@14.5.8
           "@graphql-codegen/visitor-plugin-common": 1.9.1_4a3ec2775b38acf4387c4d3c26d2b1c8
           "@graphql-toolkit/common": 0.7.4_graphql@14.5.8
+          auto-bind: 4.0.0
           change-case: 4.1.1
           graphql-tag: 2.10.1_graphql@14.5.8
           tslib: 1.10.0
@@ -4840,6 +4844,12 @@ packages:
                 optional: true
         resolution:
             integrity: sha512-v0A231a/lfOo6kxQtmEkdBfTApvC21aJYukA8pkKnoTvVqh3Wmm7/Rwy4GBCHTTHVoLVA5qsBDDvf1XY1nIV2g==
+    /auto-bind/4.0.0:
+        dev: false
+        engines:
+            node: ">=8"
+        resolution:
+            integrity: sha512-Hdw8qdNiqdJ8LqT0iK0sVzkFbzg6fhnQqqfWhBDxcHZvU75+B+ayzTy8x+k5Ix0Y92XOhOUlx74ps+bA6BeYMQ==
     /autoprefixer/9.7.3:
         dependencies:
             browserslist: 4.8.2
@@ -13748,7 +13758,7 @@ packages:
             node: ">=0.10.0"
         resolution:
             integrity: sha1-z5Fqsf1fHxbfsggi3W7H9zDCr94=
-    /redo-nexus-prisma/0.6.1-3_3d439f4e0f24d46582a80975993b2eea:
+    /redo-nexus-prisma/0.6.1-8_3d439f4e0f24d46582a80975993b2eea:
         dependencies:
             "@prisma/photon": 2.0.0-preview017.2_prisma2@2.0.0-preview017.2
             camelcase: 5.3.1
@@ -13760,7 +13770,7 @@ packages:
             "@prisma/photon": ^2.0.0-alpha.351
             graphql: "*"
         resolution:
-            integrity: sha512-J2LVzbdhSopBNyzf37GsEwWYW3k0uLpOCdtdzbKOn1wZvvAA95MF0fxYTiLaFDJ1JZpSQuTSN0TS9StXtNhIUg==
+            integrity: sha512-+3d909DeEHztPFt9lX8u3PVoqK2QfMVL2H+aKtPVgkh7ATFqQRRvc+pC2fFzBKduziVjmR+LIUKHrnidKHH1LA==
     /redux/4.0.4:
         dependencies:
             loose-envify: 1.4.0
@@ -16625,7 +16635,7 @@ packages:
             graphql-tag: 2.10.1_graphql@14.5.8
             jest: 24.9.0
             nexus: 0.12.0-rc.5_graphql@14.5.8
-            redo-nexus-prisma: 0.6.1-3_3d439f4e0f24d46582a80975993b2eea
+            redo-nexus-prisma: 0.6.1-8_3d439f4e0f24d46582a80975993b2eea
             typescript: 3.7.3
         dev: false
         id: "file:projects/gqlize.tgz"
@@ -16635,7 +16645,7 @@ packages:
             "@prisma/photon": "*"
             "@types/react": "*"
         resolution:
-            integrity: sha512-EM9UmsiK1JfLCmkq65L6bMVaXGeOgKxqdoMEHDhpwk9vJDubTVwxd2mp3ntDfi8l4VjTWJ4JYonKhCRAmtAvFQ==
+            integrity: sha512-1ykQFILZWj0A/E8+xCvO93yUofd2iDXKhhRnOJ8oThac67xSBiShcFgioQ4mSoh+8IpS08YWB0//qEw9G6Mqzg==
             tarball: "file:projects/gqlize.tgz"
         version: 0.0.0
     "file:projects/model.tgz_@babel+core@7.6.4":
@@ -16717,14 +16727,14 @@ packages:
             jsonwebtoken: 8.5.1
             nexus: 0.12.0-rc.5_graphql@14.5.8
             prisma2: 2.0.0-preview017.2
-            redo-nexus-prisma: 0.6.1-3_3d439f4e0f24d46582a80975993b2eea
+            redo-nexus-prisma: 0.6.1-8_3d439f4e0f24d46582a80975993b2eea
             ts-node: 8.4.1_typescript@3.7.3
             ts-node-dev: 1.0.0-pre.43_typescript@3.7.3
             typescript: 3.7.3
         dev: false
         name: "@rush-temp/server"
         resolution:
-            integrity: sha512-40yxiLUjgx1DuQZp55cBIO4mrNXooBFsDZ9SfYmO/L5hu2A0zk5DU4xdyKYoxXDTHCGLCihjkf9Mi22lHuOgcw==
+            integrity: sha512-k7QqLF1RwESjgyFR8DnZtS+IjtbrltdWmhuPm5eaGqMvZ2Y2/b6db3c2bOQbNFzcpV+onlKNZtYJhKCAXp/ajA==
             tarball: "file:projects/server.tgz"
         version: 0.0.0
     "file:projects/statelessly.tgz_@babel+core@7.6.4":
@@ -16953,7 +16963,7 @@ specifiers:
     react-svg-loader: 3.0.3
     react-test-renderer: 16.10.2
     react-typist: 2.0.5
-    redo-nexus-prisma: 0.6.1-3
+    redo-nexus-prisma: 0.6.1-8
     redux: 4.0.4
     reflect-metadata: 0.1.13
     style-loader: 1.0.0

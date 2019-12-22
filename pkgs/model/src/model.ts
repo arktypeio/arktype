@@ -111,10 +111,12 @@ type NexusPrismaRelationOpts<
     ? {
           alias?: string
           computedInputs?: ComputedInputs<MethodName>
+          upfilteredKey?: string
       } & DynamicRequiredType<ReturnType>
     : {
           alias?: string
           computedInputs?: ComputedInputs<MethodName>
+          upfilteredKey?: string
           filtering?:
               | boolean
               | Partial<
@@ -181,8 +183,10 @@ type GetKind<Name extends any> = IsEnum<Name> extends true
     : IsObject<Name> extends true
     ? "Object"
     : IsInputObject<Name> extends true
-    ? "InputObject" // FIXME should be "never", but GQL objects named differently // than backing type fall into this branch
-    : "Object"
+    ? "InputObject"
+    : // FIXME should be "never", but GQL objects named differently
+      // than backing type fall into this branch
+      "Object"
 
 type NexusPrismaFields<ModelName extends keyof NexusPrismaTypes> = {
     [MethodName in keyof NexusPrismaTypes[ModelName]]: NexusPrismaMethod<
@@ -489,6 +493,25 @@ export interface Context {
     userId: number
 }
 
+type PrismaCreationType = {
+    create?: object
+    connect?: object
+}
+type Unprismafy<T> = {
+    [K in keyof T]: T[K] extends object
+        ? Unprismafy<T[K] extends PrismaCreationType ? T[K]["create"] : T[K]>
+        : T[K]
+}
+type Key = string | number
+type Primitive = string | number | boolean | symbol
+type NonRecursible = Primitive | Function | null | undefined
+type ExcludedByKeys<O, K extends Key[]> = Pick<O, Exclude<keyof O, K[number]>>
+type DeepExcludedByKeys<O, K extends Key[]> = {
+    [P in keyof ExcludedByKeys<O, K>]: O[P] extends NonRecursible | any[]
+        ? O[P]
+        : DeepExcludedByKeys<O[P], K>
+}
+
 declare global {
     interface NexusGenCustomOutputProperties<TypeName extends string> {
         crud: NexusPrisma<TypeName, "crud">
@@ -501,12 +524,7 @@ declare global {
 }
 
 export interface NexusGenInputs {
-    SelectorCreateOneWithoutSelectorInput: {
-        // input type
-        connect?: NexusGenInputs["SelectorWhereUniqueInput"] | null // SelectorWhereUniqueInput
-        create?: NexusGenInputs["SelectorCreateWithoutStepsInput"] | null // SelectorCreateWithoutStepsInput
-    }
-    SelectorCreateWithoutStepsInput: {
+    SelectorCreateWithoutStepsCreateOnlyInput: {
         // input type
         css: string // String!
     }
@@ -526,28 +544,20 @@ export interface NexusGenInputs {
         last: string // String!
         password: string // String!
     }
-    StepCreateManyWithoutStepsInput: {
-        // input type
-        connect?: NexusGenInputs["StepWhereUniqueInput"][] | null // [StepWhereUniqueInput!]
-        create?: NexusGenInputs["StepCreateWithoutUserInput"][] | null // [StepCreateWithoutUserInput!]
-    }
-    StepCreateWithoutUserInput: {
+    StepCreateWithoutUserCreateOnlyInput: {
         // input type
         action: string // String!
-        selector: NexusGenInputs["SelectorCreateOneWithoutSelectorInput"] // SelectorCreateOneWithoutSelectorInput!
-        tests?: NexusGenInputs["TestCreateManyWithoutTestsInput"] | null // TestCreateManyWithoutTestsInput
+        selector?:
+            | NexusGenInputs["SelectorCreateWithoutStepsCreateOnlyInput"]
+            | null // SelectorCreateWithoutStepsCreateOnlyInput
+        tests?: NexusGenInputs["TestCreateWithoutStepsCreateOnlyInput"][] | null // [TestCreateWithoutStepsCreateOnlyInput!]
         value: string // String!
     }
     StepWhereUniqueInput: {
         // input type
         id?: number | null // Int
     }
-    TagCreateManyWithoutTagsInput: {
-        // input type
-        connect?: NexusGenInputs["TagWhereUniqueInput"][] | null // [TagWhereUniqueInput!]
-        create?: NexusGenInputs["TagCreateWithoutTestInput"][] | null // [TagCreateWithoutTestInput!]
-    }
-    TagCreateWithoutTestInput: {
+    TagCreateWithoutTestCreateOnlyInput: {
         // input type
         name: string // String!
     }
@@ -555,21 +565,16 @@ export interface NexusGenInputs {
         // input type
         id?: number | null // Int
     }
-    TestCreateInput: {
+    TestCreateCreateOnlyInput: {
         // input type
         name: string // String!
-        steps?: NexusGenInputs["StepCreateManyWithoutStepsInput"] | null // StepCreateManyWithoutStepsInput
-        tags?: NexusGenInputs["TagCreateManyWithoutTagsInput"] | null // TagCreateManyWithoutTagsInput
+        steps?: NexusGenInputs["StepCreateWithoutUserCreateOnlyInput"][] | null // [StepCreateWithoutUserCreateOnlyInput!]
+        tags?: NexusGenInputs["TagCreateWithoutTestCreateOnlyInput"][] | null // [TagCreateWithoutTestCreateOnlyInput!]
     }
-    TestCreateManyWithoutTestsInput: {
-        // input type
-        connect?: NexusGenInputs["TestWhereUniqueInput"][] | null // [TestWhereUniqueInput!]
-        create?: NexusGenInputs["TestCreateWithoutStepsInput"][] | null // [TestCreateWithoutStepsInput!]
-    }
-    TestCreateWithoutStepsInput: {
+    TestCreateWithoutStepsCreateOnlyInput: {
         // input type
         name: string // String!
-        tags?: NexusGenInputs["TagCreateManyWithoutTagsInput"] | null // TagCreateManyWithoutTagsInput
+        tags?: NexusGenInputs["TagCreateWithoutTestCreateOnlyInput"][] | null // [TagCreateWithoutTestCreateOnlyInput!]
     }
     TestWhereUniqueInput: {
         // input type
@@ -600,20 +605,16 @@ export interface NexusGenRootTypes {
 }
 
 export interface NexusGenAllTypes extends NexusGenRootTypes {
-    SelectorCreateOneWithoutSelectorInput: NexusGenInputs["SelectorCreateOneWithoutSelectorInput"]
-    SelectorCreateWithoutStepsInput: NexusGenInputs["SelectorCreateWithoutStepsInput"]
+    SelectorCreateWithoutStepsCreateOnlyInput: NexusGenInputs["SelectorCreateWithoutStepsCreateOnlyInput"]
     SelectorWhereUniqueInput: NexusGenInputs["SelectorWhereUniqueInput"]
     SignInInput: NexusGenInputs["SignInInput"]
     SignUpInput: NexusGenInputs["SignUpInput"]
-    StepCreateManyWithoutStepsInput: NexusGenInputs["StepCreateManyWithoutStepsInput"]
-    StepCreateWithoutUserInput: NexusGenInputs["StepCreateWithoutUserInput"]
+    StepCreateWithoutUserCreateOnlyInput: NexusGenInputs["StepCreateWithoutUserCreateOnlyInput"]
     StepWhereUniqueInput: NexusGenInputs["StepWhereUniqueInput"]
-    TagCreateManyWithoutTagsInput: NexusGenInputs["TagCreateManyWithoutTagsInput"]
-    TagCreateWithoutTestInput: NexusGenInputs["TagCreateWithoutTestInput"]
+    TagCreateWithoutTestCreateOnlyInput: NexusGenInputs["TagCreateWithoutTestCreateOnlyInput"]
     TagWhereUniqueInput: NexusGenInputs["TagWhereUniqueInput"]
-    TestCreateInput: NexusGenInputs["TestCreateInput"]
-    TestCreateManyWithoutTestsInput: NexusGenInputs["TestCreateManyWithoutTestsInput"]
-    TestCreateWithoutStepsInput: NexusGenInputs["TestCreateWithoutStepsInput"]
+    TestCreateCreateOnlyInput: NexusGenInputs["TestCreateCreateOnlyInput"]
+    TestCreateWithoutStepsCreateOnlyInput: NexusGenInputs["TestCreateWithoutStepsCreateOnlyInput"]
     TestWhereUniqueInput: NexusGenInputs["TestWhereUniqueInput"]
     UserWhereUniqueInput: NexusGenInputs["UserWhereUniqueInput"]
 }
@@ -680,7 +681,7 @@ export interface NexusGenArgTypes {
     Mutation: {
         createOneTest: {
             // args
-            data: NexusGenInputs["TestCreateInput"] // TestCreateInput!
+            data: NexusGenInputs["TestCreateCreateOnlyInput"] // TestCreateCreateOnlyInput!
         }
         signIn: {
             // args
@@ -821,20 +822,16 @@ export type NexusGenObjectNames =
     | "User"
 
 export type NexusGenInputNames =
-    | "SelectorCreateOneWithoutSelectorInput"
-    | "SelectorCreateWithoutStepsInput"
+    | "SelectorCreateWithoutStepsCreateOnlyInput"
     | "SelectorWhereUniqueInput"
     | "SignInInput"
     | "SignUpInput"
-    | "StepCreateManyWithoutStepsInput"
-    | "StepCreateWithoutUserInput"
+    | "StepCreateWithoutUserCreateOnlyInput"
     | "StepWhereUniqueInput"
-    | "TagCreateManyWithoutTagsInput"
-    | "TagCreateWithoutTestInput"
+    | "TagCreateWithoutTestCreateOnlyInput"
     | "TagWhereUniqueInput"
-    | "TestCreateInput"
-    | "TestCreateManyWithoutTestsInput"
-    | "TestCreateWithoutStepsInput"
+    | "TestCreateCreateOnlyInput"
+    | "TestCreateWithoutStepsCreateOnlyInput"
     | "TestWhereUniqueInput"
     | "UserWhereUniqueInput"
 
@@ -885,94 +882,6 @@ declare global {
     > {}
     interface NexusGenPluginSchemaConfig {}
 }
-
-type PrismaCreationType = {
-    create?: object
-    connect?: object
-}
-export type Unlisted<T> = T extends (infer V)[] ? V : T
-
-type Unprismafy<T> = {
-    [K in keyof T]: NonNullable<T[K]> extends object
-        ? Unprismafy<T[K] extends PrismaCreationType ? T[K]["create"] : T[K]>
-        : T[K]
-}
-
-// type FilterUp<T, UpfilteredKey> = {
-//     [K in keyof T]: undefined extends T[K]
-//         ?
-//               | FilterUp<
-//                     UpfilteredKey extends keyof NonNullable<T[K]>
-//                         ? NonNullable<T[K]>[UpfilteredKey]
-//                         : NonNullable<T[K]>,
-//                     UpfilteredKey
-//                 >
-//               | undefined
-//               | null
-//         : FilterUp<
-//               UpfilteredKey extends keyof T[K] ? T[K][UpfilteredKey] : T[K],
-//               UpfilteredKey
-//           >
-// }
-
-type S = true | false extends true ? "" : {}
-
-type CreateTest = {
-    name: string
-    steps?: CreateStep[]
-    user: string
-}
-
-type CreateStep = {
-    user: string
-    connect: {
-        user: string
-        replace: string
-    }
-}
-
-type Result = DeepExcludedByKeys<CreateStep, ["user"]>
-
-type Result2 = DeepExcludedByKeys<CreateStep[], ["user"]>
-
-const r: Result = {
-    connect: {
-        replace: ""
-    }
-}
-
-type New = DeepExcludedByKeys<CreateTest, ["user"]>
-
-const t: New = {
-    name: "",
-    steps: [{ connect: { replace: "" } }]
-}
-
-const x: FilterUp<CreateTest, "connect"> = {
-    name: "",
-    steps: [{ replace: "", user: "" }],
-    user: ""
-}
-
-type TestWorks = FilterUp<photon.TestCreateInput, "create">
-
-const test2: DeepExcludedByKeys<TestWorks, ["user"]> = {
-    name: "",
-    steps: [
-        {
-            action: "click",
-            value: "",
-            selector: {
-                css: ""
-            }
-        }
-    ]
-}
-
-type Key = string | number
-type Primitive = string | number | boolean | symbol
-type NonRecursible = Primitive | Function | null | undefined
-
 export type Selector = Unprismafy<
     DeepExcludedByKeys<photon.SelectorCreateInput, ["user"]>
 >
@@ -985,7 +894,6 @@ export type Tag = Unprismafy<
 export type Test = Unprismafy<
     DeepExcludedByKeys<photon.TestCreateInput, ["user"]>
 >
-
 export type User = Unprismafy<
     DeepExcludedByKeys<photon.UserCreateInput, ["user"]>
 >
