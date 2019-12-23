@@ -1,4 +1,4 @@
-import React, { FC, CSSProperties } from "react"
+import React, { CSSProperties } from "react"
 import { motion, SVGMotionProps } from "framer-motion"
 import { usePalette } from "../styles"
 
@@ -21,7 +21,7 @@ export type AnimatedLogoProps = {
     style?: CSSProperties
 }
 
-export const AnimatedLogo: FC<AnimatedLogoProps> = ({ style }) => {
+export const AnimatedLogo = ({ style }: AnimatedLogoProps) => {
     const { primary, secondary } = usePalette()
     return (
         <motion.svg style={style} viewBox="0 0 1823 575">

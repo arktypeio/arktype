@@ -35,9 +35,9 @@ export const FormText = ({
                 {...rest}
             />
             <div style={{ height: 20 }}>
-                {errors[name] && errors[name].message ? (
+                {errors?.[name]?.message ? (
                     <ErrorText tooltipPlacement={tooltipPlacement}>
-                        {errors[name].message.split("\n")}
+                        {errors[name]!.message!.split("\n")}
                     </ErrorText>
                 ) : null}
             </div>

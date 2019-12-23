@@ -28,7 +28,7 @@ export const AutoForm = <T extends Fields, D = any>({
     ...rest
 }: AutoFormProps<T, D>) => (
     <Form<T, D> {...rest}>
-        {({ loading, errors }) => (
+        {({ loading, error }) => (
             <>
                 {Object.entries(contents).map(([k, v], index) => (
                     <FormText name={k} key={index} {...textProps} value={v} />
@@ -40,7 +40,7 @@ export const AutoForm = <T extends Fields, D = any>({
                         <Button>Submit</Button>
                     </FormSubmit>
                 )}
-                {errors ? <ErrorText>{errors}</ErrorText> : null}
+                {error ? <ErrorText>{error.message}</ErrorText> : null}
             </>
         )}
     </Form>

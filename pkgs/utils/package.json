@@ -6,21 +6,24 @@
     "main": "dist/index.js",
     "types": "dist/index.d.ts",
     "scripts": {
-        "build": "redo-build"
+        "build": "redo-build",
+        "test": "jest"
     },
     "dependencies": {
-        "@babel/runtime-corejs3": "7.5.5",
-        "class-transformer": "0.2.0",
-        "core-js": "3.1.4",
+        "@babel/runtime-corejs3": "7.6.3",
+        "class-transformer": "0.2.3",
+        "core-js": "3.3.2",
         "fs-extra": "8.1.0",
         "moize": "5.4.4"
     },
     "devDependencies": {
-        "@babel/cli": "7.5.5",
+        "@babel/cli": "7.6.4",
         "@re-do/recommended": "0.0.1",
-        "@types/fs-extra": "8.0.0",
-        "@types/node": "12.6.6",
+        "@types/fs-extra": "8.0.1",
+        "@types/jest": "24.0.19",
+        "@types/node": "12.11.1",
         "babel-preset-redo": "0.0.1",
-        "typescript": "3.6.2"
+        "jest": "24.9.0",
+        "typescript": "3.7.4"
     }
 }

@@ -4,110 +4,49 @@ import gql from "graphql-tag"
 const contents = gql`
     mutation signUp {
         signUp(
-            email: "oder@redo.qa"
-            password: "redo"
-            firstName: "Reed"
-            lastName: "Doe"
-        ) {
-            token
-        }
+            data: {
+                email: "reed@redo.qa"
+                password: "redo"
+                first: "Reed"
+                last: "Doe"
+            }
+        )
     }
 
     mutation signIn {
-        signIn(email: "oder@redo.qa", password: "redo") {
-            token
-        }
+        signIn(data: { email: "reed@redo.qa", password: "redo" })
     }
 
     mutation createTest {
-        createTest(
-            name: "Test Something"
-            tags: [{ name: "BAT" }, { name: "short" }]
-            steps: [{ action: "set", selector: "#someId", value: "someText" }]
+        createOneTest(
+            data: {
+                name: "Test 1"
+                tags: [{ name: "critical" }]
+                steps: {
+                    action: "click"
+                    value: "something"
+                    selector: { css: "#someId" }
+                }
+            }
         ) {
             id
-        }
-    }
-
-    mutation updateTest($id: String!) {
-        updateTest(
-            id: $id
-            name: "NewName"
-            tags: [{ name: "BAT" }, { name: "short" }]
-            steps: [{ action: "set", selector: "#someId", value: "someText" }]
-        ) {
-            id
-        }
-    }
-
-    mutation createTag {
-        createTag(name: "SomeFeature") {
-            id
-            name
         }
     }
 
     query getTests {
-        getTests {
-            id
+        tests {
             name
-            tags {
-                name
-            }
-            steps {
-                action
-                selector
-                value
-            }
-        }
-    }
-
-    query getTags {
-        getTags {
             id
-            name
-        }
-    }
-
-    query getSteps {
-        getSteps {
-            id
-            action
-            selector
-            value
-        }
-    }
-
-    query me {
-        me {
-            id
-            email
-            password
-            firstName
-            lastName
-            tags {
-                id
-                name
-            }
             steps {
                 id
                 action
-                selector
                 value
+                selector {
+                    css
+                }
             }
-            tests {
-                id
+            tags {
                 name
-                tags {
-                    id
-                    name
-                }
-                steps {
-                    id
-                    action
-                    selector
-                    value
-                }
             }
         }
     }

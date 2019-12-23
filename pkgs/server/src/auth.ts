@@ -1,16 +1,14 @@
 import { verify, JsonWebTokenError } from "jsonwebtoken"
-import { AuthChecker } from "type-graphql"
-import { Context } from "./context"
 import { APP_SECRET } from "./utils"
 
 interface Token {
-    userId: string
+    userId: number
 }
 
-export function getUserId(req: any) {
+export const getUserId = (req: any) => {
     const auth = req.headers.authorization
     if (!auth) {
-        return ""
+        return 0
     }
     const token = auth.replace("Bearer ", "")
     try {
@@ -18,21 +16,8 @@ export function getUserId(req: any) {
         return verifiedToken.userId
     } catch (e) {
         if (e instanceof JsonWebTokenError) {
-            return ""
+            return 0
         }
         throw e
     }
-}
-
-export const authChecker: AuthChecker<Context> = async ({
-    context: { photon, id }
-}) => {
-    if (!id) {
-        return false
-    }
-    const user = await photon.users.findOne({ where: { id } })
-    if (!user) {
-        return false
-    }
-    return true
 }

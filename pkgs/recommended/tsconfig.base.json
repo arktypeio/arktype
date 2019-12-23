@@ -10,8 +10,8 @@
         "emitDecoratorMetadata": true,
         "allowSyntheticDefaultImports": true,
         "esModuleInterop": true,
-        "strictPropertyInitialization": false,
         "noErrorTruncation": true,
-        "skipLibCheck": true
+        "skipLibCheck": true,
+        "declaration": true
     }
 }

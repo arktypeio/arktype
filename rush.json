@@ -1,7 +1,7 @@
 {
     "$schema": "https://developer.microsoft.com/json-schemas/rush/v5/rush.schema.json",
-    "rushVersion": "5.11.2",
-    "pnpmVersion": "3.7.0",
+    "rushVersion": "5.17.2",
+    "pnpmVersion": "3.8.1",
     "nodeSupportedVersionRange": ">=10.13.0",
     "ensureConsistentVersions": true,
     "repository": {
@@ -17,8 +17,12 @@
             "projectFolder": "pkgs/utils"
         },
         {
-            "packageName": "shapeql",
-            "projectFolder": "pkgs/shapeql"
+            "packageName": "statelessly",
+            "projectFolder": "pkgs/statelessly"
+        },
+        {
+            "packageName": "react-statelessly",
+            "projectFolder": "pkgs/react-statelessly"
         },
         {
             "packageName": "@re-do/model",
@@ -51,6 +55,10 @@
         {
             "packageName": "@re-do/test",
             "projectFolder": "pkgs/test"
+        },
+        {
+            "packageName": "gqlize",
+            "projectFolder": "pkgs/gqlize"
         }
     ]
 }
