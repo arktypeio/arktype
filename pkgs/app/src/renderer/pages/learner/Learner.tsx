@@ -10,39 +10,27 @@ import {
     ChipInput,
     ErrorText
 } from "@re-do/components"
-import { NexusGenInputs, NexusGenFieldTypes, Test } from "@re-do/model"
+import { useCreateOneTestMutation } from "@re-do/model/dist/react"
 import { deactivateLearner, resetLearner } from "state"
 import { LearnerEvents } from "./StepCards"
-import gql from "graphql-tag"
-import { useMutation } from "@apollo/react-hooks"
 import { store } from "renderer/common"
 
-const SAVETEST = gql`
-    mutation createTest($data: TestCreateInput!) {
-        createOneTest(data: $data) {
-            id
-        }
-    }
-`
-
 export const Learner = () => {
+    const result = store.useQuery({
+        learner: {
+            events: true,
+            chromiumInstalling: true,
+            testName: true,
+            testTags: true
+        }
+    })
     const {
         events,
         chromiumInstalling,
         testName: name,
         testTags: tags
-    } = store.hooks.useQuery({
-        learner: {
-            events: null,
-            chromiumInstalling: null,
-            testName: null,
-            testTags: null
-        }
-    }).learner
-    const [saveTest, saveTestResult] = useMutation<
-        NexusGenFieldTypes["Mutation"]["createOneTest"],
-        NexusGenInputs["TestCreateInput"]
-    >(SAVETEST)
+    } = result.learner
+    const [createTest, createTestResult] = useCreateOneTestMutation()
     return (
         <Column full>
             <AppBar height={120} align="center">
@@ -59,19 +47,23 @@ export const Learner = () => {
                         }
                     />
                     <ChipInput
-                        value={tags}
+                        value={tags.map(tag => tag.name)}
                         colorTemplate="light"
                         placeholder="Add Tags"
                         onAdd={(chip: string) =>
                             store.mutate({
-                                learner: { testTags: _ => [..._, chip] }
+                                learner: {
+                                    testTags: _ => [..._, { name: chip }]
+                                }
                             })
                         }
                         onDelete={(chip: string) => {
                             store.mutate({
                                 learner: {
                                     testTags: _ =>
-                                        _.filter(current => current !== chip)
+                                        _.filter(
+                                            current => current.name !== chip
+                                        )
                                 }
                             })
                         }}
@@ -94,7 +86,7 @@ export const Learner = () => {
                     style={{ color: "white" }}
                     onClick={deactivateLearner}
                 />
-                {saveTestResult.loading ? (
+                {createTestResult.loading ? (
                     <Spinner />
                 ) : (
                     <>
@@ -102,27 +94,20 @@ export const Learner = () => {
                             Icon={Icons.save}
                             style={{ color: "white" }}
                             onClick={async () => {
-                                await saveTest({
+                                await createTest({
                                     variables: {
                                         name,
-                                        tags: {
-                                            create: tags.map(_ => ({ name: _ }))
-                                        },
-                                        // steps: events.map(
-                                        //     ({ __typename, ...inputs }: any) =>
-                                        //         inputs
-                                        // ),
-                                        steps: {} as any,
-                                        user: {} as any
+                                        tags,
+                                        steps: events
                                     }
                                 })
                                 await resetLearner()
                                 await deactivateLearner()
                             }}
                         />
-                        {saveTestResult.error ? (
+                        {createTestResult.error ? (
                             <ErrorText>
-                                {saveTestResult.error.message}
+                                {createTestResult.error.message}
                             </ErrorText>
                         ) : null}
                     </>

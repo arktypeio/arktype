@@ -1,9 +1,9 @@
 import finder from "@medv/finder"
-import { Step } from "@re-do/model"
+import { StepCreateWithoutUserCreateOnlyInput as StepInput } from "@re-do/model"
 
 export const watchPage = async () => {
     const browserWindow: Window & {
-        notify: (e: Step) => void
+        notify: (e: StepInput) => void
     } = window as any
     const events = {
         CLICK: "click",
@@ -16,7 +16,7 @@ export const watchPage = async () => {
         browserWindow.addEventListener(
             event,
             async (e: Event) => {
-                const step: Step = {
+                const step: StepInput = {
                     action: e.type,
                     selector: {
                         css: ""

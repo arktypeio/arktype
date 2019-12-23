@@ -10,7 +10,10 @@ import { isDeepStrictEqual } from "util"
 import { join } from "path"
 import { homedir } from "os"
 import { createHandle } from "react-statelessly"
-import { Step } from "@re-do/model"
+import {
+    StepCreateWithoutUserCreateOnlyInput as StepInput,
+    TagCreateWithoutTestCreateOnlyInput as TagInput
+} from "@re-do/model"
 import { store } from "renderer/common"
 
 const BROWSER_WINDOW_TITLEBAR_SIZE = 35
@@ -36,10 +39,10 @@ const setMainWindowBounds = (bounds: Partial<Bounds>) => {
 
 export type Learner = {
     active: boolean
-    events: Step[]
+    events: StepInput[]
     lastConnectedEndpoint: string
     testName: string
-    testTags: string[]
+    testTags: TagInput[]
     lastMainWindowBounds: Bounds
     chromiumInstalling: boolean
 }
@@ -148,7 +151,7 @@ export const resetLearner = async () => {
     })
 }
 
-const notify = (event: Step) => {
+const notify = (event: StepInput) => {
     try {
         store.mutate({
             learner: { events: _ => _.concat(event) }

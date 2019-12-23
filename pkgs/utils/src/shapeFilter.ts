@@ -1,17 +1,26 @@
 import { isRecursible, fromEntries, Unlisted, NonRecursible } from "./common"
 
-// TODO: Convert to look more like DeepFilterKeys?
-export type ShapeFilter<O, S> = {
-    [P in S extends object
-        ? Extract<keyof O, keyof S>
-        : keyof O]: O[P] extends object
-        ? O[P] extends Array<any>
-            ? Unlisted<O[P]> extends object
-                ? Array<ShapeFilter<Unlisted<O[P]>, S>>
-                : O[P]
-            : ShapeFilter<O[P], P extends keyof S ? S[P] : undefined>
-        : O[P]
-}
+export type ShapeFilter<O, S> = O extends NonRecursible
+    ? O
+    : {
+          [K in S extends object ? Extract<keyof O, keyof S> : keyof O]: Array<
+              any
+          > extends O[K]
+              ?
+                    | Array<
+                          ShapeFilter<
+                              Unlisted<Exclude<O[K], NonRecursible>>,
+                              K extends keyof S ? S[K] : undefined
+                          >
+                      >
+                    | Extract<O[K], NonRecursible>
+              :
+                    | ShapeFilter<
+                          Exclude<O[K], NonRecursible>,
+                          K extends keyof S ? S[K] : undefined
+                      >
+                    | Extract<O[K], NonRecursible>
+      }
 
 export const shapeFilter = <O, S>(o: O, shape: S): ShapeFilter<O, S> => {
     if (!isRecursible(o) || !isRecursible(shape)) {

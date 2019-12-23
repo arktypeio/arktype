@@ -2,8 +2,9 @@ import React from "react"
 import { SuggestionCard } from "./SuggestionCard"
 import { store } from "renderer/common"
 import { Card, Row } from "@re-do/components"
-import { useQuery } from "@apollo/react-hooks"
-import { NexusGenAllTypes } from "@re-do/model"
+import { useQuery } from "@apollo/client"
+import { Test } from "@re-do/model"
+import gql from "graphql-tag"
 
 const welcomeSuggestion = {
     name: "👆Hey there!",
@@ -13,25 +14,44 @@ const welcomeSuggestion = {
 }
 
 const useValues = () => {
-    const { cardFilter } = store.hooks.useQuery({ cardFilter: null })
-    const { data, loading } = useQuery<{
-        getTests: NexusGenAllTypes["Test"][]
-    }>(metadata.test.gql.get, {
-        fetchPolicy: "no-cache"
-    })
+    const { cardFilter } = store.useQuery({ cardFilter: true })
+    const { data, loading } = useQuery<{ tests: Test[] }>(
+        gql`
+            query tests {
+                tests {
+                    name
+                    steps {
+                        action
+                        value
+                        selector {
+                            css
+                        }
+                    }
+                    tags {
+                        name
+                    }
+                }
+            }
+        `,
+        { fetchPolicy: "no-cache" }
+    )
     return loading
         ? []
-        : data && data.getTests && data.getTests.length > 0
-        ? data.getTests.filter(test =>
-              JSON.stringify(test)
-                  .toLowerCase()
-                  .includes(cardFilter.toLowerCase())
-          )
+        : data?.tests && data.tests.length > 0
+        ? data.tests
+              .filter(test =>
+                  JSON.stringify(test)
+                      .toLowerCase()
+                      .includes(cardFilter.toLowerCase())
+              )
+              .map(test => ({ ...test, description: "Test" }))
         : [welcomeSuggestion]
 }
 
 export const SuggestionResultsGrid = () => {
-    const values = useValues()
+    const values = useValues() as Array<
+        (Test & { description: string }) | typeof welcomeSuggestion
+    >
     return (
         <Card
             style={{
@@ -48,13 +68,16 @@ export const SuggestionResultsGrid = () => {
             >
                 {values.map(value => (
                     <div
-                        key={name}
+                        key={value.name}
                         style={{
                             width: 200,
                             height: 200
                         }}
                     >
-                        <SuggestionCard kind="test" value={value} />
+                        <SuggestionCard
+                            kind={"steps" in value ? "test" : "other"}
+                            value={value}
+                        />
                     </div>
                 ))}
             </Row>

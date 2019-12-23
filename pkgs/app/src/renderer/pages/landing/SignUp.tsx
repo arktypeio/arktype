@@ -1,6 +1,4 @@
 import React from "react"
-import gql from "graphql-tag"
-import { useMutation } from "@apollo/react-hooks"
 import {
     Form,
     FormText,
@@ -9,25 +7,21 @@ import {
     Button,
     Column
 } from "@re-do/components"
-import { useSignUpMutation } from "@re-do/model/dist/react"
+import {
+    useSignUpMutation,
+    SignUpMutation,
+    SignUpMutationVariables
+} from "@re-do/model/dist/react"
 import { store } from "renderer/common"
-import { submitForm } from "renderer/components/CustomForm"
 import { formatEmail } from "./common"
 
 export const SignUp = () => {
     const [submit] = useSignUpMutation()
     return (
-        <Form<SignUpInput, SignUpData>
-            validator={validator}
-            submit={async fields => {
-                const result = await submitForm({ submit, fields })
-                if (result.data && result.data.signUp) {
-                    store.mutate({
-                        token: result.data.signUp
-                    })
-                }
-                return result
-            }}
+        <Form<SignUpMutationVariables, SignUpMutation>
+            validate={() => ({})}
+            submit={submit}
+            onData={data => store.mutate({ token: data.signUp })}
             transformValues={({ email, ...rest }) => ({
                 ...rest,
                 email: formatEmail(email)

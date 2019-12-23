@@ -1,16 +1,17 @@
 import React from "react"
 import { Column, Card, Row, Text, Icons, IconButton } from "@re-do/components"
-import { NexusGenAllTypes } from "@re-do/model"
 import { ValueFrom } from "@re-do/utils"
-
-class Other {
-    name: string
-    description: string
-}
+import { Test } from "@re-do/model"
 
 type SuggestionKinds = {
-    test: NexusGenAllTypes["Test"]
-    other: Other
+    test: {
+        name: string
+        description: string
+    }
+    other: {
+        name: string
+        description: string
+    }
 }
 
 type SuggestionKind = keyof SuggestionKinds
@@ -22,7 +23,7 @@ export type SuggestionCardProps<T extends SuggestionKind> = {
 
 export const getSuggestionExtras = (): SuggestionExtras => {
     return {
-        test: [<IconButton Icon={Icons.run} onClick={() => {}} />],
+        test: [],
         other: []
     }
 }
@@ -31,7 +32,7 @@ type SuggestionExtras = { [K in SuggestionKind]: JSX.Element[] }
 
 export const SuggestionCard = <T extends SuggestionKind>({
     kind,
-    value
+    value: { name, description }
 }: SuggestionCardProps<T>) => {
     const extras = getSuggestionExtras()
     return (
@@ -49,11 +50,13 @@ export const SuggestionCard = <T extends SuggestionKind>({
                 </Row>
                 <Row full={true} justify="center" align="center">
                     <Text variant="body2" align="center">
-                        {kind === "test" ? value : "Test"}
+                        {description}
                     </Text>
                 </Row>
                 <Row full={true} justify="center" align="center">
-                    {extras}
+                    {kind === "test" ? (
+                        <IconButton Icon={Icons.run} onClick={() => {}} />
+                    ) : null}
                 </Row>
             </Column>
         </Card>

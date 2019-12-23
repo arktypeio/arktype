@@ -1,8 +1,8 @@
 import React from "react"
+import { MutationResult } from "@apollo/client"
 import { Column, ColumnProps } from "../layouts"
 import {
     Fields,
-    SubmissionState,
     FormContext,
     FormContextProps,
     FullContext,
@@ -13,7 +13,7 @@ export type FormProps<T extends Fields, D = any> = FormContextProps<T, D> & {
     children:
         | JSX.Element
         | JSX.Element[]
-        | ((state: SubmissionState<D>) => JSX.Element)
+        | ((state: MutationResult<D>) => JSX.Element)
     columnProps?: ColumnProps
 }
 
@@ -25,7 +25,7 @@ export const Form = <T extends Fields, D = any>({
     return (
         <FormProvider {...contextProps}>
             <FormContext.Consumer>
-                {({ submissionState }: FullContext<T, D>) => (
+                {({ resultState: submissionState }: FullContext<T, D>) => (
                     <Column align="center" full {...columnProps}>
                         {typeof children === "function"
                             ? children(submissionState)
