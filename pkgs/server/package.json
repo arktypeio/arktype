@@ -4,13 +4,13 @@
     "author": "redo.qa",
     "description": "Redo's server",
     "scripts": {
-        "build": "tsc",
+        "build": "npm run generate && tsc",
         "start": "ts-node-dev --no-notify --respawn --transpileOnly src/index",
+        "createDb": "npm run wipeDb && npm run liftDb && npm run seedDb",
         "wipeDb": "rm -rf prisma/dev.db prisma/migrations",
-        "seed": "ts-node prisma/seed.ts",
-        "prisma": "prisma2 generate && npm run generateSchema && prisma2 lift save --name init && prisma2 lift up",
-        "generate": "npm run wipeDb && npm run prisma && npm run seed",
-        "clean": "rm -rf dist",
+        "liftDb": "prisma2 lift save --name init && prisma2 lift up",
+        "seedDb": "ts-node prisma/seed.ts",
+        "generate": "prisma2 generate && npm run generateSchema",
         "generateSchema": "ts-node --transpile-only src/schema && cp schema.gql ../model"
     },
     "dependencies": {
