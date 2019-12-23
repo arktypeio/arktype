@@ -1,29 +1,29 @@
 {
-  "name": "statelessly",
-  "version": "0.0.1",
-  "author": "redo.qa",
-  "description": "💪-typed state management with simple shapes🔷",
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
-  "scripts": {
-    "build": "redo-build",
-    "test": "jest"
-  },
-  "dependencies": {
-    "@babel/runtime-corejs3": "7.6.3",
-    "@re-do/utils": "0.0.1",
-    "deepmerge": "4.1.1",
-    "isomorphic-fetch": "2.2.1",
-    "moize": "5.4.4",
-    "redux": "4.0.4"
-  },
-  "devDependencies": {
-    "@babel/cli": "7.6.4",
-    "@re-do/recommended": "0.0.1",
-    "@types/jest": "24.0.19",
-    "@types/node": "12.11.1",
-    "babel-preset-redo": "0.0.1",
-    "jest": "24.9.0",
-    "typescript": "3.7.4"
-  }
+    "name": "statelessly",
+    "version": "0.0.1",
+    "author": "redo.qa",
+    "description": "💪-typed state management with simple shapes🔷",
+    "main": "dist/index.js",
+    "types": "dist/index.d.ts",
+    "scripts": {
+        "build": "redo-build",
+        "test": "jest"
+    },
+    "dependencies": {
+        "@babel/runtime-corejs3": "7.6.3",
+        "@re-do/utils": "0.0.1",
+        "deepmerge": "4.1.1",
+        "isomorphic-fetch": "2.2.1",
+        "moize": "5.4.4",
+        "redux": "4.0.4"
+    },
+    "devDependencies": {
+        "@babel/cli": "7.6.4",
+        "@re-do/recommended": "0.0.1",
+        "@types/jest": "24.0.19",
+        "@types/node": "12.11.1",
+        "babel-preset-redo": "0.0.1",
+        "jest": "24.9.0",
+        "typescript": "3.7.4"
+    }
 }

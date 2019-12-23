@@ -1,6 +1,5 @@
 dependencies:
     "@apollo/client": 3.0.0-beta.16_graphql@14.5.8+react@16.10.2
-    "@apollo/react-hooks": 3.1.3_31d1a7b54e6a7ee3dbc3accc4d0f8a97
     "@babel/cli": 7.6.4_@babel+core@7.6.4
     "@babel/core": 7.6.4
     "@babel/helper-plugin-utils": 7.0.0
@@ -24,7 +23,6 @@ dependencies:
     "@hot-loader/react-dom": 16.10.2_react@16.10.2
     "@material-ui/core": 4.5.1_react-dom@16.10.2+react@16.10.2
     "@material-ui/icons": 4.5.1_39308cd9abdc21fdf3cff7bab06e1917
-    "@material-ui/lab": 4.0.0-alpha.29_39308cd9abdc21fdf3cff7bab06e1917
     "@material-ui/pickers": 3.2.7_39308cd9abdc21fdf3cff7bab06e1917
     "@material-ui/styles": 4.5.0_react-dom@16.10.2+react@16.10.2
     "@mdi/js": 4.5.95
@@ -33,7 +31,7 @@ dependencies:
     "@rush-temp/app": "file:projects/app.tgz"
     "@rush-temp/babel-preset-redo": "file:projects/babel-preset-redo.tgz_react-dom@16.10.2+react@16.10.2"
     "@rush-temp/bundle": "file:projects/bundle.tgz_06b0ba4fdf0f0c5aaf41218256e8c607"
-    "@rush-temp/components": "file:projects/components.tgz_webpack@4.41.2"
+    "@rush-temp/components": "file:projects/components.tgz_graphql@14.5.8+webpack@4.41.2"
     "@rush-temp/gqlize": "file:projects/gqlize.tgz_@babel+core@7.6.4"
     "@rush-temp/model": "file:projects/model.tgz_@babel+core@7.6.4+react@16.10.2"
     "@rush-temp/react-statelessly": "file:projects/react-statelessly.tgz_@babel+core@7.6.4"
@@ -76,10 +74,6 @@ dependencies:
     "@types/webpack": 4.39.3
     "@types/webpack-merge": 4.1.5
     analytics-node: 3.4.0-beta.1
-    apollo-cache-inmemory: 1.6.3_graphql@14.5.8
-    apollo-client: 2.6.4_graphql@14.5.8
-    apollo-link-context: 1.0.19_graphql@14.5.8
-    apollo-link-http: 1.5.16_graphql@14.5.8
     apollo-server: 2.9.6_graphql@14.5.8
     babel-loader: 8.0.6_@babel+core@7.6.4+webpack@4.41.2
     babel-plugin-require-context-hook: 1.0.0
@@ -87,7 +81,6 @@ dependencies:
     babel-runtime: 6.26.0
     bcrypt: 3.0.6
     class-transformer: 0.2.3
-    class-validator: 0.11.0
     clean-webpack-plugin: 3.0.0_webpack@4.41.2
     copy-webpack-plugin: 5.0.4_webpack@4.41.2
     core-js: 3.3.2
@@ -116,12 +109,11 @@ dependencies:
     material-ui-chip-input: 1.0.0_39308cd9abdc21fdf3cff7bab06e1917
     moize: 5.4.4
     nexus: 0.12.0-rc.5_graphql@14.5.8
-    prettier: 1.15.1
-    pretty-quick: 1.8.0_prettier@1.15.1
+    prettier: 1.19.1
+    pretty-quick: 2.0.1_prettier@1.19.1
     prisma2: 2.0.0-preview017.2
     puppeteer: 1.20.0
     react: 16.10.2
-    react-apollo: 3.1.3_31d1a7b54e6a7ee3dbc3accc4d0f8a97
     react-docgen-typescript-loader: 3.3.0_typescript@3.7.4+webpack@4.41.2
     react-dom: 16.10.2_react@16.10.2
     react-hook-form: 3.24.1_react-dom@16.10.2+react@16.10.2
@@ -133,18 +125,15 @@ dependencies:
     react-typist: 2.0.5_react-dom@16.10.2+react@16.10.2
     redo-nexus-prisma: 0.6.1-8_3d439f4e0f24d46582a80975993b2eea
     redux: 4.0.4
-    reflect-metadata: 0.1.13
     style-loader: 1.0.0_webpack@4.41.2
     ts-loader: 6.2.0_typescript@3.7.4
     ts-node: 8.5.4_typescript@3.7.4
     ts-node-dev: 1.0.0-pre.43_typescript@3.7.4
     tsconfig-paths: 3.9.0
     tsconfig-paths-webpack-plugin: 3.2.0
-    type-graphql: 0.17.5_2f992e2e424a491fbdc3cbc9f3788f13
     typeface-ubuntu: 0.0.65
     typescript: 3.7.4
     uuid: 3.3.3
-    validate.js: 0.13.1
     validator: 12.1.0
     webpack: 4.41.2_webpack@4.41.2
     webpack-cli: 3.3.9_webpack@4.41.2
@@ -2528,24 +2517,6 @@ packages:
             react-dom: ^16.8.0
         resolution:
             integrity: sha512-YZ/BgJbXX4a0gOuKWb30mBaHaoXRqPanlePam83JQPZ/y4kl+3aW0Wv9tlR70hB5EGAkEJGW5m4ktJwMgxQAeA==
-    /@material-ui/lab/4.0.0-alpha.29_39308cd9abdc21fdf3cff7bab06e1917:
-        dependencies:
-            "@babel/runtime": 7.7.7
-            "@material-ui/core": 4.5.1_react-dom@16.10.2+react@16.10.2
-            "@material-ui/utils": 4.7.1_react-dom@16.10.2+react@16.10.2
-            clsx: 1.0.4
-            prop-types: 15.7.2
-            react: 16.10.2
-            react-dom: 16.10.2_react@16.10.2
-        dev: false
-        engines:
-            node: ">=8.0.0"
-        peerDependencies:
-            "@material-ui/core": ^4.5.0
-            react: ^16.8.0
-            react-dom: ^16.8.0
-        resolution:
-            integrity: sha512-lF8PHp7IkJUvbH8L9IrTCYfMtwMlAFmp0Weoc4kgLJuJMW3JAUQ2NMpyIhy3jcTJjxH/LhK+y6cKYALx2c0O1g==
     /@material-ui/pickers/3.2.7_39308cd9abdc21fdf3cff7bab06e1917:
         dependencies:
             "@babel/runtime": 7.7.7
@@ -4621,6 +4592,12 @@ packages:
             node: ">=0.10.0"
         resolution:
             integrity: sha1-45sJrqne+Gao8gbiiK9jkZuuOcQ=
+    /array-differ/3.0.0:
+        dev: false
+        engines:
+            node: ">=8"
+        resolution:
+            integrity: sha512-THtfYS6KtME/yIAhKjZ2ul7XI96lQGHRputJQHO80LAWQnuGP4iCIN8vdMRboGbIEYBwU33q8Tch1os2+X0kMg==
     /array-equal/1.0.0:
         dev: false
         resolution:
@@ -4661,6 +4638,12 @@ packages:
             node: ">=0.10.0"
         resolution:
             integrity: sha1-mjRBDk9OPaI96jdb5b5w8kd47Dk=
+    /array-union/2.1.0:
+        dev: false
+        engines:
+            node: ">=8"
+        resolution:
+            integrity: sha512-HGyxoOTYUyCM6stUe6EJgnd4EoewAI7zMdfqO+kGjnlZmBDz/cR5pf8r/cR4Wq60sL/p0IkcjUEEPwS3GFrIyw==
     /array-uniq/1.0.3:
         dev: false
         engines:
@@ -4716,6 +4699,12 @@ packages:
             node: ">=0.10.0"
         resolution:
             integrity: sha1-iYUI2iIm84DfkEcoRWhJwVAaSw0=
+    /arrify/2.0.1:
+        dev: false
+        engines:
+            node: ">=8"
+        resolution:
+            integrity: sha512-3duEwti880xqi4eAMN8AyR4a0ByT90zoYdLlevfrvU43vb0YZwZVfxOgxWrLXXXpyugL0hNZc9G6BiB5B3nUug==
     /asap/2.0.6:
         dev: false
         resolution:
@@ -7601,20 +7590,6 @@ packages:
             node: ">=4"
         resolution:
             integrity: sha1-lEvs00zEHuMqY6n68nrVpl/Fl3c=
-    /execa/0.8.0:
-        dependencies:
-            cross-spawn: 5.1.0
-            get-stream: 3.0.0
-            is-stream: 1.1.0
-            npm-run-path: 2.0.2
-            p-finally: 1.0.0
-            signal-exit: 3.0.2
-            strip-eof: 1.0.0
-        dev: false
-        engines:
-            node: ">=4"
-        resolution:
-            integrity: sha1-2NdrvBtVIX7RkP1t1J08d07PyNo=
     /execa/1.0.0:
         dependencies:
             cross-spawn: 6.0.5
@@ -7629,6 +7604,22 @@ packages:
             node: ">=6"
         resolution:
             integrity: sha512-adbxcyWV46qiHyvSp50TKt05tB4tK3HcmF7/nxfAdhnox83seTDbwnaqKO4sXRy7roHAIFqJP/Rw/AuEbX61LA==
+    /execa/2.1.0:
+        dependencies:
+            cross-spawn: 7.0.1
+            get-stream: 5.1.0
+            is-stream: 2.0.0
+            merge-stream: 2.0.0
+            npm-run-path: 3.1.0
+            onetime: 5.1.0
+            p-finally: 2.0.1
+            signal-exit: 3.0.2
+            strip-final-newline: 2.0.0
+        dev: false
+        engines:
+            node: ^8.12.0 || >=9.7.0
+        resolution:
+            integrity: sha512-Y/URAVapfbYy2Xp/gb6A0E7iR8xeqOCXsuuaoMn7A5PzrXUK84E1gyiEfq0wQd/GHA6GsoHWwhNq8anb0mleIw==
     /execa/3.2.0:
         dependencies:
             cross-spawn: 7.0.1
@@ -9077,6 +9068,12 @@ packages:
         dev: false
         resolution:
             integrity: sha512-Pgs951kaMm5GXP7MOvxERINe3gsaVjUWFm+UZPSq9xYriQAksyhg0csnS0KXSNRD5NmNdapXEpjxG49+AKh/ug==
+    /ignore/5.1.4:
+        dev: false
+        engines:
+            node: ">= 4"
+        resolution:
+            integrity: sha512-MzbUSahkTW1u7JpKKjY7LCARd1fU5W2rLdxlM4kdkayuCwZImjkpluF9CM1aLewYJguPDqewLam18Y6AU69A8A==
     /immer/1.10.0:
         dev: false
         resolution:
@@ -10027,6 +10024,9 @@ packages:
             node: ">=6"
         peerDependencies:
             jest-resolve: "*"
+        peerDependenciesMeta:
+            jest-resolve:
+                optional: true
         resolution:
             integrity: sha512-pgFw2tm54fzgYvc/OHrnysABEObZCUNFnhjoRjaVOCN8NYc032/gVjPaHD4Aq6ApkSieWtfKAFQtmDKAmhupnQ==
     /jest-regex-util/24.9.0:
@@ -11364,6 +11364,18 @@ packages:
         hasBin: true
         resolution:
             integrity: sha512-ji6J5enbMyGRHIAkAOu3WdV8nggqviKCEKtXcOqfphZZtQrmHKycfynJ2V7eVPUA4NhJ6V7Wf4TmGbTwKE9B6g==
+    /multimatch/4.0.0:
+        dependencies:
+            "@types/minimatch": 3.0.3
+            array-differ: 3.0.0
+            array-union: 2.1.0
+            arrify: 2.0.1
+            minimatch: 3.0.4
+        dev: false
+        engines:
+            node: ">=8"
+        resolution:
+            integrity: sha512-lDmx79y1z6i7RNx0ZGCPq1bzJ6ZoDDKbvh7jxr9SJcWLkShMzXrHbYVpTdnhNM5MXpDUxCQ4DgqVttVXlBgiBQ==
     /mute-stream/0.0.7:
         dev: false
         resolution:
@@ -11646,6 +11658,14 @@ packages:
             node: ">=4"
         resolution:
             integrity: sha1-NakjLfo11wZ7TLLd8jV7GHFTbF8=
+    /npm-run-path/3.1.0:
+        dependencies:
+            path-key: 3.1.1
+        dev: false
+        engines:
+            node: ">=8"
+        resolution:
+            integrity: sha512-Dbl4A/VfiVGLgQv29URL9xshU8XDY1GeLy+fsaZ1AA8JDSfjvr5P5+pzRbWqRSBxk6/DW7MIh8lTM/PaGnP2kg==
     /npm-run-path/4.0.1:
         dependencies:
             path-key: 3.1.1
@@ -12556,13 +12576,13 @@ packages:
             node: ">=4"
         resolution:
             integrity: sha1-6SQ0v6XqjBn0HN/UAddBo8gZ2Jc=
-    /prettier/1.15.1:
+    /prettier/1.19.1:
         dev: false
         engines:
             node: ">=4"
         hasBin: true
         resolution:
-            integrity: sha512-4rgV2hyc/5Pk0XHH4VjJWHRgVjgRbpMfLQjREAhHBtyW1UvTFkjJEsueGYNYYZd9mn97K+1qv0EBwm11zoaSgA==
+            integrity: sha512-s7PoyDv/II1ObgQunCbB9PdLmUcBZcnWOcxDh7O0N/UwDEsHyqkW+Qh28jW+mVuCdx7gLB0BotYI1Y6uI9iyew==
     /pretty-bytes/1.0.4:
         dependencies:
             get-stdin: 4.0.1
@@ -12597,20 +12617,23 @@ packages:
             node: ">= 0.8"
         resolution:
             integrity: sha1-t+PqQkNaTJsnWdmeDyAesZWALuE=
-    /pretty-quick/1.8.0_prettier@1.15.1:
+    /pretty-quick/2.0.1_prettier@1.19.1:
         dependencies:
             chalk: 2.4.2
-            execa: 0.8.0
-            find-up: 2.1.0
-            ignore: 3.3.10
+            execa: 2.1.0
+            find-up: 4.1.0
+            ignore: 5.1.4
             mri: 1.1.4
-            prettier: 1.15.1
+            multimatch: 4.0.0
+            prettier: 1.19.1
         dev: false
+        engines:
+            node: ">=8"
         hasBin: true
         peerDependencies:
             prettier: ">=1.8.0"
         resolution:
-            integrity: sha512-qV25sQF/ivJpdZ5efwemQYkQJa7sp3HqT/Vf/7z5vGYMcq1VrT2lDpFKAxJPf6219N1YAdR8mGkIhPAZ1odTmQ==
+            integrity: sha512-y7bJt77XadjUr+P1uKqZxFWLddvj3SKY6EU4BuQtMxmmEFSMpbN132pUWdSG1g1mtUfO0noBvn7wBf0BVeomHg==
     /prisma2/2.0.0-preview017.2:
         dev: false
         hasBin: true
@@ -16280,6 +16303,7 @@ packages:
             integrity: sha512-PQ2PC7R9rslx84ndNBZB/Dkv8V8fZEpk83RLgXtYd0fwUgEjseMn1Dgajh2x6S8QbZAFa9p2qVCEuYZNgve0dQ==
     "file:projects/app.tgz":
         dependencies:
+            "@apollo/client": 3.0.0-beta.16_graphql@14.5.8+react@16.10.2
             "@apollo/react-hooks": 3.1.3_31d1a7b54e6a7ee3dbc3accc4d0f8a97
             "@babel/core": 7.6.4
             "@babel/runtime-corejs3": 7.6.3
@@ -16332,7 +16356,7 @@ packages:
         dev: false
         name: "@rush-temp/app"
         resolution:
-            integrity: sha512-GuaP2ItLSNonoUhd4uFyg0DMkccFOzALAEyKcLu2Ev+Q7ETfVO/mJjTDLiF+c/wDHqfHGaAnLPjsWQMYyLWxQw==
+            integrity: sha512-ZHbxqavsQsBsooxUOl7vAxoNwEg9NeB4FomluxDt+rILyV1aJEzu+yBBvywqMLyhHqiO6ICzStkDB3S6Q3aKyQ==
             tarball: "file:projects/app.tgz"
         version: 0.0.0
     "file:projects/babel-preset-redo.tgz_react-dom@16.10.2+react@16.10.2":
@@ -16401,8 +16425,9 @@ packages:
             integrity: sha512-BK9Osu9HACHgg9ihZ+8uS+6baQuBa6lVuonA9Z6KIIKDfaFoh6/hhEAVAgLlDpu/Jh7Lg42cuMtQcs8rIunCeQ==
             tarball: "file:projects/bundle.tgz"
         version: 0.0.0
-    "file:projects/components.tgz_webpack@4.41.2":
+    "file:projects/components.tgz_graphql@14.5.8+webpack@4.41.2":
         dependencies:
+            "@apollo/client": 3.0.0-beta.16_graphql@14.5.8+react@16.10.2
             "@babel/cli": 7.6.4_@babel+core@7.6.4
             "@babel/core": 7.6.4
             "@babel/runtime-corejs2": 7.6.3
@@ -16410,7 +16435,6 @@ packages:
             "@date-io/date-fns": 1.3.11_date-fns@2.5.1
             "@material-ui/core": 4.5.1_react-dom@16.10.2+react@16.10.2
             "@material-ui/icons": 4.5.1_39308cd9abdc21fdf3cff7bab06e1917
-            "@material-ui/lab": 4.0.0-alpha.29_39308cd9abdc21fdf3cff7bab06e1917
             "@material-ui/pickers": 3.2.7_39308cd9abdc21fdf3cff7bab06e1917
             "@material-ui/styles": 4.5.0_react-dom@16.10.2+react@16.10.2
             "@mdi/js": 4.5.95
@@ -16433,12 +16457,9 @@ packages:
             "@types/storybook__react": 4.0.2
             babel-loader: 8.0.6_@babel+core@7.6.4+webpack@4.41.2
             babel-runtime: 6.26.0
-            class-transformer: 0.2.3
-            class-validator: 0.11.0
             core-js: 3.3.2
             core-js-pure: 3.3.2
             date-fns: 2.5.1
-            deepmerge: 4.1.1
             enzyme: 3.10.0
             enzyme-adapter-react-16: 1.15.1_43241304e96b402ec68e34a9f9e057e2
             framer-motion: 1.6.14_react-dom@16.10.2+react@16.10.2
@@ -16451,16 +16472,16 @@ packages:
             react-hook-form: 3.24.1_react-dom@16.10.2+react@16.10.2
             react-router-dom: 5.1.2_react@16.10.2
             react-test-renderer: 16.10.2_react@16.10.2
-            reflect-metadata: 0.1.13
             typeface-ubuntu: 0.0.65
             typescript: 3.7.4
         dev: false
         id: "file:projects/components.tgz"
         name: "@rush-temp/components"
         peerDependencies:
+            graphql: "*"
             webpack: "*"
         resolution:
-            integrity: sha512-t7uHstqvErRrp7ESYuNB2SwPFl/D1GR0WqOez9gzTJ7jXjdp2Og45OZDl73jVhTeD/FqDVBJ4LGiMZL/FvtCow==
+            integrity: sha512-nd7sLmmPtE//5p6m65hZhWYhjCS95LVh2GN4eoBhjcxrIlw0KZK1cmH04S304ERLcRfWRCTLaMsjSRtcgIe+Vw==
             tarball: "file:projects/components.tgz"
         version: 0.0.0
     "file:projects/gqlize.tgz_@babel+core@7.6.4":
@@ -16513,7 +16534,7 @@ packages:
             "@babel/core": "*"
             react: "*"
         resolution:
-            integrity: sha512-YJQQtZfGO/vD2J+9WDwzsI/AyYJmWdp4IAdqtaNbWzyoyohbX3/5sJL3AScCP/tfUnkxFRsDyAtaf/5cRt/ybA==
+            integrity: sha512-WXuCb4kXPwv8Q69K2eheoBYoJdIzFCuV7RjbI1VDPO8pAmKd21wZwjV/EVMwm/ceb1TjlIJ6XDoyDJD9CdOQ7Q==
             tarball: "file:projects/model.tgz"
         version: 0.0.0
     "file:projects/react-statelessly.tgz_@babel+core@7.6.4":
@@ -16677,9 +16698,9 @@ packages:
             integrity: sha512-yZBFzaUE7OK3ReuGuvq7NoIoYHMR9CQTLkAw0Rg8se5+6t/FYiVckt/qXuU7ebsjeWgakI9iTJSXBqXNcykNIw==
             tarball: "file:projects/website.tgz"
         version: 0.0.0
+registry: ""
 specifiers:
     "@apollo/client": 3.0.0-beta.16
-    "@apollo/react-hooks": 3.1.3
     "@babel/cli": 7.6.4
     "@babel/core": 7.6.4
     "@babel/helper-plugin-utils": 7.0.0
@@ -16703,7 +16724,6 @@ specifiers:
     "@hot-loader/react-dom": 16.10.2
     "@material-ui/core": 4.5.1
     "@material-ui/icons": 4.5.1
-    "@material-ui/lab": 4.0.0-alpha.29
     "@material-ui/pickers": 3.2.7
     "@material-ui/styles": 4.5.0
     "@mdi/js": 4.5.95
@@ -16755,10 +16775,6 @@ specifiers:
     "@types/webpack": 4.39.3
     "@types/webpack-merge": 4.1.5
     analytics-node: 3.4.0-beta.1
-    apollo-cache-inmemory: 1.6.3
-    apollo-client: 2.6.4
-    apollo-link-context: 1.0.19
-    apollo-link-http: 1.5.16
     apollo-server: 2.9.6
     babel-loader: 8.0.6
     babel-plugin-require-context-hook: 1.0.0
@@ -16766,7 +16782,6 @@ specifiers:
     babel-runtime: 6.26.0
     bcrypt: 3.0.6
     class-transformer: 0.2.3
-    class-validator: 0.11.0
     clean-webpack-plugin: 3.0.0
     copy-webpack-plugin: 5.0.4
     core-js: 3.3.2
@@ -16795,12 +16810,11 @@ specifiers:
     material-ui-chip-input: 1.0.0
     moize: 5.4.4
     nexus: 0.12.0-rc.5
-    prettier: 1.15.1
-    pretty-quick: 1.8.0
+    prettier: 1.19.1
+    pretty-quick: 2.0.1
     prisma2: 2.0.0-preview017.2
     puppeteer: 1.20.0
     react: 16.10.2
-    react-apollo: 3.1.3
     react-docgen-typescript-loader: 3.3.0
     react-dom: 16.10.2
     react-hook-form: 3.24.1
@@ -16812,18 +16826,15 @@ specifiers:
     react-typist: 2.0.5
     redo-nexus-prisma: 0.6.1-8
     redux: 4.0.4
-    reflect-metadata: 0.1.13
     style-loader: 1.0.0
     ts-loader: 6.2.0
     ts-node: 8.5.4
     ts-node-dev: 1.0.0-pre.43
     tsconfig-paths: 3.9.0
     tsconfig-paths-webpack-plugin: 3.2.0
-    type-graphql: 0.17.5
     typeface-ubuntu: 0.0.65
     typescript: 3.7.4
     uuid: 3.3.3
-    validate.js: 0.13.1
     validator: 12.1.0
     webpack: 4.41.2
     webpack-cli: 3.3.9

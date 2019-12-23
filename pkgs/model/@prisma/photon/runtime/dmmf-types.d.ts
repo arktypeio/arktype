@@ -1,115 +1,115 @@
 export declare namespace DMMF {
     interface Document {
-        datamodel: Datamodel;
-        schema: Schema;
-        mappings: Mapping[];
+        datamodel: Datamodel
+        schema: Schema
+        mappings: Mapping[]
     }
     interface Enum {
-        name: string;
-        values: string[];
-        dbName?: string | null;
-        documentation?: string;
+        name: string
+        values: string[]
+        dbName?: string | null
+        documentation?: string
     }
     interface Datamodel {
-        models: Model[];
-        enums: Enum[];
+        models: Model[]
+        enums: Enum[]
     }
     interface Model {
-        name: string;
-        isEmbedded: boolean;
-        dbName: string | null;
-        fields: Field[];
-        documentation?: string;
-        [key: string]: any;
-        idFields: string[];
+        name: string
+        isEmbedded: boolean
+        dbName: string | null
+        fields: Field[]
+        documentation?: string
+        [key: string]: any
+        idFields: string[]
     }
-    type FieldKind = 'scalar' | 'object' | 'enum';
+    type FieldKind = "scalar" | "object" | "enum"
     interface Field {
-        kind: FieldKind;
-        name: string;
-        isRequired: boolean;
-        isList: boolean;
-        isUnique: boolean;
-        isId: boolean;
-        type: string;
-        dbName: string | null;
-        isGenerated: boolean;
-        relationToFields?: any[];
-        relationOnDelete?: string;
-        relationName?: string;
-        documentation?: string;
-        default?: FieldDefault;
-        [key: string]: any;
+        kind: FieldKind
+        name: string
+        isRequired: boolean
+        isList: boolean
+        isUnique: boolean
+        isId: boolean
+        type: string
+        dbName: string | null
+        isGenerated: boolean
+        relationToFields?: any[]
+        relationOnDelete?: string
+        relationName?: string
+        documentation?: string
+        default?: FieldDefault
+        [key: string]: any
     }
     interface FieldDefault {
-        name: string;
-        returnType: string;
-        args: any[];
+        name: string
+        returnType: string
+        args: any[]
     }
     interface Schema {
-        rootQueryType?: string;
-        rootMutationType?: string;
-        inputTypes: InputType[];
-        outputTypes: OutputType[];
-        enums: Enum[];
+        rootQueryType?: string
+        rootMutationType?: string
+        inputTypes: InputType[]
+        outputTypes: OutputType[]
+        enums: Enum[]
     }
     interface Query {
-        name: string;
-        args: SchemaArg[];
-        output: QueryOutput;
+        name: string
+        args: SchemaArg[]
+        output: QueryOutput
     }
     interface QueryOutput {
-        name: string;
-        isRequired: boolean;
-        isList: boolean;
+        name: string
+        isRequired: boolean
+        isList: boolean
     }
-    type ArgType = string | InputType | Enum;
+    type ArgType = string | InputType | Enum
     interface SchemaArgInputType {
-        isRequired: boolean;
-        isList: boolean;
-        type: ArgType;
-        kind: FieldKind;
+        isRequired: boolean
+        isList: boolean
+        type: ArgType
+        kind: FieldKind
     }
     interface SchemaArg {
-        name: string;
-        inputType: SchemaArgInputType[];
-        isRelationFilter?: boolean;
+        name: string
+        inputType: SchemaArgInputType[]
+        isRelationFilter?: boolean
     }
     interface OutputType {
-        name: string;
-        fields: SchemaField[];
-        isEmbedded?: boolean;
+        name: string
+        fields: SchemaField[]
+        isEmbedded?: boolean
     }
     interface SchemaField {
-        name: string;
+        name: string
         outputType: {
-            type: string | OutputType | Enum;
-            isList: boolean;
-            isRequired: boolean;
-            kind: FieldKind;
-        };
-        args: SchemaArg[];
+            type: string | OutputType | Enum
+            isList: boolean
+            isRequired: boolean
+            kind: FieldKind
+        }
+        args: SchemaArg[]
     }
     interface InputType {
-        name: string;
-        isWhereType?: boolean;
-        isOrderType?: boolean;
-        atLeastOne?: boolean;
-        atMostOne?: boolean;
-        fields: SchemaArg[];
+        name: string
+        isWhereType?: boolean
+        isOrderType?: boolean
+        atLeastOne?: boolean
+        atMostOne?: boolean
+        fields: SchemaArg[]
     }
     interface Mapping {
-        model: string;
-        plural: string;
-        findOne?: string | null;
-        findMany?: string | null;
-        create?: string | null;
-        update?: string | null;
-        updateMany?: string | null;
-        upsert?: string | null;
-        delete?: string | null;
-        deleteMany?: string | null;
-        aggregate?: string | null;
+        model: string
+        plural: string
+        findOne?: string | null
+        findMany?: string | null
+        create?: string | null
+        update?: string | null
+        updateMany?: string | null
+        upsert?: string | null
+        delete?: string | null
+        deleteMany?: string | null
+        aggregate?: string | null
     }
     enum ModelAction {
         findOne = "findOne",
@@ -123,8 +123,8 @@ export declare namespace DMMF {
     }
 }
 export interface BaseField {
-    name: string;
-    type: string | DMMF.Enum | DMMF.OutputType | DMMF.SchemaArg;
-    isList: boolean;
-    isRequired: boolean;
+    name: string
+    type: string | DMMF.Enum | DMMF.OutputType | DMMF.SchemaArg
+    isList: boolean
+    isRequired: boolean
 }
