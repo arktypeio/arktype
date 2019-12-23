@@ -8,7 +8,7 @@
     "scripts": {
         "build": "npm run typify && redo-build",
         "test": "jest",
-        "typify": "ts-node src/typify"
+        "typify": "ts-node typify"
     },
     "dependencies": {
         "@apollo/client": "3.0.0-beta.16",
@@ -22,7 +22,6 @@
         "gqlize": "0.0.1",
         "graphql": "14.5.8",
         "graphql-tag": "2.10.1",
-        "nexus": "0.12.0-rc.5",
         "validator": "12.1.0"
     },
     "devDependencies": {

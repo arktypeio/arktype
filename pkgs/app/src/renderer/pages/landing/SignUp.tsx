@@ -9,39 +9,13 @@ import {
     Button,
     Column
 } from "@re-do/components"
-import { SignUpInput } from "@re-do/model"
+import { useSignUpMutation } from "@re-do/model/dist/react"
 import { store } from "renderer/common"
 import { submitForm } from "renderer/components/CustomForm"
 import { formatEmail } from "./common"
 
-type SignUpData = {
-    signUp: {
-        token: string
-    }
-}
-
-const SIGNUP = gql`
-    mutation signUp(
-        $firstName: String!
-        $lastName: String!
-        $email: String!
-        $password: String!
-    ) {
-        signUp(
-            firstName: $firstName
-            lastName: $lastName
-            email: $email
-            password: $password
-        ) {
-            token
-        }
-    }
-`
-
-const validator = new SignUpInput()
-
 export const SignUp = () => {
-    const [submit] = useMutation<SignUpData, SignUpInput>(SIGNUP)
+    const [submit] = useSignUpMutation()
     return (
         <Form<SignUpInput, SignUpData>
             validator={validator}
@@ -49,7 +23,7 @@ export const SignUp = () => {
                 const result = await submitForm({ submit, fields })
                 if (result.data && result.data.signUp) {
                     store.mutate({
-                        token: result.data.signUp.token
+                        token: result.data.signUp
                     })
                 }
                 return result

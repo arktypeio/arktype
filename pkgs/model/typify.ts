@@ -9,11 +9,9 @@ import { gqlize } from "gqlize"
 import { join } from "path"
 
 export const typify = async () => {
-    const schemaContents = readFileSync(
-        join(__dirname, "..", "schema.gql")
-    ).toString()
-    const schema = buildSchema(schemaContents)
-    const baseFileName = join(__dirname, "model.ts")
+    const schemaFile = join(__dirname, "schema.gql")
+    const schema = buildSchema(readFileSync(schemaFile).toString())
+    const baseFileName = join(__dirname, "src", "model.ts")
     const baseOptions: Types.GenerateOptions = {
         filename: baseFileName,
         schema: parse(printSchema(schema)),
@@ -27,11 +25,7 @@ export const typify = async () => {
         },
         documents: [
             {
-                content: parse(
-                    gqlize({
-                        schema: join(__dirname, "..", "schema.gql")
-                    }) as any
-                ),
+                content: parse(gqlize({ schema: schemaFile })),
                 filePath: ""
             }
         ],
@@ -39,7 +33,7 @@ export const typify = async () => {
     }
     const baseTypes = await codegen(baseOptions)
     writeFileSync(baseFileName, baseTypes)
-    const reactFileName = join(__dirname, "react", "index.tsx")
+    const reactFileName = join(__dirname, "src", "react.tsx")
     const reactOptions = {
         ...baseOptions,
         filename: reactFileName,
