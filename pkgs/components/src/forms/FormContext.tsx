@@ -117,7 +117,7 @@ export const createFormContext = <T extends Fields, D = any>({
     const customContext = {
         validate,
         submit,
-        submissionState: resultState,
+        resultState,
         handleBlur
     }
 

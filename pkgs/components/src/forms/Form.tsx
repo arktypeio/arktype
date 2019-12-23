@@ -25,10 +25,10 @@ export const Form = <T extends Fields, D = any>({
     return (
         <FormProvider {...contextProps}>
             <FormContext.Consumer>
-                {({ resultState: submissionState }: FullContext<T, D>) => (
+                {({ resultState }: FullContext<T, D>) => (
                     <Column align="center" full {...columnProps}>
                         {typeof children === "function"
-                            ? children(submissionState)
+                            ? children(resultState)
                             : children}
                     </Column>
                 )}
