@@ -1,6 +1,5 @@
 import Analytics from "analytics-node"
-import { SubmissionState } from "@re-do/components"
-import { v4 } from "node-uuid"
+import { v4 } from "uuid"
 
 const client = new Analytics(
     process.env.NODE_ENV === "production"
@@ -12,16 +11,13 @@ type TrackOptions = {
     email: string
 }
 
-const prelaunchRegister = async ({
-    email
-}: TrackOptions): Promise<SubmissionState<{}>> => {
+const prelaunchRegister = ({ email }: TrackOptions) => {
     client.identify({
         anonymousId: getAnonymousUserId(),
         traits: {
             email
         }
     })
-    return { data: {} }
 }
 
 export const getAnonymousUserId = () => {

@@ -1,8 +1,0 @@
-{
-  "schemaPath": "src/playground/schema.gql",
-  "extensions": {
-    "endpoints": {
-      "default": "http://localhost:4000/graphql"
-    }
-  }
-}

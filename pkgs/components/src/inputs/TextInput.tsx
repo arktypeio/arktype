@@ -1,4 +1,4 @@
-import React, { FC, useState } from "react"
+import React, { useState } from "react"
 import { usePalette } from "../styles"
 import { StandardTextFieldProps as BaseMuiTextFieldProps } from "@material-ui/core/TextField"
 import { TextField } from "@material-ui/core"
@@ -192,7 +192,7 @@ export type TextInputProps = Omit<MuiTextFieldProps, "variant"> & {
     textColor?: string
 }
 
-export const TextInput: FC<TextInputProps> = (props: TextInputProps) => {
+export const TextInput = (props: TextInputProps) => {
     const textFieldProps = useTextFieldProps(props)
     // @ts-ignore
     return <TextField {...textFieldProps} />

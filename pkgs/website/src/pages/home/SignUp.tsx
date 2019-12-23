@@ -13,9 +13,14 @@ export const SignUp = () => {
     return (
         <Column align="center">
             <Text variant="h4">🚀Launching soon</Text>
-            <Form<{ email: string }>
-                validator={_ => ({ email: [] })}
-                submit={async ({ email }) => track.prelaunchRegister({ email })}
+            <Form<{ email: string }, boolean>
+                validate={_ => ({ email: [] })}
+                submit={async options => {
+                    track.prelaunchRegister({
+                        email: options?.variables?.email!
+                    })
+                    return { data: true }
+                }}
             >
                 {({ data }) => (
                     <>

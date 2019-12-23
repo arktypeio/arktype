@@ -1,22 +1,27 @@
-import { ApolloClient } from "apollo-client"
-import { InMemoryCache } from "apollo-cache-inmemory"
-import { createHttpLink } from "apollo-link-http"
-import { Root, rootHandler } from "state"
-import { StoreWithHooks } from "shapeql"
-import { setContext } from "apollo-link-context"
+import {
+    ApolloClient,
+    InMemoryCache,
+    createHttpLink,
+    ApolloLink
+} from "@apollo/client"
+import { rootHandler, initialRoot } from "state"
+import { createStore } from "react-statelessly"
 
 const httpLink = createHttpLink({ uri: `http://localhost:${process.env.PORT}` })
-const contextLink = setContext(() => ({
-    headers: { authorization: `Bearer ${store.query({ token: null }).token}` }
-}))
+const contextLink = new ApolloLink((operation, forward) => {
+    operation.setContext({
+        headers: {
+            authorization: `Bearer ${store.query({ token: true }).token}`
+        }
+    })
+    return forward(operation)
+})
 
-export const cache = new InMemoryCache()
 export const client = new ApolloClient({
     link: contextLink.concat(httpLink),
-    cache
+    cache: new InMemoryCache()
 })
-export const store = new StoreWithHooks({
-    root: Root,
-    client: client as any,
+export const store = createStore({
+    initial: initialRoot,
     handler: rootHandler
 })

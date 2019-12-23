@@ -1,28 +1,32 @@
-import "reflect-metadata"
 import React from "react"
 import { storiesOf } from "@storybook/react"
 import { withKnobs } from "@storybook/addon-knobs"
-import { IsIn } from "class-validator"
 import { ValueFrom } from "@re-do/utils"
 import { Text, ErrorText } from "../text"
 import { Spinner } from "../progress"
 import { Button } from "../buttons"
 import { Row } from "../layouts"
-import { AutoForm, Form, FormText, FormSubmit, FormProps } from "."
+import {
+    AutoForm,
+    Form,
+    FormText,
+    FormSubmit,
+    FormProps,
+    MutationSubmit
+} from "."
 
 type HelloFormFields = {
     first: string
     last: string
 }
 
-const submit: ValueFrom<FormProps<HelloFormFields, string>, "submit"> = async ({
-    first,
-    last
-}) => ({
-    data: `Hello, ${first} ${last}.`
+const submit: MutationSubmit<HelloFormFields> = async params => ({
+    called: true,
+    loading: false,
+    data: `Hello, ${params?.variables?.first} ${params?.variables?.last}.`
 })
 
-const validator: ValueFrom<FormProps<HelloFormFields, string>, "validator"> = ({
+const validate: ValueFrom<FormProps<HelloFormFields, string>, "validate"> = ({
     first,
     last
 }) => ({
@@ -33,16 +37,6 @@ const validator: ValueFrom<FormProps<HelloFormFields, string>, "validator"> = ({
 const reverse = (s: string) => [...s].reverse().join("")
 
 const width = 200
-
-class HelloValidator {
-    @IsIn(["David", "Savannah"])
-    first: string
-
-    @IsIn(["Blass", "Bosse"])
-    last: string
-}
-
-const helloClassValidator = new HelloValidator()
 
 storiesOf("Form", module)
     .addDecorator(withKnobs)
@@ -55,16 +49,16 @@ storiesOf("Form", module)
             })}
         />
     ))
-    .add("With class validator", () => (
-        <HelloForm validator={helloClassValidator} />
-    ))
     .add("Two column", () => <HelloForm testAsRow />)
     .add("AutoForm", () => (
-        <AutoForm<HelloFormFields, string>
-            submit={async ({ first, last }) =>
-                console.log(`Hello, ${first} ${last}.`)
-            }
-            validator={validator}
+        <AutoForm<HelloFormFields>
+            submit={async options => {
+                console.log(
+                    `Hello, ${options?.variables?.first} ${options?.variables?.last}.`
+                )
+                return {} as any
+            }}
+            validate={validate}
             contents={{ first: "Reed", last: "Doe" }}
             columnProps={{ width }}
         />
@@ -78,11 +72,11 @@ const HelloForm = ({
 }) => (
     <Form<HelloFormFields, string>
         submit={submit}
-        validator={validator}
+        validate={validate}
         columnProps={{ width }}
         {...props}
     >
-        {({ data, loading, errors }) => (
+        {({ data, loading, error }) => (
             <>
                 {testAsRow ? (
                     <Row spacing={1}>
@@ -103,7 +97,7 @@ const HelloForm = ({
                     </FormSubmit>
                 )}
                 {data ? <Text>{data}</Text> : null}
-                {errors ? <ErrorText>{errors}</ErrorText> : null}
+                {error ? <ErrorText>{error.message}</ErrorText> : null}
             </>
         )}
     </Form>

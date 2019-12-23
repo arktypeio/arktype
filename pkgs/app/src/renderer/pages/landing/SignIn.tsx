@@ -1,45 +1,19 @@
 import React from "react"
 import { FormText, FormSubmit, Form, Button, Column } from "@re-do/components"
-import gql from "graphql-tag"
-import { SignInInput } from "@re-do/model"
-import { useMutation } from "@apollo/react-hooks"
 import { store } from "renderer/common"
-import { submitForm } from "custom/CustomForm"
 import { formatEmail } from "./common"
-
-const SIGNIN = gql`
-    mutation signIn($email: String!, $password: String!) {
-        signIn(email: $email, password: $password) {
-            token
-        }
-    }
-`
-
-type SignInData = {
-    signIn: {
-        token: string
-    }
-}
-
-const validator = new SignInInput()
+import {
+    useSignInMutation,
+    SignInMutation,
+    SignInMutationVariables
+} from "@re-do/model/dist/react"
 
 export const SignIn = () => {
-    const [submit] = useMutation<SignInData, SignInInput>(SIGNIN)
+    const [submit] = useSignInMutation()
     return (
-        <Form<SignInInput, SignInData>
-            validator={validator}
-            submit={async fields => {
-                const result = await submitForm({
-                    submit,
-                    fields
-                })
-                if (result.data && result.data.signIn) {
-                    store.mutate({
-                        token: result.data.signIn.token
-                    })
-                }
-                return result
-            }}
+        <Form<SignInMutationVariables, SignInMutation>
+            submit={submit}
+            onData={data => store.mutate({ token: data.signIn })}
             transformValues={({ email, ...rest }) => {
                 return {
                     ...rest,

@@ -1,5 +1,5 @@
 import finder from "@medv/finder"
-import { StepInput } from "@re-do/model"
+import { StepCreateWithoutUserCreateOnlyInput as StepInput } from "@re-do/model"
 
 export const watchPage = async () => {
     const browserWindow: Window & {
@@ -18,12 +18,14 @@ export const watchPage = async () => {
             async (e: Event) => {
                 const step: StepInput = {
                     action: e.type,
-                    selector: "",
+                    selector: {
+                        css: ""
+                    },
                     value: ""
                 }
                 if (e.target) {
                     const target = e.target as HTMLElement
-                    step.selector = finder(target as HTMLElement)
+                    step.selector = { css: finder(target as HTMLElement) }
                     switch (e.type) {
                         case "change":
                             if (e.target) {

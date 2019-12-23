@@ -1,23 +1,21 @@
-import Photon from "@generated/photon"
+import { Photon } from "@prisma/photon"
 import { hash } from "bcrypt"
 const photon = new Photon()
 
 const users = [
-    ["Rebecca", "Baron"],
-    ["Sarthak", "Agrawal"],
     ["David", "Blass"],
     ["Savannah", "Bosse"]
 ]
 
 async function main() {
     try {
-        for (const [firstName, lastName] of users) {
+        for (const [first, last] of users) {
             try {
                 const user = await photon.users.create({
                     data: {
-                        email: `${firstName.toLowerCase()}@redo.qa`,
-                        firstName,
-                        lastName,
+                        email: `${first.toLowerCase()}@redo.qa`,
+                        first,
+                        last,
                         password: await hash("redo", 10)
                     }
                 })
@@ -25,9 +23,7 @@ async function main() {
                     `🎉\nCreated user: ${JSON.stringify(user, null, 4)}\n🎉`
                 )
             } catch (e) {
-                console.log(
-                    `Failed to create user ${firstName} ${lastName}:\n${e}`
-                )
+                console.log(`Failed to create user ${first} ${last}:\n${e}`)
             }
         }
     } catch (e) {

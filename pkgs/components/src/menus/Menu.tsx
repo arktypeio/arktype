@@ -1,4 +1,4 @@
-import React, { FC, cloneElement } from "react"
+import React, { cloneElement } from "react"
 import { Menu as MuiMenu } from "@material-ui/core"
 import { MenuProps as MuiMenuProps } from "@material-ui/core/Menu"
 import { MenuItem } from "."
@@ -10,10 +10,7 @@ export type MenuProps = Partial<MuiMenuProps> & {
     }
 }
 
-export const Menu: FC<MenuProps> = ({
-    children: { toggle, options },
-    ...rest
-}) => {
+export const Menu = ({ children: { toggle, options }, ...rest }: MenuProps) => {
     const [anchor, setAnchor] = React.useState<HTMLElement | null>(null)
     const button = cloneElement(toggle, {
         onClick: (e: React.MouseEvent<HTMLButtonElement>) =>
