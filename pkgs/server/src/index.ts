@@ -1,5 +1,4 @@
 import "dotenv/config"
-import "reflect-metadata"
 import { ApolloServer } from "apollo-server"
 import { getUserId } from "./auth"
 import { schema } from "./schema"

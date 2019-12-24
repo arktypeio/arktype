@@ -123,7 +123,7 @@ dependencies:
     react-svg-loader: 3.0.3
     react-test-renderer: 16.10.2_react@16.10.2
     react-typist: 2.0.5_react-dom@16.10.2+react@16.10.2
-    redo-nexus-prisma: 0.6.1-8_3d439f4e0f24d46582a80975993b2eea
+    redo-nexus-prisma: 0.6.1-9_3d439f4e0f24d46582a80975993b2eea
     redux: 4.0.4
     style-loader: 1.0.0_webpack@4.41.2
     ts-loader: 6.2.0_typescript@3.7.4
@@ -13663,19 +13663,20 @@ packages:
             node: ">=0.10.0"
         resolution:
             integrity: sha1-z5Fqsf1fHxbfsggi3W7H9zDCr94=
-    /redo-nexus-prisma/0.6.1-8_3d439f4e0f24d46582a80975993b2eea:
+    /redo-nexus-prisma/0.6.1-9_3d439f4e0f24d46582a80975993b2eea:
         dependencies:
             "@prisma/photon": 2.0.0-preview017.2_prisma2@2.0.0-preview017.2
             camelcase: 5.3.1
             fs-extra: 8.1.0
+            graphql: 14.5.8
             nexus: 0.12.0-rc.5_graphql@14.5.8
             pluralize: 8.0.0
         dev: false
         peerDependencies:
             "@prisma/photon": ^2.0.0-alpha.351
-            graphql: "*"
+            graphql: ^14.5.0
         resolution:
-            integrity: sha512-+3d909DeEHztPFt9lX8u3PVoqK2QfMVL2H+aKtPVgkh7ATFqQRRvc+pC2fFzBKduziVjmR+LIUKHrnidKHH1LA==
+            integrity: sha512-GirBfkKv8vTRafW8WEmGERXUMPMARNMYaeEG1flILtZXPDlZ1QF89mx9try3PNe22qDSfc/ZzD7fTJYXcMdbcQ==
     /redux/4.0.4:
         dependencies:
             loose-envify: 1.4.0
@@ -16594,14 +16595,14 @@ packages:
             jsonwebtoken: 8.5.1
             nexus: 0.12.0-rc.5_graphql@14.5.8
             prisma2: 2.0.0-preview017.2
-            redo-nexus-prisma: 0.6.1-8_3d439f4e0f24d46582a80975993b2eea
+            redo-nexus-prisma: 0.6.1-9_3d439f4e0f24d46582a80975993b2eea
             ts-node: 8.5.4_typescript@3.7.4
             ts-node-dev: 1.0.0-pre.43_typescript@3.7.4
             typescript: 3.7.4
         dev: false
         name: "@rush-temp/server"
         resolution:
-            integrity: sha512-nx/MKSztIM+gbMKI/mfAhvRDzPjgdJfRsETD0nI5jNoxbkbZ0EKOhA3K99hdRxWrdRpMRkg7cgcw0BdU6TeLBg==
+            integrity: sha512-r68GExIiCrIDlhTv1Bpn6P+IjDbotVzS+O7ES7SJ6iD4hbb4ZsUtqlZNm+aI2g1yTi3rOwY4/4vlJiNqhW5dyw==
             tarball: "file:projects/server.tgz"
         version: 0.0.0
     "file:projects/statelessly.tgz_@babel+core@7.6.4":
@@ -16824,7 +16825,7 @@ specifiers:
     react-svg-loader: 3.0.3
     react-test-renderer: 16.10.2
     react-typist: 2.0.5
-    redo-nexus-prisma: 0.6.1-8
+    redo-nexus-prisma: 0.6.1-9
     redux: 4.0.4
     style-loader: 1.0.0
     ts-loader: 6.2.0
