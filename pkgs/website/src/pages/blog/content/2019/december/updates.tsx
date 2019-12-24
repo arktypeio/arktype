@@ -144,8 +144,14 @@ export const december2019Updates: UpdateData[] = [
     {
         date: new Date(2019, 11, 23),
         goals: {
-            "Update nexus-prisma computedInputs PR": false,
-            "Begin AWS work": false
+            "Update nexus-prisma computedInputs PR": true,
+            "Begin AWS work": true
+        }
+    },
+    {
+        date: new Date(2019, 11, 24),
+        goals: {
+            "Continue AWS work": true
         }
     }
 ]
