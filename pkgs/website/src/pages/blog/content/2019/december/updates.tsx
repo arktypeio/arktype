@@ -159,5 +159,11 @@ export const december2019Updates: UpdateData[] = [
         goals: {
             "Continue AWS work": true
         }
+    },
+    {
+        date: new Date(2019, 11, 26),
+        goals: {
+            "Continue AWS work": true
+        }
     }
 ]

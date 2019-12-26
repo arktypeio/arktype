@@ -13,12 +13,9 @@ import { Home, Blog } from "./pages"
 // See https://reacttraining.com/react-router/web/guides/scroll-restoration
 export const ScrollToTop = () => {
     const { pathname } = useLocation()
-    useEffect(
-        () => {
-            window.scrollTo(0, 0)
-        },
-        [pathname]
-    )
+    useEffect(() => {
+        window.scrollTo(0, 0)
+    }, [pathname])
     return null
 }
 
