@@ -16,7 +16,7 @@
     "dependencies": {
         "@re-do/model": "0.0.1",
         "@re-do/utils": "0.0.1",
-        "apollo-server": "2.9.6",
+        "apollo-server": "2.9.14",
         "bcrypt": "3.0.6",
         "deepmerge": "4.1.1",
         "dotenv": "8.2.0",
