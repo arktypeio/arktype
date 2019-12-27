@@ -1,0 +1,21 @@
+service: redo-server
+provider:
+    name: aws
+    runtime: nodejs8.10
+plugins:
+    - serverless-dotenv-plugin
+package:
+    exclude:
+        - node_modules/**
+functions:
+    graphql:
+        handler: dist/index.handler
+        events:
+            - http:
+                  path: graphql
+                  method: post
+                  cors: true
+            - http:
+                  path: graphql
+                  method: get
+                  cors: true

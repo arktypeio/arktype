@@ -1,0 +1,567 @@
+{
+    "service": {
+        "service": "redo-server",
+        "serviceObject": {
+            "name": "redo-server"
+        },
+        "provider": {
+            "stage": "dev",
+            "variableSyntax": "\\${([ ~:a-zA-Z0-9._@'\",\\-\\/\\(\\)*?]+?)}",
+            "name": "aws",
+            "runtime": "nodejs8.10",
+            "region": "us-east-1",
+            "versionFunctions": true,
+            "remoteFunctionData": null,
+            "environment": {
+                "APP_SECRET": "redooder",
+                "PRISMA_PORT": "4466",
+                "PORT": "4000",
+                "MYSQL_URL": "mysql://root:H^8UH@redo-db-1.cif8hvycf3mq.us-east-1.rds.amazonaws.com:3306/main"
+            },
+            "compiledCloudFormationTemplate": {
+                "AWSTemplateFormatVersion": "2010-09-09",
+                "Description": "The AWS CloudFormation template for this Serverless application",
+                "Resources": {
+                    "ServerlessDeploymentBucket": {
+                        "Type": "AWS::S3::Bucket",
+                        "Properties": {
+                            "BucketEncryption": {
+                                "ServerSideEncryptionConfiguration": [
+                                    {
+                                        "ServerSideEncryptionByDefault": {
+                                            "SSEAlgorithm": "AES256"
+                                        }
+                                    }
+                                ]
+                            }
+                        }
+                    },
+                    "ServerlessDeploymentBucketPolicy": {
+                        "Type": "AWS::S3::BucketPolicy",
+                        "Properties": {
+                            "Bucket": {
+                                "Ref": "ServerlessDeploymentBucket"
+                            },
+                            "PolicyDocument": {
+                                "Statement": [
+                                    {
+                                        "Action": "s3:*",
+                                        "Effect": "Deny",
+                                        "Principal": "*",
+                                        "Resource": [
+                                            {
+                                                "Fn::Join": [
+                                                    "",
+                                                    [
+                                                        "arn:",
+                                                        {
+                                                            "Ref": "AWS::Partition"
+                                                        },
+                                                        ":s3:::",
+                                                        {
+                                                            "Ref": "ServerlessDeploymentBucket"
+                                                        },
+                                                        "/*"
+                                                    ]
+                                                ]
+                                            }
+                                        ],
+                                        "Condition": {
+                                            "Bool": {
+                                                "aws:SecureTransport": false
+                                            }
+                                        }
+                                    }
+                                ]
+                            }
+                        }
+                    },
+                    "GraphqlLogGroup": {
+                        "Type": "AWS::Logs::LogGroup",
+                        "Properties": {
+                            "LogGroupName": "/aws/lambda/redo-server-dev-graphql"
+                        }
+                    },
+                    "IamRoleLambdaExecution": {
+                        "Type": "AWS::IAM::Role",
+                        "Properties": {
+                            "AssumeRolePolicyDocument": {
+                                "Version": "2012-10-17",
+                                "Statement": [
+                                    {
+                                        "Effect": "Allow",
+                                        "Principal": {
+                                            "Service": ["lambda.amazonaws.com"]
+                                        },
+                                        "Action": ["sts:AssumeRole"]
+                                    }
+                                ]
+                            },
+                            "Policies": [
+                                {
+                                    "PolicyName": {
+                                        "Fn::Join": [
+                                            "-",
+                                            ["dev", "redo-server", "lambda"]
+                                        ]
+                                    },
+                                    "PolicyDocument": {
+                                        "Version": "2012-10-17",
+                                        "Statement": [
+                                            {
+                                                "Effect": "Allow",
+                                                "Action": [
+                                                    "logs:CreateLogStream"
+                                                ],
+                                                "Resource": [
+                                                    {
+                                                        "Fn::Sub": "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/redo-server-dev*:*"
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "Effect": "Allow",
+                                                "Action": ["logs:PutLogEvents"],
+                                                "Resource": [
+                                                    {
+                                                        "Fn::Sub": "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/redo-server-dev*:*:*"
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    }
+                                }
+                            ],
+                            "Path": "/",
+                            "RoleName": {
+                                "Fn::Join": [
+                                    "-",
+                                    [
+                                        "redo-server",
+                                        "dev",
+                                        {
+                                            "Ref": "AWS::Region"
+                                        },
+                                        "lambdaRole"
+                                    ]
+                                ]
+                            }
+                        }
+                    },
+                    "GraphqlLambdaFunction": {
+                        "Type": "AWS::Lambda::Function",
+                        "Properties": {
+                            "Code": {
+                                "S3Bucket": {
+                                    "Ref": "ServerlessDeploymentBucket"
+                                },
+                                "S3Key": "serverless/redo-server/dev/1577486968466-2019-12-27T22:49:28.466Z/redo-server.zip"
+                            },
+                            "FunctionName": "redo-server-dev-graphql",
+                            "Handler": "dist/index.handler",
+                            "MemorySize": 1024,
+                            "Role": {
+                                "Fn::GetAtt": ["IamRoleLambdaExecution", "Arn"]
+                            },
+                            "Runtime": "nodejs8.10",
+                            "Timeout": 6,
+                            "Environment": {
+                                "Variables": {
+                                    "APP_SECRET": "redooder",
+                                    "PRISMA_PORT": "4466",
+                                    "PORT": "4000",
+                                    "MYSQL_URL": "mysql://root:H^8UH@redo-db-1.cif8hvycf3mq.us-east-1.rds.amazonaws.com:3306/main"
+                                }
+                            }
+                        },
+                        "DependsOn": [
+                            "GraphqlLogGroup",
+                            "IamRoleLambdaExecution"
+                        ]
+                    },
+                    "GraphqlLambdaVersionSa2A00FLnznhxv1Sua1GZUZIQqiBB9W5OEkoeF4DQ": {
+                        "Type": "AWS::Lambda::Version",
+                        "DeletionPolicy": "Retain",
+                        "Properties": {
+                            "FunctionName": {
+                                "Ref": "GraphqlLambdaFunction"
+                            },
+                            "CodeSha256": "ZMTrYyiK+g8NuLbRY8yNAfyMBgOArV2Lr5Hjpr8bUGE="
+                        }
+                    },
+                    "ApiGatewayRestApi": {
+                        "Type": "AWS::ApiGateway::RestApi",
+                        "Properties": {
+                            "Name": "dev-redo-server",
+                            "EndpointConfiguration": {
+                                "Types": ["EDGE"]
+                            }
+                        }
+                    },
+                    "ApiGatewayResourceGraphql": {
+                        "Type": "AWS::ApiGateway::Resource",
+                        "Properties": {
+                            "ParentId": {
+                                "Fn::GetAtt": [
+                                    "ApiGatewayRestApi",
+                                    "RootResourceId"
+                                ]
+                            },
+                            "PathPart": "graphql",
+                            "RestApiId": {
+                                "Ref": "ApiGatewayRestApi"
+                            }
+                        }
+                    },
+                    "ApiGatewayMethodGraphqlOptions": {
+                        "Type": "AWS::ApiGateway::Method",
+                        "Properties": {
+                            "AuthorizationType": "NONE",
+                            "HttpMethod": "OPTIONS",
+                            "MethodResponses": [
+                                {
+                                    "StatusCode": "200",
+                                    "ResponseParameters": {
+                                        "method.response.header.Access-Control-Allow-Origin": true,
+                                        "method.response.header.Access-Control-Allow-Headers": true,
+                                        "method.response.header.Access-Control-Allow-Methods": true
+                                    },
+                                    "ResponseModels": {}
+                                }
+                            ],
+                            "RequestParameters": {},
+                            "Integration": {
+                                "Type": "MOCK",
+                                "RequestTemplates": {
+                                    "application/json": "{statusCode:200}"
+                                },
+                                "ContentHandling": "CONVERT_TO_TEXT",
+                                "IntegrationResponses": [
+                                    {
+                                        "StatusCode": "200",
+                                        "ResponseParameters": {
+                                            "method.response.header.Access-Control-Allow-Origin": "'*'",
+                                            "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Amz-User-Agent'",
+                                            "method.response.header.Access-Control-Allow-Methods": "'OPTIONS,GET,POST'"
+                                        },
+                                        "ResponseTemplates": {
+                                            "application/json": "#set($origin = $input.params(\"Origin\"))\n#if($origin == \"\") #set($origin = $input.params(\"origin\")) #end\n#if($origin.matches(\".*\")) #set($context.responseOverride.header.Access-Control-Allow-Origin = $origin) #end"
+                                        }
+                                    }
+                                ]
+                            },
+                            "ResourceId": {
+                                "Ref": "ApiGatewayResourceGraphql"
+                            },
+                            "RestApiId": {
+                                "Ref": "ApiGatewayRestApi"
+                            }
+                        }
+                    },
+                    "ApiGatewayMethodGraphqlPost": {
+                        "Type": "AWS::ApiGateway::Method",
+                        "Properties": {
+                            "HttpMethod": "POST",
+                            "RequestParameters": {},
+                            "ResourceId": {
+                                "Ref": "ApiGatewayResourceGraphql"
+                            },
+                            "RestApiId": {
+                                "Ref": "ApiGatewayRestApi"
+                            },
+                            "ApiKeyRequired": false,
+                            "AuthorizationType": "NONE",
+                            "Integration": {
+                                "IntegrationHttpMethod": "POST",
+                                "Type": "AWS_PROXY",
+                                "Uri": {
+                                    "Fn::Join": [
+                                        "",
+                                        [
+                                            "arn:",
+                                            {
+                                                "Ref": "AWS::Partition"
+                                            },
+                                            ":apigateway:",
+                                            {
+                                                "Ref": "AWS::Region"
+                                            },
+                                            ":lambda:path/2015-03-31/functions/",
+                                            {
+                                                "Fn::GetAtt": [
+                                                    "GraphqlLambdaFunction",
+                                                    "Arn"
+                                                ]
+                                            },
+                                            "/invocations"
+                                        ]
+                                    ]
+                                }
+                            },
+                            "MethodResponses": []
+                        }
+                    },
+                    "ApiGatewayMethodGraphqlGet": {
+                        "Type": "AWS::ApiGateway::Method",
+                        "Properties": {
+                            "HttpMethod": "GET",
+                            "RequestParameters": {},
+                            "ResourceId": {
+                                "Ref": "ApiGatewayResourceGraphql"
+                            },
+                            "RestApiId": {
+                                "Ref": "ApiGatewayRestApi"
+                            },
+                            "ApiKeyRequired": false,
+                            "AuthorizationType": "NONE",
+                            "Integration": {
+                                "IntegrationHttpMethod": "POST",
+                                "Type": "AWS_PROXY",
+                                "Uri": {
+                                    "Fn::Join": [
+                                        "",
+                                        [
+                                            "arn:",
+                                            {
+                                                "Ref": "AWS::Partition"
+                                            },
+                                            ":apigateway:",
+                                            {
+                                                "Ref": "AWS::Region"
+                                            },
+                                            ":lambda:path/2015-03-31/functions/",
+                                            {
+                                                "Fn::GetAtt": [
+                                                    "GraphqlLambdaFunction",
+                                                    "Arn"
+                                                ]
+                                            },
+                                            "/invocations"
+                                        ]
+                                    ]
+                                }
+                            },
+                            "MethodResponses": []
+                        }
+                    },
+                    "ApiGatewayDeployment1577486963566": {
+                        "Type": "AWS::ApiGateway::Deployment",
+                        "Properties": {
+                            "RestApiId": {
+                                "Ref": "ApiGatewayRestApi"
+                            },
+                            "StageName": "dev"
+                        },
+                        "DependsOn": [
+                            "ApiGatewayMethodGraphqlOptions",
+                            "ApiGatewayMethodGraphqlPost",
+                            "ApiGatewayMethodGraphqlGet"
+                        ]
+                    },
+                    "GraphqlLambdaPermissionApiGateway": {
+                        "Type": "AWS::Lambda::Permission",
+                        "Properties": {
+                            "FunctionName": {
+                                "Fn::GetAtt": ["GraphqlLambdaFunction", "Arn"]
+                            },
+                            "Action": "lambda:InvokeFunction",
+                            "Principal": "apigateway.amazonaws.com",
+                            "SourceArn": {
+                                "Fn::Join": [
+                                    "",
+                                    [
+                                        "arn:",
+                                        {
+                                            "Ref": "AWS::Partition"
+                                        },
+                                        ":execute-api:",
+                                        {
+                                            "Ref": "AWS::Region"
+                                        },
+                                        ":",
+                                        {
+                                            "Ref": "AWS::AccountId"
+                                        },
+                                        ":",
+                                        {
+                                            "Ref": "ApiGatewayRestApi"
+                                        },
+                                        "/*/*"
+                                    ]
+                                ]
+                            }
+                        }
+                    }
+                },
+                "Outputs": {
+                    "ServerlessDeploymentBucketName": {
+                        "Value": {
+                            "Ref": "ServerlessDeploymentBucket"
+                        }
+                    },
+                    "GraphqlLambdaFunctionQualifiedArn": {
+                        "Description": "Current Lambda function version",
+                        "Value": {
+                            "Ref": "GraphqlLambdaVersionSa2A00FLnznhxv1Sua1GZUZIQqiBB9W5OEkoeF4DQ"
+                        }
+                    },
+                    "ServiceEndpoint": {
+                        "Description": "URL of the service endpoint",
+                        "Value": {
+                            "Fn::Join": [
+                                "",
+                                [
+                                    "https://",
+                                    {
+                                        "Ref": "ApiGatewayRestApi"
+                                    },
+                                    ".execute-api.",
+                                    {
+                                        "Ref": "AWS::Region"
+                                    },
+                                    ".",
+                                    {
+                                        "Ref": "AWS::URLSuffix"
+                                    },
+                                    "/dev"
+                                ]
+                            ]
+                        }
+                    }
+                }
+            },
+            "coreCloudFormationTemplate": {
+                "AWSTemplateFormatVersion": "2010-09-09",
+                "Description": "The AWS CloudFormation template for this Serverless application",
+                "Resources": {
+                    "ServerlessDeploymentBucket": {
+                        "Type": "AWS::S3::Bucket",
+                        "Properties": {
+                            "BucketEncryption": {
+                                "ServerSideEncryptionConfiguration": [
+                                    {
+                                        "ServerSideEncryptionByDefault": {
+                                            "SSEAlgorithm": "AES256"
+                                        }
+                                    }
+                                ]
+                            }
+                        }
+                    },
+                    "ServerlessDeploymentBucketPolicy": {
+                        "Type": "AWS::S3::BucketPolicy",
+                        "Properties": {
+                            "Bucket": {
+                                "Ref": "ServerlessDeploymentBucket"
+                            },
+                            "PolicyDocument": {
+                                "Statement": [
+                                    {
+                                        "Action": "s3:*",
+                                        "Effect": "Deny",
+                                        "Principal": "*",
+                                        "Resource": [
+                                            {
+                                                "Fn::Join": [
+                                                    "",
+                                                    [
+                                                        "arn:",
+                                                        {
+                                                            "Ref": "AWS::Partition"
+                                                        },
+                                                        ":s3:::",
+                                                        {
+                                                            "Ref": "ServerlessDeploymentBucket"
+                                                        },
+                                                        "/*"
+                                                    ]
+                                                ]
+                                            }
+                                        ],
+                                        "Condition": {
+                                            "Bool": {
+                                                "aws:SecureTransport": false
+                                            }
+                                        }
+                                    }
+                                ]
+                            }
+                        }
+                    }
+                },
+                "Outputs": {
+                    "ServerlessDeploymentBucketName": {
+                        "Value": {
+                            "Ref": "ServerlessDeploymentBucket"
+                        }
+                    }
+                }
+            },
+            "vpc": {}
+        },
+        "plugins": ["serverless-dotenv-plugin"],
+        "pluginsData": {},
+        "functions": {
+            "graphql": {
+                "handler": "dist/index.handler",
+                "events": [
+                    {
+                        "http": {
+                            "path": "graphql",
+                            "method": "post",
+                            "cors": {
+                                "origins": ["*"],
+                                "origin": "*",
+                                "methods": ["OPTIONS", "POST"],
+                                "headers": [
+                                    "Content-Type",
+                                    "X-Amz-Date",
+                                    "Authorization",
+                                    "X-Api-Key",
+                                    "X-Amz-Security-Token",
+                                    "X-Amz-User-Agent"
+                                ],
+                                "allowCredentials": false
+                            },
+                            "integration": "AWS_PROXY"
+                        }
+                    },
+                    {
+                        "http": {
+                            "path": "graphql",
+                            "method": "get",
+                            "cors": {
+                                "origins": ["*"],
+                                "origin": "*",
+                                "methods": ["OPTIONS", "GET"],
+                                "headers": [
+                                    "Content-Type",
+                                    "X-Amz-Date",
+                                    "Authorization",
+                                    "X-Api-Key",
+                                    "X-Amz-Security-Token",
+                                    "X-Amz-User-Agent"
+                                ],
+                                "allowCredentials": false
+                            },
+                            "integration": "AWS_PROXY"
+                        }
+                    }
+                ],
+                "name": "redo-server-dev-graphql",
+                "package": {},
+                "memory": 1024,
+                "timeout": 6,
+                "runtime": "nodejs8.10",
+                "vpc": {}
+            }
+        },
+        "serviceFilename": "serverless.yml",
+        "layers": {},
+        "artifact": "/home/ssalbdivad/redo/pkgs/server/.serverless/redo-server.zip"
+    },
+    "package": {
+        "artifactDirectoryName": "serverless/redo-server/dev/1577486968466-2019-12-27T22:49:28.466Z",
+        "artifact": "redo-server.zip"
+    }
+}
