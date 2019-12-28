@@ -11,6 +11,7 @@ import {
     NoEmitOnErrorsPlugin
 } from "webpack"
 import { listify } from "@re-do/utils"
+import nodeExternals from "webpack-node-externals"
 import ForkTsCheckerWebpackPlugin from "fork-ts-checker-webpack-plugin"
 
 const getMode = () =>
@@ -40,6 +41,7 @@ const getCommonConfig = ({ entries, tsconfig }: ConfigArgs): Configuration => ({
             ws: "isomorphic-ws"
         }
     },
+    externals: [nodeExternals()],
     module: {
         rules: [
             {

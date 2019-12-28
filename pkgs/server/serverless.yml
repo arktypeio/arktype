@@ -1,15 +1,18 @@
+org: ssalbdivad
+app: redo-server
 service: redo-server
 provider:
     name: aws
-    runtime: nodejs8.10
+    runtime: nodejs10.x
+    environment:
+        NODE_ENV: production
 plugins:
     - serverless-dotenv-plugin
-package:
-    exclude:
-        - node_modules/**
+    - serverless-hooks-plugin
+    - serverless-webpack
 functions:
     graphql:
-        handler: dist/index.handler
+        handler: main.handler
         events:
             - http:
                   path: graphql
@@ -19,3 +22,14 @@ functions:
                   path: graphql
                   method: get
                   cors: true
+custom:
+    webpack:
+        webpackConfig: "webpack.config.ts"
+        includeModules: true
+    hooks:
+        after:package:createDeploymentArtifacts:
+            - rm -rf .tmp-sls-pkg && unzip .serverless/redo-server.zip -d .tmp-sls-pkg
+            - rsync -rk node_modules/@types .tmp-sls-pkg/node_modules
+            - rsync -rk node_modules/@prisma .tmp-sls-pkg/node_modules
+            - cd .tmp-sls-pkg && zip -r redo-server.zip *
+            - mv .tmp-sls-pkg/redo-server.zip .serverless && rm -rf .tmp-sls-pkg

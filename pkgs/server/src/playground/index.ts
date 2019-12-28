@@ -55,7 +55,7 @@ const contents = gql`
 export const playground = {
     tabs: [
         {
-            endpoint: `http://localhost:${process.env.PORT}`,
+            // endpoint: `http://localhost:${process.env.PORT}`,
             query: print(contents)
         }
     ]

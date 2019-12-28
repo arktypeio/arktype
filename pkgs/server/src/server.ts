@@ -15,9 +15,10 @@ export const server = new ApolloServer({
         photon
     }),
     playground,
+    introspection: true,
     debug: true,
     formatError: error => {
-        console.log(error)
+        console.log(JSON.stringify(error, null, 4))
         return error
     },
     formatResponse: (response: any) => {

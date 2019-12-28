@@ -30,7 +30,8 @@
         "tsconfig-paths-webpack-plugin": "3.2.0",
         "webpack": "4.41.2",
         "webpack-dev-server": "3.8.2",
-        "webpack-merge": "4.2.2"
+        "webpack-merge": "4.2.2",
+        "webpack-node-externals": "1.7.2"
     },
     "devDependencies": {
         "@re-do/recommended": "0.0.1",
@@ -38,6 +39,7 @@
         "@types/node": "12.11.1",
         "@types/webpack": "4.39.3",
         "@types/webpack-merge": "4.1.5",
+        "@types/webpack-node-externals": "1.6.3",
         "typescript": "3.7.4"
     }
 }

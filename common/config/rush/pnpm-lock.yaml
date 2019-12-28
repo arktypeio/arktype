@@ -36,7 +36,7 @@ dependencies:
     "@rush-temp/model": "file:projects/model.tgz_@babel+core@7.6.4+react@16.10.2"
     "@rush-temp/react-statelessly": "file:projects/react-statelessly.tgz_@babel+core@7.6.4"
     "@rush-temp/recommended": "file:projects/recommended.tgz"
-    "@rush-temp/server": "file:projects/server.tgz"
+    "@rush-temp/server": "file:projects/server.tgz_webpack@4.41.2"
     "@rush-temp/statelessly": "file:projects/statelessly.tgz_@babel+core@7.6.4"
     "@rush-temp/test": "file:projects/test.tgz_@babel+core@7.6.4"
     "@rush-temp/utils": "file:projects/utils.tgz_@babel+core@7.6.4"
@@ -73,6 +73,7 @@ dependencies:
     "@types/validator": 12.0.1
     "@types/webpack": 4.39.3
     "@types/webpack-merge": 4.1.5
+    "@types/webpack-node-externals": 1.6.3
     analytics-node: 3.4.0-beta.1
     apollo-server-lambda: 2.9.15_graphql@14.5.8
     babel-loader: 8.0.6_@babel+core@7.6.4+webpack@4.41.2
@@ -93,7 +94,7 @@ dependencies:
     electron-builder: 21.2.0
     enzyme: 3.10.0
     enzyme-adapter-react-16: 1.15.1_43241304e96b402ec68e34a9f9e057e2
-    execa: 3.2.0
+    execa: 4.0.0
     file-loader: 4.2.0_webpack@4.41.2
     fork-ts-checker-webpack-plugin: 1.5.1
     framer-motion: 1.6.14_react-dom@16.10.2+react@16.10.2
@@ -127,6 +128,8 @@ dependencies:
     redux: 4.0.4
     serverless: 1.60.1
     serverless-dotenv-plugin: 2.1.1
+    serverless-hooks-plugin: 1.1.0
+    serverless-webpack: 5.3.1_webpack@4.41.2
     style-loader: 1.0.0_webpack@4.41.2
     ts-loader: 6.2.0_typescript@3.7.4
     ts-node: 8.5.4_typescript@3.7.4
@@ -141,6 +144,7 @@ dependencies:
     webpack-cli: 3.3.9_webpack@4.41.2
     webpack-dev-server: 3.8.2_webpack@4.41.2
     webpack-merge: 4.2.2
+    webpack-node-externals: 1.7.2
 lockfileVersion: 5.1
 packages:
     /2-thenable/1.0.0:
@@ -3854,6 +3858,12 @@ packages:
         dev: false
         resolution:
             integrity: sha512-cbDo592ljSHeaVe5Q39JKN6Z4vMhmo4+C3JbksOIg+kjhKQYN2keGN7dvr/i18+dughij98Qrsfn1mU9NgVoCA==
+    /@types/webpack-node-externals/1.6.3:
+        dependencies:
+            "@types/webpack": 4.39.3
+        dev: false
+        resolution:
+            integrity: sha512-sIYCMSV4Z1FbxqSKKvhmEnjd1UoZnTBT0VIhoZ0iT8gck7FB1MzJ1eH+yFyOgY65WU4LJBTxj3ySMKKfzfEiCw==
     /@types/webpack-sources/0.1.5:
         dependencies:
             "@types/node": 12.11.1
@@ -4690,6 +4700,21 @@ packages:
             node: ">= 0.10.0"
         resolution:
             integrity: sha1-TyGU1tj5nfP1MeaIHxTxXVX6ryI=
+    /archiver/2.1.1:
+        dependencies:
+            archiver-utils: 1.3.0
+            async: 2.6.3
+            buffer-crc32: 0.2.13
+            glob: 7.1.6
+            lodash: 4.17.15
+            readable-stream: 2.3.6
+            tar-stream: 1.6.2
+            zip-stream: 1.2.0
+        dev: false
+        engines:
+            node: ">= 4"
+        resolution:
+            integrity: sha1-/2YrSnggFJSj7lRNOjP+dJZQnrw=
     /are-we-there-yet/1.1.5:
         dependencies:
             delegates: 1.0.0
@@ -5769,6 +5794,12 @@ packages:
         dev: false
         resolution:
             integrity: sha512-Nd6CUb6YgDY8EXAXEIegx+1kzKqyFQ5ZM5BoYkeunAlwz/zDJoH1UCyULjoS5wQe5czNClFQy07zz2bzYD0Z4A==
+    /builtin-modules/1.1.1:
+        dev: false
+        engines:
+            node: ">=0.10.0"
+        resolution:
+            integrity: sha1-Jw8HbFpywC9bZaR9+Uxf46J4iS8=
     /builtin-modules/3.1.0:
         dev: false
         engines:
@@ -6274,6 +6305,12 @@ packages:
         dev: false
         resolution:
             integrity: sha1-0dyXOSAxTfZ/vrlCI7TuNQI56Ws=
+    /clone/1.0.4:
+        dev: false
+        engines:
+            node: ">=0.8"
+        resolution:
+            integrity: sha1-2jCcwmPfFZlMaIypAheco8fNfH4=
     /clsx/1.0.4:
         dev: false
         engines:
@@ -7283,6 +7320,12 @@ packages:
             node: ">= 6"
         resolution:
             integrity: sha512-Dj6Wk3tWyTE+Fo1rW8v0Xhwk80um6yFYKbuAxc9c3EZxIHFDYwbi34Uk42u1CdnIiVorvt4RmlSDjIPyzGC2ew==
+    /diff/3.5.0:
+        dev: false
+        engines:
+            node: ">=0.3.1"
+        resolution:
+            integrity: sha512-A46qtFgd+g7pDZinpnwiRJtxbC1hpgf0uzP3iG89scHk0AUC7A1TGxf5OiiOUv/JMZR8GOt8hL900hV0bOy5xA==
     /diff/4.0.1:
         dev: false
         engines:
@@ -8108,7 +8151,7 @@ packages:
             node: ^8.12.0 || >=9.7.0
         resolution:
             integrity: sha512-Y/URAVapfbYy2Xp/gb6A0E7iR8xeqOCXsuuaoMn7A5PzrXUK84E1gyiEfq0wQd/GHA6GsoHWwhNq8anb0mleIw==
-    /execa/3.2.0:
+    /execa/4.0.0:
         dependencies:
             cross-spawn: 7.0.1
             get-stream: 5.1.0
@@ -8117,14 +8160,13 @@ packages:
             merge-stream: 2.0.0
             npm-run-path: 4.0.1
             onetime: 5.1.0
-            p-finally: 2.0.1
             signal-exit: 3.0.2
             strip-final-newline: 2.0.0
         dev: false
         engines:
-            node: ^8.12.0 || >=9.7.0
+            node: ">=10"
         resolution:
-            integrity: sha512-kJJfVbI/lZE1PZYDI5VPxp8zXPO9rtxOkhpZ0jMKha56AI9y2gGVC6bkukStQf0ka5Rh15BA5m7cCCH4jmHqkw==
+            integrity: sha512-JbDUxwV3BoT5ZVXQrSVbAiaXhXUkIwvbhPIwZ0N13kX+5yCzOhUNdocxB/UQRuYOHRYYwAxKYwJYc0T4D12pDA==
     /exit/0.1.2:
         dev: false
         engines:
@@ -8784,6 +8826,16 @@ packages:
         dev: false
         resolution:
             integrity: sha512-y6OAwoSIf7FyjMIv94u+b5rdheZEjzR63GTyZJm5qh4Bi+2YgwLCcI/fPFZkL5PSixOt6ZNKm+w+Hfp/Bciwow==
+    /fs-extra/0.26.7:
+        dependencies:
+            graceful-fs: 4.2.3
+            jsonfile: 2.4.0
+            klaw: 1.3.1
+            path-is-absolute: 1.0.1
+            rimraf: 2.7.1
+        dev: false
+        resolution:
+            integrity: sha1-muH92UiXeY7at20JGM9C0MMYT6k=
     /fs-extra/0.30.0:
         dependencies:
             graceful-fs: 4.2.1
@@ -10053,6 +10105,14 @@ packages:
             node: ">=4"
         resolution:
             integrity: sha512-Kq1rokWXOPXWuaMAqZiJW4XxsmD9zGx9q4aePabbn3qCRGedtH7Cm+zV8WETitMfu1wdh+Rvd6w5egwSngUX2A==
+    /is-builtin-module/1.0.0:
+        dependencies:
+            builtin-modules: 1.1.1
+        dev: false
+        engines:
+            node: ">=0.10.0"
+        resolution:
+            integrity: sha1-VAVy0096wxGfj3bDDLwbHgN6/74=
     /is-callable/1.1.5:
         dev: false
         engines:
@@ -15256,6 +15316,39 @@ packages:
         dev: false
         resolution:
             integrity: sha512-T08fI0XoWGMKfs1KEpYrFwG/6A+qR2UZyANgchV7jJAhRhCtO0my1oMTLovyone5UHXOwTojrwUw3pm8NYa3rg==
+    /serverless-hooks-plugin/1.1.0:
+        dev: false
+        resolution:
+            integrity: sha1-UL6hSGhbEQls7noIfN3LSd+o75k=
+    /serverless-webpack-plugin/0.4.5_webpack@4.41.2:
+        dependencies:
+            bluebird: 3.7.2
+            clone: 1.0.4
+            fs-extra: 0.26.7
+            webpack: 4.41.2_webpack@4.41.2
+        dev: false
+        engines:
+            node: ">=4.0"
+        peerDependencies:
+            webpack: ^1.12.14
+        resolution:
+            integrity: sha1-NEuDICtN+kN9SxuKyEk8KS8EMRs=
+    /serverless-webpack/5.3.1_webpack@4.41.2:
+        dependencies:
+            archiver: 2.1.1
+            bluebird: 3.7.2
+            fs-extra: 4.0.3
+            glob: 7.1.6
+            is-builtin-module: 1.0.0
+            lodash: 4.17.15
+            semver: 5.7.1
+            ts-node: 3.3.0
+            webpack: 4.41.2_webpack@4.41.2
+        dev: false
+        peerDependencies:
+            webpack: ">= 3.0.0 < 6"
+        resolution:
+            integrity: sha512-lo5C7xpPRgY79gNbdbI7+y4f7WTzaYGxOczbiKaLuKpUIfO2VlA7HPOObC5s1n6LqviGZSBtHWqIqiUTCXJL0A==
     /serverless/1.60.1:
         dependencies:
             "@serverless/cli": 1.4.0
@@ -15566,6 +15659,12 @@ packages:
         dev: false
         resolution:
             integrity: sha512-MjqsvNwyz1s0k81Goz/9vRBe9SZdB09Bdw+/zYyO+3CuPk6fouTaxscHkgtE8jKvf01kVfl8riHzERQ/kefaSA==
+    /source-map-support/0.4.18:
+        dependencies:
+            source-map: 0.5.7
+        dev: false
+        resolution:
+            integrity: sha512-try0/JqxPLF9nOjvSta7tVondkP5dwgyLDjVoyMDlmjugT2lRZ1OfsrYTkCd2hkDnJTKRbO/Rl3orm8vlsUzbA==
     /source-map-support/0.5.16:
         dependencies:
             buffer-from: 1.1.1
@@ -16489,6 +16588,24 @@ packages:
             typescript: "*"
         resolution:
             integrity: sha512-vtFeqKNMcRdE0R00RZRMM2v7V6HadJSllJ7o1PPUc797cTyKLW2k4UsdbNaxoDEQ9PU2HIc2M+SawgM6ONh4ig==
+    /ts-node/3.3.0:
+        dependencies:
+            arrify: 1.0.1
+            chalk: 2.4.2
+            diff: 3.5.0
+            make-error: 1.3.5
+            minimist: 1.2.0
+            mkdirp: 0.5.1
+            source-map-support: 0.4.18
+            tsconfig: 6.0.0
+            v8flags: 3.1.3
+            yn: 2.0.0
+        dev: false
+        engines:
+            node: ">=4.2.0"
+        hasBin: true
+        resolution:
+            integrity: sha1-wTxqMCTjC+EYDdUwOPwgkonUv2k=
     /ts-node/8.5.4_typescript@3.7.4:
         dependencies:
             arg: 4.1.2
@@ -16531,6 +16648,13 @@ packages:
         dev: false
         resolution:
             integrity: sha512-dRcuzokWhajtZWkQsDVKbWyY+jgcLC5sqJhg2PSgf4ZkH2aHPvaOY8YWGhmjb68b5qqTfasSsDO9k7RUiEmZAw==
+    /tsconfig/6.0.0:
+        dependencies:
+            strip-bom: 3.0.0
+            strip-json-comments: 2.0.1
+        dev: false
+        resolution:
+            integrity: sha1-aw6DdgA9evGGT434+J3QBZ/80DI=
     /tsconfig/7.0.0:
         dependencies:
             "@types/strip-bom": 3.0.0
@@ -16992,6 +17116,14 @@ packages:
         dev: false
         resolution:
             integrity: sha512-CNmdbwQMBjwr9Gsmohvm0pbL954tJrNzf6gWL3K+QMQf00PF7ERGrEiLgjuU3mKreLC2MeGhUsNV9ybTbLgd3w==
+    /v8flags/3.1.3:
+        dependencies:
+            homedir-polyfill: 1.0.3
+        dev: false
+        engines:
+            node: ">= 0.10"
+        resolution:
+            integrity: sha512-amh9CCg3ZxkzQ48Mhcb8iX7xpAfYJgePHxWMQCBWECpOSqJUXgY26ncA61UTV0BkPqfhcy6mzwCIoP4ygxpW8w==
     /validate-npm-package-license/3.0.4:
         dependencies:
             spdx-correct: 3.1.0
@@ -17203,6 +17335,10 @@ packages:
         dev: false
         resolution:
             integrity: sha512-TUE1UGoTX2Cd42j3krGYqObZbOD+xF7u28WB7tfUordytSjbWTIjK/8V0amkBfTYN4/pB/GIDlJZZ657BGG19g==
+    /webpack-node-externals/1.7.2:
+        dev: false
+        resolution:
+            integrity: sha512-ajerHZ+BJKeCLviLUUmnyd5B4RavLF76uv3cs6KNuO8W+HuQaEs0y0L7o40NQxdPy5w0pcv8Ew7yPUAQG0UdCg==
     /webpack-sources/1.4.3:
         dependencies:
             source-list-map: 2.0.1
@@ -17574,6 +17710,12 @@ packages:
         dev: false
         resolution:
             integrity: sha1-lSj0QtqxsihOWLQ3m7GU4i4MQAU=
+    /yn/2.0.0:
+        dev: false
+        engines:
+            node: ">=4"
+        resolution:
+            integrity: sha1-5a2ryKz0CPY4X8dklWhMiOavaJo=
     /yn/3.1.1:
         dev: false
         engines:
@@ -17678,7 +17820,7 @@ packages:
             babel-plugin-require-context-hook: 1.0.0
             babel-plugin-transform-typescript-metadata: 0.2.2
             core-js: 3.3.2
-            execa: 3.2.0
+            execa: 4.0.0
             react-hot-loader: 4.12.15_react-dom@16.10.2+react@16.10.2
         dev: false
         id: "file:projects/babel-preset-redo.tgz"
@@ -17687,7 +17829,7 @@ packages:
             react: "*"
             react-dom: "*"
         resolution:
-            integrity: sha512-Q9syYGE2UwVurLAmyR+RsESurMVz3ogHL3hLuIlJaTM45lx6o42cZx7NFLqAJfYGAhJxX+icdzV5pKsS38uQRg==
+            integrity: sha512-gDytO+D/spofReQ0LpMumuIwTstnS+d6moSp7Vv6THMOOdPqEVRbdCDXd/iJ1R8OGw5+NaRlMoAja6Q9cAvi3Q==
             tarball: "file:projects/babel-preset-redo.tgz"
         version: 0.0.0
     "file:projects/bundle.tgz_06b0ba4fdf0f0c5aaf41218256e8c607":
@@ -17698,6 +17840,7 @@ packages:
             "@types/node": 12.11.1
             "@types/webpack": 4.39.3
             "@types/webpack-merge": 4.1.5
+            "@types/webpack-node-externals": 1.6.3
             babel-loader: 8.0.6_@babel+core@7.6.4+webpack@4.41.2
             clean-webpack-plugin: 3.0.0_webpack@4.41.2
             copy-webpack-plugin: 5.0.4_webpack@4.41.2
@@ -17715,6 +17858,7 @@ packages:
             webpack: 4.41.2_webpack@4.41.2
             webpack-dev-server: 3.8.2_webpack@4.41.2
             webpack-merge: 4.2.2
+            webpack-node-externals: 1.7.2
         dev: false
         id: "file:projects/bundle.tgz"
         name: "@rush-temp/bundle"
@@ -17723,7 +17867,7 @@ packages:
             react: "*"
             react-dom: "*"
         resolution:
-            integrity: sha512-BK9Osu9HACHgg9ihZ+8uS+6baQuBa6lVuonA9Z6KIIKDfaFoh6/hhEAVAgLlDpu/Jh7Lg42cuMtQcs8rIunCeQ==
+            integrity: sha512-Frnsr0ysLOX1a1dA9qrPJJJmiMcV7RWih2MrLkYRfiGmckI61iIpcxo30QcOgykl6yz2qylSdf2gIZoiSUEptw==
             tarball: "file:projects/bundle.tgz"
         version: 0.0.0
     "file:projects/components.tgz_graphql@14.5.8+webpack@4.41.2":
@@ -17873,7 +18017,7 @@ packages:
             integrity: sha512-WbwGq5egcbc8jVBjYzUUOA9QB/TZdjH434vtB5uwsWUJ1rJwdJGq7KYB9TIzGldxFd66HTi5O4Bf/Qcp/u+XPw==
             tarball: "file:projects/recommended.tgz"
         version: 0.0.0
-    "file:projects/server.tgz":
+    "file:projects/server.tgz_webpack@4.41.2":
         dependencies:
             "@babel/runtime-corejs3": 7.6.3
             "@prisma/photon": 2.0.0-preview017.2_prisma2@2.0.0-preview017.2
@@ -17888,6 +18032,7 @@ packages:
             bcrypt: 3.0.6
             deepmerge: 4.1.1
             dotenv: 8.2.0
+            execa: 4.0.0
             fs-extra: 8.1.0
             graphql: 14.5.8
             graphql-tag: 2.10.1_graphql@14.5.8
@@ -17899,13 +18044,19 @@ packages:
             redo-nexus-prisma: 0.6.1-9_3d439f4e0f24d46582a80975993b2eea
             serverless: 1.60.1
             serverless-dotenv-plugin: 2.1.1
+            serverless-hooks-plugin: 1.1.0
+            serverless-webpack: 5.3.1_webpack@4.41.2
+            serverless-webpack-plugin: 0.4.5_webpack@4.41.2
             ts-node: 8.5.4_typescript@3.7.4
             ts-node-dev: 1.0.0-pre.43_typescript@3.7.4
             typescript: 3.7.4
         dev: false
+        id: "file:projects/server.tgz"
         name: "@rush-temp/server"
+        peerDependencies:
+            webpack: "*"
         resolution:
-            integrity: sha512-3V6JpxYCS9lVseF6Yd5CE2BF/F9GEwwghzuXsdr1m92rPJKIeIvaPE2HVsBc8pNQi9Z6R+jazfPvYUe9HtCAcA==
+            integrity: sha512-SSlBWU+YK7IFig3VtpIOePx4p3TJorvTP54CRfbgnXdhER08qhwbEABvIZnIXqrtif/Hbhum9RaT6Necfu12pA==
             tarball: "file:projects/server.tgz"
         version: 0.0.0
     "file:projects/statelessly.tgz_@babel+core@7.6.4":
@@ -18078,6 +18229,7 @@ specifiers:
     "@types/validator": 12.0.1
     "@types/webpack": 4.39.3
     "@types/webpack-merge": 4.1.5
+    "@types/webpack-node-externals": 1.6.3
     analytics-node: 3.4.0-beta.1
     apollo-server-lambda: 2.9.15
     babel-loader: 8.0.6
@@ -18098,7 +18250,7 @@ specifiers:
     electron-builder: 21.2.0
     enzyme: 3.10.0
     enzyme-adapter-react-16: 1.15.1
-    execa: 3.2.0
+    execa: 4.0.0
     file-loader: 4.2.0
     fork-ts-checker-webpack-plugin: 1.5.1
     framer-motion: 1.6.14
@@ -18132,6 +18284,8 @@ specifiers:
     redux: 4.0.4
     serverless: 1.60.1
     serverless-dotenv-plugin: 2.1.1
+    serverless-hooks-plugin: 1.1.0
+    serverless-webpack: 5.3.1
     style-loader: 1.0.0
     ts-loader: 6.2.0
     ts-node: 8.5.4
@@ -18146,3 +18300,4 @@ specifiers:
     webpack-cli: 3.3.9
     webpack-dev-server: 3.8.2
     webpack-merge: 4.2.2
+    webpack-node-externals: 1.7.2
