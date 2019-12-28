@@ -171,5 +171,12 @@ export const december2019Updates: UpdateData[] = [
         goals: {
             "Server running in AWS": false
         }
+    },
+    {
+        date: new Date(2019, 11, 27),
+        goals: {
+            "Server running in AWS": false,
+            "App working in dev and prod": false
+        }
     }
 ]
