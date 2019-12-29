@@ -9,11 +9,22 @@ const photon = new Photon()
 
 export const server = new ApolloServer({
     schema,
-    context: ({ req }: any) => ({
-        ...req,
-        userId: getUserId(req),
-        photon
-    }),
+    context: ({ event }: any) => {
+        if (!event) {
+            throw new Error(
+                `Expected an 'event' property on the object passed to context. Received:\n${JSON.stringify(
+                    event,
+                    null,
+                    4
+                )}`
+            )
+        }
+        return {
+            ...event,
+            userId: getUserId(event),
+            photon
+        }
+    },
     playground,
     introspection: true,
     debug: true,

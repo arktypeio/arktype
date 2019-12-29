@@ -1,0 +1,253 @@
+{
+    "version": "0.3.14-fixed",
+    "steps": [
+        {
+            "stepType": "CreateModel",
+            "model": "Tag"
+        },
+        {
+            "stepType": "CreateField",
+            "model": "Tag",
+            "field": "id",
+            "type": "Int",
+            "arity": "required"
+        },
+        {
+            "stepType": "CreateDirective",
+            "model": "Tag",
+            "field": "id",
+            "directive": "id"
+        },
+        {
+            "stepType": "CreateField",
+            "model": "Tag",
+            "field": "user",
+            "type": "User",
+            "arity": "required"
+        },
+        {
+            "stepType": "CreateField",
+            "model": "Tag",
+            "field": "name",
+            "type": "String",
+            "arity": "required"
+        },
+        {
+            "stepType": "CreateDirective",
+            "model": "Tag",
+            "directive": "unique"
+        },
+        {
+            "stepType": "CreateDirectiveArgument",
+            "model": "Tag",
+            "directive": "unique",
+            "argument": "",
+            "value": "[name, user]"
+        },
+        {
+            "stepType": "CreateModel",
+            "model": "Selector"
+        },
+        {
+            "stepType": "CreateField",
+            "model": "Selector",
+            "field": "id",
+            "type": "Int",
+            "arity": "required"
+        },
+        {
+            "stepType": "CreateDirective",
+            "model": "Selector",
+            "field": "id",
+            "directive": "id"
+        },
+        {
+            "stepType": "CreateField",
+            "model": "Selector",
+            "field": "css",
+            "type": "String",
+            "arity": "required"
+        },
+        {
+            "stepType": "CreateModel",
+            "model": "Step"
+        },
+        {
+            "stepType": "CreateField",
+            "model": "Step",
+            "field": "id",
+            "type": "Int",
+            "arity": "required"
+        },
+        {
+            "stepType": "CreateDirective",
+            "model": "Step",
+            "field": "id",
+            "directive": "id"
+        },
+        {
+            "stepType": "CreateField",
+            "model": "Step",
+            "field": "action",
+            "type": "String",
+            "arity": "required"
+        },
+        {
+            "stepType": "CreateField",
+            "model": "Step",
+            "field": "selector",
+            "type": "Selector",
+            "arity": "required"
+        },
+        {
+            "stepType": "CreateField",
+            "model": "Step",
+            "field": "value",
+            "type": "String",
+            "arity": "required"
+        },
+        {
+            "stepType": "CreateField",
+            "model": "Step",
+            "field": "tests",
+            "type": "Test",
+            "arity": "list"
+        },
+        {
+            "stepType": "CreateModel",
+            "model": "Test"
+        },
+        {
+            "stepType": "CreateField",
+            "model": "Test",
+            "field": "id",
+            "type": "Int",
+            "arity": "required"
+        },
+        {
+            "stepType": "CreateDirective",
+            "model": "Test",
+            "field": "id",
+            "directive": "id"
+        },
+        {
+            "stepType": "CreateField",
+            "model": "Test",
+            "field": "user",
+            "type": "User",
+            "arity": "required"
+        },
+        {
+            "stepType": "CreateField",
+            "model": "Test",
+            "field": "name",
+            "type": "String",
+            "arity": "required"
+        },
+        {
+            "stepType": "CreateField",
+            "model": "Test",
+            "field": "steps",
+            "type": "Step",
+            "arity": "list"
+        },
+        {
+            "stepType": "CreateField",
+            "model": "Test",
+            "field": "tags",
+            "type": "Tag",
+            "arity": "list"
+        },
+        {
+            "stepType": "CreateDirective",
+            "model": "Test",
+            "directive": "unique"
+        },
+        {
+            "stepType": "CreateDirectiveArgument",
+            "model": "Test",
+            "directive": "unique",
+            "argument": "",
+            "value": "[name, user]"
+        },
+        {
+            "stepType": "CreateModel",
+            "model": "User"
+        },
+        {
+            "stepType": "CreateField",
+            "model": "User",
+            "field": "id",
+            "type": "Int",
+            "arity": "required"
+        },
+        {
+            "stepType": "CreateDirective",
+            "model": "User",
+            "field": "id",
+            "directive": "id"
+        },
+        {
+            "stepType": "CreateField",
+            "model": "User",
+            "field": "email",
+            "type": "String",
+            "arity": "required"
+        },
+        {
+            "stepType": "CreateDirective",
+            "model": "User",
+            "field": "email",
+            "directive": "unique"
+        },
+        {
+            "stepType": "CreateField",
+            "model": "User",
+            "field": "password",
+            "type": "String",
+            "arity": "required"
+        },
+        {
+            "stepType": "CreateField",
+            "model": "User",
+            "field": "first",
+            "type": "String",
+            "arity": "required"
+        },
+        {
+            "stepType": "CreateField",
+            "model": "User",
+            "field": "last",
+            "type": "String",
+            "arity": "required"
+        },
+        {
+            "stepType": "CreateField",
+            "model": "User",
+            "field": "steps",
+            "type": "Step",
+            "arity": "list"
+        },
+        {
+            "stepType": "CreateField",
+            "model": "User",
+            "field": "selectors",
+            "type": "Selector",
+            "arity": "list"
+        },
+        {
+            "stepType": "CreateField",
+            "model": "User",
+            "field": "tags",
+            "type": "Tag",
+            "arity": "list"
+        },
+        {
+            "stepType": "CreateField",
+            "model": "User",
+            "field": "tests",
+            "type": "Test",
+            "arity": "list"
+        }
+    ]
+}

@@ -1,12 +1,11 @@
 datasource db {
-  provider = "mysql"
-  url      = env("MYSQL_URL")
+  provider = "sqlite"
+  url = "***"
   default  = true
 }
 
 generator photon {
-  provider      = "photonjs"
-  binaryTargets = ["native", "rhel-openssl-1.0.x"]
+  provider = "photonjs"
 }
 
 model Tag {
