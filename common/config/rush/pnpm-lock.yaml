@@ -33,6 +33,7 @@ dependencies:
     "@rush-temp/bundle": "file:projects/bundle.tgz_06b0ba4fdf0f0c5aaf41218256e8c607"
     "@rush-temp/components": "file:projects/components.tgz_graphql@14.5.8+webpack@4.41.2"
     "@rush-temp/gqlize": "file:projects/gqlize.tgz_@babel+core@7.6.4"
+    "@rush-temp/jscripts": "file:projects/jscripts.tgz"
     "@rush-temp/model": "file:projects/model.tgz_@babel+core@7.6.4+react@16.10.2"
     "@rush-temp/react-statelessly": "file:projects/react-statelessly.tgz_@babel+core@7.6.4"
     "@rush-temp/recommended": "file:projects/recommended.tgz"
@@ -18365,6 +18366,19 @@ packages:
             integrity: sha512-ZlgN3YnP9Uee03eTjzxWKZ/ia8/1y1sHZNaEGQ14+fTmQwmtkg669iJI5N+xcrjXfu5RNvUVYU7KsdnCuVQWiw==
             tarball: "file:projects/gqlize.tgz"
         version: 0.0.0
+    "file:projects/jscripts.tgz":
+        dependencies:
+            "@babel/runtime-corejs3": 7.6.3
+            "@types/fs-extra": 8.0.1
+            "@types/node": 12.11.1
+            fs-extra: 8.1.0
+            typescript: 3.7.4
+        dev: false
+        name: "@rush-temp/jscripts"
+        resolution:
+            integrity: sha512-Q1NUuZS6dIinZ5iQ0TlYuRFBAH21iPD/olPJfB0EUBGHGSdO346R3/l0zG9PmsbwR4J74UzIcB729udhOKzbpw==
+            tarball: "file:projects/jscripts.tgz"
+        version: 0.0.0
     "file:projects/model.tgz_@babel+core@7.6.4+react@16.10.2":
         dependencies:
             "@apollo/client": 3.0.0-beta.16_graphql@14.5.8+react@16.10.2
@@ -18605,6 +18619,7 @@ specifiers:
     "@rush-temp/bundle": "file:./projects/bundle.tgz"
     "@rush-temp/components": "file:./projects/components.tgz"
     "@rush-temp/gqlize": "file:./projects/gqlize.tgz"
+    "@rush-temp/jscripts": "file:./projects/jscripts.tgz"
     "@rush-temp/model": "file:./projects/model.tgz"
     "@rush-temp/react-statelessly": "file:./projects/react-statelessly.tgz"
     "@rush-temp/recommended": "file:./projects/recommended.tgz"
