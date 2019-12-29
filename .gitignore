@@ -66,5 +66,8 @@ package-deps.json
 # OS files
 .DS_Store
 
-# Redo-specific
+# Redo
+**/migrations/*-development
 .serverless
+.webpack
+.env.production

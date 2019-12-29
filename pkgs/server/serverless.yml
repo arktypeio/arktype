@@ -21,6 +21,7 @@ plugins:
     - serverless-dotenv-plugin
     - serverless-hooks-plugin
     - serverless-webpack
+    - serverless-offline
 functions:
     graphql:
         handler: main.handler

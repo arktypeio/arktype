@@ -1,7 +1,13 @@
-datasource db {
+datasource dev {
+  provider = "sqlite"
+  url      = env("SQLITE_URL")
+  enabled  = env("ENABLE_SQLITE")
+}
+
+datasource prod {
   provider = "mysql"
   url      = env("MYSQL_URL")
-  default  = true
+  enabled  = env("ENABLE_MYSQL")
 }
 
 generator photon {
