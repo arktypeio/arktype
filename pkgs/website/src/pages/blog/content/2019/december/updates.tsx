@@ -173,10 +173,17 @@ export const december2019Updates: UpdateData[] = [
         }
     },
     {
-        date: new Date(2019, 11, 27),
+        date: new Date(2019, 11, 28),
         goals: {
-            "Server running in AWS": false,
-            "App working in dev and prod": false
+            "Server running in AWS": true,
+            "App working in dev and prod": true
+        }
+    },
+    {
+        date: new Date(2019, 11, 29),
+        goals: {
+            "Dev & prod builds": false,
+            "Electron installer": false
         }
     }
 ]
