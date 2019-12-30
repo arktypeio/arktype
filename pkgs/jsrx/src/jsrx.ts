@@ -1,5 +1,6 @@
 import { readJsonSync, writeJsonSync } from "fs-extra"
 import { join } from "path"
+import dotEnv from "dotenv"
 
 type ScriptFunction = () => any
 type ScriptMap = Record<string, ScriptFunction>
@@ -15,6 +16,10 @@ type JsrxOptions = {
     scriptName?: string
     autoGenerate?: boolean
     excludeOthers?: boolean
+    envFiles?: {
+        dev?: string
+        prod?: string
+    }
 }
 
 const addDefaults = (config: JsrxScripts): Required<JsrxScripts> => ({
@@ -27,7 +32,7 @@ const addDefaults = (config: JsrxScripts): Required<JsrxScripts> => ({
 export const jsrx = (config: JsrxScripts, options: JsrxOptions = {}) => {
     const configWithDefaults = addDefaults(config)
     const { dev, prod, shared } = configWithDefaults
-    const { scriptName, autoGenerate, excludeOthers } = options
+    const { scriptName, autoGenerate, excludeOthers, envFiles } = options
     const nameArg = process.argv.length > 2 ? process.argv[2] : null
     const name = (scriptName as string | undefined) ?? nameArg
     if (!name) {
@@ -55,12 +60,20 @@ export const jsrx = (config: JsrxScripts, options: JsrxOptions = {}) => {
     }
     if (name in devScripts) {
         process.env.NODE_ENV = "development"
+        if (envFiles?.dev) {
+            dotEnv.config({ path: envFiles.dev })
+        }
         runScript = devScripts[name]
     } else if (name in prodScripts) {
         process.env.NODE_ENV = "production"
+        if (envFiles?.prod) {
+            dotEnv.config({ path: envFiles.prod })
+        }
         runScript = prodScripts[name]
     } else {
-        throw new Error(`Unexpected error evluating script '${name}'.`)
+        throw new Error(
+            `Couldn't find a script named '${name}' in your jsrx config. Try running 'npx jsrx jsrxGen' to regenerate your scripts.`
+        )
     }
     if (autoGenerate) {
         updatePackageJson({ ...devScripts, ...prodScripts }, excludeOthers)
@@ -82,13 +95,9 @@ const validateScriptName = (
     if (name in shared) {
         appearances++
     }
-    if (appearances === 0) {
+    if (appearances > 1) {
         throw new Error(
-            `Couldn't find a script named '${name}' in your jsrx config. Try running 'jsrx gen' to regenerate your scripts.`
-        )
-    } else if (appearances > 1) {
-        throw new Error(
-            `Script named '${name}' exists in both more than one of 'dev', 'prod', and 'shared' blocks.`
+            `Script named '${name}' exists in more than one of 'dev', 'prod', and 'shared' blocks.`
         )
     }
 }
