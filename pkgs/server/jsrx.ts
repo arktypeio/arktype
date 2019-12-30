@@ -1,4 +1,6 @@
 import { jsrx, run, $ } from "jsrx"
+import { readFileSync, writeFileSync } from "fs-extra"
+import { join } from "path"
 
 const generate = async () => {
     await run("prisma2 generate")
@@ -12,7 +14,7 @@ const build = async () => {
 }
 
 const upDb = async () => {
-    await run("prisma2 lift save --name $NODE_ENV --create-db")
+    await run(`prisma2 lift save --name ${process.env.NODE_ENV} --create-db`)
     await run("prisma2 lift up")
 }
 
@@ -28,11 +30,22 @@ jsrx(
         dev: {
             createDb: async () => {
                 await run("rm -rf prisma/dev.db")
-                await upDb()
                 await run("rm -rf prisma/migrations/*-development")
-                await run(
-                    "sed -i '/-development/d' prisma/migrations/lift.lock"
+                const liftLockFile = join(
+                    __dirname,
+                    "prisma",
+                    "migrations",
+                    "lift.lock"
                 )
+                writeFileSync(
+                    liftLockFile,
+                    readFileSync(liftLockFile)
+                        .toString()
+                        .split("\n")
+                        .filter(line => !line.endsWith("-development"))
+                        .join("\n")
+                )
+                await upDb()
             },
             start: $("sls offline")
         },
@@ -44,5 +57,11 @@ jsrx(
             pack: $("sls package")
         }
     },
-    { excludeOthers: true }
+    {
+        excludeOthers: true,
+        envFiles: {
+            dev: join(__dirname, ".env"),
+            prod: join(__dirname, ".env.production")
+        }
+    }
 )
