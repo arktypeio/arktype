@@ -185,5 +185,13 @@ export const december2019Updates: UpdateData[] = [
             "Dev & prod builds": false,
             "Electron installer": false
         }
+    },
+    {
+        date: new Date(2019, 11, 30),
+        goals: {
+            "Simplify jsrx to just functions": false,
+            "Dev & prod builds": false,
+            "Electron installer": false
+        }
     }
 ]
