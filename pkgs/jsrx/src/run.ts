@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import { readdirSync } from "fs-extra"
-import { commandSync } from "execa"
+import { run } from "./utils"
 
 const cwd = process.cwd()
 
@@ -11,7 +11,6 @@ if (!jsrxConfigFile) {
     throw new Error(`Found no 'jsrx.js' or 'jsrx.ts' file in ${process.cwd()}.`)
 }
 const runner = jsrxConfigFile === "jsrx.js" ? "node" : "npx ts-node"
-commandSync(
-    `${runner} ${jsrxConfigFile} ${process.argv[process.argv.length - 1]}`,
-    { cwd }
-)
+run(`${runner} ${jsrxConfigFile} ${process.argv[process.argv.length - 1]}`, {
+    cwd
+})

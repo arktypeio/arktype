@@ -1,24 +1,32 @@
-import { jsrx } from "jsrx"
-jsrx({
-    shared: {
-        build: ["generate", "tsc"],
-        generate:
-            "prisma2 generate && ts-node --transpile-only src/schema && cp schema.gql ../model",
-        studio: "prisma2 dev",
-        tsc: "tsc",
-        upDb:
-            "prisma2 lift save --name $NODE_ENV --create-db && prisma2 lift up"
+import { jsrx, run, $ } from "jsrx"
+
+jsrx(
+    {
+        shared: {
+            build: $("npm run generate && npm run tsc"),
+            generate: $(
+                "prisma2 generate && ts-node --transpile-only src/schema && cp schema.gql ../model"
+            ),
+            studio: $("prisma2 dev"),
+            tsc: $("tsc"),
+            upDb: $(
+                "prisma2 lift save --name $NODE_ENV --create-db && prisma2 lift up"
+            )
+        },
+        dev: {
+            createDb: () => {
+                run("rm -rf prisma/dev.db && npm run _wipeMigrationsDev")
+                run("npm run upDb")
+                run(
+                    "rm -rf prisma/migrations/*-development && sed -i '/-development/d' prisma/migrations/lift.lock"
+                )
+            },
+            start: $("sls offline")
+        },
+        prod: {
+            deploy: $("npm run build-prod && sls deploy"),
+            pack: $("sls package")
+        }
     },
-    dev: {
-        createDb: ["wipeDb", "upDb", "wipeMigrations"],
-        wipeDb: "rm -rf prisma/dev.db && npm run _wipeMigrationsDev",
-        wipeMigrations:
-            "rm -rf prisma/migrations/*-development && sed -i '/-development/d' prisma/migrations/lift.lock",
-        start: "NODE_ENV=development && sls offline"
-    },
-    prod: {
-        deploy: ["build", "slsDeploy"],
-        slsDeploy: "sls deploy",
-        package: "sls package"
-    }
-})
+    { excludeOthers: true }
+)

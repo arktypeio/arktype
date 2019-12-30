@@ -1,59 +1,33 @@
 import { readJsonSync, writeJsonSync } from "fs-extra"
-import { commandSync, SyncOptions } from "execa"
 import { join } from "path"
 
-// TODO: SIMPLIFY (JUST FUNCTIONS)
-
 type ScriptFunction = () => any
-type ScriptDefinition<Names extends string> = string | ScriptFunction | Names[]
-type ScriptOptions<Names extends string> = {
-    run: ScriptDefinition<Names>
-    options?: SyncOptions
-}
-type ScriptValue<Names extends string> =
-    | ScriptDefinition<Names>
-    | ScriptOptions<Names>
-type ScriptMap<Names extends string> = { [Name in Names]: ScriptValue<Names> }
+type ScriptMap = Record<string, ScriptFunction>
 
-type JsrxConfig<
-    DevScripts extends ScriptMap<string>,
-    ProdScripts extends ScriptMap<string>,
-    SharedScripts extends ScriptMap<string>
-> = {
-    dev?: DevScripts
-    prod?: ProdScripts
-    shared?: SharedScripts
-    options?: {
-        // Normally this is passed via the cli, but this will take precedence if passed
-        scriptName?: keyof DevScripts | keyof ProdScripts | keyof SharedScripts
-        autoGenerate?: boolean
-    }
+type JsrxScripts = {
+    dev?: ScriptMap
+    prod?: ScriptMap
+    shared?: ScriptMap
 }
 
-const addDefaults = <
-    DevScripts extends ScriptMap<string>,
-    ProdScripts extends ScriptMap<string>,
-    SharedScripts extends ScriptMap<string>
->(
-    config: JsrxConfig<DevScripts, ProdScripts, SharedScripts>
-): Required<JsrxConfig<DevScripts, ProdScripts, SharedScripts>> => ({
-    dev: {} as DevScripts,
-    prod: {} as ProdScripts,
-    shared: {} as SharedScripts,
-    options: {},
+type JsrxOptions = {
+    // Normally this is passed via the cli, but this will take precedence if passed
+    scriptName?: string
+    autoGenerate?: boolean
+    excludeOthers?: boolean
+}
+
+const addDefaults = (config: JsrxScripts): Required<JsrxScripts> => ({
+    dev: {},
+    prod: {},
+    shared: {},
     ...config
 })
 
-export const jsrx = <
-    DevScripts extends ScriptMap<string>,
-    ProdScripts extends ScriptMap<string>,
-    SharedScripts extends ScriptMap<string>
->(
-    config: JsrxConfig<DevScripts, ProdScripts, SharedScripts>
-) => {
+export const jsrx = (config: JsrxScripts, options: JsrxOptions = {}) => {
     const configWithDefaults = addDefaults(config)
-    const { dev, prod, shared, options } = configWithDefaults
-    const { scriptName, autoGenerate } = options
+    const { dev, prod, shared } = configWithDefaults
+    const { scriptName, autoGenerate, excludeOthers } = options
     const nameArg = process.argv.length > 2 ? process.argv[2] : null
     const name = (scriptName as string | undefined) ?? nameArg
     if (!name) {
@@ -61,81 +35,42 @@ export const jsrx = <
             "'jsrx' requires a positional argument representing the name of the script to run, e.g. 'jsrx build'."
         )
     }
-    let scriptValue: ScriptValue<string>
+    let runScript: ScriptFunction
     const devScripts = { ...dev, ...shared }
     const prodScripts = {
         ...prod,
         ...Object.fromEntries(
             Object.entries(shared).map(([scriptName, scriptDef]) => [
-                `${scriptName}-prod`,
+                `${scriptName}Prod`,
                 scriptDef
             ])
         )
     }
     const allScripts = { ...devScripts, ...prodScripts }
-    if (name === "gen") {
-        updatePackageJson(allScripts)
+    if (name === "jsrxGen") {
+        updatePackageJson(allScripts, excludeOthers)
         return
     } else {
         validateScriptName(name, configWithDefaults)
     }
     if (name in devScripts) {
         process.env.NODE_ENV = "development"
-        scriptValue = devScripts[name]
+        runScript = devScripts[name]
     } else if (name in prodScripts) {
         process.env.NODE_ENV = "production"
-        scriptValue = prodScripts[name]
-    } else if (name === "gen") {
-        scriptValue = "gen"
+        runScript = prodScripts[name]
     } else {
         throw new Error(`Unexpected error evluating script '${name}'.`)
     }
-    let runScript: ScriptFunction
-    const scriptDefinition =
-        typeof scriptValue === "object" && !Array.isArray(scriptValue)
-            ? scriptValue.run
-            : scriptValue
-    if (typeof scriptDefinition === "function") {
-        runScript = scriptDefinition
-    } else if (typeof scriptDefinition === "string") {
-        runScript = () => commandSync(scriptDefinition)
-    } else if (Array.isArray(scriptDefinition)) {
-        runScript = () =>
-            scriptDefinition.forEach(name =>
-                commandSync(
-                    `npm run ${
-                        process.env.NODE_ENV === "development"
-                            ? name
-                            : formatProdName(name, shared)
-                    }`
-                )
-            )
-    } else {
-        throw new Error(
-            `Found an unexpected config value for script '${name}': ${JSON.stringify(
-                scriptDefinition,
-                null,
-                4
-            )}`
-        )
-    }
     if (autoGenerate) {
-        updatePackageJson({ ...devScripts, ...prodScripts })
+        updatePackageJson({ ...devScripts, ...prodScripts }, excludeOthers)
     }
     runScript()
 }
 
-const validateScriptName = <
-    DevScripts extends ScriptMap<string>,
-    ProdScripts extends ScriptMap<string>,
-    SharedScripts extends ScriptMap<string>
->(
+const validateScriptName = (
     name: string,
-    {
-        dev,
-        prod,
-        shared
-    }: Required<JsrxConfig<DevScripts, ProdScripts, SharedScripts>>
+    { dev, prod, shared }: Required<JsrxScripts>
 ) => {
     let appearances = 0
     if (name in dev) {
@@ -158,10 +93,10 @@ const validateScriptName = <
     }
 }
 
-const formatProdName = (name: string, shared: ScriptMap<string>) =>
-    name in shared ? `${name}-prod` : name
-
-const updatePackageJson = (scripts: ScriptMap<string>) => {
+const updatePackageJson = (
+    scripts: ScriptMap,
+    excludeOthers: boolean | undefined
+) => {
     const jsrxScripts = Object.fromEntries(
         Object.keys(scripts).map(name => [name, `jsrx ${name}`])
     )
@@ -172,9 +107,9 @@ const updatePackageJson = (scripts: ScriptMap<string>) => {
         {
             ...packageJsonContents,
             scripts: {
-                ...packageJsonContents.scripts,
+                ...(!excludeOthers && packageJsonContents.scripts),
                 ...jsrxScripts,
-                jsrxGen: "jsrx gen"
+                jsrxGen: "jsrx jsrxGen"
             }
         },
         { spaces: 4 }
