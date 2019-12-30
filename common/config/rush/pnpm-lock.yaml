@@ -33,7 +33,7 @@ dependencies:
     "@rush-temp/bundle": "file:projects/bundle.tgz_06b0ba4fdf0f0c5aaf41218256e8c607"
     "@rush-temp/components": "file:projects/components.tgz_graphql@14.5.8+webpack@4.41.2"
     "@rush-temp/gqlize": "file:projects/gqlize.tgz_@babel+core@7.6.4"
-    "@rush-temp/jscripts": "file:projects/jscripts.tgz"
+    "@rush-temp/jsrx": "file:projects/jsrx.tgz_@babel+core@7.6.4"
     "@rush-temp/model": "file:projects/model.tgz_@babel+core@7.6.4+react@16.10.2"
     "@rush-temp/react-statelessly": "file:projects/react-statelessly.tgz_@babel+core@7.6.4"
     "@rush-temp/recommended": "file:projects/recommended.tgz"
@@ -18366,18 +18366,25 @@ packages:
             integrity: sha512-ZlgN3YnP9Uee03eTjzxWKZ/ia8/1y1sHZNaEGQ14+fTmQwmtkg669iJI5N+xcrjXfu5RNvUVYU7KsdnCuVQWiw==
             tarball: "file:projects/gqlize.tgz"
         version: 0.0.0
-    "file:projects/jscripts.tgz":
+    "file:projects/jsrx.tgz_@babel+core@7.6.4":
         dependencies:
+            "@babel/cli": 7.6.4_@babel+core@7.6.4
             "@babel/runtime-corejs3": 7.6.3
             "@types/fs-extra": 8.0.1
+            "@types/jest": 24.0.19
             "@types/node": 12.11.1
+            execa: 4.0.0
             fs-extra: 8.1.0
+            jest: 24.9.0
             typescript: 3.7.4
         dev: false
-        name: "@rush-temp/jscripts"
+        id: "file:projects/jsrx.tgz"
+        name: "@rush-temp/jsrx"
+        peerDependencies:
+            "@babel/core": "*"
         resolution:
-            integrity: sha512-Q1NUuZS6dIinZ5iQ0TlYuRFBAH21iPD/olPJfB0EUBGHGSdO346R3/l0zG9PmsbwR4J74UzIcB729udhOKzbpw==
-            tarball: "file:projects/jscripts.tgz"
+            integrity: sha512-5iuwBfD2R+y+XO6Qu+Fbs5c/aixUnzdpAt8rjtsbnElgyyqGj43CPF6/yfm6LdPpq/xrNDaCUibIluWPlnE/qA==
+            tarball: "file:projects/jsrx.tgz"
         version: 0.0.0
     "file:projects/model.tgz_@babel+core@7.6.4+react@16.10.2":
         dependencies:
@@ -18486,7 +18493,7 @@ packages:
         peerDependencies:
             webpack: "*"
         resolution:
-            integrity: sha512-xKryBuVz+qhnpulBXO9pk8xtu5UrwpXuzWZgA4BUIfmu+opXciJok0F/dtSqxvwZgCIrc4zKiK9u1KsDC0o8lw==
+            integrity: sha512-+OfZbZDO4+EwqGtvAZZLwLxDqsMXZstDnUMe5enwXOml3TsM5hL9fst06ur17Oq2iAOj97HtBspGHL0+g3gyYw==
             tarball: "file:projects/server.tgz"
         version: 0.0.0
     "file:projects/statelessly.tgz_@babel+core@7.6.4":
@@ -18619,7 +18626,7 @@ specifiers:
     "@rush-temp/bundle": "file:./projects/bundle.tgz"
     "@rush-temp/components": "file:./projects/components.tgz"
     "@rush-temp/gqlize": "file:./projects/gqlize.tgz"
-    "@rush-temp/jscripts": "file:./projects/jscripts.tgz"
+    "@rush-temp/jsrx": "file:./projects/jsrx.tgz"
     "@rush-temp/model": "file:./projects/model.tgz"
     "@rush-temp/react-statelessly": "file:./projects/react-statelessly.tgz"
     "@rush-temp/recommended": "file:./projects/recommended.tgz"

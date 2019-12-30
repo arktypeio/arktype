@@ -1,17 +1,22 @@
 {
-    "name": "jscripts",
+    "name": "jsrx",
     "version": "0.0.1",
     "author": "redo.qa",
     "description": "Generate npm scripts from js",
     "main": "dist/index.js",
     "types": "dist/index.d.ts",
     "scripts": {
-        "build": "redo-build"
+        "build": "redo-build",
+        "test": "jest"
+    },
+    "bin": {
+        "jsrx": "./dist/run.js"
     },
     "dependencies": {
         "@babel/runtime-corejs3": "7.6.3",
         "execa": "4.0.0",
-        "fs-extra": "8.1.0"
+        "fs-extra": "8.1.0",
+        "@re-do/utils": "0.0.1"
     },
     "devDependencies": {
         "@babel/cli": "7.6.4",

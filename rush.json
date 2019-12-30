@@ -61,8 +61,8 @@
             "projectFolder": "pkgs/gqlize"
         },
         {
-            "packageName": "jscripts",
-            "projectFolder": "pkgs/jscripts"
+            "packageName": "jsrx",
+            "projectFolder": "pkgs/jsrx"
         }
     ]
 }
