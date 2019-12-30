@@ -1,6 +1,6 @@
 #!/usr/bin/env node
-import { readdirSync } from "fs-extra"
-import { run } from "./utils"
+const { readdirSync } = require("fs-extra")
+const { command } = require("execa")
 
 const cwd = process.cwd()
 
@@ -11,6 +11,10 @@ if (!jsrxConfigFile) {
     throw new Error(`Found no 'jsrx.js' or 'jsrx.ts' file in ${process.cwd()}.`)
 }
 const runner = jsrxConfigFile === "jsrx.js" ? "node" : "npx ts-node"
-run(`${runner} ${jsrxConfigFile} ${process.argv[process.argv.length - 1]}`, {
-    cwd
-})
+command(
+    `${runner} ${jsrxConfigFile} ${process.argv[process.argv.length - 1]}`,
+    {
+        cwd,
+        stdio: "inherit"
+    }
+)

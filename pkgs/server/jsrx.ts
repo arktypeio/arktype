@@ -1,30 +1,46 @@
 import { jsrx, run, $ } from "jsrx"
 
+const generate = async () => {
+    await run("prisma2 generate")
+    await run("ts-node --transpile-only src/schema")
+    await run("cp schema.gql ../model")
+}
+
+const build = async () => {
+    await generate()
+    await run("tsc")
+}
+
+const upDb = async () => {
+    await run("prisma2 lift save --name $NODE_ENV --create-db")
+    await run("prisma2 lift up")
+}
+
 jsrx(
     {
         shared: {
-            build: $("npm run generate && npm run tsc"),
-            generate: $(
-                "prisma2 generate && ts-node --transpile-only src/schema && cp schema.gql ../model"
-            ),
+            build,
+            generate,
             studio: $("prisma2 dev"),
             tsc: $("tsc"),
-            upDb: $(
-                "prisma2 lift save --name $NODE_ENV --create-db && prisma2 lift up"
-            )
+            upDb
         },
         dev: {
-            createDb: () => {
-                run("rm -rf prisma/dev.db && npm run _wipeMigrationsDev")
-                run("npm run upDb")
-                run(
-                    "rm -rf prisma/migrations/*-development && sed -i '/-development/d' prisma/migrations/lift.lock"
+            createDb: async () => {
+                await run("rm -rf prisma/dev.db")
+                await upDb()
+                await run("rm -rf prisma/migrations/*-development")
+                await run(
+                    "sed -i '/-development/d' prisma/migrations/lift.lock"
                 )
             },
             start: $("sls offline")
         },
         prod: {
-            deploy: $("npm run build-prod && sls deploy"),
+            deploy: async () => {
+                await build()
+                await run("sls deploy")
+            },
             pack: $("sls package")
         }
     },

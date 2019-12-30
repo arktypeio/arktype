@@ -6,11 +6,11 @@
     "main": "dist/index.js",
     "types": "dist/index.d.ts",
     "scripts": {
-        "build": "redo-build && chmod +x dist/run.js",
+        "build": "redo-build",
         "test": "jest"
     },
     "bin": {
-        "jsrx": "./dist/run.js"
+        "jsrx": "./run.js"
     },
     "dependencies": {
         "@babel/runtime-corejs3": "7.6.3",
