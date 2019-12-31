@@ -13,13 +13,19 @@ import {
 } from "webpack"
 import { listify, getMode, isDev } from "@re-do/utils"
 import ForkTsCheckerWebpackPlugin from "fork-ts-checker-webpack-plugin"
+import { BundleAnalyzerPlugin } from "webpack-bundle-analyzer"
 
 export type ConfigArgs = {
     entries: string[]
     tsconfig: string
+    analyzeBundle: boolean
 }
 
-const getCommonConfig = ({ entries, tsconfig }: ConfigArgs): Configuration => ({
+const getCommonConfig = ({
+    entries,
+    tsconfig,
+    analyzeBundle
+}: ConfigArgs): Configuration => ({
     mode: getMode(),
     entry: entries,
     devtool: isDev() ? "inline-source-map" : "source-map",
@@ -49,7 +55,12 @@ const getCommonConfig = ({ entries, tsconfig }: ConfigArgs): Configuration => ({
             }
         ]
     },
-    plugins: [new ForkTsCheckerWebpackPlugin({ tsconfig })]
+    plugins: analyzeBundle
+        ? [
+              new ForkTsCheckerWebpackPlugin({ tsconfig }),
+              new BundleAnalyzerPlugin()
+          ]
+        : [new ForkTsCheckerWebpackPlugin({ tsconfig })]
 })
 
 const getWebConfig = (args: ConfigArgs): Configuration =>
@@ -123,11 +134,11 @@ const getRendererConfig = (args: ConfigArgs): Configuration =>
         },
         resolve: {
             /*
-    Override default value ["browser"] since we have enabled node integration
-    And have access to more than we would in a basic web environment.
-    In particular, this allows us to import puppeteer, which specifies a 
-    "browser" field in its package.json that breaks our ability to import it.
-    */
+            Override default value ["browser"] since we have enabled node integration
+            And have access to more than we would in a basic web environment.
+            In particular, this allows us to import puppeteer, which specifies a 
+            "browser" field in its package.json that breaks our ability to import it.
+            */
             aliasFields: []
         },
         devServer: {
@@ -207,14 +218,21 @@ export type BaseConfigOptions = {
     entry: string | string[]
     tsconfig: string
     devServer?: object
+    analyzeBundle?: boolean
 }
 
 export const makeConfig = (
-    { base, entry, tsconfig, devServer }: BaseConfigOptions,
+    {
+        base,
+        entry,
+        tsconfig,
+        devServer,
+        analyzeBundle = false
+    }: BaseConfigOptions,
     merged: Partial<Configuration>[] = []
 ) =>
     merge.smart(
-        baseOptions[base]({ entries: listify(entry), tsconfig }),
+        baseOptions[base]({ entries: listify(entry), tsconfig, analyzeBundle }),
         devServer ? getDevServerConfig(devServer) : {},
         ...merged
     )
