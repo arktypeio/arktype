@@ -2,6 +2,7 @@ import { resolve } from "path"
 import { spawn } from "child_process"
 import HtmlWebpackPlugin from "html-webpack-plugin"
 import { TsconfigPathsPlugin } from "tsconfig-paths-webpack-plugin"
+import isWsl from "is-wsl"
 import merge from "webpack-merge"
 import {
     Configuration,
@@ -10,14 +11,8 @@ import {
     HotModuleReplacementPlugin,
     NoEmitOnErrorsPlugin
 } from "webpack"
-import { listify } from "@re-do/utils"
+import { listify, getMode, isDev } from "@re-do/utils"
 import ForkTsCheckerWebpackPlugin from "fork-ts-checker-webpack-plugin"
-
-const getMode = () =>
-    process.env.NODE_ENV === "development" ? "development" : "production"
-
-export const isDev = () => getMode() === "development"
-export const isProd = () => getMode() === "production"
 
 export type ConfigArgs = {
     entries: string[]
@@ -191,6 +186,7 @@ const getDevServerConfig = (customConfig?: object): Configuration =>
             historyApiFallback: true,
             hot: true,
             writeToDisk: true,
+            host: isWsl ? "0.0.0.0" : undefined,
             ...customConfig
         }
     } as Configuration)

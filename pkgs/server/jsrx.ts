@@ -49,7 +49,7 @@ jsrx(
             },
             start: async () => {
                 await build()
-                await run("sls offline")
+                await run("sls offline", { env: { SLS_DEBUG: "*" } })
             }
         },
         prod: {

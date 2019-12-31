@@ -98,6 +98,7 @@ dependencies:
     graphql: 14.5.8
     graphql-tag: 2.10.1_graphql@14.5.8
     html-webpack-plugin: 3.2.0_webpack@4.41.5
+    is-wsl: 2.1.1
     isomorphic-fetch: 2.2.1
     isomorphic-ws: 4.0.1
     jest: 24.9.0
@@ -18776,6 +18777,7 @@ packages:
             file-loader: 4.2.0_webpack@4.41.5
             fork-ts-checker-webpack-plugin: 1.5.1
             html-webpack-plugin: 3.2.0_webpack@4.41.5
+            is-wsl: 2.1.1
             react-hot-loader: 4.12.15_react-dom@16.12.0+react@16.12.0
             react-svg-loader: 3.0.3
             style-loader: 1.0.0_webpack@4.41.5
@@ -18795,7 +18797,7 @@ packages:
             react: "*"
             react-dom: "*"
         resolution:
-            integrity: sha512-ioYOHvr8ir6jTmi3HG6mVacDnQRTmTazo81OZ0brjmfkPXZDhKsxNB7VdUbfkDtSYpOKSBkI76sB26unE0t7yA==
+            integrity: sha512-jAe/Bd3Zp65S5j9eHhAUShoGRnyy0vQR9P+LmliZwNlgWiPUd5pk5vKmKal4pU8oALygjqz32Rgs/oMnhcHpPA==
             tarball: "file:projects/bundle.tgz"
         version: 0.0.0
     "file:projects/components.tgz_graphql@14.5.8+webpack@4.41.5":
@@ -18975,6 +18977,7 @@ packages:
             "@types/jest": 24.0.19
             "@types/jsonwebtoken": 8.3.5
             "@types/node": 12.11.1
+            "@types/webpack-node-externals": 1.6.3
             apollo-server-lambda: 2.9.15_graphql@14.5.8
             bcrypt: 3.0.6
             deepmerge: 4.1.1
@@ -18997,13 +19000,14 @@ packages:
             ts-node: 8.5.4_typescript@3.7.4
             ts-node-dev: 1.0.0-pre.43_typescript@3.7.4
             typescript: 3.7.4
+            webpack-node-externals: 1.7.2
         dev: false
         id: "file:projects/server.tgz"
         name: "@rush-temp/server"
         peerDependencies:
             webpack: "*"
         resolution:
-            integrity: sha512-Mq0ZPyn0k/jlpDoxy6De2KjpgIu6FysR4zDIPXiAJOqvytI5dVGxTavt1LQpzgvfSWagWWlnC7Y47/4TROy4+A==
+            integrity: sha512-PhOH0e/K+JdaUog6CiS9yqeEfk4WkevKvxUyM3sl6poOj+8d0/Pu8YYa0uCZyKA3TzP/133XrfhQ3rdGR/y5gQ==
             tarball: "file:projects/server.tgz"
         version: 0.0.0
     "file:projects/statelessly.tgz_@babel+core@7.7.7":
@@ -19201,6 +19205,7 @@ specifiers:
     graphql: 14.5.8
     graphql-tag: 2.10.1
     html-webpack-plugin: 3.2.0
+    is-wsl: 2.1.1
     isomorphic-fetch: 2.2.1
     isomorphic-ws: 4.0.1
     jest: 24.9.0

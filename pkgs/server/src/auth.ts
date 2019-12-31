@@ -8,11 +8,12 @@ type Token = {
 type ContextEvent = {
     headers?: {
         Authorization?: string
+        authorization?: string
     }
 }
 
 export const getUserId = (event: ContextEvent) => {
-    const auth = event.headers?.Authorization
+    const auth = event.headers?.Authorization || event.headers?.authorization
     if (!auth) {
         return 0
     }
