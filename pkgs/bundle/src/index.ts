@@ -2,6 +2,7 @@ import { resolve } from "path"
 import { spawn } from "child_process"
 import HtmlWebpackPlugin from "html-webpack-plugin"
 import { TsconfigPathsPlugin } from "tsconfig-paths-webpack-plugin"
+import isWsl from "is-wsl"
 import merge from "webpack-merge"
 import {
     Configuration,
@@ -10,14 +11,8 @@ import {
     HotModuleReplacementPlugin,
     NoEmitOnErrorsPlugin
 } from "webpack"
-import { listify } from "@re-do/utils"
+import { listify, getMode, isDev } from "@re-do/utils"
 import ForkTsCheckerWebpackPlugin from "fork-ts-checker-webpack-plugin"
-
-const getMode = () =>
-    process.env.NODE_ENV === "development" ? "development" : "production"
-
-export const isDev = () => getMode() === "development"
-export const isProd = () => getMode() === "production"
 
 export type ConfigArgs = {
     entries: string[]
@@ -164,7 +159,7 @@ const getInjectedConfig = (args: ConfigArgs): Configuration =>
         }
     })
 
-const getDevServerConfig = (): Configuration =>
+const getDevServerConfig = (customConfig?: object): Configuration =>
     ({
         resolve: {
             alias: {
@@ -172,7 +167,8 @@ const getDevServerConfig = (): Configuration =>
                     __dirname,
                     "..",
                     "node_modules",
-                    "@hot-loader/react-dom"
+                    "@hot-loader",
+                    "react-dom"
                 )
             }
         },
@@ -190,8 +186,9 @@ const getDevServerConfig = (): Configuration =>
             historyApiFallback: true,
             hot: true,
             writeToDisk: true,
-            host: "0.0.0.0",
-            useLocalIp: true
+            host: isWsl ? "0.0.0.0" : undefined,
+            useLocalIp: isWsl,
+            ...customConfig
         }
     } as Configuration)
 
@@ -209,7 +206,7 @@ export type BaseConfigOptions = {
     base: BaseName
     entry: string | string[]
     tsconfig: string
-    devServer?: boolean
+    devServer?: object
 }
 
 export const makeConfig = (
@@ -218,6 +215,6 @@ export const makeConfig = (
 ) =>
     merge.smart(
         baseOptions[base]({ entries: listify(entry), tsconfig }),
-        devServer ? getDevServerConfig() : {},
+        devServer ? getDevServerConfig(devServer) : {},
         ...merged
     )

@@ -22,24 +22,17 @@ export const SignUp = () => {
             validate={() => ({})}
             submit={submit}
             onData={data => store.mutate({ token: data.signUp })}
-            transformValues={({ email, ...rest }) => ({
-                ...rest,
-                email: formatEmail(email)
-            })}
+            transformValues={({ email, ...rest }) => {
+                return {
+                    ...rest,
+                    email: formatEmail(email)
+                }
+            }}
         >
             <Column justify="center" grow>
                 <Row spacing={1}>
-                    <FormText
-                        name="firstName"
-                        label="first"
-                        tooltipPlacement="left"
-                        autoFocus
-                    />
-                    <FormText
-                        name="lastName"
-                        label="last"
-                        tooltipPlacement="right"
-                    />
+                    <FormText name="first" tooltipPlacement="left" autoFocus />
+                    <FormText name="last" tooltipPlacement="right" />
                 </Row>
                 <FormText name="email" tooltipPlacement="right" />
                 <Row spacing={1}>

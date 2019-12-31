@@ -50,12 +50,23 @@ const contents = gql`
             }
         }
     }
+
+    query getUsers {
+        users {
+            first
+            last
+            email
+        }
+    }
 `
 
 export const playground = {
     tabs: [
         {
-            endpoint: `http://localhost:${process.env.PORT}`,
+            endpoint:
+                process.env.NODE_ENV === "production"
+                    ? "/dev/graphql"
+                    : "/graphql",
             query: print(contents)
         }
     ]

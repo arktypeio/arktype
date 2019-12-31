@@ -1,11 +1,18 @@
-datasource db {
+datasource dev {
   provider = "sqlite"
-  url      = "file:dev.db"
-  default  = true
+  url      = env("SQLITE_URL")
+  enabled  = env("ENABLE_SQLITE")
+}
+
+datasource prod {
+  provider = "mysql"
+  url      = env("MYSQL_URL")
+  enabled  = env("ENABLE_MYSQL")
 }
 
 generator photon {
-  provider = "photonjs"
+  provider      = "photonjs"
+  binaryTargets = ["native", "rhel-openssl-1.0.x"]
 }
 
 model Tag {

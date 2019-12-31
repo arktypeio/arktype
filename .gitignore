@@ -55,10 +55,6 @@ jspm_packages/
 
 # Common toolchain intermediate files
 temp
-generated
-**/server/src/playground/schema.gql
-**/prisma/migrations
-**/prisma/dev.db
 
 # Build output
 dist
@@ -69,3 +65,9 @@ package-deps.json
 
 # OS files
 .DS_Store
+
+# Redo
+**/migrations/*-development
+.serverless
+.webpack
+.env.production
