@@ -47,7 +47,10 @@ jsrx(
                 )
                 await upDb()
             },
-            start: $("sls offline")
+            start: async () => {
+                await build()
+                await run("sls offline")
+            }
         },
         prod: {
             deploy: async () => {

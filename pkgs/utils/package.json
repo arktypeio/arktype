@@ -12,7 +12,7 @@
     "dependencies": {
         "@babel/runtime-corejs3": "7.6.3",
         "class-transformer": "0.2.3",
-        "core-js": "3.3.2",
+        "core-js": "3.6.1",
         "fs-extra": "8.1.0",
         "moize": "5.4.4"
     },

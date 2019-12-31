@@ -7,7 +7,12 @@ import {
 import { rootHandler, initialRoot } from "state"
 import { createStore } from "react-statelessly"
 
-const httpLink = createHttpLink({ uri: `http://localhost:${process.env.PORT}` })
+const httpLink = createHttpLink({
+    uri:
+        process.env.NODE_ENV === "development"
+            ? `http://localhost:${process.env.PORT}/graphql`
+            : "https://tpru7v18yi.execute-api.us-east-1.amazonaws.com/dev/graphql"
+})
 const contextLink = new ApolloLink((operation, forward) => {
     operation.setContext({
         headers: {

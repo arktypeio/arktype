@@ -11,7 +11,6 @@ import {
     NoEmitOnErrorsPlugin
 } from "webpack"
 import { listify } from "@re-do/utils"
-import nodeExternals from "webpack-node-externals"
 import ForkTsCheckerWebpackPlugin from "fork-ts-checker-webpack-plugin"
 
 const getMode = () =>
@@ -41,7 +40,6 @@ const getCommonConfig = ({ entries, tsconfig }: ConfigArgs): Configuration => ({
             ws: "isomorphic-ws"
         }
     },
-    externals: [nodeExternals()],
     module: {
         rules: [
             {
@@ -166,7 +164,7 @@ const getInjectedConfig = (args: ConfigArgs): Configuration =>
         }
     })
 
-const getDevServerConfig = (): Configuration =>
+const getDevServerConfig = (customConfig?: object): Configuration =>
     ({
         resolve: {
             alias: {
@@ -174,7 +172,8 @@ const getDevServerConfig = (): Configuration =>
                     __dirname,
                     "..",
                     "node_modules",
-                    "@hot-loader/react-dom"
+                    "@hot-loader",
+                    "react-dom"
                 )
             }
         },
@@ -192,8 +191,7 @@ const getDevServerConfig = (): Configuration =>
             historyApiFallback: true,
             hot: true,
             writeToDisk: true,
-            host: "0.0.0.0",
-            useLocalIp: true
+            ...customConfig
         }
     } as Configuration)
 
@@ -211,7 +209,7 @@ export type BaseConfigOptions = {
     base: BaseName
     entry: string | string[]
     tsconfig: string
-    devServer?: boolean
+    devServer?: object
 }
 
 export const makeConfig = (
@@ -220,6 +218,6 @@ export const makeConfig = (
 ) =>
     merge.smart(
         baseOptions[base]({ entries: listify(entry), tsconfig }),
-        devServer ? getDevServerConfig() : {},
+        devServer ? getDevServerConfig(devServer) : {},
         ...merged
     )

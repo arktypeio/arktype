@@ -5,5 +5,5 @@ export default makeConfig({
     base: "renderer",
     entry: resolve(__dirname, "src", "renderer", "index.tsx"),
     tsconfig: resolve(__dirname, "tsconfig.json"),
-    devServer: true
+    devServer: {}
 })

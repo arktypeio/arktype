@@ -40,12 +40,11 @@
     "devDependencies": {
         "@re-do/recommended": "0.0.1",
         "@types/bcrypt": "3.0.0",
-        "@types/dotenv": "6.1.1",
         "@types/fs-extra": "8.0.1",
-        "@types/graphql": "14.5.0",
         "@types/jest": "24.0.19",
         "@types/jsonwebtoken": "8.3.5",
         "@types/node": "12.11.1",
+        "@types/webpack-node-externals": "1.6.3",
         "babel-preset-redo": "0.0.1",
         "execa": "4.0.0",
         "fs-extra": "8.1.0",
@@ -59,6 +58,7 @@
         "serverless-webpack": "5.3.1",
         "ts-node": "8.5.4",
         "ts-node-dev": "1.0.0-pre.43",
-        "typescript": "3.7.4"
+        "typescript": "3.7.4",
+        "webpack-node-externals": "1.7.2"
     }
 }
