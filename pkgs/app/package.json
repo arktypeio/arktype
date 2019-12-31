@@ -5,10 +5,10 @@
     "version": "0.0.1",
     "main": "dist/main.js",
     "scripts": {
-        "build": "NODE_ENV=production npm run clean && webpack",
-        "start": "NODE_ENV=development npm run clean && npm run devBuild && npm run devServer",
+        "build": "NODE_ENV=production && npm run clean && webpack",
+        "start": "NODE_ENV=development && npm run clean && npm run devBuild && npm run devServer",
         "devBuild": "NODE_ENV=development webpack",
-        "devServer": "NODE_ENV=production webpack-dev-server --config webpack.devServer.config.ts --progress --colors",
+        "devServer": "NODE_ENV=development && webpack-dev-server --config webpack.devServer.config.ts --progress --colors",
         "electron": "NODE_ENV=production electron --remote-debugging-port=9223 ./dist/main.js",
         "clean": "rm -rf dist && mkdir dist",
         "dist": "npm run build && electron-builder -mwl"

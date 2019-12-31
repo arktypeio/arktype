@@ -30,6 +30,9 @@ const getCommonConfig = ({
     entry: entries,
     devtool: isDev() ? "inline-source-map" : "source-map",
     context: resolve(__dirname, ".."),
+    performance: {
+        hints: isDev() && "warning"
+    },
     node: {
         __dirname: false,
         __filename: false
