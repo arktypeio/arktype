@@ -1,20 +1,23 @@
 {
-    "name": "@re-do/utils",
+    "name": "jsrx",
     "version": "0.0.1",
     "author": "redo.qa",
-    "description": "Common utilities consumed by Redo",
+    "description": "Generate npm scripts from js",
     "main": "dist/index.js",
     "types": "dist/index.d.ts",
     "scripts": {
         "build": "redo-build",
         "test": "jest"
     },
+    "bin": {
+        "jsrx": "./run.js"
+    },
     "dependencies": {
         "@babel/runtime-corejs3": "7.6.3",
-        "class-transformer": "0.2.3",
-        "core-js": "3.6.1",
-        "fs-extra": "8.1.0",
-        "moize": "5.4.4"
+        "@re-do/utils": "0.0.1",
+        "dotenv": "8.2.0",
+        "execa": "4.0.0",
+        "fs-extra": "8.1.0"
     },
     "devDependencies": {
         "@babel/cli": "7.6.4",

@@ -59,6 +59,10 @@
         {
             "packageName": "gqlize",
             "projectFolder": "pkgs/gqlize"
+        },
+        {
+            "packageName": "jsrx",
+            "projectFolder": "pkgs/jsrx"
         }
     ]
 }

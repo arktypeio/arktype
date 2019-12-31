@@ -1,5 +1,7 @@
+import "dotenv/config"
 import { Photon } from "@prisma/photon"
 import { hash } from "bcrypt"
+
 const photon = new Photon()
 
 const users = [

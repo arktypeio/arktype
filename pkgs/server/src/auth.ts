@@ -1,12 +1,19 @@
 import { verify, JsonWebTokenError } from "jsonwebtoken"
 import { APP_SECRET } from "./utils"
 
-interface Token {
+type Token = {
     userId: number
 }
 
-export const getUserId = (req: any) => {
-    const auth = req.headers.authorization
+type ContextEvent = {
+    headers?: {
+        Authorization?: string
+        authorization?: string
+    }
+}
+
+export const getUserId = (event: ContextEvent) => {
+    const auth = event.headers?.Authorization || event.headers?.authorization
     if (!auth) {
         return 0
     }
