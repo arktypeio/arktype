@@ -69,6 +69,7 @@ dependencies:
     "@types/uuid": 3.4.5
     "@types/validator": 12.0.1
     "@types/webpack": 4.39.3
+    "@types/webpack-bundle-analyzer": 2.9.2
     "@types/webpack-merge": 4.1.5
     "@types/webpack-node-externals": 1.6.3
     analytics-node: 3.4.0-beta.1
@@ -138,6 +139,7 @@ dependencies:
     uuid: 3.3.3
     validator: 12.1.0
     webpack: 4.41.5_webpack@4.41.5
+    webpack-bundle-analyzer: 3.6.0
     webpack-cli: 3.3.10_webpack@4.41.5
     webpack-dev-server: 3.10.1_webpack@4.41.5
     webpack-merge: 4.2.2
@@ -2330,6 +2332,7 @@ packages:
             integrity: sha512-6LbUqcHD8BcRtXMOp5bc5nJeU8RlKh6q5U8TgZeCrf9ebBdW8Wyy5ujAUnbJfmzQ56Kkq5XtwErC/5+5RHyFYA==
     /@babel/preset-react/7.6.3_@babel+core@7.6.4:
         dependencies:
+            "@babel/core": 7.6.4
             "@babel/helper-plugin-utils": 7.0.0
             "@babel/plugin-transform-react-display-name": 7.7.4_@babel+core@7.6.4
             "@babel/plugin-transform-react-jsx": 7.7.7_@babel+core@7.6.4
@@ -4539,6 +4542,12 @@ packages:
         dev: false
         resolution:
             integrity: sha512-l57fIANZLMe8DArz+SDb+7ATXnDm15P7u2wHBw5mb0aSMd+UuvmvhouBF2hdLgQPDMJ39sh9g2MJO4GkZ0VAdQ==
+    /@types/webpack-bundle-analyzer/2.9.2:
+        dependencies:
+            "@types/webpack": 4.39.3
+        dev: false
+        resolution:
+            integrity: sha512-RQub8vZH3P8Afwx+JezWZ2aF0Acy+q1bGctLTAaYVwPecu8XEUsO4Lc0LHHHjWnxF57XcoVxBUM7Sbcvh6B/eQ==
     /@types/webpack-env/1.14.1:
         dev: false
         resolution:
@@ -6168,6 +6177,17 @@ packages:
         requiresBuild: true
         resolution:
             integrity: sha512-taA5bCTfXe7FUjKroKky9EXpdhkVvhE5owfxfLYodbrAR1Ul3juLmIQmIQBK4L9a5BuUcE6cqmwT+Da20lF9tg==
+    /bfj/6.1.2:
+        dependencies:
+            bluebird: 3.7.2
+            check-types: 8.0.3
+            hoopy: 0.1.4
+            tryer: 1.0.1
+        dev: false
+        engines:
+            node: ">= 6.0.0"
+        resolution:
+            integrity: sha512-BmBJa4Lip6BPRINSZ0BPEIfB1wUY/9rwbwvIHQA1KjX9om29B6id0wnWXq7m3bn5JrUVjeOTnVuhPT1FiHwPGw==
     /big.js/3.2.0:
         dev: false
         resolution:
@@ -6800,6 +6820,10 @@ packages:
         dev: false
         resolution:
             integrity: sha1-wKHS86cJLgN3S/qD8UwPxXkKhmc=
+    /check-types/8.0.3:
+        dev: false
+        resolution:
+            integrity: sha512-YpeKZngUmG65rLudJ4taU7VLkOCTMhNl/u4ctNC56LQS/zJTyNH0Lrtwm1tfTsbLlwvlfsA2d1c8vCf/Kh2KwQ==
     /cheerio/1.0.0-rc.3:
         dependencies:
             css-select: 1.2.0
@@ -10291,6 +10315,12 @@ packages:
             node: ">=0.10.0"
         resolution:
             integrity: sha512-eSmmWE5bZTK2Nou4g0AI3zZ9rswp7GRKoKXS1BLUkvPviOqs4YTN1djQIqrXy9k5gEtdLPy86JjRwsNM9tnDcA==
+    /hoopy/0.1.4:
+        dev: false
+        engines:
+            node: ">= 6.0.0"
+        resolution:
+            integrity: sha512-HRcs+2mr52W0K+x8RzcLzuPPmVIKMSv97RGHy0Ea9y/mpcaK+xTrjICA04KAHi4GRzxliNqNJEFYWHghy3rSfQ==
     /hosted-git-info/2.8.5:
         dev: false
         resolution:
@@ -13635,6 +13665,11 @@ packages:
             node: ">=8"
         resolution:
             integrity: sha512-IFenVPgF70fSm1keSd2iDBIDIBZkroLeuffXq+wKTzTJlBpesFWojV9lb8mzOfaAzM1sr7HQHuO0vtV0zYekGg==
+    /opener/1.5.1:
+        dev: false
+        hasBin: true
+        resolution:
+            integrity: sha512-goYSy5c2UXE4Ra1xixabeVh1guIX/ZV/YokJksb6q2lubWu6UbvPQ20p542/sFIll1nl8JnCyK9oBaOcCWXwvA==
     /opn/5.5.0:
         dependencies:
             is-wsl: 1.1.0
@@ -17429,6 +17464,10 @@ packages:
         dev: false
         resolution:
             integrity: sha1-QFkjkJWS1W94pYGENLC3hInKXys=
+    /tryer/1.0.1:
+        dev: false
+        resolution:
+            integrity: sha512-c3zayb8/kWWpycWYg87P71E1S1ZL6b6IJxfb5fvsUgsf0S2MVGaDhDXXjDMpdCpfWXqptc+4mXwmiy1ypXqRAA==
     /ts-dedent/1.1.0:
         dev: false
         engines:
@@ -18124,6 +18163,27 @@ packages:
         dev: false
         resolution:
             integrity: sha512-YQ+BmxuTgd6UXZW3+ICGfyqRyHXVlD5GtQr5+qjiNW7bF0cqrzX500HVXPBOvgXb5YnzDd+h0zqyv61KUD7+Sg==
+    /webpack-bundle-analyzer/3.6.0:
+        dependencies:
+            acorn: 6.4.0
+            acorn-walk: 6.2.0
+            bfj: 6.1.2
+            chalk: 2.4.2
+            commander: 2.20.3
+            ejs: 2.7.4
+            express: 4.17.1
+            filesize: 3.6.1
+            gzip-size: 5.1.1
+            lodash: 4.17.15
+            mkdirp: 0.5.1
+            opener: 1.5.1
+            ws: 6.2.1
+        dev: false
+        engines:
+            node: ">= 6.14.4"
+        hasBin: true
+        resolution:
+            integrity: sha512-orUfvVYEfBMDXgEKAKVvab5iQ2wXneIEorGNsyuOyVYpjYrI7CUOhhXNDd3huMwQ3vNNWWlGP+hzflMFYNzi2g==
     /webpack-cli/3.3.10_webpack@4.41.5:
         dependencies:
             chalk: 2.4.2
@@ -18768,6 +18828,7 @@ packages:
             "@types/html-webpack-plugin": 3.2.1
             "@types/node": 12.11.1
             "@types/webpack": 4.39.3
+            "@types/webpack-bundle-analyzer": 2.9.2
             "@types/webpack-merge": 4.1.5
             "@types/webpack-node-externals": 1.6.3
             babel-loader: 8.0.6_@babel+core@7.7.7+webpack@4.41.5
@@ -18786,6 +18847,7 @@ packages:
             tsconfig-paths-webpack-plugin: 3.2.0
             typescript: 3.7.4
             webpack: 4.41.5_webpack@4.41.5
+            webpack-bundle-analyzer: 3.6.0
             webpack-dev-server: 3.10.1_webpack@4.41.5
             webpack-merge: 4.2.2
             webpack-node-externals: 1.7.2
@@ -18797,7 +18859,7 @@ packages:
             react: "*"
             react-dom: "*"
         resolution:
-            integrity: sha512-jAe/Bd3Zp65S5j9eHhAUShoGRnyy0vQR9P+LmliZwNlgWiPUd5pk5vKmKal4pU8oALygjqz32Rgs/oMnhcHpPA==
+            integrity: sha512-WLR/D3FvmVtcsaibIQXNoWSTPEzpbUve8f9eMGNDVgGNIaKej/pxrFt/Hm/FV9lq5jBY/bsXJChCKdoTN8eVaA==
             tarball: "file:projects/bundle.tgz"
         version: 0.0.0
     "file:projects/components.tgz_graphql@14.5.8+webpack@4.41.5":
@@ -19101,7 +19163,7 @@ packages:
         dev: false
         name: "@rush-temp/website"
         resolution:
-            integrity: sha512-WF4iYVOrsFtx28xsnsAAtVDBTT0tZlnJ+N25u3RmYkmD6V3tKuf9Fj6TKHMVqgEP/cadKNTvNYPud65FgGJQeA==
+            integrity: sha512-7Qtdj1zgejox7TDBPjjvxfIFt7BbBd5MOJ56/RYbMIZibjxKSD/etl2wJ6K9KEuuXoGXWHhZKU4xB/in4QP3iQ==
             tarball: "file:projects/website.tgz"
         version: 0.0.0
 registry: ""
@@ -19176,6 +19238,7 @@ specifiers:
     "@types/uuid": 3.4.5
     "@types/validator": 12.0.1
     "@types/webpack": 4.39.3
+    "@types/webpack-bundle-analyzer": 2.9.2
     "@types/webpack-merge": 4.1.5
     "@types/webpack-node-externals": 1.6.3
     analytics-node: 3.4.0-beta.1
@@ -19245,6 +19308,7 @@ specifiers:
     uuid: 3.3.3
     validator: 12.1.0
     webpack: 4.41.5
+    webpack-bundle-analyzer: 3.6.0
     webpack-cli: 3.3.10
     webpack-dev-server: 3.10.1
     webpack-merge: 4.2.2

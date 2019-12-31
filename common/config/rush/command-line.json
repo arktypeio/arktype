@@ -1,5 +1,17 @@
 {
     "$schema": "https://developer.microsoft.com/json-schemas/rush/v5/command-line.schema.json",
-    "commands": [],
+    "commands": [
+        {
+            "commandKind": "bulk",
+            "name": "build",
+            "summary": "Build all projects that haven't been built, or have changed since they were last built",
+            "description": "This command is similar to \"rush rebuild\", except that \"rush build\" performs...",
+            "safeForSimultaneousRushProcesses": false,
+            "enableParallelism": true,
+            "ignoreDependencyOrder": false,
+            "ignoreMissingScript": false,
+            "allowWarningsInSuccessfulBuild": true
+        }
+    ],
     "parameters": []
 }
