@@ -198,8 +198,9 @@ export const december2019Updates: UpdateData[] = [
         date: new Date(2019, 11, 31),
         goals: {
             "Electron installer": false,
-            "Split queries per user": false,
-            "Contributor README": false
+            "User queries": false,
+            "Contributor README": false,
+            "Remove apollo from components": false
         }
     }
 ]
