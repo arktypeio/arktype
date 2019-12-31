@@ -187,6 +187,7 @@ const getDevServerConfig = (customConfig?: object): Configuration =>
             hot: true,
             writeToDisk: true,
             host: isWsl ? "0.0.0.0" : undefined,
+            useLocalIp: isWsl,
             ...customConfig
         }
     } as Configuration)
