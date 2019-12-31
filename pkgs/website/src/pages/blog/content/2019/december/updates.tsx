@@ -189,9 +189,17 @@ export const december2019Updates: UpdateData[] = [
     {
         date: new Date(2019, 11, 30),
         goals: {
-            "Simplify jsrx to just functions": false,
-            "Dev & prod builds": false,
+            "Simplify jsrx to just functions": true,
+            "Dev & prod builds": true,
             "Electron installer": false
+        }
+    },
+    {
+        date: new Date(2019, 11, 31),
+        goals: {
+            "Electron installer": false,
+            "Split queries per user": false,
+            "Contributor README": false
         }
     }
 ]
