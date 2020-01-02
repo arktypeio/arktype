@@ -200,7 +200,8 @@ export const december2019Updates: UpdateData[] = [
             "Electron installer": false,
             "User queries": false,
             "Contributor README": false,
-            "Remove apollo from components": false
+            "Remove apollo from components": true,
+            "Fix website build": true
         }
     }
 ]
