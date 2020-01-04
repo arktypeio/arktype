@@ -21,7 +21,7 @@ export const january2020Updates: UpdateData[] = [
         date: new Date(2020, 0, 3),
         goals: {
             "Electron installer": false,
-            "Contributor README": false
+            "Contributor README": true
         }
     },
     {
