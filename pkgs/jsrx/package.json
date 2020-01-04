@@ -2,7 +2,7 @@
     "name": "jsrx",
     "version": "0.0.1",
     "author": "redo.qa",
-    "description": "Generate npm scripts from js",
+    "description": "Seamlessly write your npm scripts in JS 💊📜",
     "main": "dist/index.js",
     "types": "dist/index.d.ts",
     "scripts": {

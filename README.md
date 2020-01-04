@@ -1,16 +1,38 @@
-# redo
+![logo.svg](/pkgs/components/assets/logo.svg)
+Building something great requires good tests, but it shouldn't be your job to automate, run, or maintain them. [Redo](https://redo.qa) learns how your app works and does all that for you.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-v2.0%20adopted-ff69b4.svg)](code-of-conduct.md)
 ![Code style](https://img.shields.io/badge/code_style-prettier-ff69b4.svg)
 
+## Packages
+
+We use a [rush](https://rushjs.io) monorepo to manage our packages. Take a look at any of them individually to learn more:
+
+-   [@re-do/app](/pkgs/app): Desktop UI for creating and managing automated tests 🤖
+-   [jsrx](pkgs/jsrx): Seamlessly write your [npm scripts](https://docs.npmjs.com/misc/scripts) in JS 💊📜
+-   [gqlize](pkgs/gqlize): Zero-config graphql query generation 🎁
+-   [statelessly](pkgs/statelessly): 💪-typed state management with simple shapes🔷
+-   [react-statelessly](pkgs/react-statelessly): React hooks for [statelessly](pkgs/statelessly)
+-   [@re-do/website](pkgs/website): Source for [our website](https://redo.qa)
+-   [@re-do/components](pkgs/components): Shared [React](https://reactjs.org/) component library
+-   [@re-do/test](pkgs/test): UI test runner
+-   [@re-do/utils](pkgs/utils): Generic utilities
+-   [@re-do/model](pkgs/model): Types that model Redo's data
+-   [@re-do/recommended](pkgs/recommended): Shared configs (TS, jest, etc.)
+-   [@re-do/bundle](pkgs/bundle): Shared [webpack](https://webpack.js.org/) presets
+-   [babel-preset-redo](/pkgs/babel-preset-redo): Shared [babel](https://babeljs.io/) preset
+
 ## Contributing
 
-Read our [contributing guide](/CONTRIBUTING.md) to learn about our development process, how to propose bugfixes and improvements, and how to build and test your changes to Material-UI.
+If you're interested in contributing to one of our packages for the first time:
 
-## Roadmap
+1. Thank you 😍 We'll do everything we can to make this as straightforward as possible, regardless of your experience.
+2. Check out our [guide](/CONTRIBUTING.md) to get started!
 
-The future plans and high priority features and enhancements can be found in the [roadmap](https://material-ui.com/discover-more/roadmap/) file.
+## Project
+
+Our current and planned work can always be found [here](https://github.com/redo-qa/redo/projects/1).
 
 ## License
 
