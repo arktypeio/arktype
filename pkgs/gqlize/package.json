@@ -2,7 +2,7 @@
     "name": "gqlize",
     "version": "0.0.1",
     "author": "redo.qa",
-    "description": "🌈",
+    "description": "Zero-config graphql query generation 🎁",
     "main": "dist/index.js",
     "types": "dist/index.d.ts",
     "scripts": {
