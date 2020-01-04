@@ -51,6 +51,7 @@ dependencies:
     "@storybook/react": 5.2.8_fc9e8d5d9d9d4336af56148a3b48f158
     "@types/analytics-node": 3.1.1
     "@types/bcrypt": 3.0.0
+    "@types/dotenv": 8.2.0
     "@types/electron-devtools-installer": 2.2.0
     "@types/enzyme": 3.10.3
     "@types/enzyme-adapter-react-16": 1.0.5
@@ -121,7 +122,7 @@ dependencies:
     react-svg-loader: 3.0.3
     react-test-renderer: 16.12.0_react@16.12.0
     react-typist: 2.0.5_react-dom@16.12.0+react@16.12.0
-    redo-nexus-prisma: 0.6.1-9_3d439f4e0f24d46582a80975993b2eea
+    redo-nexus-prisma: 0.6.2-next.3-1_3d439f4e0f24d46582a80975993b2eea
     redux: 4.0.4
     serverless: 1.60.1
     serverless-dotenv-plugin: 2.1.1
@@ -4071,6 +4072,13 @@ packages:
         dev: false
         resolution:
             integrity: sha512-ftQl3DtBvqHl9L16tpqqzA4YzCSXZfi7g8cQceTz5rOlYtk/IZbFjAv3mLOQlNIgOaylCQWQoBdDQHPgEBJPHg==
+    /@types/dotenv/8.2.0:
+        dependencies:
+            dotenv: 8.2.0
+        deprecated: "This is a stub types definition. dotenv provides its own type definitions, so you do not need this installed."
+        dev: false
+        resolution:
+            integrity: sha512-ylSC9GhfRH7m1EUXBXofhgx4lUWmFeQDINW5oLuS+gxWdfUeW4zJdeVTYVkexEW+e2VUvlZR2kGnGGipAWR7kw==
     /@types/electron-devtools-installer/2.2.0:
         dev: false
         resolution:
@@ -15282,7 +15290,7 @@ packages:
             node: ">=0.10.0"
         resolution:
             integrity: sha1-z5Fqsf1fHxbfsggi3W7H9zDCr94=
-    /redo-nexus-prisma/0.6.1-9_3d439f4e0f24d46582a80975993b2eea:
+    /redo-nexus-prisma/0.6.2-next.3-1_3d439f4e0f24d46582a80975993b2eea:
         dependencies:
             "@prisma/photon": 2.0.0-preview017.2_prisma2@2.0.0-preview017.2
             camelcase: 5.3.1
@@ -15295,7 +15303,7 @@ packages:
             "@prisma/photon": ^2.0.0-alpha.351
             graphql: ^14.5.0
         resolution:
-            integrity: sha512-GirBfkKv8vTRafW8WEmGERXUMPMARNMYaeEG1flILtZXPDlZ1QF89mx9try3PNe22qDSfc/ZzD7fTJYXcMdbcQ==
+            integrity: sha512-3cCsBoCIXy11dGJfuCF3oIAdUuYoJgJQKfZ2kaVzQPxRV5kpeZS+ADna4bgUzRw/vqKJvF6+D9sWtwiob6ejZg==
     /redux/4.0.4:
         dependencies:
             loose-envify: 1.4.0
@@ -18673,6 +18681,7 @@ packages:
             "@material-ui/core": 4.8.2_react-dom@16.12.0+react@16.12.0
             "@material-ui/styles": 4.8.2_react-dom@16.12.0+react@16.12.0
             "@medv/finder": 1.1.2
+            "@types/dotenv": 8.2.0
             "@types/electron-devtools-installer": 2.2.0
             "@types/fs-extra": 8.0.1
             "@types/node": 12.11.1
@@ -18702,7 +18711,7 @@ packages:
         dev: false
         name: "@rush-temp/redo"
         resolution:
-            integrity: sha512-2f8gyGnkhMVe3+ythoumtao8ZZ/4yhpf8YbJOk8hXhQdNVLnb/Fbvr2TxQ/C071D1Co6i2WstcEHsYzFuFumgA==
+            integrity: sha512-msBrY6kHGTZcl8l2QiKDWAIo3PuqCthp1kfXa0UFhUrab9x97n6AI3EdPi19k8wrgU1r8NbLTXXxM8w3Y5+WnQ==
             tarball: "file:projects/redo.tgz"
         version: 0.0.0
     "file:projects/server.tgz_webpack@4.41.5":
@@ -18730,7 +18739,7 @@ packages:
             jsonwebtoken: 8.5.1
             nexus: 0.12.0-rc.5_graphql@14.5.8
             prisma2: 2.0.0-preview017.2
-            redo-nexus-prisma: 0.6.1-9_3d439f4e0f24d46582a80975993b2eea
+            redo-nexus-prisma: 0.6.2-next.3-1_3d439f4e0f24d46582a80975993b2eea
             serverless: 1.60.1
             serverless-dotenv-plugin: 2.1.1
             serverless-hooks-plugin: 1.1.0
@@ -18746,7 +18755,7 @@ packages:
         peerDependencies:
             webpack: "*"
         resolution:
-            integrity: sha512-PhOH0e/K+JdaUog6CiS9yqeEfk4WkevKvxUyM3sl6poOj+8d0/Pu8YYa0uCZyKA3TzP/133XrfhQ3rdGR/y5gQ==
+            integrity: sha512-J2Qu0k+adTwRk9CJzE2MDI128S7rCRAnZSIdRTet8hxWZamYYKmr8djP2Up9VElJfPDWt2wY0nbwVR+Asl8bVw==
             tarball: "file:projects/server.tgz"
         version: 0.0.0
     "file:projects/statelessly.tgz_@babel+core@7.7.7":
@@ -18897,6 +18906,7 @@ specifiers:
     "@storybook/react": 5.2.8
     "@types/analytics-node": 3.1.1
     "@types/bcrypt": 3.0.0
+    "@types/dotenv": 8.2.0
     "@types/electron-devtools-installer": 2.2.0
     "@types/enzyme": 3.10.3
     "@types/enzyme-adapter-react-16": 1.0.5
@@ -18967,7 +18977,7 @@ specifiers:
     react-svg-loader: 3.0.3
     react-test-renderer: 16.12.0
     react-typist: 2.0.5
-    redo-nexus-prisma: 0.6.1-9
+    redo-nexus-prisma: 0.6.2-next.3-1
     redux: 4.0.4
     serverless: 1.60.1
     serverless-dotenv-plugin: 2.1.1
