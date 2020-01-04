@@ -1,5 +1,6 @@
 import "dotenv/config"
 import { app, BrowserWindow, screen } from "electron"
+import { isDev } from "@re-do/utils"
 
 // import electronDevtoolsInstaller, {
 //     REACT_DEVELOPER_TOOLS,
@@ -7,8 +8,6 @@ import { app, BrowserWindow, screen } from "electron"
 // } from "electron-devtools-installer"
 
 let mainWindow: BrowserWindow | null
-
-const isDev = process.env.NODE_ENV === "development"
 
 const installExtensions = () => {
     // const extensions = {
@@ -36,21 +35,18 @@ const createWindow = async () => {
             contextIsolation: false
         },
         width,
-        height,
-        show: false
-    })
-    // Waiting until devtools is open to show the window
-    // avoids an issue that causes Apollo dev tools not to load
-    mainWindow.webContents.on("devtools-opened", () => {
-        mainWindow!.show()
+        height
     })
     mainWindow.on("closed", () => {
         mainWindow = null
     })
+    if (isDev()) {
+        mainWindow.webContents.openDevTools()
+    }
     await mainWindow.loadURL(
-        isDev ? `http://localhost:8080/` : `file://${__dirname}/index.html`
+        isDev() ? `http://localhost:8080/` : `file://${__dirname}/index.html`
     )
-    mainWindow.webContents.openDevTools()
+    mainWindow.show()
 }
 
 app.on("ready", async () => {

@@ -12,15 +12,17 @@
         "devServer": "NODE_ENV=development webpack-dev-server --config webpack.devServer.config.ts --progress --colors",
         "electron": "NODE_ENV=development electron --remote-debugging-port=9223 ./dist/main.js",
         "clean": "rm -rf dist && mkdir dist",
-        "dist": "rm -rf builds && electron-builder --macos --windows --linux"
+        "pack": "rm -rf release && electron-builder --linux --dir"
     },
     "build": {
         "appId": "com.redo.app",
-        "productName": "redo",
         "directories": {
             "buildResources": "resources",
-            "output": "builds"
+            "output": "release"
         },
+        "files": [
+            "dist/"
+        ],
         "mac": {
             "category": "public.app-category.developer-tools",
             "target": "zip"
@@ -57,6 +59,7 @@
         "@types/electron-devtools-installer": "2.2.0",
         "@types/fs-extra": "8.0.1",
         "@types/node": "12.11.1",
+        "@types/dotenv": "8.2.0",
         "@types/puppeteer": "1.20.2",
         "@types/react": "16.9.17",
         "@types/react-dom": "16.9.4",
