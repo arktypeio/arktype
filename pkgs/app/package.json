@@ -1,35 +1,28 @@
 {
-    "name": "@re-do/app",
+    "name": "redo",
     "description": "The Redo app",
-    "author": "Redo",
+    "author": "redo.qa",
     "version": "0.0.1",
+    "private": true,
     "main": "dist/main.js",
     "scripts": {
         "build": "NODE_ENV=production && npm run clean && webpack",
         "start": "NODE_ENV=development && npm run clean && npm run devBuild && npm run devServer",
         "devBuild": "NODE_ENV=development webpack",
-        "devServer": "NODE_ENV=development && webpack-dev-server --config webpack.devServer.config.ts --progress --colors",
-        "electron": "NODE_ENV=production electron --remote-debugging-port=9223 ./dist/main.js",
+        "devServer": "NODE_ENV=development webpack-dev-server --config webpack.devServer.config.ts --progress --colors",
+        "electron": "NODE_ENV=development electron --remote-debugging-port=9223 ./dist/main.js",
         "clean": "rm -rf dist && mkdir dist",
-        "dist": "npm run build && electron-builder -mwl"
+        "dist": "rm -rf builds && electron-builder --macos --windows --linux"
     },
     "build": {
         "appId": "com.redo.app",
-        "files": [
-            "./dist/**/*",
-            "./dist/injected.js",
-            "!./dist/mac",
-            "!./dist/linux-unpacked",
-            "!./dist/win-unpacked"
-        ],
-        "linux": {
-            "target": "zip"
+        "productName": "redo",
+        "directories": {
+            "buildResources": "resources",
+            "output": "builds"
         },
         "mac": {
-            "target": "zip",
-            "category": "public.app-category.developer-tools"
-        },
-        "win": {
+            "category": "public.app-category.developer-tools",
             "target": "zip"
         }
     },
