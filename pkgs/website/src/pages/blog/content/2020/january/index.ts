@@ -37,7 +37,7 @@ export const january2020Updates: UpdateData[] = [
         }
     },
     {
-        date: new Date(2020, 0, 5),
+        date: new Date(2020, 0, 6),
         goals: {
             "Electron installer": false,
             "User queries": false
