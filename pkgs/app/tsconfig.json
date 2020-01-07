@@ -3,6 +3,7 @@
     "compilerOptions": {
         "baseUrl": "src",
         "outDir": "dist",
+        "declaration": false,
         "paths": {
             "*": ["*"],
             "state": ["renderer/state"],

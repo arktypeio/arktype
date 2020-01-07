@@ -7,7 +7,7 @@ be undefined if we use that style of import.*/
 import p from "puppeteer"
 import { remote, Rectangle } from "electron"
 import { isDeepStrictEqual } from "util"
-import { join } from "path"
+import { join, resolve } from "path"
 import { homedir } from "os"
 import { createHandle } from "react-statelessly"
 import {
@@ -15,6 +15,7 @@ import {
     TagCreateWithoutTestCreateOnlyInput as TagInput
 } from "@re-do/model"
 import { store } from "renderer/common"
+import { isDev } from "@re-do/utils"
 
 const BROWSER_WINDOW_TITLEBAR_SIZE = 35
 const DEFAULT_LEARNER_WIDTH = 300
@@ -92,7 +93,10 @@ const start = async () => {
     })
     const page = (await browser.pages())[0]
     await page.exposeFunction("notify", notify)
-    const browserJs = readFileSync("dist/injected.js", "utf-8")
+    const browserJs = readFileSync(
+        resolve(isDev() ? "dist" : __dirname, "injected.js"),
+        "utf-8"
+    )
     await page.evaluateOnNewDocument(browserJs)
     await page.goto("https://google.com")
     browser.on("disconnected", () => {

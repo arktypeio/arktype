@@ -10,11 +10,14 @@ const mainConfig = makeConfig({
     tsconfig
 })
 
-const rendererConfig = makeConfig({
-    base: "renderer",
-    entry: resolve(__dirname, "src", "renderer", "index.tsx"),
-    tsconfig
-})
+const rendererConfig = makeConfig(
+    {
+        base: "renderer",
+        entry: resolve(__dirname, "src", "renderer", "index.tsx"),
+        tsconfig
+    },
+    [{ output: { publicPath: "." } }]
+)
 
 const injectedConfig = makeConfig({
     base: "injected",

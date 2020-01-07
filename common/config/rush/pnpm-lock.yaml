@@ -66,6 +66,7 @@ dependencies:
     "@types/react-redux": 7.1.5
     "@types/react-router-dom": 5.1.3
     "@types/react-typist": 2.0.1
+    "@types/source-map-support": 0.5.0
     "@types/storybook__addon-storyshots": 5.1.2_fc9e8d5d9d9d4336af56148a3b48f158
     "@types/uuid": 3.4.5
     "@types/validator": 12.0.1
@@ -129,6 +130,7 @@ dependencies:
     serverless-hooks-plugin: 1.1.0
     serverless-offline: 5.12.1_serverless@1.60.1
     serverless-webpack: 5.3.1_webpack@4.41.5
+    source-map-support: 0.5.16
     style-loader: 1.0.0_webpack@4.41.5
     ts-loader: 6.2.0_typescript@3.7.4
     ts-node: 8.5.4_typescript@3.7.4
@@ -4066,6 +4068,12 @@ packages:
         dev: false
         resolution:
             integrity: sha512-Q1y515GcOdTHgagaVFhHnIFQ38ygs/kmxdNpvpou+raI9UO3YZcHDngBSYKQklcKlvA7iuQlmIKbzvmxcOE9CQ==
+    /@types/dotenv-webpack/1.7.0:
+        dependencies:
+            "@types/webpack": 4.39.3
+        dev: false
+        resolution:
+            integrity: sha512-/dXQdLSma6nYkeTiO571+IUEPY0hs3uwJfsLVvj4v/6/CqBUm/4TNiGHpqveIllQ0M0YVB67sdl9Fmgr2riBRQ==
     /@types/dotenv/6.1.1:
         dependencies:
             "@types/node": 12.11.1
@@ -4397,6 +4405,12 @@ packages:
         dev: false
         resolution:
             integrity: sha512-K5K+yml8LTo9bWJI/rECfIPrGgxdpeNbj+d53lwN4QjW1MCwlkhUms+gtdzigTeUyBr09+u8BwOIY3MXvHdcsA==
+    /@types/source-map-support/0.5.0:
+        dependencies:
+            "@types/node": 12.11.1
+        dev: false
+        resolution:
+            integrity: sha512-OrnAz5K5dXDgMdeRRoXIjDAvkodQ9ESvVJCyzrhzUJKmCkXgmYx/KLUBcVFe5eS4FiohfcY7YPxsdkmSwJz9wA==
     /@types/stack-utils/1.0.1:
         dev: false
         resolution:
@@ -18682,14 +18696,17 @@ packages:
             "@material-ui/styles": 4.8.2_react-dom@16.12.0+react@16.12.0
             "@medv/finder": 1.1.2
             "@types/dotenv": 8.2.0
+            "@types/dotenv-webpack": 1.7.0
             "@types/electron-devtools-installer": 2.2.0
             "@types/fs-extra": 8.0.1
             "@types/node": 12.11.1
             "@types/puppeteer": 1.20.2
             "@types/react": 16.9.17
             "@types/react-dom": 16.9.4
+            "@types/source-map-support": 0.5.0
             core-js: 3.6.1
             dotenv: 8.2.0
+            dotenv-webpack: 1.7.0_webpack@4.41.5
             electron: 6.0.12
             electron-builder: 21.2.0
             framer-motion: 1.7.0_react-dom@16.12.0+react@16.12.0
@@ -18700,6 +18717,7 @@ packages:
             react: 16.12.0
             react-dom: 16.12.0_react@16.12.0
             react-hot-loader: 4.12.18_498b91122a17be5f366b66e7e4c66b66
+            source-map-support: 0.5.16
             ts-node: 8.5.4_typescript@3.7.4
             tsconfig-paths: 3.9.0
             tsconfig-paths-webpack-plugin: 3.2.0
@@ -18711,7 +18729,7 @@ packages:
         dev: false
         name: "@rush-temp/redo"
         resolution:
-            integrity: sha512-msBrY6kHGTZcl8l2QiKDWAIo3PuqCthp1kfXa0UFhUrab9x97n6AI3EdPi19k8wrgU1r8NbLTXXxM8w3Y5+WnQ==
+            integrity: sha512-Ua4aVHE1TVRtgno9o0nvXtQWQTqEZT/vTo6dUpW71o/hOYBkYOVqY43PDccDSxRvRjftYmCyondtDYejMUlZmQ==
             tarball: "file:projects/redo.tgz"
         version: 0.0.0
     "file:projects/server.tgz_webpack@4.41.5":
@@ -18921,6 +18939,7 @@ specifiers:
     "@types/react-redux": 7.1.5
     "@types/react-router-dom": 5.1.3
     "@types/react-typist": 2.0.1
+    "@types/source-map-support": 0.5.0
     "@types/storybook__addon-storyshots": 5.1.2
     "@types/uuid": 3.4.5
     "@types/validator": 12.0.1
@@ -18984,6 +19003,7 @@ specifiers:
     serverless-hooks-plugin: 1.1.0
     serverless-offline: 5.12.1
     serverless-webpack: 5.3.1
+    source-map-support: 0.5.16
     style-loader: 1.0.0
     ts-loader: 6.2.0
     ts-node: 8.5.4

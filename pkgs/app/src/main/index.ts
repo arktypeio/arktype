@@ -1,6 +1,7 @@
 import "dotenv/config"
 import { app, BrowserWindow, screen } from "electron"
 import { isDev } from "@re-do/utils"
+import sourceMapSupport from "source-map-support"
 
 // import electronDevtoolsInstaller, {
 //     REACT_DEVELOPER_TOOLS,
@@ -43,6 +44,7 @@ const createWindow = async () => {
     if (isDev()) {
         mainWindow.webContents.openDevTools()
     }
+    sourceMapSupport.install()
     await mainWindow.loadURL(
         isDev() ? `http://localhost:8080/` : `file://${__dirname}/index.html`
     )

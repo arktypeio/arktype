@@ -6,13 +6,13 @@
     "private": true,
     "main": "dist/main.js",
     "scripts": {
-        "build": "NODE_ENV=production && npm run clean && webpack",
+        "build": "NODE_ENV=production && npm run clean && webpack && cp .env dist",
         "start": "NODE_ENV=development && npm run clean && npm run devBuild && npm run devServer",
         "devBuild": "NODE_ENV=development webpack",
         "devServer": "NODE_ENV=development webpack-dev-server --config webpack.devServer.config.ts --progress --colors",
         "electron": "NODE_ENV=development electron --remote-debugging-port=9223 ./dist/main.js",
         "clean": "rm -rf dist && mkdir dist",
-        "pack": "rm -rf release && electron-builder --linux --dir"
+        "pack": "rm -rf release && electron-builder --linux --macos --windows"
     },
     "build": {
         "appId": "com.redo.app",
@@ -21,7 +21,7 @@
             "output": "release"
         },
         "files": [
-            "dist/"
+            "dist"
         ],
         "mac": {
             "category": "public.app-category.developer-tools",
@@ -48,6 +48,7 @@
         "react": "16.12.0",
         "react-dom": "16.12.0",
         "react-statelessly": "0.0.1",
+        "source-map-support": "0.5.16",
         "tsconfig-paths": "3.9.0",
         "typeface-ubuntu": "0.0.65"
     },
@@ -56,13 +57,14 @@
         "@re-do/bundle": "0.0.1",
         "@re-do/components": "0.0.1",
         "@re-do/recommended": "0.0.1",
+        "@types/dotenv": "8.2.0",
         "@types/electron-devtools-installer": "2.2.0",
         "@types/fs-extra": "8.0.1",
         "@types/node": "12.11.1",
-        "@types/dotenv": "8.2.0",
         "@types/puppeteer": "1.20.2",
         "@types/react": "16.9.17",
         "@types/react-dom": "16.9.4",
+        "@types/source-map-support": "0.5.0",
         "babel-preset-redo": "0.0.1",
         "electron": "6.0.12",
         "electron-builder": "21.2.0",
