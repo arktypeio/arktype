@@ -1,50 +1,41 @@
 import "dotenv/config"
-import { app, BrowserWindow, screen } from "electron"
+import { app, BrowserWindow } from "electron"
 import { isDev } from "@re-do/utils"
-import sourceMapSupport from "source-map-support"
-
-// import electronDevtoolsInstaller, {
-//     REACT_DEVELOPER_TOOLS,
-//     APOLLO_DEVELOPER_TOOLS
-// } from "electron-devtools-installer"
+import electronDevtoolsInstaller, {
+    REACT_DEVELOPER_TOOLS,
+    APOLLO_DEVELOPER_TOOLS
+} from "electron-devtools-installer"
+import { autoUpdater } from "electron-updater"
 
 let mainWindow: BrowserWindow | null
 
-const installExtensions = () => {
-    // const extensions = {
-    //     REACT_DEVELOPER_TOOLS,
-    //     APOLLO_DEVELOPER_TOOLS
-    // }
-    // Object.entries(extensions).forEach(async extension => {
-    //     const [name, reference] = extension
-    //     try {
-    //         console.log(`Installing ${name}...`)
-    //         await electronDevtoolsInstaller(reference)
-    //     } catch (e) {
-    //         console.log(`Failed to install ${name}:`)
-    //         console.log(e)
-    //     }
-    // })
+const installExtensions = async () => {
+    const extensions = {
+        REACT_DEVELOPER_TOOLS,
+        APOLLO_DEVELOPER_TOOLS
+    }
+    for (const [name, reference] of Object.entries(extensions)) {
+        try {
+            console.log(`Installing ${name}...`)
+            await electronDevtoolsInstaller(reference)
+        } catch (e) {
+            console.log(`Failed to install ${name}:`)
+            console.log(e)
+        }
+    }
 }
 
 const createWindow = async () => {
-    const { width, height } = screen.getPrimaryDisplay().workAreaSize
     mainWindow = new BrowserWindow({
         webPreferences: {
             webSecurity: false,
             nodeIntegration: true,
             contextIsolation: false
-        },
-        width,
-        height
+        }
     })
     mainWindow.on("closed", () => {
         mainWindow = null
     })
-    if (isDev()) {
-        mainWindow.webContents.openDevTools()
-    }
-    sourceMapSupport.install()
     await mainWindow.loadURL(
         isDev() ? `http://localhost:8080/` : `file://${__dirname}/index.html`
     )
@@ -52,7 +43,11 @@ const createWindow = async () => {
 }
 
 app.on("ready", async () => {
-    await installExtensions()
+    if (isDev()) {
+        await installExtensions()
+    } else {
+        autoUpdater.checkForUpdatesAndNotify()
+    }
     createWindow()
 })
 

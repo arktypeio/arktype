@@ -66,7 +66,6 @@ dependencies:
     "@types/react-redux": 7.1.5
     "@types/react-router-dom": 5.1.3
     "@types/react-typist": 2.0.1
-    "@types/source-map-support": 0.5.0
     "@types/storybook__addon-storyshots": 5.1.2_fc9e8d5d9d9d4336af56148a3b48f158
     "@types/uuid": 3.4.5
     "@types/validator": 12.0.1
@@ -91,6 +90,8 @@ dependencies:
     dotenv: 8.2.0
     electron: 6.0.12
     electron-builder: 21.2.0
+    electron-devtools-installer: 2.2.4
+    electron-updater: 4.2.0
     enzyme: 3.10.0
     enzyme-adapter-react-16: 1.15.1_c144b6a04efe5c1f760bc30c8dcf5b0f
     execa: 4.0.0
@@ -130,7 +131,6 @@ dependencies:
     serverless-hooks-plugin: 1.1.0
     serverless-offline: 5.12.1_serverless@1.60.1
     serverless-webpack: 5.3.1_webpack@4.41.5
-    source-map-support: 0.5.16
     style-loader: 1.0.0_webpack@4.41.5
     ts-loader: 6.2.0_typescript@3.7.4
     ts-node: 8.5.4_typescript@3.7.4
@@ -160,6 +160,11 @@ packages:
         dev: false
         resolution:
             integrity: sha512-GLyWIFBbGvpKPGo55JyRZAo4lVbnBiD52cKlw/0Vt+wnmKvWJkpZvsjVoaIolyBXDeAQKSicRtqFNPem9w0WYA==
+    /7zip/0.0.6:
+        dev: false
+        hasBin: true
+        resolution:
+            integrity: sha1-nK+xca+CMpSQNTtIFvAzR6oVCjA=
     /@apollo/client/3.0.0-beta.16_graphql@14.5.8+react@16.12.0:
         dependencies:
             "@types/zen-observable": 0.8.0
@@ -4394,6 +4399,10 @@ packages:
         dev: false
         resolution:
             integrity: sha1-a9p9uGU/piZD9e5p6facEaOS46Y=
+    /@types/semver/6.2.0:
+        dev: false
+        resolution:
+            integrity: sha512-1OzrNb4RuAzIT7wHSsgZRlMBlNsJl+do6UblR7JMW4oB7bbR+uBEYtUh7gEc/jM84GGilh68lSOokyM/zNUlBA==
     /@types/serve-static/1.13.3:
         dependencies:
             "@types/express-serve-static-core": 4.17.1
@@ -6310,6 +6319,15 @@ packages:
             node: ">=8.0.0"
         resolution:
             integrity: sha512-CSOdsYqf4RXIHh1HANPbrZHlZ9JQJXSuDDloblZPcWQVN62inyYoTQuSmY3KrgefME2Sv3Kn2MxHvbGQHRf8Iw==
+    /builder-util-runtime/8.4.0:
+        dependencies:
+            debug: 4.1.1
+            sax: 1.2.4
+        dev: false
+        engines:
+            node: ">=8.0.0"
+        resolution:
+            integrity: sha512-CJB/eKfPf2vHrkmirF5eicVnbDCkMBbwd5tRYlTlgud16zFeqD7QmrVUAOEXdnsrcNkiLg9dbuUsQKtl/AwsYQ==
     /builder-util/21.2.0:
         dependencies:
             7zip-bin: 5.0.3
@@ -7366,6 +7384,10 @@ packages:
             node: ">= 8"
         resolution:
             integrity: sha512-u7v4o84SwFpD32Z8IIcPZ6z1/ie24O6RU3RbtL5Y316l3KuHVPx9ItBgWQ6VlfAFnRnTtMUrsQ9MUUTuEZjogg==
+    /cross-unzip/0.0.2:
+        dev: false
+        resolution:
+            integrity: sha1-UYO8R6CVWb78+YzEZXlkmZNZNy8=
     /crypt/0.0.2:
         dev: false
         resolution:
@@ -8176,6 +8198,15 @@ packages:
         hasBin: true
         resolution:
             integrity: sha512-x8EXrqFbAb2L3N22YlGar3dGh8vwptbB3ovo3OF6K7NTpcsmM2zEoJv7GhFyX73rNzSG2HaWpXwGAtOp2JWiEw==
+    /electron-devtools-installer/2.2.4:
+        dependencies:
+            7zip: 0.0.6
+            cross-unzip: 0.0.2
+            rimraf: 2.7.1
+            semver: 5.7.1
+        dev: false
+        resolution:
+            integrity: sha512-b5kcM3hmUqn64+RUcHjjr8ZMpHS2WJ5YO0pnG9+P/RTdx46of/JrEjuciHWux6pE+On6ynWhHJF53j/EDJN0PA==
     /electron-download/4.1.1:
         dependencies:
             debug: 3.2.6
@@ -8209,6 +8240,19 @@ packages:
         dev: false
         resolution:
             integrity: sha512-Tc8JQEfGQ1MzfSzI/bTlSr7btJv/FFO7Yh6tanqVmIWOuNCu6/D1MilIEgLtmWqIrsv+o4IjpLAhgMBr/ncNAA==
+    /electron-updater/4.2.0:
+        dependencies:
+            "@types/semver": 6.2.0
+            builder-util-runtime: 8.4.0
+            fs-extra: 8.1.0
+            js-yaml: 3.13.1
+            lazy-val: 1.0.4
+            lodash.isequal: 4.5.0
+            pako: 1.0.10
+            semver: 6.3.0
+        dev: false
+        resolution:
+            integrity: sha512-GuS3g7HDh17x/SaFjxjswlWUaKHczksYkV2Xc5CKj/bZH0YCvTSHtOmnBAdAmCk99u/71p3zP8f0jIqDfGcjww==
     /electron/6.0.12:
         dependencies:
             "@types/node": 10.17.11
@@ -18709,6 +18753,8 @@ packages:
             dotenv-webpack: 1.7.0_webpack@4.41.5
             electron: 6.0.12
             electron-builder: 21.2.0
+            electron-devtools-installer: 2.2.4
+            electron-updater: 4.2.0
             framer-motion: 1.7.0_react-dom@16.12.0+react@16.12.0
             fs-extra: 8.1.0
             graphql: 14.5.8
@@ -18729,7 +18775,7 @@ packages:
         dev: false
         name: "@rush-temp/redo"
         resolution:
-            integrity: sha512-Ua4aVHE1TVRtgno9o0nvXtQWQTqEZT/vTo6dUpW71o/hOYBkYOVqY43PDccDSxRvRjftYmCyondtDYejMUlZmQ==
+            integrity: sha512-Gk8CGzZ9OrEHo0o6CbGyhlJtFxiASSjf9j6gy5jzxAWI3VyGK0PCJr2wLvSEWSDo0W91y6ctBXtP4muWg4T+5Q==
             tarball: "file:projects/redo.tgz"
         version: 0.0.0
     "file:projects/server.tgz_webpack@4.41.5":
@@ -18939,7 +18985,6 @@ specifiers:
     "@types/react-redux": 7.1.5
     "@types/react-router-dom": 5.1.3
     "@types/react-typist": 2.0.1
-    "@types/source-map-support": 0.5.0
     "@types/storybook__addon-storyshots": 5.1.2
     "@types/uuid": 3.4.5
     "@types/validator": 12.0.1
@@ -18964,6 +19009,8 @@ specifiers:
     dotenv: 8.2.0
     electron: 6.0.12
     electron-builder: 21.2.0
+    electron-devtools-installer: 2.2.4
+    electron-updater: 4.2.0
     enzyme: 3.10.0
     enzyme-adapter-react-16: 1.15.1
     execa: 4.0.0
@@ -19003,7 +19050,6 @@ specifiers:
     serverless-hooks-plugin: 1.1.0
     serverless-offline: 5.12.1
     serverless-webpack: 5.3.1
-    source-map-support: 0.5.16
     style-loader: 1.0.0
     ts-loader: 6.2.0
     ts-node: 8.5.4
