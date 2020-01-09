@@ -49,5 +49,12 @@ export const january2020Updates: UpdateData[] = [
             "Auto-updates": false,
             "User queries": false
         }
+    },
+    {
+        date: new Date(2020, 0, 9),
+        goals: {
+            "Auto-updates": false,
+            "User queries": false
+        }
     }
 ]
