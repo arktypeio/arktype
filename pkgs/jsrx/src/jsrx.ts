@@ -12,27 +12,41 @@ type JsrxScripts = {
 }
 
 type JsrxOptions = {
-    // Normally this is passed via the cli, but this will take precedence if passed
-    scriptName?: string
     autoGenerate?: boolean
     excludeOthers?: boolean
+    indentSpaces?: number
+    // Normally this is passed via the cli, but this will take precedence if passed
+    scriptName?: string
     envFiles?: {
         dev?: string
         prod?: string
     }
 }
 
-const addDefaults = (config: JsrxScripts): Required<JsrxScripts> => ({
+const addDefaultConfig = (config: JsrxScripts): Required<JsrxScripts> => ({
     dev: {},
     prod: {},
     shared: {},
     ...config
 })
 
+const addDefaultOptions = (options: JsrxOptions) => ({
+    autoGenerate: true,
+    excludeOthers: false,
+    indentSpaces: 4,
+    ...options
+})
+
 export const jsrx = (config: JsrxScripts, options: JsrxOptions = {}) => {
-    const configWithDefaults = addDefaults(config)
+    const configWithDefaults = addDefaultConfig(config)
     const { dev, prod, shared } = configWithDefaults
-    const { scriptName, autoGenerate, excludeOthers, envFiles } = options
+    const {
+        scriptName,
+        autoGenerate,
+        excludeOthers,
+        indentSpaces,
+        envFiles
+    } = addDefaultOptions(options)
     const nameArg = process.argv.length > 2 ? process.argv[2] : null
     const name = (scriptName as string | undefined) ?? nameArg
     if (!name) {
@@ -52,12 +66,14 @@ export const jsrx = (config: JsrxScripts, options: JsrxOptions = {}) => {
         )
     }
     const allScripts = { ...devScripts, ...prodScripts }
-    if (name === "jsrxGen") {
-        updatePackageJson(allScripts, excludeOthers)
-        return
-    } else {
-        validateScriptName(name, configWithDefaults)
+
+    if (autoGenerate || name === "jsrxGen") {
+        updatePackageJson(allScripts, excludeOthers, indentSpaces)
+        if (name === "jsrxGen") {
+            return
+        }
     }
+    validateScriptName(name, configWithDefaults)
     if (name in devScripts) {
         process.env.NODE_ENV = "development"
         if (envFiles?.dev) {
@@ -74,9 +90,6 @@ export const jsrx = (config: JsrxScripts, options: JsrxOptions = {}) => {
         throw new Error(
             `Couldn't find a script named '${name}' in your jsrx config. Try running 'npx jsrx jsrxGen' to regenerate your scripts.`
         )
-    }
-    if (autoGenerate) {
-        updatePackageJson({ ...devScripts, ...prodScripts }, excludeOthers)
     }
     runScript()
 }
@@ -104,7 +117,8 @@ const validateScriptName = (
 
 const updatePackageJson = (
     scripts: ScriptMap,
-    excludeOthers: boolean | undefined
+    excludeOthers: boolean,
+    indentSpaces: number
 ) => {
     const jsrxScripts = Object.fromEntries(
         Object.keys(scripts).map(name => [name, `jsrx ${name}`])
@@ -121,6 +135,6 @@ const updatePackageJson = (
                 jsrxGen: "jsrx jsrxGen"
             }
         },
-        { spaces: 4 }
+        { spaces: indentSpaces }
     )
 }

@@ -1,7 +1,11 @@
 import React, { useEffect } from "react"
 import { Page } from "state"
 import { store } from "renderer/common"
-import { Home, Learner, Detail, Landing, Results } from "."
+import { Home } from "./home"
+import { Learner } from "./learner"
+import { Landing } from "./landing"
+import { Detail } from "./detail"
+import { Results } from "./results"
 
 type NameToPage = { [_ in NonNullable<Page>]: JSX.Element }
 

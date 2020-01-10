@@ -1,3 +1,5 @@
+import { isDev } from "@re-do/utils"
+
 module.exports = {
-    presets: [["redo", { hot: true }]]
+    presets: [["redo", { hot: isDev() }]]
 }
