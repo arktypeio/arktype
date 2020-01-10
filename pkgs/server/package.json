@@ -35,7 +35,7 @@
         "isomorphic-ws": "4.0.1",
         "jsonwebtoken": "8.5.1",
         "nexus": "0.12.0-rc.5",
-        "redo-nexus-prisma": "0.6.1-9"
+        "redo-nexus-prisma": "0.6.2-next.3-1"
     },
     "devDependencies": {
         "@re-do/recommended": "0.0.1",

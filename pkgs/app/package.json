@@ -1,36 +1,37 @@
 {
-    "name": "@re-do/app",
+    "name": "redo",
     "description": "The Redo app",
-    "author": "Redo",
-    "version": "0.0.1",
+    "author": "redo.qa",
+    "version": "0.0.7",
+    "private": true,
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/redo-qa/redo.git",
+        "directory": "pkgs/app"
+    },
     "main": "dist/main.js",
     "scripts": {
-        "build": "NODE_ENV=production && npm run clean && webpack",
-        "start": "NODE_ENV=development && npm run clean && npm run devBuild && npm run devServer",
-        "devBuild": "NODE_ENV=development webpack",
-        "devServer": "NODE_ENV=development && webpack-dev-server --config webpack.devServer.config.ts --progress --colors",
-        "electron": "NODE_ENV=production electron --remote-debugging-port=9223 ./dist/main.js",
-        "clean": "rm -rf dist && mkdir dist",
-        "dist": "npm run build && electron-builder -mwl"
+        "start": "jsrx start",
+        "electron": "jsrx electron",
+        "build": "jsrx build",
+        "publish": "jsrx publish",
+        "publishLinux": "jsrx publishLinux",
+        "publishMac": "jsrx publishMac",
+        "publishWindows": "jsrx publishWindows",
+        "buildProd": "jsrx buildProd",
+        "jsrxGen": "jsrx jsrxGen"
     },
     "build": {
         "appId": "com.redo.app",
+        "directories": {
+            "buildResources": "resources",
+            "output": "release"
+        },
         "files": [
-            "./dist/**/*",
-            "./dist/injected.js",
-            "!./dist/mac",
-            "!./dist/linux-unpacked",
-            "!./dist/win-unpacked"
+            "dist"
         ],
-        "linux": {
-            "target": "zip"
-        },
         "mac": {
-            "target": "zip",
             "category": "public.app-category.developer-tools"
-        },
-        "win": {
-            "target": "zip"
         }
     },
     "dependencies": {
@@ -45,11 +46,12 @@
         "@re-do/utils": "0.0.1",
         "core-js": "3.6.1",
         "dotenv": "8.2.0",
+        "electron-updater": "4.2.0",
         "framer-motion": "1.7.0",
         "fs-extra": "8.1.0",
         "graphql": "14.5.8",
         "graphql-tag": "2.10.1",
-        "puppeteer": "1.20.0",
+        "puppeteer-core": "2.0.0",
         "react": "16.12.0",
         "react-dom": "16.12.0",
         "react-statelessly": "0.0.1",
@@ -61,15 +63,18 @@
         "@re-do/bundle": "0.0.1",
         "@re-do/components": "0.0.1",
         "@re-do/recommended": "0.0.1",
+        "@types/dotenv": "8.2.0",
         "@types/electron-devtools-installer": "2.2.0",
         "@types/fs-extra": "8.0.1",
         "@types/node": "12.11.1",
-        "@types/puppeteer": "1.20.2",
+        "@types/puppeteer-core": "2.0.0",
         "@types/react": "16.9.17",
         "@types/react-dom": "16.9.4",
         "babel-preset-redo": "0.0.1",
-        "electron": "6.0.12",
+        "electron": "7.1.2",
         "electron-builder": "21.2.0",
+        "electron-devtools-installer": "2.2.4",
+        "jsrx": "0.0.1",
         "react-hot-loader": "4.12.18",
         "ts-node": "8.5.4",
         "tsconfig-paths-webpack-plugin": "3.2.0",

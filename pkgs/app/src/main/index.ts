@@ -1,60 +1,53 @@
 import "dotenv/config"
-import { app, BrowserWindow, screen } from "electron"
-
-// import electronDevtoolsInstaller, {
-//     REACT_DEVELOPER_TOOLS,
-//     APOLLO_DEVELOPER_TOOLS
-// } from "electron-devtools-installer"
+import { app, BrowserWindow } from "electron"
+import { isDev } from "@re-do/utils"
+import electronDevtoolsInstaller, {
+    REACT_DEVELOPER_TOOLS,
+    APOLLO_DEVELOPER_TOOLS
+} from "electron-devtools-installer"
+import { autoUpdater } from "electron-updater"
 
 let mainWindow: BrowserWindow | null
 
-const isDev = process.env.NODE_ENV === "development"
-
-const installExtensions = () => {
-    // const extensions = {
-    //     REACT_DEVELOPER_TOOLS,
-    //     APOLLO_DEVELOPER_TOOLS
-    // }
-    // Object.entries(extensions).forEach(async extension => {
-    //     const [name, reference] = extension
-    //     try {
-    //         console.log(`Installing ${name}...`)
-    //         await electronDevtoolsInstaller(reference)
-    //     } catch (e) {
-    //         console.log(`Failed to install ${name}:`)
-    //         console.log(e)
-    //     }
-    // })
+const installExtensions = async () => {
+    const extensions = {
+        REACT_DEVELOPER_TOOLS,
+        APOLLO_DEVELOPER_TOOLS
+    }
+    for (const [name, reference] of Object.entries(extensions)) {
+        try {
+            console.log(`Installing ${name}...`)
+            await electronDevtoolsInstaller(reference)
+        } catch (e) {
+            console.log(`Failed to install ${name}:`)
+            console.log(e)
+        }
+    }
 }
 
 const createWindow = async () => {
-    const { width, height } = screen.getPrimaryDisplay().workAreaSize
     mainWindow = new BrowserWindow({
         webPreferences: {
             webSecurity: false,
             nodeIntegration: true,
             contextIsolation: false
-        },
-        width,
-        height,
-        show: false
-    })
-    // Waiting until devtools is open to show the window
-    // avoids an issue that causes Apollo dev tools not to load
-    mainWindow.webContents.on("devtools-opened", () => {
-        mainWindow!.show()
+        }
     })
     mainWindow.on("closed", () => {
         mainWindow = null
     })
     await mainWindow.loadURL(
-        isDev ? `http://localhost:8080/` : `file://${__dirname}/index.html`
+        isDev() ? `http://localhost:8080/` : `file://${__dirname}/index.html`
     )
-    mainWindow.webContents.openDevTools()
+    mainWindow.show()
 }
 
 app.on("ready", async () => {
-    await installExtensions()
+    if (isDev()) {
+        await installExtensions()
+    } else {
+        autoUpdater.checkForUpdatesAndNotify()
+    }
     createWindow()
 })
 
