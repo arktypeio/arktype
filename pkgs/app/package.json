@@ -2,7 +2,7 @@
     "name": "redo",
     "description": "The Redo app",
     "author": "redo.qa",
-    "version": "0.0.5",
+    "version": "0.0.7",
     "private": true,
     "repository": {
         "type": "git",
@@ -14,8 +14,10 @@
         "start": "jsrx start",
         "electron": "jsrx electron",
         "build": "jsrx build",
-        "pack": "jsrx pack",
         "publish": "jsrx publish",
+        "publishLinux": "jsrx publishLinux",
+        "publishMac": "jsrx publishMac",
+        "publishWindows": "jsrx publishWindows",
         "buildProd": "jsrx buildProd",
         "jsrxGen": "jsrx jsrxGen"
     },

@@ -6,6 +6,7 @@ const clean = "rm -rf dist && mkdir dist"
 type PlatformString = "linux" | "macos" | "windows"
 
 const publish = (platforms: PlatformString[]) => async () => {
+    await run("npm run buildProd")
     await run("rm -rf release")
     for (const platform of platforms) {
         try {
