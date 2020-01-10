@@ -11,7 +11,7 @@ describe("gqlize", () => {
         const mutations = gqlize({
             schema: gql(schemaContents)
         })
-        console.warn(mutations)
+        console.log(mutations)
         expect(mutations).toBeTruthy()
-    }, 9999999)
+    })
 })

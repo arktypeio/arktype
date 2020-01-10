@@ -32,46 +32,49 @@ const getConfig = ({ maxDepth, schema }: GqlizeArgs): GqlizeConfig => {
 
 export const gqlize = (args: GqlizeArgs) => {
     const config = getConfig(args)
-    return `${gqlizeMutations(config)}`
+    const gqlizedQueries = gqlizeBlock("Query", config)
+    const gqlizedMutations = gqlizeBlock("Mutation", config)
+    return gqlizedQueries + gqlizedMutations
 }
 
-const gqlizeMutations = (config: GqlizeConfig) => {
-    const mutationType = config.schema.definitions.find(
-        _ => _.kind === "ObjectTypeDefinition" && _.name.value === "Mutation"
-    ) as ObjectTypeDefinitionNode | undefined
-    return mutationType?.fields?.reduce(
-        (mutations, mutation) =>
-            mutations + gqlizeMutation({ config, mutation }) + "\n",
-        ""
+const gqlizeBlock = (name: "Query" | "Mutation", config: GqlizeConfig) => {
+    const operation = getObjectDefinition(name, config.schema)
+    return (
+        operation?.fields?.reduce(
+            (gqlized, field) =>
+                gqlized +
+                `${name.toLowerCase()} ${gqlizeOperation({
+                    config,
+                    operation: field
+                })}\n`,
+            ""
+        ) ?? ""
     )
 }
 
-const getInputObjectDefinition = (type: TypeNode, schema: DocumentNode) =>
-    (schema.definitions.find(
+const getInputObjectDefinition = (name: string, schema: DocumentNode) =>
+    schema.definitions.find(
         def =>
-            def.kind === "InputObjectTypeDefinition" &&
-            def.name.value === getTypeName(type)
-    ) as any) as InputObjectTypeDefinitionNode
+            def.kind === "InputObjectTypeDefinition" && def.name.value === name
+    ) as InputObjectTypeDefinitionNode
 
-const getObjectDefinition = (type: TypeNode, schema: DocumentNode) =>
-    (schema.definitions.find(
-        def =>
-            def.kind === "ObjectTypeDefinition" &&
-            def.name.value === getTypeName(type)
-    ) as any) as ObjectTypeDefinitionNode
+const getObjectDefinition = (name: string, schema: DocumentNode) =>
+    schema.definitions.find(
+        def => def.kind === "ObjectTypeDefinition" && def.name.value === name
+    ) as ObjectTypeDefinitionNode | undefined
 
-type GqlizeMutationArgs = {
-    mutation: FieldDefinitionNode
+type GqlizeOperationArgs = {
+    operation: FieldDefinitionNode
     config: GqlizeConfig
 }
 
-const gqlizeMutation = ({ mutation, config }: GqlizeMutationArgs) => {
-    const returnTypeName = getTypeName(mutation.type)
-    const { vars, args } = mutation.arguments
-        ? mutation.arguments.reduce(
-              ({ vars, args }, mutationArg, index) => {
+const gqlizeOperation = ({ operation, config }: GqlizeOperationArgs) => {
+    const returnTypeName = getTypeName(operation.type)
+    const { vars, args } = operation.arguments
+        ? operation.arguments.reduce(
+              ({ vars, args }, operationArg, index) => {
                   const { vars: newVars, args: newArgs } = gqlizeField({
-                      field: mutationArg,
+                      field: operationArg,
                       config,
                       path: {
                           names: [returnTypeName.toLowerCase()],
@@ -85,7 +88,7 @@ const gqlizeMutation = ({ mutation, config }: GqlizeMutationArgs) => {
                           ...newVars
                       },
                       args:
-                          index === mutation.arguments!.length - 1
+                          index === operation.arguments!.length - 1
                               ? `${args}${newArgs})`
                               : `${args}${newArgs}, `
                   }
@@ -96,28 +99,27 @@ const gqlizeMutation = ({ mutation, config }: GqlizeMutationArgs) => {
               }
           )
         : { vars: {}, args: "" }
-    return getMutationString({
-        name: mutation.name.value,
-        result: gqlizeMutationReturn({ mutation, config }),
-        vars: mutation.arguments ? variableMapToString(vars) : "",
-        args: mutation.arguments ? args : ""
+    return getOperationString({
+        name: operation.name.value,
+        result: gqlizeResult({ operation, config }),
+        vars: operation.arguments ? variableMapToString(vars) : "",
+        args: operation.arguments ? args : ""
     })
 }
 
-type GetMutationStringOptions = {
+type GetOperationStringOptions = {
     name: string
     result: string
     vars?: string
     args?: string
 }
 
-const getMutationString = ({
+const getOperationString = ({
     name,
     result,
     vars = "",
     args = ""
-}: GetMutationStringOptions) =>
-    `mutation ${name}${vars}{${name}${args}${result}}`
+}: GetOperationStringOptions) => `${name}${vars}{${name}${args}${result}}`
 
 type VariableMap = Record<string, string>
 
@@ -150,18 +152,21 @@ const getVariableName = (
     return name
 }
 
-const gqlizeMutationReturn = ({ mutation, config }: GqlizeMutationArgs) => {
-    if (isScalar(mutation.type)) {
+const gqlizeResult = ({ operation, config }: GqlizeOperationArgs) => {
+    if (isScalar(operation.type)) {
         return ""
     } else {
-        const returnType = getObjectDefinition(mutation.type, config.schema)
-        const gqlizedReturn = returnType.fields?.reduce((gqlized, field) => {
+        const resultType = getObjectDefinition(
+            getTypeName(operation.type),
+            config.schema
+        )
+        const gqlizedResult = resultType?.fields?.reduce((gqlized, field) => {
             if (isScalar(field.type)) {
                 return `${gqlized} ${field.name.value}`
             }
             return gqlized
         }, "{")
-        return `${gqlizedReturn}}`
+        return `${gqlizedResult}}`
     }
 }
 
@@ -233,7 +238,10 @@ const gqlizeField = ({
             args: `${field.name.value}: $${variableName}`
         }
     }
-    const fieldTypeDef = getInputObjectDefinition(field.type, config.schema)
+    const fieldTypeDef = getInputObjectDefinition(
+        getTypeName(field.type),
+        config.schema
+    )
     if (!fieldTypeDef.fields) {
         throw new Error(`Couldn't locate fields for type ${field.type}.`)
     }
