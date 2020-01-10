@@ -1,10 +1,11 @@
 import { readFileSync, chmodSync, mkdirp } from "fs-extra"
-/*Important we use this format as opposed to import { ... } from "puppeteer".
+/* Important we use this format as opposed to import { ... } from "puppeteer".
 Puppeteer is actually a class object whose methods rely on this, which will
-be undefined if we use that style of import.*/
+be undefined if we use that style of import.
+*/
 // TODO: Figure out how to import puppeteer using import { ... } from "puppeteer"
 // this functionality worked previously but broke when switching to babel
-import p from "puppeteer"
+import p from "puppeteer-core"
 import { remote, Rectangle } from "electron"
 import { isDeepStrictEqual } from "util"
 import { join, resolve } from "path"
@@ -170,7 +171,7 @@ const getChromiumExecutable = async () => {
     const chromiumDir = join(redoDir, "chromium")
     await mkdirp(chromiumDir)
     const browserFetcher = p.createBrowserFetcher({ path: chromiumDir })
-    const targetRevision = require("puppeteer/package.json").puppeteer
+    const targetRevision = require("puppeteer-core/package.json").puppeteer
         .chromium_revision
     const existingRevisions = await browserFetcher.localRevisions()
     if (!existingRevisions.includes(targetRevision)) {

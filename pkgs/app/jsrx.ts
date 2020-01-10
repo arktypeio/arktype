@@ -1,7 +1,22 @@
-import { jsrx, $ } from "jsrx"
+import { jsrx, $, run } from "jsrx"
 import { join } from "path"
 
 const clean = "rm -rf dist && mkdir dist"
+
+type PlatformString = "linux" | "macos" | "windows"
+
+const publish = (platforms: PlatformString[]) => async () => {
+    await run("rm -rf release")
+    for (const platform of platforms) {
+        try {
+            await run(`electron-builder --${platform} --publish always`)
+        } catch (e) {
+            console.error(
+                `Encountered the following error while building platform ${platform}:\n${e}`
+            )
+        }
+    }
+}
 
 jsrx(
     {
@@ -15,10 +30,10 @@ jsrx(
             electron: $("electron --remote-debugging-port=9223 ./dist/main.js")
         },
         prod: {
-            pack: $(
-                "rm -rf release && electron-builder --linux --macos --windows --publish always"
-            ),
-            publish: $("npm run buildProd && npm run pack")
+            publish: publish(["linux", "macos", "windows"]),
+            publishLinux: publish(["linux"]),
+            publishMac: publish(["macos"]),
+            publishWindows: publish(["windows"])
         }
     },
     {

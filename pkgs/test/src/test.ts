@@ -1,4 +1,4 @@
-import p, { Page, Browser } from "puppeteer"
+import p, { Page, Browser } from "puppeteer-core"
 import { ValueOf } from "@re-do/utils"
 import { SelectorCreateWithoutStepsCreateOnlyInput as SelectorInput } from "@re-do/model"
 
