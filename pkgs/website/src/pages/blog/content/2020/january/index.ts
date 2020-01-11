@@ -56,5 +56,19 @@ export const january2020Updates: UpdateData[] = [
             "Auto-updates": true,
             "User queries": false
         }
+    },
+    {
+        date: new Date(2020, 0, 10),
+        goals: {
+            "User queries": true
+        }
+    },
+    {
+        date: new Date(2020, 0, 11),
+        goals: {
+            "Server auth fix": false,
+            "Look into NPM installer": false,
+            "Start Redo CLI": false
+        }
     }
 ]
