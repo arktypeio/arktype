@@ -12,17 +12,24 @@ import gql from "graphql-tag"
 
 type GqlizeArgs = {
     schema: DocumentNode | string
-    maxDepth?: number
+    maxVariableDepth?: number
+    maxResultDepth?: number
 }
 
 type GqlizeConfig = {
     schema: DocumentNode
     maxDepth: number
+    maxResultDepth: number | null
 }
 
-const getConfig = ({ maxDepth, schema }: GqlizeArgs): GqlizeConfig => {
+const getConfig = ({
+    maxVariableDepth,
+    maxResultDepth,
+    schema
+}: GqlizeArgs): GqlizeConfig => {
     return {
-        maxDepth: maxDepth ?? 2,
+        maxDepth: maxVariableDepth ?? 2,
+        maxResultDepth: maxResultDepth ?? null,
         schema:
             typeof schema === "string"
                 ? (gql(readFileSync(schema).toString()) as DocumentNode)
@@ -153,21 +160,37 @@ const getVariableName = (
 }
 
 const gqlizeResult = ({ operation, config }: GqlizeOperationArgs) => {
-    if (isScalar(operation.type)) {
-        return ""
-    } else {
+    const recurse = (
+        field: FieldDefinitionNode,
+        seen: FieldDefinitionNode[],
+        depth: number
+    ): string => {
         const resultType = getObjectDefinition(
-            getTypeName(operation.type),
+            getTypeName(field.type),
             config.schema
         )
         const gqlizedResult = resultType?.fields?.reduce((gqlized, field) => {
-            if (isScalar(field.type)) {
-                return `${gqlized} ${field.name.value}`
+            let resultWithNewValue = `${gqlized} ${field.name.value}`
+            if (!isScalar(field.type)) {
+                if (
+                    seen.includes(field) ||
+                    (config.maxResultDepth && depth > config.maxResultDepth)
+                ) {
+                    // If we've already seen this field, ignore it so we don't infinitely recurse
+                    // If the user passed a maxResultDepth value and we've exceeded it, ignore non-scalar fields
+                    return gqlized
+                }
+                resultWithNewValue += ` ${recurse(
+                    field,
+                    [...seen, field],
+                    depth + 1
+                )}`
             }
-            return gqlized
+            return resultWithNewValue
         }, "{")
         return `${gqlizedResult}}`
     }
+    return isScalar(operation.type) ? "" : recurse(operation, [], 1)
 }
 
 const getVariableType = (field: InputValueDefinitionNode) => {
