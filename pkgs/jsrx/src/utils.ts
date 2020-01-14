@@ -1,6 +1,5 @@
-import { command, Options } from "execa"
+import { SyncOptions } from "execa"
+import { command } from "@re-do/utils/dist/command"
 
-export const run = (cmd: string, options?: Options) =>
-    command(cmd, { stdio: "inherit", shell: true, ...options })
-
-export const $ = (cmd: string, options?: Options) => () => run(cmd, options)
+export const run = command
+export const $ = (cmd: string, options?: SyncOptions) => () => run(cmd, options)
