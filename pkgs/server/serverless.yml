@@ -40,8 +40,4 @@ custom:
         includeModules: true
     hooks:
         after:package:createDeploymentArtifacts:
-            - rm -rf .tmp-sls-pkg && unzip .serverless/redo-server.zip -d .tmp-sls-pkg
-            - rsync -rk node_modules/@types .tmp-sls-pkg/node_modules
-            - rsync -rk node_modules/@prisma .tmp-sls-pkg/node_modules
-            - cd .tmp-sls-pkg && zip -r redo-server.zip *
-            - mv .tmp-sls-pkg/redo-server.zip .serverless && rm -rf .tmp-sls-pkg
+            - ts-node packageDependencies.ts
