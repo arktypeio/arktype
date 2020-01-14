@@ -1,4 +1,4 @@
-import { isDev } from "@re-do/utils"
+const { isDev } = require("@re-do/utils")
 
 module.exports = {
     presets: [["redo", { hot: isDev() }]]
