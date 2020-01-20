@@ -30,7 +30,8 @@
         "react-hook-form": "3.24.1",
         "react-router-dom": "5.1.2",
         "@re-do/utils": "0.0.1",
-        "typeface-ubuntu": "0.0.65"
+        "typeface-ubuntu": "0.0.65",
+        "react-autosuggest": "9.4.3"
     },
     "devDependencies": {
         "@babel/cli": "7.6.4",
@@ -65,6 +66,7 @@
         "jest": "24.9.0",
         "react-docgen-typescript-loader": "3.6.0",
         "react-test-renderer": "16.12.0",
-        "typescript": "3.7.4"
+        "typescript": "3.7.4",
+        "@types/react-autosuggest": "9.3.13"
     }
 }

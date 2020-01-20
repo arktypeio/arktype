@@ -5,6 +5,7 @@ import MuiChipInput, {
     Props as MuiChipInputProps
 } from "material-ui-chip-input"
 import { TextInputProps, useTextFieldProps } from "./TextInput"
+import {} from "react-autosuggest"
 
 const stylizeChip = makeStyles((theme: Theme) => ({
     chipClass: ({ colorTemplate }: Pick<TextInputProps, "colorTemplate">) => ({
@@ -17,11 +18,13 @@ const stylizeChip = makeStyles((theme: Theme) => ({
     })
 }))
 
-export type ChipInputProps = Omit<TextInputProps, "kind"> & MuiChipInputProps
+export type ChipInputProps = Omit<TextInputProps, "kind"> &
+    MuiChipInputProps & { suggestions?: string[] }
 
 export const ChipInput = (props: ChipInputProps) => {
     const textFieldProps = useTextFieldProps(props)
-    const { chipClass } = stylizeChip({ colorTemplate: props.colorTemplate })
+    const { colorTemplate, suggestions } = props
+    const { chipClass } = stylizeChip({ colorTemplate })
     // @ts-ignore
     return (
         <MuiChipInput
