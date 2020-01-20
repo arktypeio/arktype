@@ -95,8 +95,16 @@ export const january2020Updates: UpdateData[] = [
         date: new Date(2020, 0, 19),
         goals: {
             "Server auth fix": false,
-            "Look into NPM installer": false,
-            "nexus-prisma PR update": false
+            "Look into NPM installer": true,
+            "nexus-prisma PR update": true
+        }
+    },
+    {
+        date: new Date(2020, 0, 19),
+        goals: {
+            "Server auth fix": false,
+            "Polish jsrx": false,
+            "Update chromium installation": true
         }
     }
 ]
