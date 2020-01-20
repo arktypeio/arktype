@@ -82,5 +82,29 @@ export const january2020Updates: UpdateData[] = [
             "Look into NPM installer": false,
             "Start Redo CLI": false
         }
+    },
+    {
+        date: new Date(2020, 0, 16),
+        goals: {
+            "Server auth fix": false,
+            "Look into NPM installer": false,
+            "Start Redo CLI": false
+        }
+    },
+    {
+        date: new Date(2020, 0, 19),
+        goals: {
+            "Server auth fix": false,
+            "Look into NPM installer": true,
+            "nexus-prisma PR update": true
+        }
+    },
+    {
+        date: new Date(2020, 0, 20),
+        goals: {
+            "Server auth fix": false,
+            "Polish jsrx": false,
+            "Update chromium installation": true
+        }
     }
 ]

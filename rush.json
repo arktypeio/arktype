@@ -29,7 +29,7 @@
             "projectFolder": "pkgs/model"
         },
         {
-            "packageName": "redo",
+            "packageName": "@re-do/app",
             "projectFolder": "pkgs/app"
         },
         {

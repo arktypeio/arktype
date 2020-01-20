@@ -70,8 +70,6 @@ export const learnerInitial: Learner = {
 
 const start = async () => {
     const executablePath = await getChromiumExecutable()
-    // Ensure the chromium installation we're using from puppeteer is executable
-    chmodSync(executablePath, "755")
     // Use size and position from the Redo app to launch browser
     const lastMainWindowBounds = getMainWindowBounds()
     const { height, width, x, y } = lastMainWindowBounds
@@ -166,7 +164,7 @@ const notify = (event: StepInput) => {
     }
 }
 
-const getChromiumExecutable = async () => {
+export const getChromiumExecutable = async () => {
     const redoDir = join(homedir(), ".redo")
     const chromiumDir = join(redoDir, "chromium")
     await mkdirp(chromiumDir)
@@ -174,7 +172,10 @@ const getChromiumExecutable = async () => {
     const targetRevision = require("puppeteer-core/package.json").puppeteer
         .chromium_revision
     const existingRevisions = await browserFetcher.localRevisions()
-    if (!existingRevisions.includes(targetRevision)) {
+    const chromiumInstalling = store.query({
+        learner: { chromiumInstalling: true }
+    }).learner.chromiumInstalling
+    if (!existingRevisions.includes(targetRevision) && !chromiumInstalling) {
         await store.mutate({
             learner: { chromiumInstalling: true }
         })
@@ -190,5 +191,7 @@ const getChromiumExecutable = async () => {
     }
     const pathFromChromium = p.executablePath().split(".local-chromium")[1]
     const chromiumPath = join(chromiumDir, pathFromChromium)
+    // Ensure the chromium installation we're using from puppeteer is executable
+    chmodSync(chromiumPath, "755")
     return chromiumPath
 }

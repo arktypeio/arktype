@@ -1,5 +1,5 @@
 {
-    "name": "redo",
+    "name": "@re-do/app",
     "description": "The Redo app",
     "author": "redo.qa",
     "version": "0.0.7",
@@ -23,6 +23,7 @@
     },
     "build": {
         "appId": "com.redo.app",
+        "productName": "redo",
         "directories": {
             "buildResources": "resources",
             "output": "release"
@@ -30,6 +31,10 @@
         "files": [
             "dist"
         ],
+        "linux": {
+            "executableName": "redo",
+            "artifactName": "${productName}-${version}.${ext}"
+        },
         "mac": {
             "category": "public.app-category.developer-tools"
         }

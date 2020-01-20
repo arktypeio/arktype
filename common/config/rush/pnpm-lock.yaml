@@ -27,6 +27,7 @@ dependencies:
     "@mdi/js": 4.5.95
     "@medv/finder": 1.1.2
     "@prisma/photon": 2.0.0-preview017.2_prisma2@2.0.0-preview017.2
+    "@rush-temp/app": "file:projects/app.tgz"
     "@rush-temp/babel-preset-redo": "file:projects/babel-preset-redo.tgz_498b91122a17be5f366b66e7e4c66b66"
     "@rush-temp/bundle": "file:projects/bundle.tgz_bb15de7aca830887e0c301858f213311"
     "@rush-temp/components": "file:projects/components.tgz_graphql@14.5.8+webpack@4.41.5"
@@ -35,7 +36,6 @@ dependencies:
     "@rush-temp/model": "file:projects/model.tgz_@babel+core@7.7.7+react@16.12.0"
     "@rush-temp/react-statelessly": "file:projects/react-statelessly.tgz_@babel+core@7.7.7"
     "@rush-temp/recommended": "file:projects/recommended.tgz"
-    "@rush-temp/redo": "file:projects/redo.tgz"
     "@rush-temp/server": "file:projects/server.tgz_webpack@4.41.5"
     "@rush-temp/statelessly": "file:projects/statelessly.tgz_@babel+core@7.7.7"
     "@rush-temp/test": "file:projects/test.tgz_@babel+core@7.7.7"
@@ -60,7 +60,6 @@ dependencies:
     "@types/jest": 24.0.19
     "@types/jsonwebtoken": 8.3.5
     "@types/node": 12.11.1
-    "@types/puppeteer": 1.20.2
     "@types/puppeteer-core": 2.0.0
     "@types/react": 16.9.17
     "@types/react-dom": 16.9.4
@@ -115,7 +114,6 @@ dependencies:
     prettier: 1.19.1
     pretty-quick: 2.0.1_prettier@1.19.1
     prisma2: 2.0.0-preview017.2
-    puppeteer: 1.20.0
     puppeteer-core: 2.0.0
     react: 16.12.0
     react-docgen-typescript-loader: 3.6.0_typescript@3.7.4+webpack@4.41.5
@@ -4091,12 +4089,6 @@ packages:
         dev: false
         resolution:
             integrity: sha512-Q1y515GcOdTHgagaVFhHnIFQ38ygs/kmxdNpvpou+raI9UO3YZcHDngBSYKQklcKlvA7iuQlmIKbzvmxcOE9CQ==
-    /@types/dotenv-webpack/1.7.0:
-        dependencies:
-            "@types/webpack": 4.39.3
-        dev: false
-        resolution:
-            integrity: sha512-/dXQdLSma6nYkeTiO571+IUEPY0hs3uwJfsLVvj4v/6/CqBUm/4TNiGHpqveIllQ0M0YVB67sdl9Fmgr2riBRQ==
     /@types/dotenv/6.1.1:
         dependencies:
             "@types/node": 12.11.1
@@ -4434,12 +4426,6 @@ packages:
         dev: false
         resolution:
             integrity: sha512-K5K+yml8LTo9bWJI/rECfIPrGgxdpeNbj+d53lwN4QjW1MCwlkhUms+gtdzigTeUyBr09+u8BwOIY3MXvHdcsA==
-    /@types/source-map-support/0.5.0:
-        dependencies:
-            "@types/node": 12.11.1
-        dev: false
-        resolution:
-            integrity: sha512-OrnAz5K5dXDgMdeRRoXIjDAvkodQ9ESvVJCyzrhzUJKmCkXgmYx/KLUBcVFe5eS4FiohfcY7YPxsdkmSwJz9wA==
     /@types/stack-utils/1.0.1:
         dev: false
         resolution:
@@ -8232,10 +8218,6 @@ packages:
         dev: false
         resolution:
             integrity: sha512-b5kcM3hmUqn64+RUcHjjr8ZMpHS2WJ5YO0pnG9+P/RTdx46of/JrEjuciHWux6pE+On6ynWhHJF53j/EDJN0PA==
-    /electron-is-dev/0.3.0:
-        dev: false
-        resolution:
-            integrity: sha1-FOb9pcaOnk7L7/nM8DfL18BcWv4=
     /electron-publish/21.2.0:
         dependencies:
             bluebird-lst: 1.0.9
@@ -9676,12 +9658,6 @@ packages:
         dev: false
         resolution:
             integrity: sha1-Xv+OPmhNVprkyysSgmBOi6YhSfo=
-    /github-url-to-object/4.0.4:
-        dependencies:
-            is-url: 1.2.4
-        dev: false
-        resolution:
-            integrity: sha512-1Ri1pR8XTfzLpbtPz5MlW/amGNdNReuExPsbF9rxLsBfO1GH9RtDBamhJikd0knMWq3RTTQDbTtw0GGvvEAJEA==
     /glob-parent/3.1.0:
         dependencies:
             is-glob: 3.1.0
@@ -11132,10 +11108,6 @@ packages:
         dev: false
         resolution:
             integrity: sha1-5HnICFjfDBsR3dppQPlgEfzaSpo=
-    /is-url/1.2.4:
-        dev: false
-        resolution:
-            integrity: sha512-ITvGim8FhRiYe4IQ5uHSkj7pVaPDrCTkNd3yq3cV7iZAcJdHTUMPMEHcqSOy9xZ9qFenQCvi+2wjH9a1nXqHww==
     /is-utf8/0.2.1:
         dev: false
         resolution:
@@ -17670,15 +17642,6 @@ packages:
             node: ">=4"
         resolution:
             integrity: sha512-aZwGpamFO61g3OlfT7OQCHqhGnW43ieH9WZeP7QxN/G/jS4jfqUkZxoryvJgVPEcrl5NL/ggHsSmLMHuH64Lhg==
-    /update-electron-app/1.5.0:
-        dependencies:
-            electron-is-dev: 0.3.0
-            github-url-to-object: 4.0.4
-            is-url: 1.2.4
-            ms: 2.1.2
-        dev: false
-        resolution:
-            integrity: sha512-g7noW9JfQ8Hwq6zw9lmZei+R/ikOIBcaZ04TbmIcU5zNfv23HkN80QLLAyiR/47KvfS4sjnh2/wuDq5nh8+0mQ==
     /update-notifier/2.5.0:
         dependencies:
             boxen: 1.3.0
@@ -18551,6 +18514,50 @@ packages:
             node: ">= 0.10.0"
         resolution:
             integrity: sha1-qLxF9MG0lpnGuQGYuqyqzbzUugQ=
+    "file:projects/app.tgz":
+        dependencies:
+            "@apollo/client": 3.0.0-beta.16_graphql@14.5.8+react@16.12.0
+            "@babel/core": 7.7.7
+            "@babel/runtime-corejs3": 7.6.3
+            "@hot-loader/react-dom": 16.11.0_react@16.12.0
+            "@material-ui/core": 4.8.2_react-dom@16.12.0+react@16.12.0
+            "@material-ui/styles": 4.8.2_react-dom@16.12.0+react@16.12.0
+            "@medv/finder": 1.1.2
+            "@types/dotenv": 8.2.0
+            "@types/electron-devtools-installer": 2.2.0
+            "@types/fs-extra": 8.0.1
+            "@types/node": 12.11.1
+            "@types/puppeteer-core": 2.0.0
+            "@types/react": 16.9.17
+            "@types/react-dom": 16.9.4
+            core-js: 3.6.1
+            dotenv: 8.2.0
+            electron: 7.1.2
+            electron-builder: 21.2.0
+            electron-devtools-installer: 2.2.4
+            electron-updater: 4.2.0
+            framer-motion: 1.7.0_react-dom@16.12.0+react@16.12.0
+            fs-extra: 8.1.0
+            graphql: 14.5.8
+            graphql-tag: 2.10.1_graphql@14.5.8
+            puppeteer-core: 2.0.0
+            react: 16.12.0
+            react-dom: 16.12.0_react@16.12.0
+            react-hot-loader: 4.12.18_498b91122a17be5f366b66e7e4c66b66
+            ts-node: 8.5.4_typescript@3.7.4
+            tsconfig-paths: 3.9.0
+            tsconfig-paths-webpack-plugin: 3.2.0
+            typeface-ubuntu: 0.0.65
+            typescript: 3.7.4
+            webpack: 4.41.5_webpack@4.41.5
+            webpack-cli: 3.3.10_webpack@4.41.5
+            webpack-dev-server: 3.10.1_webpack@4.41.5
+        dev: false
+        name: "@rush-temp/app"
+        resolution:
+            integrity: sha512-tilkuEaeuUI1YESvJmNDOV7WKk9vePRw97SZkK+o9n4D4N6EK8esWwTDcDIgIwFgS0YXCmeNcUiMtznLwgP4DA==
+            tarball: "file:projects/app.tgz"
+        version: 0.0.0
     "file:projects/babel-preset-redo.tgz_498b91122a17be5f366b66e7e4c66b66":
         dependencies:
             "@babel/cli": 7.6.4_@babel+core@7.7.7
@@ -18789,57 +18796,6 @@ packages:
             integrity: sha512-WbwGq5egcbc8jVBjYzUUOA9QB/TZdjH434vtB5uwsWUJ1rJwdJGq7KYB9TIzGldxFd66HTi5O4Bf/Qcp/u+XPw==
             tarball: "file:projects/recommended.tgz"
         version: 0.0.0
-    "file:projects/redo.tgz":
-        dependencies:
-            "@apollo/client": 3.0.0-beta.16_graphql@14.5.8+react@16.12.0
-            "@babel/core": 7.7.7
-            "@babel/runtime-corejs3": 7.6.3
-            "@hot-loader/react-dom": 16.11.0_react@16.12.0
-            "@material-ui/core": 4.8.2_react-dom@16.12.0+react@16.12.0
-            "@material-ui/styles": 4.8.2_react-dom@16.12.0+react@16.12.0
-            "@medv/finder": 1.1.2
-            "@types/dotenv": 8.2.0
-            "@types/dotenv-webpack": 1.7.0
-            "@types/electron-devtools-installer": 2.2.0
-            "@types/fs-extra": 8.0.1
-            "@types/node": 12.11.1
-            "@types/puppeteer": 1.20.2
-            "@types/puppeteer-core": 2.0.0
-            "@types/react": 16.9.17
-            "@types/react-dom": 16.9.4
-            "@types/source-map-support": 0.5.0
-            core-js: 3.6.1
-            dotenv: 8.2.0
-            dotenv-webpack: 1.7.0_webpack@4.41.5
-            electron: 7.1.2
-            electron-builder: 21.2.0
-            electron-devtools-installer: 2.2.4
-            electron-updater: 4.2.0
-            framer-motion: 1.7.0_react-dom@16.12.0+react@16.12.0
-            fs-extra: 8.1.0
-            graphql: 14.5.8
-            graphql-tag: 2.10.1_graphql@14.5.8
-            puppeteer: 1.20.0
-            puppeteer-core: 2.0.0
-            react: 16.12.0
-            react-dom: 16.12.0_react@16.12.0
-            react-hot-loader: 4.12.18_498b91122a17be5f366b66e7e4c66b66
-            source-map-support: 0.5.16
-            ts-node: 8.5.4_typescript@3.7.4
-            tsconfig-paths: 3.9.0
-            tsconfig-paths-webpack-plugin: 3.2.0
-            typeface-ubuntu: 0.0.65
-            typescript: 3.7.4
-            update-electron-app: 1.5.0
-            webpack: 4.41.5_webpack@4.41.5
-            webpack-cli: 3.3.10_webpack@4.41.5
-            webpack-dev-server: 3.10.1_webpack@4.41.5
-        dev: false
-        name: "@rush-temp/redo"
-        resolution:
-            integrity: sha512-amHp/XIxMdJ9m91v0vR7Nz7NioaOAlayQngFy53amhM+a4j3udT5UDABZjn4rR5bXeFT0tE1TYkRlrRQdEEJ5g==
-            tarball: "file:projects/redo.tgz"
-        version: 0.0.0
     "file:projects/server.tgz_webpack@4.41.5":
         dependencies:
             "@babel/runtime-corejs3": 7.6.3
@@ -18911,8 +18867,10 @@ packages:
             "@babel/runtime-corejs3": 7.6.3
             "@types/jest": 24.0.19
             "@types/puppeteer": 1.20.2
+            "@types/puppeteer-core": 2.0.0
             jest: 24.9.0
             puppeteer: 1.20.0
+            puppeteer-core: 2.0.0
             typescript: 3.7.4
         dev: false
         id: "file:projects/test.tgz"
@@ -18920,7 +18878,7 @@ packages:
         peerDependencies:
             "@babel/core": "*"
         resolution:
-            integrity: sha512-mKZigrDvHJup8uUMklcKjNi1u3tO6AFWD3qWygpmJCDHi1G5Vbw0fwh7wLhFr//U+2Q4Yrp/meswj9r64GxR3g==
+            integrity: sha512-GWZ7n//GlgXWuERi6SGjumaMUmB6QXP31A1ioQqtLkYQdG8SCMaAUg57uL9QjJ1cxly8ERBZMnTlkWSLeev2GQ==
             tarball: "file:projects/test.tgz"
         version: 0.0.0
     "file:projects/utils.tgz_@babel+core@7.7.7":
@@ -18932,6 +18890,7 @@ packages:
             "@types/node": 12.11.1
             class-transformer: 0.2.3
             core-js: 3.6.1
+            execa: 4.0.0
             fs-extra: 8.1.0
             jest: 24.9.0
             moize: 5.4.4
@@ -18942,7 +18901,7 @@ packages:
         peerDependencies:
             "@babel/core": "*"
         resolution:
-            integrity: sha512-NF8NmEjdzq58IDqsP8bCIMkY3UIoFpu4DL/9Xqj/oOlG+YOEpKatG4IYwwPVj6rY8nPdmqBHl99t7sgb/mbYRw==
+            integrity: sha512-yNqTeJBxOrpArkfA1FET160ugWNGctBUE1R2FkrZ+L3a4ImwlwQtn8MXSwN4KIgO4ViO6bfMNNfIa00RZjQBIg==
             tarball: "file:projects/utils.tgz"
         version: 0.0.0
     "file:projects/website.tgz":
@@ -19008,6 +18967,7 @@ specifiers:
     "@mdi/js": 4.5.95
     "@medv/finder": 1.1.2
     "@prisma/photon": 2.0.0-preview017.2
+    "@rush-temp/app": "file:./projects/app.tgz"
     "@rush-temp/babel-preset-redo": "file:./projects/babel-preset-redo.tgz"
     "@rush-temp/bundle": "file:./projects/bundle.tgz"
     "@rush-temp/components": "file:./projects/components.tgz"
@@ -19016,7 +18976,6 @@ specifiers:
     "@rush-temp/model": "file:./projects/model.tgz"
     "@rush-temp/react-statelessly": "file:./projects/react-statelessly.tgz"
     "@rush-temp/recommended": "file:./projects/recommended.tgz"
-    "@rush-temp/redo": "file:./projects/redo.tgz"
     "@rush-temp/server": "file:./projects/server.tgz"
     "@rush-temp/statelessly": "file:./projects/statelessly.tgz"
     "@rush-temp/test": "file:./projects/test.tgz"
@@ -19041,7 +19000,6 @@ specifiers:
     "@types/jest": 24.0.19
     "@types/jsonwebtoken": 8.3.5
     "@types/node": 12.11.1
-    "@types/puppeteer": 1.20.2
     "@types/puppeteer-core": 2.0.0
     "@types/react": 16.9.17
     "@types/react-dom": 16.9.4
@@ -19096,7 +19054,6 @@ specifiers:
     prettier: 1.19.1
     pretty-quick: 2.0.1
     prisma2: 2.0.0-preview017.2
-    puppeteer: 1.20.0
     puppeteer-core: 2.0.0
     react: 16.12.0
     react-docgen-typescript-loader: 3.6.0
