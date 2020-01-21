@@ -10,32 +10,49 @@ import { camelCase } from "@re-do/utils"
 import { readFileSync } from "fs-extra"
 import gql from "graphql-tag"
 
+type MappedQueries = Record<
+    string,
+    (data: OperationData, schema: DocumentNode) => Record<string, OperationData>
+>
+
+type OperationKind = "Query" | "Mutation"
+
+type OperationData = {
+    kind: OperationKind
+    name: string
+    result: ObjectTypeDefinitionNode
+    vars?: string
+    args?: string
+}
+
 type GqlizeArgs = {
     schema: DocumentNode | string
     maxVariableDepth?: number
     maxResultDepth?: number
+    mapped?: MappedQueries
 }
 
 type GqlizeConfig = {
     schema: DocumentNode
     maxDepth: number
     maxResultDepth: number | null
+    mapped: MappedQueries
 }
 
 const getConfig = ({
     maxVariableDepth,
     maxResultDepth,
+    mapped,
     schema
-}: GqlizeArgs): GqlizeConfig => {
-    return {
-        maxDepth: maxVariableDepth ?? 2,
-        maxResultDepth: maxResultDepth ?? null,
-        schema:
-            typeof schema === "string"
-                ? (gql(readFileSync(schema).toString()) as DocumentNode)
-                : schema
-    }
-}
+}: GqlizeArgs): GqlizeConfig => ({
+    maxDepth: maxVariableDepth ?? 2,
+    maxResultDepth: maxResultDepth ?? null,
+    schema:
+        typeof schema === "string"
+            ? (gql(readFileSync(schema).toString()) as DocumentNode)
+            : schema,
+    mapped: mapped ?? {}
+})
 
 export const gqlize = (args: GqlizeArgs) => {
     const config = getConfig(args)
@@ -44,28 +61,29 @@ export const gqlize = (args: GqlizeArgs) => {
     return gqlizedQueries + gqlizedMutations
 }
 
-const gqlizeBlock = (name: "Query" | "Mutation", config: GqlizeConfig) => {
-    const operation = getObjectDefinition(name, config.schema)
+const gqlizeBlock = (operationKind: OperationKind, config: GqlizeConfig) => {
+    const operation = getObjectDefinition(operationKind, config.schema)
     return (
         operation?.fields?.reduce(
             (gqlized, field) =>
                 gqlized +
-                `${name.toLowerCase()} ${gqlizeOperation({
+                gqlizeOperation({
                     config,
-                    operation: field
-                })}\n`,
+                    operation: field,
+                    operationKind
+                }),
             ""
         ) ?? ""
     )
 }
 
-const getInputObjectDefinition = (name: string, schema: DocumentNode) =>
+export const getInputObjectDefinition = (name: string, schema: DocumentNode) =>
     schema.definitions.find(
         def =>
             def.kind === "InputObjectTypeDefinition" && def.name.value === name
     ) as InputObjectTypeDefinitionNode
 
-const getObjectDefinition = (name: string, schema: DocumentNode) =>
+export const getObjectDefinition = (name: string, schema: DocumentNode) =>
     schema.definitions.find(
         def => def.kind === "ObjectTypeDefinition" && def.name.value === name
     ) as ObjectTypeDefinitionNode | undefined
@@ -73,9 +91,14 @@ const getObjectDefinition = (name: string, schema: DocumentNode) =>
 type GqlizeOperationArgs = {
     operation: FieldDefinitionNode
     config: GqlizeConfig
+    operationKind: OperationKind
 }
 
-const gqlizeOperation = ({ operation, config }: GqlizeOperationArgs) => {
+const gqlizeOperation = ({
+    operation,
+    config,
+    operationKind
+}: GqlizeOperationArgs) => {
     const returnTypeName = getTypeName(operation.type)
     const { vars, args } = operation.arguments
         ? operation.arguments.reduce(
@@ -106,27 +129,34 @@ const gqlizeOperation = ({ operation, config }: GqlizeOperationArgs) => {
               }
           )
         : { vars: {}, args: "" }
-    return getOperationString({
+    const operationData: OperationData = {
+        kind: operationKind,
         name: operation.name.value,
-        result: gqlizeResult({ operation, config }),
+        result: operation.type,
         vars: operation.arguments ? variableMapToString(vars) : "",
         args: operation.arguments ? args : ""
-    })
+    }
+    let result = ""
+    if (operation.name.value in config.mapped) {
+        const mappedOperations = config.mapped[operation.name.value](
+            operationData,
+            config.schema
+        )
+        Object.entries(mappedOperations).forEach(
+            ([alias, mappedOperationData]) => {
+                result += getOperationString(mappedOperationData, alias)
+            }
+        )
+    }
+    result += getOperationString(operationData)
+    return result
 }
 
-type GetOperationStringOptions = {
-    name: string
-    result: string
-    vars?: string
-    args?: string
-}
-
-const getOperationString = ({
-    name,
-    result,
-    vars = "",
-    args = ""
-}: GetOperationStringOptions) => `${name}${vars}{${name}${args}${result}}`
+const getOperationString = (
+    { kind, name, result, vars = "", args = "" }: OperationData,
+    alias?: string
+) => `${kind.toLowerCase()} ${alias ?? name}${vars}{${name}${args}${result}}\n`
+//isScalar(operation.type)
 
 type VariableMap = Record<string, string>
 
@@ -159,7 +189,15 @@ const getVariableName = (
     return name
 }
 
-const gqlizeResult = ({ operation, config }: GqlizeOperationArgs) => {
+type GqlizeResultArgs = {
+    type: ObjectTypeDefinitionNode
+    config: GqlizeConfig
+    transformFields?: (
+        fields: readonly FieldDefinitionNode[]
+    ) => FieldDefinitionNode[]
+}
+
+const gqlizeResult = ({ type, config, transformFields }: GqlizeResultArgs) => {
     const recurse = (
         field: FieldDefinitionNode,
         seen: FieldDefinitionNode[],
@@ -169,7 +207,11 @@ const gqlizeResult = ({ operation, config }: GqlizeOperationArgs) => {
             getTypeName(field.type),
             config.schema
         )
-        const gqlizedResult = resultType?.fields?.reduce((gqlized, field) => {
+        let fields = resultType!.fields!
+        if (depth === 0 && transformFields) {
+            fields = transformFields(fields)
+        }
+        const gqlizedResult = fields.reduce((gqlized, field) => {
             let resultWithNewValue = `${gqlized} ${field.name.value}`
             if (!isScalar(field.type)) {
                 if (
@@ -190,7 +232,10 @@ const gqlizeResult = ({ operation, config }: GqlizeOperationArgs) => {
         }, "{")
         return `${gqlizedResult}}`
     }
-    return isScalar(operation.type) ? "" : recurse(operation, [], 1)
+    return type.fields?.reduce(
+        (gqlized, field) => gqlized + recurse(field, [], 1),
+        ""
+    )
 }
 
 const getVariableType = (field: InputValueDefinitionNode) => {
@@ -206,14 +251,15 @@ const getVariableType = (field: InputValueDefinitionNode) => {
 
 const scalarNames = ["Int", "Float", "String", "ID", "Boolean"]
 
-const getTypeName = (node: TypeNode): string =>
+export const getTypeName = (node: TypeNode): string =>
     node.kind === "NamedType" ? node.name.value : getTypeName(node.type)
 
-const isScalar = (node: TypeNode) => scalarNames.includes(getTypeName(node))
+export const isScalar = (node: TypeNode) =>
+    scalarNames.includes(getTypeName(node))
 
-const isList = (node: TypeNode) => hasNodeKind(node, "ListType")
+export const isList = (node: TypeNode) => hasNodeKind(node, "ListType")
 
-const isNonNull = (node: TypeNode) => hasNodeKind(node, "NonNullType")
+export const isNonNull = (node: TypeNode) => hasNodeKind(node, "NonNullType")
 
 const hasNodeKind = (node: TypeNode, kind: string): boolean =>
     node.kind === kind

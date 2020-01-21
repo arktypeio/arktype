@@ -1,17 +1,30 @@
 import { join } from "path"
 import { readFileSync } from "fs-extra"
 import gql from "graphql-tag"
-import { gqlize } from ".."
+import { fromEntries, camelCase } from "@re-do/utils"
+import { gqlize, getObjectDefinition } from ".."
 
 describe("gqlize", () => {
-    it("doesn't crash", async () => {
-        const schemaContents = readFileSync(
-            join(__dirname, "schema.gql")
-        ).toString()
-        const mutations = gqlize({
-            schema: gql(schemaContents)
-        })
-        console.log(mutations)
-        expect(mutations).toBeTruthy()
+    const schema = gql(readFileSync(join(__dirname, "schema.gql")).toString())
+    it("works with default options", async () => {
+        expect(gqlize({ schema })).toMatchSnapshot("defaults")
+    })
+    it("can generate new queries from defaults", async () => {
+        expect(
+            gqlize({
+                schema,
+                mapped: {
+                    me: (data, schema) => {
+                        const userType = getObjectDefinition("User", schema)
+                        return fromEntries(
+                            userType.fields.map(field => [
+                                camelCase(["my", field.name.value]),
+                                data
+                            ])
+                        )
+                    }
+                }
+            })
+        ).toMatchSnapshot("mapped")
     })
 })
