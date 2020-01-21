@@ -20,7 +20,8 @@ type OperationKind = "Query" | "Mutation"
 type OperationData = {
     kind: OperationKind
     name: string
-    result: ObjectTypeDefinitionNode
+    // Fields in the result type. If the result is a scalar, will be an empty array
+    fields: FieldDefinitionNode[]
     vars?: string
     args?: string
 }
@@ -100,7 +101,7 @@ const gqlizeOperation = ({
     operationKind
 }: GqlizeOperationArgs) => {
     const returnTypeName = getTypeName(operation.type)
-    const { vars, args } = operation.arguments
+    const { vars, args } = operation.arguments?.length
         ? operation.arguments.reduce(
               ({ vars, args }, operationArg, index) => {
                   const { vars: newVars, args: newArgs } = gqlizeField({
@@ -132,7 +133,10 @@ const gqlizeOperation = ({
     const operationData: OperationData = {
         kind: operationKind,
         name: operation.name.value,
-        result: operation.type,
+        fields: [
+            ...(getObjectDefinition(getTypeName(operation.type), config.schema)
+                ?.fields ?? [])
+        ],
         vars: operation.arguments ? variableMapToString(vars) : "",
         args: operation.arguments ? args : ""
     }
@@ -144,25 +148,28 @@ const gqlizeOperation = ({
         )
         Object.entries(mappedOperations).forEach(
             ([alias, mappedOperationData]) => {
-                result += getOperationString(mappedOperationData, alias)
+                result += getOperationString(mappedOperationData, config, alias)
             }
         )
     }
-    result += getOperationString(operationData)
+    result += getOperationString(operationData, config)
     return result
 }
 
 const getOperationString = (
-    { kind, name, result, vars = "", args = "" }: OperationData,
+    { kind, name, fields, vars = "", args = "" }: OperationData,
+    config: GqlizeConfig,
     alias?: string
-) => `${kind.toLowerCase()} ${alias ?? name}${vars}{${name}${args}${result}}\n`
-//isScalar(operation.type)
+) =>
+    `${kind.toLowerCase()} ${alias ?? name}${vars}{${name}${args}${
+        fields.length ? gqlizeResultFields({ fields, config }) : ""
+    }}\n`
 
 type VariableMap = Record<string, string>
 
 const variableMapToString = (variableMap: VariableMap) => {
     const entries = Object.entries(variableMap)
-    return entries
+    return entries.length
         ? `(${entries
               .reduce(
                   (variables, [name, type]) => [
@@ -189,52 +196,50 @@ const getVariableName = (
     return name
 }
 
-type GqlizeResultArgs = {
-    type: ObjectTypeDefinitionNode
+type GqlizeResultFieldsArgs = {
+    fields: FieldDefinitionNode[]
     config: GqlizeConfig
-    transformFields?: (
-        fields: readonly FieldDefinitionNode[]
-    ) => FieldDefinitionNode[]
 }
 
-const gqlizeResult = ({ type, config, transformFields }: GqlizeResultArgs) => {
-    const recurse = (
-        field: FieldDefinitionNode,
-        seen: FieldDefinitionNode[],
-        depth: number
-    ): string => {
-        const resultType = getObjectDefinition(
-            getTypeName(field.type),
-            config.schema
-        )
-        let fields = resultType!.fields!
-        if (depth === 0 && transformFields) {
-            fields = transformFields(fields)
-        }
-        const gqlizedResult = fields.reduce((gqlized, field) => {
-            let resultWithNewValue = `${gqlized} ${field.name.value}`
-            if (!isScalar(field.type)) {
-                if (
-                    seen.includes(field) ||
-                    (config.maxResultDepth && depth > config.maxResultDepth)
-                ) {
-                    // If we've already seen this field, ignore it so we don't infinitely recurse
-                    // If the user passed a maxResultDepth value and we've exceeded it, ignore non-scalar fields
-                    return gqlized
-                }
-                resultWithNewValue += ` ${recurse(
-                    field,
-                    [...seen, field],
-                    depth + 1
-                )}`
-            }
-            return resultWithNewValue
-        }, "{")
-        return `${gqlizedResult}}`
-    }
-    return type.fields?.reduce(
-        (gqlized, field) => gqlized + recurse(field, [], 1),
+const gqlizeResultFields = ({ fields, config }: GqlizeResultFieldsArgs) =>
+    `{${fields.reduce(
+        (gqlized, field) =>
+            `${gqlized} ${gqlizeResultField(field, [], 1, config)}`,
         ""
+    )}}`
+
+const gqlizeResultField = (
+    field: FieldDefinitionNode,
+    seen: FieldDefinitionNode[],
+    depth: number,
+    config: GqlizeConfig
+): string => {
+    if (isScalar(field.type)) {
+        return field.name.value
+    }
+    if (
+        seen.includes(field) ||
+        (config.maxResultDepth && depth > config.maxResultDepth)
+    ) {
+        // If we've already seen this field, ignore it so we don't infinitely recurse
+        // If the user passed a maxResultDepth value and we've exceeded it, ignore non-scalar fields
+        return ""
+    }
+    const resultType = getObjectDefinition(
+        getTypeName(field.type),
+        config.schema
+    )
+    return (
+        resultType?.fields?.reduce(
+            (gqlized, subField) =>
+                `${gqlized} ${gqlizeResultField(
+                    subField,
+                    [...seen, field],
+                    depth + 1,
+                    config
+                )}`,
+            `${field.name.value} {`
+        ) + "}"
     )
 }
 

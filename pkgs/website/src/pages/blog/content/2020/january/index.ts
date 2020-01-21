@@ -66,8 +66,7 @@ export const january2020Updates: UpdateData[] = [
     {
         date: new Date(2020, 0, 11),
         goals: {
-            "Server auth fix": false,
-            
+            "Server auth fix": false
         }
     },
     {

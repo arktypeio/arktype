@@ -19,7 +19,14 @@ describe("gqlize", () => {
                         return fromEntries(
                             userType.fields.map(field => [
                                 camelCase(["my", field.name.value]),
-                                data
+                                {
+                                    ...data,
+                                    fields: data.fields.filter(
+                                        resultField =>
+                                            resultField.name.value ===
+                                            field.name.value
+                                    )
+                                }
                             ])
                         )
                     }
