@@ -106,5 +106,14 @@ export const january2020Updates: UpdateData[] = [
             "Polish jsrx": false,
             "Update chromium installation": true
         }
+    },
+     {
+        date: new Date(2020, 0, 21),
+        goals: {
+            "Server auth fix": false,
+            "Polish jsrx": false,
+            "Add redo-CLI package": false,
+            "Start autosuggest chips": false
+        }
     }
 ]
