@@ -2,29 +2,13 @@
 ### Do not make changes to this file directly
 
 type Mutation {
-    createOneTest(data: TestCreateCreateOnlyInput!): Test!
+    createTest(data: TestCreateCreateOnlyInput!): Test!
     signIn(data: SignInInput!): String!
     signUp(data: SignUpInput!): String!
 }
 
 type Query {
     me: User!
-    selector(where: SelectorWhereUniqueInput!): Selector
-    selectors(
-        after: Int
-        before: Int
-        first: Int
-        last: Int
-        skip: Int
-    ): [Selector!]!
-    step(where: StepWhereUniqueInput!): Step
-    steps(after: Int, before: Int, first: Int, last: Int, skip: Int): [Step!]!
-    tag(where: TagWhereUniqueInput!): Tag
-    tags(after: Int, before: Int, first: Int, last: Int, skip: Int): [Tag!]!
-    test(where: TestWhereUniqueInput!): Test
-    tests(after: Int, before: Int, first: Int, last: Int, skip: Int): [Test!]!
-    user(where: UserWhereUniqueInput!): User
-    users(after: Int, before: Int, first: Int, last: Int, skip: Int): [User!]!
 }
 
 type Selector {
@@ -34,10 +18,6 @@ type Selector {
 
 input SelectorCreateWithoutStepsCreateOnlyInput {
     css: String!
-}
-
-input SelectorWhereUniqueInput {
-    id: Int
 }
 
 input SignInInput {
@@ -66,10 +46,6 @@ input StepCreateWithoutUserCreateOnlyInput {
     value: String!
 }
 
-input StepWhereUniqueInput {
-    id: Int
-}
-
 type Tag {
     id: Int!
     name: String!
@@ -77,10 +53,6 @@ type Tag {
 
 input TagCreateWithoutTestCreateOnlyInput {
     name: String!
-}
-
-input TagWhereUniqueInput {
-    id: Int
 }
 
 type Test {
@@ -101,10 +73,6 @@ input TestCreateWithoutStepsCreateOnlyInput {
     tags: [TagCreateWithoutTestCreateOnlyInput!]
 }
 
-input TestWhereUniqueInput {
-    id: Int
-}
-
 type User {
     email: String!
     first: String!
@@ -121,9 +89,4 @@ type User {
     steps(after: Int, before: Int, first: Int, last: Int, skip: Int): [Step!]!
     tags(after: Int, before: Int, first: Int, last: Int, skip: Int): [Tag!]!
     tests(after: Int, before: Int, first: Int, last: Int, skip: Int): [Test!]!
-}
-
-input UserWhereUniqueInput {
-    email: String
-    id: Int
 }
