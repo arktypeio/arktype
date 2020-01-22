@@ -1,4 +1,10 @@
-import { transformSubstring, camelCase } from ".."
+import {
+    transformSubstring,
+    camelCase,
+    capitalize,
+    capsCase,
+    lettersAfterFirstToLower
+} from ".."
 
 const original = "hello"
 const transform = (_: string) => _.toUpperCase()
@@ -50,5 +56,26 @@ describe("camelCase", () => {
         expect(camelCase(["HELLO", "hELLO", "hELLO"])).toEqual(
             "helloHelloHello"
         )
+    })
+})
+
+describe("capsCase", () => {
+    test("single word", () => {
+        expect(capsCase(["hELLO"])).toEqual("Hello")
+    })
+    test("multiple words", () => {
+        expect(capsCase(["hELLO", "hELLO", "hELLO"])).toEqual("HelloHelloHello")
+    })
+})
+
+describe("capitalize", () => {
+    test("works", () => {
+        expect(capitalize("hello")).toEqual("Hello")
+    })
+})
+
+describe("lettersAfterFirstToLower", () => {
+    test("works", () => {
+        expect(lettersAfterFirstToLower("HELLO")).toEqual("Hello")
     })
 })
