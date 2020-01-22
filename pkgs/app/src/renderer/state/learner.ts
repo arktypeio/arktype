@@ -10,13 +10,14 @@ import { remote, Rectangle } from "electron"
 import { isDeepStrictEqual } from "util"
 import { join, resolve } from "path"
 import { homedir } from "os"
-import { createHandle } from "react-statelessly"
+import { createHandler } from "react-statelessly"
 import {
     StepCreateWithoutUserCreateOnlyInput as StepInput,
     TagCreateWithoutTestCreateOnlyInput as TagInput
 } from "@re-do/model"
 import { store } from "renderer/common"
 import { isDev } from "@re-do/utils"
+import { Root } from "./root"
 
 const BROWSER_WINDOW_TITLEBAR_SIZE = 35
 const DEFAULT_LEARNER_WIDTH = 300
@@ -49,8 +50,9 @@ export type Learner = {
     chromiumInstalling: boolean
 }
 
-export const handleLearner = createHandle<Learner>({
-    active: async _ => await (_ ? start() : stop())
+export const handleLearner = createHandler<Learner, Root>({
+    active: async (isActive, context) =>
+        await (isActive ? start() : stop(context.learner))
 })
 
 export const learnerInitial: Learner = {
@@ -109,12 +111,8 @@ const start = async () => {
     })
 }
 
-const stop = async () => {
-    const {
-        learner: { lastConnectedEndpoint, lastMainWindowBounds }
-    } = store.query({
-        learner: { lastConnectedEndpoint: true, lastMainWindowBounds: true }
-    })
+const stop = async (context: Learner) => {
+    const { lastConnectedEndpoint, lastMainWindowBounds } = context
     if (lastConnectedEndpoint) {
         try {
             const browser = await p.connect({
