@@ -1,5 +1,9 @@
 import { isDeepStrictEqual } from "util"
-import { createStore as createReduxStore, Store as ReduxStore } from "redux"
+import {
+    createStore as createReduxStore,
+    Store as ReduxStore,
+    Reducer
+} from "redux"
 import {
     DeepPartial,
     NonRecursible,
@@ -23,14 +27,20 @@ export const createStore = <T>({
     handler
 }: StoreArgs<T>): Store<T> => {
     const handle = handler ? createHandle<T>(handler) : undefined
-    const rootReducer = (state: any, { type, data }: MutationAction<T>) => {
+    const rootReducer: Reducer<T, MutationAction<T>> = (
+        state: T | undefined,
+        { type, data }: MutationAction<T>
+    ) => {
+        if (!state) {
+            return initial
+        }
         if (type !== "MUTATION") {
             return state
         }
         const updatedState = updateMap(state, data)
         const changes = diff(state, updatedState)
         if (!isDeepStrictEqual(changes, {})) {
-            handle && handle(changes)
+            handle && handle(changes, state)
         }
         return updatedState
     }
@@ -43,14 +53,15 @@ export const createStore = <T>({
     }
 }
 
-export const createHandle = <T extends any>(handler: Handler<T>) => async (
-    changes: DeepPartial<T>
+export const createHandle = <T>(handler: Handler<T>) => async (
+    changes: DeepPartial<T>,
+    original: T
 ) => {
     for (const k in changes) {
         if (k in handler) {
             const handleKey = (handler as any)[k] as Handle<any>
             const keyChanges = (changes as any)[k] as DeepPartial<any>
-            await handleKey(keyChanges)
+            await handleKey(keyChanges, original)
         }
     }
 }
@@ -68,7 +79,10 @@ export type Query<T> = {
 
 export type Mutation<T> = DeepUpdate<T>
 
-export type Handle<T> = (change: DeepPartial<T>) => Promise<any>
+export type Handle<T> = (
+    change: DeepPartial<T>,
+    original: T
+) => void | Promise<void>
 export type Handler<T> = { [P in keyof T]?: Handle<T[P]> }
 
 type MutationAction<T> = {

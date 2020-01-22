@@ -96,13 +96,16 @@ describe("updates", () => {
     })
     test("handle side effects", () => {
         sideEffectStore.mutate({ b: true })
-        expect(bing).toBeCalledWith(true)
+        expect(bing).toBeCalledWith(true, initialRoot)
     })
     test("handles array side effects", () => {
         sideEffectStore.mutate({
             d: _ => _.concat(initialA)
         })
-        expect(dHandler).toBeCalledWith([initialA, initialA, initialA])
+        expect(dHandler).toBeCalledWith(
+            [initialA, initialA, initialA],
+            initialRoot
+        )
     })
     test("doesn't trigger extraneous side effects", () => {
         sideEffectStore.mutate({

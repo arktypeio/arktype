@@ -48,6 +48,7 @@
         "babel-preset-redo": "0.0.1",
         "execa": "4.0.0",
         "fs-extra": "8.1.0",
+        "gqlize": "0.0.1",
         "jest": "24.9.0",
         "jsrx": "0.0.1",
         "prisma2": "2.0.0-preview017.2",

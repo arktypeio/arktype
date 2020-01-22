@@ -1,7 +1,7 @@
 import React from "react"
 import { Column, AutoForm, Row, IconButton } from "@re-do/components"
 import { isRecursible, fromEntries } from "@re-do/utils"
-import { useCreateOneTestMutation } from "@re-do/model/dist/react"
+import { useCreateTestMutation } from "@re-do/model/dist/react"
 
 export type ObjectViewProps = {
     value: Record<string, any>
@@ -17,7 +17,7 @@ type SortedEntries = [FieldEntries, FieldEntries]
 
 export const ObjectView = ({ metaKey, value, path }: ObjectViewProps) => {
     // TODO: This is a placeholder
-    const [submit] = useCreateOneTestMutation()
+    const [submit] = useCreateTestMutation()
     const [mutableFields, staticFields] = Object.entries({
         ...value
     }).reduce(
