@@ -10,7 +10,7 @@ import {
     ChipInput,
     ErrorText
 } from "@re-do/components"
-import { useCreateOneTestMutation } from "@re-do/model/dist/react"
+import { useCreateTestMutation } from "@re-do/model/dist/react"
 import { deactivateLearner, resetLearner } from "state"
 import { LearnerEvents } from "./StepCards"
 import { store } from "renderer/common"
@@ -30,7 +30,7 @@ export const Learner = () => {
         testName: name,
         testTags: tags
     } = result.learner
-    const [createTest, createTestResult] = useCreateOneTestMutation()
+    const [createTest, createTestResult] = useCreateTestMutation()
     return (
         <Column full>
             <AppBar height={120} align="center">

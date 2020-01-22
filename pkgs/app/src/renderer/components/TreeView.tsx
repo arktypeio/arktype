@@ -10,6 +10,7 @@ import {
     TreeNodeTransform
 } from "@re-do/components"
 import { Test } from "@re-do/model"
+import { useMeQuery } from "@re-do/model/dist/react"
 import { ObjectView } from "./ObjectView"
 import { RedoAppBar } from "./appBar"
 import gql from "graphql-tag"
@@ -51,32 +52,11 @@ export type TreeViewProps = {
 }
 
 export const TreeView = ({ metaKey }: TreeViewProps) => {
-    const { data } = useQuery<{ tests: Test[] }>(
-        gql`
-            query tests {
-                tests {
-                    name
-                    steps {
-                        action
-                        value
-                        selector {
-                            css
-                        }
-                    }
-                    tags {
-                        name
-                    }
-                }
-            }
-        `,
-        { fetchPolicy: "no-cache" }
-    )
+    const tests = useMeQuery({ fetchPolicy: "no-cache" })?.data?.me.tests
     return (
         <Column justify="center">
             <RedoAppBar>{["home", "search", "account"]}</RedoAppBar>
-            {data ? (
-                <Tree transform={defaultTransforms}>{data.tests}</Tree>
-            ) : null}
+            {tests ? <Tree transform={defaultTransforms}>{tests}</Tree> : null}
         </Column>
     )
 }

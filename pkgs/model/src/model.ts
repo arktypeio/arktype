@@ -10,12 +10,12 @@ export type Scalars = {
 
 export type Mutation = {
     __typename?: "Mutation"
-    createOneTest: Test
+    createTest: Test
     signIn: Scalars["String"]
     signUp: Scalars["String"]
 }
 
-export type MutationCreateOneTestArgs = {
+export type MutationCreateTestArgs = {
     data: TestCreateCreateOnlyInput
 }
 
@@ -30,76 +30,6 @@ export type MutationSignUpArgs = {
 export type Query = {
     __typename?: "Query"
     me: User
-    selector?: Maybe<Selector>
-    selectors: Array<Selector>
-    step?: Maybe<Step>
-    steps: Array<Step>
-    tag?: Maybe<Tag>
-    tags: Array<Tag>
-    test?: Maybe<Test>
-    tests: Array<Test>
-    user?: Maybe<User>
-    users: Array<User>
-}
-
-export type QuerySelectorArgs = {
-    where: SelectorWhereUniqueInput
-}
-
-export type QuerySelectorsArgs = {
-    after?: Maybe<Scalars["Int"]>
-    before?: Maybe<Scalars["Int"]>
-    first?: Maybe<Scalars["Int"]>
-    last?: Maybe<Scalars["Int"]>
-    skip?: Maybe<Scalars["Int"]>
-}
-
-export type QueryStepArgs = {
-    where: StepWhereUniqueInput
-}
-
-export type QueryStepsArgs = {
-    after?: Maybe<Scalars["Int"]>
-    before?: Maybe<Scalars["Int"]>
-    first?: Maybe<Scalars["Int"]>
-    last?: Maybe<Scalars["Int"]>
-    skip?: Maybe<Scalars["Int"]>
-}
-
-export type QueryTagArgs = {
-    where: TagWhereUniqueInput
-}
-
-export type QueryTagsArgs = {
-    after?: Maybe<Scalars["Int"]>
-    before?: Maybe<Scalars["Int"]>
-    first?: Maybe<Scalars["Int"]>
-    last?: Maybe<Scalars["Int"]>
-    skip?: Maybe<Scalars["Int"]>
-}
-
-export type QueryTestArgs = {
-    where: TestWhereUniqueInput
-}
-
-export type QueryTestsArgs = {
-    after?: Maybe<Scalars["Int"]>
-    before?: Maybe<Scalars["Int"]>
-    first?: Maybe<Scalars["Int"]>
-    last?: Maybe<Scalars["Int"]>
-    skip?: Maybe<Scalars["Int"]>
-}
-
-export type QueryUserArgs = {
-    where: UserWhereUniqueInput
-}
-
-export type QueryUsersArgs = {
-    after?: Maybe<Scalars["Int"]>
-    before?: Maybe<Scalars["Int"]>
-    first?: Maybe<Scalars["Int"]>
-    last?: Maybe<Scalars["Int"]>
-    skip?: Maybe<Scalars["Int"]>
 }
 
 export type Selector = {
@@ -110,10 +40,6 @@ export type Selector = {
 
 export type SelectorCreateWithoutStepsCreateOnlyInput = {
     css: Scalars["String"]
-}
-
-export type SelectorWhereUniqueInput = {
-    id?: Maybe<Scalars["Int"]>
 }
 
 export type SignInInput = {
@@ -143,10 +69,6 @@ export type StepCreateWithoutUserCreateOnlyInput = {
     value: Scalars["String"]
 }
 
-export type StepWhereUniqueInput = {
-    id?: Maybe<Scalars["Int"]>
-}
-
 export type Tag = {
     __typename?: "Tag"
     id: Scalars["Int"]
@@ -155,10 +77,6 @@ export type Tag = {
 
 export type TagCreateWithoutTestCreateOnlyInput = {
     name: Scalars["String"]
-}
-
-export type TagWhereUniqueInput = {
-    id?: Maybe<Scalars["Int"]>
 }
 
 export type Test = {
@@ -194,10 +112,6 @@ export type TestCreateCreateOnlyInput = {
 export type TestCreateWithoutStepsCreateOnlyInput = {
     name: Scalars["String"]
     tags?: Maybe<Array<TagCreateWithoutTestCreateOnlyInput>>
-}
-
-export type TestWhereUniqueInput = {
-    id?: Maybe<Scalars["Int"]>
 }
 
 export type User = {
@@ -243,9 +157,4 @@ export type UserTestsArgs = {
     first?: Maybe<Scalars["Int"]>
     last?: Maybe<Scalars["Int"]>
     skip?: Maybe<Scalars["Int"]>
-}
-
-export type UserWhereUniqueInput = {
-    email?: Maybe<Scalars["String"]>
-    id?: Maybe<Scalars["Int"]>
 }
