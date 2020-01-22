@@ -18,7 +18,7 @@ export type Root = {
     detailView: string
 }
 
-export const rootHandler: Handler<Root> = {
+export const rootHandler: Handler<Root, Root> = {
     learner: handleLearner
 }
 
