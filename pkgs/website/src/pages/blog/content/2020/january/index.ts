@@ -109,7 +109,7 @@ export const january2020Updates: UpdateData[] = [
      {
         date: new Date(2020, 0, 21),
         goals: {
-            "Server auth fix": false,
+            "Server auth fix": true,
             "Polish jsrx": false,
             "Add redo-CLI package": false,
             "Start autosuggest chips": false
