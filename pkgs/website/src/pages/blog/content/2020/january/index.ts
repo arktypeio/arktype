@@ -123,5 +123,13 @@ export const january2020Updates: UpdateData[] = [
             "Add redo-CLI package": false,
             "Start autosuggest chips": false
         }
+    },
+    {
+        date: new Date(2020, 0, 22),
+        goals: {
+            "Fix state bug": true,
+            "Run test UI": false,
+            "Start autosuggest chips": false
+        }
     }
 ]
