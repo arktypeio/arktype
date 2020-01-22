@@ -2,20 +2,21 @@ import { jsrx, run, $ } from "jsrx"
 import { readFileSync, writeFileSync } from "fs-extra"
 import { join } from "path"
 
-const generate = async () => {
-    await run("prisma2 generate")
-    await run("ts-node --transpile-only src/schema")
-    await run("cp schema.gql ../model")
+const generate = () => {
+    run("prisma2 generate")
+    run("ts-node --transpile-only src/schema")
+    run("cp schema.gql ../model")
 }
 
-const build = async () => {
-    await generate()
-    await run("tsc")
+const build = () => {
+    generate()
+    run("tsc")
 }
 
-const upDb = async () => {
-    await run(`prisma2 lift save --name ${process.env.NODE_ENV} --create-db`)
-    await run("prisma2 lift up")
+const upDb = () => {
+    run(`prisma2 lift save --name ${process.env.NODE_ENV} --create-db`)
+    run("prisma2 lift up")
+    run(`ts-node prisma/seed.ts`)
 }
 
 jsrx(
@@ -28,9 +29,9 @@ jsrx(
             upDb
         },
         dev: {
-            createDb: async () => {
-                await run("rm -rf prisma/dev.db")
-                await run("rm -rf prisma/migrations/*-development")
+            createDb: () => {
+                run("rm -rf prisma/dev.db")
+                run("rm -rf prisma/migrations/*-development")
                 const liftLockFile = join(
                     __dirname,
                     "prisma",
@@ -45,17 +46,17 @@ jsrx(
                         .filter(line => !line.endsWith("-development"))
                         .join("\n")
                 )
-                await upDb()
+                upDb()
             },
-            start: async () => {
-                await build()
-                await run("sls offline", { env: { SLS_DEBUG: "*" } })
+            start: () => {
+                build()
+                run("sls offline", { env: { SLS_DEBUG: "*" } })
             }
         },
         prod: {
-            deploy: async () => {
-                await build()
-                await run("sls deploy")
+            deploy: () => {
+                build()
+                run("sls deploy")
             },
             pack: $("sls package")
         }

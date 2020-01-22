@@ -15,22 +15,22 @@ export const transformSubstring = ({
         original.slice(start, end)
     )}${end ? original.slice(end) : ""}`
 
-export const camelCase = (words: string[]) => {
-    const firstWord = words[0].toLowerCase()
-    const followingWords = words
-        .slice(1)
-        .map(original => {
-            const withFirstLetterToUpper = transformSubstring({
-                original,
-                transform: _ => _.toUpperCase(),
-                end: 1
-            })
-            return transformSubstring({
-                original: withFirstLetterToUpper,
-                transform: _ => _.toLowerCase(),
-                start: 1
-            })
-        })
-        .join("")
-    return `${firstWord}${followingWords}`
-}
+export const camelCase = (words: string[]) =>
+    `${words[0].toLowerCase()}${capsCase(words.slice(1))}`
+
+export const capitalize = (word: string) =>
+    transformSubstring({
+        original: word,
+        transform: _ => _.toUpperCase(),
+        end: 1
+    })
+
+export const lettersAfterFirstToLower = (word: string) =>
+    transformSubstring({
+        original: word,
+        transform: _ => _.toLowerCase(),
+        start: 1
+    })
+
+export const capsCase = (words: string[]) =>
+    words.map(word => capitalize(lettersAfterFirstToLower(word))).join("")

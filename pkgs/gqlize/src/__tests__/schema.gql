@@ -8,6 +8,7 @@ type Mutation {
 }
 
 type Query {
+    me: User!
     selector(where: SelectorWhereUniqueInput!): Selector
     selectors(
         after: Int

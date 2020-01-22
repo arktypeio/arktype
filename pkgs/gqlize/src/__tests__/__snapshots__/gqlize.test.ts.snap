@@ -1,0 +1,46 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`gqlize can generate new queries from defaults: mapped 1`] = `
+"query myEmail{me{ email}}
+query myFirst{me{ first}}
+query myId{me{ id}}
+query myLast{me{ last}}
+query myPassword{me{ password}}
+query mySelectors{me{ selectors { css id}}}
+query mySteps{me{ steps { action id selector { css id} value}}}
+query myTags{me{ tags { id name}}}
+query myTests{me{ tests { id name steps { action id selector { css id} value} tags { id name}}}}
+query me{me{ email first id last password selectors { css id} steps { action id selector { css id} value} tags { id name} tests { id name steps { action id selector { css id} value} tags { id name}}}}
+query selector($id: Int){selector(where: {id: $id}){ css id}}
+query selectors($after: Int, $before: Int, $first: Int, $last: Int, $skip: Int){selectors(after: $after, before: $before, first: $first, last: $last, skip: $skip){ css id}}
+query step($id: Int){step(where: {id: $id}){ action id selector { css id} value}}
+query steps($after: Int, $before: Int, $first: Int, $last: Int, $skip: Int){steps(after: $after, before: $before, first: $first, last: $last, skip: $skip){ action id selector { css id} value}}
+query tag($id: Int){tag(where: {id: $id}){ id name}}
+query tags($after: Int, $before: Int, $first: Int, $last: Int, $skip: Int){tags(after: $after, before: $before, first: $first, last: $last, skip: $skip){ id name}}
+query test($id: Int){test(where: {id: $id}){ id name steps { action id selector { css id} value} tags { id name}}}
+query tests($after: Int, $before: Int, $first: Int, $last: Int, $skip: Int){tests(after: $after, before: $before, first: $first, last: $last, skip: $skip){ id name steps { action id selector { css id} value} tags { id name}}}
+query user($email: String, $id: Int){user(where: {email: $email, id: $id}){ email first id last password selectors { css id} steps { action id selector { css id} value} tags { id name} tests { id name steps { action id selector { css id} value} tags { id name}}}}
+query users($after: Int, $before: Int, $first: Int, $last: Int, $skip: Int){users(after: $after, before: $before, first: $first, last: $last, skip: $skip){ email first id last password selectors { css id} steps { action id selector { css id} value} tags { id name} tests { id name steps { action id selector { css id} value} tags { id name}}}}
+mutation createOneTest($name: String!, $steps: [StepCreateWithoutUserCreateOnlyInput!], $tags: [TagCreateWithoutTestCreateOnlyInput!]){createOneTest(data: {name: $name, steps: $steps, tags: $tags}){ id name steps { action id selector { css id} value} tags { id name}}}
+mutation signIn($email: String!, $password: String!){signIn(data: {email: $email, password: $password})}
+mutation signUp($email: String!, $first: String!, $last: String!, $password: String!){signUp(data: {email: $email, first: $first, last: $last, password: $password})}
+"
+`;
+
+exports[`gqlize works with default options: defaults 1`] = `
+"query me{me{ email first id last password selectors { css id} steps { action id selector { css id} value} tags { id name} tests { id name steps { action id selector { css id} value} tags { id name}}}}
+query selector($id: Int){selector(where: {id: $id}){ css id}}
+query selectors($after: Int, $before: Int, $first: Int, $last: Int, $skip: Int){selectors(after: $after, before: $before, first: $first, last: $last, skip: $skip){ css id}}
+query step($id: Int){step(where: {id: $id}){ action id selector { css id} value}}
+query steps($after: Int, $before: Int, $first: Int, $last: Int, $skip: Int){steps(after: $after, before: $before, first: $first, last: $last, skip: $skip){ action id selector { css id} value}}
+query tag($id: Int){tag(where: {id: $id}){ id name}}
+query tags($after: Int, $before: Int, $first: Int, $last: Int, $skip: Int){tags(after: $after, before: $before, first: $first, last: $last, skip: $skip){ id name}}
+query test($id: Int){test(where: {id: $id}){ id name steps { action id selector { css id} value} tags { id name}}}
+query tests($after: Int, $before: Int, $first: Int, $last: Int, $skip: Int){tests(after: $after, before: $before, first: $first, last: $last, skip: $skip){ id name steps { action id selector { css id} value} tags { id name}}}
+query user($email: String, $id: Int){user(where: {email: $email, id: $id}){ email first id last password selectors { css id} steps { action id selector { css id} value} tags { id name} tests { id name steps { action id selector { css id} value} tags { id name}}}}
+query users($after: Int, $before: Int, $first: Int, $last: Int, $skip: Int){users(after: $after, before: $before, first: $first, last: $last, skip: $skip){ email first id last password selectors { css id} steps { action id selector { css id} value} tags { id name} tests { id name steps { action id selector { css id} value} tags { id name}}}}
+mutation createOneTest($name: String!, $steps: [StepCreateWithoutUserCreateOnlyInput!], $tags: [TagCreateWithoutTestCreateOnlyInput!]){createOneTest(data: {name: $name, steps: $steps, tags: $tags}){ id name steps { action id selector { css id} value} tags { id name}}}
+mutation signIn($email: String!, $password: String!){signIn(data: {email: $email, password: $password})}
+mutation signUp($email: String!, $first: String!, $last: String!, $password: String!){signUp(data: {email: $email, first: $first, last: $last, password: $password})}
+"
+`;

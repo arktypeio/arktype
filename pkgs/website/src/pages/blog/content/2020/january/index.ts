@@ -66,8 +66,7 @@ export const january2020Updates: UpdateData[] = [
     {
         date: new Date(2020, 0, 11),
         goals: {
-            "Server auth fix": false,
-            
+            "Server auth fix": false
         }
     },
     {
@@ -95,8 +94,34 @@ export const january2020Updates: UpdateData[] = [
         date: new Date(2020, 0, 19),
         goals: {
             "Server auth fix": false,
-            "Look into NPM installer": false,
-            "nexus-prisma PR update": false
+            "Look into NPM installer": true,
+            "nexus-prisma PR update": true
+        }
+    },
+    {
+        date: new Date(2020, 0, 20),
+        goals: {
+            "Server auth fix": false,
+            "Polish jsrx": false,
+            "Update chromium installation": true
+        }
+    },
+    {
+        date: new Date(2020, 0, 21),
+        goals: {
+            "Server auth fix": true,
+            "Polish jsrx": false,
+            "Add redo-CLI package": false,
+            "Start autosuggest chips": false
+        }
+    },
+    {
+        date: new Date(2020, 0, 22),
+        goals: {
+            "Fix state bug": true,
+            "Polish jsrx": false,
+            "Add redo-CLI package": false,
+            "Start autosuggest chips": false
         }
     }
 ]

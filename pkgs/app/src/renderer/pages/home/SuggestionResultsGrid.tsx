@@ -2,8 +2,8 @@ import React from "react"
 import { SuggestionCard } from "./SuggestionCard"
 import { store } from "renderer/common"
 import { Card, Row } from "@re-do/components"
-import { useQuery } from "@apollo/client"
 import { Test } from "@re-do/model"
+import { useMeQuery } from "@re-do/model/dist/react"
 import gql from "graphql-tag"
 
 const welcomeSuggestion = {
@@ -15,30 +15,9 @@ const welcomeSuggestion = {
 
 const useValues = () => {
     const { cardFilter } = store.useQuery({ cardFilter: true })
-    const { data, loading } = useQuery<{ tests: Test[] }>(
-        gql`
-            query tests {
-                tests {
-                    name
-                    steps {
-                        action
-                        value
-                        selector {
-                            css
-                        }
-                    }
-                    tags {
-                        name
-                    }
-                }
-            }
-        `,
-        { fetchPolicy: "no-cache" }
-    )
-    return loading
-        ? []
-        : data?.tests && data.tests.length > 0
-        ? data.tests
+    const tests = useMeQuery({ fetchPolicy: "no-cache" }).data?.me?.tests
+    return tests && tests.length > 0
+        ? tests
               .filter(test =>
                   JSON.stringify(test)
                       .toLowerCase()

@@ -1,5 +1,9 @@
 import { isDeepStrictEqual } from "util"
-import { createStore as createReduxStore, Store as ReduxStore } from "redux"
+import {
+    createStore as createReduxStore,
+    Store as ReduxStore,
+    Reducer
+} from "redux"
 import {
     DeepPartial,
     NonRecursible,
@@ -22,15 +26,21 @@ export const createStore = <T>({
     initial,
     handler
 }: StoreArgs<T>): Store<T> => {
-    const handle = handler ? createHandle<T>(handler) : undefined
-    const rootReducer = (state: any, { type, data }: MutationAction<T>) => {
+    const handle = handler ? createHandler<T, T>(handler) : undefined
+    const rootReducer: Reducer<T, MutationAction<T>> = (
+        state: T | undefined,
+        { type, data }: MutationAction<T>
+    ) => {
+        if (!state) {
+            return initial
+        }
         if (type !== "MUTATION") {
             return state
         }
         const updatedState = updateMap(state, data)
         const changes = diff(state, updatedState)
         if (!isDeepStrictEqual(changes, {})) {
-            handle && handle(changes)
+            handle && handle(changes, state)
         }
         return updatedState
     }
@@ -43,21 +53,21 @@ export const createStore = <T>({
     }
 }
 
-export const createHandle = <T extends any>(handler: Handler<T>) => async (
-    changes: DeepPartial<T>
-) => {
+export const createHandler = <HandledState, RootState>(
+    handler: Handler<HandledState, RootState>
+) => async (changes: DeepPartial<HandledState>, context: RootState) => {
     for (const k in changes) {
         if (k in handler) {
-            const handleKey = (handler as any)[k] as Handle<any>
+            const handleKey = (handler as any)[k] as Handle<any, RootState>
             const keyChanges = (changes as any)[k] as DeepPartial<any>
-            await handleKey(keyChanges)
+            await handleKey(keyChanges, context)
         }
     }
 }
 
 export type StoreArgs<T> = {
     initial: T
-    handler?: Handler<T>
+    handler?: Handler<T, T>
 }
 
 export type Query<T> = {
@@ -68,8 +78,14 @@ export type Query<T> = {
 
 export type Mutation<T> = DeepUpdate<T>
 
-export type Handle<T> = (change: DeepPartial<T>) => Promise<any>
-export type Handler<T> = { [P in keyof T]?: Handle<T[P]> }
+export type Handle<HandledState, RootState> = (
+    change: DeepPartial<HandledState>,
+    context: RootState
+) => void | Promise<void>
+
+export type Handler<HandledState, RootState> = {
+    [K in keyof HandledState]?: Handle<HandledState[K], RootState>
+}
 
 type MutationAction<T> = {
     type: "MUTATION"
