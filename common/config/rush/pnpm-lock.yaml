@@ -18820,6 +18820,7 @@ packages:
             jest: 24.9.0
             jsonwebtoken: 8.5.1
             nexus: 0.12.0-rc.5_graphql@14.5.8
+            prettier: 1.19.1
             prisma2: 2.0.0-preview017.2
             redo-nexus-prisma: 0.6.2-next.3-1_3d439f4e0f24d46582a80975993b2eea
             serverless: 1.60.1
@@ -18837,7 +18838,7 @@ packages:
         peerDependencies:
             webpack: "*"
         resolution:
-            integrity: sha512-J2Qu0k+adTwRk9CJzE2MDI128S7rCRAnZSIdRTet8hxWZamYYKmr8djP2Up9VElJfPDWt2wY0nbwVR+Asl8bVw==
+            integrity: sha512-rAAq7de+RlBnSgF3w9vjmBvMoL94/q9u0RAxvD33losUEWCfNs+ZT6YITUbDQX0XH2C9WT53P3N0Wx+Pvy7E5w==
             tarball: "file:projects/server.tgz"
         version: 0.0.0
     "file:projects/statelessly.tgz_@babel+core@7.7.7":
@@ -18865,9 +18866,11 @@ packages:
         dependencies:
             "@babel/cli": 7.6.4_@babel+core@7.7.7
             "@babel/runtime-corejs3": 7.6.3
+            "@types/fs-extra": 8.0.1
             "@types/jest": 24.0.19
             "@types/puppeteer": 1.20.2
             "@types/puppeteer-core": 2.0.0
+            fs-extra: 8.1.0
             jest: 24.9.0
             puppeteer: 1.20.0
             puppeteer-core: 2.0.0
@@ -18878,7 +18881,7 @@ packages:
         peerDependencies:
             "@babel/core": "*"
         resolution:
-            integrity: sha512-GWZ7n//GlgXWuERi6SGjumaMUmB6QXP31A1ioQqtLkYQdG8SCMaAUg57uL9QjJ1cxly8ERBZMnTlkWSLeev2GQ==
+            integrity: sha512-DZy+SMRpeNVaJoHNddAcdzpRtquiwHpR+PGvAld1F4BKq667g3jgrWpUQ5JQiOFS35km2sWNaSwbl/fYxxCRjA==
             tarball: "file:projects/test.tgz"
         version: 0.0.0
     "file:projects/utils.tgz_@babel+core@7.7.7":

@@ -1,23 +1,24 @@
 import finder from "@medv/finder"
 import { StepCreateWithoutUserCreateOnlyInput as StepInput } from "@re-do/model"
 
+const eventTypes = {
+    click: "click",
+    dblclick: "click",
+    submit: "click",
+    change: "set",
+    select: "set"
+}
+
 export const watchPage = async () => {
     const browserWindow: Window & {
         notify: (e: StepInput) => void
     } = window as any
-    const events = {
-        CLICK: "click",
-        DBLCLICK: "dblclick",
-        CHANGE: "change",
-        SELECT: "select",
-        SUBMIT: "submit"
-    }
-    Object.values(events).forEach(event =>
+    Object.keys(eventTypes).forEach(event =>
         browserWindow.addEventListener(
             event,
             async (e: Event) => {
                 const step: StepInput = {
-                    action: e.type,
+                    action: eventTypes[e.type as keyof typeof eventTypes],
                     selector: {
                         css: ""
                     },

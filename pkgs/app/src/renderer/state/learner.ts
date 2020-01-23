@@ -1,4 +1,3 @@
-import { readFileSync, chmodSync, mkdirp } from "fs-extra"
 /* Important we use this format as opposed to import { ... } from "puppeteer".
 Puppeteer is actually a class object whose methods rely on this, which will
 be undefined if we use that style of import.
@@ -6,15 +5,16 @@ be undefined if we use that style of import.
 // TODO: Figure out how to import puppeteer using import { ... } from "puppeteer"
 // this functionality worked previously but broke when switching to babel
 import p from "puppeteer-core"
+import { readFileSync } from "fs-extra"
 import { remote, Rectangle } from "electron"
 import { isDeepStrictEqual } from "util"
-import { join, resolve } from "path"
-import { homedir } from "os"
+import { resolve } from "path"
 import { createHandler } from "react-statelessly"
 import {
     StepCreateWithoutUserCreateOnlyInput as StepInput,
     TagCreateWithoutTestCreateOnlyInput as TagInput
 } from "@re-do/model"
+import { ensureChromiumPath } from "@re-do/test"
 import { store } from "renderer/common"
 import { isDev } from "@re-do/utils"
 import { Root } from "./root"
@@ -47,7 +47,6 @@ export type Learner = {
     testName: string
     testTags: TagInput[]
     lastMainWindowBounds: Bounds
-    chromiumInstalling: boolean
 }
 
 export const handleLearner = createHandler<Learner, Root>({
@@ -66,12 +65,11 @@ export const learnerInitial: Learner = {
         width: -1,
         x: -1,
         y: -1
-    },
-    chromiumInstalling: false
+    }
 }
 
 const start = async () => {
-    const executablePath = await getChromiumExecutable()
+    const executablePath = await ensureChromiumPath()
     // Use size and position from the Redo app to launch browser
     const lastMainWindowBounds = getMainWindowBounds()
     const { height, width, x, y } = lastMainWindowBounds
@@ -99,11 +97,12 @@ const start = async () => {
         "utf-8"
     )
     await page.evaluateOnNewDocument(browserJs)
-    await page.goto("https://google.com")
+    await page.goto("https://redo.qa")
     browser.on("disconnected", () => {
         deactivateLearner()
     })
-    await store.mutate({
+    // TODO: This could cause problems since it's in a side effect (maybe mutations shouldn't happen from side effects?)
+    store.mutate({
         learner: {
             lastConnectedEndpoint: browser.wsEndpoint(),
             lastMainWindowBounds: lastMainWindowBounds
@@ -160,36 +159,4 @@ const notify = (event: StepInput) => {
     } catch (e) {
         console.log(e)
     }
-}
-
-export const getChromiumExecutable = async () => {
-    const redoDir = join(homedir(), ".redo")
-    const chromiumDir = join(redoDir, "chromium")
-    await mkdirp(chromiumDir)
-    const browserFetcher = p.createBrowserFetcher({ path: chromiumDir })
-    const targetRevision = require("puppeteer-core/package.json").puppeteer
-        .chromium_revision
-    const existingRevisions = await browserFetcher.localRevisions()
-    const chromiumInstalling = store.query({
-        learner: { chromiumInstalling: true }
-    }).learner.chromiumInstalling
-    if (!existingRevisions.includes(targetRevision) && !chromiumInstalling) {
-        await store.mutate({
-            learner: { chromiumInstalling: true }
-        })
-        console.log(
-            `Updating your Chromium installation to ${targetRevision}...`
-        )
-        for (const revision of existingRevisions) {
-            console.log(`Deleting old Chromium (revision ${revision})...`)
-            await browserFetcher.remove(revision)
-        }
-        await browserFetcher.download(targetRevision)
-        await store.mutate({ learner: { chromiumInstalling: false } })
-    }
-    const pathFromChromium = p.executablePath().split(".local-chromium")[1]
-    const chromiumPath = join(chromiumDir, pathFromChromium)
-    // Ensure the chromium installation we're using from puppeteer is executable
-    chmodSync(chromiumPath, "755")
-    return chromiumPath
 }

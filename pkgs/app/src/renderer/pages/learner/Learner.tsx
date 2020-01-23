@@ -16,20 +16,13 @@ import { LearnerEvents } from "./StepCards"
 import { store } from "renderer/common"
 
 export const Learner = () => {
-    const result = store.useQuery({
+    const { events, testName: name, testTags: tags } = store.useQuery({
         learner: {
             events: true,
-            chromiumInstalling: true,
             testName: true,
             testTags: true
         }
-    })
-    const {
-        events,
-        chromiumInstalling,
-        testName: name,
-        testTags: tags
-    } = result.learner
+    }).learner
     const [createTest, createTestResult] = useCreateTestMutation()
     return (
         <Column full>
@@ -70,16 +63,7 @@ export const Learner = () => {
                     />
                 </Column>
             </AppBar>
-            <div>
-                {chromiumInstalling ? (
-                    <Column align="center">
-                        <Spinner />
-                        <Text>Getting things ready...</Text>
-                    </Column>
-                ) : (
-                    <LearnerEvents steps={events} />
-                )}
-            </div>
+            <LearnerEvents steps={events} />
             <AppBar kind="bottom" justify="space-around">
                 <IconButton
                     Icon={Icons.close}

@@ -7,6 +7,7 @@
     "scripts": {
         "createDb": "jsrx createDb",
         "start": "jsrx start",
+        "prettify": "jsrx prettify",
         "build": "jsrx build",
         "generate": "jsrx generate",
         "studio": "jsrx studio",
@@ -51,6 +52,7 @@
         "gqlize": "0.0.1",
         "jest": "24.9.0",
         "jsrx": "0.0.1",
+        "prettier": "1.19.1",
         "prisma2": "2.0.0-preview017.2",
         "serverless": "1.60.1",
         "serverless-dotenv-plugin": "2.1.1",
