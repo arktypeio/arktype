@@ -1,9 +1,14 @@
 import p, { Page, Browser } from "puppeteer-core"
 import { ValueOf } from "@re-do/utils"
 import { SelectorCreateWithoutStepsCreateOnlyInput as SelectorInput } from "@re-do/model"
+import { ensureChromiumPath } from "./chromium"
 
 export const test = async (...steps: Step[]) => {
-    const browser = await p.launch({ headless: false, slowMo: 50 })
+    const browser = await p.launch({
+        headless: false,
+        slowMo: 50,
+        executablePath: await ensureChromiumPath()
+    })
     const page = await browser.newPage()
     await page.goto("https://redo.qa")
     await page.screenshot({ path: "before.png" })

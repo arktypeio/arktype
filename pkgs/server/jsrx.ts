@@ -5,8 +5,14 @@ import { join } from "path"
 const generate = () => {
     run("prisma2 generate")
     run("ts-node --transpile-only src/schema")
+    prettify()
     run("cp schema.gql ../model")
 }
+
+const prettify = () =>
+    run(
+        'prettier --write "{,!(node_modules|dist|release|.rush|.webpack)/**/*}*.{js,ts,json,yml,gql}"'
+    )
 
 const build = () => {
     generate()
@@ -51,7 +57,8 @@ jsrx(
             start: () => {
                 build()
                 run("sls offline", { env: { SLS_DEBUG: "*" } })
-            }
+            },
+            prettify
         },
         prod: {
             deploy: () => {
