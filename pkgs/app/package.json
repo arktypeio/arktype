@@ -2,7 +2,7 @@
     "name": "@re-do/app",
     "description": "The Redo app",
     "author": "redo.qa",
-    "version": "0.0.7",
+    "version": "0.0.8",
     "private": true,
     "repository": {
         "type": "git",
@@ -48,7 +48,7 @@
         "@medv/finder": "1.1.2",
         "@re-do/model": "0.0.1",
         "@re-do/test": "0.0.1",
-        "@re-do/utils": "0.0.1",
+        "@re-do/utils": "0.0.2",
         "core-js": "3.6.1",
         "dotenv": "8.2.0",
         "electron-updater": "4.2.0",

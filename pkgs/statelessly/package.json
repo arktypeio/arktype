@@ -11,7 +11,7 @@
     },
     "dependencies": {
         "@babel/runtime-corejs3": "7.6.3",
-        "@re-do/utils": "0.0.1",
+        "@re-do/utils": "0.0.2",
         "deepmerge": "4.1.1",
         "isomorphic-fetch": "2.2.1",
         "moize": "5.4.4",

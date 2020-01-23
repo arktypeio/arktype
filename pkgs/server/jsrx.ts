@@ -1,12 +1,19 @@
 import { jsrx, run, $ } from "jsrx"
-import { readFileSync, writeFileSync } from "fs-extra"
+import { readFileSync, writeFileSync, copySync } from "fs-extra"
 import { join } from "path"
 
 const generate = () => {
     run("prisma2 generate")
     run("ts-node --transpile-only src/schema")
     prettify()
-    run("cp schema.gql ../model")
+    copySync(
+        join(__dirname, "schema.gql"),
+        join(__dirname, "src", "playground", "schema.gql")
+    )
+    copySync(
+        join(__dirname, "schema.gql"),
+        join(__dirname, "..", "model", "schema.gql")
+    )
 }
 
 const prettify = () =>

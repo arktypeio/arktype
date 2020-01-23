@@ -14,7 +14,7 @@
     },
     "dependencies": {
         "@babel/runtime-corejs3": "7.6.3",
-        "@re-do/utils": "0.0.1",
+        "@re-do/utils": "0.0.2",
         "dotenv": "8.2.0",
         "execa": "4.0.0",
         "fs-extra": "8.1.0"
