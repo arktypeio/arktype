@@ -12,7 +12,7 @@
     "dependencies": {
         "@babel/runtime-corejs3": "7.6.3",
         "@re-do/model": "0.0.1",
-        "@re-do/utils": "0.0.1",
+        "@re-do/utils": "0.0.2",
         "fs-extra": "8.1.0",
         "puppeteer-core": "2.0.0"
     },

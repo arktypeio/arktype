@@ -37,7 +37,9 @@ functions:
 custom:
     webpack:
         webpackConfig: "webpack.config.ts"
-        includeModules: true
+        includeModules:
+            forceExclude:
+                - prisma2
     hooks:
         after:package:createDeploymentArtifacts:
             - ts-node packageDependencies.ts
