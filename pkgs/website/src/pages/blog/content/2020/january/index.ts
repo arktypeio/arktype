@@ -122,5 +122,12 @@ export const january2020Updates: UpdateData[] = [
             "Run test UI": false,
             "Start autosuggest chips": false
         }
+    },
+    {
+        date: new Date(2020, 0, 23),
+        goals: {
+            "Run test UI+CLI": false,
+            "Start autosuggest chips": false
+        }
     }
 ]
