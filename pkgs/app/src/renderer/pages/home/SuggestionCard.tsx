@@ -4,7 +4,7 @@ import { Column, Card, Row, Text, Icons, IconButton } from "@re-do/components"
 export type SuggestionCardProps = {
     title: string
     description: string
-    extras?: JSX.Element[]
+    extras?: JSX.Element
 }
 
 export const SuggestionCard = ({

@@ -31,7 +31,7 @@ type Suggestion<Kind extends SuggestionKind> = {
     title: string
     description: string
     data: SuggestionKinds[Kind]
-    extras?: JSX.Element[]
+    extras?: JSX.Element
 }
 
 type SuggestionKinds = {
@@ -48,7 +48,7 @@ const toSuggestion = <Kind extends SuggestionKind>(
         test: (test: Test) => ({
             title: test.name,
             description: test.tags.map(_ => _.name).join(", "),
-            extras: [
+            extras: (
                 <IconButton
                     Icon={Icons.run}
                     onClick={() =>
@@ -60,7 +60,7 @@ const toSuggestion = <Kind extends SuggestionKind>(
                         )
                     }
                 />
-            ],
+            ),
             data: test
         })
     }
