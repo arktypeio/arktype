@@ -131,7 +131,7 @@ export const january2020Updates: UpdateData[] = [
         }
     },
      {
-        date: new Date(2020, 0, 23),
+        date: new Date(2020, 0, 24),
         goals: {
             "Refine test execution": false,
             "Redo CLI package": false,
