@@ -17,5 +17,5 @@ storiesOf("Input", module)
     .add("Chip", () => <ChipInput />)
 
     .add("Chip with Autosuggest", () => (
-        <ChipInput suggestions={["a", "b", "c"]} />
+        <ChipInput possibleSuggestions={["anna", "banna", "canna"]} />
     ))
