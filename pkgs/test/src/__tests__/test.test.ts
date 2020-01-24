@@ -7,7 +7,7 @@ describe("test", () => {
                 "set",
                 {
                     selector: { css: "[name='email']" },
-                    value: "awesome@burba.com"
+                    value: "david@redo.qa"
                 }
             ],
             ["click", { selector: { css: ".MuiButton-label" } }]

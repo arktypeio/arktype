@@ -28,11 +28,9 @@ model Selector {
 }
 
 model Step {
-  id       Int      @id
-  action   String
-  selector Selector
-  value    String
-  tests    Test[]
+  id     Int    @id
+  action Action
+  tests  Test[]
 }
 
 model Test {
@@ -54,4 +52,77 @@ model User {
   selectors Selector[]
   tags      Tag[]
   tests     Test[]
+}
+
+model Action {
+  id   Int        @id
+  kind ActionKind
+  data ActionData
+}
+
+enum ActionKind {
+  click
+  set
+  hover
+  key
+  go
+  screenshot
+  assertText
+  assertVisibility
+}
+
+model ActionData {
+  id               Int                   @id
+  click            ClickData?
+  set              SetData?
+  hover            HoverData?
+  key              KeyData?
+  go               GoData?
+  screenshot       ScreenshotData?
+  assertText       AssertTextData?
+  assertVisibility AssertVisibilityData?
+}
+
+model ClickData {
+  id       Int     @id
+  selector String
+  double   Boolean @default(false)
+}
+
+model SetData {
+  id       Int    @id
+  selector String
+  value    String
+}
+
+model HoverData {
+  id       Int    @id
+  selector String
+  duration Int
+}
+
+model KeyData {
+  id  Int    @id
+  key String
+}
+
+model GoData {
+  id  Int    @id
+  url String
+}
+
+model ScreenshotData {
+  id Int @id
+}
+
+model AssertTextData {
+  id       Int      @id
+  selector Selector
+  expected String
+}
+
+model AssertVisibilityData {
+  id       Int      @id
+  selector Selector
+  expected Boolean
 }
