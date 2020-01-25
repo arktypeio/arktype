@@ -133,9 +133,17 @@ export const january2020Updates: UpdateData[] = [
      {
         date: new Date(2020, 0, 24),
         goals: {
-            "Refine test execution": false,
+            "Refine test execution": true,
             "Redo CLI package": false,
-            "Start autosuggest chips": false
+            "Start autosuggest chips": true
+        }
+    },
+    {
+        date: new Date(2020, 0, 25),
+        goals: {
+            "Integrate new step types": false,
+            "Update nexus-prisma PR": false,
+            "Working autosuggest chips": false
         }
     }
 ]
