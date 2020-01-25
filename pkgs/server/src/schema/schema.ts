@@ -1,15 +1,11 @@
 import { join } from "path"
 import { makeSchema } from "nexus"
 import { nexusPrismaPlugin } from "redo-nexus-prisma"
-import { Selector } from "./selector"
-import { Step } from "./step"
-import { Tag } from "./tag"
-import { Test } from "./test"
-import { User } from "./user"
-import { Query } from "./query"
-import { mutationTypes } from "./mutation"
+import { objectTypes } from "./objectTypes"
+import { Query } from "./queryTypes"
+import { mutationTypes } from "./mutationTypes"
 
-const types = [Step, User, Test, Selector, Tag, Query, ...mutationTypes]
+const types = [Query, ...mutationTypes, ...objectTypes]
 
 export const schema = makeSchema({
     types,
