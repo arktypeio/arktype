@@ -2,7 +2,11 @@ import React, { createContext, useContext, ReactNode, useState } from "react"
 import useBaseForm, {
     useFormContext as useReactHookFormContext
 } from "react-hook-form"
-import { MutationTuple, MutationResult, ApolloError } from "@apollo/client"
+
+// TODO: Fix these types
+type MutationTuple<D, T> = any
+export type MutationResult<D> = any
+type ApolloError = any
 
 export type Fields = Record<string, any>
 
@@ -93,11 +97,8 @@ export const createFormContext = <T extends Fields, D = any>({
                 onData?.(data)
             }
             if (errors) {
-                const error = new ApolloError({
-                    graphQLErrors: errors
-                })
-                finalResponseState.error = error
-                onError?.(error)
+                finalResponseState.error = errors
+                onError?.(errors)
             }
             setResultState(finalResponseState)
         } else {
