@@ -19,12 +19,12 @@ import close from "@material-ui/icons/Close"
 import blog from "@material-ui/icons/ChatBubble"
 import linkedIn from "@material-ui/icons/LinkedIn"
 import email from "@material-ui/icons/Email"
-import { mdiGithubBox } from "@mdi/js"
 import SvgIcon, { SvgIconProps } from "@material-ui/core/SvgIcon"
+import { githubIcon } from "./paths"
 
 const gitHub = (props: SvgIconProps) => (
     <SvgIcon {...props}>
-        <path d={mdiGithubBox} />
+        <path d={githubIcon} />
     </SvgIcon>
 )
 

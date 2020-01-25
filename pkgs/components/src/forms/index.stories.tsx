@@ -20,7 +20,8 @@ type HelloFormFields = {
     last: string
 }
 
-const submit: MutationSubmit<HelloFormFields> = async params => ({
+// TODO: Fix any (due to not having apollo types anymore)
+const submit: MutationSubmit<HelloFormFields> = async (params: any) => ({
     called: true,
     loading: false,
     data: `Hello, ${params?.variables?.first} ${params?.variables?.last}.`
@@ -52,7 +53,8 @@ storiesOf("Form", module)
     .add("Two column", () => <HelloForm testAsRow />)
     .add("AutoForm", () => (
         <AutoForm<HelloFormFields>
-            submit={async options => {
+            // TODO: Fix any (due to not having apollo types anymore)
+            submit={async (options: any) => {
                 console.log(
                     `Hello, ${options?.variables?.first} ${options?.variables?.last}.`
                 )
