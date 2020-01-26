@@ -145,5 +145,14 @@ export const january2020Updates: UpdateData[] = [
             "Update nexus-prisma PR": false,
             "Working autosuggest chips": false
         }
-    }
+    },
+   {
+        date: new Date(2020, 0, 26 ),
+        goals: {
+            "Integrate new step types": false,
+            "Update nexus-prisma PR": false,
+            "Startup stream": false,
+            "JSRX": false   
+        }
+    },
 ]
