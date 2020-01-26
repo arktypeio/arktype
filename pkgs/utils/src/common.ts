@@ -1,5 +1,6 @@
 import moize from "moize"
 import { classToPlain, plainToClass } from "class-transformer"
+import { isDeepStrictEqual } from "util"
 
 export const objectify = classToPlain
 export const classify = plainToClass
@@ -17,6 +18,9 @@ export type DeepRequired<T> = {
         ? Required<T[P]>
         : DeepRequired<T[P]>
 }
+
+export const isEmpty = (value: object | any[]) =>
+    isDeepStrictEqual(value, {}) || isDeepStrictEqual(value, [])
 
 export type WithOptionalKeys<T extends object, Keys extends keyof T> = Omit<
     T,
