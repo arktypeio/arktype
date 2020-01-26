@@ -28,6 +28,12 @@ export type WithOptionalKeys<T extends object, Keys extends keyof T> = Omit<
 > &
     { [K in Keys]?: T[K] }
 
+export type WithRequiredKeys<T extends object, Keys extends keyof T> = Omit<
+    T,
+    Keys
+> &
+    { [K in Keys]-?: T[K] }
+
 export type DeepPartial<T> = {
     [P in keyof T]?: T[P] extends NonRecursible ? T[P] : DeepPartial<T[P]>
 }

@@ -49,7 +49,7 @@
         "@re-do/components": "0.0.2",
         "@re-do/model": "0.0.1",
         "@re-do/test": "0.0.1",
-        "@re-do/utils": "0.0.2",
+        "@re-do/utils": "0.0.3",
         "core-js": "3.6.1",
         "dotenv": "8.2.0",
         "electron-updater": "4.2.0",
