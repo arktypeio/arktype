@@ -1,12 +1,12 @@
 import React from "react"
-import { MutationResult } from "@apollo/client"
 import { Column, ColumnProps } from "../layouts"
 import {
     Fields,
     FormContext,
     FormContextProps,
     FullContext,
-    FormProvider
+    FormProvider,
+    MutationResult
 } from "./FormContext"
 
 export type FormProps<T extends Fields, D = any> = FormContextProps<T, D> & {
