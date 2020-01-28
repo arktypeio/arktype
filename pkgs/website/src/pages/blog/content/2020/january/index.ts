@@ -161,5 +161,12 @@ export const january2020Updates: UpdateData[] = [
             "Integrate new step types": false,
             "Update nexus-prisma PR": false
         }
+    },
+    {
+        date: new Date(2020, 0, 28 ),
+        goals: {
+            "Integrate new step types": false,
+            "Update nexus-prisma PR": false
+        }
     }
 ]
