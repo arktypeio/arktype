@@ -6,6 +6,8 @@ import MuiChipInput, {
 } from "material-ui-chip-input"
 import { TextInputProps, useTextFieldProps } from "./TextInput"
 import Autosuggest, { AutosuggestProps } from "react-autosuggest"
+import { Menu } from "../menus"
+import { fromEntries } from "@re-do/utils"
 
 const stylizeChip = makeStyles((theme: Theme) => ({
     chipClass: ({ colorTemplate }: Pick<TextInputProps, "colorTemplate">) => ({
@@ -24,13 +26,16 @@ const getSuggestions = (searchInput: string, possibleSuggestions: string[]) => {
     )
 }
 
+const renderSuggestion = (suggestion: string) => <div>{suggestion}</div>
+
 export type ChipInputProps = Omit<TextInputProps, "kind"> &
     MuiChipInputProps & { possibleSuggestions?: string[] }
 
 export const ChipInput = (props: ChipInputProps) => {
     const [state, setState] = useState({
         searchInput: "",
-        suggestions: [] as string[]
+        suggestions: [] as string[],
+        chips: [] as string[]
     })
     console.log(state)
     const textFieldProps = useTextFieldProps(props)
@@ -38,22 +43,54 @@ export const ChipInput = (props: ChipInputProps) => {
     const { chipClass } = stylizeChip({ colorTemplate })
     // @ts-ignore
     return (
-        <MuiChipInput
-            onUpdateInput={event =>
-                setState({
-                    searchInput: event.target.value,
-                    suggestions: getSuggestions(
-                        event.target.value,
-                        possibleSuggestions
+        <>
+            <MuiChipInput
+                value={state.chips as any}
+                onUpdateInput={event =>
+                    setState({
+                        searchInput: event.target.value,
+                        suggestions: getSuggestions(
+                            event.target.value,
+                            possibleSuggestions
+                        ),
+                        chips: state.chips
+                    })
+                }
+                // Enter and Space, respectively
+                newChipKeyCodes={[13, 32]}
+                // @ts-ignore
+                {...textFieldProps}
+                // @ts-ignore
+                classes={{ ...textFieldProps.classes, chip: chipClass }}
+            />
+            {/* <Menu open={true}>
+                {{
+                    options: fromEntries(
+                        state.suggestions.map(suggestion => [
+                            suggestion,
+                            () =>
+                                setState({
+                                    ...state,
+                                    chips: [...state.chips, suggestion]
+                                })
+                        ])
                     )
-                })
-            }
-            // Enter and Space, respectively
-            newChipKeyCodes={[13, 32]}
-            // @ts-ignore
-            {...textFieldProps}
-            // @ts-ignore
-            classes={{ ...textFieldProps.classes, chip: chipClass }}
-        />
+                }}
+            </Menu> */}
+
+            {state.suggestions.map(suggestion => (
+                <div
+                    key={suggestion}
+                    onClick={() =>
+                        setState({
+                            ...state,
+                            chips: [...state.chips, suggestion]
+                        })
+                    }
+                >
+                    {suggestion}
+                </div>
+            ))}
+        </>
     )
 }

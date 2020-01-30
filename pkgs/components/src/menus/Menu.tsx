@@ -5,17 +5,19 @@ import { MenuItem } from "."
 
 export type MenuProps = Partial<MuiMenuProps> & {
     children: {
-        toggle: JSX.Element
+        toggle?: JSX.Element
         options: Record<string, () => any>
     }
 }
 
 export const Menu = ({ children: { toggle, options }, ...rest }: MenuProps) => {
     const [anchor, setAnchor] = React.useState<HTMLElement | null>(null)
-    const button = cloneElement(toggle, {
-        onClick: (e: React.MouseEvent<HTMLButtonElement>) =>
-            setAnchor(e.currentTarget)
-    })
+    const button = toggle
+        ? cloneElement(toggle, {
+              onClick: (e: React.MouseEvent<HTMLButtonElement>) =>
+                  setAnchor(e.currentTarget)
+          })
+        : null
     return (
         <div>
             {button}
