@@ -6,7 +6,6 @@ import { posts } from "./content"
 import { getUrlSuffix } from "./common"
 import { ContactInfo } from "../../components"
 import { PostViewer } from "./PostViewer"
-import { UpdateViewer } from "./UpdateViewer"
 
 const PostContent = () => {
     const { title } = useParams()
@@ -28,8 +27,6 @@ export const Blog = () => {
                 <Route path="/blog">
                     <Column justify="space-between">
                         <PostViewer />
-                        <div style={{ height: 24 }} />
-                        <UpdateViewer />
                     </Column>
                 </Route>
             </Switch>
