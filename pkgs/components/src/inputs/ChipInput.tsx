@@ -37,7 +37,7 @@ export const ChipInput = (props: ChipInputProps) => {
         suggestions: [] as string[],
         chips: [] as string[]
     })
-    console.log(state)
+
     const textFieldProps = useTextFieldProps(props)
     const { colorTemplate, possibleSuggestions = [] } = props
     const { chipClass } = stylizeChip({ colorTemplate })
@@ -48,6 +48,7 @@ export const ChipInput = (props: ChipInputProps) => {
                 value={state.chips as any}
                 onUpdateInput={event =>
                     setState({
+                        ...state,
                         searchInput: event.target.value,
                         suggestions: getSuggestions(
                             event.target.value,
@@ -56,6 +57,21 @@ export const ChipInput = (props: ChipInputProps) => {
                         chips: state.chips
                     })
                 }
+                onAdd={value => {
+                    setState({
+                        ...state,
+                        chips: [...state.chips, value]
+                    })
+                }}
+                onDelete={(value, index) => {
+                    setState({
+                        ...state,
+                        chips: [
+                            ...state.chips.slice(0, index),
+                            ...state.chips.slice(index + 1)
+                        ]
+                    })
+                }}
                 // Enter and Space, respectively
                 newChipKeyCodes={[13, 32]}
                 // @ts-ignore
