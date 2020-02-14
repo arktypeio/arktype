@@ -15,13 +15,14 @@
         "react-hot-loader": "4.12.15"
     },
     "dependencies": {
-        "@re-do/utils": "0.0.1",
+        "@re-do/utils": "0.0.2",
         "babel-loader": "8.0.6",
         "clean-webpack-plugin": "3.0.0",
         "copy-webpack-plugin": "5.0.4",
         "css-loader": "3.2.0",
         "file-loader": "4.2.0",
         "fork-ts-checker-webpack-plugin": "1.5.1",
+        "graphql-tag": "2.10.1",
         "html-webpack-plugin": "3.2.0",
         "is-wsl": "2.1.1",
         "react-svg-loader": "3.0.3",

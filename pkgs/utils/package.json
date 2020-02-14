@@ -1,6 +1,6 @@
 {
     "name": "@re-do/utils",
-    "version": "0.0.1",
+    "version": "0.0.2",
     "author": "redo.qa",
     "description": "Common utilities consumed by Redo",
     "main": "dist/index.js",
@@ -13,6 +13,7 @@
         "@babel/runtime-corejs3": "7.6.3",
         "class-transformer": "0.2.3",
         "core-js": "3.6.1",
+        "deepmerge": "4.2.2",
         "execa": "4.0.0",
         "fs-extra": "8.1.0",
         "moize": "5.4.4"

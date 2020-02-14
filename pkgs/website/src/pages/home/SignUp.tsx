@@ -15,7 +15,7 @@ export const SignUp = () => {
             <Text variant="h4">🚀Launching soon</Text>
             <Form<{ email: string }, boolean>
                 validate={_ => ({ email: [] })}
-                submit={async options => {
+                submit={async (options: any) => {
                     track.prelaunchRegister({
                         email: options?.variables?.email!
                     })

@@ -1,12 +1,25 @@
 import { jsrx, run, $ } from "jsrx"
-import { readFileSync, writeFileSync } from "fs-extra"
+import { readFileSync, writeFileSync, copySync } from "fs-extra"
 import { join } from "path"
 
 const generate = () => {
     run("prisma2 generate")
     run("ts-node --transpile-only src/schema")
-    run("cp schema.gql ../model")
+    prettify()
+    copySync(
+        join(__dirname, "schema.gql"),
+        join(__dirname, "src", "playground", "schema.gql")
+    )
+    copySync(
+        join(__dirname, "schema.gql"),
+        join(__dirname, "..", "model", "schema.gql")
+    )
 }
+
+const prettify = () =>
+    run(
+        'prettier --write "{,!(node_modules|dist|release|.rush|.webpack)/**/*}*.{js,ts,json,yml,gql}"'
+    )
 
 const build = () => {
     generate()
@@ -51,7 +64,8 @@ jsrx(
             start: () => {
                 build()
                 run("sls offline", { env: { SLS_DEBUG: "*" } })
-            }
+            },
+            prettify
         },
         prod: {
             deploy: () => {

@@ -1,5 +1,7 @@
 import { join } from "path"
 import { gqlize } from "gqlize"
+// @ts-ignore
+import schema from "./schema.gql"
 
 export const playground = {
     tabs: [
@@ -8,7 +10,7 @@ export const playground = {
                 process.env.NODE_ENV === "production"
                     ? "/dev/graphql"
                     : "/graphql",
-            query: gqlize({ schema: join(__dirname, "..", "..", "schema.gql") })
+            query: gqlize({ schema })
         }
     ]
 }

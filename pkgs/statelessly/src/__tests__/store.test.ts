@@ -6,7 +6,7 @@ let store = createStore({ initial: initialRoot })
 const cHandler = jest.fn()
 const bing = jest.fn()
 const dHandler = jest.fn()
-const handler: Handler<Root> = {
+const handler: Handler<Root, Root> = {
     c: cHandler,
     b: bing,
     d: dHandler

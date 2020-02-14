@@ -1,11 +1,7 @@
 import moize from "moize"
-import { classToPlain, plainToClass } from "class-transformer"
-
-export const objectify = classToPlain
-export const classify = plainToClass
-
-export type Shape = object
-
+import { isDeepStrictEqual } from "util"
+import deepMerge from "deepmerge"
+export const merge = deepMerge
 export const memoize = moize as <F extends (...args: any[]) => any>(f: F) => F
 
 export type MapReturn<F, V> = F extends (value: V) => infer R ? R : any
@@ -17,6 +13,9 @@ export type DeepRequired<T> = {
         ? Required<T[P]>
         : DeepRequired<T[P]>
 }
+
+export const isEmpty = (value: object | any[]) =>
+    isDeepStrictEqual(value, {}) || isDeepStrictEqual(value, [])
 
 export type WithOptionalKeys<T extends object, Keys extends keyof T> = Omit<
     T,

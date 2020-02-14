@@ -119,9 +119,67 @@ export const january2020Updates: UpdateData[] = [
         date: new Date(2020, 0, 22),
         goals: {
             "Fix state bug": true,
-            "Polish jsrx": false,
-            "Add redo-CLI package": false,
+            "Run test UI": false,
             "Start autosuggest chips": false
+        }
+    },
+    {
+        date: new Date(2020, 0, 23),
+        goals: {
+            "Run test UI+CLI": true,
+            "Start autosuggest chips": false
+        }
+    },
+    {
+        date: new Date(2020, 0, 24),
+        goals: {
+            "Refine test execution": true,
+            "Redo CLI package": false,
+            "Start autosuggest chips": true
+        }
+    },
+    {
+        date: new Date(2020, 0, 25),
+        goals: {
+            "Integrate new step types": false,
+            "Update nexus-prisma PR": false,
+            "Working autosuggest chips": false
+        }
+    },
+    {
+        date: new Date(2020, 0, 26),
+        goals: {
+            "Integrate new step types": false,
+            "Update nexus-prisma PR": false,
+            "Startup stream": true,
+            JSRX: false
+        }
+    },
+    {
+        date: new Date(2020, 0, 27),
+        goals: {
+            "Integrate new step types": false,
+            "Update nexus-prisma PR": false
+        }
+    },
+    {
+        date: new Date(2020, 0, 28),
+        goals: {
+            "Integrate new step types": false,
+            "Update nexus-prisma PR": false
+        }
+    },
+    {
+        date: new Date(2020, 0, 29),
+        goals: {
+            "Update nexus-prisma PR": false
+        }
+    },
+    {
+        date: new Date(2020, 0, 30),
+        goals: {
+            "Integrate step types": false,
+            "Redo CLI": false
         }
     }
 ]

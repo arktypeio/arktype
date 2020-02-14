@@ -55,6 +55,11 @@ const getCommonConfig = ({
                 type: "javascript/auto",
                 test: /\.mjs$/,
                 use: []
+            },
+            {
+                test: /\.(graphql|gql)$/,
+                exclude: /node_modules/,
+                loader: "graphql-tag/loader"
             }
         ]
     },
