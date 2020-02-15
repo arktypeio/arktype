@@ -145,5 +145,41 @@ export const january2020Updates: UpdateData[] = [
             "Update nexus-prisma PR": false,
             "Working autosuggest chips": false
         }
+    },
+   {
+        date: new Date(2020, 0, 26 ),
+        goals: {
+            "Integrate new step types": false,
+            "Update nexus-prisma PR": false,
+            "Startup stream": true,
+            "JSRX": false   
+        }
+    },
+    {
+        date: new Date(2020, 0, 27 ),
+        goals: {
+            "Integrate new step types": false,
+            "Update nexus-prisma PR": false
+        }
+    },
+    {
+        date: new Date(2020, 0, 28 ),
+        goals: {
+            "Integrate new step types": false,
+            "Update nexus-prisma PR": false
+        }
+    },
+    {
+        date: new Date(2020, 0, 29 ),
+        goals: {
+            "Update nexus-prisma PR": false
+        }
+    },
+    {
+        date: new Date(2020, 0, 30 ),
+        goals: {
+            "Integrate step types": false,
+            "Redo CLI": false
+        }
     }
 ]
