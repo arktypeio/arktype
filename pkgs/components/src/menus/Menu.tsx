@@ -1,42 +1,49 @@
-import React, { cloneElement } from "react"
-import { Menu as MuiMenu } from "@material-ui/core"
-import { MenuProps as MuiMenuProps } from "@material-ui/core/Menu"
-import { MenuItem } from "."
+import React, { MutableRefObject } from "react"
+import MuiMenu, { MenuProps as MuiMenuProps } from "@material-ui/core/Menu"
+import MuiPopper, {
+    PopperProps as MuiPopperProps
+} from "@material-ui/core/Popper"
+import { MenuList, Paper } from "@material-ui/core"
+import MuiClickAwayListener from "@material-ui/core/ClickAwayListener"
+import { MenuItemProps as MuiMenuItemProps } from "@material-ui/core/MenuItem"
+import { MenuItem } from "./MenuItem"
 
-export type MenuProps = Partial<MuiMenuProps> & {
+export type MenuOptions = Record<string, () => any>
+
+export type MenuProps = Partial<MuiPopperProps> & {
+    itemProps?: MuiMenuItemProps
     children: {
-        toggle: JSX.Element
-        options: Record<string, () => any>
+        anchorTo: MutableRefObject<HTMLElement | null>
+        open: boolean
+        options: MenuOptions
+        onClickAway?: () => void
+        onSelectItem?: () => void
     }
 }
 
-export const Menu = ({ children: { toggle, options }, ...rest }: MenuProps) => {
-    const [anchor, setAnchor] = React.useState<HTMLElement | null>(null)
-    const button = cloneElement(toggle, {
-        onClick: (e: React.MouseEvent<HTMLButtonElement>) =>
-            setAnchor(e.currentTarget)
-    })
+export const Menu = ({
+    itemProps,
+    children: { anchorTo, open, options, onClickAway = () => {}, onSelectItem },
+    ...rest
+}: MenuProps) => {
     return (
-        <div>
-            {button}
-            <MuiMenu
-                anchorEl={anchor}
-                open={!!anchor}
-                onClose={() => setAnchor(null)}
-                {...rest}
-            >
-                {Object.entries(options).map(([name, onClick]) => (
-                    <MenuItem
-                        onClick={() => {
-                            onClick()
-                            setAnchor(null)
-                        }}
-                        key={name}
-                    >
-                        {name}
-                    </MenuItem>
-                ))}
-            </MuiMenu>
-        </div>
+        <MuiPopper open={open} anchorEl={anchorTo.current} {...rest}>
+            <Paper>
+                <MuiClickAwayListener onClickAway={onClickAway}>
+                    {Object.entries(options).map(([name, onClick]) => (
+                        <MenuItem
+                            onClick={() => {
+                                onClick()
+                                onSelectItem && onSelectItem()
+                            }}
+                            key={name}
+                            {...(itemProps as any)}
+                        >
+                            {name}
+                        </MenuItem>
+                    ))}
+                </MuiClickAwayListener>
+            </Paper>
+        </MuiPopper>
     )
 }

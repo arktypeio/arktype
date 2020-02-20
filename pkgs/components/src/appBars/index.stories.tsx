@@ -38,7 +38,7 @@ const TestAppBar = (props: AppBarProps) => (
     <AppBar {...props}>
         <Text>Admiral AppBar</Text>
         <TextInput kind="underlined" colorTemplate="light" />
-        <ChipInput colorTemplate="light" />
+        <ChipInput />
         <Icons.account onClick={() => console.log("clicked")} />
     </AppBar>
 )
