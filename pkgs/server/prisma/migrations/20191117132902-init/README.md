@@ -103,15 +103,14 @@ You can use a specific Photon built for this migration (20191117132902-init)
 in your `before` or `after` migration script like this:
 
 ```ts
-import Photon from '@generated/photon/20191117132902-init'
+import Photon from "@generated/photon/20191117132902-init"
 
 const photon = new Photon()
 
 async function main() {
-  const result = await photon.users()
-  console.dir(result, { depth: null })
+    const result = await photon.users()
+    console.dir(result, { depth: null })
 }
 
 main()
-
 ```

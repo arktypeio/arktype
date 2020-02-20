@@ -10,7 +10,7 @@ import {
     ChipInput,
     ErrorText
 } from "@re-do/components"
-import { useCreateTestMutation } from "@re-do/model/dist/react"
+import { useCreateTestMutation, useMeQuery } from "@re-do/model/dist/react"
 import { deactivateLearner, resetLearner } from "state"
 import { LearnerEvents } from "./StepCards"
 import { store } from "renderer/common"
@@ -24,6 +24,7 @@ export const Learner = () => {
         }
     }).learner
     const [createTest, createTestResult] = useCreateTestMutation()
+    const existingTags = useMeQuery().data?.me.tags.map(tag => tag.name) ?? []
     return (
         <Column full>
             <AppBar height={120} align="center">
@@ -40,26 +41,8 @@ export const Learner = () => {
                         }
                     />
                     <ChipInput
-                        value={tags.map(tag => tag.name)}
-                        colorTemplate="light"
-                        placeholder="Add Tags"
-                        onAdd={(chip: string) =>
-                            store.mutate({
-                                learner: {
-                                    testTags: _ => [..._, { name: chip }]
-                                }
-                            })
-                        }
-                        onDelete={(chip: string) => {
-                            store.mutate({
-                                learner: {
-                                    testTags: _ =>
-                                        _.filter(
-                                            current => current.name !== chip
-                                        )
-                                }
-                            })
-                        }}
+                        label="Tags"
+                        possibleSuggestions={existingTags}
                     />
                 </Column>
             </AppBar>
