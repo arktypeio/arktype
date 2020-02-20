@@ -1,12 +1,12 @@
 import React from "react"
-import { IconButton, Menu, Icons } from "@re-do/components"
+import { IconButton, TogglableMenu, Icons } from "@re-do/components"
 import { store } from "renderer/common"
 
 export const AccountSection = ({}) => {
     return (
         <>
             <IconButton Icon={Icons.help} style={{ color: "white" }} />
-            <Menu>
+            <TogglableMenu>
                 {{
                     toggle: (
                         <IconButton
@@ -18,7 +18,7 @@ export const AccountSection = ({}) => {
                         Logout: () => store.mutate({ token: "" })
                     }
                 }}
-            </Menu>
+            </TogglableMenu>
         </>
     )
 }
