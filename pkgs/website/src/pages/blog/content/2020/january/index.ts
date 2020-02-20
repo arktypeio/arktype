@@ -106,7 +106,7 @@ export const january2020Updates: UpdateData[] = [
             "Update chromium installation": true
         }
     },
-     {
+    {
         date: new Date(2020, 0, 21),
         goals: {
             "Server auth fix": true,
@@ -130,7 +130,7 @@ export const january2020Updates: UpdateData[] = [
             "Start autosuggest chips": false
         }
     },
-     {
+    {
         date: new Date(2020, 0, 24),
         goals: {
             "Refine test execution": true,
@@ -146,37 +146,37 @@ export const january2020Updates: UpdateData[] = [
             "Working autosuggest chips": false
         }
     },
-   {
-        date: new Date(2020, 0, 26 ),
+    {
+        date: new Date(2020, 0, 26),
         goals: {
             "Integrate new step types": false,
             "Update nexus-prisma PR": false,
             "Startup stream": true,
-            "JSRX": false   
+            JSRX: false
         }
     },
     {
-        date: new Date(2020, 0, 27 ),
+        date: new Date(2020, 0, 27),
         goals: {
             "Integrate new step types": false,
             "Update nexus-prisma PR": false
         }
     },
     {
-        date: new Date(2020, 0, 28 ),
+        date: new Date(2020, 0, 28),
         goals: {
             "Integrate new step types": false,
             "Update nexus-prisma PR": false
         }
     },
     {
-        date: new Date(2020, 0, 29 ),
+        date: new Date(2020, 0, 29),
         goals: {
             "Update nexus-prisma PR": false
         }
     },
     {
-        date: new Date(2020, 0, 30 ),
+        date: new Date(2020, 0, 30),
         goals: {
             "Integrate step types": false,
             "Redo CLI": false

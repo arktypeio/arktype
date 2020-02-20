@@ -28,7 +28,7 @@
         "@re-do/utils": "0.0.3",
         "apollo-server-lambda": "2.9.15",
         "bcrypt": "3.0.6",
-        "deepmerge": "4.1.1",
+        "deepmerge": "4.2.2",
         "dotenv": "8.2.0",
         "gqlize": "0.0.1",
         "graphql": "14.5.8",

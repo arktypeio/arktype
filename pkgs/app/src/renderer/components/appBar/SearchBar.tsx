@@ -1,5 +1,5 @@
 import React from "react"
-import { IconButton, Icons, Menu } from "@re-do/components"
+import { IconButton, Icons, TogglableMenu } from "@re-do/components"
 import { SearchInput } from "./SearchInput"
 import { Page } from "renderer/state"
 import { store } from "renderer/common"
@@ -13,7 +13,7 @@ export const SearchBar = () => (
             placeholder="Search your tests"
         />
 
-        <Menu>
+        <TogglableMenu>
             {{
                 toggle: (
                     <IconButton
@@ -27,6 +27,6 @@ export const SearchBar = () => (
                     Steps: () => store.mutate({ page: Page.Detail })
                 }
             }}
-        </Menu>
+        </TogglableMenu>
     </>
 )
