@@ -1,0 +1,26 @@
+{
+    "name": "@re-do/cli",
+    "version": "0.0.1",
+    "author": "redo.qa",
+    "description": "CLI for Redo",
+    "main": "dist/index.js",
+    "scripts": {
+        "build": "redo-build && chmod +x ./dist/index.js"
+    },
+    "bin": {
+        "redo": "./dist/index.js"
+    },
+    "dependencies": {
+        "@babel/runtime-corejs3": "7.6.3",
+        "core-js": "3.6.1",
+        "commander": "5.0.0-3"
+    },
+    "devDependencies": {
+        "@babel/cli": "7.6.4",
+        "@re-do/recommended": "0.0.1",
+        "@types/node": "12.11.1",
+        "babel-preset-redo": "0.0.1",
+        "ts-node": "8.5.4",
+        "typescript": "3.7.4"
+    }
+}
