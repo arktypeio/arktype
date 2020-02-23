@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import { Command } from "commander"
-import { install } from "./install"
+import { command } from "@re-do/utils/dist/command"
+import { ensureInstalled } from "./install"
 
 const cli = new Command()
 
@@ -9,8 +10,9 @@ cli.version(require("../package.json").version)
 cli.command("app")
     .description("Launch the Redo app")
     .action(async () => {
+        const executable = await ensureInstalled()
         console.log("Launching the app...")
-        await install()
+        command(executable)
     })
 
 cli.command("test")

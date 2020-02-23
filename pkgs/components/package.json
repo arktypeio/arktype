@@ -18,7 +18,7 @@
         "@material-ui/lab": "~4.0.0-alpha.42",
         "@material-ui/pickers": "3.2.8",
         "@material-ui/styles": "4.9.0",
-        "@re-do/utils": "0.0.3",
+        "@re-do/utils": "0.0.5",
         "core-js": "3.6.1",
         "date-fns": "2.5.1",
         "framer-motion": "1.7.0",

@@ -32,7 +32,7 @@ dependencies:
     "@rush-temp/app": "file:projects/app.tgz"
     "@rush-temp/babel-preset-redo": "file:projects/babel-preset-redo.tgz_498b91122a17be5f366b66e7e4c66b66"
     "@rush-temp/bundle": "file:projects/bundle.tgz_0c07ed463047194ace800dc43125a84f"
-    "@rush-temp/cli": "file:projects/cli.tgz_b246a10ce5c073d1d3ad52430bd59f1b"
+    "@rush-temp/cli": "file:projects/cli.tgz_@babel+core@7.7.7"
     "@rush-temp/components": "file:projects/components.tgz_webpack@4.41.5"
     "@rush-temp/gqlize": "file:projects/gqlize.tgz_@babel+core@7.7.7"
     "@rush-temp/jsrx": "file:projects/jsrx.tgz_@babel+core@7.7.7"
@@ -58,11 +58,12 @@ dependencies:
     "@types/electron-devtools-installer": 2.2.0
     "@types/enzyme": 3.10.3
     "@types/enzyme-adapter-react-16": 1.0.5
-    "@types/fs-extra": 8.0.1
+    "@types/fs-extra": 8.1.0
     "@types/html-webpack-plugin": 3.2.1
     "@types/jest": 24.0.19
     "@types/jsonwebtoken": 8.3.5
     "@types/node": 12.11.1
+    "@types/node-fetch": 2.5.4
     "@types/puppeteer-core": 2.0.0
     "@types/react": 16.9.17
     "@types/react-autosuggest": 9.3.13
@@ -107,6 +108,7 @@ dependencies:
     fs-extra: 8.1.0
     graphql: 14.5.8
     graphql-tag: 2.10.1_graphql@14.5.8
+    graphql-zeus: 2.5.7
     html-webpack-plugin: 3.2.0_webpack@4.41.5
     is-wsl: 2.1.1
     isomorphic-fetch: 2.2.1
@@ -4254,12 +4256,12 @@ packages:
         dev: false
         resolution:
             integrity: sha512-FKVPOCFbhCvZxpVAMhdBdTfVfXUpsh15wFHgqOKxh9N9vzWZVuWCSijZ5T4U34XYNnuj2oduh6xcs1i+LPI+BQ==
-    /@types/fs-extra/8.0.1:
+    /@types/fs-extra/8.1.0:
         dependencies:
             "@types/node": 12.11.1
         dev: false
         resolution:
-            integrity: sha512-J00cVDALmi/hJOYsunyT52Hva5TnJeKP5yd1r+mH/ZU0mbYZflR0Z5kw5kITtKTRYMhm1JMClOFYdHnQszEvqw==
+            integrity: sha512-UoOfVEzAUpeSPmjm7h1uk5MH6KZma2z2O7a75onTGjnNvAvMVrPzPL/vBbT65iIGHWj6rokwfmYcmxmlSf2uwg==
     /@types/glob/7.1.1:
         dependencies:
             "@types/events": 3.0.0
@@ -19603,7 +19605,7 @@ packages:
             "@re-do/utils": 0.0.3
             "@types/dotenv": 8.2.0
             "@types/electron-devtools-installer": 2.2.0
-            "@types/fs-extra": 8.0.1
+            "@types/fs-extra": 8.1.0
             "@types/node": 12.11.1
             "@types/puppeteer-core": 2.0.0
             "@types/react": 16.9.17
@@ -19633,7 +19635,7 @@ packages:
         dev: false
         name: "@rush-temp/app"
         resolution:
-            integrity: sha512-fb0ZgYsegr43z5mAdigC0QDTPIq0wKCbqhr/UjgL6kXxR0TflqfjpN3ztnlKRly6AX+bbPAiRX5szgK/pxb7lA==
+            integrity: sha512-Hrm7rkZ60n+PR8Vm7pa04JeH+MljnzqCubai+zhPPJG4zTTKwlllkrHRfdUyxQKaqOvkHxLYewlWgExQN6KV/Q==
             tarball: "file:projects/app.tgz"
         version: 0.0.0
     "file:projects/babel-preset-redo.tgz_498b91122a17be5f366b66e7e4c66b66":
@@ -19709,17 +19711,18 @@ packages:
             integrity: sha512-nbvBWRpm7eqYnSGLeYYGgEpCKK++NMZclPFvbxbeyPCwCguD4ZX7H8bqYnUtfsoAgJrUNtoW9xj2bis6JH/tJA==
             tarball: "file:projects/bundle.tgz"
         version: 0.0.0
-    "file:projects/cli.tgz_b246a10ce5c073d1d3ad52430bd59f1b":
+    "file:projects/cli.tgz_@babel+core@7.7.7":
         dependencies:
-            "@apollo/client": 3.0.0-beta.37_graphql@14.5.8+react@16.12.0
             "@babel/cli": 7.6.4_@babel+core@7.7.7
             "@babel/runtime-corejs3": 7.6.3
             "@octokit/graphql": 4.3.1
+            "@types/fs-extra": 8.1.0
             "@types/node": 12.11.1
+            "@types/node-fetch": 2.5.4
             apollo: 2.23.0_typescript@3.7.4
             commander: 5.0.0-3
             core-js: 3.6.1
-            graphql-tag: 2.10.1_graphql@14.5.8
+            fs-extra: 8.1.0
             graphql-zeus: 2.5.7
             node-fetch: 2.6.0
             ts-node: 8.5.4_typescript@3.7.4
@@ -19729,10 +19732,8 @@ packages:
         name: "@rush-temp/cli"
         peerDependencies:
             "@babel/core": "*"
-            graphql: "*"
-            react: "*"
         resolution:
-            integrity: sha512-KymMe4b9NM3tOKYu1SySvvpdhfnUuWqachV8N+JyK8QKmKHN0eWsajnkckvAs8xJRXK24A+R7cYCIjqZPOkkYA==
+            integrity: sha512-CqdbXr5teDCCif7NQ5lDkpETbZgcV1LObYp86MH3PJ5wA9TSgxSGKyjHcr5ix4fUi4JIGTTDGL9wXdYsqbk/nA==
             tarball: "file:projects/cli.tgz"
         version: 0.0.0
     "file:projects/components.tgz_webpack@4.41.5":
@@ -19798,7 +19799,7 @@ packages:
             "@babel/cli": 7.6.4_@babel+core@7.7.7
             "@babel/runtime-corejs3": 7.6.3
             "@re-do/utils": 0.0.3
-            "@types/fs-extra": 8.0.1
+            "@types/fs-extra": 8.1.0
             "@types/jest": 24.0.19
             "@types/node": 12.11.1
             fs-extra: 8.1.0
@@ -19812,7 +19813,7 @@ packages:
         peerDependencies:
             "@babel/core": "*"
         resolution:
-            integrity: sha512-QRqnO5YpDCeutmMo4RdWB9a9dKXXorFgZjnyMj4c3G+iBoKEqX9A9ZfxMt+jM94W4MUXKi8dcweHKuXRQN3+cw==
+            integrity: sha512-Wd74pROK/YcS1fVI8lNRAnEW6HovWHIVO10huvwBT3YDtjebIQBVDACei+7xEz1rB6M2uU3t2g6IFXPJ3RU/cA==
             tarball: "file:projects/gqlize.tgz"
         version: 0.0.0
     "file:projects/jsrx.tgz_@babel+core@7.7.7":
@@ -19820,7 +19821,7 @@ packages:
             "@babel/cli": 7.6.4_@babel+core@7.7.7
             "@babel/runtime-corejs3": 7.6.3
             "@re-do/utils": 0.0.3
-            "@types/fs-extra": 8.0.1
+            "@types/fs-extra": 8.1.0
             "@types/jest": 24.0.19
             "@types/node": 12.11.1
             dotenv: 8.2.0
@@ -19834,7 +19835,7 @@ packages:
         peerDependencies:
             "@babel/core": "*"
         resolution:
-            integrity: sha512-gdFtDkgUm6IBvwHBR3HYfFPy+FEyYyBiDb3B9h1JE7M+3ur8h6zbejPGOV5Hr1mFsnih7+Lop0Cp74cJA5wTXQ==
+            integrity: sha512-wuYIB+bns0NVhobURlAQtyi2YR6D/bBUL48YJUTUBciUhmvRO9Q7FAC0DuMdFSaczq2kjOFaMuDyO3l32Nm5SQ==
             tarball: "file:projects/jsrx.tgz"
         version: 0.0.0
     "file:projects/model.tgz_@babel+core@7.7.7+react@16.12.0":
@@ -19847,7 +19848,7 @@ packages:
             "@graphql-codegen/typescript": 1.9.1_graphql@14.5.8
             "@graphql-codegen/typescript-operations": 1.9.1_graphql@14.5.8
             "@graphql-codegen/typescript-react-apollo": 1.9.1_64e8e0ca60c2649945c6320b15511b28
-            "@types/fs-extra": 8.0.1
+            "@types/fs-extra": 8.1.0
             "@types/jest": 24.0.19
             "@types/node": 12.11.1
             "@types/validator": 12.0.1
@@ -19866,7 +19867,7 @@ packages:
             "@babel/core": "*"
             react: "*"
         resolution:
-            integrity: sha512-fQEGCZmwgCdncZ7KtwVKBp6Ztx7qHFNLRhtMvgbYokTrDG56FuUSASx/qrpkBXWqLv5O0jId+ZEZmGzOp01nvw==
+            integrity: sha512-agb6cZU89HESu+6lgcNHw36VrL6abWY4ngt3G8BBOePG2gWJ0WUAgm4iqfn23e7q75hBQBJ2SlFtYdyGRJoOKw==
             tarball: "file:projects/model.tgz"
         version: 0.0.0
     "file:projects/react-statelessly.tgz_@babel+core@7.7.7":
@@ -19911,7 +19912,7 @@ packages:
             "@prisma/photon": 2.0.0-preview017.2_prisma2@2.0.0-preview017.2
             "@re-do/utils": 0.0.3
             "@types/bcrypt": 3.0.0
-            "@types/fs-extra": 8.0.1
+            "@types/fs-extra": 8.1.0
             "@types/jest": 24.0.19
             "@types/jsonwebtoken": 8.3.5
             "@types/node": 12.11.1
@@ -19946,7 +19947,7 @@ packages:
         peerDependencies:
             webpack: "*"
         resolution:
-            integrity: sha512-HWbHRSrZ8Py9OX72bZzLANcd3q0q00Avmqy8HwjyEf03EqaCDXGyc/YRvVqv3nsDxM29kwj9B5wja73zsRDHvQ==
+            integrity: sha512-kzANsSJHi15lR4NKlKrVlYYtYkLj2OHVEv6PlMntejMnLr0nVf+0Cy0kVzgeEKGfR0wbRzWsk2L5aksEGLojlw==
             tarball: "file:projects/server.tgz"
         version: 0.0.0
     "file:projects/statelessly.tgz_@babel+core@7.7.7":
@@ -19976,7 +19977,7 @@ packages:
             "@babel/cli": 7.6.4_@babel+core@7.7.7
             "@babel/runtime-corejs3": 7.6.3
             "@re-do/utils": 0.0.3
-            "@types/fs-extra": 8.0.1
+            "@types/fs-extra": 8.1.0
             "@types/jest": 24.0.19
             "@types/puppeteer-core": 2.0.0
             fs-extra: 8.1.0
@@ -19989,14 +19990,14 @@ packages:
         peerDependencies:
             "@babel/core": "*"
         resolution:
-            integrity: sha512-ypkRbSxgcBVbwZuzlRuX6/LB9sr0LbxDbv6CXZ8lPq6yRfhNv7nYMy+6tWJZvOG/Cv2jg0KNAU3tjEUz2kT6tg==
+            integrity: sha512-cHO94aeVqOYXk6DOq03b6k6nDj8N345kwUG7po7pPdxSZkKCzlgjeDU26Yu008pDAtLN04QFYfVfqvBSDCZkJQ==
             tarball: "file:projects/test.tgz"
         version: 0.0.0
     "file:projects/utils.tgz_@babel+core@7.7.7":
         dependencies:
             "@babel/cli": 7.6.4_@babel+core@7.7.7
             "@babel/runtime-corejs3": 7.6.3
-            "@types/fs-extra": 8.0.1
+            "@types/fs-extra": 8.1.0
             "@types/jest": 24.0.19
             "@types/node": 12.11.1
             class-transformer: 0.2.3
@@ -20013,7 +20014,7 @@ packages:
         peerDependencies:
             "@babel/core": "*"
         resolution:
-            integrity: sha512-Cp7puOz9Gj7FS6+bfWjzbUNAbcTkyQRr1knAjlpH2cRKJpP47V/fHxqHyeIU+7FpFL72H44p2WFCcFpnpMe79Q==
+            integrity: sha512-epbDuLXr2EiVBqZHaxz2JdMdQXgo7vRK+GdCer7K5kBpOHyrHgJ8A7lXXUC0zaxGwU/5RcYPHhCpYMjU4QU9Hw==
             tarball: "file:projects/utils.tgz"
         version: 0.0.0
     "file:projects/website.tgz":
@@ -20113,11 +20114,12 @@ specifiers:
     "@types/electron-devtools-installer": 2.2.0
     "@types/enzyme": 3.10.3
     "@types/enzyme-adapter-react-16": 1.0.5
-    "@types/fs-extra": 8.0.1
+    "@types/fs-extra": 8.1.0
     "@types/html-webpack-plugin": 3.2.1
     "@types/jest": 24.0.19
     "@types/jsonwebtoken": 8.3.5
     "@types/node": 12.11.1
+    "@types/node-fetch": 2.5.4
     "@types/puppeteer-core": 2.0.0
     "@types/react": 16.9.17
     "@types/react-autosuggest": 9.3.13
@@ -20162,6 +20164,7 @@ specifiers:
     fs-extra: 8.1.0
     graphql: 14.5.8
     graphql-tag: 2.10.1
+    graphql-zeus: 2.5.7
     html-webpack-plugin: 3.2.0
     is-wsl: 2.1.1
     isomorphic-fetch: 2.2.1

@@ -7,8 +7,7 @@
     "main": "dist/index.js",
     "scripts": {
         "build": "redo-build && chmod +x ./dist/index.js",
-        "redo": "ts-node src/index.ts",
-        "getSchema": "zeus https://faker.graphqleditor.com/aexol/olympus/graphql ."
+        "redo": "ts-node src/index.ts"
     },
     "bin": {
         "redo": "./dist/index.js"
@@ -18,8 +17,9 @@
         "core-js": "3.6.1",
         "commander": "5.0.0-3",
         "node-fetch": "2.6.0",
+        "fs-extra": "8.1.0",
         "@octokit/graphql": "4.3.1",
-        "graphql-zeus": "2.5.7"
+        "@re-do/utils": "0.0.5"
     },
     "devDependencies": {
         "apollo": "2.23.0",
@@ -28,6 +28,8 @@
         "@types/node": "12.11.1",
         "babel-preset-redo": "0.0.1",
         "ts-node": "8.5.4",
-        "typescript": "3.7.4"
+        "typescript": "3.7.4",
+        "@types/node-fetch": "2.5.4",
+        "@types/fs-extra": "8.1.0"
     }
 }
