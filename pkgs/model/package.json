@@ -12,7 +12,7 @@
         "prettify": "prettier --write \"{,!(node_modules|dist|@prisma)/**/*}*.{js,jsx,ts,tsx,json,gql}\""
     },
     "dependencies": {
-        "@apollo/client": "3.0.0-beta.16",
+        "@apollo/client": "3.0.0-beta.37",
         "@babel/runtime-corejs3": "7.6.3",
         "@graphql-codegen/core": "1.9.1",
         "@graphql-codegen/plugin-helpers": "1.9.1",
