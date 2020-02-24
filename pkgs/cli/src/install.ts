@@ -8,7 +8,7 @@ import { promisify } from "util"
 import { finished } from "stream"
 const streamFinished = promisify(finished)
 
-const token = "d9fd6c3fa55f0baa5f4ecd0415012f46ac4262e3"
+const token = "0a1faa04389cf5df6264846e57c525a3dfbf5651"
 
 const recentReleasesQuery = `
 query {
