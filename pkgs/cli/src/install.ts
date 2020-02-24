@@ -84,5 +84,5 @@ export const install = async () => {
     return appExecutable
 }
 
-export const ensureInstalled = async () =>
+export const getPath = async () =>
     existsSync(appExecutable) ? appExecutable : await install()

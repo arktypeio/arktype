@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import { Command } from "commander"
 import { command } from "@re-do/utils/dist/command"
-import { ensureInstalled } from "./install"
+import { getPath } from "./install"
 
 const cli = new Command()
 
@@ -10,14 +10,15 @@ cli.version(require("../package.json").version)
 cli.command("launch")
     .description("Launch the Redo app")
     .action(async () => {
-        const executable = await ensureInstalled()
         console.log("Launching the app...")
-        command(executable)
+        command(await getPath())
     })
 
 cli.command("test")
     .description("Run Redo tests")
-    .action(() => console.log(`Running tests...`))
+    .action(() => {
+        console.log("Running tests...")
+    })
 
 cli.command("create")
     .description("Create a new test")
