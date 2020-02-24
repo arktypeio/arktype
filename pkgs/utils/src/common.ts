@@ -6,6 +6,8 @@ export const memoize = moize as <F extends (...args: any[]) => any>(f: F) => F
 
 export type MapReturn<F, V> = F extends (value: V) => infer R ? R : any
 
+export const isIn = (list: any[], value: any) => list.includes(value)
+
 export type Class<T> = new (...args: any[]) => T
 
 export type DeepRequired<T> = {

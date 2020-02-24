@@ -1,12 +1,12 @@
 import { chmodSync, mkdirpSync, existsSync } from "fs-extra"
-import p from "puppeteer-core"
+import { BrowserFetcher } from "playwright-core/lib/server/browserFetcher"
 import { join } from "path"
 import { homedir } from "os"
 
 const redoDir = join(homedir(), ".redo")
 const chromiumDir = join(redoDir, "chromium")
 mkdirpSync(chromiumDir)
-const browserFetcher = p.createBrowserFetcher({ path: chromiumDir })
+const browserFetcher = new BrowserFetcher(chromiumDir)
 
 const targetRevision = require("puppeteer-core/package.json").puppeteer
     .chromium_revision

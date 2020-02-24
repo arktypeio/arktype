@@ -63,6 +63,6 @@
         "jest": "24.9.0",
         "react-docgen-typescript-loader": "3.6.0",
         "react-test-renderer": "16.12.0",
-        "typescript": "3.7.4"
+        "typescript": "3.8.2"
     }
 }

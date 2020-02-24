@@ -1,8 +1,12 @@
 import { graphql } from "@octokit/graphql"
+import {
+    makeExecutable,
+    REDO_EXECUTABLE,
+    EXECUTABLE_SUFFIX
+} from "@re-do/utils/dist/node"
 import fetch from "node-fetch"
 import assert from "assert"
-import { createWriteStream, chmodSync, existsSync } from "fs-extra"
-import { appExecutable, executableSuffix } from "./common"
+import { createWriteStream, existsSync } from "fs-extra"
 import { once } from "events"
 import { promisify } from "util"
 import { finished } from "stream"
@@ -67,11 +71,11 @@ export const install = async () => {
         assetsResult?.repository?.release?.releaseAssets?.nodes
     )
     const assetUrl: string = assertExists(
-        assets.find(asset => asset.name.endsWith(executableSuffix))?.url
+        assets.find(asset => asset.name.endsWith(EXECUTABLE_SUFFIX))?.url
     )
     const assetRequestResult = await fetch(assertExists(assetUrl))
 
-    const fileStream = createWriteStream(appExecutable)
+    const fileStream = createWriteStream(REDO_EXECUTABLE)
     for await (const chunk of assetRequestResult.body) {
         if (!fileStream.write(chunk)) {
             await once(fileStream, "drain")
@@ -79,10 +83,10 @@ export const install = async () => {
     }
     fileStream.end()
     await streamFinished(fileStream)
-    chmodSync(appExecutable, "755")
+    makeExecutable(REDO_EXECUTABLE)
     console.log(`Succesfully installed Redo (${latestRelease.tagName})!`)
-    return appExecutable
+    return REDO_EXECUTABLE
 }
 
-export const getPath = async () =>
-    existsSync(appExecutable) ? appExecutable : await install()
+export const getPath = async (): Promise<string> =>
+    existsSync(REDO_EXECUTABLE) ? REDO_EXECUTABLE : await install()

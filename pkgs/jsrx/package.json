@@ -27,6 +27,6 @@
         "@types/node": "12.11.1",
         "babel-preset-redo": "0.0.1",
         "jest": "24.9.0",
-        "typescript": "3.7.4"
+        "typescript": "3.8.2"
     }
 }

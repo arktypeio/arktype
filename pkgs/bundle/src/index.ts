@@ -11,7 +11,8 @@ import {
     HotModuleReplacementPlugin,
     NoEmitOnErrorsPlugin
 } from "webpack"
-import { listify, getMode, isDev } from "@re-do/utils"
+import { listify } from "@re-do/utils"
+import { getMode, isDev } from "@re-do/utils/dist/node"
 import ForkTsCheckerWebpackPlugin from "fork-ts-checker-webpack-plugin"
 import { BundleAnalyzerPlugin } from "webpack-bundle-analyzer"
 

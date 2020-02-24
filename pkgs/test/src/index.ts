@@ -1,2 +1,2 @@
 export * from "./test"
-export * from "./chromium"
+export * from "./browser/install"
