@@ -7,7 +7,7 @@ const cli = new Command()
 
 cli.version(require("../package.json").version)
 
-cli.command("app")
+cli.command("launch")
     .description("Launch the Redo app")
     .action(async () => {
         const executable = await ensureInstalled()

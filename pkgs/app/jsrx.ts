@@ -5,12 +5,12 @@ const clean = "rm -rf dist && mkdir dist"
 
 type PlatformString = "linux" | "macos" | "windows"
 
-const publish = (platforms: PlatformString[]) => async () => {
-    await run("npm run buildProd")
-    await run("rm -rf release")
+const publish = (platforms: PlatformString[]) => () => {
+    run("npm run buildProd")
+    run("rm -rf release")
     for (const platform of platforms) {
         try {
-            await run(`electron-builder --${platform} --publish always`)
+            run(`electron-builder --${platform} --publish always`)
         } catch (e) {
             console.error(
                 `Encountered the following error while building platform ${platform}:\n${e}`
@@ -22,7 +22,7 @@ const publish = (platforms: PlatformString[]) => async () => {
 jsrx(
     {
         shared: {
-            build: $(`${clean} && webpack && cp .env dist`)
+            build: $(`${clean} && webpack && cp .env resources/icon.png dist`)
         },
         dev: {
             start: $(

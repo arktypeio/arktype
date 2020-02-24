@@ -6,6 +6,7 @@ import electronDevtoolsInstaller, {
     APOLLO_DEVELOPER_TOOLS
 } from "electron-devtools-installer"
 import { autoUpdater } from "electron-updater"
+import { join } from "path"
 
 let mainWindow: BrowserWindow | null
 
@@ -26,12 +27,14 @@ const installExtensions = async () => {
 }
 
 const createWindow = async () => {
+    console.log("CURRENT DIR " + __dirname)
     mainWindow = new BrowserWindow({
         webPreferences: {
             webSecurity: false,
             nodeIntegration: true,
             contextIsolation: false
-        }
+        },
+        icon: join(__dirname, "icon.png")
     })
     mainWindow.on("closed", () => {
         mainWindow = null

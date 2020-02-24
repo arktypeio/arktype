@@ -2,7 +2,7 @@
     "name": "@re-do/app",
     "description": "The Redo app",
     "author": "redo.qa",
-    "version": "0.0.8",
+    "version": "0.0.11",
     "private": true,
     "repository": {
         "type": "git",
