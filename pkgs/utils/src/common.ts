@@ -1,5 +1,6 @@
 import moize from "moize"
 import { isDeepStrictEqual } from "util"
+import assert from "assert"
 import deepMerge from "deepmerge"
 export const merge = deepMerge
 export const memoize = moize as <F extends (...args: any[]) => any>(f: F) => F
@@ -40,7 +41,14 @@ export type ValueFrom<T, K extends keyof T> = Pick<T, K>[K]
 
 export type Primitive = string | number | boolean | symbol
 export type NonRecursible = Primitive | Function | null | undefined
+export type Unpromisified<T> = T extends Promise<infer U> ? U : never
+
 export const isRecursible = (o: any) => o && typeof o === "object"
+
+export const asserted = <T>(value: T, description?: string) => {
+    assert(value, `'${value}' is not allowed as a ${description ?? "value"}.`)
+    return value as NonNullable<T>
+}
 
 export const deepMap = (
     from: object | any[],

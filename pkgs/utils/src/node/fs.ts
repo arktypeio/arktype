@@ -1,7 +1,17 @@
-import { readdirSync, lstatSync, ensureDirSync, chmodSync } from "fs-extra"
+import {
+    readdirSync,
+    lstatSync,
+    ensureDirSync,
+    chmodSync,
+    createWriteStream
+} from "fs-extra"
 import { homedir } from "os"
 import { join } from "path"
 import { EXECUTABLE_SUFFIX } from "./os"
+import { once } from "events"
+import { promisify } from "util"
+import { finished } from "stream"
+const streamFinished = promisify(finished)
 
 export const HOME = homedir()
 
@@ -19,6 +29,21 @@ export const getRedoDir = () => ensureDirSync(REDO_DIR)
 export const REDO_EXECUTABLE = fromRedo(`redo${EXECUTABLE_SUFFIX}`)
 
 export const makeExecutable = (path: string) => chmodSync(path, "755")
+
+export const streamToFile = async (
+    stream: NodeJS.ReadableStream,
+    path: string
+) => {
+    const fileStream = createWriteStream(path)
+    for await (const chunk of stream) {
+        if (!fileStream.write(chunk)) {
+            await once(fileStream, "drain")
+        }
+    }
+    fileStream.end()
+    await streamFinished(fileStream)
+    return path
+}
 
 export const walk = (dir: string): [string, any][] =>
     readdirSync(dir).map(item => [

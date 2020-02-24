@@ -1,10 +1,3 @@
-/* Important we use this format as opposed to import { ... } from "puppeteer".
-Puppeteer is actually a class object whose methods rely on this, which will
-be undefined if we use that style of import.
-*/
-// TODO: Figure out how to import puppeteer using import { ... } from "puppeteer"
-// this functionality worked previously but broke when switching to babel
-import p from "puppeteer-core"
 import { readFileSync } from "fs-extra"
 import { remote, Rectangle } from "electron"
 import { isDeepStrictEqual } from "util"
@@ -14,9 +7,9 @@ import {
     StepCreateWithoutUserCreateOnlyInput as StepInput,
     TagCreateWithoutTestCreateOnlyInput as TagInput
 } from "@re-do/model"
-import { ensureChromiumPath } from "@re-do/test"
+import { launch, BrowserName, browserHandlers } from "@re-do/test"
 import { store } from "renderer/common"
-import { isDev } from "@re-do/utils"
+import { isDev } from "@re-do/utils/dist/node"
 import { Root } from "./root"
 
 const BROWSER_WINDOW_TITLEBAR_SIZE = 35
@@ -43,6 +36,7 @@ const setMainWindowBounds = (bounds: Partial<Bounds>) => {
 export type Learner = {
     active: boolean
     events: StepInput[]
+    lastConnectedBrowser: BrowserName | ""
     lastConnectedEndpoint: string
     testName: string
     testTags: TagInput[]
@@ -59,6 +53,7 @@ export const learnerInitial: Learner = {
     events: [],
     testName: "",
     testTags: [],
+    lastConnectedBrowser: "",
     lastConnectedEndpoint: "",
     lastMainWindowBounds: {
         height: -1,
@@ -69,7 +64,6 @@ export const learnerInitial: Learner = {
 }
 
 const start = async () => {
-    const executablePath = await ensureChromiumPath()
     // Use size and position from the Redo app to launch browser
     const lastMainWindowBounds = getMainWindowBounds()
     const { height, width, x, y } = lastMainWindowBounds
@@ -81,42 +75,46 @@ const start = async () => {
         y: y - BROWSER_WINDOW_TITLEBAR_SIZE
     }
     setMainWindowBounds(newMainWindowBounds)
-    const browser = await p.launch({
-        executablePath,
-        headless: false,
-        defaultViewport: null,
+    const browser = await launch("chrome", {
         args: [
             `--window-position=${browserBounds.x},${browserBounds.y}`,
             `--window-size=${browserBounds.width},${browserBounds.height}`
         ]
     })
-    const page = (await browser.pages())[0]
+    // TODO: Fix, would break if there is not exactly one context
+    const page = (await browser.contexts()[0].pages())[0]
     await page.exposeFunction("notify", notify)
     const browserJs = readFileSync(
         resolve(isDev() ? "dist" : __dirname, "injected.js"),
         "utf-8"
     )
     await page.evaluateOnNewDocument(browserJs)
-    await page.goto("https://redo.qa")
     browser.on("disconnected", () => {
         deactivateLearner()
     })
     // TODO: This could cause problems since it's in a side effect (maybe mutations shouldn't happen from side effects?)
     store.mutate({
         learner: {
-            lastConnectedEndpoint: browser.wsEndpoint(),
-            lastMainWindowBounds: lastMainWindowBounds
+            lastConnectedEndpoint: browser.wsEndpoint,
+            lastMainWindowBounds: lastMainWindowBounds,
+            lastConnectedBrowser: "chrome"
         }
     })
 }
 
 const stop = async (context: Learner) => {
-    const { lastConnectedEndpoint, lastMainWindowBounds } = context
-    if (lastConnectedEndpoint) {
+    const {
+        lastConnectedEndpoint,
+        lastMainWindowBounds,
+        lastConnectedBrowser
+    } = context
+    if (lastConnectedEndpoint && lastConnectedBrowser) {
         try {
-            const browser = await p.connect({
-                browserWSEndpoint: lastConnectedEndpoint
-            })
+            const browser = await browserHandlers[lastConnectedBrowser].connect(
+                {
+                    wsEndpoint: lastConnectedEndpoint
+                }
+            )
             await browser.close()
         } catch (e) {
             // TODO: Stop from unnecessarily logging an error here

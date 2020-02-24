@@ -6,9 +6,9 @@ import { client, store } from "./common"
 import { defaultTheme } from "@re-do/components"
 import { initialRoot } from "state"
 import { App } from "./App"
-import { ensureChromiumPath } from "@re-do/test"
+import { installAllBrowsers } from "@re-do/test"
 
 const root = document.getElementById("root")
 store.mutate(initialRoot)
-ensureChromiumPath()
+installAllBrowsers()
 ReactDOM.render(<App apolloClient={client as any} theme={defaultTheme} />, root)

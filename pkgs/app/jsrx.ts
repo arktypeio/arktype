@@ -1,4 +1,4 @@
-import { jsrx, $, run } from "jsrx"
+import { jsrx, $, shell } from "jsrx"
 import { join } from "path"
 
 const clean = "rm -rf dist && mkdir dist"
@@ -6,11 +6,11 @@ const clean = "rm -rf dist && mkdir dist"
 type PlatformString = "linux" | "macos" | "windows"
 
 const publish = (platforms: PlatformString[]) => () => {
-    run("npm run buildProd")
-    run("rm -rf release")
+    shell("npm run buildProd")
+    shell("rm -rf release")
     for (const platform of platforms) {
         try {
-            run(`electron-builder --${platform} --publish always`)
+            shell(`electron-builder --${platform} --publish always`)
         } catch (e) {
             console.error(
                 `Encountered the following error while building platform ${platform}:\n${e}`

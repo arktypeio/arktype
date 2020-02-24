@@ -3,7 +3,7 @@ NOTE:
 These modules aren't exposed by default since they will fail
 in a browser environment. Import them like this:
 
-import { shell } from "@re-do/utils/dist/os"
+import { shell } from "@re-do/utils/dist/node"
 */
 export * from "./env"
 export * from "./fs"

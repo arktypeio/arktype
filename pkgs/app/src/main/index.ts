@@ -1,6 +1,6 @@
 import "dotenv/config"
 import { app, BrowserWindow } from "electron"
-import { isDev } from "@re-do/utils"
+import { isDev } from "@re-do/utils/dist/node"
 import electronDevtoolsInstaller, {
     REACT_DEVELOPER_TOOLS,
     APOLLO_DEVELOPER_TOOLS

@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 const { readdirSync } = require("fs-extra")
-const { command } = require("@re-do/utils/dist/command")
+const { shell } = require("@re-do/utils/dist/node")
 
 const cwd = process.cwd()
 
@@ -12,10 +12,8 @@ if (!jsrxConfigFile) {
 }
 const runner =
     jsrxConfigFile === "jsrx.js" ? "node" : "npx ts-node --transpile-only"
-command(
-    `${runner} ${jsrxConfigFile} ${process.argv[process.argv.length - 1]}`,
-    {
-        cwd,
-        stdio: "inherit"
-    }
-)
+
+shell(`${runner} ${jsrxConfigFile} ${process.argv[process.argv.length - 1]}`, {
+    cwd,
+    stdio: "inherit"
+})

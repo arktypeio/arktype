@@ -1,16 +1,13 @@
 import { graphql } from "@octokit/graphql"
+import { existsSync } from "fs-extra"
+import fetch from "node-fetch"
+import { asserted } from "@re-do/utils"
 import {
     makeExecutable,
     REDO_EXECUTABLE,
-    EXECUTABLE_SUFFIX
+    EXECUTABLE_SUFFIX,
+    streamToFile
 } from "@re-do/utils/dist/node"
-import fetch from "node-fetch"
-import assert from "assert"
-import { createWriteStream, existsSync } from "fs-extra"
-import { once } from "events"
-import { promisify } from "util"
-import { finished } from "stream"
-const streamFinished = promisify(finished)
 
 const token = "0a1faa04389cf5df6264846e57c525a3dfbf5651"
 
@@ -43,10 +40,8 @@ query latestAssets($tag: String!) {
 }
 `
 
-const assertExists = <T>(value: T) => {
-    assert(value, "Unable to find the latest Redo installation.")
-    return value as NonNullable<T>
-}
+const assertResult = <T>(value: T) =>
+    asserted<T>(value, "Unable to find the latest Redo installation.")
 
 export const install = async () => {
     console.log("Installing the latest version of Redo...")
@@ -58,32 +53,23 @@ export const install = async () => {
     const releasesResult = await query({
         query: recentReleasesQuery
     })
-    const releases: any[] = assertExists(
+    const releases: any[] = assertResult(
         releasesResult?.repository?.releases?.nodes
     )
     const latestRelease = releases.find(
         release => !release.isDraft && !release.isPrerelease
     )
     const assetsResult = await query(assetsQuery, {
-        tag: assertExists(latestRelease).tagName
+        tag: assertResult(latestRelease).tagName
     })
-    const assets: any[] = assertExists(
+    const assets: any[] = assertResult(
         assetsResult?.repository?.release?.releaseAssets?.nodes
     )
-    const assetUrl: string = assertExists(
+    const assetUrl: string = assertResult(
         assets.find(asset => asset.name.endsWith(EXECUTABLE_SUFFIX))?.url
     )
-    const assetRequestResult = await fetch(assertExists(assetUrl))
-
-    const fileStream = createWriteStream(REDO_EXECUTABLE)
-    for await (const chunk of assetRequestResult.body) {
-        if (!fileStream.write(chunk)) {
-            await once(fileStream, "drain")
-        }
-    }
-    fileStream.end()
-    await streamFinished(fileStream)
-    makeExecutable(REDO_EXECUTABLE)
+    const { body } = await fetch(assertResult(assetUrl))
+    makeExecutable(await streamToFile(body, REDO_EXECUTABLE))
     console.log(`Succesfully installed Redo (${latestRelease.tagName})!`)
     return REDO_EXECUTABLE
 }

@@ -1,4 +1,3 @@
-import { join } from "path"
 import { gqlize } from "gqlize"
 // @ts-ignore
 import schema from "./schema.gql"

@@ -6,7 +6,7 @@ import {
 } from "@apollo/client"
 import { rootHandler, initialRoot } from "state"
 import { createStore } from "react-statelessly"
-import { isDev } from "@re-do/utils"
+import { isDev } from "@re-do/utils/dist/node"
 
 const httpLink = createHttpLink({
     uri: isDev()

@@ -53,10 +53,7 @@ const toSuggestion = <Kind extends SuggestionKind>(
                     Icon={Icons.run}
                     onClick={() =>
                         runTest(
-                            ...(test.steps.map(step => [
-                                step.action,
-                                step
-                            ]) as any)
+                            test.steps.map(step => [step.action, step] as any)
                         )
                     }
                 />

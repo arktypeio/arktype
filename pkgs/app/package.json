@@ -57,7 +57,7 @@
         "fs-extra": "8.1.0",
         "graphql": "14.5.8",
         "graphql-tag": "2.10.1",
-        "puppeteer-core": "2.0.0",
+        "playwright-core": "0.11.1",
         "react": "16.12.0",
         "react-dom": "16.12.0",
         "react-statelessly": "0.0.1",

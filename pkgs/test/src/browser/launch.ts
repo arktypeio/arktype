@@ -1,17 +1,13 @@
-import { chromium as chrome, firefox, webkit as safari } from "playwright"
-import { ensureChromiumPath } from "./install"
-
-export const browsers = {
-    chrome,
-    firefox,
-    safari
-}
-
-export type BrowserTypes = typeof browsers
-export type BrowserName = keyof BrowserTypes
+import { asserted } from "@re-do/utils"
+import {
+    BrowserName,
+    BrowserHandlers,
+    browserHandlers,
+    Browser
+} from "./common"
 
 export type LaunchOptions<Name extends BrowserName> = Parameters<
-    BrowserTypes[Name]["launch"]
+    BrowserHandlers[Name]["launchServer"]
 >[0]
 
 const addDefaults = async <Name extends BrowserName>(
@@ -19,7 +15,6 @@ const addDefaults = async <Name extends BrowserName>(
 ) => ({
     headless: false,
     slowMo: 50,
-    // executablePath: await ensureChromiumPath(),
     ...options
 })
 
@@ -27,5 +22,10 @@ export const launch = async <Name extends BrowserName>(
     name: Name,
     options?: LaunchOptions<Name>
 ) => {
-    return await browsers[name].launch(await addDefaults(options))
+    const server = await browserHandlers[name].launchServer(
+        await addDefaults(options)
+    )
+    const wsEndpoint = asserted(server.wsEndpoint(), "playwright endpoint")
+    const browser = await browserHandlers[name].connect({ wsEndpoint })
+    return Object.assign(browser, { wsEndpoint }) as Browser<Name>
 }

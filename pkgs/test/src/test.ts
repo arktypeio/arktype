@@ -15,7 +15,10 @@ export const test = async <Browser extends BrowserName>(
         browser: "chrome" as const,
         ...(options ?? {})
     }
-    const browser = await launch(browserName, launchOptions)
+    const browser = await launch(
+        browserName,
+        launchOptions as LaunchOptions<Browser>
+    )
     const page = await browser.newPage()
     await page.goto("https://redo.qa")
     await page.screenshot({ path: "before.png" })
