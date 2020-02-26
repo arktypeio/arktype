@@ -18,13 +18,18 @@ export const HOME = homedir()
 export const fromDir = (dir: string) => (...pathSegments: string[]) =>
     join(dir, ...pathSegments)
 
+export const ensureDir = ensureDirSync
+
 export const fromHome = fromDir(HOME)
 
 export const REDO_DIR = fromHome(".redo")
 
 export const fromRedo = fromDir(REDO_DIR)
 
-export const getRedoDir = () => ensureDirSync(REDO_DIR)
+export const ensureRedoDir = () => {
+    ensureDir(REDO_DIR)
+    return REDO_DIR
+}
 
 export const REDO_EXECUTABLE = fromRedo(`redo${EXECUTABLE_SUFFIX}`)
 

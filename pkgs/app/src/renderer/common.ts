@@ -10,8 +10,9 @@ import { isDev } from "@re-do/utils/dist/node"
 
 const httpLink = createHttpLink({
     uri: isDev()
-        ? `http://localhost:${process.env.PORT}/graphql`
-        : "https://tpru7v18yi.execute-api.us-east-1.amazonaws.com/dev/graphql"
+        ? "https://tpru7v18yi.execute-api.us-east-1.amazonaws.com/dev/graphql"
+        : // `http://localhost:${process.env.PORT}/graphql`
+          "https://tpru7v18yi.execute-api.us-east-1.amazonaws.com/dev/graphql"
 })
 
 const contextLink = new ApolloLink((operation, forward) => {

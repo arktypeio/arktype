@@ -92,6 +92,7 @@ dependencies:
     core-js-pure: 3.6.1
     css-loader: 3.2.0_webpack@4.41.5
     date-fns: 2.5.1
+    debug: 4.1.1
     deepmerge: 4.2.2
     dotenv: 8.2.0
     electron: 7.1.2
@@ -20337,6 +20338,7 @@ packages:
             "@types/fs-extra": 8.1.0
             "@types/jest": 24.0.19
             "@types/puppeteer-core": 2.0.0
+            debug: 4.1.1
             fs-extra: 8.1.0
             jest: 24.9.0
             playwright: 0.11.1
@@ -20349,7 +20351,7 @@ packages:
         peerDependencies:
             "@babel/core": "*"
         resolution:
-            integrity: sha512-aXNqRfaIdKR+eFabm2HefI3/05YEtrz+CaIVnrNyVVSBzqsZ2T5AJFCmO52dUEI/qLXQezD01OKyBSLhzc5e/Q==
+            integrity: sha512-jwpZV7mYBAw2mxawT5oNnaJnQl5UFQqU18Gb9HCER/Qh4/JYY8CbZ0gD2NoXraYp56rUkqZnzYyTVzTZQW5BFQ==
             tarball: "file:projects/test.tgz"
         version: 0.0.0
     "file:projects/utils.tgz_@babel+core@7.7.7":
@@ -20507,6 +20509,7 @@ specifiers:
     core-js-pure: 3.6.1
     css-loader: 3.2.0
     date-fns: 2.5.1
+    debug: 4.1.1
     deepmerge: 4.2.2
     dotenv: 8.2.0
     electron: 7.1.2

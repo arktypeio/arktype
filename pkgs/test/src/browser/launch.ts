@@ -27,5 +27,14 @@ export const launch = async <Name extends BrowserName>(
     )
     const wsEndpoint = asserted(server.wsEndpoint(), "playwright endpoint")
     const browser = await browserHandlers[name].connect({ wsEndpoint })
-    return Object.assign(browser, { wsEndpoint }) as Browser<Name>
+    const pages = await browser._defaultContext.pages()
+    if (!pages || !pages.length) {
+        throw new Error(
+            `Found no usable context after launching browser ${name}.`
+        )
+    }
+    return Object.assign(browser, {
+        wsEndpoint,
+        page: pages[0]
+    }) as Browser<Name>
 }

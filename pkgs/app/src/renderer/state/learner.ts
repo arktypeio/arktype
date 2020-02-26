@@ -81,8 +81,7 @@ const start = async () => {
             `--window-size=${browserBounds.width},${browserBounds.height}`
         ]
     })
-    // TODO: Fix, would break if there is not exactly one context
-    const page = (await browser.contexts()[0].pages())[0]
+    const { page } = browser
     await page.exposeFunction("notify", notify)
     const browserJs = readFileSync(
         resolve(isDev() ? "dist" : __dirname, "injected.js"),

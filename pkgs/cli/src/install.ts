@@ -6,7 +6,8 @@ import {
     makeExecutable,
     REDO_EXECUTABLE,
     EXECUTABLE_SUFFIX,
-    streamToFile
+    streamToFile,
+    ensureRedoDir
 } from "@re-do/utils/dist/node"
 
 const token = "0a1faa04389cf5df6264846e57c525a3dfbf5651"
@@ -29,7 +30,7 @@ const assetsQuery = `
 query latestAssets($tag: String!) {
     repository(name: "redo", owner: "redo-qa") {
         release(tagName: $tag) {
-            releaseAssets(first: 10) {
+            releaseAssets(last: 10) {
                 nodes {
                     name
                     url
@@ -45,6 +46,7 @@ const assertResult = <T>(value: T) =>
 
 export const install = async () => {
     console.log("Installing the latest version of Redo...")
+    ensureRedoDir()
     const query = graphql.defaults({
         headers: {
             authorization: `token ${token}`
@@ -56,11 +58,11 @@ export const install = async () => {
     const releases: any[] = assertResult(
         releasesResult?.repository?.releases?.nodes
     )
-    const latestRelease = releases.find(
-        release => !release.isDraft && !release.isPrerelease
+    const latestRelease = assertResult(
+        releases.find(release => !release.isDraft && !release.isPrerelease)
     )
     const assetsResult = await query(assetsQuery, {
-        tag: assertResult(latestRelease).tagName
+        tag: latestRelease.tagName
     })
     const assets: any[] = assertResult(
         assetsResult?.repository?.release?.releaseAssets?.nodes
