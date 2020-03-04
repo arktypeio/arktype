@@ -8,8 +8,7 @@
         "start": "npm run clean && npm run devServer",
         "build": "npm run clean && NODE_ENV=production webpack",
         "devServer": "NODE_ENV=development webpack-dev-server --progress --colors",
-        "clean": "rm -rf dist && mkdir dist",
-        "test": "redo test"
+        "clean": "rm -rf dist && mkdir dist"
     },
     "dependencies": {
         "@babel/runtime-corejs3": "7.6.3",
@@ -30,7 +29,6 @@
     "devDependencies": {
         "@re-do/bundle": "0.0.1",
         "@re-do/recommended": "0.0.1",
-        "@re-do/cli": "0.0.1",
         "@types/analytics-node": "3.1.1",
         "@types/jest": "24.0.19",
         "@types/node": "12.11.1",
