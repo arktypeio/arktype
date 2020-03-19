@@ -27,8 +27,10 @@ const build = () => {
 }
 
 const upDb = () => {
-    shell(`prisma2 lift save --name ${process.env.NODE_ENV} --create-db`)
-    shell("prisma2 lift up")
+    shell(
+        `prisma2 migrate save --experimental --name ${process.env.NODE_ENV} --create-db`
+    )
+    shell("prisma2 migrate up --experimental")
     shell(`ts-node prisma/seed.ts`)
 }
 
@@ -37,7 +39,6 @@ jsrx(
         shared: {
             build,
             generate,
-            studio: $("prisma2 dev"),
             tsc: $("tsc"),
             upDb
         },

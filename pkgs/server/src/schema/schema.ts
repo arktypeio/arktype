@@ -20,8 +20,8 @@ export const schema = makeSchema({
         contextType: "Context.Context",
         sources: [
             {
-                source: "@prisma/photon",
-                alias: "photon"
+                source: "@prisma/client",
+                alias: "client"
             },
             {
                 source: require.resolve("../context"),
@@ -31,18 +31,20 @@ export const schema = makeSchema({
     },
     plugins: [
         nexusPrismaPlugin({
-            outputs: {
+            paths: {
                 typegen: join(
                     __dirname,
                     "../../node_modules/@types/__nexus-typegen__nexus-prisma/index.d.ts"
                 )
             },
-            computedInputs: {
-                user: ({ ctx: { userId } }) => ({
-                    connect: {
-                        id: userId
-                    }
-                })
+            inputs: {
+                user: {
+                    computeFrom: ({ ctx: { userId } }) => ({
+                        connect: {
+                            id: userId
+                        }
+                    })
+                }
             }
         })
     ]

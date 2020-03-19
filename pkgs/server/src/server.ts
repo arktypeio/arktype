@@ -3,9 +3,9 @@ import { ApolloServer } from "apollo-server-lambda"
 import { getUserId } from "./auth"
 import { schema } from "./schema"
 import { playground } from "./playground"
-import { Photon } from "@prisma/photon"
+import { PrismaClient } from "@prisma/client"
 
-const photon = new Photon()
+const prisma = new PrismaClient()
 
 export const server = new ApolloServer({
     schema,
@@ -22,7 +22,7 @@ export const server = new ApolloServer({
         return {
             ...event,
             userId: getUserId(event),
-            photon
+            prisma
         }
     },
     playground,

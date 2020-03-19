@@ -5,9 +5,9 @@ export const Query = queryType({
     definition: t => {
         t.field("me", {
             type: "User",
-            resolve: async (_, args, { photon, userId }) => {
+            resolve: async (_, args, { prisma, userId }) => {
                 const result = await ifExists(() =>
-                    photon.users.findOne({ where: { id: userId } })
+                    prisma.users.findOne({ where: { id: userId } })
                 )
                 if (result) {
                     return result

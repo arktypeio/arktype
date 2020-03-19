@@ -31,9 +31,9 @@ const Mutation = mutationType({
             args: {
                 data: arg({ type: SignInInput, required: true })
             },
-            resolve: async (_, { data: { email, password } }, { photon }) => {
+            resolve: async (_, { data: { email, password } }, { prisma }) => {
                 const user = await ifExists(() =>
-                    photon.users.findOne({
+                    prisma.users.findOne({
                         where: { email: email ? email.toLowerCase() : "" }
                     })
                 )
@@ -55,10 +55,10 @@ const Mutation = mutationType({
                 resolve: async (
                     _,
                     { data: { email, password, first, last } },
-                    { photon }
+                    { prisma }
                 ) => {
                     const existingUser = await ifExists(() =>
-                        photon.users.findOne({
+                        prisma.users.findOne({
                             where: { email: email ? email.toLowerCase() : "" }
                         })
                     )
@@ -68,7 +68,7 @@ const Mutation = mutationType({
                         )
                     }
                     const hashedPassword = await hash(password, 10)
-                    const user = await photon.users.create({
+                    const user = await prisma.users.create({
                         data: {
                             email,
                             password: hashedPassword,
