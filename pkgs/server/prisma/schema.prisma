@@ -16,25 +16,25 @@ generator client {
 }
 
 model Tag {
-  id   Int    @id
+  id   Int    @id @default(autoincrement())
   user User
   name String
   @@unique([name, user])
 }
 
 model Selector {
-  id  Int    @id
+  id  Int    @id @default(autoincrement())
   css String
 }
 
 model Step {
-  id     Int    @id
+  id     Int    @id @default(autoincrement())
   action Action
   tests  Test[]
 }
 
 model Test {
-  id    Int    @id
+  id    Int    @id @default(autoincrement())
   user  User
   name  String
   steps Step[]
@@ -43,7 +43,7 @@ model Test {
 }
 
 model User {
-  id        Int        @id
+  id        Int        @id @default(autoincrement())
   email     String     @unique
   password  String
   first     String
@@ -55,7 +55,7 @@ model User {
 }
 
 model Action {
-  id   Int        @id
+  id   Int        @id @default(autoincrement())
   kind ActionKind
   data ActionData
 }
@@ -66,7 +66,7 @@ enum ActionKind {
 
 
 model ActionData {
-  id               Int                   @id
+  id               Int                   @id @default(autoincrement())
   click            ClickData?
   set              SetData?
   hover            HoverData?
@@ -78,45 +78,45 @@ model ActionData {
 }
 
 model ClickData {
-  id       Int     @id
+  id       Int     @id @default(autoincrement())
   selector String
   double   Boolean @default(false)
 }
 
 model SetData {
-  id       Int    @id
+  id       Int    @id @default(autoincrement())
   selector String
   value    String
 }
 
 model HoverData {
-  id       Int    @id
+  id       Int    @id @default(autoincrement())
   selector String
   duration Int
 }
 
 model KeyData {
-  id  Int    @id
+  id  Int    @id @default(autoincrement())
   key String
 }
 
 model GoData {
-  id  Int    @id
+  id  Int    @id @default(autoincrement())
   url String
 }
 
 model ScreenshotData {
-  id Int @id
+  id Int @id @default(autoincrement())
 }
 
 model AssertTextData {
-  id       Int      @id
+  id       Int      @id @default(autoincrement())
   selector Selector
   expected String
 }
 
 model AssertVisibilityData {
-  id       Int      @id
+  id       Int      @id @default(autoincrement())
   selector Selector
   expected Boolean
 }

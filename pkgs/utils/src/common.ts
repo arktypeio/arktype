@@ -62,12 +62,23 @@ export const deepMap = (
         Array.isArray(from)
     )
 
+export const transform = <K extends Key, V>(
+    o: Record<K, V>,
+    map: MapFunction<K, V>
+) => {
+    if (!o || typeof o !== "object") {
+        throw new Error(`Can only transform objects. Received: ${o}.`)
+    }
+    return fromEntries(Object.entries(o).map(map as any)) as Record<K, V>
+}
+
 export type ItemOrList<T> = T | T[]
 export type Unlisted<T> = T extends (infer V)[] ? V : T
 export const listify = <T>(o: ItemOrList<T>) => ([] as T[]).concat(o)
 
 export type Key = string | number
 export type Entry = [Key, any]
+export type MapFunction<K extends Key, V> = Parameters<Array<[K, V]>["map"]>[0]
 
 export const fromEntries = (entries: Entry[], asArray = false) => {
     const obj: any = asArray ? [] : {}

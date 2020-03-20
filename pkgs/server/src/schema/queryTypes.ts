@@ -7,7 +7,7 @@ export const Query = queryType({
             type: "User",
             resolve: async (_, args, { prisma, userId }) => {
                 const result = await ifExists(() =>
-                    prisma.users.findOne({ where: { id: userId } })
+                    prisma.user.findOne({ where: { id: userId } })
                 )
                 if (result) {
                     return result

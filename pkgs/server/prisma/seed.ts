@@ -13,7 +13,7 @@ async function main() {
     try {
         for (const [first, last] of users) {
             try {
-                const user = await prisma.users.create({
+                const user = await prisma.user.create({
                     data: {
                         email: `${first.toLowerCase()}@redo.qa`,
                         first,

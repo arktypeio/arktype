@@ -11,6 +11,199 @@ export type Scalars = {
     Float: number
 }
 
+export type ActionCreateManyWithoutDataInput = {
+    connect?: Maybe<Array<ActionWhereUniqueInput>>
+    create?: Maybe<Array<ActionCreateWithoutDataInput>>
+}
+
+export type ActionCreateOneWithoutStepsInput = {
+    connect?: Maybe<ActionWhereUniqueInput>
+    create?: Maybe<ActionCreateWithoutStepsInput>
+}
+
+export type ActionCreateWithoutDataInput = {
+    kind: ActionKind
+    steps?: Maybe<StepCreateManyWithoutActionInput>
+}
+
+export type ActionCreateWithoutStepsInput = {
+    data: ActionDataCreateOneWithoutActionsInput
+    kind: ActionKind
+}
+
+export type ActionDataCreateManyWithoutAssertTextInput = {
+    connect?: Maybe<Array<ActionDataWhereUniqueInput>>
+    create?: Maybe<Array<ActionDataCreateWithoutAssertTextInput>>
+}
+
+export type ActionDataCreateManyWithoutAssertVisibilityInput = {
+    connect?: Maybe<Array<ActionDataWhereUniqueInput>>
+    create?: Maybe<Array<ActionDataCreateWithoutAssertVisibilityInput>>
+}
+
+export type ActionDataCreateOneWithoutActionsInput = {
+    connect?: Maybe<ActionDataWhereUniqueInput>
+    create?: Maybe<ActionDataCreateWithoutActionsInput>
+}
+
+export type ActionDataCreateWithoutActionsInput = {
+    assertText?: Maybe<AssertTextDataCreateOneWithoutActionDatasInput>
+    assertVisibility?: Maybe<
+        AssertVisibilityDataCreateOneWithoutActionDatasInput
+    >
+    click?: Maybe<ClickDataCreateOneWithoutActionDatasInput>
+    go?: Maybe<GoDataCreateOneWithoutActionDatasInput>
+    hover?: Maybe<HoverDataCreateOneWithoutActionDatasInput>
+    key?: Maybe<KeyDataCreateOneWithoutActionDatasInput>
+    screenshot?: Maybe<ScreenshotDataCreateOneWithoutActionDatasInput>
+    set?: Maybe<SetDataCreateOneWithoutActionDatasInput>
+}
+
+export type ActionDataCreateWithoutAssertTextInput = {
+    actions?: Maybe<ActionCreateManyWithoutDataInput>
+    assertVisibility?: Maybe<
+        AssertVisibilityDataCreateOneWithoutActionDatasInput
+    >
+    click?: Maybe<ClickDataCreateOneWithoutActionDatasInput>
+    go?: Maybe<GoDataCreateOneWithoutActionDatasInput>
+    hover?: Maybe<HoverDataCreateOneWithoutActionDatasInput>
+    key?: Maybe<KeyDataCreateOneWithoutActionDatasInput>
+    screenshot?: Maybe<ScreenshotDataCreateOneWithoutActionDatasInput>
+    set?: Maybe<SetDataCreateOneWithoutActionDatasInput>
+}
+
+export type ActionDataCreateWithoutAssertVisibilityInput = {
+    actions?: Maybe<ActionCreateManyWithoutDataInput>
+    assertText?: Maybe<AssertTextDataCreateOneWithoutActionDatasInput>
+    click?: Maybe<ClickDataCreateOneWithoutActionDatasInput>
+    go?: Maybe<GoDataCreateOneWithoutActionDatasInput>
+    hover?: Maybe<HoverDataCreateOneWithoutActionDatasInput>
+    key?: Maybe<KeyDataCreateOneWithoutActionDatasInput>
+    screenshot?: Maybe<ScreenshotDataCreateOneWithoutActionDatasInput>
+    set?: Maybe<SetDataCreateOneWithoutActionDatasInput>
+}
+
+export type ActionDataWhereUniqueInput = {
+    id?: Maybe<Scalars["Int"]>
+}
+
+export enum ActionKind {
+    AssertText = "assertText",
+    AssertVisibility = "assertVisibility",
+    Click = "click",
+    Go = "go",
+    Hover = "hover",
+    Key = "key",
+    Screenshot = "screenshot",
+    Set = "set"
+}
+
+export type ActionWhereUniqueInput = {
+    id?: Maybe<Scalars["Int"]>
+}
+
+export type AssertTextDataCreateManyWithoutSelectorInput = {
+    connect?: Maybe<Array<AssertTextDataWhereUniqueInput>>
+    create?: Maybe<Array<AssertTextDataCreateWithoutSelectorInput>>
+}
+
+export type AssertTextDataCreateOneWithoutActionDatasInput = {
+    connect?: Maybe<AssertTextDataWhereUniqueInput>
+    create?: Maybe<AssertTextDataCreateWithoutActionDatasInput>
+}
+
+export type AssertTextDataCreateWithoutActionDatasInput = {
+    expected: Scalars["String"]
+    selector: SelectorCreateOneWithoutAssertTextDatasInput
+}
+
+export type AssertTextDataCreateWithoutSelectorInput = {
+    actionDatas?: Maybe<ActionDataCreateManyWithoutAssertTextInput>
+    expected: Scalars["String"]
+}
+
+export type AssertTextDataWhereUniqueInput = {
+    id?: Maybe<Scalars["Int"]>
+}
+
+export type AssertVisibilityDataCreateManyWithoutSelectorInput = {
+    connect?: Maybe<Array<AssertVisibilityDataWhereUniqueInput>>
+    create?: Maybe<Array<AssertVisibilityDataCreateWithoutSelectorInput>>
+}
+
+export type AssertVisibilityDataCreateOneWithoutActionDatasInput = {
+    connect?: Maybe<AssertVisibilityDataWhereUniqueInput>
+    create?: Maybe<AssertVisibilityDataCreateWithoutActionDatasInput>
+}
+
+export type AssertVisibilityDataCreateWithoutActionDatasInput = {
+    expected: Scalars["Boolean"]
+    selector: SelectorCreateOneWithoutAssertVisibilityDatasInput
+}
+
+export type AssertVisibilityDataCreateWithoutSelectorInput = {
+    actionDatas?: Maybe<ActionDataCreateManyWithoutAssertVisibilityInput>
+    expected: Scalars["Boolean"]
+}
+
+export type AssertVisibilityDataWhereUniqueInput = {
+    id?: Maybe<Scalars["Int"]>
+}
+
+export type ClickDataCreateOneWithoutActionDatasInput = {
+    connect?: Maybe<ClickDataWhereUniqueInput>
+    create?: Maybe<ClickDataCreateWithoutActionDatasInput>
+}
+
+export type ClickDataCreateWithoutActionDatasInput = {
+    double?: Maybe<Scalars["Boolean"]>
+    selector: Scalars["String"]
+}
+
+export type ClickDataWhereUniqueInput = {
+    id?: Maybe<Scalars["Int"]>
+}
+
+export type GoDataCreateOneWithoutActionDatasInput = {
+    connect?: Maybe<GoDataWhereUniqueInput>
+    create?: Maybe<GoDataCreateWithoutActionDatasInput>
+}
+
+export type GoDataCreateWithoutActionDatasInput = {
+    url: Scalars["String"]
+}
+
+export type GoDataWhereUniqueInput = {
+    id?: Maybe<Scalars["Int"]>
+}
+
+export type HoverDataCreateOneWithoutActionDatasInput = {
+    connect?: Maybe<HoverDataWhereUniqueInput>
+    create?: Maybe<HoverDataCreateWithoutActionDatasInput>
+}
+
+export type HoverDataCreateWithoutActionDatasInput = {
+    duration: Scalars["Int"]
+    selector: Scalars["String"]
+}
+
+export type HoverDataWhereUniqueInput = {
+    id?: Maybe<Scalars["Int"]>
+}
+
+export type KeyDataCreateOneWithoutActionDatasInput = {
+    connect?: Maybe<KeyDataWhereUniqueInput>
+    create?: Maybe<KeyDataCreateWithoutActionDatasInput>
+}
+
+export type KeyDataCreateWithoutActionDatasInput = {
+    key: Scalars["String"]
+}
+
+export type KeyDataWhereUniqueInput = {
+    id?: Maybe<Scalars["Int"]>
+}
+
 export type Mutation = {
     __typename?: "Mutation"
     createTest: Test
@@ -19,7 +212,7 @@ export type Mutation = {
 }
 
 export type MutationCreateTestArgs = {
-    data: TestCreateCreateOnlyInput
+    data: TestCreateInput
 }
 
 export type MutationSignInArgs = {
@@ -30,9 +223,24 @@ export type MutationSignUpArgs = {
     data: SignUpInput
 }
 
+export type NameUserCompoundUniqueInput = {
+    name: Scalars["String"]
+}
+
 export type Query = {
     __typename?: "Query"
     me: User
+}
+
+export type ScreenshotDataCreateOneWithoutActionDatasInput = {
+    connect?: Maybe<ScreenshotDataWhereUniqueInput>
+    create?: Maybe<ScreenshotDataCreateWithoutActionDatasInput>
+}
+
+export type ScreenshotDataCreateWithoutActionDatasInput = {}
+
+export type ScreenshotDataWhereUniqueInput = {
+    id?: Maybe<Scalars["Int"]>
 }
 
 export type Selector = {
@@ -41,8 +249,44 @@ export type Selector = {
     id: Scalars["Int"]
 }
 
-export type SelectorCreateWithoutStepsCreateOnlyInput = {
+export type SelectorCreateOneWithoutAssertTextDatasInput = {
+    connect?: Maybe<SelectorWhereUniqueInput>
+    create?: Maybe<SelectorCreateWithoutAssertTextDatasInput>
+}
+
+export type SelectorCreateOneWithoutAssertVisibilityDatasInput = {
+    connect?: Maybe<SelectorWhereUniqueInput>
+    create?: Maybe<SelectorCreateWithoutAssertVisibilityDatasInput>
+}
+
+export type SelectorCreateWithoutAssertTextDatasInput = {
+    assertVisibilityDatas?: Maybe<
+        AssertVisibilityDataCreateManyWithoutSelectorInput
+    >
     css: Scalars["String"]
+}
+
+export type SelectorCreateWithoutAssertVisibilityDatasInput = {
+    assertTextDatas?: Maybe<AssertTextDataCreateManyWithoutSelectorInput>
+    css: Scalars["String"]
+}
+
+export type SelectorWhereUniqueInput = {
+    id?: Maybe<Scalars["Int"]>
+}
+
+export type SetDataCreateOneWithoutActionDatasInput = {
+    connect?: Maybe<SetDataWhereUniqueInput>
+    create?: Maybe<SetDataCreateWithoutActionDatasInput>
+}
+
+export type SetDataCreateWithoutActionDatasInput = {
+    selector: Scalars["String"]
+    value: Scalars["String"]
+}
+
+export type SetDataWhereUniqueInput = {
+    id?: Maybe<Scalars["Int"]>
 }
 
 export type SignInInput = {
@@ -59,17 +303,29 @@ export type SignUpInput = {
 
 export type Step = {
     __typename?: "Step"
-    action: Scalars["String"]
     id: Scalars["Int"]
-    selector: Selector
-    value: Scalars["String"]
 }
 
-export type StepCreateWithoutUserCreateOnlyInput = {
-    action: Scalars["String"]
-    selector?: Maybe<SelectorCreateWithoutStepsCreateOnlyInput>
-    tests?: Maybe<Array<TestCreateWithoutStepsCreateOnlyInput>>
-    value: Scalars["String"]
+export type StepCreateManyWithoutActionInput = {
+    connect?: Maybe<Array<StepWhereUniqueInput>>
+    create?: Maybe<Array<StepCreateWithoutActionInput>>
+}
+
+export type StepCreateManyWithoutTestsInput = {
+    connect?: Maybe<Array<StepWhereUniqueInput>>
+    create?: Maybe<Array<StepCreateWithoutTestsInput>>
+}
+
+export type StepCreateWithoutActionInput = {
+    tests?: Maybe<TestCreateManyWithoutStepsInput>
+}
+
+export type StepCreateWithoutTestsInput = {
+    action: ActionCreateOneWithoutStepsInput
+}
+
+export type StepWhereUniqueInput = {
+    id?: Maybe<Scalars["Int"]>
 }
 
 export type Tag = {
@@ -78,8 +334,18 @@ export type Tag = {
     name: Scalars["String"]
 }
 
-export type TagCreateWithoutTestCreateOnlyInput = {
+export type TagCreateManyWithoutTestInput = {
+    connect?: Maybe<Array<TagWhereUniqueInput>>
+    create?: Maybe<Array<TagCreateWithoutTestInput>>
+}
+
+export type TagCreateWithoutTestInput = {
     name: Scalars["String"]
+}
+
+export type TagWhereUniqueInput = {
+    id?: Maybe<Scalars["Int"]>
+    name_user?: Maybe<NameUserCompoundUniqueInput>
 }
 
 export type Test = {
@@ -91,30 +357,40 @@ export type Test = {
 }
 
 export type TestStepsArgs = {
-    after?: Maybe<Scalars["Int"]>
-    before?: Maybe<Scalars["Int"]>
+    after?: Maybe<StepWhereUniqueInput>
+    before?: Maybe<StepWhereUniqueInput>
     first?: Maybe<Scalars["Int"]>
     last?: Maybe<Scalars["Int"]>
     skip?: Maybe<Scalars["Int"]>
 }
 
 export type TestTagsArgs = {
-    after?: Maybe<Scalars["Int"]>
-    before?: Maybe<Scalars["Int"]>
+    after?: Maybe<TagWhereUniqueInput>
+    before?: Maybe<TagWhereUniqueInput>
     first?: Maybe<Scalars["Int"]>
     last?: Maybe<Scalars["Int"]>
     skip?: Maybe<Scalars["Int"]>
 }
 
-export type TestCreateCreateOnlyInput = {
+export type TestCreateInput = {
     name: Scalars["String"]
-    steps?: Maybe<Array<StepCreateWithoutUserCreateOnlyInput>>
-    tags?: Maybe<Array<TagCreateWithoutTestCreateOnlyInput>>
+    steps?: Maybe<StepCreateManyWithoutTestsInput>
+    tags?: Maybe<TagCreateManyWithoutTestInput>
 }
 
-export type TestCreateWithoutStepsCreateOnlyInput = {
+export type TestCreateManyWithoutStepsInput = {
+    connect?: Maybe<Array<TestWhereUniqueInput>>
+    create?: Maybe<Array<TestCreateWithoutStepsInput>>
+}
+
+export type TestCreateWithoutStepsInput = {
     name: Scalars["String"]
-    tags?: Maybe<Array<TagCreateWithoutTestCreateOnlyInput>>
+    tags?: Maybe<TagCreateManyWithoutTestInput>
+}
+
+export type TestWhereUniqueInput = {
+    id?: Maybe<Scalars["Int"]>
+    name_user?: Maybe<NameUserCompoundUniqueInput>
 }
 
 export type User = {
@@ -131,32 +407,32 @@ export type User = {
 }
 
 export type UserSelectorsArgs = {
-    after?: Maybe<Scalars["Int"]>
-    before?: Maybe<Scalars["Int"]>
+    after?: Maybe<SelectorWhereUniqueInput>
+    before?: Maybe<SelectorWhereUniqueInput>
     first?: Maybe<Scalars["Int"]>
     last?: Maybe<Scalars["Int"]>
     skip?: Maybe<Scalars["Int"]>
 }
 
 export type UserStepsArgs = {
-    after?: Maybe<Scalars["Int"]>
-    before?: Maybe<Scalars["Int"]>
+    after?: Maybe<StepWhereUniqueInput>
+    before?: Maybe<StepWhereUniqueInput>
     first?: Maybe<Scalars["Int"]>
     last?: Maybe<Scalars["Int"]>
     skip?: Maybe<Scalars["Int"]>
 }
 
 export type UserTagsArgs = {
-    after?: Maybe<Scalars["Int"]>
-    before?: Maybe<Scalars["Int"]>
+    after?: Maybe<TagWhereUniqueInput>
+    before?: Maybe<TagWhereUniqueInput>
     first?: Maybe<Scalars["Int"]>
     last?: Maybe<Scalars["Int"]>
     skip?: Maybe<Scalars["Int"]>
 }
 
 export type UserTestsArgs = {
-    after?: Maybe<Scalars["Int"]>
-    before?: Maybe<Scalars["Int"]>
+    after?: Maybe<TestWhereUniqueInput>
+    before?: Maybe<TestWhereUniqueInput>
     first?: Maybe<Scalars["Int"]>
     last?: Maybe<Scalars["Int"]>
     skip?: Maybe<Scalars["Int"]>
@@ -172,30 +448,11 @@ export type MeQuery = { __typename?: "Query" } & {
             selectors: Array<
                 { __typename?: "Selector" } & Pick<Selector, "css" | "id">
             >
-            steps: Array<
-                { __typename?: "Step" } & Pick<
-                    Step,
-                    "action" | "id" | "value"
-                > & {
-                        selector: { __typename?: "Selector" } & Pick<
-                            Selector,
-                            "css" | "id"
-                        >
-                    }
-            >
+            steps: Array<{ __typename?: "Step" } & Pick<Step, "id">>
             tags: Array<{ __typename?: "Tag" } & Pick<Tag, "id" | "name">>
             tests: Array<
                 { __typename?: "Test" } & Pick<Test, "id" | "name"> & {
-                        steps: Array<
-                            { __typename?: "Step" } & Pick<
-                                Step,
-                                "action" | "id" | "value"
-                            > & {
-                                    selector: {
-                                        __typename?: "Selector"
-                                    } & Pick<Selector, "css" | "id">
-                                }
-                        >
+                        steps: Array<{ __typename?: "Step" } & Pick<Step, "id">>
                         tags: Array<
                             { __typename?: "Tag" } & Pick<Tag, "id" | "name">
                         >
@@ -206,23 +463,15 @@ export type MeQuery = { __typename?: "Query" } & {
 
 export type CreateTestMutationVariables = {
     name: Scalars["String"]
-    steps?: Maybe<Array<StepCreateWithoutUserCreateOnlyInput>>
-    tags?: Maybe<Array<TagCreateWithoutTestCreateOnlyInput>>
+    connect?: Maybe<Array<StepWhereUniqueInput>>
+    create?: Maybe<Array<StepCreateWithoutTestsInput>>
+    testConnect?: Maybe<Array<TagWhereUniqueInput>>
+    testCreate?: Maybe<Array<TagCreateWithoutTestInput>>
 }
 
 export type CreateTestMutation = { __typename?: "Mutation" } & {
     createTest: { __typename?: "Test" } & Pick<Test, "id" | "name"> & {
-            steps: Array<
-                { __typename?: "Step" } & Pick<
-                    Step,
-                    "action" | "id" | "value"
-                > & {
-                        selector: { __typename?: "Selector" } & Pick<
-                            Selector,
-                            "css" | "id"
-                        >
-                    }
-            >
+            steps: Array<{ __typename?: "Step" } & Pick<Step, "id">>
             tags: Array<{ __typename?: "Tag" } & Pick<Tag, "id" | "name">>
         }
 }
@@ -262,13 +511,7 @@ export const MeDocument = gql`
                 id
             }
             steps {
-                action
                 id
-                selector {
-                    css
-                    id
-                }
-                value
             }
             tags {
                 id
@@ -278,13 +521,7 @@ export const MeDocument = gql`
                 id
                 name
                 steps {
-                    action
                     id
-                    selector {
-                        css
-                        id
-                    }
-                    value
                 }
                 tags {
                     id
@@ -338,20 +575,22 @@ export type MeQueryResult = ApolloReactCommon.QueryResult<
 export const CreateTestDocument = gql`
     mutation createTest(
         $name: String!
-        $steps: [StepCreateWithoutUserCreateOnlyInput!]
-        $tags: [TagCreateWithoutTestCreateOnlyInput!]
+        $connect: [StepWhereUniqueInput!]
+        $create: [StepCreateWithoutTestsInput!]
+        $testConnect: [TagWhereUniqueInput!]
+        $testCreate: [TagCreateWithoutTestInput!]
     ) {
-        createTest(data: { name: $name, steps: $steps, tags: $tags }) {
+        createTest(
+            data: {
+                name: $name
+                steps: { connect: $connect, create: $create }
+                tags: { connect: $testConnect, create: $testCreate }
+            }
+        ) {
             id
             name
             steps {
-                action
                 id
-                selector {
-                    css
-                    id
-                }
-                value
             }
             tags {
                 id
@@ -379,8 +618,10 @@ export type CreateTestMutationFn = ApolloReactCommon.MutationFunction<
  * const [createTestMutation, { data, loading, error }] = useCreateTestMutation({
  *   variables: {
  *      name: // value for 'name'
- *      steps: // value for 'steps'
- *      tags: // value for 'tags'
+ *      connect: // value for 'connect'
+ *      create: // value for 'create'
+ *      testConnect: // value for 'testConnect'
+ *      testCreate: // value for 'testCreate'
  *   },
  * });
  */

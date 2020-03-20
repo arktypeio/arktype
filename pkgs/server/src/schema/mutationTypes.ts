@@ -25,7 +25,7 @@ const SignUpInput = inputObjectType({
 
 const Mutation = mutationType({
     definition: t => {
-        t.crud.createOneTest({ alias: "createTest", upfilteredKey: "create" })
+        t.crud.createOneTest({ alias: "createTest" })
         t.field("signIn", {
             type: "String",
             args: {
@@ -33,7 +33,7 @@ const Mutation = mutationType({
             },
             resolve: async (_, { data: { email, password } }, { prisma }) => {
                 const user = await ifExists(() =>
-                    prisma.users.findOne({
+                    prisma.user.findOne({
                         where: { email: email ? email.toLowerCase() : "" }
                     })
                 )
@@ -58,7 +58,7 @@ const Mutation = mutationType({
                     { prisma }
                 ) => {
                     const existingUser = await ifExists(() =>
-                        prisma.users.findOne({
+                        prisma.user.findOne({
                             where: { email: email ? email.toLowerCase() : "" }
                         })
                     )
@@ -68,7 +68,7 @@ const Mutation = mutationType({
                         )
                     }
                     const hashedPassword = await hash(password, 10)
-                    const user = await prisma.users.create({
+                    const user = await prisma.user.create({
                         data: {
                             email,
                             password: hashedPassword,
@@ -83,7 +83,7 @@ const Mutation = mutationType({
                             tests: {
                                 create: []
                             }
-                        }
+                        } as any
                     })
                     return sign({ userId: user.id }, APP_SECRET)
                 }
