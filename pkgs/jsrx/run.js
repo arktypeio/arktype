@@ -5,7 +5,7 @@ const { shell } = require("@re-do/utils/dist/node")
 const cwd = process.cwd()
 
 const jsrxConfigFile = readdirSync(cwd).find(
-    fileName => fileName === "jsrx.js" || fileName === "jsrx.ts"
+    (fileName) => fileName === "jsrx.js" || fileName === "jsrx.ts"
 )
 if (!jsrxConfigFile) {
     throw new Error(`Found no 'jsrx.js' or 'jsrx.ts' file in ${cwd}.`)
@@ -15,5 +15,5 @@ const runner =
 
 shell(`${runner} ${jsrxConfigFile} ${process.argv[process.argv.length - 1]}`, {
     cwd,
-    stdio: "inherit"
+    stdio: "inherit",
 })

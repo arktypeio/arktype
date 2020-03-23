@@ -10,7 +10,7 @@ const welcomeSuggestion = {
     title: "👆Hey there!",
     description:
         "Looks like you don't have any tests yet. Click up here to create one!",
-    data: null
+    data: null,
 }
 
 const useTestSuggestions = (): Suggestion<SuggestionKind>[] => {
@@ -18,12 +18,12 @@ const useTestSuggestions = (): Suggestion<SuggestionKind>[] => {
     const tests = useMeQuery({ fetchPolicy: "no-cache" }).data?.me?.tests
     return tests && tests.length
         ? tests
-              .filter(test =>
+              .filter((test) =>
                   JSON.stringify(test)
                       .toLowerCase()
                       .includes(cardFilter.toLowerCase())
               )
-              .map(data => toSuggestion("test", data))
+              .map((data) => toSuggestion("test", data))
         : []
 }
 
@@ -47,19 +47,19 @@ const toSuggestion = <Kind extends SuggestionKind>(
     const suggestionTypes = {
         test: (test: Test) => ({
             title: test.name,
-            description: test.tags.map(_ => _.name).join(", "),
+            description: test.tags.map((_) => _.name).join(", "),
             extras: (
                 <IconButton
                     Icon={Icons.run}
                     onClick={() =>
                         runTest(
-                            test.steps.map(step => [step.action, step] as any)
+                            test.steps.map((step) => [step.action, step] as any)
                         )
                     }
                 />
             ),
-            data: test
-        })
+            data: test,
+        }),
     }
     return suggestionTypes[kind](data)
 }
@@ -70,23 +70,23 @@ export const SuggestionResultsGrid = () => {
         <Card
             style={{
                 width: "100%",
-                height: "100%"
+                height: "100%",
             }}
         >
             <Row
                 wrap="wrap"
                 style={{
                     width: "100%",
-                    padding: 16
+                    padding: 16,
                 }}
             >
                 {values.length ? (
-                    values.map(value => (
+                    values.map((value) => (
                         <div
                             key={value.title}
                             style={{
                                 width: 200,
-                                height: 200
+                                height: 200,
                             }}
                         >
                             <SuggestionCard {...value} />

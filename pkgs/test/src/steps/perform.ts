@@ -9,7 +9,7 @@ export const stepTypes = {
     click,
     go,
     set,
-    screenshot
+    screenshot,
 }
 
 export type StepTypes = typeof stepTypes

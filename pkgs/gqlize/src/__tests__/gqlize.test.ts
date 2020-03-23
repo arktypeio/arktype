@@ -17,20 +17,20 @@ describe("gqlize", () => {
                     me: (data, schema) => {
                         const userType = getObjectDefinition("User", schema)
                         return fromEntries(
-                            userType.fields.map(field => [
+                            userType.fields.map((field) => [
                                 camelCase(["my", field.name.value]),
                                 {
                                     ...data,
                                     fields: data.fields.filter(
-                                        resultField =>
+                                        (resultField) =>
                                             resultField.name.value ===
                                             field.name.value
-                                    )
-                                }
+                                    ),
+                                },
                             ])
                         )
-                    }
-                }
+                    },
+                },
             })
         ).toMatchSnapshot("mapped")
     })

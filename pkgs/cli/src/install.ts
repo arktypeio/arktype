@@ -7,7 +7,7 @@ import {
     REDO_EXECUTABLE,
     EXECUTABLE_SUFFIX,
     streamToFile,
-    ensureRedoDir
+    ensureRedoDir,
 } from "@re-do/utils/dist/node"
 
 const token = "0a1faa04389cf5df6264846e57c525a3dfbf5651"
@@ -49,26 +49,26 @@ export const install = async () => {
     ensureRedoDir()
     const query = graphql.defaults({
         headers: {
-            authorization: `token ${token}`
-        }
+            authorization: `token ${token}`,
+        },
     })
     const releasesResult = await query({
-        query: recentReleasesQuery
+        query: recentReleasesQuery,
     })
     const releases: any[] = assertResult(
         releasesResult?.repository?.releases?.nodes
     )
     const latestRelease = assertResult(
-        releases.find(release => !release.isDraft && !release.isPrerelease)
+        releases.find((release) => !release.isDraft && !release.isPrerelease)
     )
     const assetsResult = await query(assetsQuery, {
-        tag: latestRelease.tagName
+        tag: latestRelease.tagName,
     })
     const assets: any[] = assertResult(
         assetsResult?.repository?.release?.releaseAssets?.nodes
     )
     const assetUrl: string = assertResult(
-        assets.find(asset => asset.name.endsWith(EXECUTABLE_SUFFIX))?.url
+        assets.find((asset) => asset.name.endsWith(EXECUTABLE_SUFFIX))?.url
     )
     const { body } = await fetch(assertResult(assetUrl))
     makeExecutable(await streamToFile(body, REDO_EXECUTABLE))

@@ -3,7 +3,7 @@ import { app, BrowserWindow } from "electron"
 import { isDev } from "@re-do/utils/dist/node"
 import electronDevtoolsInstaller, {
     REACT_DEVELOPER_TOOLS,
-    APOLLO_DEVELOPER_TOOLS
+    APOLLO_DEVELOPER_TOOLS,
 } from "electron-devtools-installer"
 import { autoUpdater } from "electron-updater"
 import { join } from "path"
@@ -13,7 +13,7 @@ let mainWindow: BrowserWindow | null
 const installExtensions = async () => {
     const extensions = {
         REACT_DEVELOPER_TOOLS,
-        APOLLO_DEVELOPER_TOOLS
+        APOLLO_DEVELOPER_TOOLS,
     }
     for (const [name, reference] of Object.entries(extensions)) {
         try {
@@ -32,9 +32,9 @@ const createWindow = async () => {
         webPreferences: {
             webSecurity: false,
             nodeIntegration: true,
-            contextIsolation: false
+            contextIsolation: false,
         },
-        icon: join(__dirname, "icon.png")
+        icon: join(__dirname, "icon.png"),
     })
     mainWindow.on("closed", () => {
         mainWindow = null

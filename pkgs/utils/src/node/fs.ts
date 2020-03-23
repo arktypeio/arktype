@@ -3,7 +3,7 @@ import {
     lstatSync,
     ensureDirSync,
     chmodSync,
-    createWriteStream
+    createWriteStream,
 } from "fs-extra"
 import { homedir } from "os"
 import { join } from "path"
@@ -51,9 +51,9 @@ export const streamToFile = async (
 }
 
 export const walk = (dir: string): [string, any][] =>
-    readdirSync(dir).map(item => [
+    readdirSync(dir).map((item) => [
         item,
-        lstatSync(join(dir, item)).isDirectory() ? walk(join(dir, item)) : null
+        lstatSync(join(dir, item)).isDirectory() ? walk(join(dir, item)) : null,
     ])
 
 export const walkPaths = (dir: string): string[] =>
@@ -61,6 +61,6 @@ export const walkPaths = (dir: string): string[] =>
         const path = join(dir, item)
         return [
             ...paths,
-            ...(lstatSync(path).isDirectory() ? walkPaths(path) : [path])
+            ...(lstatSync(path).isDirectory() ? walkPaths(path) : [path]),
         ]
     }, [] as string[])

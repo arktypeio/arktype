@@ -67,6 +67,10 @@
         {
             "packageName": "@re-do/cli",
             "projectFolder": "pkgs/cli"
+        },
+        {
+            "packageName": "prismafy",
+            "projectFolder": "pkgs/prismafy"
         }
     ]
 }

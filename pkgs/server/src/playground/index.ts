@@ -9,7 +9,7 @@ export const playground = {
                 process.env.NODE_ENV === "production"
                     ? "/dev/graphql"
                     : "/graphql",
-            query: gqlize({ schema })
-        }
-    ]
+            query: gqlize({ schema }),
+        },
+    ],
 }

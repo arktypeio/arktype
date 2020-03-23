@@ -11,5 +11,5 @@ export const model: ModelMetadata = {
     Step,
     Tag,
     Test,
-    User
+    User,
 }

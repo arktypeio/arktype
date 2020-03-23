@@ -12,6 +12,6 @@ export const shell = (cmd: string, options: ShellOptions = {}) => {
     return execaCommand(cmd, {
         stdio: "inherit",
         shell: true,
-        ...execaOptions
+        ...execaOptions,
     })
 }

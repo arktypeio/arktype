@@ -19,7 +19,7 @@ export const Test: ModelTypeMetadata<"Test"> = {
                     id
                 }
             }
-        `
+        `,
     },
-    validator: ({ name, steps, tags }) => ({})
+    validator: ({ name, steps, tags }) => ({}),
 }

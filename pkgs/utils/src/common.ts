@@ -57,7 +57,7 @@ export const deepMap = (
     fromEntries(
         Object.entries(from).map(([k, v]) => [
             k,
-            isRecursible(v) ? deepMap(map(v), map) : map(v)
+            isRecursible(v) ? deepMap(map(v), map) : map(v),
         ]),
         Array.isArray(from)
     )

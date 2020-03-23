@@ -22,13 +22,13 @@ export const server = new ApolloServer({
         return {
             ...event,
             userId: getUserId(event),
-            prisma
+            prisma,
         }
     },
     playground,
     introspection: true,
     debug: true,
-    formatError: error => {
+    formatError: (error) => {
         console.log(JSON.stringify(error, null, 4))
         return error
     },
@@ -36,10 +36,10 @@ export const server = new ApolloServer({
         // Don't log spammy queries from graphql playground
         if (
             response.data &&
-            !Object.keys(response.data).every(key => key === "__schema")
+            !Object.keys(response.data).every((key) => key === "__schema")
         ) {
             console.log(JSON.stringify(response, null, 4))
         }
         return response
-    }
+    },
 })

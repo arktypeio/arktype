@@ -7,14 +7,14 @@ const tsconfig = resolve(__dirname, "tsconfig.json")
 const mainConfig = makeConfig({
     base: "main",
     entry: resolve(__dirname, "src", "main", "index.ts"),
-    tsconfig
+    tsconfig,
 })
 
 const rendererConfig = makeConfig(
     {
         base: "renderer",
         entry: resolve(__dirname, "src", "renderer", "index.tsx"),
-        tsconfig
+        tsconfig,
     },
     [{ output: { publicPath: "." } }]
 )
@@ -22,7 +22,7 @@ const rendererConfig = makeConfig(
 const injectedConfig = makeConfig({
     base: "injected",
     entry: resolve(__dirname, "src", "injected", "index.ts"),
-    tsconfig
+    tsconfig,
 })
 
 // renderer config is consumed through devServer during development

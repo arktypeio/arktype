@@ -4,11 +4,12 @@ import {
     FieldDefinitionNode,
     InputValueDefinitionNode,
     InputObjectTypeDefinitionNode,
-    TypeNode
+    TypeNode,
 } from "graphql"
 import { camelCase } from "@re-do/utils"
 import { readFileSync } from "fs-extra"
 import gql from "graphql-tag"
+import { isDeepStrictEqual } from "util"
 
 type MappedQueries = Record<
     string,
@@ -44,7 +45,7 @@ const getConfig = ({
     maxVariableDepth,
     maxResultDepth,
     mapped,
-    schema
+    schema,
 }: GqlizeArgs): GqlizeConfig => ({
     maxDepth: maxVariableDepth ?? 2,
     maxResultDepth: maxResultDepth ?? null,
@@ -52,7 +53,7 @@ const getConfig = ({
         typeof schema === "string"
             ? (gql(readFileSync(schema).toString()) as DocumentNode)
             : schema,
-    mapped: mapped ?? {}
+    mapped: mapped ?? {},
 })
 
 export const gqlize = (args: GqlizeArgs) => {
@@ -71,7 +72,7 @@ const gqlizeBlock = (operationKind: OperationKind, config: GqlizeConfig) => {
                 gqlizeOperation({
                     config,
                     operation: field,
-                    operationKind
+                    operationKind,
                 }),
             ""
         ) ?? ""
@@ -80,13 +81,13 @@ const gqlizeBlock = (operationKind: OperationKind, config: GqlizeConfig) => {
 
 export const getInputObjectDefinition = (name: string, schema: DocumentNode) =>
     schema.definitions.find(
-        def =>
+        (def) =>
             def.kind === "InputObjectTypeDefinition" && def.name.value === name
     ) as InputObjectTypeDefinitionNode
 
 export const getObjectDefinition = (name: string, schema: DocumentNode) =>
     schema.definitions.find(
-        def => def.kind === "ObjectTypeDefinition" && def.name.value === name
+        (def) => def.kind === "ObjectTypeDefinition" && def.name.value === name
     ) as ObjectTypeDefinitionNode | undefined
 
 type GqlizeOperationArgs = {
@@ -98,7 +99,7 @@ type GqlizeOperationArgs = {
 const gqlizeOperation = ({
     operation,
     config,
-    operationKind
+    operationKind,
 }: GqlizeOperationArgs) => {
     const returnTypeName = getTypeName(operation.type)
     const { vars, args } = operation.arguments?.length
@@ -109,24 +110,24 @@ const gqlizeOperation = ({
                       config,
                       path: {
                           names: [returnTypeName.toLowerCase()],
-                          types: [returnTypeName]
+                          types: [returnTypeName],
                       },
-                      vars: {}
+                      vars: {},
                   })
                   return {
                       vars: {
                           ...vars,
-                          ...newVars
+                          ...newVars,
                       },
                       args:
                           index === operation.arguments!.length - 1
                               ? `${args}${newArgs})`
-                              : `${args}${newArgs}, `
+                              : `${args}${newArgs}, `,
                   }
               },
               {
                   vars: {},
-                  args: "("
+                  args: "(",
               }
           )
         : { vars: {}, args: "" }
@@ -135,10 +136,10 @@ const gqlizeOperation = ({
         name: operation.name.value,
         fields: [
             ...(getObjectDefinition(getTypeName(operation.type), config.schema)
-                ?.fields ?? [])
+                ?.fields ?? []),
         ],
         vars: operation.arguments ? variableMapToString(vars) : "",
-        args: operation.arguments ? args : ""
+        args: operation.arguments ? args : "",
     }
     let result = ""
     if (operation.name.value in config.mapped) {
@@ -174,7 +175,7 @@ const variableMapToString = (variableMap: VariableMap) => {
               .reduce(
                   (variables, [name, type]) => [
                       ...variables,
-                      `$${name}: ${type}`
+                      `$${name}: ${type}`,
                   ],
                   [] as string[]
               )
@@ -210,31 +211,29 @@ const gqlizeResultFields = ({ fields, config }: GqlizeResultFieldsArgs) =>
 
 const gqlizeResultField = (
     field: FieldDefinitionNode,
-    seen: FieldDefinitionNode[],
+    seen: string[],
     depth: number,
     config: GqlizeConfig
 ): string => {
     if (isScalar(field.type)) {
         return field.name.value
     }
+    const typeName = getTypeName(field.type)
     if (
-        seen.includes(field) ||
+        seen.includes(typeName) ||
         (config.maxResultDepth && depth > config.maxResultDepth)
     ) {
         // If we've already seen this field, ignore it so we don't infinitely recurse
         // If the user passed a maxResultDepth value and we've exceeded it, ignore non-scalar fields
         return ""
     }
-    const resultType = getObjectDefinition(
-        getTypeName(field.type),
-        config.schema
-    )
+    const resultType = getObjectDefinition(typeName, config.schema)
     return (
         resultType?.fields?.reduce(
             (gqlized, subField) =>
                 `${gqlized} ${gqlizeResultField(
                     subField,
-                    [...seen, field],
+                    [...seen, typeName],
                     depth + 1,
                     config
                 )}`,
@@ -292,7 +291,7 @@ const gqlizeField = ({
     field,
     config,
     path,
-    vars
+    vars,
 }: GqlizeFieldArgs): GqlizedFieldData => {
     if (
         isScalar(field.type) ||
@@ -307,9 +306,9 @@ const gqlizeField = ({
         return {
             vars: {
                 ...vars,
-                [variableName]: getVariableType(field)
+                [variableName]: getVariableType(field),
             },
-            args: `${field.name.value}: $${variableName}`
+            args: `${field.name.value}: $${variableName}`,
         }
     }
     const fieldTypeDef = getInputObjectDefinition(
@@ -326,16 +325,16 @@ const gqlizeField = ({
                 config,
                 path: {
                     names: [...path.names, nestedField.name.value],
-                    types: [...path.types, getTypeName(nestedField.type)]
+                    types: [...path.types, getTypeName(nestedField.type)],
                 },
-                vars: updatedResult.vars
+                vars: updatedResult.vars,
             })
             return {
                 vars: nestedResult.vars,
                 args:
                     index === fieldTypeDef.fields!.length - 1
                         ? `${updatedResult.args}${nestedResult.args}}`
-                        : `${updatedResult.args}${nestedResult.args}, `
+                        : `${updatedResult.args}${nestedResult.args}, `,
             }
         },
         { vars, args: `${field.name.value}: {` }

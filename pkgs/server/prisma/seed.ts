@@ -6,7 +6,7 @@ const prisma = new PrismaClient()
 
 const users = [
     ["David", "Blass"],
-    ["Savannah", "Bosse"]
+    ["Savannah", "Bosse"],
 ]
 
 async function main() {
@@ -18,8 +18,8 @@ async function main() {
                         email: `${first.toLowerCase()}@redo.qa`,
                         first,
                         last,
-                        password: await hash("redo", 10)
-                    }
+                        password: await hash("redo", 10),
+                    },
                 })
                 console.log(
                     `🎉\nCreated user: ${JSON.stringify(user, null, 4)}\n🎉`

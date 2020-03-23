@@ -6,35 +6,35 @@ import { APP_SECRET, ifExists } from "../utils"
 const SignInInput = inputObjectType({
     name: "SignInInput",
     nonNullDefaults: { input: true },
-    definition: t => {
+    definition: (t) => {
         t.string("email")
         t.string("password")
-    }
+    },
 })
 
 const SignUpInput = inputObjectType({
     name: "SignUpInput",
     nonNullDefaults: { input: true },
-    definition: t => {
+    definition: (t) => {
         t.string("email")
         t.string("password")
         t.string("first")
         t.string("last")
-    }
+    },
 })
 
 const Mutation = mutationType({
-    definition: t => {
+    definition: (t) => {
         t.crud.createOneTest({ alias: "createTest" })
         t.field("signIn", {
             type: "String",
             args: {
-                data: arg({ type: SignInInput, required: true })
+                data: arg({ type: SignInInput, required: true }),
             },
             resolve: async (_, { data: { email, password } }, { prisma }) => {
                 const user = await ifExists(() =>
                     prisma.user.findOne({
-                        where: { email: email ? email.toLowerCase() : "" }
+                        where: { email: email ? email.toLowerCase() : "" },
                     })
                 )
                 if (!user) {
@@ -45,12 +45,12 @@ const Mutation = mutationType({
                     throw new Error("That wasn't the right password.")
                 }
                 return sign({ userId: user.id }, APP_SECRET)
-            }
+            },
         }),
             t.field("signUp", {
                 type: "String",
                 args: {
-                    data: arg({ type: SignUpInput, required: true })
+                    data: arg({ type: SignUpInput, required: true }),
                 },
                 resolve: async (
                     _,
@@ -59,7 +59,7 @@ const Mutation = mutationType({
                 ) => {
                     const existingUser = await ifExists(() =>
                         prisma.user.findOne({
-                            where: { email: email ? email.toLowerCase() : "" }
+                            where: { email: email ? email.toLowerCase() : "" },
                         })
                     )
                     if (existingUser) {
@@ -75,20 +75,20 @@ const Mutation = mutationType({
                             first,
                             last,
                             tags: {
-                                create: []
+                                create: [],
                             },
                             steps: {
-                                create: []
+                                create: [],
                             },
                             tests: {
-                                create: []
-                            }
-                        } as any
+                                create: [],
+                            },
+                        } as any,
                     })
                     return sign({ userId: user.id }, APP_SECRET)
-                }
+                },
             })
-    }
+    },
 })
 
 export const mutationTypes = [Mutation]

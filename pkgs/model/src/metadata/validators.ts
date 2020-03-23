@@ -17,7 +17,7 @@ type CustomValidators = {
 
 const customValidators: CustomValidators = {
     SignInInput: ({ email, password }) => ({}),
-    SignUpInput: ({ email, password, first, last }) => ({})
+    SignUpInput: ({ email, password, first, last }) => ({}),
 }
 
 const modelValidators = Object.fromEntries(

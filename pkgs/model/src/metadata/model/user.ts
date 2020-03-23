@@ -19,7 +19,7 @@ export const User: ModelTypeMetadata<"User"> = {
                     }
                 )
             }
-        `
+        `,
     },
-    validator: ({ email, password, first, last }) => ({})
+    validator: ({ email, password, first, last }) => ({}),
 }

@@ -67,7 +67,7 @@ function _syncNpmrc(sourceNpmrcFolder, targetNpmrcFolder) {
                 .readFileSync(sourceNpmrcPath)
                 .toString()
                 .split("\n")
-            npmrcFileLines = npmrcFileLines.map(line => (line || "").trim())
+            npmrcFileLines = npmrcFileLines.map((line) => (line || "").trim())
             const resultLines = []
             // Trim out lines that reference environment variables that aren't defined
             for (const line of npmrcFileLines) {
@@ -117,7 +117,7 @@ function getNpmPath() {
                 const whereOutput = childProcess
                     .execSync("where npm", { stdio: [] })
                     .toString()
-                const lines = whereOutput.split(os.EOL).filter(line => !!line)
+                const lines = whereOutput.split(os.EOL).filter((line) => !!line)
                 // take the last result, we are looking for a .cmd command
                 // see https://github.com/microsoft/rushstack/issues/759
                 _npmPath = lines[lines.length - 1]
@@ -216,11 +216,11 @@ function _resolvePackageVersion(rushCommonFolder, { name, version }) {
                     "view",
                     `${name}@${version}`,
                     "version",
-                    "--no-update-notifier"
+                    "--no-update-notifier",
                 ],
                 {
                     cwd: rushTempFolder,
-                    stdio: []
+                    stdio: [],
                 }
             )
             if (npmVersionSpawnResult.status !== 0) {
@@ -231,7 +231,7 @@ function _resolvePackageVersion(rushCommonFolder, { name, version }) {
             const npmViewVersionOutput = npmVersionSpawnResult.stdout.toString()
             const versionLines = npmViewVersionOutput
                 .split("\n")
-                .filter(line => !!line)
+                .filter((line) => !!line)
             const latestVersion = versionLines[versionLines.length - 1]
             if (!latestVersion) {
                 throw new Error(
@@ -341,11 +341,11 @@ function _createPackageJson(packageInstallFolder, name, version) {
             name: "ci-rush",
             version: "0.0.0",
             dependencies: {
-                [name]: version
+                [name]: version,
             },
             description: "DON'T WARN",
             repository: "DON'T WARN",
-            license: "MIT"
+            license: "MIT",
         }
         const packageJsonPath = path.join(
             packageInstallFolder,
@@ -369,7 +369,7 @@ function _installPackage(packageInstallFolder, name, version) {
         const result = childProcess.spawnSync(npmPath, ["install"], {
             stdio: "inherit",
             cwd: packageInstallFolder,
-            env: process.env
+            env: process.env,
         })
         if (result.status !== 0) {
             throw new Error('"npm install" encountered an error')
@@ -440,7 +440,7 @@ function installAndRun(
     const result = childProcess.spawnSync(binPath, packageBinArgs, {
         stdio: "inherit",
         cwd: process.cwd(),
-        env: process.env
+        env: process.env,
     })
     if (result.status) {
         return result.status

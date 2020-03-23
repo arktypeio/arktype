@@ -6,7 +6,7 @@ module.exports = makeConfig(
     {
         base: "common",
         entry: join(__dirname, "main.ts"),
-        tsconfig: join(__dirname, "tsconfig.json")
+        tsconfig: join(__dirname, "tsconfig.json"),
     },
     [{ externals: [nodeExternals()] }]
 )

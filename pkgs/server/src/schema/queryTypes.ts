@@ -2,7 +2,7 @@ import { queryType } from "nexus"
 import { ifExists } from "../utils"
 
 export const Query = queryType({
-    definition: t => {
+    definition: (t) => {
         t.field("me", {
             type: "User",
             resolve: async (_, args, { prisma, userId }) => {
@@ -13,7 +13,7 @@ export const Query = queryType({
                     return result
                 }
                 throw new Error("User is not authenticated.")
-            }
+            },
         })
-    }
+    },
 })

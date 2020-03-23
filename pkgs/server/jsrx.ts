@@ -28,11 +28,13 @@ const build = () => {
 
 const upDb = () => {
     shell(
-        `prisma2 migrate save --experimental --name ${process.env.NODE_ENV} --create-db`
+        `prisma2 migrate save --name "${process.env.NODE_ENV}" --create-db --experimental`
     )
     shell("prisma2 migrate up --experimental")
     shell(`ts-node prisma/seed.ts`)
 }
+
+const serve = $("sls offline", { env: { SLS_DEBUG: "*" } })
 
 jsrx(
     {
@@ -40,47 +42,33 @@ jsrx(
             build,
             generate,
             tsc: $("tsc"),
-            upDb
+            upDb,
         },
         dev: {
             createDb: () => {
-                shell("rm -rf prisma/dev.db")
-                shell("rm -rf prisma/migrations/*-development")
-                const liftLockFile = join(
-                    __dirname,
-                    "prisma",
-                    "migrations",
-                    "lift.lock"
-                )
-                writeFileSync(
-                    liftLockFile,
-                    readFileSync(liftLockFile)
-                        .toString()
-                        .split("\n")
-                        .filter(line => !line.endsWith("-development"))
-                        .join("\n")
-                )
+                shell("rm -rf dev.db prisma/dev.db prisma/migrations")
                 upDb()
             },
             start: () => {
                 build()
-                shell("sls offline", { env: { SLS_DEBUG: "*" } })
+                serve()
             },
-            prettify
+            serve,
+            prettify,
         },
         prod: {
             deploy: () => {
                 build()
                 shell("sls deploy")
             },
-            pack: $("sls package")
-        }
+            pack: $("sls package"),
+        },
     },
     {
         excludeOthers: true,
         envFiles: {
             dev: join(__dirname, ".env"),
-            prod: join(__dirname, ".env.production")
-        }
+            prod: join(__dirname, ".env.production"),
+        },
     }
 )

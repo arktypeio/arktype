@@ -17,19 +17,19 @@ export const typify = async () => {
         schema: parse(printSchema(schema)),
         plugins: [
             {
-                typescript: {}
-            }
+                typescript: {},
+            },
         ],
         pluginMap: {
-            typescript
+            typescript,
         },
         documents: [
             {
                 content: parse(gqlize({ schema: schemaFile })),
-                filePath: ""
-            }
+                filePath: "",
+            },
         ],
-        config: {}
+        config: {},
     }
     const baseTypes = await codegen(baseOptions)
     writeFileSync(baseFileName, baseTypes)
@@ -45,15 +45,15 @@ export const typify = async () => {
                     withComponent: false,
                     withHOC: false,
                     withHooks: true,
-                    reactApolloVersion: 3
-                }
-            }
+                    reactApolloVersion: 3,
+                },
+            },
         ],
         pluginMap: {
             ...baseOptions.pluginMap,
             reactApollo,
-            operations
-        }
+            operations,
+        },
     }
     const reactTypes = await codegen(reactOptions)
     writeFileSync(reactFileName, reactTypes)
