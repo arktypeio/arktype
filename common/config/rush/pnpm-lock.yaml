@@ -63,6 +63,7 @@ dependencies:
     "@types/jsonwebtoken": 8.3.5
     "@types/node": 12.11.1
     "@types/node-fetch": 2.5.4
+    "@types/prettier": 1.19.1
     "@types/puppeteer-core": 2.0.0
     "@types/react": 16.9.17
     "@types/react-autosuggest": 9.3.13
@@ -129,7 +130,6 @@ dependencies:
     react-svg-loader: 3.0.3
     react-test-renderer: 16.12.0_react@16.12.0
     react-typist: 2.0.5_react-dom@16.12.0+react@16.12.0
-    redo-nexus-prisma: 0.11.1-14
     redux: 4.0.4
     serverless: 1.67.0
     serverless-dotenv-plugin: 2.3.2
@@ -4724,6 +4724,10 @@ packages:
         dev: false
         resolution:
             integrity: sha512-//oorEZjL6sbPcKUaCdIGlIUeH26mgzimjBB77G6XRgnDl/L5wOnpyBGRe/Mmf5CVW3PwEBE1NjiMZ/ssFh4wA==
+    /@types/prettier/1.19.1:
+        dev: false
+        resolution:
+            integrity: sha512-5qOlnZscTn4xxM5MeGXAMOsIOIKIbh9e85zJWfBRVPlRMEVawzoPhINYbRGkBZCI8LxvBe7tJCdWiarA99OZfQ==
     /@types/prop-types/15.7.3:
         dev: false
         resolution:
@@ -17342,19 +17346,6 @@ packages:
         dev: false
         resolution:
             integrity: sha1-iYS1gV2ZyyIEacme7v/jiRPmzAs=
-    /redo-nexus-prisma/0.11.1-14:
-        dependencies:
-            "@re-do/utils": 0.0.6
-            camelcase: 5.3.1
-            fs-extra: 8.1.0
-            pluralize: 8.0.0
-        dev: false
-        peerDependencies:
-            "@prisma/client": 2.0.0-preview023
-            graphql: ^14.5.0
-            nexus: ^0.12.0-rc.13
-        resolution:
-            integrity: sha512-lODTdxkd0Rk4X03BJT3f+Pgq29GOHaS/nRaTjZ1VtoOCUndr5m1Gt7lxhFRTWXUiKY8+/LkFzzJWNHrVnCYqeg==
     /redo-nexus-prisma/0.11.1-14_1e4eb95aa5577ffbfafce166b7b38d6d:
         dependencies:
             "@prisma/client": 2.0.0-preview023_prisma2@2.0.0-preview024
@@ -17371,7 +17362,7 @@ packages:
             nexus: ^0.12.0-rc.13
         resolution:
             integrity: sha512-lODTdxkd0Rk4X03BJT3f+Pgq29GOHaS/nRaTjZ1VtoOCUndr5m1Gt7lxhFRTWXUiKY8+/LkFzzJWNHrVnCYqeg==
-    /redo-nexus-prisma/0.11.1-14_9dbc3ecc38b17a75c69035ae895b6a19:
+    /redo-nexus-prisma/0.11.1-17_9dbc3ecc38b17a75c69035ae895b6a19:
         dependencies:
             "@prisma/client": 2.0.0-preview024_prisma2@2.0.0-preview024
             "@re-do/utils": 0.0.6
@@ -17386,7 +17377,7 @@ packages:
             graphql: ^14.5.0
             nexus: ^0.12.0-rc.13
         resolution:
-            integrity: sha512-lODTdxkd0Rk4X03BJT3f+Pgq29GOHaS/nRaTjZ1VtoOCUndr5m1Gt7lxhFRTWXUiKY8+/LkFzzJWNHrVnCYqeg==
+            integrity: sha512-95W/T4yMukktoGjxNbvmJCUzScGhBMrxBfT4ywpD/ZJSAORxD/0kNfZSrWKNCMK6DFJPDv0HMQ3WmXK/Z8tndg==
     /redux/4.0.4:
         dependencies:
             loose-envify: 1.4.0
@@ -21103,10 +21094,12 @@ packages:
             "@types/fs-extra": 8.1.0
             "@types/jest": 24.0.19
             "@types/node": 12.11.1
+            "@types/prettier": 1.19.1
             fs-extra: 8.1.0
             graphql: 14.5.8
             graphql-tag: 2.10.1_graphql@14.5.8
             jest: 24.9.0
+            prettier: 2.0.1
             typescript: 3.8.2
         dev: false
         id: "file:projects/gqlize.tgz"
@@ -21114,7 +21107,7 @@ packages:
         peerDependencies:
             "@babel/core": "*"
         resolution:
-            integrity: sha512-53Ss6pxR51NcfCIUJBvBbq7hzmbQ6IvYxUbdZ/W31MbAzoqSVaSLJaKcsB8mAahIVo/k0qQ0YOnhcTnkox3PYg==
+            integrity: sha512-TT/5MIN3mgeqqPp0Ipaj2BE8xc9sqSuif/DT2U48r5Gy8i2GUZYuz/fHZwPODRzeUc619hSKkzIJZU81py3pfg==
             tarball: "file:projects/gqlize.tgz"
         version: 0.0.0
     "file:projects/jsrx.tgz_@babel+core@7.7.7":
@@ -21250,7 +21243,7 @@ packages:
             nexus: 0.12.0-rc.14_graphql@14.5.8
             prettier: 2.0.1
             prisma2: 2.0.0-preview024
-            redo-nexus-prisma: 0.11.1-14_9dbc3ecc38b17a75c69035ae895b6a19
+            redo-nexus-prisma: 0.11.1-17_9dbc3ecc38b17a75c69035ae895b6a19
             serverless: 1.67.0
             serverless-dotenv-plugin: 2.3.2
             serverless-hooks-plugin: 1.1.0
@@ -21266,7 +21259,7 @@ packages:
         peerDependencies:
             webpack: "*"
         resolution:
-            integrity: sha512-LGn6ExBrklOqvYhUM0G4HaYMchEuawtvJfU/zHuNol54UKFJfri+LIxJxD7gC+Dpo5ofZCBcHH7Ylk0YzLXtGA==
+            integrity: sha512-AahW8qrhJKXftDRVz1Gkz8/Z2DlxWAiu4BrdaDWoqqIdlOmX8xaBdDzAM+ZrtWzwNPfAxj63M/cmWd2+BULcvQ==
             tarball: "file:projects/server.tgz"
         version: 0.0.0
     "file:projects/statelessly.tgz_@babel+core@7.7.7":
@@ -21434,6 +21427,7 @@ specifiers:
     "@types/jsonwebtoken": 8.3.5
     "@types/node": 12.11.1
     "@types/node-fetch": 2.5.4
+    "@types/prettier": 1.19.1
     "@types/puppeteer-core": 2.0.0
     "@types/react": 16.9.17
     "@types/react-autosuggest": 9.3.13
@@ -21500,7 +21494,6 @@ specifiers:
     react-svg-loader: 3.0.3
     react-test-renderer: 16.12.0
     react-typist: 2.0.5
-    redo-nexus-prisma: 0.11.1-14
     redux: 4.0.4
     serverless: 1.67.0
     serverless-dotenv-plugin: 2.3.2

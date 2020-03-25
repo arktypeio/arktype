@@ -253,8 +253,8 @@ type Test {
 
 input TestCreateInput {
     name: String!
-    steps: StepCreateWithoutTestsInput
-    tags: TagCreateWithoutTestInput
+    steps: [StepCreateWithoutTestsInput!]
+    tags: [TagCreateWithoutTestInput!]
 }
 
 input TestWhereUniqueInput {

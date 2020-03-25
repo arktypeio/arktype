@@ -4,11 +4,11 @@ datasource dev {
   enabled  = env("ENABLE_SQLITE")
 }
 
-datasource prod {
-  provider = "mysql"
-  url      = env("MYSQL_URL")
-  enabled  = env("ENABLE_MYSQL")
-}
+// datasource prod {
+//   provider = "mysql"
+//   url      = env("MYSQL_URL")
+//   enabled  = env("ENABLE_MYSQL")
+// }
 
 generator client {
   provider      = "prisma-client-js"

@@ -152,7 +152,7 @@ input SignUpInput {
 type Step {
     data: StepData!
     id: Int!
-    kind: String!
+    kind: StepKind!
     tests(
         after: TestWhereUniqueInput
         before: TestWhereUniqueInput
@@ -165,7 +165,7 @@ type Step {
 
 input StepCreateWithoutTestsInput {
     data: StepDataCreateWithoutStepsInput!
-    kind: String!
+    kind: StepKind!
 }
 
 type StepData {
@@ -198,6 +198,17 @@ input StepDataCreateWithoutStepsInput {
 
 input StepDataWhereUniqueInput {
     id: Int
+}
+
+enum StepKind {
+    assertText
+    assertVisibility
+    click
+    go
+    hover
+    key
+    screenshot
+    set
 }
 
 input StepWhereUniqueInput {

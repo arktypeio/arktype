@@ -1,25 +1,275 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`gqlize can generate new queries from defaults: mapped 1`] = `
-"query myEmail{me{ email}}
-query myFirst{me{ first}}
-query myId{me{ id}}
-query myLast{me{ last}}
-query myPassword{me{ password}}
-query mySteps{me{ steps { data { assertText { expected id selector } assertVisibility { expected id selector } click { double id selector } go { id  url} hover { duration id selector } id key { id key } set { id selector  value} } id kind tests { id name  tags { id name  user { email first id last password   }} user { email first id last password  tags { id name  } }} user { email first id last password  tags { id name test { id name   } } tests { id name  tags { id name  } }}}}}
-query myTags{me{ tags { id name test { id name steps { data { assertText { expected id selector } assertVisibility { expected id selector } click { double id selector } go { id  url} hover { duration id selector } id key { id key } set { id selector  value} } id kind  user { email first id last password   }}  user { email first id last password steps { data { assertText { expected id selector } assertVisibility { expected id selector } click { double id selector } go { id  url} hover { duration id selector } id key { id key } set { id selector  value} } id kind  }  }} user { email first id last password steps { data { assertText { expected id selector } assertVisibility { expected id selector } click { double id selector } go { id  url} hover { duration id selector } id key { id key } set { id selector  value} } id kind tests { id name   } }  tests { id name steps { data { assertText { expected id selector } assertVisibility { expected id selector } click { double id selector } go { id  url} hover { duration id selector } id key { id key } set { id selector  value} } id kind  }  }}}}}
-query myTests{me{ tests { id name steps { data { assertText { expected id selector } assertVisibility { expected id selector } click { double id selector } go { id  url} hover { duration id selector } id key { id key } set { id selector  value} } id kind  user { email first id last password  tags { id name  } }} tags { id name  user { email first id last password steps { data { assertText { expected id selector } assertVisibility { expected id selector } click { double id selector } go { id  url} hover { duration id selector } id key { id key } set { id selector  value} } id kind  }  }} user { email first id last password steps { data { assertText { expected id selector } assertVisibility { expected id selector } click { double id selector } go { id  url} hover { duration id selector } id key { id key } set { id selector  value} } id kind  } tags { id name  } }}}}
-query me{me{ email first id last password steps { data { assertText { expected id selector } assertVisibility { expected id selector } click { double id selector } go { id  url} hover { duration id selector } id key { id key } set { id selector  value} } id kind tests { id name  tags { id name  user { email first id last password   }} user { email first id last password  tags { id name  } }} user { email first id last password  tags { id name test { id name   } } tests { id name  tags { id name  } }}} tags { id name test { id name steps { data { assertText { expected id selector } assertVisibility { expected id selector } click { double id selector } go { id  url} hover { duration id selector } id key { id key } set { id selector  value} } id kind  user { email first id last password   }}  user { email first id last password steps { data { assertText { expected id selector } assertVisibility { expected id selector } click { double id selector } go { id  url} hover { duration id selector } id key { id key } set { id selector  value} } id kind  }  }} user { email first id last password steps { data { assertText { expected id selector } assertVisibility { expected id selector } click { double id selector } go { id  url} hover { duration id selector } id key { id key } set { id selector  value} } id kind tests { id name   } }  tests { id name steps { data { assertText { expected id selector } assertVisibility { expected id selector } click { double id selector } go { id  url} hover { duration id selector } id key { id key } set { id selector  value} } id kind  }  }}} tests { id name steps { data { assertText { expected id selector } assertVisibility { expected id selector } click { double id selector } go { id  url} hover { duration id selector } id key { id key } set { id selector  value} } id kind  user { email first id last password  tags { id name  } }} tags { id name  user { email first id last password steps { data { assertText { expected id selector } assertVisibility { expected id selector } click { double id selector } go { id  url} hover { duration id selector } id key { id key } set { id selector  value} } id kind  }  }} user { email first id last password steps { data { assertText { expected id selector } assertVisibility { expected id selector } click { double id selector } go { id  url} hover { duration id selector } id key { id key } set { id selector  value} } id kind  } tags { id name  } }}}}
-mutation createTest($name: String!, $data: StepDataCreateWithoutStepsInput!, $kind: String!, $testName: String!){createTest(data: {name: $name, steps: {data: $data, kind: $kind}, tags: {name: $testName}}){ id name steps { data { assertText { expected id selector } assertVisibility { expected id selector } click { double id selector } go { id  url} hover { duration id selector } id key { id key } set { id selector  value} } id kind tests { id name  tags { id name  user { email first id last password   }} user { email first id last password  tags { id name  } }} user { email first id last password  tags { id name test { id name   } } tests { id name  tags { id name  } }}} tags { id name test { id name steps { data { assertText { expected id selector } assertVisibility { expected id selector } click { double id selector } go { id  url} hover { duration id selector } id key { id key } set { id selector  value} } id kind  user { email first id last password   }}  user { email first id last password steps { data { assertText { expected id selector } assertVisibility { expected id selector } click { double id selector } go { id  url} hover { duration id selector } id key { id key } set { id selector  value} } id kind  }  }} user { email first id last password steps { data { assertText { expected id selector } assertVisibility { expected id selector } click { double id selector } go { id  url} hover { duration id selector } id key { id key } set { id selector  value} } id kind tests { id name   } }  tests { id name steps { data { assertText { expected id selector } assertVisibility { expected id selector } click { double id selector } go { id  url} hover { duration id selector } id key { id key } set { id selector  value} } id kind  }  }}} user { email first id last password steps { data { assertText { expected id selector } assertVisibility { expected id selector } click { double id selector } go { id  url} hover { duration id selector } id key { id key } set { id selector  value} } id kind tests { id name  tags { id name  } } } tags { id name test { id name steps { data { assertText { expected id selector } assertVisibility { expected id selector } click { double id selector } go { id  url} hover { duration id selector } id key { id key } set { id selector  value} } id kind  }  } } tests { id name steps { data { assertText { expected id selector } assertVisibility { expected id selector } click { double id selector } go { id  url} hover { duration id selector } id key { id key } set { id selector  value} } id kind  } tags { id name  } }}}}
-mutation signIn($email: String!, $password: String!){signIn(data: {email: $email, password: $password})}
-mutation signUp($email: String!, $first: String!, $last: String!, $password: String!){signUp(data: {email: $email, first: $first, last: $last, password: $password})}
-"
-`;
-
 exports[`gqlize works with default options: defaults 1`] = `
-"query me{me{ email first id last password steps { data { assertText { expected id selector } assertVisibility { expected id selector } click { double id selector } go { id  url} hover { duration id selector } id key { id key } set { id selector  value} } id kind tests { id name  tags { id name  user { email first id last password   }} user { email first id last password  tags { id name  } }} user { email first id last password  tags { id name test { id name   } } tests { id name  tags { id name  } }}} tags { id name test { id name steps { data { assertText { expected id selector } assertVisibility { expected id selector } click { double id selector } go { id  url} hover { duration id selector } id key { id key } set { id selector  value} } id kind  user { email first id last password   }}  user { email first id last password steps { data { assertText { expected id selector } assertVisibility { expected id selector } click { double id selector } go { id  url} hover { duration id selector } id key { id key } set { id selector  value} } id kind  }  }} user { email first id last password steps { data { assertText { expected id selector } assertVisibility { expected id selector } click { double id selector } go { id  url} hover { duration id selector } id key { id key } set { id selector  value} } id kind tests { id name   } }  tests { id name steps { data { assertText { expected id selector } assertVisibility { expected id selector } click { double id selector } go { id  url} hover { duration id selector } id key { id key } set { id selector  value} } id kind  }  }}} tests { id name steps { data { assertText { expected id selector } assertVisibility { expected id selector } click { double id selector } go { id  url} hover { duration id selector } id key { id key } set { id selector  value} } id kind  user { email first id last password  tags { id name  } }} tags { id name  user { email first id last password steps { data { assertText { expected id selector } assertVisibility { expected id selector } click { double id selector } go { id  url} hover { duration id selector } id key { id key } set { id selector  value} } id kind  }  }} user { email first id last password steps { data { assertText { expected id selector } assertVisibility { expected id selector } click { double id selector } go { id  url} hover { duration id selector } id key { id key } set { id selector  value} } id kind  } tags { id name  } }}}}
-mutation createTest($name: String!, $data: StepDataCreateWithoutStepsInput!, $kind: String!, $testName: String!){createTest(data: {name: $name, steps: {data: $data, kind: $kind}, tags: {name: $testName}}){ id name steps { data { assertText { expected id selector } assertVisibility { expected id selector } click { double id selector } go { id  url} hover { duration id selector } id key { id key } set { id selector  value} } id kind tests { id name  tags { id name  user { email first id last password   }} user { email first id last password  tags { id name  } }} user { email first id last password  tags { id name test { id name   } } tests { id name  tags { id name  } }}} tags { id name test { id name steps { data { assertText { expected id selector } assertVisibility { expected id selector } click { double id selector } go { id  url} hover { duration id selector } id key { id key } set { id selector  value} } id kind  user { email first id last password   }}  user { email first id last password steps { data { assertText { expected id selector } assertVisibility { expected id selector } click { double id selector } go { id  url} hover { duration id selector } id key { id key } set { id selector  value} } id kind  }  }} user { email first id last password steps { data { assertText { expected id selector } assertVisibility { expected id selector } click { double id selector } go { id  url} hover { duration id selector } id key { id key } set { id selector  value} } id kind tests { id name   } }  tests { id name steps { data { assertText { expected id selector } assertVisibility { expected id selector } click { double id selector } go { id  url} hover { duration id selector } id key { id key } set { id selector  value} } id kind  }  }}} user { email first id last password steps { data { assertText { expected id selector } assertVisibility { expected id selector } click { double id selector } go { id  url} hover { duration id selector } id key { id key } set { id selector  value} } id kind tests { id name  tags { id name  } } } tags { id name test { id name steps { data { assertText { expected id selector } assertVisibility { expected id selector } click { double id selector } go { id  url} hover { duration id selector } id key { id key } set { id selector  value} } id kind  }  } } tests { id name steps { data { assertText { expected id selector } assertVisibility { expected id selector } click { double id selector } go { id  url} hover { duration id selector } id key { id key } set { id selector  value} } id kind  } tags { id name  } }}}}
-mutation signIn($email: String!, $password: String!){signIn(data: {email: $email, password: $password})}
-mutation signUp($email: String!, $first: String!, $last: String!, $password: String!){signUp(data: {email: $email, first: $first, last: $last, password: $password})}
+"query me {
+  me {
+    email
+    first
+    id
+    last
+    password
+    steps {
+      data {
+        assertText {
+          expected
+          id
+          selector
+        }
+        assertVisibility {
+          expected
+          id
+          selector
+        }
+        click {
+          double
+          id
+          selector
+        }
+        go {
+          id
+          url
+        }
+        hover {
+          duration
+          id
+          selector
+        }
+        id
+        key {
+          id
+          key
+        }
+        set {
+          id
+          selector
+          value
+        }
+      }
+      id
+      kind
+      tests {
+        id
+        name
+        tags {
+          id
+          name
+        }
+      }
+    }
+    tags {
+      id
+      name
+      test {
+        id
+        name
+        steps {
+          data {
+            id
+          }
+          id
+          kind
+        }
+      }
+    }
+    tests {
+      id
+      name
+      steps {
+        data {
+          assertText {
+            expected
+            id
+            selector
+          }
+          assertVisibility {
+            expected
+            id
+            selector
+          }
+          click {
+            double
+            id
+            selector
+          }
+          go {
+            id
+            url
+          }
+          hover {
+            duration
+            id
+            selector
+          }
+          id
+          key {
+            id
+            key
+          }
+          set {
+            id
+            selector
+            value
+          }
+        }
+        id
+        kind
+      }
+      tags {
+        id
+        name
+      }
+    }
+  }
+}
+mutation createTest(
+  $name: String!
+  $data: StepDataCreateWithoutStepsInput!
+  $kind: StepKind!
+  $testName: String!
+) {
+  createTest(
+    data: {
+      name: $name
+      steps: { data: $data, kind: $kind }
+      tags: { name: $testName }
+    }
+  ) {
+    id
+    name
+    steps {
+      data {
+        assertText {
+          expected
+          id
+          selector
+        }
+        assertVisibility {
+          expected
+          id
+          selector
+        }
+        click {
+          double
+          id
+          selector
+        }
+        go {
+          id
+          url
+        }
+        hover {
+          duration
+          id
+          selector
+        }
+        id
+        key {
+          id
+          key
+        }
+        set {
+          id
+          selector
+          value
+        }
+      }
+      id
+      kind
+      user {
+        email
+        first
+        id
+        last
+        password
+        tags {
+          id
+          name
+        }
+      }
+    }
+    tags {
+      id
+      name
+      user {
+        email
+        first
+        id
+        last
+        password
+        steps {
+          data {
+            id
+          }
+          id
+          kind
+        }
+      }
+    }
+    user {
+      email
+      first
+      id
+      last
+      password
+      steps {
+        data {
+          assertText {
+            expected
+            id
+            selector
+          }
+          assertVisibility {
+            expected
+            id
+            selector
+          }
+          click {
+            double
+            id
+            selector
+          }
+          go {
+            id
+            url
+          }
+          hover {
+            duration
+            id
+            selector
+          }
+          id
+          key {
+            id
+            key
+          }
+          set {
+            id
+            selector
+            value
+          }
+        }
+        id
+        kind
+      }
+      tags {
+        id
+        name
+      }
+    }
+  }
+}
+mutation signIn($email: String!, $password: String!) {
+  signIn(data: { email: $email, password: $password })
+}
+mutation signUp(
+  $email: String!
+  $first: String!
+  $last: String!
+  $password: String!
+) {
+  signUp(
+    data: { email: $email, first: $first, last: $last, password: $password }
+  )
+}
 "
 `;

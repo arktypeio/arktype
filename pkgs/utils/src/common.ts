@@ -36,6 +36,9 @@ export type DeepPartial<T> = {
     [P in keyof T]?: T[P] extends NonRecursible ? T[P] : DeepPartial<T[P]>
 }
 
+export type Writeable<T> = { -readonly [P in keyof T]: T[P] }
+export type DeepWriteable<T> = { -readonly [P in keyof T]: DeepWriteable<T[P]> }
+
 export type ValueOf<T> = T[keyof T]
 export type ValueFrom<T, K extends keyof T> = Pick<T, K>[K]
 

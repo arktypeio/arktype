@@ -1,15 +1,39 @@
 import { gqlize } from "gqlize"
 // @ts-ignore
 import schema from "./schema.gql"
+import { PlaygroundRenderPageOptions } from "apollo-server-lambda"
 
-export const playground = {
+export const playground: PlaygroundRenderPageOptions = {
     tabs: [
         {
-            endpoint:
-                process.env.NODE_ENV === "production"
-                    ? "/dev/graphql"
-                    : "/graphql",
-            query: gqlize({ schema }),
+            endpoint: "/dev/graphql",
+            query: gqlize({
+                schema,
+                transformOutputs: (fields) =>
+                    fields.filter(
+                        (field) => !["user", "test"].includes(field.name.value)
+                    ),
+            }),
+            variables: JSON.stringify(
+                {
+                    email: "david@redo.qa",
+                    password: "redo",
+                    name: "Example",
+                    steps: [
+                        { kind: "click", data: { click: { selector: "#id" } } },
+                        {
+                            kind: "set",
+                            data: {
+                                set: { selector: "#another", value: "hello" },
+                            },
+                        },
+                    ],
+                    tags: [{ name: "fast" }, { name: "easy" }],
+                },
+                null,
+                4
+            ),
+            headers: { Authorization: "Bearer" },
         },
     ],
 }
