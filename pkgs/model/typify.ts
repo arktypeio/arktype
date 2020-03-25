@@ -25,7 +25,16 @@ export const typify = async () => {
         },
         documents: [
             {
-                content: parse(gqlize({ schema: schemaFile })),
+                content: parse(
+                    gqlize({
+                        schema: schemaFile,
+                        transformOutputs: (fields) =>
+                            fields.filter(
+                                (field) =>
+                                    !["user", "test"].includes(field.name.value)
+                            ),
+                    })
+                ),
                 filePath: "",
             },
         ],

@@ -15,30 +15,6 @@ generator client {
   binaryTargets = ["native", "rhel-openssl-1.0.x"]
 }
 
-model Tag {
-  id   Int    @id @default(autoincrement())
-  user User
-  name String
-  @@unique([name, user])
-}
-
-
-model Step {
-  id    Int      @id @default(autoincrement())
-  kind  StepKind
-  data  StepData
-  tests Test[]
-}
-
-model Test {
-  id    Int    @id @default(autoincrement())
-  user  User
-  name  String
-  steps Step[]
-  tags  Tag[]
-  @@unique([name, user])
-}
-
 model User {
   id       Int    @id @default(autoincrement())
   email    String @unique
@@ -50,58 +26,33 @@ model User {
   tests    Test[]
 }
 
+model Test {
+  id    Int    @id @default(autoincrement())
+  user  User
+  name  String
+  steps Step[]
+  tags  Tag[]
+  @@unique([name, user])
+}
+
+model Tag {
+  id   Int    @id @default(autoincrement())
+  user User
+  name String
+  @@unique([name, user])
+}
+
+model Step {
+  id       Int      @id @default(autoincrement())
+  kind     StepKind
+  selector String?
+  value    String?
+  key      String?
+  url      String?
+  expected String?
+  tests    Test[]
+}
+
 enum StepKind {
   click set hover key go screenshot assertText assertVisibility
-}
-
-
-model StepData {
-  id               Int                   @id @default(autoincrement())
-  click            ClickData?
-  set              SetData?
-  hover            HoverData?
-  key              KeyData?
-  go               GoData?
-  assertText       AssertTextData?
-  assertVisibility AssertVisibilityData?
-}
-
-model ClickData {
-  id       Int     @id @default(autoincrement())
-  selector String
-  double   Boolean @default(false)
-}
-
-model SetData {
-  id       Int    @id @default(autoincrement())
-  selector String
-  value    String
-}
-
-model HoverData {
-  id       Int    @id @default(autoincrement())
-  selector String
-  duration Int
-}
-
-model KeyData {
-  id  Int    @id @default(autoincrement())
-  key String
-}
-
-model GoData {
-  id  Int    @id @default(autoincrement())
-  url String
-}
-
-model AssertTextData {
-  id       Int    @id @default(autoincrement())
-  selector String
-  expected String
-}
-
-model AssertVisibilityData {
-  id       Int     @id @default(autoincrement())
-  selector String
-  expected Boolean
 }

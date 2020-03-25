@@ -24,18 +24,19 @@
         "framer-motion": "1.7.0",
         "material-table": "1.54.2",
         "material-ui-chip-input": "1.1.0",
-        "react": "16.12.0",
         "react-dom": "16.12.0",
         "react-hook-form": "3.24.1",
         "react-router-dom": "5.1.2",
         "typeface-ubuntu": "0.0.65"
+    },
+    "peerDependencies": {
+        "react": "^16.0.0"
     },
     "devDependencies": {
         "@babel/cli": "7.6.4",
         "@babel/core": "7.7.7",
         "@babel/runtime-corejs2": "7.7.7",
         "@re-do/bundle": "0.0.1",
-        "@re-do/model": "0.0.1",
         "@re-do/recommended": "0.0.1",
         "@storybook/addon-actions": "5.2.8",
         "@storybook/addon-console": "1.2.1",

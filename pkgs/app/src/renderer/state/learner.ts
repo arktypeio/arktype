@@ -4,8 +4,8 @@ import { isDeepStrictEqual } from "util"
 import { resolve } from "path"
 import { createHandler } from "react-statelessly"
 import {
-    StepCreateWithoutUserCreateOnlyInput as StepInput,
-    TagCreateWithoutTestCreateOnlyInput as TagInput,
+    StepCreateWithoutTestsInput as StepInput,
+    TagCreateWithoutTestInput as TagInput,
 } from "@re-do/model"
 import { launch, BrowserName, browserHandlers } from "@re-do/test"
 import { store } from "renderer/common"

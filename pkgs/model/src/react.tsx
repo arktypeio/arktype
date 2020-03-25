@@ -11,128 +11,6 @@ export type Scalars = {
     Float: number
 }
 
-export type AssertTextData = {
-    __typename?: "AssertTextData"
-    expected: Scalars["String"]
-    id: Scalars["Int"]
-    selector: Scalars["String"]
-    stepDatas: Array<StepData>
-}
-
-export type AssertTextDataStepDatasArgs = {
-    after?: Maybe<StepDataWhereUniqueInput>
-    before?: Maybe<StepDataWhereUniqueInput>
-    first?: Maybe<Scalars["Int"]>
-    last?: Maybe<Scalars["Int"]>
-    skip?: Maybe<Scalars["Int"]>
-}
-
-export type AssertTextDataCreateWithoutStepDatasInput = {
-    expected: Scalars["String"]
-    selector: Scalars["String"]
-}
-
-export type AssertVisibilityData = {
-    __typename?: "AssertVisibilityData"
-    expected: Scalars["Boolean"]
-    id: Scalars["Int"]
-    selector: Scalars["String"]
-    stepDatas: Array<StepData>
-}
-
-export type AssertVisibilityDataStepDatasArgs = {
-    after?: Maybe<StepDataWhereUniqueInput>
-    before?: Maybe<StepDataWhereUniqueInput>
-    first?: Maybe<Scalars["Int"]>
-    last?: Maybe<Scalars["Int"]>
-    skip?: Maybe<Scalars["Int"]>
-}
-
-export type AssertVisibilityDataCreateWithoutStepDatasInput = {
-    expected: Scalars["Boolean"]
-    selector: Scalars["String"]
-}
-
-export type ClickData = {
-    __typename?: "ClickData"
-    double: Scalars["Boolean"]
-    id: Scalars["Int"]
-    selector: Scalars["String"]
-    stepDatas: Array<StepData>
-}
-
-export type ClickDataStepDatasArgs = {
-    after?: Maybe<StepDataWhereUniqueInput>
-    before?: Maybe<StepDataWhereUniqueInput>
-    first?: Maybe<Scalars["Int"]>
-    last?: Maybe<Scalars["Int"]>
-    skip?: Maybe<Scalars["Int"]>
-}
-
-export type ClickDataCreateWithoutStepDatasInput = {
-    double?: Maybe<Scalars["Boolean"]>
-    selector: Scalars["String"]
-}
-
-export type GoData = {
-    __typename?: "GoData"
-    id: Scalars["Int"]
-    stepDatas: Array<StepData>
-    url: Scalars["String"]
-}
-
-export type GoDataStepDatasArgs = {
-    after?: Maybe<StepDataWhereUniqueInput>
-    before?: Maybe<StepDataWhereUniqueInput>
-    first?: Maybe<Scalars["Int"]>
-    last?: Maybe<Scalars["Int"]>
-    skip?: Maybe<Scalars["Int"]>
-}
-
-export type GoDataCreateWithoutStepDatasInput = {
-    url: Scalars["String"]
-}
-
-export type HoverData = {
-    __typename?: "HoverData"
-    duration: Scalars["Int"]
-    id: Scalars["Int"]
-    selector: Scalars["String"]
-    stepDatas: Array<StepData>
-}
-
-export type HoverDataStepDatasArgs = {
-    after?: Maybe<StepDataWhereUniqueInput>
-    before?: Maybe<StepDataWhereUniqueInput>
-    first?: Maybe<Scalars["Int"]>
-    last?: Maybe<Scalars["Int"]>
-    skip?: Maybe<Scalars["Int"]>
-}
-
-export type HoverDataCreateWithoutStepDatasInput = {
-    duration: Scalars["Int"]
-    selector: Scalars["String"]
-}
-
-export type KeyData = {
-    __typename?: "KeyData"
-    id: Scalars["Int"]
-    key: Scalars["String"]
-    stepDatas: Array<StepData>
-}
-
-export type KeyDataStepDatasArgs = {
-    after?: Maybe<StepDataWhereUniqueInput>
-    before?: Maybe<StepDataWhereUniqueInput>
-    first?: Maybe<Scalars["Int"]>
-    last?: Maybe<Scalars["Int"]>
-    skip?: Maybe<Scalars["Int"]>
-}
-
-export type KeyDataCreateWithoutStepDatasInput = {
-    key: Scalars["String"]
-}
-
 export type Mutation = {
     __typename?: "Mutation"
     createTest: Test
@@ -161,27 +39,6 @@ export type Query = {
     me: User
 }
 
-export type SetData = {
-    __typename?: "SetData"
-    id: Scalars["Int"]
-    selector: Scalars["String"]
-    stepDatas: Array<StepData>
-    value: Scalars["String"]
-}
-
-export type SetDataStepDatasArgs = {
-    after?: Maybe<StepDataWhereUniqueInput>
-    before?: Maybe<StepDataWhereUniqueInput>
-    first?: Maybe<Scalars["Int"]>
-    last?: Maybe<Scalars["Int"]>
-    skip?: Maybe<Scalars["Int"]>
-}
-
-export type SetDataCreateWithoutStepDatasInput = {
-    selector: Scalars["String"]
-    value: Scalars["String"]
-}
-
 export type SignInInput = {
     email: Scalars["String"]
     password: Scalars["String"]
@@ -196,11 +53,15 @@ export type SignUpInput = {
 
 export type Step = {
     __typename?: "Step"
-    data: StepData
+    expected?: Maybe<Scalars["String"]>
     id: Scalars["Int"]
+    key?: Maybe<Scalars["String"]>
     kind: StepKind
+    selector?: Maybe<Scalars["String"]>
     tests: Array<Test>
+    url?: Maybe<Scalars["String"]>
     user?: Maybe<User>
+    value?: Maybe<Scalars["String"]>
 }
 
 export type StepTestsArgs = {
@@ -212,43 +73,12 @@ export type StepTestsArgs = {
 }
 
 export type StepCreateWithoutTestsInput = {
-    data: StepDataCreateWithoutStepsInput
+    expected?: Maybe<Scalars["String"]>
+    key?: Maybe<Scalars["String"]>
     kind: StepKind
-}
-
-export type StepData = {
-    __typename?: "StepData"
-    assertText?: Maybe<AssertTextData>
-    assertVisibility?: Maybe<AssertVisibilityData>
-    click?: Maybe<ClickData>
-    go?: Maybe<GoData>
-    hover?: Maybe<HoverData>
-    id: Scalars["Int"]
-    key?: Maybe<KeyData>
-    set?: Maybe<SetData>
-    steps: Array<Step>
-}
-
-export type StepDataStepsArgs = {
-    after?: Maybe<StepWhereUniqueInput>
-    before?: Maybe<StepWhereUniqueInput>
-    first?: Maybe<Scalars["Int"]>
-    last?: Maybe<Scalars["Int"]>
-    skip?: Maybe<Scalars["Int"]>
-}
-
-export type StepDataCreateWithoutStepsInput = {
-    assertText?: Maybe<AssertTextDataCreateWithoutStepDatasInput>
-    assertVisibility?: Maybe<AssertVisibilityDataCreateWithoutStepDatasInput>
-    click?: Maybe<ClickDataCreateWithoutStepDatasInput>
-    go?: Maybe<GoDataCreateWithoutStepDatasInput>
-    hover?: Maybe<HoverDataCreateWithoutStepDatasInput>
-    key?: Maybe<KeyDataCreateWithoutStepDatasInput>
-    set?: Maybe<SetDataCreateWithoutStepDatasInput>
-}
-
-export type StepDataWhereUniqueInput = {
-    id?: Maybe<Scalars["Int"]>
+    selector?: Maybe<Scalars["String"]>
+    url?: Maybe<Scalars["String"]>
+    value?: Maybe<Scalars["String"]>
 }
 
 export enum StepKind {
@@ -363,56 +193,16 @@ export type MeQuery = { __typename?: "Query" } & {
         "email" | "first" | "id" | "last" | "password"
     > & {
             steps: Array<
-                { __typename?: "Step" } & Pick<Step, "id" | "kind"> & {
-                        data: { __typename?: "StepData" } & Pick<
-                            StepData,
-                            "id"
-                        > & {
-                                assertText: Maybe<
-                                    { __typename?: "AssertTextData" } & Pick<
-                                        AssertTextData,
-                                        "expected" | "id" | "selector"
-                                    >
-                                >
-                                assertVisibility: Maybe<
-                                    {
-                                        __typename?: "AssertVisibilityData"
-                                    } & Pick<
-                                        AssertVisibilityData,
-                                        "expected" | "id" | "selector"
-                                    >
-                                >
-                                click: Maybe<
-                                    { __typename?: "ClickData" } & Pick<
-                                        ClickData,
-                                        "double" | "id" | "selector"
-                                    >
-                                >
-                                go: Maybe<
-                                    { __typename?: "GoData" } & Pick<
-                                        GoData,
-                                        "id" | "url"
-                                    >
-                                >
-                                hover: Maybe<
-                                    { __typename?: "HoverData" } & Pick<
-                                        HoverData,
-                                        "duration" | "id" | "selector"
-                                    >
-                                >
-                                key: Maybe<
-                                    { __typename?: "KeyData" } & Pick<
-                                        KeyData,
-                                        "id" | "key"
-                                    >
-                                >
-                                set: Maybe<
-                                    { __typename?: "SetData" } & Pick<
-                                        SetData,
-                                        "id" | "selector" | "value"
-                                    >
-                                >
-                            }
+                { __typename?: "Step" } & Pick<
+                    Step,
+                    | "expected"
+                    | "id"
+                    | "key"
+                    | "kind"
+                    | "selector"
+                    | "url"
+                    | "value"
+                > & {
                         tests: Array<
                             { __typename?: "Test" } & Pick<
                                 Test,
@@ -428,96 +218,20 @@ export type MeQuery = { __typename?: "Query" } & {
                         >
                     }
             >
-            tags: Array<
-                { __typename?: "Tag" } & Pick<Tag, "id" | "name"> & {
-                        test: Maybe<
-                            { __typename?: "Test" } & Pick<
-                                Test,
-                                "id" | "name"
-                            > & {
-                                    steps: Array<
-                                        { __typename?: "Step" } & Pick<
-                                            Step,
-                                            "id" | "kind"
-                                        > & {
-                                                data: {
-                                                    __typename?: "StepData"
-                                                } & Pick<StepData, "id">
-                                            }
-                                    >
-                                }
-                        >
-                    }
-            >
+            tags: Array<{ __typename?: "Tag" } & Pick<Tag, "id" | "name">>
             tests: Array<
                 { __typename?: "Test" } & Pick<Test, "id" | "name"> & {
                         steps: Array<
                             { __typename?: "Step" } & Pick<
                                 Step,
-                                "id" | "kind"
-                            > & {
-                                    data: { __typename?: "StepData" } & Pick<
-                                        StepData,
-                                        "id"
-                                    > & {
-                                            assertText: Maybe<
-                                                {
-                                                    __typename?: "AssertTextData"
-                                                } & Pick<
-                                                    AssertTextData,
-                                                    | "expected"
-                                                    | "id"
-                                                    | "selector"
-                                                >
-                                            >
-                                            assertVisibility: Maybe<
-                                                {
-                                                    __typename?: "AssertVisibilityData"
-                                                } & Pick<
-                                                    AssertVisibilityData,
-                                                    | "expected"
-                                                    | "id"
-                                                    | "selector"
-                                                >
-                                            >
-                                            click: Maybe<
-                                                {
-                                                    __typename?: "ClickData"
-                                                } & Pick<
-                                                    ClickData,
-                                                    "double" | "id" | "selector"
-                                                >
-                                            >
-                                            go: Maybe<
-                                                {
-                                                    __typename?: "GoData"
-                                                } & Pick<GoData, "id" | "url">
-                                            >
-                                            hover: Maybe<
-                                                {
-                                                    __typename?: "HoverData"
-                                                } & Pick<
-                                                    HoverData,
-                                                    | "duration"
-                                                    | "id"
-                                                    | "selector"
-                                                >
-                                            >
-                                            key: Maybe<
-                                                {
-                                                    __typename?: "KeyData"
-                                                } & Pick<KeyData, "id" | "key">
-                                            >
-                                            set: Maybe<
-                                                {
-                                                    __typename?: "SetData"
-                                                } & Pick<
-                                                    SetData,
-                                                    "id" | "selector" | "value"
-                                                >
-                                            >
-                                        }
-                                }
+                                | "expected"
+                                | "id"
+                                | "key"
+                                | "kind"
+                                | "selector"
+                                | "url"
+                                | "value"
+                            >
                         >
                         tags: Array<
                             { __typename?: "Tag" } & Pick<Tag, "id" | "name">
@@ -536,153 +250,18 @@ export type CreateTestMutationVariables = {
 export type CreateTestMutation = { __typename?: "Mutation" } & {
     createTest: { __typename?: "Test" } & Pick<Test, "id" | "name"> & {
             steps: Array<
-                { __typename?: "Step" } & Pick<Step, "id" | "kind"> & {
-                        data: { __typename?: "StepData" } & Pick<
-                            StepData,
-                            "id"
-                        > & {
-                                assertText: Maybe<
-                                    { __typename?: "AssertTextData" } & Pick<
-                                        AssertTextData,
-                                        "expected" | "id" | "selector"
-                                    >
-                                >
-                                assertVisibility: Maybe<
-                                    {
-                                        __typename?: "AssertVisibilityData"
-                                    } & Pick<
-                                        AssertVisibilityData,
-                                        "expected" | "id" | "selector"
-                                    >
-                                >
-                                click: Maybe<
-                                    { __typename?: "ClickData" } & Pick<
-                                        ClickData,
-                                        "double" | "id" | "selector"
-                                    >
-                                >
-                                go: Maybe<
-                                    { __typename?: "GoData" } & Pick<
-                                        GoData,
-                                        "id" | "url"
-                                    >
-                                >
-                                hover: Maybe<
-                                    { __typename?: "HoverData" } & Pick<
-                                        HoverData,
-                                        "duration" | "id" | "selector"
-                                    >
-                                >
-                                key: Maybe<
-                                    { __typename?: "KeyData" } & Pick<
-                                        KeyData,
-                                        "id" | "key"
-                                    >
-                                >
-                                set: Maybe<
-                                    { __typename?: "SetData" } & Pick<
-                                        SetData,
-                                        "id" | "selector" | "value"
-                                    >
-                                >
-                            }
-                        user: Maybe<
-                            { __typename?: "User" } & Pick<
-                                User,
-                                "email" | "first" | "id" | "last" | "password"
-                            > & {
-                                    tags: Array<
-                                        { __typename?: "Tag" } & Pick<
-                                            Tag,
-                                            "id" | "name"
-                                        >
-                                    >
-                                }
-                        >
-                    }
+                { __typename?: "Step" } & Pick<
+                    Step,
+                    | "expected"
+                    | "id"
+                    | "key"
+                    | "kind"
+                    | "selector"
+                    | "url"
+                    | "value"
+                >
             >
-            tags: Array<
-                { __typename?: "Tag" } & Pick<Tag, "id" | "name"> & {
-                        user: { __typename?: "User" } & Pick<
-                            User,
-                            "email" | "first" | "id" | "last" | "password"
-                        > & {
-                                steps: Array<
-                                    { __typename?: "Step" } & Pick<
-                                        Step,
-                                        "id" | "kind"
-                                    > & {
-                                            data: {
-                                                __typename?: "StepData"
-                                            } & Pick<StepData, "id">
-                                        }
-                                >
-                            }
-                    }
-            >
-            user: { __typename?: "User" } & Pick<
-                User,
-                "email" | "first" | "id" | "last" | "password"
-            > & {
-                    steps: Array<
-                        { __typename?: "Step" } & Pick<Step, "id" | "kind"> & {
-                                data: { __typename?: "StepData" } & Pick<
-                                    StepData,
-                                    "id"
-                                > & {
-                                        assertText: Maybe<
-                                            {
-                                                __typename?: "AssertTextData"
-                                            } & Pick<
-                                                AssertTextData,
-                                                "expected" | "id" | "selector"
-                                            >
-                                        >
-                                        assertVisibility: Maybe<
-                                            {
-                                                __typename?: "AssertVisibilityData"
-                                            } & Pick<
-                                                AssertVisibilityData,
-                                                "expected" | "id" | "selector"
-                                            >
-                                        >
-                                        click: Maybe<
-                                            { __typename?: "ClickData" } & Pick<
-                                                ClickData,
-                                                "double" | "id" | "selector"
-                                            >
-                                        >
-                                        go: Maybe<
-                                            { __typename?: "GoData" } & Pick<
-                                                GoData,
-                                                "id" | "url"
-                                            >
-                                        >
-                                        hover: Maybe<
-                                            { __typename?: "HoverData" } & Pick<
-                                                HoverData,
-                                                "duration" | "id" | "selector"
-                                            >
-                                        >
-                                        key: Maybe<
-                                            { __typename?: "KeyData" } & Pick<
-                                                KeyData,
-                                                "id" | "key"
-                                            >
-                                        >
-                                        set: Maybe<
-                                            { __typename?: "SetData" } & Pick<
-                                                SetData,
-                                                "id" | "selector" | "value"
-                                            >
-                                        >
-                                    }
-                            }
-                    >
-                    tags: Array<
-                        { __typename?: "Tag" } & Pick<Tag, "id" | "name">
-                    >
-                }
+            tags: Array<{ __typename?: "Tag" } & Pick<Tag, "id" | "name">>
         }
 }
 
@@ -717,44 +296,11 @@ export const MeDocument = gql`
             last
             password
             steps {
-                data {
-                    assertText {
-                        expected
-                        id
-                        selector
-                    }
-                    assertVisibility {
-                        expected
-                        id
-                        selector
-                    }
-                    click {
-                        double
-                        id
-                        selector
-                    }
-                    go {
-                        id
-                        url
-                    }
-                    hover {
-                        duration
-                        id
-                        selector
-                    }
-                    id
-                    key {
-                        id
-                        key
-                    }
-                    set {
-                        id
-                        selector
-                        value
-                    }
-                }
+                expected
                 id
+                key
                 kind
+                selector
                 tests {
                     id
                     name
@@ -763,64 +309,24 @@ export const MeDocument = gql`
                         name
                     }
                 }
+                url
+                value
             }
             tags {
                 id
                 name
-                test {
-                    id
-                    name
-                    steps {
-                        data {
-                            id
-                        }
-                        id
-                        kind
-                    }
-                }
             }
             tests {
                 id
                 name
                 steps {
-                    data {
-                        assertText {
-                            expected
-                            id
-                            selector
-                        }
-                        assertVisibility {
-                            expected
-                            id
-                            selector
-                        }
-                        click {
-                            double
-                            id
-                            selector
-                        }
-                        go {
-                            id
-                            url
-                        }
-                        hover {
-                            duration
-                            id
-                            selector
-                        }
-                        id
-                        key {
-                            id
-                            key
-                        }
-                        set {
-                            id
-                            selector
-                            value
-                        }
-                    }
+                    expected
                     id
+                    key
                     kind
+                    selector
+                    url
+                    value
                 }
                 tags {
                     id
@@ -881,124 +387,17 @@ export const CreateTestDocument = gql`
             id
             name
             steps {
-                data {
-                    assertText {
-                        expected
-                        id
-                        selector
-                    }
-                    assertVisibility {
-                        expected
-                        id
-                        selector
-                    }
-                    click {
-                        double
-                        id
-                        selector
-                    }
-                    go {
-                        id
-                        url
-                    }
-                    hover {
-                        duration
-                        id
-                        selector
-                    }
-                    id
-                    key {
-                        id
-                        key
-                    }
-                    set {
-                        id
-                        selector
-                        value
-                    }
-                }
+                expected
                 id
+                key
                 kind
-                user {
-                    email
-                    first
-                    id
-                    last
-                    password
-                    tags {
-                        id
-                        name
-                    }
-                }
+                selector
+                url
+                value
             }
             tags {
                 id
                 name
-                user {
-                    email
-                    first
-                    id
-                    last
-                    password
-                    steps {
-                        data {
-                            id
-                        }
-                        id
-                        kind
-                    }
-                }
-            }
-            user {
-                email
-                first
-                id
-                last
-                password
-                steps {
-                    data {
-                        assertText {
-                            expected
-                            id
-                            selector
-                        }
-                        assertVisibility {
-                            expected
-                            id
-                            selector
-                        }
-                        click {
-                            double
-                            id
-                            selector
-                        }
-                        go {
-                            id
-                            url
-                        }
-                        hover {
-                            duration
-                            id
-                            selector
-                        }
-                        id
-                        key {
-                            id
-                            key
-                        }
-                        set {
-                            id
-                            selector
-                            value
-                        }
-                    }
-                    id
-                    kind
-                }
-                tags {
-                    id
-                    name
-                }
             }
         }
     }

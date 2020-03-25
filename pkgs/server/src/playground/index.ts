@@ -20,12 +20,11 @@ export const playground: PlaygroundRenderPageOptions = {
                     password: "redo",
                     name: "Example",
                     steps: [
-                        { kind: "click", data: { click: { selector: "#id" } } },
+                        { kind: "click", selector: "#id" },
                         {
                             kind: "set",
-                            data: {
-                                set: { selector: "#another", value: "hello" },
-                            },
+                            selector: "#another",
+                            value: "hello",
                         },
                     ],
                     tags: [{ name: "fast" }, { name: "easy" }],
