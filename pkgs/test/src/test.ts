@@ -1,80 +1,37 @@
-import p, { Page, Browser } from "puppeteer-core"
-import { ValueOf } from "@re-do/utils"
-import { SelectorCreateWithoutStepsCreateOnlyInput as SelectorInput } from "@re-do/model"
-import { ensureChromiumPath } from "./chromium"
+import { perform, Step } from "./steps"
+import {
+    LaunchOptions,
+    launch,
+    BrowserName,
+    installBrowserIfNeeded,
+} from "./browser"
 
-export const test = async (...steps: Step[]) => {
-    const browser = await p.launch({
-        headless: false,
-        slowMo: 50,
-        executablePath: await ensureChromiumPath()
-    })
-    const page = await browser.newPage()
+export type TestOptions<Browser extends BrowserName> = LaunchOptions<
+    Browser
+> & {
+    browser?: Browser
+}
+
+export const test = async <Browser extends BrowserName>(
+    steps: Step[],
+    options: TestOptions<Browser> = {}
+) => {
+    const { browser: browserName, ...launchOptions } = {
+        browser: "chrome" as const,
+        ...(options ?? {}),
+    }
+    await installBrowserIfNeeded("chrome")
+    const browser = await launch(
+        browserName,
+        launchOptions as LaunchOptions<Browser>
+    )
+    const { page } = browser
     await page.goto("https://redo.qa")
     await page.screenshot({ path: "before.png" })
     for (const step of steps) {
-        await redo({ step, context: { browser, page } })
+        await perform(step, { browser, page })
     }
     await page.screenshot({ path: "after.png" })
+    await page.close()
     await browser.close()
-    return true
 }
-
-export type Context = {
-    browser: Browser
-    page: Page
-}
-
-export type RedoArgs = {
-    step: Step
-    context: Context
-}
-
-export const redo = async ({ step: [type, args], context }: RedoArgs) => {
-    await stepTypes[type](args as any, context)
-}
-
-export type ClickArgs = {
-    selector: SelectorInput
-}
-
-export const click = async ({ selector }: ClickArgs, { page }: Context) => {
-    await page.click(selector.css)
-}
-
-export type GoArgs = {
-    url: string
-}
-
-export const go = async ({ url }: GoArgs, { page }: Context) =>
-    await page.goto(url)
-
-export type SetArgs = {
-    selector: SelectorInput
-    value: string
-}
-
-export const set = async ({ selector, value }: SetArgs, { page }: Context) => {
-    await page.type(selector.css, value)
-}
-
-export type ScreenshotArgs = {}
-
-export const screenshot = async (args: ScreenshotArgs, { page }: Context) => {
-    await page.screenshot()
-}
-
-export const stepTypes = {
-    click,
-    go,
-    set,
-    screenshot
-}
-
-export type StepTypes = typeof stepTypes
-
-export type StepKey = keyof StepTypes
-
-export type Step = ValueOf<
-    { [K in keyof StepTypes]: [K, Parameters<StepTypes[K]>[0]] }
->

@@ -1,14 +1,13 @@
 import React from "react"
 import {
     Column,
-    Text,
     Spinner,
     TextInput,
     AppBar,
     Icons,
     IconButton,
     ChipInput,
-    ErrorText
+    ErrorText,
 } from "@re-do/components"
 import { useCreateTestMutation, useMeQuery } from "@re-do/model/dist/react"
 import { deactivateLearner, resetLearner } from "state"
@@ -20,11 +19,11 @@ export const Learner = () => {
         learner: {
             events: true,
             testName: true,
-            testTags: true
-        }
+            testTags: true,
+        },
     }).learner
     const [createTest, createTestResult] = useCreateTestMutation()
-    const existingTags = useMeQuery().data?.me.tags.map(tag => tag.name) ?? []
+    const existingTags = useMeQuery().data?.me.tags.map((tag) => tag.name) ?? []
     return (
         <Column full>
             <AppBar height={120} align="center">
@@ -34,9 +33,9 @@ export const Learner = () => {
                         placeholder="Test Name"
                         colorTemplate="light"
                         kind="underlined"
-                        onChange={e =>
+                        onChange={(e) =>
                             store.mutate({
-                                learner: { testName: e.target.value }
+                                learner: { testName: e.target.value },
                             })
                         }
                     />
@@ -65,8 +64,8 @@ export const Learner = () => {
                                     variables: {
                                         name,
                                         tags,
-                                        steps: events
-                                    }
+                                        steps: events,
+                                    },
                                 })
                                 await resetLearner()
                                 await deactivateLearner()

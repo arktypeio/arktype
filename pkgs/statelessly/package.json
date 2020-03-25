@@ -11,7 +11,7 @@
     },
     "dependencies": {
         "@babel/runtime-corejs3": "7.6.3",
-        "@re-do/utils": "0.0.2",
+        "@re-do/utils": "0.0.6",
         "deepmerge": "4.2.2",
         "isomorphic-fetch": "2.2.1",
         "moize": "5.4.4",
@@ -24,6 +24,6 @@
         "@types/node": "12.11.1",
         "babel-preset-redo": "0.0.1",
         "jest": "24.9.0",
-        "typescript": "3.7.4"
+        "typescript": "3.8.2"
     }
 }

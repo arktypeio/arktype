@@ -1,5 +1,5 @@
-const { isDev } = require("@re-do/utils")
+const { isDev } = require("@re-do/utils/dist/node")
 
 module.exports = {
-    presets: [["redo", { hot: isDev() }]]
+    presets: [["redo", { hot: isDev() }]],
 }

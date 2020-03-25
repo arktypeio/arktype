@@ -1,45 +1,58 @@
 import finder from "@medv/finder"
-import { StepCreateWithoutUserCreateOnlyInput as StepInput } from "@re-do/model"
 
-const eventTypes = {
-    click: "click",
-    dblclick: "click",
-    submit: "click",
-    change: "set",
-    select: "set"
+// TODO: Fix bizarre build failure caused by this import:
+// https://github.com/redo-qa/redo/issues/197
+// import {
+//     StepCreateWithoutTestsInput as StepInput,
+//     StepKind,
+// } from "@re-do/model/dist/react"
+
+enum StepKind {
+    Click = "click",
+    Set = "set",
 }
 
-export const watchPage = async () => {
+type StepInput = any
+
+const eventMap = {
+    click: StepKind.Click,
+    dblclick: StepKind.Click,
+    submit: StepKind.Click,
+    change: StepKind.Set,
+    select: StepKind.Set,
+} as const
+
+type EventMap = typeof eventMap
+
+type EventName = keyof EventMap
+
+const watchPage = async () => {
     const browserWindow: Window & {
         notify: (e: StepInput) => void
     } = window as any
-    Object.keys(eventTypes).forEach(event =>
-        browserWindow.addEventListener(
-            event,
-            async (e: Event) => {
-                const step: StepInput = {
-                    action: eventTypes[e.type as keyof typeof eventTypes],
-                    selector: {
-                        css: ""
-                    },
-                    value: ""
-                }
-                if (e.target) {
-                    const target = e.target as HTMLElement
-                    step.selector = { css: finder(target as HTMLElement) }
-                    switch (e.type) {
-                        case "change":
-                            if (e.target) {
-                                const inputTarget = target as HTMLInputElement
-                                step.value = inputTarget.value
-                            }
-                    }
-                }
-                browserWindow.notify(step)
-            },
-            true
-        )
+    const handler = async (e: Event) => {
+        eventToSteps(e).forEach((step) => browserWindow.notify(step))
+    }
+    Object.keys(eventMap).forEach((event) =>
+        browserWindow.addEventListener(event, handler, true)
     )
+}
+
+const eventToSteps = (e: Event) => {
+    if (!(e.type in eventMap)) {
+        return []
+    }
+    const step: StepInput = {
+        kind: eventMap[e.type as EventName],
+    }
+    if (e.target) {
+        const target = e.target as HTMLElement
+        step.selector = finder(target as HTMLElement)
+        if (step.kind === StepKind.Set) {
+            step.value = (target as HTMLInputElement).value
+        }
+    }
+    return [step]
 }
 
 watchPage()

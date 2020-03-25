@@ -1,95 +1,94 @@
 import React from "react"
+import { Unlisted } from "@re-do/utils"
 import { SuggestionCard } from "./SuggestionCard"
 import { store } from "renderer/common"
 import { Card, Row, IconButton, Icons } from "@re-do/components"
-import { Test } from "@re-do/model"
-import { useMeQuery } from "@re-do/model/dist/react"
+import { useMeQuery, MeQuery } from "@re-do/model/dist/react"
 import { test as runTest } from "@re-do/test"
 
 const welcomeSuggestion = {
     title: "👆Hey there!",
     description:
         "Looks like you don't have any tests yet. Click up here to create one!",
-    data: null
+    data: null,
 }
 
-const useTestSuggestions = (): Suggestion<SuggestionKind>[] => {
+const useSuggestions = (): Suggestion<UserItemKind>[] => {
     const { cardFilter } = store.useQuery({ cardFilter: true })
     const tests = useMeQuery({ fetchPolicy: "no-cache" }).data?.me?.tests
     return tests && tests.length
         ? tests
-              .filter(test =>
+              .filter((test) =>
                   JSON.stringify(test)
                       .toLowerCase()
                       .includes(cardFilter.toLowerCase())
               )
-              .map(data => toSuggestion("test", data))
+              .map((data) => toSuggestion("tests", data))
         : []
 }
 
-type Suggestion<Kind extends SuggestionKind> = {
+type UserData = MeQuery["me"]
+
+type UserItemKind = keyof UserData
+
+type UserItem<Kind extends UserItemKind> = Unlisted<UserData[Kind]>
+
+type Suggestion<Kind extends UserItemKind> = {
     title: string
     description: string
-    data: SuggestionKinds[Kind]
+    data: UserItem<Kind>
     extras?: JSX.Element
 }
 
-type SuggestionKinds = {
-    test: Test
+const suggestionTypes = {
+    tests: (test: UserItem<"tests">) => ({
+        title: test.name,
+        description: test.tags.map((tag) => tag.name).join(", "),
+        extras: (
+            <IconButton
+                Icon={Icons.run}
+                onClick={() =>
+                    runTest(test.steps.map((step) => [step.kind, step] as any))
+                }
+            />
+        ),
+        data: test,
+    }),
 }
 
-type SuggestionKind = keyof SuggestionKinds
+type SuggestionTypes = typeof suggestionTypes
+type SuggestionKind = keyof SuggestionTypes
 
 const toSuggestion = <Kind extends SuggestionKind>(
     kind: Kind,
-    data: SuggestionKinds[Kind]
+    data: UserItem<Kind>
 ): Suggestion<Kind> => {
-    const suggestionTypes = {
-        test: (test: Test) => ({
-            title: test.name,
-            description: test.tags.map(_ => _.name).join(", "),
-            extras: (
-                <IconButton
-                    Icon={Icons.run}
-                    onClick={() =>
-                        runTest(
-                            ...(test.steps.map(step => [
-                                step.action,
-                                step
-                            ]) as any)
-                        )
-                    }
-                />
-            ),
-            data: test
-        })
-    }
-    return suggestionTypes[kind](data)
+    return suggestionTypes[kind](data) as Suggestion<Kind>
 }
 
 export const SuggestionResultsGrid = () => {
-    const values = useTestSuggestions()
+    const values = useSuggestions()
     return (
         <Card
             style={{
                 width: "100%",
-                height: "100%"
+                height: "100%",
             }}
         >
             <Row
                 wrap="wrap"
                 style={{
                     width: "100%",
-                    padding: 16
+                    padding: 16,
                 }}
             >
                 {values.length ? (
-                    values.map(value => (
+                    values.map((value) => (
                         <div
                             key={value.title}
                             style={{
                                 width: 200,
-                                height: 200
+                                height: 200,
                             }}
                         >
                             <SuggestionCard {...value} />

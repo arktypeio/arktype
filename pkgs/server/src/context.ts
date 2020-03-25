@@ -1,7 +1,7 @@
-import { Photon } from "@prisma/photon"
+import { PrismaClient } from "@prisma/client"
 
 export interface Context {
-    photon: Photon
+    prisma: PrismaClient
     req: any
     userId: number
 }

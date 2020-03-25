@@ -1,5 +1,5 @@
 import React from "react"
-import { StepCreateWithoutUserCreateOnlyInput as StepInput } from "@re-do/model"
+import { StepCreateWithoutTestsInput as StepInput } from "@re-do/model"
 import { ContentCard } from "@re-do/components"
 
 export type StepCardProps = {

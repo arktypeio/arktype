@@ -3,9 +3,9 @@ import { ApolloServer } from "apollo-server-lambda"
 import { getUserId } from "./auth"
 import { schema } from "./schema"
 import { playground } from "./playground"
-import { Photon } from "@prisma/photon"
+import { PrismaClient } from "@prisma/client"
 
-const photon = new Photon()
+const prisma = new PrismaClient()
 
 export const server = new ApolloServer({
     schema,
@@ -22,13 +22,13 @@ export const server = new ApolloServer({
         return {
             ...event,
             userId: getUserId(event),
-            photon
+            prisma,
         }
     },
     playground,
     introspection: true,
     debug: true,
-    formatError: error => {
+    formatError: (error) => {
         console.log(JSON.stringify(error, null, 4))
         return error
     },
@@ -36,10 +36,10 @@ export const server = new ApolloServer({
         // Don't log spammy queries from graphql playground
         if (
             response.data &&
-            !Object.keys(response.data).every(key => key === "__schema")
+            !Object.keys(response.data).every((key) => key === "__schema")
         ) {
             console.log(JSON.stringify(response, null, 4))
         }
         return response
-    }
+    },
 })
