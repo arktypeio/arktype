@@ -9,9 +9,10 @@ import {
     IgnorePlugin,
     NamedModulesPlugin,
     HotModuleReplacementPlugin,
-    NoEmitOnErrorsPlugin
+    NoEmitOnErrorsPlugin,
 } from "webpack"
-import { listify, getMode, isDev } from "@re-do/utils"
+import { listify } from "@re-do/utils"
+import { getMode, isDev } from "@re-do/utils/dist/node"
 import ForkTsCheckerWebpackPlugin from "fork-ts-checker-webpack-plugin"
 import { BundleAnalyzerPlugin } from "webpack-bundle-analyzer"
 
@@ -24,51 +25,51 @@ export type ConfigArgs = {
 const getCommonConfig = ({
     entries,
     tsconfig,
-    analyzeBundle
+    analyzeBundle,
 }: ConfigArgs): Configuration => ({
     mode: getMode(),
     entry: entries,
     devtool: isDev() ? "inline-source-map" : "source-map",
     context: resolve(__dirname, ".."),
     performance: {
-        hints: isDev() && "warning"
+        hints: isDev() && "warning",
     },
     node: {
         __dirname: false,
-        __filename: false
+        __filename: false,
     },
     resolve: {
         extensions: [".ts", ".tsx", ".js", ".jsx", ".mjs", ".json"],
         plugins: [new TsconfigPathsPlugin()],
         alias: {
-            ws: "isomorphic-ws"
-        }
+            ws: "isomorphic-ws",
+        },
     },
     module: {
         rules: [
             {
                 test: /\.(j|t)sx?$/,
                 loader: "babel-loader",
-                exclude: /node_modules/
+                exclude: /node_modules/,
             },
             {
                 type: "javascript/auto",
                 test: /\.mjs$/,
-                use: []
+                use: [],
             },
             {
                 test: /\.(graphql|gql)$/,
                 exclude: /node_modules/,
-                loader: "graphql-tag/loader"
-            }
-        ]
+                loader: "graphql-tag/loader",
+            },
+        ],
     },
     plugins: analyzeBundle
         ? [
               new ForkTsCheckerWebpackPlugin({ tsconfig }),
-              new BundleAnalyzerPlugin()
+              new BundleAnalyzerPlugin(),
           ]
-        : [new ForkTsCheckerWebpackPlugin({ tsconfig })]
+        : [new ForkTsCheckerWebpackPlugin({ tsconfig })],
 })
 
 const getWebConfig = (args: ConfigArgs): Configuration =>
@@ -77,36 +78,36 @@ const getWebConfig = (args: ConfigArgs): Configuration =>
             rules: [
                 {
                     test: /\.(jpg|png|ico|icns|woff|woff2)$/,
-                    loader: "file-loader"
+                    loader: "file-loader",
                 },
                 {
                     test: /\.svg$/,
                     use: [
                         {
-                            loader: "babel-loader"
+                            loader: "babel-loader",
                         },
                         {
                             loader: "react-svg-loader",
                             options: {
-                                jsx: true
-                            }
-                        }
-                    ]
+                                jsx: true,
+                            },
+                        },
+                    ],
                 },
                 {
                     test: /\.css$/,
-                    loaders: ["style-loader", "css-loader"]
+                    loaders: ["style-loader", "css-loader"],
                 },
                 {
                     test: /node_modules[\/\\](iconv-lite)[\/\\].+/,
                     resolve: {
-                        aliasFields: ["main"]
-                    }
-                }
-            ]
+                        aliasFields: ["main"],
+                    },
+                },
+            ],
         },
         output: {
-            publicPath: "/"
+            publicPath: "/",
         },
         resolve: {
             alias: {
@@ -115,30 +116,30 @@ const getWebConfig = (args: ConfigArgs): Configuration =>
                     "..",
                     "node_modules",
                     "react-hot-loader"
-                )
-            }
+                ),
+            },
         },
         plugins: [
             new IgnorePlugin(/\/iconv-loader$/),
             new HtmlWebpackPlugin({
-                template: resolve(__dirname, "template.html")
-            })
-        ]
+                template: resolve(__dirname, "template.html"),
+            }),
+        ],
     })
 
 const getMainConfig = (args: ConfigArgs): Configuration =>
     merge.smart(getCommonConfig(args), {
         target: "electron-main",
         output: {
-            filename: "main.js"
-        }
+            filename: "main.js",
+        },
     })
 
 const getRendererConfig = (args: ConfigArgs): Configuration =>
     merge.smart(getWebConfig(args), {
         target: "electron-renderer",
         output: {
-            filename: "renderer.js"
+            filename: "renderer.js",
         },
         resolve: {
             /*
@@ -147,35 +148,35 @@ const getRendererConfig = (args: ConfigArgs): Configuration =>
             In particular, this allows us to import puppeteer, which specifies a 
             "browser" field in its package.json that breaks our ability to import it.
             */
-            aliasFields: []
+            aliasFields: [],
         },
         devServer: {
             after() {
                 spawn("npm", ["run", "electron"], {
                     shell: true,
                     env: process.env,
-                    stdio: "inherit"
+                    stdio: "inherit",
                 })
-                    .on("close", code => process.exit(code))
-                    .on("error", spawnError => console.error(spawnError))
-            }
-        }
+                    .on("close", (code) => process.exit(code))
+                    .on("error", (spawnError) => console.error(spawnError))
+            },
+        },
     } as Configuration)
 
 const getInjectedConfig = (args: ConfigArgs): Configuration =>
     merge.smart(getWebConfig(args), {
         output: {
-            filename: "injected.js"
+            filename: "injected.js",
         },
         module: {
             rules: [
                 {
                     test: /\.(j|t)sx?$/,
                     loader: "ts-loader",
-                    exclude: /node_modules/
-                }
-            ]
-        }
+                    exclude: /node_modules/,
+                },
+            ],
+        },
     })
 
 const getDevServerConfig = (customConfig?: object): Configuration =>
@@ -188,18 +189,18 @@ const getDevServerConfig = (customConfig?: object): Configuration =>
                     "node_modules",
                     "@hot-loader",
                     "react-dom"
-                )
-            }
+                ),
+            },
         },
         entry: [
             "react-hot-loader/patch",
             "webpack-dev-server/client?http://localhost:8080",
-            "webpack/hot/only-dev-server"
+            "webpack/hot/only-dev-server",
         ],
         plugins: [
             new NamedModulesPlugin(),
             new HotModuleReplacementPlugin(),
-            new NoEmitOnErrorsPlugin()
+            new NoEmitOnErrorsPlugin(),
         ],
         devServer: {
             historyApiFallback: true,
@@ -207,8 +208,8 @@ const getDevServerConfig = (customConfig?: object): Configuration =>
             writeToDisk: true,
             host: isWsl ? "0.0.0.0" : undefined,
             useLocalIp: isWsl,
-            ...customConfig
-        }
+            ...customConfig,
+        },
     } as Configuration)
 
 const baseOptions = {
@@ -216,7 +217,7 @@ const baseOptions = {
     web: getWebConfig,
     injected: getInjectedConfig,
     renderer: getRendererConfig,
-    main: getMainConfig
+    main: getMainConfig,
 }
 
 export type BaseName = keyof typeof baseOptions
@@ -235,7 +236,7 @@ export const makeConfig = (
         entry,
         tsconfig,
         devServer,
-        analyzeBundle = false
+        analyzeBundle = false,
     }: BaseConfigOptions,
     merged: Partial<Configuration>[] = []
 ) =>

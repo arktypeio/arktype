@@ -1,5 +1,6 @@
 import { SyncOptions } from "execa"
-import { command } from "@re-do/utils/dist/command"
+import { shell as runShell } from "@re-do/utils/dist/node"
 
-export const run = command
-export const $ = (cmd: string, options?: SyncOptions) => () => run(cmd, options)
+export const shell = runShell
+export const $ = (cmd: string, options?: SyncOptions) => () =>
+    shell(cmd, options)

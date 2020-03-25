@@ -2,15 +2,15 @@ import { test as t } from "../test"
 
 describe("test", () => {
     test("works", async () => {
-        await t(
+        await t([
             [
                 "set",
                 {
-                    selector: { css: "[name='email']" },
-                    value: "awesome@burba.com"
-                }
+                    selector: "[name='email']",
+                    value: "david@redo.qa",
+                },
             ],
-            ["click", { selector: { css: ".MuiButton-label" } }]
-        )
+            ["click", { selector: ".MuiButton-label" }],
+        ])
     }, 60000)
 })

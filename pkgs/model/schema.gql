@@ -2,22 +2,17 @@
 ### Do not make changes to this file directly
 
 type Mutation {
-    createTest(data: TestCreateCreateOnlyInput!): Test!
+    createTest(data: TestCreateInput!): Test!
     signIn(data: SignInInput!): String!
     signUp(data: SignUpInput!): String!
 }
 
+input NameUserCompoundUniqueInput {
+    name: String!
+}
+
 type Query {
     me: User!
-}
-
-type Selector {
-    css: String!
-    id: Int!
-}
-
-input SelectorCreateWithoutStepsCreateOnlyInput {
-    css: String!
 }
 
 input SignInInput {
@@ -33,44 +28,92 @@ input SignUpInput {
 }
 
 type Step {
-    action: String!
+    expected: String
     id: Int!
-    selector: Selector!
-    value: String!
+    key: String
+    kind: StepKind!
+    selector: String
+    tests(
+        after: TestWhereUniqueInput
+        before: TestWhereUniqueInput
+        first: Int
+        last: Int
+        skip: Int
+    ): [Test!]!
+    url: String
+    user: User
+    value: String
 }
 
-input StepCreateWithoutUserCreateOnlyInput {
-    action: String!
-    selector: SelectorCreateWithoutStepsCreateOnlyInput
-    tests: [TestCreateWithoutStepsCreateOnlyInput!]
-    value: String!
+input StepCreateWithoutTestsInput {
+    expected: String
+    key: String
+    kind: StepKind!
+    selector: String
+    url: String
+    value: String
+}
+
+enum StepKind {
+    assertText
+    assertVisibility
+    click
+    go
+    hover
+    key
+    screenshot
+    set
+}
+
+input StepWhereUniqueInput {
+    id: Int
 }
 
 type Tag {
     id: Int!
     name: String!
+    test: Test
+    user: User!
 }
 
-input TagCreateWithoutTestCreateOnlyInput {
+input TagCreateWithoutTestInput {
     name: String!
+}
+
+input TagWhereUniqueInput {
+    id: Int
+    name_user: NameUserCompoundUniqueInput
 }
 
 type Test {
     id: Int!
     name: String!
-    steps(after: Int, before: Int, first: Int, last: Int, skip: Int): [Step!]!
-    tags(after: Int, before: Int, first: Int, last: Int, skip: Int): [Tag!]!
+    steps(
+        after: StepWhereUniqueInput
+        before: StepWhereUniqueInput
+        first: Int
+        last: Int
+        skip: Int
+    ): [Step!]!
+    tags(
+        after: TagWhereUniqueInput
+        before: TagWhereUniqueInput
+        first: Int
+        last: Int
+        skip: Int
+    ): [Tag!]!
+    user: User!
 }
 
-input TestCreateCreateOnlyInput {
+input TestCreateInput {
     name: String!
-    steps: [StepCreateWithoutUserCreateOnlyInput!]
-    tags: [TagCreateWithoutTestCreateOnlyInput!]
+    steps: [StepCreateWithoutTestsInput!]
+    tags: [TagCreateWithoutTestInput!]
 }
 
-input TestCreateWithoutStepsCreateOnlyInput {
-    name: String!
-    tags: [TagCreateWithoutTestCreateOnlyInput!]
+input TestWhereUniqueInput {
+    id: Int
+    name_user: NameUserCompoundUniqueInput
 }
 
 type User {
@@ -79,14 +122,25 @@ type User {
     id: Int!
     last: String!
     password: String!
-    selectors(
-        after: Int
-        before: Int
+    steps(
+        after: StepWhereUniqueInput
+        before: StepWhereUniqueInput
         first: Int
         last: Int
         skip: Int
-    ): [Selector!]!
-    steps(after: Int, before: Int, first: Int, last: Int, skip: Int): [Step!]!
-    tags(after: Int, before: Int, first: Int, last: Int, skip: Int): [Tag!]!
-    tests(after: Int, before: Int, first: Int, last: Int, skip: Int): [Test!]!
+    ): [Step!]!
+    tags(
+        after: TagWhereUniqueInput
+        before: TagWhereUniqueInput
+        first: Int
+        last: Int
+        skip: Int
+    ): [Tag!]!
+    tests(
+        after: TestWhereUniqueInput
+        before: TestWhereUniqueInput
+        first: Int
+        last: Int
+        skip: Int
+    ): [Test!]!
 }

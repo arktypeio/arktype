@@ -1,6 +1,6 @@
 {
     "$schema": "https://developer.microsoft.com/json-schemas/rush/v5/rush.schema.json",
-    "rushVersion": "5.17.2",
+    "rushVersion": "5.19.0",
     "pnpmVersion": "4.6.0",
     "nodeSupportedVersionRange": ">=10.13.0",
     "ensureConsistentVersions": true,
@@ -63,6 +63,14 @@
         {
             "packageName": "jsrx",
             "projectFolder": "pkgs/jsrx"
+        },
+        {
+            "packageName": "@re-do/cli",
+            "projectFolder": "pkgs/cli"
+        },
+        {
+            "packageName": "prismafy",
+            "projectFolder": "pkgs/prismafy"
         }
     ]
 }

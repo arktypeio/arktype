@@ -1,53 +1,57 @@
 import { join } from "path"
 import { makeSchema } from "nexus"
 import { nexusPrismaPlugin } from "redo-nexus-prisma"
-import { Selector } from "./selector"
-import { Step } from "./step"
-import { Tag } from "./tag"
-import { Test } from "./test"
-import { User } from "./user"
-import { Query } from "./query"
-import { mutationTypes } from "./mutation"
+import { MutationResolverParams } from "redo-nexus-prisma/dist/utils"
+import { Query } from "./queryTypes"
+import { mutationTypes } from "./mutationTypes"
+import { prismafy } from "prismafy"
 
-const types = [Step, User, Test, Selector, Tag, Query, ...mutationTypes]
+const nodeModulesPath = join(__dirname, "..", "..", "node_modules")
+const typesPath = join(nodeModulesPath, "@types")
+const clientPath = join(nodeModulesPath, "@prisma", "client")
+
+const types = [Query, ...mutationTypes, ...prismafy({ clientPath })]
 
 export const schema = makeSchema({
     types,
     outputs: {
-        typegen: join(
-            __dirname,
-            "../../node_modules/@types/__nexus-typegen__nexus-core/index.d.ts"
-        ),
-        schema: join(__dirname, "..", "..", "schema.gql")
+        typegen: join(typesPath, "nexus-core-generated", "index.d.ts"),
+        schema: join(__dirname, "..", "..", "schema.gql"),
     },
     typegenAutoConfig: {
         contextType: "Context.Context",
         sources: [
             {
-                source: "@prisma/photon",
-                alias: "photon"
+                source: "@prisma/client",
+                alias: "prisma",
             },
             {
                 source: require.resolve("../context"),
-                alias: "Context"
-            }
-        ]
+                alias: "Context",
+            },
+        ],
     },
     plugins: [
         nexusPrismaPlugin({
-            outputs: {
+            paths: {
                 typegen: join(
-                    __dirname,
-                    "../../node_modules/@types/__nexus-typegen__nexus-prisma/index.d.ts"
-                )
+                    typesPath,
+                    "nexus-prisma-generated",
+                    "index.d.ts"
+                ),
             },
-            computedInputs: {
-                user: ({ ctx: { userId } }) => ({
-                    connect: {
-                        id: userId
-                    }
-                })
-            }
-        })
-    ]
+            inputs: {
+                user: {
+                    computeFrom: ({
+                        ctx: { userId },
+                    }: MutationResolverParams) => ({
+                        connect: {
+                            id: userId,
+                        },
+                    }),
+                },
+            },
+            collapseTo: "create",
+        }),
+    ],
 })

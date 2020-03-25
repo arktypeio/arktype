@@ -4,39 +4,30 @@ datasource dev {
   enabled  = env("ENABLE_SQLITE")
 }
 
-datasource prod {
-  provider = "mysql"
-  url      = env("MYSQL_URL")
-  enabled  = env("ENABLE_MYSQL")
-}
+// datasource prod {
+//   provider = "mysql"
+//   url      = env("MYSQL_URL")
+//   enabled  = env("ENABLE_MYSQL")
+// }
 
-generator photon {
-  provider      = "photonjs"
+generator client {
+  provider      = "prisma-client-js"
   binaryTargets = ["native", "rhel-openssl-1.0.x"]
 }
 
-model Tag {
-  id   Int    @id
-  user User
-  name String
-  @@unique([name, user])
-}
-
-model Selector {
-  id  Int    @id
-  css String
-}
-
-model Step {
-  id       Int      @id
-  action   String
-  selector Selector
-  value    String
+model User {
+  id       Int    @id @default(autoincrement())
+  email    String @unique
+  password String
+  first    String
+  last     String
+  steps    Step[]
+  tags     Tag[]
   tests    Test[]
 }
 
 model Test {
-  id    Int    @id
+  id    Int    @id @default(autoincrement())
   user  User
   name  String
   steps Step[]
@@ -44,14 +35,24 @@ model Test {
   @@unique([name, user])
 }
 
-model User {
-  id        Int        @id
-  email     String     @unique
-  password  String
-  first     String
-  last      String
-  steps     Step[]
-  selectors Selector[]
-  tags      Tag[]
-  tests     Test[]
+model Tag {
+  id   Int    @id @default(autoincrement())
+  user User
+  name String
+  @@unique([name, user])
+}
+
+model Step {
+  id       Int      @id @default(autoincrement())
+  kind     StepKind
+  selector String?
+  value    String?
+  key      String?
+  url      String?
+  expected String?
+  tests    Test[]
+}
+
+enum StepKind {
+  click set hover key go screenshot assertText assertVisibility
 }

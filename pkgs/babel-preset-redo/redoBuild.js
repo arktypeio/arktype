@@ -26,7 +26,7 @@ const build = async () => {
             "src/**/__tests__/*",
             "--source-maps",
             "inline",
-            "--delete-dir-on-start"
+            "--delete-dir-on-start",
         ])
         console.log(`redo-build🔨: Compiling types for ${pkg}...`)
         await run("tsc", ["--emitDeclarationOnly"])

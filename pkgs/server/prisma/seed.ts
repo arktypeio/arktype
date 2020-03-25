@@ -1,25 +1,25 @@
 import "dotenv/config"
-import { Photon } from "@prisma/photon"
+import { PrismaClient } from "@prisma/client"
 import { hash } from "bcrypt"
 
-const photon = new Photon()
+const prisma = new PrismaClient()
 
 const users = [
     ["David", "Blass"],
-    ["Savannah", "Bosse"]
+    ["Savannah", "Bosse"],
 ]
 
 async function main() {
     try {
         for (const [first, last] of users) {
             try {
-                const user = await photon.users.create({
+                const user = await prisma.user.create({
                     data: {
                         email: `${first.toLowerCase()}@redo.qa`,
                         first,
                         last,
-                        password: await hash("redo", 10)
-                    }
+                        password: await hash("redo", 10),
+                    },
                 })
                 console.log(
                     `🎉\nCreated user: ${JSON.stringify(user, null, 4)}\n🎉`
@@ -31,7 +31,7 @@ async function main() {
     } catch (e) {
         console.log(e)
     } finally {
-        await photon.disconnect()
+        await prisma.disconnect()
     }
 }
 

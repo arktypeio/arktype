@@ -1,10 +1,13 @@
 import moize from "moize"
 import { isDeepStrictEqual } from "util"
+import assert from "assert"
 import deepMerge from "deepmerge"
 export const merge = deepMerge
 export const memoize = moize as <F extends (...args: any[]) => any>(f: F) => F
 
 export type MapReturn<F, V> = F extends (value: V) => infer R ? R : any
+
+export const isIn = (list: any[], value: any) => list.includes(value)
 
 export type Class<T> = new (...args: any[]) => T
 
@@ -33,12 +36,22 @@ export type DeepPartial<T> = {
     [P in keyof T]?: T[P] extends NonRecursible ? T[P] : DeepPartial<T[P]>
 }
 
+export type Writeable<T> = { -readonly [P in keyof T]: T[P] }
+export type DeepWriteable<T> = { -readonly [P in keyof T]: DeepWriteable<T[P]> }
+
 export type ValueOf<T> = T[keyof T]
 export type ValueFrom<T, K extends keyof T> = Pick<T, K>[K]
 
 export type Primitive = string | number | boolean | symbol
 export type NonRecursible = Primitive | Function | null | undefined
+export type Unpromisified<T> = T extends Promise<infer U> ? U : never
+
 export const isRecursible = (o: any) => o && typeof o === "object"
+
+export const asserted = <T>(value: T, description?: string) => {
+    assert(value, `'${value}' is not allowed as a ${description ?? "value"}.`)
+    return value as NonNullable<T>
+}
 
 export const deepMap = (
     from: object | any[],
@@ -47,10 +60,20 @@ export const deepMap = (
     fromEntries(
         Object.entries(from).map(([k, v]) => [
             k,
-            isRecursible(v) ? deepMap(map(v), map) : map(v)
+            isRecursible(v) ? deepMap(map(v), map) : map(v),
         ]),
         Array.isArray(from)
     )
+
+export const transform = <K extends Key, V>(
+    o: Record<K, V>,
+    map: MapFunction<K, V>
+) => {
+    if (!o || typeof o !== "object") {
+        throw new Error(`Can only transform objects. Received: ${o}.`)
+    }
+    return fromEntries(Object.entries(o).map(map as any)) as Record<K, V>
+}
 
 export type ItemOrList<T> = T | T[]
 export type Unlisted<T> = T extends (infer V)[] ? V : T
@@ -58,6 +81,7 @@ export const listify = <T>(o: ItemOrList<T>) => ([] as T[]).concat(o)
 
 export type Key = string | number
 export type Entry = [Key, any]
+export type MapFunction<K extends Key, V> = Parameters<Array<[K, V]>["map"]>[0]
 
 export const fromEntries = (entries: Entry[], asArray = false) => {
     const obj: any = asArray ? [] : {}

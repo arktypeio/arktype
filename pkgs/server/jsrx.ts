@@ -1,10 +1,10 @@
-import { jsrx, run, $ } from "jsrx"
+import { jsrx, shell, $ } from "jsrx"
 import { readFileSync, writeFileSync, copySync } from "fs-extra"
 import { join } from "path"
 
 const generate = () => {
-    run("prisma2 generate")
-    run("ts-node --transpile-only src/schema")
+    shell("prisma2 generate")
+    shell("ts-node --transpile-only src/schema")
     prettify()
     copySync(
         join(__dirname, "schema.gql"),
@@ -17,69 +17,58 @@ const generate = () => {
 }
 
 const prettify = () =>
-    run(
+    shell(
         'prettier --write "{,!(node_modules|dist|release|.rush|.webpack)/**/*}*.{js,ts,json,yml,gql}"'
     )
 
 const build = () => {
     generate()
-    run("tsc")
+    shell("tsc")
 }
 
 const upDb = () => {
-    run(`prisma2 lift save --name ${process.env.NODE_ENV} --create-db`)
-    run("prisma2 lift up")
-    run(`ts-node prisma/seed.ts`)
+    shell(
+        `prisma2 migrate save --name "${process.env.NODE_ENV}" --create-db --experimental`
+    )
+    shell("prisma2 migrate up --experimental")
+    shell(`ts-node prisma/seed.ts`)
 }
+
+const serve = $("sls offline", { env: { SLS_DEBUG: "*" } })
 
 jsrx(
     {
         shared: {
             build,
             generate,
-            studio: $("prisma2 dev"),
             tsc: $("tsc"),
-            upDb
+            upDb,
         },
         dev: {
             createDb: () => {
-                run("rm -rf prisma/dev.db")
-                run("rm -rf prisma/migrations/*-development")
-                const liftLockFile = join(
-                    __dirname,
-                    "prisma",
-                    "migrations",
-                    "lift.lock"
-                )
-                writeFileSync(
-                    liftLockFile,
-                    readFileSync(liftLockFile)
-                        .toString()
-                        .split("\n")
-                        .filter(line => !line.endsWith("-development"))
-                        .join("\n")
-                )
+                shell("rm -rf dev.db prisma/dev.db prisma/migrations")
                 upDb()
             },
             start: () => {
                 build()
-                run("sls offline", { env: { SLS_DEBUG: "*" } })
+                serve()
             },
-            prettify
+            serve,
+            prettify,
         },
         prod: {
             deploy: () => {
                 build()
-                run("sls deploy")
+                shell("sls deploy")
             },
-            pack: $("sls package")
-        }
+            pack: $("sls package"),
+        },
     },
     {
         excludeOthers: true,
         envFiles: {
             dev: join(__dirname, ".env"),
-            prod: join(__dirname, ".env.production")
-        }
+            prod: join(__dirname, ".env.production"),
+        },
     }
 )
