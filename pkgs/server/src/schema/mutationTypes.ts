@@ -1,4 +1,6 @@
-import { mutationType, inputObjectType, arg } from "nexus"
+import { mutationType, inputObjectType, arg } from "@nexus/schema"
+import { deepMap } from "@re-do/utils"
+import { TagCreateInput } from "@prisma/client"
 import { compare, hash } from "bcrypt"
 import { sign } from "jsonwebtoken"
 import { APP_SECRET, ifExists } from "../utils"
@@ -25,7 +27,56 @@ const SignUpInput = inputObjectType({
 
 const Mutation = mutationType({
     definition: (t) => {
-        t.crud.createOneTest({ alias: "createTest" })
+        t.crud.createOneTest({
+            alias: "createTest",
+            preResolve: async ({ args, ctx: { prisma } }) => {
+                const findTags = (args: any): TagCreateInput[] => {
+                    if (typeof args !== "object") {
+                        return []
+                    }
+                    const nestedTags = Object.values(args).reduce<
+                        TagCreateInput[]
+                    >((tags, arg) => [...tags, ...findTags(arg)], [])
+                    const shallowTags =
+                        args?.tags?.create?.filter(
+                            (tag: TagCreateInput) =>
+                                !nestedTags.find(
+                                    (nestedTag) => nestedTag.name === tag.name
+                                )
+                        ) ?? []
+                    return [...nestedTags, ...shallowTags]
+                }
+                const tags = findTags(args)
+                for (const tag of tags) {
+                    await prisma.tag.upsert({
+                        update: {},
+                        where: {
+                            name_user: {
+                                name: tag.name,
+                            },
+                        },
+                        create: tag,
+                    })
+                }
+                const mappedResult = deepMap(args!, (entry) =>
+                    entry[0] === "tags"
+                        ? [
+                              "tags",
+                              {
+                                  connect: entry[1].create.map(
+                                      ({ name }: TagCreateInput) => ({
+                                          name_user: {
+                                              name,
+                                          },
+                                      })
+                                  ),
+                              },
+                          ]
+                        : entry
+                )
+                return mappedResult
+            },
+        })
         t.field("signIn", {
             type: "String",
             args: {
@@ -83,7 +134,7 @@ const Mutation = mutationType({
                             tests: {
                                 create: [],
                             },
-                        } as any,
+                        },
                     })
                     return sign({ userId: user.id }, APP_SECRET)
                 },

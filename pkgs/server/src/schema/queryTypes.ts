@@ -1,4 +1,4 @@
-import { queryType } from "nexus"
+import { queryType } from "@nexus/schema"
 import { ifExists } from "../utils"
 
 export const Query = queryType({

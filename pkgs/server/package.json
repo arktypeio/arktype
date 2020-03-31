@@ -23,7 +23,7 @@
     },
     "dependencies": {
         "@babel/runtime-corejs3": "7.6.3",
-        "@prisma/client": "2.0.0-preview024",
+        "@prisma/client": "2.0.0-preview023",
         "@re-do/utils": "0.0.6",
         "apollo-server-lambda": "2.11.0",
         "bcrypt": "3.0.6",
@@ -34,9 +34,9 @@
         "graphql-tag": "2.10.1",
         "isomorphic-ws": "4.0.1",
         "jsonwebtoken": "8.5.1",
-        "nexus": "0.12.0-rc.14",
+        "@nexus/schema": "0.13.1",
         "prismafy": "0.0.1",
-        "redo-nexus-prisma": "0.11.1-17"
+        "redo-nexus-prisma": "0.11.1-22"
     },
     "devDependencies": {
         "@re-do/bundle": "0.0.1",
@@ -53,7 +53,7 @@
         "jest": "24.9.0",
         "jsrx": "0.0.1",
         "prettier": "2.0.1",
-        "prisma2": "2.0.0-preview024",
+        "prisma2": "2.0.0-preview023",
         "serverless": "1.67.0",
         "serverless-dotenv-plugin": "2.3.2",
         "serverless-hooks-plugin": "1.1.0",

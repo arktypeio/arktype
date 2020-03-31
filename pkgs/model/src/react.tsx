@@ -30,7 +30,7 @@ export type MutationSignUpArgs = {
     data: SignUpInput
 }
 
-export type NameUserCompoundUniqueInput = {
+export type NameCompoundUniqueInput = {
     name: Scalars["String"]
 }
 
@@ -110,7 +110,7 @@ export type TagCreateWithoutTestInput = {
 
 export type TagWhereUniqueInput = {
     id?: Maybe<Scalars["Int"]>
-    name_user?: Maybe<NameUserCompoundUniqueInput>
+    name_user?: Maybe<NameCompoundUniqueInput>
 }
 
 export type Test = {
@@ -146,7 +146,7 @@ export type TestCreateInput = {
 
 export type TestWhereUniqueInput = {
     id?: Maybe<Scalars["Int"]>
-    name_user?: Maybe<NameUserCompoundUniqueInput>
+    name_user?: Maybe<NameCompoundUniqueInput>
 }
 
 export type User = {

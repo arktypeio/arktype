@@ -28,6 +28,8 @@ export const playground: PlaygroundRenderPageOptions = {
                         },
                     ],
                     tags: [{ name: "fast" }, { name: "easy" }],
+                    first: "David",
+                    last: "Blass",
                 },
                 null,
                 4

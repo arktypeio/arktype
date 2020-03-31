@@ -7,7 +7,7 @@ type Mutation {
     signUp(data: SignUpInput!): String!
 }
 
-input NameUserCompoundUniqueInput {
+input NameCompoundUniqueInput {
     name: String!
 }
 
@@ -82,7 +82,7 @@ input TagCreateWithoutTestInput {
 
 input TagWhereUniqueInput {
     id: Int
-    name_user: NameUserCompoundUniqueInput
+    name_user: NameCompoundUniqueInput
 }
 
 type Test {
@@ -113,7 +113,7 @@ input TestCreateInput {
 
 input TestWhereUniqueInput {
     id: Int
-    name_user: NameUserCompoundUniqueInput
+    name_user: NameCompoundUniqueInput
 }
 
 type User {

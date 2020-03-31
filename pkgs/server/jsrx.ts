@@ -1,5 +1,5 @@
 import { jsrx, shell, $ } from "jsrx"
-import { readFileSync, writeFileSync, copySync } from "fs-extra"
+import { copySync } from "fs-extra"
 import { join } from "path"
 
 const generate = () => {
@@ -27,9 +27,7 @@ const build = () => {
 }
 
 const upDb = () => {
-    shell(
-        `prisma2 migrate save --name "${process.env.NODE_ENV}" --create-db --experimental`
-    )
+    shell(`prisma2 migrate save --name ${process.env.NODE_ENV} --experimental`)
     shell("prisma2 migrate up --experimental")
     shell(`ts-node prisma/seed.ts`)
 }

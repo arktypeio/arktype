@@ -1,7 +1,6 @@
 import { join } from "path"
-import { makeSchema } from "nexus"
+import { makeSchema } from "@nexus/schema"
 import { nexusPrismaPlugin } from "redo-nexus-prisma"
-import { MutationResolverParams } from "redo-nexus-prisma/dist/utils"
 import { Query } from "./queryTypes"
 import { mutationTypes } from "./mutationTypes"
 import { prismafy } from "prismafy"
@@ -42,9 +41,7 @@ export const schema = makeSchema({
             },
             inputs: {
                 user: {
-                    computeFrom: ({
-                        ctx: { userId },
-                    }: MutationResolverParams) => ({
+                    computeFrom: ({ ctx: { userId } }) => ({
                         connect: {
                             id: userId,
                         },
