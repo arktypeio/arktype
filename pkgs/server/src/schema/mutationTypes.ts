@@ -1,11 +1,11 @@
-import { mutationType, inputObjectType, arg } from "@nexus/schema"
+import { schema } from "nexus"
 import { deepMap } from "@re-do/utils"
 import { TagCreateInput } from "@prisma/client"
 import { compare, hash } from "bcrypt"
 import { sign } from "jsonwebtoken"
 import { APP_SECRET, ifExists } from "../utils"
 
-const SignInInput = inputObjectType({
+const SignInInput = schema.inputObjectType({
     name: "SignInInput",
     nonNullDefaults: { input: true },
     definition: (t) => {
@@ -14,7 +14,7 @@ const SignInInput = inputObjectType({
     },
 })
 
-const SignUpInput = inputObjectType({
+const SignUpInput = schema.inputObjectType({
     name: "SignUpInput",
     nonNullDefaults: { input: true },
     definition: (t) => {
@@ -25,62 +25,62 @@ const SignUpInput = inputObjectType({
     },
 })
 
-const Mutation = mutationType({
+const createTestPreresolve = async ({ args, ctx: { prisma } }) => {
+    const findTags = (args: any): TagCreateInput[] => {
+        if (typeof args !== "object") {
+            return []
+        }
+        const nestedTags = Object.values(args).reduce<TagCreateInput[]>(
+            (tags, arg) => [...tags, ...findTags(arg)],
+            []
+        )
+        const shallowTags =
+            args?.tags?.create?.filter(
+                (tag: TagCreateInput) =>
+                    !nestedTags.find((nestedTag) => nestedTag.name === tag.name)
+            ) ?? []
+        return [...nestedTags, ...shallowTags]
+    }
+    const tags = findTags(args)
+    for (const tag of tags) {
+        await prisma.tag.upsert({
+            update: {},
+            where: {
+                name_user: {
+                    name: tag.name,
+                },
+            },
+            create: tag,
+        })
+    }
+    const mappedResult = deepMap(args!, (entry) =>
+        entry[0] === "tags"
+            ? [
+                  "tags",
+                  {
+                      connect: entry[1].create.map(
+                          ({ name }: TagCreateInput) => ({
+                              name_user: {
+                                  name,
+                              },
+                          })
+                      ),
+                  },
+              ]
+            : entry
+    )
+    return mappedResult
+}
+
+const Mutation = schema.mutationType({
     definition: (t) => {
         t.crud.createOneTest({
             alias: "createTest",
-            preResolve: async ({ args, ctx: { prisma } }) => {
-                const findTags = (args: any): TagCreateInput[] => {
-                    if (typeof args !== "object") {
-                        return []
-                    }
-                    const nestedTags = Object.values(args).reduce<
-                        TagCreateInput[]
-                    >((tags, arg) => [...tags, ...findTags(arg)], [])
-                    const shallowTags =
-                        args?.tags?.create?.filter(
-                            (tag: TagCreateInput) =>
-                                !nestedTags.find(
-                                    (nestedTag) => nestedTag.name === tag.name
-                                )
-                        ) ?? []
-                    return [...nestedTags, ...shallowTags]
-                }
-                const tags = findTags(args)
-                for (const tag of tags) {
-                    await prisma.tag.upsert({
-                        update: {},
-                        where: {
-                            name_user: {
-                                name: tag.name,
-                            },
-                        },
-                        create: tag,
-                    })
-                }
-                const mappedResult = deepMap(args!, (entry) =>
-                    entry[0] === "tags"
-                        ? [
-                              "tags",
-                              {
-                                  connect: entry[1].create.map(
-                                      ({ name }: TagCreateInput) => ({
-                                          name_user: {
-                                              name,
-                                          },
-                                      })
-                                  ),
-                              },
-                          ]
-                        : entry
-                )
-                return mappedResult
-            },
         })
         t.field("signIn", {
             type: "String",
             args: {
-                data: arg({ type: SignInInput, required: true }),
+                data: schema.arg({ type: SignInInput, required: true }),
             },
             resolve: async (_, { data: { email, password } }, { prisma }) => {
                 const user = await ifExists(() =>
@@ -101,7 +101,7 @@ const Mutation = mutationType({
             t.field("signUp", {
                 type: "String",
                 args: {
-                    data: arg({ type: SignUpInput, required: true }),
+                    data: schema.arg({ type: SignUpInput, required: true }),
                 },
                 resolve: async (
                     _,
