@@ -5,6 +5,7 @@
     "author": "redo.qa",
     "description": "Redo's server",
     "scripts": {
+        "dev": "jsrx dev",
         "createDb": "jsrx createDb",
         "start": "jsrx start",
         "serve": "jsrx serve",
@@ -23,7 +24,6 @@
     },
     "dependencies": {
         "@babel/runtime-corejs3": "7.6.3",
-        "@prisma/client": "2.0.0-preview023",
         "@re-do/utils": "0.0.6",
         "apollo-server-lambda": "2.11.0",
         "bcrypt": "3.0.6",

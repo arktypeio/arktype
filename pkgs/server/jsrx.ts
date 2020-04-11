@@ -43,6 +43,7 @@ jsrx(
             upDb,
         },
         dev: {
+            dev: $("./node_modules/nexus/dist/cli/main.js dev"),
             createDb: () => {
                 shell("rm -rf dev.db prisma/dev.db prisma/migrations")
                 upDb()

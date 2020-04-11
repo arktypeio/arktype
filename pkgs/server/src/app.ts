@@ -1,12 +1,11 @@
 import "dotenv/config"
 import { ApolloServer } from "apollo-server-lambda"
 import { getUserId } from "./auth"
-import { schema } from "./schema"
-import { playground } from "./playground"
 import { PrismaClient } from "@prisma/client"
+import { prisma } from "nexus-plugin-prisma"
 
-const prisma = new PrismaClient()
 import { server, use } from "nexus"
+use(prisma())
 server.express.use()
 
 // export const server = new ApolloServer({

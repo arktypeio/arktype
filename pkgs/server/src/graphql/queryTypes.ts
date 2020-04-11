@@ -1,7 +1,7 @@
-import { queryType } from "@nexus/schema"
+import { schema } from "nexus"
 import { ifExists } from "../utils"
 
-export const Query = queryType({
+schema.queryType({
     definition: (t) => {
         t.field("me", {
             type: "User",
