@@ -1,7 +1,6 @@
 import "dotenv/config"
 import { ApolloServer } from "apollo-server-lambda"
 import { getUserId } from "./auth"
-import { PrismaClient } from "@prisma/client"
 import { prisma } from "nexus-plugin-prisma"
 
 import { server, use } from "nexus"
