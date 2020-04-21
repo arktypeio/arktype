@@ -78,7 +78,7 @@ const getWebConfig = (args: ConfigArgs): Configuration =>
             rules: [
                 {
                     test: /\.(jpg|png|ico|icns|woff|woff2)$/,
-                    loader: "file-loader",
+                    loader: "url-loader",
                 },
                 {
                     test: /\.svg$/,

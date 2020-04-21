@@ -1,3 +1,5 @@
 export * from "./Background"
 export * from "./AppHeader"
 export * from "./ContactInfo"
+export * from "./SignUp"
+export * from "./TwitchInfo"

@@ -16,17 +16,22 @@ import dropdown from "@material-ui/icons/MoreVert"
 import view from "@material-ui/icons/RemoveRedEye"
 import save from "@material-ui/icons/Done"
 import close from "@material-ui/icons/Close"
-import blog from "@material-ui/icons/ChatBubble"
 import linkedIn from "@material-ui/icons/LinkedIn"
 import email from "@material-ui/icons/Email"
+import gitHub from "@material-ui/icons/GitHub"
+import twitter from "@material-ui/icons/Twitter"
+import video from "@material-ui/icons/VideocamOutlined"
 import SvgIcon, { SvgIconProps } from "@material-ui/core/SvgIcon"
-import { githubIcon } from "./paths"
+import { twitchPath, blogPath } from "./paths"
 
-const gitHub = (props: SvgIconProps) => (
+const toIcon = (path: string) => (props: SvgIconProps) => (
     <SvgIcon {...props}>
-        <path d={githubIcon} />
+        <path d={path} />
     </SvgIcon>
 )
+
+const twitch = toIcon(twitchPath)
+const blog = toIcon(blogPath)
 
 export const Icons = {
     add,
@@ -49,5 +54,8 @@ export const Icons = {
     blog,
     email,
     linkedIn,
-    gitHub
+    gitHub,
+    twitch,
+    twitter,
+    video,
 }
