@@ -1,10 +1,9 @@
 import React, { useState } from "react"
 import { Row, Text, Column, Icons } from "@re-do/components"
 import { copy } from "../../constants"
-// import ExpandMore from "@material-ui/icons/ExpandMore"
 import { AnimatedCheckbox } from "./AnimatedCheckbox"
 import ExpansionPanel, {
-    ExpansionPanelProps
+    ExpansionPanelProps,
 } from "@material-ui/core/ExpansionPanel"
 import ExpansionPanelSummary from "@material-ui/core/ExpansionPanelSummary"
 import ExpansionPanelDetails from "@material-ui/core/ExpansionPanelDetails"
@@ -22,7 +21,7 @@ const Step = ({ summary, details, defaultExpanded, ...rest }: StepProps) => {
             style={{
                 background: "transparent",
                 width: "100%",
-                boxShadow: "unset"
+                boxShadow: "unset",
             }}
             defaultExpanded={defaultExpanded}
             onChange={(_, open) => setExpanded(open)}

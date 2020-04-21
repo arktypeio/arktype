@@ -5,19 +5,25 @@ import {
     FormSubmit,
     Button,
     Column,
-    Text
+    Text,
+    TextProps,
 } from "@re-do/components"
-import { track } from "../../analytics"
+import { track } from "../analytics"
+import { layout } from "../constants"
 
-export const SignUp = () => {
+export type SignUpProps = {
+    textVariant?: TextProps["variant"]
+}
+
+export const SignUp = ({ textVariant = "h4" }: SignUpProps) => {
     return (
-        <Column align="center">
-            <Text variant="h4">🚀Launching soon</Text>
+        <Column align="center" width={layout.signUpWidth}>
+            <Text variant={textVariant}>🚀Launching soon</Text>
             <Form<{ email: string }, boolean>
-                validate={_ => ({ email: [] })}
+                validate={(_) => ({ email: [] })}
                 submit={async (options: any) => {
                     track.prelaunchRegister({
-                        email: options?.variables?.email!
+                        email: options?.variables?.email!,
                     })
                     return { data: true }
                 }}

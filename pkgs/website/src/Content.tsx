@@ -1,11 +1,11 @@
 import React, { useEffect } from "react"
 import { AppContents, Column } from "@re-do/components"
-import { AppHeader } from "./components"
+import { AppHeader, ContactInfo } from "./components"
 import {
     BrowserRouter as Router,
     Route,
     Switch,
-    useLocation
+    useLocation,
 } from "react-router-dom"
 import { layout } from "./constants"
 import { Home, Blog } from "./pages"
@@ -20,14 +20,14 @@ export const ScrollToTop = () => {
 }
 
 export const Inner = () => {
-    const headerHeight = layout.header.contentHeight + layout.header.slantHeight
+    const headerHeight = layout.headerHeight + layout.slantHeight
     return (
         <Column
             spacing={4}
             style={{
                 position: "absolute",
                 top: headerHeight,
-                ...layout.content
+                ...layout.content,
             }}
         >
             <Switch>
@@ -44,8 +44,9 @@ export const Content = () => {
             <Column align="center" style={{ overflow: "hidden" }}>
                 <Router>
                     <ScrollToTop />
-                    <AppHeader mobile={true} />
+                    <AppHeader />
                     <Inner />
+                    <ContactInfo />
                 </Router>
             </Column>
         </AppContents>
