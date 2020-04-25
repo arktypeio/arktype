@@ -1,5 +1,5 @@
 import React from "react"
-import { Text, Row, Icons, IconButton, AppBar } from "@re-do/components"
+import { Text, Icons, IconButton, AppBar } from "@re-do/components"
 
 export const ContactInfo = () => {
     return (
