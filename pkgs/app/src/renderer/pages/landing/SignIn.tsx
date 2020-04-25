@@ -5,32 +5,42 @@ import { formatEmail } from "./common"
 import {
     useSignInMutation,
     SignInMutation,
-    SignInMutationVariables
+    SignInMutationVariables,
 } from "@re-do/model/dist/react"
 
 export const SignIn = () => {
     const [submit] = useSignInMutation()
+    const disabled =
+        store.useQuery({
+            page: true,
+        }).page !== "SIGN_IN"
     return (
         <Form<SignInMutationVariables, SignInMutation>
             submit={submit}
-            onData={data => store.mutate({ token: data.signIn })}
+            onData={(data) => store.mutate({ token: data.signIn })}
             transformValues={({ email, ...rest }) => {
                 return {
                     ...rest,
-                    email: formatEmail(email)
+                    email: formatEmail(email),
                 }
             }}
         >
             <Column justify="center" grow>
-                <FormText name="email" tooltipPlacement="right" autoFocus />
+                <FormText
+                    name="email"
+                    disabled={disabled}
+                    tooltipPlacement="right"
+                    autoFocus
+                />
                 <FormText
                     type="password"
                     tooltipPlacement="right"
                     name="password"
+                    disabled={disabled}
                 />
             </Column>
             <FormSubmit>
-                <Button>Sign in</Button>
+                <Button disabled={disabled}>Sign in</Button>
             </FormSubmit>
         </Form>
     )
