@@ -25,7 +25,7 @@
         "@babel/runtime-corejs3": "7.6.3",
         "@prisma/client": "2.0.0-preview024",
         "@re-do/utils": "0.0.6",
-        "apollo-server-lambda": "2.11.0",
+        "apollo-server-lambda": "2.14.2",
         "bcrypt": "3.0.6",
         "deepmerge": "4.2.2",
         "dotenv": "8.2.0",
