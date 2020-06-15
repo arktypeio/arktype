@@ -1,6 +1,6 @@
 {
     "name": "statelessly",
-    "version": "0.0.1",
+    "version": "0.0.2",
     "author": "redo.qa",
     "description": "💪-typed state management with simple shapes🔷",
     "main": "dist/index.js",
