@@ -1,6 +1,6 @@
 {
     "name": "react-statelessly",
-    "version": "0.0.2",
+    "version": "0.0.3",
     "author": "redo.qa",
     "description": "💪-typed state management with simple shapes🔷 for react",
     "main": "dist/index.js",
