@@ -67,7 +67,7 @@ const getCommonConfig = ({
     plugins: analyzeBundle
         ? [
               new ForkTsCheckerWebpackPlugin({ tsconfig }),
-              new BundleAnalyzerPlugin(),
+              new BundleAnalyzerPlugin() as any,
           ]
         : [new ForkTsCheckerWebpackPlugin({ tsconfig })],
 })
