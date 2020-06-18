@@ -1,6 +1,6 @@
 {
     "name": "@re-do/components",
-    "version": "0.0.2",
+    "version": "0.0.4",
     "author": "redo.qa",
     "description": "Common UI components consumed by Redo",
     "main": "dist/index.js",
@@ -15,7 +15,7 @@
         "@date-io/date-fns": "1.3.11",
         "@material-ui/core": "4.9.3",
         "@material-ui/icons": "4.5.1",
-        "@material-ui/lab": "~4.0.0-alpha.42",
+        "@material-ui/lab": "4.0.0-alpha.42",
         "@material-ui/pickers": "3.2.8",
         "@material-ui/styles": "4.9.0",
         "@re-do/utils": "0.0.6",

@@ -46,7 +46,7 @@
         "@material-ui/core": "4.9.3",
         "@material-ui/styles": "4.9.0",
         "@medv/finder": "1.1.2",
-        "@re-do/components": "0.0.2",
+        "@re-do/components": "0.0.4",
         "@re-do/model": "0.0.1",
         "@re-do/test": "0.0.1",
         "@re-do/utils": "0.0.6",
@@ -60,7 +60,7 @@
         "playwright-core": "0.11.1",
         "react": "16.12.0",
         "react-dom": "16.12.0",
-        "react-statelessly": "0.0.1",
+        "react-statelessly": "0.0.3",
         "tsconfig-paths": "3.9.0",
         "typeface-ubuntu": "0.0.65"
     },
