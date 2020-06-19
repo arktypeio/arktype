@@ -3,8 +3,8 @@ import { copySync } from "fs-extra"
 import { join } from "path"
 
 const generate = () => {
-    shell("prisma2 generate")
-    shell("ts-node --transpile-only src/schema")
+    shell("prisma generate")
+    shell("ts-node --transpile-only src/graphql/schema")
     prettify()
     copySync(
         join(__dirname, "schema.gql"),
@@ -27,9 +27,8 @@ const build = () => {
 }
 
 const upDb = () => {
-    shell(`prisma2 migrate save --name ${process.env.NODE_ENV} --experimental`)
-    shell("prisma2 migrate up --experimental")
-    shell(`ts-node prisma/seed.ts`)
+    shell(`prisma migrate save --name ${process.env.NODE_ENV} --experimental`)
+    shell("prisma migrate up --experimental")
 }
 
 const serve = $("sls offline", { env: { SLS_DEBUG: "*" } })
@@ -43,10 +42,13 @@ jsrx(
             upDb,
         },
         dev: {
-            dev: $("nexus dev"),
+            dev: () => {
+                shell("nexus dev")
+            },
             createDb: () => {
-                shell("rm -rf dev.db prisma/dev.db prisma/migrations")
+                shell("docker-compose up -d")
                 upDb()
+                shell(`ts-node prisma/seed.ts`)
             },
             start: () => {
                 build()

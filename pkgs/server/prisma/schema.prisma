@@ -1,18 +1,12 @@
 datasource dev {
-  provider = "sqlite"
-  url      = env("SQLITE_URL")
-  enabled  = env("ENABLE_SQLITE")
+  provider = "mysql"
+  url      = env("DB_URL")
 }
-
-// datasource prod {
-//   provider = "mysql"
-//   url      = env("MYSQL_URL")
-//   enabled  = env("ENABLE_MYSQL")
-// }
 
 generator client {
   provider      = "prisma-client-js"
   binaryTargets = ["native", "rhel-openssl-1.0.x"]
+  output = "../node_modules/.prisma/client"
 }
 
 model User {
@@ -28,18 +22,20 @@ model User {
 
 model Test {
   id    Int    @id @default(autoincrement())
-  user  User
+  user  User  @relation(fields: [userId], references: [id])
+  userId Int 
   name  String
   steps Step[]
   tags  Tag[]
-  @@unique([name, user])
+  @@unique([name, userId])
 }
 
 model Tag {
   id   Int    @id @default(autoincrement())
-  user User
+  user User  @relation(fields: [userId], references: [id])
+  userId Int 
   name String
-  @@unique([name, user])
+  @@unique([name, userId])
 }
 
 model Step {
@@ -54,5 +50,12 @@ model Step {
 }
 
 enum StepKind {
-  click set hover key go screenshot assertText assertVisibility
+  click
+  set
+  hover
+  key
+  go
+  screenshot
+  assertText
+  assertVisibility
 }

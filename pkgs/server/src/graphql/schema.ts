@@ -1,5 +1,5 @@
 import { join } from "path"
-import { prismafy } from "prismafy"
+// import { prismafy } from "prismafy"
 
 const nodeModulesPath = join(__dirname, "..", "..", "node_modules")
 const typesPath = join(nodeModulesPath, "@types")
