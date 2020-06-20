@@ -15,8 +15,8 @@
  */
 module.exports = {
     hooks: {
-        readPackage
-    }
+        readPackage,
+    },
 }
 
 /**
@@ -36,7 +36,7 @@ function readPackage(packageJson, context) {
             `Adding GraphQL as a peer dependency for ${packageJson.name}...`
         )
         packageJson.peerDependencies = {
-            graphql: "^0.11.0 || ^0.12.0 || ^0.13.0 || ^14.0.0"
+            graphql: "^0.11.0 || ^0.12.0 || ^0.13.0 || ^14.0.0",
         }
     }
     if (packageJson.name === "material-table") {
@@ -58,6 +58,10 @@ function readPackage(packageJson, context) {
         packageJson.dependencies["change-case"] = "4.1.1"
         packageJson.dependencies["@graphql-toolkit/common"] = "0.7.4"
         packageJson.dependencies["auto-bind"] = "4.0.0"
+    }
+    if (packageJson.name === "@prisma/engine-core") {
+        context.log("Updating undici version for @prisma/engine-core...")
+        packageJson.dependencies["undici"] = "1.0.3"
     }
     return packageJson
 }

@@ -1,8 +1,8 @@
 {
     "$schema": "https://developer.microsoft.com/json-schemas/rush/v5/rush.schema.json",
-    "rushVersion": "5.19.0",
-    "pnpmVersion": "4.6.0",
-    "nodeSupportedVersionRange": ">=10.13.0",
+    "rushVersion": "5.26.0",
+    "pnpmVersion": "4.12.5",
+    "nodeSupportedVersionRange": ">=12.13.0 <13.0.0",
     "ensureConsistentVersions": true,
     "repository": {
         "url": "https://github.com/redo-qa/redo"

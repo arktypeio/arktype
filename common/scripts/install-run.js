@@ -45,9 +45,8 @@ function _parsePackageSpecifier(rawPackageSpecifier) {
     return { name, version }
 }
 /**
- * As a workaround, _syncNpmrc() copies the .npmrc file to the target folder, and also trims
- * unusable lines from the .npmrc file.  If the source .npmrc file not exist, then _syncNpmrc()
- * will delete an .npmrc that is found in the target folder.
+ * As a workaround, copyAndTrimNpmrcFile() copies the .npmrc file to the target folder, and also trims
+ * unusable lines from the .npmrc file.
  *
  * Why are we trimming the .npmrc lines?  NPM allows environment variables to be specified in
  * the .npmrc file to provide different authentication tokens for different registry.
@@ -56,49 +55,60 @@ function _parsePackageSpecifier(rawPackageSpecifier) {
  * we'd prefer to skip that line and continue looking in other places such as the user's
  * home directory.
  *
+ * IMPORTANT: THIS CODE SHOULD BE KEPT UP TO DATE WITH Utilities._copyNpmrcFile()
+ */
+function _copyAndTrimNpmrcFile(sourceNpmrcPath, targetNpmrcPath) {
+    console.log(`Copying ${sourceNpmrcPath} --> ${targetNpmrcPath}`) // Verbose
+    let npmrcFileLines = fs.readFileSync(sourceNpmrcPath).toString().split("\n")
+    npmrcFileLines = npmrcFileLines.map((line) => (line || "").trim())
+    const resultLines = []
+    // Trim out lines that reference environment variables that aren't defined
+    for (const line of npmrcFileLines) {
+        // This finds environment variable tokens that look like "${VAR_NAME}"
+        const regex = /\$\{([^\}]+)\}/g
+        const environmentVariables = line.match(regex)
+        let lineShouldBeTrimmed = false
+        if (environmentVariables) {
+            for (const token of environmentVariables) {
+                // Remove the leading "${" and the trailing "}" from the token
+                const environmentVariableName = token.substring(
+                    2,
+                    token.length - 1
+                )
+                if (!process.env[environmentVariableName]) {
+                    lineShouldBeTrimmed = true
+                    break
+                }
+            }
+        }
+        if (lineShouldBeTrimmed) {
+            // Example output:
+            // "; MISSING ENVIRONMENT VARIABLE: //my-registry.com/npm/:_authToken=${MY_AUTH_TOKEN}"
+            resultLines.push("; MISSING ENVIRONMENT VARIABLE: " + line)
+        } else {
+            resultLines.push(line)
+        }
+    }
+    fs.writeFileSync(targetNpmrcPath, resultLines.join(os.EOL))
+}
+/**
+ * syncNpmrc() copies the .npmrc file to the target folder, and also trims unusable lines from the .npmrc file.
+ * If the source .npmrc file not exist, then syncNpmrc() will delete an .npmrc that is found in the target folder.
+ *
  * IMPORTANT: THIS CODE SHOULD BE KEPT UP TO DATE WITH Utilities._syncNpmrc()
  */
-function _syncNpmrc(sourceNpmrcFolder, targetNpmrcFolder) {
-    const sourceNpmrcPath = path.join(sourceNpmrcFolder, ".npmrc")
+function _syncNpmrc(sourceNpmrcFolder, targetNpmrcFolder, useNpmrcPublish) {
+    const sourceNpmrcPath = path.join(
+        sourceNpmrcFolder,
+        !useNpmrcPublish ? ".npmrc" : ".npmrc-publish"
+    )
     const targetNpmrcPath = path.join(targetNpmrcFolder, ".npmrc")
     try {
         if (fs.existsSync(sourceNpmrcPath)) {
-            let npmrcFileLines = fs
-                .readFileSync(sourceNpmrcPath)
-                .toString()
-                .split("\n")
-            npmrcFileLines = npmrcFileLines.map((line) => (line || "").trim())
-            const resultLines = []
-            // Trim out lines that reference environment variables that aren't defined
-            for (const line of npmrcFileLines) {
-                // This finds environment variable tokens that look like "${VAR_NAME}"
-                const regex = /\$\{([^\}]+)\}/g
-                const environmentVariables = line.match(regex)
-                let lineShouldBeTrimmed = false
-                if (environmentVariables) {
-                    for (const token of environmentVariables) {
-                        // Remove the leading "${" and the trailing "}" from the token
-                        const environmentVariableName = token.substring(
-                            2,
-                            token.length - 1
-                        )
-                        if (!process.env[environmentVariableName]) {
-                            lineShouldBeTrimmed = true
-                            break
-                        }
-                    }
-                }
-                if (lineShouldBeTrimmed) {
-                    // Example output:
-                    // "; MISSING ENVIRONMENT VARIABLE: //my-registry.com/npm/:_authToken=${MY_AUTH_TOKEN}"
-                    resultLines.push("; MISSING ENVIRONMENT VARIABLE: " + line)
-                } else {
-                    resultLines.push(line)
-                }
-            }
-            fs.writeFileSync(targetNpmrcPath, resultLines.join(os.EOL))
+            _copyAndTrimNpmrcFile(sourceNpmrcPath, targetNpmrcPath)
         } else if (fs.existsSync(targetNpmrcPath)) {
             // If the source .npmrc doesn't exist and there is one in the target, delete the one in the target
+            console.log(`Deleting ${targetNpmrcPath}`) // Verbose
             fs.unlinkSync(targetNpmrcPath)
         }
     } catch (e) {
@@ -124,7 +134,7 @@ function getNpmPath() {
             } else {
                 // We aren't on Windows - assume we're on *NIX or Darwin
                 _npmPath = childProcess
-                    .execSync("which npm", { stdio: [] })
+                    .execSync("command -v npm", { stdio: [] })
                     .toString()
             }
         } catch (e) {
@@ -324,10 +334,15 @@ function _cleanInstallFolder(rushTempFolder, packageInstallFolder) {
         if (fs.existsSync(nodeModulesFolder)) {
             const rushRecyclerFolder = _ensureAndJoinPath(
                 rushTempFolder,
-                "rush-recycler",
-                `install-run-${Date.now().toString()}`
+                "rush-recycler"
             )
-            fs.renameSync(nodeModulesFolder, rushRecyclerFolder)
+            fs.renameSync(
+                nodeModulesFolder,
+                path.join(
+                    rushRecyclerFolder,
+                    `install-run-${Date.now().toString()}`
+                )
+            )
         }
     } catch (e) {
         throw new Error(
@@ -437,12 +452,19 @@ function installAndRun(
     const statusMessageLine = new Array(statusMessage.length + 1).join("-")
     console.log(os.EOL + statusMessage + os.EOL + statusMessageLine + os.EOL)
     const binPath = _getBinPath(packageInstallFolder, packageBinName)
+    const binFolderPath = path.resolve(
+        packageInstallFolder,
+        NODE_MODULES_FOLDER_NAME,
+        ".bin"
+    )
     const result = childProcess.spawnSync(binPath, packageBinArgs, {
         stdio: "inherit",
         cwd: process.cwd(),
-        env: process.env,
+        env: Object.assign({}, process.env, {
+            PATH: [binFolderPath, process.env.PATH].join(path.delimiter),
+        }),
     })
-    if (result.status) {
+    if (result.status !== null) {
         return result.status
     } else {
         throw result.error || new Error("An unknown error occurred.")
@@ -461,11 +483,11 @@ function runWithErrorAndStatusCode(fn) {
 exports.runWithErrorAndStatusCode = runWithErrorAndStatusCode
 function _run() {
     const [
-        nodePath,
-        /* Ex: /bin/node */ scriptPath,
-        /* /repo/common/scripts/install-run-rush.js */ rawPackageSpecifier,
-        /* qrcode@^1.2.0 */ packageBinName,
-        /* qrcode */ ...packageBinArgs /* [-f, myproject/lib] */
+        nodePath /* Ex: /bin/node */,
+        scriptPath /* /repo/common/scripts/install-run-rush.js */,
+        rawPackageSpecifier /* qrcode@^1.2.0 */,
+        packageBinName /* qrcode */,
+        ...packageBinArgs /* [-f, myproject/lib] */
     ] = process.argv
     if (!nodePath) {
         throw new Error("Unexpected exception: could not detect node path")

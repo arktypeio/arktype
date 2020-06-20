@@ -1,5 +1,6 @@
 import { join } from "path"
 // import { prismafy } from "prismafy"
+import { UserCrudResolver } from "@generated/type-graphql"
 
 const nodeModulesPath = join(__dirname, "..", "..", "node_modules")
 const typesPath = join(nodeModulesPath, "@types")

@@ -12,4 +12,4 @@ services:
         expose:
             - "6033"
         volumes:
-            - ./prisma/db:/var/lib/mysql
+            - .db:/var/lib/mysql

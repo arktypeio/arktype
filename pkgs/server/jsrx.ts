@@ -18,7 +18,7 @@ const generate = () => {
 
 const prettify = () =>
     shell(
-        'prettier --write "{,!(node_modules|dist|release|.rush|.webpack)/**/*}*.{js,ts,json,yml,gql}"'
+        'prettier --write "{,!(node_modules|dist|release|.rush|.webpack|.db)/**/*}*.{js,ts,json,yml,gql}"'
     )
 
 const build = () => {
@@ -45,11 +45,8 @@ jsrx(
             dev: () => {
                 shell("nexus dev")
             },
-            createDb: () => {
-                shell("docker-compose up -d")
-                upDb()
-                shell(`ts-node prisma/seed.ts`)
-            },
+            createDb: $("docker-compose up -d"),
+            seed: $("ts-node prisma/seed.ts"),
             start: () => {
                 build()
                 serve()
