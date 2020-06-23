@@ -19,7 +19,7 @@ provider:
         NODE_ENV: production
 plugins:
     - serverless-dotenv-plugin
-    - serverless-hooks-plugin
+    # - serverless-hooks-plugin
     - serverless-plugin-typescript
     - serverless-offline
 functions:

@@ -2,10 +2,10 @@ import "reflect-metadata"
 import { join } from "path"
 // import { prismafy } from "prismafy"
 import { buildSchemaSync } from "type-graphql"
-import { UserCrudResolver, UserRelationsResolver } from "./generated"
+import { CreateTestResolver, FindManyTestResolver } from "./generated"
 
 export const schema: any = buildSchemaSync({
-    resolvers: [UserRelationsResolver, UserCrudResolver],
+    resolvers: [CreateTestResolver, FindManyTestResolver],
     emitSchemaFile: join(__dirname, "..", "..", "schema.gql"),
 })
 // const nodeModulesPath = join(__dirname, "..", "..", "node_modules")

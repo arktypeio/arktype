@@ -7,7 +7,7 @@ import {
     EnumTypeDefinitionNode,
     TypeNode,
 } from "graphql"
-import { camelCase, DeepWriteable } from "@re-do/utils"
+import { camelCase } from "@re-do/utils"
 import { readFileSync } from "fs-extra"
 import { format } from "prettier"
 import gql from "graphql-tag"
@@ -153,7 +153,7 @@ const gqlizeOperation = ({
                           names: [output.name.toLowerCase()],
                           types: [output.name],
                       },
-                      vars: {},
+                      vars,
                   })
                   return {
                       vars: {
@@ -232,7 +232,7 @@ const getVariableName = (
     let name = field.name.value
     let nameParts = [name]
     for (let tries = 0; taken.includes(name); tries++) {
-        nameParts = [path[tries], ...nameParts]
+        nameParts = [path[path.length - tries - 1], ...nameParts]
         name = camelCase(nameParts)
     }
     return name
@@ -348,18 +348,18 @@ const gqlizeField = ({
         isScalar(field.type) ||
         isList(field.type) ||
         isEnum(field.type, config.schema) ||
-        path.names.length > config.maxVariableDepth
+        // If the field is optional, recursing for variables will break the query if they're required
+        !isNonNull(field.type) ||
+        path.names.length >= config.maxVariableDepth
     ) {
         const variableName = getVariableName(
             field,
             path.names,
             Object.keys(vars)
         )
+        vars[variableName] = getVariableType(field)
         return {
-            vars: {
-                ...vars,
-                [variableName]: getVariableType(field),
-            },
+            vars,
             args: `${field.name.value}: $${variableName}`,
         }
     }
@@ -379,10 +379,10 @@ const gqlizeField = ({
                     names: [...path.names, nestedField.name.value],
                     types: [...path.types, getTypeName(nestedField.type)],
                 },
-                vars: updatedResult.vars,
+                vars,
             })
             return {
-                vars: nestedResult.vars,
+                vars,
                 args:
                     index === fieldTypeDef.fields!.length - 1
                         ? `${updatedResult.args}${nestedResult.args}}`

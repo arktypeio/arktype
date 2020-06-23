@@ -3,20 +3,6 @@
 # !!!   DO NOT MODIFY THIS FILE BY YOURSELF   !!!
 # -----------------------------------------------
 
-type AggregateUser {
-    count(
-        cursor: UserWhereUniqueInput
-        orderBy: UserOrderByInput
-        skip: Int
-        take: Int
-        where: UserWhereInput
-    ): Int!
-}
-
-type BatchPayload {
-    count: Int!
-}
-
 input IntFilter {
     equals: Int
     gt: Int
@@ -29,19 +15,7 @@ input IntFilter {
 }
 
 type Mutation {
-    createUser(data: UserCreateInput!): User!
-    deleteManyUser(where: UserWhereInput): BatchPayload!
-    deleteUser(where: UserWhereUniqueInput!): User
-    updateManyUser(
-        data: UserUpdateManyMutationInput!
-        where: UserWhereInput
-    ): BatchPayload!
-    updateUser(data: UserUpdateInput!, where: UserWhereUniqueInput!): User
-    upsertUser(
-        create: UserCreateInput!
-        update: UserUpdateInput!
-        where: UserWhereUniqueInput!
-    ): User!
+    createTest(data: TestCreateInput!): Test!
 }
 
 input NameUserIdCompoundUniqueInput {
@@ -80,15 +54,13 @@ enum OrderByArg {
 }
 
 type Query {
-    aggregateUser: AggregateUser!
-    user(where: UserWhereUniqueInput!): User
-    users(
-        cursor: UserWhereUniqueInput
-        orderBy: UserOrderByInput
+    tests(
+        cursor: TestWhereUniqueInput
+        orderBy: TestOrderByInput
         skip: Int
         take: Int
-        where: UserWhereInput
-    ): [User!]!
+        where: TestWhereInput
+    ): [Test!]!
 }
 
 type Step {
@@ -175,104 +147,6 @@ input StepOrderByInput {
     value: OrderByArg
 }
 
-input StepScalarWhereInput {
-    AND: [StepScalarWhereInput!]
-    expected: NullableStringFilter
-    id: IntFilter
-    key: NullableStringFilter
-    kind: StepKindFilter
-    NOT: [StepScalarWhereInput!]
-    OR: [StepScalarWhereInput!]
-    selector: NullableStringFilter
-    tests: TestFilter
-    url: NullableStringFilter
-    userId: NullableIntFilter
-    value: NullableStringFilter
-}
-
-input StepUpdateManyDataInput {
-    expected: String
-    id: Int
-    key: String
-    kind: StepKind
-    selector: String
-    url: String
-    value: String
-}
-
-input StepUpdateManyWithoutTestsInput {
-    connect: [StepWhereUniqueInput!]
-    create: [StepCreateWithoutTestsInput!]
-    delete: [StepWhereUniqueInput!]
-    deleteMany: [StepScalarWhereInput!]
-    disconnect: [StepWhereUniqueInput!]
-    set: [StepWhereUniqueInput!]
-    update: [StepUpdateWithWhereUniqueWithoutTestsInput!]
-    updateMany: [StepUpdateManyWithWhereNestedInput!]
-    upsert: [StepUpsertWithWhereUniqueWithoutTestsInput!]
-}
-
-input StepUpdateManyWithoutUserInput {
-    connect: [StepWhereUniqueInput!]
-    create: [StepCreateWithoutUserInput!]
-    delete: [StepWhereUniqueInput!]
-    deleteMany: [StepScalarWhereInput!]
-    disconnect: [StepWhereUniqueInput!]
-    set: [StepWhereUniqueInput!]
-    update: [StepUpdateWithWhereUniqueWithoutUserInput!]
-    updateMany: [StepUpdateManyWithWhereNestedInput!]
-    upsert: [StepUpsertWithWhereUniqueWithoutUserInput!]
-}
-
-input StepUpdateManyWithWhereNestedInput {
-    data: StepUpdateManyDataInput!
-    where: StepScalarWhereInput!
-}
-
-input StepUpdateWithoutTestsDataInput {
-    expected: String
-    id: Int
-    key: String
-    kind: StepKind
-    selector: String
-    url: String
-    User: UserUpdateOneWithoutStepsInput
-    value: String
-}
-
-input StepUpdateWithoutUserDataInput {
-    expected: String
-    id: Int
-    key: String
-    kind: StepKind
-    selector: String
-    tests: TestUpdateManyWithoutStepsInput
-    url: String
-    value: String
-}
-
-input StepUpdateWithWhereUniqueWithoutTestsInput {
-    data: StepUpdateWithoutTestsDataInput!
-    where: StepWhereUniqueInput!
-}
-
-input StepUpdateWithWhereUniqueWithoutUserInput {
-    data: StepUpdateWithoutUserDataInput!
-    where: StepWhereUniqueInput!
-}
-
-input StepUpsertWithWhereUniqueWithoutTestsInput {
-    create: StepCreateWithoutTestsInput!
-    update: StepUpdateWithoutTestsDataInput!
-    where: StepWhereUniqueInput!
-}
-
-input StepUpsertWithWhereUniqueWithoutUserInput {
-    create: StepCreateWithoutUserInput!
-    update: StepUpdateWithoutUserDataInput!
-    where: StepWhereUniqueInput!
-}
-
 input StepWhereInput {
     AND: [StepWhereInput!]
     expected: NullableStringFilter
@@ -349,84 +223,6 @@ input TagOrderByInput {
     userId: OrderByArg
 }
 
-input TagScalarWhereInput {
-    AND: [TagScalarWhereInput!]
-    id: IntFilter
-    name: StringFilter
-    NOT: [TagScalarWhereInput!]
-    OR: [TagScalarWhereInput!]
-    testId: NullableIntFilter
-    userId: IntFilter
-}
-
-input TagUpdateManyDataInput {
-    id: Int
-    name: String
-}
-
-input TagUpdateManyWithoutTestInput {
-    connect: [TagWhereUniqueInput!]
-    create: [TagCreateWithoutTestInput!]
-    delete: [TagWhereUniqueInput!]
-    deleteMany: [TagScalarWhereInput!]
-    disconnect: [TagWhereUniqueInput!]
-    set: [TagWhereUniqueInput!]
-    update: [TagUpdateWithWhereUniqueWithoutTestInput!]
-    updateMany: [TagUpdateManyWithWhereNestedInput!]
-    upsert: [TagUpsertWithWhereUniqueWithoutTestInput!]
-}
-
-input TagUpdateManyWithoutUserInput {
-    connect: [TagWhereUniqueInput!]
-    create: [TagCreateWithoutUserInput!]
-    delete: [TagWhereUniqueInput!]
-    deleteMany: [TagScalarWhereInput!]
-    disconnect: [TagWhereUniqueInput!]
-    set: [TagWhereUniqueInput!]
-    update: [TagUpdateWithWhereUniqueWithoutUserInput!]
-    updateMany: [TagUpdateManyWithWhereNestedInput!]
-    upsert: [TagUpsertWithWhereUniqueWithoutUserInput!]
-}
-
-input TagUpdateManyWithWhereNestedInput {
-    data: TagUpdateManyDataInput!
-    where: TagScalarWhereInput!
-}
-
-input TagUpdateWithoutTestDataInput {
-    id: Int
-    name: String
-    user: UserUpdateOneRequiredWithoutTagsInput
-}
-
-input TagUpdateWithoutUserDataInput {
-    id: Int
-    name: String
-    Test: TestUpdateOneWithoutTagsInput
-}
-
-input TagUpdateWithWhereUniqueWithoutTestInput {
-    data: TagUpdateWithoutTestDataInput!
-    where: TagWhereUniqueInput!
-}
-
-input TagUpdateWithWhereUniqueWithoutUserInput {
-    data: TagUpdateWithoutUserDataInput!
-    where: TagWhereUniqueInput!
-}
-
-input TagUpsertWithWhereUniqueWithoutTestInput {
-    create: TagCreateWithoutTestInput!
-    update: TagUpdateWithoutTestDataInput!
-    where: TagWhereUniqueInput!
-}
-
-input TagUpsertWithWhereUniqueWithoutUserInput {
-    create: TagCreateWithoutUserInput!
-    update: TagUpdateWithoutUserDataInput!
-    where: TagWhereUniqueInput!
-}
-
 input TagWhereInput {
     AND: [TagWhereInput!]
     id: IntFilter
@@ -463,6 +259,13 @@ type Test {
     ): [Tag!]
     user: User!
     userId: Int!
+}
+
+input TestCreateInput {
+    name: String!
+    steps: StepCreateManyWithoutTestsInput
+    tags: TagCreateManyWithoutTestInput
+    user: UserCreateOneWithoutTestsInput!
 }
 
 input TestCreateManyWithoutStepsInput {
@@ -508,108 +311,6 @@ input TestOrderByInput {
     id: OrderByArg
     name: OrderByArg
     userId: OrderByArg
-}
-
-input TestScalarWhereInput {
-    AND: [TestScalarWhereInput!]
-    id: IntFilter
-    name: StringFilter
-    NOT: [TestScalarWhereInput!]
-    OR: [TestScalarWhereInput!]
-    steps: StepFilter
-    tags: TagFilter
-    userId: IntFilter
-}
-
-input TestUpdateManyDataInput {
-    id: Int
-    name: String
-}
-
-input TestUpdateManyWithoutStepsInput {
-    connect: [TestWhereUniqueInput!]
-    create: [TestCreateWithoutStepsInput!]
-    delete: [TestWhereUniqueInput!]
-    deleteMany: [TestScalarWhereInput!]
-    disconnect: [TestWhereUniqueInput!]
-    set: [TestWhereUniqueInput!]
-    update: [TestUpdateWithWhereUniqueWithoutStepsInput!]
-    updateMany: [TestUpdateManyWithWhereNestedInput!]
-    upsert: [TestUpsertWithWhereUniqueWithoutStepsInput!]
-}
-
-input TestUpdateManyWithoutUserInput {
-    connect: [TestWhereUniqueInput!]
-    create: [TestCreateWithoutUserInput!]
-    delete: [TestWhereUniqueInput!]
-    deleteMany: [TestScalarWhereInput!]
-    disconnect: [TestWhereUniqueInput!]
-    set: [TestWhereUniqueInput!]
-    update: [TestUpdateWithWhereUniqueWithoutUserInput!]
-    updateMany: [TestUpdateManyWithWhereNestedInput!]
-    upsert: [TestUpsertWithWhereUniqueWithoutUserInput!]
-}
-
-input TestUpdateManyWithWhereNestedInput {
-    data: TestUpdateManyDataInput!
-    where: TestScalarWhereInput!
-}
-
-input TestUpdateOneWithoutTagsInput {
-    connect: TestWhereUniqueInput
-    create: TestCreateWithoutTagsInput
-    delete: Boolean
-    disconnect: Boolean
-    update: TestUpdateWithoutTagsDataInput
-    upsert: TestUpsertWithoutTagsInput
-}
-
-input TestUpdateWithoutStepsDataInput {
-    id: Int
-    name: String
-    tags: TagUpdateManyWithoutTestInput
-    user: UserUpdateOneRequiredWithoutTestsInput
-}
-
-input TestUpdateWithoutTagsDataInput {
-    id: Int
-    name: String
-    steps: StepUpdateManyWithoutTestsInput
-    user: UserUpdateOneRequiredWithoutTestsInput
-}
-
-input TestUpdateWithoutUserDataInput {
-    id: Int
-    name: String
-    steps: StepUpdateManyWithoutTestsInput
-    tags: TagUpdateManyWithoutTestInput
-}
-
-input TestUpdateWithWhereUniqueWithoutStepsInput {
-    data: TestUpdateWithoutStepsDataInput!
-    where: TestWhereUniqueInput!
-}
-
-input TestUpdateWithWhereUniqueWithoutUserInput {
-    data: TestUpdateWithoutUserDataInput!
-    where: TestWhereUniqueInput!
-}
-
-input TestUpsertWithoutTagsInput {
-    create: TestCreateWithoutTagsInput!
-    update: TestUpdateWithoutTagsDataInput!
-}
-
-input TestUpsertWithWhereUniqueWithoutStepsInput {
-    create: TestCreateWithoutStepsInput!
-    update: TestUpdateWithoutStepsDataInput!
-    where: TestWhereUniqueInput!
-}
-
-input TestUpsertWithWhereUniqueWithoutUserInput {
-    create: TestCreateWithoutUserInput!
-    update: TestUpdateWithoutUserDataInput!
-    where: TestWhereUniqueInput!
 }
 
 input TestWhereInput {
@@ -658,16 +359,6 @@ type User {
     ): [Test!]
 }
 
-input UserCreateInput {
-    email: String!
-    first: String!
-    last: String!
-    password: String!
-    steps: StepCreateManyWithoutUserInput
-    tags: TagCreateManyWithoutUserInput
-    tests: TestCreateManyWithoutUserInput
-}
-
 input UserCreateOneWithoutStepsInput {
     connect: UserWhereUniqueInput
     create: UserCreateWithoutStepsInput
@@ -708,101 +399,6 @@ input UserCreateWithoutTestsInput {
     password: String!
     steps: StepCreateManyWithoutUserInput
     tags: TagCreateManyWithoutUserInput
-}
-
-input UserOrderByInput {
-    email: OrderByArg
-    first: OrderByArg
-    id: OrderByArg
-    last: OrderByArg
-    password: OrderByArg
-}
-
-input UserUpdateInput {
-    email: String
-    first: String
-    id: Int
-    last: String
-    password: String
-    steps: StepUpdateManyWithoutUserInput
-    tags: TagUpdateManyWithoutUserInput
-    tests: TestUpdateManyWithoutUserInput
-}
-
-input UserUpdateManyMutationInput {
-    email: String
-    first: String
-    id: Int
-    last: String
-    password: String
-}
-
-input UserUpdateOneRequiredWithoutTagsInput {
-    connect: UserWhereUniqueInput
-    create: UserCreateWithoutTagsInput
-    update: UserUpdateWithoutTagsDataInput
-    upsert: UserUpsertWithoutTagsInput
-}
-
-input UserUpdateOneRequiredWithoutTestsInput {
-    connect: UserWhereUniqueInput
-    create: UserCreateWithoutTestsInput
-    update: UserUpdateWithoutTestsDataInput
-    upsert: UserUpsertWithoutTestsInput
-}
-
-input UserUpdateOneWithoutStepsInput {
-    connect: UserWhereUniqueInput
-    create: UserCreateWithoutStepsInput
-    delete: Boolean
-    disconnect: Boolean
-    update: UserUpdateWithoutStepsDataInput
-    upsert: UserUpsertWithoutStepsInput
-}
-
-input UserUpdateWithoutStepsDataInput {
-    email: String
-    first: String
-    id: Int
-    last: String
-    password: String
-    tags: TagUpdateManyWithoutUserInput
-    tests: TestUpdateManyWithoutUserInput
-}
-
-input UserUpdateWithoutTagsDataInput {
-    email: String
-    first: String
-    id: Int
-    last: String
-    password: String
-    steps: StepUpdateManyWithoutUserInput
-    tests: TestUpdateManyWithoutUserInput
-}
-
-input UserUpdateWithoutTestsDataInput {
-    email: String
-    first: String
-    id: Int
-    last: String
-    password: String
-    steps: StepUpdateManyWithoutUserInput
-    tags: TagUpdateManyWithoutUserInput
-}
-
-input UserUpsertWithoutStepsInput {
-    create: UserCreateWithoutStepsInput!
-    update: UserUpdateWithoutStepsDataInput!
-}
-
-input UserUpsertWithoutTagsInput {
-    create: UserCreateWithoutTagsInput!
-    update: UserUpdateWithoutTagsDataInput!
-}
-
-input UserUpsertWithoutTestsInput {
-    create: UserCreateWithoutTestsInput!
-    update: UserUpdateWithoutTestsDataInput!
 }
 
 input UserWhereInput {

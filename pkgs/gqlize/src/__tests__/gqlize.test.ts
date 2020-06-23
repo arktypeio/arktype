@@ -1,5 +1,4 @@
 import { join } from "path"
-import { readFileSync } from "fs-extra"
 import { fromEntries, camelCase } from "@re-do/utils"
 import { gqlize, getObjectDefinition } from ".."
 
