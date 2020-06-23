@@ -10,7 +10,7 @@
         "test": "jest"
     },
     "dependencies": {
-        "@babel/runtime-corejs3": "7.6.3",
+        "@babel/runtime-corejs3": "7.10.3",
         "@re-do/utils": "0.0.6",
         "deepmerge": "4.2.2",
         "isomorphic-fetch": "2.2.1",
@@ -18,7 +18,7 @@
         "redux": "4.0.4"
     },
     "devDependencies": {
-        "@babel/cli": "7.6.4",
+        "@babel/cli": "7.10.3",
         "@re-do/recommended": "0.0.1",
         "@types/jest": "24.0.19",
         "@types/node": "12.11.1",

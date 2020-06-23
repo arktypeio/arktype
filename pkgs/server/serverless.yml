@@ -3,7 +3,7 @@ app: redo-server
 service: redo-server
 provider:
     name: aws
-    runtime: nodejs10.x
+    runtime: nodejs12.x
     region: us-east-1
     vpc:
         securityGroupIds:
@@ -20,7 +20,7 @@ provider:
 plugins:
     - serverless-dotenv-plugin
     - serverless-hooks-plugin
-    - serverless-webpack
+    - serverless-plugin-typescript
     - serverless-offline
 functions:
     graphql:
@@ -34,12 +34,12 @@ functions:
                   path: graphql
                   method: get
                   cors: true
-custom:
-    webpack:
-        webpackConfig: "webpack.config.ts"
-        includeModules:
-            forceExclude:
-                - prisma2
-    hooks:
-        after:package:createDeploymentArtifacts:
-            - ts-node packageDependencies.ts
+# custom:
+#     webpack:
+#         webpackConfig: "webpack.config.ts"
+#         includeModules:
+#             forceExclude:
+#                 - prisma2
+#     hooks:
+#         after:package:createDeploymentArtifacts:
+#             - ts-node packageDependencies.ts

@@ -66,10 +66,16 @@ const getCommonConfig = ({
     },
     plugins: analyzeBundle
         ? [
-              new ForkTsCheckerWebpackPlugin({ tsconfig }),
+              new ForkTsCheckerWebpackPlugin({
+                  typescript: { configFile: tsconfig },
+              }),
               new BundleAnalyzerPlugin() as any,
           ]
-        : [new ForkTsCheckerWebpackPlugin({ tsconfig })],
+        : [
+              new ForkTsCheckerWebpackPlugin({
+                  typescript: { configFile: tsconfig },
+              }),
+          ],
 })
 
 const getWebConfig = (args: ConfigArgs): Configuration =>
