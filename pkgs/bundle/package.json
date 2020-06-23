@@ -43,6 +43,6 @@
         "@types/webpack": "4.41.17",
         "@types/webpack-bundle-analyzer": "3.8.0",
         "@types/webpack-merge": "4.1.5",
-        "typescript": "3.8.2"
+        "typescript": "3.9.5"
     }
 }

@@ -4,7 +4,7 @@ import { join } from "path"
 
 const generate = () => {
     shell("prisma generate")
-    shell("ts-node --transpile-only src/graphql/schema")
+    shell("ts-node --transpile-only src/schema")
     prettify()
     copySync(
         join(__dirname, "schema.gql"),

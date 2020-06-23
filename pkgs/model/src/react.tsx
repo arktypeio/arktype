@@ -2,6 +2,7 @@ import gql from "graphql-tag"
 import * as ApolloReactCommon from "@apollo/client"
 import * as ApolloReactHooks from "@apollo/client"
 export type Maybe<T> = T | null
+export type Exact<T extends { [key: string]: any }> = { [K in keyof T]: T[K] }
 /** All built-in and custom scalars, mapped to their actual values */
 export type Scalars = {
     ID: string
@@ -185,7 +186,7 @@ export type UserTestsArgs = {
     skip?: Maybe<Scalars["Int"]>
 }
 
-export type MeQueryVariables = {}
+export type MeQueryVariables = Exact<{ [key: string]: never }>
 
 export type MeQuery = { __typename?: "Query" } & {
     me: { __typename?: "User" } & Pick<
@@ -241,11 +242,11 @@ export type MeQuery = { __typename?: "Query" } & {
         }
 }
 
-export type CreateTestMutationVariables = {
+export type CreateTestMutationVariables = Exact<{
     name: Scalars["String"]
     steps?: Maybe<Array<StepCreateWithoutTestsInput>>
     tags?: Maybe<Array<TagCreateWithoutTestInput>>
-}
+}>
 
 export type CreateTestMutation = { __typename?: "Mutation" } & {
     createTest: { __typename?: "Test" } & Pick<Test, "id" | "name"> & {
@@ -265,22 +266,22 @@ export type CreateTestMutation = { __typename?: "Mutation" } & {
         }
 }
 
-export type SignInMutationVariables = {
+export type SignInMutationVariables = Exact<{
     email: Scalars["String"]
     password: Scalars["String"]
-}
+}>
 
 export type SignInMutation = { __typename?: "Mutation" } & Pick<
     Mutation,
     "signIn"
 >
 
-export type SignUpMutationVariables = {
+export type SignUpMutationVariables = Exact<{
     email: Scalars["String"]
     first: Scalars["String"]
     last: Scalars["String"]
     password: Scalars["String"]
-}
+}>
 
 export type SignUpMutation = { __typename?: "Mutation" } & Pick<
     Mutation,

@@ -4,7 +4,7 @@ import { buildSchema, printSchema, parse } from "graphql"
 import { readFileSync, writeFileSync } from "fs-extra"
 import * as typescript from "@graphql-codegen/typescript"
 import * as reactApollo from "@graphql-codegen/typescript-react-apollo"
-const operations = require("@graphql-codegen/typescript-operations")
+import * as operations from "@graphql-codegen/typescript-operations"
 import { gqlize } from "gqlize"
 import { join } from "path"
 
@@ -25,7 +25,7 @@ export const typify = async () => {
         },
         documents: [
             {
-                content: parse(
+                document: parse(
                     gqlize({
                         schema: schemaFile,
                         transformOutputs: (fields) =>
@@ -35,7 +35,6 @@ export const typify = async () => {
                             ),
                     })
                 ),
-                filePath: "",
             },
         ],
         config: {},
