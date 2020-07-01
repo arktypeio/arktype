@@ -11,7 +11,7 @@
     },
     "dependencies": {
         "@babel/runtime-corejs3": "7.10.3",
-        "@re-do/utils": "0.0.6",
+        "@re-do/utils": "0.0.9",
         "fs-extra": "8.1.0",
         "graphql": "15.1.0",
         "graphql-tag": "2.10.1",

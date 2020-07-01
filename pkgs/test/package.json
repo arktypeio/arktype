@@ -12,7 +12,7 @@
     "dependencies": {
         "@babel/runtime-corejs3": "7.10.3",
         "@re-do/model": "0.0.1",
-        "@re-do/utils": "0.0.6",
+        "@re-do/utils": "0.0.9",
         "fs-extra": "8.1.0",
         "playwright-core": "0.11.1"
     },

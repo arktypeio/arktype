@@ -11,7 +11,7 @@
     "dependencies": {
         "@babel/runtime-corejs3": "7.10.3",
         "core-js": "3.6.1",
-        "@re-do/utils": "0.0.6"
+        "@re-do/utils": "0.0.9"
     },
     "peerDependencies": {
         "@prisma/client": "2.0.0-preview023",
