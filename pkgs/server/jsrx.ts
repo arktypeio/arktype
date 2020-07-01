@@ -39,7 +39,7 @@ jsrx(
             build,
             generate,
             tsc: $("tsc"),
-            upDb,
+            upDb
         },
         dev: {
             dev: () => {
@@ -52,21 +52,21 @@ jsrx(
                 serve()
             },
             serve,
-            prettify,
+            prettify
         },
         prod: {
             deploy: () => {
                 build()
                 shell("sls deploy")
             },
-            pack: $("sls package"),
-        },
+            pack: $("sls package")
+        }
     },
     {
         excludeOthers: true,
         envFiles: {
             dev: join(__dirname, ".env"),
-            prod: join(__dirname, ".env.production"),
-        },
+            prod: join(__dirname, ".env.production")
+        }
     }
 )

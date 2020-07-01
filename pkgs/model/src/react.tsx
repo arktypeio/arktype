@@ -64,7 +64,7 @@ export type NullableStringFilter = {
 
 export enum OrderByArg {
     Asc = "asc",
-    Desc = "desc",
+    Desc = "desc"
 }
 
 export type Query = {
@@ -146,7 +146,7 @@ export enum StepKind {
     Hover = "hover",
     Key = "key",
     Screenshot = "screenshot",
-    Set = "set",
+    Set = "set"
 }
 
 export type StepKindFilter = {

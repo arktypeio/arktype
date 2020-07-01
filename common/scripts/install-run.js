@@ -226,11 +226,11 @@ function _resolvePackageVersion(rushCommonFolder, { name, version }) {
                     "view",
                     `${name}@${version}`,
                     "version",
-                    "--no-update-notifier",
+                    "--no-update-notifier"
                 ],
                 {
                     cwd: rushTempFolder,
-                    stdio: [],
+                    stdio: []
                 }
             )
             if (npmVersionSpawnResult.status !== 0) {
@@ -356,11 +356,11 @@ function _createPackageJson(packageInstallFolder, name, version) {
             name: "ci-rush",
             version: "0.0.0",
             dependencies: {
-                [name]: version,
+                [name]: version
             },
             description: "DON'T WARN",
             repository: "DON'T WARN",
-            license: "MIT",
+            license: "MIT"
         }
         const packageJsonPath = path.join(
             packageInstallFolder,
@@ -384,7 +384,7 @@ function _installPackage(packageInstallFolder, name, version) {
         const result = childProcess.spawnSync(npmPath, ["install"], {
             stdio: "inherit",
             cwd: packageInstallFolder,
-            env: process.env,
+            env: process.env
         })
         if (result.status !== 0) {
             throw new Error('"npm install" encountered an error')
@@ -461,8 +461,8 @@ function installAndRun(
         stdio: "inherit",
         cwd: process.cwd(),
         env: Object.assign({}, process.env, {
-            PATH: [binFolderPath, process.env.PATH].join(path.delimiter),
-        }),
+            PATH: [binFolderPath, process.env.PATH].join(path.delimiter)
+        })
     })
     if (result.status !== null) {
         return result.status

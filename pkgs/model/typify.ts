@@ -17,27 +17,27 @@ export const typify = async () => {
         transformOutputs: (fields) =>
             fields.filter(
                 (field) => !["user", "test"].includes(field.name.value)
-            ),
+            )
     })
     const baseOptions: Types.GenerateOptions = {
         filename: baseFileName,
         schema: parse(printSchema(schema)),
         plugins: [
             {
-                typescript: {},
-            },
+                typescript: {}
+            }
         ],
         pluginMap: {
-            typescript,
+            typescript
         },
         documents: [
             {
-                document: parse(gql),
-            },
+                document: parse(gql)
+            }
         ],
         config: {
-            skipDocumentsValidation: true,
-        },
+            skipDocumentsValidation: true
+        }
     }
     const baseTypes = await codegen(baseOptions)
     writeFileSync(baseFileName, baseTypes)
@@ -53,15 +53,15 @@ export const typify = async () => {
                     withComponent: false,
                     withHOC: false,
                     withHooks: true,
-                    reactApolloVersion: 3,
-                },
-            },
+                    reactApolloVersion: 3
+                }
+            }
         ],
         pluginMap: {
             ...baseOptions.pluginMap,
             reactApollo,
-            operations,
-        },
+            operations
+        }
     }
     const reactTypes = await codegen(reactOptions)
     writeFileSync(reactFileName, reactTypes)

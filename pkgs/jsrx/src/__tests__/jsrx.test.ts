@@ -13,6 +13,7 @@ it("calls the right script", () => {
             }
         },
         {
+            autoGenerate: false,
             scriptName: "shouldBeCalled"
         }
     )

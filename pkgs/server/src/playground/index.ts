@@ -10,7 +10,7 @@ export const playground: PlaygroundRenderPageOptions = {
                 transformOutputs: (fields) =>
                     fields.filter(
                         (field) => !["user", "test"].includes(field.name.value)
-                    ),
+                    )
             }),
             variables: JSON.stringify(
                 {
@@ -22,17 +22,17 @@ export const playground: PlaygroundRenderPageOptions = {
                         {
                             kind: "set",
                             selector: "#another",
-                            value: "hello",
-                        },
+                            value: "hello"
+                        }
                     ],
                     tags: [{ name: "fast" }, { name: "easy" }],
                     first: "David",
-                    last: "Blass",
+                    last: "Blass"
                 },
                 null,
                 4
             ),
-            headers: { Authorization: "Bearer" },
-        },
-    ],
+            headers: { Authorization: "Bearer" }
+        }
+    ]
 }

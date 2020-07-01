@@ -27,6 +27,7 @@ dependencies:
     "@medv/finder": 1.1.2
     "@octokit/graphql": 4.3.1
     "@prisma/cli": 2.0.1
+    "@re-do/recommended": 0.0.1
     "@rush-temp/app": "file:projects/app.tgz"
     "@rush-temp/babel-preset-redo": "file:projects/babel-preset-redo.tgz_f8e84b8c3e4df93652ef9d6a53bb8604"
     "@rush-temp/bundle": "file:projects/bundle.tgz_c48d99055344e95867788848f8fcdaa0"
@@ -4483,6 +4484,10 @@ packages:
         dev: false
         resolution:
             integrity: sha1-p3c2C1s5oaLlEG+OhY8v0tBgxXA=
+    /@re-do/recommended/0.0.1:
+        dev: false
+        resolution:
+            integrity: sha512-QmWGGkcLN3IAHJbxxrCWNmaZ/Rb51AEfktR2WNN1QblHu2TM9G4+R4nZK623aeMo8lD/HhgADTBQtJkWMXCKOw==
     /@reach/router/1.3.3_react-dom@16.12.0:
         dependencies:
             create-react-context: 0.3.0_prop-types@15.7.2
@@ -24256,6 +24261,7 @@ packages:
             "@material-ui/core": 4.9.3_498b91122a17be5f366b66e7e4c66b66
             "@material-ui/styles": 4.9.0_498b91122a17be5f366b66e7e4c66b66
             "@medv/finder": 1.1.2
+            "@re-do/recommended": 0.0.1
             "@types/dotenv": 8.2.0
             "@types/electron-devtools-installer": 2.2.0
             "@types/fs-extra": 8.1.0
@@ -24288,7 +24294,7 @@ packages:
         dev: false
         name: "@rush-temp/app"
         resolution:
-            integrity: sha512-0q9f4btwK5iRFuLtYyUNs66jO+mzQHWe/ywwU82N/CGO00aqixpDqVEzOV3wkzHoJMJTpJOqjeeRh88KxdR7Aw==
+            integrity: sha512-gXu7f+0o/05OBfWkSbDswwXH4xi0N/H7q6NO9VLYJhkjsTIVo13kPj0Hx+Oax1jGeVlKevtZuom6bCWSjpmiKQ==
             tarball: "file:projects/app.tgz"
         version: 0.0.0
     "file:projects/babel-preset-redo.tgz_f8e84b8c3e4df93652ef9d6a53bb8604":
@@ -24325,6 +24331,7 @@ packages:
         dependencies:
             "@babel/runtime-corejs3": 7.6.3
             "@hot-loader/react-dom": 16.10.2
+            "@re-do/recommended": 0.0.1
             "@types/html-webpack-plugin": 3.2.3
             "@types/node": 12.11.1
             "@types/webpack": 4.41.17
@@ -24359,7 +24366,7 @@ packages:
             react-dom: "*"
             webpack-cli: "*"
         resolution:
-            integrity: sha512-bQEjxhUIQi+u3oi9s6/mC0BVh/qWTP5++jUHyaUqz/Nh1xg1MXsMN5x923MhNLupUzxBz7s+MLQdBncV63C7RA==
+            integrity: sha512-QDY1866IZ53SFlfTJTISZKZeRqkeaIhaNcLqXh128Pj9XoZWuGUI3w/dRkBIS0aeONAXsGE7FfnP9+VtwBPEwA==
             tarball: "file:projects/bundle.tgz"
         version: 0.0.0
     "file:projects/cli.tgz_@babel+core@7.10.3":
@@ -24367,6 +24374,7 @@ packages:
             "@babel/cli": 7.10.3_@babel+core@7.10.3
             "@babel/runtime-corejs3": 7.10.3
             "@octokit/graphql": 4.3.1
+            "@re-do/recommended": 0.0.1
             "@types/fs-extra": 8.1.0
             "@types/node": 12.11.1
             "@types/node-fetch": 2.5.4
@@ -24383,7 +24391,7 @@ packages:
         peerDependencies:
             "@babel/core": "*"
         resolution:
-            integrity: sha512-nz6mb43zT4RNG9qzpzUUB5izxTUudaXRyVnQT5TXOu+jPaH+sxiDhqgcmC7bp2S82nvsY5cspdHAxdO6XEf6jA==
+            integrity: sha512-lqxWiG/ErRuy7KG8tluH8KNoUaGMgbhLRmUNAh7llXFSQUXFmhe/aacTf0NIkdy7wIjK7eCDCd4BOBJkF9Aglg==
             tarball: "file:projects/cli.tgz"
         version: 0.0.0
     "file:projects/components.tgz_webpack@4.43.0":
@@ -24398,6 +24406,7 @@ packages:
             "@material-ui/lab": 4.0.0-alpha.42_08f1ac7564376c72eeffb2e7eff7dd4b
             "@material-ui/pickers": 3.2.8_8160590bbec51c2edae848dae2796754
             "@material-ui/styles": 4.9.0_eb515f89e47582c30d0abc2086de227a
+            "@re-do/recommended": 0.0.1
             "@storybook/addon-actions": 5.2.8_react-dom@16.12.0
             "@storybook/addon-console": 1.2.1_@storybook+addon-actions@5.2.8
             "@storybook/addon-info": 5.2.8_react-dom@16.12.0
@@ -24440,13 +24449,14 @@ packages:
         peerDependencies:
             webpack: "*"
         resolution:
-            integrity: sha512-zYVlQvORa4DeGAWWiEGWO5m4YaAWU/ZXQU8E1t3d+B+qFhQCrjO1xrODlkl/G88EnbaoLA9rDG/tz7tXg4i48w==
+            integrity: sha512-y7UeUi90kbyqvSGtHLCaTidpJXfHKvbp2OYJu88n5x9aeCnXW8GKbHxJhGr/qIQkqCPkJU+N0nMqnbEvl06coA==
             tarball: "file:projects/components.tgz"
         version: 0.0.0
     "file:projects/gqlize.tgz_@babel+core@7.10.3":
         dependencies:
             "@babel/cli": 7.10.3_@babel+core@7.10.3
             "@babel/runtime-corejs3": 7.10.3
+            "@re-do/recommended": 0.0.1
             "@types/fs-extra": 8.1.0
             "@types/jest": 24.0.19
             "@types/node": 12.11.1
@@ -24463,13 +24473,14 @@ packages:
         peerDependencies:
             "@babel/core": "*"
         resolution:
-            integrity: sha512-lrvYBJM6TBrINMzG/neDCCfOigzcpzfD339p9PFfnLfMjI0MJ8uDKaJrswm3pE83SIqOGSkm59qV0Uoc//oqeQ==
+            integrity: sha512-bUFYELolyvWufZZddFEG6Mhp9EuJLP+bxZv09AF+ong0pgaX0geKjlrxFJEFkWve7/eQmpcUy4UKHV5WSmtNBA==
             tarball: "file:projects/gqlize.tgz"
         version: 0.0.0
     "file:projects/jsrx.tgz_@babel+core@7.10.3":
         dependencies:
             "@babel/cli": 7.10.3_@babel+core@7.10.3
             "@babel/runtime-corejs3": 7.10.3
+            "@re-do/recommended": 0.0.1
             "@types/fs-extra": 8.1.0
             "@types/jest": 24.0.19
             "@types/node": 12.11.1
@@ -24484,7 +24495,7 @@ packages:
         peerDependencies:
             "@babel/core": "*"
         resolution:
-            integrity: sha512-cyO9qGrsOGfNPS1YAf26BSYjRpG/mS+d7YAKToysH4qeugqwHq17i+i7UUHdfm69J/f3Ec79l+SJZrpknKh/PA==
+            integrity: sha512-TQmuIc3oMrONZFSq77osvoCU2Kuz2rxQDfgR/q6THsnDT7O94VGFkIcPEmeHe/9PUFpZSLjm9iMgwtlGos2opw==
             tarball: "file:projects/jsrx.tgz"
         version: 0.0.0
     "file:projects/model.tgz_@babel+core@7.10.3":
@@ -24497,6 +24508,7 @@ packages:
             "@graphql-codegen/typescript": 1.15.4_graphql@15.1.0
             "@graphql-codegen/typescript-operations": 1.15.4_graphql@15.1.0
             "@graphql-codegen/typescript-react-apollo": 1.15.4_2ea23d3465d225e2cc20225c4793aca2
+            "@re-do/recommended": 0.0.1
             "@types/fs-extra": 8.1.0
             "@types/node": 12.11.1
             "@types/validator": 12.0.1
@@ -24514,7 +24526,7 @@ packages:
         peerDependencies:
             "@babel/core": "*"
         resolution:
-            integrity: sha512-2zlPzMKprl3G2pZdqlcXOjRK8mXS8C2c7ux+woejlOGyeYnY6VlhO2urAvLVrhKa4LlFL/SX2iH4pCm50CYIkA==
+            integrity: sha512-0OeKUCeQQ4182zcVWQtdupJ7k3wkpMrmwSRh6Rd0FBnlqYZP3bbxACJG2Mbrt4Mjb5F+/YljDX7E6lMSWw12KA==
             tarball: "file:projects/model.tgz"
         version: 0.0.0
     "file:projects/prismafy.tgz_@babel+core@7.10.3":
@@ -24522,6 +24534,7 @@ packages:
             "@babel/cli": 7.10.3_@babel+core@7.10.3
             "@babel/runtime-corejs3": 7.10.3
             "@prisma/client": 2.0.0-preview023
+            "@re-do/recommended": 0.0.1
             "@types/node": 12.11.1
             core-js: 3.6.1
             graphql: 14.6.0
@@ -24533,13 +24546,14 @@ packages:
         peerDependencies:
             "@babel/core": "*"
         resolution:
-            integrity: sha512-Y6sHYQnE3oxiBsb8aXQSzovywnpYOhk2i4IWKskf2hBw+kmLBrlmrVJZ+1D6hZ4MND07xnnQ5XoeGeXJ1cu2sg==
+            integrity: sha512-zcoLDFxoL8urow5hGLcH9sl11ZVxjl9CMZXBh4eK4VKuUYPPplWAjCYFHOi6ENjg0o5PoNap5vhDRq+slUOo2Q==
             tarball: "file:projects/prismafy.tgz"
         version: 0.0.0
     "file:projects/react-statelessly.tgz_@babel+core@7.10.3":
         dependencies:
             "@babel/cli": 7.10.3_@babel+core@7.10.3
             "@babel/runtime-corejs3": 7.10.3
+            "@re-do/recommended": 0.0.1
             "@types/enzyme": 3.10.3
             "@types/enzyme-adapter-react-16": 1.0.5
             "@types/jest": 24.0.19
@@ -24561,7 +24575,7 @@ packages:
         peerDependencies:
             "@babel/core": "*"
         resolution:
-            integrity: sha512-UkTE1YEJzMJcQ5EghT21aXQEETKSORAOCYYNU7AoQt7s/2RkBzQm+d8vXRjTULwfbeEOoaT+8hMMdjnjVSXktg==
+            integrity: sha512-K6W7Dx7Y8cFvHp9ybNu7+NQGhN7ozcoa7BIL1FVVgbSCPQAVDBiRLcv4Jt9/0cpCdDPYpmdEoC4JG8SnWvFNIg==
             tarball: "file:projects/react-statelessly.tgz"
         version: 0.0.0
     "file:projects/recommended.tgz":
@@ -24576,6 +24590,7 @@ packages:
             "@babel/runtime-corejs3": 7.10.3
             "@prisma/cli": 2.0.1
             "@prisma/client": 2.0.1_@prisma+cli@2.0.1
+            "@re-do/recommended": 0.0.1
             "@types/bcrypt": 3.0.0
             "@types/fs-extra": 8.1.0
             "@types/jest": 24.0.19
@@ -24616,13 +24631,14 @@ packages:
         peerDependencies:
             webpack: "*"
         resolution:
-            integrity: sha512-eE2ULS26cvKq6r7TpK1rqu1sQ0MdktiyOfo1TZ9Ysh423A0GHNoi69GAIhNMuaZZvP12Kamb+FDMNDWHH8v19A==
+            integrity: sha512-M2KTwbVP+r7KwDQBvXkvOyFlYIOUtDXCQFfqmY2miVK/YX22zdGeemyNdLHXGZig7zweP1gScYe7Q3IiCKu76g==
             tarball: "file:projects/server.tgz"
         version: 0.0.0
     "file:projects/statelessly.tgz_@babel+core@7.10.3":
         dependencies:
             "@babel/cli": 7.10.3_@babel+core@7.10.3
             "@babel/runtime-corejs3": 7.10.3
+            "@re-do/recommended": 0.0.1
             "@types/jest": 24.0.19
             "@types/node": 12.11.1
             deepmerge: 4.2.2
@@ -24637,13 +24653,14 @@ packages:
         peerDependencies:
             "@babel/core": "*"
         resolution:
-            integrity: sha512-k2M4HNN0xVuWgK5IbDAFKs/vU2NUk/FnIWKOq+/nxFwDlg0S1IgvtfpsJHXKpOqHljO4sVcMRzj1ROdiNGudIw==
+            integrity: sha512-6E/kGxLSRgaBKJl7lGCgw2WEnbIHqztaSw/g6SJo8aaCsTJXZ2WOkHdhWiV6GL2WwKZiO/trST9MSaIcyqnfig==
             tarball: "file:projects/statelessly.tgz"
         version: 0.0.0
     "file:projects/test.tgz_@babel+core@7.10.3":
         dependencies:
             "@babel/cli": 7.10.3_@babel+core@7.10.3
             "@babel/runtime-corejs3": 7.10.3
+            "@re-do/recommended": 0.0.1
             "@types/fs-extra": 8.1.0
             "@types/jest": 24.0.19
             fs-extra: 8.1.0
@@ -24656,13 +24673,14 @@ packages:
         peerDependencies:
             "@babel/core": "*"
         resolution:
-            integrity: sha512-uDyjSzzOT3CEgDmRTVXJMxbiwUHAWgFol0GDBN3hUyfCaJa8CCA6RDg/QRfWEdnhmIRqFtbOcK/reDpmLpi7PA==
+            integrity: sha512-vAY0XGaGy47E/WFFoXyrQsO0oj8Ba0FOh96nnJqaFR+S2DolpH9//HzYAXxQFxN9bZGdR/aQdkLRitSUYrly0w==
             tarball: "file:projects/test.tgz"
         version: 0.0.0
     "file:projects/utils.tgz_@babel+core@7.10.3":
         dependencies:
             "@babel/cli": 7.10.3_@babel+core@7.10.3
             "@babel/runtime-corejs3": 7.10.3
+            "@re-do/recommended": 0.0.1
             "@types/fs-extra": 8.1.0
             "@types/jest": 24.0.19
             "@types/node": 12.11.1
@@ -24679,7 +24697,7 @@ packages:
         peerDependencies:
             "@babel/core": "*"
         resolution:
-            integrity: sha512-TizseOQpIOzqynQJMakUXkNye6E0SyLL2YeB2Pken4pOh5IeO1bWdFlnkivhVhOIzF94ZA4rjT/LkoqVmg06bQ==
+            integrity: sha512-f8GRogu7gnBU+q2UqH8LDjOeaVh3Kmj7g6QcwygqgsPHK5vORpMFGcQQUvFr34EmcIYhsE3/3mgECgj4S/0kNg==
             tarball: "file:projects/utils.tgz"
         version: 0.0.0
     "file:projects/website.tgz":
@@ -24688,6 +24706,7 @@ packages:
             "@hot-loader/react-dom": 16.11.0_react@16.12.0
             "@material-ui/core": 4.9.3_498b91122a17be5f366b66e7e4c66b66
             "@material-ui/styles": 4.9.0_498b91122a17be5f366b66e7e4c66b66
+            "@re-do/recommended": 0.0.1
             "@types/analytics-node": 3.1.1
             "@types/jest": 24.0.19
             "@types/node": 12.11.1
@@ -24715,7 +24734,7 @@ packages:
         dev: false
         name: "@rush-temp/website"
         resolution:
-            integrity: sha512-nRngynNYn6O6oTyOtVPfWss/FN+/LrRBUfrxMqNiv6rth6zhJVjwOhf/2AQdr4O7iMDzE17JBM51u014k+vi8w==
+            integrity: sha512-9AxaMBuTyOtk8PvFQg8lbHDpSvubb619GjdF2cjgShUChv5rBTBJb1vLVCt0JKHZRBaLZ8y2uD4MgwLyfUa75A==
             tarball: "file:projects/website.tgz"
         version: 0.0.0
 registry: ""
@@ -24748,6 +24767,7 @@ specifiers:
     "@medv/finder": 1.1.2
     "@octokit/graphql": 4.3.1
     "@prisma/cli": 2.0.1
+    "@re-do/recommended": 0.0.1
     "@rush-temp/app": "file:./projects/app.tgz"
     "@rush-temp/babel-preset-redo": "file:./projects/babel-preset-redo.tgz"
     "@rush-temp/bundle": "file:./projects/bundle.tgz"

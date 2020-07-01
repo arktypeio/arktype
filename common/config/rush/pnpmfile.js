@@ -15,8 +15,8 @@
  */
 module.exports = {
     hooks: {
-        readPackage,
-    },
+        readPackage
+    }
 }
 
 /**
@@ -36,7 +36,7 @@ function readPackage(packageJson, context) {
             `Adding GraphQL as a peer dependency for ${packageJson.name}...`
         )
         packageJson.peerDependencies = {
-            graphql: "^0.11.0 || ^0.12.0 || ^0.13.0 || ^14.0.0",
+            graphql: "^0.11.0 || ^0.12.0 || ^0.13.0 || ^14.0.0"
         }
     }
     if (packageJson.name === "material-table") {

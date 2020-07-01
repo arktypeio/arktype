@@ -6,7 +6,7 @@ import { CreateTestResolver, FindManyTestResolver } from "./generated"
 
 export const schema: any = buildSchemaSync({
     resolvers: [CreateTestResolver, FindManyTestResolver],
-    emitSchemaFile: join(__dirname, "..", "..", "schema.gql"),
+    emitSchemaFile: join(__dirname, "..", "..", "schema.gql")
 })
 // const nodeModulesPath = join(__dirname, "..", "..", "node_modules")
 // const typesPath = join(nodeModulesPath, "@types")

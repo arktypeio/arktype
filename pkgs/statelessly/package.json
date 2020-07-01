@@ -19,10 +19,10 @@
     },
     "devDependencies": {
         "@babel/cli": "7.10.3",
-        "@re-do/recommended": "0.0.1",
+        "@re-do/recommended": "0.0.2",
         "@types/jest": "24.0.19",
         "@types/node": "12.11.1",
-        "babel-preset-redo": "0.0.1",
+        "babel-preset-redo": "0.0.2",
         "jest": "24.9.0",
         "typescript": "3.9.5"
     }

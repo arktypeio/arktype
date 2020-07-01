@@ -24,9 +24,9 @@
     "devDependencies": {
         "apollo": "2.23.0",
         "@babel/cli": "7.10.3",
-        "@re-do/recommended": "0.0.1",
+        "@re-do/recommended": "0.0.2",
         "@types/node": "12.11.1",
-        "babel-preset-redo": "0.0.1",
+        "babel-preset-redo": "0.0.2",
         "ts-node": "8.10.2",
         "typescript": "3.9.5",
         "@types/node-fetch": "2.5.4",

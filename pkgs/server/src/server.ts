@@ -22,7 +22,7 @@ export const server = new ApolloServer({
         return {
             ...event,
             userId: getUserId(event),
-            prisma,
+            prisma
         }
     },
     playground,
@@ -41,5 +41,5 @@ export const server = new ApolloServer({
             console.log(JSON.stringify(response, null, 4))
         }
         return response
-    },
+    }
 })
