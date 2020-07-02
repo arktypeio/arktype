@@ -61,10 +61,6 @@
             "projectFolder": "pkgs/gqlize"
         },
         {
-            "packageName": "jsrx",
-            "projectFolder": "pkgs/jsrx"
-        },
-        {
             "packageName": "@re-do/cli",
             "projectFolder": "pkgs/cli"
         },

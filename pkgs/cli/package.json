@@ -19,7 +19,7 @@
         "node-fetch": "2.6.0",
         "fs-extra": "8.1.0",
         "@octokit/graphql": "4.3.1",
-        "@re-do/utils": "0.0.9"
+        "@re-do/utils": "0.0.10"
     },
     "devDependencies": {
         "apollo": "2.23.0",

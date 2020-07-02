@@ -26,7 +26,7 @@
     "dependencies": {
         "@babel/runtime-corejs3": "7.10.3",
         "@prisma/client": "2.0.1",
-        "@re-do/utils": "0.0.9",
+        "@re-do/utils": "0.0.10",
         "apollo-server-lambda": "2.15.0",
         "bcrypt": "3.0.6",
         "deepmerge": "4.2.2",
@@ -55,7 +55,7 @@
         "execa": "4.0.0",
         "fs-extra": "8.1.0",
         "jest": "24.9.0",
-        "jsrx": "0.0.1",
+        "jsrx": "0.0.2",
         "prettier": "2.0.1",
         "@prisma/cli": "2.0.1",
         "serverless": "1.67.0",
