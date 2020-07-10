@@ -1,9 +1,9 @@
 import "dotenv/config"
 import { ApolloServer } from "apollo-server-lambda"
 import { getUserId } from "./auth"
-import { schema } from "./schema"
-import { playground } from "./playground"
 import { PrismaClient } from "@prisma/client"
+import { playground } from "./playground"
+import { schema } from "./schema"
 
 const prisma = new PrismaClient()
 
@@ -22,7 +22,7 @@ export const server = new ApolloServer({
         return {
             ...event,
             userId: getUserId(event),
-            prisma,
+            prisma
         }
     },
     playground,
@@ -41,5 +41,5 @@ export const server = new ApolloServer({
             console.log(JSON.stringify(response, null, 4))
         }
         return response
-    },
+    }
 })

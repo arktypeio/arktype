@@ -53,15 +53,11 @@ export const asserted = <T>(value: T, description?: string) => {
     return value as NonNullable<T>
 }
 
-export const deepMap = (
-    from: object | any[],
-    map: (value: any) => any
-): object =>
+export const deepMap = <T>(from: T, map: (entry: Entry) => any): T =>
     fromEntries(
-        Object.entries(from).map(([k, v]) => [
-            k,
-            isRecursible(v) ? deepMap(map(v), map) : map(v),
-        ]),
+        Object.entries(from).map(([k, v]) =>
+            map([k, isRecursible(v) ? deepMap(v, map) : v])
+        ),
         Array.isArray(from)
     )
 

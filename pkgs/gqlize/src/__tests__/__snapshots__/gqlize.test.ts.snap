@@ -123,17 +123,10 @@ exports[`gqlize works with default options: defaults 1`] = `
 }
 mutation createTest(
   $name: String!
-  $data: StepDataCreateWithoutStepsInput!
-  $kind: StepKind!
-  $testName: String!
+  $steps: StepCreateWithoutTestsInput
+  $tags: TagCreateWithoutTestInput
 ) {
-  createTest(
-    data: {
-      name: $name
-      steps: { data: $data, kind: $kind }
-      tags: { name: $testName }
-    }
-  ) {
+  createTest(data: { name: $name, steps: $steps, tags: $tags }) {
     id
     name
     steps {

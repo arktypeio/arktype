@@ -13,22 +13,22 @@
         "redo": "./dist/index.js"
     },
     "dependencies": {
-        "@babel/runtime-corejs3": "7.6.3",
+        "@babel/runtime-corejs3": "7.10.3",
         "core-js": "3.6.1",
         "commander": "5.0.0-3",
         "node-fetch": "2.6.0",
         "fs-extra": "8.1.0",
         "@octokit/graphql": "4.3.1",
-        "@re-do/utils": "0.0.6"
+        "@re-do/utils": "0.0.10"
     },
     "devDependencies": {
         "apollo": "2.23.0",
-        "@babel/cli": "7.6.4",
-        "@re-do/recommended": "0.0.1",
+        "@babel/cli": "7.10.3",
+        "@re-do/recommended": "0.0.2",
         "@types/node": "12.11.1",
-        "babel-preset-redo": "0.0.1",
-        "ts-node": "8.5.4",
-        "typescript": "3.8.2",
+        "babel-preset-redo": "0.0.2",
+        "ts-node": "8.10.2",
+        "typescript": "3.9.5",
         "@types/node-fetch": "2.5.4",
         "@types/fs-extra": "8.1.0"
     }

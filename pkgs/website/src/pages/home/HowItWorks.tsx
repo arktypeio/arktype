@@ -2,13 +2,11 @@ import React, { useState } from "react"
 import { Row, Text, Column, Icons } from "@re-do/components"
 import { copy } from "../../constants"
 import { AnimatedCheckbox } from "./AnimatedCheckbox"
-import ExpansionPanel, {
-    ExpansionPanelProps,
-} from "@material-ui/core/ExpansionPanel"
-import ExpansionPanelSummary from "@material-ui/core/ExpansionPanelSummary"
-import ExpansionPanelDetails from "@material-ui/core/ExpansionPanelDetails"
+import Accordion, { AccordionProps } from "@material-ui/core/Accordion"
+import AccordionSummary from "@material-ui/core/AccordionSummary"
+import AccordionDetails from "@material-ui/core/AccordionDetails"
 
-type StepProps = ExpansionPanelProps & {
+type StepProps = Partial<AccordionProps> & {
     summary: string
     details: string
 }
@@ -16,27 +14,27 @@ type StepProps = ExpansionPanelProps & {
 const Step = ({ summary, details, defaultExpanded, ...rest }: StepProps) => {
     const [expanded, setExpanded] = useState(!!defaultExpanded)
     return (
-        <ExpansionPanel
+        <Accordion
             key={summary}
             style={{
                 background: "transparent",
                 width: "100%",
-                boxShadow: "unset",
+                boxShadow: "unset"
             }}
             defaultExpanded={defaultExpanded}
             onChange={(_, open) => setExpanded(open)}
             {...rest}
         >
-            <ExpansionPanelSummary expandIcon={<Icons.expandDown />}>
+            <AccordionSummary expandIcon={<Icons.expandDown />}>
                 <Row align="center">
                     <AnimatedCheckbox checked={expanded} />
                     <Text variant="h6">{summary}</Text>
                 </Row>
-            </ExpansionPanelSummary>
-            <ExpansionPanelDetails>
+            </AccordionSummary>
+            <AccordionDetails>
                 <Text>{details}</Text>
-            </ExpansionPanelDetails>
-        </ExpansionPanel>
+            </AccordionDetails>
+        </Accordion>
     )
 }
 

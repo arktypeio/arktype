@@ -1,18 +1,17 @@
 datasource dev {
-  provider = "sqlite"
-  url      = env("SQLITE_URL")
-  enabled  = env("ENABLE_SQLITE")
+  provider = "mysql"
+  url      = env("DB_URL")
 }
 
-// datasource prod {
-//   provider = "mysql"
-//   url      = env("MYSQL_URL")
-//   enabled  = env("ENABLE_MYSQL")
-// }
-
 generator client {
-  provider      = "prisma-client-js"
-  binaryTargets = ["native", "rhel-openssl-1.0.x"]
+  provider = "prisma-client-js"
+  // binaryTargets = ["native", "rhel-openssl-1.0.x"]
+  // output   = "../node_modules/.prisma/client"
+}
+
+generator typegraphql {
+  provider = "node node_modules/typegraphql-prisma/generator.js"
+  output   = "../src/schema/generated"
 }
 
 model User {
@@ -27,19 +26,23 @@ model User {
 }
 
 model Test {
-  id    Int    @id @default(autoincrement())
-  user  User
-  name  String
-  steps Step[]
-  tags  Tag[]
-  @@unique([name, user])
+  id     Int    @id @default(autoincrement())
+  user   User   @relation(fields: [userId], references: [id])
+  userId Int
+  name   String
+  steps  Step[]
+  tags   Tag[]
+  @@unique([name, userId])
 }
 
 model Tag {
-  id   Int    @id @default(autoincrement())
-  user User
-  name String
-  @@unique([name, user])
+  id     Int    @id @default(autoincrement())
+  user   User   @relation(fields: [userId], references: [id])
+  userId Int
+  name   String
+  @@unique([name, userId])
+  Test   Test? @relation(fields: [testId], references: [id])
+  testId Int?
 }
 
 model Step {
@@ -51,8 +54,17 @@ model Step {
   url      String?
   expected String?
   tests    Test[]
+  User     User?    @relation(fields: [userId], references: [id])
+  userId   Int?
 }
 
 enum StepKind {
-  click set hover key go screenshot assertText assertVisibility
+  click
+  set
+  hover
+  key
+  go
+  screenshot
+  assertText
+  assertVisibility
 }

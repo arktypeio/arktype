@@ -1,6 +1,4 @@
 import { gqlize } from "gqlize"
-// @ts-ignore
-import schema from "./schema.gql"
 import { PlaygroundRenderPageOptions } from "apollo-server-lambda"
 
 export const playground: PlaygroundRenderPageOptions = {
@@ -8,11 +6,11 @@ export const playground: PlaygroundRenderPageOptions = {
         {
             endpoint: "/dev/graphql",
             query: gqlize({
-                schema,
+                schema: "./schema.gql",
                 transformOutputs: (fields) =>
                     fields.filter(
                         (field) => !["user", "test"].includes(field.name.value)
-                    ),
+                    )
             }),
             variables: JSON.stringify(
                 {
@@ -24,15 +22,17 @@ export const playground: PlaygroundRenderPageOptions = {
                         {
                             kind: "set",
                             selector: "#another",
-                            value: "hello",
-                        },
+                            value: "hello"
+                        }
                     ],
                     tags: [{ name: "fast" }, { name: "easy" }],
+                    first: "David",
+                    last: "Blass"
                 },
                 null,
                 4
             ),
-            headers: { Authorization: "Bearer" },
-        },
-    ],
+            headers: { Authorization: "Bearer" }
+        }
+    ]
 }

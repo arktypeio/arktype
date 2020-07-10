@@ -2,7 +2,9 @@
     "extends": "@re-do/recommended/tsconfig.base",
     "compilerOptions": {
         "baseUrl": "src",
-        "outDir": "dist"
+        "outDir": "dist",
+        "emitDecoratorMetadata": true,
+        "experimentalDecorators": true
     },
     "include": ["src", "main.ts"],
     "exclude": ["node_modules", "**/__tests__"]

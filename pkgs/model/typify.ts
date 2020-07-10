@@ -4,7 +4,7 @@ import { buildSchema, printSchema, parse } from "graphql"
 import { readFileSync, writeFileSync } from "fs-extra"
 import * as typescript from "@graphql-codegen/typescript"
 import * as reactApollo from "@graphql-codegen/typescript-react-apollo"
-const operations = require("@graphql-codegen/typescript-operations")
+import * as operations from "@graphql-codegen/typescript-operations"
 import { gqlize } from "gqlize"
 import { join } from "path"
 
@@ -12,33 +12,32 @@ export const typify = async () => {
     const schemaFile = join(__dirname, "schema.gql")
     const schema = buildSchema(readFileSync(schemaFile).toString())
     const baseFileName = join(__dirname, "src", "model.ts")
+    const gql = gqlize({
+        schema: schemaFile,
+        transformOutputs: (fields) =>
+            fields.filter(
+                (field) => !["user", "test"].includes(field.name.value)
+            )
+    })
     const baseOptions: Types.GenerateOptions = {
         filename: baseFileName,
         schema: parse(printSchema(schema)),
         plugins: [
             {
-                typescript: {},
-            },
+                typescript: {}
+            }
         ],
         pluginMap: {
-            typescript,
+            typescript
         },
         documents: [
             {
-                content: parse(
-                    gqlize({
-                        schema: schemaFile,
-                        transformOutputs: (fields) =>
-                            fields.filter(
-                                (field) =>
-                                    !["user", "test"].includes(field.name.value)
-                            ),
-                    })
-                ),
-                filePath: "",
-            },
+                document: parse(gql)
+            }
         ],
-        config: {},
+        config: {
+            skipDocumentsValidation: true
+        }
     }
     const baseTypes = await codegen(baseOptions)
     writeFileSync(baseFileName, baseTypes)
@@ -54,15 +53,15 @@ export const typify = async () => {
                     withComponent: false,
                     withHOC: false,
                     withHooks: true,
-                    reactApolloVersion: 3,
-                },
-            },
+                    reactApolloVersion: 3
+                }
+            }
         ],
         pluginMap: {
             ...baseOptions.pluginMap,
             reactApollo,
-            operations,
-        },
+            operations
+        }
     }
     const reactTypes = await codegen(reactOptions)
     writeFileSync(reactFileName, reactTypes)

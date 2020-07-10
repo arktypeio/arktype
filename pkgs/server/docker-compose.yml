@@ -1,0 +1,15 @@
+version: "3.3"
+
+services:
+    db:
+        image: mysql:8
+        restart: always
+        environment:
+            MYSQL_DATABASE: db
+            MYSQL_ROOT_PASSWORD: redo
+        ports:
+            - "6033:3306"
+        expose:
+            - "6033"
+        volumes:
+            - .db:/var/lib/mysql
