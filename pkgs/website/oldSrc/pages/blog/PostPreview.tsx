@@ -7,7 +7,7 @@ export type PostPreviewProps = {
 }
 
 export const PostPreview = ({
-    post: { title, caption, image, link },
+    post: { title, caption, image, link }
 }: PostPreviewProps) => {
     return (
         <Card style={{ width: "100%", marginBottom: 8 }}>

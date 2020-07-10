@@ -5,7 +5,7 @@ import {
     BrowserRouter as Router,
     Route,
     Switch,
-    useLocation,
+    useLocation
 } from "react-router-dom"
 import { layout } from "./constants"
 import { Home, Blog } from "./pages"
@@ -27,7 +27,7 @@ export const Inner = () => {
             style={{
                 position: "absolute",
                 top: headerHeight,
-                ...layout.content,
+                ...layout.content
             }}
         >
             <Switch>

@@ -1,3 +1,3 @@
 module.exports = {
-    presets: [["redo", { hot: true }]]
+    presets: [require.resolve("@docusaurus/core/lib/babel/preset")]
 }

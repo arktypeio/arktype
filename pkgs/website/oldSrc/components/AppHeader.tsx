@@ -7,7 +7,7 @@ import {
     Row,
     Link,
     Icons,
-    IconButton,
+    IconButton
 } from "@re-do/components"
 import { Background } from "./Background"
 import { SignUp } from "./SignUp"
@@ -32,7 +32,7 @@ export const AppHeader = () => {
                 {layout.isMobile ? null : <TwitchInfo />}
                 <Column
                     style={{
-                        width: layout.middleWidth,
+                        width: layout.middleWidth
                     }}
                     justify="space-around"
                     align="center"

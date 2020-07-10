@@ -6,7 +6,7 @@ import {
     Button,
     Column,
     Text,
-    TextProps,
+    TextProps
 } from "@re-do/components"
 import { track } from "../analytics"
 import { layout } from "../constants"
@@ -23,7 +23,7 @@ export const SignUp = ({ textVariant = "h4" }: SignUpProps) => {
                 validate={(_) => ({ email: [] })}
                 submit={async (options: any) => {
                     track.prelaunchRegister({
-                        email: options?.variables?.email!,
+                        email: options?.variables?.email!
                     })
                     return { data: true }
                 }}

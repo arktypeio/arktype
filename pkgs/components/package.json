@@ -26,7 +26,7 @@
         "material-ui-chip-input": "1.1.0",
         "react-dom": "16.13.1",
         "react-hook-form": "3.24.1",
-        "react-router-dom": "5.1.2",
+        "react-router-dom": "5.2.0",
         "typeface-ubuntu": "0.0.65"
     },
     "peerDependencies": {
