@@ -1,6 +1,6 @@
-import { commandSync as execaCommand, SyncOptions as ExecaOptions } from "execa"
+import { commandSync, SyncOptions } from "execa"
 
-export type ShellOptions = Omit<ExecaOptions, "shell"> & {
+export type ShellOptions = Omit<SyncOptions, "shell"> & {
     suppressCmdStringLogging?: boolean
 }
 
@@ -9,9 +9,12 @@ export const shell = (cmd: string, options: ShellOptions = {}) => {
     if (!suppressCmdStringLogging) {
         console.log(`Running command '${cmd}'...`)
     }
-    return execaCommand(cmd, {
+    return commandSync(cmd, {
         stdio: "inherit",
         shell: true,
-        ...execaOptions,
+        ...execaOptions
     })
 }
+
+export const $ = (cmd: string, options?: ShellOptions) => () =>
+    shell(cmd, options)

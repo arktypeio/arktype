@@ -59,5 +59,9 @@ function readPackage(packageJson, context) {
         packageJson.dependencies["@graphql-toolkit/common"] = "0.7.4"
         packageJson.dependencies["auto-bind"] = "4.0.0"
     }
+    if (packageJson.name === "@prisma/engine-core") {
+        context.log("Updating undici version for @prisma/engine-core...")
+        packageJson.dependencies["undici"] = "1.0.3"
+    }
     return packageJson
 }

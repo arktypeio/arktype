@@ -1,9 +1,9 @@
 import { jsrx, shell, $ } from "jsrx"
-import { readFileSync, writeFileSync, copySync } from "fs-extra"
+import { copySync } from "fs-extra"
 import { join } from "path"
 
 const generate = () => {
-    shell("prisma2 generate")
+    shell("prisma generate")
     shell("ts-node --transpile-only src/schema")
     prettify()
     copySync(
@@ -18,7 +18,7 @@ const generate = () => {
 
 const prettify = () =>
     shell(
-        'prettier --write "{,!(node_modules|dist|release|.rush|.webpack)/**/*}*.{js,ts,json,yml,gql}"'
+        'prettier --write "{,!(node_modules|dist|release|.rush|.webpack|.db)/**/*}*.{js,ts,json,yml,gql}"'
     )
 
 const build = () => {
@@ -27,11 +27,8 @@ const build = () => {
 }
 
 const upDb = () => {
-    shell(
-        `prisma2 migrate save --name "${process.env.NODE_ENV}" --create-db --experimental`
-    )
-    shell("prisma2 migrate up --experimental")
-    shell(`ts-node prisma/seed.ts`)
+    shell(`prisma migrate save --name ${process.env.NODE_ENV} --experimental`)
+    shell("prisma migrate up --experimental")
 }
 
 const serve = $("sls offline", { env: { SLS_DEBUG: "*" } })
@@ -42,33 +39,34 @@ jsrx(
             build,
             generate,
             tsc: $("tsc"),
-            upDb,
+            upDb
         },
         dev: {
-            createDb: () => {
-                shell("rm -rf dev.db prisma/dev.db prisma/migrations")
-                upDb()
+            dev: () => {
+                shell("nexus dev")
             },
+            createDb: $("docker-compose up -d"),
+            seed: $("ts-node prisma/seed.ts"),
             start: () => {
                 build()
                 serve()
             },
             serve,
-            prettify,
+            prettify
         },
         prod: {
             deploy: () => {
                 build()
                 shell("sls deploy")
             },
-            pack: $("sls package"),
-        },
+            pack: $("sls package")
+        }
     },
     {
         excludeOthers: true,
         envFiles: {
             dev: join(__dirname, ".env"),
-            prod: join(__dirname, ".env.production"),
-        },
+            prod: join(__dirname, ".env.production")
+        }
     }
 )

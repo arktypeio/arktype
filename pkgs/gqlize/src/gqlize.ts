@@ -5,9 +5,9 @@ import {
     InputValueDefinitionNode,
     InputObjectTypeDefinitionNode,
     EnumTypeDefinitionNode,
-    TypeNode,
+    TypeNode
 } from "graphql"
-import { camelCase, DeepWriteable } from "@re-do/utils"
+import { camelCase } from "@re-do/utils"
 import { readFileSync } from "fs-extra"
 import { format } from "prettier"
 import gql from "graphql-tag"
@@ -74,7 +74,7 @@ const getConfig = ({ schema, ...options }: GqlizeArgs): GqlizeConfig => ({
     schema:
         typeof schema === "string"
             ? (gql(readFileSync(schema).toString()) as DocumentNode)
-            : schema,
+            : schema
 })
 
 export const gqlize = (args: GqlizeArgs) => {
@@ -94,7 +94,7 @@ const gqlizeBlock = (operationKind: OperationKind, config: GqlizeConfig) => {
                 gqlizeOperation({
                     config,
                     operation: field,
-                    operationKind,
+                    operationKind
                 }),
             ""
         ) ?? ""
@@ -104,7 +104,7 @@ const gqlizeBlock = (operationKind: OperationKind, config: GqlizeConfig) => {
 export const getOutputDefinition = (name: string, schema: DocumentNode) =>
     ({
         name,
-        fields: getObjectDefinition(name, schema)?.fields ?? [],
+        fields: getObjectDefinition(name, schema)?.fields ?? []
     } as OutputDefinition)
 
 export const getEnumDefinitions = (schema: DocumentNode) =>
@@ -130,17 +130,17 @@ type GqlizeOperationArgs = {
 const gqlizeOperation = ({
     operation,
     config,
-    operationKind,
+    operationKind
 }: GqlizeOperationArgs) => {
     let output = getOutputDefinition(getTypeName(operation.type), config.schema)
     const { map, branch, transformOutputs } = {
         ...config,
-        ...config.queries[operation.name.value],
+        ...config.queries[operation.name.value]
     }
     if (transformOutputs) {
         output = {
             ...output,
-            fields: transformOutputs(output.fields, config.schema),
+            fields: transformOutputs(output.fields, config.schema)
         }
     }
     const { vars, args } = operation.arguments?.length
@@ -151,24 +151,24 @@ const gqlizeOperation = ({
                       config,
                       path: {
                           names: [output.name.toLowerCase()],
-                          types: [output.name],
+                          types: [output.name]
                       },
-                      vars: {},
+                      vars
                   })
                   return {
                       vars: {
                           ...vars,
-                          ...newVars,
+                          ...newVars
                       },
                       args:
                           index === operation.arguments!.length - 1
                               ? `${args}${newArgs})`
-                              : `${args}${newArgs}, `,
+                              : `${args}${newArgs}, `
                   }
               },
               {
                   vars: {},
-                  args: "(",
+                  args: "("
               }
           )
         : { vars: {}, args: "" }
@@ -178,7 +178,7 @@ const gqlizeOperation = ({
         name: operation.name.value,
         output,
         vars: operation.arguments ? variableMapToString(vars) : "",
-        args: operation.arguments ? args : "",
+        args: operation.arguments ? args : ""
     }
     let result = ""
     if (branch) {
@@ -192,7 +192,7 @@ const gqlizeOperation = ({
         {
             ...config,
             // Ensure query-level takes precedence
-            transformOutputs,
+            transformOutputs
         }
     )
     return result
@@ -216,7 +216,7 @@ const variableMapToString = (variableMap: VariableMap) => {
               .reduce(
                   (variables, [name, type]) => [
                       ...variables,
-                      `$${name}: ${type}`,
+                      `$${name}: ${type}`
                   ],
                   [] as string[]
               )
@@ -232,7 +232,7 @@ const getVariableName = (
     let name = field.name.value
     let nameParts = [name]
     for (let tries = 0; taken.includes(name); tries++) {
-        nameParts = [path[tries], ...nameParts]
+        nameParts = [path[path.length - tries - 1], ...nameParts]
         name = camelCase(nameParts)
     }
     return name
@@ -342,25 +342,25 @@ const gqlizeField = ({
     field,
     config,
     path,
-    vars,
+    vars
 }: GqlizeFieldArgs): GqlizedFieldData => {
     if (
         isScalar(field.type) ||
         isList(field.type) ||
         isEnum(field.type, config.schema) ||
-        path.names.length > config.maxVariableDepth
+        // If the field is optional, recursing for variables will break the query if they're required
+        !isNonNull(field.type) ||
+        path.names.length >= config.maxVariableDepth
     ) {
         const variableName = getVariableName(
             field,
             path.names,
             Object.keys(vars)
         )
+        vars[variableName] = getVariableType(field)
         return {
-            vars: {
-                ...vars,
-                [variableName]: getVariableType(field),
-            },
-            args: `${field.name.value}: $${variableName}`,
+            vars,
+            args: `${field.name.value}: $${variableName}`
         }
     }
     const fieldTypeDef = getInputObjectDefinition(
@@ -377,16 +377,16 @@ const gqlizeField = ({
                 config,
                 path: {
                     names: [...path.names, nestedField.name.value],
-                    types: [...path.types, getTypeName(nestedField.type)],
+                    types: [...path.types, getTypeName(nestedField.type)]
                 },
-                vars: updatedResult.vars,
+                vars
             })
             return {
-                vars: nestedResult.vars,
+                vars,
                 args:
                     index === fieldTypeDef.fields!.length - 1
                         ? `${updatedResult.args}${nestedResult.args}}`
-                        : `${updatedResult.args}${nestedResult.args}, `,
+                        : `${updatedResult.args}${nestedResult.args}, `
             }
         },
         { vars, args: `${field.name.value}: {` }

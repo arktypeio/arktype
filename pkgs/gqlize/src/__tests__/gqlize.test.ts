@@ -1,5 +1,4 @@
 import { join } from "path"
-import { readFileSync } from "fs-extra"
 import { fromEntries, camelCase } from "@re-do/utils"
 import { gqlize, getObjectDefinition } from ".."
 
@@ -24,13 +23,13 @@ describe("gqlize", () => {
                                         (resultField) =>
                                             resultField.name.value ===
                                             field.name.value
-                                    ),
-                                },
+                                    )
+                                }
                             ])
                         )
-                    },
-                },
-            },
+                    }
+                }
+            }
         })
     }),
         it("can transform existing queries", async () => {
@@ -38,9 +37,9 @@ describe("gqlize", () => {
                 schema,
                 queries: {
                     me: {
-                        map: (data) => ({ ...data, name: "myself" }),
-                    },
-                },
+                        map: (data) => ({ ...data, name: "myself" })
+                    }
+                }
             })
             expect(transformed).toContain("query myself")
             expect(transformed).not.toContain("query me")
@@ -49,7 +48,7 @@ describe("gqlize", () => {
             const transformed = gqlize({
                 schema,
                 transformOutputs: (fields) =>
-                    fields.filter((field) => field.name.value !== "user"),
+                    fields.filter((field) => field.name.value !== "user")
             })
             expect(transformed).not.toContain("user")
         })

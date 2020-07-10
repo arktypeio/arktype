@@ -9,21 +9,20 @@
         "build": "redo-build"
     },
     "dependencies": {
-        "@babel/runtime-corejs3": "7.6.3",
+        "@babel/runtime-corejs3": "7.10.3",
         "core-js": "3.6.1",
-        "@re-do/utils": "0.0.6"
+        "@re-do/utils": "0.0.10"
     },
     "peerDependencies": {
         "@prisma/client": "2.0.0-preview023",
         "graphql": "^14.5.0",
-        "nexus": "^0.12.0-rc.13",
-        "redo-nexus-prisma": "0.11.1-14"
+        "nexus": "0.20.0-next.40"
     },
     "devDependencies": {
-        "@babel/cli": "7.6.4",
-        "@re-do/recommended": "0.0.1",
+        "@babel/cli": "7.10.3",
+        "@re-do/recommended": "0.0.2",
         "@types/node": "12.11.1",
-        "babel-preset-redo": "0.0.1",
-        "typescript": "3.8.2"
+        "babel-preset-redo": "0.0.2",
+        "typescript": "3.9.5"
     }
 }

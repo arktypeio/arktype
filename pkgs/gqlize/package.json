@@ -10,22 +10,22 @@
         "test": "jest"
     },
     "dependencies": {
-        "@babel/runtime-corejs3": "7.6.3",
-        "@re-do/utils": "0.0.6",
+        "@babel/runtime-corejs3": "7.10.3",
+        "@re-do/utils": "0.0.10",
         "fs-extra": "8.1.0",
-        "graphql": "14.5.8",
+        "graphql": "15.1.0",
         "graphql-tag": "2.10.1",
         "prettier": "2.0.1"
     },
     "devDependencies": {
-        "@babel/cli": "7.6.4",
-        "@re-do/recommended": "0.0.1",
+        "@babel/cli": "7.10.3",
+        "@re-do/recommended": "0.0.2",
         "@types/fs-extra": "8.1.0",
         "@types/jest": "24.0.19",
         "@types/node": "12.11.1",
         "@types/prettier": "1.19.1",
-        "babel-preset-redo": "0.0.1",
+        "babel-preset-redo": "0.0.2",
         "jest": "24.9.0",
-        "typescript": "3.8.2"
+        "typescript": "3.9.5"
     }
 }

@@ -12,6 +12,6 @@ copySync(
 )
 shell("zip -r redo-server.zip *", { cwd: ".tmp-sls-pkg" })
 moveSync(".tmp-sls-pkg/redo-server.zip", ".serverless/redo-server.zip", {
-    overwrite: true,
+    overwrite: true
 })
 removeSync(".tmp-sls-pkg")

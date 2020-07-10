@@ -6,6 +6,6 @@ export const handler: ReturnType<
 > = server.createHandler({
     cors: {
         origin: "*",
-        credentials: true,
-    },
+        credentials: true
+    }
 })
