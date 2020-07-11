@@ -1,17 +1,17 @@
 module.exports = {
-    title: "My Site",
+    title: "Redo",
     tagline: "The tagline of my site",
-    url: "https://your-docusaurus-test-site.com",
+    url: "https://redo.qa",
     baseUrl: "/",
-    favicon: "img/favicon.ico",
-    organizationName: "facebook", // Usually your GitHub org/user name.
-    projectName: "docusaurus", // Usually your repo name.
+    favicon: "icon.png",
+    organizationName: "re-do", // Usually your GitHub org/user name.
+    projectName: "redo", // Usually your repo name.
     themeConfig: {
         navbar: {
-            title: "My Site",
+            title: "Redo",
             logo: {
-                alt: "My Site Logo",
-                src: "img/logo.svg"
+                alt: "Redo Logo",
+                src: "icon.svg"
             },
             links: [
                 {

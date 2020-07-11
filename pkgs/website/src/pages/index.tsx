@@ -41,7 +41,7 @@ const features = [
     }
 ]
 
-function Feature({ imageUrl, title, description }) {
+function Feature({ imageUrl, title, description }: any) {
     const imgUrl = useBaseUrl(imageUrl)
     return (
         <div className={clsx("col col--4", styles.feature)}>
