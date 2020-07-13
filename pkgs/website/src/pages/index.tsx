@@ -8,8 +8,8 @@ import styles from "./styles.module.css"
 
 const features = [
     {
-        title: <>Easy to Use</>,
-        imageUrl: "img/undraw_docusaurus_mountain.svg",
+        title: <>100% open source</>,
+        imageUrl: "undraw_docusaurus_mountain.svg",
         description: (
             <>
                 Docusaurus was designed from the ground up to be easily
@@ -18,8 +18,8 @@ const features = [
         )
     },
     {
-        title: <>Focus on What Matters</>,
-        imageUrl: "img/undraw_docusaurus_tree.svg",
+        title: <>O(damn) fast</>,
+        imageUrl: "undraw_docusaurus_tree.svg",
         description: (
             <>
                 Docusaurus lets you focus on your docs, and we&apos;ll do the
@@ -29,8 +29,35 @@ const features = [
         )
     },
     {
-        title: <>Powered by React</>,
-        imageUrl: "img/undraw_docusaurus_react.svg",
+        title: <>Deterministic & transparent</>,
+        imageUrl: "undraw_docusaurus_react.svg",
+        description: (
+            <>
+                Extend or customize your website layout by reusing React.
+                Docusaurus can be extended while reusing the same header and
+                footer.
+            </>
+        )
+    },
+    {
+        title: <>JS/TS integrations that "just work"</>,
+        imageUrl: "undraw_docusaurus_mountain.svg",
+        description: <>(npm/🧶, git, Jest, etc.)</>
+    },
+    {
+        title: <>Incrementally adoptable</>,
+        imageUrl: "undraw_docusaurus_tree.svg",
+        description: (
+            <>
+                Docusaurus lets you focus on your docs, and we&apos;ll do the
+                chores. Go ahead and move your docs into the <code>docs</code>{" "}
+                directory.
+            </>
+        )
+    },
+    {
+        title: <>By and for developers</>,
+        imageUrl: "undraw_docusaurus_react.svg",
         description: (
             <>
                 Extend or customize your website layout by reusing React.
