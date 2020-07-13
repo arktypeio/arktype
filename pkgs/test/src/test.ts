@@ -3,7 +3,7 @@ import {
     LaunchOptions,
     launch,
     BrowserName,
-    installBrowserIfNeeded,
+    installBrowserIfNeeded
 } from "./browser"
 
 export type TestOptions<Browser extends BrowserName> = LaunchOptions<
@@ -18,7 +18,7 @@ export const test = async <Browser extends BrowserName>(
 ) => {
     const { browser: browserName, ...launchOptions } = {
         browser: "chrome" as const,
-        ...(options ?? {}),
+        ...(options ?? {})
     }
     await installBrowserIfNeeded("chrome")
     const browser = await launch(

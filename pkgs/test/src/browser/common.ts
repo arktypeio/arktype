@@ -9,7 +9,7 @@ const handlerConfig = { _projectRoot: BROWSERS_DIR }
 export const browserHandlers = {
     chrome: Object.assign(chromium, handlerConfig),
     firefox: Object.assign(firefox, handlerConfig),
-    safari: Object.assign(webkit, handlerConfig),
+    safari: Object.assign(webkit, handlerConfig)
 } as const
 
 export type BrowserHandlers = typeof browserHandlers

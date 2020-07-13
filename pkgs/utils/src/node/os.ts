@@ -4,7 +4,7 @@ const supportedOsMap = {
     darwin: "mac",
     linux: "linux",
     win32: "windows",
-    win64: "windows",
+    win64: "windows"
 } as const
 
 type SupportedOsMap = typeof supportedOsMap
@@ -16,7 +16,7 @@ export const supportedPlatforms = Object.keys(
 
 type SupportedOs = ValueOf<SupportedOsMap>
 export const supportedOs = [
-    ...new Set(Object.values(supportedOsMap)),
+    ...new Set(Object.values(supportedOsMap))
 ] as SupportedOs[]
 
 export const getOs = () => {
@@ -34,7 +34,7 @@ type ExecutableSuffixes = { [Os in SupportedOs]: string }
 export const executableSuffixes: ExecutableSuffixes = {
     mac: "-mac.zip",
     linux: ".AppImage",
-    windows: ".exe",
+    windows: ".exe"
 }
 
 export const EXECUTABLE_SUFFIX = executableSuffixes[getOs()]

@@ -3,7 +3,7 @@ import {
     BrowserName,
     BrowserHandlers,
     browserHandlers,
-    Browser,
+    Browser
 } from "./common"
 
 export type LaunchOptions<Name extends BrowserName> = Parameters<
@@ -15,7 +15,7 @@ const addDefaults = async <Name extends BrowserName>(
 ) => ({
     headless: false,
     slowMo: 50,
-    ...options,
+    ...options
 })
 
 export const launch = async <Name extends BrowserName>(
@@ -35,6 +35,6 @@ export const launch = async <Name extends BrowserName>(
     }
     return Object.assign(browser, {
         wsEndpoint,
-        page: pages[0],
+        page: pages[0]
     }) as Browser<Name>
 }

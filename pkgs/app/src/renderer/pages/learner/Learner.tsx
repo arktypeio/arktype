@@ -7,7 +7,7 @@ import {
     Icons,
     IconButton,
     ChipInput,
-    ErrorText,
+    ErrorText
 } from "@re-do/components"
 import { useCreateTestMutation, useMeQuery } from "@re-do/model/dist/react"
 import { deactivateLearner, resetLearner } from "state"
@@ -19,8 +19,8 @@ export const Learner = () => {
         learner: {
             events: true,
             testName: true,
-            testTags: true,
-        },
+            testTags: true
+        }
     }).learner
     const [createTest, createTestResult] = useCreateTestMutation()
     const existingTags = useMeQuery().data?.me.tags.map((tag) => tag.name) ?? []
@@ -35,7 +35,7 @@ export const Learner = () => {
                         kind="underlined"
                         onChange={(e) =>
                             store.mutate({
-                                learner: { testName: e.target.value },
+                                learner: { testName: e.target.value }
                             })
                         }
                     />
@@ -64,8 +64,8 @@ export const Learner = () => {
                                     variables: {
                                         name,
                                         tags,
-                                        steps: events,
-                                    },
+                                        steps: events
+                                    }
                                 })
                                 await resetLearner()
                                 await deactivateLearner()

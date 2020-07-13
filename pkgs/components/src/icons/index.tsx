@@ -57,5 +57,5 @@ export const Icons = {
     gitHub,
     twitch,
     twitter,
-    video,
+    video
 }
