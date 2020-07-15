@@ -2,9 +2,9 @@ import React from "react"
 import createMuiTheme, {
     ThemeOptions
 } from "@material-ui/core/styles/createMuiTheme"
-import { ThemeProvider } from "@material-ui/styles"
-import { useTheme as useMuiTheme } from "@material-ui/styles"
+import { useTheme as useMuiTheme, ThemeProvider } from "@material-ui/styles"
 export { makeStyles, ThemeProvider } from "@material-ui/styles"
+import { CssBaseline } from "@material-ui/core"
 
 export const defaultConfig: ThemeOptions = {
     palette: {
@@ -20,13 +20,29 @@ export const defaultConfig: ThemeOptions = {
         button: {
             textTransform: "none"
         }
+    },
+    overrides: {
+        MuiCssBaseline: {
+            "@global": {
+                ".MuiAccordion-root:before": {
+                    height: "0 !important"
+                }
+            }
+        }
     }
 }
 
 export const makeTheme = createMuiTheme
 export const defaultTheme = createMuiTheme(defaultConfig)
-export const DefaultTheme = ({ children }: any) => (
-    <ThemeProvider theme={defaultTheme}>{children}</ThemeProvider>
+
+export type DefaultThemeProps = {
+    children: JSX.Element
+}
+export const DefaultTheme = ({ children }: DefaultThemeProps) => (
+    <ThemeProvider theme={defaultTheme}>
+        <CssBaseline />
+        {children}
+    </ThemeProvider>
 )
 export const T = DefaultTheme
 export type Theme = typeof defaultTheme

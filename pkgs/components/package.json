@@ -21,7 +21,7 @@
         "@re-do/utils": "0.0.10",
         "core-js": "3.6.1",
         "date-fns": "2.5.1",
-        "framer-motion": "1.7.0",
+        "framer-motion": "2.0.0",
         "material-table": "1.54.2",
         "material-ui-chip-input": "1.1.0",
         "react-dom": "16.13.1",

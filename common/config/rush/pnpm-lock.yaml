@@ -105,7 +105,7 @@ dependencies:
     execa: 4.0.0
     file-loader: 6.0.0_webpack@4.43.0
     fork-ts-checker-webpack-plugin: 5.0.4
-    framer-motion: 1.7.0_react-dom@16.13.1
+    framer-motion: 2.0.0_react-dom@16.13.1
     fs-extra: 8.1.0
     graphql-tag: 2.10.1
     graphql-type-json: 0.3.2
@@ -13568,7 +13568,7 @@ packages:
             node: ">=0.10.0"
         resolution:
             integrity: sha1-QpD60n8T6Jvn8zeZxrxaCr//DRk=
-    /framer-motion/1.7.0_react-dom@16.13.1:
+    /framer-motion/2.0.0_react-dom@16.13.1:
         dependencies:
             "@popmotion/easing": 1.0.2
             "@popmotion/popcorn": 0.4.4
@@ -13577,7 +13577,6 @@ packages:
             popmotion: 9.0.0-beta-8
             react-dom: 16.13.1
             style-value-types: 3.1.7
-            stylefire: 7.0.3
             tslib: 1.13.0
         dev: false
         optionalDependencies:
@@ -13586,8 +13585,8 @@ packages:
             react: ^16.8
             react-dom: ^16.8
         resolution:
-            integrity: sha512-bE1aWkX0AKgmxMjFnAcXZ1d47TcuKugLn3D5cHvZcQwBiDPJuKD1WzwdTaDb7EHc+vbiWfBgMbECWxQFb9di5g==
-    /framer-motion/1.7.0_react-dom@16.13.1+react@16.13.1:
+            integrity: sha512-UyqXAWezOKzUqHCPrjrGuis6erhhoYb5iDT82GHgyEN2KYlXXCiP8WC6SfqbrK9SWL7FZoLf37LCpyQGapHH3A==
+    /framer-motion/2.0.0_react-dom@16.13.1+react@16.13.1:
         dependencies:
             "@popmotion/easing": 1.0.2
             "@popmotion/popcorn": 0.4.4
@@ -13597,7 +13596,6 @@ packages:
             react: 16.13.1
             react-dom: 16.13.1_react@16.13.1
             style-value-types: 3.1.7
-            stylefire: 7.0.3
             tslib: 1.13.0
         dev: false
         optionalDependencies:
@@ -13606,7 +13604,7 @@ packages:
             react: ^16.8
             react-dom: ^16.8
         resolution:
-            integrity: sha512-bE1aWkX0AKgmxMjFnAcXZ1d47TcuKugLn3D5cHvZcQwBiDPJuKD1WzwdTaDb7EHc+vbiWfBgMbECWxQFb9di5g==
+            integrity: sha512-UyqXAWezOKzUqHCPrjrGuis6erhhoYb5iDT82GHgyEN2KYlXXCiP8WC6SfqbrK9SWL7FZoLf37LCpyQGapHH3A==
     /framesync/4.0.4:
         dependencies:
             hey-listen: 1.0.8
@@ -24049,16 +24047,6 @@ packages:
         dev: false
         resolution:
             integrity: sha512-jPaG5HcAPs3vetSwOJozrBXxuHo9tjZVnbRyBjxqb00c2saIoeuBJc1/2MtvB8eRZy41u/BBDH0CpfzWixftKg==
-    /stylefire/7.0.3:
-        dependencies:
-            "@popmotion/popcorn": 0.4.4
-            framesync: 4.0.4
-            hey-listen: 1.0.8
-            style-value-types: 3.1.7
-            tslib: 1.13.0
-        dev: false
-        resolution:
-            integrity: sha512-Q0l7NSeFz/OkX+o6/7Zg3VZxSAZeQzQpYomWmIpOehFM/rJNMSLVX5fgg6Q48ut2ETNKwdhm97mPNU643EBCoQ==
     /stylehacks/4.0.3:
         dependencies:
             browserslist: 4.13.0
@@ -26514,7 +26502,7 @@ packages:
             electron-builder: 22.7.0
             electron-devtools-installer: 3.1.0
             electron-updater: 4.3.1
-            framer-motion: 1.7.0_react-dom@16.13.1+react@16.13.1
+            framer-motion: 2.0.0_react-dom@16.13.1+react@16.13.1
             fs-extra: 8.1.0
             graphql: 15.1.0
             graphql-tag: 2.10.1_graphql@15.1.0
@@ -26534,7 +26522,7 @@ packages:
         dev: false
         name: "@rush-temp/app"
         resolution:
-            integrity: sha512-pBC/s4Q5X32ThAS8vvf0cV/g8NZR0c8+CPbdn8+YSZ08+f7COzrB6+ZBz7qrzogsc5Ukditu5mXMC3nfQCWguQ==
+            integrity: sha512-IdfLgZhbO52c3vFAMUyNLfBLtA+ua+tCnHcWriuHvyhRJ+ryUtoBoCArxpggSgizaA2OeYgso2uXfb0tz3tJKA==
             tarball: "file:projects/app.tgz"
         version: 0.0.0
     "file:projects/babel-preset-redo.tgz_d77c18e5ab4fa088efe5b7fb3a6d75dc":
@@ -26668,7 +26656,7 @@ packages:
             date-fns: 2.5.1
             enzyme: 3.10.0
             enzyme-adapter-react-16: 1.15.1_9ecfd52b2263fff4da2800011a7de82b
-            framer-motion: 1.7.0_react-dom@16.13.1+react@16.13.1
+            framer-motion: 2.0.0_react-dom@16.13.1+react@16.13.1
             jest: 24.9.0
             material-table: 1.54.2_64fe165cdb3bb1449f67ef4ad817869b
             material-ui-chip-input: 1.1.0_64fe165cdb3bb1449f67ef4ad817869b
@@ -26686,7 +26674,7 @@ packages:
         peerDependencies:
             webpack: "*"
         resolution:
-            integrity: sha512-yWhgHwj21kl6gf6ExlMenp5CyvAxRE8/4GrJpg28iFt0ogYdUXuUflU+Uz9VX/egN/qip9jW+M9vDT5SeGiYtA==
+            integrity: sha512-KhZwqE1XrVNyTu/H5hshfK9NtATAONkMS2HFzI36b4If505jZl+GWin1XWCvjY2I1sD434tl6d24pjp9tTu+Rg==
             tarball: "file:projects/components.tgz"
         version: 0.0.0
     "file:projects/gqlize.tgz_@babel+core@7.10.3":
@@ -26920,6 +26908,7 @@ packages:
             "@types/react": 16.9.42
             "@types/react-typist": 2.0.1
             clsx: 1.1.1
+            framer-motion: 2.0.0_react-dom@16.13.1+react@16.13.1
             ismobilejs: 1.1.1
             react: 16.13.1
             react-dom: 16.13.1_react@16.13.1
@@ -26931,7 +26920,7 @@ packages:
         peerDependencies:
             webpack-cli: "*"
         resolution:
-            integrity: sha512-Q6Usg6wEjwLmhzRhQX66ePir8bqLdcPZ2yLmk1ECQ5eMXaGNiET3L0cyIWyCZmuoyYgimD8netPdmb4DbGNKPg==
+            integrity: sha512-UnBozqdpfP4kssSG9XApWKYW0qgssisnEdFGjIInBr6ou4HShDm0kEkJ7qmcrLfBeLeZ/YHdP3ot/ukZSET3sw==
             tarball: "file:projects/website.tgz"
         version: 0.0.0
 registry: ""
@@ -27042,7 +27031,7 @@ specifiers:
     execa: 4.0.0
     file-loader: 6.0.0
     fork-ts-checker-webpack-plugin: 5.0.4
-    framer-motion: 1.7.0
+    framer-motion: 2.0.0
     fs-extra: 8.1.0
     graphql-tag: 2.10.1
     graphql-type-json: 0.3.2

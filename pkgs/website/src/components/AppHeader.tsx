@@ -11,8 +11,7 @@ import {
 } from "@re-do/components"
 import { Background } from "./Background"
 import { SignUp } from "./SignUp"
-import { TwitchInfo } from "./TwitchInfo"
-import { layout } from "../constants"
+import { layout } from "./constants"
 
 export const AppHeader = () => {
     const startHeight = layout.headerHeight + layout.slantHeight
@@ -29,7 +28,6 @@ export const AppHeader = () => {
                 align="center"
                 justify="space-around"
             >
-                {layout.isMobile ? null : <TwitchInfo />}
                 <Column
                     style={{
                         width: layout.middleWidth

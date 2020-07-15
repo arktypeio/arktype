@@ -53,7 +53,7 @@
         "core-js": "3.6.1",
         "dotenv": "8.2.0",
         "electron-updater": "4.3.1",
-        "framer-motion": "1.7.0",
+        "framer-motion": "2.0.0",
         "fs-extra": "8.1.0",
         "graphql": "15.1.0",
         "graphql-tag": "2.10.1",

@@ -1,10 +1,10 @@
 import React, { useState } from "react"
 import { Row, Text, Column, Icons } from "@re-do/components"
-import { copy } from "../../constants"
-import { AnimatedCheckbox } from "./AnimatedCheckbox"
 import Accordion, { AccordionProps } from "@material-ui/core/Accordion"
 import AccordionSummary from "@material-ui/core/AccordionSummary"
 import AccordionDetails from "@material-ui/core/AccordionDetails"
+import { AnimatedCheckbox } from "./AnimatedCheckbox"
+import { steps } from "../content"
 
 type StepProps = Partial<AccordionProps> & {
     summary: string
@@ -18,9 +18,9 @@ const Step = ({ summary, details, defaultExpanded, ...rest }: StepProps) => {
             key={summary}
             style={{
                 background: "transparent",
-                width: "100%",
-                boxShadow: "unset"
+                width: 461
             }}
+            elevation={0}
             defaultExpanded={defaultExpanded}
             onChange={(_, open) => setExpanded(open)}
             {...rest}
@@ -53,8 +53,8 @@ const Steps = ({ children }: StepsProps) => (
 export const HowItWorks = () => {
     return (
         <Column align="center">
-            <Text variant="h4">{copy.howItWorks.title}</Text>
-            <Steps>{copy.howItWorks.steps}</Steps>
+            <Text variant="h4">How it works</Text>
+            <Steps>{steps}</Steps>
         </Column>
     )
 }

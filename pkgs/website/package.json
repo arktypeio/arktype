@@ -21,15 +21,16 @@
         "ismobilejs": "1.1.1",
         "react": "16.13.1",
         "react-dom": "16.13.1",
-        "react-typist": "2.0.5"
+        "react-typist": "2.0.5",
+        "framer-motion": "2.0.0"
     },
     "devDependencies": {
         "@docusaurus/module-type-aliases": "2.0.0-alpha.58",
         "@re-do/recommended": "0.0.2",
         "@types/node": "12.11.1",
+        "@types/react": "16.9.42",
         "@types/react-typist": "2.0.1",
-        "typescript": "3.9.5",
-        "@types/react": "16.9.42"
+        "typescript": "3.9.5"
     },
     "browserslist": {
         "production": [

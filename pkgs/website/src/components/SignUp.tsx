@@ -8,8 +8,6 @@ import {
     Text,
     TextProps
 } from "@re-do/components"
-import { track } from "../analytics"
-import { layout } from "../constants"
 
 export type SignUpProps = {
     textVariant?: TextProps["variant"]
@@ -17,14 +15,17 @@ export type SignUpProps = {
 
 export const SignUp = ({ textVariant = "h4" }: SignUpProps) => {
     return (
-        <Column align="center" width={layout.signUpWidth}>
+        <Column align="center" width={285}>
             <Text variant={textVariant}>🚀Launching soon</Text>
             <Form<{ email: string }, boolean>
                 validate={(_) => ({ email: [] })}
                 submit={async (options: any) => {
-                    track.prelaunchRegister({
-                        email: options?.variables?.email!
-                    })
+                    // track.prelaunchRegister({
+                    //     email: options?.variables?.email!
+                    // })
+                    console.log(
+                        `User ${options?.variables?.email!} registered!`
+                    )
                     return { data: true }
                 }}
             >
