@@ -5,10 +5,5 @@ import { Button } from "../buttons"
 import { Text } from "../text"
 
 storiesOf("Modals", module).add("ModalView", () => (
-    <Modal>
-        {{
-            toggle: <Button>Open modal!</Button>,
-            content: <Text>Hi!</Text>
-        }}
-    </Modal>
+    <Modal toggle={<Button>Open modal!</Button>} content={<Text>Hi!</Text>} />
 ))

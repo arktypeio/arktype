@@ -24,7 +24,7 @@ export type TreeNodeTransformation<T = any> = {
 }
 
 export type TreeProps<O extends TreeSource> = {
-    children: O
+    source: O
     transform?: TreeNodeTransform
 }
 
@@ -34,7 +34,7 @@ type NodeProps = {
 }
 
 export const Tree = <O extends TreeSource>({
-    children,
+    source,
     transform
 }: TreeProps<O>) => {
     const [expandedPaths, setExpandedPaths] = useState<Record<string, boolean>>(
@@ -111,11 +111,11 @@ export const Tree = <O extends TreeSource>({
         </>
     )
     const initialTransform = transform
-        ? transform({ key: "", value: children, path: "" })
+        ? transform({ key: "", value: source, path: "" })
         : undefined
     const initialValue =
         initialTransform && initialTransform.entry
             ? initialTransform.entry[1]
-            : children
+            : source
     return <Node source={initialValue} parentPath={""} />
 }
