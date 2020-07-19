@@ -1,4 +1,9 @@
-import { PostData } from "./common"
+export type PostData = {
+    title: string
+    caption: string
+    image: string
+    link: string
+}
 
 export const posts: PostData[] = [
     {

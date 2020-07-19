@@ -1,12 +1,9 @@
 import React from "react"
 import useBaseUrl from "@docusaurus/useBaseUrl"
 import { Column, Row } from "@re-do/components"
+import { FeatureData } from "../content"
 
-type FeatureProps = {
-    imageUrl: string
-    title: JSX.Element
-    description: JSX.Element
-}
+type FeatureProps = FeatureData
 
 const Feature = ({ imageUrl, title, description }: FeatureProps) => {
     const imgUrl = useBaseUrl(imageUrl)

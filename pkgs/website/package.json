@@ -1,6 +1,7 @@
 {
     "name": "@re-do/website",
     "version": "0.0.1",
+    "description": "Redo's website (https://redo.qa)",
     "private": true,
     "scripts": {
         "start": "docusaurus start",

@@ -1,5 +1,11 @@
 import React from "react"
 
+export type FeatureData = {
+    imageUrl: string
+    title: JSX.Element
+    description: JSX.Element
+}
+
 export const features = [
     {
         title: <>100% open source</>,

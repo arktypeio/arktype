@@ -1,3 +1,8 @@
+export type StepData = {
+    summary: string
+    details: string
+}
+
 export const steps = [
     {
         summary: `Install and open Redo`,
