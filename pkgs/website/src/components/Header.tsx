@@ -18,7 +18,7 @@ export const Header = () => {
         >
             <h1 className="hero__title">{siteConfig.title}</h1>
             <p className="hero__subtitle">{siteConfig.tagline}</p>
-            <Link to={useBaseUrl("docs/")}>
+            {/* <Link to={useBaseUrl("docs/")}>
                 <Button
                     kind="secondary"
                     style={{
@@ -28,7 +28,7 @@ export const Header = () => {
                 >
                     Get Started
                 </Button>
-            </Link>
+            </Link> */}
         </Column>
     )
 }

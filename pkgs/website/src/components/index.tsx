@@ -1,5 +1,5 @@
 export * from "./AnimatedCheckbox"
-export * from "./AppHeader"
+export * from "./LegacyHeader"
 export * from "./Background"
 export * from "./Features"
 export * from "./HowItWorks"

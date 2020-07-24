@@ -1,5 +1,4 @@
 import React from "react"
-import { Column, Card, Text } from "@re-do/components"
 import { PostPreview } from "../components/PostPreview"
 import { posts } from "../content/posts"
 import { Page, PrimaryContent } from "../components"

@@ -1,11 +1,11 @@
 module.exports = {
     title: "Redo",
-    tagline: "The tagline of my site",
+    tagline: "Web testing rewritten",
     url: "https://redo.qa",
     baseUrl: "/",
     favicon: "icon.png",
-    organizationName: "re-do", // Usually your GitHub org/user name.
-    projectName: "redo", // Usually your repo name.
+    organizationName: "re-do",
+    projectName: "redo",
     themeConfig: {
         navbar: {
             title: "Redo",
@@ -13,19 +13,19 @@ module.exports = {
                 alt: "Redo Logo",
                 src: "icon.svg"
             },
-            links: [
-                {
-                    to: "docs/",
-                    activeBasePath: "docs",
-                    label: "Docs",
-                    position: "left"
-                },
-                { to: "blog", label: "Blog", position: "left" },
+            items: [
+                // {
+                //     to: "docs/",
+                //     activeBasePath: "docs",
+                //     label: "Docs",
+                //     position: "left"
+                // },
                 {
                     href: "https://github.com/re-do/redo",
                     label: "GitHub",
-                    position: "right"
-                }
+                    position: "left"
+                },
+                { to: "blog", label: "Blog", position: "left" }
             ]
         },
         footer: {
@@ -35,12 +35,8 @@ module.exports = {
                     title: "Docs",
                     items: [
                         {
-                            label: "Style Guide",
+                            label: "Getting Started",
                             to: "docs/"
-                        },
-                        {
-                            label: "Second Doc",
-                            to: "docs/doc2/"
                         }
                     ]
                 },
@@ -48,35 +44,17 @@ module.exports = {
                     title: "Community",
                     items: [
                         {
-                            label: "Stack Overflow",
-                            href:
-                                "https://stackoverflow.com/questions/tagged/docusaurus"
-                        },
-                        {
-                            label: "Discord",
-                            href: "https://discordapp.com/invite/docusaurus"
+                            label: "Github",
+                            href: "https://github.com/re-do"
                         },
                         {
                             label: "Twitter",
-                            href: "https://twitter.com/docusaurus"
-                        }
-                    ]
-                },
-                {
-                    title: "More",
-                    items: [
-                        {
-                            label: "Blog",
-                            to: "blog"
-                        },
-                        {
-                            label: "GitHub",
-                            href: "https://github.com/facebook/docusaurus"
+                            href: "https://twitter.com/redoqa"
                         }
                     ]
                 }
             ],
-            copyright: `Copyright © ${new Date().getFullYear()} My Project, Inc. Built with Docusaurus.`
+            copyright: `Copyright ©${new Date().getFullYear()} Redo, Inc. Built with Docusaurus.`
         }
     },
     presets: [

@@ -7,8 +7,9 @@ type FeatureProps = FeatureData
 
 const Feature = ({ imageUrl, title, description }: FeatureProps) => {
     const imgUrl = useBaseUrl(imageUrl)
+    // TODO: Add descriptions, revert padding to 25
     return (
-        <Column width={361} style={{ padding: 25 }}>
+        <Column width={361} align="center" style={{ padding: 8 }}>
             <img style={{ height: 200, width: 200 }} src={imgUrl} />
             <h3>{title}</h3>
             <p>{description}</p>

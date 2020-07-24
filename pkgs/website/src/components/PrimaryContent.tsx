@@ -6,7 +6,7 @@ export type PrimaryContentProps = {
 }
 
 export const PrimaryContent = ({ children }: PrimaryContentProps) => (
-    <Column align="center" width={1200} style={{ padding: 24 }}>
+    <Column align="center" width={1200} spacing={4} style={{ padding: 24 }}>
         {children}
     </Column>
 )
