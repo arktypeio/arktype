@@ -19,7 +19,6 @@
         "nexus": "0.20.0-next.40"
     },
     "devDependencies": {
-        "@babel/cli": "7.10.3",
         "@re-do/recommended": "0.0.2",
         "@types/node": "12.11.1",
         "babel-preset-redo": "0.0.2",

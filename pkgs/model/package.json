@@ -29,7 +29,6 @@
         "react": "^16.0.0"
     },
     "devDependencies": {
-        "@babel/cli": "7.10.3",
         "@re-do/recommended": "0.0.2",
         "@types/fs-extra": "8.1.0",
         "@types/node": "12.11.1",

@@ -19,7 +19,6 @@
         "statelessly": "0.0.2"
     },
     "devDependencies": {
-        "@babel/cli": "7.10.3",
         "@re-do/recommended": "0.0.2",
         "@types/enzyme": "3.10.3",
         "@types/enzyme-adapter-react-16": "1.0.5",

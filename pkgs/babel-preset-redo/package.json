@@ -8,7 +8,7 @@
     },
     "bin": {
         "redo-build": "./redoBuild.js",
-        "babel": "./node_modules/@babel/cli/bin/babel.js"
+        "babel": "./babel.js"
     },
     "dependencies": {
         "@babel/cli": "7.10.5",

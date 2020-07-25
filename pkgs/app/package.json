@@ -65,7 +65,6 @@
         "typeface-ubuntu": "0.0.65"
     },
     "devDependencies": {
-        "@babel/core": "7.10.3",
         "@re-do/bundle": "0.0.1",
         "@re-do/recommended": "0.0.2",
         "@types/dotenv": "8.2.0",
