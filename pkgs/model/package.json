@@ -13,7 +13,7 @@
     },
     "dependencies": {
         "@apollo/client": "3.0.0-beta.37",
-        "@babel/runtime-corejs3": "7.10.3",
+        "@babel/runtime-corejs3": "7.10.5",
         "@graphql-codegen/core": "1.15.4",
         "@graphql-codegen/plugin-helpers": "1.15.4",
         "@graphql-codegen/typescript": "1.15.4",

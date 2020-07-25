@@ -37,7 +37,8 @@ const plugins = [
     require("@babel/plugin-proposal-object-rest-spread"),
     require("@babel/plugin-proposal-optional-chaining"),
     require("@babel/plugin-proposal-nullish-coalescing-operator"),
-    require("babel-plugin-transform-typescript-metadata")
+    require("babel-plugin-transform-typescript-metadata"),
+    require("@babel/plugin-transform-modules-commonjs")
 ]
 
 const reactHotLoaderPlugin = require("react-hot-loader/babel")

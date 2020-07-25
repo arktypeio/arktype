@@ -10,7 +10,7 @@
         "test": "jest"
     },
     "dependencies": {
-        "@babel/runtime-corejs3": "7.10.3",
+        "@babel/runtime-corejs3": "7.10.5",
         "@re-do/utils": "0.0.10",
         "react": "16.13.1",
         "react-dom": "16.13.1",
