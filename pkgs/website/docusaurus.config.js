@@ -57,6 +57,9 @@ module.exports = {
             copyright: `Copyright ©${new Date().getFullYear()} Redo, Inc. Built with Docusaurus.`
         }
     },
+    stylesheets: [
+        "https://fonts.googleapis.com/css?family=Ubuntu:400,400i,700"
+    ],
     presets: [
         [
             "@docusaurus/preset-classic",
