@@ -2,8 +2,6 @@
     "$schema": "https://developer.microsoft.com/json-schemas/rush/v5/common-versions.schema.json",
     "allowedAlternativeVersions": {},
     "preferredVersions": {
-        "prettier": "2.0.1",
-        "pretty-quick": "2.0.1",
         "react-router": "5.2.0",
         "react-router-dom": "5.2.0"
     }
