@@ -35,9 +35,24 @@ export const SignUp = ({ textVariant = "h4" }: SignUpProps) => {
                         <FormText name="email" />
                         <FormSubmit>
                             {data ? (
-                                <Button disabled>You're in the loop 💌</Button>
+                                <Button
+                                    style={{
+                                        fontSize: "large",
+                                        fontWeight: 700
+                                    }}
+                                    disabled
+                                >
+                                    You're in the loop 💌
+                                </Button>
                             ) : (
-                                <Button>Keep me posted!</Button>
+                                <Button
+                                    style={{
+                                        fontSize: "large",
+                                        fontWeight: 700
+                                    }}
+                                >
+                                    Keep me posted!
+                                </Button>
                             )}
                         </FormSubmit>
                     </>

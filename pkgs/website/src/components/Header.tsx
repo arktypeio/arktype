@@ -1,22 +1,7 @@
-import DocusaurusLink from "@docusaurus/Link"
-import useBaseUrl from "@docusaurus/useBaseUrl"
-import { Button } from "@re-do/components"
-
 import React, { useEffect, useState } from "react"
 import Typist from "react-typist"
-import {
-    Text,
-    Column,
-    AnimatedLogo,
-    Row,
-    Link,
-    Icons,
-    IconButton,
-    Card,
-    usePalette
-} from "@re-do/components"
-import { SignUp } from "./SignUp"
-import { layout } from "./constants"
+import { Text, Column, AnimatedLogo, Row, Card } from "@re-do/components"
+import { GetStartedButton } from "."
 
 export const Header = () => {
     const [width, setWidth] = useState(window.innerWidth)
@@ -29,29 +14,25 @@ export const Header = () => {
     })
     const angle = -Math.tan(50 / width)
     return (
-        <div
-            style={{
-                position: "fixed",
-                top: -24,
-                zIndex: 1,
-                transform: `skewY(${angle}rad)`,
-                transformOrigin: "center"
-            }}
-        >
+        <>
             <Card
                 elevation={24}
                 style={{
+                    position: "fixed",
+                    top: -24,
+                    zIndex: 1,
+                    transform: `skewY(${angle}rad)`,
+                    transformOrigin: "center",
                     width
                 }}
             >
-                <div style={{ height: 24 }} />
                 <Row
                     justify="center"
-                    style={{ transform: `skewY(${-angle}rad)` }}
+                    style={{ transform: `skewY(${-angle}rad)`, marginTop: 24 }}
                 >
                     <AnimatedLogo
                         style={{
-                            width: 300
+                            height: 80
                         }}
                     />
                 </Row>
@@ -60,54 +41,44 @@ export const Header = () => {
                 elevation={24}
                 style={{
                     width,
-                    height: 150,
+                    marginTop: 96,
+                    padding: 16,
+                    transform: `skewY(${angle}rad)`,
+                    transformOrigin: "center",
                     background: "#2979ff"
                 }}
             >
-                <Column
+                <Row
+                    justify="center"
+                    align="center"
                     style={{
                         transform: `skewY(${-angle}rad)`
                     }}
-                    justify="space-around"
-                    align="center"
                 >
-                    <Text variant="h4" style={{ color: "white" }}>
-                        Web testing rewritten
-                    </Text>
-                    <Typist
-                        startDelay={400}
-                        avgTypingDelay={80}
-                        cursor={{ show: false }}
+                    <div style={{ minWidth: 160 }} />
+                    <Column
+                        align="center"
+                        width={400}
+                        style={{ minHeight: 84 }}
                     >
-                        <Text variant="h4" color="secondary">
-                            is writing itself.
+                        <Text variant="h4" style={{ color: "white" }}>
+                            Web testing rewritten
                         </Text>
-                    </Typist>
-                    <Link to={useBaseUrl("docs/")}>
-                        <Button
-                            kind="secondary"
-                            style={{
-                                color: "white",
-                                borderColor: "white"
-                            }}
-                            size="large"
+                        <Typist
+                            startDelay={400}
+                            avgTypingDelay={80}
+                            cursor={{ show: false }}
                         >
-                            Get Started
-                        </Button>
-                    </Link>
-                    {/* <Row justify="space-around" align="baseline">
-                        <Link to="/" variant="h6">
-                            Home
-                        </Link>
-                        <Link to="/blog" variant="h6">
-                            Blog
-                        </Link>
-                        <a href="https://bit.ly/on-git" target="_blank">
-                            <IconButton Icon={Icons.gitHub} color="primary" />
-                        </a>
-                    </Row> */}
-                </Column>
+                            <Text variant="h4" color="secondary">
+                                is writing itself.
+                            </Text>
+                        </Typist>
+                    </Column>
+                    <div style={{ minWidth: 160 }}>
+                        <GetStartedButton />
+                    </div>
+                </Row>
             </Card>
-        </div>
+        </>
     )
 }
