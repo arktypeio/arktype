@@ -1,3 +1,5 @@
+const { resolve } = require("path")
+
 module.exports = {
     title: "Redo",
     tagline: "Web testing rewritten",
@@ -55,6 +57,9 @@ module.exports = {
                 }
             ],
             copyright: `Copyright ©${new Date().getFullYear()} Redo, Inc. Built with Docusaurus.`
+        },
+        colorMode: {
+            disableSwitch: true
         }
     },
     stylesheets: [
@@ -64,6 +69,9 @@ module.exports = {
         [
             "@docusaurus/preset-classic",
             {
+                theme: {
+                    customCss: resolve(__dirname, "docusaurus.css")
+                },
                 docs: {
                     // It is recommended to set document id as docs home page (`docs/` path).
                     homePageId: "doc1",

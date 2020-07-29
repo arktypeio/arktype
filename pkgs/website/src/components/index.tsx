@@ -1,6 +1,4 @@
 export * from "./AnimatedCheckbox"
-export * from "./LegacyHeader"
-export * from "./Background"
 export * from "./Features"
 export * from "./HowItWorks"
 export * from "./SignUp"

@@ -13,6 +13,7 @@ export const Home = () => {
     return (
         <Page>
             <Header />
+            <div style={{ height: 200 }} />
             <PrimaryContent>
                 <Features content={features} />
                 <HowItWorks />
