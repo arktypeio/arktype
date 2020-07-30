@@ -11,7 +11,7 @@ export const GetStartedButton = ({}: GetStartedButtonProps) => {
     const wiggle = {
         rotate: [0, -2, 2, -2, 2, 0],
         transition: {
-            duration: 0.3
+            duration: 0.4
         }
     }
     const initialWiggle = {
