@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from "react"
 import Typist from "react-typist"
 import { Text, Column, AnimatedLogo, Row, Card } from "@re-do/components"
-import { GetStartedButton } from "."
+import { ScrollingGetStartedButton } from "./ScrollingGetStartedButton"
+import { layout } from "./constants"
 
 export const Header = () => {
     const [width, setWidth] = useState(window.innerWidth)
@@ -23,19 +24,18 @@ export const Header = () => {
                     zIndex: 1,
                     transform: `skewY(${angle}rad)`,
                     transformOrigin: "center",
-                    width
+                    width,
+                    display: "flex",
+                    justifyContent: "center"
                 }}
             >
-                <Row
-                    justify="center"
-                    style={{ transform: `skewY(${-angle}rad)`, marginTop: 24 }}
-                >
-                    <AnimatedLogo
-                        style={{
-                            height: 80
-                        }}
-                    />
-                </Row>
+                <AnimatedLogo
+                    style={{
+                        marginTop: 24,
+                        transform: `skewY(${-angle}rad)`,
+                        height: layout.headerHeight
+                    }}
+                />
             </Card>
             <Card
                 elevation={24}
@@ -45,40 +45,34 @@ export const Header = () => {
                     padding: 16,
                     transform: `skewY(${angle}rad)`,
                     transformOrigin: "center",
-                    background: "#2979ff"
+                    background: "#2979ff",
+                    display: "flex",
+                    justifyContent: "center"
                 }}
             >
-                <Row
-                    justify="center"
+                <Column
                     align="center"
+                    width={400}
                     style={{
+                        minHeight: layout.headerHeight,
                         transform: `skewY(${-angle}rad)`
                     }}
                 >
-                    <div style={{ minWidth: 160 }} />
-                    <Column
-                        align="center"
-                        width={400}
-                        style={{ minHeight: 84 }}
+                    <Text variant="h4" style={{ color: "white" }}>
+                        Web testing rewritten
+                    </Text>
+                    <Typist
+                        startDelay={400}
+                        avgTypingDelay={80}
+                        cursor={{ show: false }}
                     >
-                        <Text variant="h4" style={{ color: "white" }}>
-                            Web testing rewritten
+                        <Text variant="h4" color="secondary">
+                            is writing itself.
                         </Text>
-                        <Typist
-                            startDelay={400}
-                            avgTypingDelay={80}
-                            cursor={{ show: false }}
-                        >
-                            <Text variant="h4" color="secondary">
-                                is writing itself.
-                            </Text>
-                        </Typist>
-                    </Column>
-                    <div style={{ minWidth: 160 }}>
-                        <GetStartedButton />
-                    </div>
-                </Row>
+                    </Typist>
+                </Column>
             </Card>
+            <ScrollingGetStartedButton />
         </>
     )
 }

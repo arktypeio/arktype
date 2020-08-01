@@ -13,7 +13,7 @@ export const layout = {
     contactInfo: {
         height: 45
     },
-    headerHeight: 225,
+    headerHeight: 84,
     slantHeight: 64,
     middleWidth: 400,
     signUpWidth: 285,

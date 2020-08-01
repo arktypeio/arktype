@@ -2,11 +2,15 @@ import React, { useState } from "react"
 import Link from "@docusaurus/Link"
 import useBaseUrl from "@docusaurus/useBaseUrl"
 import { Button } from "@re-do/components"
-import { motion, useAnimation } from "framer-motion"
+import { motion, useAnimation, MotionValue } from "framer-motion"
 
-export type GetStartedButtonProps = {}
+export type GetStartedButtonProps = {
+    color?: string | MotionValue
+}
 
-export const GetStartedButton = ({}: GetStartedButtonProps) => {
+export const GetStartedButton = ({
+    color = "white"
+}: GetStartedButtonProps) => {
     const controls = useAnimation()
     const wiggle = {
         rotate: [0, -2, 2, -2, 2, 0],
@@ -36,12 +40,16 @@ export const GetStartedButton = ({}: GetStartedButtonProps) => {
                     animate={controls}
                     onHoverStart={() => controls.start(loopedWiggle)}
                     onHoverEnd={() => controls.stop()}
+                    style={{
+                        color,
+                        borderColor: color
+                    }}
                 >
                     <Button
                         kind="secondary"
                         style={{
-                            color: "white",
-                            borderColor: "white",
+                            color: "inherit",
+                            borderColor: "inherit",
                             fontSize: "large",
                             fontWeight: 700
                         }}
