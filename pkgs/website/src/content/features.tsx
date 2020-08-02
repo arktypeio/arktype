@@ -10,27 +10,44 @@ export const features = [
     {
         title: <>100% open source</>,
         imageUrl: "openSource.svg",
-        description: <></>
+        description: (
+            <>
+                Stop in any time and{" "}
+                <a href="https://github.com/re-do/redo">
+                    star our GitHub repo{" "}
+                </a>
+                😉
+            </>
+        )
     },
     {
         title: <>O(damn) fast</>,
         imageUrl: "fast.svg",
-        description: <></>
+        description: (
+            <>Automate your first test in minutes. Run it in seconds.</>
+        )
     },
     {
         title: <>Deterministic & transparent</>,
         imageUrl: "deterministic.svg",
-        description: <></>
+        description: <>No more flaky Selenium scripts. No more AI wizardry.</>
     },
     {
         title: <>JS/TS integrations that "just work"</>,
         imageUrl: "integrations.svg",
-        description: <></>
+        description: (
+            <>Integrates seamlessly with the tools you're already using.</>
+        )
     },
     {
         title: <>Incrementally adoptable</>,
         imageUrl: "incremental.svg",
-        description: <></>
+        description: (
+            <>
+                Keep what you have. Start by adding a single test. Or fifty.
+                It's up to you.
+            </>
+        )
     },
     {
         title: <>By and for developers</>,
