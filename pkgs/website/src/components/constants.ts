@@ -2,22 +2,10 @@ import isMobile from "ismobilejs"
 
 export const layout = {
     header: {
-        maxWidth: 1250,
-        padding: 16
+        height: 80,
+        slantHeight: 40
     },
-    content: {
-        maxWidth: 600,
-        minWidth: 343,
-        padding: 16
-    },
-    contactInfo: {
-        height: 45
-    },
-    headerHeight: 84,
-    slantHeight: 64,
-    middleWidth: 400,
-    signUpWidth: 285,
-    isMobile: isMobile(window.navigator).any
+    maxWidth: 1200
 }
 
 export const copy = {
@@ -25,15 +13,7 @@ export const copy = {
         title: `💡A new way to test`,
         content: `Building something great requires good tests, but it shouldn't be your job
             to automate, run, or maintain them. Redo learns how your app works and does
-            all that for you.`,
-        features: [
-            `😻 Fully open source`,
-            `⏱ O(damn) fast`,
-            `🚫🎲🧙‍♂️ Deterministic & transparent`,
-            `🔌 JS/TS integrations "just work" (npm/🧶, git, Jest, etc.)`,
-            `🍫 Incrementally adoptable`,
-            `🧬 By and for developers`
-        ]
+            all that for you.`
     },
     howItWorks: {
         title: `🔨How it works`,

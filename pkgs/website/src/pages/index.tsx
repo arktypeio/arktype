@@ -4,8 +4,7 @@ import {
     HowItWorks,
     Page,
     PrimaryContent,
-    Header,
-    SignUp
+    Header
 } from "../components"
 import { features } from "../content"
 
@@ -16,7 +15,6 @@ export const Home = () => {
             <PrimaryContent>
                 <Features content={features} />
                 <HowItWorks />
-                <SignUp />
             </PrimaryContent>
         </Page>
     )

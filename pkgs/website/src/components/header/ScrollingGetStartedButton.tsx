@@ -1,16 +1,14 @@
 import React from "react"
-import Typist from "react-typist"
-import { Text, Column, AnimatedLogo, Row, Card } from "@re-do/components"
-import { GetStartedButton } from "."
+import { GetStartedButton } from "./GetStartedButton"
 import { motion, useViewportScroll, useTransform } from "framer-motion"
-import { layout } from "./constants"
+import { layout } from "../constants"
 
 export type ScrollingGetStartedButtonProps = {}
 
 export const ScrollingGetStartedButton = ({}: ScrollingGetStartedButtonProps) => {
     const { scrollY } = useViewportScroll()
-    const scrollRange = [0, layout.headerHeight]
-    const offsetRange = [layout.headerHeight + 24, 8]
+    const scrollRange = [0, layout.header.height]
+    const offsetRange = [layout.header.height + 24, 8]
     const colorRange = ["#ffffff", "#2979ff"]
     const getStartedOffset = useTransform(scrollY, scrollRange, offsetRange)
     const getStartedColor = useTransform(scrollY, scrollRange, colorRange)
@@ -18,7 +16,7 @@ export const ScrollingGetStartedButton = ({}: ScrollingGetStartedButtonProps) =>
         <motion.div
             style={{
                 position: "fixed",
-                height: layout.headerHeight,
+                height: layout.header.height,
                 width: 640,
                 top: getStartedOffset,
                 color: getStartedColor,
