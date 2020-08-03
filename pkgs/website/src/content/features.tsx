@@ -30,7 +30,7 @@ export const features = [
     {
         title: <>Deterministic & transparent</>,
         imageUrl: "deterministic.svg",
-        description: <>No more flaky Selenium scripts. No more AI wizardry.</>
+        description: <>No more flaky Selenium scripts or AI-powered wizardry.</>
     },
     {
         title: <>JS/TS integrations that "just work"</>,
@@ -52,6 +52,6 @@ export const features = [
     {
         title: <>By and for developers</>,
         imageUrl: "developers.svg",
-        description: <></>
+        description: <>We built Redo for us. Now we want to know what you think.</>
     }
 ]
