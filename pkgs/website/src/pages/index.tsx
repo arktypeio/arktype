@@ -11,7 +11,7 @@ import { features } from "../content"
 export const Home = () => {
     return (
         <Page>
-            <Header />
+            <Header displaySubHeader={true} />
             <PrimaryContent>
                 <Features content={features} />
                 <HowItWorks />

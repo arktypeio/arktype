@@ -21,7 +21,6 @@
         "@re-do/components": "0.0.4",
         "@re-do/utils": "0.0.10",
         "analytics-node": "3.4.0-beta.2",
-        "ismobilejs": "1.1.1",
         "react": "16.13.1",
         "react-dom": "16.13.1",
         "react-typist": "2.0.5",

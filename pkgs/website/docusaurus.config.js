@@ -9,27 +9,27 @@ module.exports = {
     organizationName: "re-do",
     projectName: "redo",
     themeConfig: {
-        navbar: {
-            title: "Redo",
-            logo: {
-                alt: "Redo Logo",
-                src: "icon.svg"
-            },
-            items: [
-                // {
-                //     to: "docs/",
-                //     activeBasePath: "docs",
-                //     label: "Docs",
-                //     position: "left"
-                // },
-                {
-                    href: "https://github.com/re-do/redo",
-                    label: "GitHub",
-                    position: "left"
-                },
-                { to: "blog", label: "Blog", position: "left" }
-            ]
-        },
+        // navbar: {
+        //     title: "Redo",
+        //     logo: {
+        //         alt: "Redo Logo",
+        //         src: "icon.svg"
+        //     },
+        //     items: [
+        //         // {
+        //         //     to: "docs/",
+        //         //     activeBasePath: "docs",
+        //         //     label: "Docs",
+        //         //     position: "left"
+        //         // },
+        //         {
+        //             href: "https://github.com/re-do/redo",
+        //             label: "GitHub",
+        //             position: "left"
+        //         },
+        //         { to: "blog", label: "Blog", position: "left" }
+        //     ]
+        // },
         footer: {
             style: "dark",
             links: [
@@ -56,7 +56,7 @@ module.exports = {
                     ]
                 }
             ],
-            copyright: `Copyright ©${new Date().getFullYear()} Redo, Inc. Built with Docusaurus.`
+            copyright: `Copyright ©${new Date().getFullYear()} Redo, Inc.`
         },
         colorMode: {
             disableSwitch: true

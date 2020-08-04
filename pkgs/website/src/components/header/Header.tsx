@@ -1,12 +1,14 @@
 import React, { useEffect, useState } from "react"
 import { layout } from "../constants"
-import { HeaderTitle } from "./HeaderTitle"
+import { NavBar } from "./NavBar"
 import { SubHeader } from "./SubHeader"
 import { ScrollingGetStartedButton } from "./ScrollingGetStartedButton"
 
-export type HeaderProps = {}
+export type HeaderProps = {
+    displaySubHeader?: false
+}
 
-export const Header = ({}: HeaderProps) => {
+export const Header = ({ displaySubHeader }: HeaderProps) => {
     const [width, setWidth] = useState(window.innerWidth)
     useEffect(() => {
         const handleResize = () => setWidth(window.innerWidth)
@@ -18,9 +20,9 @@ export const Header = ({}: HeaderProps) => {
     const angle = -Math.tan(layout.header.slantHeight / width)
     return (
         <>
-            <HeaderTitle skewAngle={angle} />
-            <SubHeader skewAngle={angle} />
-            <ScrollingGetStartedButton />
+            <NavBar skewAngle={angle} />
+            {displaySubHeader ? <SubHeader skewAngle={angle} /> : null}
+            {displaySubHeader ? <ScrollingGetStartedButton /> : null}
         </>
     )
 }

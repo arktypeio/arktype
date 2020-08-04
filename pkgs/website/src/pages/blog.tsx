@@ -6,11 +6,9 @@ import { Page, PrimaryContent } from "../components"
 export const Blog = () => {
     return (
         <Page>
-            <PrimaryContent>
-                {posts.map((post) => (
-                    <PostPreview key={post.title} post={post} />
-                ))}
-            </PrimaryContent>
+            {posts.map((post) => (
+                <PostPreview key={post.title} post={post} />
+            ))}
         </Page>
     )
 }
