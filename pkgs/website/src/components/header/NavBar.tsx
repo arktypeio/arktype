@@ -2,6 +2,7 @@ import React from "react"
 import Link from "@docusaurus/Link"
 import { AnimatedLogo, Card, Row, Text } from "@re-do/components"
 import { layout } from "../constants"
+import { NavBarLink } from "./NavBarLink"
 
 export type NavBarProps = {
     skewAngle: number
@@ -22,9 +23,17 @@ export const NavBar = ({ skewAngle }: NavBarProps) => {
                 justifyContent: "center"
             }}
         >
-            <Row
-                justify="space-between"
+            <AnimatedLogo
                 style={{
+                    marginTop: 24,
+                    transform: `skewY(${-skewAngle}rad)`,
+                    flexGrow: 1,
+                    height: layout.header.height
+                }}
+            />
+            <Row
+                style={{
+                    position: "fixed",
                     maxWidth: layout.maxWidth,
                     marginTop: 24,
                     transform: `skewY(${-skewAngle}rad)`,
@@ -32,23 +41,11 @@ export const NavBar = ({ skewAngle }: NavBarProps) => {
                     paddingRight: 24
                 }}
             >
-                <div style={{ width: 100, display: "inline-flex" }}>
-                    <Text style={{ paddingRight: 16 }}>
-                        <a href="https://github.com/re-do/redo" target="_blank">
-                            GitHub
-                        </a>
-                    </Text>
-                    <Text>
-                        <Link to="/blog">Blog</Link>
-                    </Text>
-                </div>
-                <AnimatedLogo
-                    style={{
-                        flexGrow: 1,
-                        maxHeight: layout.header.height
-                    }}
-                />
-                <div style={{ width: 100 }} />
+                <NavBarLink to="/">Home</NavBarLink>
+                <NavBarLink to="https://github.com/re-do/redo" external>
+                    GitHub
+                </NavBarLink>
+                <NavBarLink to="/blog">Blog</NavBarLink>
             </Row>
         </Card>
     )

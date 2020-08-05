@@ -18,7 +18,7 @@ const Step = ({ summary, details, defaultExpanded, ...rest }: StepProps) => {
             key={summary}
             style={{
                 background: "transparent",
-                width: 461
+                maxWidth: 461
             }}
             elevation={0}
             defaultExpanded={defaultExpanded}
@@ -53,7 +53,9 @@ const Steps = ({ children }: StepsProps) => (
 export const HowItWorks = () => {
     return (
         <Column align="center">
-            <Text variant="h4">How it works</Text>
+            <Text variant="h3" style={{ fontWeight: 700 }}>
+                How it works
+            </Text>
             <Steps>{steps}</Steps>
         </Column>
     )

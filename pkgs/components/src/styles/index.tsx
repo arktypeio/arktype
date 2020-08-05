@@ -3,8 +3,10 @@ import createMuiTheme, {
     ThemeOptions
 } from "@material-ui/core/styles/createMuiTheme"
 import { useTheme as useMuiTheme, ThemeProvider } from "@material-ui/styles"
-export { makeStyles, ThemeProvider } from "@material-ui/styles"
 import { CssBaseline } from "@material-ui/core"
+import { responsiveFontSizes } from "@material-ui/core/styles"
+
+export { ThemeProvider, makeStyles } from "@material-ui/styles"
 
 export const defaultConfig: ThemeOptions = {
     palette: {
@@ -33,7 +35,7 @@ export const defaultConfig: ThemeOptions = {
 }
 
 export const makeTheme = createMuiTheme
-export const defaultTheme = createMuiTheme(defaultConfig)
+export const defaultTheme = responsiveFontSizes(createMuiTheme(defaultConfig))
 
 export type DefaultThemeProps = {
     children: JSX.Element

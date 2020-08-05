@@ -5,7 +5,7 @@ import { SubHeader } from "./SubHeader"
 import { ScrollingGetStartedButton } from "./ScrollingGetStartedButton"
 
 export type HeaderProps = {
-    displaySubHeader?: false
+    displaySubHeader?: boolean
 }
 
 export const Header = ({ displaySubHeader }: HeaderProps) => {

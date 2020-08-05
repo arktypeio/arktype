@@ -3,7 +3,7 @@ export const layout = {
         height: 80,
         slantHeight: 40
     },
-    maxWidth: 1200
+    maxWidth: 1400
 }
 
 export const copy = {

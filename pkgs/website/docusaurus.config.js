@@ -63,7 +63,7 @@ module.exports = {
         }
     },
     stylesheets: [
-        "https://fonts.googleapis.com/css?family=Ubuntu:400,400i,700"
+        "https://fonts.googleapis.com/css?family=Ubuntu:300,400,500,700&display=swap"
     ],
     presets: [
         [

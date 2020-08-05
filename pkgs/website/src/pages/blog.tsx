@@ -1,7 +1,7 @@
 import React from "react"
 import { PostPreview } from "../components/PostPreview"
 import { posts } from "../content/posts"
-import { Page, PrimaryContent } from "../components"
+import { Page } from "../components"
 
 export const Blog = () => {
     return (
