@@ -23,6 +23,7 @@ import gitHub from "@material-ui/icons/GitHub"
 import twitter from "@material-ui/icons/Twitter"
 import video from "@material-ui/icons/VideocamOutlined"
 import blog from "@material-ui/icons/Notes"
+import code from "@material-ui/icons/Code"
 import SvgIcon, { SvgIconProps } from "@material-ui/core/SvgIcon"
 import { twitchPath } from "./paths"
 
@@ -36,6 +37,7 @@ const twitch = toIcon(twitchPath)
 
 export const Icons = {
     add,
+    code,
     collapse,
     edit,
     expandRight,

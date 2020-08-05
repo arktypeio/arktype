@@ -2,8 +2,7 @@ import React, { useEffect, useState } from "react"
 import { layout } from "../constants"
 import { NavBar } from "./NavBar"
 import { SubHeader } from "./SubHeader"
-import { ScrollingGetStartedButton } from "./ScrollingGetStartedButton"
-import { useMediaQuery } from "@material-ui/core"
+import { GetStartedButton } from "./GetStartedButton"
 
 export type HeaderProps = {
     displaySubHeader?: boolean
@@ -23,8 +22,10 @@ export const Header = ({ displaySubHeader }: HeaderProps) => {
     return (
         <>
             <NavBar skewAngle={angle} mobile={useMobileLayout} />
-            <SubHeader skewAngle={angle} />
-            <ScrollingGetStartedButton />
+            {displaySubHeader ? (
+                <SubHeader skewAngle={angle} mobile={useMobileLayout} />
+            ) : null}
+            <GetStartedButton mobile={useMobileLayout} />
         </>
     )
 }

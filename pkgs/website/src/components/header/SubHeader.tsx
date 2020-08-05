@@ -1,36 +1,38 @@
-import React, { useEffect, useState } from "react"
+import React from "react"
 import Typist from "react-typist"
 import { Text, Column, Card } from "@re-do/components"
 import { layout } from "../constants"
 
 export type SubHeaderProps = {
     skewAngle: number
+    mobile: boolean
 }
 
-export const SubHeader = ({ skewAngle }: SubHeaderProps) => {
+export const SubHeader = ({ skewAngle, mobile }: SubHeaderProps) => {
+    const skew = `skewY(${skewAngle}rad)`
+    const unskew = `skewY(${-skewAngle}rad)`
     return (
         <Card
             elevation={24}
             style={{
                 marginTop: 96,
-                padding: 16,
+                paddingTop: 32,
                 width: "100%",
-                transform: `skewY(${skewAngle}rad)`,
+                transform: skew,
                 transformOrigin: "center",
-                background: "#2979ff",
-                display: "flex",
-                justifyContent: "center"
+                background: "#2979ff"
             }}
         >
             <Column
                 align="center"
-                width={400}
-                style={{
-                    minHeight: layout.header.height,
-                    transform: `skewY(${-skewAngle}rad)`
-                }}
+                style={{ minHeight: layout.header.height, transform: unskew }}
             >
-                <Text variant="h4" style={{ color: "white" }}>
+                <Text
+                    variant="h4"
+                    style={{
+                        color: "white"
+                    }}
+                >
                     Web testing rewritten
                 </Text>
                 <Typist
