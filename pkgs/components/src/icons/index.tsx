@@ -5,6 +5,7 @@ import expandRight from "@material-ui/icons/ChevronRight"
 import expandDown from "@material-ui/icons/ExpandMore"
 import home from "@material-ui/icons/Home"
 import openModal from "@material-ui/icons/OpenInNew"
+import menu from "@material-ui/icons/Menu"
 import schedule from "@material-ui/icons/Schedule"
 import run from "@material-ui/icons/PlayArrow"
 import edit from "@material-ui/icons/Edit"
@@ -21,8 +22,9 @@ import email from "@material-ui/icons/Email"
 import gitHub from "@material-ui/icons/GitHub"
 import twitter from "@material-ui/icons/Twitter"
 import video from "@material-ui/icons/VideocamOutlined"
+import blog from "@material-ui/icons/Notes"
 import SvgIcon, { SvgIconProps } from "@material-ui/core/SvgIcon"
-import { twitchPath, blogPath } from "./paths"
+import { twitchPath } from "./paths"
 
 const toIcon = (path: string) => (props: SvgIconProps) => (
     <SvgIcon {...props}>
@@ -31,7 +33,6 @@ const toIcon = (path: string) => (props: SvgIconProps) => (
 )
 
 const twitch = toIcon(twitchPath)
-const blog = toIcon(blogPath)
 
 export const Icons = {
     add,
@@ -57,5 +58,6 @@ export const Icons = {
     gitHub,
     twitch,
     twitter,
-    video
+    video,
+    menu
 }

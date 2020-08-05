@@ -1,27 +1,37 @@
 import React from "react"
-import Link from "@docusaurus/Link"
 import { Text } from "@re-do/components"
+import Link from "@docusaurus/Link"
+import { ListItem, ListItemIcon, ListItemText } from "@material-ui/core"
 
-export type NavBarLinkProps = {
-    children: React.ReactNode
+type NavBarLinkProps = {
+    Icon?: React.ComponentType
+    text: string
     to: string
-    external?: boolean
+    mobile: boolean
 }
 
-export const NavBarLink = ({ to, children, external }: NavBarLinkProps) => (
-    <Text
-        variant="h6"
-        style={{
-            fontWeight: 700,
-            paddingRight: 16
-        }}
-    >
-        {external ? (
-            <a href={to} target="_blank">
-                {children}
-            </a>
-        ) : (
-            <Link to={to}>{children}</Link>
-        )}
-    </Text>
-)
+export const NavBarLink = ({ Icon, text, to, mobile }: NavBarLinkProps) => {
+    const contents = mobile ? (
+        <ListItem button>
+            <ListItemIcon>{Icon ? <Icon /> : null}</ListItemIcon>
+            <ListItemText primary={text} />
+        </ListItem>
+    ) : (
+        <Text
+            variant="h6"
+            style={{
+                fontWeight: 700,
+                padding: 8
+            }}
+        >
+            {text}
+        </Text>
+    )
+    return to.startsWith("http") ? (
+        <a href={to} target="_blank">
+            {contents}
+        </a>
+    ) : (
+        <Link to={to}>{contents}</Link>
+    )
+}

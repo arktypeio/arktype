@@ -1,34 +1,39 @@
-import React from "react"
-import Link from "@docusaurus/Link"
-import { AnimatedLogo, Card, Row, Text } from "@re-do/components"
+import React, { useState } from "react"
+import { AnimatedLogo, Card, Row, Button, Icons } from "@re-do/components"
+import { Drawer, List } from "@material-ui/core"
 import { layout } from "../constants"
 import { NavBarLink } from "./NavBarLink"
 
 export type NavBarProps = {
     skewAngle: number
+    mobile: boolean
 }
 
-export const NavBar = ({ skewAngle }: NavBarProps) => {
+export const NavBar = ({ skewAngle, mobile = false }: NavBarProps) => {
     return (
         <Card
             elevation={24}
             style={{
                 position: "fixed",
                 top: -24,
+                left: 0,
                 zIndex: 1,
                 width: "100%",
                 transform: `skewY(${skewAngle}rad)`,
                 transformOrigin: "center",
                 display: "flex",
-                justifyContent: "center"
+                justifyContent: "center",
+                padding: 0
             }}
         >
             <AnimatedLogo
                 style={{
-                    marginTop: 24,
+                    marginTop: 32,
+                    marginBottom: 8,
                     transform: `skewY(${-skewAngle}rad)`,
                     flexGrow: 1,
-                    height: layout.header.height
+                    height: layout.header.height,
+                    maxWidth: "60%"
                 }}
             />
             <Row
@@ -36,17 +41,67 @@ export const NavBar = ({ skewAngle }: NavBarProps) => {
                     position: "fixed",
                     maxWidth: layout.maxWidth,
                     marginTop: 24,
-                    transform: `skewY(${-skewAngle}rad)`,
-                    paddingLeft: 24,
-                    paddingRight: 24
+                    padding: 0,
+                    transform: `skewY(${-skewAngle}rad)`
                 }}
             >
-                <NavBarLink to="/">Home</NavBarLink>
-                <NavBarLink to="https://github.com/re-do/redo" external>
-                    GitHub
-                </NavBarLink>
-                <NavBarLink to="/blog">Blog</NavBarLink>
+                {mobile ? <MobileNav /> : <DesktopNav />}
             </Row>
         </Card>
+    )
+}
+
+const DesktopNav = () => (
+    <>
+        <NavBarLink to="/" text="Home" mobile={false} />
+        <NavBarLink
+            to="https://github.com/re-do/redo"
+            text="GitHub"
+            mobile={false}
+        />
+        <NavBarLink to="/blog" text="Blog" mobile={false} />
+    </>
+)
+
+const MobileNav = () => {
+    const [open, setOpen] = useState(false)
+    return (
+        <>
+            <Button
+                Icon={Icons.menu}
+                fontSize={36}
+                onClick={() => setOpen(true)}
+            />
+            <Drawer
+                open={open}
+                PaperProps={{
+                    style: {
+                        width: 160
+                    }
+                }}
+                onClose={() => setOpen(false)}
+            >
+                <List component="nav">
+                    <NavBarLink
+                        Icon={Icons.home}
+                        to="/"
+                        text="Home"
+                        mobile={true}
+                    />
+                    <NavBarLink
+                        Icon={Icons.gitHub}
+                        to="https://github.com/re-do/redo"
+                        text="GitHub"
+                        mobile={true}
+                    />
+                    <NavBarLink
+                        Icon={Icons.blog}
+                        to="/blog"
+                        text="Blog"
+                        mobile={true}
+                    />
+                </List>
+            </Drawer>
+        </>
     )
 }

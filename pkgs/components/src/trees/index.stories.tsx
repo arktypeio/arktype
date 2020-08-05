@@ -2,7 +2,7 @@ import React from "react"
 import { fromEntries } from "@re-do/utils"
 import { storiesOf } from "@storybook/react"
 import { Tree } from "."
-import { IconButton } from "../buttons"
+import { Button } from "../buttons"
 import { Icons } from "../icons"
 import { Modal } from "../modals"
 import { Text } from "../text"
@@ -65,7 +65,7 @@ storiesOf("TreeView", module)
                 return {
                     extras: (
                         <Modal
-                            toggle={<IconButton Icon={Icons.openModal} />}
+                            toggle={<Button Icon={Icons.openModal} />}
                             content={
                                 <>
                                     <Text>{`This modal was created when you clicked on ${key} at ${path}, which has the following value:`}</Text>

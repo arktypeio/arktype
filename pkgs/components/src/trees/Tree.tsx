@@ -3,7 +3,7 @@ import { isRecursible } from "@re-do/utils"
 import { Row } from "../layouts"
 import { Text } from "../text"
 import { Icons } from "../icons"
-import { IconButton } from "../buttons"
+import { Button } from "../buttons"
 
 type TreeSource = Record<string, any>
 
@@ -84,7 +84,7 @@ export const Tree = <O extends TreeSource>({
                                 }
                             >
                                 {recursible ? (
-                                    <IconButton
+                                    <Button
                                         Icon={
                                             expandedPaths[path]
                                                 ? Icons.collapse

@@ -52,8 +52,8 @@ const Steps = ({ children }: StepsProps) => (
 
 export const HowItWorks = () => {
     return (
-        <Column align="center">
-            <Text variant="h3" style={{ fontWeight: 700 }}>
+        <Column align="center" style={{ paddingTop: 48 }}>
+            <Text variant="h2" style={{ fontWeight: 700 }}>
                 How it works
             </Text>
             <Steps>{steps}</Steps>

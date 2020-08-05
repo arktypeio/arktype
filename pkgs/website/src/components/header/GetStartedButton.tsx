@@ -50,9 +50,9 @@ export const GetStartedButton = ({
                     style={{
                         color: "inherit",
                         borderColor: "inherit",
-                        fontSize: "large",
                         fontWeight: 700
                     }}
+                    fontSize={18}
                     onClick={() => setDialogOpen(true)}
                 >
                     Get Started
