@@ -54,7 +54,7 @@ export const features = [
         description: (
             <>
                 Stop in any time and{" "}
-                <a href="https://github.com/re-do/redo">
+                <a href="https://github.com/re-do/redo" target="_blank">
                     star our GitHub repo{" "}
                 </a>
                 😉
