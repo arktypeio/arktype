@@ -18,7 +18,7 @@ const Step = ({ summary, details, defaultExpanded, ...rest }: StepProps) => {
             key={summary}
             style={{
                 background: "transparent",
-                maxWidth: 461
+                maxWidth: 480
             }}
             elevation={0}
             defaultExpanded={defaultExpanded}

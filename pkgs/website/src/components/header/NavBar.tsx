@@ -17,7 +17,7 @@ export const NavBar = ({ skewAngle, mobile = false }: NavBarProps) => {
                 position: "fixed",
                 top: -24,
                 left: 0,
-                zIndex: 1,
+                zIndex: 2,
                 width: "100%",
                 transform: `skewY(${skewAngle}rad)`,
                 transformOrigin: "center",
