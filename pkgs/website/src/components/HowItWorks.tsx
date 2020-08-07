@@ -17,8 +17,7 @@ const Step = ({ summary, details, defaultExpanded, ...rest }: StepProps) => {
         <Accordion
             key={summary}
             style={{
-                background: "transparent",
-                maxWidth: 480
+                background: "transparent"
             }}
             elevation={0}
             defaultExpanded={defaultExpanded}
@@ -56,7 +55,12 @@ export const HowItWorks = () => {
             <Text variant="h2" style={{ fontWeight: 700 }}>
                 How it works
             </Text>
-            <Steps>{steps}</Steps>
+            <Row wrap="wrap" justify="center" style={{ maxWidth: "90vw" }}>
+                <div style={{ width: 480 }}>
+                    <Steps>{steps}</Steps>
+                </div>
+                <video style={{ width: 480 }} src="RedoDemo.mp4" controls />
+            </Row>
         </Column>
     )
 }
