@@ -12,8 +12,8 @@
     },
     "dependencies": {
         "@babel/runtime-corejs3": "7.10.5",
-        "@docusaurus/core": "2.0.0-alpha.59",
-        "@docusaurus/preset-classic": "2.0.0-alpha.59",
+        "@docusaurus/core": "2.0.0-alpha.61",
+        "@docusaurus/preset-classic": "2.0.0-alpha.61",
         "@material-ui/core": "4.11.0",
         "@material-ui/styles": "4.10.0",
         "@material-ui/lab": "4.0.0-alpha.56",
@@ -28,7 +28,7 @@
         "uuid": "8.2.0"
     },
     "devDependencies": {
-        "@docusaurus/module-type-aliases": "2.0.0-alpha.59",
+        "@docusaurus/module-type-aliases": "2.0.0-alpha.61",
         "@re-do/recommended": "0.0.2",
         "@types/node": "12.11.1",
         "@types/react": "16.9.42",
