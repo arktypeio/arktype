@@ -20,7 +20,8 @@ export const SignUpForm = () => (
                         <Button
                             style={{
                                 fontSize: "large",
-                                fontWeight: 700
+                                fontWeight: 700,
+                                minWidth: 200
                             }}
                             disabled
                         >
@@ -30,7 +31,8 @@ export const SignUpForm = () => (
                         <Button
                             style={{
                                 fontSize: "large",
-                                fontWeight: 700
+                                fontWeight: 700,
+                                minWidth: 200
                             }}
                         >
                             Keep me posted!

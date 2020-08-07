@@ -31,8 +31,13 @@ export const SignUpDialog = ({ open, onClose }: SignUpDialogProps) => {
                     we're close!™️
                 </a>
             </Text>
-            <Row align="center" style={{ paddingTop: 16 }}>
-                <img style={{ height: 200 }} src="launch.svg" />
+            <Row
+                wrap="wrap"
+                justify="center"
+                align="center"
+                style={{ paddingTop: 16 }}
+            >
+                <img style={{ width: 200 }} src="launch.svg" />
                 <SignUpForm />
             </Row>
         </Dialog>
