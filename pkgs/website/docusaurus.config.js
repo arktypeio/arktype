@@ -82,5 +82,6 @@ module.exports = {
                 }
             }
         ]
-    ]
+    ],
+    plugins: [resolve(__dirname, "docusaurus.webpack.js")]
 }
