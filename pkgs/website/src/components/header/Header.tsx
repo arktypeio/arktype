@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from "react"
-import { layout } from "../constants"
+import { layout } from "../../constants"
 import { NavBar } from "./NavBar"
 import { SubHeader } from "./SubHeader"
 import { GetStarted } from "./getStarted"
 
-const { height, slantHeight } = layout.header
+const { slantHeight } = layout.header
 
 export type HeaderProps = {
     displaySubHeader?: boolean

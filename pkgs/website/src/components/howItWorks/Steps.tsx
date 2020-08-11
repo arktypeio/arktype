@@ -4,7 +4,6 @@ import Accordion, { AccordionProps } from "@material-ui/core/Accordion"
 import AccordionSummary from "@material-ui/core/AccordionSummary"
 import AccordionDetails from "@material-ui/core/AccordionDetails"
 import { AnimatedCheckbox } from "./AnimatedCheckbox"
-import { steps } from "../content"
 
 type StepProps = Partial<AccordionProps> & {
     summary: string
@@ -41,26 +40,10 @@ type StepsProps = {
     children: StepProps[]
 }
 
-const Steps = ({ children }: StepsProps) => (
+export const Steps = ({ children }: StepsProps) => (
     <>
         {children.map((stepProps, index) => (
             <Step key={index} defaultExpanded={index === 0} {...stepProps} />
         ))}
     </>
 )
-
-export const HowItWorks = () => {
-    return (
-        <Column align="center" style={{ paddingTop: 48 }}>
-            <Text variant="h2" style={{ fontWeight: 700 }}>
-                How it works
-            </Text>
-            <Row wrap="wrap" justify="center" style={{ maxWidth: "90vw" }}>
-                <div style={{ width: 480 }}>
-                    <Steps>{steps}</Steps>
-                </div>
-                <video style={{ width: 480 }} src="RedoDemo.mp4" controls />
-            </Row>
-        </Column>
-    )
-}

@@ -1,7 +1,7 @@
 import React from "react"
-import { Card, Text, Row } from "@re-do/components"
+import { Card, Text } from "@re-do/components"
 import { CardActionArea } from "@material-ui/core"
-import { PostData } from "../content"
+import { PostData } from "content"
 
 export type PostPreviewProps = {
     post: PostData
@@ -20,7 +20,11 @@ export const PostPreview = ({
                 <Text align="center" variant="h4">
                     {title}
                 </Text>
-                <img src={image} alt={title} style={{ width: "100%" }} />
+                <img
+                    src={`assets/${image}`}
+                    alt={title}
+                    style={{ width: "100%" }}
+                />
                 <Text align="center" style={{ fontSize: 24 }}>
                     <i>{caption}</i>
                 </Text>

@@ -1,6 +1,5 @@
 import React from "react"
-import { Text } from "@re-do/components"
-import Link from "@docusaurus/Link"
+import { Text, Link } from "@re-do/components"
 import { ListItem, ListItemIcon, ListItemText } from "@material-ui/core"
 
 type NavBarLinkProps = {

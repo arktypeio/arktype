@@ -1,7 +1,7 @@
 import React, { useState } from "react"
 import { AnimatedLogo, Card, Row, Button, Icons } from "@re-do/components"
 import { Drawer, List } from "@material-ui/core"
-import { layout } from "../constants"
+import { layout } from "../../constants"
 import { NavBarLink } from "./NavBarLink"
 
 export type NavBarProps = {

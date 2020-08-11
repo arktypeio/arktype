@@ -1,7 +1,7 @@
 import React from "react"
-import { PostPreview } from "../components/PostPreview"
-import { posts } from "../content/posts"
-import { Page } from "../components"
+import { PostPreview } from "./PostPreview"
+import { posts } from "content/posts"
+import { Page } from "components"
 
 export const Blog = () => {
     return (
@@ -12,5 +12,3 @@ export const Blog = () => {
         </Page>
     )
 }
-
-export default Blog

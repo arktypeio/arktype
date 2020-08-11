@@ -1,7 +1,7 @@
 import React from "react"
 
 export type FeatureData = {
-    imageUrl: string
+    image: string
     title: JSX.Element
     description: JSX.Element
 }
@@ -9,14 +9,14 @@ export type FeatureData = {
 export const features = [
     {
         title: <>O(damn) fast</>,
-        imageUrl: "fast.svg",
+        image: "fast.svg",
         description: (
             <>Automate your first test in minutes. Run it in seconds.</>
         )
     },
     {
         title: <>Deterministic & transparent</>,
-        imageUrl: "deterministic.svg",
+        image: "deterministic.svg",
         description: (
             <>
                 No more flaky Selenium scripts or AI-powered wizardry— just
@@ -26,14 +26,14 @@ export const features = [
     },
     {
         title: <>JS/TS integrations "just work"</>,
-        imageUrl: "integrations.svg",
+        image: "integrations.svg",
         description: (
             <>Integrates seamlessly with the tools you're already using.</>
         )
     },
     {
         title: <>Incrementally adoptable</>,
-        imageUrl: "incremental.svg",
+        image: "incremental.svg",
         description: (
             <>
                 Keep what you have. Start by adding a single test. Or fifty.
@@ -43,14 +43,14 @@ export const features = [
     },
     {
         title: <>By and for developers</>,
-        imageUrl: "developers.svg",
+        image: "developers.svg",
         description: (
             <>We built Redo for us. Now we want to know what you think.</>
         )
     },
     {
         title: <>100% open source</>,
-        imageUrl: "openSource.svg",
+        image: "openSource.svg",
         description: (
             <>
                 Stop in any time and{" "}

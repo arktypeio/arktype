@@ -1,6 +1,6 @@
 import React from "react"
-import { Features, HowItWorks, Page, Header } from "../components"
-import { features } from "../content"
+import { Features, HowItWorks, Page } from "../../components"
+import { features } from "../../content"
 
 export const Home = () => {
     return (

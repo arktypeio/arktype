@@ -6,13 +6,13 @@ import {
     useViewportScroll,
     useTransform
 } from "framer-motion"
-import { layout, animations } from "../../constants"
+import { layout, animations } from "../../../constants"
 
-export type GetStartedButtonProps = {
+export type GetStartedDesktopProps = {
     onClick: () => void
 }
 
-export const GetStartedButton = ({ onClick }: GetStartedButtonProps) => {
+export const GetStartedDesktop = ({ onClick }: GetStartedDesktopProps) => {
     const { scrollY } = useViewportScroll()
     const controls = useAnimation()
     const scrollRange = [0, layout.header.height]

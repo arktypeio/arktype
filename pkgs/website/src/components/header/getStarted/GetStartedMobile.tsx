@@ -1,16 +1,15 @@
 import React from "react"
-import { Fab } from "@material-ui/core"
-import { Icons, Button } from "@re-do/components"
+import { Button } from "@re-do/components"
 import { motion, useViewportScroll, useTransform } from "framer-motion"
-import { animations } from "../../constants"
+import { animations } from "../../../constants"
 
 const { scrollRange, offsetRange } = animations.header
 
-export type GetStartedFabProps = {
+export type GetStartedMobileProps = {
     onClick: () => void
 }
 
-export const GetStartedFab = ({ onClick }: GetStartedFabProps) => {
+export const GetStartedMobile = ({ onClick }: GetStartedMobileProps) => {
     const { scrollY } = useViewportScroll()
     const top = useTransform(scrollY, scrollRange, offsetRange)
     const opacity = useTransform(scrollY, scrollRange, [0, 1])

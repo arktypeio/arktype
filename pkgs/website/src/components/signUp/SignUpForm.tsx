@@ -1,6 +1,6 @@
 import React from "react"
 import { Form, FormText, FormSubmit, Button } from "@re-do/components"
-import { track } from "../analytics"
+import { track } from "./analytics"
 
 export const SignUpForm = () => (
     <Form<{ email: string }, boolean>

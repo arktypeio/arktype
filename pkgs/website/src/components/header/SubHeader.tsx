@@ -1,7 +1,7 @@
 import React from "react"
 import Typist from "react-typist"
 import { Text, Column, Card } from "@re-do/components"
-import { layout } from "../constants"
+import { layout } from "../../constants"
 import { motion, useViewportScroll } from "framer-motion"
 
 export type SubHeaderProps = {

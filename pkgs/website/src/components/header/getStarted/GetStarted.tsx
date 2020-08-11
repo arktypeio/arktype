@@ -1,7 +1,7 @@
 import React, { useState } from "react"
 import { SignUpDialog } from "../../signUp/SignUp"
-import { GetStartedButton } from "./GetStartedButton"
-import { GetStartedFab } from "./GetStartedFab"
+import { GetStartedDesktop } from "./GetStartedDesktop"
+import { GetStartedMobile } from "./GetStartedMobile"
 
 export type GetStartedButtonProps = {
     mobile: boolean
@@ -13,9 +13,9 @@ export const GetStarted = ({ mobile }: GetStartedButtonProps) => {
     return (
         <>
             {mobile ? (
-                <GetStartedFab onClick={openDialog} />
+                <GetStartedMobile onClick={openDialog} />
             ) : (
-                <GetStartedButton onClick={openDialog} />
+                <GetStartedDesktop onClick={openDialog} />
             )}
             <SignUpDialog
                 open={dialogOpen}
