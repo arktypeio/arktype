@@ -37,7 +37,7 @@ export const SignUpDialog = ({ open, onClose }: SignUpDialogProps) => {
                 align="center"
                 style={{ paddingTop: 16 }}
             >
-                <img style={{ width: 200 }} src="launch.svg" />
+                <img style={{ width: 200 }} src="assets/launch.svg" />
                 <SignUpForm />
             </Row>
         </Dialog>
