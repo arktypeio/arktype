@@ -14,7 +14,7 @@ export const LearnerEvents = ({ steps }: LearnerEventsProps) => {
         <List
             style={{
                 height: "100%",
-                width: "100%",
+                width: "100%"
             }}
         >
             {steps.map((e, i) => (

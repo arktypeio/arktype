@@ -10,7 +10,7 @@ const addDefaults = (
     options: PrismafyOptions = {}
 ): Required<PrismafyOptions> => ({
     clientPath: getDefaultClientPath(),
-    ...options,
+    ...options
 })
 
 export const prismafy = (options?: PrismafyOptions) => {
@@ -21,7 +21,7 @@ export const prismafy = (options?: PrismafyOptions) => {
             name,
             definition: (t) => {
                 fields.forEach(({ name }) => (t as any).model[name]())
-            },
+            }
         })
     })
 }

@@ -2,8 +2,8 @@
     "extends": "@re-do/recommended/tsconfig.base",
     "compilerOptions": {
         "baseUrl": "src",
-        "outDir": "dist"
+        "outDir": "dist",
+        "types": ["node"]
     },
-    "include": ["src"],
-    "exclude": ["node_modules", "**/__tests__"]
+    "include": ["src"]
 }

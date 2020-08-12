@@ -10,7 +10,7 @@ const welcomeSuggestion = {
     title: "👆Hey there!",
     description:
         "Looks like you don't have any tests yet. Click up here to create one!",
-    data: null,
+    data: null
 }
 
 const useSuggestions = (): Suggestion<UserItemKind>[] => {
@@ -52,8 +52,8 @@ const suggestionTypes = {
                 }
             />
         ),
-        data: test,
-    }),
+        data: test
+    })
 }
 
 type SuggestionTypes = typeof suggestionTypes
@@ -72,14 +72,14 @@ export const SuggestionResultsGrid = () => {
         <Card
             style={{
                 width: "100%",
-                height: "100%",
+                height: "100%"
             }}
         >
             <Row
                 wrap="wrap"
                 style={{
                     width: "100%",
-                    padding: 16,
+                    padding: 16
                 }}
             >
                 {values.length ? (
@@ -88,7 +88,7 @@ export const SuggestionResultsGrid = () => {
                             key={value.title}
                             style={{
                                 width: 200,
-                                height: 200,
+                                height: 200
                             }}
                         >
                             <SuggestionCard {...value} />

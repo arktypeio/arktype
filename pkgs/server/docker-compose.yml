@@ -12,4 +12,4 @@ services:
         expose:
             - "6033"
         volumes:
-            - .db:/var/lib/mysql
+            - /tmp/redo.db:/var/lib/mysql

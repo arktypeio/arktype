@@ -1,1 +1,1 @@
-# redo-website
+# Redo's website (https://redo.qa)

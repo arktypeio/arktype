@@ -1,58 +1,52 @@
-import isMobile from "ismobilejs"
+import { TargetAndTransition } from "framer-motion"
 
 export const layout = {
     header: {
-        maxWidth: 1250,
-        padding: 16,
+        height: 80,
+        slantHeight: 40
     },
-    content: {
-        maxWidth: 600,
-        minWidth: 343,
-        padding: 16,
-    },
-    contactInfo: {
-        height: 45,
-    },
-    headerHeight: 225,
-    slantHeight: 64,
-    middleWidth: 400,
-    signUpWidth: 285,
-    isMobile: isMobile(window.navigator).any,
+    maxWidth: 1400
 }
 
 export const copy = {
     subheader: {
-        title: `💡A new way to test`,
         content: `Building something great requires good tests, but it shouldn't be your job
             to automate, run, or maintain them. Redo learns how your app works and does
-            all that for you.`,
-        features: [
-            `😻 Fully open source`,
-            `⏱ O(damn) fast`,
-            `🚫🎲🧙‍♂️ Deterministic & transparent`,
-            `🔌 JS/TS integrations "just work" (npm/🧶, git, Jest, etc.)`,
-            `🍫 Incrementally adoptable`,
-            `🧬 By and for developers`,
-        ],
-    },
-    howItWorks: {
-        title: `🔨How it works`,
-        steps: [
-            {
-                summary: `Install and open Redo`,
-                details: `After launch, Redo will be installable via npm/yarn/pnpm. Redo can be used through our CLI or desktop app.`,
-            },
-            {
-                summary: `Interact with your website`,
-                details: `Redo will launch a browser you can use to interact with your website. 
-                      Whenever you do something on your page, Redo learns how to perform that action automatically.`,
-            },
-            {
-                summary: `Save your automated test`,
-                details: `After you're done, Redo will use your test and others you've saved to build a transparent,
-                      well-structured model of your app, just like an engineer would.
-                      You can run your tests anytime, anywhere, and get clear, deterministic results.`,
-            },
-        ],
-    },
+            all that for you.`
+    }
+}
+
+const wiggle: TargetAndTransition = {
+    rotate: [0, -2, 2, -2, 2, 0],
+    transition: {
+        duration: 0.4
+    }
+}
+const initialWiggle: TargetAndTransition = {
+    ...wiggle,
+    transition: {
+        ...wiggle.transition,
+        delay: 2.2
+    }
+}
+
+const loopedWiggle = {
+    ...wiggle,
+    transition: {
+        ...wiggle.transition,
+        loop: Infinity,
+        repeatDelay: 0.7
+    }
+}
+
+export const animations = {
+    initialWiggle,
+    loopedWiggle,
+    header: {
+        scrollRange: [0, layout.header.height],
+        offsetRange: [
+            layout.header.height * 2 + layout.header.slantHeight,
+            layout.header.height + layout.header.slantHeight
+        ]
+    }
 }

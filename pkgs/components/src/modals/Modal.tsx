@@ -5,16 +5,11 @@ import { Dialog } from "@material-ui/core"
 import { DialogProps } from "@material-ui/core/Dialog"
 
 export type ModalProps = Omit<Partial<DialogProps>, "open"> & {
-    children: {
-        toggle: JSX.Element
-        content: JSX.Element
-    }
+    toggle: JSX.Element
+    content: JSX.Element
 }
 
-export const Modal = ({
-    children: { toggle, content },
-    ...rest
-}: ModalProps) => {
+export const Modal = ({ toggle, content, ...rest }: ModalProps) => {
     const theme = useTheme()
     const [state, setState] = useState(false)
     const button = cloneElement(toggle, {

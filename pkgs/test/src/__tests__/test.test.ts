@@ -7,10 +7,10 @@ describe("test", () => {
                 "set",
                 {
                     selector: "[name='email']",
-                    value: "david@redo.qa",
-                },
+                    value: "david@redo.qa"
+                }
             ],
-            ["click", { selector: ".MuiButton-label" }],
+            ["click", { selector: ".MuiButton-label" }]
         ])
     }, 60000)
 })

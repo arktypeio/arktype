@@ -2,7 +2,7 @@ import React from "react"
 import { mount, ReactWrapper } from "enzyme"
 import { Menu as MuiMenu } from "@material-ui/core"
 import { Button } from "../../buttons"
-import { Menu, MenuItem } from ".."
+import { TogglableMenu, Menu, MenuItem } from ".."
 
 const options = {
     option1: jest.fn(),
@@ -19,22 +19,14 @@ let clickButton: ReturnType<typeof createClickButton>
 let clickMenuItem: ReturnType<typeof createClickMenuItem>
 
 const createClickMenuItem = (element: ReactWrapper) => (index: number) =>
-    element
-        .find(MenuItem)
-        .at(index)
-        .simulate("click")
+    element.find(MenuItem).at(index).simulate("click")
 
 const getVisibleOptionCount = () => element.find(MenuItem).length
 
 describe("menu", () => {
     beforeEach(() => {
         element = mount(
-            <Menu>
-                {{
-                    toggle: <Button>Open</Button>,
-                    options
-                }}
-            </Menu>
+            <TogglableMenu toggle={<Button>Open</Button>} options={options} />
         )
         clickButton = createClickButton(element)
         clickMenuItem = createClickMenuItem(element)
@@ -57,8 +49,8 @@ describe("menu", () => {
         })
     })
     test("each option responds to click", () => {
-        clickButton()
         Object.values(options).forEach((option, clickIndex, allOptions) => {
+            clickButton()
             clickMenuItem(clickIndex)
             expect(
                 allOptions.every(
@@ -71,8 +63,8 @@ describe("menu", () => {
     })
     test("closes after option click", () => {
         clickButton()
-        expect(element.find(MuiMenu).props().open).toBe(true)
+        expect(element.find(Menu).props().open).toBe(true)
         clickMenuItem(0)
-        expect(element.find(MuiMenu).props().open).toBe(false)
+        expect(element.find(Menu).props().open).toBe(false)
     })
 })

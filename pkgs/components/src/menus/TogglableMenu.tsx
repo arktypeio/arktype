@@ -1,16 +1,19 @@
 import React, { cloneElement, useState, MouseEvent } from "react"
-import { MenuOptions, MenuProps, Menu } from "./Menu"
+import { MenuOptions, Menu } from "./Menu"
+import { PopperProps as MuiPopperProps } from "@material-ui/core/Popper"
 
-export type TogglableMenuProps = Partial<Omit<MenuProps, "children">> & {
-    children: {
-        toggle: JSX.Element
-        options: MenuOptions
-    }
+export type TogglableMenuProps = Partial<MuiPopperProps> & {
+    toggle: JSX.Element
+    options: MenuOptions
 }
 
-export const TogglableMenu = ({ children, ...rest }: TogglableMenuProps) => {
+export const TogglableMenu = ({
+    toggle,
+    options,
+    ...rest
+}: TogglableMenuProps) => {
     const [anchorRef, setAnchorRef] = useState<HTMLElement | null>(null)
-    const anchorComponent = cloneElement(children.toggle, {
+    const anchorComponent = cloneElement(toggle, {
         onClick: (e: MouseEvent<HTMLButtonElement>) => {
             setAnchorRef(e.currentTarget)
         }
@@ -18,15 +21,14 @@ export const TogglableMenu = ({ children, ...rest }: TogglableMenuProps) => {
     return (
         <>
             {anchorComponent}
-            <Menu {...rest}>
-                {{
-                    anchorTo: { current: anchorRef },
-                    onClickAway: () => setAnchorRef(null),
-                    onSelectItem: () => setAnchorRef(null),
-                    open: !!anchorRef,
-                    options: children.options
-                }}
-            </Menu>
+            <Menu
+                anchorTo={{ current: anchorRef }}
+                onClickAway={() => setAnchorRef(null)}
+                onSelectItem={() => setAnchorRef(null)}
+                open={!!anchorRef}
+                options={options}
+                {...rest}
+            />
         </>
     )
 }

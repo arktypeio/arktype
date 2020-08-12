@@ -6,5 +6,5 @@ export default makeConfig({
     base: "web",
     entry: resolve(__dirname, "src", "index.tsx"),
     tsconfig: resolve(__dirname, "tsconfig.json"),
-    devServer: isDev() ? { open: true } : undefined,
+    devServer: isDev() ? { open: true } : undefined
 })

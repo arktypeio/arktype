@@ -5,14 +5,14 @@ import { formatEmail } from "./common"
 import {
     useSignInMutation,
     SignInMutation,
-    SignInMutationVariables,
+    SignInMutationVariables
 } from "@re-do/model/dist/react"
 
 export const SignIn = () => {
     const [submit] = useSignInMutation()
     const disabled =
         store.useQuery({
-            page: true,
+            page: true
         }).page !== "SIGN_IN"
     return (
         <Form<SignInMutationVariables, SignInMutation>
@@ -21,7 +21,7 @@ export const SignIn = () => {
             transformValues={({ email, ...rest }) => {
                 return {
                     ...rest,
-                    email: formatEmail(email),
+                    email: formatEmail(email)
                 }
             }}
         >

@@ -6,7 +6,7 @@ import { ErrorText } from "."
 const getKnobProps = () => {
     const textChildren = text("children", "this says stuff")
     const objectChildren = object("childrenArray", null)
-    const toolTipPlacement = select(
+    const tooltipPlacement = select(
         "toolTipPlacement",
         {
             "bottom-end": "bottom-end",
@@ -27,7 +27,7 @@ const getKnobProps = () => {
 
     return {
         children: objectChildren ? objectChildren : textChildren,
-        toolTipPlacement
+        tooltipPlacement
     }
 }
 

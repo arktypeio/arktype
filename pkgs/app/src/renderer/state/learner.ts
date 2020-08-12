@@ -5,7 +5,7 @@ import { resolve } from "path"
 import { createHandler } from "react-statelessly"
 import {
     StepCreateWithoutTestsInput as StepInput,
-    TagCreateWithoutTestInput as TagInput,
+    TagCreateWithoutTestInput as TagInput
 } from "@re-do/model"
 import { launch, BrowserName, browserHandlers } from "@re-do/test"
 import { store } from "renderer/common"
@@ -23,7 +23,7 @@ export type Bounds = {
 }
 
 const getMainWindowBounds = (): Bounds => ({
-    ...remote.getCurrentWindow().getBounds(),
+    ...remote.getCurrentWindow().getBounds()
 })
 
 // TODO: Make sure bounds are within screen size
@@ -45,7 +45,7 @@ export type Learner = {
 
 export const handleLearner = createHandler<Learner, Root>({
     active: async (isActive, context) =>
-        await (isActive ? start() : stop(context.learner)),
+        await (isActive ? start() : stop(context.learner))
 })
 
 export const learnerInitial: Learner = {
@@ -59,8 +59,8 @@ export const learnerInitial: Learner = {
         height: -1,
         width: -1,
         x: -1,
-        y: -1,
-    },
+        y: -1
+    }
 }
 
 const start = async () => {
@@ -72,14 +72,14 @@ const start = async () => {
         height: height + BROWSER_WINDOW_TITLEBAR_SIZE,
         width: width - DEFAULT_LEARNER_WIDTH,
         x: x + DEFAULT_LEARNER_WIDTH,
-        y: y - BROWSER_WINDOW_TITLEBAR_SIZE,
+        y: y - BROWSER_WINDOW_TITLEBAR_SIZE
     }
     setMainWindowBounds(newMainWindowBounds)
     const browser = await launch("chrome", {
         args: [
             `--window-position=${browserBounds.x},${browserBounds.y}`,
-            `--window-size=${browserBounds.width},${browserBounds.height}`,
-        ],
+            `--window-size=${browserBounds.width},${browserBounds.height}`
+        ]
     })
     const { page } = browser
     await page.exposeFunction("notify", notify)
@@ -96,8 +96,8 @@ const start = async () => {
         learner: {
             lastConnectedEndpoint: browser.wsEndpoint,
             lastMainWindowBounds: lastMainWindowBounds,
-            lastConnectedBrowser: "chrome",
-        },
+            lastConnectedBrowser: "chrome"
+        }
     })
 }
 
@@ -105,13 +105,13 @@ const stop = async (context: Learner) => {
     const {
         lastConnectedEndpoint,
         lastMainWindowBounds,
-        lastConnectedBrowser,
+        lastConnectedBrowser
     } = context
     if (lastConnectedEndpoint && lastConnectedBrowser) {
         try {
             const browser = await browserHandlers[lastConnectedBrowser].connect(
                 {
-                    wsEndpoint: lastConnectedEndpoint,
+                    wsEndpoint: lastConnectedEndpoint
                 }
             )
             await browser.close()
@@ -133,8 +133,8 @@ const stop = async (context: Learner) => {
 export const deactivateLearner = async () => {
     await store.mutate({
         learner: {
-            active: false,
-        },
+            active: false
+        }
     })
 }
 
@@ -143,15 +143,15 @@ export const resetLearner = async () => {
         learner: {
             events: [],
             testName: "",
-            testTags: [],
-        },
+            testTags: []
+        }
     })
 }
 
 const notify = (event: StepInput) => {
     try {
         store.mutate({
-            learner: { events: (_) => _.concat(event) },
+            learner: { events: (_) => _.concat(event) }
         })
     } catch (e) {
         console.log(e)

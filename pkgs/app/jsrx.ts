@@ -22,26 +22,26 @@ const publish = (platforms: PlatformString[]) => () => {
 jsrx(
     {
         shared: {
-            build: $(`${clean} && webpack && cp .env resources/icon.png dist`),
+            build: $(`${clean} && webpack && cp .env resources/icon.png dist`)
         },
         dev: {
             start: $(
                 `${clean} && npm run build && webpack-dev-server --config webpack.devServer.config.ts --progress --colors`
             ),
-            electron: $("electron --remote-debugging-port=9223 ./dist/main.js"),
+            electron: $("electron --remote-debugging-port=9223 ./dist/main.js")
         },
         prod: {
             publish: publish(["linux", "macos", "windows"]),
             publishLinux: publish(["linux"]),
             publishMac: publish(["macos"]),
-            publishWindows: publish(["windows"]),
-        },
+            publishWindows: publish(["windows"])
+        }
     },
     {
         excludeOthers: true,
         envFiles: {
             dev: join(__dirname, ".env"),
-            prod: join(__dirname, ".env.production"),
-        },
+            prod: join(__dirname, ".env.production")
+        }
     }
 )

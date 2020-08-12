@@ -9,7 +9,7 @@ import finder from "@medv/finder"
 
 enum StepKind {
     Click = "click",
-    Set = "set",
+    Set = "set"
 }
 
 type StepInput = any
@@ -19,7 +19,7 @@ const eventMap = {
     dblclick: StepKind.Click,
     submit: StepKind.Click,
     change: StepKind.Set,
-    select: StepKind.Set,
+    select: StepKind.Set
 } as const
 
 type EventMap = typeof eventMap
@@ -43,7 +43,7 @@ const eventToSteps = (e: Event) => {
         return []
     }
     const step: StepInput = {
-        kind: eventMap[e.type as EventName],
+        kind: eventMap[e.type as EventName]
     }
     if (e.target) {
         const target = e.target as HTMLElement
