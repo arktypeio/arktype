@@ -6,7 +6,7 @@ export const SignUpForm = () => (
     <Form<{ email: string }, boolean>
         validate={(_) => ({ email: [] })}
         submit={async (options: any) => {
-            track.prelaunchRegister({
+            await track.googleRegister({
                 email: options?.variables?.email!
             })
             return { data: true }

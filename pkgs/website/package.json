@@ -20,6 +20,7 @@
         "analytics-node": "3.4.0-beta.2",
         "react": "16.13.1",
         "react-dom": "16.13.1",
+        "react-ga": "3.1.2",
         "react-router-dom": "5.2.0",
         "react-typist": "2.0.5",
         "framer-motion": "2.0.0",
