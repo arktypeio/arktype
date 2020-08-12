@@ -10,12 +10,17 @@ import { layout, animations } from "../../../constants"
 
 export type GetStartedDesktopProps = {
     onClick: () => void
+    animateScroll?: boolean
 }
 
-export const GetStartedDesktop = ({ onClick }: GetStartedDesktopProps) => {
+export const GetStartedDesktop = ({
+    onClick,
+    animateScroll
+}: GetStartedDesktopProps) => {
     const { scrollY } = useViewportScroll()
     const controls = useAnimation()
-    const scrollRange = [0, layout.header.height]
+    // Setting the scroll range to [0, 0] renders components in the end state of their animation
+    const scrollRange = animateScroll ? animations.header.scrollRange : [0, 0]
     const offsetRange = [(layout.header.height * 3) / 2 + 16, 32]
     const colorRange = ["#ffffff", "#2979ff"]
     const getStartedOffset = useTransform(scrollY, scrollRange, offsetRange)

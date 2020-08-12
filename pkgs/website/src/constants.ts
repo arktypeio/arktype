@@ -43,7 +43,7 @@ export const animations = {
     initialWiggle,
     loopedWiggle,
     header: {
-        scrollRange: [layout.header.slantHeight, layout.header.height],
+        scrollRange: [0, layout.header.height],
         offsetRange: [
             layout.header.height * 2 + layout.header.slantHeight,
             layout.header.height + layout.header.slantHeight

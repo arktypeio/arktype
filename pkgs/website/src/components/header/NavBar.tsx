@@ -11,43 +11,45 @@ export type NavBarProps = {
 
 export const NavBar = ({ skewAngle, mobile = false }: NavBarProps) => {
     return (
-        <Card
-            elevation={24}
-            style={{
-                position: "fixed",
-                top: -24,
-                left: 0,
-                zIndex: 2,
-                width: "100%",
-                transform: `skewY(${skewAngle}rad)`,
-                transformOrigin: "center",
-                display: "flex",
-                justifyContent: "center",
-                padding: 0
-            }}
-        >
-            <AnimatedLogo
-                style={{
-                    marginTop: 32,
-                    marginBottom: 8,
-                    transform: `skewY(${-skewAngle}rad)`,
-                    flexGrow: 1,
-                    height: layout.header.height,
-                    maxWidth: "60%"
-                }}
-            />
-            <Row
+        <div style={{ height: layout.header.height, width: "100%" }}>
+            <Card
+                elevation={24}
                 style={{
                     position: "fixed",
-                    maxWidth: layout.maxWidth,
-                    marginTop: 24,
-                    padding: 0,
-                    transform: `skewY(${-skewAngle}rad)`
+                    top: -24,
+                    left: 0,
+                    zIndex: 2,
+                    width: "100%",
+                    transform: `skewY(${skewAngle}rad)`,
+                    transformOrigin: "center",
+                    display: "flex",
+                    justifyContent: "center",
+                    padding: 0
                 }}
             >
-                {mobile ? <MobileNav /> : <DesktopNav />}
-            </Row>
-        </Card>
+                <AnimatedLogo
+                    style={{
+                        marginTop: 32,
+                        marginBottom: 8,
+                        transform: `skewY(${-skewAngle}rad)`,
+                        flexGrow: 1,
+                        height: layout.header.height,
+                        maxWidth: "60%"
+                    }}
+                />
+                <Row
+                    style={{
+                        position: "fixed",
+                        maxWidth: layout.maxWidth,
+                        marginTop: 24,
+                        padding: 0,
+                        transform: `skewY(${-skewAngle}rad)`
+                    }}
+                >
+                    {mobile ? <MobileNav /> : <DesktopNav />}
+                </Row>
+            </Card>
+        </div>
     )
 }
 

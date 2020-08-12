@@ -7,19 +7,23 @@ import { motion, useViewportScroll } from "framer-motion"
 export type SubHeaderProps = {
     skewAngle: number
     mobile: boolean
+    animateScroll?: boolean
 }
 
-export const SubHeader = ({ skewAngle, mobile }: SubHeaderProps) => {
+export const SubHeader = ({
+    skewAngle,
+    mobile,
+    animateScroll
+}: SubHeaderProps) => {
     const { scrollY } = useViewportScroll()
     const skew = `skewY(${skewAngle}rad)`
     const unskew = `skewY(${-skewAngle}rad)`
     return (
-        <>
+        <div style={{ height: layout.header.height, width: "100%" }}>
             <Card
                 elevation={24}
                 style={{
                     position: mobile ? "fixed" : "unset",
-                    marginTop: layout.header.height,
                     width: "100%",
                     transform: skew,
                     transformOrigin: "center",
@@ -37,7 +41,13 @@ export const SubHeader = ({ skewAngle, mobile }: SubHeaderProps) => {
                     }}
                 >
                     <motion.div
-                        style={{ position: "relative", bottom: scrollY }}
+                        style={{
+                            position: "relative",
+                            bottom: animateScroll
+                                ? scrollY
+                                : layout.header.height +
+                                  layout.header.slantHeight
+                        }}
                     >
                         <Text
                             variant="h4"
@@ -60,14 +70,6 @@ export const SubHeader = ({ skewAngle, mobile }: SubHeaderProps) => {
                     </motion.div>
                 </Column>
             </Card>
-            {mobile ? (
-                <div
-                    style={{
-                        height:
-                            layout.header.height * 2 + layout.header.slantHeight
-                    }}
-                />
-            ) : null}
-        </>
+        </div>
     )
 }

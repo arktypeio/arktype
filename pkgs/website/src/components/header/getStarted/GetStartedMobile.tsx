@@ -3,16 +3,26 @@ import { Button } from "@re-do/components"
 import { motion, useViewportScroll, useTransform } from "framer-motion"
 import { animations } from "../../../constants"
 
-const { scrollRange, offsetRange } = animations.header
-
 export type GetStartedMobileProps = {
     onClick: () => void
+    animateScroll?: boolean
 }
 
-export const GetStartedMobile = ({ onClick }: GetStartedMobileProps) => {
+export const GetStartedMobile = ({
+    animateScroll,
+    onClick
+}: GetStartedMobileProps) => {
     const { scrollY } = useViewportScroll()
-    const top = useTransform(scrollY, scrollRange, offsetRange)
-    const opacity = useTransform(scrollY, scrollRange, [0, 1])
+    // Setting the scroll range to [0, 0] renders components in the end state of their animation
+    const scrollBoundaries = animateScroll
+        ? animations.header.scrollRange
+        : [0, 0]
+    const top = useTransform(
+        scrollY,
+        scrollBoundaries,
+        animations.header.offsetRange
+    )
+    const opacity = useTransform(scrollY, scrollBoundaries, [0, 1])
     return (
         <motion.div
             style={{

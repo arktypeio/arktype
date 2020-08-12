@@ -4,7 +4,7 @@ import { features } from "../../content"
 
 export const Home = () => {
     return (
-        <Page subHeader={true}>
+        <Page subHeader={true} animateScroll={true}>
             <Features content={features} />
             <HowItWorks />
         </Page>
