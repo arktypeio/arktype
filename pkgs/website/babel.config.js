@@ -1,3 +1,3 @@
 module.exports = {
-    presets: [["redo", { hot: true }]]
+    presets: ["redo"]
 }

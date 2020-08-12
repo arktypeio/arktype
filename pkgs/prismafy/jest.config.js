@@ -1,3 +1,3 @@
 module.exports = {
-    ...require("@re-do/recommended/jest"),
+    ...require("@re-do/recommended/jest")
 }

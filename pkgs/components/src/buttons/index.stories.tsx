@@ -1,24 +1,28 @@
 import React from "react"
-import { storiesOf } from "@storybook/react"
-import { Button, IconButton } from "."
-import { withKnobs, select } from "@storybook/addon-knobs"
+import { Button, ButtonProps } from "."
 import { Icons } from "../icons"
 
-storiesOf("Button", module)
-    .addDecorator(withKnobs)
-    .add("Standard", () => {
-        return (
-            <Button
-                kind={select(
-                    "kind",
-                    { primary: "primary", secondary: "secondary" },
-                    "primary"
-                )}
-            >
-                This says stuff!
-            </Button>
-        )
-    })
-    .add("IconButton", () => (
-        <Icons.account onClick={() => console.log("Hello")} />
-    ))
+export default {
+    title: "buttons"
+}
+
+export const Standard = (props: ButtonProps) => (
+    <Button {...props}>This says stuff!</Button>
+)
+
+Standard.args = { kind: "primary" }
+Standard.argTypes = {
+    kind: { control: { type: "radio", options: ["primary", "secondary"] } },
+    fontSize: { control: "number" },
+    color: { control: "color" }
+}
+
+export const Icon = (props: ButtonProps) => (
+    <Button {...props} Icon={Icons.account} />
+)
+
+Icon.args = { fontSize: 16 }
+Icon.argTypes = {
+    fontSize: { control: "number" },
+    color: { control: "color" }
+}

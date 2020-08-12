@@ -1,21 +1,14 @@
 import React from "react"
-import { Column } from "@re-do/components"
-import { HowItWorks } from "./HowItWorks"
-import { SignUp, TwitchInfo } from "../../components"
-import { layout } from "../../constants"
-import { SubHeader } from "./SubHeader"
+import { Features, HowItWorks, Page } from "../../components"
+import { features } from "../../content"
 
-export const Home = () => (
-    <Column align="center">
-        <SubHeader />
-        <HowItWorks />
-        {layout.isMobile ? (
-            <Column align="center">
-                <SignUp />
-                <div style={{ height: 40 }} />
-                <TwitchInfo />
-            </Column>
-        ) : null}
-        <div style={{ height: layout.contactInfo.height }} />
-    </Column>
-)
+export const Home = () => {
+    return (
+        <Page subHeader={true} animateScroll={true}>
+            <Features content={features} />
+            <HowItWorks />
+        </Page>
+    )
+}
+
+export default Home

@@ -1,0 +1,20 @@
+import React from "react"
+import { Row } from "@re-do/components"
+import { FeatureSummary, FeatureSummaryProps } from "./FeatureSummary"
+
+export type FeaturesProps = {
+    content: FeatureSummaryProps[]
+}
+
+export const Features = ({ content }: FeaturesProps) => (
+    <Row
+        wrap="wrap"
+        justify="space-around"
+        align="baseline"
+        style={{ padding: 0 }}
+    >
+        {content.map((props, idx) => (
+            <FeatureSummary key={idx} {...props} />
+        ))}
+    </Row>
+)

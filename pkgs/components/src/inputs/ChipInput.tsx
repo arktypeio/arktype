@@ -25,8 +25,6 @@ export const ChipInput = ({
                 />
             ))
         }
-        renderInput={params => (
-            <TextInput label={label} fullWidth {...params} />
-        )}
+        renderInput={(params) => <TextInput label={label} {...params} />}
     />
 )

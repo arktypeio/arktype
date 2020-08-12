@@ -24,7 +24,7 @@
         "jsrxGen": "jsrx jsrxGen"
     },
     "dependencies": {
-        "@babel/runtime-corejs3": "7.10.3",
+        "@babel/runtime-corejs3": "7.10.5",
         "@prisma/client": "2.0.1",
         "@re-do/utils": "0.0.10",
         "apollo-server-lambda": "2.15.0",
@@ -68,6 +68,6 @@
         "ts-node-dev": "1.0.0-pre.43",
         "typescript": "3.9.5",
         "webpack-node-externals": "1.7.2",
-        "@babel/runtime-corejs3": "7.10.3"
+        "@babel/runtime-corejs3": "7.10.5"
     }
 }

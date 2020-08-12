@@ -3,7 +3,7 @@ import { transform } from "../common"
 const o = {
     a: 1,
     b: 2,
-    c: 3,
+    c: 3
 }
 
 describe("transform", () => {
@@ -11,7 +11,7 @@ describe("transform", () => {
         expect(transform(o, ([k, v]) => [k.toUpperCase(), -v])).toStrictEqual({
             A: -1,
             B: -2,
-            C: -3,
+            C: -3
         })
     })
     test("errors on invalid objects", () => {

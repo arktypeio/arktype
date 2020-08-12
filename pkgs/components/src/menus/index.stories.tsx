@@ -7,31 +7,29 @@ import { withKnobs, boolean as booleanKnob } from "@storybook/addon-knobs"
 storiesOf("Menu", module)
     .addDecorator(withKnobs)
     .add("ToggleMenu", () => (
-        <TogglableMenu>
-            {{
-                toggle: <Button>Open</Button>,
-                options: {
-                    Logout: () => console.log("out"),
-                    Login: () => console.log("in")
-                }
+        <TogglableMenu
+            toggle={<Button>Open</Button>}
+            options={{
+                Logout: () => console.log("out"),
+                Login: () => console.log("in")
             }}
-        </TogglableMenu>
+        />
     ))
     .add("Menu", () => {
-        const anchorTo = useRef<HTMLDivElement>(null)
+        const [anchorTo, setAnchorTo] = React.useState<EventTarget | null>(null)
         return (
             <div>
-                <div ref={anchorTo}>Anchored here</div>
-                <Menu>
-                    {{
-                        anchorTo,
-                        open: booleanKnob("open", true),
-                        options: {
-                            Logout: () => console.log("out"),
-                            Login: () => console.log("in")
-                        }
+                <button onClick={(e) => setAnchorTo(e.currentTarget)}>
+                    Anchored here
+                </button>
+                <Menu
+                    anchorTo={anchorTo}
+                    open={booleanKnob("open", true)}
+                    options={{
+                        Logout: () => console.log("out"),
+                        Login: () => console.log("in")
                     }}
-                </Menu>
+                />
             </div>
         )
     })

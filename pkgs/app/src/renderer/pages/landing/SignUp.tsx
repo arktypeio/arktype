@@ -5,12 +5,12 @@ import {
     Row,
     FormSubmit,
     Button,
-    Column,
+    Column
 } from "@re-do/components"
 import {
     useSignUpMutation,
     SignUpMutation,
-    SignUpMutationVariables,
+    SignUpMutationVariables
 } from "@re-do/model/dist/react"
 import { store } from "renderer/common"
 import { formatEmail } from "./common"
@@ -19,7 +19,7 @@ export const SignUp = () => {
     const [submit] = useSignUpMutation()
     const disabled =
         store.useQuery({
-            page: true,
+            page: true
         }).page !== "SIGN_UP"
     return (
         <Form<SignUpMutationVariables, SignUpMutation>
@@ -29,7 +29,7 @@ export const SignUp = () => {
             transformValues={({ email, ...rest }) => {
                 return {
                     ...rest,
-                    email: formatEmail(email),
+                    email: formatEmail(email)
                 }
             }}
         >

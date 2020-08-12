@@ -45,12 +45,6 @@ function readPackage(packageJson, context) {
         )
         packageJson.dependencies["@babel/runtime"] = "7.5.5"
     }
-    if (packageJson.name === "@material-ui/pickers") {
-        context.log(
-            "Adding prop-types as a dependency for @material-ui/pickers..."
-        )
-        packageJson.dependencies["prop-types"] = "15.7.2"
-    }
     if (packageJson.name.startsWith("@graphql-codegen/")) {
         context.log(
             `Adding change-case as a peer dependency for ${packageJson.name}...`
@@ -62,6 +56,14 @@ function readPackage(packageJson, context) {
     if (packageJson.name === "@prisma/engine-core") {
         context.log("Updating undici version for @prisma/engine-core...")
         packageJson.dependencies["undici"] = "1.0.3"
+    }
+    if (packageJson.name.startsWith("@docusaurus")) {
+        if (!packageJson.dependencies["core-js"]) {
+            context.log(
+                `Adding core-js as a dependency for ${packageJson.name}...`
+            )
+            packageJson.dependencies["core-js"] = "^2.6.5"
+        }
     }
     return packageJson
 }
