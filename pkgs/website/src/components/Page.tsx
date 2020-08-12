@@ -44,7 +44,8 @@ export const Page = ({
             <Column
                 align="center"
                 style={{
-                    maxWidth: layout.maxWidth
+                    maxWidth: layout.maxWidth,
+                    padding: 8
                 }}
             >
                 {children}
