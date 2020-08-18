@@ -36,7 +36,6 @@ const googleRegister = ({ email }: TrackOptions) => {
     if (!localStorage.userId) {
         localStorage.userId = v4()
     }
-    ;(window as any).reactGA = reactGA
     reactGA.set({ userId: localStorage.userId, email })
     reactGA.event({ category: "User", action: "Signed Up" })
 }

@@ -24,17 +24,17 @@ export const FormText = ({
                 name={name}
                 label={label ? label : name}
                 inputRef={register}
-                onBlur={event => {
+                onBlur={(event) => {
                     onBlur && onBlur(event)
                     handleBlur(name)
                 }}
-                onKeyDown={event => {
+                onKeyDown={(event) => {
                     onKeyDown && onKeyDown(event)
                     event.key === "Enter" && submit()
                 }}
                 {...rest}
             />
-            <div style={{ height: 20 }}>
+            <div style={{ height: 20, maxWidth: 300 }}>
                 {errors?.[name]?.message ? (
                     <ErrorText tooltipPlacement={tooltipPlacement}>
                         {errors[name]!.message!.split("\n")}

@@ -68,7 +68,7 @@ dependencies:
   '@types/react-router-dom': 5.1.3
   '@types/react-typist': 2.0.1
   '@types/uuid': 8.0.0
-  '@types/validator': 12.0.1
+  '@types/validator': 13.1.0
   '@types/webpack': 4.41.17
   '@types/webpack-bundle-analyzer': 3.8.0
   '@types/webpack-merge': 4.1.5
@@ -6631,14 +6631,14 @@ packages:
     dev: false
     resolution:
       integrity: sha512-xSQfNcvOiE5f9dyd4Kzxbof1aTrLobL278pGLKOZI6esGfZ7ts9Ka16CzIN6Y8hFHE1C7jIBZokULhK1bOgjRw==
-  /@types/validator/12.0.1:
-    dev: false
-    resolution:
-      integrity: sha512-l57fIANZLMe8DArz+SDb+7ATXnDm15P7u2wHBw5mb0aSMd+UuvmvhouBF2hdLgQPDMJ39sh9g2MJO4GkZ0VAdQ==
   /@types/validator/13.0.0:
     dev: false
     resolution:
       integrity: sha512-WAy5txG7aFX8Vw3sloEKp5p/t/Xt8jD3GRD9DacnFv6Vo8ubudAsRTXgxpQwU0mpzY/H8U4db3roDuCMjShBmw==
+  /@types/validator/13.1.0:
+    dev: false
+    resolution:
+      integrity: sha512-gHUHI6pJaANIO2r6WcbT7+WMgbL9GZooR4tWpuBOETpDIqFNxwaJluE+6rj6VGYe8k6OkfhbHz2Fkm8kl06Igw==
   /@types/webpack-bundle-analyzer/3.8.0:
     dependencies:
       '@types/webpack': 4.41.17
@@ -25339,7 +25339,7 @@ packages:
       '@graphql-codegen/typescript-react-apollo': 1.15.4_2ea23d3465d225e2cc20225c4793aca2
       '@types/fs-extra': 8.1.0
       '@types/node': 12.11.1
-      '@types/validator': 12.0.1
+      '@types/validator': 13.1.0
       fs-extra: 8.1.0
       graphql: 15.1.0
       graphql-tag: 2.10.1_graphql@15.1.0
@@ -25351,7 +25351,7 @@ packages:
     dev: false
     name: '@rush-temp/model'
     resolution:
-      integrity: sha512-janqoBUixjhjwTYKhWA2SaiBC1PSoEiAC3XGY2AapeIRMe8L3cQwn7zzj2j8MwSXwbO4QrNRcegUsi1uKoLSZg==
+      integrity: sha512-aai8VmMNIYtt1KvwalFCZJQELNlMbxbPdT5XCmuKOlnHF8xL/DjWI2ab3243wqDUvyd0qC76NSHFfFUj7gOxyg==
       tarball: 'file:projects/model.tgz'
     version: 0.0.0
   'file:projects/prismafy.tgz':
@@ -25493,10 +25493,11 @@ packages:
       jest: 24.9.0
       moize: 5.4.4
       typescript: 3.9.5
+      validator: 13.1.1
     dev: false
     name: '@rush-temp/utils'
     resolution:
-      integrity: sha512-/RqsbclDKLGwEtqzxNZTMnewiD4ir1kMQXtGgBUMuQgM7YKLGRE+na2JmryBS1hD3NlHH4rEQlQnzpCZLnQQvQ==
+      integrity: sha512-vwTJX6RHFoOtktodtOIpX5idOEfHJw3SB8EcG4KSg1Hzv4+0lo2m35Vi7nR/ysbY9C6c9b2vohSsTM0VdMTTPw==
       tarball: 'file:projects/utils.tgz'
     version: 0.0.0
   'file:projects/website.tgz':
@@ -25513,6 +25514,7 @@ packages:
       '@types/react-router-dom': 5.1.3
       '@types/react-typist': 2.0.1
       '@types/uuid': 8.0.0
+      '@types/validator': 13.1.0
       analytics-node: 3.4.0-beta.2
       framer-motion: 2.0.0_react-dom@16.13.1+react@16.13.1
       react: 16.13.1
@@ -25523,13 +25525,14 @@ packages:
       react-typist: 2.0.5_react-dom@16.13.1+react@16.13.1
       typescript: 3.9.5
       uuid: 8.2.0
+      validator: 13.1.1
       webpack: 4.43.0_webpack@4.43.0
       webpack-cli: 3.3.10_webpack@4.43.0
       webpack-dev-server: 3.11.0_11a3126e563e077c75be5be96bb84f2d
     dev: false
     name: '@rush-temp/website'
     resolution:
-      integrity: sha512-VF9fFyP1Stb7Pl+zS7XrITd3XZkSz4lDk2a/91U0ao+CSblkR7JImP0U+CtBXD7R4/MJQ/dwJiHLmfQCOU/myw==
+      integrity: sha512-MA7dx7jRfFGm/InSGi3/BUhkaWzC8qRWMOnAiKsfUPWUzvguTYe56GDbIjaTXf8QCTQwAJ0qq0TkWwiplzph+g==
       tarball: 'file:projects/website.tgz'
     version: 0.0.0
 registry: ''
@@ -25603,7 +25606,7 @@ specifiers:
   '@types/react-router-dom': 5.1.3
   '@types/react-typist': 2.0.1
   '@types/uuid': 8.0.0
-  '@types/validator': 12.0.1
+  '@types/validator': 13.1.0
   '@types/webpack': 4.41.17
   '@types/webpack-bundle-analyzer': 3.8.0
   '@types/webpack-merge': 4.1.5
