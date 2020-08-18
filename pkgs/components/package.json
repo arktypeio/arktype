@@ -24,7 +24,7 @@
         "material-table": "1.54.2",
         "react": "16.13.1",
         "react-dom": "16.13.1",
-        "react-hook-form": "3.24.1",
+        "react-hook-form": "6.4.1",
         "react-router-dom": "5.2.0",
         "typeface-ubuntu": "0.0.65"
     },

@@ -117,7 +117,7 @@ dependencies:
   prettier: 2.0.1
   react-dom: 16.13.1
   react-ga: 3.1.2
-  react-hook-form: 3.24.1_react-dom@16.13.1
+  react-hook-form: 6.4.1
   react-redux: 7.1.3_react-dom@16.13.1+redux@4.0.4
   react-router: 5.2.0
   react-router-dom: 5.2.0
@@ -20133,25 +20133,20 @@ packages:
       react-dom: ^16.6.0
     resolution:
       integrity: sha512-t+bhAI4NgxfEv8ez4r77cLfR4O4Z55E/FH2DT+uiE4U7yfWgAk7OAOi7IxHxuYEVLI26bqjZvlVCkpC5/5AoNA==
-  /react-hook-form/3.24.1_react-dom@16.13.1:
-    dependencies:
-      react-dom: 16.13.1
+  /react-hook-form/6.4.1:
     dev: false
     peerDependencies:
       react: ^16.8.0
-      react-dom: ^16.8.0
     resolution:
-      integrity: sha512-tF3f7tYP7cF1h+AiO5vdHexTiaq94VWeiRgnbYQTD9BjLRxugyHZAA2IvYWkD3Q4L+3tnF9ORd8YRx27JnIPKw==
-  /react-hook-form/3.24.1_react-dom@16.13.1+react@16.13.1:
+      integrity: sha512-DC0sdwRvCTxccad87APbGu6lggDc8gqKApe1cwakm3Ris0PjwNIll+48ViCed5YFIOE5UCgqRCevAjWu4ZslkQ==
+  /react-hook-form/6.4.1_react@16.13.1:
     dependencies:
       react: 16.13.1
-      react-dom: 16.13.1_react@16.13.1
     dev: false
     peerDependencies:
       react: ^16.8.0
-      react-dom: ^16.8.0
     resolution:
-      integrity: sha512-tF3f7tYP7cF1h+AiO5vdHexTiaq94VWeiRgnbYQTD9BjLRxugyHZAA2IvYWkD3Q4L+3tnF9ORd8YRx27JnIPKw==
+      integrity: sha512-DC0sdwRvCTxccad87APbGu6lggDc8gqKApe1cwakm3Ris0PjwNIll+48ViCed5YFIOE5UCgqRCevAjWu4ZslkQ==
   /react-hot-loader/4.12.15_react-dom@16.13.1:
     dependencies:
       fast-levenshtein: 2.0.6
@@ -25295,7 +25290,7 @@ packages:
       material-table: 1.54.2_64fe165cdb3bb1449f67ef4ad817869b
       react: 16.13.1
       react-dom: 16.13.1_react@16.13.1
-      react-hook-form: 3.24.1_react-dom@16.13.1+react@16.13.1
+      react-hook-form: 6.4.1_react@16.13.1
       react-router-dom: 5.2.0_react@16.13.1
       typeface-ubuntu: 0.0.65
       typescript: 3.9.5
@@ -25306,7 +25301,7 @@ packages:
       '@babel/core': '*'
       webpack: '*'
     resolution:
-      integrity: sha512-tx/mxKsVfI7IZeDpcU/CzKL5z/NrYZ28CE1ud41XN53TxO08+bHnsDUHMcnFS/7LNjJnlQLwzRpP4bf3Aabgpg==
+      integrity: sha512-/M4Qry5eTqeHlpq4lpGArZYWQTGru4oUd3i28EE1+e3PflSXiLNQ2aD7YqeWFHh1ujKE4a0mYxd+qAugJg9+rA==
       tarball: 'file:projects/components.tgz'
     version: 0.0.0
   'file:projects/gqlize.tgz':
@@ -25655,7 +25650,7 @@ specifiers:
   prettier: 2.0.1
   react-dom: 16.13.1
   react-ga: 3.1.2
-  react-hook-form: 3.24.1
+  react-hook-form: 6.4.1
   react-redux: 7.1.3
   react-router: 5.2.0
   react-router-dom: 5.2.0

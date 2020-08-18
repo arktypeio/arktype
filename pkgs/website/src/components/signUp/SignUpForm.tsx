@@ -29,7 +29,7 @@ export const SignUpForm = () => (
             return { data: true }
         }}
     >
-        {({ data, error }) => (
+        {({ data }) => (
             <>
                 <FormText name="email" />
                 <FormSubmit>
