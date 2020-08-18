@@ -20,13 +20,11 @@ export const SignUpForm = () => (
             return { email: errors }
         }}
         submit={async (options: any) => {
-            if (!(window as any).ga.loaded) {
-                return { error: "You have uBlock." }
-            }
-            track.googleRegister({
-                email: options?.variables?.email!
+            const email = options.variables.email
+            track.subscribe({
+                email
             })
-            return { data: true }
+            return { data: { email } }
         }}
     >
         {({ data }) => (
