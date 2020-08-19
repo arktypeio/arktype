@@ -19,7 +19,7 @@
         "@graphql-codegen/typescript": "1.15.4",
         "@graphql-codegen/typescript-operations": "1.15.4",
         "@graphql-codegen/typescript-react-apollo": "1.15.4",
-        "fs-extra": "8.1.0",
+        "fs-extra": "9.0.1",
         "gqlize": "0.0.1",
         "graphql": "15.1.0",
         "graphql-tag": "2.10.1",
@@ -30,7 +30,7 @@
     },
     "devDependencies": {
         "@re-do/recommended": "0.0.2",
-        "@types/fs-extra": "8.1.0",
+        "@types/fs-extra": "9.0.1",
         "@types/node": "12.11.1",
         "@types/validator": "13.1.0",
         "babel-preset-redo": "0.0.2",

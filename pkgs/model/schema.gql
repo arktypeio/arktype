@@ -3,6 +3,13 @@
 # !!!   DO NOT MODIFY THIS FILE BY YOURSELF   !!!
 # -----------------------------------------------
 
+input EnumStepKindFilter {
+    equals: StepKind
+    in: [StepKind!]
+    not: NestedEnumStepKindFilter
+    notIn: [StepKind!]
+}
+
 input IntFilter {
     equals: Int
     gt: Int
@@ -10,7 +17,18 @@ input IntFilter {
     in: [Int!]
     lt: Int
     lte: Int
-    not: Int
+    not: NestedIntFilter
+    notIn: [Int!]
+}
+
+input IntNullableFilter {
+    equals: Int
+    gt: Int
+    gte: Int
+    in: [Int!]
+    lt: Int
+    lte: Int
+    not: NestedIntNullableFilter
     notIn: [Int!]
 }
 
@@ -23,18 +41,36 @@ input NameUserIdCompoundUniqueInput {
     userId: Int!
 }
 
-input NullableIntFilter {
+input NestedEnumStepKindFilter {
+    equals: StepKind
+    in: [StepKind!]
+    not: NestedEnumStepKindFilter
+    notIn: [StepKind!]
+}
+
+input NestedIntFilter {
     equals: Int
     gt: Int
     gte: Int
     in: [Int!]
     lt: Int
     lte: Int
-    not: Int
+    not: NestedIntFilter
     notIn: [Int!]
 }
 
-input NullableStringFilter {
+input NestedIntNullableFilter {
+    equals: Int
+    gt: Int
+    gte: Int
+    in: [Int!]
+    lt: Int
+    lte: Int
+    not: NestedIntNullableFilter
+    notIn: [Int!]
+}
+
+input NestedStringFilter {
     contains: String
     endsWith: String
     equals: String
@@ -43,24 +79,39 @@ input NullableStringFilter {
     in: [String!]
     lt: String
     lte: String
-    not: String
+    not: NestedStringFilter
     notIn: [String!]
     startsWith: String
 }
 
-enum OrderByArg {
-    asc
-    desc
+input NestedStringNullableFilter {
+    contains: String
+    endsWith: String
+    equals: String
+    gt: String
+    gte: String
+    in: [String!]
+    lt: String
+    lte: String
+    not: NestedStringNullableFilter
+    notIn: [String!]
+    startsWith: String
 }
 
 type Query {
     tests(
         cursor: TestWhereUniqueInput
-        orderBy: TestOrderByInput
+        distinct: [TestDistinctFieldEnum!]
+        orderBy: [TestOrderByInput!]
         skip: Int
         take: Int
         where: TestWhereInput
     ): [Test!]!
+}
+
+enum SortOrder {
+    asc
+    desc
 }
 
 type Step {
@@ -71,7 +122,8 @@ type Step {
     selector: String
     tests(
         cursor: TestWhereUniqueInput
-        orderBy: TestOrderByInput
+        distinct: [TestDistinctFieldEnum!]
+        orderBy: [TestOrderByInput!]
         skip: Int
         take: Int
         where: TestWhereInput
@@ -112,10 +164,15 @@ input StepCreateWithoutUserInput {
     value: String
 }
 
-input StepFilter {
-    every: StepWhereInput
-    none: StepWhereInput
-    some: StepWhereInput
+enum StepDistinctFieldEnum {
+    expected
+    id
+    key
+    kind
+    selector
+    url
+    userId
+    value
 }
 
 enum StepKind {
@@ -129,38 +186,37 @@ enum StepKind {
     set
 }
 
-input StepKindFilter {
-    equals: StepKind
-    in: [StepKind!]
-    not: StepKind
-    notIn: [StepKind!]
+input StepListRelationFilter {
+    every: StepWhereInput
+    none: StepWhereInput
+    some: StepWhereInput
 }
 
 input StepOrderByInput {
-    expected: OrderByArg
-    id: OrderByArg
-    key: OrderByArg
-    kind: OrderByArg
-    selector: OrderByArg
-    url: OrderByArg
-    userId: OrderByArg
-    value: OrderByArg
+    expected: SortOrder
+    id: SortOrder
+    key: SortOrder
+    kind: SortOrder
+    selector: SortOrder
+    url: SortOrder
+    userId: SortOrder
+    value: SortOrder
 }
 
 input StepWhereInput {
     AND: [StepWhereInput!]
-    expected: NullableStringFilter
+    expected: StringNullableFilter
     id: IntFilter
-    key: NullableStringFilter
-    kind: StepKindFilter
+    key: StringNullableFilter
+    kind: EnumStepKindFilter
     NOT: [StepWhereInput!]
     OR: [StepWhereInput!]
-    selector: NullableStringFilter
-    tests: TestFilter
-    url: NullableStringFilter
+    selector: StringNullableFilter
+    tests: TestListRelationFilter
+    url: StringNullableFilter
     User: UserWhereInput
-    userId: NullableIntFilter
-    value: NullableStringFilter
+    userId: IntNullableFilter
+    value: StringNullableFilter
 }
 
 input StepWhereUniqueInput {
@@ -176,7 +232,21 @@ input StringFilter {
     in: [String!]
     lt: String
     lte: String
-    not: String
+    not: NestedStringFilter
+    notIn: [String!]
+    startsWith: String
+}
+
+input StringNullableFilter {
+    contains: String
+    endsWith: String
+    equals: String
+    gt: String
+    gte: String
+    in: [String!]
+    lt: String
+    lte: String
+    not: NestedStringNullableFilter
     notIn: [String!]
     startsWith: String
 }
@@ -210,17 +280,24 @@ input TagCreateWithoutUserInput {
     Test: TestCreateOneWithoutTagsInput
 }
 
-input TagFilter {
+enum TagDistinctFieldEnum {
+    id
+    name
+    testId
+    userId
+}
+
+input TagListRelationFilter {
     every: TagWhereInput
     none: TagWhereInput
     some: TagWhereInput
 }
 
 input TagOrderByInput {
-    id: OrderByArg
-    name: OrderByArg
-    testId: OrderByArg
-    userId: OrderByArg
+    id: SortOrder
+    name: SortOrder
+    testId: SortOrder
+    userId: SortOrder
 }
 
 input TagWhereInput {
@@ -230,7 +307,7 @@ input TagWhereInput {
     NOT: [TagWhereInput!]
     OR: [TagWhereInput!]
     Test: TestWhereInput
-    testId: NullableIntFilter
+    testId: IntNullableFilter
     user: UserWhereInput
     userId: IntFilter
 }
@@ -245,14 +322,16 @@ type Test {
     name: String!
     steps(
         cursor: StepWhereUniqueInput
-        orderBy: StepOrderByInput
+        distinct: [StepDistinctFieldEnum!]
+        orderBy: [StepOrderByInput!]
         skip: Int
         take: Int
         where: StepWhereInput
     ): [Step!]
     tags(
         cursor: TagWhereUniqueInput
-        orderBy: TagOrderByInput
+        distinct: [TagDistinctFieldEnum!]
+        orderBy: [TagOrderByInput!]
         skip: Int
         take: Int
         where: TagWhereInput
@@ -301,16 +380,22 @@ input TestCreateWithoutUserInput {
     tags: TagCreateManyWithoutTestInput
 }
 
-input TestFilter {
+enum TestDistinctFieldEnum {
+    id
+    name
+    userId
+}
+
+input TestListRelationFilter {
     every: TestWhereInput
     none: TestWhereInput
     some: TestWhereInput
 }
 
 input TestOrderByInput {
-    id: OrderByArg
-    name: OrderByArg
-    userId: OrderByArg
+    id: SortOrder
+    name: SortOrder
+    userId: SortOrder
 }
 
 input TestWhereInput {
@@ -319,8 +404,8 @@ input TestWhereInput {
     name: StringFilter
     NOT: [TestWhereInput!]
     OR: [TestWhereInput!]
-    steps: StepFilter
-    tags: TagFilter
+    steps: StepListRelationFilter
+    tags: TagListRelationFilter
     user: UserWhereInput
     userId: IntFilter
 }
@@ -338,21 +423,24 @@ type User {
     password: String!
     steps(
         cursor: StepWhereUniqueInput
-        orderBy: StepOrderByInput
+        distinct: [StepDistinctFieldEnum!]
+        orderBy: [StepOrderByInput!]
         skip: Int
         take: Int
         where: StepWhereInput
     ): [Step!]
     tags(
         cursor: TagWhereUniqueInput
-        orderBy: TagOrderByInput
+        distinct: [TagDistinctFieldEnum!]
+        orderBy: [TagOrderByInput!]
         skip: Int
         take: Int
         where: TagWhereInput
     ): [Tag!]
     tests(
         cursor: TestWhereUniqueInput
-        orderBy: TestOrderByInput
+        distinct: [TestDistinctFieldEnum!]
+        orderBy: [TestOrderByInput!]
         skip: Int
         take: Int
         where: TestWhereInput
@@ -410,9 +498,9 @@ input UserWhereInput {
     NOT: [UserWhereInput!]
     OR: [UserWhereInput!]
     password: StringFilter
-    steps: StepFilter
-    tags: TagFilter
-    tests: TestFilter
+    steps: StepListRelationFilter
+    tags: TagListRelationFilter
+    tests: TestListRelationFilter
 }
 
 input UserWhereUniqueInput {

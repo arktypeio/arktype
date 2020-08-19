@@ -12,14 +12,14 @@
     "dependencies": {
         "@babel/runtime-corejs3": "7.10.5",
         "@re-do/utils": "0.0.10",
-        "fs-extra": "8.1.0",
+        "fs-extra": "9.0.1",
         "graphql": "15.1.0",
         "graphql-tag": "2.10.1",
         "prettier": "2.0.1"
     },
     "devDependencies": {
         "@re-do/recommended": "0.0.2",
-        "@types/fs-extra": "8.1.0",
+        "@types/fs-extra": "9.0.1",
         "@types/jest": "24.0.19",
         "@types/node": "12.11.1",
         "@types/prettier": "1.19.1",
