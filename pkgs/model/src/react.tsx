@@ -12,6 +12,13 @@ export type Scalars = {
     Float: number
 }
 
+export type EnumStepKindFilter = {
+    equals?: Maybe<StepKind>
+    in?: Maybe<Array<StepKind>>
+    not?: Maybe<NestedEnumStepKindFilter>
+    notIn?: Maybe<Array<StepKind>>
+}
+
 export type IntFilter = {
     equals?: Maybe<Scalars["Int"]>
     gt?: Maybe<Scalars["Int"]>
@@ -19,7 +26,18 @@ export type IntFilter = {
     in?: Maybe<Array<Scalars["Int"]>>
     lt?: Maybe<Scalars["Int"]>
     lte?: Maybe<Scalars["Int"]>
-    not?: Maybe<Scalars["Int"]>
+    not?: Maybe<NestedIntFilter>
+    notIn?: Maybe<Array<Scalars["Int"]>>
+}
+
+export type IntNullableFilter = {
+    equals?: Maybe<Scalars["Int"]>
+    gt?: Maybe<Scalars["Int"]>
+    gte?: Maybe<Scalars["Int"]>
+    in?: Maybe<Array<Scalars["Int"]>>
+    lt?: Maybe<Scalars["Int"]>
+    lte?: Maybe<Scalars["Int"]>
+    not?: Maybe<NestedIntNullableFilter>
     notIn?: Maybe<Array<Scalars["Int"]>>
 }
 
@@ -37,18 +55,36 @@ export type NameUserIdCompoundUniqueInput = {
     userId: Scalars["Int"]
 }
 
-export type NullableIntFilter = {
+export type NestedEnumStepKindFilter = {
+    equals?: Maybe<StepKind>
+    in?: Maybe<Array<StepKind>>
+    not?: Maybe<NestedEnumStepKindFilter>
+    notIn?: Maybe<Array<StepKind>>
+}
+
+export type NestedIntFilter = {
     equals?: Maybe<Scalars["Int"]>
     gt?: Maybe<Scalars["Int"]>
     gte?: Maybe<Scalars["Int"]>
     in?: Maybe<Array<Scalars["Int"]>>
     lt?: Maybe<Scalars["Int"]>
     lte?: Maybe<Scalars["Int"]>
-    not?: Maybe<Scalars["Int"]>
+    not?: Maybe<NestedIntFilter>
     notIn?: Maybe<Array<Scalars["Int"]>>
 }
 
-export type NullableStringFilter = {
+export type NestedIntNullableFilter = {
+    equals?: Maybe<Scalars["Int"]>
+    gt?: Maybe<Scalars["Int"]>
+    gte?: Maybe<Scalars["Int"]>
+    in?: Maybe<Array<Scalars["Int"]>>
+    lt?: Maybe<Scalars["Int"]>
+    lte?: Maybe<Scalars["Int"]>
+    not?: Maybe<NestedIntNullableFilter>
+    notIn?: Maybe<Array<Scalars["Int"]>>
+}
+
+export type NestedStringFilter = {
     contains?: Maybe<Scalars["String"]>
     endsWith?: Maybe<Scalars["String"]>
     equals?: Maybe<Scalars["String"]>
@@ -57,14 +93,23 @@ export type NullableStringFilter = {
     in?: Maybe<Array<Scalars["String"]>>
     lt?: Maybe<Scalars["String"]>
     lte?: Maybe<Scalars["String"]>
-    not?: Maybe<Scalars["String"]>
+    not?: Maybe<NestedStringFilter>
     notIn?: Maybe<Array<Scalars["String"]>>
     startsWith?: Maybe<Scalars["String"]>
 }
 
-export enum OrderByArg {
-    Asc = "asc",
-    Desc = "desc"
+export type NestedStringNullableFilter = {
+    contains?: Maybe<Scalars["String"]>
+    endsWith?: Maybe<Scalars["String"]>
+    equals?: Maybe<Scalars["String"]>
+    gt?: Maybe<Scalars["String"]>
+    gte?: Maybe<Scalars["String"]>
+    in?: Maybe<Array<Scalars["String"]>>
+    lt?: Maybe<Scalars["String"]>
+    lte?: Maybe<Scalars["String"]>
+    not?: Maybe<NestedStringNullableFilter>
+    notIn?: Maybe<Array<Scalars["String"]>>
+    startsWith?: Maybe<Scalars["String"]>
 }
 
 export type Query = {
@@ -74,10 +119,16 @@ export type Query = {
 
 export type QueryTestsArgs = {
     cursor?: Maybe<TestWhereUniqueInput>
-    orderBy?: Maybe<TestOrderByInput>
+    distinct?: Maybe<Array<TestDistinctFieldEnum>>
+    orderBy?: Maybe<Array<TestOrderByInput>>
     skip?: Maybe<Scalars["Int"]>
     take?: Maybe<Scalars["Int"]>
     where?: Maybe<TestWhereInput>
+}
+
+export enum SortOrder {
+    Asc = "asc",
+    Desc = "desc"
 }
 
 export type Step = {
@@ -96,7 +147,8 @@ export type Step = {
 
 export type StepTestsArgs = {
     cursor?: Maybe<TestWhereUniqueInput>
-    orderBy?: Maybe<TestOrderByInput>
+    distinct?: Maybe<Array<TestDistinctFieldEnum>>
+    orderBy?: Maybe<Array<TestOrderByInput>>
     skip?: Maybe<Scalars["Int"]>
     take?: Maybe<Scalars["Int"]>
     where?: Maybe<TestWhereInput>
@@ -132,10 +184,15 @@ export type StepCreateWithoutUserInput = {
     value?: Maybe<Scalars["String"]>
 }
 
-export type StepFilter = {
-    every?: Maybe<StepWhereInput>
-    none?: Maybe<StepWhereInput>
-    some?: Maybe<StepWhereInput>
+export enum StepDistinctFieldEnum {
+    Expected = "expected",
+    Id = "id",
+    Key = "key",
+    Kind = "kind",
+    Selector = "selector",
+    Url = "url",
+    UserId = "userId",
+    Value = "value"
 }
 
 export enum StepKind {
@@ -149,38 +206,37 @@ export enum StepKind {
     Set = "set"
 }
 
-export type StepKindFilter = {
-    equals?: Maybe<StepKind>
-    in?: Maybe<Array<StepKind>>
-    not?: Maybe<StepKind>
-    notIn?: Maybe<Array<StepKind>>
+export type StepListRelationFilter = {
+    every?: Maybe<StepWhereInput>
+    none?: Maybe<StepWhereInput>
+    some?: Maybe<StepWhereInput>
 }
 
 export type StepOrderByInput = {
-    expected?: Maybe<OrderByArg>
-    id?: Maybe<OrderByArg>
-    key?: Maybe<OrderByArg>
-    kind?: Maybe<OrderByArg>
-    selector?: Maybe<OrderByArg>
-    url?: Maybe<OrderByArg>
-    userId?: Maybe<OrderByArg>
-    value?: Maybe<OrderByArg>
+    expected?: Maybe<SortOrder>
+    id?: Maybe<SortOrder>
+    key?: Maybe<SortOrder>
+    kind?: Maybe<SortOrder>
+    selector?: Maybe<SortOrder>
+    url?: Maybe<SortOrder>
+    userId?: Maybe<SortOrder>
+    value?: Maybe<SortOrder>
 }
 
 export type StepWhereInput = {
     AND?: Maybe<Array<StepWhereInput>>
-    expected?: Maybe<NullableStringFilter>
+    expected?: Maybe<StringNullableFilter>
     id?: Maybe<IntFilter>
-    key?: Maybe<NullableStringFilter>
-    kind?: Maybe<StepKindFilter>
+    key?: Maybe<StringNullableFilter>
+    kind?: Maybe<EnumStepKindFilter>
     NOT?: Maybe<Array<StepWhereInput>>
     OR?: Maybe<Array<StepWhereInput>>
-    selector?: Maybe<NullableStringFilter>
-    tests?: Maybe<TestFilter>
-    url?: Maybe<NullableStringFilter>
+    selector?: Maybe<StringNullableFilter>
+    tests?: Maybe<TestListRelationFilter>
+    url?: Maybe<StringNullableFilter>
     User?: Maybe<UserWhereInput>
-    userId?: Maybe<NullableIntFilter>
-    value?: Maybe<NullableStringFilter>
+    userId?: Maybe<IntNullableFilter>
+    value?: Maybe<StringNullableFilter>
 }
 
 export type StepWhereUniqueInput = {
@@ -196,7 +252,21 @@ export type StringFilter = {
     in?: Maybe<Array<Scalars["String"]>>
     lt?: Maybe<Scalars["String"]>
     lte?: Maybe<Scalars["String"]>
-    not?: Maybe<Scalars["String"]>
+    not?: Maybe<NestedStringFilter>
+    notIn?: Maybe<Array<Scalars["String"]>>
+    startsWith?: Maybe<Scalars["String"]>
+}
+
+export type StringNullableFilter = {
+    contains?: Maybe<Scalars["String"]>
+    endsWith?: Maybe<Scalars["String"]>
+    equals?: Maybe<Scalars["String"]>
+    gt?: Maybe<Scalars["String"]>
+    gte?: Maybe<Scalars["String"]>
+    in?: Maybe<Array<Scalars["String"]>>
+    lt?: Maybe<Scalars["String"]>
+    lte?: Maybe<Scalars["String"]>
+    not?: Maybe<NestedStringNullableFilter>
     notIn?: Maybe<Array<Scalars["String"]>>
     startsWith?: Maybe<Scalars["String"]>
 }
@@ -231,17 +301,24 @@ export type TagCreateWithoutUserInput = {
     Test?: Maybe<TestCreateOneWithoutTagsInput>
 }
 
-export type TagFilter = {
+export enum TagDistinctFieldEnum {
+    Id = "id",
+    Name = "name",
+    TestId = "testId",
+    UserId = "userId"
+}
+
+export type TagListRelationFilter = {
     every?: Maybe<TagWhereInput>
     none?: Maybe<TagWhereInput>
     some?: Maybe<TagWhereInput>
 }
 
 export type TagOrderByInput = {
-    id?: Maybe<OrderByArg>
-    name?: Maybe<OrderByArg>
-    testId?: Maybe<OrderByArg>
-    userId?: Maybe<OrderByArg>
+    id?: Maybe<SortOrder>
+    name?: Maybe<SortOrder>
+    testId?: Maybe<SortOrder>
+    userId?: Maybe<SortOrder>
 }
 
 export type TagWhereInput = {
@@ -251,7 +328,7 @@ export type TagWhereInput = {
     NOT?: Maybe<Array<TagWhereInput>>
     OR?: Maybe<Array<TagWhereInput>>
     Test?: Maybe<TestWhereInput>
-    testId?: Maybe<NullableIntFilter>
+    testId?: Maybe<IntNullableFilter>
     user?: Maybe<UserWhereInput>
     userId?: Maybe<IntFilter>
 }
@@ -273,7 +350,8 @@ export type Test = {
 
 export type TestStepsArgs = {
     cursor?: Maybe<StepWhereUniqueInput>
-    orderBy?: Maybe<StepOrderByInput>
+    distinct?: Maybe<Array<StepDistinctFieldEnum>>
+    orderBy?: Maybe<Array<StepOrderByInput>>
     skip?: Maybe<Scalars["Int"]>
     take?: Maybe<Scalars["Int"]>
     where?: Maybe<StepWhereInput>
@@ -281,7 +359,8 @@ export type TestStepsArgs = {
 
 export type TestTagsArgs = {
     cursor?: Maybe<TagWhereUniqueInput>
-    orderBy?: Maybe<TagOrderByInput>
+    distinct?: Maybe<Array<TagDistinctFieldEnum>>
+    orderBy?: Maybe<Array<TagOrderByInput>>
     skip?: Maybe<Scalars["Int"]>
     take?: Maybe<Scalars["Int"]>
     where?: Maybe<TagWhereInput>
@@ -327,16 +406,22 @@ export type TestCreateWithoutUserInput = {
     tags?: Maybe<TagCreateManyWithoutTestInput>
 }
 
-export type TestFilter = {
+export enum TestDistinctFieldEnum {
+    Id = "id",
+    Name = "name",
+    UserId = "userId"
+}
+
+export type TestListRelationFilter = {
     every?: Maybe<TestWhereInput>
     none?: Maybe<TestWhereInput>
     some?: Maybe<TestWhereInput>
 }
 
 export type TestOrderByInput = {
-    id?: Maybe<OrderByArg>
-    name?: Maybe<OrderByArg>
-    userId?: Maybe<OrderByArg>
+    id?: Maybe<SortOrder>
+    name?: Maybe<SortOrder>
+    userId?: Maybe<SortOrder>
 }
 
 export type TestWhereInput = {
@@ -345,8 +430,8 @@ export type TestWhereInput = {
     name?: Maybe<StringFilter>
     NOT?: Maybe<Array<TestWhereInput>>
     OR?: Maybe<Array<TestWhereInput>>
-    steps?: Maybe<StepFilter>
-    tags?: Maybe<TagFilter>
+    steps?: Maybe<StepListRelationFilter>
+    tags?: Maybe<TagListRelationFilter>
     user?: Maybe<UserWhereInput>
     userId?: Maybe<IntFilter>
 }
@@ -370,7 +455,8 @@ export type User = {
 
 export type UserStepsArgs = {
     cursor?: Maybe<StepWhereUniqueInput>
-    orderBy?: Maybe<StepOrderByInput>
+    distinct?: Maybe<Array<StepDistinctFieldEnum>>
+    orderBy?: Maybe<Array<StepOrderByInput>>
     skip?: Maybe<Scalars["Int"]>
     take?: Maybe<Scalars["Int"]>
     where?: Maybe<StepWhereInput>
@@ -378,7 +464,8 @@ export type UserStepsArgs = {
 
 export type UserTagsArgs = {
     cursor?: Maybe<TagWhereUniqueInput>
-    orderBy?: Maybe<TagOrderByInput>
+    distinct?: Maybe<Array<TagDistinctFieldEnum>>
+    orderBy?: Maybe<Array<TagOrderByInput>>
     skip?: Maybe<Scalars["Int"]>
     take?: Maybe<Scalars["Int"]>
     where?: Maybe<TagWhereInput>
@@ -386,7 +473,8 @@ export type UserTagsArgs = {
 
 export type UserTestsArgs = {
     cursor?: Maybe<TestWhereUniqueInput>
-    orderBy?: Maybe<TestOrderByInput>
+    distinct?: Maybe<Array<TestDistinctFieldEnum>>
+    orderBy?: Maybe<Array<TestOrderByInput>>
     skip?: Maybe<Scalars["Int"]>
     take?: Maybe<Scalars["Int"]>
     where?: Maybe<TestWhereInput>
@@ -443,9 +531,9 @@ export type UserWhereInput = {
     NOT?: Maybe<Array<UserWhereInput>>
     OR?: Maybe<Array<UserWhereInput>>
     password?: Maybe<StringFilter>
-    steps?: Maybe<StepFilter>
-    tags?: Maybe<TagFilter>
-    tests?: Maybe<TestFilter>
+    steps?: Maybe<StepListRelationFilter>
+    tags?: Maybe<TagListRelationFilter>
+    tests?: Maybe<TestListRelationFilter>
 }
 
 export type UserWhereUniqueInput = {
@@ -455,7 +543,8 @@ export type UserWhereUniqueInput = {
 
 export type TestsQueryVariables = Exact<{
     cursor?: Maybe<TestWhereUniqueInput>
-    orderBy?: Maybe<TestOrderByInput>
+    distinct?: Maybe<Array<TestDistinctFieldEnum>>
+    orderBy?: Maybe<Array<TestOrderByInput>>
     skip?: Maybe<Scalars["Int"]>
     take?: Maybe<Scalars["Int"]>
     where?: Maybe<TestWhereInput>
@@ -580,13 +669,15 @@ export type CreateTestMutation = { __typename?: "Mutation" } & {
 export const TestsDocument = gql`
     query tests(
         $cursor: TestWhereUniqueInput
-        $orderBy: TestOrderByInput
+        $distinct: [TestDistinctFieldEnum!]
+        $orderBy: [TestOrderByInput!]
         $skip: Int
         $take: Int
         $where: TestWhereInput
     ) {
         tests(
             cursor: $cursor
+            distinct: $distinct
             orderBy: $orderBy
             skip: $skip
             take: $take
@@ -641,6 +732,7 @@ export const TestsDocument = gql`
  * const { data, loading, error } = useTestsQuery({
  *   variables: {
  *      cursor: // value for 'cursor'
+ *      distinct: // value for 'distinct'
  *      orderBy: // value for 'orderBy'
  *      skip: // value for 'skip'
  *      take: // value for 'take'

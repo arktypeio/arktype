@@ -6,7 +6,7 @@ datasource dev {
 generator client {
   provider = "prisma-client-js"
   // binaryTargets = ["native", "rhel-openssl-1.0.x"]
-  output   = env("PRISMA_CLIENT_OUTPUT")
+  // output   = "../node_modules/.prisma/client"
 }
 
 generator typegraphql {
