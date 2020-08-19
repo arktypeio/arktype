@@ -2,7 +2,7 @@ import "reflect-metadata"
 import { join } from "path"
 // import { prismafy } from "prismafy"
 import { buildSchemaSync } from "type-graphql"
-import { CreateTestResolver, FindManyTestResolver } from "../generated/schema"
+import { CreateTestResolver, FindManyTestResolver } from "./generated"
 
 export const schema: any = buildSchemaSync({
     resolvers: [CreateTestResolver, FindManyTestResolver],

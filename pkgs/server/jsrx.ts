@@ -31,7 +31,10 @@ const upDb = () => {
     shell("prisma migrate up --experimental")
 }
 
-const serve = $("sls offline", { env: { SLS_DEBUG: "*" } })
+const serve = () => {
+    copySync(join(__dirname, "prisma"), join(__dirname, ".build", "prisma"))
+    shell("sls offline", { env: { SLS_DEBUG: "*" } })
+}
 
 jsrx(
     {

@@ -1,7 +1,7 @@
 import "dotenv/config"
 import { ApolloServer } from "apollo-server-lambda"
 import { getUserId } from "./auth"
-import { PrismaClient } from "@prisma/client"
+import { PrismaClient } from "../prisma/client"
 import { playground } from "./playground"
 import { schema } from "./schema"
 
