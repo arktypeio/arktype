@@ -1,5 +1,6 @@
 import React, { createContext, useContext, ReactNode, useState } from "react"
-import useBaseForm, {
+import {
+    useForm,
     useFormContext as useReactHookFormContext
 } from "react-hook-form"
 
@@ -60,13 +61,12 @@ export const createFormContext = <T extends Fields, D = any>({
         touched: Array<keyof T>,
         validationResult: FormErrors<T>
     ) => {
-        touched.forEach(key => {
+        touched.forEach((key) => {
             if (validationResult[key] && validationResult[key]!.length) {
-                baseContext.setError(
-                    key as any,
-                    "error",
-                    validationResult[key]!.join("\n")
-                )
+                baseContext.setError(key as any, {
+                    type: "error",
+                    message: validationResult[key]!.join("\n")
+                })
             } else {
                 baseContext.clearError(key)
             }
@@ -81,7 +81,7 @@ export const createFormContext = <T extends Fields, D = any>({
         const validationResult = validate()
         if (
             Object.values(validationResult).every(
-                errors => !errors || !errors.length
+                (errors) => !errors || !errors.length
             )
         ) {
             values = transformValues ? transformValues(values) : values
@@ -150,7 +150,7 @@ export const FormProvider = <T extends Fields, D = any>({
     children,
     ...contextArgs
 }: FormContextProps<T, D>) => {
-    const baseContext = useBaseForm<T>() as BaseContext<T>
+    const baseContext: any = useForm<T>()
     const [touched, setTouched] = useState<Array<keyof T>>([])
     const [resultState, setResultState] = useState<MutationResult<D>>({
         called: false,

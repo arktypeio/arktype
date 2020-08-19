@@ -27,7 +27,7 @@ export const ErrorText = ({
     const { tooltip } = stylize()
     const { error } = usePalette()
     const messages = (listify(children) as string[]).filter(
-        child => !!child.trim()
+        (child) => !!child.trim()
     )
     return (
         <Tooltip
@@ -35,11 +35,14 @@ export const ErrorText = ({
                 tooltip
             }}
             title={messages.map((message, index) => (
-                <Text
-                    key={index}
-                    variant="caption"
-                    style={{ color: error.main }}
-                >{`🤔${message}\n`}</Text>
+                <>
+                    <Text
+                        key={index}
+                        variant="caption"
+                        style={{ color: error.main }}
+                    >{`🤔${message}`}</Text>
+                    <br />
+                </>
             ))}
             placement={tooltipPlacement}
             {...tooltipProps}
@@ -47,8 +50,7 @@ export const ErrorText = ({
             <div
                 style={{
                     overflow: "hidden",
-                    textOverflow: "ellipsis",
-                    width: "100%"
+                    textOverflow: "ellipsis"
                 }}
             >
                 <Text
