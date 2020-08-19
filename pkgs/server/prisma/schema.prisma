@@ -6,12 +6,12 @@ datasource dev {
 generator client {
   provider = "prisma-client-js"
   // binaryTargets = ["native", "rhel-openssl-1.0.x"]
-  // output   = "../node_modules/.prisma/client"
+  output   = "../src/generated/client"
 }
 
 generator typegraphql {
   provider = "node node_modules/typegraphql-prisma/generator.js"
-  output   = "../src/schema/generated"
+  output   = "../src/generated/schema"
 }
 
 model User {
