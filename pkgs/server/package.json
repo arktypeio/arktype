@@ -28,7 +28,7 @@
         "@prisma/client": "2.0.1",
         "@re-do/utils": "0.0.10",
         "apollo-server-lambda": "2.15.0",
-        "bcrypt": "3.0.6",
+        "bcrypt": "5.0.0",
         "deepmerge": "4.2.2",
         "dotenv": "8.2.0",
         "gqlize": "0.0.1",
