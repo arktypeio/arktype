@@ -1,141 +1,68 @@
-import { deepMap } from "@re-do/utils"
 import { compare, hash } from "bcrypt"
 import { sign } from "jsonwebtoken"
 import { APP_SECRET, ifExists } from "../utils"
 
-// schema.inputObjectType({
-//     name: "SignInInput",
-//     nonNullDefaults: { input: true },
-//     definition: (t) => {
-//         t.string("email")
-//         t.string("password")
-//     },
-// })
+import { Resolver, Mutation, Arg } from "type-graphql"
 
-// schema.inputObjectType({
-//     name: "SignUpInput",
-//     nonNullDefaults: { input: true },
-//     definition: (t) => {
-//         t.string("email")
-//         t.string("password")
-//         t.string("first")
-//         t.string("last")
-//     },
-// })
+@Resolver()
+export class AuthResolver {
+    @Mutation()
+    async signIn(
+        @Arg("email") email: string,
+        @Arg("password") password: string
+    ) {
+        const user = await ifExists(() =>
+            prisma.user.findOne({
+                where: { email: email ? email.toLowerCase() : "" }
+            })
+        )
+        if (!user) {
+            throw new Error("We don't recognize that email.")
+        }
+        const passwordValid = await compare(password, user.password)
+        if (!passwordValid) {
+            throw new Error("That wasn't the right password.")
+        }
+        return sign({ userId: user.id }, APP_SECRET)
+    }
 
-// const createTestPreresolve = async ({ args, ctx: { prisma } }) => {
-//     const findTags = (args: any): TagCreateInput[] => {
-//         if (typeof args !== "object") {
-//             return []
-//         }
-//         const nestedTags = Object.values(args).reduce<TagCreateInput[]>(
-//             (tags, arg) => [...tags, ...findTags(arg)],
-//             []
-//         )
-//         const shallowTags =
-//             args?.tags?.create?.filter(
-//                 (tag: TagCreateInput) =>
-//                     !nestedTags.find((nestedTag) => nestedTag.name === tag.name)
-//             ) ?? []
-//         return [...nestedTags, ...shallowTags]
-//     }
-//     const tags = findTags(args)
-//     for (const tag of tags) {
-//         await prisma.tag.upsert({
-//             update: {},
-//             where: {
-//                 name_user: {
-//                     name: tag.name,
-//                 },
-//             },
-//             create: tag,
-//         })
-//     }
-//     const mappedResult = deepMap(args!, (entry) =>
-//         entry[0] === "tags"
-//             ? [
-//                   "tags",
-//                   {
-//                       connect: entry[1].create.map(
-//                           ({ name }: TagCreateInput) => ({
-//                               name_user: {
-//                                   name,
-//                               },
-//                           })
-//                       ),
-//                   },
-//               ]
-//             : entry
-//     )
-//     return mappedResult
-// }
-
-// schema.mutationType({
-//     definition: (t) => {
-//         t.crud.createOneTest({
-//             alias: "createTest",
-//         })
-//         t.field("signIn", {
-//             type: "String",
-//             args: {
-//                 data: schema.arg({ type: SignInInput, required: true }),
-//             },
-//             resolve: async (_, { data: { email, password } }, { prisma }) => {
-//                 const user = await ifExists(() =>
-//                     prisma.user.findOne({
-//                         where: { email: email ? email.toLowerCase() : "" },
-//                     })
-//                 )
-//                 if (!user) {
-//                     throw new Error("We don't recognize that email.")
-//                 }
-//                 const passwordValid = await compare(password, user.password)
-//                 if (!passwordValid) {
-//                     throw new Error("That wasn't the right password.")
-//                 }
-//                 return sign({ userId: user.id }, APP_SECRET)
-//             },
-//         }),
-//             t.field("signUp", {
-//                 type: "String",
-//                 args: {
-//                     data: schema.arg({ type: SignUpInput, required: true }),
-//                 },
-//                 resolve: async (
-//                     _,
-//                     { data: { email, password, first, last } },
-//                     { prisma }
-//                 ) => {
-//                     const existingUser = await ifExists(() =>
-//                         prisma.user.findOne({
-//                             where: { email: email ? email.toLowerCase() : "" },
-//                         })
-//                     )
-//                     if (existingUser) {
-//                         throw new Error(
-//                             "Someone's already using that email. If it's you, try signing in instead!"
-//                         )
-//                     }
-//                     const hashedPassword = await hash(password, 10)
-//                     const user = await prisma.user.create({
-//                         data: {
-//                             email,
-//                             password: hashedPassword,
-//                             first,
-//                             last,
-//                             tags: {
-//                                 create: [],
-//                             },
-//                             steps: {
-//                                 create: [],
-//                             },
-//                             tests: {
-//                                 create: [],
-//                             },
-//                         },
-//                     })
-//                     return sign({ userId: user.id }, APP_SECRET)
-//                 },
-//             })
-//     },
-// })
+    @Mutation()
+    async signUp(
+        @Arg("email") email: string,
+        @Arg("first") first: string,
+        @Arg("last") last: string,
+        @Arg("password") password: string
+    ) {
+        const existingUser = await ifExists(() =>
+            prisma.user.findOne({
+                where: {
+                    email: email ? email.toLowerCase() : ""
+                }
+            })
+        )
+        if (existingUser) {
+            throw new Error(
+                "Someone's already using that email. If it's you, try signing in instead!"
+            )
+        }
+        const hashedPassword = await hash(password, 10)
+        const user = await prisma.user.create({
+            data: {
+                email,
+                password: hashedPassword,
+                first,
+                last,
+                tags: {
+                    create: []
+                },
+                steps: {
+                    create: []
+                },
+                tests: {
+                    create: []
+                }
+            }
+        })
+        return sign({ userId: user.id }, APP_SECRET)
+    }
+}

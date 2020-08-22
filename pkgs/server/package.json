@@ -37,7 +37,7 @@
         "isomorphic-ws": "4.0.1",
         "jsonwebtoken": "8.5.1",
         "typegraphql-prisma": "0.4.2",
-        "type-graphql": "1.0.0-rc.3",
+        "type-graphql": "1.0.0",
         "graphql-type-json": "0.3.2",
         "reflect-metadata": "0.1.13",
         "class-validator": "0.12.2",

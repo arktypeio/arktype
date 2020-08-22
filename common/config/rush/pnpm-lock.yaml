@@ -139,9 +139,9 @@ dependencies:
   ts-node-dev: 1.0.0-pre.58_typescript@3.9.5
   tsconfig-paths: 3.9.0
   tsconfig-paths-webpack-plugin: 3.2.0
-  type-graphql: 1.0.0-rc.3_class-validator@0.12.2
+  type-graphql: 1.0.0_class-validator@0.12.2
   typeface-ubuntu: 0.0.65
-  typegraphql-prisma: 0.4.2_a6db9f374992859f658fc449168383f1
+  typegraphql-prisma: 0.4.2_a09b96545931aa0a1df5a5777ca1200e
   typescript: 3.9.5
   url-loader: 4.1.0_file-loader@6.0.0+webpack@4.43.0
   uuid: 8.2.0
@@ -6197,7 +6197,7 @@ packages:
   /@types/glob/7.1.3:
     dependencies:
       '@types/minimatch': 3.0.3
-      '@types/node': 12.11.1
+      '@types/node': 13.13.13
     dev: false
     resolution:
       integrity: sha512-SEYeGAIQIQX8NN6LDKprLjbrd5dARM5EXsd8GI/A5l0apYI1fGMWgPHSe4ZKL4eozlAyI+doUE9XbYS4xCkQ1w==
@@ -6582,6 +6582,10 @@ packages:
     dev: false
     resolution:
       integrity: sha512-ooD/FJ8EuwlDKOI6D9HWxgIgJjMg2cuziXm/42npDC8y4NjxplBUn9loewZiBNCt44450lHAU0OSb51/UqXeag==
+  /@types/semver/7.3.3:
+    dev: false
+    resolution:
+      integrity: sha512-jQxClWFzv9IXdLdhSaTf16XI3NYe6zrEbckSpb5xhKfPbWgIyAY0AFyWWWfaiDcBuj3UHmMkCIwSRqpKMTZL2Q==
   /@types/serve-static/1.13.4:
     dependencies:
       '@types/express-serve-static-core': 4.17.8
@@ -13712,15 +13716,15 @@ packages:
     dev: false
     resolution:
       integrity: sha512-x3VE5lUcR4XCOxPIqaO4CE+bTK8u6gVouOdpQX9+EKHr+scqtK5Pp/l8nIGqIpN1TUlkKE6jDCCycm/WtLRAwA==
-  /graphql-query-complexity/0.6.0:
+  /graphql-query-complexity/0.7.0:
     dependencies:
       lodash.get: 4.4.2
     dev: false
     peerDependencies:
       graphql: ^0.13.0 || ^14.0.0 || ^15.0.0
     resolution:
-      integrity: sha512-xYLLvN7PSeSYtiQ2nR53B7B/C6iGOWVPBrzcpbheVxE78GYdiNZffDRNCoMvYGCOAY0eQTpsnTfwncVszQsOJw==
-  /graphql-query-complexity/0.6.0_graphql@15.1.0:
+      integrity: sha512-nl/aOzRdQ1Opj/sND9Wx+/FHnsU4SFA0wePWJzyZajyht43nP9/1edP6YaoupXfNeUocHFXsmAOOFVTwTLu/6A==
+  /graphql-query-complexity/0.7.0_graphql@15.1.0:
     dependencies:
       graphql: 15.1.0
       lodash.get: 4.4.2
@@ -13728,7 +13732,7 @@ packages:
     peerDependencies:
       graphql: ^0.13.0 || ^14.0.0 || ^15.0.0
     resolution:
-      integrity: sha512-xYLLvN7PSeSYtiQ2nR53B7B/C6iGOWVPBrzcpbheVxE78GYdiNZffDRNCoMvYGCOAY0eQTpsnTfwncVszQsOJw==
+      integrity: sha512-nl/aOzRdQ1Opj/sND9Wx+/FHnsU4SFA0wePWJzyZajyht43nP9/1edP6YaoupXfNeUocHFXsmAOOFVTwTLu/6A==
   /graphql-subscriptions/1.1.0:
     dependencies:
       iterall: 1.3.0
@@ -23168,15 +23172,15 @@ packages:
       node: '>=8'
     resolution:
       integrity: sha512-4dbzIzqvjtgiM5rw1k5rEHtBANKmdudhGyBEajN01fEyhaAIhsoKNy6y7+IN93IfpFtwY9iqi7kD+xwKhQsNJA==
-  /type-graphql/1.0.0-rc.3_65a4f50e5e23b567759397111f9b5d94:
+  /type-graphql/1.0.0_65a4f50e5e23b567759397111f9b5d94:
     dependencies:
       '@types/glob': 7.1.3
       '@types/node': 13.13.13
-      '@types/semver': 7.3.1
+      '@types/semver': 7.3.3
       class-validator: 0.12.2
       glob: 7.1.6
       graphql: 15.1.0
-      graphql-query-complexity: 0.6.0_graphql@15.1.0
+      graphql-query-complexity: 0.7.0_graphql@15.1.0
       graphql-subscriptions: 1.1.0_graphql@15.1.0
       semver: 7.3.2
       tslib: 2.0.1
@@ -23185,18 +23189,18 @@ packages:
       node: '>= 10.3'
     peerDependencies:
       class-validator: '>=0.12.0'
-      graphql: ^15.1.0
+      graphql: ^15.3.0
     requiresBuild: true
     resolution:
-      integrity: sha512-klfYIlnmwvYbBQh5CHDfDzbaN3/v6y4ZSfdz9K96QNBvf9+7iE3jMG0weKWFqv5aY1iI3ZMiQznxIpbbGaKQmA==
-  /type-graphql/1.0.0-rc.3_class-validator@0.12.2:
+      integrity: sha512-ejXSEmqewrv9MX/0XOSKBc7utjrF6N0UeZJQ0w/R/Ene4Or9/cA+8iLQnuqgBDlNpXIdcq4rSvrk3mUMAIqOQA==
+  /type-graphql/1.0.0_class-validator@0.12.2:
     dependencies:
       '@types/glob': 7.1.3
       '@types/node': 13.13.13
-      '@types/semver': 7.3.1
+      '@types/semver': 7.3.3
       class-validator: 0.12.2
       glob: 7.1.6
-      graphql-query-complexity: 0.6.0
+      graphql-query-complexity: 0.7.0
       graphql-subscriptions: 1.1.0
       semver: 7.3.2
       tslib: 2.0.1
@@ -23205,10 +23209,10 @@ packages:
       node: '>= 10.3'
     peerDependencies:
       class-validator: '>=0.12.0'
-      graphql: ^15.1.0
+      graphql: ^15.3.0
     requiresBuild: true
     resolution:
-      integrity: sha512-klfYIlnmwvYbBQh5CHDfDzbaN3/v6y4ZSfdz9K96QNBvf9+7iE3jMG0weKWFqv5aY1iI3ZMiQznxIpbbGaKQmA==
+      integrity: sha512-ejXSEmqewrv9MX/0XOSKBc7utjrF6N0UeZJQ0w/R/Ene4Or9/cA+8iLQnuqgBDlNpXIdcq4rSvrk3mUMAIqOQA==
   /type-is/1.6.18:
     dependencies:
       media-typer: 0.3.0
@@ -23244,7 +23248,7 @@ packages:
     dev: false
     resolution:
       integrity: sha512-v+s/216IINmqQoO3Y9+bKDn9OgrasPtRLWaVSmjRBljFDkFndmQjHcsLZrv0r89aSeqzxlBvKwZIigFh8pZO9Q==
-  /typegraphql-prisma/0.4.2_a6db9f374992859f658fc449168383f1:
+  /typegraphql-prisma/0.4.2_a09b96545931aa0a1df5a5777ca1200e:
     dependencies:
       '@prisma/cli': 2.5.0
       '@prisma/generator-helper': 2.4.1
@@ -23256,7 +23260,7 @@ packages:
       pluralize: 8.0.0
       ts-morph: 7.3.0
       tslib: 2.0.1
-      type-graphql: 1.0.0-rc.3_class-validator@0.12.2
+      type-graphql: 1.0.0_class-validator@0.12.2
     dev: false
     engines:
       node: '>=12.4'
@@ -23269,7 +23273,7 @@ packages:
       type-graphql: 1.0.0-rc.3
     resolution:
       integrity: sha512-39zrb4DJh9F368joONh7URm507LtMAvH5SgLMRAMxEhXyyT2jv2Ij9W4GDMfAqRrgmagb80+gL3GzQmNwJmO7g==
-  /typegraphql-prisma/0.4.2_cda9fde736d7459d56ab14f139521b34:
+  /typegraphql-prisma/0.4.2_a856c279b9aff27082f1dbd4c6a4fe59:
     dependencies:
       '@prisma/cli': 2.5.0
       '@prisma/client': 2.5.0_@prisma+cli@2.5.0
@@ -23282,7 +23286,7 @@ packages:
       pluralize: 8.0.0
       ts-morph: 7.3.0
       tslib: 2.0.1
-      type-graphql: 1.0.0-rc.3_65a4f50e5e23b567759397111f9b5d94
+      type-graphql: 1.0.0_65a4f50e5e23b567759397111f9b5d94
     dev: false
     engines:
       node: '>=12.4'
@@ -25058,8 +25062,8 @@ packages:
       serverless-webpack: 5.3.3_typescript@3.9.5+webpack@4.43.0
       ts-node: 8.10.2_typescript@3.9.5
       ts-node-dev: 1.0.0-pre.58_typescript@3.9.5
-      type-graphql: 1.0.0-rc.3_65a4f50e5e23b567759397111f9b5d94
-      typegraphql-prisma: 0.4.2_cda9fde736d7459d56ab14f139521b34
+      type-graphql: 1.0.0_65a4f50e5e23b567759397111f9b5d94
+      typegraphql-prisma: 0.4.2_a856c279b9aff27082f1dbd4c6a4fe59
       typescript: 3.9.5
       webpack-node-externals: 1.7.2
     dev: false
@@ -25068,7 +25072,7 @@ packages:
     peerDependencies:
       webpack: '*'
     resolution:
-      integrity: sha512-k/ECKO6tyurSfGKjp7H1d/eEpXclqNlXHQ/xBjfr2/hqgDpKX70kG6zkVfzzr9/LjMFAuFu5r3dyeOuok0IbXw==
+      integrity: sha512-8fGlIryAlnp4+sL+mdPpxqJ7F+T79zL5IpDPToL155ezXtVwSjaoTciYZ8jxV7W1YbB8v80z6zmBwK6yGpZlZg==
       tarball: 'file:projects/server.tgz'
     version: 0.0.0
   'file:projects/statelessly.tgz':
@@ -25300,7 +25304,7 @@ specifiers:
   ts-node-dev: 1.0.0-pre.58
   tsconfig-paths: 3.9.0
   tsconfig-paths-webpack-plugin: 3.2.0
-  type-graphql: 1.0.0-rc.3
+  type-graphql: 1.0.0
   typeface-ubuntu: 0.0.65
   typegraphql-prisma: 0.4.2
   typescript: 3.9.5
