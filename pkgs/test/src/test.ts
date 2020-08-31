@@ -1,31 +1,13 @@
 import { perform, Step } from "./steps"
-import {
-    LaunchOptions,
-    launch,
-    BrowserName,
-    installBrowserIfNeeded
-} from "./browser"
+import { launch, BrowserName, LaunchOptions } from "./launch"
 
-export type TestOptions<Browser extends BrowserName> = LaunchOptions<
-    Browser
-> & {
-    browser?: Browser
+export type TestOptions = LaunchOptions & {
+    browser?: BrowserName
 }
 
-export const test = async <Browser extends BrowserName>(
-    steps: Step[],
-    options: TestOptions<Browser> = {}
-) => {
-    const { browser: browserName, ...launchOptions } = {
-        browser: "chrome" as const,
-        ...(options ?? {})
-    }
-    await installBrowserIfNeeded("chrome")
-    const browser = await launch(
-        browserName,
-        launchOptions as LaunchOptions<Browser>
-    )
-    const { page } = browser
+export const test = async (steps: Step[], options: TestOptions = {}) => {
+    const { browser: browserName = "chrome", ...rest } = options
+    const { page, browser } = await launch(browserName, rest)
     await page.goto("https://redo.qa")
     await page.screenshot({ path: "before.png" })
     for (const step of steps) {
