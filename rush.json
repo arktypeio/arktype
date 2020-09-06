@@ -33,10 +33,6 @@
             "projectFolder": "pkgs/app"
         },
         {
-            "packageName": "@re-do/server",
-            "projectFolder": "pkgs/server"
-        },
-        {
             "packageName": "@re-do/components",
             "projectFolder": "pkgs/components"
         },
@@ -57,16 +53,8 @@
             "projectFolder": "pkgs/test"
         },
         {
-            "packageName": "gqlize",
-            "projectFolder": "pkgs/gqlize"
-        },
-        {
             "packageName": "@re-do/cli",
             "projectFolder": "pkgs/cli"
-        },
-        {
-            "packageName": "prismafy",
-            "projectFolder": "pkgs/prismafy"
         }
     ]
 }

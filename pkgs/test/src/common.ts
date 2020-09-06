@@ -1,4 +1,4 @@
-import { Page, Browser } from "playwright-core"
+import { Page, Browser } from "playwright"
 
 export type Context = {
     browser: Browser
