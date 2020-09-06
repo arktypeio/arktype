@@ -68,10 +68,10 @@ package-deps.json
 .DS_Store
 
 # Redo
-**/migrations/*-development
 .serverless
 .webpack
 .env.production
 release
 generated
+**/prisma/client
 .build

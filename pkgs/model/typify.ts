@@ -12,13 +12,6 @@ export const typify = async () => {
     const schemaFile = join(__dirname, "schema.gql")
     const schema = buildSchema(readFileSync(schemaFile).toString())
     const baseFileName = join(__dirname, "src", "model.ts")
-    const gql = gqlize({
-        schema: schemaFile,
-        transformOutputs: (fields) =>
-            fields.filter(
-                (field) => !["user", "test"].includes(field.name.value)
-            )
-    })
     const baseOptions: Types.GenerateOptions = {
         filename: baseFileName,
         schema: parse(printSchema(schema)),
@@ -30,11 +23,7 @@ export const typify = async () => {
         pluginMap: {
             typescript
         },
-        documents: [
-            {
-                document: parse(gql)
-            }
-        ],
+        documents: [],
         config: {
             skipDocumentsValidation: true
         }

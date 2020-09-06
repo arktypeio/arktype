@@ -1,6 +1,4 @@
 import gql from "graphql-tag"
-import * as ApolloReactCommon from "@apollo/client"
-import * as ApolloReactHooks from "@apollo/client"
 export type Maybe<T> = T | null
 export type Exact<T extends { [key: string]: any }> = { [K in keyof T]: T[K] }
 /** All built-in and custom scalars, mapped to their actual values */
@@ -12,6 +10,13 @@ export type Scalars = {
     Float: number
 }
 
+export type EnumStepKindFilter = {
+    equals?: Maybe<StepKind>
+    in?: Maybe<Array<StepKind>>
+    not?: Maybe<NestedEnumStepKindFilter>
+    notIn?: Maybe<Array<StepKind>>
+}
+
 export type IntFilter = {
     equals?: Maybe<Scalars["Int"]>
     gt?: Maybe<Scalars["Int"]>
@@ -19,7 +24,18 @@ export type IntFilter = {
     in?: Maybe<Array<Scalars["Int"]>>
     lt?: Maybe<Scalars["Int"]>
     lte?: Maybe<Scalars["Int"]>
-    not?: Maybe<Scalars["Int"]>
+    not?: Maybe<NestedIntFilter>
+    notIn?: Maybe<Array<Scalars["Int"]>>
+}
+
+export type IntNullableFilter = {
+    equals?: Maybe<Scalars["Int"]>
+    gt?: Maybe<Scalars["Int"]>
+    gte?: Maybe<Scalars["Int"]>
+    in?: Maybe<Array<Scalars["Int"]>>
+    lt?: Maybe<Scalars["Int"]>
+    lte?: Maybe<Scalars["Int"]>
+    not?: Maybe<NestedIntNullableFilter>
     notIn?: Maybe<Array<Scalars["Int"]>>
 }
 
@@ -37,18 +53,36 @@ export type NameUserIdCompoundUniqueInput = {
     userId: Scalars["Int"]
 }
 
-export type NullableIntFilter = {
+export type NestedEnumStepKindFilter = {
+    equals?: Maybe<StepKind>
+    in?: Maybe<Array<StepKind>>
+    not?: Maybe<NestedEnumStepKindFilter>
+    notIn?: Maybe<Array<StepKind>>
+}
+
+export type NestedIntFilter = {
     equals?: Maybe<Scalars["Int"]>
     gt?: Maybe<Scalars["Int"]>
     gte?: Maybe<Scalars["Int"]>
     in?: Maybe<Array<Scalars["Int"]>>
     lt?: Maybe<Scalars["Int"]>
     lte?: Maybe<Scalars["Int"]>
-    not?: Maybe<Scalars["Int"]>
+    not?: Maybe<NestedIntFilter>
     notIn?: Maybe<Array<Scalars["Int"]>>
 }
 
-export type NullableStringFilter = {
+export type NestedIntNullableFilter = {
+    equals?: Maybe<Scalars["Int"]>
+    gt?: Maybe<Scalars["Int"]>
+    gte?: Maybe<Scalars["Int"]>
+    in?: Maybe<Array<Scalars["Int"]>>
+    lt?: Maybe<Scalars["Int"]>
+    lte?: Maybe<Scalars["Int"]>
+    not?: Maybe<NestedIntNullableFilter>
+    notIn?: Maybe<Array<Scalars["Int"]>>
+}
+
+export type NestedStringFilter = {
     contains?: Maybe<Scalars["String"]>
     endsWith?: Maybe<Scalars["String"]>
     equals?: Maybe<Scalars["String"]>
@@ -57,14 +91,23 @@ export type NullableStringFilter = {
     in?: Maybe<Array<Scalars["String"]>>
     lt?: Maybe<Scalars["String"]>
     lte?: Maybe<Scalars["String"]>
-    not?: Maybe<Scalars["String"]>
+    not?: Maybe<NestedStringFilter>
     notIn?: Maybe<Array<Scalars["String"]>>
     startsWith?: Maybe<Scalars["String"]>
 }
 
-export enum OrderByArg {
-    Asc = "asc",
-    Desc = "desc"
+export type NestedStringNullableFilter = {
+    contains?: Maybe<Scalars["String"]>
+    endsWith?: Maybe<Scalars["String"]>
+    equals?: Maybe<Scalars["String"]>
+    gt?: Maybe<Scalars["String"]>
+    gte?: Maybe<Scalars["String"]>
+    in?: Maybe<Array<Scalars["String"]>>
+    lt?: Maybe<Scalars["String"]>
+    lte?: Maybe<Scalars["String"]>
+    not?: Maybe<NestedStringNullableFilter>
+    notIn?: Maybe<Array<Scalars["String"]>>
+    startsWith?: Maybe<Scalars["String"]>
 }
 
 export type Query = {
@@ -74,10 +117,16 @@ export type Query = {
 
 export type QueryTestsArgs = {
     cursor?: Maybe<TestWhereUniqueInput>
-    orderBy?: Maybe<TestOrderByInput>
+    distinct?: Maybe<Array<TestDistinctFieldEnum>>
+    orderBy?: Maybe<Array<TestOrderByInput>>
     skip?: Maybe<Scalars["Int"]>
     take?: Maybe<Scalars["Int"]>
     where?: Maybe<TestWhereInput>
+}
+
+export enum SortOrder {
+    Asc = "asc",
+    Desc = "desc"
 }
 
 export type Step = {
@@ -96,7 +145,8 @@ export type Step = {
 
 export type StepTestsArgs = {
     cursor?: Maybe<TestWhereUniqueInput>
-    orderBy?: Maybe<TestOrderByInput>
+    distinct?: Maybe<Array<TestDistinctFieldEnum>>
+    orderBy?: Maybe<Array<TestOrderByInput>>
     skip?: Maybe<Scalars["Int"]>
     take?: Maybe<Scalars["Int"]>
     where?: Maybe<TestWhereInput>
@@ -132,10 +182,15 @@ export type StepCreateWithoutUserInput = {
     value?: Maybe<Scalars["String"]>
 }
 
-export type StepFilter = {
-    every?: Maybe<StepWhereInput>
-    none?: Maybe<StepWhereInput>
-    some?: Maybe<StepWhereInput>
+export enum StepDistinctFieldEnum {
+    Expected = "expected",
+    Id = "id",
+    Key = "key",
+    Kind = "kind",
+    Selector = "selector",
+    Url = "url",
+    UserId = "userId",
+    Value = "value"
 }
 
 export enum StepKind {
@@ -149,38 +204,37 @@ export enum StepKind {
     Set = "set"
 }
 
-export type StepKindFilter = {
-    equals?: Maybe<StepKind>
-    in?: Maybe<Array<StepKind>>
-    not?: Maybe<StepKind>
-    notIn?: Maybe<Array<StepKind>>
+export type StepListRelationFilter = {
+    every?: Maybe<StepWhereInput>
+    none?: Maybe<StepWhereInput>
+    some?: Maybe<StepWhereInput>
 }
 
 export type StepOrderByInput = {
-    expected?: Maybe<OrderByArg>
-    id?: Maybe<OrderByArg>
-    key?: Maybe<OrderByArg>
-    kind?: Maybe<OrderByArg>
-    selector?: Maybe<OrderByArg>
-    url?: Maybe<OrderByArg>
-    userId?: Maybe<OrderByArg>
-    value?: Maybe<OrderByArg>
+    expected?: Maybe<SortOrder>
+    id?: Maybe<SortOrder>
+    key?: Maybe<SortOrder>
+    kind?: Maybe<SortOrder>
+    selector?: Maybe<SortOrder>
+    url?: Maybe<SortOrder>
+    userId?: Maybe<SortOrder>
+    value?: Maybe<SortOrder>
 }
 
 export type StepWhereInput = {
     AND?: Maybe<Array<StepWhereInput>>
-    expected?: Maybe<NullableStringFilter>
+    expected?: Maybe<StringNullableFilter>
     id?: Maybe<IntFilter>
-    key?: Maybe<NullableStringFilter>
-    kind?: Maybe<StepKindFilter>
+    key?: Maybe<StringNullableFilter>
+    kind?: Maybe<EnumStepKindFilter>
     NOT?: Maybe<Array<StepWhereInput>>
     OR?: Maybe<Array<StepWhereInput>>
-    selector?: Maybe<NullableStringFilter>
-    tests?: Maybe<TestFilter>
-    url?: Maybe<NullableStringFilter>
+    selector?: Maybe<StringNullableFilter>
+    tests?: Maybe<TestListRelationFilter>
+    url?: Maybe<StringNullableFilter>
     User?: Maybe<UserWhereInput>
-    userId?: Maybe<NullableIntFilter>
-    value?: Maybe<NullableStringFilter>
+    userId?: Maybe<IntNullableFilter>
+    value?: Maybe<StringNullableFilter>
 }
 
 export type StepWhereUniqueInput = {
@@ -196,7 +250,21 @@ export type StringFilter = {
     in?: Maybe<Array<Scalars["String"]>>
     lt?: Maybe<Scalars["String"]>
     lte?: Maybe<Scalars["String"]>
-    not?: Maybe<Scalars["String"]>
+    not?: Maybe<NestedStringFilter>
+    notIn?: Maybe<Array<Scalars["String"]>>
+    startsWith?: Maybe<Scalars["String"]>
+}
+
+export type StringNullableFilter = {
+    contains?: Maybe<Scalars["String"]>
+    endsWith?: Maybe<Scalars["String"]>
+    equals?: Maybe<Scalars["String"]>
+    gt?: Maybe<Scalars["String"]>
+    gte?: Maybe<Scalars["String"]>
+    in?: Maybe<Array<Scalars["String"]>>
+    lt?: Maybe<Scalars["String"]>
+    lte?: Maybe<Scalars["String"]>
+    not?: Maybe<NestedStringNullableFilter>
     notIn?: Maybe<Array<Scalars["String"]>>
     startsWith?: Maybe<Scalars["String"]>
 }
@@ -231,17 +299,24 @@ export type TagCreateWithoutUserInput = {
     Test?: Maybe<TestCreateOneWithoutTagsInput>
 }
 
-export type TagFilter = {
+export enum TagDistinctFieldEnum {
+    Id = "id",
+    Name = "name",
+    TestId = "testId",
+    UserId = "userId"
+}
+
+export type TagListRelationFilter = {
     every?: Maybe<TagWhereInput>
     none?: Maybe<TagWhereInput>
     some?: Maybe<TagWhereInput>
 }
 
 export type TagOrderByInput = {
-    id?: Maybe<OrderByArg>
-    name?: Maybe<OrderByArg>
-    testId?: Maybe<OrderByArg>
-    userId?: Maybe<OrderByArg>
+    id?: Maybe<SortOrder>
+    name?: Maybe<SortOrder>
+    testId?: Maybe<SortOrder>
+    userId?: Maybe<SortOrder>
 }
 
 export type TagWhereInput = {
@@ -251,7 +326,7 @@ export type TagWhereInput = {
     NOT?: Maybe<Array<TagWhereInput>>
     OR?: Maybe<Array<TagWhereInput>>
     Test?: Maybe<TestWhereInput>
-    testId?: Maybe<NullableIntFilter>
+    testId?: Maybe<IntNullableFilter>
     user?: Maybe<UserWhereInput>
     userId?: Maybe<IntFilter>
 }
@@ -273,7 +348,8 @@ export type Test = {
 
 export type TestStepsArgs = {
     cursor?: Maybe<StepWhereUniqueInput>
-    orderBy?: Maybe<StepOrderByInput>
+    distinct?: Maybe<Array<StepDistinctFieldEnum>>
+    orderBy?: Maybe<Array<StepOrderByInput>>
     skip?: Maybe<Scalars["Int"]>
     take?: Maybe<Scalars["Int"]>
     where?: Maybe<StepWhereInput>
@@ -281,7 +357,8 @@ export type TestStepsArgs = {
 
 export type TestTagsArgs = {
     cursor?: Maybe<TagWhereUniqueInput>
-    orderBy?: Maybe<TagOrderByInput>
+    distinct?: Maybe<Array<TagDistinctFieldEnum>>
+    orderBy?: Maybe<Array<TagOrderByInput>>
     skip?: Maybe<Scalars["Int"]>
     take?: Maybe<Scalars["Int"]>
     where?: Maybe<TagWhereInput>
@@ -327,16 +404,22 @@ export type TestCreateWithoutUserInput = {
     tags?: Maybe<TagCreateManyWithoutTestInput>
 }
 
-export type TestFilter = {
+export enum TestDistinctFieldEnum {
+    Id = "id",
+    Name = "name",
+    UserId = "userId"
+}
+
+export type TestListRelationFilter = {
     every?: Maybe<TestWhereInput>
     none?: Maybe<TestWhereInput>
     some?: Maybe<TestWhereInput>
 }
 
 export type TestOrderByInput = {
-    id?: Maybe<OrderByArg>
-    name?: Maybe<OrderByArg>
-    userId?: Maybe<OrderByArg>
+    id?: Maybe<SortOrder>
+    name?: Maybe<SortOrder>
+    userId?: Maybe<SortOrder>
 }
 
 export type TestWhereInput = {
@@ -345,8 +428,8 @@ export type TestWhereInput = {
     name?: Maybe<StringFilter>
     NOT?: Maybe<Array<TestWhereInput>>
     OR?: Maybe<Array<TestWhereInput>>
-    steps?: Maybe<StepFilter>
-    tags?: Maybe<TagFilter>
+    steps?: Maybe<StepListRelationFilter>
+    tags?: Maybe<TagListRelationFilter>
     user?: Maybe<UserWhereInput>
     userId?: Maybe<IntFilter>
 }
@@ -370,7 +453,8 @@ export type User = {
 
 export type UserStepsArgs = {
     cursor?: Maybe<StepWhereUniqueInput>
-    orderBy?: Maybe<StepOrderByInput>
+    distinct?: Maybe<Array<StepDistinctFieldEnum>>
+    orderBy?: Maybe<Array<StepOrderByInput>>
     skip?: Maybe<Scalars["Int"]>
     take?: Maybe<Scalars["Int"]>
     where?: Maybe<StepWhereInput>
@@ -378,7 +462,8 @@ export type UserStepsArgs = {
 
 export type UserTagsArgs = {
     cursor?: Maybe<TagWhereUniqueInput>
-    orderBy?: Maybe<TagOrderByInput>
+    distinct?: Maybe<Array<TagDistinctFieldEnum>>
+    orderBy?: Maybe<Array<TagOrderByInput>>
     skip?: Maybe<Scalars["Int"]>
     take?: Maybe<Scalars["Int"]>
     where?: Maybe<TagWhereInput>
@@ -386,7 +471,8 @@ export type UserTagsArgs = {
 
 export type UserTestsArgs = {
     cursor?: Maybe<TestWhereUniqueInput>
-    orderBy?: Maybe<TestOrderByInput>
+    distinct?: Maybe<Array<TestDistinctFieldEnum>>
+    orderBy?: Maybe<Array<TestOrderByInput>>
     skip?: Maybe<Scalars["Int"]>
     take?: Maybe<Scalars["Int"]>
     where?: Maybe<TestWhereInput>
@@ -443,327 +529,12 @@ export type UserWhereInput = {
     NOT?: Maybe<Array<UserWhereInput>>
     OR?: Maybe<Array<UserWhereInput>>
     password?: Maybe<StringFilter>
-    steps?: Maybe<StepFilter>
-    tags?: Maybe<TagFilter>
-    tests?: Maybe<TestFilter>
+    steps?: Maybe<StepListRelationFilter>
+    tags?: Maybe<TagListRelationFilter>
+    tests?: Maybe<TestListRelationFilter>
 }
 
 export type UserWhereUniqueInput = {
     email?: Maybe<Scalars["String"]>
     id?: Maybe<Scalars["Int"]>
 }
-
-export type TestsQueryVariables = Exact<{
-    cursor?: Maybe<TestWhereUniqueInput>
-    orderBy?: Maybe<TestOrderByInput>
-    skip?: Maybe<Scalars["Int"]>
-    take?: Maybe<Scalars["Int"]>
-    where?: Maybe<TestWhereInput>
-}>
-
-export type TestsQuery = { __typename?: "Query" } & {
-    tests: Array<
-        { __typename?: "Test" } & Pick<Test, "id" | "name" | "userId"> & {
-                steps?: Maybe<
-                    Array<
-                        { __typename?: "Step" } & Pick<
-                            Step,
-                            | "expected"
-                            | "id"
-                            | "key"
-                            | "kind"
-                            | "selector"
-                            | "url"
-                            | "userId"
-                            | "value"
-                        > & {
-                                User?: Maybe<
-                                    { __typename?: "User" } & Pick<
-                                        User,
-                                        | "email"
-                                        | "first"
-                                        | "id"
-                                        | "last"
-                                        | "password"
-                                    > & {
-                                            tags?: Maybe<
-                                                Array<
-                                                    {
-                                                        __typename?: "Tag"
-                                                    } & Pick<
-                                                        Tag,
-                                                        | "id"
-                                                        | "name"
-                                                        | "testId"
-                                                        | "userId"
-                                                    >
-                                                >
-                                            >
-                                        }
-                                >
-                            }
-                    >
-                >
-                tags?: Maybe<
-                    Array<
-                        { __typename?: "Tag" } & Pick<
-                            Tag,
-                            "id" | "name" | "testId" | "userId"
-                        >
-                    >
-                >
-            }
-    >
-}
-
-export type CreateTestMutationVariables = Exact<{
-    name: Scalars["String"]
-    steps?: Maybe<StepCreateManyWithoutTestsInput>
-    tags?: Maybe<TagCreateManyWithoutTestInput>
-    user: UserCreateOneWithoutTestsInput
-}>
-
-export type CreateTestMutation = { __typename?: "Mutation" } & {
-    createTest: { __typename?: "Test" } & Pick<
-        Test,
-        "id" | "name" | "userId"
-    > & {
-            steps?: Maybe<
-                Array<
-                    { __typename?: "Step" } & Pick<
-                        Step,
-                        | "expected"
-                        | "id"
-                        | "key"
-                        | "kind"
-                        | "selector"
-                        | "url"
-                        | "userId"
-                        | "value"
-                    > & {
-                            User?: Maybe<
-                                { __typename?: "User" } & Pick<
-                                    User,
-                                    | "email"
-                                    | "first"
-                                    | "id"
-                                    | "last"
-                                    | "password"
-                                > & {
-                                        tags?: Maybe<
-                                            Array<
-                                                { __typename?: "Tag" } & Pick<
-                                                    Tag,
-                                                    | "id"
-                                                    | "name"
-                                                    | "testId"
-                                                    | "userId"
-                                                >
-                                            >
-                                        >
-                                    }
-                            >
-                        }
-                >
-            >
-            tags?: Maybe<
-                Array<
-                    { __typename?: "Tag" } & Pick<
-                        Tag,
-                        "id" | "name" | "testId" | "userId"
-                    >
-                >
-            >
-        }
-}
-
-export const TestsDocument = gql`
-    query tests(
-        $cursor: TestWhereUniqueInput
-        $orderBy: TestOrderByInput
-        $skip: Int
-        $take: Int
-        $where: TestWhereInput
-    ) {
-        tests(
-            cursor: $cursor
-            orderBy: $orderBy
-            skip: $skip
-            take: $take
-            where: $where
-        ) {
-            id
-            name
-            steps {
-                expected
-                id
-                key
-                kind
-                selector
-                url
-                User {
-                    email
-                    first
-                    id
-                    last
-                    password
-                    tags {
-                        id
-                        name
-                        testId
-                        userId
-                    }
-                }
-                userId
-                value
-            }
-            tags {
-                id
-                name
-                testId
-                userId
-            }
-            userId
-        }
-    }
-`
-
-/**
- * __useTestsQuery__
- *
- * To run a query within a React component, call `useTestsQuery` and pass it any options that fit your needs.
- * When your component renders, `useTestsQuery` returns an object from Apollo Client that contains loading, error, and data properties
- * you can use to render your UI.
- *
- * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
- *
- * @example
- * const { data, loading, error } = useTestsQuery({
- *   variables: {
- *      cursor: // value for 'cursor'
- *      orderBy: // value for 'orderBy'
- *      skip: // value for 'skip'
- *      take: // value for 'take'
- *      where: // value for 'where'
- *   },
- * });
- */
-export function useTestsQuery(
-    baseOptions?: ApolloReactHooks.QueryHookOptions<
-        TestsQuery,
-        TestsQueryVariables
-    >
-) {
-    return ApolloReactHooks.useQuery<TestsQuery, TestsQueryVariables>(
-        TestsDocument,
-        baseOptions
-    )
-}
-export function useTestsLazyQuery(
-    baseOptions?: ApolloReactHooks.LazyQueryHookOptions<
-        TestsQuery,
-        TestsQueryVariables
-    >
-) {
-    return ApolloReactHooks.useLazyQuery<TestsQuery, TestsQueryVariables>(
-        TestsDocument,
-        baseOptions
-    )
-}
-export type TestsQueryHookResult = ReturnType<typeof useTestsQuery>
-export type TestsLazyQueryHookResult = ReturnType<typeof useTestsLazyQuery>
-export type TestsQueryResult = ApolloReactCommon.QueryResult<
-    TestsQuery,
-    TestsQueryVariables
->
-export const CreateTestDocument = gql`
-    mutation createTest(
-        $name: String!
-        $steps: StepCreateManyWithoutTestsInput
-        $tags: TagCreateManyWithoutTestInput
-        $user: UserCreateOneWithoutTestsInput!
-    ) {
-        createTest(
-            data: { name: $name, steps: $steps, tags: $tags, user: $user }
-        ) {
-            id
-            name
-            steps {
-                expected
-                id
-                key
-                kind
-                selector
-                url
-                User {
-                    email
-                    first
-                    id
-                    last
-                    password
-                    tags {
-                        id
-                        name
-                        testId
-                        userId
-                    }
-                }
-                userId
-                value
-            }
-            tags {
-                id
-                name
-                testId
-                userId
-            }
-            userId
-        }
-    }
-`
-export type CreateTestMutationFn = ApolloReactCommon.MutationFunction<
-    CreateTestMutation,
-    CreateTestMutationVariables
->
-
-/**
- * __useCreateTestMutation__
- *
- * To run a mutation, you first call `useCreateTestMutation` within a React component and pass it any options that fit your needs.
- * When your component renders, `useCreateTestMutation` returns a tuple that includes:
- * - A mutate function that you can call at any time to execute the mutation
- * - An object with fields that represent the current status of the mutation's execution
- *
- * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
- *
- * @example
- * const [createTestMutation, { data, loading, error }] = useCreateTestMutation({
- *   variables: {
- *      name: // value for 'name'
- *      steps: // value for 'steps'
- *      tags: // value for 'tags'
- *      user: // value for 'user'
- *   },
- * });
- */
-export function useCreateTestMutation(
-    baseOptions?: ApolloReactHooks.MutationHookOptions<
-        CreateTestMutation,
-        CreateTestMutationVariables
-    >
-) {
-    return ApolloReactHooks.useMutation<
-        CreateTestMutation,
-        CreateTestMutationVariables
-    >(CreateTestDocument, baseOptions)
-}
-export type CreateTestMutationHookResult = ReturnType<
-    typeof useCreateTestMutation
->
-export type CreateTestMutationResult = ApolloReactCommon.MutationResult<
-    CreateTestMutation
->
-export type CreateTestMutationOptions = ApolloReactCommon.BaseMutationOptions<
-    CreateTestMutation,
-    CreateTestMutationVariables
->
