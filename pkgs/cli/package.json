@@ -16,7 +16,7 @@
         "@babel/runtime-corejs3": "7.10.5",
         "core-js": "3.6.1",
         "commander": "5.0.0-3",
-        "node-fetch": "2.6.0",
+        "node-fetch": "2.6.1",
         "fs-extra": "9.0.1",
         "@octokit/graphql": "4.3.1",
         "@re-do/utils": "0.0.10"
