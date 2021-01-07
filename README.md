@@ -10,7 +10,6 @@ Building something great requires good tests, but it shouldn't be your job to au
 We use a [rush](https://rushjs.io) monorepo to manage our packages. Take a look at any of them individually to learn more:
 
 -   [@re-do/app](/pkgs/app): Desktop UI for creating and managing automated tests 🤖
--   [jsrx](pkgs/jsrx): Seamlessly write your [npm scripts](https://docs.npmjs.com/misc/scripts) in JS 💊📜
 -   [gqlize](pkgs/gqlize): Zero-config graphql query generation 🎁
 -   [statelessly](pkgs/statelessly): 💪-typed state management with simple shapes🔷
 -   [react-statelessly](pkgs/react-statelessly): React hooks for [statelessly](pkgs/statelessly)
