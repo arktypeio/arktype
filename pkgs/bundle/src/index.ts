@@ -8,7 +8,8 @@ import {
     Configuration,
     IgnorePlugin,
     HotModuleReplacementPlugin,
-    NoEmitOnErrorsPlugin
+    NoEmitOnErrorsPlugin,
+    ProvidePlugin
 } from "webpack"
 import { listify } from "@re-do/utils"
 import { getMode, isDev } from "@re-do/utils/dist/node"
@@ -42,7 +43,7 @@ const getCommonConfig = ({
         plugins: [new TsconfigPathsPlugin() as any],
         alias: {
             ws: "isomorphic-ws"
-        },
+        }
     },
     module: {
         rules: [
@@ -66,12 +67,14 @@ const getCommonConfig = ({
     },
     plugins: analyzeBundle
         ? [
+            new ProvidePlugin({ process: "process/browser"}),
             new ForkTsCheckerWebpackPlugin({
                 typescript: { configFile: tsconfig }
             }),
             new BundleAnalyzerPlugin() as any
         ]
         : [
+            new ProvidePlugin({ process: "process/browser"}),
             new ForkTsCheckerWebpackPlugin({
                 typescript: { configFile: tsconfig }
             })
