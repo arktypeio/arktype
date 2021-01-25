@@ -7,7 +7,6 @@ import { merge } from "webpack-merge"
 import {
     Configuration,
     IgnorePlugin,
-    NamedModulesPlugin,
     HotModuleReplacementPlugin,
     NoEmitOnErrorsPlugin
 } from "webpack"
@@ -40,10 +39,10 @@ const getCommonConfig = ({
     },
     resolve: {
         extensions: [".ts", ".tsx", ".js", ".jsx", ".mjs", ".json"],
-        plugins: [new TsconfigPathsPlugin()],
+        plugins: [new TsconfigPathsPlugin() as any],
         alias: {
             ws: "isomorphic-ws"
-        }
+        },
     },
     module: {
         rules: [
@@ -53,9 +52,10 @@ const getCommonConfig = ({
                 exclude: /node_modules/
             },
             {
-                type: "javascript/auto",
-                test: /\.mjs$/,
-                use: []
+                test: /\.m?js$/,
+                resolve: {
+                    fullySpecified: false
+                }
             },
             {
                 test: /\.(graphql|gql)$/,
@@ -66,16 +66,16 @@ const getCommonConfig = ({
     },
     plugins: analyzeBundle
         ? [
-              new ForkTsCheckerWebpackPlugin({
-                  typescript: { configFile: tsconfig }
-              }),
-              new BundleAnalyzerPlugin() as any
-          ]
+            new ForkTsCheckerWebpackPlugin({
+                typescript: { configFile: tsconfig }
+            }),
+            new BundleAnalyzerPlugin() as any
+        ]
         : [
-              new ForkTsCheckerWebpackPlugin({
-                  typescript: { configFile: tsconfig }
-              })
-          ]
+            new ForkTsCheckerWebpackPlugin({
+                typescript: { configFile: tsconfig }
+            })
+        ]
 })
 
 const getWebConfig = (args: ConfigArgs): Configuration =>
@@ -102,7 +102,10 @@ const getWebConfig = (args: ConfigArgs): Configuration =>
                 },
                 {
                     test: /\.css$/,
-                    loaders: ["style-loader", "css-loader"]
+                    use: [
+                        { loader: "style-loader" },
+                        { loader: "css-loader" }
+                    ]
                 },
                 {
                     test: /node_modules[\/\\](iconv-lite)[\/\\].+/,
@@ -126,7 +129,7 @@ const getWebConfig = (args: ConfigArgs): Configuration =>
             }
         },
         plugins: [
-            new IgnorePlugin(/\/iconv-loader$/),
+            new IgnorePlugin({ checkResource: name => name.includes("iconv-loader") }),
             new HtmlWebpackPlugin({
                 template: resolve(__dirname, "template.html")
             })
@@ -186,37 +189,36 @@ const getInjectedConfig = (args: ConfigArgs): Configuration =>
     })
 
 const getDevServerConfig = (customConfig?: object): Configuration =>
-    ({
-        resolve: {
-            alias: {
-                "react-dom": resolve(
-                    __dirname,
-                    "..",
-                    "node_modules",
-                    "@hot-loader",
-                    "react-dom"
-                )
-            }
-        },
-        entry: [
-            "react-hot-loader/patch",
-            "webpack-dev-server/client?http://localhost:8080",
-            "webpack/hot/only-dev-server"
-        ],
-        plugins: [
-            new NamedModulesPlugin(),
-            new HotModuleReplacementPlugin(),
-            new NoEmitOnErrorsPlugin()
-        ],
-        devServer: {
-            historyApiFallback: true,
-            hot: true,
-            writeToDisk: true,
-            host: isWsl ? "0.0.0.0" : undefined,
-            useLocalIp: isWsl,
-            ...customConfig
+({
+    resolve: {
+        alias: {
+            "react-dom": resolve(
+                __dirname,
+                "..",
+                "node_modules",
+                "@hot-loader",
+                "react-dom"
+            )
         }
-    } as Configuration)
+    },
+    entry: [
+        "react-hot-loader/patch",
+        "webpack-dev-server/client?http://localhost:8080",
+        "webpack/hot/only-dev-server"
+    ],
+    plugins: [
+        new HotModuleReplacementPlugin(),
+        new NoEmitOnErrorsPlugin()
+    ],
+    devServer: {
+        historyApiFallback: true,
+        hot: true,
+        writeToDisk: true,
+        host: isWsl ? "0.0.0.0" : undefined,
+        useLocalIp: isWsl,
+        ...customConfig
+    }
+} as Configuration)
 
 const baseOptions = {
     common: getCommonConfig,

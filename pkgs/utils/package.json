@@ -16,7 +16,10 @@
         "execa": "5.0.0",
         "fs-extra": "9.0.1",
         "moize": "5.4.7",
-        "validator": "13.5.2"
+        "validator": "13.5.2",
+        "util": "0.12.3",
+        "assert": "2.0.0",
+        "process": "0.11.10"
     },
     "devDependencies": {
         "@re-do/recommended": "0.0.2",
