@@ -3,7 +3,7 @@ import { spawn } from "child_process"
 import HtmlWebpackPlugin from "html-webpack-plugin"
 import { TsconfigPathsPlugin } from "tsconfig-paths-webpack-plugin"
 import isWsl from "is-wsl"
-import merge from "webpack-merge"
+import { merge } from "webpack-merge"
 import {
     Configuration,
     IgnorePlugin,
@@ -79,7 +79,7 @@ const getCommonConfig = ({
 })
 
 const getWebConfig = (args: ConfigArgs): Configuration =>
-    merge.smart(getCommonConfig(args), {
+    merge(getCommonConfig(args), {
         module: {
             rules: [
                 {
@@ -134,7 +134,7 @@ const getWebConfig = (args: ConfigArgs): Configuration =>
     })
 
 const getMainConfig = (args: ConfigArgs): Configuration =>
-    merge.smart(getCommonConfig(args), {
+    merge(getCommonConfig(args), {
         target: "electron-main",
         output: {
             filename: "main.js"
@@ -142,7 +142,7 @@ const getMainConfig = (args: ConfigArgs): Configuration =>
     })
 
 const getRendererConfig = (args: ConfigArgs): Configuration =>
-    merge.smart(getWebConfig(args), {
+    merge(getWebConfig(args), {
         target: "electron-renderer",
         output: {
             filename: "renderer.js"
@@ -163,14 +163,14 @@ const getRendererConfig = (args: ConfigArgs): Configuration =>
                     env: process.env,
                     stdio: "inherit"
                 })
-                    .on("close", (code) => process.exit(code))
+                    .on("close", (code) => process.exit(code ?? undefined))
                     .on("error", (spawnError) => console.error(spawnError))
             }
         }
     } as Configuration)
 
 const getInjectedConfig = (args: ConfigArgs): Configuration =>
-    merge.smart(getWebConfig(args), {
+    merge(getWebConfig(args), {
         output: {
             filename: "injected.js"
         },
@@ -246,7 +246,7 @@ export const makeConfig = (
     }: BaseConfigOptions,
     merged: Partial<Configuration>[] = []
 ) =>
-    merge.smart(
+    merge(
         baseOptions[base]({ entries: listify(entry), tsconfig, analyzeBundle }),
         devServer ? getDevServerConfig(devServer) : {},
         ...merged
