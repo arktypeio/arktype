@@ -28,17 +28,6 @@ module.exports = {
  * The return value is the updated object.
  */
 function readPackage(packageJson, context) {
-    if (
-        packageJson.name.startsWith("apollo-") &&
-        (!packageJson.peerDependencies || !packageJson.peerDependencies.graphql)
-    ) {
-        context.log(
-            `Adding GraphQL as a peer dependency for ${packageJson.name}...`
-        )
-        packageJson.peerDependencies = {
-            graphql: "^0.11.0 || ^0.12.0 || ^0.13.0 || ^14.0.0"
-        }
-    }
     if (packageJson.name === "material-table") {
         context.log(
             "Adding @babel/runtime as a dependency for material-table..."
