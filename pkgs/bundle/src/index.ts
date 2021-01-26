@@ -3,13 +3,13 @@ import { spawn } from "child_process"
 import HtmlWebpackPlugin from "html-webpack-plugin"
 import { TsconfigPathsPlugin } from "tsconfig-paths-webpack-plugin"
 import isWsl from "is-wsl"
-import merge from "webpack-merge"
+import { merge } from "webpack-merge"
 import {
     Configuration,
     IgnorePlugin,
-    NamedModulesPlugin,
     HotModuleReplacementPlugin,
-    NoEmitOnErrorsPlugin
+    NoEmitOnErrorsPlugin,
+    ProvidePlugin
 } from "webpack"
 import { listify } from "@re-do/utils"
 import { getMode, isDev } from "@re-do/utils/dist/node"
@@ -21,6 +21,20 @@ export type ConfigArgs = {
     tsconfig: string
     analyzeBundle: boolean
 }
+
+const getPlugins = (tsconfig: string, analyze?: boolean) => {
+    const plugins = [
+        new ProvidePlugin({ process: "process/browser", Buffer: ["buffer", "Buffer"]}),
+        new ForkTsCheckerWebpackPlugin({
+            typescript: { configFile: tsconfig }
+        })
+    ]
+    if (analyze) {
+        plugins.push(new BundleAnalyzerPlugin() as any)
+    }
+    return plugins 
+} 
+
 
 const getCommonConfig = ({
     entries,
@@ -40,7 +54,7 @@ const getCommonConfig = ({
     },
     resolve: {
         extensions: [".ts", ".tsx", ".js", ".jsx", ".mjs", ".json"],
-        plugins: [new TsconfigPathsPlugin()],
+        plugins: [new TsconfigPathsPlugin() as any],
         alias: {
             ws: "isomorphic-ws"
         }
@@ -53,9 +67,10 @@ const getCommonConfig = ({
                 exclude: /node_modules/
             },
             {
-                type: "javascript/auto",
-                test: /\.mjs$/,
-                use: []
+                test: /\.m?js$/,
+                resolve: {
+                    fullySpecified: false
+                }
             },
             {
                 test: /\.(graphql|gql)$/,
@@ -64,22 +79,11 @@ const getCommonConfig = ({
             }
         ]
     },
-    plugins: analyzeBundle
-        ? [
-              new ForkTsCheckerWebpackPlugin({
-                  typescript: { configFile: tsconfig }
-              }),
-              new BundleAnalyzerPlugin() as any
-          ]
-        : [
-              new ForkTsCheckerWebpackPlugin({
-                  typescript: { configFile: tsconfig }
-              })
-          ]
+    plugins: getPlugins(tsconfig, analyzeBundle)
 })
 
 const getWebConfig = (args: ConfigArgs): Configuration =>
-    merge.smart(getCommonConfig(args), {
+    merge(getCommonConfig(args), {
         module: {
             rules: [
                 {
@@ -102,7 +106,10 @@ const getWebConfig = (args: ConfigArgs): Configuration =>
                 },
                 {
                     test: /\.css$/,
-                    loaders: ["style-loader", "css-loader"]
+                    use: [
+                        { loader: "style-loader" },
+                        { loader: "css-loader" }
+                    ]
                 },
                 {
                     test: /node_modules[\/\\](iconv-lite)[\/\\].+/,
@@ -126,7 +133,7 @@ const getWebConfig = (args: ConfigArgs): Configuration =>
             }
         },
         plugins: [
-            new IgnorePlugin(/\/iconv-loader$/),
+            new IgnorePlugin({ checkResource: name => name.includes("iconv-loader") }),
             new HtmlWebpackPlugin({
                 template: resolve(__dirname, "template.html")
             })
@@ -134,7 +141,7 @@ const getWebConfig = (args: ConfigArgs): Configuration =>
     })
 
 const getMainConfig = (args: ConfigArgs): Configuration =>
-    merge.smart(getCommonConfig(args), {
+    merge(getCommonConfig(args), {
         target: "electron-main",
         output: {
             filename: "main.js"
@@ -142,7 +149,7 @@ const getMainConfig = (args: ConfigArgs): Configuration =>
     })
 
 const getRendererConfig = (args: ConfigArgs): Configuration =>
-    merge.smart(getWebConfig(args), {
+    merge(getWebConfig(args), {
         target: "electron-renderer",
         output: {
             filename: "renderer.js"
@@ -163,14 +170,14 @@ const getRendererConfig = (args: ConfigArgs): Configuration =>
                     env: process.env,
                     stdio: "inherit"
                 })
-                    .on("close", (code) => process.exit(code))
+                    .on("close", (code) => process.exit(code ?? undefined))
                     .on("error", (spawnError) => console.error(spawnError))
             }
         }
     } as Configuration)
 
 const getInjectedConfig = (args: ConfigArgs): Configuration =>
-    merge.smart(getWebConfig(args), {
+    merge(getWebConfig(args), {
         output: {
             filename: "injected.js"
         },
@@ -186,37 +193,36 @@ const getInjectedConfig = (args: ConfigArgs): Configuration =>
     })
 
 const getDevServerConfig = (customConfig?: object): Configuration =>
-    ({
-        resolve: {
-            alias: {
-                "react-dom": resolve(
-                    __dirname,
-                    "..",
-                    "node_modules",
-                    "@hot-loader",
-                    "react-dom"
-                )
-            }
-        },
-        entry: [
-            "react-hot-loader/patch",
-            "webpack-dev-server/client?http://localhost:8080",
-            "webpack/hot/only-dev-server"
-        ],
-        plugins: [
-            new NamedModulesPlugin(),
-            new HotModuleReplacementPlugin(),
-            new NoEmitOnErrorsPlugin()
-        ],
-        devServer: {
-            historyApiFallback: true,
-            hot: true,
-            writeToDisk: true,
-            host: isWsl ? "0.0.0.0" : undefined,
-            useLocalIp: isWsl,
-            ...customConfig
+({
+    resolve: {
+        alias: {
+            "react-dom": resolve(
+                __dirname,
+                "..",
+                "node_modules",
+                "@hot-loader",
+                "react-dom"
+            )
         }
-    } as Configuration)
+    },
+    entry: [
+        "react-hot-loader/patch",
+        "webpack-dev-server/client?http://localhost:8080",
+        "webpack/hot/only-dev-server"
+    ],
+    plugins: [
+        new HotModuleReplacementPlugin(),
+        new NoEmitOnErrorsPlugin()
+    ],
+    devServer: {
+        historyApiFallback: true,
+        hot: true,
+        writeToDisk: true,
+        host: isWsl ? "0.0.0.0" : undefined,
+        useLocalIp: isWsl,
+        ...customConfig
+    }
+} as Configuration)
 
 const baseOptions = {
     common: getCommonConfig,
@@ -246,7 +252,7 @@ export const makeConfig = (
     }: BaseConfigOptions,
     merged: Partial<Configuration>[] = []
 ) =>
-    merge.smart(
+    merge(
         baseOptions[base]({ entries: listify(entry), tsconfig, analyzeBundle }),
         devServer ? getDevServerConfig(devServer) : {},
         ...merged

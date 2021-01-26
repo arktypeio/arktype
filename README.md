@@ -7,10 +7,9 @@ Building something great requires good tests, but it shouldn't be your job to au
 
 ## Packages
 
-We use a [rush](https://rushjs.io) monorepo to manage our packages. Take a look at any of them individually to learn more:
+We use a [rush](https://rushjs.io) monorepo to manage the Redo app. Take a look at any of the individual packages to learn more:
 
 -   [@re-do/app](/pkgs/app): Desktop UI for creating and managing automated tests 🤖
--   [jsrx](pkgs/jsrx): Seamlessly write your [npm scripts](https://docs.npmjs.com/misc/scripts) in JS 💊📜
 -   [gqlize](pkgs/gqlize): Zero-config graphql query generation 🎁
 -   [statelessly](pkgs/statelessly): 💪-typed state management with simple shapes🔷
 -   [react-statelessly](pkgs/react-statelessly): React hooks for [statelessly](pkgs/statelessly)
@@ -22,6 +21,10 @@ We use a [rush](https://rushjs.io) monorepo to manage our packages. Take a look 
 -   [@re-do/recommended](pkgs/recommended): Shared configs (TS, jest, etc.)
 -   [@re-do/bundle](pkgs/bundle): Shared [webpack](https://webpack.js.org/) presets
 -   [babel-preset-redo](/pkgs/babel-preset-redo): Shared [babel](https://babeljs.io/) preset
+
+These packages have left the monorepo nest, but you can visit them in their new homes:
+
+-   [jsrx](https://github.com/re-do/jsrx): Seamlessly write your npm scripts in JS 💊📜
 
 ## Contributing
 
