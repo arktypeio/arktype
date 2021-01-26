@@ -20,6 +20,7 @@
         "@re-do/components": "0.0.4",
         "@re-do/utils": "0.0.10",
         "analytics-node": "3.5.0",
+        "buffer": "6.0.3",
         "react": "17.0.1",
         "react-dom": "17.0.1",
         "react-ga": "3.3.0",

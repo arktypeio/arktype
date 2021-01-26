@@ -70,6 +70,7 @@ dependencies:
   babel-loader: 8.2.2_baabc0d578894a2be8d781502c3441b6
   babel-plugin-require-context-hook: 1.0.0
   babel-plugin-transform-typescript-metadata: 0.3.1
+  buffer: 6.0.3
   clean-webpack-plugin: 3.0.0_webpack@5.17.0
   commander: 6.2.1
   copy-webpack-plugin: 7.0.0_webpack@5.17.0
@@ -6234,6 +6235,13 @@ packages:
     dev: false
     resolution:
       integrity: sha512-xq+q3SRMOxGivLhBNaUdC64hDTQwejJ+H0T/NB1XMtTVEwNTrfFF3gAxiyW0Bu/xWEGhjVKgUcMhCrUy2+uCWg==
+  /buffer/6.0.3:
+    dependencies:
+      base64-js: 1.3.1
+      ieee754: 1.2.1
+    dev: false
+    resolution:
+      integrity: sha512-FTiCpNxtwiZZHEZbcbTIcZjERVICn9yq/pDFkTl95/AxzD1naBctN7YO68riM/gLSDY7sdrMby8hofADYuuqOA==
   /builder-util-runtime/8.7.2:
     dependencies:
       debug: 4.3.1
@@ -10276,6 +10284,10 @@ packages:
     dev: false
     resolution:
       integrity: sha512-4vf7I2LYV/HaWerSo3XmlMkp5eZ83i+/CDluXi/IGTs/O1sejBNhTtnxzmRZfvOUqj7lZjqHkeTvpgSFDlWZTg==
+  /ieee754/1.2.1:
+    dev: false
+    resolution:
+      integrity: sha512-dcyqhDvX1C46lXZcVqCpK+FtMRQVdIMN6/Df5js2zouUsqG7I6sFxitIC+7KYK29KdXOLHdu9zL4sFnoVQnqaA==
   /iferr/0.1.5:
     dev: false
     resolution:
@@ -18581,6 +18593,7 @@ packages:
       '@types/uuid': 8.3.0
       '@types/validator': 13.1.3
       analytics-node: 3.5.0
+      buffer: 6.0.3
       framer-motion: 3.2.1_react-dom@17.0.1+react@17.0.1
       react: 17.0.1
       react-dom: 17.0.1_react@17.0.1
@@ -18601,7 +18614,7 @@ packages:
     peerDependencies:
       webpack-bundle-analyzer: '*'
     resolution:
-      integrity: sha512-37md6e9lLVjdyeiPpJNpgJ0HYCKdLrOJO+5JPRN1744f/h5dla2dFQPPouwq1vH5l4r+UcJqoq231Qh1gcbAEw==
+      integrity: sha512-D6XFYM/5XukZiOHcrM02ILTgpwtkiLpSxRZXJSmJcsHNo0z2BVNovBCMIogga2TV3kVUyqqniSxOQecEfHa/kQ==
       tarball: 'file:projects/website.tgz'
     version: 0.0.0
 registry: ''
@@ -18677,6 +18690,7 @@ specifiers:
   babel-loader: 8.2.2
   babel-plugin-require-context-hook: 1.0.0
   babel-plugin-transform-typescript-metadata: 0.3.1
+  buffer: 6.0.3
   clean-webpack-plugin: 3.0.0
   commander: 6.2.1
   copy-webpack-plugin: 7.0.0

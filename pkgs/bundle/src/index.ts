@@ -22,6 +22,20 @@ export type ConfigArgs = {
     analyzeBundle: boolean
 }
 
+const getPlugins = (tsconfig: string, analyze?: boolean) => {
+    const plugins = [
+        new ProvidePlugin({ process: "process/browser", Buffer: ["buffer", "Buffer"]}),
+        new ForkTsCheckerWebpackPlugin({
+            typescript: { configFile: tsconfig }
+        })
+    ]
+    if (analyze) {
+        plugins.push(new BundleAnalyzerPlugin() as any)
+    }
+    return plugins 
+} 
+
+
 const getCommonConfig = ({
     entries,
     tsconfig,
@@ -65,20 +79,7 @@ const getCommonConfig = ({
             }
         ]
     },
-    plugins: analyzeBundle
-        ? [
-            new ProvidePlugin({ process: "process/browser"}),
-            new ForkTsCheckerWebpackPlugin({
-                typescript: { configFile: tsconfig }
-            }),
-            new BundleAnalyzerPlugin() as any
-        ]
-        : [
-            new ProvidePlugin({ process: "process/browser"}),
-            new ForkTsCheckerWebpackPlugin({
-                typescript: { configFile: tsconfig }
-            })
-        ]
+    plugins: getPlugins(tsconfig, analyzeBundle)
 })
 
 const getWebConfig = (args: ConfigArgs): Configuration =>
