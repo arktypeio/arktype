@@ -5,7 +5,6 @@ import { readFileSync, writeFileSync } from "fs-extra"
 import * as typescript from "@graphql-codegen/typescript"
 import * as reactApollo from "@graphql-codegen/typescript-react-apollo"
 import * as operations from "@graphql-codegen/typescript-operations"
-import { gqlize } from "gqlize"
 import { join } from "path"
 
 export const typify = async () => {

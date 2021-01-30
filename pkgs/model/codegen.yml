@@ -1,0 +1,9 @@
+schema:
+    - schema.gql
+
+generates:
+    src/index.tsx:
+        plugins:
+            - typescript
+            - typescript-operations
+            - typescript-react-apollo
