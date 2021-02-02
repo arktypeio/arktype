@@ -1,11 +1,4 @@
-import finder from "@medv/finder"
-
-// TODO: Fix bizarre build failure caused by this import:
-// https://github.com/redo-qa/redo/issues/197
-// import {
-//     StepCreateWithoutTestsInput as StepInput,
-//     StepKind,
-// } from "@re-do/model/dist/react"
+import { finder } from "@medv/finder"
 
 enum StepKind {
     Click = "click",
