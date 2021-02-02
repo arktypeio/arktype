@@ -2,7 +2,8 @@ import { isDeepStrictEqual } from "util"
 import {
     createStore as createReduxStore,
     Store as ReduxStore,
-    Reducer
+    Reducer,
+    PreloadedState
 } from "redux"
 import {
     DeepPartial,
@@ -44,7 +45,7 @@ export const createStore = <T>({
         }
         return updatedState
     }
-    const reduxStore = createReduxStore(rootReducer, initial)
+    const reduxStore = createReduxStore(rootReducer, initial as PreloadedState<T>)
     return {
         underlying: reduxStore,
         getState: reduxStore.getState,
