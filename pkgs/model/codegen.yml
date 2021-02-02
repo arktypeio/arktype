@@ -1,6 +1,5 @@
-schema:
-    - schema.gql
-
+schema: schema.gql
+documents: queries.gql
 generates:
     src/index.tsx:
         plugins:

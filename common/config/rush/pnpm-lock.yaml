@@ -86,7 +86,7 @@ dependencies:
   fork-ts-checker-webpack-plugin: 6.1.0
   framer-motion: 3.2.1_react-dom@17.0.1+react@17.0.1
   fs-extra: 9.0.1
-  gqlize: 0.0.1
+  gqlize: 0.0.3
   graphql: 15.4.0
   graphql-tag: 2.11.0_graphql@15.4.0
   html-webpack-plugin: 4.5.1_webpack@5.17.0
@@ -1657,13 +1657,6 @@ packages:
     dev: false
     resolution:
       integrity: sha512-roGr54CsTmNPPzZoCP1AmDXuBoNao7tnSA83TXTwt+UK5QVyh1DIJnrgYRPWKCF2flqZQXwa7Yr8v7VmLzF0YQ==
-  /@babel/runtime-corejs3/7.5.5:
-    dependencies:
-      core-js-pure: 3.6.1
-      regenerator-runtime: 0.13.7
-    dev: false
-    resolution:
-      integrity: sha512-bNxHJ+w7RfLzZJtIZdEjFgL1twwZ6ozuOmsEjtyuTqfi1hb1fqsDYYyi3Fi3i+RgAO4S9+wkSG102+GCqdpr7w==
   /@babel/runtime-corejs3/7.6.3:
     dependencies:
       core-js-pure: 3.6.1
@@ -3296,16 +3289,6 @@ packages:
     dev: false
     resolution:
       integrity: sha512-cPqjjzuFWNK3BSKLm0abspP0sp/IGOli4p5I5fKFAzdS8fvjdOwDCfZqAaIiXd9lPkOWi3SUUfZof3hEb7J/uw==
-  /@re-do/utils/0.0.1:
-    dependencies:
-      '@babel/runtime-corejs3': 7.5.5
-      class-transformer: 0.2.0
-      core-js: 3.1.4
-      fs-extra: 8.1.0
-      moize: 5.4.4
-    dev: false
-    resolution:
-      integrity: sha512-n2P2iz1Gn8gECm7P5GHak3Lb1t6bzFbH10ZYaE9ExZSRmxpW6YE9UJ2Mv2zzPbR9orsZv1cSgWmCSiuc6I1SYQ==
   /@re-do/utils/0.0.10:
     dependencies:
       '@babel/runtime-corejs3': 7.10.3
@@ -7063,10 +7046,6 @@ packages:
     dev: false
     resolution:
       integrity: sha512-uc2Vix1frTfnuzxxu1Hp4ktSvM3QaI4oXl4ZUqL1wjTu/BGki9TrCWoqLTg/drR1KwAEarXuRFCG2Svr1GxPFw==
-  /class-transformer/0.2.0:
-    dev: false
-    resolution:
-      integrity: sha512-6N/5WkEmLZCKxyC2CAPYQIJt3pDZzDFag7AExpyWRm7CjaS/U62VDRU+Z2AUrQaNpnuiXRlli0so4PJUqGSVZQ==
   /class-utils/0.3.6:
     dependencies:
       arr-union: 3.1.0
@@ -7603,11 +7582,6 @@ packages:
     requiresBuild: true
     resolution:
       integrity: sha512-5wjnpaT/3dV+XB4borEsnAYQchn00XSgTAWKDkEqv+K8KevjbzmofK6hfJ9TZIlpj2N0xQpazy7PiRQiWHqzWg==
-  /core-js/3.1.4:
-    dev: false
-    requiresBuild: true
-    resolution:
-      integrity: sha512-YNZN8lt82XIMLnLirj9MhKDFZHalwzzrL9YLt6eb0T5D0EDl4IQ90IGkua8mHbnxNrkj1d8hbdizMc0Qmg1WnQ==
   /core-js/3.6.1:
     dev: false
     requiresBuild: true
@@ -9743,6 +9717,17 @@ packages:
       node: '>=10'
     resolution:
       integrity: sha512-h2iAoN838FqAFJY2/qVpzFXy+EBxfVE220PalAqQLDVsFOHLJrZvut5puAbCdNv6WJk+B8ihI+k0c7JK5erwqQ==
+  /fs-extra/9.1.0:
+    dependencies:
+      at-least-node: 1.0.0
+      graceful-fs: 4.2.4
+      jsonfile: 6.0.1
+      universalify: 2.0.0
+    dev: false
+    engines:
+      node: '>=10'
+    resolution:
+      integrity: sha512-hcg3ZmepS30/7BSFqRvoo3DOMQu7IjqxO5nCDt+zM9XWjb33Wg7ziNT+Qvqbuc3+gWpzO02JubVyk2G4Zvo1OQ==
   /fs-minipass/2.1.0:
     dependencies:
       minipass: 3.1.3
@@ -10175,16 +10160,17 @@ packages:
       node: '>=8.6'
     resolution:
       integrity: sha512-R7eWptXuGYxwijs0eV+v3o6+XH1IqVK8dJOEecQfTmkncw9AV4dcw/Dhxi8MdlqPthxxpZyizMzyg8RTmEsG+Q==
-  /gqlize/0.0.1:
+  /gqlize/0.0.3:
     dependencies:
-      '@babel/runtime-corejs3': 7.6.3
-      '@re-do/utils': 0.0.1
-      fs-extra: 8.1.0
-      graphql: 14.5.8
-      graphql-tag: 2.10.1_graphql@14.5.8
+      '@babel/runtime-corejs3': 7.12.5
+      '@re-do/utils': 0.0.10
+      fs-extra: 9.1.0
+      graphql: 15.5.0
+      graphql-tag: 2.11.0_graphql@15.5.0
+      prettier: 2.2.1
     dev: false
     resolution:
-      integrity: sha512-mnlkEy+CQNsIpC7yfGMIOut5SBEa18Ug4UU8voWhJ2mVePw7T9ULZ885W+9wwQyVi/CtUKtQKj2GM7tpgb4X4Q==
+      integrity: sha512-CGRzWlJeAHiGJv+mhbZ1NRnmcF8uKoUBPyd3C+bqmK+iZs8a505Og+T4jOWDFq/HNRDniLOWAMZVPsXSwLRMlQ==
   /graceful-fs/4.1.15:
     dev: false
     resolution:
@@ -10227,17 +10213,17 @@ packages:
       graphql: 14.x || 15.x
     resolution:
       integrity: sha512-acrTzidSlwAj8wBNO7Q/UQHS8T+z5qRGquCQRv9J1InwR01BBWV9ObnoE+JS5nCCEj8wSGS0yrDXVDoRiKZuOg==
-  /graphql-tag/2.10.1_graphql@14.5.8:
-    dependencies:
-      graphql: 14.5.8
-    dev: false
-    peerDependencies:
-      graphql: ^0.9.0 || ^0.10.0 || ^0.11.0 || ^0.12.0 || ^0.13.0 || ^14.0.0
-    resolution:
-      integrity: sha512-jApXqWBzNXQ8jYa/HLkZJaVw9jgwNqZkywa2zfFn16Iv1Zb7ELNHkJaXHR7Quvd5SIGsy6Ny7SUKATgnu05uEg==
   /graphql-tag/2.11.0_graphql@15.4.0:
     dependencies:
       graphql: 15.4.0
+    dev: false
+    peerDependencies:
+      graphql: ^0.9.0 || ^0.10.0 || ^0.11.0 || ^0.12.0 || ^0.13.0 || ^14.0.0 || ^15.0.0
+    resolution:
+      integrity: sha512-VmsD5pJqWJnQZMUeRwrDhfgoyqcfwEkvtpANqcoUG8/tOLkwNgU9mzub/Mc78OJMhHjx7gfAMTxzdG43VGg3bA==
+  /graphql-tag/2.11.0_graphql@15.5.0:
+    dependencies:
+      graphql: 15.5.0
     dev: false
     peerDependencies:
       graphql: ^0.9.0 || ^0.10.0 || ^0.11.0 || ^0.12.0 || ^0.13.0 || ^14.0.0 || ^15.0.0
@@ -10268,20 +10254,18 @@ packages:
       graphql: '>=0.11 <=15'
     resolution:
       integrity: sha512-DxJP1y2YzCqVLy7DrQN0iuR2l48vMOBWukX2d/J9aN2o5x9un5psIIq/2UFRh91UGARmfvPH86y1p4qbC1dITg==
-  /graphql/14.5.8:
-    dependencies:
-      iterall: 1.3.0
-    dev: false
-    engines:
-      node: '>= 6.x'
-    resolution:
-      integrity: sha512-MMwmi0zlVLQKLdGiMfWkgQD7dY/TUKt4L+zgJ/aR0Howebod3aNgP5JkgvAULiR2HPVZaP2VEElqtdidHweLkg==
   /graphql/15.4.0:
     dev: false
     engines:
       node: '>= 10.x'
     resolution:
       integrity: sha512-EB3zgGchcabbsU9cFe1j+yxdzKQKAbGUWRb13DsrsMN1yyfmmIq+2+L5MqVWcDCE4V89R5AyUOi7sMOGxdsYtA==
+  /graphql/15.5.0:
+    dev: false
+    engines:
+      node: '>= 10.x'
+    resolution:
+      integrity: sha512-OmaM7y0kaK31NKG31q4YbD2beNYa6jBBKtMFT6gLYJljHLJr42IqJ8KX08u3Li/0ifzTU5HjmoOOrwa5BRLeDA==
   /growly/1.3.0:
     dev: false
     optional: true
@@ -17993,6 +17977,12 @@ packages:
       node: '>= 10.0.0'
     resolution:
       integrity: sha512-rb6X1W158d7pRQBg5gkR8uPaSfiids68LTJQYOtEUhoJUWBdaQHsuT/EUduxXYxcrt4r5PJ4fuHW1MHT6p0qug==
+  /universalify/2.0.0:
+    dev: false
+    engines:
+      node: '>= 10.0.0'
+    resolution:
+      integrity: sha512-hAZsKq7Yy11Zu1DE0OzWjw7nnLZmJZYTDZZyEFHZdUhV8FkH5MCfoU1XMaxXovpyW5nq5scPqq0ZDP9Zyl04oQ==
   /unixify/1.0.0:
     dependencies:
       normalize-path: 2.1.1
@@ -19312,7 +19302,7 @@ packages:
       '@types/node': 14.14.21
       '@types/validator': 13.1.3
       fs-extra: 9.0.1
-      gqlize: 0.0.1
+      gqlize: 0.0.3
       graphql: 15.4.0
       graphql-tag: 2.11.0_graphql@15.4.0
       prettier: 2.2.1
@@ -19325,7 +19315,7 @@ packages:
     peerDependencies:
       react: '*'
     resolution:
-      integrity: sha512-kFpNkQIua20IWiYflG/5TXy8rfFs0hsW8W3MOv62IAggV5QtGpX7WHaZ+O9yJsgDSG2qdV3+VMPdNelC5XEU8w==
+      integrity: sha512-1rqYUeF9Bavh1o7cGLauCfxsD40i9moRL2NtAPHC/5aEplLcKnpiTWC/v0rFygk5jIGGhQWLXiQZvwhVVvthRQ==
       tarball: 'file:projects/model.tgz'
     version: 0.0.0
   'file:projects/react-statelessly.tgz_ts-node@9.1.1':
@@ -19555,7 +19545,7 @@ specifiers:
   fork-ts-checker-webpack-plugin: 6.1.0
   framer-motion: 3.2.1
   fs-extra: 9.0.1
-  gqlize: 0.0.1
+  gqlize: 0.0.3
   graphql: 15.4.0
   graphql-tag: 2.11.0
   html-webpack-plugin: 4.5.1

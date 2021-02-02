@@ -1,0 +1,20 @@
+query me {
+  me {
+    email
+    first
+    id
+    last
+    password
+  }
+}
+mutation signIn($email: String!, $password: String!) {
+  signIn(email: $email, password: $password)
+}
+mutation signUp(
+  $email: String!
+  $first: String!
+  $last: String!
+  $password: String!
+) {
+  signUp(email: $email, first: $first, last: $last, password: $password)
+}
