@@ -1,4 +1,3 @@
-import { asserted } from "@re-do/utils"
 import { BrowserType, Browser, chromium, firefox, webkit } from "playwright"
 
 export type BrowserName = "chrome" | "firefox" | "safari"
