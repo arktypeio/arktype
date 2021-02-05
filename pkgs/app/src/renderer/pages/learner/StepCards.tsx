@@ -19,7 +19,7 @@ export const LearnerEvents = ({ steps }: LearnerEventsProps) => {
         >
             {steps.map((e, i) => (
                 <ListItem style={{ padding: theme.spacing(2) }} key={i}>
-                    <StepCard event={{ ...e }} />
+                    <StepCard step={{ ...e }} />
                 </ListItem>
             ))}
         </List>

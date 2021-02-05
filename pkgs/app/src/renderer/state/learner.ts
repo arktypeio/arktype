@@ -3,11 +3,7 @@ import { remote, Rectangle } from "electron"
 import { isDeepStrictEqual } from "util"
 import { resolve } from "path"
 import { createHandler } from "react-statelessly"
-import {
-    StepCreateWithoutTestsInput as StepInput,
-    TagCreateWithoutTestInput as TagInput
-} from "@re-do/model"
-import { launch, BrowserName, browserHandlers } from "@re-do/test"
+import { launch, BrowserName, Step } from "@re-do/test"
 import { store } from "renderer/common"
 import { isDev } from "@re-do/utils/dist/node"
 import { Root } from "./root"
@@ -35,11 +31,11 @@ const setMainWindowBounds = (bounds: Partial<Bounds>) => {
 
 export type Learner = {
     active: boolean
-    events: StepInput[]
+    events: Step[]
     lastConnectedBrowser: BrowserName | ""
     lastConnectedEndpoint: string
     testName: string
-    testTags: TagInput[]
+    testTags: string[]
     lastMainWindowBounds: Bounds
 }
 
@@ -75,26 +71,24 @@ const start = async () => {
         y: y - BROWSER_WINDOW_TITLEBAR_SIZE
     }
     setMainWindowBounds(newMainWindowBounds)
-    const browser = await launch("chrome", {
+    const { browser, page } = await launch("chrome", {
         args: [
             `--window-position=${browserBounds.x},${browserBounds.y}`,
             `--window-size=${browserBounds.width},${browserBounds.height}`
         ]
     })
-    const { page } = browser
     await page.exposeFunction("notify", notify)
     const browserJs = readFileSync(
         resolve(isDev() ? "dist" : __dirname, "injected.js"),
         "utf-8"
     )
-    await page.evaluateOnNewDocument(browserJs)
+    await page.evaluate(browserJs)
     browser.on("disconnected", () => {
         deactivateLearner()
     })
     // TODO: This could cause problems since it's in a side effect (maybe mutations shouldn't happen from side effects?)
     store.mutate({
         learner: {
-            lastConnectedEndpoint: browser.wsEndpoint,
             lastMainWindowBounds: lastMainWindowBounds,
             lastConnectedBrowser: "chrome"
         }
@@ -109,12 +103,14 @@ const stop = async (context: Learner) => {
     } = context
     if (lastConnectedEndpoint && lastConnectedBrowser) {
         try {
-            const browser = await browserHandlers[lastConnectedBrowser].connect(
-                {
-                    wsEndpoint: lastConnectedEndpoint
-                }
-            )
-            await browser.close()
+            // const browser = await browserHandlers[lastConnectedBrowser].connect(
+            //     {
+            //         wsEndpoint: lastConnectedEndpoint
+            //     }
+            // )
+            // await browser.close()
+            // TODO: Replace this
+            console.log("Browser should be closed here.")
         } catch (e) {
             // TODO: Stop from unnecessarily logging an error here
             console.log("Browser was already disconnected.")
@@ -148,10 +144,10 @@ export const resetLearner = async () => {
     })
 }
 
-const notify = (event: StepInput) => {
+const notify = (event: Step) => {
     try {
         store.mutate({
-            learner: { events: (_) => _.concat(event) }
+            learner: { events: _ => _.concat(event) }
         })
     } catch (e) {
         console.log(e)

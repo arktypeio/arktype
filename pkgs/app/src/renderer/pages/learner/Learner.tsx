@@ -5,11 +5,11 @@ import {
     TextInput,
     AppBar,
     Icons,
-    IconButton,
+    Button,
     ChipInput,
     ErrorText
 } from "@re-do/components"
-import { useCreateTestMutation, useMeQuery } from "@re-do/model/dist/react"
+import { useCreateTestMutation, useMeQuery } from "@re-do/model"
 import { deactivateLearner, resetLearner } from "state"
 import { LearnerEvents } from "./StepCards"
 import { store } from "renderer/common"
@@ -47,7 +47,7 @@ export const Learner = () => {
             </AppBar>
             <LearnerEvents steps={events} />
             <AppBar kind="bottom" justify="space-around">
-                <IconButton
+                <Button
                     Icon={Icons.close}
                     style={{ color: "white" }}
                     onClick={deactivateLearner}
@@ -56,7 +56,7 @@ export const Learner = () => {
                     <Spinner />
                 ) : (
                     <>
-                        <IconButton
+                        <Button
                             Icon={Icons.save}
                             style={{ color: "white" }}
                             onClick={async () => {
