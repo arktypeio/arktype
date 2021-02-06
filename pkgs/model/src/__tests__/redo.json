@@ -1,0 +1,14 @@
+{
+    "tests": [
+        {
+            "name": "New Test",
+            "steps": [],
+            "tags": []
+        },
+        {
+            "name": "New Test",
+            "steps": [],
+            "tags": []
+        }
+    ]
+}
