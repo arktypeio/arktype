@@ -1,5 +1,34 @@
-import { Root, initialRoot, initialA } from "./common"
 import { createStore, Handler } from "../store"
+
+type Root = {
+    a: A
+    b: boolean
+    c: string
+    d: A[]
+}
+
+type A = {
+    a: number
+    b: B
+}
+
+type B = {
+    a: number[]
+}
+const initialA: A = Object.freeze({
+    a: 0,
+    b: {
+        a: [0]
+    }
+})
+
+const initialRoot: Root = Object.freeze({
+    a: initialA,
+    b: false,
+    c: "",
+    d: [initialA, initialA]
+})
+
 
 let store = createStore({ initial: initialRoot })
 
@@ -14,6 +43,12 @@ const handler: Handler<Root, Root> = {
 let sideEffectStore = createStore({
     initial: initialRoot,
     handler
+})
+
+const functionalHandler = jest.fn()
+let sideEffectFunctionStore = createStore({
+    initial: initialRoot,
+    handler: functionalHandler
 })
 
 describe("queries", () => {
@@ -114,5 +149,9 @@ describe("updates", () => {
         })
         expect(cHandler).toHaveBeenCalled()
         expect(bing).not.toHaveBeenCalled()
+    })
+    test("handles side effects with function", () => {
+        sideEffectFunctionStore.mutate({ b: true })
+        expect(functionalHandler).toHaveBeenCalled()
     })
 })

@@ -27,7 +27,7 @@ export const createStore = <T>({
     initial,
     handler
 }: StoreArgs<T>): Store<T> => {
-    const handle = handler ? createHandler<T, T>(handler) : undefined
+    const handle = typeof handler === "object" ? createHandler<T, T>(handler) : handler
     const rootReducer: Reducer<T, MutationAction<T>> = (
         state: T | undefined,
         { type, data }: MutationAction<T>
@@ -68,13 +68,13 @@ export const createHandler = <HandledState, RootState>(
 
 export type StoreArgs<T> = {
     initial: T
-    handler?: Handler<T, T>
+    handler?: Handler<T, T> | Handle<T, T>
 }
 
 export type Query<T> = {
     [P in keyof T]?: Unlisted<T[P]> extends NonRecursible
-        ? true
-        : Query<Unlisted<T[P]>> | true
+    ? true
+    : Query<Unlisted<T[P]>> | true
 }
 
 export type Mutation<T> = DeepUpdate<T>
