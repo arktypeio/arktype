@@ -3,14 +3,14 @@ import { useQuery } from "@apollo/client"
 import {
     Column,
     Tree,
-    IconButton,
+    Button,
     Modal,
     Icons,
     TreeNodeContext,
     TreeNodeTransform
 } from "@re-do/components"
 import { Test } from "@re-do/model"
-import { useMeQuery } from "@re-do/model/dist/react"
+import { useMeQuery } from "@re-do/model"
 import { ObjectView } from "./ObjectView"
 import { RedoAppBar } from "./appBar"
 import gql from "graphql-tag"
@@ -34,14 +34,7 @@ const defaultTransforms: TreeNodeTransform = ({ key, value, path }) => {
     // TODO: Fix hack
     const metaKey = "test" //getMetadataKey(value)
     const extras = (
-        <Modal>
-            {{
-                toggle: <IconButton Icon={Icons.openModal} />,
-                content: (
-                    <ObjectView value={value} path={path} metaKey={metaKey} />
-                )
-            }}
-        </Modal>
+        <Modal toggle={<Button Icon={Icons.openModal} />} content={<ObjectView value={value} path={path} metaKey={metaKey} />}/>
     )
     const render = ["__typename", "id"].includes(key) ? null : undefined
     return { render, extras }
@@ -56,7 +49,7 @@ export const TreeView = ({ metaKey }: TreeViewProps) => {
     return (
         <Column justify="center">
             <RedoAppBar>{["home", "search", "account"]}</RedoAppBar>
-            {tests ? <Tree transform={defaultTransforms}>{tests}</Tree> : null}
+            {tests ? <Tree source={tests} transform={defaultTransforms}/> : null}
         </Column>
     )
 }

@@ -1,12 +1,12 @@
 import React from "react"
-import { IconButton, Icons } from "@re-do/components"
+import { Button, Icons } from "@re-do/components"
 import { store } from "renderer/common"
 
 export type NewTestButtonProps = {}
 
 export const NewTestButton = () => {
     return (
-        <IconButton
+        <Button
             Icon={Icons.add}
             style={{ color: "white" }}
             onClick={() =>

@@ -6,7 +6,7 @@ import {
     useSignInMutation,
     SignInMutation,
     SignInMutationVariables
-} from "@re-do/model/dist/react"
+} from "@re-do/model"
 
 export const SignIn = () => {
     const [submit] = useSignInMutation()

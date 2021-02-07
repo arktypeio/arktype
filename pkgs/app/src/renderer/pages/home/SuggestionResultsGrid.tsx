@@ -2,7 +2,7 @@ import React from "react"
 import { Unlisted } from "@re-do/utils"
 import { SuggestionCard } from "./SuggestionCard"
 import { store } from "renderer/common"
-import { Card, Row, IconButton, Icons } from "@re-do/components"
+import { Card, Row, Button, Icons } from "@re-do/components"
 import { useMeQuery, MeQuery } from "@re-do/model/dist/react"
 import { test as runTest } from "@re-do/test"
 
@@ -45,7 +45,7 @@ const suggestionTypes = {
         title: test.name,
         description: test.tags.map((tag) => tag.name).join(", "),
         extras: (
-            <IconButton
+            <Button
                 Icon={Icons.run}
                 onClick={() =>
                     runTest(test.steps.map((step) => [step.kind, step] as any))

@@ -3,7 +3,7 @@ import { remote, Rectangle } from "electron"
 import { isDeepStrictEqual } from "util"
 import { resolve } from "path"
 import { createHandler } from "react-statelessly"
-import { launch, BrowserName, Step } from "@re-do/test"
+import { launch, BrowserName, Step, browserHandlers } from "@re-do/test"
 import { store } from "renderer/common"
 import { isDev } from "@re-do/utils/dist/node"
 import { Root } from "./root"
@@ -103,13 +103,12 @@ const stop = async (context: Learner) => {
     } = context
     if (lastConnectedEndpoint && lastConnectedBrowser) {
         try {
-            // const browser = await browserHandlers[lastConnectedBrowser].connect(
-            //     {
-            //         wsEndpoint: lastConnectedEndpoint
-            //     }
-            // )
-            // await browser.close()
-            // TODO: Replace this
+            const browser = await browserHandlers[lastConnectedBrowser].connect(
+                {
+                    wsEndpoint: lastConnectedEndpoint
+                }
+            )
+            await browser.close()
             console.log("Browser should be closed here.")
         } catch (e) {
             // TODO: Stop from unnecessarily logging an error here
