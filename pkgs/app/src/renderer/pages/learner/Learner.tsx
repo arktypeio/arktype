@@ -9,21 +9,21 @@ import {
     ChipInput,
     ErrorText
 } from "@re-do/components"
-import { useCreateTestMutation, useMeQuery } from "@re-do/model"
+import { loadStore } from "@re-do/model"
 import { deactivateLearner, resetLearner } from "state"
 import { LearnerEvents } from "./StepCards"
 import { store } from "renderer/common"
+import { join } from "path"
 
 export const Learner = () => {
-    const { events, testName: name, testTags: tags } = store.useQuery({
+    const { steps, testName: name, testTags: tags } = store.useQuery({
         learner: {
-            events: true,
+            steps: true,
             testName: true,
             testTags: true
         }
     }).learner
-    const [createTest, createTestResult] = useCreateTestMutation()
-    const existingTags = useMeQuery().data?.me.tags.map((tag) => tag.name) ?? []
+    const persistedStore = loadStore({ path: join(process.cwd(), "redo.json") })
     return (
         <Column full>
             <AppBar height={120} align="center">
@@ -41,43 +41,31 @@ export const Learner = () => {
                     />
                     <ChipInput
                         label="Tags"
-                        possibleSuggestions={existingTags}
+                        // TODO: Add existing tags
+                        possibleSuggestions={[]}
                     />
                 </Column>
             </AppBar>
-            <LearnerEvents steps={events} />
+            <LearnerEvents steps={steps as any} />
             <AppBar kind="bottom" justify="space-around">
                 <Button
                     Icon={Icons.close}
                     style={{ color: "white" }}
                     onClick={deactivateLearner}
                 />
-                {createTestResult.loading ? (
-                    <Spinner />
-                ) : (
-                    <>
-                        <Button
-                            Icon={Icons.save}
-                            style={{ color: "white" }}
-                            onClick={async () => {
-                                await createTest({
-                                    variables: {
-                                        name,
-                                        tags,
-                                        steps: events
-                                    }
-                                })
-                                await resetLearner()
-                                await deactivateLearner()
-                            }}
-                        />
-                        {createTestResult.error ? (
-                            <ErrorText>
-                                {createTestResult.error.message}
-                            </ErrorText>
-                        ) : null}
-                    </>
-                )}
+                <Button
+                    Icon={Icons.save}
+                    style={{ color: "white" }}
+                    onClick={() => {
+                        persistedStore.createTest({
+                            name,
+                            tags,
+                            steps: steps as any
+                        })
+                        resetLearner()
+                        deactivateLearner()
+                    }}
+                />
             </AppBar>
         </Column>
     )

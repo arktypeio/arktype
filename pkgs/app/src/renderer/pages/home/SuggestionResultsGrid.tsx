@@ -3,8 +3,9 @@ import { Unlisted } from "@re-do/utils"
 import { SuggestionCard } from "./SuggestionCard"
 import { store } from "renderer/common"
 import { Card, Row, Button, Icons } from "@re-do/components"
-import { useMeQuery, MeQuery } from "@re-do/model/dist/react"
+import { loadStore, Test } from "@re-do/model"
 import { test as runTest } from "@re-do/test"
+import { join } from "path"
 
 const welcomeSuggestion = {
     title: "👆Hey there!",
@@ -15,7 +16,8 @@ const welcomeSuggestion = {
 
 const useSuggestions = (): Suggestion<UserItemKind>[] => {
     const { cardFilter } = store.useQuery({ cardFilter: true })
-    const tests = useMeQuery({ fetchPolicy: "no-cache" }).data?.me?.tests
+    const persistedStore = loadStore({ path: join(process.cwd(), "redo.json") })
+    const tests = persistedStore.getTests()
     return tests && tests.length
         ? tests
               .filter((test) =>
@@ -23,11 +25,11 @@ const useSuggestions = (): Suggestion<UserItemKind>[] => {
                       .toLowerCase()
                       .includes(cardFilter.toLowerCase())
               )
-              .map((data) => toSuggestion("tests", data))
+              .map((data) => toSuggestion("tests", data as any))
         : []
 }
 
-type UserData = MeQuery["me"]
+type UserData = { tests: Test }
 
 type UserItemKind = keyof UserData
 
@@ -43,12 +45,12 @@ type Suggestion<Kind extends UserItemKind> = {
 const suggestionTypes = {
     tests: (test: UserItem<"tests">) => ({
         title: test.name,
-        description: test.tags.map((tag) => tag.name).join(", "),
+        description: test.tags.join(", "),
         extras: (
             <Button
                 Icon={Icons.run}
                 onClick={() =>
-                    runTest(test.steps.map((step) => [step.kind, step] as any))
+                    runTest(test.steps.map((step) => [step[0], step[1]] as any))
                 }
             />
         ),

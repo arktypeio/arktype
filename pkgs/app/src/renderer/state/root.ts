@@ -3,7 +3,6 @@ import { Handler } from "react-statelessly"
 
 export enum Page {
     Home = "HOME",
-    Detail = "DETAIL",
     SignIn = "SIGN_IN",
     SignUp = "SIGN_UP",
     Learner = "LEARNER",

@@ -1,11 +1,11 @@
 import React from "react"
 import { List, ListItem } from "@material-ui/core"
-import { StepCreateWithoutTestsInput as StepInput } from "@re-do/model"
+import { Step } from "@re-do/test"
 import { StepCard } from "./StepCard"
 import { useTheme } from "@re-do/components"
 
 export type LearnerEventsProps = {
-    steps: StepInput[]
+    steps: Step[]
 }
 
 export const LearnerEvents = ({ steps }: LearnerEventsProps) => {

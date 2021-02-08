@@ -31,7 +31,7 @@ const setMainWindowBounds = (bounds: Partial<Bounds>) => {
 
 export type Learner = {
     active: boolean
-    events: Step[]
+    steps: Step[]
     lastConnectedBrowser: BrowserName | ""
     lastConnectedEndpoint: string
     testName: string
@@ -46,7 +46,7 @@ export const handleLearner = createHandler<Learner, Root>({
 
 export const learnerInitial: Learner = {
     active: false,
-    events: [],
+    steps: [],
     testName: "",
     testTags: [],
     lastConnectedBrowser: "",
@@ -143,10 +143,10 @@ export const resetLearner = async () => {
     })
 }
 
-const notify = (event: Step) => {
+const notify = (step: Step) => {
     try {
         store.mutate({
-            learner: { events: _ => _.concat(event) }
+            learner: { steps: (_) => _.concat(step) }
         })
     } catch (e) {
         console.log(e)

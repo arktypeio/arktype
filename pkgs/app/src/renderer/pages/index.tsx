@@ -1,6 +1,5 @@
 export * from "./home"
 export * from "./learner"
 export * from "./landing"
-export * from "./detail"
 export * from "./results"
 export * from "./Router"

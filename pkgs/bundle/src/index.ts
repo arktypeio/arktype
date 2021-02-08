@@ -24,7 +24,6 @@ export type ConfigArgs = {
 
 const getPlugins = (tsconfig: string, analyze?: boolean) => {
     const plugins = [
-        new ProvidePlugin({ process: "process/browser", Buffer: ["buffer", "Buffer"]}),
         new ForkTsCheckerWebpackPlugin({
             typescript: { configFile: tsconfig }
         })
@@ -136,7 +135,8 @@ const getWebConfig = (args: ConfigArgs): Configuration =>
             new IgnorePlugin({ checkResource: name => name.includes("iconv-loader") }),
             new HtmlWebpackPlugin({
                 template: resolve(__dirname, "template.html")
-            })
+            }),
+            new ProvidePlugin({ process: "process/browser", Buffer: ["buffer", "Buffer"]})
         ]
     })
 

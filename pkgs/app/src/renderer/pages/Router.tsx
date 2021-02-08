@@ -4,7 +4,6 @@ import { store } from "renderer/common"
 import { Home } from "./home"
 import { Learner } from "./learner"
 import { Landing } from "./landing"
-import { Detail } from "./detail"
 import { Results } from "./results"
 
 type NameToPage = { [_ in NonNullable<Page>]: JSX.Element }
@@ -14,7 +13,6 @@ export const Pages: NameToPage = {
     SIGN_IN: <Landing page={Page.SignIn} />,
     SIGN_UP: <Landing page={Page.SignUp} />,
     LEARNER: <Learner />,
-    DETAIL: <Detail />,
     RESULTS: <Results />
 }
 
