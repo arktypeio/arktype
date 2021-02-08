@@ -61,7 +61,9 @@
         "react-dom": "17.0.1",
         "react-statelessly": "0.0.3",
         "tsconfig-paths": "3.9.0",
-        "typeface-ubuntu": "1.1.13"
+        "typeface-ubuntu": "1.1.13",
+        "isomorphic-ws": "4.0.1",
+        "playwright-core": "1.8.0"
     },
     "devDependencies": {
         "@re-do/bundle": "0.0.1",

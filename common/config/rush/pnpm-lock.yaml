@@ -84,7 +84,6 @@ dependencies:
   electron-updater: 4.3.5
   enzyme: 3.11.0
   enzyme-adapter-react-16: 1.15.5_ed988ebff08079c40ff9e87e2acc78b3
-  events: 3.2.0
   execa: 5.0.0
   file-loader: 6.2.0_webpack@5.17.0
   fork-ts-checker-webpack-plugin: 6.1.0
@@ -14498,25 +14497,6 @@ packages:
       node: '>=8'
     resolution:
       integrity: sha512-nDywThFk1i4BQK4twPQ6TA4RT8bDY96yeuCVBWL3ePARCiEKDRSrNGbFIgUJpLp+XeIR65v8ra7WuJOFUBtkMA==
-  /playwright-core/1.7.1:
-    dependencies:
-      debug: 4.3.1
-      extract-zip: 2.0.1
-      https-proxy-agent: 5.0.0
-      jpeg-js: 0.4.2
-      mime: 2.4.6
-      pngjs: 5.0.0
-      progress: 2.0.3
-      proper-lockfile: 4.1.1
-      proxy-from-env: 1.1.0
-      rimraf: 3.0.2
-      ws: 7.4.2
-    dev: false
-    engines:
-      node: '>=10.17.0'
-    requiresBuild: true
-    resolution:
-      integrity: sha512-HVc7q+xLPBmZTQ4ddTpF+QA2Qf0SdIIzXKP7gQ+1eY98AP84yuFstnD/4rI4FoR14aJm4iXgdIKXYyDFWOXfQQ==
   /playwright-core/1.8.0:
     dependencies:
       commander: 6.2.1
@@ -19218,8 +19198,9 @@ packages:
       fs-extra: 9.0.1
       graphql: 15.4.0
       graphql-tag: 2.11.0_graphql@15.4.0
+      isomorphic-ws: 4.0.1
       jsrx: 0.0.3
-      playwright-core: 1.7.1
+      playwright-core: 1.8.0
       react: 17.0.1
       react-dom: 17.0.1_react@17.0.1
       react-hot-loader: 4.13.0_4695a47c40ef995f48f8c834d2fb82ec
@@ -19237,7 +19218,7 @@ packages:
     peerDependencies:
       webpack-bundle-analyzer: '*'
     resolution:
-      integrity: sha512-LdKN9yxrBai7OmqNlTFbT84BJUtRox6b+Fb61d3rf0DjoP5uJWG+nbUcvOGjkPzTxKg3NRO/cQkh9xcty/tHKA==
+      integrity: sha512-qtYsg83WKyWo0++zWEtMiXdJaAh/pXDgRITrRc8frf17RfFe8cQObhq+ZIbkwr5dZZeVSqSMcppz20vFWDAQPQ==
       tarball: 'file:projects/app.tgz'
     version: 0.0.0
   'file:projects/babel-preset-redo.tgz_4695a47c40ef995f48f8c834d2fb82ec':
@@ -19487,7 +19468,7 @@ packages:
     peerDependencies:
       ts-node: '*'
     resolution:
-      integrity: sha512-aseZeR5NMuEeXczPFY6jduqMMidPPujj72pYKhlh6drjNOlkSAxw9NTYIvbeUjvK98MSPnSpHmsfJxKuGOtf6A==
+      integrity: sha512-o/YAGDJ19k/PmEoPTiuXQ349s+cbt0/3+rdA7qI7W/iuxAefODICDzLnCrnRJydHfPTNWSwoH/IejPKonZJgtg==
       tarball: 'file:projects/test.tgz'
     version: 0.0.0
   'file:projects/utils.tgz_ts-node@9.1.1':
@@ -19643,7 +19624,6 @@ specifiers:
   electron-updater: 4.3.5
   enzyme: 3.11.0
   enzyme-adapter-react-16: 1.15.5
-  events: 3.2.0
   execa: 5.0.0
   file-loader: 6.2.0
   fork-ts-checker-webpack-plugin: 6.1.0

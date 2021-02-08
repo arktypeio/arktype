@@ -52,13 +52,10 @@ const getCommonConfig = ({
     },
     resolve: {
         extensions: [".ts", ".tsx", ".js", ".jsx", ".mjs", ".json"],
-        plugins: [new TsconfigPathsPlugin() as any],
-        alias: {
-            ws: "isomorphic-ws"
-        },
-        fallback: {
-            events: "events"
-        }
+        plugins: [new TsconfigPathsPlugin() as any]
+        // alias: {
+        //     ws: "isomorphic-ws"
+        // }
     },
     module: {
         rules: [
@@ -169,7 +166,7 @@ const getRendererConfig = (args: ConfigArgs): Configuration =>
             /*
             Override default value ["browser"] since we have enabled node integration
             And have access to more than we would in a basic web environment.
-            In particular, this allows us to import puppeteer, which specifies a 
+            In particular, this allows us to import puppeteer, which specifies a
             "browser" field in its package.json that breaks our ability to import it.
             */
             aliasFields: []
