@@ -57,7 +57,6 @@
         "fs-extra": "9.0.1",
         "graphql": "15.4.0",
         "graphql-tag": "2.11.0",
-        "playwright-core": "1.7.1",
         "react": "17.0.1",
         "react-dom": "17.0.1",
         "react-statelessly": "0.0.3",

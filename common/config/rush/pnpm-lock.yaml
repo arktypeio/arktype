@@ -84,6 +84,7 @@ dependencies:
   electron-updater: 4.3.5
   enzyme: 3.11.0
   enzyme-adapter-react-16: 1.15.5_ed988ebff08079c40ff9e87e2acc78b3
+  events: 3.2.0
   execa: 5.0.0
   file-loader: 6.2.0_webpack@5.17.0
   fork-ts-checker-webpack-plugin: 6.1.0
@@ -95,13 +96,14 @@ dependencies:
   html-webpack-plugin: 4.5.1_webpack@5.17.0
   is-wsl: 2.2.0
   isomorphic-fetch: 3.0.0
+  isomorphic-ws: 4.0.1
   jest: 26.6.3_ts-node@9.1.1
   jsrx: 0.0.3
   material-table: 1.69.2_f4b58722d877c15467e3e7d6668ec53d
   moize: 5.4.7
   node-fetch: 2.6.1
-  playwright: 1.7.1
-  playwright-core: 1.7.1
+  node-polyfill-webpack-plugin: 1.0.2_webpack@5.17.0
+  playwright-core: 1.8.0
   prettier: 2.2.1
   process: 0.11.10
   react: 17.0.1
@@ -8358,6 +8360,12 @@ packages:
       npm: '>=1.2'
     resolution:
       integrity: sha512-jnjyiM6eRyZl2H+W8Q/zLMA481hzi0eszAaBUzIVnmYVDBbnLxVNnfu1HgEBvCbL+71FrxMl3E6lpKH7Ge3OXA==
+  /domain-browser/4.19.0:
+    dev: false
+    engines:
+      node: '>=10'
+    resolution:
+      integrity: sha512-fRA+BaAWOR/yr/t7T9E9GJztHPeFjj8U35ajyAjCDtAAnTn1Rc1f6W6VGPJrO1tkQv9zWu+JRof7z6oQtiYVFQ==
   /domelementtype/1.3.1:
     dev: false
     resolution:
@@ -11695,6 +11703,12 @@ packages:
     dev: false
     resolution:
       integrity: sha512-TYgVnXWeESVmQSg4GLVbalmQ+B4NPi/H4eWxqALKj63KsUrcu301YDjBqaOw3h+cbak7Na4Xyps3BiptHtxTfg==
+  /isomorphic-ws/4.0.1:
+    dev: false
+    peerDependencies:
+      ws: '*'
+    resolution:
+      integrity: sha512-BhBvN2MBpWTaSHdWRb/bwdZJ1WaehQ2L1KngkCkfLUGF0mAWAT1sQUQacEmQ0jXkFw/czDXPNQSL5u2/Krsz1w==
   /isomorphic-ws/4.0.1_ws@7.4.2:
     dependencies:
       ws: 7.4.2
@@ -13636,6 +13650,38 @@ packages:
     optional: true
     resolution:
       integrity: sha512-BvEXF+UmsnAfYfoapKM9nGxnP+Wn7P91YfXmrKnfcYCx6VBeoN5Ez5Ogck6I8Bi5k4RlpqRYaw75pAwzX9OphA==
+  /node-polyfill-webpack-plugin/1.0.2_webpack@5.17.0:
+    dependencies:
+      assert: 2.0.0
+      browserify-zlib: 0.2.0
+      buffer: 6.0.3
+      console-browserify: 1.2.0
+      constants-browserify: 1.0.0
+      crypto-browserify: 3.12.0
+      domain-browser: 4.19.0
+      events: 3.2.0
+      https-browserify: 1.0.0
+      os-browserify: 0.3.0
+      process: 0.11.10
+      punycode: 2.1.1
+      querystring-es3: 0.2.1
+      readable-stream: 3.6.0
+      stream-browserify: 3.0.0
+      stream-http: 3.1.1
+      string_decoder: 1.3.0
+      timers-browserify: 2.0.12
+      tty-browserify: 0.0.1
+      url: 0.11.0
+      util: 0.12.3
+      vm-browserify: 1.1.2
+      webpack: 5.17.0_webpack-cli@4.4.0+webpack@5.17.0
+    dev: false
+    engines:
+      node: '>=10'
+    peerDependencies:
+      webpack: '>=5'
+    resolution:
+      integrity: sha512-x4dNQ28D/kwvDbp52y6WBOuXs2QhGkIkv8RT2xhBj5JO21iUrNT4aSJyw41Jio3Ima/S0UKCTfHdS6mUOxjYmw==
   /node-releases/1.1.69:
     dev: false
     resolution:
@@ -14471,8 +14517,9 @@ packages:
     requiresBuild: true
     resolution:
       integrity: sha512-HVc7q+xLPBmZTQ4ddTpF+QA2Qf0SdIIzXKP7gQ+1eY98AP84yuFstnD/4rI4FoR14aJm4iXgdIKXYyDFWOXfQQ==
-  /playwright/1.7.1:
+  /playwright-core/1.8.0:
     dependencies:
+      commander: 6.2.1
       debug: 4.3.1
       extract-zip: 2.0.1
       https-proxy-agent: 5.0.0
@@ -14487,9 +14534,31 @@ packages:
     dev: false
     engines:
       node: '>=10.17.0'
+    hasBin: true
     requiresBuild: true
     resolution:
-      integrity: sha512-dOSWME42wDedJ/PXv8k0zG0Kxd6d6R2OKA51/05++Z2ISdA4N58gHlWqlVKPDkBog1MI6lu/KNt7QDn19AybWQ==
+      integrity: sha512-3FDiIMabIkamEOPqdjHrPA1puIElx3iYIaln1k5G8ZyGRubmPE9AijHyTXYqkavgteUp+Kb8QOeE13nlnQ++Fg==
+  /playwright/1.8.0:
+    dependencies:
+      commander: 6.2.1
+      debug: 4.3.1
+      extract-zip: 2.0.1
+      https-proxy-agent: 5.0.0
+      jpeg-js: 0.4.2
+      mime: 2.4.6
+      pngjs: 5.0.0
+      progress: 2.0.3
+      proper-lockfile: 4.1.1
+      proxy-from-env: 1.1.0
+      rimraf: 3.0.2
+      ws: 7.4.2
+    dev: false
+    engines:
+      node: '>=10.17.0'
+    hasBin: true
+    requiresBuild: true
+    resolution:
+      integrity: sha512-urMJDLX92KawbkWKrt3chVVBPQsuuNwlS5St7I5YQENXAEItoyUqX7FjiYaoPgXifKqe1+BKC+7pBAq1QUkgSw==
   /pngjs/5.0.0:
     dev: false
     engines:
@@ -16866,6 +16935,13 @@ packages:
     dev: false
     resolution:
       integrity: sha512-nX6hmklHs/gr2FuxYDltq8fJA1GDlxKQCz8O/IM4atRqBH8OORmBNgfvW5gG10GT/qQ9u0CzIvr2X5Pkt6ntqg==
+  /stream-browserify/3.0.0:
+    dependencies:
+      inherits: 2.0.4
+      readable-stream: 3.6.0
+    dev: false
+    resolution:
+      integrity: sha512-H73RAHsVBapbim0tU2JwwOiXUj+fikfiaoYAKHF3VJfA0pe2BCzkhAHBlLG6REzE+2WNZcxOXjK7lkso+9euLA==
   /stream-each/1.2.3:
     dependencies:
       end-of-stream: 1.4.4
@@ -16883,6 +16959,15 @@ packages:
     dev: false
     resolution:
       integrity: sha512-+TSkfINHDo4J+ZobQLWiMouQYB+UVYFttRA94FpEzzJ7ZdqcL4uUUQ7WkdkI4DSozGmgBUE/a47L+38PenXhUw==
+  /stream-http/3.1.1:
+    dependencies:
+      builtin-status-codes: 3.0.0
+      inherits: 2.0.4
+      readable-stream: 3.6.0
+      xtend: 4.0.2
+    dev: false
+    resolution:
+      integrity: sha512-S7OqaYu0EkFpgeGFb/NPOoPLxFko7TPqtEeFg5DXPB4v/KETHG0Ln6fRFrNezoelpaDKmycEmmZ81cC9DAwgYg==
   /stream-shift/1.0.1:
     dev: false
     resolution:
@@ -17440,6 +17525,14 @@ packages:
       node: '>=0.6.0'
     resolution:
       integrity: sha512-60aV6sgJ5YEbzUdn9c8kYGIqOubPoUdqQCul3SBAsRCZ40s6Y5cMcrW4dt3/k/EsbLVJNl9n6Vz3fTc+k2GeKQ==
+  /timers-browserify/2.0.12:
+    dependencies:
+      setimmediate: 1.0.5
+    dev: false
+    engines:
+      node: '>=0.6.0'
+    resolution:
+      integrity: sha512-9phl76Cqm6FhSX9Xe1ZUAMLtm1BLkKj2Qd5ApyWkXzsMRaA7dgr81kf4wJmQf/hAvg8EEyJxDo3du/0KlhPiKQ==
   /tiny-emitter/2.1.0:
     dev: false
     optional: true
@@ -17714,6 +17807,10 @@ packages:
     dev: false
     resolution:
       integrity: sha1-oVe6QC2iTpv5V/mqadUk7tQpAaY=
+  /tty-browserify/0.0.1:
+    dev: false
+    resolution:
+      integrity: sha512-C3TaO7K81YvjCgQH9Q1S3R3P3BtN3RIM8n+OvX4il1K1zgE8ZhI0op7kClgkxtutIE8hQrcrHBXvIheqKUUCxw==
   /tty/1.0.1:
     dev: false
     resolution:
@@ -19140,7 +19237,7 @@ packages:
     peerDependencies:
       webpack-bundle-analyzer: '*'
     resolution:
-      integrity: sha512-rr0zDlDlubglPXZfoq+XfNQeU+nTNBqnnlHPZ5yvB7HI58QlkBUHWYkpDrJlEfilFrqBRLwk09iUYNOuc6miYg==
+      integrity: sha512-LdKN9yxrBai7OmqNlTFbT84BJUtRox6b+Fb61d3rf0DjoP5uJWG+nbUcvOGjkPzTxKg3NRO/cQkh9xcty/tHKA==
       tarball: 'file:projects/app.tgz'
     version: 0.0.0
   'file:projects/babel-preset-redo.tgz_4695a47c40ef995f48f8c834d2fb82ec':
@@ -19192,6 +19289,7 @@ packages:
       graphql-tag: 2.11.0_graphql@15.4.0
       html-webpack-plugin: 4.5.1_webpack@5.17.0
       is-wsl: 2.2.0
+      node-polyfill-webpack-plugin: 1.0.2_webpack@5.17.0
       react-hot-loader: 4.12.15_react-dom@17.0.1+react@17.0.1
       react-svg-loader: 3.0.3
       style-loader: 2.0.0_webpack@5.17.0
@@ -19214,7 +19312,7 @@ packages:
       react-dom: '*'
       webpack-cli: '*'
     resolution:
-      integrity: sha512-EyM2K6BRpOMrDrfmFDWdXqyRbpR1uUIBzd5EGEm7XNV3VwcJPHXFORhql2brpkRXtlJ5dHGrMGJ3OJ4GjgPIsg==
+      integrity: sha512-wOYbCb6lz6lKHFfpQcWLb0wvTgQ57j938ZQO5lEF4QPHQeVHSVkwS7iyu6C85mf+U5mB7+741Qrl+0XYOzoHwA==
       tarball: 'file:projects/bundle.tgz'
     version: 0.0.0
   'file:projects/cli.tgz':
@@ -19296,12 +19394,14 @@ packages:
       '@graphql-codegen/typescript-operations': 1.17.14_graphql@15.4.0
       '@graphql-codegen/typescript-react-apollo': 2.2.1_61edad96dc558f3dad3097aea1ce4739
       '@types/fs-extra': 9.0.6
+      '@types/jest': 26.0.20
       '@types/node': 14.14.21
       '@types/validator': 13.1.3
       fs-extra: 9.0.1
       gqlize: 0.0.3
       graphql: 15.4.0
       graphql-tag: 2.11.0_graphql@15.4.0
+      jest: 26.6.3_ts-node@9.1.1
       prettier: 2.2.1
       ts-node: 9.1.1_typescript@4.1.3
       typescript: 4.1.3
@@ -19312,7 +19412,7 @@ packages:
     peerDependencies:
       react: '*'
     resolution:
-      integrity: sha512-2zUWyb+x4Xbv8VeLzssSGHoCeBLIyomOTUJ/ahsq7O/B+IlaPESneCTgd/a+uP5Id7R0vOJcaqLCpwmIA8EMqg==
+      integrity: sha512-wCJTwJ6+Nv/4gFrYI0X6xHXZcx5LRB3Ttmk3e+cNJbdgV7DCnNyf925N4OJDWEFPVkSfYGDqTx2atqk/5lJ4tA==
       tarball: 'file:projects/model.tgz'
     version: 0.0.0
   'file:projects/react-statelessly.tgz_ts-node@9.1.1':
@@ -19374,9 +19474,12 @@ packages:
       '@babel/runtime-corejs3': 7.12.5
       '@types/fs-extra': 9.0.6
       '@types/jest': 26.0.20
+      events: 3.2.0
       fs-extra: 9.0.1
+      isomorphic-ws: 4.0.1
       jest: 26.6.3_ts-node@9.1.1
-      playwright: 1.7.1
+      playwright: 1.8.0
+      playwright-core: 1.8.0
       typescript: 4.1.3
     dev: false
     id: 'file:projects/test.tgz'
@@ -19384,7 +19487,7 @@ packages:
     peerDependencies:
       ts-node: '*'
     resolution:
-      integrity: sha512-2xo3IMzXVEP9wcl2TdZUJjdSRl677iuiEO4TO9tPSsHBMqxbGYfWTqF4Ysi2RsDWoCSz/9HEZYtZPbXl9L5PEg==
+      integrity: sha512-aseZeR5NMuEeXczPFY6jduqMMidPPujj72pYKhlh6drjNOlkSAxw9NTYIvbeUjvK98MSPnSpHmsfJxKuGOtf6A==
       tarball: 'file:projects/test.tgz'
     version: 0.0.0
   'file:projects/utils.tgz_ts-node@9.1.1':
@@ -19540,6 +19643,7 @@ specifiers:
   electron-updater: 4.3.5
   enzyme: 3.11.0
   enzyme-adapter-react-16: 1.15.5
+  events: 3.2.0
   execa: 5.0.0
   file-loader: 6.2.0
   fork-ts-checker-webpack-plugin: 6.1.0
@@ -19551,13 +19655,14 @@ specifiers:
   html-webpack-plugin: 4.5.1
   is-wsl: 2.2.0
   isomorphic-fetch: 3.0.0
+  isomorphic-ws: 4.0.1
   jest: 26.6.3
   jsrx: 0.0.3
   material-table: 1.69.2
   moize: 5.4.7
   node-fetch: 2.6.1
-  playwright: 1.7.1
-  playwright-core: 1.7.1
+  node-polyfill-webpack-plugin: 1.0.2
+  playwright-core: 1.8.0
   prettier: 2.2.1
   process: 0.11.10
   react: 17.0.1
