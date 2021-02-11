@@ -19,9 +19,9 @@ storiesOf("Menu", module)
         const [anchorTo, setAnchorTo] = React.useState<EventTarget | null>(null)
         return (
             <div>
-                <button onClick={(e) => setAnchorTo(e.currentTarget)}>
+                <Button onClick={(e) => setAnchorTo(e.currentTarget)}>
                     Anchored here
-                </button>
+                </Button>
                 <Menu
                     anchorTo={anchorTo}
                     open={booleanKnob("open", true)}
