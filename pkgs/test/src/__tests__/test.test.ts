@@ -4,15 +4,13 @@ describe("test", () => {
     test("works", async () => {
         await t(
             [
-                ["click", { selector: "'Get Started'" }],
-                [
-                    "set",
-                    {
-                        selector: "[name='email']",
-                        value: "david@redo.qa"
-                    }
-                ],
-                ["click", { selector: "'Keep me posted!'" }]
+                { kind: "click", selector: "'Get Started'" },
+                {
+                    kind: "set",
+                    selector: "[name='email']",
+                    value: "david@redo.qa"
+                },
+                { kind: "click", selector: "'Keep me posted!'" }
             ],
             { headless: false, slowMo: 50 }
         )

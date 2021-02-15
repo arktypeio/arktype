@@ -18,8 +18,9 @@ export type StepName = keyof StepTypes
 
 export type StepArgs<K extends StepName> = Parameters<StepTypes[K]>[0]
 
-export type Step = ValueOf<{ [K in keyof StepTypes]: [K, StepArgs<K>] }>
+export type Step = ValueOf<
+    { [K in keyof StepTypes]: { kind: K } & StepArgs<K> }
+>
 
-export const perform = async ([type, args]: Step, context: Context) => {
-    await stepTypes[type](args as any, context)
-}
+export const perform = async ({ kind, ...args }: Step, context: Context) =>
+    await stepTypes[kind](args as any, context)
