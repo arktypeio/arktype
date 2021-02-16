@@ -10,9 +10,17 @@ export const browserHandlers = {
 
 export type BrowserName = keyof typeof browserHandlers
 
-export const launch = async (browser: BrowserName, options?: LaunchOptions) => {
+const addDefaults = (options: LaunchOptions): LaunchOptions => ({
+    headless: false,
+    ...options
+})
+
+export const launch = async (
+    browser: BrowserName,
+    options: LaunchOptions = {}
+) => {
     const browserHandler = browserHandlers[browser]
-    const server = await browserHandler.launchServer(options)
+    const server = await browserHandler.launchServer(addDefaults(options))
     const endpoint = server.wsEndpoint()
     const instance = await browserHandler.connect({ wsEndpoint: endpoint })
     return {

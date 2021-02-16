@@ -24,7 +24,7 @@ const watchPage = async () => {
         notify: (e: StepInput) => void
     } = window as any
     const handler = async (e: Event) => {
-        eventToSteps(e).forEach((step) => browserWindow.notify(step))
+        browserWindow.notify(eventToSteps(e))
     }
     Object.keys(eventMap).forEach((event) =>
         browserWindow.addEventListener(event, handler, true)
@@ -32,20 +32,16 @@ const watchPage = async () => {
 }
 
 const eventToSteps = (e: Event) => {
-    if (!(e.type in eventMap)) {
-        return []
-    }
-    const step: StepInput = {
-        kind: eventMap[e.type as EventName]
-    }
+    const kind = eventMap[e.type as EventName]
+    const step: any = {}
     if (e.target) {
         const target = e.target as HTMLElement
         step.selector = finder(target as HTMLElement)
-        if (step.kind === StepKind.Set) {
+        if (kind === StepKind.Set) {
             step.value = (target as HTMLInputElement).value
         }
     }
-    return [step]
+    return [kind, step]
 }
 
 watchPage()

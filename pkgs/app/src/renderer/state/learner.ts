@@ -77,6 +77,7 @@ const start = async () => {
             `--window-size=${browserBounds.width},${browserBounds.height}`
         ]
     })
+    page.goto("https://redo.qa")
     await page.exposeFunction("notify", notify)
     const browserJs = readFileSync(
         resolve(isDev() ? "dist" : __dirname, "injected.js"),
@@ -109,7 +110,6 @@ const stop = async (context: Learner) => {
                 }
             )
             await browser.close()
-            console.log("Browser should be closed here.")
         } catch (e) {
             // TODO: Stop from unnecessarily logging an error here
             console.log("Browser was already disconnected.")
@@ -144,9 +144,10 @@ export const resetLearner = async () => {
 }
 
 const notify = (step: Step) => {
+    console.log(step)
     try {
         store.mutate({
-            learner: { steps: (_) => _.concat(step) }
+            learner: { steps: (steps) => [...steps, step] }
         })
     } catch (e) {
         console.log(e)
