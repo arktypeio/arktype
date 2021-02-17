@@ -1,13 +1,11 @@
 import React from "react"
 import {
     Column,
-    Spinner,
     TextInput,
     AppBar,
     Icons,
     Button,
-    ChipInput,
-    ErrorText
+    ChipInput
 } from "@re-do/components"
 import { loadStore } from "@re-do/model"
 import { deactivateLearner, resetLearner } from "state"
@@ -43,6 +41,13 @@ export const Learner = () => {
                         label="Tags"
                         // TODO: Add existing tags
                         possibleSuggestions={[]}
+                        onChange={(values) =>
+                            store.mutate({
+                                learner: {
+                                    testTags: values
+                                }
+                            })
+                        }
                     />
                 </Column>
             </AppBar>

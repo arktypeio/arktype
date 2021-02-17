@@ -1,0 +1,69 @@
+{
+    "tests": [
+        {
+            "name": "Signup",
+            "tags": [],
+            "steps": [
+                [
+                    "click",
+                    {
+                        "selector": ".MuiButton-root"
+                    }
+                ],
+                [
+                    "click",
+                    {
+                        "selector": ".MuiInputBase-input"
+                    }
+                ],
+                [
+                    "set",
+                    {
+                        "selector": ".MuiInputBase-input",
+                        "value": "david@redo.qa"
+                    }
+                ],
+                [
+                    "click",
+                    {
+                        "selector": ".MuiButton-contained > .MuiButton-label"
+                    }
+                ]
+            ]
+        },
+        {
+            "name": "New Test",
+            "tags": [
+                "some",
+                "tags"
+            ],
+            "steps": [
+                [
+                    "click",
+                    {
+                        "selector": ".MuiButton-label"
+                    }
+                ],
+                [
+                    "click",
+                    {
+                        "selector": ".MuiInputBase-input"
+                    }
+                ],
+                [
+                    "set",
+                    {
+                        "selector": ".MuiInputBase-input",
+                        "value": "david@redo.qa"
+                    }
+                ],
+                [
+                    "click",
+                    {
+                        "selector": ".MuiButton-contained > .MuiButton-label"
+                    }
+                ]
+            ]
+        }
+    ]
+}
