@@ -71,7 +71,7 @@ const start = async () => {
         y: y - BROWSER_WINDOW_TITLEBAR_SIZE
     }
     setMainWindowBounds(newMainWindowBounds)
-    const { browser, page } = await launch("chrome", {
+    const { browser, page, endpoint } = await launch("chrome", {
         args: [
             `--window-position=${browserBounds.x},${browserBounds.y}`,
             `--window-size=${browserBounds.width},${browserBounds.height}`
@@ -91,7 +91,8 @@ const start = async () => {
     store.mutate({
         learner: {
             lastMainWindowBounds: lastMainWindowBounds,
-            lastConnectedBrowser: "chrome"
+            lastConnectedBrowser: "chrome",
+            lastConnectedEndpoint: endpoint
         }
     })
 }
@@ -125,18 +126,11 @@ const stop = async (context: Learner) => {
     }
 }
 
-export const deactivateLearner = async () => {
-    await store.mutate({
+export const deactivateLearner = () => {
+    store.mutate({
         learner: {
-            active: false
-        }
-    })
-}
-
-export const resetLearner = async () => {
-    await store.mutate({
-        learner: {
-            events: [],
+            active: false,
+            steps: [],
             testName: "",
             testTags: []
         }
@@ -144,7 +138,6 @@ export const resetLearner = async () => {
 }
 
 const notify = (step: Step) => {
-    console.log(step)
     try {
         store.mutate({
             learner: { steps: (steps) => [...steps, step] }

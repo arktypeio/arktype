@@ -8,7 +8,7 @@ import {
     ChipInput
 } from "@re-do/components"
 import { loadStore } from "@re-do/model"
-import { deactivateLearner, resetLearner } from "state"
+import { deactivateLearner } from "state"
 import { LearnerEvents } from "./StepCards"
 import { store } from "renderer/common"
 import { join } from "path"
@@ -67,7 +67,6 @@ export const Learner = () => {
                             tags,
                             steps: steps as any
                         })
-                        resetLearner()
                         deactivateLearner()
                     }}
                 />

@@ -1,7 +1,6 @@
 import { join } from "path"
 import { loadStore, RedoStore } from "../model"
 import { removeSync } from "fs-extra"
-jest.mock("uuid", () => ({ v4: () => "FAKE-UUID" }))
 
 describe("store", () => {
     let store: RedoStore
@@ -35,22 +34,40 @@ describe("store", () => {
     const storedTestData = {
         name: "Test With Steps",
         steps: [
-            { kind: "click", id: "FAKE-UUID" },
+            { kind: "click", element: 1 },
             {
                 kind: "set",
-                id: "FAKE-UUID",
+                element: 2,
                 value: "New Value"
             }
         ],
         tags: []
     }
+    const storedElementData = [
+        {
+            id: 1,
+            selector: "#button"
+        },
+        {
+            id: 2,
+            selector: "#textbox"
+        }
+    ]
     test("translates selectors to elements", () => {
         store.createTest(testData as any)
         expect(store.getTests()).toStrictEqual([storedTestData])
+        expect(store.getElements()).toStrictEqual(storedElementData)
     })
     test("translates stored tests to executable tests", () => {
+        store.createTest(testData as any)
         expect(store.testToSteps(storedTestData as any)).toStrictEqual(
             testData.steps
         )
+    })
+    test("reuses existing elements", () => {
+        store.createTest(testData as any)
+        store.createTest(testData as any)
+        expect(store.getTests()).toStrictEqual([storedTestData, storedTestData])
+        expect(store.getElements()).toStrictEqual(storedElementData)
     })
 })

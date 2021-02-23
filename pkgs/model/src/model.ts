@@ -6,9 +6,8 @@ import {
     existsSync,
     writeJSONSync
 } from "fs-extra"
-import { v4 } from "uuid"
 
-export type StoredStep = Omit<Step, "selector"> & { element: string }
+export type StoredStep = Omit<Step, "selector"> & { element: number }
 
 export type StoredTest = {
     name: string
@@ -23,7 +22,7 @@ export type Test = {
 }
 
 export type Element = {
-    id: string
+    id: number
     selector: string
 }
 
@@ -44,49 +43,71 @@ export const loadStore = ({ path }: LoadStoreArgs) => {
     }
     const store = createStore({
         initial: readJSONSync(path) as RedoData,
-        handler: (data) => writeJsonSync(path, data, { spaces: 4 })
+        handler: (data) => {
+            const stored = readJSONSync(path)
+            writeJsonSync(path, { ...stored, ...data }, { spaces: 4 })
+        }
     })
     const getElements = () => store.query({ elements: true }).elements
     const createElement = (data: Element) =>
         store.mutate({ elements: (_) => _.concat(data) })
+    const createTest = ({ steps, ...data }: Test) => {
+        const storedSteps = steps.map((step) => {
+            if ("selector" in step) {
+                const { selector, ...data } = step
+                const existingElements = getElements()
+                const matchingElement = existingElements.find(
+                    (element) => element.selector === selector
+                )
+                if (matchingElement) {
+                    return { ...data, element: matchingElement.id }
+                }
+                // Set id to one more than max existing ID
+                const id =
+                    existingElements.reduce(
+                        (maxId, currentElement) =>
+                            currentElement.id > maxId
+                                ? currentElement.id
+                                : maxId,
+                        0
+                    ) + 1
+                createElement({ selector, id })
+                return { ...data, element: id } as any
+            }
+        })
+        store.mutate({
+            tests: (_) =>
+                _.concat({
+                    ...data,
+                    steps: storedSteps
+                })
+        })
+    }
+    const getTests = () => store.query({ tests: true }).tests
+    const testToSteps = (test: StoredTest): Step[] =>
+        test.steps.map((step) => {
+            if (step.element) {
+                const { element, ...data } = step
+                const storedElement = getElements().find(
+                    (storedElement) => storedElement.id === element
+                )
+                if (!storedElement) {
+                    throw new Error(
+                        `Element with id ${element} does not exist.`
+                    )
+                }
+                return {
+                    ...data,
+                    selector: storedElement.selector
+                }
+            }
+            return step as any
+        })
     return {
-        createTest: (data: Test) => {
-            data.steps = data.steps.map((step) => {
-                if ("selector" in step) {
-                    const { selector, ...data } = step
-                    const existingElement = getElements().find(
-                        (element) => element.selector === selector
-                    )
-                    if (existingElement) {
-                        return { ...data, id: existingElement.id }
-                    }
-                    const id = v4()
-                    createElement({ selector, id })
-                    return { ...data, id } as any
-                }
-            })
-            store.mutate({ tests: (_) => _.concat(data as any) })
-        },
-        getTests: () => store.query({ tests: true }).tests,
-        createElement: getElements,
-        testToSteps: (test: StoredTest): Step[] =>
-            test.steps.map((step) => {
-                if (step.element) {
-                    const { element, ...data } = step
-                    const storedElement = getElements().find(
-                        (storedElement) => storedElement.id === element
-                    )
-                    if (!storedElement) {
-                        throw new Error(
-                            `Element with id ${element} does not exist.`
-                        )
-                    }
-                    return {
-                        ...data,
-                        id: storedElement.id
-                    }
-                }
-                return step as any
-            })
+        createTest,
+        getTests,
+        createElement,
+        getElements,
+        testToSteps
     }
 }

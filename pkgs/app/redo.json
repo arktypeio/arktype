@@ -1,69 +1,165 @@
 {
     "tests": [
         {
-            "name": "Signup",
+            "name": "Test Login",
             "tags": [],
             "steps": [
-                [
-                    "click",
-                    {
-                        "selector": ".MuiButton-root"
-                    }
-                ],
-                [
-                    "click",
-                    {
-                        "selector": ".MuiInputBase-input"
-                    }
-                ],
-                [
-                    "set",
-                    {
-                        "selector": ".MuiInputBase-input",
-                        "value": "david@redo.qa"
-                    }
-                ],
-                [
-                    "click",
-                    {
-                        "selector": ".MuiButton-contained > .MuiButton-label"
-                    }
-                ]
+                {
+                    "kind": "click",
+                    "element": 1
+                },
+                {
+                    "kind": "click",
+                    "element": 2
+                },
+                {
+                    "kind": "set",
+                    "value": "david@redo.qa",
+                    "element": 2
+                }
             ]
         },
         {
-            "name": "New Test",
-            "tags": [
-                "some",
-                "tags"
-            ],
+            "name": "Login 2",
+            "tags": [],
             "steps": [
-                [
-                    "click",
-                    {
-                        "selector": ".MuiButton-label"
-                    }
-                ],
-                [
-                    "click",
-                    {
-                        "selector": ".MuiInputBase-input"
-                    }
-                ],
-                [
-                    "set",
-                    {
-                        "selector": ".MuiInputBase-input",
-                        "value": "david@redo.qa"
-                    }
-                ],
-                [
-                    "click",
-                    {
-                        "selector": ".MuiButton-contained > .MuiButton-label"
-                    }
-                ]
+                {
+                    "kind": "click",
+                    "element": 3
+                },
+                {
+                    "kind": "click",
+                    "element": 1
+                },
+                {
+                    "kind": "click",
+                    "element": 2
+                },
+                {
+                    "kind": "set",
+                    "value": "david@redo.qa",
+                    "element": 2
+                },
+                {
+                    "kind": "click",
+                    "element": 4
+                }
             ]
+        },
+        {
+            "name": "Test 5",
+            "tags": [],
+            "steps": [
+                {
+                    "kind": "click",
+                    "element": 1
+                },
+                {
+                    "kind": "click",
+                    "element": 2
+                },
+                {
+                    "kind": "set",
+                    "value": "david@redo.qa",
+                    "element": 2
+                }
+            ]
+        },
+        {
+            "name": "Test 6",
+            "tags": [],
+            "steps": [
+                {
+                    "kind": "click",
+                    "element": 5
+                },
+                {
+                    "kind": "click",
+                    "element": 2
+                },
+                {
+                    "kind": "set",
+                    "value": "david@redo.qa",
+                    "element": 2
+                },
+                {
+                    "kind": "click",
+                    "element": 6
+                }
+            ]
+        },
+        {
+            "name": "Test 7",
+            "tags": [],
+            "steps": [
+                {
+                    "kind": "click",
+                    "element": 7
+                },
+                {
+                    "kind": "click",
+                    "element": 8
+                },
+                {
+                    "kind": "click",
+                    "element": 9
+                },
+                {
+                    "kind": "click",
+                    "element": 1
+                },
+                {
+                    "kind": "click",
+                    "element": 2
+                },
+                {
+                    "kind": "set",
+                    "value": "david@redo.qa",
+                    "element": 2
+                },
+                {
+                    "kind": "click",
+                    "element": 4
+                }
+            ]
+        }
+    ],
+    "elements": [
+        {
+            "selector": ".MuiButton-label",
+            "id": 1
+        },
+        {
+            "selector": ".MuiInputBase-input",
+            "id": 2
+        },
+        {
+            "selector": ".MuiPaper-root > .MuiGrid-direction-xs-column",
+            "id": 3
+        },
+        {
+            "selector": ".MuiButton-contained > .MuiButton-label",
+            "id": 4
+        },
+        {
+            "selector": ".MuiButton-root",
+            "id": 5
+        },
+        {
+            "selector": ".MuiButton-contained",
+            "id": 6
+        },
+        {
+            "selector": ".MuiDialog-container",
+            "id": 7
+        },
+        {
+            "selector": ".MuiGrid-align-items-xs-baseline",
+            "id": 8
+        },
+        {
+            "selector": ".MuiGrid-root:nth-child(2) > img",
+            "id": 9
         }
     ]
 }

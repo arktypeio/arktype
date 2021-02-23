@@ -3,7 +3,7 @@ import { Unlisted } from "@re-do/utils"
 import { SuggestionCard } from "./SuggestionCard"
 import { store } from "renderer/common"
 import { Card, Row, Button, Icons } from "@re-do/components"
-import { loadStore, Test } from "@re-do/model"
+import { loadStore, StoredTest } from "@re-do/model"
 import { test as runTest } from "@re-do/test"
 import { join } from "path"
 
@@ -29,7 +29,7 @@ const useSuggestions = (): Suggestion<UserItemKind>[] => {
         : []
 }
 
-type UserData = { tests: Test }
+type UserData = { tests: StoredTest }
 
 type UserItemKind = keyof UserData
 
@@ -43,19 +43,22 @@ type Suggestion<Kind extends UserItemKind> = {
 }
 
 const suggestionTypes = {
-    tests: (test: UserItem<"tests">) => ({
-        title: test.name,
-        description: test.tags.join(", "),
-        extras: (
-            <Button
-                Icon={Icons.run}
-                onClick={() =>
-                    runTest(test.steps.map((step) => [step[0], step[1]] as any))
-                }
-            />
-        ),
-        data: test
-    })
+    tests: (test: UserItem<"tests">) => {
+        const persistedStore = loadStore({
+            path: join(process.cwd(), "redo.json")
+        })
+        return {
+            title: test.name,
+            description: test.tags.join(", "),
+            extras: (
+                <Button
+                    Icon={Icons.run}
+                    onClick={() => runTest(persistedStore.testToSteps(test))}
+                />
+            ),
+            data: test
+        }
+    }
 }
 
 type SuggestionTypes = typeof suggestionTypes

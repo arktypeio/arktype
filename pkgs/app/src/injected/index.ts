@@ -33,7 +33,7 @@ const watchPage = async () => {
 
 const eventToSteps = (e: Event) => {
     const kind = eventMap[e.type as EventName]
-    const step: any = {}
+    const step: any = { kind }
     if (e.target) {
         const target = e.target as HTMLElement
         step.selector = finder(target as HTMLElement)
@@ -41,7 +41,7 @@ const eventToSteps = (e: Event) => {
             step.value = (target as HTMLInputElement).value
         }
     }
-    return [kind, step]
+    return step
 }
 
 watchPage()
