@@ -32,8 +32,8 @@ export const RedoAppBar = ({ children }: RedoAppBarProps) => (
             <div key={index}>
                 <Row>
                     {children
-                        .filter(key => key in group)
-                        .map(key => {
+                        .filter((key) => key in group)
+                        .map((key) => {
                             const Group: ComponentType = (group as any)[key]
                             return <Group key={key} />
                         })}

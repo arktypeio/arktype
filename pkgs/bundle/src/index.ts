@@ -24,7 +24,6 @@ export type ConfigArgs = {
 
 const getPlugins = (tsconfig: string, analyze?: boolean) => {
     const plugins = [
-        new ProvidePlugin({ process: "process/browser", Buffer: ["buffer", "Buffer"]}),
         new ForkTsCheckerWebpackPlugin({
             typescript: { configFile: tsconfig }
         })
@@ -32,9 +31,8 @@ const getPlugins = (tsconfig: string, analyze?: boolean) => {
     if (analyze) {
         plugins.push(new BundleAnalyzerPlugin() as any)
     }
-    return plugins 
-} 
-
+    return plugins
+}
 
 const getCommonConfig = ({
     entries,
@@ -54,10 +52,10 @@ const getCommonConfig = ({
     },
     resolve: {
         extensions: [".ts", ".tsx", ".js", ".jsx", ".mjs", ".json"],
-        plugins: [new TsconfigPathsPlugin() as any],
-        alias: {
-            ws: "isomorphic-ws"
-        }
+        plugins: [new TsconfigPathsPlugin() as any]
+        // alias: {
+        //     ws: "isomorphic-ws"
+        // }
     },
     module: {
         rules: [
@@ -82,7 +80,7 @@ const getCommonConfig = ({
     plugins: getPlugins(tsconfig, analyzeBundle)
 })
 
-const getWebConfig = (args: ConfigArgs): Configuration =>
+const getFrontendConfig = (args: ConfigArgs): Configuration =>
     merge(getCommonConfig(args), {
         module: {
             rules: [
@@ -106,10 +104,7 @@ const getWebConfig = (args: ConfigArgs): Configuration =>
                 },
                 {
                     test: /\.css$/,
-                    use: [
-                        { loader: "style-loader" },
-                        { loader: "css-loader" }
-                    ]
+                    use: [{ loader: "style-loader" }, { loader: "css-loader" }]
                 },
                 {
                     test: /node_modules[\/\\](iconv-lite)[\/\\].+/,
@@ -133,9 +128,22 @@ const getWebConfig = (args: ConfigArgs): Configuration =>
             }
         },
         plugins: [
-            new IgnorePlugin({ checkResource: name => name.includes("iconv-loader") }),
+            new IgnorePlugin({
+                checkResource: (name) =>
+                    name.includes("iconv-loader") || name.endsWith(".exe")
+            }),
             new HtmlWebpackPlugin({
                 template: resolve(__dirname, "template.html")
+            })
+        ]
+    })
+
+const getWebConfig = (args: ConfigArgs): Configuration =>
+    merge(getFrontendConfig(args), {
+        plugins: [
+            new ProvidePlugin({
+                process: "process/browser",
+                Buffer: ["buffer", "Buffer"]
             })
         ]
     })
@@ -149,7 +157,7 @@ const getMainConfig = (args: ConfigArgs): Configuration =>
     })
 
 const getRendererConfig = (args: ConfigArgs): Configuration =>
-    merge(getWebConfig(args), {
+    merge(getFrontendConfig(args), {
         target: "electron-renderer",
         output: {
             filename: "renderer.js"
@@ -158,7 +166,7 @@ const getRendererConfig = (args: ConfigArgs): Configuration =>
             /*
             Override default value ["browser"] since we have enabled node integration
             And have access to more than we would in a basic web environment.
-            In particular, this allows us to import puppeteer, which specifies a 
+            In particular, this allows us to import puppeteer, which specifies a
             "browser" field in its package.json that breaks our ability to import it.
             */
             aliasFields: []
@@ -177,7 +185,7 @@ const getRendererConfig = (args: ConfigArgs): Configuration =>
     } as Configuration)
 
 const getInjectedConfig = (args: ConfigArgs): Configuration =>
-    merge(getWebConfig(args), {
+    merge(getFrontendConfig(args), {
         output: {
             filename: "injected.js"
         },
@@ -193,36 +201,33 @@ const getInjectedConfig = (args: ConfigArgs): Configuration =>
     })
 
 const getDevServerConfig = (customConfig?: object): Configuration =>
-({
-    resolve: {
-        alias: {
-            "react-dom": resolve(
-                __dirname,
-                "..",
-                "node_modules",
-                "@hot-loader",
-                "react-dom"
-            )
+    ({
+        resolve: {
+            alias: {
+                "react-dom": resolve(
+                    __dirname,
+                    "..",
+                    "node_modules",
+                    "@hot-loader",
+                    "react-dom"
+                )
+            }
+        },
+        entry: [
+            "react-hot-loader/patch",
+            "webpack-dev-server/client?http://localhost:8080",
+            "webpack/hot/only-dev-server"
+        ],
+        plugins: [new HotModuleReplacementPlugin(), new NoEmitOnErrorsPlugin()],
+        devServer: {
+            historyApiFallback: true,
+            hot: true,
+            writeToDisk: true,
+            host: isWsl ? "0.0.0.0" : undefined,
+            useLocalIp: isWsl,
+            ...customConfig
         }
-    },
-    entry: [
-        "react-hot-loader/patch",
-        "webpack-dev-server/client?http://localhost:8080",
-        "webpack/hot/only-dev-server"
-    ],
-    plugins: [
-        new HotModuleReplacementPlugin(),
-        new NoEmitOnErrorsPlugin()
-    ],
-    devServer: {
-        historyApiFallback: true,
-        hot: true,
-        writeToDisk: true,
-        host: isWsl ? "0.0.0.0" : undefined,
-        useLocalIp: isWsl,
-        ...customConfig
-    }
-} as Configuration)
+    } as Configuration)
 
 const baseOptions = {
     common: getCommonConfig,

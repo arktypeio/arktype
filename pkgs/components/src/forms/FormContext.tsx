@@ -13,11 +13,7 @@ export type Fields = Record<string, any>
 
 export type FormErrors<T extends Fields> = { [K in keyof T]?: string[] }
 
-export type BaseContext<T extends Fields> = ReturnType<
-    typeof useReactHookFormContext
-> & {
-    clearError: (name?: keyof T | Array<keyof T>) => void
-}
+export type BaseContext = ReturnType<typeof useReactHookFormContext>
 
 export type MutationSubmit<T extends Fields, D = any> = MutationTuple<D, T>[0]
 
@@ -28,14 +24,14 @@ export type CustomContext<T extends Fields, D = any> = {
     handleBlur: (field: keyof T) => any
 }
 
-export type FullContext<T extends Fields, D = any> = BaseContext<T> &
+export type FullContext<T extends Fields, D = any> = BaseContext &
     CustomContext<T, D>
 
 export type CreateFormContextArgs<T extends Fields, D = any> = FormContextArgs<
     T,
     D
 > & {
-    baseContext: BaseContext<T>
+    baseContext: BaseContext
     touched: Array<keyof T>
     setTouched: (_: Array<keyof T>) => any
     resultState: MutationResult<D>
@@ -68,7 +64,7 @@ export const createFormContext = <T extends Fields, D = any>({
                     message: validationResult[key]!.join("\n")
                 })
             } else {
-                baseContext.clearError(key)
+                baseContext.clearErrors(key as string)
             }
         })
     }

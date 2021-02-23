@@ -54,7 +54,7 @@ export const install = async () => {
     })
     const releasesResult = await query({
         query: recentReleasesQuery
-    })
+    }) as any
     const releases: any[] = assertResult(
         releasesResult?.repository?.releases?.nodes
     )
@@ -63,7 +63,7 @@ export const install = async () => {
     )
     const assetsResult = await query(assetsQuery, {
         tag: latestRelease.tagName
-    })
+    }) as any
     const assets: any[] = assertResult(
         assetsResult?.repository?.release?.releaseAssets?.nodes
     )

@@ -14,7 +14,9 @@ storiesOf("Input", module)
             )}
         />
     ))
-    .add("Chip", () => <ChipInput label="State" />)
+    .add("Chip", () => (
+        <ChipInput onChange={(value) => console.log(value)} label="State" />
+    ))
     .add("Chip with Autosuggest", () => (
         <ChipInput label="State" possibleSuggestions={getStates()} />
     ))

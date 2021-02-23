@@ -6,16 +6,21 @@ import { TextInput } from "./TextInput"
 export type ChipInputProps = {
     possibleSuggestions?: string[]
     label?: string
+    onChange?: (value: string[]) => void
 }
 
 export const ChipInput = ({
     label,
-    possibleSuggestions = []
+    possibleSuggestions = [],
+    onChange
 }: ChipInputProps) => (
     <MuiAutoComplete
         multiple
         freeSolo
         options={possibleSuggestions}
+        onChange={
+            onChange ? (event, value) => onChange(value as string[]) : undefined
+        }
         renderTags={(suggestions, getTagProps) =>
             suggestions.map((suggestion, index) => (
                 <Chip

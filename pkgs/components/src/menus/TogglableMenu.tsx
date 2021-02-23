@@ -22,7 +22,7 @@ export const TogglableMenu = ({
         <>
             {anchorComponent}
             <Menu
-                anchorTo={{ current: anchorRef }}
+                anchorTo={anchorRef}
                 onClickAway={() => setAnchorRef(null)}
                 onSelectItem={() => setAnchorRef(null)}
                 open={!!anchorRef}

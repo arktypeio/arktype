@@ -1,5 +1,5 @@
 import React from "react"
-import { Column, Card, Row, Text, Icons, IconButton } from "@re-do/components"
+import { Column, Card, Row, Text } from "@re-do/components"
 
 export type SuggestionCardProps = {
     title: string

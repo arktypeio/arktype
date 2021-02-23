@@ -1,0 +1,44 @@
+{
+    "tests": [
+        {
+            "name": "Test With Steps",
+            "tags": [],
+            "steps": [
+                {
+                    "kind": "click",
+                    "element": 1
+                },
+                {
+                    "kind": "set",
+                    "value": "New Value",
+                    "element": 2
+                }
+            ]
+        },
+        {
+            "name": "Test With Steps",
+            "tags": [],
+            "steps": [
+                {
+                    "kind": "click",
+                    "element": 1
+                },
+                {
+                    "kind": "set",
+                    "value": "New Value",
+                    "element": 2
+                }
+            ]
+        }
+    ],
+    "elements": [
+        {
+            "selector": "#button",
+            "id": 1
+        },
+        {
+            "selector": "#textbox",
+            "id": 2
+        }
+    ]
+}

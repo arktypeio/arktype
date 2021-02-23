@@ -1,11 +1,11 @@
 import React from "react"
-import { StepCreateWithoutTestsInput as StepInput } from "@re-do/model"
+import { Step } from "@re-do/test"
 import { ContentCard } from "@re-do/components"
 
 export type StepCardProps = {
-    event: StepInput
+    step: Step
 }
 
-export const StepCard = ({ event }: StepCardProps) => (
-    <ContentCard from={event} />
+export const StepCard = ({ step }: StepCardProps) => (
+    <ContentCard from={step} />
 )

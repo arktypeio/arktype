@@ -26,7 +26,7 @@ jsrx(
         },
         dev: {
             start: $(
-                `${clean} && npm run build && webpack-dev-server --config webpack.devServer.config.ts --progress --colors`
+                `${clean} && npm run build && webpack serve --config webpack.devServer.config.ts --progress`
             ),
             electron: $("electron --remote-debugging-port=9223 ./dist/main.js")
         },
