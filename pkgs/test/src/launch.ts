@@ -20,12 +20,9 @@ export const launch = async (
     options: LaunchOptions = {}
 ) => {
     const browserHandler = browserHandlers[browser]
-    const server = await browserHandler.launchServer(addDefaults(options))
-    const endpoint = server.wsEndpoint()
-    const instance = await browserHandler.connect({ wsEndpoint: endpoint })
+    const instance = await browserHandler.launch(addDefaults(options))
     return {
         browser: instance,
-        page: await instance.newPage(),
-        endpoint
+        page: await instance.newPage()
     }
 }

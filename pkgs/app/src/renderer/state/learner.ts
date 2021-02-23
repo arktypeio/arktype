@@ -3,7 +3,8 @@ import { remote, Rectangle } from "electron"
 import { isDeepStrictEqual } from "util"
 import { resolve } from "path"
 import { createHandler } from "react-statelessly"
-import { launch, BrowserName, Step, browserHandlers } from "@re-do/test"
+import { launch, Step, browserHandlers } from "@re-do/test"
+import { Browser } from "playwright-core"
 import { store } from "renderer/common"
 import { isDev } from "@re-do/utils/dist/node"
 import { Root } from "./root"
@@ -32,8 +33,6 @@ const setMainWindowBounds = (bounds: Partial<Bounds>) => {
 export type Learner = {
     active: boolean
     steps: Step[]
-    lastConnectedBrowser: BrowserName | ""
-    lastConnectedEndpoint: string
     testName: string
     testTags: string[]
     lastMainWindowBounds: Bounds
@@ -49,8 +48,6 @@ export const learnerInitial: Learner = {
     steps: [],
     testName: "",
     testTags: [],
-    lastConnectedBrowser: "",
-    lastConnectedEndpoint: "",
     lastMainWindowBounds: {
         height: -1,
         width: -1,
@@ -58,6 +55,8 @@ export const learnerInitial: Learner = {
         y: -1
     }
 }
+
+let lastConnectedBrowser: Browser
 
 const start = async () => {
     // Use size and position from the Redo app to launch browser
@@ -71,12 +70,14 @@ const start = async () => {
         y: y - BROWSER_WINDOW_TITLEBAR_SIZE
     }
     setMainWindowBounds(newMainWindowBounds)
-    const { browser, page, endpoint } = await launch("chrome", {
+    const { page, browser } = await launch("chrome", {
         args: [
             `--window-position=${browserBounds.x},${browserBounds.y}`,
             `--window-size=${browserBounds.width},${browserBounds.height}`
         ]
     })
+    page.on("close", () => deactivateLearner())
+    lastConnectedBrowser = browser
     page.goto("https://redo.qa")
     await page.exposeFunction("notify", notify)
     const browserJs = readFileSync(
@@ -84,38 +85,22 @@ const start = async () => {
         "utf-8"
     )
     await page.evaluate(browserJs)
-    browser.on("disconnected", () => {
-        deactivateLearner()
-    })
     // TODO: This could cause problems since it's in a side effect (maybe mutations shouldn't happen from side effects?)
     store.mutate({
         learner: {
-            lastMainWindowBounds: lastMainWindowBounds,
-            lastConnectedBrowser: "chrome",
-            lastConnectedEndpoint: endpoint
+            lastMainWindowBounds: lastMainWindowBounds
         }
     })
 }
 
 const stop = async (context: Learner) => {
-    const {
-        lastConnectedEndpoint,
-        lastMainWindowBounds,
-        lastConnectedBrowser
-    } = context
-    if (lastConnectedEndpoint && lastConnectedBrowser) {
-        try {
-            const browser = await browserHandlers[lastConnectedBrowser].connect(
-                {
-                    wsEndpoint: lastConnectedEndpoint
-                }
-            )
-            await browser.close()
-        } catch (e) {
-            // TODO: Stop from unnecessarily logging an error here
-            console.log("Browser was already disconnected.")
-        }
+    try {
+        await lastConnectedBrowser.close()
+    } catch (e) {
+        // TODO: Stop from unnecessarily logging an error here
+        console.log("Browser was already disconnected.")
     }
+    const { lastMainWindowBounds } = context
     if (
         !isDeepStrictEqual(
             lastMainWindowBounds,
