@@ -29,8 +29,8 @@ export const Menu = ({
 }: MenuProps) => {
     return (
         <MuiPopper open={open} anchorEl={anchorTo} {...rest}>
-            <Paper>
-                <MuiClickAwayListener onClickAway={onClickAway}>
+            <MuiClickAwayListener onClickAway={onClickAway}>
+                <Paper>
                     <>
                         {Object.entries(options).map(([name, onClick]) => (
                             <MenuItem
@@ -45,8 +45,8 @@ export const Menu = ({
                             </MenuItem>
                         ))}
                     </>
-                </MuiClickAwayListener>
-            </Paper>
+                </Paper>
+            </MuiClickAwayListener>
         </MuiPopper>
     )
 }

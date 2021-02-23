@@ -9,11 +9,9 @@ export const test = async (steps: Step[], options: TestOptions = {}) => {
     const { browser: browserName = "chrome", ...rest } = options
     const { page, browser } = await launch(browserName, rest)
     await page.goto("https://redo.qa")
-    await page.screenshot({ path: "before.png" })
     for (const step of steps) {
         await perform(step, { browser, page })
     }
-    await page.screenshot({ path: "after.png" })
     await page.close()
     await browser.close()
 }

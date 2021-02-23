@@ -11,7 +11,7 @@ import {
     useSignUpMutation,
     SignUpMutation,
     SignUpMutationVariables
-} from "@re-do/model/dist/react"
+} from "@re-do/model"
 import { store } from "renderer/common"
 import { formatEmail } from "./common"
 

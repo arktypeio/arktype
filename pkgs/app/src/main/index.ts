@@ -27,12 +27,11 @@ const installExtensions = async () => {
 }
 
 const createWindow = async () => {
-    console.log("CURRENT DIR " + __dirname)
     mainWindow = new BrowserWindow({
         webPreferences: {
             webSecurity: false,
             nodeIntegration: true,
-            contextIsolation: false
+            enableRemoteModule: true
         },
         icon: join(__dirname, "icon.png")
     })

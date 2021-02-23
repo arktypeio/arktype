@@ -1,11 +1,4 @@
-import finder from "@medv/finder"
-
-// TODO: Fix bizarre build failure caused by this import:
-// https://github.com/redo-qa/redo/issues/197
-// import {
-//     StepCreateWithoutTestsInput as StepInput,
-//     StepKind,
-// } from "@re-do/model/dist/react"
+import { finder } from "@medv/finder"
 
 enum StepKind {
     Click = "click",
@@ -31,7 +24,7 @@ const watchPage = async () => {
         notify: (e: StepInput) => void
     } = window as any
     const handler = async (e: Event) => {
-        eventToSteps(e).forEach((step) => browserWindow.notify(step))
+        browserWindow.notify(eventToSteps(e))
     }
     Object.keys(eventMap).forEach((event) =>
         browserWindow.addEventListener(event, handler, true)
@@ -39,20 +32,16 @@ const watchPage = async () => {
 }
 
 const eventToSteps = (e: Event) => {
-    if (!(e.type in eventMap)) {
-        return []
-    }
-    const step: StepInput = {
-        kind: eventMap[e.type as EventName]
-    }
+    const kind = eventMap[e.type as EventName]
+    const step: any = { kind }
     if (e.target) {
         const target = e.target as HTMLElement
         step.selector = finder(target as HTMLElement)
-        if (step.kind === StepKind.Set) {
+        if (kind === StepKind.Set) {
             step.value = (target as HTMLInputElement).value
         }
     }
-    return [step]
+    return step
 }
 
 watchPage()

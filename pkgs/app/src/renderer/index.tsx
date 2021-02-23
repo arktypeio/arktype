@@ -5,9 +5,7 @@ import ReactDOM from "react-dom"
 import { client, store } from "./common"
 import { initialRoot } from "state"
 import { App } from "./App"
-import { installMissingBrowsers } from "@re-do/test"
 
 const root = document.getElementById("root")
 store.mutate(initialRoot)
-installMissingBrowsers()
 ReactDOM.render(<App apolloClient={client as any} />, root)

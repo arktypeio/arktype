@@ -1,5 +1,33 @@
-import { Root, initialRoot, initialA } from "./common"
 import { createStore, Handler } from "../store"
+
+type Root = {
+    a: A
+    b: boolean
+    c: string
+    d: A[]
+}
+
+type A = {
+    a: number
+    b: B
+}
+
+type B = {
+    a: number[]
+}
+const initialA: A = Object.freeze({
+    a: 0,
+    b: {
+        a: [0]
+    }
+})
+
+const initialRoot: Root = Object.freeze({
+    a: initialA,
+    b: false,
+    c: "",
+    d: [initialA, initialA]
+})
 
 let store = createStore({ initial: initialRoot })
 
@@ -14,6 +42,12 @@ const handler: Handler<Root, Root> = {
 let sideEffectStore = createStore({
     initial: initialRoot,
     handler
+})
+
+const functionalHandler = jest.fn()
+let sideEffectFunctionStore = createStore({
+    initial: initialRoot,
+    handler: functionalHandler
 })
 
 describe("queries", () => {
@@ -49,7 +83,7 @@ describe("updates", () => {
         sideEffectStore = createStore({ initial: initialRoot, handler })
     })
     test("handles shallow", () => {
-        store.mutate({ c: value => value + "suffix" })
+        store.mutate({ c: (value) => value + "suffix" })
         expect(store.getState()).toStrictEqual({
             ...initialRoot,
             c: initialRoot.c + "suffix"
@@ -57,7 +91,7 @@ describe("updates", () => {
     })
     test("handles deep", () => {
         store.mutate({
-            a: { b: { a: value => value.concat([1]) } }
+            a: { b: { a: (value) => value.concat([1]) } }
         })
         expect(store.getState()).toStrictEqual({
             ...initialRoot,
@@ -71,7 +105,7 @@ describe("updates", () => {
         })
     })
     test("handles object arrays", () => {
-        store.mutate({ d: value => value.concat(initialA) })
+        store.mutate({ d: (value) => value.concat(initialA) })
         expect(store.getState()).toStrictEqual({
             ...initialRoot,
             d: [initialA, initialA, initialA]
@@ -87,7 +121,7 @@ describe("updates", () => {
 
     test("doesn't update extraneous keys", () => {
         store.mutate({
-            a: { b: { a: value => value.concat([1]) } }
+            a: { b: { a: (value) => value.concat([1]) } }
         })
         expect(store.getState()).toStrictEqual({
             ...initialRoot,
@@ -100,7 +134,7 @@ describe("updates", () => {
     })
     test("handles array side effects", () => {
         sideEffectStore.mutate({
-            d: _ => _.concat(initialA)
+            d: (_) => _.concat(initialA)
         })
         expect(dHandler).toBeCalledWith(
             [initialA, initialA, initialA],
@@ -109,10 +143,14 @@ describe("updates", () => {
     })
     test("doesn't trigger extraneous side effects", () => {
         sideEffectStore.mutate({
-            b: current => current,
-            c: current => current + "new"
+            b: (current) => current,
+            c: (current) => current + "new"
         })
         expect(cHandler).toHaveBeenCalled()
         expect(bing).not.toHaveBeenCalled()
+    })
+    test("handles side effects with function", () => {
+        sideEffectFunctionStore.mutate({ b: true })
+        expect(functionalHandler).toHaveBeenCalled()
     })
 })
