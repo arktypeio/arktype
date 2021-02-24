@@ -19,13 +19,13 @@ const rendererConfig = makeConfig(
     [{ output: { publicPath: "." } }]
 )
 
-const injectedConfig = makeConfig({
+const observerConfig = makeConfig({
     base: "injected",
-    entry: resolve(__dirname, "src", "injected", "index.ts"),
+    entry: resolve(__dirname, "src", "observer", "index.ts"),
     tsconfig
 })
 
 // renderer config is consumed through devServer during development
 export default isDev()
-    ? [mainConfig, injectedConfig]
-    : [mainConfig, rendererConfig, injectedConfig]
+    ? [mainConfig, observerConfig]
+    : [mainConfig, rendererConfig, observerConfig]

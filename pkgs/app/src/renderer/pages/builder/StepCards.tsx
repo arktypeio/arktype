@@ -4,11 +4,11 @@ import { Step } from "@re-do/test"
 import { StepCard } from "./StepCard"
 import { useTheme } from "@re-do/components"
 
-export type LearnerEventsProps = {
+export type BuilderEventsProps = {
     steps: Step[]
 }
 
-export const LearnerEvents = ({ steps }: LearnerEventsProps) => {
+export const BuilderEvents = ({ steps }: BuilderEventsProps) => {
     const theme = useTheme()
     return (
         <List

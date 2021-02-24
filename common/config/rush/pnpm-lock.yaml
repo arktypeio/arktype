@@ -102,7 +102,7 @@ dependencies:
   moize: 5.4.7
   node-fetch: 2.6.1
   node-polyfill-webpack-plugin: 1.0.2_webpack@5.17.0
-  playwright-core: 1.8.0
+  playwright-core: 1.9.0
   prettier: 2.2.1
   process: 0.11.10
   react: 17.0.1
@@ -14497,7 +14497,7 @@ packages:
       node: '>=8'
     resolution:
       integrity: sha512-nDywThFk1i4BQK4twPQ6TA4RT8bDY96yeuCVBWL3ePARCiEKDRSrNGbFIgUJpLp+XeIR65v8ra7WuJOFUBtkMA==
-  /playwright-core/1.8.0:
+  /playwright-core/1.9.0:
     dependencies:
       commander: 6.2.1
       debug: 4.3.1
@@ -14510,6 +14510,7 @@ packages:
       proper-lockfile: 4.1.1
       proxy-from-env: 1.1.0
       rimraf: 3.0.2
+      stack-utils: 2.0.3
       ws: 7.4.2
     dev: false
     engines:
@@ -14517,7 +14518,7 @@ packages:
     hasBin: true
     requiresBuild: true
     resolution:
-      integrity: sha512-3FDiIMabIkamEOPqdjHrPA1puIElx3iYIaln1k5G8ZyGRubmPE9AijHyTXYqkavgteUp+Kb8QOeE13nlnQ++Fg==
+      integrity: sha512-PckBIeQnTf4otsE8L6ahy2/SnkKDELosoWFAaottcTM6+En7vSVLFiNkyEqKwQ5z9KGZJZiUPhqvp44tbf1gcQ==
   /playwright/1.8.0:
     dependencies:
       commander: 6.2.1
@@ -19200,10 +19201,11 @@ packages:
       graphql-tag: 2.11.0_graphql@15.4.0
       isomorphic-ws: 4.0.1
       jsrx: 0.0.3
-      playwright-core: 1.8.0
+      playwright-core: 1.9.0
       react: 17.0.1
       react-dom: 17.0.1_react@17.0.1
       react-hot-loader: 4.13.0_4695a47c40ef995f48f8c834d2fb82ec
+      react-router-dom: 5.2.0_react@17.0.1
       ts-node: 9.1.1_typescript@4.1.3
       tsconfig-paths: 3.9.0
       tsconfig-paths-webpack-plugin: 3.3.0
@@ -19218,7 +19220,7 @@ packages:
     peerDependencies:
       webpack-bundle-analyzer: '*'
     resolution:
-      integrity: sha512-qtYsg83WKyWo0++zWEtMiXdJaAh/pXDgRITrRc8frf17RfFe8cQObhq+ZIbkwr5dZZeVSqSMcppz20vFWDAQPQ==
+      integrity: sha512-rAM4YRVzKnullVQkI0/WfthDgPHEov1ECTNwXFTvlliAZfDmLKPyi7kU/rMl85PjQWq3L00YZrJFOdZcC66AYw==
       tarball: 'file:projects/app.tgz'
     version: 0.0.0
   'file:projects/babel-preset-redo.tgz_4695a47c40ef995f48f8c834d2fb82ec':
@@ -19377,6 +19379,7 @@ packages:
       '@types/fs-extra': 9.0.6
       '@types/jest': 26.0.20
       '@types/node': 14.14.21
+      '@types/uuid': 8.3.0
       '@types/validator': 13.1.3
       fs-extra: 9.0.1
       gqlize: 0.0.3
@@ -19386,6 +19389,7 @@ packages:
       prettier: 2.2.1
       ts-node: 9.1.1_typescript@4.1.3
       typescript: 4.1.3
+      uuid: 8.3.2
       validator: 13.5.2
     dev: false
     id: 'file:projects/model.tgz'
@@ -19393,7 +19397,7 @@ packages:
     peerDependencies:
       react: '*'
     resolution:
-      integrity: sha512-wCJTwJ6+Nv/4gFrYI0X6xHXZcx5LRB3Ttmk3e+cNJbdgV7DCnNyf925N4OJDWEFPVkSfYGDqTx2atqk/5lJ4tA==
+      integrity: sha512-GmJOOpatScWDxw9xsUpPgUh1CIHiJSwXEPq0pNbA0VVCaOaZ2TtXEB+yCrqVnZ4r0ZpQQvH7k0TBhDVO4MaUew==
       tarball: 'file:projects/model.tgz'
     version: 0.0.0
   'file:projects/react-statelessly.tgz_ts-node@9.1.1':
@@ -19460,7 +19464,7 @@ packages:
       isomorphic-ws: 4.0.1
       jest: 26.6.3_ts-node@9.1.1
       playwright: 1.8.0
-      playwright-core: 1.8.0
+      playwright-core: 1.9.0
       typescript: 4.1.3
     dev: false
     id: 'file:projects/test.tgz'
@@ -19468,7 +19472,7 @@ packages:
     peerDependencies:
       ts-node: '*'
     resolution:
-      integrity: sha512-o/YAGDJ19k/PmEoPTiuXQ349s+cbt0/3+rdA7qI7W/iuxAefODICDzLnCrnRJydHfPTNWSwoH/IejPKonZJgtg==
+      integrity: sha512-MMLyymDSFadeaj4P1beQCEOkyFhcO6oC+T7sO3t8JeR8LNnmhlC0iclDZrQY0NBHRA2S9nugnYh0OcTk4DFT2g==
       tarball: 'file:projects/test.tgz'
     version: 0.0.0
   'file:projects/utils.tgz_ts-node@9.1.1':
@@ -19642,7 +19646,7 @@ specifiers:
   moize: 5.4.7
   node-fetch: 2.6.1
   node-polyfill-webpack-plugin: 1.0.2
-  playwright-core: 1.8.0
+  playwright-core: 1.9.0
   prettier: 2.2.1
   process: 0.11.10
   react: 17.0.1
