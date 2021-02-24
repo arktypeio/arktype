@@ -122,6 +122,78 @@
                     "element": 4
                 }
             ]
+        },
+        {
+            "name": "Test Something Else",
+            "tags": [],
+            "steps": [
+                {
+                    "kind": "click",
+                    "element": 10
+                },
+                {
+                    "kind": "click",
+                    "element": 11
+                },
+                {
+                    "kind": "click",
+                    "element": 11
+                },
+                {
+                    "kind": "click",
+                    "element": 12
+                },
+                {
+                    "kind": "click",
+                    "element": 13
+                }
+            ]
+        },
+        {
+            "name": "",
+            "tags": [],
+            "steps": [
+                {
+                    "kind": "click",
+                    "element": 1
+                },
+                {
+                    "kind": "click",
+                    "element": 2
+                },
+                {
+                    "kind": "set",
+                    "value": "david@redo.qa",
+                    "element": 2
+                },
+                {
+                    "kind": "click",
+                    "element": 6
+                }
+            ]
+        },
+        {
+            "name": "Log In Again",
+            "tags": [],
+            "steps": [
+                {
+                    "kind": "click",
+                    "element": 1
+                },
+                {
+                    "kind": "click",
+                    "element": 2
+                },
+                {
+                    "kind": "set",
+                    "value": "david@redo.qa",
+                    "element": 2
+                },
+                {
+                    "kind": "click",
+                    "element": 4
+                }
+            ]
         }
     ],
     "elements": [
@@ -160,6 +232,22 @@
         {
             "selector": ".MuiGrid-root:nth-child(2) > img",
             "id": 9
+        },
+        {
+            "selector": ".MuiPaper-root:nth-child(2) path:nth-child(3)",
+            "id": 10
+        },
+        {
+            "selector": ".MuiPaper-root:nth-child(3) path:nth-child(3)",
+            "id": 11
+        },
+        {
+            "selector": ".MuiPaper-root:nth-child(2) > .MuiButtonBase-root .MuiTypography-root",
+            "id": 12
+        },
+        {
+            "selector": ".Mui-expanded path:nth-child(3)",
+            "id": 13
         }
     ]
 }

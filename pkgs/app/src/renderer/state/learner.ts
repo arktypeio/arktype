@@ -9,7 +9,8 @@ import { store } from "renderer/common"
 import { isDev } from "@re-do/utils/dist/node"
 import { Root } from "./root"
 
-const BROWSER_WINDOW_TITLEBAR_SIZE = 35
+const BROWSER_WINDOW_TITLEBAR_SIZE = 44
+const ELECTRON_TITLEBAR_SIZE = 37
 const DEFAULT_LEARNER_WIDTH = 300
 
 export type Bounds = {
@@ -26,8 +27,7 @@ const getMainWindowBounds = (): Bounds => ({
 // TODO: Make sure bounds are within screen size
 const setMainWindowBounds = (bounds: Partial<Bounds>) => {
     remote.getCurrentWindow().unmaximize()
-    // Electron actually allows partial bounds, @types/electron is just incorrect
-    remote.getCurrentWindow().setBounds(bounds as Rectangle)
+    remote.getCurrentWindow().setBounds(bounds)
 }
 
 export type Learner = {
@@ -63,18 +63,16 @@ const start = async () => {
     const lastMainWindowBounds = getMainWindowBounds()
     const { height, width, x, y } = lastMainWindowBounds
     const newMainWindowBounds = { height, width: DEFAULT_LEARNER_WIDTH, x, y }
-    const browserBounds = {
-        height: height + BROWSER_WINDOW_TITLEBAR_SIZE,
-        width: width - DEFAULT_LEARNER_WIDTH,
-        x: x + DEFAULT_LEARNER_WIDTH,
-        y: y - BROWSER_WINDOW_TITLEBAR_SIZE
-    }
     setMainWindowBounds(newMainWindowBounds)
     const { page, browser } = await launch("chrome", {
-        args: [
-            `--window-position=${browserBounds.x},${browserBounds.y}`,
-            `--window-size=${browserBounds.width},${browserBounds.height}`
-        ]
+        position: {
+            x: x + DEFAULT_LEARNER_WIDTH,
+            y: y
+        },
+        size: {
+            height: height - BROWSER_WINDOW_TITLEBAR_SIZE,
+            width: width - DEFAULT_LEARNER_WIDTH - 24
+        }
     })
     page.on("close", () => deactivateLearner())
     lastConnectedBrowser = browser
@@ -88,7 +86,7 @@ const start = async () => {
     // TODO: This could cause problems since it's in a side effect (maybe mutations shouldn't happen from side effects?)
     store.mutate({
         learner: {
-            lastMainWindowBounds: lastMainWindowBounds
+            lastMainWindowBounds
         }
     })
 }

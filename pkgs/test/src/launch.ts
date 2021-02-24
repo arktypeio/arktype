@@ -1,6 +1,15 @@
-import { BrowserType, chromium, firefox, webkit } from "playwright-core"
+import { chromium, firefox, webkit } from "playwright-core"
 
-export type LaunchOptions = Parameters<BrowserType<string>["launch"]>[0]
+export type LaunchOptions = {
+    size?: {
+        height: number
+        width: number
+    }
+    position?: {
+        x: number
+        y: number
+    }
+}
 
 export const browserHandlers = {
     chrome: chromium,
@@ -10,19 +19,24 @@ export const browserHandlers = {
 
 export type BrowserName = keyof typeof browserHandlers
 
-const addDefaults = (options: LaunchOptions): LaunchOptions => ({
-    headless: false,
-    ...options
-})
-
 export const launch = async (
     browser: BrowserName,
-    options: LaunchOptions = {}
+    { size, position }: LaunchOptions = {}
 ) => {
     const browserHandler = browserHandlers[browser]
-    const instance = await browserHandler.launch(addDefaults(options))
+    const browserLaunchArgs: string[] = []
+    if (position) {
+        browserLaunchArgs.push(`--window-position=${position.x},${position.y}`)
+    }
+    const instance = await browserHandler.launch({
+        headless: false,
+        args: browserLaunchArgs
+    })
+    const page = await instance.newPage({
+        viewport: size ? { height: size.height, width: size.width } : undefined
+    })
     return {
         browser: instance,
-        page: await instance.newPage()
+        page
     }
 }
