@@ -1,5 +1,10 @@
 import "dotenv/config"
-import { app, BrowserWindow } from "electron"
+import {
+    app,
+    BrowserWindow,
+    ipcMain,
+    BrowserWindowConstructorOptions
+} from "electron"
 import { isDev } from "@re-do/utils/dist/node"
 import electronDevtoolsInstaller, {
     REACT_DEVELOPER_TOOLS,
@@ -8,7 +13,17 @@ import electronDevtoolsInstaller, {
 import { autoUpdater } from "electron-updater"
 import { join } from "path"
 
-let mainWindow: BrowserWindow | null
+let mainWindow: BrowserWindow
+let builderWindow: BrowserWindow
+
+const defaultElectronOptions: BrowserWindowConstructorOptions = {
+    webPreferences: {
+        webSecurity: false,
+        nodeIntegration: true,
+        enableRemoteModule: true
+    },
+    icon: join(__dirname, "icon.png")
+}
 
 const installExtensions = async () => {
     const extensions = {
@@ -26,22 +41,20 @@ const installExtensions = async () => {
     }
 }
 
-const createWindow = async () => {
-    mainWindow = new BrowserWindow({
-        webPreferences: {
-            webSecurity: false,
-            nodeIntegration: true,
-            enableRemoteModule: true
-        },
-        icon: join(__dirname, "icon.png")
-    })
-    mainWindow.on("closed", () => {
-        mainWindow = null
-    })
+const createWindows = async () => {
+    mainWindow = new BrowserWindow(defaultElectronOptions)
     await mainWindow.loadURL(
         isDev() ? `http://localhost:8080/` : `file://${__dirname}/index.html`
     )
-    mainWindow.show()
+    builderWindow = new BrowserWindow({
+        ...defaultElectronOptions,
+        show: false
+    })
+    await builderWindow.loadURL(
+        isDev()
+            ? `http://localhost:8080/builder`
+            : `file://${__dirname}/index.html`
+    )
 }
 
 app.on("ready", async () => {
@@ -50,7 +63,8 @@ app.on("ready", async () => {
     } else {
         autoUpdater.checkForUpdatesAndNotify()
     }
-    createWindow()
+    createWindows()
+    mainWindow.show()
 })
 
 app.on("window-all-closed", () => {
@@ -61,6 +75,16 @@ app.on("window-all-closed", () => {
 
 app.on("activate", () => {
     if (mainWindow === null) {
-        createWindow()
+        createWindows()
+    }
+})
+
+ipcMain.on("builder", async (event, name) => {
+    console.warn("GOT EVENT")
+    console.warn({ name, event })
+    if (name === "open") {
+        builderWindow.show()
+    } else if (name === "close") {
+        builderWindow.hide()
     }
 })
