@@ -88,9 +88,9 @@ export const SuggestionResultsGrid = () => {
                 }}
             >
                 {values.length ? (
-                    values.map((value) => (
+                    values.map((value, index) => (
                         <div
-                            key={value.title}
+                            key={index}
                             style={{
                                 width: 200,
                                 height: 200

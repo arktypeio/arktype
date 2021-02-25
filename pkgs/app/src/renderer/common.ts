@@ -4,7 +4,7 @@ import {
     createHttpLink,
     ApolloLink
 } from "@apollo/client"
-import { initialRoot } from "state"
+import { initialRoot, rootHandler } from "state"
 import { createStore } from "react-statelessly"
 import { isDev } from "@re-do/utils/dist/node"
 
@@ -28,4 +28,4 @@ export const client = new ApolloClient({
     cache: new InMemoryCache()
 })
 
-export const store = createStore({ initial: initialRoot })
+export const store = createStore({ initial: initialRoot, handler: rootHandler })

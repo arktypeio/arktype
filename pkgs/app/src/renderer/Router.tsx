@@ -3,9 +3,19 @@ import { hot } from "react-hot-loader/root"
 import { AppContents } from "@re-do/components"
 import { Page } from "state"
 import { store } from "renderer/common"
-import { Home, Builder, Landing, Results } from "./pages"
+import { Home, Landing, Results } from "./pages"
+import { Builder } from "./builder"
 
 export const Router = hot(() => {
+    // This URL is loaded if and only if we're in the builder window
+    if (window.location.pathname === "/builder") {
+        return (
+            <AppContents>
+                <Builder />
+            </AppContents>
+        )
+    }
+    // Otherwise, we're loading a page in the app's main window
     const { page, token } = store.useQuery({
         page: true,
         token: true
@@ -25,7 +35,6 @@ export const Pages: NameToPage = {
     HOME: <Home />,
     SIGN_IN: <Landing page={Page.SignIn} />,
     SIGN_UP: <Landing page={Page.SignUp} />,
-    LEARNER: <Builder />,
     RESULTS: <Results />
 }
 
@@ -41,9 +50,6 @@ const route = (requested: Page, authed: boolean) => {
         if (!redirected || !UnauthedPages.includes(redirected)) {
             redirected = Page.SignIn
         }
-    }
-    if (window.location.pathname === "/builder") {
-        redirected = Page.Builder
     }
     return redirected
 }

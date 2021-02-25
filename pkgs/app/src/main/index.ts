@@ -41,15 +41,20 @@ const installExtensions = async () => {
     }
 }
 
-const createWindows = async () => {
+const createMainWindow = async () => {
     mainWindow = new BrowserWindow(defaultElectronOptions)
     await mainWindow.loadURL(
         isDev() ? `http://localhost:8080/` : `file://${__dirname}/index.html`
     )
+}
+
+const createBuilderWindow = async () => {
     builderWindow = new BrowserWindow({
         ...defaultElectronOptions,
         show: false
     })
+    // Builder window should always exist, even if it's not shown
+    builderWindow.on("close", createBuilderWindow)
     await builderWindow.loadURL(
         isDev()
             ? `http://localhost:8080/builder`
@@ -63,8 +68,8 @@ app.on("ready", async () => {
     } else {
         autoUpdater.checkForUpdatesAndNotify()
     }
-    createWindows()
-    mainWindow.show()
+    createMainWindow()
+    createBuilderWindow()
 })
 
 app.on("window-all-closed", () => {
@@ -75,16 +80,18 @@ app.on("window-all-closed", () => {
 
 app.on("activate", () => {
     if (mainWindow === null) {
-        createWindows()
+        createMainWindow()
     }
 })
 
 ipcMain.on("builder", async (event, name) => {
-    console.warn("GOT EVENT")
-    console.warn({ name, event })
+    if (builderWindow.isDestroyed()) {
+        await createBuilderWindow()
+    }
     if (name === "open") {
         builderWindow.show()
     } else if (name === "close") {
         builderWindow.hide()
     }
+    event.returnValue = true
 })

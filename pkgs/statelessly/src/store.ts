@@ -40,7 +40,9 @@ export const createStore = <T>({
         }
         const updatedState = updateMap(state, data)
         const changes = diff(state, updatedState)
+        console.warn({state, updatedState, changes})
         if (!isDeepStrictEqual(changes, {})) {
+            console.warn("Handling changes...")
             handle && handle(changes, state)
         }
         return updatedState

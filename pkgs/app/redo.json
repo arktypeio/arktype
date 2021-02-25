@@ -1,253 +1,40 @@
 {
     "tests": [
         {
-            "name": "Test Login",
+            "name": "",
             "tags": [],
-            "steps": [
-                {
-                    "kind": "click",
-                    "element": 1
-                },
-                {
-                    "kind": "click",
-                    "element": 2
-                },
-                {
-                    "kind": "set",
-                    "value": "david@redo.qa",
-                    "element": 2
-                }
-            ]
-        },
-        {
-            "name": "Login 2",
-            "tags": [],
-            "steps": [
-                {
-                    "kind": "click",
-                    "element": 3
-                },
-                {
-                    "kind": "click",
-                    "element": 1
-                },
-                {
-                    "kind": "click",
-                    "element": 2
-                },
-                {
-                    "kind": "set",
-                    "value": "david@redo.qa",
-                    "element": 2
-                },
-                {
-                    "kind": "click",
-                    "element": 4
-                }
-            ]
-        },
-        {
-            "name": "Test 5",
-            "tags": [],
-            "steps": [
-                {
-                    "kind": "click",
-                    "element": 1
-                },
-                {
-                    "kind": "click",
-                    "element": 2
-                },
-                {
-                    "kind": "set",
-                    "value": "david@redo.qa",
-                    "element": 2
-                }
-            ]
-        },
-        {
-            "name": "Test 6",
-            "tags": [],
-            "steps": [
-                {
-                    "kind": "click",
-                    "element": 5
-                },
-                {
-                    "kind": "click",
-                    "element": 2
-                },
-                {
-                    "kind": "set",
-                    "value": "david@redo.qa",
-                    "element": 2
-                },
-                {
-                    "kind": "click",
-                    "element": 6
-                }
-            ]
-        },
-        {
-            "name": "Test 7",
-            "tags": [],
-            "steps": [
-                {
-                    "kind": "click",
-                    "element": 7
-                },
-                {
-                    "kind": "click",
-                    "element": 8
-                },
-                {
-                    "kind": "click",
-                    "element": 9
-                },
-                {
-                    "kind": "click",
-                    "element": 1
-                },
-                {
-                    "kind": "click",
-                    "element": 2
-                },
-                {
-                    "kind": "set",
-                    "value": "david@redo.qa",
-                    "element": 2
-                },
-                {
-                    "kind": "click",
-                    "element": 4
-                }
-            ]
-        },
-        {
-            "name": "Test Something Else",
-            "tags": [],
-            "steps": [
-                {
-                    "kind": "click",
-                    "element": 10
-                },
-                {
-                    "kind": "click",
-                    "element": 11
-                },
-                {
-                    "kind": "click",
-                    "element": 11
-                },
-                {
-                    "kind": "click",
-                    "element": 12
-                },
-                {
-                    "kind": "click",
-                    "element": 13
-                }
-            ]
+            "steps": []
         },
         {
             "name": "",
             "tags": [],
-            "steps": [
-                {
-                    "kind": "click",
-                    "element": 1
-                },
-                {
-                    "kind": "click",
-                    "element": 2
-                },
-                {
-                    "kind": "set",
-                    "value": "david@redo.qa",
-                    "element": 2
-                },
-                {
-                    "kind": "click",
-                    "element": 6
-                }
-            ]
+            "steps": []
         },
         {
-            "name": "Log In Again",
+            "name": "",
             "tags": [],
-            "steps": [
-                {
-                    "kind": "click",
-                    "element": 1
-                },
-                {
-                    "kind": "click",
-                    "element": 2
-                },
-                {
-                    "kind": "set",
-                    "value": "david@redo.qa",
-                    "element": 2
-                },
-                {
-                    "kind": "click",
-                    "element": 4
-                }
-            ]
+            "steps": []
+        },
+        {
+            "name": "",
+            "tags": [],
+            "steps": []
+        },
+        {
+            "name": "",
+            "tags": [],
+            "steps": []
+        },
+        {
+            "name": "",
+            "tags": [],
+            "steps": []
+        },
+        {
+            "name": "",
+            "tags": [],
+            "steps": []
         }
     ],
-    "elements": [
-        {
-            "selector": ".MuiButton-label",
-            "id": 1
-        },
-        {
-            "selector": ".MuiInputBase-input",
-            "id": 2
-        },
-        {
-            "selector": ".MuiPaper-root > .MuiGrid-direction-xs-column",
-            "id": 3
-        },
-        {
-            "selector": ".MuiButton-contained > .MuiButton-label",
-            "id": 4
-        },
-        {
-            "selector": ".MuiButton-root",
-            "id": 5
-        },
-        {
-            "selector": ".MuiButton-contained",
-            "id": 6
-        },
-        {
-            "selector": ".MuiDialog-container",
-            "id": 7
-        },
-        {
-            "selector": ".MuiGrid-align-items-xs-baseline",
-            "id": 8
-        },
-        {
-            "selector": ".MuiGrid-root:nth-child(2) > img",
-            "id": 9
-        },
-        {
-            "selector": ".MuiPaper-root:nth-child(2) path:nth-child(3)",
-            "id": 10
-        },
-        {
-            "selector": ".MuiPaper-root:nth-child(3) path:nth-child(3)",
-            "id": 11
-        },
-        {
-            "selector": ".MuiPaper-root:nth-child(2) > .MuiButtonBase-root .MuiTypography-root",
-            "id": 12
-        },
-        {
-            "selector": ".Mui-expanded path:nth-child(3)",
-            "id": 13
-        }
-    ]
+    "elements": []
 }

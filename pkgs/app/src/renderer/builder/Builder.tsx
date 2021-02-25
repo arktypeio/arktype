@@ -11,6 +11,7 @@ import { loadStore } from "@re-do/model"
 import { Step } from "@re-do/test"
 import { BuilderEvents } from "./StepCards"
 import { join } from "path"
+import { store } from "renderer/common"
 
 const initialState = {
     name: "",
@@ -48,7 +49,7 @@ export const Builder = () => {
                 <Button
                     Icon={Icons.close}
                     style={{ color: "white" }}
-                    // onClick={deactivateBuilder}
+                    onClick={() => store.mutate({ builderActive: false })}
                 />
                 <Button
                     Icon={Icons.save}
@@ -59,7 +60,9 @@ export const Builder = () => {
                             tags,
                             steps: steps as any
                         })
-                        // deactivateBuilder()
+                        console.log(store.getState())
+                        store.mutate({ builderActive: false })
+                        console.log(store.getState())
                     }}
                 />
             </AppBar>
