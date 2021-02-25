@@ -96,8 +96,7 @@ export const Builder = () => {
 
 // const start = async () => {
 //     // Use size and position from the Redo app to launch browser
-//     const lastMainWindowBounds = getMainWindowBounds()
-//     const { height, width, x, y } = lastMainWindowBounds
+//     const { height, width, x, y } = getMainWindowBounds()
 //     const newMainWindowBounds = { height, width: DEFAULT_LEARNER_WIDTH, x, y }
 //     setMainWindowBounds(newMainWindowBounds)
 //     const { page, browser } = await launch("chrome", {

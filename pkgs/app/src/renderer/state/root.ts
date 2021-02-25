@@ -24,7 +24,6 @@ export const initialRoot: Root = {
 
 export const rootHandler = createHandler<Root, Root>({
     builderActive: (value) => {
-        console.warn(value)
         if (value) {
             ipcRenderer.sendSync("builder", "open")
         } else {

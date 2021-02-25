@@ -16,13 +16,17 @@ import { join } from "path"
 let mainWindow: BrowserWindow
 let builderWindow: BrowserWindow
 
+const DEFAULT_BUILDER_WIDTH = 300
+
 const defaultElectronOptions: BrowserWindowConstructorOptions = {
     webPreferences: {
         webSecurity: false,
         nodeIntegration: true,
         enableRemoteModule: true
     },
-    icon: join(__dirname, "icon.png")
+    icon: join(__dirname, "icon.png"),
+    autoHideMenuBar: true,
+    show: false
 }
 
 const installExtensions = async () => {
@@ -46,19 +50,28 @@ const createMainWindow = async () => {
     await mainWindow.loadURL(
         isDev() ? `http://localhost:8080/` : `file://${__dirname}/index.html`
     )
+    mainWindow.maximize()
+    mainWindow.show()
 }
 
 const createBuilderWindow = async () => {
+    const { height, x, y } = mainWindow.getBounds()
+    console.warn({ height, x, y })
     builderWindow = new BrowserWindow({
         ...defaultElectronOptions,
-        show: false
+        show: false,
+        height,
+        width: DEFAULT_BUILDER_WIDTH,
+        x,
+        y
     })
     // Builder window should always exist, even if it's not shown
     builderWindow.on("close", createBuilderWindow)
     await builderWindow.loadURL(
         isDev()
             ? `http://localhost:8080/builder`
-            : `file://${__dirname}/index.html`
+            : // TODO: Find a way to do routing for file like this
+              `file://${__dirname}/index.html`
     )
 }
 
@@ -66,10 +79,10 @@ app.on("ready", async () => {
     if (isDev()) {
         await installExtensions()
     } else {
-        autoUpdater.checkForUpdatesAndNotify()
+        await autoUpdater.checkForUpdatesAndNotify()
     }
-    createMainWindow()
-    createBuilderWindow()
+    await createMainWindow()
+    await createBuilderWindow()
 })
 
 app.on("window-all-closed", () => {
