@@ -1,40 +1,4 @@
 {
-    "tests": [
-        {
-            "name": "",
-            "tags": [],
-            "steps": []
-        },
-        {
-            "name": "",
-            "tags": [],
-            "steps": []
-        },
-        {
-            "name": "",
-            "tags": [],
-            "steps": []
-        },
-        {
-            "name": "",
-            "tags": [],
-            "steps": []
-        },
-        {
-            "name": "",
-            "tags": [],
-            "steps": []
-        },
-        {
-            "name": "",
-            "tags": [],
-            "steps": []
-        },
-        {
-            "name": "",
-            "tags": [],
-            "steps": []
-        }
-    ],
+    "tests": [],
     "elements": []
 }

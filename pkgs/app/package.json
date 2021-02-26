@@ -63,7 +63,8 @@
         "tsconfig-paths": "3.9.0",
         "typeface-ubuntu": "1.1.13",
         "isomorphic-ws": "4.0.1",
-        "playwright-core": "1.9.0"
+        "playwright-core": "1.9.0",
+        "electron-redux": "1.5.4"
     },
     "devDependencies": {
         "@re-do/bundle": "0.0.1",

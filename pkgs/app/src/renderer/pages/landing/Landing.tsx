@@ -2,7 +2,7 @@ import React, { useLayoutEffect, useState } from "react"
 import { motion } from "framer-motion"
 import { Column, Card, Button, Row, AnimatedLogo } from "@re-do/components"
 import { store } from "renderer/common"
-import { Page } from "renderer/state"
+import { Page } from "state"
 import { SignIn } from "./SignIn"
 import { SignUp } from "./SignUp"
 
@@ -32,7 +32,7 @@ export const Landing = ({ page }: LandingProps) => {
             >
                 <AnimatedLogo />
                 <Row width={sliderWidth} reverse={!isSignIn}>
-                    {slideBetween.map(element => (
+                    {slideBetween.map((element) => (
                         <motion.div
                             key={element.type.name}
                             layout

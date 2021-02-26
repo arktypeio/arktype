@@ -6,15 +6,15 @@
         "declaration": false,
         "paths": {
             "*": ["*"],
-            "state": ["renderer/state"],
-            "state/*": ["renderer/state/*"],
+            "state": ["state"],
+            "state/*": ["state/*"],
             "renderer/*": ["renderer/*"],
             "pages": ["renderer/pages"],
             "pages/*": ["renderer/pages/*"],
             "browser": ["browser"],
             "browser/*": ["browser/*"],
             "assets": ["renderer/assets"],
-            "assets/*": ["renderer/assets/*"]
+            "assets/*": ["renderer/assets/*"],
         }
     },
     "include": ["src"],

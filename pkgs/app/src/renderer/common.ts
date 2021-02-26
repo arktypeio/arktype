@@ -4,9 +4,8 @@ import {
     createHttpLink,
     ApolloLink
 } from "@apollo/client"
-import { initialRoot, rootHandler } from "state"
-import { createStore } from "react-statelessly"
 import { isDev } from "@re-do/utils/dist/node"
+import { createRendererStore } from "state"
 
 const httpLink = createHttpLink({
     uri: isDev()
@@ -28,4 +27,4 @@ export const client = new ApolloClient({
     cache: new InMemoryCache()
 })
 
-export const store = createStore({ initial: initialRoot, handler: rootHandler })
+export const store = createRendererStore({})

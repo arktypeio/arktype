@@ -12,10 +12,26 @@ import electronDevtoolsInstaller, {
 } from "electron-devtools-installer"
 import { autoUpdater } from "electron-updater"
 import { join } from "path"
+import { createMainStore, Root } from "state"
+import { createHandler } from "react-statelessly"
 
 let mainWindow: BrowserWindow
 let builderWindow: BrowserWindow
 
+const handler = createHandler<Root, Root>({
+    builderActive: async (isActive) => {
+        if (builderWindow.isDestroyed()) {
+            await createBuilderWindow()
+        }
+        if (isActive) {
+            builderWindow.show()
+        } else {
+            builderWindow.hide()
+        }
+    }
+})
+
+createMainStore(handler as any)
 const DEFAULT_BUILDER_WIDTH = 300
 
 const defaultElectronOptions: BrowserWindowConstructorOptions = {
@@ -56,7 +72,6 @@ const createMainWindow = async () => {
 
 const createBuilderWindow = async () => {
     const { height, x, y } = mainWindow.getBounds()
-    console.warn({ height, x, y })
     builderWindow = new BrowserWindow({
         ...defaultElectronOptions,
         show: false,
@@ -95,16 +110,4 @@ app.on("activate", () => {
     if (mainWindow === null) {
         createMainWindow()
     }
-})
-
-ipcMain.on("builder", async (event, name) => {
-    if (builderWindow.isDestroyed()) {
-        await createBuilderWindow()
-    }
-    if (name === "open") {
-        builderWindow.show()
-    } else if (name === "close") {
-        builderWindow.hide()
-    }
-    event.returnValue = true
 })

@@ -3,7 +3,8 @@ import {
     createStore as createReduxStore,
     Store as ReduxStore,
     Reducer,
-    PreloadedState
+    PreloadedState,
+    applyMiddleware
 } from "redux"
 import {
     DeepPartial,
@@ -23,11 +24,19 @@ export type Store<T> = {
     mutate: <M extends Mutation<T>>(data: M) => void
 }
 
+export type StoreArgs<T> = {
+    initial: T
+    handler?: Handler<T, T> | Handle<T, T>
+    middlewares?: Parameters<typeof applyMiddleware>
+}
+
 export const createStore = <T>({
     initial,
-    handler
+    handler,
+    middlewares
 }: StoreArgs<T>): Store<T> => {
-    const handle = typeof handler === "object" ? createHandler<T, T>(handler) : handler
+    const handle =
+        typeof handler === "object" ? createHandler<T, T>(handler) : handler
     const rootReducer: Reducer<T, MutationAction<T>> = (
         state: T | undefined,
         { type, data }: MutationAction<T>
@@ -40,19 +49,21 @@ export const createStore = <T>({
         }
         const updatedState = updateMap(state, data)
         const changes = diff(state, updatedState)
-        console.warn({state, updatedState, changes})
         if (!isDeepStrictEqual(changes, {})) {
-            console.warn("Handling changes...")
             handle && handle(changes, state)
         }
         return updatedState
     }
-    const reduxStore = createReduxStore(rootReducer, initial as PreloadedState<T>)
+    const reduxStore = createReduxStore(
+        rootReducer,
+        initial as PreloadedState<T>,
+        middlewares ? applyMiddleware(...middlewares) : undefined
+    )
     return {
         underlying: reduxStore,
         getState: reduxStore.getState,
-        query: q => shapeFilter(reduxStore.getState(), q),
-        mutate: data => reduxStore.dispatch({ type: "MUTATION", data })
+        query: (q) => shapeFilter(reduxStore.getState(), q),
+        mutate: (data) => reduxStore.dispatch({ type: "MUTATION", data })
     }
 }
 
@@ -68,15 +79,10 @@ export const createHandler = <HandledState, RootState>(
     }
 }
 
-export type StoreArgs<T> = {
-    initial: T
-    handler?: Handler<T, T> | Handle<T, T>
-}
-
 export type Query<T> = {
     [P in keyof T]?: Unlisted<T[P]> extends NonRecursible
-    ? true
-    : Query<Unlisted<T[P]>> | true
+        ? true
+        : Query<Unlisted<T[P]>> | true
 }
 
 export type Mutation<T> = DeepUpdate<T>
