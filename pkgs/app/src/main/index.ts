@@ -1,14 +1,10 @@
 import "dotenv/config"
-import {
-    app,
-    BrowserWindow,
-    ipcMain,
-    BrowserWindowConstructorOptions
-} from "electron"
+import { app, BrowserWindow, BrowserWindowConstructorOptions } from "electron"
 import { isDev } from "@re-do/utils/dist/node"
 import electronDevtoolsInstaller, {
     REACT_DEVELOPER_TOOLS,
-    APOLLO_DEVELOPER_TOOLS
+    APOLLO_DEVELOPER_TOOLS,
+    REDUX_DEVTOOLS
 } from "electron-devtools-installer"
 import { autoUpdater } from "electron-updater"
 import { join } from "path"
@@ -46,7 +42,8 @@ const defaultElectronOptions: BrowserWindowConstructorOptions = {
 const installExtensions = async () => {
     const extensions = {
         REACT_DEVELOPER_TOOLS,
-        APOLLO_DEVELOPER_TOOLS
+        APOLLO_DEVELOPER_TOOLS,
+        REDUX_DEVTOOLS
     }
     for (const [name, reference] of Object.entries(extensions)) {
         try {
