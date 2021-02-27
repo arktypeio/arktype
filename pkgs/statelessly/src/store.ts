@@ -39,7 +39,7 @@ export const createStore = <T>({
         typeof handler === "object" ? createHandler<T, T>(handler) : handler
     const rootReducer: Reducer<T, MutationAction<T>> = (
         state: T | undefined,
-        { type, data }: MutationAction<T>
+        { type, payload }
     ) => {
         if (!state) {
             return initial
@@ -47,12 +47,10 @@ export const createStore = <T>({
         if (type !== "MUTATION") {
             return state
         }
-        const updatedState = updateMap(state, data)
-        const changes = diff(state, updatedState)
-        if (!isDeepStrictEqual(changes, {})) {
-            handle && handle(changes, state)
+        if (handle) {
+            handle(payload, state)
         }
-        return updatedState
+        return updateMap(state, payload as any)
     }
     const reduxStore = createReduxStore(
         rootReducer,
@@ -63,7 +61,14 @@ export const createStore = <T>({
         underlying: reduxStore,
         getState: reduxStore.getState,
         query: (q) => shapeFilter(reduxStore.getState(), q),
-        mutate: (data) => reduxStore.dispatch({ type: "MUTATION", data })
+        mutate: (updates) => {
+            const state = reduxStore.getState()
+            const updatedState = updateMap(state, updates)
+            const changes = diff(state, updatedState)
+            if (!isDeepStrictEqual(changes, {})) {
+                reduxStore.dispatch({ type: "MUTATION", payload: changes })
+            }
+        }
     }
 }
 
@@ -98,5 +103,5 @@ export type Handler<HandledState, RootState> = {
 
 type MutationAction<T> = {
     type: "MUTATION"
-    data: Mutation<T>
+    payload: DeepPartial<T>
 }

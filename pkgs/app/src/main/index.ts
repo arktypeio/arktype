@@ -12,13 +12,14 @@ import electronDevtoolsInstaller, {
 } from "electron-devtools-installer"
 import { autoUpdater } from "electron-updater"
 import { join } from "path"
-import { createMainStore, Root } from "state"
-import { createHandler } from "react-statelessly"
+import { createMainStore } from "state"
 
 let mainWindow: BrowserWindow
 let builderWindow: BrowserWindow
 
-const handler = createHandler<Root, Root>({
+const DEFAULT_BUILDER_WIDTH = 300
+
+createMainStore({
     builderActive: async (isActive) => {
         if (builderWindow.isDestroyed()) {
             await createBuilderWindow()
@@ -30,9 +31,6 @@ const handler = createHandler<Root, Root>({
         }
     }
 })
-
-createMainStore(handler as any)
-const DEFAULT_BUILDER_WIDTH = 300
 
 const defaultElectronOptions: BrowserWindowConstructorOptions = {
     webPreferences: {
