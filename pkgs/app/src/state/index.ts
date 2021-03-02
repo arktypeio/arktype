@@ -33,7 +33,7 @@ export const createMainStore = (handler: Handler<Root, Root>) => {
     const mainStore = createStore({
         initial: initialRoot,
         handler,
-        middlewares: [forwardToRenderer]
+        middleware: [forwardToRenderer]
     })
     replayActionMain(mainStore.underlying as any)
     return mainStore
@@ -43,7 +43,7 @@ export const createRendererStore = (handler: Handler<Root, Root>) => {
     const rendererStore = createStore({
         initial: getInitialStateRenderer<Root>(),
         handler,
-        middlewares: [forwardToMain]
+        middleware: [forwardToMain]
     })
     replayActionRenderer(rendererStore.underlying as any)
     return rendererStore

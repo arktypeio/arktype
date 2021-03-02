@@ -1,12 +1,10 @@
 import { isDeepStrictEqual } from "util"
 import {
-    createStore as createReduxStore,
+    configureStore,
+    Middleware,
     Store as ReduxStore,
-    Reducer,
-    PreloadedState,
-    applyMiddleware
-} from "redux"
-import { composeWithDevTools, devToolsEnhancer } from "redux-devtools-extension"
+    Reducer
+} from "@reduxjs/toolkit"
 import {
     DeepPartial,
     NonRecursible,
@@ -28,16 +26,14 @@ export type Store<T> = {
 export type StoreArgs<T> = {
     initial: T
     handler?: Handler<T, T> | Handle<T, T>
-    middlewares?: Parameters<typeof applyMiddleware>
+    middleware?: Middleware[]
 }
 
 export const createStore = <T>({
     initial,
     handler,
-    middlewares
+    middleware
 }: StoreArgs<T>): Store<T> => {
-    const handle =
-        typeof handler === "object" ? createHandler<T, T>(handler) : handler
     const rootReducer: Reducer<T, MutationAction<T>> = (
         state: T | undefined,
         { type, payload }
@@ -48,19 +44,25 @@ export const createStore = <T>({
         if (type !== "MUTATION") {
             return state
         }
-        if (handle) {
-            handle(payload, state)
-        }
+        // Since updateMap has already been executed in the mutate function,
+        // update functions have already been converted to resultant values
+        // and payload should only include serializable values
         return updateMap(state, payload as any)
     }
-    const composeEnhancers = composeWithDevTools({})
-    const reduxStore = createReduxStore(
-        rootReducer,
-        initial as PreloadedState<T>,
-        middlewares
-            ? composeEnhancers(applyMiddleware(...middlewares))
-            : devToolsEnhancer({})
-    )
+    const handle =
+        typeof handler === "object" ? createHandler<T, T>(handler) : handler
+    const reduxMiddleware = middleware ? [...middleware] : []
+    if (handle) {
+        reduxMiddleware.push(({ getState }) => (next) => (action) => {
+            handle(action.payload, getState())
+            return next(action)
+        })
+    }
+    const reduxStore = configureStore({
+        reducer: rootReducer,
+        preloadedState: initial,
+        middleware: reduxMiddleware
+    })
     return {
         underlying: reduxStore,
         getState: reduxStore.getState,

@@ -26,6 +26,7 @@ dependencies:
   '@mdx-js/react': 1.6.22_react@17.0.1
   '@medv/finder': 2.0.0
   '@octokit/graphql': 4.5.8
+  '@reduxjs/toolkit': 1.5.0
   '@rush-temp/app': 'file:projects/app.tgz_webpack-bundle-analyzer@4.3.0'
   '@rush-temp/babel-preset-redo': 'file:projects/babel-preset-redo.tgz_4695a47c40ef995f48f8c834d2fb82ec'
   '@rush-temp/bundle': 'file:projects/bundle.tgz_27d82c74e8b9ccfac2ab4cea25c22698'
@@ -3014,6 +3015,15 @@ packages:
       react-dom: 15.x || 16.x || 16.4.0-alpha.0911da3
     resolution:
       integrity: sha512-+mtn9wjlB9NN2CNnnC/BRYtwdKBfSyyasPYraNAyvaV1occr/5NnB4CVzjEZipNHwYebQwcndGUmpFzxAUoqSA==
+  /@reduxjs/toolkit/1.5.0:
+    dependencies:
+      immer: 8.0.1
+      redux: 4.0.5
+      redux-thunk: 2.3.0
+      reselect: 4.0.0
+    dev: false
+    resolution:
+      integrity: sha512-E/FUraRx+8guw9Hlg/Ja8jI/hwCrmIKed8Annt9YsZw3BQp+F24t5I5b2OWR6pkEHY4hn1BgP08FrTZFRKsdaQ==
   /@samverschueren/stream-to-observable/0.3.1_rxjs@6.6.6:
     dependencies:
       any-observable: 0.3.0
@@ -10586,6 +10596,10 @@ packages:
     dev: false
     resolution:
       integrity: sha512-O3sR1/opvCDGLEVcvrGTMtLac8GJ5IwZC4puPrLuRj3l7ICKvkmA0vGuU9OW8mV9WIBRnaxp5GJh9IEAaNOoYg==
+  /immer/8.0.1:
+    dev: false
+    resolution:
+      integrity: sha512-aqXhGP7//Gui2+UrEtvxZxSquQVXTpZ7KDxfCcKAF3Vysvw0CViVaW9RZ1j1xlIYqaaaipBoqdqeibkc18PNvA==
   /immutable/3.7.6:
     dev: false
     engines:
@@ -15367,6 +15381,10 @@ packages:
       redux: ^3.1.0 || ^4.0.0
     resolution:
       integrity: sha512-8qlpooP2QqPtZHQZRhx3x3OP5skEV1py/zUdMY28WNAocbafxdG2tRD1MWE7sp8obGMNYuLWanhhQ7EQvT1FBg==
+  /redux-thunk/2.3.0:
+    dev: false
+    resolution:
+      integrity: sha512-km6dclyFnmcvxhAcrQV2AkZmPQjzPDjgVlQtR0EQjxZPyJ0BnMf3in1ryuR8A2qU0HldVRfxYXbFSKlI3N7Slw==
   /redux/4.0.5:
     dependencies:
       loose-envify: 1.4.0
@@ -15677,6 +15695,10 @@ packages:
     dev: false
     resolution:
       integrity: sha1-kl0mAdOaxIXgkc8NpcbmlNw9yv8=
+  /reselect/4.0.0:
+    dev: false
+    resolution:
+      integrity: sha512-qUgANli03jjAyGlnbYVAV5vvnOmJnODyABz51RdBN7M4WaVu8mecZWgyQNkG8Yqe3KRGRt0l4K4B3XVEULC4CA==
   /resolve-cwd/2.0.0:
     dependencies:
       resolve-from: 3.0.0
@@ -19047,6 +19069,7 @@ packages:
   'file:projects/statelessly.tgz_ts-node@9.1.1':
     dependencies:
       '@babel/runtime-corejs3': 7.12.5
+      '@reduxjs/toolkit': 1.5.0
       '@types/jest': 26.0.20
       '@types/node': 14.14.21
       deepmerge: 4.2.2
@@ -19062,7 +19085,7 @@ packages:
     peerDependencies:
       ts-node: '*'
     resolution:
-      integrity: sha512-9xqDbvS9d75AyowmSCEDpjiDxaykL39Nv8utIlL+/idCn4YtLUWbspHVlTIbSPhxjhnl1s7HLXXp9hM9Im7CKQ==
+      integrity: sha512-t+s+XFKnVIPV25sqyLlto6aHeCorm4tfQaWj5etPLnLfGBvMXyTWx7kQoYpKNzSwvvBumeyFgHWkySrWqXnBSA==
       tarball: 'file:projects/statelessly.tgz'
     version: 0.0.0
   'file:projects/test.tgz_ts-node@9.1.1':
@@ -19178,6 +19201,7 @@ specifiers:
   '@mdx-js/react': 1.6.22
   '@medv/finder': 2.0.0
   '@octokit/graphql': 4.5.8
+  '@reduxjs/toolkit': 1.5.0
   '@rush-temp/app': 'file:./projects/app.tgz'
   '@rush-temp/babel-preset-redo': 'file:./projects/babel-preset-redo.tgz'
   '@rush-temp/bundle': 'file:./projects/bundle.tgz'

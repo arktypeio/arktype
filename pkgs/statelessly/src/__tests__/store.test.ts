@@ -80,7 +80,6 @@ describe("queries", () => {
 describe("updates", () => {
     beforeEach(() => {
         store = createStore({ initial: initialRoot })
-        sideEffectStore = createStore({ initial: initialRoot, handler })
     })
     test("handles shallow", () => {
         store.mutate({ c: (value) => value + "suffix" })
@@ -111,7 +110,7 @@ describe("updates", () => {
             d: [initialA, initialA, initialA]
         })
     })
-    test("sets array value", async () => {
+    test("sets array value", () => {
         store.mutate({ d: [] })
         expect(store.getState()).toStrictEqual({
             ...initialRoot,
@@ -127,6 +126,12 @@ describe("updates", () => {
             ...initialRoot,
             a: { ...initialA, b: { ...initialA.b, a: [0, 1] } }
         })
+    })
+})
+
+describe("side effects", () => {
+    beforeEach(() => {
+        sideEffectStore = createStore({ initial: initialRoot, handler })
     })
     test("handle side effects", () => {
         sideEffectStore.mutate({ b: true })

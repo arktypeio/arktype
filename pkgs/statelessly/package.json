@@ -16,7 +16,8 @@
         "isomorphic-fetch": "3.0.0",
         "moize": "5.4.7",
         "redux": "4.0.5",
-        "redux-devtools-extension": "2.13.8"
+        "redux-devtools-extension": "2.13.8",
+        "@reduxjs/toolkit": "1.5.0"
     },
     "devDependencies": {
         "@re-do/recommended": "0.0.2",
