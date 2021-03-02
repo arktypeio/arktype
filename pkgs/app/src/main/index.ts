@@ -14,11 +14,14 @@ let mainWindow: BrowserWindow
 let builderWindow: BrowserWindow
 
 const DEFAULT_BUILDER_WIDTH = 300
+const BASE_URL = isDev()
+    ? `http://localhost:8080`
+    : `file://${__dirname}/index.html`
 
-createMainStore({
+const store = createMainStore({
     builderActive: async (isActive) => {
         if (builderWindow.isDestroyed()) {
-            await createBuilderWindow()
+            return
         }
         if (isActive) {
             builderWindow.show()
@@ -58,9 +61,7 @@ const installExtensions = async () => {
 
 const createMainWindow = async () => {
     mainWindow = new BrowserWindow(defaultElectronOptions)
-    await mainWindow.loadURL(
-        isDev() ? `http://localhost:8080/` : `file://${__dirname}/index.html`
-    )
+    await mainWindow.loadURL(BASE_URL)
     mainWindow.maximize()
     mainWindow.show()
 }
@@ -69,20 +70,17 @@ const createBuilderWindow = async () => {
     const { height, x, y } = mainWindow.getBounds()
     builderWindow = new BrowserWindow({
         ...defaultElectronOptions,
-        show: false,
         height,
         width: DEFAULT_BUILDER_WIDTH,
         x,
         y
     })
     // Builder window should always exist, even if it's not shown
-    builderWindow.on("close", createBuilderWindow)
-    await builderWindow.loadURL(
-        isDev()
-            ? `http://localhost:8080/builder`
-            : // TODO: Find a way to do routing for file like this
-              `file://${__dirname}/index.html`
-    )
+    builderWindow.on("close", () => {
+        store.mutate({ builderActive: false })
+        createBuilderWindow()
+    })
+    await builderWindow.loadURL(`${BASE_URL}/#builder`)
 }
 
 app.on("ready", async () => {

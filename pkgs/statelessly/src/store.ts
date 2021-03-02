@@ -6,6 +6,7 @@ import {
     PreloadedState,
     applyMiddleware
 } from "redux"
+import { composeWithDevTools, devToolsEnhancer } from "redux-devtools-extension"
 import {
     DeepPartial,
     NonRecursible,
@@ -52,10 +53,13 @@ export const createStore = <T>({
         }
         return updateMap(state, payload as any)
     }
+    const composeEnhancers = composeWithDevTools({})
     const reduxStore = createReduxStore(
         rootReducer,
         initial as PreloadedState<T>,
-        middlewares ? applyMiddleware(...middlewares) : undefined
+        middlewares
+            ? composeEnhancers(applyMiddleware(...middlewares))
+            : devToolsEnhancer({})
     )
     return {
         underlying: reduxStore,

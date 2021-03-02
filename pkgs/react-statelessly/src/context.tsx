@@ -12,7 +12,7 @@ export type StoreProviderProps<T> = {
 const InnerStatelessProvider = <T extends any>({
     children
 }: StoreProviderProps<T>) => {
-    const data = useSelector(state => state)
+    const data = useSelector((state) => state)
     return (
         <StatelessContext.Provider value={data}>
             {children}
