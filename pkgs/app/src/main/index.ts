@@ -8,25 +8,31 @@ import electronDevtoolsInstaller, {
 } from "electron-devtools-installer"
 import { autoUpdater } from "electron-updater"
 import { join } from "path"
-import { createMainStore } from "state"
+import { createMainStore, Root, deactivateBuilder } from "state"
+import { Store } from "react-statelessly"
+import { launchBrowser, closeBrowser } from "./launchBrowser"
 
 let mainWindow: BrowserWindow
 let builderWindow: BrowserWindow
+let store: Store<Root>
 
 const DEFAULT_BUILDER_WIDTH = 300
 const BASE_URL = isDev()
     ? `http://localhost:8080`
     : `file://${__dirname}/index.html`
 
-const store = createMainStore({
+store = createMainStore({
     builderActive: async (isActive) => {
         if (builderWindow.isDestroyed()) {
+            // TODO: Add logic to wait if activating? Possible race condition
             return
         }
         if (isActive) {
             builderWindow.show()
+            launchBrowser(store, mainWindow)
         } else {
             builderWindow.hide()
+            closeBrowser()
         }
     }
 })
@@ -77,7 +83,7 @@ const createBuilderWindow = async () => {
     })
     // Builder window should always exist, even if it's not shown
     builderWindow.on("close", () => {
-        store.mutate({ builderActive: false })
+        deactivateBuilder(store)
         createBuilderWindow()
     })
     await builderWindow.loadURL(`${BASE_URL}/#builder`)

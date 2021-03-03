@@ -1,4 +1,5 @@
-import { Handler } from "react-statelessly"
+import { Handler, createStore, Store } from "react-statelessly"
+import { BrowserName, Step } from "@re-do/test"
 import {
     forwardToMain,
     forwardToRenderer,
@@ -6,7 +7,6 @@ import {
     replayActionMain,
     getInitialStateRenderer
 } from "electron-redux"
-import { createStore } from "react-statelessly"
 
 export enum Page {
     Home = "HOME",
@@ -20,13 +20,17 @@ export type Root = {
     page: Page
     cardFilter: string
     builderActive: boolean
+    steps: Step[]
+    defaultBrowser: BrowserName
 }
 
 export const initialRoot: Root = {
     token: "",
     page: Page.Home,
     cardFilter: "",
-    builderActive: false
+    builderActive: false,
+    defaultBrowser: "chrome",
+    steps: []
 }
 
 export const createMainStore = (handler: Handler<Root, Root>) => {
@@ -48,3 +52,6 @@ export const createRendererStore = (handler: Handler<Root, Root>) => {
     replayActionRenderer(rendererStore.underlying as any)
     return rendererStore
 }
+
+export const deactivateBuilder = (store: Store<Root>) =>
+    store.mutate({ builderActive: false, steps: [] })

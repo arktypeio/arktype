@@ -1,4 +1,12 @@
 {
-    "tests": [],
+    "tests": [
+        {
+            "name": "New Test",
+            "tags": [
+                "Something"
+            ],
+            "steps": []
+        }
+    ],
     "elements": []
 }

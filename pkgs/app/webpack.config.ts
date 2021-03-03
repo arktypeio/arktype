@@ -2,28 +2,42 @@ import { resolve } from "path"
 import { makeConfig } from "@re-do/bundle"
 import { isDev } from "@re-do/utils/dist/node"
 
-const tsconfig = resolve(__dirname, "tsconfig.json")
+export const tsconfig = resolve(__dirname, "tsconfig.json")
 
-const mainConfig = makeConfig({
-    base: "main",
-    entry: resolve(__dirname, "src", "main", "index.ts"),
-    tsconfig
-})
+export const externalPlaywrightConfig = {
+    externals: {
+        "playwright-core": "require('playwright-core')"
+    }
+}
+
+const mainConfig = makeConfig(
+    {
+        base: "main",
+        entry: resolve(__dirname, "src", "main", "index.ts"),
+        tsconfig
+    },
+    [externalPlaywrightConfig]
+)
+
+export const rendererEntry = resolve(__dirname, "src", "renderer", "index.tsx")
 
 const rendererConfig = makeConfig(
     {
         base: "renderer",
-        entry: resolve(__dirname, "src", "renderer", "index.tsx"),
+        entry: rendererEntry,
         tsconfig
     },
-    [{ output: { publicPath: "." } }]
+    [externalPlaywrightConfig, { output: { publicPath: "." } }]
 )
 
-const observerConfig = makeConfig({
-    base: "injected",
-    entry: resolve(__dirname, "src", "observer", "index.ts"),
-    tsconfig
-})
+const observerConfig = makeConfig(
+    {
+        base: "injected",
+        entry: resolve(__dirname, "src", "observer", "index.ts"),
+        tsconfig
+    },
+    [externalPlaywrightConfig]
+)
 
 // renderer config is consumed through devServer during development
 export default isDev()

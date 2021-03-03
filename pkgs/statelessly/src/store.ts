@@ -13,7 +13,9 @@ import {
     diff,
     shapeFilter,
     ShapeFilter,
-    DeepUpdate
+    DeepUpdate,
+    ValueOf,
+    Path
 } from "@re-do/utils"
 
 export type Store<T> = {
