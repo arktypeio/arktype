@@ -15,12 +15,14 @@ import {
     ShapeFilter,
     DeepUpdate,
     ValueOf,
-    Path
+    Path,
+    valueAtPath
 } from "@re-do/utils"
 
 export type Store<T> = {
     underlying: ReduxStore<T, MutationAction<T>>
     getState: () => T
+    get: <P extends Path<T>>(p: P) => any
     query: <Q extends Query<T>>(q: Q) => ShapeFilter<T, Q>
     mutate: <M extends Mutation<T>>(data: M) => void
 }

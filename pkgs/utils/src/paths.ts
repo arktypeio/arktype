@@ -1,59 +1,36 @@
-export const valueAtPath = <T extends object>(obj: T, path: Path<T>) => {
-    const segments = (path as string).split("/")
+import { Object, Function, String } from "ts-toolbelt"
+
+// export const valueAtPath = <O extends object, P extends string>(
+//     obj: O,
+//     path: Function.AutoPath<O, P>
+// ): Object.Path<O, Split<P, ".">> => {
+//     let value = obj
+//     for (let segment of path) {
+//         if (typeof value === "object" && segment in value) {
+//             value = (value as any)[segment]
+//         } else {
+//             // This should never happen if the provided types are accurate
+//             return undefined as any
+//         }
+//     }
+//     return value as Object.Path<T, P>
+// }
+
+// const x = valueAtPath({ a: { b: 1 } }, ["h"])
+
+export function valueAtPath<O extends object, P extends string>(
+    obj: O,
+    path: Function.AutoPath<O, P>
+): Object.Path<O, String.Split<P, ".">> {
+    const segments = path.split(".")
     let value = obj
     for (let segment of segments) {
-        console.log({ value, segment })
         if (typeof value === "object" && segment in value) {
             value = (value as any)[segment]
         } else {
-            return undefined
+            // This should never happen if the provided types are accurate
+            return undefined as any
         }
     }
-    return value
+    return value as Object.Path<O, String.Split<P, ".">>
 }
-
-// Represents a valid path through nested keys of T as a "/" separated string
-// See https://stackoverflow.com/questions/58434389/typescript-deep-keyof-of-a-nested-object
-export type Path<T, D extends number = 5> = [D] extends [never]
-    ? never
-    : T extends object
-    ? {
-          [K in keyof T]-?: K extends string | number
-              ? `${K}` | Join<K, Path<T[K], Prev[D]>>
-              : never
-      }[keyof T]
-    : ""
-
-type x = [] extends Array<any> ? true : false
-
-type Join<K, P> = K extends string | number
-    ? P extends string | number
-        ? `${K}${"" extends P ? "" : "/"}${P}`
-        : never
-    : never
-
-type Prev = [
-    never,
-    0,
-    1,
-    2,
-    3,
-    4,
-    5,
-    6,
-    7,
-    8,
-    9,
-    10,
-    11,
-    12,
-    13,
-    14,
-    15,
-    16,
-    17,
-    18,
-    19,
-    20,
-    ...0[]
-]
