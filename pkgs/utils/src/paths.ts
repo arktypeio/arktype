@@ -1,4 +1,5 @@
 import { Object, Function, String } from "ts-toolbelt"
+import { AutoPath } from "./Autopath"
 
 // export const valueAtPath = <O extends object, P extends string>(
 //     obj: O,
@@ -20,9 +21,9 @@ import { Object, Function, String } from "ts-toolbelt"
 
 export function valueAtPath<O extends object, P extends string>(
     obj: O,
-    path: Function.AutoPath<O, P>
-): Object.Path<O, String.Split<P, ".">> {
-    const segments = path.split(".")
+    path: AutoPath<O, P, "/">
+): Object.Path<O, String.Split<P, "/">> {
+    const segments = path.split("/")
     let value = obj
     for (let segment of segments) {
         if (typeof value === "object" && segment in value) {
@@ -32,5 +33,5 @@ export function valueAtPath<O extends object, P extends string>(
             return undefined as any
         }
     }
-    return value as Object.Path<O, String.Split<P, ".">>
+    return value as any
 }

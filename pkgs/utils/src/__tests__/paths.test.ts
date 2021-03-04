@@ -12,21 +12,21 @@ const obj = {
 }
 
 test("retrieves primitive at path", () => {
-    expect(valueAtPath(obj, "a.b.c")).toBe(31)
+    expect(valueAtPath(obj, "a/b/c")).toBe(31)
 })
 test("retrieves object at path", () => {
-    expect(valueAtPath(obj, ["a", "b"])).toStrictEqual({ c: 31 })
+    expect(valueAtPath(obj, "a/b")).toStrictEqual({ c: 31 })
 })
 test("retrieves primitive from array", () => {
-    expect(valueAtPath(obj, ["d", "0"])).toBe("redo")
+    expect(valueAtPath(obj, "d/0")).toBe("redo")
 })
 test("retrieves primitive from array with number key", () => {
-    expect(valueAtPath(obj, ["f", 0])).toBe(255)
+    expect(valueAtPath(obj, "f/0")).toBe(255)
 })
 test("retrieves primitive from object in array", () => {
-    expect(valueAtPath(obj, ["d", "0", "e"])).toBe(true)
+    expect(valueAtPath(obj, "d/0/e")).toBe(true)
 })
 test("returns undefined on nonexistent path", () => {
     // @ts-ignore
-    expect(valueAtPath(obj, ["fake", "fake"])).toBe(undefined)
+    expect(valueAtPath(obj, "fake/fake")).toBe(undefined)
 })
