@@ -18,7 +18,7 @@ test("retrieves object at path", () => {
     expect(valueAtPath(obj, "a/b")).toStrictEqual({ c: 31 })
 })
 test("retrieves primitive from array", () => {
-    expect(valueAtPath(obj, "d/0")).toBe("redo")
+    expect(valueAtPath(obj, "d/1")).toBe("redo")
 })
 test("retrieves primitive from array with number key", () => {
     expect(valueAtPath(obj, "f/0")).toBe(255)

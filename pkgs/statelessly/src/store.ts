@@ -14,15 +14,15 @@ import {
     shapeFilter,
     ShapeFilter,
     DeepUpdate,
-    ValueOf,
-    Path,
-    valueAtPath
+    AutoPath,
+    valueAtPath,
+    ValueAtPath
 } from "@re-do/utils"
 
-export type Store<T> = {
+export type Store<T extends object> = {
     underlying: ReduxStore<T, MutationAction<T>>
     getState: () => T
-    get: <P extends Path<T>>(p: P) => any
+    get: <P extends string>(path: AutoPath<T, P, "/">) => ValueAtPath<T, P>
     query: <Q extends Query<T>>(q: Q) => ShapeFilter<T, Q>
     mutate: <M extends Mutation<T>>(data: M) => void
 }
@@ -33,7 +33,7 @@ export type StoreArgs<T> = {
     middleware?: Middleware[]
 }
 
-export const createStore = <T>({
+export const createStore = <T extends object>({
     initial,
     handler,
     middleware
@@ -71,6 +71,7 @@ export const createStore = <T>({
         underlying: reduxStore,
         getState: reduxStore.getState,
         query: (q) => shapeFilter(reduxStore.getState(), q),
+        get: (path) => valueAtPath(reduxStore.getState(), path),
         mutate: (updates) => {
             const state = reduxStore.getState()
             const updatedState = updateMap(state, updates)
@@ -78,7 +79,7 @@ export const createStore = <T>({
             if (!isDeepStrictEqual(changes, {})) {
                 reduxStore.dispatch({ type: "MUTATION", payload: changes })
             }
-        }
+        } 
     }
 }
 
