@@ -51,7 +51,7 @@ let sideEffectFunctionStore = createStore({
 })
 
 describe("queries", () => {
-    beforeEach(() => {
+    beforeAll(() => {
         store = createStore({ initial: initialRoot })
     })
     test("handle shallow", () => {
@@ -74,6 +74,21 @@ describe("queries", () => {
         expect(store.query({ a: { a: true } })).toStrictEqual({
             a: { a: initialA.a }
         })
+    })
+})
+
+describe("gets", () => {
+    beforeAll(() => {
+        store = createStore({ initial: initialRoot })
+    })
+    test("shallow", () => {
+        expect(store.get("c")).toBe("")
+    })
+    test("nested", () => {
+        expect(store.get("a/b/a")).toStrictEqual([0])
+    })
+    test("from array", () => {
+        expect(store.get("d/0/a")).toBe(0)
     })
 })
 
