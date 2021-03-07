@@ -25,7 +25,7 @@ export const Settings = () => (
             name="browser"
             value={store.useQuery({ defaultBrowser: true }).defaultBrowser}
             onChange={(e) =>
-                store.mutate({
+                store.update({
                     defaultBrowser: e.target.value as BrowserName
                 })
             }
@@ -61,7 +61,7 @@ export const AccountSection = ({}) => {
                     <Button Icon={Icons.account} style={{ color: "white" }} />
                 }
                 options={{
-                    Logout: () => store.mutate({ token: "" })
+                    Logout: () => store.update({ token: "" })
                 }}
             />
         </>

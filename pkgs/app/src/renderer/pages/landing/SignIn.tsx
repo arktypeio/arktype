@@ -17,7 +17,7 @@ export const SignIn = () => {
     return (
         <Form<SignInMutationVariables, SignInMutation>
             submit={submit}
-            onData={(data) => store.mutate({ token: data.signIn })}
+            onData={(data) => store.update({ token: data.signIn })}
             transformValues={({ email, ...rest }) => {
                 return {
                     ...rest,

@@ -33,7 +33,7 @@ export const launchBrowser = async (
     lastConnectedBrowser = browser
     page.goto("https://redo.qa")
     const notify = (step: Step) => {
-        store.mutate({
+        store.update({
             steps: (steps) => [...steps, step]
         })
     }

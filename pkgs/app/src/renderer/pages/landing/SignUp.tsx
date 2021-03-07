@@ -25,7 +25,7 @@ export const SignUp = () => {
         <Form<SignUpMutationVariables, SignUpMutation>
             validate={() => ({})}
             submit={submit}
-            onData={(data) => store.mutate({ token: data.signUp })}
+            onData={(data) => store.update({ token: data.signUp })}
             transformValues={({ email, ...rest }) => {
                 return {
                     ...rest,

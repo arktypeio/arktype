@@ -58,7 +58,7 @@ export const Landing = ({ page }: LandingProps) => {
                     marginTop: 8
                 }}
                 onClick={() =>
-                    store.mutate({
+                    store.update({
                         page: isSignIn ? Page.SignUp : Page.SignIn
                     })
                 }

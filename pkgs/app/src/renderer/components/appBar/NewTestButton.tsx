@@ -9,7 +9,7 @@ export const NewTestButton = () => {
         <Button
             Icon={Icons.add}
             style={{ color: "white" }}
-            onClick={() => store.mutate({ builderActive: true })}
+            onClick={() => store.update({ builderActive: true })}
         />
     )
 }

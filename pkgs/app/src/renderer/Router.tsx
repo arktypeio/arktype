@@ -23,7 +23,7 @@ export const Router = hot(() => {
     const redirected = route(page!, !!token)
     useEffect(() => {
         if (redirected !== page) {
-            store.mutate({ page: redirected })
+            store.update({ page: redirected })
         }
     })
     return <AppContents>{Pages[redirected]}</AppContents>

@@ -7,6 +7,6 @@ export const ResultsButton = () => (
     <Button
         Icon={Icons.view}
         style={{ color: "white" }}
-        onClick={() => store.mutate({ page: Page.Results })}
+        onClick={() => store.update({ page: Page.Results })}
     />
 )

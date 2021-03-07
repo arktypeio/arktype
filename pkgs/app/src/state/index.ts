@@ -54,4 +54,4 @@ export const createRendererStore = (handler: Handler<Root, Root>) => {
 }
 
 export const deactivateBuilder = (store: Store<Root>) =>
-    store.mutate({ builderActive: false, steps: [] })
+    store.update({ builderActive: false, steps: [] })
