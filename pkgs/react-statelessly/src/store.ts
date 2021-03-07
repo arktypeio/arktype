@@ -4,10 +4,10 @@ import { shapeFilter } from "@re-do/utils"
 import { Store } from "./utils"
 import { StatelessContext } from "./context"
 
-export const createStore = <T extends any>(args: StoreArgs<T>): Store<T> => {
+export const createStore = <T extends object>(args: StoreArgs<T>): Store<T> => {
     const store = createBaseStore(args)
     return {
         ...store,
-        useQuery: q => shapeFilter(useContext(StatelessContext), q)
+        useQuery: (q) => shapeFilter(useContext(StatelessContext), q)
     }
 }

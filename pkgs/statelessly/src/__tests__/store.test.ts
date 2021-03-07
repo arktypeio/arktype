@@ -97,14 +97,14 @@ describe("updates", () => {
         store = createStore({ initial: initialRoot })
     })
     test("handles shallow", () => {
-        store.mutate({ c: (value) => value + "suffix" })
+        store.update({ c: (value) => value + "suffix" })
         expect(store.getState()).toStrictEqual({
             ...initialRoot,
             c: initialRoot.c + "suffix"
         })
     })
     test("handles deep", () => {
-        store.mutate({
+        store.update({
             a: { b: { a: (value) => value.concat([1]) } }
         })
         expect(store.getState()).toStrictEqual({
@@ -119,14 +119,14 @@ describe("updates", () => {
         })
     })
     test("handles object arrays", () => {
-        store.mutate({ d: (value) => value.concat(initialA) })
+        store.update({ d: (value) => value.concat(initialA) })
         expect(store.getState()).toStrictEqual({
             ...initialRoot,
             d: [initialA, initialA, initialA]
         })
     })
     test("sets array value", () => {
-        store.mutate({ d: [] })
+        store.update({ d: [] })
         expect(store.getState()).toStrictEqual({
             ...initialRoot,
             d: []
@@ -134,7 +134,7 @@ describe("updates", () => {
     })
 
     test("doesn't update extraneous keys", () => {
-        store.mutate({
+        store.update({
             a: { b: { a: (value) => value.concat([1]) } }
         })
         expect(store.getState()).toStrictEqual({
@@ -149,11 +149,11 @@ describe("side effects", () => {
         sideEffectStore = createStore({ initial: initialRoot, handler })
     })
     test("handle side effects", () => {
-        sideEffectStore.mutate({ b: true })
+        sideEffectStore.update({ b: true })
         expect(bing).toBeCalledWith(true, initialRoot)
     })
     test("handles array side effects", () => {
-        sideEffectStore.mutate({
+        sideEffectStore.update({
             d: (_) => _.concat(initialA)
         })
         expect(dHandler).toBeCalledWith(
@@ -162,7 +162,7 @@ describe("side effects", () => {
         )
     })
     test("doesn't trigger extraneous side effects", () => {
-        sideEffectStore.mutate({
+        sideEffectStore.update({
             b: (current) => current,
             c: (current) => current + "new"
         })
@@ -170,7 +170,7 @@ describe("side effects", () => {
         expect(bing).not.toHaveBeenCalled()
     })
     test("handles side effects with function", () => {
-        sideEffectFunctionStore.mutate({ b: true })
+        sideEffectFunctionStore.update({ b: true })
         expect(functionalHandler).toHaveBeenCalled()
     })
 })

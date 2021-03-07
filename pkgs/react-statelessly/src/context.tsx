@@ -4,12 +4,12 @@ import { Store } from "./utils"
 
 export const StatelessContext = createContext<any>({} as any)
 
-export type StoreProviderProps<T> = {
+export type StoreProviderProps<T extends object> = {
     children: ReactNode
     store: Store<T>
 }
 
-const InnerStatelessProvider = <T extends any>({
+const InnerStatelessProvider = <T extends object>({
     children
 }: StoreProviderProps<T>) => {
     const data = useSelector((state) => state)
@@ -20,7 +20,7 @@ const InnerStatelessProvider = <T extends any>({
     )
 }
 
-export const StatelessProvider = <T extends any>({
+export const StatelessProvider = <T extends object>({
     children,
     store
 }: StoreProviderProps<T>) => {

@@ -14,7 +14,7 @@ describe("StoreContext", () => {
         mount(
             <StatelessProvider store={store}>
                 <StatelessConsumer>
-                    {data => {
+                    {(data) => {
                         value = data
                         return null
                     }}
@@ -32,7 +32,7 @@ type ResultCheckerProps = {
 const QueryChecker = ({ passTo }: ResultCheckerProps) =>
     passTo(store.useQuery({ b: true }))
 
-const checkResult = jest.fn(_ => null)
+const checkResult = jest.fn((_) => null)
 
 describe("useQuery", () => {
     beforeEach(() => {
@@ -52,7 +52,7 @@ describe("useQuery", () => {
                 <QueryChecker passTo={checkResult} />
             </StatelessProvider>
         )
-        store.mutate({ b: true })
+        store.update({ b: true })
         expect(checkResult).toBeCalledTimes(2)
         expect(checkResult).lastCalledWith({ b: true })
     })

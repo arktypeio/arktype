@@ -50,7 +50,7 @@ export const loadStore = ({ path }: LoadStoreArgs) => {
     })
     const getElements = () => store.query({ elements: true }).elements
     const createElement = (data: Element) =>
-        store.mutate({ elements: (_) => _.concat(data) })
+        store.update({ elements: (_) => _.concat(data) })
     const createTest = ({ steps, ...data }: Test) => {
         const storedSteps = steps.map((step) => {
             if ("selector" in step) {
@@ -75,7 +75,7 @@ export const loadStore = ({ path }: LoadStoreArgs) => {
                 return { ...data, element: id } as any
             }
         })
-        store.mutate({
+        store.update({
             tests: (_) =>
                 _.concat({
                     ...data,

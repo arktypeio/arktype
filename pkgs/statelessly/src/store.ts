@@ -20,11 +20,11 @@ import {
 } from "@re-do/utils"
 
 export type Store<T extends object> = {
-    underlying: ReduxStore<T, MutationAction<T>>
+    underlying: ReduxStore<T, UpdateAction<T>>
     getState: () => T
     get: <P extends string>(path: AutoPath<T, P, "/">) => ValueAtPath<T, P>
     query: <Q extends Query<T>>(q: Q) => ShapeFilter<T, Q>
-    mutate: <M extends Mutation<T>>(data: M) => void
+    update: <U extends Update<T>>(u: U) => void
 }
 
 export type StoreArgs<T> = {
@@ -38,17 +38,17 @@ export const createStore = <T extends object>({
     handler,
     middleware
 }: StoreArgs<T>): Store<T> => {
-    const rootReducer: Reducer<T, MutationAction<T>> = (
+    const rootReducer: Reducer<T, UpdateAction<T>> = (
         state: T | undefined,
         { type, payload }
     ) => {
         if (!state) {
             return initial
         }
-        if (type !== "MUTATION") {
+        if (type !== "STATELESSLY") {
             return state
         }
-        // Since updateMap has already been executed in the mutate function,
+        // Since updateMap has already been executed in the update function,
         // update functions have already been converted to resultant values
         // and payload should only include serializable values
         return updateMap(state, payload as any)
@@ -71,15 +71,16 @@ export const createStore = <T extends object>({
         underlying: reduxStore,
         getState: reduxStore.getState,
         query: (q) => shapeFilter(reduxStore.getState(), q),
-        get: (path) => valueAtPath(reduxStore.getState(), path),
-        mutate: (updates) => {
+        // any types are a temporary workaround for excessive stack depth on type comparison error in TS
+        get: ((path: any) => valueAtPath(reduxStore.getState(), path)) as any,
+        update: (update) => {
             const state = reduxStore.getState()
-            const updatedState = updateMap(state, updates)
+            const updatedState = updateMap(state, update)
             const changes = diff(state, updatedState)
             if (!isDeepStrictEqual(changes, {})) {
-                reduxStore.dispatch({ type: "MUTATION", payload: changes })
+                reduxStore.dispatch({ type: "STATELESSLY", payload: changes })
             }
-        } 
+        }
     }
 }
 
@@ -101,7 +102,7 @@ export type Query<T> = {
         : Query<Unlisted<T[P]>> | true
 }
 
-export type Mutation<T> = DeepUpdate<T>
+export type Update<T> = DeepUpdate<T>
 
 export type Handle<HandledState, RootState> = (
     change: DeepPartial<HandledState>,
@@ -112,7 +113,7 @@ export type Handler<HandledState, RootState> = {
     [K in keyof HandledState]?: Handle<HandledState[K], RootState>
 }
 
-type MutationAction<T> = {
-    type: "MUTATION"
+type UpdateAction<T> = {
+    type: "STATELESSLY"
     payload: DeepPartial<T>
 }

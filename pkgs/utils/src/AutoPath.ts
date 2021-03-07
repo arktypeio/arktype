@@ -20,11 +20,20 @@ type MetaPath<
     Delimiter extends string,
     SP extends List<Index> = [],
     P extends List<Index> = []
-> = {
-    [K in keyof O]:
-        | MetaPath<O[K] & {}, Delimiter, Tail<SP>, [...P, KeyToIndex<K, SP>]>
-        | Join<[...P, KeyToIndex<K, SP>], Delimiter>
-}
+> =
+    // Avoid keys like "toValue" and "toLowerCase" being available as paths
+    O extends object
+        ? {
+              [K in keyof O]:
+                  | MetaPath<
+                        O[K] & {},
+                        Delimiter,
+                        Tail<SP>,
+                        [...P, KeyToIndex<K, SP>]
+                    >
+                  | Join<[...P, KeyToIndex<K, SP>], Delimiter>
+          }
+        : P
 
 type NextPath<OP> = Select<UnionOf<Exclude<OP, string> & {}>, string>
 
