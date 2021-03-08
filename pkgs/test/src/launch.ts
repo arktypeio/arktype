@@ -34,16 +34,16 @@ export const launch = async (
     const instance = await browserHandler.launch({
         headless: false
     })
-    const page = await instance.newPage({
-        viewport: size ? { height: size.height, width: size.width } : undefined
-    })
-    // const [popup] = await Promise.all([
-    //     page.waitForEvent("popup"),
-    //     page.evaluate(
-    //         (args) => window.open(undefined, undefined, args),
-    //         pageLaunchArgs.join(",")
-    //     )
-    // ])
+    const bootstrapper = await instance.newPage()
+    const [page] = await Promise.all([
+        bootstrapper.waitForEvent("popup"),
+        bootstrapper.evaluate(
+            (args) => window.open(undefined, undefined, args),
+            pageLaunchArgs.join(",")
+        )
+    ])
+    // Calling bootstrapper.close() directly closes spawned page as well
+    await bootstrapper.evaluate(() => window.close())
     return {
         browser: instance,
         page
