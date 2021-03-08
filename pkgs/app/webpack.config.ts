@@ -32,11 +32,18 @@ const rendererConfig = makeConfig(
 
 const observerConfig = makeConfig(
     {
-        base: "injected",
+        base: "web",
         entry: resolve(__dirname, "src", "observer", "index.ts"),
         tsconfig
     },
-    [externalPlaywrightConfig]
+    [
+        externalPlaywrightConfig,
+        {
+            output: {
+                filename: "observer.js"
+            }
+        }
+    ]
 )
 
 // renderer config is consumed through devServer during development

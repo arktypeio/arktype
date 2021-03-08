@@ -119,6 +119,7 @@ dependencies:
   react-typist: 2.0.5_react-dom@17.0.1+react@17.0.1
   redux: 4.0.5
   redux-devtools-extension: 2.13.8_redux@4.0.5
+  source-map-loader: 2.0.1_webpack@5.17.0
   style-loader: 2.0.0_webpack@5.17.0
   ts-loader: 8.0.14_typescript@4.2.3+webpack@5.17.0
   ts-node: 9.1.1_typescript@4.2.3
@@ -16416,6 +16417,25 @@ packages:
     dev: false
     resolution:
       integrity: sha512-qnQ7gVMxGNxsiL4lEuJwe/To8UnK7fAnmbGEEH8RpLouuKbeEm0lhbQVFIrNSuB+G7tVrAlVsZgETT5nljf+Iw==
+  /source-map-js/0.6.2:
+    dev: false
+    engines:
+      node: '>=0.10.0'
+    resolution:
+      integrity: sha512-/3GptzWzu0+0MBQFrDKzw/DvvMTUORvgY6k6jd/VS6iCR4RDTKWH6v6WPwQoUO8667uQEf9Oe38DxAYWY5F/Ug==
+  /source-map-loader/2.0.1_webpack@5.17.0:
+    dependencies:
+      abab: 2.0.5
+      iconv-lite: 0.6.2
+      source-map-js: 0.6.2
+      webpack: 5.17.0_webpack-cli@4.5.0+webpack@5.17.0
+    dev: false
+    engines:
+      node: '>= 10.13.0'
+    peerDependencies:
+      webpack: ^5.0.0
+    resolution:
+      integrity: sha512-UzOTTQhoNPeTNzOxwFw220RSRzdGSyH4lpNyWjR7Qm34P4/N0W669YSUFdH07+YNeN75h765XLHmNsF/bm97RQ==
   /source-map-resolve/0.5.3:
     dependencies:
       atob: 2.1.2
@@ -18958,6 +18978,7 @@ packages:
       node-polyfill-webpack-plugin: 1.0.2_webpack@5.17.0
       react-hot-loader: 4.12.15_react-dom@17.0.1+react@17.0.1
       react-svg-loader: 3.0.3
+      source-map-loader: 2.0.1_webpack@5.17.0
       style-loader: 2.0.0_webpack@5.17.0
       ts-loader: 8.0.14_typescript@4.2.3+webpack@5.17.0
       ts-node: 9.1.1_typescript@4.2.3
@@ -18978,7 +18999,7 @@ packages:
       react-dom: '*'
       webpack-cli: '*'
     resolution:
-      integrity: sha512-myxxtBHmdHmwv3K6t13SEcNPN80mD4D2Nmf58mDVjMZvLHzdki/WC+fGZjRba65M/0ptZYKtBHtlO6KOl+VSZg==
+      integrity: sha512-pc5eRKR6ysT39YeiU5xflxGjNxiwIfkM9Z/4waVLBk4/cZ0bwV5lN4ZAJOEVQRTjPYvv7mJz8OilRPvVKTJpdQ==
       tarball: 'file:projects/bundle.tgz'
     version: 0.0.0
   'file:projects/cli.tgz':
@@ -19346,6 +19367,7 @@ specifiers:
   react-typist: 2.0.5
   redux: 4.0.5
   redux-devtools-extension: 2.13.8
+  source-map-loader: 2.0.1
   style-loader: 2.0.0
   ts-loader: 8.0.14
   ts-node: 9.1.1

@@ -53,9 +53,6 @@ const getCommonConfig = ({
     resolve: {
         extensions: [".ts", ".tsx", ".js", ".jsx", ".mjs", ".json"],
         plugins: [new TsconfigPathsPlugin() as any]
-        // alias: {
-        //     ws: "isomorphic-ws"
-        // }
     },
     module: {
         rules: [
@@ -184,22 +181,6 @@ const getRendererConfig = (args: ConfigArgs): Configuration =>
         }
     } as Configuration)
 
-const getInjectedConfig = (args: ConfigArgs): Configuration =>
-    merge(getFrontendConfig(args), {
-        output: {
-            filename: "injected.js"
-        },
-        module: {
-            rules: [
-                {
-                    test: /\.(j|t)sx?$/,
-                    loader: "ts-loader",
-                    exclude: /node_modules/
-                }
-            ]
-        }
-    })
-
 const getDevServerConfig = (customConfig?: object): Configuration =>
     ({
         resolve: {
@@ -232,7 +213,6 @@ const getDevServerConfig = (customConfig?: object): Configuration =>
 const baseOptions = {
     common: getCommonConfig,
     web: getWebConfig,
-    injected: getInjectedConfig,
     renderer: getRendererConfig,
     main: getMainConfig
 }

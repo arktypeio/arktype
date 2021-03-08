@@ -26,6 +26,7 @@
         "html-webpack-plugin": "4.5.1",
         "is-wsl": "2.2.0",
         "react-svg-loader": "3.0.3",
+        "source-map-loader": "2.0.1",
         "style-loader": "2.0.0",
         "ts-loader": "8.0.14",
         "ts-node": "9.1.1",

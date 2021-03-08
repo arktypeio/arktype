@@ -26,12 +26,14 @@ const watchPage = async () => {
     const handler = async (e: Event) => {
         browserWindow.notify(eventToSteps(e))
     }
+    console.log("Adding listeners...")
     Object.keys(eventMap).forEach((event) =>
         browserWindow.addEventListener(event, handler, true)
     )
 }
 
 const eventToSteps = (e: Event) => {
+    console.log({ event: e })
     const kind = eventMap[e.type as EventName]
     const step: any = { kind }
     if (e.target) {
@@ -44,4 +46,5 @@ const eventToSteps = (e: Event) => {
     return step
 }
 
+console.log("Before watch page")
 watchPage()

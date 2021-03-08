@@ -6,7 +6,48 @@
                 "Something"
             ],
             "steps": []
+        },
+        {
+            "name": "Sign Up",
+            "tags": [],
+            "steps": []
+        },
+        {
+            "name": "Sign Up",
+            "tags": [],
+            "steps": [
+                {
+                    "kind": "click",
+                    "element": 1
+                },
+                {
+                    "kind": "click",
+                    "element": 2
+                },
+                {
+                    "kind": "set",
+                    "value": "david@redo.qa",
+                    "element": 2
+                },
+                {
+                    "kind": "click",
+                    "element": 3
+                }
+            ]
         }
     ],
-    "elements": []
+    "elements": [
+        {
+            "selector": ".MuiButton-label",
+            "id": 1
+        },
+        {
+            "selector": ".MuiInputBase-input",
+            "id": 2
+        },
+        {
+            "selector": ".MuiButton-contained > .MuiButton-label",
+            "id": 3
+        }
+    ]
 }
