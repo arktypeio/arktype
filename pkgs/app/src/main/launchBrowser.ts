@@ -8,7 +8,6 @@ import { Root, deactivateBuilder } from "state"
 import { Store } from "react-statelessly"
 
 const BROWSER_WINDOW_TITLEBAR_SIZE = 44
-const ELECTRON_TITLEBAR_SIZE = 37
 const DEFAULT_LEARNER_WIDTH = 300
 
 let lastConnectedBrowser: Browser
@@ -25,11 +24,10 @@ export const launchBrowser = async (
             y: y
         },
         size: {
-            height: height - BROWSER_WINDOW_TITLEBAR_SIZE,
+            height: height - BROWSER_WINDOW_TITLEBAR_SIZE - 24,
             width: width - DEFAULT_LEARNER_WIDTH - 24
         }
     })
-    page.on("close", () => deactivateBuilder(store))
     lastConnectedBrowser = browser
     page.goto("https://redo.qa")
     const notify = (step: Step) => {

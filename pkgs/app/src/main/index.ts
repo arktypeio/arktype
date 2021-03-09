@@ -17,6 +17,8 @@ let builderWindow: BrowserWindow
 let store: Store<Root>
 
 const DEFAULT_BUILDER_WIDTH = 300
+const ELECTRON_TITLEBAR_SIZE = 37
+
 const BASE_URL = isDev()
     ? `http://localhost:8080`
     : `file://${__dirname}/index.html`
@@ -28,6 +30,13 @@ store = createMainStore({
             return
         }
         if (isActive) {
+            const { height, x, y } = mainWindow.getBounds()
+            builderWindow.setBounds({
+                height,
+                width: DEFAULT_BUILDER_WIDTH,
+                x,
+                y: y - ELECTRON_TITLEBAR_SIZE
+            })
             builderWindow.show()
             launchBrowser(store, mainWindow)
         } else {
@@ -66,21 +75,17 @@ const installExtensions = async () => {
 }
 
 const createMainWindow = async () => {
-    mainWindow = new BrowserWindow(defaultElectronOptions)
+    mainWindow = new BrowserWindow({
+        ...defaultElectronOptions,
+        title: "New Test"
+    })
     await mainWindow.loadURL(BASE_URL)
     mainWindow.maximize()
     mainWindow.show()
 }
 
 const createBuilderWindow = async () => {
-    const { height, x, y } = mainWindow.getBounds()
-    builderWindow = new BrowserWindow({
-        ...defaultElectronOptions,
-        height,
-        width: DEFAULT_BUILDER_WIDTH,
-        x,
-        y
-    })
+    builderWindow = new BrowserWindow(defaultElectronOptions)
     // Builder window should always exist, even if it's not shown
     builderWindow.on("close", () => {
         deactivateBuilder(store)
