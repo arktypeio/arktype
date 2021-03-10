@@ -24,17 +24,26 @@ export const launch = async (
     { size, position }: LaunchOptions = {}
 ) => {
     const browserHandler = browserHandlers[browser]
-    const browserLaunchArgs: string[] = []
+    let pageLaunchArgs: string[] = []
     if (position) {
-        browserLaunchArgs.push(`--window-position=${position.x},${position.y}`)
+        pageLaunchArgs.push(`x:${position.x}`, `y:${position.y}`)
+    }
+    if (size) {
+        pageLaunchArgs.push(`height:${size.height}`, `width:${size.width}`)
     }
     const instance = await browserHandler.launch({
-        headless: false,
-        args: browserLaunchArgs
+        headless: false
     })
     const page = await instance.newPage({
         viewport: size ? { height: size.height, width: size.width } : undefined
     })
+    // const [popup] = await Promise.all([
+    //     page.waitForEvent("popup"),
+    //     page.evaluate(
+    //         (args) => window.open(undefined, undefined, args),
+    //         pageLaunchArgs.join(",")
+    //     )
+    // ])
     return {
         browser: instance,
         page

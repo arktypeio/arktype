@@ -10,15 +10,15 @@ describe("test", () => {
         },
         { kind: "click", selector: "'Keep me posted!'" }
     ]
-    test("works with default options", async () => {
-        await redoTest(signUpSteps)
-    }, 60000)
-    test("works on firefox", async () => {
-        await redoTest(signUpSteps, { browser: "firefox" })
-    }, 60000)
-    test("works on safari", async () => {
-        await redoTest(signUpSteps, { browser: "safari" })
-    }, 60000)
+    // test("works with default options", async () => {
+    //     await redoTest(signUpSteps)
+    // }, 60000)
+    // test("works on firefox", async () => {
+    //     await redoTest(signUpSteps, { browser: "firefox" })
+    // }, 60000)
+    // test("works on safari", async () => {
+    //     await redoTest(signUpSteps, { browser: "safari" })
+    // }, 60000)
     test("chromium can be positioned and sized", async () => {
         await launch("chrome", {
             size: { height: 500, width: 500 },

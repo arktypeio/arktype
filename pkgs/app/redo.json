@@ -34,6 +34,31 @@
                     "element": 3
                 }
             ]
+        },
+        {
+            "name": "New Test",
+            "tags": [
+                "sodfihdsoif"
+            ],
+            "steps": [
+                {
+                    "kind": "click",
+                    "element": 1
+                },
+                {
+                    "kind": "click",
+                    "element": 2
+                },
+                {
+                    "kind": "set",
+                    "value": "david@redo.qa",
+                    "element": 2
+                },
+                {
+                    "kind": "click",
+                    "element": 3
+                }
+            ]
         }
     ],
     "elements": [
