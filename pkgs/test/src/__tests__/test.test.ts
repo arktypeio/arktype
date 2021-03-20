@@ -20,7 +20,7 @@ describe("test", () => {
     //     await redoTest(signUpSteps, { browser: "safari" })
     // }, 60000)
     test("chromium can be positioned and sized", async () => {
-        await launch("firefox", {
+        await launch("chrome", {
             size: { height: 500, width: 1000 },
             position: { x: 200, y: 200 }
         })
