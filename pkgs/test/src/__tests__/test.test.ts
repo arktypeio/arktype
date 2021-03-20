@@ -21,8 +21,16 @@ describe("test", () => {
     // }, 60000)
     test("chromium can be positioned and sized", async () => {
         await launch("chrome", {
-            size: { height: 500, width: 1000 },
-            position: { x: 200, y: 200 }
+            // size: { height: 500, width: 1000 },
+            // position: { x: 200, y: 200 },
+            size: {
+                height: 500, //1017,
+                width: 1000 //1620
+            },
+            position: {
+                x: 200, // 0
+                y: 200 // 23
+            }
         })
     }, 60000)
 })

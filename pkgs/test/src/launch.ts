@@ -31,7 +31,11 @@ export const launch = async (
     const [page] = await Promise.all([
         bootstrapper.waitForEvent("popup"),
         bootstrapper.evaluate(() =>
-            window.open(undefined, undefined, "resizable,scrollbars")
+            window.open(
+                undefined,
+                undefined,
+                "resizable,scrollbars,toolbar,menubar,status"
+            )
         )
     ])
     await page.evaluate(({ position, size }: LaunchOptions) => {
