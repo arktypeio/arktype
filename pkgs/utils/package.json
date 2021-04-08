@@ -10,7 +10,7 @@
         "test": "jest"
     },
     "dependencies": {
-        "@babel/runtime-corejs3": "7.12.5",
+        "@babel/runtime-corejs3": "7.13.10",
         "core-js": "3.8.2",
         "deepmerge": "4.2.2",
         "execa": "5.0.0",

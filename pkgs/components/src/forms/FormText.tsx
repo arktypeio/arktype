@@ -17,7 +17,12 @@ export const FormText = ({
     tooltipPlacement,
     ...rest
 }: FormTextProps) => {
-    const { register, errors, handleBlur, submit } = useFormContext()
+    const {
+        register,
+        formState: { errors },
+        handleBlur,
+        submit
+    } = useFormContext()
     return (
         <Column align="center">
             <TextInput

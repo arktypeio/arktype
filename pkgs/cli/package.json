@@ -13,7 +13,7 @@
         "redo": "./dist/index.js"
     },
     "dependencies": {
-        "@babel/runtime-corejs3": "7.12.5",
+        "@babel/runtime-corejs3": "7.13.10",
         "core-js": "3.8.2",
         "commander": "6.2.1",
         "node-fetch": "2.6.1",

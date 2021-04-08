@@ -1,10 +1,8 @@
 import React from "react"
-import { storiesOf } from "@storybook/react"
-import { withKnobs, object, text } from "@storybook/addon-knobs"
 import { ContentCard, ContentCardProps, Card, CardProps } from "."
 
 export default {
-    title: "cards"
+    title: "Card"
 }
 
 export const Standard = (props: CardProps) => <Card {...props} />
@@ -27,7 +25,3 @@ Content.argTypes = {
         control: "object"
     }
 }
-
-// storiesOf("Card", module)
-//     .addDecorator(withKnobs)
-//     .add("Standard", () => )

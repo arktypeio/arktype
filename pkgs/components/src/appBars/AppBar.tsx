@@ -5,17 +5,15 @@ import MuiAppBar, {
 } from "@material-ui/core/AppBar"
 import { makeKinds, KindFrom } from "../common"
 
-const useStyleKind = makeKinds<CSSProperties>()(() => {
-    return {
-        top: {
-            top: 0
-        },
-        bottom: {
-            bottom: 0,
-            top: "auto"
-        }
+const useStyleKind = makeKinds<CSSProperties>()(() => ({
+    top: {
+        top: 0
+    },
+    bottom: {
+        bottom: 0,
+        top: "auto"
     }
-})
+}))
 
 export type AppBarProps = RowProps &
     Pick<CSSProperties, "height"> & {

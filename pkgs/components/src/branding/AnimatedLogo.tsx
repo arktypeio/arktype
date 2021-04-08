@@ -1,5 +1,5 @@
 import React, { CSSProperties } from "react"
-import { motion, SVGMotionProps } from "framer-motion"
+import { motion } from "framer-motion"
 import { usePalette } from "../styles"
 
 const animationProps = (delay: number) => ({
