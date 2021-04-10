@@ -1,4 +1,4 @@
-import React from "react"
+import React, { useState } from "react"
 import { ValueFrom } from "@re-do/utils"
 import { Text, ErrorText } from "../text"
 import { Spinner } from "../progress"
@@ -13,12 +13,14 @@ import {
 } from "."
 
 export default {
-    title: "Form"
+    title: "Forms"
 }
 
 type HelloFormFields = {
     first: string
     last: string
+    password: string
+    passwordMatch: string
 }
 
 const submit: MutationSubmit<HelloFormFields> = async (params: any) => ({
@@ -28,12 +30,14 @@ const submit: MutationSubmit<HelloFormFields> = async (params: any) => ({
 })
 
 const validate: ValueFrom<FormProps<HelloFormFields, string>, "validate"> = ({
-    first,
-    last
-}) => ({
-    first: first ? [] : ["We need this!"],
-    last: last ? [] : ["We need this!"]
-})
+    password,
+    passwordMatch
+}) => {
+    return {
+        passwordMatch:
+            password === passwordMatch ? [] : ["Passwords must match."]
+    }
+}
 
 const HelloForm = (props: Partial<FormProps<HelloFormFields, string>>) => (
     <Form<HelloFormFields, string>
@@ -44,8 +48,14 @@ const HelloForm = (props: Partial<FormProps<HelloFormFields, string>>) => (
     >
         {({ data, loading, error }) => (
             <>
-                <FormText name="first" />
+                <FormText name="first" defaultValue="Default" />
                 <FormText name="last" />
+                <FormText name="password" type="password" />
+                <FormText
+                    name="passwordMatch"
+                    label="retype password"
+                    type="password"
+                />
                 {loading ? (
                     <Spinner />
                 ) : (
@@ -53,7 +63,7 @@ const HelloForm = (props: Partial<FormProps<HelloFormFields, string>>) => (
                         <Button>Submit</Button>
                     </FormSubmit>
                 )}
-                {data ? <Text>{data}</Text> : null}
+                {<Text>{data ? data : "Submit the form!"}</Text>}
                 {error ? <ErrorText>{error.message}</ErrorText> : null}
             </>
         )}
@@ -74,16 +84,26 @@ export const TransformOnSubmit = () => (
     />
 )
 
-export const AutoForm = (
-    <RedoAutoForm<HelloFormFields>
-        submit={async (options: any) => {
-            console.log(
-                `Hello, ${options?.variables?.first} ${options?.variables?.last}.`
-            )
-            return {} as any
-        }}
-        validate={validate}
-        contents={{ first: "Reed", last: "Doe" }}
-        columnProps={{ width }}
-    />
-)
+export const AutoForm = () => {
+    const [message, setMessage] = useState("Submit the form!")
+    return (
+        <>
+            <RedoAutoForm
+                submit={async (options: any) =>
+                    setMessage(
+                        `Hello, ${options?.variables?.first} ${options?.variables?.last}.`
+                    )
+                }
+                validate={validate}
+                contents={{
+                    first: "Default",
+                    last: "",
+                    password: "",
+                    passwordMatch: ""
+                }}
+                columnProps={{ width }}
+            />
+            <Text>{message}</Text>
+        </>
+    )
+}

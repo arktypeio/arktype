@@ -15,19 +15,19 @@ const useStyleKind = makeKinds<CSSProperties>()(() => ({
     }
 }))
 
-export type AppBarProps = RowProps &
+export type FloatBarProps = RowProps &
     Pick<CSSProperties, "height"> & {
         muiAppBarProps?: MuiAppBarProps
         kind?: KindFrom<typeof useStyleKind>
     }
 
-export const AppBar = ({
+export const FloatBar = ({
     muiAppBarProps,
     children,
     height = 45,
     kind = "top",
     ...rest
-}: AppBarProps) => {
+}: FloatBarProps) => {
     const kindStyles = useStyleKind(kind)
     const { style: muiAppBarStyles, ...muiAppBarRest } = muiAppBarProps
         ? muiAppBarProps

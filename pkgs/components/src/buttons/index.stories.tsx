@@ -3,7 +3,7 @@ import { Button, ButtonProps } from "."
 import { Icons } from "../icons"
 
 export default {
-    title: "buttons"
+    title: "Buttons"
 }
 
 export const Standard = (props: ButtonProps) => (
@@ -14,7 +14,8 @@ Standard.args = { kind: "primary" }
 Standard.argTypes = {
     kind: { control: { type: "radio", options: ["primary", "secondary"] } },
     fontSize: { control: "number" },
-    color: { control: "color" }
+    color: { control: "color" },
+    textColor: { control: "color" }
 }
 
 export const Icon = (props: ButtonProps) => (

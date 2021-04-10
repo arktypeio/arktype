@@ -31,7 +31,12 @@ export const AutoForm = <T extends Fields, D = any>({
         {({ loading, error }) => (
             <>
                 {Object.entries(contents).map(([k, v], index) => (
-                    <FormText name={k} key={index} {...textProps} value={v} />
+                    <FormText
+                        name={k}
+                        key={index}
+                        {...textProps}
+                        defaultValue={v}
+                    />
                 ))}
                 {loading ? (
                     <Spinner />

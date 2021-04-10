@@ -80,7 +80,9 @@ export const createFormContext = <T extends Fields, D = any>({
                 (errors) => !errors || !errors.length
             )
         ) {
-            values = transformValues ? transformValues(values) : values
+            values = transformValues
+                ? { ...values, ...transformValues(values) }
+                : values
             setResultState({ called: true, loading: true })
             const { data, errors } =
                 (await submitPrevalidated({ variables: values })) || {}
@@ -127,7 +129,7 @@ export const createFormContext = <T extends Fields, D = any>({
 export type FormContextArgs<T extends Fields, D = any> = {
     submit: MutationSubmit<T, D>
     validate?: (fields: T) => FormErrors<T>
-    transformValues?: (fields: T) => T
+    transformValues?: (fields: T) => Partial<T>
     onData?: (data: D) => void | Promise<void>
     onError?: (error: ApolloError) => void | Promise<void>
     staticValues?: any

@@ -11,6 +11,7 @@ export type FormTextProps = FormFieldProps &
 
 export const FormText = ({
     name,
+    rules,
     label,
     onBlur,
     onKeyDown,
@@ -26,16 +27,17 @@ export const FormText = ({
     return (
         <Column align="center">
             <TextInput
-                name={name}
                 label={label ? label : name}
-                inputRef={register}
+                inputProps={{ ...register(name, { required: true, ...rules }) }}
                 onBlur={(event) => {
                     onBlur && onBlur(event)
                     handleBlur(name)
                 }}
                 onKeyDown={(event) => {
                     onKeyDown && onKeyDown(event)
-                    event.key === "Enter" && submit()
+                    if (event.key === "Enter") {
+                        submit()
+                    }
                 }}
                 {...rest}
             />
