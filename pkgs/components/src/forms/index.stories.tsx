@@ -95,6 +95,7 @@ export const AutoForm = () => {
                     )
                 }
                 validate={validate}
+                // TODO: Update to take an object with parameters like default value, type (e.g. password), label, validate, etc.
                 contents={{
                     first: "Default",
                     last: "",
