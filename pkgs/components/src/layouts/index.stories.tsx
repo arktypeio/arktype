@@ -1,5 +1,4 @@
 import React from "react"
-import { select, boolean, number } from "@storybook/addon-knobs"
 import { defaultTheme, ThemeProvider } from "../styles"
 import { Card } from "../cards"
 import { Row, Column } from "."
@@ -8,37 +7,6 @@ export default {
     title: "Layouts"
 }
 
-const getKnobProps = () => ({
-    align: select(
-        "align",
-        {
-            stretch: "stretch",
-            center: "center",
-            "flex-start": "flex-start",
-            "flex-end": "flex-end",
-            baseline: "baseline"
-        },
-        "flex-start"
-    ),
-    grow: boolean("grow", false),
-    height: number("height", undefined as any),
-    width: number("width", undefined as any),
-    reverse: boolean("reverse", false),
-    full: boolean("full", false),
-    justify: select(
-        "justify",
-        {
-            "flex-start": "flex-start",
-            center: "center",
-            "flex-end": "flex-end",
-            "space-between": "space-between",
-            "space-around": "space-around",
-            "space-evenly": "space-evenly"
-        },
-        "flex-start"
-    )
-})
-
 const argTypes = {
     align: {
         control: {
@@ -46,25 +14,24 @@ const argTypes = {
             options: ["stretch", "center", "flex-start", "flex-end", "baseline"]
         }
     },
-    fontSize: { control: "number" },
-    color: { control: "color" },
-    grow: boolean("grow", false),
-    height: number("height", undefined as any),
-    width: number("width", undefined as any),
-    reverse: boolean("reverse", false),
-    full: boolean("full", false),
-    justify: select(
-        "justify",
-        {
-            "flex-start": "flex-start",
-            center: "center",
-            "flex-end": "flex-end",
-            "space-between": "space-between",
-            "space-around": "space-around",
-            "space-evenly": "space-evenly"
-        },
-        "flex-start"
-    )
+    grow: { control: "boolean" },
+    height: { control: "number" },
+    width: { control: "number" },
+    reverse: { control: "boolean" },
+    full: { control: "boolean" },
+    justify: {
+        control: {
+            type: "radio",
+            options: [
+                "center",
+                "flex-start",
+                "flex-end",
+                "space-between",
+                "space-around",
+                "space-evenly"
+            ]
+        }
+    }
 }
 
 const cards = (
@@ -94,55 +61,67 @@ const Context = ({ children }: any) => (
 
 export const SingleRow = (props: any) => (
     <Context>
-        <Row {...getKnobProps()}>{cards}</Row>
+        <Row {...props}>{cards}</Row>
     </Context>
 )
+
+SingleRow.argTypes = argTypes
 
 export const SingleColumn = (props: any) => (
     <Context>
-        <Column {...getKnobProps()}>{cards}</Column>
+        <Column {...props}>{cards}</Column>
     </Context>
 )
 
+SingleColumn.argTypes = argTypes
+
 export const RowOfColumns = (props: any) => (
     <Context>
-        <Row {...getKnobProps()}>
-            <Column {...getKnobProps()}>{cards}</Column>
-            <Column {...getKnobProps()}>{cards}</Column>
-            <Column {...getKnobProps()}>{cards}</Column>
+        <Row {...props}>
+            <Column {...props}>{cards}</Column>
+            <Column {...props}>{cards}</Column>
+            <Column {...props}>{cards}</Column>
         </Row>
     </Context>
 )
+
+RowOfColumns.argTypes = argTypes
 
 export const RowOfRows = (props: any) => (
     <Context>
         <Row>
-            <Row {...getKnobProps()}>{cards}</Row>
-            <Row {...getKnobProps()}>{cards}</Row>
-            <Row {...getKnobProps()}>{cards}</Row>
+            <Row {...props}>{cards}</Row>
+            <Row {...props}>{cards}</Row>
+            <Row {...props}>{cards}</Row>
         </Row>
     </Context>
 )
 
-export const ColumnofRows = (props: any) => (
+RowOfRows.argTypes = argTypes
+
+export const ColumnOfRows = (props: any) => (
     <Context>
-        <Column {...getKnobProps()}>
-            <Row {...getKnobProps()}>{cards}</Row>
-            <Row {...getKnobProps()}>{cards}</Row>
-            <Row {...getKnobProps()}>{cards}</Row>
+        <Column {...props}>
+            <Row {...props}>{cards}</Row>
+            <Row {...props}>{cards}</Row>
+            <Row {...props}>{cards}</Row>
         </Column>
     </Context>
 )
 
+ColumnOfRows.argTypes = argTypes
+
 export const ColumnOfColumns = (props: any) => (
     <Context>
-        <Column {...getKnobProps()}>
-            <Column {...getKnobProps()}>{cards}</Column>
-            <Column {...getKnobProps()}>{cards}</Column>
-            <Column {...getKnobProps()}>{cards}</Column>
+        <Column {...props}>
+            <Column {...props}>{cards}</Column>
+            <Column {...props}>{cards}</Column>
+            <Column {...props}>{cards}</Column>
         </Column>
     </Context>
 )
+
+ColumnOfColumns.argTypes = argTypes
 
 export const StandardLayout = (props: any) => (
     <Context>
