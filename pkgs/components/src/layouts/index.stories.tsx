@@ -3,7 +3,11 @@ import { storiesOf } from "@storybook/react"
 import { withKnobs, select, boolean, number } from "@storybook/addon-knobs"
 import { defaultTheme, ThemeProvider } from "../styles"
 import { Card } from "../cards"
-import { Row, Column } from "."
+import { Row as R, Column as C } from "."
+
+export default {
+    title: "Layouts"
+}
 
 const getKnobProps = () => ({
     align: select(
