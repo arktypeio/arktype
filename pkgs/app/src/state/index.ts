@@ -11,8 +11,7 @@ import {
 export enum Page {
     Home = "HOME",
     SignIn = "SIGN_IN",
-    SignUp = "SIGN_UP",
-    Results = "RESULTS"
+    SignUp = "SIGN_UP"
 }
 
 export type Root = {

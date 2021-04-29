@@ -1,16 +1,14 @@
 import React, { ComponentType } from "react"
 import { Row } from "@re-do/components"
-import { AppBar } from "@re-do/components"
+import { FloatBar } from "@re-do/components"
 import { SearchBar } from "./SearchBar"
 import { HomeButton } from "./HomeButton"
 import { NewTestButton } from "./NewTestButton"
 import { AccountSection } from "./AccountSection"
-import { ResultsButton } from "./ResultsButton"
 
 const leftItems = {
     home: HomeButton,
-    newTest: NewTestButton,
-    results: ResultsButton
+    newTest: NewTestButton
 }
 type LeftKey = keyof typeof leftItems
 const centerItems = {
@@ -27,7 +25,7 @@ export type RedoAppBarProps = { children: ItemKey[] }
 export type ItemKey = LeftKey | CenterKey | RightKey
 
 export const RedoAppBar = ({ children }: RedoAppBarProps) => (
-    <AppBar>
+    <FloatBar>
         {[leftItems, centerItems, rightItems].map((group, index) => (
             <div key={index}>
                 <Row>
@@ -40,5 +38,5 @@ export const RedoAppBar = ({ children }: RedoAppBarProps) => (
                 </Row>
             </div>
         ))}
-    </AppBar>
+    </FloatBar>
 )

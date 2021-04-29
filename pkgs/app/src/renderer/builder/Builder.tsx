@@ -2,7 +2,7 @@ import React, { useState } from "react"
 import {
     Column,
     TextInput,
-    AppBar,
+    FloatBar,
     Icons,
     Button,
     ChipInput
@@ -31,7 +31,7 @@ export const Builder = () => {
     const persistedStore = loadStore({ path: join(process.cwd(), "redo.json") })
     return (
         <Column full>
-            <AppBar height={120} align="center">
+            <FloatBar height={120} align="center">
                 <Column align="center">
                     <TextInput
                         value={name}
@@ -49,9 +49,9 @@ export const Builder = () => {
                         onChange={(tags) => setState({ ...state, tags })}
                     />
                 </Column>
-            </AppBar>
+            </FloatBar>
             <BuilderEvents steps={steps as any} />
-            <AppBar kind="bottom" justify="space-around">
+            <FloatBar kind="bottom" justify="space-around">
                 <Button
                     Icon={Icons.close}
                     style={{ color: "white" }}
@@ -69,7 +69,7 @@ export const Builder = () => {
                         deactivateBuilder(store)
                     }}
                 />
-            </AppBar>
+            </FloatBar>
         </Column>
     )
 }

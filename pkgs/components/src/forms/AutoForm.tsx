@@ -1,6 +1,6 @@
 import React from "react"
 import { Button } from "../buttons"
-import { Spinner } from "../progress"
+import { LoadingAnimation } from "../loading"
 import { ErrorText } from "../text"
 import {
     Form,
@@ -39,7 +39,7 @@ export const AutoForm = <T extends Fields, D = any>({
                     />
                 ))}
                 {loading ? (
-                    <Spinner />
+                    <LoadingAnimation />
                 ) : (
                     <FormSubmit {...submitProps}>
                         <Button>Submit</Button>

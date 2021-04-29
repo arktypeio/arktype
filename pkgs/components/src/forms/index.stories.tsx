@@ -1,7 +1,7 @@
 import React, { useState } from "react"
 import { ValueFrom } from "@re-do/utils"
 import { Text, ErrorText } from "../text"
-import { Spinner } from "../progress"
+import { LoadingAnimation } from "../loading"
 import { Button } from "../buttons"
 import {
     AutoForm as RedoAutoForm,
@@ -57,7 +57,7 @@ const HelloForm = (props: Partial<FormProps<HelloFormFields, string>>) => (
                     type="password"
                 />
                 {loading ? (
-                    <Spinner />
+                    <LoadingAnimation />
                 ) : (
                     <FormSubmit>
                         <Button>Submit</Button>

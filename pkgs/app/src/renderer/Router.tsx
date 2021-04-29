@@ -3,7 +3,7 @@ import { hot } from "react-hot-loader/root"
 import { AppContents } from "@re-do/components"
 import { Page } from "state"
 import { store } from "renderer/common"
-import { Home, Landing, Results } from "./pages"
+import { Home, Landing } from "./pages"
 import { Builder } from "./builder"
 
 export const Router = hot(() => {
@@ -34,8 +34,7 @@ type NameToPage = { [_ in NonNullable<Page>]: JSX.Element }
 export const Pages: NameToPage = {
     HOME: <Home />,
     SIGN_IN: <Landing page={Page.SignIn} />,
-    SIGN_UP: <Landing page={Page.SignUp} />,
-    RESULTS: <Results />
+    SIGN_UP: <Landing page={Page.SignUp} />
 }
 
 const UnauthedPages = [Page.SignIn, Page.SignUp]
