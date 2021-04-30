@@ -22,54 +22,47 @@ export const SignUp = () => {
             page: true
         }).page !== "SIGN_UP"
     return (
-        <Form<SignUpMutationVariables, SignUpMutation>
-            validate={() => ({})}
-            submit={submit}
-            onData={(data) => store.update({ token: data.signUp })}
-            transformValues={({ email, ...rest }) => {
-                return {
-                    ...rest,
-                    email: formatEmail(email)
-                }
+        <Form
+            submit={async (data) => {
+                const result = await submit()
+                store.update({ token: result?.data?.signUp })
             }}
         >
             <Column justify="center" grow>
                 <Row spacing={1}>
                     <FormText
                         name="first"
-                        tooltipPlacement="left"
+                        errorTooltipPlacement="left"
                         disabled={disabled}
                         autoFocus
                     />
                     <FormText
                         name="last"
-                        tooltipPlacement="right"
+                        errorTooltipPlacement="right"
                         disabled={disabled}
                     />
                 </Row>
                 <FormText
                     name="email"
-                    tooltipPlacement="right"
+                    errorTooltipPlacement="right"
                     disabled={disabled}
                 />
                 <Row spacing={1}>
                     <FormText
                         type="password"
                         name="password"
-                        tooltipPlacement="left"
+                        errorTooltipPlacement="left"
                         disabled={disabled}
                     />
                     <FormText
                         type="password"
                         name="confirm"
-                        tooltipPlacement="right"
+                        errorTooltipPlacement="right"
                         disabled={disabled}
                     />
                 </Row>
             </Column>
-            <FormSubmit>
-                <Button disabled={disabled}>Sign up</Button>
-            </FormSubmit>
+            <FormSubmit>Sign up</FormSubmit>
         </Form>
     )
 }

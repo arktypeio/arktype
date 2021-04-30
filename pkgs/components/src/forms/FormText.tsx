@@ -16,14 +16,15 @@ export const FormText = ({
     errorMessage,
     label,
     inputProps,
+    transform,
     ...rest
 }: FormTextProps) => {
     const {
         register,
         setValue,
-        formState: { errors }
+        formState: { errors, touchedFields }
     } = useFormContext()
-    if (defaultValue) {
+    if (defaultValue && !(name in touchedFields)) {
         setValue(name, defaultValue)
     }
     return (
@@ -32,7 +33,11 @@ export const FormText = ({
                 label={label ?? name}
                 inputProps={{
                     ...inputProps,
-                    ...register(name, { required: !optional, ...rules })
+                    ...register(name, {
+                        required: !optional,
+                        ...rules,
+                        setValueAs: transform
+                    })
                 }}
                 {...rest}
             />

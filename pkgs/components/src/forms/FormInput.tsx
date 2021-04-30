@@ -24,4 +24,5 @@ export type FormInputProps<T> = {
     rules?: RegisterOptions
     errorTooltipPlacement?: ValueFrom<ErrorTextProps, "tooltipPlacement">
     errorMessage?: string | ((e: FieldError) => string)
+    transform?: (input: any) => T
 }
