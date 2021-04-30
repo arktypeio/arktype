@@ -13,7 +13,7 @@ export const Form = <Inputs extends object>({
     onSubmit,
     columnProps
 }: FormProps<Inputs>) => {
-    const context = useForm<Inputs>()
+    const context = useForm<Inputs>({ mode: "onBlur" })
     return (
         <FormProvider {...context}>
             <form onSubmit={context.handleSubmit(onSubmit)}>
