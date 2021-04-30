@@ -1,38 +1,36 @@
-import React from "react"
+import React, { useState } from "react"
+import { useForm, SubmitHandler, FormProvider } from "react-hook-form"
 import { Column, ColumnProps } from "../layouts"
-import {
-    Fields,
-    FormContext,
-    FormContextProps,
-    FullContext,
-    FormProvider,
-    MutationResult
-} from "./FormContext"
+import { ErrorText } from "../text"
 
-export type FormProps<T extends Fields, D = any> = FormContextProps<T, D> & {
-    children:
-        | JSX.Element
-        | JSX.Element[]
-        | ((state: MutationResult<D>) => JSX.Element)
+export type FormProps<Inputs extends object> = {
+    children: JSX.Element | JSX.Element[]
+    submit: SubmitHandler<Inputs>
     columnProps?: ColumnProps
 }
 
-export const Form = <T extends Fields, D = any>({
+export const Form = <Inputs extends object>({
     children,
-    columnProps,
-    ...contextProps
-}: FormProps<T, D>) => {
+    submit,
+    columnProps
+}: FormProps<Inputs>) => {
+    const [submitError, setSubmitError] = useState("")
+    const context = { ...useForm<Inputs>({ mode: "onBlur" }), submitError }
+    const onSubmit = async (data: Inputs) => {
+        try {
+            await context.handleSubmit(submit)()
+        } catch (e) {
+            // Propagate a non-field-specific error to FormSubmit
+            setSubmitError(e)
+        }
+    }
     return (
-        <FormProvider {...contextProps}>
-            <FormContext.Consumer>
-                {({ resultState }: FullContext<T, D>) => (
-                    <Column align="center" full {...columnProps}>
-                        {typeof children === "function"
-                            ? children(resultState)
-                            : children}
-                    </Column>
-                )}
-            </FormContext.Consumer>
+        <FormProvider {...context}>
+            <form onSubmit={context.handleSubmit(onSubmit as any)}>
+                <Column align="center" {...columnProps}>
+                    {children}
+                </Column>
+            </form>
         </FormProvider>
     )
 }

@@ -1,110 +1,48 @@
 import React, { useState } from "react"
-import { ValueFrom } from "@re-do/utils"
-import { Text, ErrorText } from "../text"
-import { LoadingAnimation } from "../loading"
-import { Button } from "../buttons"
-import {
-    AutoForm as RedoAutoForm,
-    Form,
-    FormText,
-    FormSubmit,
-    FormProps,
-    MutationSubmit
-} from "."
+import { Form, FormText, FormSubmit, FormCheck } from "."
+import { Text } from "../text"
 
 export default {
-    title: "Forms"
+    title: "Form2"
 }
 
-type HelloFormFields = {
+type Inputs = {
     first: string
+    middle: string
     last: string
-    password: string
-    passwordMatch: string
+    serverBroken: boolean
 }
 
-const submit: MutationSubmit<HelloFormFields> = async (params: any) => ({
-    called: true,
-    loading: false,
-    data: `Hello, ${params?.variables?.first} ${params?.variables?.last}.`
-})
-
-const validate: ValueFrom<FormProps<HelloFormFields, string>, "validate"> = ({
-    password,
-    passwordMatch
-}) => {
-    return {
-        passwordMatch:
-            password === passwordMatch ? [] : ["Passwords must match."]
-    }
-}
-
-const HelloForm = (props: Partial<FormProps<HelloFormFields, string>>) => (
-    <Form<HelloFormFields, string>
-        submit={submit}
-        validate={validate}
-        columnProps={{ width }}
-        {...props}
-    >
-        {({ data, loading, error }) => (
-            <>
-                <FormText name="first" defaultValue="Default" />
-                <FormText name="last" />
-                <FormText name="password" type="password" />
-                <FormText
-                    name="passwordMatch"
-                    label="retype password"
-                    type="password"
-                />
-                {loading ? (
-                    <LoadingAnimation />
-                ) : (
-                    <FormSubmit>
-                        <Button>Submit</Button>
-                    </FormSubmit>
-                )}
-                {<Text>{data ? data : "Submit the form!"}</Text>}
-                {error ? <ErrorText>{error.message}</ErrorText> : null}
-            </>
-        )}
-    </Form>
-)
-
-const reverse = (s: string) => [...s].reverse().join("")
-
-const width = 200
-
-export const Standard = () => <HelloForm />
-export const TransformOnSubmit = () => (
-    <HelloForm
-        transformValues={(values) => ({
-            first: reverse(values.first),
-            last: reverse(values.last)
-        })}
-    />
-)
-
-export const AutoForm = () => {
-    const [message, setMessage] = useState("Submit the form!")
+export const form = () => {
+    const [data, setData] = useState("Submit the form!")
     return (
         <>
-            <RedoAutoForm
-                submit={async (options: any) =>
-                    setMessage(
-                        `Hello, ${options?.variables?.first} ${options?.variables?.last}.`
+            <Form<Inputs>
+                submit={async (data) =>
+                    new Promise((resolve, reject) =>
+                        setTimeout(() => {
+                            if (data.serverBroken) {
+                                setData("")
+                                reject("Something went very wrong.")
+                            } else {
+                                setData(JSON.stringify(data, null, 4))
+                                resolve(data)
+                            }
+                        }, 1000)
                     )
                 }
-                validate={validate}
-                // TODO: Update to take an object with parameters like default value, type (e.g. password), label, validate, etc.
-                contents={{
-                    first: "Default",
-                    last: "",
-                    password: "",
-                    passwordMatch: ""
-                }}
-                columnProps={{ width }}
-            />
-            <Text>{message}</Text>
+            >
+                <FormText name="first" defaultValue="Default Value" />
+                <FormText
+                    name="middle"
+                    label="middle initial"
+                    rules={{ maxLength: 1 }}
+                />
+                <FormText name="last" placeholder="Placeholder Value" />
+                <FormCheck name="serverBroken" label="Break the server?" />
+                <FormSubmit />
+            </Form>
+            <Text>{data}</Text>
         </>
     )
 }

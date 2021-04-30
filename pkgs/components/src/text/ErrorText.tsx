@@ -40,7 +40,7 @@ export const ErrorText = ({
                         key={index}
                         variant="caption"
                         style={{ color: error.main }}
-                    >{`🤔${message}`}</Text>
+                    >{`🤔 ${message}`}</Text>
                     <br />
                 </>
             ))}
@@ -62,8 +62,8 @@ export const ErrorText = ({
                     {...rest}
                 >
                     {messages.length > 1
-                        ? `🤯${messages[0]} (and more...)`
-                        : `🤔${messages[0]}`}
+                        ? `🤯 ${messages[0]} (and more...)`
+                        : `🤔 ${messages[0]}`}
                 </Text>
             </div>
         </Tooltip>
