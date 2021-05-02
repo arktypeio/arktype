@@ -1,11 +1,12 @@
 import React from "react"
 import { useFormContext } from "react-hook-form"
+import { Merge } from "@re-do/utils"
 import { ErrorText } from "../text"
 import { TextInput, TextInputProps } from "../inputs"
 import { Column } from "../layouts"
 import { FormInputProps, getDefaultErrorMessage } from "./FormInput"
 
-export type FormTextProps = FormInputProps<string> & TextInputProps
+export type FormTextProps = Merge<TextInputProps, FormInputProps<string>>
 
 export const FormText = ({
     name,

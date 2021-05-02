@@ -1,6 +1,6 @@
 import { ValueFrom } from "@re-do/utils"
 import { RegisterOptions, FieldError } from "react-hook-form"
-import { ErrorTextProps } from "../text"
+import { TooltipPlacement } from "../text"
 
 export const defaultErrorMessages = {
     required: "We need this!",
@@ -22,7 +22,7 @@ export type FormInputProps<T> = {
     defaultValue?: T
     optional?: boolean
     rules?: RegisterOptions
-    errorTooltipPlacement?: ValueFrom<ErrorTextProps, "tooltipPlacement">
-    errorMessage?: string | ((e: FieldError) => string)
+    errorTooltipPlacement?: TooltipPlacement
+    errorMessage?: string | string[] | ((e: FieldError) => string | string[])
     transform?: (input: any) => T
 }

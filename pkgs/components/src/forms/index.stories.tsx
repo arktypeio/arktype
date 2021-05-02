@@ -3,7 +3,7 @@ import { Form, FormText, FormSubmit, FormCheck } from "."
 import { Text } from "../text"
 
 export default {
-    title: "Form2"
+    title: "Forms"
 }
 
 type Inputs = {

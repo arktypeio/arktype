@@ -2,8 +2,20 @@ import moize from "moize"
 import { isDeepStrictEqual } from "util"
 import assert from "assert"
 import deepMerge from "deepmerge"
+import { Object as O } from "ts-toolbelt"
+
 export const merge = deepMerge
 export const memoize = moize as <F extends (...args: any[]) => any>(f: F) => F
+
+export type Merge<
+    A extends object,
+    B extends object,
+    C extends object = {},
+    D extends object = {},
+    E extends object = {},
+    F extends object = {},
+    G extends object = {}
+> = O.Assign<A, [B, C, D, E, F, G]>
 
 export type MapReturn<F, V> = F extends (value: V) => infer R ? R : any
 

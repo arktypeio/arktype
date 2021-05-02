@@ -2,7 +2,11 @@ import React from "react"
 import { FormText, FormSubmit, Form, Button, Column } from "@re-do/components"
 import { store } from "renderer/common"
 import { formatEmail } from "./common"
-import { useSignInMutation } from "@re-do/model"
+import {
+    useSignInMutation,
+    SignInMutationVariables,
+    SignInMutation
+} from "@re-do/model"
 
 export const SignIn = () => {
     const [submit] = useSignInMutation()
@@ -11,27 +15,28 @@ export const SignIn = () => {
             page: true
         }).page !== "SIGN_IN"
     return (
-        <Form
+        <Form<SignInMutationVariables>
             submit={async (data) => {
-                const result = await submit()
+                const result = await submit({ variables: data })
                 store.update({ token: result?.data?.signIn })
             }}
+            grow
+            full
+            justify="center"
         >
-            <Column justify="center" grow>
-                <FormText
-                    name="email"
-                    disabled={disabled}
-                    errorTooltipPlacement="right"
-                    transform={formatEmail}
-                    autoFocus
-                />
-                <FormText
-                    type="password"
-                    errorTooltipPlacement="right"
-                    name="password"
-                    disabled={disabled}
-                />
-            </Column>
+            <FormText
+                name="email"
+                disabled={disabled}
+                errorTooltipPlacement="right"
+                transform={formatEmail}
+                autoFocus
+            />
+            <FormText
+                type="password"
+                errorTooltipPlacement="right"
+                name="password"
+                disabled={disabled}
+            />
             <FormSubmit>Sign in</FormSubmit>
         </Form>
     )

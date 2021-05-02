@@ -1,21 +1,19 @@
 import React, { useState } from "react"
 import { useForm, SubmitHandler, FormProvider } from "react-hook-form"
 import { Column, ColumnProps } from "../layouts"
-import { ErrorText } from "../text"
 
-export type FormProps<Inputs extends object> = {
+export type FormProps<Inputs extends object> = ColumnProps & {
     children: JSX.Element | JSX.Element[]
     submit: SubmitHandler<Inputs>
-    columnProps?: ColumnProps
 }
 
 export const Form = <Inputs extends object>({
     children,
     submit,
-    columnProps
+    ...columnProps
 }: FormProps<Inputs>) => {
     const [submitError, setSubmitError] = useState("")
-    const context = { ...useForm<Inputs>({ mode: "onBlur" }), submitError }
+    const context = { ...useForm<Inputs>({ mode: "onChange" }), submitError }
     const onSubmit = async (data: Inputs) => {
         try {
             await context.handleSubmit(submit)()
@@ -26,7 +24,10 @@ export const Form = <Inputs extends object>({
     }
     return (
         <FormProvider {...context}>
-            <form onSubmit={context.handleSubmit(onSubmit as any)}>
+            <form
+                style={{ height: "100%", width: "100%" }}
+                onSubmit={context.handleSubmit(onSubmit as any)}
+            >
                 <Column align="center" {...columnProps}>
                     {children}
                 </Column>
