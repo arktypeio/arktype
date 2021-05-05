@@ -55,10 +55,6 @@
         {
             "packageName": "@re-do/cli",
             "projectFolder": "pkgs/cli"
-        },
-        {
-            "packageName": "app2",
-            "projectFolder": "pkgs/app2"
         }
     ]
 }
