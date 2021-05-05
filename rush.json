@@ -29,10 +29,6 @@
             "projectFolder": "pkgs/model"
         },
         {
-            "packageName": "@re-do/app",
-            "projectFolder": "pkgs/app"
-        },
-        {
             "packageName": "@re-do/components",
             "projectFolder": "pkgs/components"
         },
@@ -55,6 +51,10 @@
         {
             "packageName": "@re-do/cli",
             "projectFolder": "pkgs/cli"
+        },
+        {
+            "packageName": "app2",
+            "projectFolder": "pkgs/app2"
         }
     ]
 }

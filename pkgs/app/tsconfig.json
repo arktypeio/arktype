@@ -14,7 +14,7 @@
             "browser": ["browser"],
             "browser/*": ["browser/*"],
             "assets": ["renderer/assets"],
-            "assets/*": ["renderer/assets/*"],
+            "assets/*": ["renderer/assets/*"]
         }
     },
     "include": ["src"],

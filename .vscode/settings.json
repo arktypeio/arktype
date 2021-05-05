@@ -1,7 +1,15 @@
 {
     "files.watcherExclude": {
         "**/.git/objects/**": true,
-        "**/.git/subtree-cache/**": true,
-        "**/.hg/store/**": true
+        "**/.git/subtree-cache/**": true
+    },
+    "search.exclude": {
+        "common/temp": true,
+        ".git": true,
+        "**/dist/*": true,
+        "**/node_modules/*": true,
+        "test/**/__snapshots__": true,
+        "pnpm-lock.*": true,
+        "*.lock": true,
     }
 }

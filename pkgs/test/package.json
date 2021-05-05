@@ -12,8 +12,8 @@
     "dependencies": {
         "@babel/runtime-corejs3": "7.13.10",
         "@re-do/utils": "0.0.10",
-        "fs-extra": "9.0.1",
-        "playwright-core": "1.9.0"
+        "fs-extra": "10.0.0",
+        "playwright-core": "1.10.0"
     },
     "devDependencies": {
         "@re-do/recommended": "0.0.2",
