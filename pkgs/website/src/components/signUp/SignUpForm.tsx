@@ -4,7 +4,7 @@ import { track } from "./analytics"
 import validator from "validator"
 
 export const SignUpForm = () => (
-    <Form<{ email: string }, boolean>
+    <Form<{ email: string }>
         validate={({ email }) => {
             const errors: string[] = []
             if (!validator.isEmail(email)) {
@@ -27,22 +27,13 @@ export const SignUpForm = () => (
             return { data: { email } }
         }}
     >
-        {({ data }) => (
-            <>
-                <FormText name="email" />
-                <FormSubmit>
-                    <Button
-                        style={{
-                            fontSize: "large",
-                            fontWeight: 700,
-                            minWidth: 200
-                        }}
-                        disabled={!!data}
-                    >
-                        {data ? "You're in the loop 💌" : "Keep me posted!"}
-                    </Button>
-                </FormSubmit>
-            </>
-        )}
+        <FormText name="email" />
+        <FormSubmit
+            buttonProps={{
+                style: { fontSize: "large", fontWeight: 700, minWidth: 200 }
+            }}
+        >
+            {data ? "You're in the loop 💌" : "Keep me posted!"}
+        </FormSubmit>
     </Form>
 )
