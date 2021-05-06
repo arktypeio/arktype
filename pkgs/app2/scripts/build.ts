@@ -4,8 +4,8 @@ import { dirname } from "path"
 const mode = (process.env.MODE = process.env.MODE || "production")
 
 const packagesConfigs = [
-    "packages/main/vite.config.js",
-    "packages/renderer/vite.config.js"
+    "src/main/vite.config.js",
+    "src/renderer/vite.config.js"
 ]
 
 const buildByConfig = (configFile: string) => build({ configFile, mode })

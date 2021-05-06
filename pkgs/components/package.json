@@ -3,8 +3,14 @@
     "version": "0.0.4",
     "author": "redo.qa",
     "description": "Common UI components consumed by Redo",
-    "main": "dist/index.js",
-    "types": "dist/index.d.ts",
+    "main": "dist/cjs/index.js",
+    "module": "dist/mjs/index.js",
+    "exports": {
+        ".": {
+            "import": "./dist/mjs/index.js",
+            "require": "./dist/cjs/index.js"
+        }
+    },
     "scripts": {
         "start": "start-storybook -p 6006",
         "build": "redo-build",

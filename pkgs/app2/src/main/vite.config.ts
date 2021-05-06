@@ -3,7 +3,7 @@ import { join } from "path"
 import { builtinModules } from "module"
 import { defineConfig } from "vite"
 
-const PACKAGE_ROOT = __dirname
+const PACKAGE_ROOT = join(__dirname, "..")
 /**
  * @see https://vitejs.dev/config/
  */
@@ -11,7 +11,8 @@ export default defineConfig({
     root: PACKAGE_ROOT,
     resolve: {
         alias: {
-            "/@/": join(PACKAGE_ROOT, "src") + "/"
+            "@/": PACKAGE_ROOT + "/",
+            state: join(PACKAGE_ROOT, "state")
         }
     },
     build: {
@@ -28,7 +29,7 @@ export default defineConfig({
             safari10: false
         },
         lib: {
-            entry: "src/index.ts",
+            entry: "main/index.ts",
             formats: ["cjs"]
         },
         rollupOptions: {

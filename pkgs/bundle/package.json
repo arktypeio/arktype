@@ -36,7 +36,8 @@
         "webpack-bundle-analyzer": "4.3.0",
         "webpack-dev-server": "3.11.2",
         "webpack-merge": "5.7.3",
-        "node-polyfill-webpack-plugin": "1.0.2"
+        "node-polyfill-webpack-plugin": "1.0.2",
+        "@re-do/node-utils": "0.0.1"
     },
     "devDependencies": {
         "@re-do/recommended": "0.0.2",

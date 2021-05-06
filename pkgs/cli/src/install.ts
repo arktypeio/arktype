@@ -8,7 +8,7 @@ import {
     EXECUTABLE_SUFFIX,
     streamToFile,
     ensureRedoDir
-} from "@re-do/utils/dist/node"
+} from "@re-do/node-utils"
 
 const token = "0a1faa04389cf5df6264846e57c525a3dfbf5651"
 
@@ -52,18 +52,18 @@ export const install = async () => {
             authorization: `token ${token}`
         }
     })
-    const releasesResult = await query({
+    const releasesResult = (await query({
         query: recentReleasesQuery
-    }) as any
+    })) as any
     const releases: any[] = assertResult(
         releasesResult?.repository?.releases?.nodes
     )
     const latestRelease = assertResult(
         releases.find((release) => !release.isDraft && !release.isPrerelease)
     )
-    const assetsResult = await query(assetsQuery, {
+    const assetsResult = (await query(assetsQuery, {
         tag: latestRelease.tagName
-    }) as any
+    })) as any
     const assets: any[] = assertResult(
         assetsResult?.repository?.release?.releaseAssets?.nodes
     )

@@ -4,7 +4,7 @@ import {
     createHttpLink,
     ApolloLink
 } from "@apollo/client"
-import { isDev } from "@re-do/utils/dist/node"
+import { isDev } from "@re-do/node-utils"
 import { createRendererStore } from "state"
 
 const httpLink = createHttpLink({

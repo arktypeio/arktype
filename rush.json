@@ -1,8 +1,8 @@
 {
     "$schema": "https://developer.microsoft.com/json-schemas/rush/v5/rush.schema.json",
-    "rushVersion": "5.26.0",
-    "pnpmVersion": "4.12.5",
-    "nodeSupportedVersionRange": ">=12.13.0 <13.0.0",
+    "rushVersion": "5.46.1",
+    "pnpmVersion": "6.2.3",
+    "nodeSupportedVersionRange": ">=14.16.1",
     "ensureConsistentVersions": true,
     "repository": {
         "url": "https://github.com/redo-qa/redo"
@@ -55,6 +55,10 @@
         {
             "packageName": "app2",
             "projectFolder": "pkgs/app2"
+        },
+        {
+            "packageName": "@re-do/node-utils",
+            "projectFolder": "pkgs/node-utils"
         }
     ]
 }

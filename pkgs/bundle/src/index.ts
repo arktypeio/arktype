@@ -12,7 +12,7 @@ import {
     ProvidePlugin
 } from "webpack"
 import { listify } from "@re-do/utils"
-import { getMode, isDev } from "@re-do/utils/dist/node"
+import { getMode, isDev } from "@re-do/node-utils"
 import ForkTsCheckerWebpackPlugin from "fork-ts-checker-webpack-plugin"
 import { BundleAnalyzerPlugin } from "webpack-bundle-analyzer"
 

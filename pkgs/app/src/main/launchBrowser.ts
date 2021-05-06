@@ -3,7 +3,7 @@ import { BrowserWindow } from "electron"
 import { resolve } from "path"
 import { launch, Step } from "@re-do/test"
 import { Browser } from "playwright-core"
-import { isDev } from "@re-do/utils/dist/node"
+import { isDev } from "@re-do/node-utils"
 import { Root, deactivateBuilder } from "state"
 import { Store } from "react-statelessly"
 

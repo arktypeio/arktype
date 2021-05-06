@@ -1,6 +1,6 @@
 import { resolve } from "path"
 import { makeConfig } from "@re-do/bundle"
-import { isDev } from "@re-do/utils/dist/node"
+import { isDev } from "@re-do/node-utils"
 
 export default makeConfig({
     base: "web",

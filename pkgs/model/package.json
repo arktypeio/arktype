@@ -3,8 +3,14 @@
     "version": "0.0.1",
     "author": "redo.qa",
     "description": "Redo's storage model",
-    "main": "dist/index.js",
-    "types": "dist/index.d.ts",
+    "main": "dist/cjs/index.js",
+    "module": "dist/mjs/index.js",
+    "exports": {
+        ".": {
+            "import": "./dist/mjs/index.js",
+            "require": "./dist/cjs/index.js"
+        }
+    },
     "scripts": {
         "build": "ts-node gqlize && graphql-codegen && redo-build",
         "test": "jest",

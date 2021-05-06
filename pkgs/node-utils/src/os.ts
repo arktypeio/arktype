@@ -1,4 +1,4 @@
-import { ValueOf, isIn } from "../common"
+import { ValueOf, isIn } from "@re-do/utils"
 
 const supportedOsMap = {
     darwin: "mac",
@@ -15,9 +15,7 @@ export const supportedPlatforms = Object.keys(
 ) as SupportedPlatform[]
 
 type SupportedOs = ValueOf<SupportedOsMap>
-export const supportedOs = [
-    ...new Set(Object.values(supportedOsMap))
-] as SupportedOs[]
+export const supportedOs = [...Object.values(supportedOsMap)] as SupportedOs[]
 
 export const getOs = () => {
     const platform = process.platform

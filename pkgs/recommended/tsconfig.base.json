@@ -1,8 +1,7 @@
 {
     "compilerOptions": {
-        "target": "es2018",
-        "module": "commonjs",
-        "lib": ["esnext", "dom"],
+        "moduleResolution": "node",
+        "lib": ["ESNext", "DOM", "DOM.Iterable"],
         "jsx": "react",
         "inlineSourceMap": true,
         "strict": true,

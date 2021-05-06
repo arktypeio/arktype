@@ -53,7 +53,7 @@ const setupMainPackageWatcher = (viteDevServer: ViteDevServer) => {
 
     return getWatcher({
         name: "reload-app-on-main-package-change",
-        configFile: "packages/main/vite.config.ts",
+        configFile: "src/main/vite.config.ts",
         writeBundle: () => {
             if (spawnProcess !== null) {
                 spawnProcess.kill("SIGINT")
@@ -94,7 +94,7 @@ const setupMainPackageWatcher = (viteDevServer: ViteDevServer) => {
     try {
         const viteDevServer = await createServer({
             ...sharedConfig,
-            configFile: "packages/renderer/vite.config.ts"
+            configFile: "src/renderer/vite.config.ts"
         })
 
         await viteDevServer.listen()
