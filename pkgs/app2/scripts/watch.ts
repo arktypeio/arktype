@@ -6,8 +6,8 @@ import {
     UserConfig,
     LogLevel
 } from "vite"
-import electron from "electron"
 import { ChildProcessWithoutNullStreams, spawn } from "child_process"
+const electronPath = require("electron")
 
 const mode = (process.env.MODE = process.env.MODE || "development")
 
@@ -59,8 +59,7 @@ const setupMainPackageWatcher = (viteDevServer: ViteDevServer) => {
                 spawnProcess.kill("SIGINT")
                 spawnProcess = null
             }
-
-            spawnProcess = spawn(String(electron), ["."])
+            spawnProcess = spawn(String(electronPath), ["."])
 
             spawnProcess.stdout.on(
                 "data",

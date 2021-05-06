@@ -18,7 +18,7 @@ export default defineConfig({
     build: {
         sourcemap: "inline",
         target: `node14`,
-        outDir: "dist",
+        outDir: join(PACKAGE_ROOT, "..", "dist"),
         assetsDir: ".",
         minify: process.env.MODE === "development" ? false : "terser",
         terserOptions: {

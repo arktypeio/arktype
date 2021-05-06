@@ -6,9 +6,10 @@
         "node": ">=v14.16",
         "npm": ">=7.7"
     },
+    "main": "dist/index.cjs",
     "scripts": {
-        "buildEnvTypes": "ts-node scripts/buildEnvTypes.ts",
-        "build": "ts-node scripts/build.ts",
+        "buildEnvTypes": "ts-node -O '{\"module\":\"commonjs\"}' scripts/buildEnvTypes.ts",
+        "build": "ts-node -O '{\"module\":\"commonjs\"}' scripts/build.ts",
         "precompile": "cross-env MODE=production npm run build",
         "compile": "electron-builder build --config electron-builder.config.js --dir --config.asar=false",
         "pretest": "cross-env MODE=test npm run build",
@@ -59,7 +60,7 @@
     "devDependencies": {
         "@types/electron-devtools-installer": "2.2.0",
         "cross-env": "7.0.3",
-        "electron": "11.2.0",
+        "electron": "11.4.5",
         "electron-builder": "22.9.1",
         "electron-devtools-installer": "3.2.0",
         "lint-staged": "10.5.4",

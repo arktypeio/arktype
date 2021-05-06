@@ -84,7 +84,7 @@ specifiers:
   css-loader: 5.0.1
   deepmerge: 4.2.2
   dotenv: 9.0.0
-  electron: 11.2.0
+  electron: 11.4.5
   electron-builder: 22.9.1
   electron-devtools-installer: 3.2.0
   electron-redux: 1.5.4
@@ -226,7 +226,7 @@ dependencies:
   css-loader: 5.0.1_webpack@5.17.0
   deepmerge: 4.2.2
   dotenv: 9.0.0
-  electron: 11.2.0
+  electron: 11.4.5
   electron-builder: 22.9.1
   electron-devtools-installer: 3.2.0
   electron-redux: 1.5.4
@@ -265,7 +265,7 @@ dependencies:
   redux-devtools-extension: 2.13.8_redux@4.0.5
   simple-git-hooks: 2.4.1
   source-map-loader: 2.0.1_webpack@5.17.0
-  spectron: 14.0.0_electron@11.2.0
+  spectron: 14.0.0_electron@11.4.5
   style-loader: 2.0.0_webpack@5.17.0
   ts-loader: 8.0.14_typescript@4.2.3+webpack@5.17.0
   ts-node: 9.1.1_typescript@4.2.3
@@ -2654,12 +2654,12 @@ packages:
       - supports-color
     dev: false
 
-  /@electron/remote/1.1.0_electron@11.2.0:
+  /@electron/remote/1.1.0_electron@11.4.5:
     resolution: {integrity: sha512-yr8gZTkIgJYKbFqExI4QZqMSjn1kL/us9Dl46+TH1EZdhgRtsJ6HDfdsIxu0QEc6Hv+DMAXs69rgquH+8FDk4w==}
     peerDependencies:
       electron: '>= 10.0.0-beta.1'
     dependencies:
-      electron: 11.2.0
+      electron: 11.4.5
     dev: false
 
   /@emotion/cache/10.0.29:
@@ -9501,8 +9501,8 @@ packages:
       - supports-color
     dev: false
 
-  /electron/11.2.0:
-    resolution: {integrity: sha512-weszOPAJPoPu6ozL7vR9enXmaDSqH+KE9iZODfbGdnFgtVfVdfyedjlvEGIUJkLMPXM1y/QWwCl2dINzr0Jq5Q==}
+  /electron/11.4.5:
+    resolution: {integrity: sha512-F1s70t8ZVU7PuXuP7wxbF5muOIRulWvzRAE8MiD5PTomaOar5+I+eR3jD20bs13Z5GdyOQu148WQt8r9h+ALTA==}
     engines: {node: '>= 8.6'}
     hasBin: true
     requiresBuild: true
@@ -17316,12 +17316,12 @@ packages:
       - supports-color
     dev: false
 
-  /spectron/14.0.0_electron@11.2.0:
+  /spectron/14.0.0_electron@11.4.5:
     resolution: {integrity: sha512-88GM7D1eLiTxjByjtY7lxU7CJcQ92kX1x0WfnADaIXqqYRLbI1KlIWxXz1Xm5UxuMJh5N847K0NONG49mvZtuw==}
     engines: {node: '>=10.12.0'}
     requiresBuild: true
     dependencies:
-      '@electron/remote': 1.1.0_electron@11.2.0
+      '@electron/remote': 1.1.0_electron@11.4.5
       dev-null: 0.1.1
       electron-chromedriver: 12.0.0
       got: 11.8.2
@@ -19678,7 +19678,7 @@ packages:
     dev: false
 
   file:projects/app2.tgz:
-    resolution: {integrity: sha512-ai9UclXwVO5mbpBLQ88PoD/wxPUEQhWDMoteMnGMrk1GLBYYz9OU6pdJghMbCYxCk7HlEJxYdEh9EvYLZIsusg==, tarball: file:projects/app2.tgz}
+    resolution: {integrity: sha512-RxB42Tmy8uWkQLiL9coV4FjP5ANy7gN5sxV8c9UGmLSF+ZTUNRazjO6RM6M0UuIU+7MOnD2VFV1tOVMbstBevQ==, tarball: file:projects/app2.tgz}
     name: '@rush-temp/app2'
     version: 0.0.0
     dependencies:
@@ -19697,7 +19697,7 @@ packages:
       core-js: 3.8.2
       cross-env: 7.0.3
       dotenv: 9.0.0
-      electron: 11.2.0
+      electron: 11.4.5
       electron-builder: 22.9.1
       electron-devtools-installer: 3.2.0
       electron-redux: 1.5.4
@@ -19713,7 +19713,7 @@ packages:
       react: 17.0.2
       react-dom: 17.0.2_react@17.0.2
       simple-git-hooks: 2.4.1
-      spectron: 14.0.0_electron@11.2.0
+      spectron: 14.0.0_electron@11.4.5
       ts-node: 9.1.1_typescript@4.2.3
       typeface-ubuntu: 1.1.13
       typescript: 4.2.3
@@ -19758,7 +19758,7 @@ packages:
     dev: false
 
   file:projects/bundle.tgz_b7cbaec9489e82b382688a684817783c:
-    resolution: {integrity: sha512-7qoD34B2K0t2MgDYDRy+UnuingRs6Ed+Mg623F6boJG/OxSM7YPhwjDGzCDjD1gmQA/c1SoshwWoy35tfht3Pw==, tarball: file:projects/bundle.tgz}
+    resolution: {integrity: sha512-XtYp5JI343hSu1CzZwqKiZQIDptmhYM8ookWtAve2rL9nhvy+SIjAfYylCF6zq+wsW30P95DlyYNUItsdqAUpg==, tarball: file:projects/bundle.tgz}
     id: file:projects/bundle.tgz
     name: '@rush-temp/bundle'
     version: 0.0.0
@@ -19805,7 +19805,7 @@ packages:
     dev: false
 
   file:projects/cli.tgz:
-    resolution: {integrity: sha512-R3ajX7vNFDHUerX6LZ5IcCTpaYVXHgb1Su5nyZRYxYvV8Vq20CMo4a79xQ4lpVmQnkDoE+2nS5X7trSR+/lhZg==, tarball: file:projects/cli.tgz}
+    resolution: {integrity: sha512-4HXlrMefalRCr5iAb0Vf+hqgp4hwJ70gZXNhxMaj9gGpDxyfo9/k682veB+D6VMXNngE8654QKFVNk3YVLRfrg==, tarball: file:projects/cli.tgz}
     name: '@rush-temp/cli'
     version: 0.0.0
     dependencies:
@@ -20066,7 +20066,7 @@ packages:
     dev: false
 
   file:projects/website.tgz_webpack-bundle-analyzer@4.3.0:
-    resolution: {integrity: sha512-YjmxqHlIgon/jhLkkRsdtfI8S2auzBrfdriC/jXTuxFcsX06vFF2x7GOp4I6XIQb8Qt2BTY1nYCVJ2mHeY9Ugw==, tarball: file:projects/website.tgz}
+    resolution: {integrity: sha512-aa7Iyn9h7mNxb8Aj31WtG0f4E5Hg+0rvPs6VKHJC4ZQUWNyr91LufV2txafrmS+WDUnwppH0liQxonI87O8Z9A==, tarball: file:projects/website.tgz}
     id: file:projects/website.tgz
     name: '@rush-temp/website'
     version: 0.0.0

@@ -4,8 +4,8 @@
         "outDir": "dist",
         "module": "esnext",
         "target": "esnext",
-        "sourceMap": true,
         "moduleResolution": "Node",
+        "sourceMap": true,
         "skipLibCheck": true,
         "strict": true,
         "isolatedModules": true,
@@ -14,6 +14,5 @@
         "typeRoots": ["node_modules/@types"],
         "lib": ["ESNext", "dom", "dom.iterable"],
         "jsx": "react"
-    },
-    "include": ["src"]
+    }
 }

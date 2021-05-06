@@ -13,7 +13,8 @@ export default defineConfig({
     root: PACKAGE_ROOT,
     resolve: {
         alias: {
-            "@/": PACKAGE_ROOT + "/"
+            "@/": PACKAGE_ROOT + "/",
+            state: join(PACKAGE_ROOT, "state")
         }
     },
     plugins: [reactRefresh()],
@@ -22,8 +23,12 @@ export default defineConfig({
         sourcemap: true,
         target: `chrome89`,
         polyfillDynamicImport: false,
-        outDir: "dist",
+        outDir: join(PACKAGE_ROOT, "..", "dist"),
         assetsDir: ".",
+        lib: {
+            entry: "renderer/index.html",
+            formats: ["cjs"]
+        },
         terserOptions: {
             ecma: 2020,
             compress: {
