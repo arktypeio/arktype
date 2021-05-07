@@ -9,7 +9,7 @@ import { createRendererStore } from "state"
 
 const httpLink = createHttpLink({
     uri: isDev()
-        ? `http://localhost:${process.env.PORT}/dev/graphql`
+        ? `http://localhost:${process.env.GRAPHQL_SERVER_PORT}/dev/graphql`
         : "https://tpru7v18yi.execute-api.us-east-1.amazonaws.com/dev/graphql"
 })
 

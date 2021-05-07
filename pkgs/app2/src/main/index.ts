@@ -20,7 +20,7 @@ const DEFAULT_BUILDER_WIDTH = 300
 const ELECTRON_TITLEBAR_SIZE = 37
 
 const BASE_URL = isDev()
-    ? `http://localhost:8080`
+    ? `http://localhost:${process.env["DEV_SERVER_PORT"]}`
     : `file://${__dirname}/index.html`
 
 store = createMainStore({
@@ -77,7 +77,7 @@ const installExtensions = async () => {
 const createMainWindow = async () => {
     mainWindow = new BrowserWindow({
         ...defaultElectronOptions,
-        title: "New Test"
+        title: "Redo"
     })
     await mainWindow.loadURL(BASE_URL)
     mainWindow.maximize()
@@ -85,7 +85,10 @@ const createMainWindow = async () => {
 }
 
 const createBuilderWindow = async () => {
-    builderWindow = new BrowserWindow(defaultElectronOptions)
+    builderWindow = new BrowserWindow({
+        ...defaultElectronOptions,
+        title: "New Test"
+    })
     // Builder window should always exist, even if it's not shown
     builderWindow.on("close", () => {
         deactivateBuilder(store)

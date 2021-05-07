@@ -1,4 +1,3 @@
-import "dotenv"
 import { join } from "path"
 import { builtinModules } from "module"
 import { defineConfig } from "vite"
@@ -40,7 +39,7 @@ export default defineConfig({
         rollupOptions: {
             external: [...builtinModules],
             output: {
-                entryFileNames: "[name].cjs"
+                entryFileNames: "[name].js"
             }
         },
         emptyOutDir: true

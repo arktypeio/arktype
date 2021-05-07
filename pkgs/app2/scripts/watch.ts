@@ -1,3 +1,4 @@
+import "dotenv/config"
 import {
     ViteDevServer,
     createServer,
@@ -7,6 +8,7 @@ import {
     LogLevel
 } from "vite"
 import { ChildProcessWithoutNullStreams, spawn } from "child_process"
+
 const electronPath = require("electron")
 
 const mode = (process.env.MODE = process.env.MODE || "development")
@@ -93,9 +95,11 @@ const setupMainPackageWatcher = (viteDevServer: ViteDevServer) => {
     try {
         const viteDevServer = await createServer({
             ...sharedConfig,
+            server: {
+                port: Number(process.env.DEV_SERVER_PORT)
+            },
             configFile: "src/renderer/vite.config.ts"
         })
-
         await viteDevServer.listen()
 
         // await setupPreloadPackageWatcher(viteDevServer)

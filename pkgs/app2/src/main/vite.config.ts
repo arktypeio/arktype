@@ -1,4 +1,3 @@
-import "dotenv"
 import { join } from "path"
 import { builtinModules } from "module"
 import { defineConfig } from "vite"
@@ -33,9 +32,14 @@ export default defineConfig({
             formats: ["cjs"]
         },
         rollupOptions: {
-            external: ["electron", "electron-updater", ...builtinModules],
+            external: [
+                "electron",
+                "electron-updater",
+                "playwright-core",
+                ...builtinModules
+            ],
             output: {
-                entryFileNames: "[name].cjs"
+                entryFileNames: "[name].js"
             }
         },
         emptyOutDir: true

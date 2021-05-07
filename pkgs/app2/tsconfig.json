@@ -14,5 +14,6 @@
         "typeRoots": ["node_modules/@types"],
         "lib": ["ESNext", "dom", "dom.iterable"],
         "jsx": "react"
-    }
+    },
+    "include": ["src"]
 }
