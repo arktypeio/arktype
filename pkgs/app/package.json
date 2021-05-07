@@ -76,7 +76,7 @@
         "@types/react": "17.0.5",
         "@types/react-dom": "17.0.3",
         "babel-preset-redo": "0.0.2",
-        "jsrx": "0.0.5",
+        "jsrx": "0.0.9",
         "electron": "11.2.0",
         "electron-builder": "22.9.1",
         "electron-devtools-installer": "3.1.1",

@@ -105,7 +105,7 @@ specifiers:
   isomorphic-fetch: 3.0.0
   isomorphic-ws: 4.0.1
   jest: 26.6.3
-  jsrx: 0.0.5
+  jsrx: 0.0.9
   lint-staged: 10.5.4
   moize: 5.4.7
   node-fetch: 2.6.1
@@ -250,7 +250,7 @@ dependencies:
   isomorphic-fetch: 3.0.0
   isomorphic-ws: 4.0.1
   jest: 26.6.3_ts-node@9.1.1
-  jsrx: 0.0.5
+  jsrx: 0.0.9
   lint-staged: 10.5.4
   moize: 5.4.7
   node-fetch: 2.6.1
@@ -13194,8 +13194,8 @@ packages:
       verror: 1.10.0
     dev: false
 
-  /jsrx/0.0.5:
-    resolution: {integrity: sha512-XgD1F0SDlOM8XymXQRYAlvEUEvGMHsZWB25r/6LELASoC/TNf+MpqBXy/rvcejBAqO1lmFkGCyzuU84D/bUnrQ==}
+  /jsrx/0.0.9:
+    resolution: {integrity: sha512-ATPpUj2++sFkC6QsBDadyLcS6FJaDUo5tB+e3GDFze3ASZZbVpJ505LIfJwDpligwexkEW0/G9gaqCZ0X2unkg==}
     hasBin: true
     dependencies:
       '@re-do/node-utils': 0.0.2
@@ -19726,7 +19726,7 @@ packages:
     dev: false
 
   file:projects/app2.tgz:
-    resolution: {integrity: sha512-kNWzGnCn6niYzYynhppKw0RDdemGshYZxqYEAk3Qp7JZlNwKco41YqHut00ogHAvrMK7bLc79IVGTaxDhXhygw==, tarball: file:projects/app2.tgz}
+    resolution: {integrity: sha512-LlnZuLl0KAbg4Bck5vUdpOgegZ8BgC62nWpLAnLmhpbM0o1olzdQ0oG5tudXMU2ls906akOGh2sDXCtVLqB4rA==, tarball: file:projects/app2.tgz}
     name: '@rush-temp/app2'
     version: 0.0.0
     dependencies:
@@ -19756,7 +19756,7 @@ packages:
       graphql: 15.5.0
       graphql-tag: 2.12.4_graphql@15.5.0
       isomorphic-ws: 4.0.1
-      jsrx: 0.0.5
+      jsrx: 0.0.9
       lint-staged: 10.5.4
       playwright-core: 1.10.0
       react: 17.0.2
