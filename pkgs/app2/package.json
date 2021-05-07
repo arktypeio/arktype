@@ -6,7 +6,7 @@
         "node": ">=v14.16",
         "npm": ">=7.7"
     },
-    "main": "dist/index.cjs",
+    "main": "dist/main/index.js",
     "scripts": {
         "buildEnvTypes": "ts-node -O '{\"module\":\"commonjs\"}' scripts/buildEnvTypes.ts",
         "build": "ts-node -O '{\"module\":\"commonjs\"}' scripts/build.ts",

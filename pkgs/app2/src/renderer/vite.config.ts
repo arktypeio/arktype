@@ -14,7 +14,8 @@ export default defineConfig({
     resolve: {
         alias: {
             "@/": PACKAGE_ROOT + "/",
-            state: join(PACKAGE_ROOT, "state")
+            state: join(PACKAGE_ROOT, "state"),
+            renderer: join(PACKAGE_ROOT, "renderer")
         }
     },
     plugins: [reactRefresh()],
@@ -23,7 +24,7 @@ export default defineConfig({
         sourcemap: true,
         target: `chrome89`,
         polyfillDynamicImport: false,
-        outDir: join(PACKAGE_ROOT, "..", "dist"),
+        outDir: join(PACKAGE_ROOT, "..", "dist", "renderer"),
         assetsDir: ".",
         lib: {
             entry: "renderer/index.html",
@@ -37,7 +38,10 @@ export default defineConfig({
             safari10: false
         },
         rollupOptions: {
-            external: [...builtinModules]
+            external: [...builtinModules],
+            output: {
+                entryFileNames: "[name].cjs"
+            }
         },
         emptyOutDir: true
     }
