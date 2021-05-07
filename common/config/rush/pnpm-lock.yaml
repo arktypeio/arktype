@@ -28,6 +28,7 @@ specifiers:
   '@mdx-js/react': 1.6.22
   '@medv/finder': 2.0.0
   '@octokit/graphql': 4.5.8
+  '@re-do/node-utils': 0.0.1
   '@reduxjs/toolkit': 1.5.0
   '@rush-temp/app2': file:./projects/app2.tgz
   '@rush-temp/babel-preset-redo': file:./projects/babel-preset-redo.tgz
@@ -56,6 +57,7 @@ specifiers:
   '@types/jest': 26.0.20
   '@types/node': 15.0.2
   '@types/node-fetch': 2.5.8
+  '@types/prompts': 2.0.11
   '@types/react': 17.0.5
   '@types/react-autosuggest': 10.1.4
   '@types/react-dom': 17.0.3
@@ -103,7 +105,7 @@ specifiers:
   isomorphic-fetch: 3.0.0
   isomorphic-ws: 4.0.1
   jest: 26.6.3
-  jsrx: 0.0.3
+  jsrx: 0.0.5
   lint-staged: 10.5.4
   moize: 5.4.7
   node-fetch: 2.6.1
@@ -111,6 +113,7 @@ specifiers:
   playwright-core: 1.10.0
   prettier: 2.2.1
   process: 0.11.10
+  prompts: 2.4.1
   react: 17.0.2
   react-dom: 17.0.2
   react-ga: 3.3.0
@@ -170,6 +173,7 @@ dependencies:
   '@mdx-js/react': 1.6.22_react@17.0.2
   '@medv/finder': 2.0.0
   '@octokit/graphql': 4.5.8
+  '@re-do/node-utils': 0.0.1
   '@reduxjs/toolkit': 1.5.0
   '@rush-temp/app2': file:projects/app2.tgz
   '@rush-temp/babel-preset-redo': file:projects/babel-preset-redo.tgz_c9b97d0291e0c7f7ae91672f3bb47b49
@@ -198,6 +202,7 @@ dependencies:
   '@types/jest': 26.0.20
   '@types/node': 15.0.2
   '@types/node-fetch': 2.5.8
+  '@types/prompts': 2.0.11
   '@types/react': 17.0.5
   '@types/react-autosuggest': 10.1.4
   '@types/react-dom': 17.0.3
@@ -245,7 +250,7 @@ dependencies:
   isomorphic-fetch: 3.0.0
   isomorphic-ws: 4.0.1
   jest: 26.6.3_ts-node@9.1.1
-  jsrx: 0.0.3
+  jsrx: 0.0.5
   lint-staged: 10.5.4
   moize: 5.4.7
   node-fetch: 2.6.1
@@ -253,6 +258,7 @@ dependencies:
   playwright-core: 1.10.0
   prettier: 2.2.1
   process: 0.11.10
+  prompts: 2.4.1
   react: 17.0.2
   react-dom: 17.0.2_react@17.0.2
   react-ga: 3.3.0_react@17.0.2
@@ -4045,6 +4051,40 @@ packages:
     resolution: {integrity: sha512-VZMYa7+fXHdwIq1TDhSXoVmSPEGM/aa+6Aiq3nVVJ9bXr24zScr+NlKFKC3iPljA7ho/GAZr+d2jOf5GIRC30Q==}
     dev: false
 
+  /@re-do/node-utils/0.0.1:
+    resolution: {integrity: sha512-UhpYOX2fzj/DHbE0MQAQgr4v04tDxi2PkUn2TGslAC0H8gG2X/O8vJs+qzPIZbXotn5C1miSHJDU2mjclu6mlA==}
+    dependencies:
+      '@babel/runtime-corejs3': 7.13.10
+      '@re-do/utils': 0.0.11
+      assert: 2.0.0
+      core-js: 3.8.2
+      deepmerge: 4.2.2
+      execa: 5.0.0
+      fs-extra: 10.0.0
+      moize: 5.4.7
+      process: 0.11.10
+      prompts: 2.4.1
+      util: 0.12.3
+      validator: 13.5.2
+    dev: false
+
+  /@re-do/node-utils/0.0.2:
+    resolution: {integrity: sha512-ztoUQ8WwGgw3ijTJ0vgFnXZKIrEvR5kVO0uOdWPW4E/DK27GKtVLmxl0HhihSAQjhOlGeiYgwY77X/YSUZDoAQ==}
+    dependencies:
+      '@babel/runtime-corejs3': 7.13.10
+      '@re-do/utils': 0.0.11
+      assert: 2.0.0
+      core-js: 3.8.2
+      deepmerge: 4.2.2
+      execa: 5.0.0
+      fs-extra: 10.0.0
+      moize: 5.4.7
+      process: 0.11.10
+      prompts: 2.4.1
+      util: 0.12.3
+      validator: 13.5.2
+    dev: false
+
   /@re-do/utils/0.0.10:
     resolution: {integrity: sha512-7M3d4L65MkzpcqKccP9OhYpnBdyKE2uspQWz1SxkTJol7wDL4qciSN545aQm5q2tefc9QSDuoOynS//LiJtQpA==}
     dependencies:
@@ -4054,6 +4094,22 @@ packages:
       execa: 4.0.0
       fs-extra: 8.1.0
       moize: 5.4.4
+    dev: false
+
+  /@re-do/utils/0.0.11:
+    resolution: {integrity: sha512-YPdGXiBMZcF9cb0Ys5CS95o7u26V7I+PhcbmjV952Xr5XmNQqrtgRUoaeb+1wLml56HmrSQV3ecZkiBEtBh/qQ==}
+    dependencies:
+      '@babel/runtime-corejs3': 7.13.10
+      assert: 2.0.0
+      core-js: 3.8.2
+      deepmerge: 4.2.2
+      execa: 5.0.0
+      fs-extra: 10.0.0
+      moize: 5.4.7
+      process: 0.11.10
+      ts-toolbelt: 9.5.10
+      util: 0.12.3
+      validator: 13.5.2
     dev: false
 
   /@reach/router/1.3.4_react-dom@17.0.2+react@17.0.2:
@@ -5471,6 +5527,12 @@ packages:
 
   /@types/pretty-hrtime/1.0.0:
     resolution: {integrity: sha512-xl+5r2rcrxdLViAYkkiLMYsoUs3qEyrAnHFyEzYysgRxdVp3WbhysxIvJIxZp9FvZ2CYezh0TaHZorivH+voOQ==}
+    dev: false
+
+  /@types/prompts/2.0.11:
+    resolution: {integrity: sha512-dcF5L3rU9VfpLEJIV++FEyhGhuIpJllNEwllVuJ5g8eoVqjf048tW9+spivIwjzgPbtaGAl7mIZW3cmhDAq2UQ==}
+    dependencies:
+      '@types/node': 15.0.2
     dev: false
 
   /@types/prop-types/15.7.3:
@@ -10581,16 +10643,6 @@ packages:
       universalify: 0.1.2
     dev: false
 
-  /fs-extra/9.0.1:
-    resolution: {integrity: sha512-h2iAoN838FqAFJY2/qVpzFXy+EBxfVE220PalAqQLDVsFOHLJrZvut5puAbCdNv6WJk+B8ihI+k0c7JK5erwqQ==}
-    engines: {node: '>=10'}
-    dependencies:
-      at-least-node: 1.0.0
-      graceful-fs: 4.2.6
-      jsonfile: 6.1.0
-      universalify: 1.0.0
-    dev: false
-
   /fs-extra/9.1.0:
     resolution: {integrity: sha512-hcg3ZmepS30/7BSFqRvoo3DOMQu7IjqxO5nCDt+zM9XWjb33Wg7ziNT+Qvqbuc3+gWpzO02JubVyk2G4Zvo1OQ==}
     engines: {node: '>=10'}
@@ -13142,13 +13194,14 @@ packages:
       verror: 1.10.0
     dev: false
 
-  /jsrx/0.0.3:
-    resolution: {integrity: sha512-0ZLfJrxo920Ifs7SEAjSkdH3HjYpizfdBmuhGQIOrqMFw56gMXVywh2Jk+WQWg0MMS65GlnPFHJsxMo7GcFvOw==}
+  /jsrx/0.0.5:
+    resolution: {integrity: sha512-XgD1F0SDlOM8XymXQRYAlvEUEvGMHsZWB25r/6LELASoC/TNf+MpqBXy/rvcejBAqO1lmFkGCyzuU84D/bUnrQ==}
     hasBin: true
     dependencies:
-      '@re-do/utils': 0.0.10
-      dotenv: 8.2.0
-      fs-extra: 9.0.1
+      '@re-do/node-utils': 0.0.2
+      '@re-do/utils': 0.0.11
+      dotenv: 9.0.0
+      fs-extra: 10.0.0
     dev: false
 
   /jss-plugin-camel-case/10.6.0:
@@ -18549,11 +18602,6 @@ packages:
     engines: {node: '>= 4.0.0'}
     dev: false
 
-  /universalify/1.0.0:
-    resolution: {integrity: sha512-rb6X1W158d7pRQBg5gkR8uPaSfiids68LTJQYOtEUhoJUWBdaQHsuT/EUduxXYxcrt4r5PJ4fuHW1MHT6p0qug==}
-    engines: {node: '>= 10.0.0'}
-    dev: false
-
   /universalify/2.0.0:
     resolution: {integrity: sha512-hAZsKq7Yy11Zu1DE0OzWjw7nnLZmJZYTDZZyEFHZdUhV8FkH5MCfoU1XMaxXovpyW5nq5scPqq0ZDP9Zyl04oQ==}
     engines: {node: '>= 10.0.0'}
@@ -19678,7 +19726,7 @@ packages:
     dev: false
 
   file:projects/app2.tgz:
-    resolution: {integrity: sha512-RxB42Tmy8uWkQLiL9coV4FjP5ANy7gN5sxV8c9UGmLSF+ZTUNRazjO6RM6M0UuIU+7MOnD2VFV1tOVMbstBevQ==, tarball: file:projects/app2.tgz}
+    resolution: {integrity: sha512-kNWzGnCn6niYzYynhppKw0RDdemGshYZxqYEAk3Qp7JZlNwKco41YqHut00ogHAvrMK7bLc79IVGTaxDhXhygw==, tarball: file:projects/app2.tgz}
     name: '@rush-temp/app2'
     version: 0.0.0
     dependencies:
@@ -19687,6 +19735,7 @@ packages:
       '@material-ui/core': 4.11.2_c9b97d0291e0c7f7ae91672f3bb47b49
       '@material-ui/styles': 4.11.2_c9b97d0291e0c7f7ae91672f3bb47b49
       '@medv/finder': 2.0.0
+      '@re-do/node-utils': 0.0.1
       '@types/dotenv': 8.2.0
       '@types/electron-devtools-installer': 2.2.0
       '@types/fs-extra': 9.0.6
@@ -19707,7 +19756,7 @@ packages:
       graphql: 15.5.0
       graphql-tag: 2.12.4_graphql@15.5.0
       isomorphic-ws: 4.0.1
-      jsrx: 0.0.3
+      jsrx: 0.0.5
       lint-staged: 10.5.4
       playwright-core: 1.10.0
       react: 17.0.2
@@ -19758,13 +19807,14 @@ packages:
     dev: false
 
   file:projects/bundle.tgz_b7cbaec9489e82b382688a684817783c:
-    resolution: {integrity: sha512-XtYp5JI343hSu1CzZwqKiZQIDptmhYM8ookWtAve2rL9nhvy+SIjAfYylCF6zq+wsW30P95DlyYNUItsdqAUpg==, tarball: file:projects/bundle.tgz}
+    resolution: {integrity: sha512-2b1DXd2c9/jM+m63hQVXP20AL+7mqM8SGVqI5T4BsWJAKmKiE8/oqZH1PWEEV2nkxaHsXhzrsXqorFPlSqHH0w==, tarball: file:projects/bundle.tgz}
     id: file:projects/bundle.tgz
     name: '@rush-temp/bundle'
     version: 0.0.0
     dependencies:
       '@babel/runtime-corejs3': 7.6.3
       '@hot-loader/react-dom': 16.10.2_react@17.0.2
+      '@re-do/node-utils': 0.0.1
       '@types/html-webpack-plugin': 3.2.4
       '@types/node': 15.0.2
       '@types/webpack': 4.41.26
@@ -19805,12 +19855,13 @@ packages:
     dev: false
 
   file:projects/cli.tgz:
-    resolution: {integrity: sha512-4HXlrMefalRCr5iAb0Vf+hqgp4hwJ70gZXNhxMaj9gGpDxyfo9/k682veB+D6VMXNngE8654QKFVNk3YVLRfrg==, tarball: file:projects/cli.tgz}
+    resolution: {integrity: sha512-/YyF78mpMRS/8bmqVcI6VAK3yyMddgw+qUYxaR7xONDoUcRlb28qn0u8aq+/+/Rno2iOYpywkFP2x9FdqObpuA==, tarball: file:projects/cli.tgz}
     name: '@rush-temp/cli'
     version: 0.0.0
     dependencies:
       '@babel/runtime-corejs3': 7.13.10
       '@octokit/graphql': 4.5.8
+      '@re-do/node-utils': 0.0.1
       '@types/fs-extra': 9.0.6
       '@types/node': 15.0.2
       '@types/node-fetch': 2.5.8
@@ -19827,7 +19878,7 @@ packages:
     dev: false
 
   file:projects/components.tgz_e5e74f1d005dd720298ef80a69db7f10:
-    resolution: {integrity: sha512-GzNkMPzK4DfOog7F8tiyysDB2Yfy+wimUJ84jmXK8w4/TDiOCQvkxcsBVUJmB7b792GQZ+8OQGDnSaN0Q9GWsQ==, tarball: file:projects/components.tgz}
+    resolution: {integrity: sha512-XUJbI4Xm+yyexi2RJolaWWK9YaZ0SeUjdhTbEeWZMREOae/yDN8W4y5qvj2ThbvBGnBmz7va9x/QTewKvQFuug==, tarball: file:projects/components.tgz}
     id: file:projects/components.tgz
     name: '@rush-temp/components'
     version: 0.0.0
@@ -19924,7 +19975,7 @@ packages:
     dev: false
 
   file:projects/node-utils.tgz_ts-node@9.1.1:
-    resolution: {integrity: sha512-3TqlO/+gVk0SgF7P8IsqWgvQxX+qo5nVr/LYGkZ3pIFH9zVjm9ee8xAI9lu1+5nRMPsVkOQaXBWnn8bGmFxjAQ==, tarball: file:projects/node-utils.tgz}
+    resolution: {integrity: sha512-ukKBGp8pBcUvK5Jf+OEXVCaretMkPjF80TLU4zaYZyTG1Np/yo96Rhe2jtKp9zJibgEM60Rx+pIqKVt7HhHZkg==, tarball: file:projects/node-utils.tgz}
     id: file:projects/node-utils.tgz
     name: '@rush-temp/node-utils'
     version: 0.0.0
@@ -19933,6 +19984,7 @@ packages:
       '@types/fs-extra': 9.0.6
       '@types/jest': 26.0.20
       '@types/node': 15.0.2
+      '@types/prompts': 2.0.11
       assert: 2.0.0
       core-js: 3.8.2
       deepmerge: 4.2.2
@@ -19941,6 +19993,7 @@ packages:
       jest: 26.6.3_ts-node@9.1.1
       moize: 5.4.7
       process: 0.11.10
+      prompts: 2.4.1
       typescript: 4.2.3
       util: 0.12.3
       validator: 13.5.2
@@ -19953,7 +20006,7 @@ packages:
     dev: false
 
   file:projects/react-statelessly.tgz_ts-node@9.1.1:
-    resolution: {integrity: sha512-m+H3w2X6D88Ew9lXMhbJaXJocGghJvfyNdt4tXe6f8QCDDeol04HYFGW8UVTfNE0WBs6EbIlAAwn5Crm+qFRUA==, tarball: file:projects/react-statelessly.tgz}
+    resolution: {integrity: sha512-d0SEB4C+8GBjxDY2mxfiCqBlj9e80rtHFQZ+pg6wxpOqkIT/a6H/kYlE3HGws3QM3NUa/b1k6pFjQ6elYF2maw==, tarball: file:projects/react-statelessly.tgz}
     id: file:projects/react-statelessly.tgz
     name: '@rush-temp/react-statelessly'
     version: 0.0.0
@@ -19990,7 +20043,7 @@ packages:
     dev: false
 
   file:projects/statelessly.tgz_ts-node@9.1.1:
-    resolution: {integrity: sha512-u5+yo1vD8woZa0SVOTwE8L9GznR+/VGkGhTg+0wCW12c8hX11uQYull2dRxeB3V116cDoYJ7DZieldVi7R7qyg==, tarball: file:projects/statelessly.tgz}
+    resolution: {integrity: sha512-klXyDuIshMCn+BcL5+H4eI10vd0UT7CTel4gLSKxoGT8o5n8GwcwU8UaR+Y6CHWiBKbxrBDGIWUZFoGqBcfuNQ==, tarball: file:projects/statelessly.tgz}
     id: file:projects/statelessly.tgz
     name: '@rush-temp/statelessly'
     version: 0.0.0
@@ -20015,7 +20068,7 @@ packages:
     dev: false
 
   file:projects/test.tgz_ts-node@9.1.1:
-    resolution: {integrity: sha512-1vb66NFkeFoc4Bm3jBBVrRDtAwxfMXDWPY47lbjW5DKPFaRIyxVCEgI1GtO39wQi9jKGcBCgtJDcl10ErmH+pQ==, tarball: file:projects/test.tgz}
+    resolution: {integrity: sha512-SWG8VbSrMkKOr9mSZt9j6d1YWhLHxA/T2nLliVp2E3JfCiQK1lycXNUENZEHN0UbXFPQPqT5J49ju26Pp5lKRQ==, tarball: file:projects/test.tgz}
     id: file:projects/test.tgz
     name: '@rush-temp/test'
     version: 0.0.0
@@ -20066,7 +20119,7 @@ packages:
     dev: false
 
   file:projects/website.tgz_webpack-bundle-analyzer@4.3.0:
-    resolution: {integrity: sha512-aa7Iyn9h7mNxb8Aj31WtG0f4E5Hg+0rvPs6VKHJC4ZQUWNyr91LufV2txafrmS+WDUnwppH0liQxonI87O8Z9A==, tarball: file:projects/website.tgz}
+    resolution: {integrity: sha512-rA6iVCv7JlVlZiuM3MQReTZoLwllIGusXvDSUmQaWFwhr5OWHOglV5CLYc2xY/SluOTZkEZtFel+NdfGW/EOpg==, tarball: file:projects/website.tgz}
     id: file:projects/website.tgz
     name: '@rush-temp/website'
     version: 0.0.0
@@ -20076,6 +20129,7 @@ packages:
       '@material-ui/lab': 4.0.0-alpha.57_869b9dfa5d36930b3c5f506c90aa92ff
       '@material-ui/styles': 4.11.2_c9b97d0291e0c7f7ae91672f3bb47b49
       '@mdx-js/react': 1.6.22_react@17.0.2
+      '@re-do/node-utils': 0.0.1
       '@types/analytics-node': 3.1.4
       '@types/node': 15.0.2
       '@types/react': 17.0.5
