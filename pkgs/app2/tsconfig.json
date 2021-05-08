@@ -15,5 +15,11 @@
         "lib": ["ESNext", "dom", "dom.iterable"],
         "jsx": "react"
     },
+    "ts-node": {
+        "transpileOnly": true,
+        "compilerOptions": {
+            "module": "CommonJS"
+        }
+    },
     "include": ["src"]
 }

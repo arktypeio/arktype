@@ -8,18 +8,12 @@
     },
     "main": "dist/main/index.js",
     "scripts": {
-        "buildEnvTypes": "jsrx buildEnvTypes",
-        "build": "jsrx build",
-        "precompile": "jsrx precompile",
-        "compile": "jsrx compile",
-        "pretest": "jsrx pretest",
-        "test": "jsrx test",
         "watch": "jsrx watch",
         "lint": "jsrx lint",
-        "pretypecheck": "jsrx pretypecheck",
-        "typecheck-main": "jsrx typecheck-main",
-        "typecheck-renderer": "jsrx typecheck-renderer",
         "typecheck": "jsrx typecheck",
+        "build": "jsrx build",
+        "compile": "jsrx compile",
+        "buildProd": "jsrx buildProd",
         "jsrxGen": "jsrx jsrxGen"
     },
     "browserslist": [
