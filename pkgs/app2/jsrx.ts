@@ -1,58 +1,63 @@
 import { jsrx, $, shell } from "jsrx"
 import { createServer, build } from "vite"
-import { ChildProcess, isDev, shellAsync } from "@re-do/node-utils"
+import { ChildProcess, shellAsync } from "@re-do/node-utils"
+import {
+    getMainConfig,
+    getRendererConfig,
+    getObserverConfig
+} from "./viteConfigs"
+import { join } from "path"
+import { ViteDevServer } from "vite"
 
 const electronPath = require("electron")
-const viteConfigs = ["src/main/vite.config.ts", "src/renderer/vite.config.ts"]
-const mode = isDev() ? "development" : "production"
 
 const buildAll = async () => {
-    for (const configFile of viteConfigs) {
-        await build({
-            configFile,
-            mode
-        })
-    }
+    await build(getMainConfig())
+    await build(getRendererConfig())
 }
 
-type GetWatcherArgs = {
-    name: string
-    configFile: string
-    writeBundle: () => void
-}
+let mainProcess: ChildProcess | undefined
 
-const getWatcher = ({ name, configFile, writeBundle }: GetWatcherArgs) => {
-    return build({
-        configFile,
-        plugins: [{ name, writeBundle }],
-        mode
-    })
-}
-
-const setupMainPackageWatcher = () => {
-    let mainProcess: ChildProcess
-
-    return getWatcher({
-        name: "reload-app-on-main-package-change",
-        configFile: "src/main/vite.config.ts",
-        writeBundle: async () => {
-            if (mainProcess && !mainProcess.killed) {
-                mainProcess.kill()
+const watchMain = async () =>
+    build({
+        ...getMainConfig(),
+        plugins: [
+            {
+                name: "main-watcher",
+                writeBundle: async () => {
+                    if (mainProcess && !mainProcess.killed) {
+                        mainProcess.kill()
+                    }
+                    mainProcess = shellAsync(`${electronPath} "."`)
+                }
             }
-            mainProcess = shellAsync(`${electronPath} "."`)
-        }
+        ]
     })
-}
+
+const watchObserver = (devServer: ViteDevServer) =>
+    build({
+        ...getObserverConfig(),
+        plugins: [
+            {
+                name: "observer-watcher",
+                writeBundle: async () => {
+                    devServer.ws.send({
+                        type: "full-reload"
+                    })
+                }
+            }
+        ]
+    })
 
 const watch = async () => {
     const viteDevServer = await createServer({
+        ...getRendererConfig(),
         server: {
             port: Number(process.env.DEV_SERVER_PORT)
-        },
-        configFile: "src/renderer/vite.config.ts"
+        }
     })
     await viteDevServer.listen()
-    await setupMainPackageWatcher()
+    await watchMain()
 }
 
 jsrx(
@@ -72,18 +77,10 @@ jsrx(
         }
     },
     {
-        excludeOthers: true
+        excludeOthers: true,
+        envFiles: {
+            dev: join(__dirname, ".env"),
+            prod: join(__dirname, ".env.production")
+        }
     }
 )
-
-// const setupPreloadPackageWatcher = (viteDevServer: ViteDevServer) => {
-//     return getWatcher({
-//         name: "reload-page-on-preload-package-change",
-//         configFile: "packages/preload/vite.config.js",
-//         writeBundle() {
-//             viteDevServer.ws.send({
-//                 type: "full-reload"
-//             })
-//         }
-//     })
-// }
