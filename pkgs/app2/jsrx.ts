@@ -20,7 +20,7 @@ let mainProcess: ChildProcess | undefined
 
 const watchMain = async () =>
     build({
-        ...getMainConfig(),
+        ...getMainConfig({ watch: true }),
         plugins: [
             {
                 name: "main-watcher",
@@ -36,7 +36,7 @@ const watchMain = async () =>
 
 const watchObserver = (devServer: ViteDevServer) =>
     build({
-        ...getObserverConfig(),
+        ...getObserverConfig({ watch: true }),
         plugins: [
             {
                 name: "observer-watcher",
@@ -51,7 +51,7 @@ const watchObserver = (devServer: ViteDevServer) =>
 
 const watch = async () => {
     const viteDevServer = await createServer({
-        ...getRendererConfig(),
+        ...getRendererConfig({ watch: true }),
         server: {
             port: Number(process.env.DEV_SERVER_PORT)
         }

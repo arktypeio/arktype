@@ -1,4 +1,3 @@
-import "dotenv/config"
 import { app, BrowserWindow, BrowserWindowConstructorOptions } from "electron"
 import { isDev } from "@re-do/node-utils"
 import electronDevtoolsInstaller, {

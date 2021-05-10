@@ -12,7 +12,7 @@ const config = {
         output: "dist",
         buildResources: "buildResources"
     },
-    files: ["src/**/dist/**"],
+    files: ["dist/**"],
     extraMetadata: {
         version: buildVersion
     }

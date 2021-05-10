@@ -5,22 +5,38 @@ import { isDev } from "@re-do/node-utils"
 import { UserConfig } from "vite"
 import reactRefresh from "@vitejs/plugin-react-refresh"
 
-const root = join(__dirname, "src")
+const sourceRoot = join(__dirname, "src")
 const outRoot = join(__dirname, "dist")
 
-const getConfig = (entry: string, options?: Partial<UserConfig>) =>
+const getConfig = (options?: Partial<UserConfig>) =>
     merge<UserConfig>(
         {
-            root,
             mode: isDev() ? "development" : "production",
             resolve: {
-                alias: {
-                    "@/": root + "/",
-                    main: join(root, "main"),
-                    observer: join(root, "observer"),
-                    renderer: join(root, "renderer"),
-                    state: join(root, "state")
-                }
+                alias: [
+                    {
+                        find: /^@material-ui\/icons\/(.*)/,
+                        replacement: "@material-ui/icons/esm/$1"
+                    },
+                    {
+                        find: /^@material-ui\/core\/(.+)/,
+                        replacement: "@material-ui/core/es/$1"
+                    },
+                    {
+                        find: /^@material-ui\/core$/,
+                        replacement: "@material-ui/core/es"
+                    },
+                    { find: "main", replacement: join(sourceRoot, "main") },
+                    {
+                        find: "renderer",
+                        replacement: join(sourceRoot, "renderer")
+                    },
+                    { find: "state", replacement: join(sourceRoot, "state") },
+                    {
+                        find: "observer",
+                        replacement: join(sourceRoot, "observer")
+                    }
+                ]
             },
             build: {
                 sourcemap: "inline",
@@ -32,10 +48,7 @@ const getConfig = (entry: string, options?: Partial<UserConfig>) =>
                     },
                     safari10: false
                 },
-                lib: {
-                    entry,
-                    formats: ["cjs"]
-                },
+                assetsDir: ".",
                 rollupOptions: {
                     external: [
                         "electron",
@@ -53,29 +66,43 @@ const getConfig = (entry: string, options?: Partial<UserConfig>) =>
         options
     )
 
-export const getMainConfig = () =>
-    getConfig(join(root, "main", "index.ts"), {
+export type GetConfigArgs = {
+    watch?: boolean
+}
+
+export const getMainConfig = ({ watch }: GetConfigArgs = {}) =>
+    getConfig({
+        root: join(sourceRoot, "main"),
         build: {
             target: "node14",
-            outDir: join(outRoot, "main")
+            outDir: join(outRoot, "main"),
+            lib: {
+                entry: join(sourceRoot, "main", "index.ts"),
+                formats: ["cjs"]
+            },
+            watch: watch ? {} : undefined
         }
     })
 
-export const getRendererConfig = () =>
-    getConfig(join(root, "renderer", "index.html"), {
+export const getRendererConfig = ({ watch }: GetConfigArgs = {}) =>
+    getConfig({
+        root: join(sourceRoot, "renderer"),
         build: {
             target: "chrome89",
             polyfillDynamicImport: false,
-            outDir: join(outRoot, "renderer")
+            outDir: join(outRoot, "renderer"),
+            watch: watch ? {} : undefined
         },
         plugins: [reactRefresh()]
     })
 
-export const getObserverConfig = () =>
-    getConfig(join(root, "observer", "index.ts"), {
+export const getObserverConfig = ({ watch }: GetConfigArgs = {}) =>
+    getConfig({
+        root: join(sourceRoot, "observer"),
         build: {
             target: "chrome89",
             polyfillDynamicImport: false,
-            outDir: join(outRoot, "observer")
+            outDir: join(outRoot, "observer"),
+            watch: watch ? {} : undefined
         }
     })
