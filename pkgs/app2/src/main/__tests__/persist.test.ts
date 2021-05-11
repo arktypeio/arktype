@@ -1,5 +1,5 @@
 import { join } from "path"
-import { loadStore, RedoStore } from "../model"
+import { loadStore, RedoStore } from "../persist"
 import { removeSync } from "fs-extra"
 
 describe("store", () => {

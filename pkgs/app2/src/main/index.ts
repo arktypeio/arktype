@@ -1,14 +1,16 @@
 import { app, BrowserWindow, BrowserWindowConstructorOptions } from "electron"
-import { isDev } from "@re-do/node-utils"
 import electronDevtoolsInstaller, {
     REACT_DEVELOPER_TOOLS,
     APOLLO_DEVELOPER_TOOLS,
     REDUX_DEVTOOLS
 } from "electron-devtools-installer"
 import { autoUpdater } from "electron-updater"
+import { test as runTest } from "@re-do/test"
 import { join } from "path"
 import { createMainStore, Root, deactivateBuilder } from "state"
 import { Store } from "react-statelessly"
+import { loadStore } from "./persist"
+import { StoredTest } from "@re-do/model"
 import { launchBrowser, closeBrowser } from "./launchBrowser"
 
 let mainWindow: BrowserWindow
@@ -17,10 +19,13 @@ let store: Store<Root>
 
 const DEFAULT_BUILDER_WIDTH = 300
 const ELECTRON_TITLEBAR_SIZE = 37
+const isDev = process.env.NODE_ENV === "development"
 
-const BASE_URL = isDev()
+const BASE_URL = isDev
     ? `http://localhost:${process.env["DEV_SERVER_PORT"]}`
     : `file://${__dirname}/index.html`
+
+const persistedStore = loadStore({ path: join(process.cwd(), "redo.json") })
 
 store = createMainStore({
     builderActive: async (isActive) => {
@@ -41,6 +46,15 @@ store = createMainStore({
         } else {
             builderWindow.hide()
             closeBrowser()
+        }
+    },
+    tests: async (tests) => {
+        tests.forEach((test) => persistedStore.createTest(test as any))
+    },
+    runningTest: async (test) => {
+        if (test) {
+            await runTest(persistedStore.testToSteps(test as StoredTest))
+            store.update({ runningTest: null })
         }
     }
 })
@@ -97,7 +111,7 @@ const createBuilderWindow = async () => {
 }
 
 app.on("ready", async () => {
-    if (isDev()) {
+    if (isDev) {
         await installExtensions()
     } else {
         await autoUpdater.checkForUpdatesAndNotify()

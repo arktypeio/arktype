@@ -28,7 +28,9 @@ const watchMain = async () =>
                     if (mainProcess && !mainProcess.killed) {
                         mainProcess.kill()
                     }
-                    mainProcess = shellAsync(`${electronPath} "."`)
+                    mainProcess = shellAsync(
+                        `${electronPath} --remote-debugging-port=9223 "."`
+                    )
                 }
             }
         ]

@@ -7,9 +7,7 @@ import {
     Button,
     ChipInput
 } from "@re-do/components"
-import { loadStore } from "@re-do/model"
 import { BuilderEvents } from "./StepCards"
-import { join } from "path"
 import { store } from "renderer/common"
 import { deactivateBuilder } from "state"
 
@@ -28,7 +26,7 @@ export const Builder = () => {
     if (!builderActive && (name || tags.length)) {
         setState({ name: "", tags: [] })
     }
-    const persistedStore = loadStore({ path: join(process.cwd(), "redo.json") })
+
     return (
         <Column full>
             <FloatBar height={120} align="center">
@@ -61,10 +59,8 @@ export const Builder = () => {
                     Icon={Icons.save}
                     style={{ color: "white" }}
                     onClick={() => {
-                        persistedStore.createTest({
-                            name,
-                            tags,
-                            steps: steps as any
+                        store.update({
+                            tests: (_) => _.concat({ name, tags, steps })
                         })
                         deactivateBuilder(store)
                     }}
