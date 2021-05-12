@@ -1,4 +1,3 @@
-import "typeface-ubuntu"
 import React from "react"
 import { ApolloProvider } from "@apollo/client"
 import { DefaultTheme } from "@re-do/components"

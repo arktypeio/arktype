@@ -30,6 +30,7 @@ specifiers:
   '@octokit/graphql': 4.5.8
   '@re-do/node-utils': 0.0.1
   '@reduxjs/toolkit': 1.5.0
+  '@rollup/plugin-commonjs': 19.0.0
   '@rush-temp/app2': file:./projects/app2.tgz
   '@rush-temp/babel-preset-redo': file:./projects/babel-preset-redo.tgz
   '@rush-temp/bundle': file:./projects/bundle.tgz
@@ -139,6 +140,7 @@ specifiers:
   uuid: 8.3.2
   validator: 13.5.2
   vite: 2.2.4
+  vite-plugin-commonjs-externals: 0.1.1
   webpack: 5.17.0
   webpack-bundle-analyzer: 4.3.0
   webpack-cli: 4.5.0
@@ -175,6 +177,7 @@ dependencies:
   '@octokit/graphql': 4.5.8
   '@re-do/node-utils': 0.0.1
   '@reduxjs/toolkit': 1.5.0
+  '@rollup/plugin-commonjs': 19.0.0
   '@rush-temp/app2': file:projects/app2.tgz
   '@rush-temp/babel-preset-redo': file:projects/babel-preset-redo.tgz_c9b97d0291e0c7f7ae91672f3bb47b49
   '@rush-temp/bundle': file:projects/bundle.tgz_b7cbaec9489e82b382688a684817783c
@@ -284,6 +287,7 @@ dependencies:
   uuid: 8.3.2
   validator: 13.5.2
   vite: 2.2.4
+  vite-plugin-commonjs-externals: 0.1.1
   webpack: 5.17.0_webpack-cli@4.5.0
   webpack-bundle-analyzer: 4.3.0
   webpack-cli: 4.5.0_499bd0e4476833284ade8b6aed3f6b4e
@@ -4135,6 +4139,32 @@ packages:
       reselect: 4.0.0
     dev: false
 
+  /@rollup/plugin-commonjs/19.0.0:
+    resolution: {integrity: sha512-adTpD6ATGbehdaQoZQ6ipDFhdjqsTgpOAhFiPwl+dzre4pPshsecptDPyEFb61JMJ1+mGljktaC4jI8ARMSNyw==}
+    engines: {node: '>= 8.0.0'}
+    peerDependencies:
+      rollup: ^2.38.3
+    dependencies:
+      '@rollup/pluginutils': 3.1.0
+      commondir: 1.0.1
+      estree-walker: 2.0.2
+      glob: 7.1.6
+      is-reference: 1.2.1
+      magic-string: 0.25.7
+      resolve: 1.20.0
+    dev: false
+
+  /@rollup/pluginutils/3.1.0:
+    resolution: {integrity: sha512-GksZ6pr6TpIjHm8h9lSQ8pi8BE9VeubNT0OMJ3B5uZJ8pz73NPiqOtCog/x2/QzM1ENChPKxMDhiQuRHsqc+lg==}
+    engines: {node: '>= 8.0.0'}
+    peerDependencies:
+      rollup: ^1.20.0||^2.0.0
+    dependencies:
+      '@types/estree': 0.0.39
+      estree-walker: 1.0.1
+      picomatch: 2.2.3
+    dev: false
+
   /@samverschueren/stream-to-observable/0.3.1_rxjs@6.6.7:
     resolution: {integrity: sha512-c/qwwcHyafOQuVQJj0IlBjf5yYgBI7YPJ77k4fOJYesb41jio65eaJODRUmfYKhTOFBrIZ66kgvGPlNbjuoRdQ==}
     engines: {node: '>=6'}
@@ -5315,6 +5345,10 @@ packages:
     dependencies:
       '@types/estree': 0.0.46
       '@types/json-schema': 7.0.7
+    dev: false
+
+  /@types/estree/0.0.39:
+    resolution: {integrity: sha512-EYNwp3bU+98cpU4lAWYYL7Zz+2gryWH1qbdDTidVd6hkiR6weksdbMadyXKXNPEkQFhXM+hVO9ZygomHXp+AIw==}
     dev: false
 
   /@types/estree/0.0.46:
@@ -9815,6 +9849,10 @@ packages:
     resolution: {integrity: sha512-Va0Q/xqtrss45hWzP8CZJwzGSZJjDM5/MJRE3IXXnUCcVLElR9BRaE9F62BopysASyc4nM3uwhSW7FFB9nlWAA==}
     dev: false
 
+  /es-module-lexer/0.4.1:
+    resolution: {integrity: sha512-ooYciCUtfw6/d2w56UVeqHPcoCFAiJdz5XOkYpv/Txl1HMUozpXjz/2RIQgqwKdXNDPSF1W7mJCFse3G+HDyAA==}
+    dev: false
+
   /es-to-primitive/1.2.1:
     resolution: {integrity: sha512-QCOllgZJtaUo9miYBcLChTUaHNjJF3PYs1VidD7AwiEj1kYxKeQTctLAezAOH5ZKRH0g2IgPn6KwB4IT8iRpvA==}
     engines: {node: '>= 0.4'}
@@ -9926,6 +9964,14 @@ packages:
   /estraverse/5.2.0:
     resolution: {integrity: sha512-BxbNGGNm0RyRYvUdHpIwv9IWzeM9XClbOxwoATuFdOE7ZE6wHL+HQ5T8hoPM+zHvmKzzsEqhgy0GrQ5X13afiQ==}
     engines: {node: '>=4.0'}
+    dev: false
+
+  /estree-walker/1.0.1:
+    resolution: {integrity: sha512-1fMXF3YP4pZZVozF8j/ZLfvnR8NSIljt56UhbZ5PeeDmmGHpgpdwQt7ITlGvYaQukCvuBRMLEiKiYC+oeIg4cg==}
+    dev: false
+
+  /estree-walker/2.0.2:
+    resolution: {integrity: sha512-Rfkk/Mp/DL7JVje3u18FxFujQlTNR2q6QfMSMB7AvCBx91NGj/ba3kCfza0f6dVDbw7YlRf/nDrn7pQrCCyQ/w==}
     dev: false
 
   /esutils/2.0.3:
@@ -12298,6 +12344,12 @@ packages:
     resolution: {integrity: sha512-hvpoI6korhJMnej285dSg6nu1+e6uxs7zG3BYAm5byqDsgJNWwxzM6z6iZiAgQR4TJ30JmBTOwqZUw3WlyH3AQ==}
     dev: false
 
+  /is-reference/1.2.1:
+    resolution: {integrity: sha512-U82MsXXiFIrjCK4otLT+o2NA2Cd2g5MLoOVXUZjIOhLurrRxpEXzI8O0KZHr3IjLvlAH1kTPYSuqer5T9ZVBKQ==}
+    dependencies:
+      '@types/estree': 0.0.46
+    dev: false
+
   /is-regex/1.1.2:
     resolution: {integrity: sha512-axvdhb5pdhEVThqJzYXwMlVuZwC+FF2DpcOhTS+y/8jVq4trxyPgfcwIxIKiyeuLlSQYKkmUaPQJ8ZE4yNKXDg==}
     engines: {node: '>= 0.4'}
@@ -13773,6 +13825,12 @@ packages:
     engines: {node: '>=10'}
     dependencies:
       yallist: 4.0.0
+    dev: false
+
+  /magic-string/0.25.7:
+    resolution: {integrity: sha512-4CrMT5DOHTDk4HYDlzmwu4FVCcIYI8gauveasrdCu2IKIFOJ3f0v/8MDGJCDL9oD2ppz/Av1b0Nj345H9M+XIA==}
+    dependencies:
+      sourcemap-codec: 1.4.8
     dev: false
 
   /make-dir/2.1.0:
@@ -17317,6 +17375,10 @@ packages:
     engines: {node: '>= 8'}
     dev: false
 
+  /sourcemap-codec/1.4.8:
+    resolution: {integrity: sha512-9NykojV5Uih4lgo5So5dtw+f0JgJX30KCNI8gwhz2J9A15wD0Ml6tjHKwf6fTSa6fAdVBdZeNOs9eJ71qCk8vA==}
+    dev: false
+
   /space-separated-tokens/1.1.5:
     resolution: {integrity: sha512-q/JSVd1Lptzhf5bkYm4ob4iWPjx0KiRe3sRFBNrVqbJkFaBm5vbbowy1mymoPNLRa52+oadOhJ+K49wsSeSjTA==}
     dev: false
@@ -18934,6 +18996,14 @@ packages:
       vfile-message: 2.0.4
     dev: false
 
+  /vite-plugin-commonjs-externals/0.1.1:
+    resolution: {integrity: sha512-XRFsdFos/D1Dam0t40qBM+8b1Mrn5vH6aOwaTt8CW5myGx9uKivFXPukP2CsEo6cSukbPlBImsL1voiV6e3o5w==}
+    dependencies:
+      acorn: 8.2.4
+      es-module-lexer: 0.4.1
+      magic-string: 0.25.7
+    dev: false
+
   /vite/2.2.4:
     resolution: {integrity: sha512-vnIwSNci+phFMp6krhy+FbYzKL0R67Sdt9mVZ96S27AewrApSJjTqncJcalk8sf60BgcbW4+1C6DFIWkxquO9g==}
     engines: {node: '>=12.0.0'}
@@ -19726,7 +19796,7 @@ packages:
     dev: false
 
   file:projects/app2.tgz:
-    resolution: {integrity: sha512-LlnZuLl0KAbg4Bck5vUdpOgegZ8BgC62nWpLAnLmhpbM0o1olzdQ0oG5tudXMU2ls906akOGh2sDXCtVLqB4rA==, tarball: file:projects/app2.tgz}
+    resolution: {integrity: sha512-CkAGqAXggr2SKf81sVK/IUAOXOwXP1P8z8yEXh5vEp/bBFEooYuL9thT0rhXcTtBXdRjyYkrHHifoF/YAmLEkA==, tarball: file:projects/app2.tgz}
     name: '@rush-temp/app2'
     version: 0.0.0
     dependencies:
@@ -19736,6 +19806,7 @@ packages:
       '@material-ui/styles': 4.11.2_c9b97d0291e0c7f7ae91672f3bb47b49
       '@medv/finder': 2.0.0
       '@re-do/node-utils': 0.0.1
+      '@rollup/plugin-commonjs': 19.0.0
       '@types/dotenv': 8.2.0
       '@types/electron-devtools-installer': 2.2.0
       '@types/fs-extra': 9.0.6
@@ -19767,8 +19838,10 @@ packages:
       typeface-ubuntu: 1.1.13
       typescript: 4.2.3
       vite: 2.2.4
+      vite-plugin-commonjs-externals: 0.1.1
     transitivePeerDependencies:
       - bufferutil
+      - rollup
       - subscriptions-transport-ws
       - supports-color
       - utf-8-validate

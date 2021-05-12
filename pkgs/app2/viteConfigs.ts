@@ -3,10 +3,25 @@ import { builtinModules } from "module"
 import { merge } from "@re-do/utils"
 import { isDev } from "@re-do/node-utils"
 import { UserConfig } from "vite"
-import reactRefresh from "@vitejs/plugin-react-refresh"
+import reactRefreshPlugin from "@vitejs/plugin-react-refresh"
+import commonJsExternalsPlugin from "vite-plugin-commonjs-externals"
 
 const sourceRoot = join(__dirname, "src")
 const outRoot = join(__dirname, "dist")
+
+import pkg from "./package.json"
+
+const commonjsPackages = [
+    "electron",
+    "electron/main",
+    "electron/common",
+    "electron/renderer",
+    "original-fs",
+    ...builtinModules,
+    ...Object.keys(pkg.dependencies).map(
+        (name) => new RegExp(`^${name}(\\/.+)?$`)
+    )
+] as const
 
 const getConfig = (options?: Partial<UserConfig>) =>
     merge<UserConfig>(
@@ -48,11 +63,11 @@ const getConfig = (options?: Partial<UserConfig>) =>
                     },
                     safari10: false
                 },
-                assetsDir: ".",
                 rollupOptions: {
                     external: [
                         "electron",
                         "electron-updater",
+                        "electron-redux",
                         "playwright-core",
                         ...builtinModules
                     ],
@@ -93,7 +108,12 @@ export const getRendererConfig = ({ watch }: GetConfigArgs = {}) =>
             outDir: join(outRoot, "renderer"),
             watch: watch ? {} : undefined
         },
-        plugins: [reactRefresh()]
+        plugins: [
+            reactRefreshPlugin(),
+            commonJsExternalsPlugin({
+                externals: commonjsPackages
+            })
+        ]
     })
 
 export const getObserverConfig = ({ watch }: GetConfigArgs = {}) =>
