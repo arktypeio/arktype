@@ -5,9 +5,16 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "Attach",
+            "type": "chrome",
+            "request": "attach",
+            "skipFiles": ["<node_internals>/**"],
+            "port": 9223
+        },
+        {
+            "name": "Jest Current File",
             "type": "node",
             "request": "launch",
-            "name": "Jest Current File",
             "program": "${workspaceRoot}/node_modules/jest/bin/jest.js",
             "args": [
                 "${relativeFile}",
@@ -19,9 +26,9 @@
             "console": "integratedTerminal"
         },
         {
+            "name": "Jest Highlighted Test",
             "type": "node",
             "request": "launch",
-            "name": "Jest Highlighted Test",
             "program": "${workspaceRoot}/node_modules/jest/bin/jest.js",
             "args": [
                 "${relativeFile}",

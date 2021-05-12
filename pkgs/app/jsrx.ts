@@ -1,40 +1,81 @@
 import { jsrx, $, shell } from "jsrx"
+import { createServer, build } from "vite"
+import { ChildProcess, shellAsync } from "@re-do/node-utils"
+import {
+    getMainConfig,
+    getRendererConfig,
+    getObserverConfig
+} from "./viteConfigs"
 import { join } from "path"
+import { ViteDevServer } from "vite"
 
-const clean = "rm -rf dist && mkdir dist"
+const electronPath = require("electron")
 
-type PlatformString = "linux" | "macos" | "windows"
+const buildAll = async () => {
+    await build(getMainConfig())
+    await build(getRendererConfig())
+}
 
-const publish = (platforms: PlatformString[]) => () => {
-    shell("npm run buildProd")
-    shell("rm -rf release")
-    for (const platform of platforms) {
-        try {
-            shell(`electron-builder --${platform} --publish always`)
-        } catch (e) {
-            console.error(
-                `Encountered the following error while building platform ${platform}:\n${e}`
-            )
+let mainProcess: ChildProcess | undefined
+
+const watchMain = async () =>
+    build({
+        ...getMainConfig({ watch: true }),
+        plugins: [
+            {
+                name: "main-watcher",
+                writeBundle: async () => {
+                    if (mainProcess && !mainProcess.killed) {
+                        mainProcess.kill()
+                    }
+                    mainProcess = shellAsync(
+                        `${electronPath} --remote-debugging-port=9223 "."`
+                    )
+                }
+            }
+        ]
+    })
+
+const watchObserver = (devServer: ViteDevServer) =>
+    build({
+        ...getObserverConfig({ watch: true }),
+        plugins: [
+            {
+                name: "observer-watcher",
+                writeBundle: async () => {
+                    devServer.ws.send({
+                        type: "full-reload"
+                    })
+                }
+            }
+        ]
+    })
+
+const start = async () => {
+    const viteDevServer = await createServer({
+        ...getRendererConfig({ watch: true }),
+        server: {
+            port: Number(process.env.DEV_SERVER_PORT)
         }
-    }
+    })
+    await viteDevServer.listen()
+    await watchMain()
 }
 
 jsrx(
     {
-        shared: {
-            build: $(`${clean} && webpack && cp .env resources/icon.png dist`)
-        },
         dev: {
-            start: $(
-                `${clean} && npm run build && webpack serve --config webpack.devServer.config.ts --progress`
-            ),
-            electron: $("electron --remote-debugging-port=9223 ./dist/main.js")
+            start,
+            lint: $(`prettier --write`),
+            typecheck: $(`tsc --noEmit`)
         },
         prod: {
-            publish: publish(["linux", "macos", "windows"]),
-            publishLinux: publish(["linux"]),
-            publishMac: publish(["macos"]),
-            publishWindows: publish(["windows"])
+            compile: $(
+                `electron-builder build --config electron-builder.config.js --dir --config.asar=false`
+            )
+        },
+        shared: {
+            build: () => buildAll()
         }
     },
     {

@@ -53,8 +53,8 @@
             "projectFolder": "pkgs/cli"
         },
         {
-            "packageName": "app2",
-            "projectFolder": "pkgs/app2"
+            "packageName": "@re-do/app",
+            "projectFolder": "pkgs/app"
         },
         {
             "packageName": "@re-do/node-utils",

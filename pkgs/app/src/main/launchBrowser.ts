@@ -3,8 +3,7 @@ import { BrowserWindow } from "electron"
 import { resolve } from "path"
 import { launch, Step } from "@re-do/test"
 import { Browser } from "playwright-core"
-import { isDev } from "@re-do/node-utils"
-import { Root, deactivateBuilder } from "state"
+import { Root } from "state"
 import { Store } from "react-statelessly"
 
 const BROWSER_WINDOW_TITLEBAR_SIZE = 44
@@ -18,7 +17,6 @@ export const launchBrowser = async (
 ) => {
     // Use size and position from the Redo app to launch browser
     const { height, width, x, y } = mainWindow.getBounds()
-    console.warn({ height, width, x, y })
     const { page, browser } = await launch(store.get("defaultBrowser"), {
         position: {
             x: x + DEFAULT_LEARNER_WIDTH,
@@ -38,7 +36,10 @@ export const launchBrowser = async (
     }
     await page.exposeFunction("notify", notify)
     const browserJs = readFileSync(
-        resolve(isDev() ? "dist" : __dirname, "observer.js"),
+        resolve(
+            process.env.NODE_ENV === "development" ? "dist" : __dirname,
+            "observer.js"
+        ),
         "utf-8"
     )
     await page.evaluate(browserJs)

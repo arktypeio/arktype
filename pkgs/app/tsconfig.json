@@ -1,22 +1,25 @@
 {
-    "extends": "@re-do/recommended/tsconfig.base",
     "compilerOptions": {
         "baseUrl": "src",
         "outDir": "dist",
-        "declaration": false,
-        "paths": {
-            "*": ["*"],
-            "state": ["state"],
-            "state/*": ["state/*"],
-            "renderer/*": ["renderer/*"],
-            "pages": ["renderer/pages"],
-            "pages/*": ["renderer/pages/*"],
-            "browser": ["browser"],
-            "browser/*": ["browser/*"],
-            "assets": ["renderer/assets"],
-            "assets/*": ["renderer/assets/*"]
+        "module": "esnext",
+        "target": "esnext",
+        "moduleResolution": "Node",
+        "sourceMap": true,
+        "skipLibCheck": true,
+        "strict": true,
+        "isolatedModules": true,
+        "esModuleInterop": true,
+        "types": ["vite/client", "node"],
+        "typeRoots": ["node_modules/@types"],
+        "lib": ["ESNext", "dom", "dom.iterable"],
+        "jsx": "react"
+    },
+    "ts-node": {
+        "transpileOnly": true,
+        "compilerOptions": {
+            "module": "CommonJS"
         }
     },
-    "include": ["src"],
-    "exclude": ["node_modules", "**/__tests__"]
+    "include": ["src"]
 }

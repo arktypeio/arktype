@@ -1,48 +1,27 @@
 {
     "name": "@re-do/app",
-    "description": "The Redo app",
-    "author": "redo.qa",
-    "version": "0.0.13",
+    "version": "0.0.14",
     "private": true,
-    "repository": {
-        "type": "git",
-        "url": "https://github.com/redo-qa/redo.git",
-        "directory": "pkgs/app"
-    },
-    "main": "dist/main.js",
+    "main": "dist/main/index.js",
     "scripts": {
         "start": "jsrx start",
-        "electron": "jsrx electron",
+        "lint": "jsrx lint",
+        "typecheck": "jsrx typecheck",
         "build": "jsrx build",
-        "publish": "jsrx publish",
-        "publishLinux": "jsrx publishLinux",
-        "publishMac": "jsrx publishMac",
-        "publishWindows": "jsrx publishWindows",
+        "compile": "jsrx compile",
         "buildProd": "jsrx buildProd",
         "jsrxGen": "jsrx jsrxGen"
     },
-    "build": {
-        "appId": "com.redo.app",
-        "productName": "redo",
-        "directories": {
-            "buildResources": "resources",
-            "output": "release"
-        },
-        "files": [
-            "dist"
-        ],
-        "linux": {
-            "executableName": "redo",
-            "artifactName": "${productName}-${version}.${ext}"
-        },
-        "mac": {
-            "category": "public.app-category.developer-tools"
-        }
+    "simple-git-hooks": {
+        "pre-commit": "npx lint-staged",
+        "pre-push": "npm run typecheck"
+    },
+    "lint-staged": {
+        "*.{js,ts}": "prettier --write"
     },
     "dependencies": {
+        "electron-updater": "4.3.5",
         "@apollo/client": "3.3.7",
-        "@babel/runtime-corejs3": "7.13.10",
-        "@hot-loader/react-dom": "17.0.1",
         "@material-ui/core": "4.11.2",
         "@material-ui/styles": "4.11.2",
         "@medv/finder": "2.0.0",
@@ -50,43 +29,39 @@
         "@re-do/model": "0.0.1",
         "@re-do/test": "0.0.1",
         "@re-do/utils": "0.0.11",
-        "core-js": "3.8.2",
-        "dotenv": "8.2.0",
-        "electron-updater": "4.3.5",
+        "@re-do/node-utils": "0.0.1",
+        "dotenv": "9.0.0",
         "framer-motion": "4.1.11",
         "fs-extra": "10.0.0",
         "graphql": "15.5.0",
         "graphql-tag": "2.12.4",
-        "react-dom": "17.0.2",
         "react": "17.0.2",
+        "react-dom": "17.0.2",
         "react-statelessly": "0.0.3",
-        "tsconfig-paths": "3.9.0",
-        "typeface-ubuntu": "1.1.13",
         "isomorphic-ws": "4.0.1",
         "playwright-core": "1.10.0",
         "electron-redux": "1.5.4"
     },
     "devDependencies": {
-        "@re-do/bundle": "0.0.1",
-        "@re-do/recommended": "0.0.2",
-        "@types/dotenv": "8.2.0",
         "@types/electron-devtools-installer": "2.2.0",
-        "@types/fs-extra": "9.0.6",
-        "@types/node": "15.0.2",
+        "cross-env": "7.0.3",
+        "electron": "11.4.5",
+        "electron-builder": "22.9.1",
+        "electron-devtools-installer": "3.2.0",
+        "lint-staged": "10.5.4",
+        "simple-git-hooks": "2.4.1",
+        "spectron": "14.0.0",
+        "typescript": "4.2.3",
+        "vite": "2.2.4",
+        "jsrx": "0.0.9",
         "@types/react": "17.0.5",
         "@types/react-dom": "17.0.3",
-        "babel-preset-redo": "0.0.2",
-        "jsrx": "0.0.9",
-        "electron": "11.2.0",
-        "electron-builder": "22.9.1",
-        "electron-devtools-installer": "3.1.1",
-        "react-hot-loader": "4.13.0",
+        "@types/node": "15.0.2",
+        "@types/fs-extra": "9.0.6",
+        "@types/dotenv": "8.2.0",
+        "@vitejs/plugin-react-refresh": "1.3.3",
         "ts-node": "9.1.1",
-        "tsconfig-paths-webpack-plugin": "3.3.0",
-        "typescript": "4.2.3",
-        "webpack": "5.17.0",
-        "webpack-cli": "4.5.0",
-        "webpack-dev-server": "3.11.2",
-        "vite": "2.2.4"
+        "@rollup/plugin-commonjs": "19.0.0",
+        "vite-plugin-commonjs-externals": "0.1.1"
     }
 }

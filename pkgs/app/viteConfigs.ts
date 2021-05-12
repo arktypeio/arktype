@@ -9,49 +9,49 @@ import commonJsExternalsPlugin from "vite-plugin-commonjs-externals"
 const sourceRoot = join(__dirname, "src")
 const outRoot = join(__dirname, "dist")
 
-import pkg from "./package.json"
-
-const commonjsPackages = [
+const externals = [
     "electron",
-    "electron/main",
-    "electron/common",
-    "electron/renderer",
-    "original-fs",
-    ...builtinModules,
-    ...Object.keys(pkg.dependencies).map(
-        (name) => new RegExp(`^${name}(\\/.+)?$`)
-    )
-] as const
+    "electron-updater",
+    "electron-redux",
+    "playwright-core",
+    "fs-extra",
+    ...builtinModules
+]
+
+const materialUiResolves = [
+    {
+        find: /^@material-ui\/icons\/(.*)/,
+        replacement: "@material-ui/icons/esm/$1"
+    },
+    {
+        find: /^@material-ui\/core\/(.+)/,
+        replacement: "@material-ui/core/es/$1"
+    },
+    {
+        find: /^@material-ui\/core$/,
+        replacement: "@material-ui/core/es"
+    }
+]
+
+const localResolves = [
+    { find: "main", replacement: join(sourceRoot, "main") },
+    {
+        find: "renderer",
+        replacement: join(sourceRoot, "renderer")
+    },
+    { find: "state", replacement: join(sourceRoot, "state") },
+    {
+        find: "observer",
+        replacement: join(sourceRoot, "observer")
+    }
+]
 
 const getConfig = (options?: Partial<UserConfig>) =>
     merge<UserConfig>(
         {
             mode: isDev() ? "development" : "production",
             resolve: {
-                alias: [
-                    {
-                        find: /^@material-ui\/icons\/(.*)/,
-                        replacement: "@material-ui/icons/esm/$1"
-                    },
-                    {
-                        find: /^@material-ui\/core\/(.+)/,
-                        replacement: "@material-ui/core/es/$1"
-                    },
-                    {
-                        find: /^@material-ui\/core$/,
-                        replacement: "@material-ui/core/es"
-                    },
-                    { find: "main", replacement: join(sourceRoot, "main") },
-                    {
-                        find: "renderer",
-                        replacement: join(sourceRoot, "renderer")
-                    },
-                    { find: "state", replacement: join(sourceRoot, "state") },
-                    {
-                        find: "observer",
-                        replacement: join(sourceRoot, "observer")
-                    }
-                ]
+                alias: [...materialUiResolves, ...localResolves]
             },
             build: {
                 sourcemap: "inline",
@@ -64,19 +64,14 @@ const getConfig = (options?: Partial<UserConfig>) =>
                     safari10: false
                 },
                 rollupOptions: {
-                    external: [
-                        "electron",
-                        "electron-updater",
-                        "electron-redux",
-                        "playwright-core",
-                        ...builtinModules
-                    ],
+                    external: externals,
                     output: {
                         entryFileNames: "[name].js"
                     }
                 },
                 emptyOutDir: true
-            }
+            },
+            plugins: [commonJsExternalsPlugin({ externals })]
         },
         options
     )
@@ -108,12 +103,7 @@ export const getRendererConfig = ({ watch }: GetConfigArgs = {}) =>
             outDir: join(outRoot, "renderer"),
             watch: watch ? {} : undefined
         },
-        plugins: [
-            reactRefreshPlugin(),
-            commonJsExternalsPlugin({
-                externals: commonjsPackages
-            })
-        ]
+        plugins: [reactRefreshPlugin()]
     })
 
 export const getObserverConfig = ({ watch }: GetConfigArgs = {}) =>

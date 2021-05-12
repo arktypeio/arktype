@@ -1,12 +1,11 @@
 import React, { useEffect } from "react"
-import { hot } from "react-hot-loader/root"
 import { AppContents } from "@re-do/components"
 import { Page } from "state"
 import { store } from "renderer/common"
 import { Home, Landing } from "./pages"
 import { Builder } from "./builder"
 
-export const Router = hot(() => {
+export const Router = () => {
     // This URL is loaded if and only if we're in the builder window
     if (window.location.hash === "#builder") {
         return (
@@ -27,7 +26,7 @@ export const Router = hot(() => {
         }
     })
     return <AppContents>{Pages[redirected]}</AppContents>
-})
+}
 
 type NameToPage = { [_ in NonNullable<Page>]: JSX.Element }
 
