@@ -1,5 +1,5 @@
 import moize from "moize"
-import { isDeepStrictEqual } from "util"
+import isDeepEqual from "fast-deep-equal"
 import assert from "assert"
 import deepMerge from "deepmerge"
 import { Object as O } from "ts-toolbelt"
@@ -30,7 +30,7 @@ export type DeepRequired<T> = {
 }
 
 export const isEmpty = (value: object | any[]) =>
-    isDeepStrictEqual(value, {}) || isDeepStrictEqual(value, [])
+    isDeepEqual(value, {}) || isDeepEqual(value, [])
 
 export type WithOptionalKeys<T extends object, Keys extends keyof T> = Omit<
     T,

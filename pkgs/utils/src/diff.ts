@@ -1,5 +1,5 @@
-import { isDeepStrictEqual } from "util"
 import { isRecursible, fromEntries, DeepPartial } from "./common"
+import isDeepEqual from "fast-deep-equal"
 
 const diffable = (o: any) => isRecursible(o) && !Array.isArray(o)
 
@@ -8,10 +8,7 @@ export const diff = <T>(original: T, updated: T): DeepPartial<T> =>
         Object.entries(updated)
             .filter(
                 ([k]) =>
-                    !isDeepStrictEqual(
-                        original[k as keyof T],
-                        updated[k as keyof T]
-                    )
+                    !isDeepEqual(original[k as keyof T], updated[k as keyof T])
             )
             .map(([k]) => {
                 return [

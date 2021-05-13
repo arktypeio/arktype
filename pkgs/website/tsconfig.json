@@ -1,9 +1,26 @@
 {
-    "extends": "@re-do/recommended/tsconfig.base",
     "compilerOptions": {
         "baseUrl": "src",
         "outDir": "dist",
-        "types": ["node"]
+        "module": "esnext",
+        "target": "esnext",
+        "moduleResolution": "Node",
+        "sourceMap": true,
+        "skipLibCheck": true,
+        "strict": true,
+        "isolatedModules": true,
+        "esModuleInterop": true,
+        "declaration": true,
+        "types": ["vite/client", "node"],
+        "typeRoots": ["node_modules/@types"],
+        "lib": ["ESNext", "dom", "dom.iterable"],
+        "jsx": "react"
+    },
+    "ts-node": {
+        "transpileOnly": true,
+        "compilerOptions": {
+            "module": "CommonJS"
+        }
     },
     "include": ["src"]
 }
