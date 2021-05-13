@@ -19197,7 +19197,7 @@ packages:
     dev: false
 
   file:projects/app.tgz:
-    resolution: {integrity: sha512-JFSpqAxWSBk4vih82UCBzbd7TMMNsUebw2lU6jkHkhSv+BYPUFROYCHDUL7l8qCBkKUv9U9+jdzyVfPvN+gccg==, tarball: file:projects/app.tgz}
+    resolution: {integrity: sha512-5VfcXrOP3+i2alJFWRJBoHnm+32tM//T6WND4d938H1XiH28z1kltIDRhIfAieRRlT8w21IzQiMkqmuWJphHww==, tarball: file:projects/app.tgz}
     name: '@rush-temp/app'
     version: 0.0.0
     dependencies:
@@ -19556,7 +19556,7 @@ packages:
     dev: false
 
   file:projects/website.tgz:
-    resolution: {integrity: sha512-rA6iVCv7JlVlZiuM3MQReTZoLwllIGusXvDSUmQaWFwhr5OWHOglV5CLYc2xY/SluOTZkEZtFel+NdfGW/EOpg==, tarball: file:projects/website.tgz}
+    resolution: {integrity: sha512-W+ofvDgag735p5t8ftxArGIUiH0go7wfQ4lESMaD3AphsVDQMXkNEGMEqK/yycJn2tmF04ubIA7WcZvNts3Meg==, tarball: file:projects/website.tgz}
     name: '@rush-temp/website'
     version: 0.0.0
     dependencies:
@@ -19577,6 +19577,7 @@ packages:
       analytics-node: 3.5.0
       buffer: 6.0.3
       framer-motion: 4.1.11_react-dom@17.0.2+react@17.0.2
+      jsrx: 0.0.9
       react: 17.0.2
       react-dom: 17.0.2_react@17.0.2
       react-ga: 3.3.0_react@17.0.2
@@ -19587,6 +19588,7 @@ packages:
       typescript: 4.2.3
       uuid: 8.3.2
       validator: 13.5.2
+      vite: 2.2.4
       webpack: 5.17.0_webpack-cli@4.5.0
       webpack-cli: 4.5.0_dc825068fadcc46eb552c456deeae18a
       webpack-dev-server: 3.11.2_webpack-cli@4.5.0+webpack@5.17.0
