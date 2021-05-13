@@ -35,10 +35,10 @@ export const GetStartedMobile = ({
             <Button
                 kind="secondary"
                 style={{
-                    color: "white",
                     borderColor: "#fec400",
                     fontWeight: 700
                 }}
+                textColor="white"
                 fontSize={18}
                 onClick={onClick}
             >

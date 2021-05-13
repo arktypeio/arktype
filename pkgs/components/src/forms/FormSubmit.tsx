@@ -7,18 +7,30 @@ import { ErrorText } from "../text"
 export type FormSubmitProps = {
     children?: string
     buttonProps?: ButtonProps
+    disableAfterValidSubmission?: boolean
 }
 
-export const FormSubmit = ({ children, buttonProps }: FormSubmitProps) => {
+export const FormSubmit = ({
+    children,
+    buttonProps,
+    disableAfterValidSubmission
+}: FormSubmitProps) => {
     const {
-        formState: { isValid, isSubmitting },
+        formState: { isValid, isSubmitting, isSubmitSuccessful },
         submitError
     } = useFormContext() as UseFormReturn & { submitError: string }
     return isSubmitting ? (
         <LoadingAnimation />
     ) : (
         <>
-            <Button {...buttonProps} type="submit" disabled={!isValid}>
+            <Button
+                {...buttonProps}
+                type="submit"
+                disabled={
+                    !isValid ||
+                    (disableAfterValidSubmission && isSubmitSuccessful)
+                }
+            >
                 {children ?? "Submit"}
             </Button>
             {submitError ? <ErrorText>{submitError}</ErrorText> : null}

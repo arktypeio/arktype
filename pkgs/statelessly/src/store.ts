@@ -1,4 +1,3 @@
-import { isDeepStrictEqual } from "util"
 import {
     configureStore,
     Middleware,
@@ -16,7 +15,8 @@ import {
     DeepUpdate,
     AutoPath,
     valueAtPath,
-    ValueAtPath
+    ValueAtPath,
+    deepEquals
 } from "@re-do/utils"
 
 export type Store<T extends object> = {
@@ -77,24 +77,24 @@ export const createStore = <T extends object>({
             const state = reduxStore.getState()
             const updatedState = updateMap(state, update)
             const changes = diff(state, updatedState)
-            if (!isDeepStrictEqual(changes, {})) {
+            if (!deepEquals(changes, {})) {
                 reduxStore.dispatch({ type: "STATELESSLY", payload: changes })
             }
         }
     }
 }
 
-export const createHandler = <HandledState, RootState>(
-    handler: Handler<HandledState, RootState>
-) => async (changes: DeepPartial<HandledState>, context: RootState) => {
-    for (const k in changes) {
-        if (k in handler) {
-            const handleKey = (handler as any)[k] as Handle<any, RootState>
-            const keyChanges = (changes as any)[k] as DeepPartial<any>
-            await handleKey(keyChanges, context)
+export const createHandler =
+    <HandledState, RootState>(handler: Handler<HandledState, RootState>) =>
+    async (changes: DeepPartial<HandledState>, context: RootState) => {
+        for (const k in changes) {
+            if (k in handler) {
+                const handleKey = (handler as any)[k] as Handle<any, RootState>
+                const keyChanges = (changes as any)[k] as DeepPartial<any>
+                await handleKey(keyChanges, context)
+            }
         }
     }
-}
 
 export type Query<T> = {
     [P in keyof T]?: Unlisted<T[P]> extends NonRecursible

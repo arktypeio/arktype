@@ -1,11 +1,11 @@
 import moize from "moize"
 import isDeepEqual from "fast-deep-equal"
-import assert from "assert"
 import deepMerge from "deepmerge"
 import { Object as O } from "ts-toolbelt"
 
 export const merge = deepMerge
 export const memoize = moize as <F extends (...args: any[]) => any>(f: F) => F
+export const deepEquals = isDeepEqual
 
 export type Merge<
     A extends object,
@@ -30,7 +30,7 @@ export type DeepRequired<T> = {
 }
 
 export const isEmpty = (value: object | any[]) =>
-    isDeepEqual(value, {}) || isDeepEqual(value, [])
+    deepEquals(value, {}) || deepEquals(value, [])
 
 export type WithOptionalKeys<T extends object, Keys extends keyof T> = Omit<
     T,
@@ -61,7 +61,9 @@ export type Unpromisified<T> = T extends Promise<infer U> ? U : never
 export const isRecursible = (o: any) => o && typeof o === "object"
 
 export const asserted = <T>(value: T, description?: string) => {
-    assert(value, `'${value}' is not allowed as a ${description ?? "value"}.`)
+    if (!value) {
+        throw Error(`'${value}' is not allowed as a ${description ?? "value"}.`)
+    }
     return value as NonNullable<T>
 }
 

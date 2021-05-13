@@ -48,10 +48,10 @@ export const GetStartedDesktop = ({
                 <Button
                     kind="secondary"
                     style={{
-                        color: "inherit",
                         borderColor: "inherit",
                         fontWeight: 700
                     }}
+                    textColor="inherit"
                     fontSize={18}
                     onClick={onClick}
                 >
