@@ -24,6 +24,9 @@ export const getWebsiteConfig = ({ watch }: GetConfigArgs = {}) =>
         options: {
             resolve: {
                 alias: localResolves
+            },
+            server: {
+                port: Number(process.env.VITE_DEV_SERVER_PORT)
             }
         }
     })

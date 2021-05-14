@@ -1,12 +1,18 @@
 import React, { useState } from "react"
-import { Form, FormText, FormSubmit, Button } from "@re-do/components"
+import { Form, FormText, FormSubmit } from "@re-do/components"
+import { useSubscribeMutation } from "@re-do/model"
+import { track } from "./analytics"
 
 export const SignUpForm = () => {
     const [submitted, setSubmitted] = useState(false)
+    const [subscribe] = useSubscribeMutation()
     return (
         <Form<{ email: string }>
             submit={async ({ email }) => {
-                console.log(`New user: ${email}`)
+                await subscribe({
+                    variables: { email }
+                })
+                await track.subscribe({ email })
                 setSubmitted(true)
                 return { email }
             }}

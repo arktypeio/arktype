@@ -1,4 +1,5 @@
 import { jsrx, $, shell } from "jsrx"
+import { join } from "path"
 import { createServer, build } from "vite"
 import { getWebsiteConfig } from "./viteConfigs"
 
@@ -7,12 +8,21 @@ const start = async () => {
     await viteDevServer.listen()
 }
 
-jsrx({
-    dev: {
-        start
+jsrx(
+    {
+        dev: {
+            start
+        },
+        prod: {},
+        shared: {
+            build: () => build(getWebsiteConfig())
+        }
     },
-    prod: {},
-    shared: {
-        build: () => build(getWebsiteConfig())
+    {
+        excludeOthers: true,
+        envFiles: {
+            dev: join(__dirname, ".env"),
+            prod: join(__dirname, ".env.production")
+        }
     }
-})
+)

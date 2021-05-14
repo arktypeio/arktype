@@ -11,7 +11,7 @@ type SubscribeOptions = {
     email: string
 }
 
-const subscribe = ({ email }: SubscribeOptions) => {
+const subscribe = async ({ email }: SubscribeOptions) => {
     if (!localStorage.userId) {
         localStorage.userId = v4()
     }
