@@ -93,6 +93,7 @@ specifiers:
   redux-devtools-extension: 2.13.8
   simple-git-hooks: 2.4.1
   spectron: 14.0.0
+  ts-jest: 26.5.6
   ts-node: 9.1.1
   ts-toolbelt: 9.5.10
   typeface-ubuntu: 1.1.13
@@ -195,6 +196,7 @@ dependencies:
   redux-devtools-extension: 2.13.8_redux@4.0.5
   simple-git-hooks: 2.4.1
   spectron: 14.0.0_electron@11.4.5
+  ts-jest: 26.5.6_jest@26.6.3+typescript@4.2.3
   ts-node: 9.1.1_typescript@4.2.3
   ts-toolbelt: 9.5.10
   typeface-ubuntu: 1.1.13
@@ -7258,6 +7260,13 @@ packages:
       electron-to-chromium: 1.3.727
       escalade: 3.1.1
       node-releases: 1.1.71
+    dev: false
+
+  /bs-logger/0.2.6:
+    resolution: {integrity: sha512-pd8DCoxmbgc7hyPKOvxtqNcjYoOsABPQdcCUjGp3d42VR2CX1ORhk2A87oqqu5R1kk+76nsxZupkmyd+MVtCog==}
+    engines: {node: '>= 6'}
+    dependencies:
+      fast-json-stable-stringify: 2.1.0
     dev: false
 
   /bser/2.1.1:
@@ -17061,6 +17070,28 @@ packages:
       tslib: 1.14.1
     dev: false
 
+  /ts-jest/26.5.6_jest@26.6.3+typescript@4.2.3:
+    resolution: {integrity: sha512-rua+rCP8DxpA8b4DQD/6X2HQS8Zy/xzViVYfEs2OQu68tkCuKLV0Md8pmX55+W24uRIyAsf/BajRfxOs+R2MKA==}
+    engines: {node: '>= 10'}
+    hasBin: true
+    peerDependencies:
+      jest: '>=26 <27'
+      typescript: '>=3.8 <5.0'
+    dependencies:
+      bs-logger: 0.2.6
+      buffer-from: 1.1.1
+      fast-json-stable-stringify: 2.1.0
+      jest: 26.6.3_ts-node@9.1.1
+      jest-util: 26.6.2
+      json5: 2.2.0
+      lodash: 4.17.21
+      make-error: 1.3.6
+      mkdirp: 1.0.4
+      semver: 7.3.5
+      typescript: 4.2.3
+      yargs-parser: 20.2.7
+    dev: false
+
   /ts-log/2.2.3:
     resolution: {integrity: sha512-XvB+OdKSJ708Dmf9ore4Uf/q62AYDTzFcAdxc8KNML1mmAWywRFVt/dn1KYJH8Agt5UJNujfM3znU5PxgAzA2w==}
     dev: false
@@ -18238,7 +18269,7 @@ packages:
     dev: false
 
   file:projects/app.tgz:
-    resolution: {integrity: sha512-qNxOiwGpyH/w0kJGDSaLmpYEN6V6vDgbn6y57XJvSxWHltir9A3ddvyjs5vHcpUrJNCcG9XG2wMqA+BSxXbfBg==, tarball: file:projects/app.tgz}
+    resolution: {integrity: sha512-/vA+3ngbYpOo1Ii2NuuJ9YfmKI81wl00YgDOx51Ppi81QmTaekmUKtNBKDJpFQSrbo+07dccx2gd6x4FS8cwCQ==, tarball: file:projects/app.tgz}
     name: '@rush-temp/app'
     version: 0.0.0
     dependencies:
@@ -18309,7 +18340,7 @@ packages:
     dev: false
 
   file:projects/components.tgz_ts-node@9.1.1:
-    resolution: {integrity: sha512-afv73amH+XwnycGWBk8BP5rOGA0Clouy8WDPtCOZ1A/qg57N22q5KLkfZX9mSOfgNe6X2UvYsQEuiH0Lr6BapQ==, tarball: file:projects/components.tgz}
+    resolution: {integrity: sha512-O3dZc4x+YRiVr2amL3MBHIZruHLW5LyF8FmgRxUhqGoSuJC/mrVVeTrXz74kBKQTtQtmjTmEQDknsO1MpktX+Q==, tarball: file:projects/components.tgz}
     id: file:projects/components.tgz
     name: '@rush-temp/components'
     version: 0.0.0
@@ -18341,6 +18372,7 @@ packages:
       react-dom: 17.0.2_react@17.0.2
       react-hook-form: 7.0.4_react@17.0.2
       react-router-dom: 5.2.0_react@17.0.2
+      ts-jest: 26.5.6_jest@26.6.3+typescript@4.2.3
       typeface-ubuntu: 1.1.13
       typescript: 4.2.3
     transitivePeerDependencies:
@@ -18389,7 +18421,7 @@ packages:
     dev: false
 
   file:projects/model.tgz_react@17.0.2:
-    resolution: {integrity: sha512-i78zS0Ip6rBUFM6o9GNqvIkPQaw5xu2WDNZcjKs6Vq/aqR8L1uhXAAg73HNl+dI+fkm+XT0XSn5524pEZnESHQ==, tarball: file:projects/model.tgz}
+    resolution: {integrity: sha512-quUVKLX8T7oFhw469LysBFtS0eHPSWZbpAdkvVMwaUY5iu/GtbAokrvb0g8OT9jdSKqGfNaVh34JxqDzzV0psA==, tarball: file:projects/model.tgz}
     id: file:projects/model.tgz
     name: '@rush-temp/model'
     version: 0.0.0
@@ -18411,6 +18443,7 @@ packages:
       graphql-tag: 2.12.4_graphql@15.5.0
       jest: 26.6.3_ts-node@9.1.1
       prettier: 2.2.1
+      ts-jest: 26.5.6_jest@26.6.3+typescript@4.2.3
       ts-node: 9.1.1_typescript@4.2.3
       typescript: 4.2.3
       uuid: 8.3.2
@@ -18426,7 +18459,7 @@ packages:
     dev: false
 
   file:projects/node-utils.tgz_ts-node@9.1.1:
-    resolution: {integrity: sha512-bfBXzIOjsCF7SSHtadee5I3X4noql+O1RXMDgDeRk+7R1OJmN7E4fheIw1rOzhAplYXA6jiMrC4GqsjyPlT0Dg==, tarball: file:projects/node-utils.tgz}
+    resolution: {integrity: sha512-6JjakvqUGrJ946xSN1vloCg9SquC0xUQLrkjhsB+dkhsHw3U+y0xZb8fm9ep0sA4kH+c/gMlWxQ5AWTZx9/+AQ==, tarball: file:projects/node-utils.tgz}
     id: file:projects/node-utils.tgz
     name: '@rush-temp/node-utils'
     version: 0.0.0
@@ -18445,6 +18478,7 @@ packages:
       moize: 5.4.7
       process: 0.11.10
       prompts: 2.4.1
+      ts-jest: 26.5.6_jest@26.6.3+typescript@4.2.3
       typescript: 4.2.3
       util: 0.12.3
       validator: 13.5.2
@@ -18457,7 +18491,7 @@ packages:
     dev: false
 
   file:projects/react-statelessly.tgz_ts-node@9.1.1:
-    resolution: {integrity: sha512-lbUSKRCDhRhtUbddXyBxy9O4D8VCLTCaabj6AAOpqM8hPpv7C5Xj88tShrymZfvlzy6MDVO5vEsSGAs2KHayPA==, tarball: file:projects/react-statelessly.tgz}
+    resolution: {integrity: sha512-m9/1cyy5/vC9xsndIoF66YPWvBcNMwqzvwTB7RmNLwVmZbB3L4MPIV5HpYj+FENV6m2EoIIv/lzVty72KURzAg==, tarball: file:projects/react-statelessly.tgz}
     id: file:projects/react-statelessly.tgz
     name: '@rush-temp/react-statelessly'
     version: 0.0.0
@@ -18477,6 +18511,7 @@ packages:
       react-dom: 17.0.2_react@17.0.2
       react-redux: 7.2.2_8436876974e3dcafae98d64b636de192
       redux: 4.0.5
+      ts-jest: 26.5.6_jest@26.6.3+typescript@4.2.3
       typescript: 4.2.3
     transitivePeerDependencies:
       - bufferutil
@@ -18488,7 +18523,7 @@ packages:
     dev: false
 
   file:projects/statelessly.tgz_ts-node@9.1.1:
-    resolution: {integrity: sha512-9VEZ2GwS4y7jnMLwHZTKBp1IzSdpg91/IAXKEssb07YGbAQyAPQzLHVRIAWxBzBT4MfGHlVNFUNpZPgk6p3iDg==, tarball: file:projects/statelessly.tgz}
+    resolution: {integrity: sha512-lVQ80CZ75yMe5+I8tukdSCZUke0jGoRwHkABSV5bi9gsplYGPropEDCHf08YxlswW6lCEW3nczW+0dinZSyI1w==, tarball: file:projects/statelessly.tgz}
     id: file:projects/statelessly.tgz
     name: '@rush-temp/statelessly'
     version: 0.0.0
@@ -18503,6 +18538,7 @@ packages:
       moize: 5.4.7
       redux: 4.0.5
       redux-devtools-extension: 2.13.8_redux@4.0.5
+      ts-jest: 26.5.6_jest@26.6.3+typescript@4.2.3
       typescript: 4.2.3
     transitivePeerDependencies:
       - bufferutil
@@ -18513,7 +18549,7 @@ packages:
     dev: false
 
   file:projects/test.tgz_ts-node@9.1.1:
-    resolution: {integrity: sha512-J0/LQxfWk4ORy4QMimvDBKjtuYrQxIzZyPgQT5lIOxf+/utdzwg8YeK0Z7nmSRwSKqFqTzLCAE69LbByn5AwaQ==, tarball: file:projects/test.tgz}
+    resolution: {integrity: sha512-K4lfEC7obFYN+SKkxARBxSX/dKx/SKw3AoROyv6SPNKiAp8Z+gu1yL7cZfEqcRNtYQT10icDVUsXG5KQMspdyA==, tarball: file:projects/test.tgz}
     id: file:projects/test.tgz
     name: '@rush-temp/test'
     version: 0.0.0
@@ -18524,6 +18560,7 @@ packages:
       fs-extra: 10.0.0
       jest: 26.6.3_ts-node@9.1.1
       playwright-core: 1.10.0
+      ts-jest: 26.5.6_jest@26.6.3+typescript@4.2.3
       typescript: 4.2.3
     transitivePeerDependencies:
       - bufferutil
@@ -18534,7 +18571,7 @@ packages:
     dev: false
 
   file:projects/utils.tgz_ts-node@9.1.1:
-    resolution: {integrity: sha512-SUGWNZi57hRHduGY+QShl1/OyPEHvyoGCnvt+3RcowsmJgTQNmrIidALkxK0z3CdPbnH6sYwzgiz48ImZCSV9g==, tarball: file:projects/utils.tgz}
+    resolution: {integrity: sha512-4P6siW36y36rUd0tscBlTAsOrGzPCwzJm/xyugyRVFE38sK1Df0RNz2JLHuzNuxbhCI/KxsLBz0+qTprF0vAmA==, tarball: file:projects/utils.tgz}
     id: file:projects/utils.tgz
     name: '@rush-temp/utils'
     version: 0.0.0
@@ -18552,6 +18589,7 @@ packages:
       jest: 26.6.3_ts-node@9.1.1
       moize: 5.4.7
       process: 0.11.10
+      ts-jest: 26.5.6_jest@26.6.3+typescript@4.2.3
       ts-toolbelt: 9.5.10
       typescript: 4.2.3
       util: 0.12.3

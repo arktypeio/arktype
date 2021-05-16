@@ -1,3 +1,3 @@
-module.exports = {
-    ...require("@re-do/configs/jest")
-}
+const { getJestConfig } = require("@re-do/configs")
+
+module.exports = getJestConfig()
