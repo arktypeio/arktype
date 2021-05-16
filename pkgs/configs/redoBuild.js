@@ -16,21 +16,6 @@ const run = async (cmd, args) => {
 const build = async () => {
     try {
         console.log(`redo-build🔨: Building ${pkg}...`)
-        // console.log(`redo-build🔨: Transpiling ${pkg}...`)
-        // await run("babel", [
-        //     "src",
-        //     "-d",
-        //     "dist",
-        //     "--extensions",
-        //     ".ts,.tsx",
-        //     "--ignore",
-        //     "src/**/__tests__/*",
-        //     "--source-maps",
-        //     "inline",
-        //     "--delete-dir-on-start"
-        // ])
-        // console.log(`redo-build🔨: Compiling types for ${pkg}...`)
-        // await run("tsc", ["--emitDeclarationOnly"])
         await run("tsc", [
             "--module",
             "esnext",

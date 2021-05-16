@@ -1,5 +1,5 @@
 {
-    "extends": "@re-do/configs/tsconfig.base",
+    "extends": "./tsconfig.base.json",
     "compilerOptions": {
         "baseUrl": "src",
         "outDir": "dist"

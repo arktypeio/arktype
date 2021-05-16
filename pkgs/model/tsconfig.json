@@ -1,5 +1,5 @@
 {
-    "extends": "@re-do/recommended/tsconfig.base",
+    "extends": "@re-do/configs/tsconfig.base",
     "compilerOptions": {
         "baseUrl": "src",
         "outDir": "dist"

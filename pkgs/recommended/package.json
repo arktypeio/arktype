@@ -1,9 +1,0 @@
-{
-    "name": "@re-do/recommended",
-    "version": "0.0.2",
-    "author": "redo.qa",
-    "description": "Shared set of default configurations for Redo's packages",
-    "scripts": {
-        "build": ""
-    }
-}

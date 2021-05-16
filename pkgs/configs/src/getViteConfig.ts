@@ -1,10 +1,11 @@
 import { join } from "path"
 import { builtinModules } from "module"
-import { merge } from "@re-do/utils"
-import { isDev } from "@re-do/node-utils"
+import merge from "deepmerge"
 import { UserConfig, Terser } from "vite"
 import reactRefreshPlugin from "@vitejs/plugin-react-refresh"
 import commonJsExternalsPlugin from "vite-plugin-commonjs-externals"
+
+const isDev = () => process.env.NODE_ENV === "development"
 
 const externals = [
     "electron",

@@ -1,5 +1,5 @@
 import { join } from "path"
-import { getWebConfig } from "@re-do/bundle"
+import { getWebConfig } from "@re-do/configs"
 
 const pkgRoot = join(__dirname, "src")
 

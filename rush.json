@@ -9,8 +9,8 @@
     },
     "projects": [
         {
-            "packageName": "@re-do/recommended",
-            "projectFolder": "pkgs/recommended"
+            "packageName": "@re-do/configs",
+            "projectFolder": "pkgs/configs"
         },
         {
             "packageName": "@re-do/utils",
@@ -35,14 +35,6 @@
         {
             "packageName": "@re-do/website",
             "projectFolder": "pkgs/website"
-        },
-        {
-            "packageName": "@re-do/bundle",
-            "projectFolder": "pkgs/bundle"
-        },
-        {
-            "packageName": "babel-preset-redo",
-            "projectFolder": "pkgs/babel-preset-redo"
         },
         {
             "packageName": "@re-do/test",

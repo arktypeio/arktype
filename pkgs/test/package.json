@@ -16,16 +16,14 @@
         "test": "jest"
     },
     "dependencies": {
-        "@babel/runtime-corejs3": "7.13.10",
         "@re-do/utils": "0.0.11",
         "fs-extra": "10.0.0",
         "playwright-core": "1.10.0"
     },
     "devDependencies": {
-        "@re-do/recommended": "0.0.2",
+        "@re-do/configs": "0.0.2",
         "@types/fs-extra": "9.0.6",
         "@types/jest": "26.0.20",
-        "babel-preset-redo": "0.0.2",
         "jest": "26.6.3",
         "typescript": "4.2.3"
     }

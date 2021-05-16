@@ -32,8 +32,7 @@
         "typeface-ubuntu": "1.1.13"
     },
     "devDependencies": {
-        "@re-do/bundle": "0.0.1",
-        "@re-do/recommended": "0.0.2",
+        "@re-do/configs": "0.0.2",
         "@storybook/addon-essentials": "6.2.9",
         "@storybook/addons": "6.2.9",
         "@storybook/addon-knobs": "6.2.9",
