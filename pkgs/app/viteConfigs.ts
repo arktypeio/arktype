@@ -14,6 +14,10 @@ const localResolves = [
     {
         find: "observer",
         replacement: join(pkgRoot, "observer")
+    },
+    {
+        find: "assets",
+        replacement: join(pkgRoot, "assets")
     }
 ]
 

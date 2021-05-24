@@ -1,4 +1,9 @@
-import { app, BrowserWindow, BrowserWindowConstructorOptions } from "electron"
+import {
+    app,
+    BrowserWindow,
+    BrowserWindowConstructorOptions,
+    nativeImage
+} from "electron"
 import electronDevtoolsInstaller, {
     REACT_DEVELOPER_TOOLS,
     APOLLO_DEVELOPER_TOOLS,
@@ -12,6 +17,7 @@ import { Store } from "react-statelessly"
 import { loadStore } from "./persist"
 import { StoredTest } from "@re-do/model"
 import { launchBrowser, closeBrowser } from "./launchBrowser"
+import icon from "assets/icon.png"
 
 let mainWindow: BrowserWindow
 let builderWindow: BrowserWindow
@@ -65,7 +71,7 @@ const defaultElectronOptions: BrowserWindowConstructorOptions = {
         nodeIntegration: true,
         enableRemoteModule: true
     },
-    icon: join(__dirname, "icon.png"),
+    icon: nativeImage.createFromDataURL(icon),
     autoHideMenuBar: true,
     show: false
 }
