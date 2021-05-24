@@ -11,7 +11,7 @@ const externals = [
     "electron",
     "electron-updater",
     "electron-redux",
-    "playwright-core",
+    "playwright",
     "fs-extra",
     ...builtinModules
 ]

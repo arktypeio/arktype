@@ -18,7 +18,7 @@
     "dependencies": {
         "@re-do/utils": "0.0.11",
         "fs-extra": "10.0.0",
-        "playwright-core": "1.10.0"
+        "playwright": "1.11.1"
     },
     "devDependencies": {
         "@re-do/configs": "0.0.2",

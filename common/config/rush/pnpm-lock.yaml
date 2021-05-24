@@ -78,7 +78,7 @@ specifiers:
   lint-staged: 10.5.4
   moize: 5.4.7
   node-fetch: 2.6.1
-  playwright-core: 1.10.0
+  playwright: 1.11.1
   prettier: 2.2.1
   process: 0.11.10
   prompts: 2.4.1
@@ -181,7 +181,7 @@ dependencies:
   lint-staged: 10.5.4
   moize: 5.4.7
   node-fetch: 2.6.1
-  playwright-core: 1.10.0
+  playwright: 1.11.1
   prettier: 2.2.1
   process: 0.11.10
   prompts: 2.4.1
@@ -14303,6 +14303,32 @@ packages:
       - utf-8-validate
     dev: false
 
+  /playwright/1.11.1:
+    resolution: {integrity: sha512-UuMrYuvzttbJXUD7sTVcQBsGRojelGepvuQPD+QtVm/n5zyKvkiUErU/DGRXfX8VDZRdQ5D6qVqZndrydC2b4w==}
+    engines: {node: '>=12'}
+    hasBin: true
+    requiresBuild: true
+    dependencies:
+      commander: 6.2.1
+      debug: 4.3.1
+      extract-zip: 2.0.1
+      https-proxy-agent: 5.0.0
+      jpeg-js: 0.4.3
+      mime: 2.5.2
+      pngjs: 5.0.0
+      progress: 2.0.3
+      proper-lockfile: 4.1.2
+      proxy-from-env: 1.1.0
+      rimraf: 3.0.2
+      stack-utils: 2.0.3
+      ws: 7.4.5
+      yazl: 2.5.1
+    transitivePeerDependencies:
+      - bufferutil
+      - supports-color
+      - utf-8-validate
+    dev: false
+
   /please-upgrade-node/3.2.0:
     resolution: {integrity: sha512-gQR3WpIgNIKwBMVLkpMUeR3e1/E1y42bqDQZfql+kDeXd8COYfM8PQA4X6y7a8u9Ua9FHmsrrmirW2vHs45hWg==}
     dependencies:
@@ -18234,6 +18260,12 @@ packages:
       fd-slicer: 1.1.0
     dev: false
 
+  /yazl/2.5.1:
+    resolution: {integrity: sha512-phENi2PLiHnHb6QBVot+dJnaAZ0xosj7p3fWl+znIjBDlnMI2PsZCJZ306BPTFOaHf5qdDEI8x5qFrSOBN5vrw==}
+    dependencies:
+      buffer-crc32: 0.2.13
+    dev: false
+
   /yn/3.1.1:
     resolution: {integrity: sha512-Ux4ygGWsu2c7isFWe8Yu1YluJmqVhxqK2cLXNQA5AcC3QfbGNpM7fu0Y8b/z16pXLnFxZYvWhd3fhBY9DLmC6Q==}
     engines: {node: '>=6'}
@@ -18269,7 +18301,7 @@ packages:
     dev: false
 
   file:projects/app.tgz:
-    resolution: {integrity: sha512-/vA+3ngbYpOo1Ii2NuuJ9YfmKI81wl00YgDOx51Ppi81QmTaekmUKtNBKDJpFQSrbo+07dccx2gd6x4FS8cwCQ==, tarball: file:projects/app.tgz}
+    resolution: {integrity: sha512-JeS4GoYNZjBhxrY42OJ7Vfgp42uh2u74EnMsypsDhvNOMJWQNAGvo+l7NDUybdT5A2HwqUc68yJrbBfDSO3asw==, tarball: file:projects/app.tgz}
     name: '@rush-temp/app'
     version: 0.0.0
     dependencies:
@@ -18299,6 +18331,7 @@ packages:
       isomorphic-ws: 4.0.1
       jsrx: 0.0.9
       lint-staged: 10.5.4
+      playwright: 1.11.1
       playwright-core: 1.10.0
       react: 17.0.2
       react-dom: 17.0.2_react@17.0.2
@@ -18549,7 +18582,7 @@ packages:
     dev: false
 
   file:projects/test.tgz_ts-node@9.1.1:
-    resolution: {integrity: sha512-K4lfEC7obFYN+SKkxARBxSX/dKx/SKw3AoROyv6SPNKiAp8Z+gu1yL7cZfEqcRNtYQT10icDVUsXG5KQMspdyA==, tarball: file:projects/test.tgz}
+    resolution: {integrity: sha512-azGatFodTmrX8v6o4soEhevTlbTjZaj3dtuAp/pSlZjn7+6MtlzKp9qOtbL6Czt8dtOco3RHFZ7yvQE8NqAkyw==, tarball: file:projects/test.tgz}
     id: file:projects/test.tgz
     name: '@rush-temp/test'
     version: 0.0.0
@@ -18559,6 +18592,7 @@ packages:
       '@types/jest': 26.0.20
       fs-extra: 10.0.0
       jest: 26.6.3_ts-node@9.1.1
+      playwright: 1.11.1
       playwright-core: 1.10.0
       ts-jest: 26.5.6_jest@26.6.3+typescript@4.2.3
       typescript: 4.2.3

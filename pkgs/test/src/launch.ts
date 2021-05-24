@@ -1,4 +1,4 @@
-import { chromium, firefox, webkit } from "playwright-core"
+import { chromium, firefox, webkit } from "playwright"
 
 export type LaunchOptions = {
     size?: {

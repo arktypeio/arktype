@@ -1,4 +1,70 @@
 {
-    "tests": [],
-    "elements": []
+    "tests": [
+        {
+            "name": "New Test",
+            "tags": [],
+            "steps": [
+                {
+                    "kind": "click",
+                    "element": 1
+                },
+                {
+                    "kind": "click",
+                    "element": 1
+                },
+                {
+                    "kind": "click",
+                    "element": 1
+                },
+                {
+                    "kind": "click",
+                    "element": 1
+                },
+                {
+                    "kind": "click",
+                    "element": 1
+                },
+                {
+                    "kind": "click",
+                    "element": 1
+                },
+                {
+                    "kind": "click",
+                    "element": 1
+                }
+            ]
+        },
+        {
+            "name": "New Something",
+            "tags": [],
+            "steps": [
+                {
+                    "kind": "click",
+                    "element": 1
+                },
+                {
+                    "kind": "click",
+                    "element": 1
+                },
+                {
+                    "kind": "click",
+                    "element": 1
+                },
+                {
+                    "kind": "click",
+                    "element": 2
+                }
+            ]
+        }
+    ],
+    "elements": [
+        {
+            "selector": ".MuiGrid-align-items-xs-baseline",
+            "id": 1
+        },
+        {
+            "selector": ".Mui-expanded > .MuiGrid-root svg",
+            "id": 2
+        }
+    ]
 }

@@ -2,7 +2,7 @@ import { readFileSync } from "fs-extra"
 import { BrowserWindow } from "electron"
 import { resolve } from "path"
 import { launch, Step } from "@re-do/test"
-import { Browser } from "playwright-core"
+import { Browser } from "playwright"
 import { Root } from "state"
 import { Store } from "react-statelessly"
 
@@ -36,10 +36,7 @@ export const launchBrowser = async (
     }
     await page.exposeFunction("notify", notify)
     const browserJs = readFileSync(
-        resolve(
-            process.env.NODE_ENV === "development" ? "dist" : __dirname,
-            "observer.js"
-        ),
+        resolve("dist", "observer", "index.js"),
         "utf-8"
     )
     await page.evaluate(browserJs)

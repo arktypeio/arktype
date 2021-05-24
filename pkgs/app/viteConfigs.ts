@@ -46,11 +46,14 @@ export const getRendererConfig = ({ watch }: GetConfigArgs = {}) =>
     })
 
 export const getObserverConfig = ({ watch }: GetConfigArgs = {}) =>
-    getWebConfig({
+    getNodeConfig({
         srcDir: join(pkgRoot, "observer"),
         outDir: join(outRoot, "observer"),
         watch,
         options: {
+            build: {
+                target: "chrome89"
+            },
             resolve: {
                 alias: localResolves
             }

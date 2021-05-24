@@ -13,6 +13,7 @@ const electronPath = require("electron")
 
 const buildAll = async () => {
     await build(getMainConfig())
+    await build(getObserverConfig())
     await build(getRendererConfig())
 }
 
@@ -59,6 +60,7 @@ const start = async () => {
         }
     })
     await viteDevServer.listen()
+    await watchObserver(viteDevServer)
     await watchMain()
 }
 
