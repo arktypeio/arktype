@@ -16,13 +16,14 @@ We use a [rush](https://rushjs.io) monorepo to manage the Redo app. Take a look 
 -   [@re-do/components](pkgs/components): Shared [React](https://reactjs.org/) component library
 -   [@re-do/test](pkgs/test): UI test runner
 -   [@re-do/utils](pkgs/utils): Generic utilities
+-   [@re-do/node-utils](pkgs/node-utils): Generic utilities for Node
 -   [@re-do/model](pkgs/model): Types that model Redo's data
 -   [@re-do/configs](pkgs/recommended): Shared configs (TS, jest, etc.)
 
 These packages have left the monorepo nest, but you can visit them in their new homes:
 
 -   [jsrx](https://github.com/re-do/jsrx): Seamlessly write your npm scripts in JS 💊📜
--   [gqlize](pkgs/gqlize): Zero-config graphql query generation 🎁
+-   [gqlize](https://github.com/re-do/gqlize): Zero-config graphql query generation 🎁
 
 ## Contributing
 
