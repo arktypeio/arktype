@@ -17,14 +17,23 @@ const buildAll = async () => {
 }
 
 let mainProcess: ChildProcess | undefined
+const cmdString = `${electronPath} --remote-debugging-port=9223 .`
 
 const startMain = () => {
-    mainProcess = shellAsync(`${electronPath} --remote-debugging-port=9223 "."`)
+    mainProcess = shellAsync(cmdString)
+}
+
+const killMain = () => {
+    // Find and kill the actual electron main process
+    shell(
+        `kill $(ps -aux | grep '${cmdString}' | grep -vE '/bin/sh|grep' | awk '{print $2}')`
+    )
+    mainProcess = undefined
 }
 
 const restartMain = (startIfNotRunning: boolean) => {
     if (mainProcess && !mainProcess.killed) {
-        mainProcess.kill()
+        killMain()
         startMain()
     } else if (startIfNotRunning) {
         startMain()
