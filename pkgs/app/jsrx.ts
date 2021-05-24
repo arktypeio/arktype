@@ -7,7 +7,6 @@ import {
     getObserverConfig
 } from "./viteConfigs"
 import { join } from "path"
-import { ViteDevServer } from "vite"
 
 const electronPath = require("electron")
 
@@ -19,35 +18,37 @@ const buildAll = async () => {
 
 let mainProcess: ChildProcess | undefined
 
+const startMain = () => {
+    mainProcess = shellAsync(`${electronPath} --remote-debugging-port=9223 "."`)
+}
+
+const restartMain = (startIfNotRunning: boolean) => {
+    if (mainProcess && !mainProcess.killed) {
+        mainProcess.kill()
+        startMain()
+    } else if (startIfNotRunning) {
+        startMain()
+    }
+}
+
 const watchMain = async () =>
     build({
         ...getMainConfig({ watch: true }),
         plugins: [
             {
                 name: "main-watcher",
-                writeBundle: async () => {
-                    if (mainProcess && !mainProcess.killed) {
-                        mainProcess.kill()
-                    }
-                    mainProcess = shellAsync(
-                        `${electronPath} --remote-debugging-port=9223 "."`
-                    )
-                }
+                writeBundle: () => restartMain(true)
             }
         ]
     })
 
-const watchObserver = (devServer: ViteDevServer) =>
+const watchObserver = () =>
     build({
         ...getObserverConfig({ watch: true }),
         plugins: [
             {
                 name: "observer-watcher",
-                writeBundle: async () => {
-                    devServer.ws.send({
-                        type: "full-reload"
-                    })
-                }
+                writeBundle: () => restartMain(false)
             }
         ]
     })
@@ -60,7 +61,7 @@ const start = async () => {
         }
     })
     await viteDevServer.listen()
-    await watchObserver(viteDevServer)
+    await watchObserver()
     await watchMain()
 }
 

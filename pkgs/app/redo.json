@@ -55,6 +55,38 @@
                     "element": 2
                 }
             ]
+        },
+        {
+            "name": "Some New Test",
+            "tags": [
+                "fdfa"
+            ],
+            "steps": [
+                {
+                    "kind": "click",
+                    "element": 1
+                },
+                {
+                    "kind": "click",
+                    "element": 3
+                },
+                {
+                    "kind": "click",
+                    "element": 4
+                },
+                {
+                    "kind": "click",
+                    "element": 4
+                },
+                {
+                    "kind": "click",
+                    "element": 4
+                },
+                {
+                    "kind": "click",
+                    "element": 4
+                }
+            ]
         }
     ],
     "elements": [
@@ -65,6 +97,14 @@
         {
             "selector": ".Mui-expanded > .MuiGrid-root svg",
             "id": 2
+        },
+        {
+            "selector": ".MuiGrid-root:nth-child(2) > .MuiTypography-body1",
+            "id": 3
+        },
+        {
+            "selector": ".MuiGrid-root:nth-child(5)",
+            "id": 4
         }
     ]
 }

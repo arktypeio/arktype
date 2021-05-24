@@ -3,6 +3,7 @@
     "version": "0.0.3",
     "author": "redo.qa",
     "description": "💪-typed state management with simple shapes🔷 for react",
+    "type": "module",
     "main": "dist/cjs/index.js",
     "module": "dist/mjs/index.js",
     "exports": {

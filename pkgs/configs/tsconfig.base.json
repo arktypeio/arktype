@@ -1,16 +1,21 @@
 {
     "compilerOptions": {
-        "moduleResolution": "node",
-        "lib": ["ESNext", "DOM", "DOM.Iterable"],
-        "jsx": "react",
-        "inlineSourceMap": true,
-        "strict": true,
-        "experimentalDecorators": true,
-        "emitDecoratorMetadata": true,
-        "allowSyntheticDefaultImports": true,
-        "esModuleInterop": true,
-        "noErrorTruncation": true,
+        "module": "esnext",
+        "target": "esnext",
+        "moduleResolution": "Node",
+        "sourceMap": true,
         "skipLibCheck": true,
-        "declaration": true
+        "strict": true,
+        "isolatedModules": true,
+        "esModuleInterop": true,
+        "declaration": true,
+        "lib": ["ESNext", "dom", "dom.iterable"],
+        "jsx": "react"
+    },
+    "ts-node": {
+        "transpileOnly": true,
+        "compilerOptions": {
+            "module": "CommonJS"
+        }
     }
 }
