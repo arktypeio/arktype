@@ -28,7 +28,6 @@ const useSuggestions = (): Suggestion<UserItemKind>[] => {
         : []
 }
 
-// TODO: Resolve Test/StoredTest conflict
 type UserData = { tests: StoredTest }
 
 type UserItemKind = keyof UserData

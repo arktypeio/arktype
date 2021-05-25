@@ -7,6 +7,7 @@ import {
     Button,
     ChipInput
 } from "@re-do/components"
+import { Step } from "@re-do/test"
 import { BuilderEvents } from "./StepCards"
 import { store } from "renderer/common"
 import { deactivateBuilder } from "state"
@@ -23,8 +24,9 @@ export const Builder = () => {
         builderActive: true,
         steps: true
     })
+
     if (!builderActive && (name || tags.length)) {
-        setState({ name: "", tags: [] })
+        setState(initialState)
     }
 
     return (
@@ -60,7 +62,7 @@ export const Builder = () => {
                     style={{ color: "white" }}
                     onClick={() => {
                         store.update({
-                            tests: (_) => _.concat({ name, tags, steps })
+                            savingTest: { name, tags, steps }
                         })
                         deactivateBuilder(store)
                     }}

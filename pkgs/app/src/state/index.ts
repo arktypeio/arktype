@@ -7,7 +7,7 @@ import {
     replayActionMain,
     getInitialStateRenderer
 } from "electron-redux"
-import { Test, StoredTest } from "@re-do/model"
+import { StoredTest, Test } from "@re-do/model"
 
 export enum Page {
     Home = "HOME",
@@ -22,8 +22,9 @@ export type Root = {
     builderActive: boolean
     steps: Step[]
     defaultBrowser: BrowserName
-    tests: Test[]
+    tests: StoredTest[]
     runningTest: StoredTest | null
+    savingTest: Test | null
 }
 
 export const initialRoot: Root = {
@@ -34,7 +35,8 @@ export const initialRoot: Root = {
     defaultBrowser: "chrome",
     steps: [],
     tests: [],
-    runningTest: null
+    runningTest: null,
+    savingTest: null
 }
 
 export const createMainStore = (handler: Handler<Root, Root>) => {

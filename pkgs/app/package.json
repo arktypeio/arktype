@@ -60,6 +60,7 @@
         "@types/react-dom": "17.0.3",
         "@types/node": "15.0.2",
         "@types/fs-extra": "9.0.6",
-        "@types/dotenv": "8.2.0"
+        "@types/dotenv": "8.2.0",
+        "tree-kill": "1.2.2"
     }
 }

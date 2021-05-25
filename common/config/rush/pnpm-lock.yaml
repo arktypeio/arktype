@@ -93,6 +93,7 @@ specifiers:
   redux-devtools-extension: 2.13.8
   simple-git-hooks: 2.4.1
   spectron: 14.0.0
+  tree-kill: 1.2.2
   ts-jest: 26.5.6
   ts-node: 9.1.1
   ts-toolbelt: 9.5.10
@@ -196,6 +197,7 @@ dependencies:
   redux-devtools-extension: 2.13.8_redux@4.0.5
   simple-git-hooks: 2.4.1
   spectron: 14.0.0_electron@11.4.5
+  tree-kill: 1.2.2
   ts-jest: 26.5.6_jest@26.6.3+typescript@4.2.3
   ts-node: 9.1.1_typescript@4.2.3
   ts-toolbelt: 9.5.10
@@ -17049,6 +17051,11 @@ packages:
       punycode: 2.1.1
     dev: false
 
+  /tree-kill/1.2.2:
+    resolution: {integrity: sha512-L0Orpi8qGpRG//Nd+H90vFB+3iHnue1zSSGmNOOCh1GLJ7rUKVwV2HvijphGQS2UmhUZewS9VgvxYIdgr+fG1A==}
+    hasBin: true
+    dev: false
+
   /treeify/1.1.0:
     resolution: {integrity: sha512-1m4RA7xVAJrSGrrXGs0L3YTwyvBs2S8PbRHaLZAkFw7JR8oIFwYtysxlBZhYIa7xSyiYJKZ3iGrrk55cGA3i9A==}
     engines: {node: '>=0.6'}
@@ -18301,7 +18308,7 @@ packages:
     dev: false
 
   file:projects/app.tgz:
-    resolution: {integrity: sha512-JeS4GoYNZjBhxrY42OJ7Vfgp42uh2u74EnMsypsDhvNOMJWQNAGvo+l7NDUybdT5A2HwqUc68yJrbBfDSO3asw==, tarball: file:projects/app.tgz}
+    resolution: {integrity: sha512-iScM48T5Wra11HCacPW0dC2j/+807bacvl8wWuPz/7or7wM81DnLxIhYbMpiE3xv5nZ5aAoEMPVVvA8QH5Ulhg==, tarball: file:projects/app.tgz}
     name: '@rush-temp/app'
     version: 0.0.0
     dependencies:
@@ -18337,6 +18344,7 @@ packages:
       react-dom: 17.0.2_react@17.0.2
       simple-git-hooks: 2.4.1
       spectron: 14.0.0_electron@11.4.5
+      tree-kill: 1.2.2
       ts-node: 9.1.1_typescript@4.2.3
       typescript: 4.2.3
       vite: 2.2.4

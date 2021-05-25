@@ -1,4 +1,5 @@
 import { jsrx, $, shell } from "jsrx"
+import treeKill from "tree-kill"
 import { createServer, build } from "vite"
 import { ChildProcess, shellAsync } from "@re-do/node-utils"
 import {
@@ -17,26 +18,15 @@ const buildAll = async () => {
 }
 
 let mainProcess: ChildProcess | undefined
+
 const cmdString = `${electronPath} --remote-debugging-port=9223 .`
-
-const startMain = () => {
-    mainProcess = shellAsync(cmdString)
-}
-
-const killMain = () => {
-    // Find and kill the actual electron main process
-    shell(
-        `kill $(ps -aux | grep '${cmdString}' | grep -vE '/bin/sh|grep' | awk '{print $2}')`
-    )
-    mainProcess = undefined
-}
 
 const restartMain = (startIfNotRunning: boolean) => {
     if (mainProcess && !mainProcess.killed) {
-        killMain()
-        startMain()
+        treeKill(mainProcess.pid)
+        mainProcess = shellAsync(cmdString)
     } else if (startIfNotRunning) {
-        startMain()
+        mainProcess = shellAsync(cmdString)
     }
 }
 

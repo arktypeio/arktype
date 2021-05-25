@@ -87,6 +87,57 @@
                     "element": 4
                 }
             ]
+        },
+        {
+            "name": "Some New Test",
+            "tags": [
+                "kekw"
+            ],
+            "steps": [
+                {
+                    "kind": "click",
+                    "element": 5
+                },
+                {
+                    "kind": "click",
+                    "element": 6
+                },
+                {
+                    "kind": "set",
+                    "value": "david@redo.qa",
+                    "element": 6
+                },
+                {
+                    "kind": "click",
+                    "element": 7
+                }
+            ]
+        },
+        {
+            "name": "Another New Test",
+            "tags": [
+                "AnotherNewTag",
+                "kekw"
+            ],
+            "steps": [
+                {
+                    "kind": "click",
+                    "element": 8
+                },
+                {
+                    "kind": "click",
+                    "element": 6
+                },
+                {
+                    "kind": "set",
+                    "value": "david@redo.qa",
+                    "element": 6
+                },
+                {
+                    "kind": "click",
+                    "element": 9
+                }
+            ]
         }
     ],
     "elements": [
@@ -105,6 +156,26 @@
         {
             "selector": ".MuiGrid-root:nth-child(5)",
             "id": 4
+        },
+        {
+            "selector": ".MuiButton-label",
+            "id": 5
+        },
+        {
+            "selector": ".MuiInputBase-input",
+            "id": 6
+        },
+        {
+            "selector": ".MuiButton-contained",
+            "id": 7
+        },
+        {
+            "selector": ".MuiButton-root",
+            "id": 8
+        },
+        {
+            "selector": ".MuiButton-contained > .MuiButton-label",
+            "id": 9
         }
     ]
 }

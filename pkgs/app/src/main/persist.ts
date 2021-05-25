@@ -57,13 +57,14 @@ export const loadStore = ({ path }: LoadStoreArgs) => {
                 return { ...data, element: id } as any
             }
         })
+        const test = {
+            ...data,
+            steps: storedSteps
+        }
         store.update({
-            tests: (_) =>
-                _.concat({
-                    ...data,
-                    steps: storedSteps
-                })
+            tests: (_) => [..._, test]
         })
+        return test
     }
     const getTests = () => store.query({ tests: true }).tests
     const testToSteps = (test: StoredTest): Step[] =>

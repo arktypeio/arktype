@@ -54,21 +54,29 @@ store = createMainStore({
             closeBrowser()
         }
     },
-    tests: async (tests) => {
-        tests.forEach((test) => persistedStore.createTest(test as any))
-    },
     runningTest: async (test) => {
         if (test) {
             await runTest(persistedStore.testToSteps(test as StoredTest))
             store.update({ runningTest: null })
         }
+    },
+    savingTest: async (test) => {
+        if (test) {
+            persistedStore.createTest(test as any)
+            store.update({
+                savingTest: null,
+                tests: (_) => [..._, test as any]
+            })
+        }
     }
 })
 
+store.update({ tests: persistedStore.getTests() })
+
 const defaultElectronOptions: BrowserWindowConstructorOptions = {
     webPreferences: {
-        webSecurity: false,
         nodeIntegration: true,
+        contextIsolation: false,
         enableRemoteModule: true
     },
     icon: nativeImage.createFromDataURL(icon),
@@ -118,7 +126,7 @@ const createBuilderWindow = async () => {
 
 app.on("ready", async () => {
     if (isDev) {
-        await installExtensions()
+        // await installExtensions()
     } else {
         await autoUpdater.checkForUpdatesAndNotify()
     }
