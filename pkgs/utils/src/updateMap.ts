@@ -17,16 +17,18 @@ export const updateMap = <T>(current: T, updater: DeepUpdate<T>): T => {
             if (k in updater) {
                 const key = k as keyof T
                 if (typeof updater[key] === "function") {
-                    const update = (updater[key] as any) as UpdateFunction<
+                    const update = updater[key] as any as UpdateFunction<
                         ValueOf<T>
                     >
                     return [k, update(v)]
                 } else {
-                    return isRecursible(v) && !Array.isArray(updater[key])
+                    return isRecursible(v) &&
+                        isRecursible(updater[key]) &&
+                        !Array.isArray(updater[key])
                         ? Array.isArray(v)
                             ? [
                                   k,
-                                  v.map(item =>
+                                  v.map((item) =>
                                       updateMap(item, updater[key] as any)
                                   )
                               ]

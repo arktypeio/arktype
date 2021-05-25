@@ -4,19 +4,19 @@ import { o } from "./common"
 const map: DeepUpdate<typeof o> = {
     a: {
         a: "new",
-        b: value => value.concat([1, 2, 3]),
+        b: (value) => value.concat([1, 2, 3]),
         c: {
             a: false,
-            b: value => !value,
+            b: (value) => !value,
             c: null
         }
     },
     b: {
         a: {
-            a: value => value + 1
+            a: (value) => value + 1
         }
     },
-    d: value => value + "suffix"
+    d: (value) => value + "suffix"
 }
 
 const expected = {
@@ -44,13 +44,18 @@ test("updates simple objects", () => {
     expect(result).toStrictEqual(expected)
 })
 
+test("updates objects to null", () => {
+    const result = updateMap(o, { a: null } as any)
+    expect(result).toStrictEqual({ ...o, a: null })
+})
+
 test("updates deep arrays", () => {
     const deepArrayExpected = {
         ...o,
         e: [{ a: ["old"] }, { a: ["old"] }, { a: ["new"] }]
     }
     const result: typeof deepArrayExpected = updateMap(o, {
-        e: value => value.concat({ a: ["new"] })
+        e: (value) => value.concat({ a: ["new"] })
     })
     expect(result).toStrictEqual(deepArrayExpected)
 })
