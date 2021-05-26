@@ -9,35 +9,44 @@ import {
     NonRecursible,
     Unlisted,
     updateMap,
-    diff,
     shapeFilter,
     ShapeFilter,
     DeepUpdate,
     AutoPath,
     valueAtPath,
     ValueAtPath,
-    deepEquals
+    transform
 } from "@re-do/utils"
 
-export type Store<T extends object> = {
+export type Actions<T extends object> = Record<
+    string,
+    Update<T> | ((...args: any) => Update<T>)
+>
+
+export type StoreActions<T extends object, A extends Actions<T>> = {
+    [K in keyof A]: A[K] extends (...args: any) => any
+        ? (...args: Parameters<A[K]>) => void
+        : () => void
+}
+
+export type Store<T extends object, A extends Actions<T>> = {
     underlying: ReduxStore<T, UpdateAction<T>>
     getState: () => T
     get: <P extends string>(path: AutoPath<T, P, "/">) => ValueAtPath<T, P>
     query: <Q extends Query<T>>(q: Q) => ShapeFilter<T, Q>
-    update: <U extends Update<T>>(u: U) => void
-}
+} & StoreActions<T, A>
 
-export type StoreArgs<T> = {
-    initial: T
+export type StoreOptions<T> = {
     handler?: Handler<T, T> | Handle<T, T>
     middleware?: Middleware[]
 }
 
-export const createStore = <T extends object>({
-    initial,
-    handler,
-    middleware
-}: StoreArgs<T>): Store<T> => {
+export const createStore = <T extends object, A extends Actions<T>>(
+    initial: T,
+    actions: A,
+    options: StoreOptions<T> = {}
+): Store<T, A> => {
+    const { handler, middleware } = options
     const rootReducer: Reducer<T, UpdateAction<T>> = (
         state: T | undefined,
         { type, payload }
@@ -48,9 +57,9 @@ export const createStore = <T extends object>({
         if (type !== "STATELESSLY") {
             return state
         }
-        // Since updateMap has already been executed in the update function,
-        // update functions have already been converted to resultant values
-        // and payload should only include serializable values
+        // Since payload has already been transformed by a prior updateMap call
+        // in the action function, at this point all mapping functions have been
+        // converted to their resultant serializable values
         return updateMap(state, payload as any)
     }
     const handle =
@@ -67,20 +76,35 @@ export const createStore = <T extends object>({
         preloadedState: initial,
         middleware: reduxMiddleware
     })
+    const storeActions = transform(actions, ([k, v]) => {
+        const state = reduxStore.getState()
+        if (typeof v === "function") {
+            return [
+                k,
+                (...args: any) =>
+                    reduxStore.dispatch({
+                        type: "STATELESSLY",
+                        payload: updateMap(state, v(...args))
+                    })
+            ]
+        } else {
+            return [
+                k,
+                () =>
+                    reduxStore.dispatch({
+                        type: "STATELESSLY",
+                        payload: updateMap(state, v)
+                    })
+            ]
+        }
+    }) as any as StoreActions<T, A>
     return {
+        ...storeActions,
         underlying: reduxStore,
         getState: reduxStore.getState,
         query: (q) => shapeFilter(reduxStore.getState(), q),
         // any types are a temporary workaround for excessive stack depth on type comparison error in TS
-        get: ((path: any) => valueAtPath(reduxStore.getState(), path)) as any,
-        update: (update) => {
-            const state = reduxStore.getState()
-            const updatedState = updateMap(state, update)
-            const changes = diff(state, updatedState)
-            if (!deepEquals(changes, {})) {
-                reduxStore.dispatch({ type: "STATELESSLY", payload: changes })
-            }
-        }
+        get: ((path: any) => valueAtPath(reduxStore.getState(), path)) as any
     }
 }
 

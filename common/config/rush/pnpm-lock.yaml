@@ -18564,7 +18564,7 @@ packages:
     dev: false
 
   file:projects/statelessly.tgz_ts-node@9.1.1:
-    resolution: {integrity: sha512-lVQ80CZ75yMe5+I8tukdSCZUke0jGoRwHkABSV5bi9gsplYGPropEDCHf08YxlswW6lCEW3nczW+0dinZSyI1w==, tarball: file:projects/statelessly.tgz}
+    resolution: {integrity: sha512-x2nPc/5bb6dxWYURc7XZTlbPCU86zh/JQzLuq0PKy5bto8+ztXLtjBkjQomU1zNVGo3ubyR0Ehokpe0/2bjQ8g==, tarball: file:projects/statelessly.tgz}
     id: file:projects/statelessly.tgz
     name: '@rush-temp/statelessly'
     version: 0.0.0
@@ -18580,6 +18580,7 @@ packages:
       redux: 4.0.5
       redux-devtools-extension: 2.13.8_redux@4.0.5
       ts-jest: 26.5.6_jest@26.6.3+typescript@4.2.3
+      ts-toolbelt: 9.5.10
       typescript: 4.2.3
     transitivePeerDependencies:
       - bufferutil
