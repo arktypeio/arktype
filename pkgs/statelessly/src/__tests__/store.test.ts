@@ -1,4 +1,4 @@
-import { createStore, Handler } from "../store"
+import { createStore, Handler, Actions, StoreOptions } from "../store"
 
 type Root = {
     a: A
@@ -29,44 +29,31 @@ const initialRoot: Root = Object.freeze({
     d: [initialA, initialA]
 })
 
-const getStore = () =>
-    createStore(initialRoot, {
-        enableB: { b: true },
-        nameC: (name: string) => ({
-            c: name
-        }),
-        addOneToEndOfList: {
-            a: { b: { a: (_) => [..._, 1] } }
+const getStore = (options: StoreOptions<Root> = {}) =>
+    createStore(
+        initialRoot,
+        {
+            enableB: { b: true },
+            nameC: (name: string) => ({
+                c: name
+            }),
+            addOneToEndOfList: {
+                a: { b: { a: (_) => [..._, 1] } }
+            },
+            addNumberToEndOfList: (value: number) => ({
+                a: { b: { a: (_) => [..._, value] } }
+            }),
+            appendObjectToArray: { d: (value) => value.concat(initialA) },
+            emptyDArray: { d: [] },
+            updateSomeValues: {
+                b: (_) => _,
+                c: (_) => `updated${_}`
+            }
         },
-        addNumberToEndOfList: (value: number) => ({
-            a: { b: { a: (_) => [..._, value] } }
-        }),
-        appendObjectToArray: { d: (value) => value.concat(initialA) },
-        emptyDArray: { d: [] }
-    })
+        options
+    )
 
 let store = getStore()
-
-// const cHandler = jest.fn()
-// const bing = jest.fn()
-// const dHandler = jest.fn()
-// const handler: Handler<Root, Root> = {
-//     c: cHandler,
-//     b: bing,
-//     d: dHandler
-// }
-// let sideEffectStore = createStore({
-//     initial: initialRoot,
-//     handler,
-//     actions: {}
-// })
-
-// const functionalHandler = jest.fn()
-// let sideEffectFunctionStore = createStore({
-//     initial: initialRoot,
-//     handler: functionalHandler,
-//     actions: {}
-// })
 
 describe("queries", () => {
     beforeAll(() => {
@@ -170,33 +157,40 @@ describe("actions", () => {
     })
 })
 
-// describe("side effects", () => {
-//     beforeEach(() => {
-//         sideEffectStore = createStore({ initial: initialRoot, handler })
-//     })
-//     test("handle side effects", () => {
-//         sideEffectStore.update({ b: true })
-//         expect(bing).toBeCalledWith(true, initialRoot)
-//     })
-//     test("handles array side effects", () => {
-//         sideEffectStore.update({
-//             d: (_) => _.concat(initialA)
-//         })
-//         expect(dHandler).toBeCalledWith(
-//             [initialA, initialA, initialA],
-//             initialRoot
-//         )
-//     })
-//     test("doesn't trigger extraneous side effects", () => {
-//         sideEffectStore.update({
-//             b: (current) => current,
-//             c: (current) => current + "new"
-//         })
-//         expect(cHandler).toHaveBeenCalled()
-//         expect(bing).not.toHaveBeenCalled()
-//     })
-//     test("handles side effects with function", () => {
-//         sideEffectFunctionStore.update({ b: true })
-//         expect(functionalHandler).toHaveBeenCalled()
-//     })
-// })
+const cHandler = jest.fn()
+const bing = jest.fn()
+const dHandler = jest.fn()
+const handler: Handler<Root, Root> = {
+    c: cHandler,
+    b: bing,
+    d: dHandler
+}
+
+const functionalHandler = jest.fn()
+
+describe("side effects", () => {
+    beforeEach(() => {
+        store = getStore({ handler })
+    })
+    test("handle side effects", () => {
+        store.enableB()
+        expect(bing).toBeCalledWith(true, initialRoot)
+    })
+    test("handles array side effects", () => {
+        store.appendObjectToArray()
+        expect(dHandler).toBeCalledWith(
+            [initialA, initialA, initialA],
+            initialRoot
+        )
+    })
+    test("doesn't trigger extraneous side effects", () => {
+        store.updateSomeValues()
+        expect(cHandler).toHaveBeenCalled()
+        expect(bing).not.toHaveBeenCalled()
+    })
+    test("handles side effects with function", () => {
+        store = getStore({ handler: functionalHandler })
+        store.enableB()
+        expect(functionalHandler).toHaveBeenCalledWith({ b: true }, initialRoot)
+    })
+})

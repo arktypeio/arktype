@@ -15,7 +15,9 @@ import {
     AutoPath,
     valueAtPath,
     ValueAtPath,
-    transform
+    transform,
+    deepEquals,
+    diff
 } from "@re-do/utils"
 
 export type Actions<T extends object> = Record<
@@ -49,12 +51,12 @@ export const createStore = <T extends object, A extends Actions<T>>(
     const { handler, middleware } = options
     const rootReducer: Reducer<T, UpdateAction<T>> = (
         state: T | undefined,
-        { type, payload }
+        { type, payload, statelessly }
     ) => {
         if (!state) {
             return initial
         }
-        if (type !== "STATELESSLY") {
+        if (!statelessly) {
             return state
         }
         // Since payload has already been transformed by a prior updateMap call
@@ -65,38 +67,32 @@ export const createStore = <T extends object, A extends Actions<T>>(
     const handle =
         typeof handler === "object" ? createHandler<T, T>(handler) : handler
     const reduxMiddleware = middleware ? [...middleware] : []
-    if (handle) {
-        reduxMiddleware.push(({ getState }) => (next) => (action) => {
-            handle(action.payload, getState())
-            return next(action)
-        })
-    }
     const reduxStore = configureStore({
         reducer: rootReducer,
         preloadedState: initial,
         middleware: reduxMiddleware
     })
-    const storeActions = transform(actions, ([k, v]) => {
+    const storeActions = transform(actions, ([type, updater]) => {
         const state = reduxStore.getState()
-        if (typeof v === "function") {
-            return [
-                k,
-                (...args: any) =>
-                    reduxStore.dispatch({
-                        type: "STATELESSLY",
-                        payload: updateMap(state, v(...args))
-                    })
-            ]
-        } else {
-            return [
-                k,
-                () =>
-                    reduxStore.dispatch({
-                        type: "STATELESSLY",
-                        payload: updateMap(state, v)
-                    })
-            ]
-        }
+        return [
+            type,
+            // args will be ignored if updater was not a function
+            (...args: any) => {
+                const updatedState = updateMap(
+                    state,
+                    typeof updater === "function" ? updater(...args) : updater
+                )
+                const changes = diff(state, updatedState)
+                if (!deepEquals(changes, {})) {
+                    handle && handle(changes, state)
+                }
+                reduxStore.dispatch({
+                    type,
+                    payload: updatedState,
+                    statelessly: true
+                })
+            }
+        ]
     }) as any as StoreActions<T, A>
     return {
         ...storeActions,
@@ -138,6 +134,7 @@ export type Handler<HandledState, RootState> = {
 }
 
 type UpdateAction<T> = {
-    type: "STATELESSLY"
+    type: string
     payload: DeepPartial<T>
+    statelessly: true
 }
