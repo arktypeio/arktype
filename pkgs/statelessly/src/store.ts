@@ -41,7 +41,7 @@ export type Store<T extends object, A extends Actions<T>> = {
 } & StoreActions<T, A>
 
 export type StoreOptions<T> = {
-    handler?: Handler<T, T> | Handle<T, T>
+    onChange?: ListenerMap<T, T> | Listener<T, T>
     middleware?: Middleware[]
 }
 
@@ -50,7 +50,7 @@ export const createStore = <T extends object, A extends Actions<T>>(
     actions: A,
     options: StoreOptions<T> = {}
 ): Store<T, A> => {
-    const { handler, middleware } = options
+    const { onChange, middleware } = options
     const rootReducer: Reducer<T, UpdateAction<T>> = (
         state: T | undefined,
         { type, payload, statelessly }
@@ -66,35 +66,47 @@ export const createStore = <T extends object, A extends Actions<T>>(
         // converted to their resultant serializable values
         return updateMap(state, payload as any)
     }
-    const handle =
-        typeof handler === "object" ? createHandler<T, T>(handler) : handler
+    const handleChange =
+        typeof onChange === "object" ? createListener<T, T>(onChange) : onChange
     const reduxMiddleware = middleware ? [...middleware] : []
     const reduxStore = configureStore({
         reducer: rootReducer,
         preloadedState: initial,
         middleware: reduxMiddleware
     })
-    const storeActions = transform(actions, ([type, updater]) => {
+    const performUpdate = (actionType: string, update: Update<T>) => {
         const state = reduxStore.getState()
+        const updatedState = updateMap(state, update)
+        const changes = diff(state, updatedState)
+        if (!deepEquals(changes, {})) {
+            handleChange && handleChange(changes, state)
+        }
+        reduxStore.dispatch({
+            type: actionType,
+            payload: updatedState,
+            statelessly: true
+        })
+    }
+    const storeActions = transform(actions, ([actionType, actionValue]) => {
         return [
-            type,
-            // args will be ignored if updater was not a function
-            async (...args: any) => {
-                const updatedState = updateMap(
-                    state,
-                    typeof updater === "function"
-                        ? await updater(...args)
-                        : updater
-                )
-                const changes = diff(state, updatedState)
-                if (!deepEquals(changes, {})) {
-                    handle && handle(changes, state)
+            actionType,
+            (...args: any) => {
+                let update: Update<T>
+                if (actionValue instanceof Function) {
+                    const returnValue = actionValue(...args)
+                    if (returnValue instanceof Promise) {
+                        returnValue.then((resolvedValue) => {
+                            performUpdate(actionType, resolvedValue)
+                        })
+                        return returnValue
+                    } else {
+                        update = actionValue(...args) as Update<T>
+                    }
+                } else {
+                    // args shouldn't exist if updater was not a function
+                    update = actionValue
                 }
-                reduxStore.dispatch({
-                    type,
-                    payload: updatedState,
-                    statelessly: true
-                })
+                performUpdate(actionType, update)
             }
         ]
     }) as any as StoreActions<T, A>
@@ -108,14 +120,17 @@ export const createStore = <T extends object, A extends Actions<T>>(
     }
 }
 
-export const createHandler =
-    <HandledState, RootState>(handler: Handler<HandledState, RootState>) =>
-    async (changes: DeepPartial<HandledState>, context: RootState) => {
+export const createListener =
+    <ChangedState, RootState>(handler: ListenerMap<ChangedState, RootState>) =>
+    async (changes: DeepPartial<ChangedState>, context: RootState) => {
         for (const k in changes) {
             if (k in handler) {
-                const handleKey = (handler as any)[k] as Handle<any, RootState>
-                const keyChanges = (changes as any)[k] as DeepPartial<any>
-                await handleKey(keyChanges, context)
+                const change = (changes as any)[k] as any
+                const handleKey = (handler as any)[k] as Listener<
+                    any,
+                    RootState
+                >
+                await handleKey(change, context)
             }
         }
     }
@@ -128,13 +143,13 @@ export type Query<T> = {
 
 export type Update<T> = DeepUpdate<T>
 
-export type Handle<HandledState, RootState> = (
-    change: DeepPartial<HandledState>,
+export type Listener<ChangedState, RootState> = (
+    change: DeepPartial<ChangedState>,
     context: RootState
 ) => void | Promise<void>
 
-export type Handler<HandledState, RootState> = {
-    [K in keyof HandledState]?: Handle<HandledState[K], RootState>
+export type ListenerMap<ChangedState, RootState> = {
+    [K in keyof ChangedState]?: Listener<ChangedState[K], RootState>
 }
 
 type UpdateAction<T> = {

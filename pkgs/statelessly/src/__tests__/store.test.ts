@@ -1,4 +1,4 @@
-import { createStore, Handler, Actions, StoreOptions } from "../store"
+import { createStore, ListenerMap, Actions, StoreOptions } from "../store"
 
 type Root = {
     a: A
@@ -175,17 +175,17 @@ describe("actions", () => {
 const cHandler = jest.fn()
 const bing = jest.fn()
 const dHandler = jest.fn()
-const handler: Handler<Root, Root> = {
+const onChange: ListenerMap<Root, Root> = {
     c: cHandler,
     b: bing,
     d: dHandler
 }
 
-const functionalHandler = jest.fn()
+const functionalListener = jest.fn()
 
 describe("side effects", () => {
     beforeEach(() => {
-        store = getStore({ handler })
+        store = getStore({ onChange })
     })
     test("handle side effects", () => {
         store.enableB()
@@ -204,8 +204,11 @@ describe("side effects", () => {
         expect(bing).not.toHaveBeenCalled()
     })
     test("handles side effects with function", () => {
-        store = getStore({ handler: functionalHandler })
+        store = getStore({ onChange: functionalListener })
         store.enableB()
-        expect(functionalHandler).toHaveBeenCalledWith({ b: true }, initialRoot)
+        expect(functionalListener).toHaveBeenCalledWith(
+            { b: true },
+            initialRoot
+        )
     })
 })

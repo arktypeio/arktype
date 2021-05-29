@@ -1,5 +1,5 @@
 import React from "react"
-import { StatelessProvider, StatelessConsumer, createStore, Store } from ".."
+import { StatelessProvider, StatelessConsumer, createStore } from ".."
 import { mount } from "enzyme"
 
 type Root = {
