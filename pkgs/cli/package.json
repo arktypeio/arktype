@@ -4,13 +4,13 @@
     "author": "redo.qa",
     "description": "CLI for Redo",
     "license": "MIT",
-    "main": "dist/index.js",
+    "main": "dist/cjs/index.js",
     "scripts": {
-        "build": "redo-build && chmod +x ./dist/index.js",
+        "build": "redo-build && chmod +x ./dist/cjs/index.js",
         "redo": "ts-node src/index.ts"
     },
     "bin": {
-        "redo": "./dist/index.js"
+        "redo": "./dist/cjs/index.js"
     },
     "dependencies": {
         "commander": "6.2.1",
