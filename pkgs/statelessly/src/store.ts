@@ -38,6 +38,7 @@ export type Store<T extends object, A extends Actions<T>> = {
     getState: () => T
     get: <P extends string>(path: AutoPath<T, P, "/">) => ValueAtPath<T, P>
     query: <Q extends Query<T>>(q: Q) => ShapeFilter<T, Q>
+    update: <U extends Update<T>>(u: U) => void
 } & StoreActions<T, A>
 
 export type StoreOptions<T> = {
@@ -53,12 +54,12 @@ export const createStore = <T extends object, A extends Actions<T>>(
     const { onChange, middleware } = options
     const rootReducer: Reducer<T, UpdateAction<T>> = (
         state: T | undefined,
-        { type, payload, statelessly }
+        { payload, meta }
     ) => {
         if (!state) {
             return initial
         }
-        if (!statelessly) {
+        if (!meta?.statelessly) {
             return state
         }
         // Since payload has already been transformed by a prior updateMap call
@@ -84,7 +85,9 @@ export const createStore = <T extends object, A extends Actions<T>>(
         reduxStore.dispatch({
             type: actionType,
             payload: updatedState,
-            statelessly: true
+            meta: {
+                statelessly: true
+            }
         })
     }
     const storeActions = transform(actions, ([actionType, actionValue]) => {
@@ -116,7 +119,8 @@ export const createStore = <T extends object, A extends Actions<T>>(
         getState: reduxStore.getState,
         query: (q) => shapeFilter(reduxStore.getState(), q),
         // any types are a temporary workaround for excessive stack depth on type comparison error in TS
-        get: ((path: any) => valueAtPath(reduxStore.getState(), path)) as any
+        get: ((path: any) => valueAtPath(reduxStore.getState(), path)) as any,
+        update: (u) => performUpdate("update", u)
     }
 }
 
@@ -155,5 +159,7 @@ export type ListenerMap<ChangedState, RootState> = {
 type UpdateAction<T> = {
     type: string
     payload: DeepPartial<T>
-    statelessly: true
+    meta: {
+        statelessly: true
+    }
 }

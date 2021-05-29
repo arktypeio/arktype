@@ -12,7 +12,7 @@ const DEFAULT_LEARNER_WIDTH = 300
 let lastConnectedBrowser: Browser
 
 export const launchBrowser = async (
-    store: Store<Root>,
+    store: Store<Root, any>,
     mainWindow: BrowserWindow
 ) => {
     // Use size and position from the Redo app to launch browser

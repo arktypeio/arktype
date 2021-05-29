@@ -2,7 +2,8 @@ import {
     app,
     BrowserWindow,
     BrowserWindowConstructorOptions,
-    nativeImage
+    nativeImage,
+    ipcMain
 } from "electron"
 import electronDevtoolsInstaller, {
     REACT_DEVELOPER_TOOLS,
@@ -12,16 +13,15 @@ import electronDevtoolsInstaller, {
 import { autoUpdater } from "electron-updater"
 import { test as runTest } from "@re-do/test"
 import { join } from "path"
-import { createMainStore, Root, deactivateBuilder } from "state"
-import { Store } from "react-statelessly"
+import { createMainStore } from "state"
 import { loadStore } from "./persist"
 import { StoredTest } from "@re-do/model"
 import { launchBrowser, closeBrowser } from "./launchBrowser"
 import icon from "assets/icon.png"
+import { electron } from "process"
 
 let mainWindow: BrowserWindow
 let builderWindow: BrowserWindow
-let store: Store<Root>
 
 const DEFAULT_BUILDER_WIDTH = 300
 const ELECTRON_TITLEBAR_SIZE = 37
@@ -33,7 +33,7 @@ const BASE_URL = isDev
 
 const persistedStore = loadStore({ path: join(process.cwd(), "redo.json") })
 
-store = createMainStore({
+const store = createMainStore({
     builderActive: async (isActive) => {
         if (builderWindow.isDestroyed()) {
             // TODO: Add logic to wait if activating? Possible race condition
@@ -54,13 +54,9 @@ store = createMainStore({
             closeBrowser()
         }
     },
-    runningTest: async (test) => {
-        if (test) {
-            await runTest(persistedStore.testToSteps(test as StoredTest))
-            store.update({ runningTest: null })
-        }
-    },
-    savingTest: async (test) => {
+    testToRun: async (test) =>
+        await runTest(persistedStore.testToSteps(test as StoredTest)),
+    testToSave: async (test) => {
         if (test) {
             persistedStore.createTest(test as any)
             store.update({
@@ -118,7 +114,7 @@ const createBuilderWindow = async () => {
     })
     // Builder window should always exist, even if it's not shown
     builderWindow.on("close", () => {
-        deactivateBuilder(store)
+        store.deactivateBuilder()
         createBuilderWindow()
     })
     await builderWindow.loadURL(`${BASE_URL}/#builder`)
@@ -126,7 +122,7 @@ const createBuilderWindow = async () => {
 
 app.on("ready", async () => {
     if (isDev) {
-        // await installExtensions()
+        await installExtensions()
     } else {
         await autoUpdater.checkForUpdatesAndNotify()
     }

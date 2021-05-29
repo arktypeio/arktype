@@ -7,10 +7,8 @@ import {
     Button,
     ChipInput
 } from "@re-do/components"
-import { Step } from "@re-do/test"
 import { BuilderEvents } from "./StepCards"
 import { store } from "renderer/common"
-import { deactivateBuilder } from "state"
 
 const initialState = {
     name: "",
@@ -55,16 +53,16 @@ export const Builder = () => {
                 <Button
                     Icon={Icons.close}
                     style={{ color: "white" }}
-                    onClick={() => deactivateBuilder(store)}
+                    onClick={() => store.deactivateBuilder()}
                 />
                 <Button
                     Icon={Icons.save}
                     style={{ color: "white" }}
                     onClick={() => {
                         store.update({
-                            savingTest: { name, tags, steps }
+                            testToSave: { name, tags, steps }
                         })
-                        deactivateBuilder(store)
+                        store.deactivateBuilder()
                     }}
                 />
             </FloatBar>

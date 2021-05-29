@@ -1,4 +1,4 @@
-import { Handler, createStore, Store, Actions } from "react-statelessly"
+import { ListenerMap, createStore, Actions } from "react-statelessly"
 import { BrowserName, Step } from "@re-do/test"
 import {
     forwardToMain,
@@ -23,8 +23,8 @@ export type Root = {
     steps: Step[]
     defaultBrowser: BrowserName
     tests: StoredTest[]
-    runningTest: StoredTest | null
-    savingTest: Test | null
+    testToRun: StoredTest | null
+    testToSave: Test | null
 }
 
 export const initialRoot: Root = {
@@ -35,29 +35,29 @@ export const initialRoot: Root = {
     defaultBrowser: "chrome",
     steps: [],
     tests: [],
-    runningTest: null,
-    savingTest: null
+    testToRun: null,
+    testToSave: null
 }
 
-const sharedActions: Actions<Root> = {
+const sharedActions = {
     deactivateBuilder: { builderActive: false, steps: [] }
 }
 
-export const createMainStore = (handler: Handler<Root, Root>) => {
+export const createMainStore = (onChange: ListenerMap<Root, Root>) => {
     const mainStore = createStore(
         initialRoot,
         { ...sharedActions },
-        { handler, middleware: [forwardToRenderer] }
+        { onChange, middleware: [forwardToRenderer] }
     )
     replayActionMain(mainStore.underlying as any)
     return mainStore
 }
 
-export const createRendererStore = (handler: Handler<Root, Root>) => {
+export const createRendererStore = (onChange: ListenerMap<Root, Root>) => {
     const rendererStore = createStore(
         getInitialStateRenderer<Root>(),
         { ...sharedActions },
-        { handler, middleware: [forwardToMain] }
+        { onChange, middleware: [forwardToMain] }
     )
     replayActionRenderer(rendererStore.underlying as any)
     return rendererStore

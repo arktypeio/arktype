@@ -23,13 +23,16 @@ export const loadStore = ({ path }: LoadStoreArgs) => {
     if (!existsSync(path)) {
         writeJSONSync(path, { tests: [], elements: [] }, { spaces: 4 })
     }
-    const store = createStore({
-        initial: readJSONSync(path) as RedoData,
-        handler: (data) => {
-            const stored = readJSONSync(path)
-            writeJsonSync(path, { ...stored, ...data }, { spaces: 4 })
+    const store = createStore(
+        readJSONSync(path) as RedoData,
+        {},
+        {
+            onChange: (data) => {
+                const stored = readJSONSync(path)
+                writeJsonSync(path, { ...stored, ...data }, { spaces: 4 })
+            }
         }
-    })
+    )
     const getElements = () => store.query({ elements: true }).elements
     const createElement = (data: Element) =>
         store.update({ elements: (_) => _.concat(data) })

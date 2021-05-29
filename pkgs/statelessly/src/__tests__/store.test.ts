@@ -108,6 +108,13 @@ describe("actions", () => {
     beforeEach(() => {
         store = getStore()
     })
+    test("direct update", () => {
+        store.update({ b: true })
+        expect(store.getState()).toStrictEqual({
+            ...initialRoot,
+            b: true
+        })
+    })
     test("shallow set value", () => {
         store.enableB()
         expect(store.getState()).toStrictEqual({
