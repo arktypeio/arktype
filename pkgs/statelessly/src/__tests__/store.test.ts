@@ -29,6 +29,9 @@ const initialRoot: Root = Object.freeze({
     d: [initialA, initialA]
 })
 
+const fakeUpload = () =>
+    new Promise<string>((resolve) => setTimeout(() => resolve("Success!"), 100))
+
 const getStore = (options: StoreOptions<Root> = {}) =>
     createStore(
         initialRoot,
@@ -48,6 +51,10 @@ const getStore = (options: StoreOptions<Root> = {}) =>
             updateSomeValues: {
                 b: (_) => _,
                 c: (_) => `updated${_}`
+            },
+            uploadToServer: async () => {
+                const result = await fakeUpload()
+                return { c: result }
             }
         },
         options
@@ -153,6 +160,14 @@ describe("actions", () => {
         expect(store.getState()).toStrictEqual({
             ...initialRoot,
             d: []
+        })
+    })
+    test("handles async", async () => {
+        store = getStore()
+        await store.uploadToServer()
+        expect(store.getState()).toStrictEqual({
+            ...initialRoot,
+            c: "Success!"
         })
     })
 })

@@ -22,12 +22,14 @@ import {
 
 export type Actions<T extends object> = Record<
     string,
-    Update<T> | ((...args: any) => Update<T>)
+    Update<T> | ((...args: any) => Update<T> | Promise<Update<T>>)
 >
 
 export type StoreActions<T extends object, A extends Actions<T>> = {
     [K in keyof A]: A[K] extends (...args: any) => any
-        ? (...args: Parameters<A[K]>) => void
+        ? (
+              ...args: Parameters<A[K]>
+          ) => ReturnType<A[K]> extends Promise<any> ? Promise<void> : void
         : () => void
 }
 
@@ -77,10 +79,12 @@ export const createStore = <T extends object, A extends Actions<T>>(
         return [
             type,
             // args will be ignored if updater was not a function
-            (...args: any) => {
+            async (...args: any) => {
                 const updatedState = updateMap(
                     state,
-                    typeof updater === "function" ? updater(...args) : updater
+                    typeof updater === "function"
+                        ? await updater(...args)
+                        : updater
                 )
                 const changes = diff(state, updatedState)
                 if (!deepEquals(changes, {})) {
