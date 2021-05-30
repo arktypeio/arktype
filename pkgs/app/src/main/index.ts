@@ -68,7 +68,7 @@ ipcMain.on("redux-action", async (event, action: ActionData<Root>) => {
     const mainActions = action.payload.main
     console.log(JSON.stringify(mainActions, null, 4))
     if (mainActions) {
-        for (const entry in Object.entries(mainActions)) {
+        for (const entry of Object.entries(mainActions)) {
             const [name, args] = entry
             console.log(JSON.stringify({ name, args }, null, 4))
             await (store as any)[name](...(args as any))
