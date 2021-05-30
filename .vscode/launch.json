@@ -5,10 +5,22 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Attach",
+            "name": "Attach (Node)",
+            "type": "node",
+            "request": "attach",
+            "cwd": "${workspaceFolder}",
+            "outFiles": ["${workspaceFolder}/dist/**/*.js"],
+            "smartStep": true,
+            "sourceMaps": true,
+            "protocol": "inspector",
+            "port": 9222,
+            "timeout": 20000
+        },
+        {
+            "name": "Attach (Chrome)",
             "type": "chrome",
             "request": "attach",
-            "skipFiles": ["<node_internals>/**"],
+            "webRoot": "${workspaceFolder}",
             "port": 9223
         },
         {

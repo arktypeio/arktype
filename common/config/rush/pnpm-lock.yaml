@@ -35,7 +35,6 @@ specifiers:
   '@types/dotenv': 8.2.0
   '@types/electron-devtools-installer': 2.2.0
   '@types/enzyme': 3.10.8
-  '@types/enzyme-adapter-react-16': 1.0.6
   '@types/fs-extra': 9.0.6
   '@types/jest': 26.0.20
   '@types/node': 15.0.2
@@ -68,6 +67,7 @@ specifiers:
   fast-deep-equal: 3.1.3
   framer-motion: 4.1.11
   fs-extra: 10.0.0
+  get-port: 5.1.1
   gqlize: 0.0.3
   graphql: 15.5.0
   graphql-tag: 2.12.4
@@ -139,7 +139,6 @@ dependencies:
   '@types/dotenv': 8.2.0
   '@types/electron-devtools-installer': 2.2.0
   '@types/enzyme': 3.10.8
-  '@types/enzyme-adapter-react-16': 1.0.6
   '@types/fs-extra': 9.0.6
   '@types/jest': 26.0.20
   '@types/node': 15.0.2
@@ -172,6 +171,7 @@ dependencies:
   fast-deep-equal: 3.1.3
   framer-motion: 4.1.11_react-dom@17.0.2+react@17.0.2
   fs-extra: 10.0.0
+  get-port: 5.1.1
   gqlize: 0.0.3
   graphql: 15.5.0
   graphql-tag: 2.12.4_graphql@15.5.0
@@ -18308,7 +18308,7 @@ packages:
     dev: false
 
   file:projects/app.tgz:
-    resolution: {integrity: sha512-iScM48T5Wra11HCacPW0dC2j/+807bacvl8wWuPz/7or7wM81DnLxIhYbMpiE3xv5nZ5aAoEMPVVvA8QH5Ulhg==, tarball: file:projects/app.tgz}
+    resolution: {integrity: sha512-DTWNRNY/g7xwKw6uI4cLP/qwRBD8Ww05IGH5ZbU9JuxrEyjQINT5vLXmeNBZrrFBc/Busc5G6gza5x0pxzyxmg==, tarball: file:projects/app.tgz}
     name: '@rush-temp/app'
     version: 0.0.0
     dependencies:
@@ -18333,6 +18333,7 @@ packages:
       electron-updater: 4.3.5
       framer-motion: 4.1.11_react-dom@17.0.2+react@17.0.2
       fs-extra: 10.0.0
+      get-port: 5.1.1
       graphql: 15.5.0
       graphql-tag: 2.12.4_graphql@15.5.0
       isomorphic-ws: 4.0.1
@@ -18532,7 +18533,7 @@ packages:
     dev: false
 
   file:projects/react-statelessly.tgz_ts-node@9.1.1:
-    resolution: {integrity: sha512-m9/1cyy5/vC9xsndIoF66YPWvBcNMwqzvwTB7RmNLwVmZbB3L4MPIV5HpYj+FENV6m2EoIIv/lzVty72KURzAg==, tarball: file:projects/react-statelessly.tgz}
+    resolution: {integrity: sha512-EXz2hq6fVMfoq1GM4ySHBNzO0QNAi0400iZV1sOHoKZesI4OJl9E+e/BiZTZ9cbPx4Htv1b31YDNr2P0aWMqBg==, tarball: file:projects/react-statelessly.tgz}
     id: file:projects/react-statelessly.tgz
     name: '@rush-temp/react-statelessly'
     version: 0.0.0

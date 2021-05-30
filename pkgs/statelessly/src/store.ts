@@ -34,7 +34,7 @@ export type StoreActions<T extends object, A extends Actions<T>> = {
 }
 
 export type Store<T extends object, A extends Actions<T>> = {
-    underlying: ReduxStore<T, UpdateAction<T>>
+    underlying: ReduxStore<T, ActionData<T>>
     getState: () => T
     get: <P extends string>(path: AutoPath<T, P, "/">) => ValueAtPath<T, P>
     query: <Q extends Query<T>>(q: Q) => ShapeFilter<T, Q>
@@ -52,7 +52,7 @@ export const createStore = <T extends object, A extends Actions<T>>(
     options: StoreOptions<T> = {}
 ): Store<T, A> => {
     const { onChange, middleware } = options
-    const rootReducer: Reducer<T, UpdateAction<T>> = (
+    const rootReducer: Reducer<T, ActionData<T>> = (
         state: T | undefined,
         { payload, meta }
     ) => {
@@ -156,7 +156,7 @@ export type ListenerMap<ChangedState, RootState> = {
     [K in keyof ChangedState]?: Listener<ChangedState[K], RootState>
 }
 
-type UpdateAction<T> = {
+export type ActionData<T> = {
     type: string
     payload: DeepPartial<T>
     meta: {

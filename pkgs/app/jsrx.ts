@@ -19,7 +19,7 @@ const buildAll = async () => {
 
 let mainProcess: ChildProcess | undefined
 
-const cmdString = `${electronPath} --remote-debugging-port=9223 .`
+const cmdString = `${electronPath} --inspect=9222 --remote-debugging-port=9223 .`
 
 const restartMain = (startIfNotRunning: boolean) => {
     if (mainProcess && !mainProcess.killed) {
@@ -53,6 +53,10 @@ const watchObserver = () =>
     })
 
 const start = async () => {
+    // kill any leftover processses to ensure debug ports are free
+    // the echo is to ensure we don't throw an error if no processes are found
+    // the brackets ensure pkill won't kill itself :O
+    shell(`echo $(pkill -f '[\-]-remote-debugging-port=9223')`)
     const viteDevServer = await createServer({
         ...getRendererConfig({ watch: true }),
         server: {

@@ -4,7 +4,9 @@ import {
     createHttpLink,
     ApolloLink
 } from "@apollo/client"
-import { createRendererStore } from "state"
+import { ipcRenderer } from "electron"
+import { createRendererStore, Root } from "state"
+import { ActionData } from "../../../statelessly/dist/cjs"
 
 const httpLink = createHttpLink({
     uri:
@@ -25,6 +27,17 @@ const contextLink = new ApolloLink((operation, forward) => {
 export const client = new ApolloClient({
     link: contextLink.concat(httpLink),
     cache: new InMemoryCache()
+})
+
+ipcRenderer.on("redux-action", async (event, action: ActionData<Root>) => {
+    const rendererActions = action.payload
+    console.log(JSON.stringify(rendererActions, null, 4))
+    if (rendererActions) {
+        for (const entry in Object.entries(rendererActions)) {
+            const [name, args] = entry
+            await (store as any)[name](...(args as any))
+        }
+    }
 })
 
 export const store = createRendererStore({})

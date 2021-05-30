@@ -9,7 +9,10 @@ export const NewTestButton = () => {
         <Button
             Icon={Icons.add}
             style={{ color: "white" }}
-            onClick={() => store.update({ builderActive: true })}
+            onClick={() => {
+                console.log("clicko!")
+                store.update({ main: { launchBuilder: [] } })
+            }}
         />
     )
 }

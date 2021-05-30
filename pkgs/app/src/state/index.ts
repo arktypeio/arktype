@@ -23,9 +23,18 @@ export type Root = {
     steps: Step[]
     defaultBrowser: BrowserName
     tests: StoredTest[]
-    testToRun: StoredTest | null
-    testToSave: Test | null
+    main: MainActions
+    renderer: RendererActions
 }
+
+export type MainActions = {
+    runTest?: [StoredTest]
+    saveTest?: [Test]
+    launchBuilder?: []
+    closeBuilder?: []
+}
+
+export type RendererActions = {}
 
 export const initialRoot: Root = {
     token: "",
@@ -35,20 +44,14 @@ export const initialRoot: Root = {
     defaultBrowser: "chrome",
     steps: [],
     tests: [],
-    testToRun: null,
-    testToSave: null
+    main: {},
+    renderer: {}
 }
 
-const sharedActions = {
-    deactivateBuilder: { builderActive: false, steps: [] }
-}
-
-export const createMainStore = (onChange: ListenerMap<Root, Root>) => {
-    const mainStore = createStore(
-        initialRoot,
-        { ...sharedActions },
-        { onChange, middleware: [forwardToRenderer] }
-    )
+export const createMainStore = <T extends Actions<Root>>(mainActions: T) => {
+    const mainStore = createStore(initialRoot, mainActions, {
+        middleware: [forwardToRenderer]
+    })
     replayActionMain(mainStore.underlying as any)
     return mainStore
 }
@@ -56,7 +59,7 @@ export const createMainStore = (onChange: ListenerMap<Root, Root>) => {
 export const createRendererStore = (onChange: ListenerMap<Root, Root>) => {
     const rendererStore = createStore(
         getInitialStateRenderer<Root>(),
-        { ...sharedActions },
+        {},
         { onChange, middleware: [forwardToMain] }
     )
     replayActionRenderer(rendererStore.underlying as any)

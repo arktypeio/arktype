@@ -10,15 +10,15 @@ import electronDevtoolsInstaller, {
     APOLLO_DEVELOPER_TOOLS,
     REDUX_DEVTOOLS
 } from "electron-devtools-installer"
+import { ActionData } from "react-statelessly"
 import { autoUpdater } from "electron-updater"
 import { test as runTest } from "@re-do/test"
 import { join } from "path"
-import { createMainStore } from "state"
+import { createMainStore, Root } from "state"
 import { loadStore } from "./persist"
-import { StoredTest } from "@re-do/model"
+import { StoredTest, Test } from "@re-do/model"
 import { launchBrowser, closeBrowser } from "./launchBrowser"
 import icon from "assets/icon.png"
-import { electron } from "process"
 
 let mainWindow: BrowserWindow
 let builderWindow: BrowserWindow
@@ -34,35 +34,44 @@ const BASE_URL = isDev
 const persistedStore = loadStore({ path: join(process.cwd(), "redo.json") })
 
 const store = createMainStore({
-    builderActive: async (isActive) => {
-        if (builderWindow.isDestroyed()) {
-            // TODO: Add logic to wait if activating? Possible race condition
-            return
-        }
-        if (isActive) {
-            const { height, x, y } = mainWindow.getBounds()
-            builderWindow.setBounds({
-                height,
-                width: DEFAULT_BUILDER_WIDTH,
-                x,
-                y: y - ELECTRON_TITLEBAR_SIZE
-            })
-            builderWindow.show()
-            launchBrowser(store, mainWindow)
-        } else {
-            builderWindow.hide()
-            closeBrowser()
-        }
+    launchBuilder: async () => {
+        const { height, x, y } = mainWindow.getBounds()
+        builderWindow.setBounds({
+            height,
+            width: DEFAULT_BUILDER_WIDTH,
+            x,
+            y: y - ELECTRON_TITLEBAR_SIZE
+        })
+        builderWindow.show()
+        await launchBrowser(store, mainWindow)
+        return { builderActive: true }
     },
-    testToRun: async (test) =>
-        await runTest(persistedStore.testToSteps(test as StoredTest)),
-    testToSave: async (test) => {
-        if (test) {
-            persistedStore.createTest(test as any)
-            store.update({
-                savingTest: null,
-                tests: (_) => [..._, test as any]
-            })
+    closeBuilder: async () => {
+        if (builderWindow.isVisible()) {
+            builderWindow.hide()
+        }
+        await closeBrowser()
+        return { builderActive: false, steps: [] }
+    },
+    runTest: async (test: StoredTest) => {
+        await runTest(persistedStore.testToSteps(test as StoredTest))
+        return {}
+    },
+    saveTest: async (test: Test) => {
+        persistedStore.createTest(test as any)
+        store.update({ tests: (_) => _.concat(_) })
+        return {}
+    }
+})
+
+ipcMain.on("redux-action", async (event, action: ActionData<Root>) => {
+    const mainActions = action.payload.main
+    console.log(JSON.stringify(mainActions, null, 4))
+    if (mainActions) {
+        for (const entry in Object.entries(mainActions)) {
+            const [name, args] = entry
+            console.log(JSON.stringify({ name, args }, null, 4))
+            await (store as any)[name](...(args as any))
         }
     }
 })
@@ -114,7 +123,7 @@ const createBuilderWindow = async () => {
     })
     // Builder window should always exist, even if it's not shown
     builderWindow.on("close", () => {
-        store.deactivateBuilder()
+        store.closeBuilder()
         createBuilderWindow()
     })
     await builderWindow.loadURL(`${BASE_URL}/#builder`)
