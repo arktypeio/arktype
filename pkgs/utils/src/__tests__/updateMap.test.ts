@@ -4,19 +4,19 @@ import { o } from "./common"
 const map: DeepUpdate<typeof o> = {
     a: {
         a: "new",
-        b: (value) => value.concat([1, 2, 3]),
+        b: (_) => _.concat([1, 2, 3]),
         c: {
             a: false,
-            b: (value) => !value,
+            b: (_) => !_,
             c: null
         }
     },
     b: {
         a: {
-            a: (value) => value + 1
+            a: (_) => _ + 1
         }
     },
-    d: (value) => value + "suffix"
+    d: (_) => _ + "suffix"
 }
 
 const expected = {
@@ -49,13 +49,21 @@ test("updates objects to null", () => {
     expect(result).toStrictEqual({ ...o, a: null })
 })
 
+test("updates keys missing that aren't defined in the original object", () => {
+    const result = updateMap(o, { a: { c: { d: true } } })
+    expect(result).toStrictEqual({
+        ...o,
+        a: { ...o.a, c: { ...o.a.c, d: true } }
+    })
+})
+
 test("updates deep arrays", () => {
     const deepArrayExpected = {
         ...o,
         e: [{ a: ["old"] }, { a: ["old"] }, { a: ["new"] }]
     }
     const result: typeof deepArrayExpected = updateMap(o, {
-        e: (value) => value.concat({ a: ["new"] })
+        e: (_) => _.concat({ a: ["new"] })
     })
     expect(result).toStrictEqual(deepArrayExpected)
 })

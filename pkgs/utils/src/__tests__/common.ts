@@ -6,7 +6,7 @@ export const o = Object.freeze({
             a: true,
             b: false,
             c: null
-        }
+        } as { a: boolean; b: boolean; c: null; d?: boolean }
     },
     b: {
         a: {
