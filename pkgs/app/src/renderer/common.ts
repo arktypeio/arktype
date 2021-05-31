@@ -30,8 +30,7 @@ export const client = new ApolloClient({
 })
 
 ipcRenderer.on("redux-action", async (event, action: ActionData<Root>) => {
-    const rendererActions = action.payload
-    console.log(JSON.stringify(rendererActions, null, 4))
+    const rendererActions = action.payload.renderer
     if (rendererActions) {
         for (const entry in Object.entries(rendererActions)) {
             const [name, args] = entry

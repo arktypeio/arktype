@@ -53,16 +53,16 @@ export const Builder = () => {
                 <Button
                     Icon={Icons.close}
                     style={{ color: "white" }}
-                    onClick={() => store.deactivateBuilder()}
+                    onClick={() => store.update({ main: { closeBuilder: [] } })}
                 />
                 <Button
                     Icon={Icons.save}
                     style={{ color: "white" }}
                     onClick={() => {
                         store.update({
-                            testToSave: { name, tags, steps }
+                            main: { saveTest: [{ name, tags, steps }] }
                         })
-                        store.deactivateBuilder()
+                        store.update({ main: { closeBuilder: [] } })
                     }}
                 />
             </FloatBar>

@@ -138,6 +138,31 @@
                     "element": 9
                 }
             ]
+        },
+        {
+            "name": "Sign Up 565",
+            "tags": [
+                "again"
+            ],
+            "steps": [
+                {
+                    "kind": "click",
+                    "element": 5
+                },
+                {
+                    "kind": "click",
+                    "element": 6
+                },
+                {
+                    "kind": "set",
+                    "value": "david@redo.qa",
+                    "element": 6
+                },
+                {
+                    "kind": "click",
+                    "element": 7
+                }
+            ]
         }
     ],
     "elements": [
