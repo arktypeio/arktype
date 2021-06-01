@@ -7,7 +7,7 @@ import {
     Button,
     ChipInput
 } from "@re-do/components"
-import { BuilderEvents } from "./StepCards"
+import { StepCard } from "./StepCard"
 import { store } from "renderer/common"
 
 const initialState = {
@@ -48,7 +48,15 @@ export const Builder = () => {
                     />
                 </Column>
             </FloatBar>
-            <BuilderEvents steps={steps as any} />
+            <div style={{ paddingBottom: 45 }}>
+                {steps.map((step, i) => (
+                    <StepCard
+                        step={step}
+                        cardProps={{ style: { margin: 16 } }}
+                        key={i}
+                    />
+                ))}
+            </div>
             <FloatBar kind="bottom" justify="space-around">
                 <Button
                     Icon={Icons.close}

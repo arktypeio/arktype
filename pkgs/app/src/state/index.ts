@@ -11,12 +11,14 @@ import { StoredTest, Test } from "@re-do/model"
 
 export type Page = "HOME" | "SIGN_IN" | "SIGN_UP"
 
+export type UnsavedStep = Step & { id: number }
+
 export type Root = {
     token: string
     page: Page
     cardFilter: string
     builderActive: boolean
-    steps: Step[]
+    steps: UnsavedStep[]
     defaultBrowser: BrowserName
     tests: StoredTest[]
     main: MainActions

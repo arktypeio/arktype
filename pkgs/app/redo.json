@@ -113,6 +113,35 @@
                     "element": 9
                 }
             ]
+        },
+        {
+            "name": "Edited Sign In",
+            "tags": [
+                "firstTry"
+            ],
+            "steps": [
+                {
+                    "kind": "go",
+                    "url": "https://redo.qa/",
+                    "id": 1
+                },
+                {
+                    "kind": "click",
+                    "id": 2,
+                    "element": 7
+                },
+                {
+                    "kind": "click",
+                    "id": 3,
+                    "element": 8
+                },
+                {
+                    "kind": "set",
+                    "value": "notdavid@redo.qa",
+                    "id": 4,
+                    "element": 8
+                }
+            ]
         }
     ],
     "elements": [

@@ -1,11 +1,40 @@
 import React from "react"
-import { Step } from "@re-do/test"
-import { Card } from "@re-do/components"
+import { Card, TextInput, Text, CardProps } from "@re-do/components"
+import { store } from "renderer/common"
+import { UnsavedStep } from "state"
 
 export type StepCardProps = {
-    step: Step
+    step: UnsavedStep
+    cardProps: CardProps
 }
 
-export const StepCard = ({ step }: StepCardProps) => (
-    <Card>{JSON.stringify(step, null, 4)}</Card>
-)
+export const StepCard = ({ step, cardProps }: StepCardProps) => {
+    return (
+        <Card {...cardProps}>
+            {Object.entries(step).map(([k, v]) => {
+                if (k === "id") {
+                    return null
+                } else if (k === "kind") {
+                    return <Text>{v}</Text>
+                }
+                return (
+                    <TextInput
+                        key={k}
+                        label={k}
+                        defaultValue={v}
+                        onChange={(e) =>
+                            store.update({
+                                steps: (_) =>
+                                    _.map((existingStep) =>
+                                        step.id === existingStep.id
+                                            ? { ...step, [k]: e.target.value }
+                                            : existingStep
+                                    )
+                            })
+                        }
+                    />
+                )
+            })}
+        </Card>
+    )
+}

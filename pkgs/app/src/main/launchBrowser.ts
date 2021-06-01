@@ -34,13 +34,21 @@ export const launchBrowser = async (
         }
     })
     lastConnectedBrowser = browser
+    const getNewStepId = () => {
+        const existingSteps = store.get("steps")
+        if (!existingSteps.length) {
+            return 1
+        }
+        return existingSteps[existingSteps.length - 1].id + 1
+    }
     let lastNavigationStep: Step
     page.on("framenavigated", async (frame) => {
         const navigationStep = { kind: "go" as const, url: frame.url() }
         if (!deepEquals(navigationStep, lastNavigationStep)) {
             lastNavigationStep = navigationStep
             store.update({
-                steps: (_) => _.concat(navigationStep)
+                steps: (_) =>
+                    _.concat({ ...navigationStep, id: getNewStepId() })
             })
         }
         await page.evaluate(browserJs)
@@ -52,7 +60,7 @@ export const launchBrowser = async (
         }
         const { timeStamp, ...step } = eventData
         store.update({
-            steps: (steps) => [...steps, step]
+            steps: (steps) => [...steps, { ...step, id: getNewStepId() }]
         })
         lastEventData = eventData
     }
