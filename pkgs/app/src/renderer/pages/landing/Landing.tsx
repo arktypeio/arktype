@@ -2,7 +2,6 @@ import React, { useLayoutEffect, useState } from "react"
 import { motion } from "framer-motion"
 import { Column, Card, Button, Row, AnimatedLogo } from "@re-do/components"
 import { store } from "renderer/common"
-import { Page } from "state"
 import { SignIn } from "./SignIn"
 import { SignUp } from "./SignUp"
 

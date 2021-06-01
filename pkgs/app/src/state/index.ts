@@ -24,10 +24,10 @@ export type Root = {
 }
 
 export type MainActions = {
-    runTest?: [StoredTest]
-    saveTest?: [Test]
-    launchBuilder?: []
-    closeBuilder?: []
+    runTest: [StoredTest] | null
+    saveTest: [Test] | null
+    launchBuilder: [] | null
+    closeBuilder: [] | null
 }
 
 export type RendererActions = {}

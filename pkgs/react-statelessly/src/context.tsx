@@ -27,7 +27,7 @@ export const StatelessProvider = <T extends object, A extends Actions<T>>({
 }: StoreProviderProps<T, A>) => {
     return (
         <ReduxProvider store={store.underlying}>
-            <InnerStatelessProvider store={store}>
+            <InnerStatelessProvider store={store as any}>
                 {children}
             </InnerStatelessProvider>
         </ReduxProvider>

@@ -13,6 +13,13 @@ const ELECTRON_TITLEBAR_SIZE = 37
 
 const persistedStore = loadStore({ path: join(process.cwd(), "redo.json") })
 
+const emptyMainActions: MainActions = {
+    saveTest: null,
+    runTest: null,
+    launchBuilder: null,
+    closeBuilder: null
+}
+
 const initialState: Root = {
     token: "",
     page: "HOME",
@@ -21,7 +28,7 @@ const initialState: Root = {
     defaultBrowser: "chrome",
     steps: [],
     tests: persistedStore.getTests(),
-    main: {},
+    main: emptyMainActions,
     renderer: {}
 }
 
@@ -56,8 +63,8 @@ const mainActions: MainActionFunctions = {
         return {}
     },
     saveTest: async (test: Test) => {
-        persistedStore.createTest(test)
-        store.update({ tests: (_) => _.concat(_) })
+        const storedTest = persistedStore.createTest(test)
+        store.update({ tests: (_) => _.concat(storedTest) })
         return {}
     }
 }
@@ -65,11 +72,16 @@ const mainActions: MainActionFunctions = {
 export const store = createMainStore(initialState, mainActions)
 
 ipcMain.on("redux-action", async (event, action: ActionData<Root>) => {
+    // TODO: Convert this to a queue, handle race condition
     const mainActions = action.payload.main
     if (mainActions) {
-        for (const entry of Object.entries(mainActions)) {
-            const [name, args] = entry
+        const requiredActions = Object.entries(mainActions).filter(
+            ([name, args]) => !!args
+        )
+        for (const action of requiredActions) {
+            const [name, args] = action
             await (store as any)[name](...(args as any))
+            store.update({ main: { [name]: null } })
         }
     }
 })

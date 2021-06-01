@@ -6,7 +6,7 @@ import { formatEmail } from "./common"
 
 export const SignUp = () => {
     const [submit] = useSignUpMutation()
-    const disabled = store.get("page") !== "SIGN_UP"
+    const disabled = store.useGet("page") !== "SIGN_UP"
     return (
         <Form<SignUpMutationVariables>
             submit={async (data) => {

@@ -60,9 +60,11 @@ export const Builder = () => {
                     style={{ color: "white" }}
                     onClick={() => {
                         store.update({
-                            main: { saveTest: [{ name, tags, steps }] }
+                            main: {
+                                saveTest: [{ name, tags, steps }],
+                                closeBuilder: []
+                            }
                         })
-                        store.update({ main: { closeBuilder: [] } })
                     }}
                 />
             </FloatBar>

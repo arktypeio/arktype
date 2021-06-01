@@ -1,4 +1,4 @@
-import { StoredTest, Test, Element } from "@re-do/model"
+import { StoredTest, Test, Element, StoredStep } from "@re-do/model"
 import { Step } from "@re-do/test"
 import { createStore } from "react-statelessly"
 import {
@@ -36,8 +36,8 @@ export const loadStore = ({ path }: LoadStoreArgs) => {
     const getElements = () => store.query({ elements: true }).elements
     const createElement = (data: Element) =>
         store.update({ elements: (_) => _.concat(data) })
-    const createTest = ({ steps, ...data }: Test) => {
-        const storedSteps = steps.map((step) => {
+    const createTest = ({ steps, ...data }: Test): StoredTest => {
+        const storedSteps: StoredStep[] = steps.map((step) => {
             if ("selector" in step) {
                 const { selector, ...data } = step
                 const existingElements = getElements()
@@ -57,7 +57,9 @@ export const loadStore = ({ path }: LoadStoreArgs) => {
                         0
                     ) + 1
                 createElement({ selector, id })
-                return { ...data, element: id } as any
+                return { ...data, element: id }
+            } else {
+                return step as StoredStep
             }
         })
         const test = {
@@ -69,7 +71,7 @@ export const loadStore = ({ path }: LoadStoreArgs) => {
         })
         return test
     }
-    const getTests = () => store.query({ tests: true }).tests
+    const getTests = () => store.get("tests")
     const testToSteps = (test: StoredTest): Step[] =>
         test.steps.map((step) => {
             if (step.element) {

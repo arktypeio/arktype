@@ -2,15 +2,11 @@ import React from "react"
 import { FormText, FormSubmit, Form, Button, Column } from "@re-do/components"
 import { store } from "renderer/common"
 import { formatEmail } from "./common"
-import {
-    useSignInMutation,
-    SignInMutationVariables,
-    SignInMutation
-} from "@re-do/model"
+import { useSignInMutation, SignInMutationVariables } from "@re-do/model"
 
 export const SignIn = () => {
     const [submit] = useSignInMutation()
-    const disabled = store.get("page") !== "SIGN_IN"
+    const disabled = store.useGet("page") !== "SIGN_IN"
     return (
         <Form<SignInMutationVariables>
             submit={async (data) => {
