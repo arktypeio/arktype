@@ -10,10 +10,7 @@ import {
 
 export const SignIn = () => {
     const [submit] = useSignInMutation()
-    const disabled =
-        store.useQuery({
-            page: true
-        }).page !== "SIGN_IN"
+    const disabled = store.get("page") !== "SIGN_IN"
     return (
         <Form<SignInMutationVariables>
             submit={async (data) => {

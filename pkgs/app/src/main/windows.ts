@@ -3,16 +3,12 @@ import {
     BrowserWindowConstructorOptions,
     nativeImage
 } from "electron"
-import electronDevtoolsInstaller, {
-    REACT_DEVELOPER_TOOLS,
-    APOLLO_DEVELOPER_TOOLS,
-    REDUX_DEVTOOLS
-} from "electron-devtools-installer"
 import { isDev } from "@re-do/node-utils"
 import icon from "assets/icon.png"
+import { store } from "./store"
 
-let mainWindow: BrowserWindow
-let builderWindow: BrowserWindow
+export let mainWindow: BrowserWindow
+export let builderWindow: BrowserWindow
 
 const BASE_URL = isDev()
     ? `http://localhost:${process.env["DEV_SERVER_PORT"]}`
@@ -39,8 +35,6 @@ export const createMainWindow = async () => {
     mainWindow.show()
 }
 
-export const getMainWindow = () => mainWindow
-
 export const createBuilderWindow = async () => {
     builderWindow = new BrowserWindow({
         ...defaultElectronOptions,
@@ -53,5 +47,3 @@ export const createBuilderWindow = async () => {
     })
     await builderWindow.loadURL(`${BASE_URL}/#builder`)
 }
-
-export const getBuilderWindow = () => builderWindow

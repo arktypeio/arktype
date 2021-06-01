@@ -23,7 +23,7 @@ export const Settings = () => (
         <RadioGroup
             aria-label="browser"
             name="browser"
-            value={store.useQuery({ defaultBrowser: true }).defaultBrowser}
+            value={store.get("defaultBrowser")}
             onChange={(e) =>
                 store.update({
                     defaultBrowser: e.target.value as BrowserName

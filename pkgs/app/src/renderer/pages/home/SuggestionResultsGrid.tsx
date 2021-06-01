@@ -49,7 +49,7 @@ const suggestionTypes = {
             extras: (
                 <Button
                     Icon={Icons.run}
-                    onClick={() => store.update({ runningTest: test })}
+                    onClick={() => store.update({ main: { runTest: [test] } })}
                 />
             ),
             data: test

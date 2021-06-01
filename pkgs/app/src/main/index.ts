@@ -1,12 +1,12 @@
 import { app } from "electron"
 import { autoUpdater } from "electron-updater"
-import { installExtensions } from "./extensions"
+import { installDevTools } from "./installDevTools"
 import { createMainWindow, createBuilderWindow } from "./windows"
 import { isDev } from "@re-do/node-utils"
 
 app.on("ready", async () => {
     if (isDev()) {
-        await installExtensions()
+        await installDevTools()
     } else {
         await autoUpdater.checkForUpdatesAndNotify()
     }

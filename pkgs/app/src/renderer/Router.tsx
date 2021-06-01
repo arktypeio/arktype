@@ -32,21 +32,21 @@ type NameToPage = { [_ in NonNullable<Page>]: JSX.Element }
 
 export const Pages: NameToPage = {
     HOME: <Home />,
-    SIGN_IN: <Landing page={Page.SignIn} />,
-    SIGN_UP: <Landing page={Page.SignUp} />
+    SIGN_IN: <Landing page={"SIGN_IN"} />,
+    SIGN_UP: <Landing page={"SIGN_UP"} />
 }
 
-const UnauthedPages = [Page.SignIn, Page.SignUp]
+const UnauthedPages = ["SIGN_IN", "SIGN_UP"]
 
 const route = (requested: Page, authed: boolean) => {
     let redirected = requested
     if (authed) {
         if (!redirected || UnauthedPages.includes(redirected)) {
-            redirected = Page.Home
+            redirected = "HOME"
         }
     } else {
         if (!redirected || !UnauthedPages.includes(redirected)) {
-            redirected = Page.SignIn
+            redirected = "SIGN_IN"
         }
     }
     return redirected

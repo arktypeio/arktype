@@ -4,7 +4,7 @@ import electronDevtoolsInstaller, {
     REDUX_DEVTOOLS
 } from "electron-devtools-installer"
 
-export const installExtensions = async () => {
+export const installDevTools = async () => {
     const extensions = {
         REACT_DEVELOPER_TOOLS,
         APOLLO_DEVELOPER_TOOLS,

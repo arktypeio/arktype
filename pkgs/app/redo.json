@@ -163,6 +163,61 @@
                     "element": 7
                 }
             ]
+        },
+        {
+            "name": "Another Login",
+            "tags": [
+                "Yep"
+            ],
+            "steps": [
+                {
+                    "kind": "click",
+                    "element": 5
+                },
+                {
+                    "kind": "click",
+                    "element": 6
+                },
+                {
+                    "kind": "set",
+                    "value": "david@redo.qa",
+                    "element": 6
+                },
+                {
+                    "kind": "click",
+                    "element": 9
+                }
+            ]
+        },
+        {
+            "name": "New Test",
+            "tags": [
+                "fdfds"
+            ],
+            "steps": [
+                {
+                    "kind": "click",
+                    "element": 10
+                }
+            ]
+        },
+        {
+            "name": "fddfldskhfslka",
+            "tags": [],
+            "steps": [
+                {
+                    "kind": "click",
+                    "element": 1
+                },
+                {
+                    "kind": "click",
+                    "element": 1
+                },
+                {
+                    "kind": "click",
+                    "element": 1
+                }
+            ]
         }
     ],
     "elements": [
@@ -201,6 +256,10 @@
         {
             "selector": ".MuiButton-contained > .MuiButton-label",
             "id": 9
+        },
+        {
+            "selector": ".MuiGrid-root:nth-child(2) > img",
+            "id": 10
         }
     ]
 }

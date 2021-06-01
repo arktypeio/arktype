@@ -7,16 +7,15 @@ import { SignIn } from "./SignIn"
 import { SignUp } from "./SignUp"
 
 export type LandingProps = {
-    page: Page.SignIn | Page.SignUp
+    page: "SIGN_IN" | "SIGN_UP"
 }
 
 const slideBetween = [<SignIn />, <SignUp />]
 
 export const Landing = ({ page }: LandingProps) => {
-    const [sliderWidth, setSliderWidth] = useState<string | undefined>(
-        undefined
-    )
-    const isSignIn = page === Page.SignIn
+    const [sliderWidth, setSliderWidth] =
+        useState<string | undefined>(undefined)
+    const isSignIn = page === "SIGN_IN"
     useLayoutEffect(() => {
         // A rerender is required to get the layout right
         setSliderWidth("fit-content")
@@ -59,7 +58,7 @@ export const Landing = ({ page }: LandingProps) => {
                 }}
                 onClick={() =>
                     store.update({
-                        page: isSignIn ? Page.SignUp : Page.SignIn
+                        page: isSignIn ? "SIGN_UP" : "SIGN_IN"
                     })
                 }
             >

@@ -9,11 +9,7 @@ import {
 } from "electron-redux"
 import { StoredTest, Test } from "@re-do/model"
 
-export enum Page {
-    Home = "HOME",
-    SignIn = "SIGN_IN",
-    SignUp = "SIGN_UP"
-}
+export type Page = "HOME" | "SIGN_IN" | "SIGN_UP"
 
 export type Root = {
     token: string
@@ -36,20 +32,11 @@ export type MainActions = {
 
 export type RendererActions = {}
 
-export const getInitialState = () => ({
-    token: "",
-    page: Page.Home,
-    cardFilter: "",
-    builderActive: false,
-    defaultBrowser: "chrome",
-    steps: [],
-    tests: [],
-    main: {},
-    renderer: {}
-})
-
-export const createMainStore = <T extends Actions<Root>>(mainActions: T) => {
-    const mainStore = createStore(initialRoot, mainActions, {
+export const createMainStore = <A extends Actions<Root>>(
+    initial: Root,
+    mainActions: A
+) => {
+    const mainStore = createStore(initial, mainActions, {
         middleware: [forwardToRenderer]
     })
     replayActionMain(mainStore.underlying as any)
