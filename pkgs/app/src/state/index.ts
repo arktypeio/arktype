@@ -36,7 +36,7 @@ export type MainActions = {
 
 export type RendererActions = {}
 
-export const initialRoot: Root = {
+export const getInitialState = () => ({
     token: "",
     page: Page.Home,
     cardFilter: "",
@@ -46,7 +46,7 @@ export const initialRoot: Root = {
     tests: [],
     main: {},
     renderer: {}
-}
+})
 
 export const createMainStore = <T extends Actions<Root>>(mainActions: T) => {
     const mainStore = createStore(initialRoot, mainActions, {
