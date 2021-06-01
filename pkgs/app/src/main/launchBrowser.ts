@@ -2,14 +2,20 @@ import { readFileSync } from "fs-extra"
 import { BrowserWindow } from "electron"
 import { resolve } from "path"
 import { launch, Step } from "@re-do/test"
+import { deepEquals } from "@re-do/utils"
 import { Browser } from "playwright"
 import { Root } from "state"
 import { Store } from "react-statelessly"
+
+type EventData = Step & { timeStamp: number }
 
 const BROWSER_WINDOW_TITLEBAR_SIZE = 44
 const DEFAULT_LEARNER_WIDTH = 300
 
 let lastConnectedBrowser: Browser
+let lastEventData: EventData
+
+const browserJs = readFileSync(resolve("dist", "observer", "index.js"), "utf-8")
 
 export const launchBrowser = async (
     store: Store<Root, any>,
@@ -28,18 +34,29 @@ export const launchBrowser = async (
         }
     })
     lastConnectedBrowser = browser
-    page.goto("https://redo.qa")
-    const notify = (step: Step) => {
+    let lastNavigationStep: Step
+    page.on("framenavigated", async (frame) => {
+        const navigationStep = { kind: "go" as const, url: frame.url() }
+        if (!deepEquals(navigationStep, lastNavigationStep)) {
+            lastNavigationStep = navigationStep
+            store.update({
+                steps: (_) => _.concat(navigationStep)
+            })
+        }
+        await page.evaluate(browserJs)
+    })
+    const notify = (eventData: EventData) => {
+        if (deepEquals(eventData, lastEventData)) {
+            // looks like a duplicate, ignoring
+            return
+        }
+        const { timeStamp, ...step } = eventData
         store.update({
             steps: (steps) => [...steps, step]
         })
+        lastEventData = eventData
     }
     await page.exposeFunction("notify", notify)
-    const browserJs = readFileSync(
-        resolve("dist", "observer", "index.js"),
-        "utf-8"
-    )
-    await page.evaluate(browserJs)
 }
 
 export const closeBrowser = async () => {

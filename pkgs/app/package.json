@@ -29,7 +29,7 @@
         "@re-do/model": "0.0.1",
         "@re-do/test": "0.0.1",
         "@re-do/utils": "0.0.11",
-        "@re-do/node-utils": "0.0.1",
+        "@re-do/node-utils": "0.0.2",
         "dotenv": "9.0.0",
         "framer-motion": "4.1.11",
         "fs-extra": "10.0.0",
@@ -61,7 +61,6 @@
         "@types/node": "15.0.2",
         "@types/fs-extra": "9.0.6",
         "@types/dotenv": "8.2.0",
-        "tree-kill": "1.2.2",
-        "get-port": "5.1.1"
+        "tree-kill": "1.2.2"
     }
 }

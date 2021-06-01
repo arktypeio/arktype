@@ -52,3 +52,13 @@ export const createRendererStore = (onChange: ListenerMap<Root, Root>) => {
     replayActionRenderer(rendererStore.underlying as any)
     return rendererStore
 }
+
+export const supportedEvents = {
+    click: "click",
+    dblclick: "click",
+    submit: "click",
+    change: "set",
+    select: "set"
+} as const
+
+export type SupportedEvent = keyof typeof supportedEvents
