@@ -20,11 +20,7 @@ export const PostPreview = ({
                 <Text align="center" variant="h4">
                     {title}
                 </Text>
-                <img
-                    src={`assets/${image}`}
-                    alt={title}
-                    style={{ width: "100%" }}
-                />
+                <img src={image} alt={title} style={{ width: "100%" }} />
                 <Text align="center" style={{ fontSize: 24 }}>
                     <i>{caption}</i>
                 </Text>

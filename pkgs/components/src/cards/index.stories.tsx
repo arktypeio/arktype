@@ -1,33 +1,13 @@
 import React from "react"
-import { storiesOf } from "@storybook/react"
-import { withKnobs, object, text } from "@storybook/addon-knobs"
-import { ContentCard, ContentCardProps, Card, CardProps } from "."
+import { Card, CardProps } from "."
 
 export default {
-    title: "cards"
+    title: "Cards"
 }
 
-export const Standard = (props: CardProps) => <Card {...props} />
+export const Basic = (props: CardProps) => <Card {...props} />
 
-Standard.args = {
-    children: "I'm a card!"
+Basic.args = {
+    children: "I'm a card!",
+    sizeToContent: false
 }
-
-export const Content = (props: ContentCardProps) => <ContentCard {...props} />
-
-Content.args = {
-    from: {
-        key: "value",
-        anotherKey: "anotherValue"
-    }
-}
-
-Content.argTypes = {
-    from: {
-        control: "object"
-    }
-}
-
-// storiesOf("Card", module)
-//     .addDecorator(withKnobs)
-//     .add("Standard", () => )

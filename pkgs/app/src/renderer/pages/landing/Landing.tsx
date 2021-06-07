@@ -2,21 +2,19 @@ import React, { useLayoutEffect, useState } from "react"
 import { motion } from "framer-motion"
 import { Column, Card, Button, Row, AnimatedLogo } from "@re-do/components"
 import { store } from "renderer/common"
-import { Page } from "renderer/state"
 import { SignIn } from "./SignIn"
 import { SignUp } from "./SignUp"
 
 export type LandingProps = {
-    page: Page.SignIn | Page.SignUp
+    page: "SIGN_IN" | "SIGN_UP"
 }
 
 const slideBetween = [<SignIn />, <SignUp />]
 
 export const Landing = ({ page }: LandingProps) => {
-    const [sliderWidth, setSliderWidth] = useState<string | undefined>(
-        undefined
-    )
-    const isSignIn = page === Page.SignIn
+    const [sliderWidth, setSliderWidth] =
+        useState<string | undefined>(undefined)
+    const isSignIn = page === "SIGN_IN"
     useLayoutEffect(() => {
         // A rerender is required to get the layout right
         setSliderWidth("fit-content")
@@ -32,7 +30,7 @@ export const Landing = ({ page }: LandingProps) => {
             >
                 <AnimatedLogo />
                 <Row width={sliderWidth} reverse={!isSignIn}>
-                    {slideBetween.map(element => (
+                    {slideBetween.map((element) => (
                         <motion.div
                             key={element.type.name}
                             layout
@@ -58,8 +56,8 @@ export const Landing = ({ page }: LandingProps) => {
                     marginTop: 8
                 }}
                 onClick={() =>
-                    store.mutate({
-                        page: isSignIn ? Page.SignUp : Page.SignIn
+                    store.update({
+                        page: isSignIn ? "SIGN_UP" : "SIGN_IN"
                     })
                 }
             >

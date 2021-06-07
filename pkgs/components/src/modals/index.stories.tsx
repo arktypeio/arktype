@@ -4,6 +4,10 @@ import { Modal } from "."
 import { Button } from "../buttons"
 import { Text } from "../text"
 
-storiesOf("Modals", module).add("ModalView", () => (
+export default {
+    title: "Modals"
+}
+
+export const ModalView = () => (
     <Modal toggle={<Button>Open modal!</Button>} content={<Text>Hi!</Text>} />
-))
+)

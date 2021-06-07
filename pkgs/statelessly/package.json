@@ -3,26 +3,34 @@
     "version": "0.0.2",
     "author": "redo.qa",
     "description": "💪-typed state management with simple shapes🔷",
-    "main": "dist/index.js",
-    "types": "dist/index.d.ts",
+    "main": "dist/cjs/index.js",
+    "module": "dist/mjs/index.js",
+    "exports": {
+        ".": {
+            "import": "./dist/mjs/index.js",
+            "require": "./dist/cjs/index.js"
+        }
+    },
     "scripts": {
         "build": "redo-build",
         "test": "jest"
     },
     "dependencies": {
-        "@babel/runtime-corejs3": "7.12.5",
-        "@re-do/utils": "0.0.10",
+        "@re-do/utils": "0.0.11",
         "deepmerge": "4.2.2",
         "isomorphic-fetch": "3.0.0",
         "moize": "5.4.7",
-        "redux": "4.0.5"
+        "redux": "4.0.5",
+        "redux-devtools-extension": "2.13.8",
+        "@reduxjs/toolkit": "1.5.0"
     },
     "devDependencies": {
-        "@re-do/recommended": "0.0.2",
+        "@re-do/configs": "0.0.2",
         "@types/jest": "26.0.20",
         "jest": "26.6.3",
-        "@types/node": "14.14.21",
-        "babel-preset-redo": "0.0.2",
-        "typescript": "4.1.3"
+        "ts-jest": "26.5.6",
+        "@types/node": "15.0.2",
+        "ts-toolbelt": "9.5.10",
+        "typescript": "4.2.3"
     }
 }

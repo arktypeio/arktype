@@ -1,40 +1,92 @@
 import { jsrx, $, shell } from "jsrx"
+import treeKill from "tree-kill"
+import { createServer, build } from "vite"
+import { ChildProcess, shellAsync } from "@re-do/node-utils"
+import {
+    getMainConfig,
+    getRendererConfig,
+    getObserverConfig
+} from "./viteConfigs"
 import { join } from "path"
 
-const clean = "rm -rf dist && mkdir dist"
+const electronPath = require("electron")
 
-type PlatformString = "linux" | "macos" | "windows"
+const buildAll = async () => {
+    await build(getMainConfig())
+    await build(getObserverConfig())
+    await build(getRendererConfig())
+}
 
-const publish = (platforms: PlatformString[]) => () => {
-    shell("npm run buildProd")
-    shell("rm -rf release")
-    for (const platform of platforms) {
-        try {
-            shell(`electron-builder --${platform} --publish always`)
-        } catch (e) {
-            console.error(
-                `Encountered the following error while building platform ${platform}:\n${e}`
-            )
-        }
+let mainProcess: ChildProcess | undefined
+
+const cmdString = `${electronPath} --inspect=9222 --remote-debugging-port=9223 .`
+
+const restartMain = (startIfNotRunning: boolean) => {
+    if (mainProcess && !mainProcess.killed) {
+        treeKill(mainProcess.pid, () => {
+            killExisting()
+            mainProcess = shellAsync(cmdString)
+        })
+    } else if (startIfNotRunning) {
+        mainProcess = shellAsync(cmdString)
     }
+}
+
+const watchMain = async () =>
+    build({
+        ...getMainConfig({ watch: true }),
+        plugins: [
+            {
+                name: "main-watcher",
+                writeBundle: () => restartMain(true)
+            }
+        ]
+    })
+
+const watchObserver = () =>
+    build({
+        ...getObserverConfig({ watch: true }),
+        plugins: [
+            {
+                name: "observer-watcher",
+                writeBundle: () => restartMain(false)
+            }
+        ]
+    })
+
+// kill any leftover processses to ensure debug ports are free
+// the echo is to ensure we don't throw an error if no processes are found
+// the brackets ensure pkill won't kill itself :O
+const killExisting = () =>
+    shell(`echo $(pkill -9 -f '[\-]-remote-debugging-port=9223')`)
+
+const start = async () => {
+    killExisting()
+    const viteDevServer = await createServer({
+        ...getRendererConfig({ watch: true }),
+        server: {
+            port: Number(process.env.DEV_SERVER_PORT)
+        }
+    })
+    await viteDevServer.listen()
+    await watchObserver()
+    await watchMain()
 }
 
 jsrx(
     {
-        shared: {
-            build: $(`${clean} && webpack && cp .env resources/icon.png dist`)
-        },
         dev: {
-            start: $(
-                `${clean} && npm run build && webpack serve --config webpack.devServer.config.ts --progress`
-            ),
-            electron: $("electron --remote-debugging-port=9223 ./dist/main.js")
+            start,
+            lint: $(`prettier --write`),
+            typecheck: $(`tsc --noEmit`)
         },
         prod: {
-            publish: publish(["linux", "macos", "windows"]),
-            publishLinux: publish(["linux"]),
-            publishMac: publish(["macos"]),
-            publishWindows: publish(["windows"])
+            compile: $(
+                `electron-builder build --config electron-builder.config.js --dir --config.asar=false`
+            )
+        },
+        shared: {
+            build: () => buildAll()
         }
     },
     {

@@ -24,6 +24,7 @@ import twitter from "@material-ui/icons/Twitter"
 import video from "@material-ui/icons/VideocamOutlined"
 import blog from "@material-ui/icons/Notes"
 import code from "@material-ui/icons/Code"
+import settings from "@material-ui/icons/Settings"
 import SvgIcon, { SvgIconProps } from "@material-ui/core/SvgIcon"
 import { twitchPath } from "./paths"
 
@@ -61,5 +62,6 @@ export const Icons = {
     twitch,
     twitter,
     video,
-    menu
+    menu,
+    settings
 }

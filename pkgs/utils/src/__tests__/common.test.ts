@@ -15,8 +15,8 @@ describe("transform", () => {
         })
     })
     test("errors on invalid objects", () => {
-        expect(() => transform(null, (_) => _)).toThrow()
-        expect(() => transform(undefined, (_) => _)).toThrow()
-        expect(() => transform(true, (_) => _)).toThrow()
+        expect(() => transform(null as any, (_) => _)).toThrow()
+        expect(() => transform(undefined as any, (_) => _)).toThrow()
+        expect(() => transform(true as any, (_) => _)).toThrow()
     })
 })

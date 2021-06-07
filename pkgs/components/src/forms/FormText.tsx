@@ -1,43 +1,55 @@
 import React from "react"
+import { useFormContext } from "react-hook-form"
+import { Merge } from "@re-do/utils"
+import { ErrorText } from "../text"
 import { TextInput, TextInputProps } from "../inputs"
-import { ErrorText, ErrorTextProps } from "../text"
-import { useFormContext } from "./FormContext"
-import { FormFieldProps } from "./FormField"
 import { Column } from "../layouts"
+import { FormInputProps, getDefaultErrorMessage } from "./FormInput"
 
-export type FormTextProps = FormFieldProps &
-    TextInputProps &
-    Pick<ErrorTextProps, "tooltipPlacement">
+export type FormTextProps = Merge<TextInputProps, FormInputProps<string>>
 
 export const FormText = ({
     name,
+    defaultValue,
+    optional,
+    rules,
+    errorTooltipPlacement,
+    errorMessage,
     label,
-    onBlur,
-    onKeyDown,
-    tooltipPlacement,
+    inputProps,
+    transform,
     ...rest
 }: FormTextProps) => {
-    const { register, errors, handleBlur, submit } = useFormContext()
+    const {
+        register,
+        setValue,
+        formState: { errors, touchedFields }
+    } = useFormContext()
+    if (defaultValue && !(name in touchedFields)) {
+        setValue(name, defaultValue)
+    }
     return (
         <Column align="center">
             <TextInput
-                name={name}
-                label={label ? label : name}
-                inputRef={register}
-                onBlur={(event) => {
-                    onBlur && onBlur(event)
-                    handleBlur(name)
-                }}
-                onKeyDown={(event) => {
-                    onKeyDown && onKeyDown(event)
-                    event.key === "Enter" && submit()
+                label={label ?? name}
+                inputProps={{
+                    ...inputProps,
+                    ...register(name, {
+                        required: !optional,
+                        ...rules,
+                        setValueAs: transform
+                    })
                 }}
                 {...rest}
             />
-            <div style={{ height: 20, maxWidth: 300 }}>
-                {errors?.[name]?.message ? (
-                    <ErrorText tooltipPlacement={tooltipPlacement}>
-                        {errors[name]!.message!.split("\n")}
+            <div style={{ height: 20 }}>
+                {errors?.[name] ? (
+                    <ErrorText tooltipPlacement={errorTooltipPlacement}>
+                        {errorMessage
+                            ? typeof errorMessage === "function"
+                                ? errorMessage(errors[name])
+                                : errorMessage
+                            : getDefaultErrorMessage(errors[name])}
                     </ErrorText>
                 ) : null}
             </div>

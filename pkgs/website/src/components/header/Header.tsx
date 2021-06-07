@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react"
+import React from "react"
 import { layout } from "../../constants"
 import { NavBar } from "./NavBar"
 import { Column } from "@re-do/components"

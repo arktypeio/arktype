@@ -1,13 +1,69 @@
 import React from "react"
 import { fromEntries } from "@re-do/utils"
-import { storiesOf } from "@storybook/react"
 import { Tree } from "."
 import { Button } from "../buttons"
 import { Icons } from "../icons"
 import { Modal } from "../modals"
 import { Text } from "../text"
 
-const src = {
+export default {
+    title: "TreeView"
+}
+
+export const Basic = () => <Tree source={getData()} />
+
+export const WithHiddenKeys = () => (
+    <Tree
+        source={getData()}
+        transform={({ key }) =>
+            key === "metadata" ? { render: null } : { render: undefined }
+        }
+    />
+)
+
+export const WithExtras = () => (
+    <Tree
+        source={getData()}
+        transform={({ key, value, path }) => {
+            console.log(
+                "If a tree falls in the console, and no one is around to hear it..."
+            )
+            return {
+                extras: (
+                    <Modal
+                        toggle={<Button Icon={Icons.openModal} />}
+                        content={
+                            <>
+                                <Text>{`This modal was created when you clicked on ${key} at ${path}, which has the following value:`}</Text>
+                                <Text>{JSON.stringify(value)}</Text>
+                            </>
+                        }
+                    />
+                )
+            }
+        }}
+    />
+)
+
+export const WithTransform = () => (
+    <Tree
+        source={getData()}
+        transform={({ key, value }) => {
+            let updatedValue = value
+            if (value === "🐛") {
+                updatedValue = "🦋"
+            }
+            if (Array.isArray(value)) {
+                updatedValue = fromEntries(
+                    value.map((item, index) => [index + 1, item])
+                )
+            }
+            return { entry: [key, updatedValue] }
+        }}
+    />
+)
+
+export const getData = () => ({
     username: "ssalbdivad",
     bug: "🐛",
     metadata: {
@@ -43,55 +99,4 @@ const src = {
     videos: {
         howRedoGotStarted: "https://www.youtube.com/watch?v=oHg5SJYRHA0"
     }
-}
-
-storiesOf("TreeView", module)
-    .add("basic", () => <Tree source={src} />)
-    .add("with hidden keys", () => (
-        <Tree
-            source={src}
-            transform={({ key }) =>
-                key === "metadata" ? { render: null } : { render: undefined }
-            }
-        />
-    ))
-    .add("with context-aware extras", () => (
-        <Tree
-            source={src}
-            transform={({ key, value, path }) => {
-                console.log(
-                    "If a tree falls in the console, and no one is around to hear it..."
-                )
-                return {
-                    extras: (
-                        <Modal
-                            toggle={<Button Icon={Icons.openModal} />}
-                            content={
-                                <>
-                                    <Text>{`This modal was created when you clicked on ${key} at ${path}, which has the following value:`}</Text>
-                                    <Text>{JSON.stringify(value)}</Text>
-                                </>
-                            }
-                        />
-                    )
-                }
-            }}
-        />
-    ))
-    .add("with complex transform", () => (
-        <Tree
-            source={src}
-            transform={({ key, value }) => {
-                let updatedValue = value
-                if (value === "🐛") {
-                    updatedValue = "🦋"
-                }
-                if (Array.isArray(value)) {
-                    updatedValue = fromEntries(
-                        value.map((item, index) => [index + 1, item])
-                    )
-                }
-                return { entry: [key, updatedValue] }
-            }}
-        />
-    ))
+})

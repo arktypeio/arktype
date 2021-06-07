@@ -1,0 +1,37 @@
+{
+    "name": "@re-do/node-utils",
+    "version": "0.0.2",
+    "author": "redo.qa",
+    "description": "Node utilities consumed by Redo",
+    "main": "dist/cjs/index.js",
+    "module": "dist/mjs/index.js",
+    "exports": {
+        ".": {
+            "import": "./dist/mjs/index.js",
+            "require": "./dist/cjs/index.js"
+        }
+    },
+    "scripts": {
+        "build": "redo-build",
+        "test": "jest"
+    },
+    "dependencies": {
+        "@re-do/utils": "0.0.11",
+        "deepmerge": "4.2.2",
+        "execa": "5.0.0",
+        "fs-extra": "10.0.0",
+        "moize": "5.4.7",
+        "validator": "13.5.2",
+        "prompts": "2.4.1"
+    },
+    "devDependencies": {
+        "@re-do/configs": "0.0.2",
+        "@types/fs-extra": "9.0.6",
+        "@types/jest": "26.0.20",
+        "@types/node": "15.0.2",
+        "@types/prompts": "2.0.11",
+        "jest": "26.6.3",
+        "ts-jest": "26.5.6",
+        "typescript": "4.2.3"
+    }
+}

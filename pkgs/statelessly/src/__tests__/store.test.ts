@@ -1,4 +1,4 @@
-import { createStore, Handler } from "../store"
+import { createStore, ListenerMap, Actions, StoreOptions } from "../store"
 
 type Root = {
     a: A
@@ -29,30 +29,42 @@ const initialRoot: Root = Object.freeze({
     d: [initialA, initialA]
 })
 
-let store = createStore({ initial: initialRoot })
+const fakeUpload = () =>
+    new Promise<string>((resolve) => setTimeout(() => resolve("Success!"), 100))
 
-const cHandler = jest.fn()
-const bing = jest.fn()
-const dHandler = jest.fn()
-const handler: Handler<Root, Root> = {
-    c: cHandler,
-    b: bing,
-    d: dHandler
-}
-let sideEffectStore = createStore({
-    initial: initialRoot,
-    handler
-})
+const getStore = (options: StoreOptions<Root> = {}) =>
+    createStore(
+        initialRoot,
+        {
+            enableB: { b: true },
+            nameC: (name: string) => ({
+                c: name
+            }),
+            addOneToEndOfList: {
+                a: { b: { a: (_) => [..._, 1] } }
+            },
+            addNumberToEndOfList: (value: number) => ({
+                a: { b: { a: (_) => [..._, value] } }
+            }),
+            appendObjectToArray: { d: (value) => value.concat(initialA) },
+            emptyDArray: { d: [] },
+            updateSomeValues: {
+                b: (_) => _,
+                c: (_) => `updated${_}`
+            },
+            uploadToServer: async () => {
+                const result = await fakeUpload()
+                return { c: result }
+            }
+        },
+        options
+    )
 
-const functionalHandler = jest.fn()
-let sideEffectFunctionStore = createStore({
-    initial: initialRoot,
-    handler: functionalHandler
-})
+let store = getStore()
 
 describe("queries", () => {
-    beforeEach(() => {
-        store = createStore({ initial: initialRoot })
+    beforeAll(() => {
+        store = getStore()
     })
     test("handle shallow", () => {
         expect(store.query({ b: true })).toStrictEqual({ b: false })
@@ -77,22 +89,48 @@ describe("queries", () => {
     })
 })
 
-describe("updates", () => {
-    beforeEach(() => {
-        store = createStore({ initial: initialRoot })
-        sideEffectStore = createStore({ initial: initialRoot, handler })
+describe("gets", () => {
+    beforeAll(() => {
+        store = getStore()
     })
-    test("handles shallow", () => {
-        store.mutate({ c: (value) => value + "suffix" })
+    test("shallow", () => {
+        expect(store.get("c")).toBe("")
+    })
+    test("nested", () => {
+        expect(store.get("a/b/a")).toStrictEqual([0])
+    })
+    test("from array", () => {
+        expect(store.get("d/0/a")).toBe(0)
+    })
+})
+
+describe("actions", () => {
+    beforeEach(() => {
+        store = getStore()
+    })
+    test("direct update", () => {
+        store.update({ b: true })
         expect(store.getState()).toStrictEqual({
             ...initialRoot,
-            c: initialRoot.c + "suffix"
+            b: true
         })
     })
-    test("handles deep", () => {
-        store.mutate({
-            a: { b: { a: (value) => value.concat([1]) } }
+    test("shallow set value", () => {
+        store.enableB()
+        expect(store.getState()).toStrictEqual({
+            ...initialRoot,
+            b: true
         })
+    })
+    test("shallow set function", () => {
+        store.nameC("redo")
+        expect(store.getState()).toStrictEqual({
+            ...initialRoot,
+            c: "redo"
+        })
+    })
+    test("deep set value", () => {
+        store.addOneToEndOfList()
         expect(store.getState()).toStrictEqual({
             ...initialRoot,
             a: {
@@ -104,53 +142,80 @@ describe("updates", () => {
             }
         })
     })
+    test("deep set function", () => {
+        store.addNumberToEndOfList(5)
+        expect(store.getState()).toStrictEqual({
+            ...initialRoot,
+            a: {
+                ...initialRoot.a,
+                b: {
+                    ...initialRoot.a.b,
+                    a: initialRoot.a.b.a.concat([5])
+                }
+            }
+        })
+    })
     test("handles object arrays", () => {
-        store.mutate({ d: (value) => value.concat(initialA) })
+        store.appendObjectToArray()
         expect(store.getState()).toStrictEqual({
             ...initialRoot,
             d: [initialA, initialA, initialA]
         })
     })
-    test("sets array value", async () => {
-        store.mutate({ d: [] })
+    test("sets array value", () => {
+        store.emptyDArray()
         expect(store.getState()).toStrictEqual({
             ...initialRoot,
             d: []
         })
     })
-
-    test("doesn't update extraneous keys", () => {
-        store.mutate({
-            a: { b: { a: (value) => value.concat([1]) } }
-        })
+    test("handles async", async () => {
+        store = getStore()
+        await store.uploadToServer()
         expect(store.getState()).toStrictEqual({
             ...initialRoot,
-            a: { ...initialA, b: { ...initialA.b, a: [0, 1] } }
+            c: "Success!"
         })
     })
+})
+
+const cHandler = jest.fn()
+const bing = jest.fn()
+const dHandler = jest.fn()
+const onChange: ListenerMap<Root, Root> = {
+    c: cHandler,
+    b: bing,
+    d: dHandler
+}
+
+const functionalListener = jest.fn()
+
+describe("side effects", () => {
+    beforeEach(() => {
+        store = getStore({ onChange })
+    })
     test("handle side effects", () => {
-        sideEffectStore.mutate({ b: true })
+        store.enableB()
         expect(bing).toBeCalledWith(true, initialRoot)
     })
     test("handles array side effects", () => {
-        sideEffectStore.mutate({
-            d: (_) => _.concat(initialA)
-        })
+        store.appendObjectToArray()
         expect(dHandler).toBeCalledWith(
             [initialA, initialA, initialA],
             initialRoot
         )
     })
     test("doesn't trigger extraneous side effects", () => {
-        sideEffectStore.mutate({
-            b: (current) => current,
-            c: (current) => current + "new"
-        })
+        store.updateSomeValues()
         expect(cHandler).toHaveBeenCalled()
         expect(bing).not.toHaveBeenCalled()
     })
     test("handles side effects with function", () => {
-        sideEffectFunctionStore.mutate({ b: true })
-        expect(functionalHandler).toHaveBeenCalled()
+        store = getStore({ onChange: functionalListener })
+        store.enableB()
+        expect(functionalListener).toHaveBeenCalledWith(
+            { b: true },
+            initialRoot
+        )
     })
 })

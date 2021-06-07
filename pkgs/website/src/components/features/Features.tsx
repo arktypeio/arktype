@@ -13,8 +13,8 @@ export const Features = ({ content }: FeaturesProps) => (
         align="baseline"
         style={{ padding: 0 }}
     >
-        {content.map((props, idx) => (
-            <FeatureSummary key={idx} {...props} />
+        {content.map((props, id) => (
+            <FeatureSummary key={id} {...props} />
         ))}
     </Row>
 )

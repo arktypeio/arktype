@@ -1,11 +1,35 @@
 {
     "tests": [
         {
-            "name": "Test Login",
-            "tags": [],
+            "name": "A bunch of random stuff",
+            "tags": [
+                "navigation"
+            ],
             "steps": [
                 {
+                    "kind": "go",
+                    "url": "https://redo.qa/"
+                },
+                {
+                    "kind": "go",
+                    "url": "https://www.google.com/"
+                },
+                {
                     "kind": "click",
+                    "element": 1
+                },
+                {
+                    "kind": "click",
+                    "element": 1
+                },
+                {
+                    "kind": "set",
+                    "value": "rick astley",
+                    "element": 1
+                },
+                {
+                    "kind": "set",
+                    "value": "rick astley",
                     "element": 1
                 },
                 {
@@ -13,85 +37,64 @@
                     "element": 2
                 },
                 {
-                    "kind": "set",
-                    "value": "david@redo.qa",
+                    "kind": "click",
                     "element": 2
-                }
-            ]
-        },
-        {
-            "name": "Login 2",
-            "tags": [],
-            "steps": [
+                },
+                {
+                    "kind": "go",
+                    "url": "https://www.google.com/search?q=rick+astley&source=hp&ei=poq2YJzZJqvl5NoPu5Gc-A0&iflsig=AINFCbYAAAAAYLaYtjzGdbO73PCNvuGyfH-Jgq5naiv3&oq=rick+astley&gs_lcp=Cgdnd3Mtd2l6EAMyCAguELEDEJMCMgIIADICCAAyBQgAELEDMgUIABCxAzIFCAAQsQMyBQgAELEDMgIIADICCC4yBQgAELEDOggIABDqAhCPAToLCC4QsQMQgwEQkwI6CAguEMcBEKMCOg4ILhCxAxCDARDHARCjAjoLCC4QsQMQxwEQowI6CAgAELEDEIMBOggILhCxAxCDAToFCC4QsQM6CAguEMcBEK8BUKozWJ9GYLNLaAFwAHgAgAF-iAGfB5IBAzcuNJgBAKABAaoBB2d3cy13aXqwAQo&sclient=gws-wiz&ved=0ahUKEwicxJTplffwAhWrMlkFHbsIB98Q4dUDCAk&uact=5"
+                },
                 {
                     "kind": "click",
                     "element": 3
                 },
                 {
                     "kind": "click",
-                    "element": 1
+                    "element": 3
                 },
                 {
-                    "kind": "click",
-                    "element": 2
+                    "kind": "go",
+                    "url": "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
+                },
+                {
+                    "kind": "go",
+                    "url": "about:blank"
+                },
+                {
+                    "kind": "go",
+                    "url": "https://www.wikipedia.org/"
                 },
                 {
                     "kind": "set",
-                    "value": "david@redo.qa",
-                    "element": 2
-                },
-                {
-                    "kind": "click",
+                    "value": "sloths",
                     "element": 4
-                }
-            ]
-        },
-        {
-            "name": "Test 5",
-            "tags": [],
-            "steps": [
-                {
-                    "kind": "click",
-                    "element": 1
                 },
-                {
-                    "kind": "click",
-                    "element": 2
-                },
-                {
-                    "kind": "set",
-                    "value": "david@redo.qa",
-                    "element": 2
-                }
-            ]
-        },
-        {
-            "name": "Test 6",
-            "tags": [],
-            "steps": [
                 {
                     "kind": "click",
                     "element": 5
                 },
                 {
                     "kind": "click",
-                    "element": 2
-                },
-                {
-                    "kind": "set",
-                    "value": "david@redo.qa",
-                    "element": 2
-                },
-                {
-                    "kind": "click",
                     "element": 6
+                },
+                {
+                    "kind": "go",
+                    "url": "https://en.wikipedia.org/wiki/Sloths"
+                },
+                {
+                    "kind": "go",
+                    "url": "https://en.wikipedia.org/wiki/Sloth"
                 }
             ]
         },
         {
-            "name": "Test 7",
+            "name": "",
             "tags": [],
             "steps": [
+                {
+                    "kind": "go",
+                    "url": "https://redo.qa/"
+                },
                 {
                     "kind": "click",
                     "element": 7
@@ -101,64 +104,196 @@
                     "element": 8
                 },
                 {
-                    "kind": "click",
-                    "element": 9
+                    "kind": "set",
+                    "value": "david@redo.qa",
+                    "element": 8
                 },
                 {
                     "kind": "click",
+                    "element": 9
+                }
+            ]
+        },
+        {
+            "name": "Edited Sign In",
+            "tags": [
+                "firstTry"
+            ],
+            "steps": [
+                {
+                    "kind": "go",
+                    "url": "https://redo.qa/",
+                    "id": 1
+                },
+                {
+                    "kind": "click",
+                    "id": 2,
+                    "element": 7
+                },
+                {
+                    "kind": "click",
+                    "id": 3,
+                    "element": 8
+                },
+                {
+                    "kind": "set",
+                    "value": "notdavid@redo.qa",
+                    "id": 4,
+                    "element": 8
+                }
+            ]
+        },
+        {
+            "name": "Do Random Stuff",
+            "tags": [
+                "dofihsdo"
+            ],
+            "steps": [
+                {
+                    "kind": "go",
+                    "url": "https://www.google.com/",
+                    "id": 1
+                },
+                {
+                    "kind": "click",
+                    "id": 2,
+                    "element": 1
+                },
+                {
+                    "kind": "set",
+                    "value": "dogs",
+                    "id": 3,
                     "element": 1
                 },
                 {
                     "kind": "click",
+                    "id": 4,
                     "element": 2
                 },
                 {
-                    "kind": "set",
-                    "value": "david@redo.qa",
-                    "element": 2
+                    "kind": "go",
+                    "url": "https://www.google.com/search?q=cats&source=hp&ei=5sK2YNr8MNjR5NoPnMKvWA&iflsig=AINFCbYAAAAAYLbQ9k4F7Ky2hsCiD2GT5CYz5dR1IyCB&oq=cats&gs_lcp=Cgdnd3Mtd2l6EAMyCAguELEDEJMCMgUIABDJAzIFCAAQkgMyBQgAEJIDMgUILhCxAzICCAAyBQgAELEDMgUIABCxAzIFCC4QsQMyAgguOggIABDqAhCPAToLCC4QsQMQxwEQowI6CAgAELEDEIMBOggILhCxAxCDAToOCC4QsQMQgwEQxwEQowJQ_d8BWJ7iAWCR5QFoAXAAeACAAVKIAZQCkgEBNJgBAKABAaoBB2d3cy13aXqwAQo&sclient=gws-wiz&ved=0ahUKEwjah9m7y_fwAhXYKFkFHRzhCwsQ4dUDCAk&uact=5",
+                    "id": 5
+                },
+                {
+                    "kind": "go",
+                    "url": "https://redo.qa/",
+                    "id": 6
                 },
                 {
                     "kind": "click",
-                    "element": 4
+                    "id": 7,
+                    "element": 7
+                },
+                {
+                    "kind": "click",
+                    "id": 8,
+                    "element": 8
+                },
+                {
+                    "kind": "set",
+                    "value": "notdavid@redo.qa",
+                    "id": 9,
+                    "element": 8
+                },
+                {
+                    "kind": "click",
+                    "id": 10,
+                    "element": 9
+                }
+            ]
+        },
+        {
+            "name": "Some New Test 435345343",
+            "tags": [
+                "dfsdd"
+            ],
+            "steps": [
+                {
+                    "kind": "go",
+                    "url": "https://www.google.com/",
+                    "id": 1
+                },
+                {
+                    "kind": "set",
+                    "value": "dogs",
+                    "id": 2,
+                    "element": 1
+                },
+                {
+                    "kind": "click",
+                    "id": 3,
+                    "element": 2
+                },
+                {
+                    "kind": "go",
+                    "url": "https://www.google.com/search?q=cats&source=hp&ei=kuK2YKD7KsCo5NoPxZGKkAo&iflsig=AINFCbYAAAAAYLbwonSpkPuHwyYD6pwSR1Y_5hTzOZuq&oq=cats&gs_lcp=Cgdnd3Mtd2l6EAMyCAguELEDEJMCMgUIABDJAzIFCAAQkgMyBQgAEJIDMgUILhCxAzICCAAyBQgAELEDMgUIABCxAzIFCC4QsQMyAgguOgsILhCxAxDHARCjAjoICAAQsQMQgwE6DgguELEDEIMBEMcBEKMCOggILhCxAxCDAVDwL1ivM2DtNmgAcAB4AIABVogBqwKSAQE0mAEAoAEBqgEHZ3dzLXdpeg&sclient=gws-wiz&ved=0ahUKEwigjOzV6ffwAhVAFFkFHcWIAqIQ4dUDCAk&uact=5",
+                    "id": 4
+                },
+                {
+                    "kind": "go",
+                    "url": "https://redo.qa/",
+                    "id": 5
+                },
+                {
+                    "kind": "click",
+                    "id": 6,
+                    "element": 7
+                },
+                {
+                    "kind": "click",
+                    "id": 7,
+                    "element": 8
+                },
+                {
+                    "kind": "set",
+                    "value": "notdavid@redo.qa",
+                    "id": 8,
+                    "element": 8
+                },
+                {
+                    "kind": "click",
+                    "id": 9,
+                    "element": 9
                 }
             ]
         }
     ],
     "elements": [
         {
-            "selector": ".MuiButton-label",
+            "selector": ".gLFyf",
             "id": 1
         },
         {
-            "selector": ".MuiInputBase-input",
+            "selector": "center:nth-child(2) > .gNO89b",
             "id": 2
         },
         {
-            "selector": ".MuiPaper-root > .MuiGrid-direction-xs-column",
+            "selector": ".esMTkb .OPkOif",
             "id": 3
         },
         {
-            "selector": ".MuiButton-contained > .MuiButton-label",
+            "selector": "#searchInput",
             "id": 4
         },
         {
-            "selector": ".MuiButton-root",
+            "selector": ".pure-button",
             "id": 5
         },
         {
-            "selector": ".MuiButton-contained",
+            "selector": "#search-form",
             "id": 6
         },
         {
-            "selector": ".MuiDialog-container",
+            "selector": ".MuiButton-label",
             "id": 7
         },
         {
-            "selector": ".MuiGrid-align-items-xs-baseline",
+            "selector": ".MuiInputBase-input",
             "id": 8
         },
         {
-            "selector": ".MuiGrid-root:nth-child(2) > img",
+            "selector": ".MuiButton-contained > .MuiButton-label",
             "id": 9
         }
     ]

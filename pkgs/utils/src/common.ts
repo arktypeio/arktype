@@ -1,9 +1,21 @@
 import moize from "moize"
-import { isDeepStrictEqual } from "util"
-import assert from "assert"
+import isDeepEqual from "fast-deep-equal"
 import deepMerge from "deepmerge"
+import { Object as O } from "ts-toolbelt"
+
 export const merge = deepMerge
 export const memoize = moize as <F extends (...args: any[]) => any>(f: F) => F
+export const deepEquals = isDeepEqual
+
+export type Merge<
+    A extends object,
+    B extends object,
+    C extends object = {},
+    D extends object = {},
+    E extends object = {},
+    F extends object = {},
+    G extends object = {}
+> = O.Assign<A, [B, C, D, E, F, G]>
 
 export type MapReturn<F, V> = F extends (value: V) => infer R ? R : any
 
@@ -18,7 +30,7 @@ export type DeepRequired<T> = {
 }
 
 export const isEmpty = (value: object | any[]) =>
-    isDeepStrictEqual(value, {}) || isDeepStrictEqual(value, [])
+    deepEquals(value, {}) || deepEquals(value, [])
 
 export type WithOptionalKeys<T extends object, Keys extends keyof T> = Omit<
     T,
@@ -49,7 +61,9 @@ export type Unpromisified<T> = T extends Promise<infer U> ? U : never
 export const isRecursible = (o: any) => o && typeof o === "object"
 
 export const asserted = <T>(value: T, description?: string) => {
-    assert(value, `'${value}' is not allowed as a ${description ?? "value"}.`)
+    if (!value) {
+        throw Error(`'${value}' is not allowed as a ${description ?? "value"}.`)
+    }
     return value as NonNullable<T>
 }
 

@@ -1,22 +1,10 @@
 {
-    "extends": "@re-do/recommended/tsconfig.base",
+    "extends": "@re-do/configs/tsconfig.base.json",
     "compilerOptions": {
         "baseUrl": "src",
         "outDir": "dist",
-        "declaration": false,
-        "paths": {
-            "*": ["*"],
-            "state": ["renderer/state"],
-            "state/*": ["renderer/state/*"],
-            "renderer/*": ["renderer/*"],
-            "pages": ["renderer/pages"],
-            "pages/*": ["renderer/pages/*"],
-            "browser": ["browser"],
-            "browser/*": ["browser/*"],
-            "assets": ["renderer/assets"],
-            "assets/*": ["renderer/assets/*"]
-        }
+        "declaration": false
     },
     "include": ["src"],
-    "exclude": ["node_modules", "**/__tests__"]
+    "exclude": ["**/__tests__"]
 }

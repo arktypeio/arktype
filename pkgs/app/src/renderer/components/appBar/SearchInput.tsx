@@ -5,7 +5,7 @@ import { store } from "renderer/common"
 export type SearchInputProps = Omit<TextInputProps, "variant">
 
 const onChange = async (event: React.ChangeEvent<HTMLInputElement>) =>
-    store.mutate({
+    store.update({
         cardFilter: event.target.value
     })
 

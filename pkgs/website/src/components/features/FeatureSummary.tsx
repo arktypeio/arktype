@@ -10,7 +10,7 @@ export const FeatureSummary = ({
     description
 }: FeatureSummaryProps) => (
     <Column style={{ maxWidth: 360 }} align="center">
-        <img style={{ height: 200, width: 200 }} src={`assets/${image}`} />
+        <img style={{ height: 200, width: 200 }} src={image} />
         <Text variant="h5" style={{ fontWeight: 700 }}>
             {title}
         </Text>
