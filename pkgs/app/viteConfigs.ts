@@ -10,11 +10,11 @@ const localResolves = [
         find: "renderer",
         replacement: join(pkgRoot, "renderer")
     },
-    { find: "state", replacement: join(pkgRoot, "state") },
     {
         find: "observer",
         replacement: join(pkgRoot, "observer")
     },
+    { find: "common", replacement: join(pkgRoot, "common") },
     {
         find: "assets",
         replacement: join(pkgRoot, "assets")

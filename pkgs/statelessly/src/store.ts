@@ -27,25 +27,25 @@ export class Store<T extends object, A extends Actions<T>> {
     underlying: ReduxStore<T, ActionData<T>>
     actions: StoreActions<T, A>
     $: StoreActions<T, A>
-    #handleChange: Listener<T, T> | undefined
+    private handleChange: Listener<T, T> | undefined
 
     constructor(
         initial: T,
         actions: A,
         { onChange, middleware }: StoreOptions<T> = {}
     ) {
-        this.underlying = this.#getReduxStore(initial, middleware ?? [])
-        this.#handleChange =
+        this.underlying = this.getReduxStore(initial, middleware ?? [])
+        this.handleChange =
             typeof onChange === "object"
                 ? createListener<T, T>(onChange)
                 : onChange
-        this.actions = this.#defineActions(actions)
+        this.actions = this.defineActions(actions)
         this.$ = this.actions
     }
 
     getState = () => this.underlying.getState()
 
-    // Defining the type seperately avoids excessive stack depth TS error
+    // Defining the entire function type together avoids excessive stack depth TS error
     get: <P extends string>(path: AutoPath<T, P, "/">) => ValueAtPath<T, P> = (
         path: any
     ) => valueAtPath(this.underlying.getState(), path) as any
@@ -58,7 +58,7 @@ export class Store<T extends object, A extends Actions<T>> {
         const updatedState = updateMap(state, u)
         const changes = diff(state, updatedState)
         if (!deepEquals(changes, {})) {
-            this.#handleChange && this.#handleChange(changes, state)
+            this.handleChange && this.handleChange(changes, state)
         }
         this.underlying.dispatch({
             type: actionType,
@@ -69,7 +69,7 @@ export class Store<T extends object, A extends Actions<T>> {
         })
     }
 
-    #getReduxStore = (initial: T, middleware: Middleware[]) =>
+    private getReduxStore = (initial: T, middleware: Middleware[]) =>
         configureStore<T, ActionData<T>, any>({
             preloadedState: initial,
             middleware,
@@ -87,21 +87,21 @@ export class Store<T extends object, A extends Actions<T>> {
             }
         })
 
-    #defineActions = (actions: A): StoreActions<T, A> =>
+    private defineActions = (actions: A): StoreActions<T, A> =>
         transform(actions, ([actionType, actionValue]) => {
             return [
                 actionType,
-                (...args: any) => {
+                (args: any) => {
                     let update: Update<T>
                     if (actionValue instanceof Function) {
-                        const returnValue = actionValue(...args)
+                        const returnValue = actionValue(args, this as any)
                         if (returnValue instanceof Promise) {
                             returnValue.then((resolvedValue) => {
                                 this.update(resolvedValue, actionType)
                             })
                             return returnValue
                         } else {
-                            update = actionValue(...args) as Update<T>
+                            update = actionValue(args, this as any) as Update<T>
                         }
                     } else {
                         // args shouldn't exist if updater was not a function
@@ -130,13 +130,29 @@ export const createListener =
 
 export type Actions<T extends object> = Record<
     string,
-    Update<T> | ((...args: any) => Update<T> | Promise<Update<T>>)
+    | Update<T>
+    | ((
+          args: any,
+          context: Store<T, Actions<T>>
+      ) => Update<T> | Promise<Update<T>>)
 >
+
+// This allows us to convert from the user provided actions, which can use context to access
+// the store in their definitions, to actions as they are attached to the Store, which do not
+// require context as a parameter as it is passed internally
+
+type RemoveContextFromArgs<T extends unknown[]> = T extends []
+    ? []
+    : T extends [infer Current, ...infer Rest]
+    ? Current extends Store<any, any>
+        ? RemoveContextFromArgs<Rest>
+        : [Current, ...RemoveContextFromArgs<Rest>]
+    : T
 
 export type StoreActions<T extends object, A extends Actions<T>> = {
     [K in keyof A]: A[K] extends (...args: any) => any
         ? (
-              ...args: Parameters<A[K]>
+              ...args: RemoveContextFromArgs<Parameters<A[K]>>
           ) => ReturnType<A[K]> extends Promise<any> ? Promise<void> : void
         : () => void
 }

@@ -1,6 +1,6 @@
 import { StoredTest, Test, Element, StoredStep } from "@re-do/model"
 import { Step } from "@re-do/test"
-import { Actions, createStore, Store } from "react-statelessly"
+import { Actions, Store } from "react-statelessly"
 import {
     readJSONSync,
     writeJsonSync,
@@ -35,7 +35,7 @@ export const loadStore = ({ path }: LoadStoreArgs) => {
     if (!existsSync(path)) {
         writeJSONSync(path, { tests: [], elements: [] }, { spaces: 4 })
     }
-    store = createStore(readJSONSync(path) as RedoData, actions, {
+    store = new Store(readJSONSync(path) as RedoData, actions, {
         onChange: (data) => {
             const stored = readJSONSync(path)
             writeJsonSync(path, { ...stored, ...data }, { spaces: 4 })
@@ -62,7 +62,7 @@ export const loadStore = ({ path }: LoadStoreArgs) => {
                                 : maxId,
                         0
                     ) + 1
-                createElement({ selector, id })
+                store.$.createElement({ selector, id })
                 return { ...data, element: id }
             } else {
                 return step as StoredStep
@@ -100,7 +100,6 @@ export const loadStore = ({ path }: LoadStoreArgs) => {
     return {
         createTest,
         getTests,
-        createElement,
         getElements,
         testToSteps
     }

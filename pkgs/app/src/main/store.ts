@@ -1,8 +1,9 @@
 import { ipcMain } from "electron"
-import { ActionData, Update } from "react-statelessly"
+import { ActionData, Update, Store } from "react-statelessly"
 import { test as runTest } from "@re-do/test"
 import { join } from "path"
-import { createMainStore, MainActions, Root } from "state"
+import { MainActions, Root } from "common"
+import { forwardToRenderer, replayActionMain } from "electron-redux"
 import { loadStore } from "./persist"
 import { StoredTest, Test } from "@re-do/model"
 import { launchBrowser, closeBrowser } from "./launchBrowser"
@@ -69,7 +70,11 @@ const mainActions: MainActionFunctions = {
     }
 }
 
-export const store = createMainStore(initialState, mainActions)
+export const store = new Store(initialState, mainActions, {
+    middleware: [forwardToRenderer]
+})
+
+replayActionMain(store.underlying as any)
 
 ipcMain.on("redux-action", async (event, action: ActionData<Root>) => {
     // TODO: Convert this to a queue, handle race condition

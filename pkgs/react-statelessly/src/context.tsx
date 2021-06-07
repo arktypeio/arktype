@@ -1,7 +1,7 @@
 import React, { ReactNode, createContext } from "react"
 import { Provider as ReduxProvider, useSelector } from "react-redux"
 import { Actions } from "statelessly"
-import { Store } from "./utils"
+import type { Store } from "./store"
 
 export const StatelessContext = createContext<any>({} as any)
 

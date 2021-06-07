@@ -1,6 +1,5 @@
-// Figure out how to import this from shared
 import { finder } from "@medv/finder"
-import { supportedEvents, SupportedEvent } from "./types"
+import { supportedEvents, SupportedEvent } from "common"
 
 const getEventData = (e: Event) => {
     const kind = supportedEvents[e.type as SupportedEvent]

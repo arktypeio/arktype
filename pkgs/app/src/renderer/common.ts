@@ -4,9 +4,14 @@ import {
     createHttpLink,
     ApolloLink
 } from "@apollo/client"
+import {
+    forwardToMain,
+    replayActionRenderer,
+    getInitialStateRenderer
+} from "electron-redux"
 import { ipcRenderer } from "electron"
-import { createRendererStore, Root } from "state"
-import { ActionData } from "../../../statelessly/dist/cjs"
+import { Root } from "common"
+import { Store, ActionData } from "react-statelessly"
 
 const httpLink = createHttpLink({
     uri:
@@ -18,7 +23,7 @@ const httpLink = createHttpLink({
 const contextLink = new ApolloLink((operation, forward) => {
     operation.setContext({
         headers: {
-            authorization: `Bearer ${store.query({ token: true }).token}`
+            authorization: `Bearer ${store.get("token")}`
         }
     })
     return forward(operation)
@@ -39,4 +44,10 @@ ipcRenderer.on("redux-action", async (event, action: ActionData<Root>) => {
     }
 })
 
-export const store = createRendererStore({})
+export const store = new Store(
+    getInitialStateRenderer<Root>(),
+    {},
+    { middleware: [forwardToMain] }
+)
+
+replayActionRenderer(store.underlying as any)

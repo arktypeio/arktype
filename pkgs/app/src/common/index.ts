@@ -1,12 +1,4 @@
-import { ListenerMap, createStore, Actions } from "react-statelessly"
 import { BrowserName, Step } from "@re-do/test"
-import {
-    forwardToMain,
-    forwardToRenderer,
-    replayActionRenderer,
-    replayActionMain,
-    getInitialStateRenderer
-} from "electron-redux"
 import { StoredTest, Test } from "@re-do/model"
 
 export type Page = "HOME" | "SIGN_IN" | "SIGN_UP"
@@ -33,27 +25,6 @@ export type MainActions = {
 }
 
 export type RendererActions = {}
-
-export const createMainStore = <A extends Actions<Root>>(
-    initial: Root,
-    mainActions: A
-) => {
-    const mainStore = createStore(initial, mainActions, {
-        middleware: [forwardToRenderer]
-    })
-    replayActionMain(mainStore.underlying as any)
-    return mainStore
-}
-
-export const createRendererStore = (onChange: ListenerMap<Root, Root>) => {
-    const rendererStore = createStore(
-        getInitialStateRenderer<Root>(),
-        {},
-        { onChange, middleware: [forwardToMain] }
-    )
-    replayActionRenderer(rendererStore.underlying as any)
-    return rendererStore
-}
 
 export const supportedEvents = {
     click: "click",

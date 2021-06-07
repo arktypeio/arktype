@@ -5,6 +5,7 @@ type Root = {
     b: boolean
     c: string
     d: A[]
+    e: string
 }
 
 type A = {
@@ -26,11 +27,16 @@ const initialRoot: Root = Object.freeze({
     a: initialA,
     b: false,
     c: "",
-    d: [initialA, initialA]
+    d: [initialA, initialA],
+    e: ""
 })
 
+const fakeResponse = "Success!"
+
 const fakeUpload = () =>
-    new Promise<string>((resolve) => setTimeout(() => resolve("Success!"), 100))
+    new Promise<string>((resolve) =>
+        setTimeout(() => resolve(fakeResponse), 100)
+    )
 
 const getStore = (options: StoreOptions<Root> = {}) =>
     new Store(
@@ -55,6 +61,13 @@ const getStore = (options: StoreOptions<Root> = {}) =>
             uploadToServer: async () => {
                 const result = await fakeUpload()
                 return { c: result }
+            },
+            nameEFromC: (suffix: string, store) => ({
+                e: store.get("c") + suffix
+            }),
+            nameEFromServerResponse: async (suffix: string, store) => {
+                await store.$.uploadToServer()
+                return { e: store.get("c") + suffix }
             }
         },
         options
@@ -170,13 +183,29 @@ describe("actions", () => {
         })
     })
     test("handles async", async () => {
-        store = getStore()
         await store.$.uploadToServer()
         expect(store.getState()).toStrictEqual({
             ...initialRoot,
-            c: "Success!"
+            c: fakeResponse
         })
     })
+    test("passes store as context", () => {
+        store.$.nameC("re")
+        store.$.nameEFromC("do")
+        expect(store.getState()).toStrictEqual({
+            ...initialRoot,
+            c: "re",
+            e: "redo"
+        })
+    }),
+        test("allows different action to be called from context", async () => {
+            await store.$.nameEFromServerResponse("!!")
+            expect(store.getState()).toStrictEqual({
+                ...initialRoot,
+                c: fakeResponse,
+                e: `${fakeResponse}!!`
+            })
+        })
 })
 
 const cHandler = jest.fn()
