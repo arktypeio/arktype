@@ -9,7 +9,11 @@ const localResolves = [
         find: "content",
         replacement: join(pkgRoot, "content")
     },
-    { find: "pages", replacement: join(pkgRoot, "pages") }
+    { find: "pages", replacement: join(pkgRoot, "pages") },
+    {
+        find: "assets",
+        replacement: join(pkgRoot, "assets")
+    }
 ]
 
 export type GetConfigArgs = {
