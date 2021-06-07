@@ -2,6 +2,7 @@ import React from "react"
 import { Dialog } from "@material-ui/core"
 import { Text, Row } from "@re-do/components"
 import { SignUpForm } from "./SignUpForm"
+import launchSvg from "assets/launch.svg"
 
 export type SignUpDialogProps = {
     open: boolean
@@ -37,7 +38,7 @@ export const SignUpDialog = ({ open, onClose }: SignUpDialogProps) => {
                 align="center"
                 style={{ paddingTop: 16 }}
             >
-                <img style={{ width: 200 }} src="assets/launch.svg" />
+                <img style={{ width: 200 }} src={launchSvg} />
                 <SignUpForm />
             </Row>
         </Dialog>

@@ -1,7 +1,8 @@
 import React from "react"
-import { Row, Text, Column } from "@re-do/components"
+import { Text, Column } from "@re-do/components"
 import { steps } from "content"
 import { Steps } from "./Steps"
+import redoDemoMp4 from "assets/RedoDemo.mp4"
 
 export const HowItWorks = () => {
     const maxWidth = window.innerWidth >= 528 ? 480 : 0.9 * window.innerWidth
@@ -13,7 +14,7 @@ export const HowItWorks = () => {
             <div style={{ maxWidth }}>
                 <Steps>{steps}</Steps>
             </div>
-            <video style={{ maxWidth }} src="assets/RedoDemo.mp4" controls />
+            <video style={{ maxWidth }} src={redoDemoMp4} controls />
         </Column>
     )
 }
