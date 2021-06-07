@@ -1,4 +1,4 @@
-import { createStore, ListenerMap, Actions, StoreOptions } from "../store"
+import { Store, ListenerMap, StoreOptions } from ".."
 
 type Root = {
     a: A
@@ -33,7 +33,7 @@ const fakeUpload = () =>
     new Promise<string>((resolve) => setTimeout(() => resolve("Success!"), 100))
 
 const getStore = (options: StoreOptions<Root> = {}) =>
-    createStore(
+    new Store(
         initialRoot,
         {
             enableB: { b: true },
@@ -116,21 +116,21 @@ describe("actions", () => {
         })
     })
     test("shallow set value", () => {
-        store.enableB()
+        store.actions.enableB()
         expect(store.getState()).toStrictEqual({
             ...initialRoot,
             b: true
         })
     })
     test("shallow set function", () => {
-        store.nameC("redo")
+        store.$.nameC("redo")
         expect(store.getState()).toStrictEqual({
             ...initialRoot,
             c: "redo"
         })
     })
     test("deep set value", () => {
-        store.addOneToEndOfList()
+        store.$.addOneToEndOfList()
         expect(store.getState()).toStrictEqual({
             ...initialRoot,
             a: {
@@ -143,7 +143,7 @@ describe("actions", () => {
         })
     })
     test("deep set function", () => {
-        store.addNumberToEndOfList(5)
+        store.$.addNumberToEndOfList(5)
         expect(store.getState()).toStrictEqual({
             ...initialRoot,
             a: {
@@ -156,14 +156,14 @@ describe("actions", () => {
         })
     })
     test("handles object arrays", () => {
-        store.appendObjectToArray()
+        store.$.appendObjectToArray()
         expect(store.getState()).toStrictEqual({
             ...initialRoot,
             d: [initialA, initialA, initialA]
         })
     })
     test("sets array value", () => {
-        store.emptyDArray()
+        store.$.emptyDArray()
         expect(store.getState()).toStrictEqual({
             ...initialRoot,
             d: []
@@ -171,7 +171,7 @@ describe("actions", () => {
     })
     test("handles async", async () => {
         store = getStore()
-        await store.uploadToServer()
+        await store.$.uploadToServer()
         expect(store.getState()).toStrictEqual({
             ...initialRoot,
             c: "Success!"
@@ -195,24 +195,24 @@ describe("side effects", () => {
         store = getStore({ onChange })
     })
     test("handle side effects", () => {
-        store.enableB()
+        store.$.enableB()
         expect(bing).toBeCalledWith(true, initialRoot)
     })
     test("handles array side effects", () => {
-        store.appendObjectToArray()
+        store.$.appendObjectToArray()
         expect(dHandler).toBeCalledWith(
             [initialA, initialA, initialA],
             initialRoot
         )
     })
     test("doesn't trigger extraneous side effects", () => {
-        store.updateSomeValues()
+        store.$.updateSomeValues()
         expect(cHandler).toHaveBeenCalled()
         expect(bing).not.toHaveBeenCalled()
     })
     test("handles side effects with function", () => {
         store = getStore({ onChange: functionalListener })
-        store.enableB()
+        store.$.enableB()
         expect(functionalListener).toHaveBeenCalledWith(
             { b: true },
             initialRoot
