@@ -1,16 +1,16 @@
 {
     "$schema": "https://developer.microsoft.com/json-schemas/rush/v5/rush.schema.json",
-    "rushVersion": "5.26.0",
-    "pnpmVersion": "4.12.5",
-    "nodeSupportedVersionRange": ">=12.13.0 <13.0.0",
+    "rushVersion": "5.46.1",
+    "pnpmVersion": "6.2.3",
+    "nodeSupportedVersionRange": ">=14.16.1",
     "ensureConsistentVersions": true,
     "repository": {
         "url": "https://github.com/redo-qa/redo"
     },
     "projects": [
         {
-            "packageName": "@re-do/recommended",
-            "projectFolder": "pkgs/recommended"
+            "packageName": "@re-do/configs",
+            "projectFolder": "pkgs/configs"
         },
         {
             "packageName": "@re-do/utils",
@@ -29,10 +29,6 @@
             "projectFolder": "pkgs/model"
         },
         {
-            "packageName": "@re-do/app",
-            "projectFolder": "pkgs/app"
-        },
-        {
             "packageName": "@re-do/components",
             "projectFolder": "pkgs/components"
         },
@@ -41,20 +37,20 @@
             "projectFolder": "pkgs/website"
         },
         {
-            "packageName": "@re-do/bundle",
-            "projectFolder": "pkgs/bundle"
-        },
-        {
-            "packageName": "babel-preset-redo",
-            "projectFolder": "pkgs/babel-preset-redo"
-        },
-        {
             "packageName": "@re-do/test",
             "projectFolder": "pkgs/test"
         },
         {
             "packageName": "@re-do/cli",
             "projectFolder": "pkgs/cli"
+        },
+        {
+            "packageName": "@re-do/app",
+            "projectFolder": "pkgs/app"
+        },
+        {
+            "packageName": "@re-do/node-utils",
+            "projectFolder": "pkgs/node-utils"
         }
     ]
 }

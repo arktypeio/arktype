@@ -1,4 +1,10 @@
 import React from "react"
+import fastSvg from "assets/fast.svg"
+import deterministicSvg from "assets/deterministic.svg"
+import integrationsSvg from "assets/integrations.svg"
+import incrementalSvg from "assets/incremental.svg"
+import developersSvg from "assets/developers.svg"
+import openSourceSvg from "assets/openSource.svg"
 
 export type FeatureData = {
     image: string
@@ -9,14 +15,14 @@ export type FeatureData = {
 export const features = [
     {
         title: <>O(damn) fast</>,
-        image: "fast.svg",
+        image: fastSvg,
         description: (
             <>Automate your first test in minutes. Run it in seconds.</>
         )
     },
     {
         title: <>Deterministic & transparent</>,
-        image: "deterministic.svg",
+        image: deterministicSvg,
         description: (
             <>
                 No more flaky Selenium scripts or AI-powered wizardry— just
@@ -26,14 +32,14 @@ export const features = [
     },
     {
         title: <>JS/TS integrations "just work"</>,
-        image: "integrations.svg",
+        image: integrationsSvg,
         description: (
             <>Integrates seamlessly with the tools you're already using.</>
         )
     },
     {
         title: <>Incrementally adoptable</>,
-        image: "incremental.svg",
+        image: incrementalSvg,
         description: (
             <>
                 Keep what you have. Start by adding a single test. Or fifty.
@@ -43,14 +49,14 @@ export const features = [
     },
     {
         title: <>By and for developers</>,
-        image: "developers.svg",
+        image: developersSvg,
         description: (
             <>We built Redo for us. Now we want to know what you think.</>
         )
     },
     {
         title: <>100% open source</>,
-        image: "openSource.svg",
+        image: openSourceSvg,
         description: (
             <>
                 Stop in any time and{" "}

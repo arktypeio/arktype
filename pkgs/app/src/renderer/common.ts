@@ -4,14 +4,15 @@ import {
     createHttpLink,
     ApolloLink
 } from "@apollo/client"
-import { rootHandler, initialRoot } from "state"
-import { createStore } from "react-statelessly"
-import { isDev } from "@re-do/utils/dist/node"
+import { ipcRenderer } from "electron"
+import { createRendererStore, Root } from "state"
+import { ActionData } from "../../../statelessly/dist/cjs"
 
 const httpLink = createHttpLink({
-    uri: isDev()
-        ? `http://localhost:${process.env.PORT}/dev/graphql`
-        : "https://tpru7v18yi.execute-api.us-east-1.amazonaws.com/dev/graphql"
+    uri:
+        process.env.NODE_ENV === "development"
+            ? `http://localhost:${process.env.GRAPHQL_SERVER_PORT}/dev/graphql`
+            : "https://tpru7v18yi.execute-api.us-east-1.amazonaws.com/dev/graphql"
 })
 
 const contextLink = new ApolloLink((operation, forward) => {
@@ -27,7 +28,15 @@ export const client = new ApolloClient({
     link: contextLink.concat(httpLink),
     cache: new InMemoryCache()
 })
-export const store = createStore({
-    initial: initialRoot,
-    handler: rootHandler
+
+ipcRenderer.on("redux-action", async (event, action: ActionData<Root>) => {
+    const rendererActions = action.payload.renderer
+    if (rendererActions) {
+        for (const entry in Object.entries(rendererActions)) {
+            const [name, args] = entry
+            await (store as any)[name](...(args as any))
+        }
+    }
 })
+
+export const store = createRendererStore({})

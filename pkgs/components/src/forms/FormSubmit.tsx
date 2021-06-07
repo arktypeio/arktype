@@ -1,20 +1,39 @@
-import React, { cloneElement, MouseEvent, CSSProperties } from "react"
-import { useFormContext } from "./FormContext"
+import React from "react"
+import { useFormContext, UseFormReturn } from "react-hook-form"
+import { Button, ButtonProps } from "../buttons"
+import { LoadingAnimation } from "../loading"
+import { ErrorText } from "../text"
 
 export type FormSubmitProps = {
-    children: JSX.Element
+    children?: string
+    buttonProps?: ButtonProps
+    disableAfterValidSubmission?: boolean
 }
 
-export const FormSubmit = ({ children, ...rest }: FormSubmitProps) => {
-    const { submit } = useFormContext()
-    const onClick = (e: MouseEvent) => {
-        children.props.onClick && children.props.onClick(e)
-        submit()
-    }
-    return cloneElement(children, {
-        style: { alignSelf: "center", ...children.props.style },
-        ...rest,
-        onClick,
-        type: "submit"
-    })
+export const FormSubmit = ({
+    children,
+    buttonProps,
+    disableAfterValidSubmission
+}: FormSubmitProps) => {
+    const {
+        formState: { isValid, isSubmitting, isSubmitSuccessful },
+        submitError
+    } = useFormContext() as UseFormReturn & { submitError: string }
+    return isSubmitting ? (
+        <LoadingAnimation />
+    ) : (
+        <>
+            <Button
+                {...buttonProps}
+                type="submit"
+                disabled={
+                    !isValid ||
+                    (disableAfterValidSubmission && isSubmitSuccessful)
+                }
+            >
+                {children ?? "Submit"}
+            </Button>
+            {submitError ? <ErrorText>{submitError}</ErrorText> : null}
+        </>
+    )
 }

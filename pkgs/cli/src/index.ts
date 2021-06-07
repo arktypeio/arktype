@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import { Command } from "commander"
-import { shell } from "@re-do/utils/dist/node"
+import { shell } from "@re-do/node-utils"
 import { getPath } from "./install"
 
 const cli = new Command()

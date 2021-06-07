@@ -8,7 +8,6 @@ export type TestOptions = LaunchOptions & {
 export const test = async (steps: Step[], options: TestOptions = {}) => {
     const { browser: browserName = "chrome", ...rest } = options
     const { page, browser } = await launch(browserName, rest)
-    await page.goto("https://redo.qa")
     for (const step of steps) {
         await perform(step, { browser, page })
     }

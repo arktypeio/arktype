@@ -23,6 +23,7 @@ export type ButtonProps = ButtonBaseProps & {
     kind?: KindFrom<typeof useKind>
     Icon?: any
     fontSize?: number
+    textColor?: string
     color?: string
 }
 
@@ -32,6 +33,7 @@ export const Button = ({
     Icon,
     fontSize,
     color,
+    textColor,
     ...rest
 }: ButtonProps) => {
     const { style: kindStyle, ...kindRest } = useKind(kind)
@@ -44,7 +46,7 @@ export const Button = ({
     ) : (
         <MuiButton
             fullWidth={false}
-            style={{ ...styles, background: color }}
+            style={{ ...styles, background: color, color: textColor }}
             {...props}
         />
     )

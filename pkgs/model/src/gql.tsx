@@ -17,6 +17,7 @@ export type Mutation = {
   __typename?: 'Mutation';
   signIn: Scalars['String'];
   signUp: Scalars['String'];
+  subscribe: Scalars['String'];
 };
 
 
@@ -31,6 +32,11 @@ export type MutationSignUpArgs = {
   first: Scalars['String'];
   last: Scalars['String'];
   password: Scalars['String'];
+};
+
+
+export type MutationSubscribeArgs = {
+  email: Scalars['String'];
 };
 
 export type Query = {
@@ -80,6 +86,16 @@ export type SignUpMutationVariables = Exact<{
 export type SignUpMutation = (
   { __typename?: 'Mutation' }
   & Pick<Mutation, 'signUp'>
+);
+
+export type SubscribeMutationVariables = Exact<{
+  email: Scalars['String'];
+}>;
+
+
+export type SubscribeMutation = (
+  { __typename?: 'Mutation' }
+  & Pick<Mutation, 'subscribe'>
 );
 
 
@@ -183,3 +199,33 @@ export function useSignUpMutation(baseOptions?: Apollo.MutationHookOptions<SignU
 export type SignUpMutationHookResult = ReturnType<typeof useSignUpMutation>;
 export type SignUpMutationResult = Apollo.MutationResult<SignUpMutation>;
 export type SignUpMutationOptions = Apollo.BaseMutationOptions<SignUpMutation, SignUpMutationVariables>;
+export const SubscribeDocument = gql`
+    mutation subscribe($email: String!) {
+  subscribe(email: $email)
+}
+    `;
+export type SubscribeMutationFn = Apollo.MutationFunction<SubscribeMutation, SubscribeMutationVariables>;
+
+/**
+ * __useSubscribeMutation__
+ *
+ * To run a mutation, you first call `useSubscribeMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useSubscribeMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [subscribeMutation, { data, loading, error }] = useSubscribeMutation({
+ *   variables: {
+ *      email: // value for 'email'
+ *   },
+ * });
+ */
+export function useSubscribeMutation(baseOptions?: Apollo.MutationHookOptions<SubscribeMutation, SubscribeMutationVariables>) {
+        return Apollo.useMutation<SubscribeMutation, SubscribeMutationVariables>(SubscribeDocument, baseOptions);
+      }
+export type SubscribeMutationHookResult = ReturnType<typeof useSubscribeMutation>;
+export type SubscribeMutationResult = Apollo.MutationResult<SubscribeMutation>;
+export type SubscribeMutationOptions = Apollo.BaseMutationOptions<SubscribeMutation, SubscribeMutationVariables>;

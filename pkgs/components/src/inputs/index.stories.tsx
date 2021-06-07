@@ -1,25 +1,23 @@
 import React from "react"
-import { withKnobs, select } from "@storybook/addon-knobs"
-import { storiesOf } from "@storybook/react"
-import { TextInput, ChipInput } from "."
+import { TextInput, TextInputProps, ChipInput } from "."
 
-storiesOf("Input", module)
-    .addDecorator(withKnobs)
-    .add("Text", () => (
-        <TextInput
-            kind={select(
-                "kind",
-                { outlined: "outlined", underlined: "underlined" },
-                "outlined"
-            )}
-        />
-    ))
-    .add("Chip", () => (
-        <ChipInput onChange={(value) => console.log(value)} label="State" />
-    ))
-    .add("Chip with Autosuggest", () => (
-        <ChipInput label="State" possibleSuggestions={getStates()} />
-    ))
+export default {
+    title: "Inputs"
+}
+
+export const Text = (props: TextInputProps) => <TextInput {...props} />
+
+Text.argTypes = {
+    kind: { control: { type: "radio", options: ["outlined", "underlined"] } }
+}
+
+export const Chip = () => (
+    <ChipInput onChange={(value) => console.log(value)} label="State" />
+)
+
+export const ChipWithAutosuggest = () => (
+    <ChipInput label="State" possibleSuggestions={getStates()} />
+)
 
 const getStates = () => [
     "Alabama",

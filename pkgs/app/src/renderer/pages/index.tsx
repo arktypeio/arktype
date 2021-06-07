@@ -1,5 +1,2 @@
 export * from "./home"
-export * from "./learner"
 export * from "./landing"
-export * from "./results"
-export * from "./Router"

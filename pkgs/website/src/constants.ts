@@ -39,7 +39,7 @@ const loopedWiggle = {
     }
 }
 
-export const animations = {
+export const animations: any = {
     initialWiggle,
     loopedWiggle,
     header: {

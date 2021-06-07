@@ -11,6 +11,7 @@ type Mutation {
         last: String!
         password: String!
     ): String!
+    subscribe(email: String!): String!
 }
 
 type Query {

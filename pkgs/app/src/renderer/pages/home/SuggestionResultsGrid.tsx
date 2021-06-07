@@ -3,9 +3,7 @@ import { Unlisted } from "@re-do/utils"
 import { SuggestionCard } from "./SuggestionCard"
 import { store } from "renderer/common"
 import { Card, Row, Button, Icons } from "@re-do/components"
-import { loadStore, StoredTest } from "@re-do/model"
-import { test as runTest } from "@re-do/test"
-import { join } from "path"
+import { StoredTest } from "@re-do/model"
 
 const welcomeSuggestion = {
     title: "👆Hey there!",
@@ -15,9 +13,10 @@ const welcomeSuggestion = {
 }
 
 const useSuggestions = (): Suggestion<UserItemKind>[] => {
-    const { cardFilter } = store.useQuery({ cardFilter: true })
-    const persistedStore = loadStore({ path: join(process.cwd(), "redo.json") })
-    const tests = persistedStore.getTests()
+    const { cardFilter, tests } = store.useQuery({
+        cardFilter: true,
+        tests: true
+    })
     return tests && tests.length
         ? tests
               .filter((test) =>
@@ -44,16 +43,13 @@ type Suggestion<Kind extends UserItemKind> = {
 
 const suggestionTypes = {
     tests: (test: UserItem<"tests">) => {
-        const persistedStore = loadStore({
-            path: join(process.cwd(), "redo.json")
-        })
         return {
             title: test.name,
             description: test.tags.join(", "),
             extras: (
                 <Button
                     Icon={Icons.run}
-                    onClick={() => runTest(persistedStore.testToSteps(test))}
+                    onClick={() => store.update({ main: { runTest: [test] } })}
                 />
             ),
             data: test
@@ -88,9 +84,9 @@ export const SuggestionResultsGrid = () => {
                 }}
             >
                 {values.length ? (
-                    values.map((value) => (
+                    values.map((value, index) => (
                         <div
-                            key={value.title}
+                            key={index}
                             style={{
                                 width: 200,
                                 height: 200

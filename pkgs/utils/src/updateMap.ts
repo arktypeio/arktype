@@ -1,6 +1,6 @@
 import { isRecursible, fromEntries, ValueOf, NonRecursible } from "./common"
 
-export type UpdateFunction<T> = (value: T) => T
+export type UpdateFunction<T> = (currentValuealue: T) => T
 
 export type ShallowUpdate<T> = T | UpdateFunction<T>
 
@@ -12,29 +12,31 @@ export type DeepUpdate<T> = {
 }
 
 export const updateMap = <T>(current: T, updater: DeepUpdate<T>): T => {
+    const keys = Object.keys({ ...current, ...updater })
     return fromEntries(
-        Object.entries(current).map(([k, v]) => {
-            if (k in updater) {
-                const key = k as keyof T
-                if (typeof updater[key] === "function") {
-                    const update = (updater[key] as any) as UpdateFunction<
-                        ValueOf<T>
-                    >
-                    return [k, update(v)]
-                } else {
-                    return isRecursible(v) && !Array.isArray(updater[key])
-                        ? Array.isArray(v)
-                            ? [
-                                  k,
-                                  v.map(item =>
-                                      updateMap(item, updater[key] as any)
-                                  )
-                              ]
-                            : [k, updateMap(v, updater[key] as any)]
-                        : [k, updater[key]]
-                }
+        keys.map((k) => {
+            const key = k as keyof T
+            const currentValue = current[key]
+            const updaterValue = updater[key]
+            if (!(k in updater)) {
+                return [k, currentValue]
+            }
+            if (typeof updaterValue === "function") {
+                const update = updaterValue as any as UpdateFunction<ValueOf<T>>
+                return [k, update(currentValue)]
             } else {
-                return [k, v]
+                return isRecursible(currentValue) &&
+                    isRecursible(updaterValue) &&
+                    !Array.isArray(updaterValue)
+                    ? Array.isArray(currentValue)
+                        ? [
+                              k,
+                              currentValue.map((item) =>
+                                  updateMap(item, updaterValue as any)
+                              )
+                          ]
+                        : [k, updateMap(currentValue, updaterValue as any)]
+                    : [k, updaterValue]
             }
         })
     ) as T

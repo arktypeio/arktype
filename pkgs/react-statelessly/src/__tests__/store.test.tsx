@@ -1,20 +1,51 @@
 import React from "react"
-import { Root, initialRoot } from "./common"
-import { StatelessProvider, StatelessConsumer, createStore, Store } from ".."
+import { StatelessProvider, StatelessConsumer, createStore } from ".."
 import { mount } from "enzyme"
 
-let store: Store<Root>
+type Root = {
+    a: A
+    b: boolean
+    c: string
+    d: A[]
+}
+
+type A = {
+    a: number
+    b: B
+}
+
+type B = {
+    a: number[]
+}
+
+const initialA: A = Object.freeze({
+    a: 0,
+    b: {
+        a: [0]
+    }
+})
+
+const initialRoot: Root = Object.freeze({
+    a: initialA,
+    b: false,
+    c: "",
+    d: [initialA, initialA]
+})
+
+const getStore = () => createStore(initialRoot, { enableB: { b: true } })
+
+let store = getStore()
 
 describe("StoreContext", () => {
     beforeEach(() => {
-        store = createStore({ initial: initialRoot })
+        store = getStore()
     })
     it("provides a store and consumes data", () => {
-        let value: Root
+        let value: Root | undefined
         mount(
             <StatelessProvider store={store}>
                 <StatelessConsumer>
-                    {data => {
+                    {(data) => {
                         value = data
                         return null
                     }}
@@ -32,11 +63,11 @@ type ResultCheckerProps = {
 const QueryChecker = ({ passTo }: ResultCheckerProps) =>
     passTo(store.useQuery({ b: true }))
 
-const checkResult = jest.fn(_ => null)
+const checkResult = jest.fn((_) => null)
 
 describe("useQuery", () => {
     beforeEach(() => {
-        store = createStore({ initial: initialRoot })
+        store = getStore()
     })
     it("can execute a query", () => {
         mount(
@@ -52,7 +83,7 @@ describe("useQuery", () => {
                 <QueryChecker passTo={checkResult} />
             </StatelessProvider>
         )
-        store.mutate({ b: true })
+        store.enableB()
         expect(checkResult).toBeCalledTimes(2)
         expect(checkResult).lastCalledWith({ b: true })
     })
