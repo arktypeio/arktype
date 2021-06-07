@@ -15,7 +15,6 @@ specifiers:
   '@mdx-js/react': 1.6.22
   '@medv/finder': 2.0.0
   '@octokit/graphql': 4.5.8
-  '@re-do/node-utils': 0.0.1
   '@reduxjs/toolkit': 1.5.0
   '@rush-temp/app': file:./projects/app.tgz
   '@rush-temp/cli': file:./projects/cli.tgz
@@ -54,7 +53,6 @@ specifiers:
   babel-loader: 8.2.2
   babel-preset-redo: 0.0.2
   commander: 6.2.1
-  cross-env: 7.0.3
   deepmerge: 4.2.2
   dotenv: 9.0.0
   electron: 11.4.5
@@ -67,15 +65,13 @@ specifiers:
   fast-deep-equal: 3.1.3
   framer-motion: 4.1.11
   fs-extra: 10.0.0
-  get-port: 5.1.1
   gqlize: 0.0.3
   graphql: 15.5.0
   graphql-tag: 2.12.4
   isomorphic-fetch: 3.0.0
   isomorphic-ws: 4.0.1
   jest: 26.6.3
-  jsrx: 0.0.9
-  lint-staged: 10.5.4
+  jsrx: 0.0.10
   moize: 5.4.7
   node-fetch: 2.6.1
   playwright: 1.11.1
@@ -91,8 +87,6 @@ specifiers:
   react-typist: 2.0.5
   redux: 4.0.5
   redux-devtools-extension: 2.13.8
-  simple-git-hooks: 2.4.1
-  spectron: 14.0.0
   tree-kill: 1.2.2
   ts-jest: 26.5.6
   ts-node: 9.1.1
@@ -119,7 +113,6 @@ dependencies:
   '@mdx-js/react': 1.6.22_react@17.0.2
   '@medv/finder': 2.0.0
   '@octokit/graphql': 4.5.8
-  '@re-do/node-utils': 0.0.1
   '@reduxjs/toolkit': 1.5.0
   '@rush-temp/app': file:projects/app.tgz
   '@rush-temp/cli': file:projects/cli.tgz
@@ -158,7 +151,6 @@ dependencies:
   babel-loader: 8.2.2
   babel-preset-redo: 0.0.2_ae0270319c858645f645a76f436797f4
   commander: 6.2.1
-  cross-env: 7.0.3
   deepmerge: 4.2.2
   dotenv: 9.0.0
   electron: 11.4.5
@@ -171,15 +163,13 @@ dependencies:
   fast-deep-equal: 3.1.3
   framer-motion: 4.1.11_react-dom@17.0.2+react@17.0.2
   fs-extra: 10.0.0
-  get-port: 5.1.1
   gqlize: 0.0.3
   graphql: 15.5.0
   graphql-tag: 2.12.4_graphql@15.5.0
   isomorphic-fetch: 3.0.0
   isomorphic-ws: 4.0.1
   jest: 26.6.3_ts-node@9.1.1
-  jsrx: 0.0.9
-  lint-staged: 10.5.4
+  jsrx: 0.0.10
   moize: 5.4.7
   node-fetch: 2.6.1
   playwright: 1.11.1
@@ -195,8 +185,6 @@ dependencies:
   react-typist: 2.0.5_react-dom@17.0.2+react@17.0.2
   redux: 4.0.5
   redux-devtools-extension: 2.13.8_redux@4.0.5
-  simple-git-hooks: 2.4.1
-  spectron: 14.0.0_electron@11.4.5
   tree-kill: 1.2.2
   ts-jest: 26.5.6_jest@26.6.3+typescript@4.2.3
   ts-node: 9.1.1_typescript@4.2.3
@@ -12449,8 +12437,8 @@ packages:
       verror: 1.10.0
     dev: false
 
-  /jsrx/0.0.9:
-    resolution: {integrity: sha512-ATPpUj2++sFkC6QsBDadyLcS6FJaDUo5tB+e3GDFze3ASZZbVpJ505LIfJwDpligwexkEW0/G9gaqCZ0X2unkg==}
+  /jsrx/0.0.10:
+    resolution: {integrity: sha512-BLKkI9PmTCyy7d14nkNMF6r17HT4m+8OAOHkwiLXfwpBr19BmlMsUg3S+Eni47ZK/inr0cbcEZpWo8Fl6syM/w==}
     hasBin: true
     dependencies:
       '@re-do/node-utils': 0.0.2
@@ -18308,7 +18296,7 @@ packages:
     dev: false
 
   file:projects/app.tgz:
-    resolution: {integrity: sha512-DTWNRNY/g7xwKw6uI4cLP/qwRBD8Ww05IGH5ZbU9JuxrEyjQINT5vLXmeNBZrrFBc/Busc5G6gza5x0pxzyxmg==, tarball: file:projects/app.tgz}
+    resolution: {integrity: sha512-dED7yK0xDlSGvvkwEwBHoj2Ske/a/JbFxzMSGO/pISl8A27l0Qlyfz9P2jpCn5FXLGuouJOOPiN8EujwiX5IZA==, tarball: file:projects/app.tgz}
     name: '@rush-temp/app'
     version: 0.0.0
     dependencies:
@@ -18320,6 +18308,7 @@ packages:
       '@types/dotenv': 8.2.0
       '@types/electron-devtools-installer': 2.2.0
       '@types/fs-extra': 9.0.6
+      '@types/jest': 26.0.20
       '@types/node': 15.0.2
       '@types/react': 17.0.5
       '@types/react-dom': 17.0.3
@@ -18337,7 +18326,8 @@ packages:
       graphql: 15.5.0
       graphql-tag: 2.12.4_graphql@15.5.0
       isomorphic-ws: 4.0.1
-      jsrx: 0.0.9
+      jest: 26.6.3_ts-node@9.1.1
+      jsrx: 0.0.10
       lint-staged: 10.5.4
       playwright: 1.11.1
       playwright-core: 1.10.0
@@ -18346,12 +18336,14 @@ packages:
       simple-git-hooks: 2.4.1
       spectron: 14.0.0_electron@11.4.5
       tree-kill: 1.2.2
+      ts-jest: 26.5.6_jest@26.6.3+typescript@4.2.3
       ts-node: 9.1.1_typescript@4.2.3
       typescript: 4.2.3
       vite: 2.2.4
       vite-plugin-commonjs-externals: 0.1.1
     transitivePeerDependencies:
       - bufferutil
+      - canvas
       - subscriptions-transport-ws
       - supports-color
       - utf-8-validate
@@ -18359,7 +18351,7 @@ packages:
     dev: false
 
   file:projects/cli.tgz:
-    resolution: {integrity: sha512-7ikxmyeAiublk3ChyTJDns1AoCuW4ogYg4f3GB7wwtzl3zH4TfBHxdSC+gNaZVZyC1sBR1rKvj4YTVGLj+2anQ==, tarball: file:projects/cli.tgz}
+    resolution: {integrity: sha512-i4Qj0G+PfDIhaHlB7aP2TIFpdMAtPDVdVUxclcXxECBgDy6Seni4pUcaiqLLWPTGFkCAduIn+hVJUvhcJZEb/Q==, tarball: file:projects/cli.tgz}
     name: '@rush-temp/cli'
     version: 0.0.0
     dependencies:
@@ -18647,7 +18639,7 @@ packages:
     dev: false
 
   file:projects/website.tgz_graphql@15.5.0:
-    resolution: {integrity: sha512-pL8MmJmtmEccqZs8g3TvaG8B4rQb+LzBACRutqkUCqjhcL0oPb6AIwl7nN6acHkkfnsLA+TQbCnINheQvSC9Lg==, tarball: file:projects/website.tgz}
+    resolution: {integrity: sha512-Y3STmjl2RCJ+xL076xXNn9s0zuUXSerstagd7JaV+y47rBkzy38/JO5U6qRezeQ86/vQlnuh2DTT4vigILZrGA==, tarball: file:projects/website.tgz}
     id: file:projects/website.tgz
     name: '@rush-temp/website'
     version: 0.0.0
@@ -18665,7 +18657,7 @@ packages:
       '@types/uuid': 8.3.0
       '@types/validator': 13.1.3
       framer-motion: 4.1.11_react-dom@17.0.2+react@17.0.2
-      jsrx: 0.0.9
+      jsrx: 0.0.10
       react: 17.0.2
       react-dom: 17.0.2_react@17.0.2
       react-ga: 3.3.0_react@17.0.2

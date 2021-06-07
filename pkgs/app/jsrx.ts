@@ -78,7 +78,8 @@ jsrx(
         dev: {
             start,
             lint: $(`prettier --write`),
-            typecheck: $(`tsc --noEmit`)
+            typecheck: $(`tsc --noEmit`),
+            test: $(`jest`)
         },
         prod: {
             compile: $(

@@ -1,6 +1,6 @@
 import { StoredTest, Test, Element, StoredStep } from "@re-do/model"
 import { Step } from "@re-do/test"
-import { createStore } from "react-statelessly"
+import { Actions, createStore, Store } from "react-statelessly"
 import {
     readJSONSync,
     writeJsonSync,
@@ -19,23 +19,29 @@ export type RedoData = {
 
 export type RedoStore = ReturnType<typeof loadStore>
 
+const defineActions = <A extends Actions<RedoData>>(actions: A) => actions
+
+const actions = defineActions({
+    createElement: (data: Element) => ({
+        elements: (_) => _.concat(data)
+    })
+})
+
+type RedoDataActions = typeof actions
+
+let store: Store<RedoData, RedoDataActions>
+
 export const loadStore = ({ path }: LoadStoreArgs) => {
     if (!existsSync(path)) {
         writeJSONSync(path, { tests: [], elements: [] }, { spaces: 4 })
     }
-    const store = createStore(
-        readJSONSync(path) as RedoData,
-        {},
-        {
-            onChange: (data) => {
-                const stored = readJSONSync(path)
-                writeJsonSync(path, { ...stored, ...data }, { spaces: 4 })
-            }
+    store = createStore(readJSONSync(path) as RedoData, actions, {
+        onChange: (data) => {
+            const stored = readJSONSync(path)
+            writeJsonSync(path, { ...stored, ...data }, { spaces: 4 })
         }
-    )
+    })
     const getElements = () => store.query({ elements: true }).elements
-    const createElement = (data: Element) =>
-        store.update({ elements: (_) => _.concat(data) })
     const createTest = ({ steps, ...data }: Test): StoredTest => {
         const storedSteps: StoredStep[] = steps.map((step) => {
             if ("selector" in step) {
