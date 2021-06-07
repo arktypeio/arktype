@@ -23,8 +23,10 @@ const cmdString = `${electronPath} --inspect=9222 --remote-debugging-port=9223 .
 
 const restartMain = (startIfNotRunning: boolean) => {
     if (mainProcess && !mainProcess.killed) {
-        treeKill(mainProcess.pid)
-        mainProcess = shellAsync(cmdString)
+        treeKill(mainProcess.pid, () => {
+            killExisting()
+            mainProcess = shellAsync(cmdString)
+        })
     } else if (startIfNotRunning) {
         mainProcess = shellAsync(cmdString)
     }
@@ -52,11 +54,14 @@ const watchObserver = () =>
         ]
     })
 
-const start = async () => {
-    // kill any leftover processses to ensure debug ports are free
-    // the echo is to ensure we don't throw an error if no processes are found
-    // the brackets ensure pkill won't kill itself :O
+// kill any leftover processses to ensure debug ports are free
+// the echo is to ensure we don't throw an error if no processes are found
+// the brackets ensure pkill won't kill itself :O
+const killExisting = () =>
     shell(`echo $(pkill -9 -f '[\-]-remote-debugging-port=9223')`)
+
+const start = async () => {
+    killExisting()
     const viteDevServer = await createServer({
         ...getRendererConfig({ watch: true }),
         server: {

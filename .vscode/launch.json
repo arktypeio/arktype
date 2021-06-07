@@ -10,18 +10,21 @@
             "request": "attach",
             "cwd": "${workspaceFolder}",
             "outFiles": ["${workspaceFolder}/dist/**/*.js"],
-            "smartStep": true,
             "sourceMaps": true,
             "protocol": "inspector",
             "port": 9222,
-            "timeout": 20000
+            "timeout": 20000,
+            "smartStep": true,
+            "skipFiles": ["<node_internals>/**"]
         },
         {
             "name": "Attach (Chrome)",
             "type": "chrome",
             "request": "attach",
             "webRoot": "${workspaceFolder}",
-            "port": 9223
+            "port": 9223,
+            "smartStep": true,
+            "skipFiles": ["<node_internals>/**"]
         },
         {
             "name": "Jest Current File",
@@ -35,7 +38,9 @@
                 "--runInBand"
             ],
             "disableOptimisticBPs": true,
-            "console": "integratedTerminal"
+            "console": "integratedTerminal",
+            "smartStep": true,
+            "skipFiles": ["<node_internals>/**"]
         },
         {
             "name": "Jest Highlighted Test",
@@ -51,7 +56,9 @@
                 "--runInBand"
             ],
             "disableOptimisticBPs": true,
-            "console": "integratedTerminal"
+            "console": "integratedTerminal",
+            "smartStep": true,
+            "skipFiles": ["<node_internals>/**"]
         }
     ]
 }

@@ -21,41 +21,21 @@ export type BrowserName = keyof typeof browserHandlers
 
 export const launch = async (
     browser: BrowserName,
-    options: LaunchOptions = {}
+    { size, position }: LaunchOptions = {}
 ) => {
     const browserHandler = browserHandlers[browser]
-    const instance = await browserHandler.launch({
-        headless: false
-    })
-    const bootstrapper = await instance.newPage()
-    const [page] = await Promise.all([
-        bootstrapper.waitForEvent("popup"),
-        bootstrapper.evaluate(() =>
-            window.open(
-                undefined,
-                undefined,
-                "resizable,scrollbars,toolbar,menubar,status"
-            )
-        )
-    ])
-    await page.evaluate(({ position, size }: LaunchOptions) => {
-        if (size) {
-            window.resizeTo(size.width, size.height)
-        }
-        if (position) {
-            window.moveTo(position.x, position.y)
-        }
-    }, options)
-    try {
-        // Calling bootstrapper.close() directly closes spawned page as well
-        await bootstrapper.evaluate(() => window.close())
-    } catch (e) {
-        if (e?.message?.includes("page has been closed")) {
-            // Safari throws a protocol error like this that we can ignore
-        } else {
-            throw e
-        }
+    const args = []
+    if (position) {
+        args.push(`--window-position=${position.x},${position.y}`)
     }
+    if (size) {
+        args.push(`--window-size=${size.width},${size.height}`)
+    }
+    const instance = await browserHandler.launch({
+        headless: false,
+        args
+    })
+    const page = await instance.newPage({ viewport: null })
     return {
         browser: instance,
         page

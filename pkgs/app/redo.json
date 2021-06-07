@@ -142,6 +142,121 @@
                     "element": 8
                 }
             ]
+        },
+        {
+            "name": "Do Random Stuff",
+            "tags": [
+                "dofihsdo"
+            ],
+            "steps": [
+                {
+                    "kind": "go",
+                    "url": "https://www.google.com/",
+                    "id": 1
+                },
+                {
+                    "kind": "click",
+                    "id": 2,
+                    "element": 1
+                },
+                {
+                    "kind": "set",
+                    "value": "dogs",
+                    "id": 3,
+                    "element": 1
+                },
+                {
+                    "kind": "click",
+                    "id": 4,
+                    "element": 2
+                },
+                {
+                    "kind": "go",
+                    "url": "https://www.google.com/search?q=cats&source=hp&ei=5sK2YNr8MNjR5NoPnMKvWA&iflsig=AINFCbYAAAAAYLbQ9k4F7Ky2hsCiD2GT5CYz5dR1IyCB&oq=cats&gs_lcp=Cgdnd3Mtd2l6EAMyCAguELEDEJMCMgUIABDJAzIFCAAQkgMyBQgAEJIDMgUILhCxAzICCAAyBQgAELEDMgUIABCxAzIFCC4QsQMyAgguOggIABDqAhCPAToLCC4QsQMQxwEQowI6CAgAELEDEIMBOggILhCxAxCDAToOCC4QsQMQgwEQxwEQowJQ_d8BWJ7iAWCR5QFoAXAAeACAAVKIAZQCkgEBNJgBAKABAaoBB2d3cy13aXqwAQo&sclient=gws-wiz&ved=0ahUKEwjah9m7y_fwAhXYKFkFHRzhCwsQ4dUDCAk&uact=5",
+                    "id": 5
+                },
+                {
+                    "kind": "go",
+                    "url": "https://redo.qa/",
+                    "id": 6
+                },
+                {
+                    "kind": "click",
+                    "id": 7,
+                    "element": 7
+                },
+                {
+                    "kind": "click",
+                    "id": 8,
+                    "element": 8
+                },
+                {
+                    "kind": "set",
+                    "value": "notdavid@redo.qa",
+                    "id": 9,
+                    "element": 8
+                },
+                {
+                    "kind": "click",
+                    "id": 10,
+                    "element": 9
+                }
+            ]
+        },
+        {
+            "name": "Some New Test 435345343",
+            "tags": [
+                "dfsdd"
+            ],
+            "steps": [
+                {
+                    "kind": "go",
+                    "url": "https://www.google.com/",
+                    "id": 1
+                },
+                {
+                    "kind": "set",
+                    "value": "dogs",
+                    "id": 2,
+                    "element": 1
+                },
+                {
+                    "kind": "click",
+                    "id": 3,
+                    "element": 2
+                },
+                {
+                    "kind": "go",
+                    "url": "https://www.google.com/search?q=cats&source=hp&ei=kuK2YKD7KsCo5NoPxZGKkAo&iflsig=AINFCbYAAAAAYLbwonSpkPuHwyYD6pwSR1Y_5hTzOZuq&oq=cats&gs_lcp=Cgdnd3Mtd2l6EAMyCAguELEDEJMCMgUIABDJAzIFCAAQkgMyBQgAEJIDMgUILhCxAzICCAAyBQgAELEDMgUIABCxAzIFCC4QsQMyAgguOgsILhCxAxDHARCjAjoICAAQsQMQgwE6DgguELEDEIMBEMcBEKMCOggILhCxAxCDAVDwL1ivM2DtNmgAcAB4AIABVogBqwKSAQE0mAEAoAEBqgEHZ3dzLXdpeg&sclient=gws-wiz&ved=0ahUKEwigjOzV6ffwAhVAFFkFHcWIAqIQ4dUDCAk&uact=5",
+                    "id": 4
+                },
+                {
+                    "kind": "go",
+                    "url": "https://redo.qa/",
+                    "id": 5
+                },
+                {
+                    "kind": "click",
+                    "id": 6,
+                    "element": 7
+                },
+                {
+                    "kind": "click",
+                    "id": 7,
+                    "element": 8
+                },
+                {
+                    "kind": "set",
+                    "value": "notdavid@redo.qa",
+                    "id": 8,
+                    "element": 8
+                },
+                {
+                    "kind": "click",
+                    "id": 9,
+                    "element": 9
+                }
+            ]
         }
     ],
     "elements": [

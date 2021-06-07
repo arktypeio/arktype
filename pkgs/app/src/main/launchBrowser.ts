@@ -26,10 +26,10 @@ export const launchBrowser = async (
     const { page, browser } = await launch(store.get("defaultBrowser"), {
         position: {
             x: x + DEFAULT_LEARNER_WIDTH,
-            y: y
+            y: y - BROWSER_WINDOW_TITLEBAR_SIZE
         },
         size: {
-            height: height - BROWSER_WINDOW_TITLEBAR_SIZE,
+            height: height - 16,
             width: width - DEFAULT_LEARNER_WIDTH
         }
     })
