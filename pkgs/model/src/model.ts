@@ -1,20 +1,24 @@
 import { Step } from "@re-do/test"
 
-export type StoredStep = Omit<Step, "selector"> & { element: number }
+export type StepData = Omit<Step, "selector"> & {
+    element?: number
+    id: number
+}
 
-export type StoredTest = {
+export type TestData = {
+    id: number
     name: string
-    steps: StoredStep[]
+    steps: number[]
     tags: string[]
+}
+
+export type ElementData = {
+    id: number
+    selector: string
 }
 
 export type Test = {
     name: string
     steps: Step[]
     tags: string[]
-}
-
-export type Element = {
-    id: number
-    selector: string
 }

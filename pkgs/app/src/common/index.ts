@@ -1,13 +1,14 @@
 import { BrowserName, Step } from "@re-do/test"
-import { StoredTest, Test, Element } from "@re-do/model"
+import { TestData, Test, ElementData, StepData } from "@re-do/model"
 
 export type Page = "HOME" | "SIGN_IN" | "SIGN_UP"
 
 export type UnsavedStep = Step & { id: number }
 
 export type RedoData = {
-    tests: StoredTest[]
-    elements: Element[]
+    tests: TestData[]
+    elements: ElementData[]
+    steps: StepData[]
 }
 
 export type Root = {
@@ -25,7 +26,7 @@ export type Root = {
 }
 
 export type MainActions = {
-    runTest: [StoredTest] | null
+    runTest: [TestData] | null
     saveTest: [Test] | null
     launchBuilder: [] | null
     closeBuilder: [] | null

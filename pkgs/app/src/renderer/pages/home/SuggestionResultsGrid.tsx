@@ -3,7 +3,7 @@ import { Unlisted } from "@re-do/utils"
 import { SuggestionCard } from "./SuggestionCard"
 import { store } from "renderer/common"
 import { Card, Row, Button, Icons } from "@re-do/components"
-import { StoredTest } from "@re-do/model"
+import { TestData } from "@re-do/model"
 
 const welcomeSuggestion = {
     title: "👆Hey there!",
@@ -33,7 +33,7 @@ const useSuggestions = (): Suggestion<UserItemKind>[] => {
         : []
 }
 
-type UserData = { tests: StoredTest }
+type UserData = { tests: TestData }
 
 type UserItemKind = keyof UserData
 

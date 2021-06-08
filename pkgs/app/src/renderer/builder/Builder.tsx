@@ -64,7 +64,16 @@ export const Builder = () => {
                     onClick={() => {
                         store.update({
                             main: {
-                                saveTest: [{ name, tags, steps }],
+                                saveTest: [
+                                    {
+                                        name,
+                                        tags,
+                                        steps: steps.map((step) => {
+                                            const { id, ...stepData } = step
+                                            return stepData
+                                        })
+                                    }
+                                ],
                                 closeBuilder: []
                             }
                         })

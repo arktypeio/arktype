@@ -3,11 +3,11 @@ import { ActionData, Update, Store, BaseStore } from "react-statelessly"
 import { test as runTest } from "@re-do/test"
 import { MainActions, Root } from "common"
 import { forwardToRenderer, replayActionMain } from "electron-redux"
-import { StoredTest } from "@re-do/model"
+import { TestData } from "@re-do/model"
 import { launchBrowser, closeBrowser } from "./launchBrowser"
 import { mainWindow, builderWindow } from "./windows"
 import { ValueOf } from "@re-do/utils"
-import { data, createSteps, testToSteps } from "./data"
+import { data, createSteps, testToSteps, getNextId } from "./data"
 
 const DEFAULT_BUILDER_WIDTH = 300
 const ELECTRON_TITLEBAR_SIZE = 37
@@ -66,16 +66,17 @@ const mainActions: MainActionFunctions = {
         return { builder: { active: false, steps: [] } }
     },
     runTest: async ([test]) => {
-        await runTest(testToSteps(test as StoredTest))
+        await runTest(testToSteps(test as TestData))
         return {}
     },
     saveTest: async ([{ steps, ...rest }], store) => {
-        const storedTest = {
+        const testData: TestData = {
             ...rest,
-            steps: createSteps(steps)
+            steps: createSteps(steps),
+            id: getNextId(data.get("tests"))
         }
-        store.update({ data: { tests: (_) => _.concat(storedTest) } })
-        return {}
+        data.update({ tests: (_) => _.concat(testData) })
+        return { data: { tests: (_) => _.concat(testData) } }
     },
     reloadData: () => {
         data.$.reload()
