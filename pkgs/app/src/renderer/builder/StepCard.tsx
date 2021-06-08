@@ -1,5 +1,13 @@
 import React from "react"
-import { Card, TextInput, Text, CardProps } from "@re-do/components"
+import {
+    Card,
+    TextInput,
+    Text,
+    CardProps,
+    Column,
+    Icons
+} from "@re-do/components"
+import { Fab } from "@material-ui/core"
 import { store } from "renderer/common"
 import { UnsavedStep } from "common"
 
@@ -11,6 +19,30 @@ export type StepCardProps = {
 export const StepCard = ({ step, cardProps }: StepCardProps) => {
     return (
         <Card {...cardProps}>
+            <Column style={{ height: 0 }}>
+                <Fab
+                    style={{
+                        height: 24,
+                        width: 24,
+                        minHeight: 24,
+                        alignSelf: "flex-end"
+                    }}
+                    color="primary"
+                    onClick={() =>
+                        store.update({
+                            builder: {
+                                steps: (_) =>
+                                    _.filter(
+                                        (existingStep) =>
+                                            step.id !== existingStep.id
+                                    )
+                            }
+                        })
+                    }
+                >
+                    <Icons.close style={{ fontSize: 16 }} />
+                </Fab>
+            </Column>
             {Object.entries(step).map(([k, v]) => {
                 if (k === "id") {
                     return null
