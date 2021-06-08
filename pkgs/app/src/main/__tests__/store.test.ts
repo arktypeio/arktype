@@ -1,23 +1,22 @@
 import { join } from "path"
-import { loadStore, RedoStore } from "../persist"
+import { store } from "../store"
+import { testToSteps } from "../data"
 import { removeSync } from "fs-extra"
 
 describe("store", () => {
-    let store: RedoStore
     beforeEach(() => {
-        const path = join(__dirname, "redo.json")
-        removeSync(path)
-        store = loadStore({ path })
+        removeSync(join(__dirname, "redo.json"))
+        store.$.reloadData()
     })
     test("can retrieve existing tests", () => {
-        expect(store.getTests()).toStrictEqual([])
+        expect(store.get("data/tests")).toStrictEqual([])
     })
     test("can create new tests", () => {
         const newTest = { name: "New Test", steps: [], tags: [] }
-        store.createTest(newTest)
-        expect(store.getTests()).toStrictEqual([newTest])
-        store.createTest(newTest)
-        expect(store.getTests()).toStrictEqual([newTest, newTest])
+        store.$.saveTest([newTest])
+        expect(store.get("data/tests")).toStrictEqual([newTest])
+        store.$.saveTest([newTest])
+        expect(store.get("data/tests")).toStrictEqual([newTest, newTest])
     })
     const testData = {
         name: "Test With Steps",
@@ -54,20 +53,21 @@ describe("store", () => {
         }
     ]
     test("translates selectors to elements", () => {
-        store.createTest(testData as any)
-        expect(store.getTests()).toStrictEqual([storedTestData])
-        expect(store.getElements()).toStrictEqual(storedElementData)
+        store.$.saveTest([testData])
+        expect(store.get("data/tests")).toStrictEqual([storedTestData])
+        expect(store.get("data/elements")).toStrictEqual(storedElementData)
     })
     test("translates stored tests to executable tests", () => {
-        store.createTest(testData as any)
-        expect(store.testToSteps(storedTestData as any)).toStrictEqual(
-            testData.steps
-        )
+        store.$.saveTest([testData])
+        expect(testToSteps(storedTestData as any)).toStrictEqual(testData.steps)
     })
     test("reuses existing elements", () => {
-        store.createTest(testData as any)
-        store.createTest(testData as any)
-        expect(store.getTests()).toStrictEqual([storedTestData, storedTestData])
-        expect(store.getElements()).toStrictEqual(storedElementData)
+        store.$.saveTest([testData])
+        store.$.saveTest([testData])
+        expect(store.get("tests")).toStrictEqual([
+            storedTestData,
+            storedTestData
+        ])
+        expect(store.get("elements")).toStrictEqual(storedElementData)
     })
 })

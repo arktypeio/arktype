@@ -295,6 +295,22 @@
         {
             "selector": ".MuiButton-contained > .MuiButton-label",
             "id": 9
+        },
+        {
+            "selector": ".MuiButton-root",
+            "id": 10
+        },
+        {
+            "selector": ".MuiGrid-direction-xs-column:nth-child(1) > .MuiGrid-root",
+            "id": 11
+        },
+        {
+            "selector": ".MuiButton-contained",
+            "id": 12
+        },
+        {
+            "selector": "form",
+            "id": 13
         }
     ]
 }

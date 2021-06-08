@@ -1,42 +1,48 @@
 import { ipcMain } from "electron"
-import { ActionData, Update, Store } from "react-statelessly"
+import { ActionData, Update, Store, BaseStore } from "react-statelessly"
 import { test as runTest } from "@re-do/test"
-import { join } from "path"
 import { MainActions, Root } from "common"
 import { forwardToRenderer, replayActionMain } from "electron-redux"
-import { loadStore } from "./persist"
-import { StoredTest, Test } from "@re-do/model"
+import { StoredTest } from "@re-do/model"
 import { launchBrowser, closeBrowser } from "./launchBrowser"
 import { mainWindow, builderWindow } from "./windows"
+import { ValueOf } from "@re-do/utils"
+import { data, createSteps, testToSteps } from "./data"
 
 const DEFAULT_BUILDER_WIDTH = 300
 const ELECTRON_TITLEBAR_SIZE = 37
-
-const persistedStore = loadStore({ path: join(process.cwd(), "redo.json") })
 
 const emptyMainActions: MainActions = {
     saveTest: null,
     runTest: null,
     launchBuilder: null,
-    closeBuilder: null
+    closeBuilder: null,
+    reloadData: null
 }
 
 const initialState: Root = {
-    token: "",
     page: "HOME",
+    token: "",
     cardFilter: "",
-    builderActive: false,
     defaultBrowser: "chrome",
-    steps: [],
-    tests: persistedStore.getTests(),
+    builder: {
+        steps: [],
+        active: false
+    },
     main: emptyMainActions,
-    renderer: {}
+    renderer: {},
+    data: data.getState()
 }
 
+type ActionReturn = Update<Root> | Promise<Update<Root>>
+
 type MainActionFunctions = {
-    [K in keyof MainActions]-?: (
-        ...args: NonNullable<MainActions[K]>
-    ) => Update<Root> | Promise<Update<Root>>
+    [K in keyof MainActions]-?: [] extends MainActions[K]
+        ? (store: BaseStore<Root, any>) => ActionReturn
+        : (
+              args: NonNullable<MainActions[K]>,
+              store: BaseStore<Root, any>
+          ) => ActionReturn
 }
 
 const mainActions: MainActionFunctions = {
@@ -50,23 +56,30 @@ const mainActions: MainActionFunctions = {
         })
         builderWindow.show()
         await launchBrowser(store, mainWindow)
-        return { builderActive: true }
+        return { builder: { active: true, steps: [] } }
     },
     closeBuilder: async () => {
         if (builderWindow.isVisible()) {
             builderWindow.hide()
         }
         await closeBrowser()
-        return { builderActive: false, steps: [] }
+        return { builder: { active: false, steps: [] } }
     },
-    runTest: async (test: StoredTest) => {
-        await runTest(persistedStore.testToSteps(test as StoredTest))
+    runTest: async ([test]) => {
+        await runTest(testToSteps(test as StoredTest))
         return {}
     },
-    saveTest: async (test: Test) => {
-        const storedTest = persistedStore.createTest(test)
-        store.update({ tests: (_) => _.concat(storedTest) })
+    saveTest: async ([{ steps, ...rest }], store) => {
+        const storedTest = {
+            ...rest,
+            steps: createSteps(steps)
+        }
+        store.update({ data: { tests: (_) => _.concat(storedTest) } })
         return {}
+    },
+    reloadData: () => {
+        data.$.reload()
+        return { data: data.getState() }
     }
 }
 
@@ -82,10 +95,10 @@ ipcMain.on("redux-action", async (event, action: ActionData<Root>) => {
     if (mainActions) {
         const requiredActions = Object.entries(mainActions).filter(
             ([name, args]) => !!args
-        )
+        ) as [keyof MainActions, ValueOf<MainActions>][]
         for (const action of requiredActions) {
             const [name, args] = action
-            await (store as any)[name](...(args as any))
+            await store.actions[name](args as any)
             store.update({ main: { [name]: null } })
         }
     }

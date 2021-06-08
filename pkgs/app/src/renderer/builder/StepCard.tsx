@@ -1,7 +1,7 @@
 import React from "react"
 import { Card, TextInput, Text, CardProps } from "@re-do/components"
 import { store } from "renderer/common"
-import { UnsavedStep } from "state"
+import { UnsavedStep } from "common"
 
 export type StepCardProps = {
     step: UnsavedStep
@@ -24,12 +24,17 @@ export const StepCard = ({ step, cardProps }: StepCardProps) => {
                         defaultValue={v}
                         onChange={(e) =>
                             store.update({
-                                steps: (_) =>
-                                    _.map((existingStep) =>
-                                        step.id === existingStep.id
-                                            ? { ...step, [k]: e.target.value }
-                                            : existingStep
-                                    )
+                                builder: {
+                                    steps: (_) =>
+                                        _.map((existingStep) =>
+                                            step.id === existingStep.id
+                                                ? {
+                                                      ...step,
+                                                      [k]: e.target.value
+                                                  }
+                                                : existingStep
+                                        )
+                                }
                             })
                         }
                     />

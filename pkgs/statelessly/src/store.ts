@@ -133,7 +133,7 @@ export type Actions<T extends object> = Record<
     | Update<T>
     | ((
           args: any,
-          context: Store<T, Actions<T>>
+          context: Store<T, Actions<T>> & Record<string, any>
       ) => Update<T> | Promise<Update<T>>)
 >
 

@@ -13,9 +13,14 @@ const welcomeSuggestion = {
 }
 
 const useSuggestions = (): Suggestion<UserItemKind>[] => {
-    const { cardFilter, tests } = store.useQuery({
+    const {
+        cardFilter,
+        data: { tests }
+    } = store.useQuery({
         cardFilter: true,
-        tests: true
+        data: {
+            tests: true
+        }
     })
     return tests && tests.length
         ? tests

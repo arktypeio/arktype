@@ -1,20 +1,27 @@
 import { BrowserName, Step } from "@re-do/test"
-import { StoredTest, Test } from "@re-do/model"
+import { StoredTest, Test, Element } from "@re-do/model"
 
 export type Page = "HOME" | "SIGN_IN" | "SIGN_UP"
 
 export type UnsavedStep = Step & { id: number }
 
-export type Root = {
-    token: string
-    page: Page
-    cardFilter: string
-    builderActive: boolean
-    steps: UnsavedStep[]
-    defaultBrowser: BrowserName
+export type RedoData = {
     tests: StoredTest[]
+    elements: Element[]
+}
+
+export type Root = {
+    page: Page
+    token: string
+    cardFilter: string
+    defaultBrowser: BrowserName
+    builder: {
+        active: boolean
+        steps: UnsavedStep[]
+    }
     main: MainActions
     renderer: RendererActions
+    data: RedoData
 }
 
 export type MainActions = {
@@ -22,6 +29,7 @@ export type MainActions = {
     saveTest: [Test] | null
     launchBuilder: [] | null
     closeBuilder: [] | null
+    reloadData: [] | null
 }
 
 export type RendererActions = {}
