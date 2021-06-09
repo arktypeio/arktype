@@ -19,26 +19,39 @@ import {
 } from "@re-do/utils"
 
 export type StoreOptions<T> = {
-    onChange?: ListenerMap<T, T> | Listener<T, T>
+    onChange?: ListenerMap<T> | Listener<T>
     middleware?: Middleware[]
 }
+
+const createOnChangeMiddleware =
+    <T extends object>(handleChange: Listener<T>): Middleware =>
+    (store) =>
+    (next) =>
+    async (action: ActionData<T>) => {
+        const result = next(action)
+        await handleChange(action.payload)
+        return result
+    }
 
 export class Store<T extends object, A extends Actions<T>> {
     underlying: ReduxStore<T, ActionData<T>>
     actions: StoreActions<T, A>
     $: StoreActions<T, A>
-    private handleChange: Listener<T, T> | undefined
 
     constructor(
         initial: T,
         actions: A,
         { onChange, middleware }: StoreOptions<T> = {}
     ) {
-        this.underlying = this.getReduxStore(initial, middleware ?? [])
-        this.handleChange =
-            typeof onChange === "object"
-                ? createListener<T, T>(onChange)
-                : onChange
+        const middlewares = middleware ? [...middleware] : []
+        if (onChange) {
+            const handleChange =
+                typeof onChange === "object"
+                    ? createListener(onChange)
+                    : onChange
+            middlewares.push(createOnChangeMiddleware(handleChange))
+        }
+        this.underlying = this.getReduxStore(initial, middlewares)
         this.actions = this.defineActions(actions)
         this.$ = this.actions
     }
@@ -58,15 +71,14 @@ export class Store<T extends object, A extends Actions<T>> {
         const updatedState = updateMap(state, u)
         const changes = diff(state, updatedState)
         if (!deepEquals(changes, {})) {
-            this.handleChange && this.handleChange(changes, state)
+            this.underlying.dispatch({
+                type: actionType,
+                payload: changes,
+                meta: {
+                    statelessly: true
+                }
+            })
         }
-        this.underlying.dispatch({
-            type: actionType,
-            payload: updatedState,
-            meta: {
-                statelessly: true
-            }
-        })
     }
 
     private getReduxStore = (initial: T, middleware: Middleware[]) =>
@@ -114,16 +126,13 @@ export class Store<T extends object, A extends Actions<T>> {
 }
 
 export const createListener =
-    <ChangedState, RootState>(handler: ListenerMap<ChangedState, RootState>) =>
-    async (changes: DeepPartial<ChangedState>, context: RootState) => {
+    <ChangedState>(handler: ListenerMap<ChangedState>) =>
+    async (changes: DeepPartial<ChangedState>) => {
         for (const k in changes) {
             if (k in handler) {
                 const change = (changes as any)[k] as any
-                const handleKey = (handler as any)[k] as Listener<
-                    any,
-                    RootState
-                >
-                await handleKey(change, context)
+                const handleKey = (handler as any)[k] as Listener<any>
+                await handleKey(change)
             }
         }
     }
@@ -165,13 +174,12 @@ export type Query<T> = {
 
 export type Update<T> = DeepUpdate<T>
 
-export type Listener<ChangedState, RootState> = (
-    change: DeepPartial<ChangedState>,
-    context: RootState
+export type Listener<ChangedState> = (
+    change: DeepPartial<ChangedState>
 ) => void | Promise<void>
 
-export type ListenerMap<ChangedState, RootState> = {
-    [K in keyof ChangedState]?: Listener<ChangedState[K], RootState>
+export type ListenerMap<ChangedState> = {
+    [K in keyof ChangedState]?: Listener<ChangedState[K]>
 }
 
 export type ActionData<T> = {

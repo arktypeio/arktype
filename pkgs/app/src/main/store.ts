@@ -85,22 +85,19 @@ const mainActions: MainActionFunctions = {
 }
 
 export const store = new Store(initialState, mainActions, {
-    middleware: [forwardToRenderer]
-})
-
-replayActionMain(store.underlying as any)
-
-ipcMain.on("redux-action", async (event, action: ActionData<Root>) => {
-    // TODO: Convert this to a queue, handle race condition
-    const mainActions = action.payload.main
-    if (mainActions) {
-        const requiredActions = Object.entries(mainActions).filter(
-            ([name, args]) => !!args
-        ) as [keyof MainActions, ValueOf<MainActions>][]
-        for (const action of requiredActions) {
-            const [name, args] = action
-            await store.actions[name](args as any)
-            store.update({ main: { [name]: null } })
+    middleware: [forwardToRenderer],
+    onChange: {
+        main: async (changes) => {
+            const requiredActions = Object.entries(changes).filter(
+                ([name, args]) => !!args
+            ) as [keyof MainActions, ValueOf<MainActions>][]
+            for (const action of requiredActions) {
+                const [name, args] = action
+                await store.actions[name](args as any)
+                store.update({ main: { [name]: null } })
+            }
         }
     }
 })
+
+replayActionMain(store.underlying as any)

@@ -34,16 +34,6 @@ export const client = new ApolloClient({
     cache: new InMemoryCache()
 })
 
-ipcRenderer.on("redux-action", async (event, action: ActionData<Root>) => {
-    const rendererActions = action.payload.renderer
-    if (rendererActions) {
-        for (const entry in Object.entries(rendererActions)) {
-            const [name, args] = entry
-            await (store as any)[name](...(args as any))
-        }
-    }
-})
-
 export const store = new Store(
     getInitialStateRenderer<Root>(),
     {},
