@@ -9,9 +9,8 @@ import {
     replayActionRenderer,
     getInitialStateRenderer
 } from "electron-redux"
-import { ipcRenderer } from "electron"
 import { Root } from "common"
-import { Store, ActionData } from "react-statelessly"
+import { Store } from "react-statelessly"
 
 const httpLink = createHttpLink({
     uri:
