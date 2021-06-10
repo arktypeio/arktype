@@ -1,46 +1,14 @@
-import { TestData, Test, ElementData, StepData } from "@re-do/model"
+import { TestData } from "@re-do/model"
 import { Step } from "@re-do/test"
-import { Store } from "react-statelessly"
-import {
-    readJSONSync,
-    writeJsonSync,
-    existsSync,
-    writeJSONSync
-} from "fs-extra"
 import { join } from "path"
-import { RedoData } from "common"
 import { deepEquals } from "@re-do/utils"
 import { LocalStore } from "./store"
+import { RedoData } from "common"
 
-export type LoadDataArgs = {
-    path: string
-}
-
-export const defaultRedoJsonPath = join(process.cwd(), "redo.json")
-export const defaultRedoData = { tests: [], elements: [], steps: [] }
-
-const getRedoData = (path: string) => {
-    if (!existsSync(path)) {
-        writeJSONSync(path, defaultRedoData, { spaces: 4 })
-        return defaultRedoData
-    }
-    return readJSONSync(path) as RedoData
-}
-
-export const loadData = ({ path }: LoadDataArgs) =>
-    new LocalStore(
-        getRedoData(path),
-        {
-            reload: () => getRedoData(path)
-        },
-        {
-            path
-        }
-    )
-
-export const data = loadData({ path: defaultRedoJsonPath })
-
-export const testToSteps = (test: TestData): Step[] =>
+export const testToSteps = (
+    data: LocalStore<RedoData, {}>,
+    test: TestData
+): Step[] =>
     test.steps.map((stepId) => {
         const step = data.get("steps").find((_) => _.id === stepId)
         if (!step) {
@@ -69,7 +37,10 @@ export const getNextId = (existing: { id: number }[]) =>
         0
     ) + 1
 
-export const createSteps = (steps: Step[]): number[] => {
+export const createSteps = (
+    data: LocalStore<RedoData, {}>,
+    steps: Step[]
+): number[] => {
     const existingSteps = data.get("steps")
     return steps.map((step) => {
         const matchingStep = existingSteps.find((existing) => {

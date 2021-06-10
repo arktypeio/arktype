@@ -1,22 +1,35 @@
 import { Update, Store, BaseStore } from "react-statelessly"
 import { test as runTest } from "@re-do/test"
-import { MainActions, Root } from "common"
+import { MainActions, RedoData, Root } from "common"
 import { forwardToRenderer, replayActionMain } from "electron-redux"
 import { TestData } from "@re-do/model"
 import { launchBrowser, closeBrowser } from "./launchBrowser"
 import { mainWindow, builderWindow } from "./windows"
 import { ValueOf } from "@re-do/utils"
-import {
-    data,
-    createSteps,
-    testToSteps,
-    getNextId,
-    defaultRedoJsonPath
-} from "./data"
-import { watch } from "fs"
+import { createSteps, testToSteps, getNextId, LocalStore } from "./data"
+import { join } from "path"
 
 const DEFAULT_BUILDER_WIDTH = 300
 const ELECTRON_TITLEBAR_SIZE = 37
+
+export const defaultRedoJsonPath = join(process.cwd(), "redo.json")
+export const defaultRedoData: RedoData = { tests: [], elements: [], steps: [] }
+
+export let store: Store<Root, MainActionFunctions>
+
+export const data = new LocalStore(
+    defaultRedoData,
+    {},
+    {
+        path: defaultRedoJsonPath,
+        onChange: (change, localStore) => {
+            // Forward changes from local store to app state store
+            if (store) {
+                store.update({ data: localStore.getState() })
+            }
+        }
+    }
+)
 
 const emptyMainActions: MainActions = {
     saveTest: null,
@@ -72,25 +85,25 @@ const mainActions: MainActionFunctions = {
         return { builder: { active: false, steps: [] } }
     },
     runTest: async ([test]) => {
-        await runTest(testToSteps(test as TestData))
+        await runTest(testToSteps(data, test as TestData))
         return {}
     },
     saveTest: async ([{ steps, ...rest }], store) => {
         const testData: TestData = {
             ...rest,
-            steps: createSteps(steps),
+            steps: createSteps(data, steps),
             id: getNextId(data.get("tests"))
         }
         data.update({ tests: (_) => _.concat(testData) })
         return { data: { tests: (_) => _.concat(testData) } }
     },
     reloadData: () => {
-        data.$.reload()
+        data.refresh()
         return { data: data.getState() }
     }
 }
 
-export const store = new Store(initialState, mainActions, {
+store = new Store(initialState, mainActions, {
     middleware: [forwardToRenderer],
     onChange: {
         main: async (changes) => {
@@ -104,10 +117,6 @@ export const store = new Store(initialState, mainActions, {
             }
         }
     }
-})
-
-watch(defaultRedoJsonPath, {}, (event) => {
-    store.$.reloadData()
 })
 
 replayActionMain(store.underlying as any)
