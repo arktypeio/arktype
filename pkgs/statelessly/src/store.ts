@@ -4,12 +4,8 @@ import {
     Store as ReduxStore
 } from "@reduxjs/toolkit"
 import {
-    DeepPartial,
-    NonRecursible,
-    Unlisted,
     updateMap,
     shapeFilter,
-    DeepUpdate,
     AutoPath,
     valueAtPath,
     ValueAtPath,
@@ -17,21 +13,13 @@ import {
     deepEquals,
     diff
 } from "@re-do/utils"
+import { Query, Update, Actions, ActionData, StoreActions } from "./common"
+import { createOnChangeMiddleware, OnChangeMiddlewareArgs } from "./middleware"
 
-export type StoreOptions<T> = {
-    onChange?: ListenerMap<T> | Listener<T>
+export type StoreOptions<T extends object> = {
+    onChange?: OnChangeMiddlewareArgs<T>
     middleware?: Middleware[]
 }
-
-const createOnChangeMiddleware =
-    <T extends object>(handleChange: Listener<T>): Middleware =>
-    (store) =>
-    (next) =>
-    async (action: ActionData<T>) => {
-        const result = next(action)
-        await handleChange(action.payload)
-        return result
-    }
 
 export class Store<T extends object, A extends Actions<T>> {
     underlying: ReduxStore<T, ActionData<T>>
@@ -45,11 +33,7 @@ export class Store<T extends object, A extends Actions<T>> {
     ) {
         const middlewares = middleware ? [...middleware] : []
         if (onChange) {
-            const handleChange =
-                typeof onChange === "object"
-                    ? createListener(onChange)
-                    : onChange
-            middlewares.push(createOnChangeMiddleware(handleChange))
+            middlewares.push(createOnChangeMiddleware(onChange))
         }
         this.underlying = this.getReduxStore(initial, middlewares)
         this.actions = this.defineActions(actions)
@@ -123,69 +107,4 @@ export class Store<T extends object, A extends Actions<T>> {
                 }
             ]
         }) as any
-}
-
-export const createListener =
-    <ChangedState>(handler: ListenerMap<ChangedState>) =>
-    async (changes: DeepPartial<ChangedState>) => {
-        for (const k in changes) {
-            if (k in handler) {
-                const change = (changes as any)[k] as any
-                const handleKey = (handler as any)[k] as Listener<any>
-                await handleKey(change)
-            }
-        }
-    }
-
-export type Actions<T extends object> = Record<
-    string,
-    | Update<T>
-    | ((
-          args: any,
-          context: Store<T, Actions<T>> & Record<string, any>
-      ) => Update<T> | Promise<Update<T>>)
->
-
-// This allows us to convert from the user provided actions, which can use context to access
-// the store in their definitions, to actions as they are attached to the Store, which do not
-// require context as a parameter as it is passed internally
-
-type RemoveContextFromArgs<T extends unknown[]> = T extends []
-    ? []
-    : T extends [infer Current, ...infer Rest]
-    ? Current extends Store<any, any>
-        ? RemoveContextFromArgs<Rest>
-        : [Current, ...RemoveContextFromArgs<Rest>]
-    : T
-
-export type StoreActions<T extends object, A extends Actions<T>> = {
-    [K in keyof A]: A[K] extends (...args: any) => any
-        ? (
-              ...args: RemoveContextFromArgs<Parameters<A[K]>>
-          ) => ReturnType<A[K]> extends Promise<any> ? Promise<void> : void
-        : () => void
-}
-
-export type Query<T> = {
-    [P in keyof T]?: Unlisted<T[P]> extends NonRecursible
-        ? true
-        : Query<Unlisted<T[P]>> | true
-}
-
-export type Update<T> = DeepUpdate<T>
-
-export type Listener<ChangedState> = (
-    change: DeepPartial<ChangedState>
-) => void | Promise<void>
-
-export type ListenerMap<ChangedState> = {
-    [K in keyof ChangedState]?: Listener<ChangedState[K]>
-}
-
-export type ActionData<T> = {
-    type: string
-    payload: DeepPartial<T>
-    meta: {
-        statelessly: true
-    }
 }
