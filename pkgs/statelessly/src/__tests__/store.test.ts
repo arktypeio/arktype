@@ -241,4 +241,12 @@ describe("side effects", () => {
         store.$.enableB()
         expect(functionalListener).toHaveBeenCalledWith({ b: true }, store)
     })
+    test("accepts an array of listeners", async () => {
+        store = getStore({ onChange: [functionalListener, onChange] })
+        store.$.enableB()
+        // I'm sure there's a more elegant way to wait for a listener to be called in jest but I don't want to figure it out ;)
+        await new Promise((_) => setTimeout(_, 100))
+        expect(bing).toBeCalledWith(true, store)
+        expect(functionalListener).toHaveBeenCalledWith({ b: true }, store)
+    })
 })

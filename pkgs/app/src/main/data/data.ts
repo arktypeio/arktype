@@ -10,6 +10,7 @@ import {
 import { join } from "path"
 import { RedoData } from "common"
 import { deepEquals } from "@re-do/utils"
+import { LocalStore } from "./store"
 
 export type LoadDataArgs = {
     path: string
@@ -27,15 +28,13 @@ const getRedoData = (path: string) => {
 }
 
 export const loadData = ({ path }: LoadDataArgs) =>
-    new Store(
+    new LocalStore(
         getRedoData(path),
         {
             reload: () => getRedoData(path)
         },
         {
-            onChange: (changes, store) => {
-                writeJsonSync(path, store.getState(), { spaces: 4 })
-            }
+            path
         }
     )
 
