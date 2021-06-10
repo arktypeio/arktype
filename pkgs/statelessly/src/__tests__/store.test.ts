@@ -211,7 +211,7 @@ describe("actions", () => {
 const cHandler = jest.fn()
 const bing = jest.fn()
 const dHandler = jest.fn()
-const onChange: ListenerMap<Root> = {
+const onChange: ListenerMap<Root, Store<Root, any>> = {
     c: cHandler,
     b: bing,
     d: dHandler
@@ -225,11 +225,11 @@ describe("side effects", () => {
     })
     test("handle side effects", () => {
         store.$.enableB()
-        expect(bing).toBeCalledWith(true)
+        expect(bing).toBeCalledWith(true, store)
     })
     test("handles array side effects", () => {
         store.$.appendObjectToArray()
-        expect(dHandler).toBeCalledWith([initialA, initialA, initialA])
+        expect(dHandler).toBeCalledWith([initialA, initialA, initialA], store)
     })
     test("doesn't trigger extraneous side effects", () => {
         store.$.updateSomeValues()
@@ -239,6 +239,6 @@ describe("side effects", () => {
     test("handles side effects with function", () => {
         store = getStore({ onChange: functionalListener })
         store.$.enableB()
-        expect(functionalListener).toHaveBeenCalledWith({ b: true })
+        expect(functionalListener).toHaveBeenCalledWith({ b: true }, store)
     })
 })

@@ -1,3 +1,3 @@
 export * from "./common"
-export * from "./middleware"
+export * from "./onChange"
 export * from "./store"

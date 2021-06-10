@@ -15,7 +15,8 @@ export type LoadDataArgs = {
     path: string
 }
 
-const defaultRedoData = { tests: [], elements: [], steps: [] }
+export const defaultRedoJsonPath = join(process.cwd(), "redo.json")
+export const defaultRedoData = { tests: [], elements: [], steps: [] }
 
 const getRedoData = (path: string) => {
     if (!existsSync(path)) {
@@ -32,14 +33,13 @@ export const loadData = ({ path }: LoadDataArgs) =>
             reload: () => getRedoData(path)
         },
         {
-            onChange: (changes) => {
-                const stored = getRedoData(path)
-                writeJsonSync(path, { ...stored, ...changes }, { spaces: 4 })
+            onChange: (changes, store) => {
+                writeJsonSync(path, store.getState(), { spaces: 4 })
             }
         }
     )
 
-export const data = loadData({ path: join(process.cwd(), "redo.json") })
+export const data = loadData({ path: defaultRedoJsonPath })
 
 export const testToSteps = (test: TestData): Step[] =>
     test.steps.map((stepId) => {

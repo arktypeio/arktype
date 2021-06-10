@@ -1,5 +1,4 @@
-import { ipcMain } from "electron"
-import { ActionData, Update, Store, BaseStore } from "react-statelessly"
+import { Update, Store, BaseStore } from "react-statelessly"
 import { test as runTest } from "@re-do/test"
 import { MainActions, Root } from "common"
 import { forwardToRenderer, replayActionMain } from "electron-redux"
@@ -7,7 +6,14 @@ import { TestData } from "@re-do/model"
 import { launchBrowser, closeBrowser } from "./launchBrowser"
 import { mainWindow, builderWindow } from "./windows"
 import { ValueOf } from "@re-do/utils"
-import { data, createSteps, testToSteps, getNextId } from "./data"
+import {
+    data,
+    createSteps,
+    testToSteps,
+    getNextId,
+    defaultRedoJsonPath
+} from "./data"
+import { watch } from "fs"
 
 const DEFAULT_BUILDER_WIDTH = 300
 const ELECTRON_TITLEBAR_SIZE = 37
@@ -98,6 +104,10 @@ export const store = new Store(initialState, mainActions, {
             }
         }
     }
+})
+
+watch(defaultRedoJsonPath, {}, (event) => {
+    store.$.reloadData()
 })
 
 replayActionMain(store.underlying as any)

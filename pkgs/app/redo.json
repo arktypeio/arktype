@@ -1,98 +1,18 @@
 {
     "tests": [
         {
-            "name": "Sign Up 1",
+            "name": "New Test",
             "tags": [],
-            "steps": [
-                1,
-                2,
-                3,
-                4,
-                5
-            ],
+            "steps": [],
             "id": 1
         },
         {
-            "name": "Sign Up 2",
+            "name": "Another Change",
             "tags": [],
-            "steps": [
-                1,
-                6,
-                2,
-                3,
-                4,
-                5,
-                7
-            ],
+            "steps": [],
             "id": 2
-        },
-        {
-            "name": "Test 3",
-            "tags": [],
-            "steps": [
-                1
-            ],
-            "id": 3
         }
     ],
-    "elements": [
-        {
-            "selector": ".MuiButton-label",
-            "id": 1
-        },
-        {
-            "selector": ".MuiInputBase-input",
-            "id": 2
-        },
-        {
-            "selector": ".MuiButton-contained",
-            "id": 3
-        },
-        {
-            "selector": ".MuiPaper-root > .MuiGrid-direction-xs-column",
-            "id": 4
-        },
-        {
-            "selector": "form",
-            "id": 5
-        }
-    ],
-    "steps": [
-        {
-            "kind": "go",
-            "url": "https://redo.qa/",
-            "id": 1
-        },
-        {
-            "kind": "click",
-            "element": 1,
-            "id": 2
-        },
-        {
-            "kind": "click",
-            "element": 2,
-            "id": 3
-        },
-        {
-            "kind": "set",
-            "value": "david@redo.qa",
-            "element": 2,
-            "id": 4
-        },
-        {
-            "kind": "click",
-            "element": 3,
-            "id": 5
-        },
-        {
-            "kind": "click",
-            "element": 4,
-            "id": 6
-        },
-        {
-            "kind": "click",
-            "element": 5,
-            "id": 7
-        }
-    ]
+    "elements": [],
+    "steps": []
 }

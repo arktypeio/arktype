@@ -14,10 +14,10 @@ import {
     diff
 } from "@re-do/utils"
 import { Query, Update, Actions, ActionData, StoreActions } from "./common"
-import { createOnChangeMiddleware, OnChangeMiddlewareArgs } from "./middleware"
+import { createOnChangeMiddleware, OnChangeMiddlewareArgs } from "./onChange"
 
 export type StoreOptions<T extends object> = {
-    onChange?: OnChangeMiddlewareArgs<T>
+    onChange?: OnChangeMiddlewareArgs<T, Store<T, any>>
     middleware?: Middleware[]
 }
 
@@ -33,7 +33,7 @@ export class Store<T extends object, A extends Actions<T>> {
     ) {
         const middlewares = middleware ? [...middleware] : []
         if (onChange) {
-            middlewares.push(createOnChangeMiddleware(onChange))
+            middlewares.push(createOnChangeMiddleware(onChange, this))
         }
         this.underlying = this.getReduxStore(initial, middlewares)
         this.actions = this.defineActions(actions)
