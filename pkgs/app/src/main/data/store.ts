@@ -30,11 +30,12 @@ export class LocalStore<
         const onChangeWithFileWrite = listify(onChange ?? []).concat(
             writeChangesToFile
         )
-        if (bidirectional) {
-            watch(path, {}, (event) => {
-                this.syncToFile()
-            })
-        }
+        // if (bidirectional) {
+        //     ensureFile(path, fallback)
+        //     watch(path, {}, (event) => {
+        //         this.syncToFile()
+        //     })
+        // }
         super(getFileState(path, fallback), actions, {
             onChange: onChangeWithFileWrite,
             ...otherOptions
@@ -63,12 +64,16 @@ export class LocalStore<
 const validated = <T>(contents: any): T => contents
 
 const getFileState = <T>(path: string, fallback: T): T => {
-    if (!existsSync(path)) {
-        setFileState(path, fallback)
-    }
+    ensureFile(path, fallback)
     const contents = readJsonSync(path)
     return validated(contents)
 }
 
 const setFileState = <T>(path: string, state: T) =>
     writeJsonSync(path, state, { spaces: 4 })
+
+const ensureFile = <T>(path: string, fallback: T) => {
+    if (!existsSync(path)) {
+        setFileState(path, fallback)
+    }
+}
