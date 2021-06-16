@@ -1,5 +1,11 @@
 import { Store, Actions, StoreOptions, Listener, Update } from "statelessly"
-import { listify, transform, Unlisted } from "@re-do/utils"
+import {
+    FilterByValue,
+    listify,
+    transform,
+    Unlisted,
+    filter
+} from "@re-do/utils"
 import { existsSync, watch, readFileSync, writeFileSync } from "fs"
 
 export type FileStoreOptions<T extends object> = StoreOptions<T> & {
@@ -17,13 +23,17 @@ type Interactions<O extends object> = {
     persist: (o: O) => Persisted<O>
 }
 
-export class FileStore<
-    T extends Record<string, object[]>,
-    A extends Actions<T>
-> extends Store<T, A> {
+export class FileStore<T extends object, A extends Actions<T>> extends Store<
+    T,
+    A
+> {
     private fallback: T
     private path: string
-    model: { [K in keyof T]: Interactions<Unlisted<T[K]>> }
+    model: {
+        [K in keyof FilterByValue<T, object[]>]: Interactions<
+            Unlisted<T[K] extends object ? T[K] : never>
+        >
+    }
 
     constructor(
         fallback: T,
@@ -50,13 +60,16 @@ export class FileStore<
         })
         this.fallback = fallback
         this.path = path
-        this.model = transform(fallback, ([k, v]) => [
+        const modeledData = filter(fallback, {
+            objectFilter: ([k, v]) => Array.isArray(v)
+        }) as FilterByValue<T, any[]>
+        this.model = transform(modeledData, ([k, v]) => [
             k,
             {
                 persist: (o: object) =>
                     this.update({
                         [k]: (_: object[]) => _.concat(o)
-                    } as Update<T>)
+                    } as any)
             }
         ]) as any
         if (bidirectional) {

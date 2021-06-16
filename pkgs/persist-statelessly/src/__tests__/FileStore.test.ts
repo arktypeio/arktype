@@ -5,10 +5,12 @@ type Root = {
     a: {
         enabled: boolean
     }[]
+    b: string
 }
 
 const fallback: Root = {
-    a: []
+    a: [],
+    b: "not in model"
 }
 
 let store: FileStore<Root, {}>
@@ -25,5 +27,9 @@ describe("persist", () => {
     test("works", () => {
         store.model.a.persist({ enabled: true })
         expect(store.get("a")).toStrictEqual([{ enabled: true }])
+    })
+    test("doesn't include non-object-arrays", () => {
+        // @ts-ignore
+        expect(() => store.model.b.persist("not in model")).toThrowError()
     })
 })

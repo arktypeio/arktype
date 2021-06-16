@@ -87,6 +87,13 @@ export const transform = <K extends Key, V>(
 
 export type ItemOrList<T> = T | T[]
 export type Unlisted<T> = T extends (infer V)[] ? V : T
+export type FilterByValue<T extends object, ValueType> = Pick<
+    T,
+    {
+        [K in keyof T]: T[K] extends ValueType ? K : never
+    }[keyof T]
+>
+
 export const listify = <T>(o: ItemOrList<T>) => ([] as T[]).concat(o)
 
 export type Key = string | number
