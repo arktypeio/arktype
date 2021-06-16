@@ -24,6 +24,7 @@ export type ActionData<T> = {
     payload: DeepPartial<T>
     meta: {
         statelessly: true
+        bypassOnChange?: boolean
     }
 }
 

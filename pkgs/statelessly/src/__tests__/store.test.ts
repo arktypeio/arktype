@@ -1,3 +1,4 @@
+import { DeepPartial } from "@re-do/utils"
 import { Store, ListenerMap, StoreOptions } from ".."
 
 type Root = {
@@ -211,7 +212,7 @@ describe("actions", () => {
 const cHandler = jest.fn()
 const bing = jest.fn()
 const dHandler = jest.fn()
-const onChange: ListenerMap<Root, Store<Root, any>> = {
+const onChange: ListenerMap<Root, Root> = {
     c: cHandler,
     b: bing,
     d: dHandler
@@ -219,17 +220,41 @@ const onChange: ListenerMap<Root, Store<Root, any>> = {
 
 const functionalListener = jest.fn()
 
+const expectedContext = (
+    type: string,
+    payload: DeepPartial<Root>,
+    meta?: any
+) => ({
+    store,
+    action: {
+        type,
+        payload,
+        meta: {
+            bypassOnChange: undefined,
+            statelessly: true,
+            ...meta
+        }
+    }
+})
+
+const getEnableBContext = () => expectedContext("enableB", { b: true })
+
 describe("side effects", () => {
     beforeEach(() => {
         store = getStore({ onChange })
     })
     test("handle side effects", () => {
         store.$.enableB()
-        expect(bing).toBeCalledWith(true, store)
+        expect(bing).toBeCalledWith(true, getEnableBContext())
     })
     test("handles array side effects", () => {
         store.$.appendObjectToArray()
-        expect(dHandler).toBeCalledWith([initialA, initialA, initialA], store)
+        expect(dHandler).toBeCalledWith(
+            [initialA, initialA, initialA],
+            expectedContext("appendObjectToArray", {
+                d: [initialA, initialA, initialA]
+            })
+        )
     })
     test("doesn't trigger extraneous side effects", () => {
         store.$.updateSomeValues()
@@ -239,14 +264,24 @@ describe("side effects", () => {
     test("handles side effects with function", () => {
         store = getStore({ onChange: functionalListener })
         store.$.enableB()
-        expect(functionalListener).toHaveBeenCalledWith({ b: true }, store)
+        expect(functionalListener).toHaveBeenCalledWith(
+            { b: true },
+            getEnableBContext()
+        )
     })
     test("accepts an array of listeners", async () => {
         store = getStore({ onChange: [functionalListener, onChange] })
         store.$.enableB()
         // I'm sure there's a more elegant way to wait for a listener to be called in jest but I don't want to figure it out ;)
         await new Promise((_) => setTimeout(_, 100))
-        expect(bing).toBeCalledWith(true, store)
-        expect(functionalListener).toHaveBeenCalledWith({ b: true }, store)
+        expect(bing).toBeCalledWith(true, getEnableBContext())
+        expect(functionalListener).toHaveBeenCalledWith(
+            { b: true },
+            getEnableBContext()
+        )
+    })
+    test("listeners can be optionally bypassed", () => {
+        store.update({ b: true }, { bypassOnChange: true })
+        expect(bing).not.toBeCalled()
     })
 })

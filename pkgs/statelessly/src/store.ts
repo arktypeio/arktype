@@ -17,10 +17,15 @@ import { Query, Update, Actions, ActionData, StoreActions } from "./common"
 import { createOnChangeMiddleware, OnChangeMiddlewareArgs } from "./onChange"
 
 export type StoreOptions<T extends object> = {
-    onChange?: OnChangeMiddlewareArgs<T, Store<T, any>>
+    onChange?: OnChangeMiddlewareArgs<T>
     middleware?: Middleware[]
 }
 
+export type UpdateOptions = {
+    actionType?: string
+    bypassOnChange?: boolean
+    meta?: Record<string, any>
+}
 export class Store<T extends object, A extends Actions<T>> {
     underlying: ReduxStore<T, ActionData<T>>
     actions: StoreActions<T, A>
@@ -50,7 +55,10 @@ export class Store<T extends object, A extends Actions<T>> {
     query = <Q extends Query<T>>(q: Q) =>
         shapeFilter(this.underlying.getState(), q)
 
-    update = <U extends Update<T>>(u: U, actionType = "update") => {
+    update = <U extends Update<T>>(
+        u: U,
+        { actionType = "update", bypassOnChange, meta }: UpdateOptions = {}
+    ) => {
         const state = this.getState()
         const updatedState = updateMap(state, u)
         const changes = diff(state, updatedState)
@@ -59,7 +67,9 @@ export class Store<T extends object, A extends Actions<T>> {
                 type: actionType,
                 payload: changes,
                 meta: {
-                    statelessly: true
+                    ...meta,
+                    statelessly: true,
+                    bypassOnChange
                 }
             })
         }
@@ -93,7 +103,7 @@ export class Store<T extends object, A extends Actions<T>> {
                         const returnValue = actionValue(args, this as any)
                         if (returnValue instanceof Promise) {
                             returnValue.then((resolvedValue) => {
-                                this.update(resolvedValue, actionType)
+                                this.update(resolvedValue, { actionType })
                             })
                             return returnValue
                         } else {
@@ -103,7 +113,7 @@ export class Store<T extends object, A extends Actions<T>> {
                         // args shouldn't exist if updater was not a function
                         update = actionValue
                     }
-                    this.update(update, actionType)
+                    this.update(update, { actionType })
                 }
             ]
         }) as any

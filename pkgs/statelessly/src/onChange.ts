@@ -1,43 +1,53 @@
 import { Middleware } from "@reduxjs/toolkit"
 import { DeepPartial, listify } from "@re-do/utils"
 import { ActionData } from "./common"
+import { Store } from "./store"
 
-export type OnChangeMiddlewareArgs<T, Context> =
-    | Listener<T, Context>
-    | ListenerMap<T, Context>
-    | Array<Listener<T, Context> | ListenerMap<T, Context>>
+export type OnChangeMiddlewareArgs<T extends object> =
+    | Listener<T, T>
+    | ListenerMap<T, T>
+    | Array<Listener<T, T> | ListenerMap<T, T>>
 
-export const createOnChangeMiddleware = <T extends object, Context>(
-    onChange: OnChangeMiddlewareArgs<T, Context>,
-    context: Context
+export type OnChangeContext<T extends object> = {
+    store: Store<T, any>
+    action: ActionData<T>
+}
+
+export const createOnChangeMiddleware = <T extends object>(
+    onChange: OnChangeMiddlewareArgs<T>,
+    store: Store<T, any>
 ): Middleware => {
-    const handlers: Listener<T, Context>[] = []
+    const handlers: Listener<T, T>[] = []
     for (const listener of listify(onChange)) {
         if (typeof listener === "function") {
             handlers.push(listener)
         } else if (typeof listener === "object") {
-            handlers.push(createListener(listener, context))
+            handlers.push(createListener(listener))
         } else {
             throw new Error(
                 `Cannot create a listener from '${listener}' of type '${typeof listener}.'`
             )
         }
     }
-    return (store) => (next) => async (action: ActionData<T>) => {
+    return (reduxStore) => (next) => async (action: ActionData<T>) => {
         const result = next(action)
-        for (const handler of handlers) {
-            await handler(action.payload, context)
+        if (!action.meta.bypassOnChange) {
+            for (const handler of handlers) {
+                await handler(action.payload, { store, action })
+            }
         }
         return result
     }
 }
 
 export const createListener =
-    <ChangedState, Context>(
-        handler: ListenerMap<ChangedState, Context>,
-        context: Context
+    <ChangedState, RootState extends object>(
+        handler: ListenerMap<ChangedState, RootState>
     ) =>
-    async (changes: DeepPartial<ChangedState>) => {
+    async (
+        changes: DeepPartial<ChangedState>,
+        context: OnChangeContext<RootState>
+    ) => {
         for (const k in changes) {
             if (k in handler) {
                 const change = (changes as any)[k] as any
@@ -47,11 +57,14 @@ export const createListener =
         }
     }
 
-export type Listener<ChangedState, Context> = (
+export type Listener<ChangedState, RootState extends object> = (
     change: DeepPartial<ChangedState>,
-    context: Context
+    context: OnChangeContext<RootState>
 ) => void | Promise<void>
 
-export type ListenerMap<ChangedState, Context> = {
-    [K in keyof ChangedState]?: Listener<ChangedState[K], Context>
+export type ListenerMap<ChangedState, RootState extends object> = {
+    [K in keyof ChangedState]?: Listener<
+        ChangedState[K],
+        OnChangeContext<RootState>
+    >
 }

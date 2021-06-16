@@ -22,10 +22,10 @@ export const data = new LocalStore(
     {},
     {
         path: defaultRedoJsonPath,
-        onChange: (change, localStore) => {
+        onChange: (change, context) => {
             // Forward changes from local store to app state store
             if (store) {
-                store.update({ data: localStore.getState() })
+                store.update({ data: context.store.getState() })
             }
         }
     }

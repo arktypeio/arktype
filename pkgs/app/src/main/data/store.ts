@@ -1,7 +1,7 @@
 import { BaseStore, Actions, StoreOptions, Listener } from "react-statelessly"
 import { writeJsonSync, readJsonSync } from "fs-extra"
 import { listify } from "@re-do/utils"
-import { existsSync, watch, writeFileSync } from "fs"
+import { existsSync, FSWatcher, watch } from "fs"
 
 export type LocalStoreOptions<T extends object> = StoreOptions<T> & {
     path: string
@@ -14,6 +14,7 @@ export class LocalStore<
 > extends BaseStore<T, A> {
     private fallback: T
     private path: string
+    private watcher?: FSWatcher
 
     constructor(
         fallback: T,
@@ -25,38 +26,39 @@ export class LocalStore<
             ...otherOptions
         }: LocalStoreOptions<T>
     ) {
-        const writeChangesToFile: Listener<T, BaseStore<T, A>> = () =>
-            setFileState(path, this.getState())
+        const writeChangesToFile: Listener<T, T> = (changes, context) => {
+            // Avoid an infinite loop if updates are bidrectional
+            if (!("syncingFromFile" in context.action.meta)) {
+                setFileState(path, this.getState())
+            }
+        }
         const onChangeWithFileWrite = listify(onChange ?? []).concat(
             writeChangesToFile
         )
-        // if (bidirectional) {
-        //     ensureFile(path, fallback)
-        //     watch(path, {}, (event) => {
-        //         this.syncToFile()
-        //     })
-        // }
         super(getFileState(path, fallback), actions, {
             onChange: onChangeWithFileWrite,
             ...otherOptions
         })
         this.fallback = fallback
         this.path = path
+        if (bidirectional) {
+            this.watcher = watch(this.path, {}, (event) => {
+                this.syncFromFile()
+            })
+        }
     }
 
     refresh() {
-        this.underlying.dispatch({
-            type: "refresh",
-            payload: getFileState(this.path, this.fallback),
-            meta: { statelessly: true }
+        this.update(getFileState(this.path, this.fallback), {
+            actionType: "refresh",
+            meta: { syncingFromFile: true }
         })
     }
 
-    private syncToFile() {
-        this.underlying.dispatch({
-            type: "syncToFile",
-            payload: getFileState(this.path, this.fallback),
-            meta: { statelessly: true }
+    private syncFromFile() {
+        this.update(getFileState(this.path, this.fallback), {
+            actionType: "syncFromFile",
+            meta: { syncingFromFile: true }
         })
     }
 }
