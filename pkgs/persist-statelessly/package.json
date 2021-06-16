@@ -1,0 +1,30 @@
+{
+    "name": "persist-statelessly",
+    "version": "0.0.1",
+    "author": "redo.qa",
+    "description": "Seemlessly persist objects to a local file",
+    "main": "dist/cjs/index.js",
+    "module": "dist/mjs/index.js",
+    "exports": {
+        ".": {
+            "import": "./dist/mjs/index.js",
+            "require": "./dist/cjs/index.js"
+        }
+    },
+    "scripts": {
+        "build": "redo-build",
+        "test": "jest"
+    },
+    "dependencies": {
+        "statelessly": "0.0.2",
+        "@re-do/utils": "0.0.11"
+    },
+    "devDependencies": {
+        "@re-do/configs": "0.0.2",
+        "@types/jest": "26.0.20",
+        "@types/node": "15.0.2",
+        "jest": "26.6.3",
+        "ts-jest": "26.5.6",
+        "typescript": "4.2.3"
+    }
+}

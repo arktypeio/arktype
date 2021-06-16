@@ -39,6 +39,7 @@
         "react": "17.0.2",
         "react-dom": "17.0.2",
         "react-statelessly": "0.0.3",
+        "persist-statelessly": "0.0.1",
         "isomorphic-ws": "4.0.1",
         "playwright": "1.11.1",
         "electron-redux": "1.5.4"

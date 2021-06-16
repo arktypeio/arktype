@@ -1,12 +1,11 @@
 import { TestData } from "@re-do/model"
 import { Step } from "@re-do/test"
-import { join } from "path"
 import { deepEquals } from "@re-do/utils"
-import { LocalStore } from "./store"
+import { FileStore } from "persist-statelessly"
 import { RedoData } from "common"
 
 export const testToSteps = (
-    data: LocalStore<RedoData, {}>,
+    data: FileStore<RedoData, {}>,
     test: TestData
 ): Step[] =>
     test.steps.map((stepId) => {
@@ -38,7 +37,7 @@ export const getNextId = (existing: { id: number }[]) =>
     ) + 1
 
 export const createSteps = (
-    data: LocalStore<RedoData, {}>,
+    data: FileStore<RedoData, {}>,
     steps: Step[]
 ): number[] => {
     const existingSteps = data.get("steps")

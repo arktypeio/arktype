@@ -22,6 +22,7 @@ specifiers:
   '@rush-temp/configs': file:./projects/configs.tgz
   '@rush-temp/model': file:./projects/model.tgz
   '@rush-temp/node-utils': file:./projects/node-utils.tgz
+  '@rush-temp/persist-statelessly': file:./projects/persist-statelessly.tgz
   '@rush-temp/react-statelessly': file:./projects/react-statelessly.tgz
   '@rush-temp/statelessly': file:./projects/statelessly.tgz
   '@rush-temp/test': file:./projects/test.tgz
@@ -120,6 +121,7 @@ dependencies:
   '@rush-temp/configs': file:projects/configs.tgz
   '@rush-temp/model': file:projects/model.tgz_react@17.0.2
   '@rush-temp/node-utils': file:projects/node-utils.tgz_ts-node@9.1.1
+  '@rush-temp/persist-statelessly': file:projects/persist-statelessly.tgz_ts-node@9.1.1
   '@rush-temp/react-statelessly': file:projects/react-statelessly.tgz_ts-node@9.1.1
   '@rush-temp/statelessly': file:projects/statelessly.tgz_ts-node@9.1.1
   '@rush-temp/test': file:projects/test.tgz_ts-node@9.1.1
@@ -18516,6 +18518,25 @@ packages:
       typescript: 4.2.3
       util: 0.12.3
       validator: 13.5.2
+    transitivePeerDependencies:
+      - bufferutil
+      - canvas
+      - supports-color
+      - ts-node
+      - utf-8-validate
+    dev: false
+
+  file:projects/persist-statelessly.tgz_ts-node@9.1.1:
+    resolution: {integrity: sha512-/InWlL4a2/J4yAQCeppFP2auJo9WwBgrRW0NfsIWPZaz+O+RV3LGqWZIb6ORPXyr55XrBRVMKRZNqbm6cWnCXA==, tarball: file:projects/persist-statelessly.tgz}
+    id: file:projects/persist-statelessly.tgz
+    name: '@rush-temp/persist-statelessly'
+    version: 0.0.0
+    dependencies:
+      '@types/jest': 26.0.20
+      '@types/node': 15.0.2
+      jest: 26.6.3_ts-node@9.1.1
+      ts-jest: 26.5.6_jest@26.6.3+typescript@4.2.3
+      typescript: 4.2.3
     transitivePeerDependencies:
       - bufferutil
       - canvas

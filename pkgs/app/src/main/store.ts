@@ -6,7 +6,8 @@ import { TestData } from "@re-do/model"
 import { launchBrowser, closeBrowser } from "./launchBrowser"
 import { mainWindow, builderWindow } from "./windows"
 import { ValueOf } from "@re-do/utils"
-import { createSteps, testToSteps, getNextId, LocalStore } from "./data"
+import { createSteps, testToSteps, getNextId } from "./data"
+import { FileStore } from "persist-statelessly"
 import { join } from "path"
 
 const DEFAULT_BUILDER_WIDTH = 300
@@ -17,7 +18,7 @@ export const defaultRedoData: RedoData = { tests: [], elements: [], steps: [] }
 
 export let store: Store<Root, MainActionFunctions>
 
-export const data = new LocalStore(
+export const data = new FileStore(
     defaultRedoData,
     {},
     {
@@ -88,7 +89,7 @@ const mainActions: MainActionFunctions = {
         await runTest(testToSteps(data, test as TestData))
         return {}
     },
-    saveTest: async ([{ steps, ...rest }], store) => {
+    saveTest: async ([{ steps, ...rest }]) => {
         const testData: TestData = {
             ...rest,
             steps: createSteps(data, steps),
