@@ -1,7 +1,4 @@
 {
-    "a": [
-        {
-            "enabled": true
-        }
-    ]
+    "users": [],
+    "groups": []
 }
