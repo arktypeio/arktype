@@ -1,4 +1,7 @@
 {
-    "a": [],
-    "b": "not in model"
+    "a": [
+        {
+            "enabled": true
+        }
+    ]
 }

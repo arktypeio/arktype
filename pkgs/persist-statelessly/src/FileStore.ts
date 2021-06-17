@@ -13,27 +13,12 @@ export type FileStoreOptions<T extends object> = StoreOptions<T> & {
     bidirectional?: boolean
 }
 
-type Persisted<O extends object> = {
-    [K in keyof O]: O[K] extends object ? number : O[K]
-} & {
-    id: number
-}
-
-type Interactions<O extends object> = {
-    persist: (o: O) => Persisted<O>
-}
-
 export class FileStore<T extends object, A extends Actions<T>> extends Store<
     T,
     A
 > {
     private fallback: T
     private path: string
-    model: {
-        [K in keyof FilterByValue<T, object[]>]: Interactions<
-            Unlisted<T[K] extends object ? T[K] : never>
-        >
-    }
 
     constructor(
         fallback: T,
@@ -63,15 +48,6 @@ export class FileStore<T extends object, A extends Actions<T>> extends Store<
         const modeledData = filter(fallback, {
             objectFilter: ([k, v]) => Array.isArray(v)
         }) as FilterByValue<T, any[]>
-        this.model = transform(modeledData, ([k, v]) => [
-            k,
-            {
-                persist: (o: object) =>
-                    this.update({
-                        [k]: (_: object[]) => _.concat(o)
-                    } as any)
-            }
-        ]) as any
         if (bidirectional) {
             watch(this.path, {}, (event) => {
                 this.syncFromFile()

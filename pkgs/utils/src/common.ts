@@ -93,6 +93,12 @@ export type FilterByValue<T extends object, ValueType> = Pick<
         [K in keyof T]: T[K] extends ValueType ? K : never
     }[keyof T]
 >
+export type ExcludeByValue<T extends object, ValueType> = Pick<
+    T,
+    {
+        [K in keyof T]: T[K] extends ValueType ? never : K
+    }[keyof T]
+>
 
 export const listify = <T>(o: ItemOrList<T>) => ([] as T[]).concat(o)
 
