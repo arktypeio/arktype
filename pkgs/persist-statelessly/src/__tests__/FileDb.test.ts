@@ -49,7 +49,7 @@ const mappedKeys: MappedKeys<Root> = {
 
 let db: FileDb<Root>
 
-describe("persist", () => {
+describe("create", () => {
     beforeEach(() => {
         rmSync(path)
         db = createFileDb({
@@ -59,25 +59,28 @@ describe("persist", () => {
             bidirectional: false
         })
     })
+    const expectedShallowUser = { ...shallowUserData, id: 1 }
     test("shallow", () => {
-        db.users.persist(shallowUserData)
-        expect(db.users.retrieve()).toStrictEqual([
-            { ...shallowUserData, id: 0 }
-        ])
+        expect(db.users.create(shallowUserData)).toStrictEqual(
+            expectedShallowUser
+        )
+        expect(db.users.find()).toStrictEqual([expectedShallowUser])
     })
-    const expectedDeepUsers = [
-        { ...shallowUserData, id: 0 },
-        { ...deepUserData, friends: [0], id: 0 }
-    ]
+    const expectedDeepUser = { ...deepUserData, friends: [1], id: 2 }
+    const bothExpectedUsers = [expectedShallowUser, expectedDeepUser]
     test("deep", () => {
-        db.users.persist(deepUserData)
-        expect(db.users.retrieve()).toStrictEqual(expectedDeepUsers)
+        expect(db.users.create(deepUserData)).toStrictEqual(expectedDeepUser)
+        expect(db.users.find()).toStrictEqual(bothExpectedUsers)
     })
+    const expectedDeepGroup = { ...deepGroupData, users: [2], id: 1 }
     test("deep multitype", () => {
-        db.groups.persist(deepGroupData)
-        expect(db.groups.retrieve()).toStrictEqual([
-            { ...deepGroupData, users: [0], id: 0 }
-        ])
-        expect(db.users.retrieve()).toStrictEqual(expectedDeepUsers)
+        expect(db.groups.create(deepGroupData)).toStrictEqual(expectedDeepGroup)
+        expect(db.groups.find()).toStrictEqual([expectedDeepGroup])
+        expect(db.users.find()).toStrictEqual(bothExpectedUsers)
+    })
+    test("errors on unknown object", () => {
+        expect(() =>
+            db.users.create({ ...shallowUserData, unknown: {} } as any)
+        ).toThrow()
     })
 })
