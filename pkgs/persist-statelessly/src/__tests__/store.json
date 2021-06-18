@@ -1,4 +1,28 @@
 {
-    "users": [],
-    "groups": []
+    "users": [
+        {
+            "name": "Mister Shallow",
+            "friends": [],
+            "groups": [],
+            "id": 1
+        },
+        {
+            "name": "Mister Deep",
+            "friends": [
+                1
+            ],
+            "groups": [],
+            "id": 2
+        }
+    ],
+    "groups": [
+        {
+            "name": "Adventurer's Club",
+            "description": "The most daring individuals in the world",
+            "users": [
+                2
+            ],
+            "id": 1
+        }
+    ]
 }

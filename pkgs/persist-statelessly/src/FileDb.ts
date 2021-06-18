@@ -31,17 +31,19 @@ export const createFileDb = <
     IdFieldName extends undefined ? "id" : IdFieldName
 > => {
     const store = new FileStore(fallback, {}, rest)
+    const context: FileDbContext = {
+        fallback,
+        store,
+        mappedKeys,
+        idFieldName: idFieldName ?? "id"
+    }
     return transform(fallback, ([k, v]) => [
         k,
         {
-            create: (o: any) =>
-                deepCreate(k, o, {
-                    fallback,
-                    store,
-                    mappedKeys,
-                    idFieldName: idFieldName ?? "id"
-                }),
-            find: () => store.get(k as any)
+            create: (o: any) => deepCreate(k, o, context),
+            all: () => store.get(k as any),
+            find: (by: FindBy<T, IdFieldName>) =>
+                unpackStoredValue(k, shallowFind(k, by, context), context)
         }
     ]) as any
 }
@@ -55,11 +57,8 @@ type Persisted<O extends object, IdFieldName extends string> = {
 
 type Interactions<O extends object, IdFieldName extends string> = {
     create: (o: O) => Persisted<O, IdFieldName>
+    all: () => O[]
     find: (by: FindBy<O, IdFieldName>) => O[]
-    findOne: (by: FindBy<O, IdFieldName>) => O
-    findShallow: (
-        by: FindBy<Persisted<O, IdFieldName>, IdFieldName>
-    ) => Persisted<O, IdFieldName>[]
 }
 
 type FileDbContext = {
