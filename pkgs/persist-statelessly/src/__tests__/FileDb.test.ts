@@ -93,10 +93,21 @@ describe("find", () => {
     beforeEach(() => {
         db = getDb()
     })
+    const expectedDeepGroupData = {
+        ...deepGroupData,
+        id: 1,
+        users: [
+            {
+                ...deepUserData,
+                id: 2,
+                friends: [{ ...shallowUserData, id: 1 }]
+            }
+        ]
+    }
     test("unpacks deep values", () => {
         db.groups.create(deepGroupData)
         expect(
             db.groups.find((_) => _.name === deepGroupData.name)
-        ).toStrictEqual(deepGroupData)
+        ).toStrictEqual(expectedDeepGroupData)
     })
 })

@@ -43,7 +43,7 @@ export const createFileDb = <
             create: (o: any) => deepCreate(k, o, context),
             all: () => store.get(k as any),
             find: (by: FindBy<T, IdFieldName>) =>
-                unpackStoredValue(k, shallowFind(k, by, context), context)
+                unpackStoredValue(k, shallowFind(k, by, context)!, context)
         }
     ]) as any
 }
@@ -122,7 +122,7 @@ const shallowFind = (
     context: FileDbContext
 ) => {
     const existing = context.store.get(typeName) as object[]
-    return existing.filter(by)
+    return existing.find(by)
 }
 
 const unpackStoredValue = (
@@ -146,7 +146,7 @@ const unpackStoredValue = (
                         objectTypeName!,
                         (o) => o[context.idFieldName] === id,
                         context
-                    ),
+                    )!,
                     context
                 )
             if (typeof v === "number") {

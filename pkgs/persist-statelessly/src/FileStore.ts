@@ -1,11 +1,5 @@
 import { Store, Actions, StoreOptions, Listener, Update } from "statelessly"
-import {
-    FilterByValue,
-    listify,
-    transform,
-    Unlisted,
-    filter
-} from "@re-do/utils"
+import { listify } from "@re-do/utils"
 import { existsSync, watch, readFileSync, writeFileSync } from "fs"
 
 export type FileStoreOptions<T extends object> = StoreOptions<T> & {
@@ -45,9 +39,6 @@ export class FileStore<T extends object, A extends Actions<T>> extends Store<
         })
         this.fallback = fallback
         this.path = path
-        const modeledData = filter(fallback, {
-            objectFilter: ([k, v]) => Array.isArray(v)
-        }) as FilterByValue<T, any[]>
         if (bidirectional) {
             watch(this.path, {}, (event) => {
                 this.syncFromFile()
