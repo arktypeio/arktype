@@ -42,23 +42,34 @@ export const createFileDb = <
         {
             create: (o: any) => deepCreate(k, o, context),
             all: () => store.get(k as any),
-            find: (by: FindBy<T, IdFieldName>) =>
-                unpackStoredValue(k, shallowFind(k, by, context)!, context)
+            find: (by: FindBy<T>) => find(k, by, context)
         }
     ]) as any
 }
 
-type FindBy<O extends object, IdFieldName extends string> = (o: O) => boolean
+type FindBy<O extends object> = (o: O) => boolean
 
-type Persisted<O extends object, IdFieldName extends string> = {
-    [K in keyof O]: O[K] extends object ? number : O[K]
-} &
+type Persisted<O extends object, IdFieldName extends string> = WithId<
+    {
+        [K in keyof O]: O[K] extends object ? number : O[K]
+    },
+    IdFieldName
+>
+
+type WithId<O extends object, IdFieldName extends string> = O &
     Record<IdFieldName extends string ? IdFieldName : never, number>
 
+type WithIds<O extends object, IdFieldName extends string> = WithId<
+    {
+        [K in keyof O]: O[K] extends object ? WithIds<O[K], IdFieldName> : O[K]
+    },
+    IdFieldName
+>
+
 type Interactions<O extends object, IdFieldName extends string> = {
-    create: (o: O) => Persisted<O, IdFieldName>
+    create: (o: O) => WithIds<O, IdFieldName>
     all: () => O[]
-    find: (by: FindBy<O, IdFieldName>) => O[]
+    find: (by: FindBy<WithIds<O, IdFieldName>>) => WithIds<O, IdFieldName>
 }
 
 type FileDbContext = {
@@ -116,13 +127,32 @@ const deepCreate = (typeName: string, value: any, context: FileDbContext) => {
     return storedDataWithId
 }
 
-const shallowFind = (
+type FindOptions = {
+    unpack?: boolean
+    exactlyOne?: boolean
+}
+
+const find = (
     typeName: string,
-    by: FindBy<any, any>,
-    context: FileDbContext
+    by: FindBy<any>,
+    context: FileDbContext,
+    { exactlyOne = true, unpack = true }: FindOptions = {}
 ) => {
-    const existing = context.store.get(typeName) as object[]
-    return existing.find(by)
+    let objectsToSearch = context.store.get(typeName) as object[]
+    if (unpack) {
+        objectsToSearch = objectsToSearch.map((o) =>
+            unpackStoredValue(typeName, o, context)
+        )
+    }
+    if (exactlyOne) {
+        const result = objectsToSearch.find(by)
+        if (!result) {
+            throw new Error(`${typeName} matching criteria ${by} didn't exist.`)
+        }
+        return result
+    } else {
+        return objectsToSearch.filter(by)
+    }
 }
 
 const unpackStoredValue = (
@@ -142,10 +172,11 @@ const unpackStoredValue = (
             const getUnpackedValue = (id: number) =>
                 unpackStoredValue(
                     objectTypeName!,
-                    shallowFind(
+                    find(
                         objectTypeName!,
                         (o) => o[context.idFieldName] === id,
-                        context
+                        context,
+                        { unpack: false }
                     )!,
                     context
                 )

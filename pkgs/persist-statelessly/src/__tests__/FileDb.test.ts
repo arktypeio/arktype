@@ -107,7 +107,7 @@ describe("find", () => {
     test("unpacks deep values", () => {
         db.groups.create(deepGroupData)
         expect(
-            db.groups.find((_) => _.name === deepGroupData.name)
+            db.groups.find((group) => group.name === deepGroupData.name)
         ).toStrictEqual(expectedDeepGroupData)
     })
 })
