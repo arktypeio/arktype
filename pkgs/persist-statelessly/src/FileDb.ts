@@ -1,10 +1,20 @@
-import { transform, Unlisted } from "@re-do/utils"
+import {
+    transform,
+    Unlisted,
+    FilterByValue,
+    withDefaults,
+    Key,
+    split,
+    isEmpty
+} from "@re-do/utils"
 import { FileStore, FileStoreOptions } from "./FileStore"
 
 export type Model = Record<string, Record<string, any>[]>
 
-export type MappedKeys<T extends Model> = {
-    [K in keyof T]?: { [K2 in keyof Unlisted<T[K]>]?: keyof T }
+export type Relationships<T extends Model> = {
+    [K in keyof T]: {
+        [K2 in keyof FilterByValue<Unlisted<T[K]>, object>]: keyof T
+    }
 }
 
 export type FileDb<T extends Model, IdFieldName extends string = "id"> = {
@@ -15,8 +25,7 @@ export type FileDbArgs<
     T extends Model,
     IdFieldName extends string = "id"
 > = FileStoreOptions<T> & {
-    fallback: T
-    mappedKeys?: MappedKeys<T>
+    relationships: Relationships<T>
     idFieldName?: IdFieldName
 }
 
@@ -24,54 +33,135 @@ export const createFileDb = <
     T extends Model,
     IdFieldName extends string = "id"
 >({
-    fallback,
-    mappedKeys = {},
+    relationships,
     idFieldName,
-    ...rest
+    ...fileStoreOptions
 }: FileDbArgs<T, IdFieldName extends undefined ? "id" : IdFieldName>): FileDb<
     T,
     IdFieldName extends undefined ? "id" : IdFieldName
 > => {
-    const store = new FileStore(fallback, {}, rest)
+    const store = new FileStore<T>({}, fileStoreOptions)
     const context: FileDbContext = {
-        fallback,
         store,
-        mappedKeys,
+        relationships,
         idFieldName: idFieldName ?? "id"
     }
-    return transform(fallback, ([k, v]) => [
+    const dependents = transform(relationships, ([k, v]) => [
+        k,
+        Object.entries(relationships).reduce(
+            (dependentsOfK, [candidateKey, candidateRelationships]) => {
+                const kTypedFields = Object.entries(candidateRelationships)
+                    .filter(
+                        ([candidateField, candidateFieldType]) =>
+                            candidateFieldType === k
+                    )
+                    .map(
+                        ([candidateField, candidateFieldType]) => candidateField
+                    )
+                if (!isEmpty(kTypedFields)) {
+                    return {
+                        ...dependentsOfK,
+                        [candidateKey]: kTypedFields
+                    }
+                }
+                return dependentsOfK
+            },
+            {}
+        )
+    ]) as any as { [K in keyof T]: { [K in keyof T]?: string[] } }
+    return transform(relationships, ([k, v]: [string, any]) => [
         k,
         {
-            create: (o: any, options?: InteractionOptions<any>) => {
+            create: (o: any, options: InteractionOptions<any> = {}) => {
                 const { unpack } = addDefaultInteractionOptions(options)
                 const result = deepCreate(k, o, context)
                 return unpack ? unpackStoredValue(k, result, context) : result
             },
-            all: (options?: InteractionOptions<any>) => {
+            all: (options: InteractionOptions<any> = {}) => {
                 const { unpack } = addDefaultInteractionOptions(options)
                 return find(k, (_) => true, context, {
                     unpack,
                     exactlyOne: false
                 })
             },
-            find: (by: FindBy<T>, options?: InteractionOptions<any>) => {
+            find: (by: FindBy<T>, options: InteractionOptions<any> = {}) => {
                 const { unpack } = addDefaultInteractionOptions(options)
                 return find(k, by, context, { unpack })
             },
-            filter: (by: FindBy<T>, options?: InteractionOptions<any>) => {
+            filter: (by: FindBy<T>, options: InteractionOptions<any> = {}) => {
                 const { unpack } = addDefaultInteractionOptions(options)
                 return find(k, by, context, { unpack, exactlyOne: false })
             },
-            delete: (by: FindBy<T>, options?: DeleteOptions) => {
+            delete: (by: FindBy<T>, options: DeleteOptions = {}) => {
                 const { prune } = addDefaultDeleteOptions(options)
-                // Filter to objects that don't match the find criteria
-                const objectsToPreserve = find(k, (o) => !by(o), context, {
-                    unpack: false,
-                    exactlyOne: false
-                }) as object[]
-                store.update({ [k]: objectsToPreserve } as any, {
-                    actionType: "delete"
-                })
+                const [objectsToDelete, objectsToPreserve] = split<T>(
+                    store.get(k as any) as T[],
+                    by
+                )
+                const idsToDelete = objectsToDelete.map(
+                    (o) => o.id
+                ) as any as number[]
+                const cascadedUpdates = {} as any
+                Object.entries(dependents[k]).forEach(
+                    ([dependentType, dependentFields]) => {
+                        const possibleDependentValues = store.get(
+                            dependentType as any
+                        ) as any[]
+                        possibleDependentValues.forEach(
+                            (possibleDependentValue) => {
+                                dependentFields?.forEach((fieldName) => {
+                                    const idsOfK =
+                                        possibleDependentValue?.[fieldName]
+                                    if (idsOfK) {
+                                        if (Array.isArray(idsOfK)) {
+                                            const preservedIdsOfK =
+                                                idsOfK.filter(
+                                                    (id) =>
+                                                        !idsToDelete.includes(
+                                                            id
+                                                        )
+                                                )
+                                            if (
+                                                preservedIdsOfK.length <
+                                                idsOfK.length
+                                            ) {
+                                                cascadedUpdates[dependentType] =
+                                                    {
+                                                        ...cascadedUpdates[
+                                                            dependentType
+                                                        ],
+                                                        [fieldName]:
+                                                            preservedIdsOfK
+                                                    }
+                                            }
+                                        } else if (typeof idsOfK === "number") {
+                                            if (idsToDelete.includes(idsOfK)) {
+                                                cascadedUpdates[dependentType] =
+                                                    {
+                                                        ...cascadedUpdates[
+                                                            dependentType
+                                                        ],
+                                                        [fieldName]: null
+                                                    }
+                                            }
+                                        } else {
+                                            throw new Error(
+                                                `Expected an ID or list of IDs for ${dependentType}/${fieldName} but instead found ${idsOfK}.`
+                                            )
+                                        }
+                                    }
+                                })
+                            }
+                        )
+                    }
+                )
+                // TODO: Fix types that reference themselves
+                store.update(
+                    { [k]: objectsToPreserve, ...cascadedUpdates },
+                    {
+                        actionType: "delete"
+                    }
+                )
             }
         }
     ]) as any
@@ -104,19 +194,11 @@ type DeleteOptions = {
     prune?: boolean
 }
 
-const addDefaultOptions =
-    <T extends object>(defaultOptions: Required<T>) =>
-    (providedOptions?: T) => {
-        return { ...defaultOptions, ...providedOptions }
-    }
+const addDefaultInteractionOptions = withDefaults<InteractionOptions<any>>({
+    unpack: true
+})
 
-const addDefaultInteractionOptions = addDefaultOptions<InteractionOptions<any>>(
-    {
-        unpack: true
-    }
-)
-
-const addDefaultDeleteOptions = addDefaultOptions<DeleteOptions>({
+const addDefaultDeleteOptions = withDefaults<DeleteOptions>({
     prune: true
 })
 
@@ -149,9 +231,8 @@ type Interactions<O extends object, IdFieldName extends string> = {
 }
 
 type FileDbContext = {
-    fallback: Model
     store: FileStore<any, {}>
-    mappedKeys: MappedKeys<any>
+    relationships: Relationships<any>
     idFieldName: string
 }
 
@@ -166,15 +247,11 @@ const deepCreate = (typeName: string, value: any, context: FileDbContext) => {
         let storedValue = v
         if (v && typeof v === "object") {
             let keyName: string
-            const possibleMappedKey = context.mappedKeys[typeName]?.[k]
+            const possibleMappedKey = context.relationships[typeName]?.[k]
             if (possibleMappedKey) {
                 keyName = String(possibleMappedKey)
-            } else if (k in context.fallback) {
-                keyName = String(k)
             } else {
-                throw new Error(
-                    `Unable to determine entity associated with key '${k}' from type '${typeName}'.`
-                )
+                throw new Error(getUnknownEntityErrorMessage(typeName, k))
             }
             storedValue = Array.isArray(v)
                 ? v.map(
@@ -208,6 +285,10 @@ type FindOptions = {
     exactlyOne?: boolean
 }
 
+const getUnknownEntityErrorMessage = (typeName: string, key: Key) =>
+    `Unable to determine entity associated with key '${key}' from type '${typeName}'.` +
+    `Try adding specifying its type by adding it to the DB's relationships.`
+
 const find = (
     typeName: string,
     by: FindBy<any>,
@@ -238,11 +319,9 @@ const unpackStoredValue = (
 ): any => {
     return transform(o, ([k, v]) => {
         let objectTypeName: string | undefined
-        const possibleObjectTypeName = context.mappedKeys[typeName]?.[k]
+        const possibleObjectTypeName = context.relationships[typeName]?.[k]
         if (possibleObjectTypeName) {
             objectTypeName = String(possibleObjectTypeName)
-        } else if (k in context.fallback) {
-            objectTypeName = String(k)
         }
         if (objectTypeName) {
             const getUnpackedValue = (id: number) =>

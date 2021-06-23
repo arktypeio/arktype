@@ -1,6 +1,6 @@
 import { rmSync } from "fs"
 import { join } from "path"
-import { createFileDb, FileDb, MappedKeys } from ".."
+import { createFileDb, FileDb, Relationships } from ".."
 
 const path = join(__dirname, "store.json")
 
@@ -41,21 +41,20 @@ const deepGroupData: Group = {
 
 type Root = typeof fallback
 
-const mappedKeys: MappedKeys<Root> = {
-    users: {
-        friends: "users"
-    }
+const relationships: Relationships<Root> = {
+    users: { friends: "users", groups: "groups" },
+    groups: { users: "users" }
 }
 
 let db: FileDb<Root>
 
 const getDb = () => {
     rmSync(path)
-    return createFileDb({
-        fallback,
+    return createFileDb<Root>({
+        relationships,
         path,
-        mappedKeys,
-        bidirectional: false
+        bidirectional: false,
+        onNoFile: () => ({ users: [], groups: [] })
     })
 }
 const expectedShallowUser = { ...shallowUserData, id: 1 }
