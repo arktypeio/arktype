@@ -70,17 +70,48 @@ describe("create", () => {
         )
         expect(db.users.all()).toStrictEqual([expectedShallowUser])
     })
-    const expectedDeepUser = { ...deepUserData, friends: [1], id: 2 }
-    const bothExpectedUsers = [expectedShallowUser, expectedDeepUser]
+    const expectedDeepUserShallow = {
+        ...deepUserData,
+        friends: [1],
+        id: 2
+    }
+    const expectedDeepUserDeep = {
+        ...expectedDeepUserShallow,
+        friends: [expectedShallowUser]
+    }
+    const bothExpectedUsersShallow = [
+        expectedShallowUser,
+        expectedDeepUserShallow
+    ]
     test("deep", () => {
-        expect(db.users.create(deepUserData)).toStrictEqual(expectedDeepUser)
-        expect(db.users.all()).toStrictEqual(bothExpectedUsers)
+        expect(db.users.create(deepUserData)).toStrictEqual(
+            expectedDeepUserDeep
+        )
+        expect(db.users.all({ unpack: false })).toStrictEqual(
+            bothExpectedUsersShallow
+        )
     })
-    const expectedDeepGroup = { ...deepGroupData, users: [2], id: 1 }
+
+    test("deep no unpack", () => {
+        expect(db.users.create(deepUserData, { unpack: false })).toStrictEqual(
+            expectedDeepUserShallow
+        )
+    })
+    const expectedDeepGroupShallow = { ...deepGroupData, users: [2], id: 1 }
+    const expectedDeepGroupDeep = {
+        ...expectedDeepGroupShallow,
+        users: [expectedDeepUserDeep]
+    }
     test("deep multitype", () => {
-        expect(db.groups.create(deepGroupData)).toStrictEqual(expectedDeepGroup)
-        expect(db.groups.all()).toStrictEqual([expectedDeepGroup])
-        expect(db.users.all()).toStrictEqual(bothExpectedUsers)
+        expect(db.groups.create(deepGroupData)).toStrictEqual(
+            expectedDeepGroupDeep
+        )
+        expect(db.groups.all({ unpack: false })).toStrictEqual([
+            expectedDeepGroupShallow
+        ])
+        expect(db.users.all({ unpack: false })).toStrictEqual(
+            bothExpectedUsersShallow
+        )
     })
     test("errors on unknown object", () => {
         expect(() =>

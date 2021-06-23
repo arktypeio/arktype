@@ -11,12 +11,14 @@ export type FileDb<T extends Model, IdFieldName extends string = "id"> = {
     [K in keyof T]: Interactions<Unlisted<T[K]>, IdFieldName>
 }
 
-export type FileDbArgs<T extends Model, IdFieldName extends string = "id"> =
-    FileStoreOptions<T> & {
-        fallback: T
-        mappedKeys?: MappedKeys<T>
-        idFieldName?: IdFieldName
-    }
+export type FileDbArgs<
+    T extends Model,
+    IdFieldName extends string = "id"
+> = FileStoreOptions<T> & {
+    fallback: T
+    mappedKeys?: MappedKeys<T>
+    idFieldName?: IdFieldName
+}
 
 export const createFileDb = <
     T extends Model,
@@ -40,16 +42,33 @@ export const createFileDb = <
     return transform(fallback, ([k, v]) => [
         k,
         {
-            create: (o: any) => deepCreate(k, o, context),
-            all: () => store.get(k as any),
-            find: (by: FindBy<T>) => find(k, by, context)
+            create: (o: any, options?: InteractionOptions<any>) => {
+                const { unpack } = addDefaultInteractionOptions(options)
+                const result = deepCreate(k, o, context)
+                return unpack ? unpackStoredValue(k, result, context) : result
+            },
+            all: (options?: InteractionOptions<any>) => {
+                const { unpack } = addDefaultInteractionOptions(options)
+                return find(k, (_) => true, context, {
+                    unpack,
+                    exactlyOne: false
+                })
+            },
+            find: (by: FindBy<T>, options?: InteractionOptions<any>) => {
+                const { unpack } = addDefaultInteractionOptions(options)
+                return find(k, by, context, { unpack })
+            },
+            filter: (by: FindBy<T>, options?: InteractionOptions<any>) => {
+                const { unpack } = addDefaultInteractionOptions(options)
+                return find(k, by, context, { unpack, exactlyOne: false })
+            }
         }
     ]) as any
 }
 
 type FindBy<O extends object> = (o: O) => boolean
 
-type Persisted<O extends object, IdFieldName extends string> = WithId<
+type Shallow<O extends object, IdFieldName extends string> = WithId<
     {
         [K in keyof O]: O[K] extends object ? number : O[K]
     },
@@ -66,10 +85,35 @@ type WithIds<O extends object, IdFieldName extends string> = WithId<
     IdFieldName
 >
 
+type InteractionOptions<Unpack extends boolean = true> = {
+    unpack?: Unpack
+}
+
+const addDefaultInteractionOptions = (
+    provided?: InteractionOptions
+): Required<InteractionOptions> => {
+    const defaultInteractionOptions: Required<InteractionOptions> = {
+        unpack: true
+    }
+    return { ...defaultInteractionOptions, ...provided }
+}
+
 type Interactions<O extends object, IdFieldName extends string> = {
-    create: (o: O) => WithIds<O, IdFieldName>
-    all: () => O[]
-    find: (by: FindBy<WithIds<O, IdFieldName>>) => WithIds<O, IdFieldName>
+    create: <U extends boolean>(
+        o: O,
+        options?: InteractionOptions<U>
+    ) => U extends true ? WithIds<O, IdFieldName> : Shallow<O, IdFieldName>
+    all: <U extends boolean>(
+        options?: InteractionOptions<U>
+    ) => WithIds<O[], IdFieldName>
+    find: <U extends boolean>(
+        by: FindBy<WithIds<O, IdFieldName>>,
+        options?: InteractionOptions<U>
+    ) => WithIds<O, IdFieldName>
+    filter: <U extends boolean>(
+        by: FindBy<WithIds<O, IdFieldName>>,
+        options?: InteractionOptions<U>
+    ) => WithIds<O, IdFieldName>[]
 }
 
 type FileDbContext = {
@@ -109,7 +153,7 @@ const deepCreate = (typeName: string, value: any, context: FileDbContext) => {
         }
         return [k, storedValue]
     })
-    const existing = context.store.get(typeName) as Persisted<any, any>[]
+    const existing = context.store.get(typeName) as Shallow<any, any>[]
     const storedDataWithId = {
         ...storedData,
         [context.idFieldName]:
