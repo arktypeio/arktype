@@ -58,31 +58,33 @@ const getDb = () => {
         bidirectional: false
     })
 }
+const expectedShallowUser = { ...shallowUserData, id: 1 }
+const expectedDeepUserShallow = {
+    ...deepUserData,
+    friends: [1],
+    id: 2
+}
+const expectedDeepUserDeep = {
+    ...expectedDeepUserShallow,
+    friends: [expectedShallowUser]
+}
+const bothExpectedUsersShallow = [expectedShallowUser, expectedDeepUserShallow]
+const expectedDeepGroupShallow = { ...deepGroupData, users: [2], id: 1 }
+const expectedDeepGroupDeep = {
+    ...expectedDeepGroupShallow,
+    users: [expectedDeepUserDeep]
+}
 
 describe("create", () => {
     beforeEach(() => {
         db = getDb()
     })
-    const expectedShallowUser = { ...shallowUserData, id: 1 }
     test("shallow", () => {
         expect(db.users.create(shallowUserData)).toStrictEqual(
             expectedShallowUser
         )
         expect(db.users.all()).toStrictEqual([expectedShallowUser])
     })
-    const expectedDeepUserShallow = {
-        ...deepUserData,
-        friends: [1],
-        id: 2
-    }
-    const expectedDeepUserDeep = {
-        ...expectedDeepUserShallow,
-        friends: [expectedShallowUser]
-    }
-    const bothExpectedUsersShallow = [
-        expectedShallowUser,
-        expectedDeepUserShallow
-    ]
     test("deep", () => {
         expect(db.users.create(deepUserData)).toStrictEqual(
             expectedDeepUserDeep
@@ -91,17 +93,11 @@ describe("create", () => {
             bothExpectedUsersShallow
         )
     })
-
     test("deep no unpack", () => {
         expect(db.users.create(deepUserData, { unpack: false })).toStrictEqual(
             expectedDeepUserShallow
         )
     })
-    const expectedDeepGroupShallow = { ...deepGroupData, users: [2], id: 1 }
-    const expectedDeepGroupDeep = {
-        ...expectedDeepGroupShallow,
-        users: [expectedDeepUserDeep]
-    }
     test("deep multitype", () => {
         expect(db.groups.create(deepGroupData)).toStrictEqual(
             expectedDeepGroupDeep
@@ -124,21 +120,51 @@ describe("find", () => {
     beforeEach(() => {
         db = getDb()
     })
-    const expectedDeepGroupData = {
-        ...deepGroupData,
-        id: 1,
-        users: [
-            {
-                ...deepUserData,
-                id: 2,
-                friends: [{ ...shallowUserData, id: 1 }]
-            }
-        ]
-    }
-    test("unpacks deep values", () => {
+    test("can retrieve all values of a given type", () => {
+        db.users.create(deepUserData)
+        expect(db.users.all({ unpack: false })).toStrictEqual(
+            bothExpectedUsersShallow
+        )
+    })
+    test("unpacks deep values by default", () => {
         db.groups.create(deepGroupData)
         expect(
             db.groups.find((group) => group.name === deepGroupData.name)
-        ).toStrictEqual(expectedDeepGroupData)
+        ).toStrictEqual(expectedDeepGroupDeep)
+    })
+    test("can find shallow values", () => {
+        db.groups.create(deepGroupData)
+        expect(
+            db.groups.find((group) => group.name === deepGroupData.name, {
+                unpack: false
+            })
+        ).toStrictEqual(expectedDeepGroupShallow)
+    })
+    test("can filter values of a given type", () => {
+        db.groups.create(deepGroupData)
+        expect(
+            db.groups.filter((group) => group.name === deepGroupData.name)
+        ).toStrictEqual([expectedDeepGroupDeep])
+    })
+})
+
+describe("delete", () => {
+    beforeEach(() => {
+        db = getDb()
+    })
+    test("deletes shallow values", () => {
+        db.users.create(shallowUserData)
+        db.users.delete((user) => user.name === shallowUserData.name)
+        expect(db.users.all()).toStrictEqual([])
+    })
+    test("deletes all references to the deleted object", () => {
+        db.users.create(deepUserData)
+        db.users.delete((user) => user.name === shallowUserData.name)
+        expect(db.users.all({ unpack: false })).toStrictEqual([
+            {
+                ...expectedDeepUserShallow,
+                friends: []
+            }
+        ])
     })
 })

@@ -61,6 +61,17 @@ export const createFileDb = <
             filter: (by: FindBy<T>, options?: InteractionOptions<any>) => {
                 const { unpack } = addDefaultInteractionOptions(options)
                 return find(k, by, context, { unpack, exactlyOne: false })
+            },
+            delete: (by: FindBy<T>, options?: DeleteOptions) => {
+                const { prune } = addDefaultDeleteOptions(options)
+                // Filter to objects that don't match the find criteria
+                const objectsToPreserve = find(k, (o) => !by(o), context, {
+                    unpack: false,
+                    exactlyOne: false
+                }) as object[]
+                store.update({ [k]: objectsToPreserve } as any, {
+                    actionType: "delete"
+                })
             }
         }
     ]) as any
@@ -89,31 +100,52 @@ type InteractionOptions<Unpack extends boolean = true> = {
     unpack?: Unpack
 }
 
-const addDefaultInteractionOptions = (
-    provided?: InteractionOptions
-): Required<InteractionOptions> => {
-    const defaultInteractionOptions: Required<InteractionOptions> = {
-        unpack: true
-    }
-    return { ...defaultInteractionOptions, ...provided }
+type DeleteOptions = {
+    prune?: boolean
 }
 
+const addDefaultOptions =
+    <T extends object>(defaultOptions: Required<T>) =>
+    (providedOptions?: T) => {
+        return { ...defaultOptions, ...providedOptions }
+    }
+
+const addDefaultInteractionOptions = addDefaultOptions<InteractionOptions<any>>(
+    {
+        unpack: true
+    }
+)
+
+const addDefaultDeleteOptions = addDefaultOptions<DeleteOptions>({
+    prune: true
+})
+
+type Data<
+    O extends object,
+    IdFieldName extends string,
+    Unpacked extends boolean
+> = Unpacked extends true ? WithIds<O, IdFieldName> : Shallow<O, IdFieldName>
+
 type Interactions<O extends object, IdFieldName extends string> = {
-    create: <U extends boolean>(
+    create: <U extends boolean = true>(
         o: O,
         options?: InteractionOptions<U>
-    ) => U extends true ? WithIds<O, IdFieldName> : Shallow<O, IdFieldName>
-    all: <U extends boolean>(
+    ) => Data<O, IdFieldName, U>
+    all: <U extends boolean = true>(
         options?: InteractionOptions<U>
-    ) => WithIds<O[], IdFieldName>
-    find: <U extends boolean>(
-        by: FindBy<WithIds<O, IdFieldName>>,
+    ) => Data<O, IdFieldName, U>
+    find: <U extends boolean = true>(
+        by: FindBy<Data<O, IdFieldName, U>>,
         options?: InteractionOptions<U>
-    ) => WithIds<O, IdFieldName>
-    filter: <U extends boolean>(
-        by: FindBy<WithIds<O, IdFieldName>>,
+    ) => Data<O, IdFieldName, U>
+    filter: <U extends boolean = true>(
+        by: FindBy<Data<O, IdFieldName, U>>,
         options?: InteractionOptions<U>
-    ) => WithIds<O, IdFieldName>[]
+    ) => Data<O, IdFieldName, U>
+    delete: <U extends boolean = true>(
+        by: FindBy<Data<O, IdFieldName, U>>,
+        options?: DeleteOptions
+    ) => void
 }
 
 type FileDbContext = {
