@@ -153,17 +153,25 @@ describe("delete", () => {
     })
     test("deletes shallow values", () => {
         db.users.create(shallowUserData)
-        db.users.delete((user) => user.name === shallowUserData.name)
+        db.users.remove((user) => user.name === shallowUserData.name)
         expect(db.users.all()).toStrictEqual([])
     })
     test("deletes all references to the deleted object", () => {
         db.users.create(deepUserData)
-        db.users.delete((user) => user.name === shallowUserData.name)
+        db.users.remove((user) => user.name === shallowUserData.name)
         expect(db.users.all({ unpack: false })).toStrictEqual([
             {
                 ...expectedDeepUserShallow,
                 friends: []
             }
         ])
+    })
+    test("deletes references across object types", () => {
+        db.groups.create(deepGroupData)
+        db.groups.remove((group) => group.name === deepGroupData.name)
+        expect(db.groups.all({ unpack: false })).toStrictEqual([])
+        expect(db.users.all({ unpack: false })).toStrictEqual(
+            bothExpectedUsersShallow
+        )
     })
 })

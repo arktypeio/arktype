@@ -8,7 +8,9 @@
         },
         {
             "name": "Mister Deep",
-            "friends": [],
+            "friends": [
+                1
+            ],
             "groups": [],
             "id": 2
         }
