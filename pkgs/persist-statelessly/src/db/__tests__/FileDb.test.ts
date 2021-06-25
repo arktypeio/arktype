@@ -175,3 +175,16 @@ describe("delete", () => {
         )
     })
 })
+
+describe("update", () => {
+    beforeEach(() => {
+        db = getDb()
+    })
+    test("shallow", () => {
+        db.users.create(shallowUserData)
+        db.users.update((user) => user.id === 1, { name: "Monsieur Shallow" })
+        expect(db.users.all({ unpack: false })).toStrictEqual([
+            { ...expectedShallowUser, name: "Monsieur Shallow" }
+        ])
+    })
+})

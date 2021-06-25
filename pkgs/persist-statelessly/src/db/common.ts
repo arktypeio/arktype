@@ -40,28 +40,6 @@ export type WithIds<O extends object, IdFieldName extends string> = WithId<
     IdFieldName
 >
 
-export type Interactions<O extends object, IdFieldName extends string> = {
-    create: <U extends boolean = true>(
-        o: O,
-        options?: InteractionOptions<U>
-    ) => Data<O, IdFieldName, U>
-    all: <U extends boolean = true>(
-        options?: InteractionOptions<U>
-    ) => Data<O, IdFieldName, U>
-    find: <U extends boolean = true>(
-        by: FindBy<Data<O, IdFieldName, U>>,
-        options?: InteractionOptions<U>
-    ) => Data<O, IdFieldName, U>
-    filter: <U extends boolean = true>(
-        by: FindBy<Data<O, IdFieldName, U>>,
-        options?: InteractionOptions<U>
-    ) => Data<O, IdFieldName, U>
-    remove: <U extends boolean = true>(
-        by: FindBy<Data<O, IdFieldName, U>>,
-        options?: RemoveOptions
-    ) => void
-}
-
 export type Model = Record<string, Record<string, any>[]>
 
 export type Relationships<T extends Model> = {

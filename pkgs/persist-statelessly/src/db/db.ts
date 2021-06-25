@@ -1,8 +1,8 @@
-import { transform, Unlisted } from "@re-do/utils"
+import { DeepUpdate, transform, Unlisted } from "@re-do/utils"
 import { FileStore, FileStoreOptions } from ".."
 import {
     Model,
-    Interactions,
+    Data,
     InteractionOptions,
     Relationships,
     FileDbContext,
@@ -12,10 +12,7 @@ import { createDependentsMap } from "./relationships"
 import { create, CreateOptions } from "./create"
 import { remove, RemoveOptions } from "./remove"
 import { find } from "./find"
-
-export type FileDb<T extends Model, IdFieldName extends string = "id"> = {
-    [K in keyof T]: Interactions<Unlisted<T[K]>, IdFieldName>
-}
+import { update } from "./update"
 
 export type FileDbArgs<
     T extends Model,
@@ -61,7 +58,38 @@ export const createFileDb = <
                     exactlyOne: false
                 }),
             remove: (by: FindBy<T>, options: RemoveOptions = {}) =>
-                remove(k, by, context, options)
+                remove(k, by, context, options),
+            update: (where: FindBy<T>, changes: DeepUpdate<T>) => update(k, where, changes, context)
         }
     ]) as any
+}
+
+export type FileDb<T extends Model, IdFieldName extends string = "id"> = {
+    [K in keyof T]: Interactions<Unlisted<T[K]>, IdFieldName>
+}
+
+export type Interactions<O extends object, IdFieldName extends string> = {
+    create: <U extends boolean = true>(
+        o: O,
+        options?: InteractionOptions<U>
+    ) => Data<O, IdFieldName, U>
+    all: <U extends boolean = true>(
+        options?: InteractionOptions<U>
+    ) => Data<O, IdFieldName, U>
+    find: <U extends boolean = true>(
+        by: FindBy<Data<O, IdFieldName, U>>,
+        options?: InteractionOptions<U>
+    ) => Data<O, IdFieldName, U>
+    filter: <U extends boolean = true>(
+        by: FindBy<Data<O, IdFieldName, U>>,
+        options?: InteractionOptions<U>
+    ) => Data<O, IdFieldName, U>
+    remove: <U extends boolean = true>(
+        by: FindBy<Data<O, IdFieldName, U>>,
+        options?: RemoveOptions
+    ) => void
+    update: <U extends boolean = true>(
+        by: FindBy<Data<O, IdFieldName, U>>,
+        update: DeepUpdate<Data<O, IdFieldName, U>>
+    ) => void
 }
