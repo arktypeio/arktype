@@ -1,9 +1,8 @@
 import { FileStore } from ".."
 import { FilterByValue, Unlisted, withDefaults, Key } from "@re-do/utils"
-import { RemoveOptions } from "./remove"
 
 export type FileDbContext<T extends Model> = {
-    store: FileStore<T, {}>
+    store: FileStore<ShallowModel<T, any>, {}>
     relationships: Relationships<T>
     dependents: Dependents<T>
     idFieldName: string
@@ -22,6 +21,10 @@ export type Data<
 > = Unpacked extends true ? WithIds<O, IdFieldName> : Shallow<O, IdFieldName>
 
 export type FindBy<O extends object> = (o: O) => boolean
+
+export type ShallowModel<T extends Model, IdFieldName extends string> = {
+    [K in keyof T]: Shallow<Unlisted<T[K]>, IdFieldName>[]
+}
 
 export type Shallow<O extends object, IdFieldName extends string> = WithId<
     {
@@ -48,7 +51,7 @@ export type Model = Record<string, Record<string, any>[]>
 
 export type Relationships<T extends Model> = {
     [K in keyof T]: {
-        [K2 in keyof FilterByValue<Unlisted<T[K]>, object>]: keyof T
+        [K2 in keyof FilterByValue<Required<Unlisted<T[K]>>, object>]: keyof T
     }
 }
 

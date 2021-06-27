@@ -6,7 +6,8 @@ import {
     InteractionOptions,
     Relationships,
     FileDbContext,
-    FindBy
+    FindBy,
+    ShallowModel
 } from "./common"
 import { createDependentsMap } from "./relationships"
 import { create, CreateOptions } from "./create"
@@ -17,7 +18,7 @@ import { update } from "./update"
 export type FileDbArgs<
     T extends Model,
     IdFieldName extends string = "id"
-> = FileStoreOptions<T> & {
+> = FileStoreOptions<ShallowModel<T, IdFieldName>> & {
     relationships: Relationships<T>
     idFieldName?: IdFieldName
 }
@@ -33,14 +34,17 @@ export const createFileDb = <
     T,
     IdFieldName extends undefined ? "id" : IdFieldName
 > => {
-    const store = new FileStore<T>({}, fileStoreOptions)
+    const store = new FileStore<ShallowModel<T, IdFieldName>>(
+        {},
+        fileStoreOptions
+    )
     const context: FileDbContext<T> = {
         store,
         relationships,
         dependents: createDependentsMap(relationships),
         idFieldName: idFieldName ?? "id"
     }
-    return transform(relationships, ([k, v]: [string, any]) => [
+    const interactions = transform(relationships, ([k, v]: [string, any]) => [
         k,
         {
             create: (o: any, options?: CreateOptions<any>) =>
@@ -63,9 +67,15 @@ export const createFileDb = <
                 update(k, where, changes, context)
         }
     ]) as any
+    return {
+        ...interactions,
+        all: () => store.getState()
+    }
 }
 
 export type FileDb<T extends Model, IdFieldName extends string = "id"> = {
+    all: () => ShallowModel<T, IdFieldName>
+} & {
     [K in keyof T]: Interactions<Unlisted<T[K]>, IdFieldName>
 }
 
@@ -90,7 +100,7 @@ export type Interactions<O extends object, IdFieldName extends string> = {
         options?: RemoveOptions
     ) => void
     update: (
-        by: FindBy<Data<O, IdFieldName, true>>,
+        by: FindBy<Data<O, IdFieldName, false>>,
         update: DeepUpdate<Data<O, IdFieldName, false>>
     ) => void
 }

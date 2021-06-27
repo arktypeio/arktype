@@ -4,7 +4,7 @@ import { DeepUpdate, updateMap } from "@re-do/utils"
 export const update = <T extends Model>(
     typeName: KeyName<T>,
     where: FindBy<any>,
-    update: DeepUpdate<T>,
+    update: DeepUpdate<any>,
     context: FileDbContext<T>
 ) => {
     const existing = context.store.get(typeName as any) as any[]

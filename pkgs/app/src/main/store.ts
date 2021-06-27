@@ -7,30 +7,43 @@ import { launchBrowser, closeBrowser } from "./launchBrowser"
 import { mainWindow, builderWindow } from "./windows"
 import { ValueOf } from "@re-do/utils"
 import { createSteps, testToSteps, getNextId } from "./data"
-import { FileStore } from "persist-statelessly"
+import { createFileDb, ShallowModel } from "persist-statelessly"
 import { join } from "path"
 
 const DEFAULT_BUILDER_WIDTH = 300
 const ELECTRON_TITLEBAR_SIZE = 37
 
 export const defaultRedoJsonPath = join(process.cwd(), "redo.json")
-export const defaultRedoData: RedoData = { tests: [], elements: [], steps: [] }
+export const defaultRedoData: ShallowModel<RedoData, "id"> = {
+    tests: [],
+    elements: [],
+    steps: [],
+    tags: []
+}
 
 export let store: Store<Root, MainActionFunctions>
 
-export const data = new FileStore(
-    defaultRedoData,
-    {},
-    {
-        path: defaultRedoJsonPath,
-        onChange: (change, context) => {
-            // Forward changes from local store to app state store
-            if (store) {
-                store.update({ data: context.store.getState() })
-            }
+export const db = createFileDb<RedoData>({
+    path: defaultRedoJsonPath,
+    onNoFile: () => defaultRedoData,
+    onChange: (change, context) => {
+        // Forward changes from local store to app state store
+        if (store) {
+            store.update({ data: context.store.getState() })
         }
+    },
+    relationships: {
+        tests: {
+            steps: "steps",
+            tags: "tags"
+        },
+        elements: {},
+        steps: {
+            element: "elements"
+        },
+        tags: {}
     }
-)
+})
 
 const emptyMainActions: MainActions = {
     saveTest: null,
@@ -51,7 +64,7 @@ const initialState: Root = {
     },
     main: emptyMainActions,
     renderer: {},
-    data: data.getState()
+    data: db.all()
 }
 
 type ActionReturn = Update<Root> | Promise<Update<Root>>

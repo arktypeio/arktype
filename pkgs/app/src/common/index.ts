@@ -1,15 +1,34 @@
-import { BrowserName, Step } from "@re-do/test"
-import { TestData, Test, ElementData, StepData } from "@re-do/model"
+import { BrowserName, Step as StepData } from "@re-do/test"
+import { Relationships, Shallow, ShallowModel } from "persist-statelessly"
+
+export type Step = Omit<StepData, "selector"> & {
+    element?: Element
+}
+
+export type Tag = {
+    value: string
+}
+
+export type Element = {
+    selector: string
+}
+
+export type Test = {
+    name: string
+    steps: Step[]
+    tags: Tag[]
+}
+
+export type RedoData = {
+    tests: Test[]
+    elements: Element[]
+    steps: Step[]
+    tags: Tag[]
+}
 
 export type Page = "HOME" | "SIGN_IN" | "SIGN_UP"
 
 export type UnsavedStep = Step & { id: number }
-
-export type RedoData = {
-    tests: TestData[]
-    elements: ElementData[]
-    steps: StepData[]
-}
 
 export type Root = {
     page: Page
@@ -22,11 +41,11 @@ export type Root = {
     }
     main: MainActions
     renderer: RendererActions
-    data: RedoData
+    data: ShallowModel<RedoData, "id">
 }
 
 export type MainActions = {
-    runTest: [TestData] | null
+    runTest: [Test] | null
     saveTest: [Test] | null
     launchBuilder: [] | null
     closeBuilder: [] | null
