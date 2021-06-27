@@ -25,7 +25,11 @@ export type FindBy<O extends object> = (o: O) => boolean
 
 export type Shallow<O extends object, IdFieldName extends string> = WithId<
     {
-        [K in keyof O]: O[K] extends object ? number : O[K]
+        [K in keyof O]: Unlisted<O[K]> extends object
+            ? O[K] extends any[]
+                ? number[]
+                : number
+            : O[K]
     },
     IdFieldName
 >

@@ -59,7 +59,8 @@ export const createFileDb = <
                 }),
             remove: (by: FindBy<T>, options: RemoveOptions = {}) =>
                 remove(k, by, context, options),
-            update: (where: FindBy<T>, changes: DeepUpdate<T>) => update(k, where, changes, context)
+            update: (where: FindBy<T>, changes: DeepUpdate<T>) =>
+                update(k, where, changes, context)
         }
     ]) as any
 }
@@ -88,8 +89,8 @@ export type Interactions<O extends object, IdFieldName extends string> = {
         by: FindBy<Data<O, IdFieldName, U>>,
         options?: RemoveOptions
     ) => void
-    update: <U extends boolean = true>(
-        by: FindBy<Data<O, IdFieldName, U>>,
-        update: DeepUpdate<Data<O, IdFieldName, U>>
+    update: (
+        by: FindBy<Data<O, IdFieldName, true>>,
+        update: DeepUpdate<Data<O, IdFieldName, false>>
     ) => void
 }

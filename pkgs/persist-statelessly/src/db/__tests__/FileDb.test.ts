@@ -68,6 +68,16 @@ const expectedDeepUserDeep = {
     friends: [expectedShallowUser]
 }
 const bothExpectedUsersShallow = [expectedShallowUser, expectedDeepUserShallow]
+
+const expectedShallowUserWithDeepFriendShallow = {
+    ...expectedShallowUser,
+    friends: [2]
+}
+const expectedShallowUserWithDeepFriendDeep = {
+    ...expectedShallowUser,
+    friends: [expectedDeepUserShallow]
+}
+
 const expectedDeepGroupShallow = { ...deepGroupData, users: [2], id: 1 }
 const expectedDeepGroupDeep = {
     ...expectedDeepGroupShallow,
@@ -145,6 +155,17 @@ describe("find", () => {
             db.groups.filter((group) => group.name === deepGroupData.name)
         ).toStrictEqual([expectedDeepGroupDeep])
     })
+    test("doesn't unpack the same value twice", () => {
+        db.users.create(deepUserData)
+        db.users.update((user) => user.id === 1, { friends: [2] })
+        expect(db.users.all()).toStrictEqual([
+            expectedShallowUserWithDeepFriendDeep,
+            {
+                ...expectedDeepUserShallow,
+                friends: [expectedShallowUserWithDeepFriendShallow]
+            }
+        ])
+    })
 })
 
 describe("delete", () => {
@@ -186,5 +207,14 @@ describe("update", () => {
         expect(db.users.all({ unpack: false })).toStrictEqual([
             { ...expectedShallowUser, name: "Monsieur Shallow" }
         ])
+    })
+    test("update to id", () => {
+        db.users.create(deepUserData)
+        db.users.update((user) => user.id === 1, {
+            friends: (_) => _.concat(2)
+        })
+        expect(
+            db.users.find((user) => user.id === 1, { unpack: false })
+        ).toStrictEqual(expectedShallowUserWithDeepFriendShallow)
     })
 })

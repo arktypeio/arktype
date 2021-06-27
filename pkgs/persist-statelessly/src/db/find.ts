@@ -38,8 +38,12 @@ export const find = <T extends Model>(
 export const unpack = <T extends Model>(
     typeName: KeyName<T>,
     o: Record<string, any>,
-    context: FileDbContext<T>
+    context: FileDbContext<T>,
+    seen: { [K in keyof T]?: Record<number, true> } = {}
 ): any => {
+    if (seen[typeName] && o[context.idFieldName] in seen[typeName]) {
+        return o[context.idFieldName]
+    }
     return transform(o, ([k, v]) => {
         let objectTypeName: string | undefined
         const possibleObjectTypeName = (
@@ -58,7 +62,14 @@ export const unpack = <T extends Model>(
                         context,
                         { unpack: false }
                     )!,
-                    context
+                    context,
+                    {
+                        ...seen,
+                        [typeName]: {
+                            ...seen[typeName],
+                            [o[context.idFieldName]]: true
+                        }
+                    }
                 )
             if (typeof v === "number") {
                 return [k, getUnpackedValue(v)]
