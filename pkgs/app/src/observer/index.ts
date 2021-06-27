@@ -6,7 +6,7 @@ const getEventData = (e: Event) => {
     const data: any = { kind, timeStamp: e.timeStamp }
     if (e.target) {
         const target = e.target as HTMLElement
-        data.selector = finder(target as HTMLElement)
+        data.element = { selector: finder(target as HTMLElement) }
         if (kind === "set") {
             data.value = (target as HTMLInputElement).value
         }

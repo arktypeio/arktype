@@ -2,11 +2,9 @@ import { Update, Store, BaseStore } from "react-statelessly"
 import { test as runTest } from "@re-do/test"
 import { MainActions, RedoData, Root } from "common"
 import { forwardToRenderer, replayActionMain } from "electron-redux"
-import { TestData } from "@re-do/model"
 import { launchBrowser, closeBrowser } from "./launchBrowser"
 import { mainWindow, builderWindow } from "./windows"
 import { ValueOf } from "@re-do/utils"
-import { createSteps, testToSteps, getNextId } from "./data"
 import { createFileDb, ShallowModel } from "persist-statelessly"
 import { join } from "path"
 
@@ -49,8 +47,7 @@ const emptyMainActions: MainActions = {
     saveTest: null,
     runTest: null,
     launchBuilder: null,
-    closeBuilder: null,
-    reloadData: null
+    closeBuilder: null
 }
 
 const initialState: Root = {
@@ -99,21 +96,12 @@ const mainActions: MainActionFunctions = {
         return { builder: { active: false, steps: [] } }
     },
     runTest: async ([test]) => {
-        await runTest(testToSteps(data, test as TestData))
+        await runTest(test.steps)
         return {}
     },
-    saveTest: async ([{ steps, ...rest }]) => {
-        const testData: TestData = {
-            ...rest,
-            steps: createSteps(data, steps),
-            id: getNextId(data.get("tests"))
-        }
-        data.update({ tests: (_) => _.concat(testData) })
-        return { data: { tests: (_) => _.concat(testData) } }
-    },
-    reloadData: () => {
-        data.refresh()
-        return { data: data.getState() }
+    saveTest: async ([test]) => {
+        db.tests.create(test)
+        return {}
     }
 }
 

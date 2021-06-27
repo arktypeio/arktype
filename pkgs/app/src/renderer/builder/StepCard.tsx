@@ -10,6 +10,7 @@ import {
 import { Fab } from "@material-ui/core"
 import { store } from "renderer/common"
 import { UnsavedStep } from "common"
+import { Element } from "../../../../model/dist/cjs"
 
 export type StepCardProps = {
     step: UnsavedStep
@@ -53,7 +54,9 @@ export const StepCard = ({ step, cardProps }: StepCardProps) => {
                     <TextInput
                         key={k}
                         label={k}
-                        defaultValue={v}
+                        defaultValue={
+                            k === "element" ? (v as Element).selector : v
+                        }
                         onChange={(e) =>
                             store.update({
                                 builder: {
@@ -62,7 +65,14 @@ export const StepCard = ({ step, cardProps }: StepCardProps) => {
                                             step.id === existingStep.id
                                                 ? {
                                                       ...step,
-                                                      [k]: e.target.value
+                                                      [k]:
+                                                          k === "element"
+                                                              ? {
+                                                                    selector:
+                                                                        e.target
+                                                                            .value
+                                                                }
+                                                              : e.target.value
                                                   }
                                                 : existingStep
                                         )

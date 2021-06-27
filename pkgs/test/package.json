@@ -16,6 +16,7 @@
         "test": "jest"
     },
     "dependencies": {
+        "@re-do/model": "0.0.1",
         "@re-do/utils": "0.0.11",
         "fs-extra": "10.0.0",
         "playwright": "1.11.1"

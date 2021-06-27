@@ -7,12 +7,13 @@ import {
     Button,
     ChipInput
 } from "@re-do/components"
+import { Tag } from "@re-do/model"
 import { StepCard } from "./StepCard"
 import { store } from "renderer/common"
 
 const initialState = {
     name: "",
-    tags: [] as string[]
+    tags: [] as Tag[]
 }
 
 export const Builder = () => {
@@ -39,7 +40,12 @@ export const Builder = () => {
                         label="Tags"
                         // TODO: Add existing tags
                         possibleSuggestions={[]}
-                        onChange={(tags) => setState({ ...state, tags })}
+                        onChange={(tagValues) =>
+                            setState({
+                                ...state,
+                                tags: tagValues.map((_) => ({ value: _ }))
+                            })
+                        }
                     />
                 </Column>
             </FloatBar>
