@@ -285,3 +285,35 @@ describe("side effects", () => {
         expect(bing).not.toBeCalled()
     })
 })
+
+describe("validation", () => {
+    beforeEach(() => {
+        store = getStore({
+            validate: (o: Root) => {
+                if (o.c === "good") {
+                    return true
+                } else if (o.c === "fixable") {
+                    return { ...o, c: "good" }
+                } else if (o.c === "broken") {
+                    return o
+                } else {
+                    throw new Error("invalid")
+                }
+            }
+        })
+    })
+    test("good state", () => {
+        store.update({ c: "good" })
+        expect(store.get("c")).toBe("good")
+    })
+    test("fixable state", () => {
+        store.update({ c: "fixable" })
+        expect(store.get("c")).toBe("good")
+    })
+    test("broken fixable", () => {
+        expect(() => store.update({ c: "broken" })).toThrow("broken")
+    })
+    test("non-fixable", () => {
+        expect(() => store.update({ c: "invalid" })).toThrow("invalid")
+    })
+})

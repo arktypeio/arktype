@@ -15,10 +15,12 @@ import {
 } from "@re-do/utils"
 import { Query, Update, Actions, ActionData, StoreActions } from "./common"
 import { createOnChangeMiddleware, OnChangeMiddlewareArgs } from "./onChange"
+import { createValidationMiddleware, ValidationFunction } from "./validate"
 
 export type StoreOptions<T extends object> = {
     onChange?: OnChangeMiddlewareArgs<T>
     middleware?: Middleware[]
+    validate?: ValidationFunction<T>
 }
 
 export type UpdateOptions = {
@@ -34,9 +36,12 @@ export class Store<T extends object, A extends Actions<T>> {
     constructor(
         initial: T,
         actions: A,
-        { onChange, middleware }: StoreOptions<T> = {}
+        { onChange, middleware, validate }: StoreOptions<T> = {}
     ) {
         const middlewares = middleware ? [...middleware] : []
+        if (validate) {
+            middlewares.push(createValidationMiddleware(validate, this))
+        }
         if (onChange) {
             middlewares.push(createOnChangeMiddleware(onChange, this))
         }
