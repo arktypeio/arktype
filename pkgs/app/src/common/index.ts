@@ -1,6 +1,6 @@
 import { BrowserName } from "@re-do/test"
 import { Step, Tag, Element, Test } from "@re-do/model"
-import { ShallowModel } from "persist-statelessly"
+import type { ShallowModel } from "persist-statelessly"
 
 export type RedoData = {
     tests: Test[]
@@ -28,7 +28,7 @@ export type Root = {
 }
 
 export type MainActions = {
-    runTest: [Test] | null
+    runTest: [number] | null
     saveTest: [Test] | null
     launchBuilder: [] | null
     closeBuilder: [] | null

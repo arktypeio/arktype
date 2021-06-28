@@ -3,7 +3,8 @@ import { Unlisted } from "@re-do/utils"
 import { SuggestionCard } from "./SuggestionCard"
 import { store } from "renderer/common"
 import { Card, Row, Button, Icons } from "@re-do/components"
-import { TestData } from "@re-do/model"
+import { Test } from "@re-do/model"
+import type { Shallow } from "persist-statelessly"
 
 const welcomeSuggestion = {
     title: "👆Hey there!",
@@ -33,7 +34,7 @@ const useSuggestions = (): Suggestion<UserItemKind>[] => {
         : []
 }
 
-type UserData = { tests: TestData }
+type UserData = { tests: Shallow<Test, "id"> }
 
 type UserItemKind = keyof UserData
 
@@ -54,7 +55,9 @@ const suggestionTypes = {
             extras: (
                 <Button
                     Icon={Icons.run}
-                    onClick={() => store.update({ main: { runTest: [test] } })}
+                    onClick={() =>
+                        store.update({ main: { runTest: [test.id] } })
+                    }
                 />
             ),
             data: test
