@@ -3,7 +3,14 @@
         {
             "name": "New Test",
             "tags": [],
-            "steps": [1, 2, 3, 4, 5, 6],
+            "steps": [
+                1,
+                2,
+                3,
+                4,
+                5,
+                6
+            ],
             "id": 1
         },
         {
@@ -17,6 +24,22 @@
             "tags": [],
             "steps": [],
             "id": 3
+        },
+        {
+            "name": "DB Test",
+            "tags": [
+                1,
+                2
+            ],
+            "steps": [
+                7,
+                8,
+                9,
+                10,
+                11,
+                12
+            ],
+            "id": 4
         }
     ],
     "elements": [
@@ -35,6 +58,26 @@
         {
             "selector": "form",
             "id": 4
+        },
+        {
+            "selector": ".MuiButton-label",
+            "id": 5
+        },
+        {
+            "selector": ".MuiInputBase-input",
+            "id": 6
+        },
+        {
+            "selector": ".MuiInputBase-input",
+            "id": 7
+        },
+        {
+            "selector": ".MuiButton-contained",
+            "id": 8
+        },
+        {
+            "selector": "form",
+            "id": 9
         }
     ],
     "steps": [
@@ -68,7 +111,47 @@
             "kind": "click",
             "element": 4,
             "id": 6
+        },
+        {
+            "kind": "go",
+            "url": "https://redo.qa/",
+            "id": 7
+        },
+        {
+            "kind": "click",
+            "element": 5,
+            "id": 8
+        },
+        {
+            "kind": "click",
+            "element": 6,
+            "id": 9
+        },
+        {
+            "kind": "set",
+            "element": 7,
+            "value": "david@redo.qa",
+            "id": 10
+        },
+        {
+            "kind": "click",
+            "element": 8,
+            "id": 11
+        },
+        {
+            "kind": "click",
+            "element": 9,
+            "id": 12
         }
     ],
-    "tags": []
+    "tags": [
+        {
+            "value": "tag1",
+            "id": 1
+        },
+        {
+            "value": "tag2",
+            "id": 2
+        }
+    ]
 }

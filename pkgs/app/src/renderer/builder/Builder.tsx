@@ -83,6 +83,7 @@ export const Builder = () => {
                                 closeBuilder: []
                             }
                         })
+                        setState(initialState)
                     }}
                 />
             </FloatBar>

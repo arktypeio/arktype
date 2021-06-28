@@ -53,8 +53,8 @@ export class FileStore<
             baseStoreOptions.onChange ?? []
         ).concat(writeChangesToFile)
         super(getFileState(fileStateContext), actions, {
-            onChange: onChangeWithFileWrite,
-            ...baseStoreOptions
+            ...baseStoreOptions,
+            onChange: onChangeWithFileWrite
         })
         this.fileStateContext = fileStateContext
         if (bidirectional) {
