@@ -85,20 +85,23 @@ type FileStateContext<T extends object> = {
     onNoFile: OnNoFile<T>
 }
 
-const validated = <T>(contents: any): T => contents
-
 const getFileState = <T extends object>(ctx: FileStateContext<T>): T => {
     if (!existsSync(ctx.path)) {
-        setFileState(ctx.onNoFile(), ctx)
+        const fallbackState = ctx.onNoFile()
+        writeFileSync(ctx.path, JSON.stringify(fallbackState, null, 4))
+        return fallbackState
     }
     const contents = readFileSync(ctx.path).toString()
     try {
-        const state = JSON.parse(contents)
-        return validated(state)
+        return JSON.parse(contents)
     } catch {
-        return ctx.onBadFile(contents)
+        const fixedState = ctx.onBadFile(contents)
+        writeFileSync(ctx.path, JSON.stringify(fixedState, null, 4))
+        return fixedState
     }
 }
 
-const setFileState = <T extends object>(state: T, ctx: FileStateContext<T>) =>
-    writeFileSync(ctx.path, JSON.stringify(state, null, 4))
+const setFileState = <T extends object>(
+    state: object,
+    ctx: FileStateContext<T>
+) => writeFileSync(ctx.path, JSON.stringify(state, null, 4))

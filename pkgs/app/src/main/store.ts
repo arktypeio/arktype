@@ -40,6 +40,9 @@ export const db = createFileDb<RedoData>({
             element: "elements"
         },
         tags: {}
+    },
+    validate: (state, { store }) => {
+        return true
     }
 })
 
