@@ -3,7 +3,8 @@ import { Unlisted } from "@re-do/utils"
 import { SuggestionCard } from "./SuggestionCard"
 import { store } from "renderer/common"
 import { Card, Row, Button, Icons } from "@re-do/components"
-import { StoredTest } from "@re-do/model"
+import { Test } from "@re-do/model"
+import type { Shallow } from "persist-statelessly"
 
 const welcomeSuggestion = {
     title: "👆Hey there!",
@@ -13,9 +14,14 @@ const welcomeSuggestion = {
 }
 
 const useSuggestions = (): Suggestion<UserItemKind>[] => {
-    const { cardFilter, tests } = store.useQuery({
+    const {
+        cardFilter,
+        data: { tests }
+    } = store.useQuery({
         cardFilter: true,
-        tests: true
+        data: {
+            tests: true
+        }
     })
     return tests && tests.length
         ? tests
@@ -28,7 +34,7 @@ const useSuggestions = (): Suggestion<UserItemKind>[] => {
         : []
 }
 
-type UserData = { tests: StoredTest }
+type UserData = { tests: Shallow<Test, "id"> }
 
 type UserItemKind = keyof UserData
 
@@ -49,7 +55,9 @@ const suggestionTypes = {
             extras: (
                 <Button
                     Icon={Icons.run}
-                    onClick={() => store.update({ main: { runTest: [test] } })}
+                    onClick={() =>
+                        store.update({ main: { runTest: [test.id] } })
+                    }
                 />
             ),
             data: test

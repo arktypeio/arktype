@@ -25,18 +25,20 @@ import video from "@material-ui/icons/VideocamOutlined"
 import blog from "@material-ui/icons/Notes"
 import code from "@material-ui/icons/Code"
 import settings from "@material-ui/icons/Settings"
+import cancel from "@material-ui/icons/Cancel"
 import SvgIcon, { SvgIconProps } from "@material-ui/core/SvgIcon"
 import { twitchPath } from "./paths"
 
-const toIcon = (path: string) => (props: SvgIconProps) => (
-    <SvgIcon {...props}>
-        <path d={path} />
-    </SvgIcon>
-)
+const toIcon = (path: string) => (props: SvgIconProps) =>
+    (
+        <SvgIcon {...props}>
+            <path d={path} />
+        </SvgIcon>
+    )
 
 const twitch = toIcon(twitchPath)
 
-export const Icons = {
+export const Icons: Record<string, typeof SvgIcon> = {
     add,
     code,
     collapse,
@@ -63,5 +65,6 @@ export const Icons = {
     twitter,
     video,
     menu,
-    settings
+    settings,
+    cancel
 }

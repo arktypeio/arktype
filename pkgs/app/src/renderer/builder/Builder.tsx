@@ -7,26 +7,22 @@ import {
     Button,
     ChipInput
 } from "@re-do/components"
+import { Tag } from "@re-do/model"
 import { StepCard } from "./StepCard"
 import { store } from "renderer/common"
 
 const initialState = {
     name: "",
-    tags: [] as string[]
+    tags: [] as Tag[]
 }
 
 export const Builder = () => {
     const [state, setState] = useState(initialState)
     const { name, tags } = state
-    const { builderActive, steps } = store.useQuery({
-        builderActive: true,
-        steps: true
-    })
-
-    if (!builderActive && (name || tags.length)) {
+    const { active, steps } = store.useGet("builder")
+    if (!active && (name || tags.length)) {
         setState(initialState)
     }
-
     return (
         <Column full>
             <FloatBar height={120} align="center">
@@ -44,7 +40,12 @@ export const Builder = () => {
                         label="Tags"
                         // TODO: Add existing tags
                         possibleSuggestions={[]}
-                        onChange={(tags) => setState({ ...state, tags })}
+                        onChange={(tagValues) =>
+                            setState({
+                                ...state,
+                                tags: tagValues.map((_) => ({ value: _ }))
+                            })
+                        }
                     />
                 </Column>
             </FloatBar>
@@ -69,10 +70,20 @@ export const Builder = () => {
                     onClick={() => {
                         store.update({
                             main: {
-                                saveTest: [{ name, tags, steps }],
+                                saveTest: [
+                                    {
+                                        name,
+                                        tags,
+                                        steps: steps.map((step) => {
+                                            const { id, ...stepData } = step
+                                            return stepData
+                                        })
+                                    }
+                                ],
                                 closeBuilder: []
                             }
                         })
+                        setState(initialState)
                     }}
                 />
             </FloatBar>

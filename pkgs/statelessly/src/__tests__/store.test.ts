@@ -1,10 +1,12 @@
-import { createStore, ListenerMap, Actions, StoreOptions } from "../store"
+import { DeepPartial } from "@re-do/utils"
+import { Store, ListenerMap, StoreOptions } from ".."
 
 type Root = {
     a: A
     b: boolean
     c: string
     d: A[]
+    e: string
 }
 
 type A = {
@@ -26,14 +28,19 @@ const initialRoot: Root = Object.freeze({
     a: initialA,
     b: false,
     c: "",
-    d: [initialA, initialA]
+    d: [initialA, initialA],
+    e: ""
 })
 
+const fakeResponse = "Success!"
+
 const fakeUpload = () =>
-    new Promise<string>((resolve) => setTimeout(() => resolve("Success!"), 100))
+    new Promise<string>((resolve) =>
+        setTimeout(() => resolve(fakeResponse), 100)
+    )
 
 const getStore = (options: StoreOptions<Root> = {}) =>
-    createStore(
+    new Store(
         initialRoot,
         {
             enableB: { b: true },
@@ -55,6 +62,13 @@ const getStore = (options: StoreOptions<Root> = {}) =>
             uploadToServer: async () => {
                 const result = await fakeUpload()
                 return { c: result }
+            },
+            nameEFromC: (suffix: string, store) => ({
+                e: store.get("c") + suffix
+            }),
+            nameEFromServerResponse: async (suffix: string, store) => {
+                await store.$.uploadToServer()
+                return { e: store.get("c") + suffix }
             }
         },
         options
@@ -116,21 +130,21 @@ describe("actions", () => {
         })
     })
     test("shallow set value", () => {
-        store.enableB()
+        store.actions.enableB()
         expect(store.getState()).toStrictEqual({
             ...initialRoot,
             b: true
         })
     })
     test("shallow set function", () => {
-        store.nameC("redo")
+        store.$.nameC("redo")
         expect(store.getState()).toStrictEqual({
             ...initialRoot,
             c: "redo"
         })
     })
     test("deep set value", () => {
-        store.addOneToEndOfList()
+        store.$.addOneToEndOfList()
         expect(store.getState()).toStrictEqual({
             ...initialRoot,
             a: {
@@ -143,7 +157,7 @@ describe("actions", () => {
         })
     })
     test("deep set function", () => {
-        store.addNumberToEndOfList(5)
+        store.$.addNumberToEndOfList(5)
         expect(store.getState()).toStrictEqual({
             ...initialRoot,
             a: {
@@ -156,27 +170,43 @@ describe("actions", () => {
         })
     })
     test("handles object arrays", () => {
-        store.appendObjectToArray()
+        store.$.appendObjectToArray()
         expect(store.getState()).toStrictEqual({
             ...initialRoot,
             d: [initialA, initialA, initialA]
         })
     })
     test("sets array value", () => {
-        store.emptyDArray()
+        store.$.emptyDArray()
         expect(store.getState()).toStrictEqual({
             ...initialRoot,
             d: []
         })
     })
     test("handles async", async () => {
-        store = getStore()
-        await store.uploadToServer()
+        await store.$.uploadToServer()
         expect(store.getState()).toStrictEqual({
             ...initialRoot,
-            c: "Success!"
+            c: fakeResponse
         })
     })
+    test("passes store as context", () => {
+        store.$.nameC("re")
+        store.$.nameEFromC("do")
+        expect(store.getState()).toStrictEqual({
+            ...initialRoot,
+            c: "re",
+            e: "redo"
+        })
+    }),
+        test("allows different action to be called from context", async () => {
+            await store.$.nameEFromServerResponse("!!")
+            expect(store.getState()).toStrictEqual({
+                ...initialRoot,
+                c: fakeResponse,
+                e: `${fakeResponse}!!`
+            })
+        })
 })
 
 const cHandler = jest.fn()
@@ -190,32 +220,100 @@ const onChange: ListenerMap<Root, Root> = {
 
 const functionalListener = jest.fn()
 
+const expectedContext = (
+    type: string,
+    payload: DeepPartial<Root>,
+    meta?: any
+) => ({
+    store,
+    action: {
+        type,
+        payload,
+        meta: {
+            bypassOnChange: undefined,
+            statelessly: true,
+            ...meta
+        }
+    }
+})
+
+const getEnableBContext = () => expectedContext("enableB", { b: true })
+
 describe("side effects", () => {
     beforeEach(() => {
         store = getStore({ onChange })
     })
     test("handle side effects", () => {
-        store.enableB()
-        expect(bing).toBeCalledWith(true, initialRoot)
+        store.$.enableB()
+        expect(bing).toBeCalledWith(true, getEnableBContext())
     })
     test("handles array side effects", () => {
-        store.appendObjectToArray()
+        store.$.appendObjectToArray()
         expect(dHandler).toBeCalledWith(
             [initialA, initialA, initialA],
-            initialRoot
+            expectedContext("appendObjectToArray", {
+                d: [initialA, initialA, initialA]
+            })
         )
     })
     test("doesn't trigger extraneous side effects", () => {
-        store.updateSomeValues()
+        store.$.updateSomeValues()
         expect(cHandler).toHaveBeenCalled()
         expect(bing).not.toHaveBeenCalled()
     })
     test("handles side effects with function", () => {
         store = getStore({ onChange: functionalListener })
-        store.enableB()
+        store.$.enableB()
         expect(functionalListener).toHaveBeenCalledWith(
             { b: true },
-            initialRoot
+            getEnableBContext()
         )
+    })
+    test("accepts an array of listeners", async () => {
+        store = getStore({ onChange: [functionalListener, onChange] })
+        store.$.enableB()
+        // I'm sure there's a more elegant way to wait for a listener to be called in jest but I don't want to figure it out ;)
+        await new Promise((_) => setTimeout(_, 100))
+        expect(bing).toBeCalledWith(true, getEnableBContext())
+        expect(functionalListener).toHaveBeenCalledWith(
+            { b: true },
+            getEnableBContext()
+        )
+    })
+    test("listeners can be optionally bypassed", () => {
+        store.update({ b: true }, { bypassOnChange: true })
+        expect(bing).not.toBeCalled()
+    })
+})
+
+describe("validation", () => {
+    beforeEach(() => {
+        store = getStore({
+            validate: (o: Root) => {
+                if (o.c === "good") {
+                    return true
+                } else if (o.c === "fixable") {
+                    return { ...o, c: "good" }
+                } else if (o.c === "broken") {
+                    return o
+                } else {
+                    throw new Error("invalid")
+                }
+            }
+        })
+    })
+    test("good state", () => {
+        store.update({ c: "good" })
+        expect(store.get("c")).toBe("good")
+    })
+    test("fixable state", () => {
+        store.update({ c: "fixable" })
+        expect(store.get("c")).toBe("good")
+    })
+    test("broken fixable", () => {
+        expect(() => store.update({ c: "broken" })).toThrow("broken")
+    })
+    test("non-fixable", () => {
+        expect(() => store.update({ c: "invalid" })).toThrow("invalid")
     })
 })

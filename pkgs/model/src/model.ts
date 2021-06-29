@@ -1,20 +1,35 @@
-import { Step } from "@re-do/test"
+export type ClickArgs = {
+    kind: "click"
+    element: Element
+}
 
-export type StoredStep = Omit<Step, "selector"> & { element: number }
+export type GoArgs = {
+    kind: "go"
+    url: string
+}
 
-export type StoredTest = {
-    name: string
-    steps: StoredStep[]
-    tags: string[]
+export type SetArgs = {
+    kind: "set"
+    element: Element
+    value: string
+}
+
+export type ScreenshotArgs = {
+    kind: "screenshot"
+}
+
+export type Step = ClickArgs | GoArgs | SetArgs | ScreenshotArgs
+
+export type Tag = {
+    value: string
+}
+
+export type Element = {
+    selector: string
 }
 
 export type Test = {
     name: string
     steps: Step[]
-    tags: string[]
-}
-
-export type Element = {
-    id: number
-    selector: string
+    tags: Tag[]
 }

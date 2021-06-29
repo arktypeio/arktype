@@ -1,6 +1,7 @@
+import { ScreenshotArgs } from "@re-do/model"
 import { Context } from "../common"
 
-export type ScreenshotArgs = {}
+export type { ScreenshotArgs } from "@re-do/model"
 
 export const screenshot = async (args: ScreenshotArgs, { page }: Context) => {
     await page.screenshot()
