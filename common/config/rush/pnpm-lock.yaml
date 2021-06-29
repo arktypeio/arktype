@@ -18298,7 +18298,7 @@ packages:
     dev: false
 
   file:projects/app.tgz:
-    resolution: {integrity: sha512-dED7yK0xDlSGvvkwEwBHoj2Ske/a/JbFxzMSGO/pISl8A27l0Qlyfz9P2jpCn5FXLGuouJOOPiN8EujwiX5IZA==, tarball: file:projects/app.tgz}
+    resolution: {integrity: sha512-iAG7NRLpHKLmu6XJYeIZ0xA5EkeC1vN683A8Ro5GU44cW7O/O259ctlCFlAAiL6VdpREWeRmEPaM5Fw9CM/QTQ==, tarball: file:projects/app.tgz}
     name: '@rush-temp/app'
     version: 0.0.0
     dependencies:
@@ -18457,7 +18457,7 @@ packages:
     dev: false
 
   file:projects/model.tgz_react@17.0.2:
-    resolution: {integrity: sha512-quUVKLX8T7oFhw469LysBFtS0eHPSWZbpAdkvVMwaUY5iu/GtbAokrvb0g8OT9jdSKqGfNaVh34JxqDzzV0psA==, tarball: file:projects/model.tgz}
+    resolution: {integrity: sha512-W8kXuBTDYIVAMHwnb3rb+9wWtjgg+02d477Y3hTciO2/wIqNiwtYtp1BfSFF9yngF4MKekk+i9bpwApUjoNwiA==, tarball: file:projects/model.tgz}
     id: file:projects/model.tgz
     name: '@rush-temp/model'
     version: 0.0.0
@@ -18605,7 +18605,7 @@ packages:
     dev: false
 
   file:projects/test.tgz_ts-node@9.1.1:
-    resolution: {integrity: sha512-azGatFodTmrX8v6o4soEhevTlbTjZaj3dtuAp/pSlZjn7+6MtlzKp9qOtbL6Czt8dtOco3RHFZ7yvQE8NqAkyw==, tarball: file:projects/test.tgz}
+    resolution: {integrity: sha512-jMnuHpRPQWwnAJYtWKJfSSMD0tnfA2UV1PL/TmTIHblddr7f2DjRIJq3LtQj+rcZdJwulUIVEmR/GNWA2Tz1hQ==, tarball: file:projects/test.tgz}
     id: file:projects/test.tgz
     name: '@rush-temp/test'
     version: 0.0.0
@@ -18660,7 +18660,7 @@ packages:
     dev: false
 
   file:projects/website.tgz_graphql@15.5.0:
-    resolution: {integrity: sha512-Y3STmjl2RCJ+xL076xXNn9s0zuUXSerstagd7JaV+y47rBkzy38/JO5U6qRezeQ86/vQlnuh2DTT4vigILZrGA==, tarball: file:projects/website.tgz}
+    resolution: {integrity: sha512-4K4YODpEE22F/8gDkZVUzi3/B7h9j+bHJVedGalMADYXErFr+SSl/VQUBJvy9bp10vnKrd0mOc4fYISnVJ3IlQ==, tarball: file:projects/website.tgz}
     id: file:projects/website.tgz
     name: '@rush-temp/website'
     version: 0.0.0
@@ -18670,6 +18670,7 @@ packages:
       '@material-ui/lab': 4.0.0-alpha.57_869b9dfa5d36930b3c5f506c90aa92ff
       '@material-ui/styles': 4.11.2_c9b97d0291e0c7f7ae91672f3bb47b49
       '@mdx-js/react': 1.6.22_react@17.0.2
+      '@types/jest': 26.0.20
       '@types/node': 15.0.2
       '@types/react': 17.0.5
       '@types/react-dom': 17.0.3
@@ -18678,19 +18679,25 @@ packages:
       '@types/uuid': 8.3.0
       '@types/validator': 13.1.3
       framer-motion: 4.1.11_react-dom@17.0.2+react@17.0.2
+      jest: 26.6.3_ts-node@9.1.1
       jsrx: 0.0.10
       react: 17.0.2
       react-dom: 17.0.2_react@17.0.2
       react-ga: 3.3.0_react@17.0.2
       react-router-dom: 5.2.0_react@17.0.2
       react-typist: 2.0.5_react-dom@17.0.2+react@17.0.2
+      ts-jest: 26.5.6_jest@26.6.3+typescript@4.2.3
       ts-node: 9.1.1_typescript@4.2.3
       typescript: 4.2.3
       uuid: 8.3.2
       validator: 13.5.2
       vite: 2.2.4
     transitivePeerDependencies:
+      - bufferutil
+      - canvas
       - graphql
       - prop-types
       - subscriptions-transport-ws
+      - supports-color
+      - utf-8-validate
     dev: false
