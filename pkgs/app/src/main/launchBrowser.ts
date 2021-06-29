@@ -4,7 +4,7 @@ import { resolve } from "path"
 import { launch, Step } from "@re-do/test"
 import { deepEquals } from "@re-do/utils"
 import { Browser } from "playwright"
-import { Root } from "state"
+import { Root } from "common"
 import { Store } from "react-statelessly"
 
 type EventData = Step & { timeStamp: number }
@@ -35,7 +35,7 @@ export const launchBrowser = async (
     })
     lastConnectedBrowser = browser
     const getNewStepId = () => {
-        const existingSteps = store.get("steps")
+        const existingSteps = store.get("builder/steps")
         if (!existingSteps.length) {
             return 1
         }
@@ -47,8 +47,10 @@ export const launchBrowser = async (
         if (!deepEquals(navigationStep, lastNavigationStep)) {
             lastNavigationStep = navigationStep
             store.update({
-                steps: (_) =>
-                    _.concat({ ...navigationStep, id: getNewStepId() })
+                builder: {
+                    steps: (_) =>
+                        _.concat({ ...navigationStep, id: getNewStepId() })
+                }
             })
         }
         await page.evaluate(browserJs)
@@ -60,7 +62,9 @@ export const launchBrowser = async (
         }
         const { timeStamp, ...step } = eventData
         store.update({
-            steps: (steps) => [...steps, { ...step, id: getNewStepId() }]
+            builder: {
+                steps: (steps) => [...steps, { ...step, id: getNewStepId() }]
+            }
         })
         lastEventData = eventData
     }

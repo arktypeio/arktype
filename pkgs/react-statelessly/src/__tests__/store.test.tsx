@@ -1,5 +1,5 @@
 import React from "react"
-import { StatelessProvider, StatelessConsumer, createStore } from ".."
+import { StatelessProvider, StatelessConsumer, Store } from ".."
 import { mount } from "enzyme"
 
 type Root = {
@@ -32,7 +32,7 @@ const initialRoot: Root = Object.freeze({
     d: [initialA, initialA]
 })
 
-const getStore = () => createStore(initialRoot, { enableB: { b: true } })
+const getStore = () => new Store(initialRoot, { enableB: { b: true } })
 
 let store = getStore()
 
@@ -83,7 +83,7 @@ describe("useQuery", () => {
                 <QueryChecker passTo={checkResult} />
             </StatelessProvider>
         )
-        store.enableB()
+        store.$.enableB()
         expect(checkResult).toBeCalledTimes(2)
         expect(checkResult).lastCalledWith({ b: true })
     })

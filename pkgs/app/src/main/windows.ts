@@ -42,7 +42,7 @@ export const createBuilderWindow = async () => {
     })
     // Builder window should always exist, even if it's not shown
     builderWindow.on("close", () => {
-        store.closeBuilder()
+        store.$.closeBuilder()
         createBuilderWindow()
     })
     await builderWindow.loadURL(`${BASE_URL}/#builder`)

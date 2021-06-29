@@ -87,6 +87,25 @@ export const transform = <K extends Key, V>(
 
 export type ItemOrList<T> = T | T[]
 export type Unlisted<T> = T extends (infer V)[] ? V : T
+export type FilterByValue<T extends object, ValueType> = Pick<
+    T,
+    {
+        [K in keyof T]: T[K] extends ValueType ? K : never
+    }[keyof T]
+>
+export type ExcludeByValue<T extends object, ValueType> = Pick<
+    T,
+    {
+        [K in keyof T]: T[K] extends ValueType ? never : K
+    }[keyof T]
+>
+export type OptionalOnly<T extends object> = Pick<
+    T,
+    {
+        [K in keyof T]: undefined extends T[K] ? K : never
+    }[keyof T]
+>
+
 export const listify = <T>(o: ItemOrList<T>) => ([] as T[]).concat(o)
 
 export type Key = string | number
@@ -139,3 +158,9 @@ export type FilterUp<T, UpfilteredKey> = {
                 >
               | Extract<T[K], NonRecursible>
 }
+
+export const withDefaults =
+    <T extends Record<string, any>>(defaults: Required<OptionalOnly<T>>) =>
+    (provided: T) => {
+        return { ...defaults, ...provided }
+    }

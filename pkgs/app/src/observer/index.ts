@@ -1,13 +1,12 @@
-// Figure out how to import this from shared
 import { finder } from "@medv/finder"
-import { supportedEvents, SupportedEvent } from "./types"
+import { supportedEvents, SupportedEvent } from "common"
 
 const getEventData = (e: Event) => {
     const kind = supportedEvents[e.type as SupportedEvent]
     const data: any = { kind, timeStamp: e.timeStamp }
     if (e.target) {
         const target = e.target as HTMLElement
-        data.selector = finder(target as HTMLElement)
+        data.element = { selector: finder(target as HTMLElement) }
         if (kind === "set") {
             data.value = (target as HTMLInputElement).value
         }

@@ -25,6 +25,10 @@
             "projectFolder": "pkgs/react-statelessly"
         },
         {
+            "packageName": "persist-statelessly",
+            "projectFolder": "pkgs/persist-statelessly"
+        },
+        {
             "packageName": "@re-do/model",
             "projectFolder": "pkgs/model"
         },

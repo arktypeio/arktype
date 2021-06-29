@@ -1,17 +1,50 @@
-import { ipcMain } from "electron"
-import { ActionData, Update } from "react-statelessly"
+import { Update, Store, BaseStore } from "react-statelessly"
 import { test as runTest } from "@re-do/test"
-import { join } from "path"
-import { createMainStore, MainActions, Root } from "state"
-import { loadStore } from "./persist"
-import { StoredTest, Test } from "@re-do/model"
+import { MainActions, RedoData, Root } from "common"
+import { forwardToRenderer, replayActionMain } from "electron-redux"
 import { launchBrowser, closeBrowser } from "./launchBrowser"
 import { mainWindow, builderWindow } from "./windows"
+import { ValueOf } from "@re-do/utils"
+import { createFileDb, ShallowModel } from "persist-statelessly"
+import { join } from "path"
 
 const DEFAULT_BUILDER_WIDTH = 300
 const ELECTRON_TITLEBAR_SIZE = 37
 
-const persistedStore = loadStore({ path: join(process.cwd(), "redo.json") })
+export const defaultRedoJsonPath = join(process.cwd(), "redo.json")
+export const defaultRedoData: ShallowModel<RedoData, "id"> = {
+    tests: [],
+    elements: [],
+    steps: [],
+    tags: []
+}
+
+export let store: Store<Root, MainActionFunctions>
+
+export const db = createFileDb<RedoData>({
+    path: defaultRedoJsonPath,
+    onNoFile: () => defaultRedoData,
+    onChange: (change, context) => {
+        // Forward changes from local store to app state store
+        if (store) {
+            store.update({ data: context.store.getState() })
+        }
+    },
+    relationships: {
+        tests: {
+            steps: "steps",
+            tags: "tags"
+        },
+        elements: {},
+        steps: {
+            element: "elements"
+        },
+        tags: {}
+    },
+    validate: (state, { store }) => {
+        return true
+    }
+})
 
 const emptyMainActions: MainActions = {
     saveTest: null,
@@ -21,21 +54,28 @@ const emptyMainActions: MainActions = {
 }
 
 const initialState: Root = {
-    token: "",
     page: "HOME",
+    token: "",
     cardFilter: "",
-    builderActive: false,
     defaultBrowser: "chrome",
-    steps: [],
-    tests: persistedStore.getTests(),
+    builder: {
+        steps: [],
+        active: false
+    },
     main: emptyMainActions,
-    renderer: {}
+    renderer: {},
+    data: db.all()
 }
 
+type ActionReturn = Update<Root> | Promise<Update<Root>>
+
 type MainActionFunctions = {
-    [K in keyof MainActions]-?: (
-        ...args: NonNullable<MainActions[K]>
-    ) => Update<Root> | Promise<Update<Root>>
+    [K in keyof MainActions]-?: [] extends MainActions[K]
+        ? (store: BaseStore<Root, any>) => ActionReturn
+        : (
+              args: NonNullable<MainActions[K]>,
+              store: BaseStore<Root, any>
+          ) => ActionReturn
 }
 
 const mainActions: MainActionFunctions = {
@@ -49,39 +89,39 @@ const mainActions: MainActionFunctions = {
         })
         builderWindow.show()
         await launchBrowser(store, mainWindow)
-        return { builderActive: true }
+        return { builder: { active: true, steps: [] } }
     },
     closeBuilder: async () => {
         if (builderWindow.isVisible()) {
             builderWindow.hide()
         }
         await closeBrowser()
-        return { builderActive: false, steps: [] }
+        return { builder: { active: false, steps: [] } }
     },
-    runTest: async (test: StoredTest) => {
-        await runTest(persistedStore.testToSteps(test as StoredTest))
+    runTest: async ([id]) => {
+        await runTest(db.tests.find((test) => test.id === id).steps)
         return {}
     },
-    saveTest: async (test: Test) => {
-        const storedTest = persistedStore.createTest(test)
-        store.update({ tests: (_) => _.concat(storedTest) })
+    saveTest: async ([test]) => {
+        db.tests.create(test)
         return {}
     }
 }
 
-export const store = createMainStore(initialState, mainActions)
-
-ipcMain.on("redux-action", async (event, action: ActionData<Root>) => {
-    // TODO: Convert this to a queue, handle race condition
-    const mainActions = action.payload.main
-    if (mainActions) {
-        const requiredActions = Object.entries(mainActions).filter(
-            ([name, args]) => !!args
-        )
-        for (const action of requiredActions) {
-            const [name, args] = action
-            await (store as any)[name](...(args as any))
-            store.update({ main: { [name]: null } })
+store = new Store(initialState, mainActions, {
+    middleware: [forwardToRenderer],
+    onChange: {
+        main: async (changes) => {
+            const requiredActions = Object.entries(changes).filter(
+                ([name, args]) => !!args
+            ) as [keyof MainActions, ValueOf<MainActions>][]
+            for (const action of requiredActions) {
+                const [name, args] = action
+                await store.actions[name](args as any)
+                store.update({ main: { [name]: null } })
+            }
         }
     }
 })
+
+replayActionMain(store.underlying as any)
