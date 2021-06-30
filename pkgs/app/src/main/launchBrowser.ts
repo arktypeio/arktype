@@ -1,4 +1,4 @@
-import { readFileSync } from "fs-extra"
+import { readFileSync } from "fs"
 import { BrowserWindow } from "electron"
 import { resolve } from "path"
 import { launch, Step } from "@re-do/test"

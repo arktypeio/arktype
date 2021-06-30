@@ -9,8 +9,7 @@ const buildVersion = `${now.getFullYear() - 2000}.${
  */
 const config = {
     directories: {
-        output: "dist",
-        buildResources: "buildResources"
+        output: "dist"
     },
     files: ["dist/**"],
     extraMetadata: {
