@@ -1,10 +1,12 @@
 import {
     readdirSync,
     lstatSync,
-    ensureDirSync,
     chmodSync,
-    createWriteStream
-} from "fs-extra"
+    createWriteStream,
+    existsSync,
+    mkdirSync,
+    statSync
+} from "fs"
 import { homedir } from "os"
 import { join } from "path"
 import { EXECUTABLE_SUFFIX } from "./os"
@@ -15,10 +17,20 @@ const streamFinished = promisify(finished)
 
 export const HOME = homedir()
 
-export const fromDir = (dir: string) => (...pathSegments: string[]) =>
-    join(dir, ...pathSegments)
+export const fromDir =
+    (dir: string) =>
+    (...pathSegments: string[]) =>
+        join(dir, ...pathSegments)
 
-export const ensureDir = ensureDirSync
+export const ensureDir = (path: string) => {
+    if (existsSync(path)) {
+        if (!statSync(path).isDirectory()) {
+            throw new Error(`${path} exists and is not a directory.`)
+        }
+    } else {
+        mkdirSync(path)
+    }
+}
 
 export const fromHome = fromDir(HOME)
 

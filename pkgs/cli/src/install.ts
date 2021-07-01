@@ -1,5 +1,5 @@
 import { graphql } from "@octokit/graphql"
-import { existsSync } from "fs-extra"
+import { existsSync } from "fs"
 import fetch from "node-fetch"
 import { asserted } from "@re-do/utils"
 import {

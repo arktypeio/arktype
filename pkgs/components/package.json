@@ -23,7 +23,7 @@
         "@material-ui/lab": "4.0.0-alpha.57",
         "@material-ui/pickers": "3.2.10",
         "@material-ui/styles": "4.11.2",
-        "@re-do/utils": "0.0.11",
+        "@re-do/utils": "0.0.12",
         "framer-motion": "4.1.11",
         "react": "17.0.2",
         "react-dom": "17.0.2",

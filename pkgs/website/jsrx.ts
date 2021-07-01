@@ -11,7 +11,8 @@ const start = async () => {
 jsrx(
     {
         dev: {
-            start
+            start,
+            test: $("jest")
         },
         prod: {},
         shared: {

@@ -82,9 +82,11 @@ jsrx(
             test: $(`jest`)
         },
         prod: {
-            compile: $(
-                `electron-builder build --config electron-builder.config.js --dir --config.asar=false`
-            )
+            release: () => {
+                shell(
+                    `electron-builder build --config electron-builder.config.js --dir --config.asar=false`
+                )
+            }
         },
         shared: {
             build: () => buildAll()

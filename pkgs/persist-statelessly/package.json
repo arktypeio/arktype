@@ -1,6 +1,6 @@
 {
     "name": "persist-statelessly",
-    "version": "0.0.1",
+    "version": "0.0.2",
     "author": "redo.qa",
     "description": "Seemlessly persist objects to a local file",
     "main": "dist/cjs/index.js",
@@ -16,8 +16,8 @@
         "test": "jest"
     },
     "dependencies": {
-        "statelessly": "0.0.2",
-        "@re-do/utils": "0.0.11"
+        "statelessly": "0.0.3",
+        "@re-do/utils": "0.0.12"
     },
     "devDependencies": {
         "@re-do/configs": "0.0.2",
