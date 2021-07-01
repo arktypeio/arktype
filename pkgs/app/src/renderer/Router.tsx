@@ -1,9 +1,9 @@
 import React, { useEffect } from "react"
 import { AppContents } from "@re-do/components"
-import { Page } from "state"
 import { store } from "renderer/common"
 import { Home, Landing } from "./pages"
 import { Builder } from "./builder"
+import { Page } from "../common"
 
 export const Router = () => {
     // This URL is loaded if and only if we're in the builder window
@@ -28,9 +28,7 @@ export const Router = () => {
     return <AppContents>{Pages[redirected]}</AppContents>
 }
 
-type NameToPage = { [_ in NonNullable<Page>]: JSX.Element }
-
-export const Pages: NameToPage = {
+export const Pages: Record<Page, JSX.Element> = {
     HOME: <Home />,
     SIGN_IN: <Landing page={"SIGN_IN"} />,
     SIGN_UP: <Landing page={"SIGN_UP"} />

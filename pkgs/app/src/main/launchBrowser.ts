@@ -1,6 +1,6 @@
 import { readFileSync } from "fs"
 import { BrowserWindow } from "electron"
-import { resolve } from "path"
+import { join } from "path"
 import { launch, Step } from "@re-do/test"
 import { deepEquals } from "@re-do/utils"
 import { Browser } from "playwright"
@@ -15,7 +15,10 @@ const DEFAULT_LEARNER_WIDTH = 300
 let lastConnectedBrowser: Browser
 let lastEventData: EventData
 
-const browserJs = readFileSync(resolve("dist", "observer", "index.js"), "utf-8")
+const browserJs = readFileSync(
+    join(__dirname, "..", "observer", "index.js"),
+    "utf-8"
+)
 
 export const launchBrowser = async (
     store: Store<Root, any>,
