@@ -3,6 +3,11 @@
     "version": "0.0.14",
     "private": true,
     "main": "dist/main/index.js",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/redo-qa/redo.git",
+        "directory": "pkgs/app"
+    },
     "scripts": {
         "start": "jsrx start",
         "lint": "jsrx lint",
@@ -10,6 +15,13 @@
         "test": "jsrx test",
         "build": "jsrx build",
         "release": "jsrx release",
+        "releaseLinux": "jsrx releaseLinux",
+        "releaseMac": "jsrx releaseMac",
+        "releaseWindows": "jsrx releaseWindows",
+        "publish": "jsrx publish",
+        "publishLinux": "jsrx publishLinux",
+        "publishMac": "jsrx publishMac",
+        "publishWindows": "jsrx publishWindows",
         "buildProd": "jsrx buildProd",
         "jsrxGen": "jsrx jsrxGen"
     },
