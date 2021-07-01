@@ -12,7 +12,7 @@ export let builderWindow: BrowserWindow
 
 const BASE_URL = isDev()
     ? `http://localhost:${process.env["DEV_SERVER_PORT"]}`
-    : `file://${__dirname}/index.html`
+    : `file://${__dirname}/../renderer/index.html`
 
 const defaultElectronOptions: BrowserWindowConstructorOptions = {
     webPreferences: {
@@ -45,5 +45,5 @@ export const createBuilderWindow = async () => {
         store.$.closeBuilder()
         createBuilderWindow()
     })
-    await builderWindow.loadURL(`${BASE_URL}/#builder`)
+    await builderWindow.loadURL(`${BASE_URL}#builder`)
 }

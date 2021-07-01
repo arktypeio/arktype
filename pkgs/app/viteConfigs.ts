@@ -43,6 +43,7 @@ export const getRendererConfig = ({ watch }: GetConfigArgs = {}) =>
         outDir: join(outRoot, "renderer"),
         watch,
         options: {
+            base: "./",
             resolve: {
                 alias: localResolves
             }

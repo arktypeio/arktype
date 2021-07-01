@@ -1,6 +1,6 @@
 {
     "name": "react-statelessly",
-    "version": "0.0.3",
+    "version": "0.0.5",
     "author": "redo.qa",
     "description": "💪-typed state management with simple shapes🔷 for react",
     "main": "dist/cjs/index.js",
@@ -16,12 +16,12 @@
         "test": "jest"
     },
     "dependencies": {
-        "@re-do/utils": "0.0.11",
+        "@re-do/utils": "0.0.12",
         "react": "17.0.2",
         "react-dom": "17.0.2",
         "react-redux": "7.2.2",
         "redux": "4.0.5",
-        "statelessly": "0.0.2"
+        "statelessly": "0.0.3"
     },
     "devDependencies": {
         "@re-do/configs": "0.0.2",
