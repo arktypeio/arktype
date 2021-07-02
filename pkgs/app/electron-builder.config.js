@@ -20,7 +20,11 @@ const config = {
         target: "AppImage"
     },
     mac: {
+        target: "tar.gz",
         category: "public.app-category.developer-tools"
+    },
+    win: {
+        target: "nsis"
     },
     beforeBuild: async (ctx) => {
         return false
