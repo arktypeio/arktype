@@ -1,4 +1,3 @@
-import { graphql } from "@octokit/graphql"
 import { existsSync } from "fs"
 import fetch from "node-fetch"
 import {
@@ -19,8 +18,8 @@ export const install = async (path: string) => {
         owner: "re-do",
         repo: "redo"
     })
-    const appRelease = data.assets.find(
-        (asset) => asset.name === "redo-0.0.13.AppImage"
+    const appRelease = data.assets.find((asset) =>
+        asset.name.endsWith(".AppImage")
     )
     if (!appRelease) {
         throw new Error(`Unable to find a Redo release for your platform.`)

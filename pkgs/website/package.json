@@ -6,6 +6,7 @@
     "scripts": {
         "start": "jsrx start",
         "test": "jsrx test",
+        "redo": "jsrx redo",
         "build": "jsrx build",
         "buildProd": "jsrx buildProd",
         "jsrxGen": "jsrx jsrxGen"
@@ -28,6 +29,7 @@
         "validator": "13.5.2"
     },
     "devDependencies": {
+        "@re-do/test": "0.0.2",
         "@re-do/configs": "0.0.2",
         "@types/node": "15.0.2",
         "@types/react": "17.0.5",

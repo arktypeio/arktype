@@ -1,11 +1,6 @@
 const { shell } = require("@re-do/node-utils")
 const { join } = require("path")
 
-const now = new Date()
-const buildVersion = `${now.getFullYear() - 2000}.${
-    now.getMonth() + 1
-}.${now.getDate()}`
-
 /**
  * @type {import('electron-builder').Configuration}
  * @see https://www.electron.build/configuration/configuration
@@ -17,11 +12,11 @@ const config = {
     },
     files: ["dist/**"],
     extraMetadata: {
-        version: buildVersion
+        version: require("./package.json").version
     },
     linux: {
         executableName: "redo",
-        artifactName: "${productName}-${version}.${ext}",
+        artifactName: "redo-${version}.${ext}",
         target: "AppImage"
     },
     mac: {
