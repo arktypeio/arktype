@@ -40,7 +40,7 @@
         "@medv/finder": "2.0.0",
         "@re-do/components": "0.0.4",
         "@re-do/model": "0.0.1",
-        "@re-do/test": "0.0.1",
+        "@re-do/run": "0.0.1",
         "@re-do/utils": "0.0.12",
         "@re-do/node-utils": "0.0.3",
         "dotenv": "9.0.0",

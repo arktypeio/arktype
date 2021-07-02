@@ -41,12 +41,12 @@
             "projectFolder": "pkgs/website"
         },
         {
-            "packageName": "@re-do/test",
-            "projectFolder": "pkgs/test"
+            "packageName": "@re-do/run",
+            "projectFolder": "pkgs/run"
         },
         {
-            "packageName": "@re-do/cli",
-            "projectFolder": "pkgs/cli"
+            "packageName": "@re-do/test",
+            "projectFolder": "pkgs/test"
         },
         {
             "packageName": "@re-do/app",

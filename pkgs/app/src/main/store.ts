@@ -1,5 +1,5 @@
 import { Update, Store, BaseStore } from "react-statelessly"
-import { test as runTest } from "@re-do/test"
+import { test as runTest } from "@re-do/run"
 import { MainActions, RedoData, Root } from "common"
 import { forwardToRenderer, replayActionMain } from "electron-redux"
 import { launchBrowser, closeBrowser } from "./launchBrowser"

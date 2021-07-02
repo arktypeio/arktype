@@ -2,29 +2,35 @@
     "name": "@re-do/test",
     "version": "0.0.1",
     "author": "redo.qa",
-    "description": "Delightful web testing that writes itself 🖋",
+    "description": "CLI for Redo",
+    "license": "MIT",
     "main": "dist/cjs/index.js",
-    "module": "dist/mjs/index.js",
-    "exports": {
-        ".": {
-            "import": "./dist/mjs/index.js",
-            "require": "./dist/cjs/index.js"
-        }
-    },
     "scripts": {
-        "build": "redo-build",
+        "build": "redo-build && chmod +x ./dist/cjs/index.js",
+        "redo": "ts-node src/index.ts",
         "test": "jest"
     },
+    "bin": {
+        "redo": "./dist/cjs/index.js"
+    },
     "dependencies": {
-        "@re-do/model": "0.0.1",
+        "commander": "6.2.1",
+        "node-fetch": "2.6.1",
+        "@octokit/rest": "18.6.6",
         "@re-do/utils": "0.0.12",
-        "playwright": "1.11.1"
+        "@re-do/node-utils": "0.0.3"
     },
     "devDependencies": {
         "@re-do/configs": "0.0.2",
+        "@types/node": "15.0.2",
+        "ts-node": "9.1.1",
+        "typescript": "4.2.3",
+        "@types/node-fetch": "2.5.8",
         "@types/jest": "26.0.20",
         "jest": "26.6.3",
         "ts-jest": "26.5.6",
-        "typescript": "4.2.3"
+        "tree-kill": "1.2.2",
+        "ps-list": "7.2.0",
+        "async-wait-until": "2.0.7"
     }
 }

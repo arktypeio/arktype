@@ -15,7 +15,7 @@ import {
     Radio
 } from "@material-ui/core"
 import { store } from "renderer/common"
-import { BrowserName } from "@re-do/test"
+import { BrowserName } from "@re-do/run"
 
 export const Settings = () => {
     const defaultBrowser = store.useGet("defaultBrowser")

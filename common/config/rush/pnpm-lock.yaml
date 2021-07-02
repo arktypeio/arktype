@@ -15,15 +15,16 @@ specifiers:
   '@mdx-js/react': 1.6.22
   '@medv/finder': 2.0.0
   '@octokit/graphql': 4.5.8
+  '@octokit/rest': 18.6.6
   '@reduxjs/toolkit': 1.5.0
   '@rush-temp/app': file:./projects/app.tgz
-  '@rush-temp/cli': file:./projects/cli.tgz
   '@rush-temp/components': file:./projects/components.tgz
   '@rush-temp/configs': file:./projects/configs.tgz
   '@rush-temp/model': file:./projects/model.tgz
   '@rush-temp/node-utils': file:./projects/node-utils.tgz
   '@rush-temp/persist-statelessly': file:./projects/persist-statelessly.tgz
   '@rush-temp/react-statelessly': file:./projects/react-statelessly.tgz
+  '@rush-temp/run': file:./projects/run.tgz
   '@rush-temp/statelessly': file:./projects/statelessly.tgz
   '@rush-temp/test': file:./projects/test.tgz
   '@rush-temp/utils': file:./projects/utils.tgz
@@ -50,6 +51,7 @@ specifiers:
   '@vitejs/plugin-react-refresh': 1.3.3
   '@wojtekmaj/enzyme-adapter-react-17': 0.4.1
   apollo: 2.32.1
+  async-wait-until: 2.0.7
   babel-loader: 8.2.2
   babel-preset-redo: 0.0.2
   commander: 6.2.1
@@ -77,6 +79,7 @@ specifiers:
   prettier: 2.2.1
   process: 0.11.10
   prompts: 2.4.1
+  ps-list: 7.2.0
   react: 17.0.2
   react-dom: 17.0.2
   react-ga: 3.3.0
@@ -112,17 +115,18 @@ dependencies:
   '@mdx-js/react': 1.6.22_react@17.0.2
   '@medv/finder': 2.0.0
   '@octokit/graphql': 4.5.8
+  '@octokit/rest': 18.6.6
   '@reduxjs/toolkit': 1.5.0
   '@rush-temp/app': file:projects/app.tgz
-  '@rush-temp/cli': file:projects/cli.tgz
   '@rush-temp/components': file:projects/components.tgz_ts-node@9.1.1
   '@rush-temp/configs': file:projects/configs.tgz
   '@rush-temp/model': file:projects/model.tgz_react@17.0.2
   '@rush-temp/node-utils': file:projects/node-utils.tgz_ts-node@9.1.1
   '@rush-temp/persist-statelessly': file:projects/persist-statelessly.tgz_ts-node@9.1.1
   '@rush-temp/react-statelessly': file:projects/react-statelessly.tgz_ts-node@9.1.1
+  '@rush-temp/run': file:projects/run.tgz_ts-node@9.1.1
   '@rush-temp/statelessly': file:projects/statelessly.tgz_ts-node@9.1.1
-  '@rush-temp/test': file:projects/test.tgz_ts-node@9.1.1
+  '@rush-temp/test': file:projects/test.tgz
   '@rush-temp/utils': file:projects/utils.tgz_ts-node@9.1.1
   '@rush-temp/website': file:projects/website.tgz_graphql@15.5.0
   '@storybook/addon-essentials': 6.2.9_28cc04bcc6b916c2bbf776e47acadc45
@@ -147,6 +151,7 @@ dependencies:
   '@vitejs/plugin-react-refresh': 1.3.3
   '@wojtekmaj/enzyme-adapter-react-17': 0.4.1_fae758709a8810ba97b4c03852dde4d0
   apollo: 2.32.1_typescript@4.2.3
+  async-wait-until: 2.0.7
   babel-loader: 8.2.2
   babel-preset-redo: 0.0.2_ae0270319c858645f645a76f436797f4
   commander: 6.2.1
@@ -174,6 +179,7 @@ dependencies:
   prettier: 2.2.1
   process: 0.11.10
   prompts: 2.4.1
+  ps-list: 7.2.0
   react: 17.0.2
   react-dom: 17.0.2_react@17.0.2
   react-ga: 3.3.0_react@17.0.2
@@ -4095,6 +4101,24 @@ packages:
     engines: {node: '>=8.0.0'}
     dev: false
 
+  /@octokit/auth-token/2.4.5:
+    resolution: {integrity: sha512-BpGYsPgJt05M7/L/5FoE1PiAbdxXFZkX/3kDYcsvd1v6UhlnE5e96dTDr0ezX/EFwciQxf3cNV0loipsURU+WA==}
+    dependencies:
+      '@octokit/types': 6.17.4
+    dev: false
+
+  /@octokit/core/3.5.1:
+    resolution: {integrity: sha512-omncwpLVxMP+GLpLPgeGJBF6IWJFjXDS5flY5VbppePYX9XehevbDykRH9PdCdvqt9TS5AOTiDide7h0qrkHjw==}
+    dependencies:
+      '@octokit/auth-token': 2.4.5
+      '@octokit/graphql': 4.5.8
+      '@octokit/request': 5.6.0
+      '@octokit/request-error': 2.1.0
+      '@octokit/types': 6.17.4
+      before-after-hook: 2.2.2
+      universal-user-agent: 6.0.0
+    dev: false
+
   /@octokit/endpoint/6.0.12:
     resolution: {integrity: sha512-lF3puPwkQWGfkMClXb4k/eUT/nZKQfxinRWJrdZaJO85Dqwo/G0yOC434Jr2ojwafWJMYqFGFa5ms4jJUgujdA==}
     dependencies:
@@ -4115,6 +4139,33 @@ packages:
     resolution: {integrity: sha512-NnGr4NNDqO5wjSDJo5nxrGtzZUwoT23YasqK2H4Pav/6vSgeVTxuqCL9Aeh+cWfTxDomj1M4Os5BrXFsvl7qiQ==}
     dev: false
 
+  /@octokit/plugin-paginate-rest/2.13.6_@octokit+core@3.5.1:
+    resolution: {integrity: sha512-ai7TNKLi8tGkDvLM7fm0X1fbIP9u1nfXnN49ZAw2PgSoQou9yixKn5c3m0awuLacbuX2aXEvJpv1gKm3jboabg==}
+    peerDependencies:
+      '@octokit/core': '>=2'
+    dependencies:
+      '@octokit/core': 3.5.1
+      '@octokit/types': 6.17.4
+    dev: false
+
+  /@octokit/plugin-request-log/1.0.4_@octokit+core@3.5.1:
+    resolution: {integrity: sha512-mLUsMkgP7K/cnFEw07kWqXGF5LKrOkD+lhCrKvPHXWDywAwuDUeDwWBpc69XK3pNX0uKiVt8g5z96PJ6z9xCFA==}
+    peerDependencies:
+      '@octokit/core': '>=3'
+    dependencies:
+      '@octokit/core': 3.5.1
+    dev: false
+
+  /@octokit/plugin-rest-endpoint-methods/5.3.7_@octokit+core@3.5.1:
+    resolution: {integrity: sha512-LAgTLOsJ86ig2wYSpcSx+UWt7aQYYsEZ/Tf/pksAVQWKNcGuTVCDl9OUiPhQ7DZelNozYVWTO9Iyjd/soe4tug==}
+    peerDependencies:
+      '@octokit/core': '>=3'
+    dependencies:
+      '@octokit/core': 3.5.1
+      '@octokit/types': 6.17.4
+      deprecation: 2.3.1
+    dev: false
+
   /@octokit/request-error/2.1.0:
     resolution: {integrity: sha512-1VIvgXxs9WHSjicsRwq8PlR2LR2x6DwsJAaFgzdi0JfJoGSO8mYI/cHJQ+9FbN21aa+DrgNLnwObmyeSC8Rmpg==}
     dependencies:
@@ -4132,6 +4183,15 @@ packages:
       is-plain-object: 5.0.0
       node-fetch: 2.6.1
       universal-user-agent: 6.0.0
+    dev: false
+
+  /@octokit/rest/18.6.6:
+    resolution: {integrity: sha512-kCLvz8MSh+KToXySdqUp80caBom1ZQmsX3gbT3osfbJy6fD86QObUjzAOD3D3Awz3X7ng24+lB+imvSr5EnM7g==}
+    dependencies:
+      '@octokit/core': 3.5.1
+      '@octokit/plugin-paginate-rest': 2.13.6_@octokit+core@3.5.1
+      '@octokit/plugin-request-log': 1.0.4_@octokit+core@3.5.1
+      '@octokit/plugin-rest-endpoint-methods': 5.3.7_@octokit+core@3.5.1
     dev: false
 
   /@octokit/types/6.17.4:
@@ -6684,6 +6744,11 @@ packages:
     engines: {node: '>=0.12.0'}
     dev: false
 
+  /async-wait-until/2.0.7:
+    resolution: {integrity: sha512-SjHxM2f5ev4o87gYppr8HmWPjOHw06Pg5KZvkSl6FMqa3TTHzDGIWCZx61XWjxO5ArPcZBuJYbAa809FNyx3QQ==}
+    engines: {node: '>= 0.12.0', npm: '>= 1.0.0'}
+    dev: false
+
   /async/0.9.2:
     resolution: {integrity: sha1-rqdNXmHB+JlhO/ZL2mbUx48v0X0=}
     dev: false
@@ -7071,6 +7136,10 @@ packages:
 
   /batch-processor/1.0.0:
     resolution: {integrity: sha1-dclcMrdI4IUNEMKxaPa9vpiRrOg=}
+    dev: false
+
+  /before-after-hook/2.2.2:
+    resolution: {integrity: sha512-3pZEU3NT5BFUo/AD5ERPWOgQOCZITni6iavr5AUw5AUwQjMlI0kzu5btnyD39AF0gUEsDPwJT+oY1ORBJijPjQ==}
     dev: false
 
   /better-opn/2.1.1:
@@ -7984,6 +8053,11 @@ packages:
 
   /commander/4.1.1:
     resolution: {integrity: sha512-NOKm8xhkzAjzFx8B2v5OAHT+u5pRQc2UCa2Vq9jYL/31o2wi9mxBA7LIFs3sV5VSC49z6pEhfbMULvShKj26WA==}
+    engines: {node: '>= 6'}
+    dev: false
+
+  /commander/5.1.0:
+    resolution: {integrity: sha512-P0CysNDQ7rtVw4QIQtm+MRxV66vKFSvlsQvGYXZWR3qFU0jlMKHZZZgw8e+8DSah4UDKMqnknRDQz+xuQXQ/Zg==}
     engines: {node: '>= 6'}
     dev: false
 
@@ -9639,6 +9713,17 @@ packages:
       commondir: 1.0.1
       make-dir: 3.1.0
       pkg-dir: 4.2.0
+    dev: false
+
+  /find-process/1.4.4:
+    resolution: {integrity: sha512-rRSuT1LE4b+BFK588D2V8/VG9liW0Ark1XJgroxZXI0LtwmQJOb490DvDYvbm+Hek9ETFzTutGfJ90gumITPhQ==}
+    hasBin: true
+    dependencies:
+      chalk: 4.1.1
+      commander: 5.1.0
+      debug: 4.3.1
+    transitivePeerDependencies:
+      - supports-color
     dev: false
 
   /find-root/1.1.0:
@@ -14108,6 +14193,11 @@ packages:
     resolution: {integrity: sha1-0/wRS6BplaRexok/SEzrHXj19HY=}
     dev: false
 
+  /ps-list/7.2.0:
+    resolution: {integrity: sha512-v4Bl6I3f2kJfr5o80ShABNHAokIgY+wFDTQfE+X3zWYgSGQOCBeYptLZUpoOALBqO5EawmDN/tjTldJesd0ujQ==}
+    engines: {node: '>=10'}
+    dev: false
+
   /psl/1.8.0:
     resolution: {integrity: sha512-RIdOzyoavK+hA18OGGWDqUTsCLhtA7IcZ/6NCs4fFJaHBDab+pDDmDIByWFRQJq2Cd7r1OoQxBGKOaztq+hjIQ==}
     dev: false
@@ -17505,7 +17595,7 @@ packages:
     dev: false
 
   file:projects/app.tgz:
-    resolution: {integrity: sha512-aX1pFLWFaFPkV2XpdrpV//V1rgw15ljPx9OJB4FLprdF0R8hxXW+VUlo+zhcniB5gl1Mmb/ebI/EPr7La2GxJw==, tarball: file:projects/app.tgz}
+    resolution: {integrity: sha512-xj3mpJcDC6Ula2wl0vJcmXFPJ+3efjDm7mpuaBA9oYzvzvDOcqMqIiPKe5IOugUWWARlae8uOx2+NgIRQT6ptA==, tarball: file:projects/app.tgz}
     name: '@rush-temp/app'
     version: 0.0.0
     dependencies:
@@ -17546,24 +17636,6 @@ packages:
       - supports-color
       - utf-8-validate
       - ws
-    dev: false
-
-  file:projects/cli.tgz:
-    resolution: {integrity: sha512-rpwQe8G0Ux4IrZF/kr9YewyQ4fU3YH1QbShktV4C0/KOei4pW/WwEV+e6wBs1fXoaHE6OK/xu3AadY49BhARXA==, tarball: file:projects/cli.tgz}
-    name: '@rush-temp/cli'
-    version: 0.0.0
-    dependencies:
-      '@octokit/graphql': 4.5.8
-      '@types/node': 15.0.2
-      '@types/node-fetch': 2.5.8
-      apollo: 2.32.1_typescript@4.2.3
-      commander: 6.2.1
-      node-fetch: 2.6.1
-      ts-node: 9.1.1_typescript@4.2.3
-      typescript: 4.2.3
-    transitivePeerDependencies:
-      - supports-color
-      - zen-observable
     dev: false
 
   file:projects/components.tgz_ts-node@9.1.1:
@@ -17754,6 +17826,25 @@ packages:
       - utf-8-validate
     dev: false
 
+  file:projects/run.tgz_ts-node@9.1.1:
+    resolution: {integrity: sha512-T6U2awaNN4N7K3yOTxO7UjK7oi3C8Y4Pm4KleO2txGwDjWLMW2DD6+VT3ogcYBd7s0RRfM0lYPIomq7ZiTI/Fg==, tarball: file:projects/run.tgz}
+    id: file:projects/run.tgz
+    name: '@rush-temp/run'
+    version: 0.0.0
+    dependencies:
+      '@types/jest': 26.0.20
+      jest: 26.6.3_ts-node@9.1.1
+      playwright: 1.11.1
+      ts-jest: 26.5.6_jest@26.6.3+typescript@4.2.3
+      typescript: 4.2.3
+    transitivePeerDependencies:
+      - bufferutil
+      - canvas
+      - supports-color
+      - ts-node
+      - utf-8-validate
+    dev: false
+
   file:projects/statelessly.tgz_ts-node@9.1.1:
     resolution: {integrity: sha512-YCxPwf+9MQGtAJq130gMoACdzpCWwshKdmS5RWarF88rL5Vxt/y/1BOywQ09KSBO2fJXAdqdD8uaUVasnMHoaw==, tarball: file:projects/statelessly.tgz}
     id: file:projects/statelessly.tgz
@@ -17780,23 +17871,33 @@ packages:
       - utf-8-validate
     dev: false
 
-  file:projects/test.tgz_ts-node@9.1.1:
-    resolution: {integrity: sha512-7iYMH9J9ba3jSlXr9FtI6L57nj8wSjroVY8ROOnneNdZ0VxD4J0Y81ys+kBXxDD1npdAXBwC20hcBujyDcc5YQ==, tarball: file:projects/test.tgz}
-    id: file:projects/test.tgz
+  file:projects/test.tgz:
+    resolution: {integrity: sha512-+0Fm5BY/i0PGEICL3hB7koqz1uCq9gmcqxmwgbnO5iCrFpTkblkM58Og14krxe9tGFd0lXTf7TDkJPLVra5gsA==, tarball: file:projects/test.tgz}
     name: '@rush-temp/test'
     version: 0.0.0
     dependencies:
+      '@octokit/graphql': 4.5.8
+      '@octokit/rest': 18.6.6
       '@types/jest': 26.0.20
+      '@types/node': 15.0.2
+      '@types/node-fetch': 2.5.8
+      apollo: 2.32.1_typescript@4.2.3
+      async-wait-until: 2.0.7
+      commander: 6.2.1
+      find-process: 1.4.4
       jest: 26.6.3_ts-node@9.1.1
-      playwright: 1.11.1
+      node-fetch: 2.6.1
+      ps-list: 7.2.0
+      tree-kill: 1.2.2
       ts-jest: 26.5.6_jest@26.6.3+typescript@4.2.3
+      ts-node: 9.1.1_typescript@4.2.3
       typescript: 4.2.3
     transitivePeerDependencies:
       - bufferutil
       - canvas
       - supports-color
-      - ts-node
       - utf-8-validate
+      - zen-observable
     dev: false
 
   file:projects/utils.tgz_ts-node@9.1.1:
