@@ -1,5 +1,5 @@
 [build]
-  command = "NODE_ENV=production && npm install -g @microsoft/rush@5.26.0 && rush update && rush build --to @re-do/website"
+  command = "NODE_ENV=production && npm install -g @microsoft/rush@5.26.0 && rush update && rush build --to-except @re-do/website && cd pkgs/website && rushx buildProd"
   publish = "pkgs/website/dist"
 [build.environment]
   NODE_VERSION = "14.16.1"
