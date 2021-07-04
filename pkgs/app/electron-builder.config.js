@@ -11,12 +11,13 @@ const config = {
         buildResources: join(__dirname, "src", "assets")
     },
     files: ["dist/**"],
+    appId: "redo",
     extraMetadata: {
-        version: require("./package.json").version
+        name: "redo"
     },
+    artifactName: "redo-${version}.${ext}",
     linux: {
         executableName: "redo",
-        artifactName: "redo-${version}.${ext}",
         target: "AppImage"
     },
     mac: {
@@ -30,14 +31,15 @@ const config = {
         return false
     },
     afterPack: async (ctx) => {
-        shell("pnpm i --prod --store-dir .pnpm", {
-            cwd: join(
-                ctx.appOutDir,
-                ctx.appOutDir.endsWith("mac")
-                    ? "@re-doapp.app/Contents/Resources"
-                    : "resources",
-                "app"
-            )
+        const resourceDir = join(
+            ctx.appOutDir,
+            ctx.appOutDir.endsWith("mac")
+                ? "redo.app/Contents/Resources"
+                : "resources",
+            "app"
+        )
+        shell("pnpm i --prod --shamefully-hoist", {
+            cwd: resourceDir
         })
     }
 }

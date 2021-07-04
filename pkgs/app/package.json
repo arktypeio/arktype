@@ -33,7 +33,6 @@
         "*.{js,ts}": "prettier --write"
     },
     "dependencies": {
-        "electron-updater": "4.3.5",
         "@apollo/client": "3.3.7",
         "@material-ui/core": "4.11.2",
         "@material-ui/styles": "4.11.2",
@@ -64,7 +63,7 @@
         "@types/jest": "26.0.20",
         "@re-do/configs": "0.0.2",
         "electron": "11.4.5",
-        "electron-builder": "22.9.1",
+        "electron-builder": "22.11.7",
         "electron-devtools-installer": "3.2.0",
         "typescript": "4.2.3",
         "ts-node": "9.1.1",
