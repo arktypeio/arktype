@@ -12,7 +12,7 @@
         }
     },
     "scripts": {
-        "build": "./redoBuild.js"
+        "build": "node redoBuild.js"
     },
     "bin": {
         "redo-build": "./redoBuild.js"
