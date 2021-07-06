@@ -1,7 +1,7 @@
-export {}
+import { redo } from "@re-do/test"
 
 describe("website", () => {
-    test("nothing", () => {
-        expect(true).toBe(true)
+    test("Sign Up", async () => {
+        await redo({ id: 1 })
     })
 })

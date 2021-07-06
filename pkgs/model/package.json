@@ -22,7 +22,8 @@
         "graphql-tag": "2.12.4",
         "validator": "13.5.2",
         "statelessly": "0.0.3",
-        "uuid": "8.3.2"
+        "uuid": "8.3.2",
+        "persist-statelessly": "0.0.2"
     },
     "devDependencies": {
         "@re-do/configs": "0.0.2",
