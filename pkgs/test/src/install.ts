@@ -53,5 +53,13 @@ export const getPath = async (version: string) => {
     return executablePath
 }
 
-export const getExecutablePath = (versionDir: string) =>
-    join(versionDir, getOs() === "windows" ? "redo.exe" : "redo")
+export const getExecutablePath = (versionDir: string) => {
+    const os = getOs()
+    if (os === "windows") {
+        return join(versionDir, "redo.exe")
+    } else if (os === "linux") {
+        return join(versionDir, "redo")
+    } else {
+        return join(versionDir, "redo.app", "Contents", "MacOS", "redo")
+    }
+}
