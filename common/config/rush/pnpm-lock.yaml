@@ -57,7 +57,6 @@ dependencies:
   electron-builder: 22.11.7
   electron-devtools-installer: 3.2.0
   electron-redux: 1.5.4
-  electron-updater: 4.3.9
   enzyme: 3.11.0
   execa: 5.0.0
   fast-deep-equal: 3.1.3
@@ -5080,7 +5079,7 @@ packages:
       integrity: sha512-anKkLmZZ+xm4p8JWBf4hElkM4XR+EZeA2M9BAkkTldmcyDY4mbdIJnRghDJH3Ov5ooY7/UAoENtmdMSkaAd7Cw==
   /@types/hast/2.3.1:
     dependencies:
-      '@types/unist': 2.0.4
+      '@types/unist': 2.0.5
     dev: false
     resolution:
       integrity: sha512-viwwrB+6xGzw+G1eWpF9geV3fnsDgXqHG+cqgiHrvQfDUW5hzhCyV7Sy3UJxhfRFBsgky2SSW33qi/YrIkjX5Q==
@@ -5158,7 +5157,7 @@ packages:
       integrity: sha512-30nFYpceM/ZEvhGiqWjm5quLUxNeld0HCzJEXMZZDpq53FPkS85mTwkWtCXzCqq8s5JYLgM5W392a02xn8Bdaw==
   /@types/mdast/3.0.3:
     dependencies:
-      '@types/unist': 2.0.4
+      '@types/unist': 2.0.5
     dev: false
     resolution:
       integrity: sha512-SXPBMnFVQg1s00dlMCc/jCdvPqdE4mXaMMCeRlxLDmTAEoegHT53xKtkDnzDTOcmMHUfcjyf36/YYZ6SxRdnsw==
@@ -5312,10 +5311,6 @@ packages:
     dev: false
     resolution:
       integrity: sha512-EaCxbanVeyxDRTQBkdLb3Bvl/HK7PBK6UJjsSixB0iHKoWxE5uu2Q/DgtpOhPIojN0Zl1whvOd7PoHs2P0s5eA==
-  /@types/semver/7.3.6:
-    dev: false
-    resolution:
-      integrity: sha512-0caWDWmpCp0uifxFh+FaqK3CuZ2SkRR/ZRxAV5+zNdC3QVUi6wyOJnefhPvtNt8NQWXB5OA93BUvZsXpWat2Xw==
   /@types/source-list-map/0.1.2:
     dev: false
     resolution:
@@ -5344,10 +5339,10 @@ packages:
     dev: false
     resolution:
       integrity: sha512-+/DsiV4CxXl6ZWefwHZDXSe1Slitz21tom38qPCaG0DYCS1NnDPIQDTKcmQ/tvK/edJUKkmuIDBJbmKDiB0r/g==
-  /@types/unist/2.0.4:
+  /@types/unist/2.0.5:
     dev: false
     resolution:
-      integrity: sha512-zfyYsDTK1HTGYXU3fTiM76+om93HcFtsZd2M0bO/CL4DiETV7mSa/pIVN/6+G3esOqEMdg2An5cHHbK5t+9w+A==
+      integrity: sha512-wnra4Vw9dopnuybR6HBywJ/URYpYrKLoepBTEtgfJup8Ahoi2zJECPP2cwiXp7btTvOT2CULv87aQRA4eZSP6g==
   /@types/uuid/8.3.0:
     dev: false
     resolution:
@@ -6720,7 +6715,7 @@ packages:
   /browserslist/4.14.2:
     dependencies:
       caniuse-lite: 1.0.30001242
-      electron-to-chromium: 1.3.766
+      electron-to-chromium: 1.3.768
       escalade: 3.1.1
       node-releases: 1.1.73
     dev: false
@@ -6733,7 +6728,7 @@ packages:
     dependencies:
       caniuse-lite: 1.0.30001242
       colorette: 1.2.2
-      electron-to-chromium: 1.3.766
+      electron-to-chromium: 1.3.768
       escalade: 3.1.1
       node-releases: 1.1.73
     dev: false
@@ -6793,15 +6788,6 @@ packages:
     dev: false
     resolution:
       integrity: sha512-EHcyIPBQ4BSGlvjB16k5KgAJ27CIsHY/2JBmCRReo48y9rQ3MaUzWX3KVlBa4U7MyX02HdVj0K7C3WaB3ju7FQ==
-  /builder-util-runtime/8.7.5:
-    dependencies:
-      debug: 4.3.2
-      sax: 1.2.4
-    dev: false
-    engines:
-      node: '>=12.0.0'
-    resolution:
-      integrity: sha512-fgUFHKtMNjdvH6PDRFntdIGUPgwZ69sXsAqEulCtoiqgWes5agrMq/Ud274zjJRTbckYh2PHh8/1CpFc6dpsbQ==
   /builder-util-runtime/8.7.6:
     dependencies:
       debug: 4.3.2
@@ -7515,7 +7501,7 @@ packages:
   /constant-case/3.0.4:
     dependencies:
       no-case: 3.0.4
-      tslib: 2.1.0
+      tslib: 2.2.0
       upper-case: 2.0.2
     dev: false
     resolution:
@@ -8375,23 +8361,10 @@ packages:
     dev: false
     resolution:
       integrity: sha512-7fM7OLVR34prk/ZlIv3yRbB4XCZPPQJ9ZfYLPmWPvKIONe2qm1e0on+cMLGgwzREapQrzCmc1VAxs8WNbWgncg==
-  /electron-to-chromium/1.3.766:
+  /electron-to-chromium/1.3.768:
     dev: false
     resolution:
-      integrity: sha512-u2quJ862q9reRKh/je3GXis3w38+RoXH1J9N3XjtsS6NzmUAosNsyZgUVFZPN/ZlJ3v6T0rTyZR3q/J5c6Sy5w==
-  /electron-updater/4.3.9:
-    dependencies:
-      '@types/semver': 7.3.6
-      builder-util-runtime: 8.7.5
-      fs-extra: 10.0.0
-      js-yaml: 4.1.0
-      lazy-val: 1.0.5
-      lodash.escaperegexp: 4.1.2
-      lodash.isequal: 4.5.0
-      semver: 7.3.5
-    dev: false
-    resolution:
-      integrity: sha512-LCNfedSwZfS4Hza+pDyPR05LqHtGorCStaBgVpRnfKxOlZcvpYEX0AbMeH5XUtbtGRoH2V8osbbf2qKPNb7AsA==
+      integrity: sha512-I4UMZHhVSK2pwt8jOIxTi3GIuc41NkddtKT/hpuxp9GO5UWJgDKTBa4TACppbVAuKtKbMK6BhQZvT5tFF1bcNA==
   /electron/11.4.5:
     dependencies:
       '@electron/get': 1.12.4
@@ -9104,7 +9077,7 @@ packages:
   /file-loader/6.2.0_webpack@4.46.0:
     dependencies:
       loader-utils: 2.0.0
-      schema-utils: 3.0.0
+      schema-utils: 3.1.0
       webpack: 4.46.0
     dev: false
     engines:
@@ -9955,7 +9928,7 @@ packages:
       integrity: sha512-taOaskGt4z4SOANNseOviYDvjEJinIkRgmp7LbKP2YTTmVxWBl87s/uzK9r+44BclBSp2X7K1hqeNfz9JbBeXA==
   /hast-to-hyperscript/9.0.1:
     dependencies:
-      '@types/unist': 2.0.4
+      '@types/unist': 2.0.5
       comma-separated-tokens: 1.0.8
       property-information: 5.6.0
       space-separated-tokens: 1.1.5
@@ -12010,10 +11983,6 @@ packages:
     dev: false
     resolution:
       integrity: sha1-yQRGkMIeBClL6qUXcS/e0fqI3pg=
-  /lodash.escaperegexp/4.1.2:
-    dev: false
-    resolution:
-      integrity: sha1-ZHYsSGGAglGKw99Mz11YhtriA0c=
   /lodash.flattendeep/4.4.0:
     dev: false
     resolution:
@@ -12250,7 +12219,7 @@ packages:
   /mdast-util-to-hast/10.0.1:
     dependencies:
       '@types/mdast': 3.0.3
-      '@types/unist': 2.0.4
+      '@types/unist': 2.0.5
       mdast-util-definitions: 4.0.0
       mdurl: 1.0.1
       unist-builder: 2.0.3
@@ -13507,7 +13476,7 @@ packages:
       klona: 2.0.4
       loader-utils: 2.0.0
       postcss: 7.0.36
-      schema-utils: 3.0.0
+      schema-utils: 3.1.0
       semver: 7.3.5
       webpack: 4.46.0
     dev: false
@@ -13911,7 +13880,7 @@ packages:
   /raw-loader/4.0.2_webpack@4.46.0:
     dependencies:
       loader-utils: 2.0.0
-      schema-utils: 3.0.0
+      schema-utils: 3.1.0
       webpack: 4.46.0
     dev: false
     engines:
@@ -14955,7 +14924,7 @@ packages:
       node: '>= 8.9.0'
     resolution:
       integrity: sha512-SHiNtMOUGWBQJwzISiVYKu82GiV4QYGePp3odlY1tuKO7gPtphAT5R/py0fA6xtbgLL/RvtJZnU9b8s0F1q0Xg==
-  /schema-utils/3.0.0:
+  /schema-utils/3.1.0:
     dependencies:
       '@types/json-schema': 7.0.7
       ajv: 6.12.6
@@ -14964,7 +14933,7 @@ packages:
     engines:
       node: '>= 10.13.0'
     resolution:
-      integrity: sha512-6D82/xSzO094ajanoOSbe4YvXWMfn2A//8Y1+MUqFAJul5Bs+yn36xbK9OtNDcRVSBJ9jjeoXftM6CfztsjOAA==
+      integrity: sha512-tTEaeYkyIhEZ9uWgAjDerWov3T9MgX8dhhy2r0IGeeX4W8ngtGl1++dUve/RUqzuaASSh7shwCDJjEzthxki8w==
   /scuid/1.1.0:
     dev: false
     resolution:
@@ -16357,20 +16326,20 @@ packages:
       integrity: sha512-J8NYPyBm4baYLdCbjmf1bhPu45Cr1MWTm77qd9istEkzWpnN6O9tMsEbB2JhNnBCqGENRqEWomQ+He6au0B27Q==
   /unist-util-stringify-position/2.0.3:
     dependencies:
-      '@types/unist': 2.0.4
+      '@types/unist': 2.0.5
     dev: false
     resolution:
       integrity: sha512-3faScn5I+hy9VleOq/qNbAd6pAx7iH5jYBMS9I1HgQVijz/4mv5Bvw5iw1sC/90CODiKo81G/ps8AJrISn687g==
   /unist-util-visit-parents/3.1.1:
     dependencies:
-      '@types/unist': 2.0.4
+      '@types/unist': 2.0.5
       unist-util-is: 4.1.0
     dev: false
     resolution:
       integrity: sha512-1KROIZWo6bcMrZEwiH2UrXDyalAa0uqzWCxCJj6lPOvTve2WkfgCytoDTPaMnodXh1WrXOq0haVYHj99ynJlsg==
   /unist-util-visit/2.0.3:
     dependencies:
-      '@types/unist': 2.0.4
+      '@types/unist': 2.0.5
       unist-util-is: 4.1.0
       unist-util-visit-parents: 3.1.1
     dev: false
@@ -16483,7 +16452,7 @@ packages:
       file-loader: 6.2.0_webpack@4.46.0
       loader-utils: 2.0.0
       mime-types: 2.1.31
-      schema-utils: 3.0.0
+      schema-utils: 3.1.0
       webpack: 4.46.0
     dev: false
     engines:
@@ -16685,14 +16654,14 @@ packages:
       integrity: sha512-aLEIZKv/oxuCDZ8lkJGhuhztf/BW4M+iHdCwglA/eWc+vtuRFJj8EtgceYFX4LRjOhCAAiNHsKGssC6onJ+jbA==
   /vfile-message/2.0.4:
     dependencies:
-      '@types/unist': 2.0.4
+      '@types/unist': 2.0.5
       unist-util-stringify-position: 2.0.3
     dev: false
     resolution:
       integrity: sha512-DjssxRGkMvifUOJre00juHoP9DPWuzjxKuMDrhNbk2TdaYYBNMStsNhEOt3idrtI12VQYM/1+iM0KOzXi4pxwQ==
   /vfile/4.2.1:
     dependencies:
-      '@types/unist': 2.0.4
+      '@types/unist': 2.0.5
       is-buffer: 2.0.5
       unist-util-stringify-position: 2.0.3
       vfile-message: 2.0.4
@@ -17230,7 +17199,6 @@ packages:
       electron-builder: 22.11.7
       electron-devtools-installer: 3.2.0
       electron-redux: 1.5.4
-      electron-updater: 4.3.9
       framer-motion: 4.1.11_react-dom@17.0.2+react@17.0.2
       graphql: 15.5.0
       graphql-tag: 2.12.4_graphql@15.5.0
@@ -17248,7 +17216,7 @@ packages:
     dev: false
     name: '@rush-temp/app'
     resolution:
-      integrity: sha512-2UJyjfq2dYlTsop51IgTCYw82oVS7Zo6GiR9VAuhJph3vXAFPP+rj/n+iM6Gd/uuj63beKtUL10lONKJI1KonQ==
+      integrity: sha512-fIZoF6E6QuDC2u+ump0g6kQ2t23ykE2UKiW0kA5gfeNu4xfBvNoqHeZXlAy+a/9eW3IAFq5k889vhucgpu9QSg==
       tarball: file:projects/app.tgz
     version: 0.0.0
   file:projects/components.tgz_ts-node@9.1.1:
@@ -17580,7 +17548,6 @@ specifiers:
   electron-builder: 22.11.7
   electron-devtools-installer: 3.2.0
   electron-redux: 1.5.4
-  electron-updater: 4.3.9
   enzyme: 3.11.0
   execa: 5.0.0
   fast-deep-equal: 3.1.3
