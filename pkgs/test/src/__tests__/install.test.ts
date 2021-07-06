@@ -4,9 +4,10 @@ import { waitUntil } from "async-wait-until"
 import treeKill from "tree-kill"
 import psList, { ProcessDescriptor } from "ps-list"
 import { rmSync } from "fs"
-import { install } from "../install"
+import { version, install, getExecutablePath } from "../install"
 
-const APP_PATH = join(__dirname, "redo")
+const REDO_DIR = join(__dirname, ".redo")
+const VERSION_DIR = join(REDO_DIR, version)
 let redoMainProcess: ChildProcess | undefined
 
 describe("installation", () => {
@@ -14,11 +15,11 @@ describe("installation", () => {
         if (redoMainProcess && !redoMainProcess.killed) {
             treeKill(redoMainProcess.pid)
         }
-        rmSync(APP_PATH, { force: true })
+        rmSync(REDO_DIR, { recursive: true, force: true })
     })
     test("works", async () => {
-        await install(APP_PATH)
-        redoMainProcess = shellAsync(APP_PATH)
+        await install(VERSION_DIR, version)
+        redoMainProcess = shellAsync(getExecutablePath(VERSION_DIR))
         let redoRendererProcesses: ProcessDescriptor[] = []
         await waitUntil(
             async () => {

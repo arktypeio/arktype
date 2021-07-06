@@ -3,18 +3,23 @@ import fetch from "node-fetch"
 import {
     makeExecutable,
     streamToFile,
-    ensureRedoDir,
     fromRedo,
-    getOs
+    getOs,
+    ensureDir
 } from "@re-do/node-utils"
 import Zip from "adm-zip"
-
 import { Octokit } from "@octokit/rest"
 import { join } from "path"
 
+export const version: string = require(join(
+    __dirname,
+    "..",
+    "package.json"
+)).version
+
 export const install = async (versionDir: string, version: string) => {
     console.log(`Installing Redo (version ${version})...`)
-    ensureRedoDir()
+    ensureDir(versionDir)
     const gitHub = new Octokit().rest
     const { data } = await gitHub.repos.getReleaseByTag({
         owner: "re-do",
@@ -52,5 +57,5 @@ export const getPath = async (version: string) => {
     return executablePath
 }
 
-const getExecutablePath = (versionDir: string) =>
-    join(versionDir, getOs() === "linux" ? "redo.AppImage" : "redo")
+export const getExecutablePath = (versionDir: string) =>
+    join(versionDir, getOs() === "windows" ? "redo.exe" : "redo")

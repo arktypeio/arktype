@@ -27,7 +27,7 @@ export const ensureDir = (path: string) => {
             throw new Error(`${path} exists and is not a directory.`)
         }
     } else {
-        mkdirSync(path)
+        mkdirSync(path, { recursive: true })
     }
 }
 

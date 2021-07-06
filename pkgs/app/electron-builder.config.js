@@ -36,7 +36,7 @@ const config = {
                 : "resources",
             "app"
         )
-        shell("pnpm i --prod --shamefully-hoist", {
+        shell("npm i --save-prod", {
             cwd: resourceDir
         })
     }

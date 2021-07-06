@@ -7,11 +7,11 @@
     "main": "dist/cjs/index.js",
     "scripts": {
         "build": "redo-build",
-        "redo": "ts-node src/index.ts",
+        "redo": "ts-node src/cli.ts",
         "test": "jest"
     },
     "bin": {
-        "redo": "./redo.js"
+        "redo": "./cli.js"
     },
     "dependencies": {
         "commander": "6.2.1",
