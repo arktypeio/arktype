@@ -1,6 +1,6 @@
 {
     "name": "@re-do/app",
-    "version": "0.0.16",
+    "version": "0.0.17",
     "private": true,
     "main": "dist/main/index.js",
     "repository": {
@@ -14,14 +14,8 @@
         "typecheck": "jsrx typecheck",
         "test": "jsrx test",
         "build": "jsrx build",
-        "release": "jsrx release",
-        "releaseLinux": "jsrx releaseLinux",
-        "releaseMac": "jsrx releaseMac",
-        "releaseWindows": "jsrx releaseWindows",
+        "dryRun": "jsrx dryRun",
         "publish": "jsrx publish",
-        "publishLinux": "jsrx publishLinux",
-        "publishMac": "jsrx publishMac",
-        "publishWindows": "jsrx publishWindows",
         "buildProd": "jsrx buildProd",
         "jsrxGen": "jsrx jsrxGen"
     },

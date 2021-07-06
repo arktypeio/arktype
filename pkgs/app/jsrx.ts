@@ -73,21 +73,12 @@ const start = async () => {
     await watchMain()
 }
 
-type PlatformString = "linux" | "macos" | "windows"
-
-const release = (platforms: PlatformString[], publish = false) => {
-    const platformFlags = platforms.map((_) => `--${_}`).join(" ")
-    try {
-        shell(
-            `electron-builder ${platformFlags} --config.asar=false --config electron-builder.config.js --publish ${
-                publish ? "always" : "never"
-            }`
-        )
-    } catch (e) {
-        console.error(
-            `Encountered the following error while building electron:\n${e}`
-        )
-    }
+const createRelease = (publish: boolean) => {
+    shell(
+        `electron-builder --config.asar=false --config electron-builder.config.js --publish ${
+            publish ? "always" : "never"
+        }`
+    )
 }
 
 jsrx(
@@ -99,14 +90,8 @@ jsrx(
             test: $(`jest`)
         },
         prod: {
-            release: () => release(["linux", "macos", "windows"]),
-            releaseLinux: () => release(["linux"]),
-            releaseMac: () => release(["macos"]),
-            releaseWindows: () => release(["windows"]),
-            publish: () => release(["linux", "macos", "windows"], true),
-            publishLinux: () => release(["linux"], true),
-            publishMac: () => release(["macos"], true),
-            publishWindows: () => release(["windows"], true)
+            dryRun: () => createRelease(false),
+            publish: () => createRelease(true)
         },
         shared: {
             build: () => buildAll()

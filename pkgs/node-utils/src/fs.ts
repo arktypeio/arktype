@@ -9,7 +9,6 @@ import {
 } from "fs"
 import { homedir } from "os"
 import { join } from "path"
-import { EXECUTABLE_SUFFIX } from "./os"
 import { once } from "events"
 import { promisify } from "util"
 import { finished } from "stream"
@@ -42,8 +41,6 @@ export const ensureRedoDir = () => {
     ensureDir(REDO_DIR)
     return REDO_DIR
 }
-
-export const REDO_EXECUTABLE = fromRedo(`redo${EXECUTABLE_SUFFIX}`)
 
 export const makeExecutable = (path: string) => chmodSync(path, "755")
 

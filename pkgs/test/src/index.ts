@@ -5,14 +5,15 @@ import { getPath } from "./install"
 import { join } from "path"
 
 const cli = new Command()
+const version = require(join(__dirname, "package.json")).version
 
-cli.version(require(join(__dirname, "package.json")).version)
+cli.version(version)
 
 cli.command("launch")
     .description("Launch the Redo app")
     .action(async () => {
         console.log("Launching the app...")
-        shell(await getPath())
+        shell(await getPath(version))
     })
 
 cli.command("test")

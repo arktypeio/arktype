@@ -15,14 +15,12 @@ const config = {
     extraMetadata: {
         name: "redo"
     },
-    artifactName: "redo-${version}.${ext}",
+    artifactName: "redo-${version}-${os}.${ext}",
     linux: {
-        executableName: "redo",
-        target: "AppImage"
+        target: "zip"
     },
     mac: {
-        target: "tar.gz",
-        category: "public.app-category.developer-tools"
+        target: "zip"
     },
     win: {
         target: "zip"

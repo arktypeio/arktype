@@ -1,36 +1,56 @@
-import { existsSync } from "fs"
+import { existsSync, rmSync } from "fs"
 import fetch from "node-fetch"
 import {
     makeExecutable,
-    REDO_EXECUTABLE,
-    EXECUTABLE_SUFFIX,
     streamToFile,
-    ensureRedoDir
+    ensureRedoDir,
+    fromRedo,
+    getOs
 } from "@re-do/node-utils"
+import Zip from "adm-zip"
 
 import { Octokit } from "@octokit/rest"
+import { join } from "path"
 
-export const install = async (path: string) => {
-    console.log("Installing the latest version of Redo...")
+export const install = async (versionDir: string, version: string) => {
+    console.log(`Installing Redo (version ${version})...`)
     ensureRedoDir()
     const gitHub = new Octokit().rest
-    const { data } = await gitHub.repos.getLatestRelease({
+    const { data } = await gitHub.repos.getReleaseByTag({
         owner: "re-do",
-        repo: "redo"
+        repo: "redo",
+        tag: `v${version}`
     })
-    const appRelease = data.assets.find((asset) =>
-        asset.name.endsWith(".AppImage")
-    )
+    const os = getOs()
+    const zipName = `redo-${version}-${os === "windows" ? "win" : os}.zip`
+    const appRelease = data.assets.find((asset) => asset.name === zipName)
     if (!appRelease) {
         throw new Error(`Unable to find a Redo release for your platform.`)
     }
     const { body } = await fetch(appRelease.browser_download_url)
-    makeExecutable(await streamToFile(body, path))
+    const zipPath = join(versionDir, zipName)
+    await streamToFile(body, zipPath)
+    const zipContents = new Zip(zipPath)
+    zipContents.extractAllTo(versionDir, true)
+    rmSync(zipPath)
+    const executablePath = getExecutablePath(versionDir)
+    if (!existsSync(executablePath)) {
+        throw new Error(
+            `Installation failed: expected file at ${executablePath} did not exist.`
+        )
+    }
+    makeExecutable(executablePath)
     console.log(`Succesfully installed Redo (${data.tag_name})!`)
-    return REDO_EXECUTABLE
 }
 
-export const getPath = async (): Promise<string> =>
-    existsSync(REDO_EXECUTABLE)
-        ? REDO_EXECUTABLE
-        : await install(REDO_EXECUTABLE)
+export const getPath = async (version: string) => {
+    const versionDir = fromRedo(version)
+    const executablePath = getExecutablePath(versionDir)
+    if (!existsSync(executablePath)) {
+        await install(versionDir, version)
+    }
+    return executablePath
+}
+
+const getExecutablePath = (versionDir: string) =>
+    join(versionDir, getOs() === "linux" ? "redo.AppImage" : "redo")

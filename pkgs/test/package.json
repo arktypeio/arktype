@@ -1,6 +1,6 @@
 {
     "name": "@re-do/test",
-    "version": "0.0.2",
+    "version": "0.0.17",
     "author": "redo.qa",
     "description": "CLI for Redo",
     "license": "MIT",
@@ -18,11 +18,13 @@
         "node-fetch": "2.6.1",
         "@octokit/rest": "18.6.6",
         "@re-do/utils": "0.0.12",
-        "@re-do/node-utils": "0.0.3"
+        "@re-do/node-utils": "0.0.3",
+        "adm-zip": "0.5.5"
     },
     "devDependencies": {
         "@re-do/configs": "0.0.2",
         "@types/node": "15.0.2",
+        "@types/adm-zip": "0.4.34",
         "ts-node": "9.1.1",
         "typescript": "4.2.3",
         "@types/node-fetch": "2.5.8",

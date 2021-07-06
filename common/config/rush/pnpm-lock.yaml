@@ -13,6 +13,7 @@ dependencies:
   '@mdx-js/react': 1.6.22_react@17.0.2
   '@medv/finder': 2.0.0
   '@octokit/rest': 18.6.6
+  '@re-do/test': 0.0.2
   '@reduxjs/toolkit': 1.5.0
   '@rush-temp/app': file:projects/app.tgz
   '@rush-temp/components': file:projects/components.tgz_ts-node@9.1.1
@@ -30,6 +31,7 @@ dependencies:
   '@storybook/addon-knobs': 6.2.9_c9b97d0291e0c7f7ae91672f3bb47b49
   '@storybook/addons': 6.2.9_react-dom@17.0.2+react@17.0.2
   '@storybook/react': 6.2.9_79fe77a2cb0a80bdd5d2fc8a123a8abc
+  '@types/adm-zip': 0.4.34
   '@types/dotenv': 8.2.0
   '@types/electron-devtools-installer': 2.2.0
   '@types/enzyme': 3.10.8
@@ -47,6 +49,7 @@ dependencies:
   '@types/validator': 13.1.3
   '@vitejs/plugin-react-refresh': 1.3.3
   '@wojtekmaj/enzyme-adapter-react-17': 0.4.1_fae758709a8810ba97b4c03852dde4d0
+  adm-zip: 0.5.5
   async-wait-until: 2.0.7
   babel-loader: 8.2.2
   babel-preset-redo: 0.0.2_ae0270319c858645f645a76f436797f4
@@ -3940,6 +3943,28 @@ packages:
     dev: false
     resolution:
       integrity: sha512-ztoUQ8WwGgw3ijTJ0vgFnXZKIrEvR5kVO0uOdWPW4E/DK27GKtVLmxl0HhihSAQjhOlGeiYgwY77X/YSUZDoAQ==
+  /@re-do/node-utils/0.0.3:
+    dependencies:
+      '@re-do/utils': 0.0.11
+      deepmerge: 4.2.2
+      execa: 5.0.0
+      moize: 5.4.7
+      prompts: 2.4.1
+      validator: 13.5.2
+    dev: false
+    resolution:
+      integrity: sha512-R0TufUE1XmGDyovbmmNhHG8bzNeT8XzgH9bh948dl4RbvPHOBEy2wPHpoQfpHctKEGrAHvbhp84dcZql3udEXw==
+  /@re-do/test/0.0.2:
+    dependencies:
+      '@octokit/rest': 18.6.6
+      '@re-do/node-utils': 0.0.3
+      '@re-do/utils': 0.0.12
+      commander: 6.2.1
+      node-fetch: 2.6.1
+    dev: false
+    hasBin: true
+    resolution:
+      integrity: sha512-27As9+jswzr4fHvIjF/fWaeiyabuVCBIFHe9fTt8ehEttAr7JD42IiDLm8UcDQAQeIcvPqRQuisVnqXl6jGD9g==
   /@re-do/utils/0.0.10:
     dependencies:
       '@babel/runtime-corejs3': 7.10.3
@@ -3967,6 +3992,17 @@ packages:
     dev: false
     resolution:
       integrity: sha512-YPdGXiBMZcF9cb0Ys5CS95o7u26V7I+PhcbmjV952Xr5XmNQqrtgRUoaeb+1wLml56HmrSQV3ecZkiBEtBh/qQ==
+  /@re-do/utils/0.0.12:
+    dependencies:
+      deepmerge: 4.2.2
+      fast-deep-equal: 3.1.3
+      moize: 5.4.7
+      process: 0.11.10
+      ts-toolbelt: 9.5.10
+      validator: 13.5.2
+    dev: false
+    resolution:
+      integrity: sha512-cWyNT8U5cEtMZEEN47HFe+AtnHedawOHFGZr37JnD4SFjddf6r0oA4mwZQmC2KI0+Dq44ETrqY3p9MMS6sFodA==
   /@reach/router/1.3.4_react-dom@17.0.2+react@17.0.2:
     dependencies:
       create-react-context: 0.3.0_prop-types@15.7.2+react@17.0.2
@@ -4982,6 +5018,12 @@ packages:
       node: '>= 6'
     resolution:
       integrity: sha512-RbzJvlNzmRq5c3O09UipeuXno4tA1FE6ikOjxZK0tuxVv3412l64l5t1W5pj4+rJq9vpkm/kwiR07aZXnsKPxw==
+  /@types/adm-zip/0.4.34:
+    dependencies:
+      '@types/node': 15.0.2
+    dev: false
+    resolution:
+      integrity: sha512-8ToYLLAYhkRfcmmljrKi22gT2pqu7hGMDtORP1emwIEGmgUTZOsaDjzWFzW5N2frcFRz/50CWt4zA1CxJ73pmQ==
   /@types/babel__core/7.1.14:
     dependencies:
       '@babel/parser': 7.14.7
@@ -5674,6 +5716,12 @@ packages:
       node: '>= 0.12.0'
     resolution:
       integrity: sha512-aT6camzM4xEA54YVJYSqxz1kv4IHnQZRtThJJHhUMRExaU5spC7jX5ugSwTaTgJliIgs4VhZOk7htClvQ/LmRA==
+  /adm-zip/0.5.5:
+    dev: false
+    engines:
+      node: '>=6.0'
+    resolution:
+      integrity: sha512-IWwXKnCbirdbyXSfUDvCCrmYrOHANRZcc8NcRrvTlIApdl7PwE9oGcsYvNeJPAVY1M+70b4PxXGKIf8AEuiQ6w==
   /agent-base/6.0.2:
     dependencies:
       debug: 4.3.2
@@ -17410,9 +17458,11 @@ packages:
   file:projects/test.tgz:
     dependencies:
       '@octokit/rest': 18.6.6
+      '@types/adm-zip': 0.4.34
       '@types/jest': 26.0.20
       '@types/node': 15.0.2
       '@types/node-fetch': 2.5.8
+      adm-zip: 0.5.5
       async-wait-until: 2.0.7
       commander: 6.2.1
       jest: 26.6.3_ts-node@9.1.1
@@ -17425,7 +17475,7 @@ packages:
     dev: false
     name: '@rush-temp/test'
     resolution:
-      integrity: sha512-8VGVsVn11aK7uKVaaA1ZM//sxtc9ydK2z4kU5TKeKyfwTAZLoPVQYF8sD2jQKY8+h5CnObiDtmNMGNYWMtCH0A==
+      integrity: sha512-3JX8yy6yIsSh09FYyo+QocC3Zm7x//KxXFnRXsDDSG+Yrkwi7D7QZtIhhCsv04EiBTw4q7wdNgn80bEVdFw7lQ==
       tarball: file:projects/test.tgz
     version: 0.0.0
   file:projects/utils.tgz_ts-node@9.1.1:
@@ -17457,6 +17507,7 @@ packages:
       '@material-ui/lab': 4.0.0-alpha.57_869b9dfa5d36930b3c5f506c90aa92ff
       '@material-ui/styles': 4.11.2_c9b97d0291e0c7f7ae91672f3bb47b49
       '@mdx-js/react': 1.6.22_react@17.0.2
+      '@re-do/test': 0.0.2
       '@types/jest': 26.0.20
       '@types/node': 15.0.2
       '@types/react': 17.0.5
@@ -17485,7 +17536,7 @@ packages:
     peerDependencies:
       graphql: '*'
     resolution:
-      integrity: sha512-J5x/tpwSGI0Ql+SYn5VikcTEgtcvoIPzFBmhwMjTOZuhyRYIgjic7edSB7sxuDeHuSt1bWL1Jh+qX74BJVH6Kw==
+      integrity: sha512-3C0C1xxlAzXhByPOuJpbfqkwupWOJaArcsgvG7q1T7E3iJTk6hBuCp4u1nyj0bRGz5bV+YnrQHz2/QAcV8sdew==
       tarball: file:projects/website.tgz
     version: 0.0.0
 specifiers:
@@ -17503,6 +17554,7 @@ specifiers:
   '@mdx-js/react': 1.6.22
   '@medv/finder': 2.0.0
   '@octokit/rest': 18.6.6
+  '@re-do/test': 0.0.2
   '@reduxjs/toolkit': 1.5.0
   '@rush-temp/app': file:./projects/app.tgz
   '@rush-temp/components': file:./projects/components.tgz
@@ -17520,6 +17572,7 @@ specifiers:
   '@storybook/addon-knobs': 6.2.9
   '@storybook/addons': 6.2.9
   '@storybook/react': 6.2.9
+  '@types/adm-zip': 0.4.34
   '@types/dotenv': 8.2.0
   '@types/electron-devtools-installer': 2.2.0
   '@types/enzyme': 3.10.8
@@ -17537,6 +17590,7 @@ specifiers:
   '@types/validator': 13.1.3
   '@vitejs/plugin-react-refresh': 1.3.3
   '@wojtekmaj/enzyme-adapter-react-17': 0.4.1
+  adm-zip: 0.5.5
   async-wait-until: 2.0.7
   babel-loader: 8.2.2
   babel-preset-redo: 0.0.2
