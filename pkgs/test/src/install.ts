@@ -11,11 +11,7 @@ import Zip from "adm-zip"
 import { Octokit } from "@octokit/rest"
 import { join } from "path"
 
-export const version: string = require(join(
-    __dirname,
-    "..",
-    "package.json"
-)).version
+export const version = "0.0.17"
 
 export const install = async (versionDir: string, version: string) => {
     console.log(`Installing Redo (version ${version})...`)
