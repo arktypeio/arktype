@@ -25,7 +25,7 @@ const config = {
         category: "public.app-category.developer-tools"
     },
     win: {
-        target: "nsis"
+        target: "zip"
     },
     beforeBuild: async (ctx) => {
         return false
