@@ -67,11 +67,10 @@ dependencies:
   isomorphic-fetch: 3.0.0
   isomorphic-ws: 4.0.1
   jest: 26.6.3_ts-node@9.1.1
-  jsrx: 0.0.10
+  jsrx: 0.0.11
   moize: 5.4.7
   node-fetch: 2.6.1
   playwright: 1.11.1
-  prettier: 2.2.1
   process: 0.11.10
   prompts: 2.4.1
   ps-list: 7.2.0
@@ -11660,7 +11659,7 @@ packages:
       npm: '>=1.4.28'
     resolution:
       integrity: sha512-XjwVfRS6jTMsqYs0EsuJ4LGxXV14zQybNd4L2r0UvbVnSF9Af8x7p5MzbJ90Ioz/9TI41/hTCvznF/loiSzn8w==
-  /jsrx/0.0.10:
+  /jsrx/0.0.11:
     dependencies:
       '@re-do/node-utils': 0.0.2
       '@re-do/utils': 0.0.11
@@ -11669,7 +11668,7 @@ packages:
     dev: false
     hasBin: true
     resolution:
-      integrity: sha512-BLKkI9PmTCyy7d14nkNMF6r17HT4m+8OAOHkwiLXfwpBr19BmlMsUg3S+Eni47ZK/inr0cbcEZpWo8Fl6syM/w==
+      integrity: sha512-nsNCMWv4JNH+el6k3/1oa3VY5WgCxwSoutn887BgsuKF5Qgy/WxgtUGcvUJC67f7G9AKaPj+xXY7ZvukJR//Fg==
   /jss-plugin-camel-case/10.7.1:
     dependencies:
       '@babel/runtime': 7.14.6
@@ -17204,7 +17203,7 @@ packages:
       graphql-tag: 2.12.4_graphql@15.5.0
       isomorphic-ws: 4.0.1
       jest: 26.6.3_ts-node@9.1.1
-      jsrx: 0.0.10
+      jsrx: 0.0.11
       playwright: 1.11.1
       react: 17.0.2
       react-dom: 17.0.2_react@17.0.2
@@ -17216,7 +17215,7 @@ packages:
     dev: false
     name: '@rush-temp/app'
     resolution:
-      integrity: sha512-fIZoF6E6QuDC2u+ump0g6kQ2t23ykE2UKiW0kA5gfeNu4xfBvNoqHeZXlAy+a/9eW3IAFq5k889vhucgpu9QSg==
+      integrity: sha512-FyMKY2xeoooRRcbzp2dYex55sR1qBDLE9l77DR8YzL0EMlEk3TOJ/BtaukFCASeTwGzDNugZl4p8jO0g1UXSsw==
       tarball: file:projects/app.tgz
     version: 0.0.0
   file:projects/components.tgz_ts-node@9.1.1:
@@ -17302,7 +17301,7 @@ packages:
     peerDependencies:
       react: '*'
     resolution:
-      integrity: sha512-HNGDcneypHpdj32S5s9HcBWcL2gGST6kHYPdb2Sr0i/QZiJ0zkxB2PNASJaJ7ErNsB7N8x7973cnnAZWeE794g==
+      integrity: sha512-R8nQLldJx5sczMULYVdYSvvmG/tbz09YxyvzxI72BuW/7IDffeTgMWN01RMpZ32eQpXgGrVJjw+wJey+XhyxuQ==
       tarball: file:projects/model.tgz
     version: 0.0.0
   file:projects/node-utils.tgz_ts-node@9.1.1:
@@ -17468,7 +17467,7 @@ packages:
       '@types/validator': 13.1.3
       framer-motion: 4.1.11_react-dom@17.0.2+react@17.0.2
       jest: 26.6.3_ts-node@9.1.1
-      jsrx: 0.0.10
+      jsrx: 0.0.11
       react: 17.0.2
       react-dom: 17.0.2_react@17.0.2
       react-ga: 3.3.0_react@17.0.2
@@ -17486,7 +17485,7 @@ packages:
     peerDependencies:
       graphql: '*'
     resolution:
-      integrity: sha512-MXc2J0pPGUZg90Ka6EKI2ipWutc1PN2msKhmHYBQ53A9is0EtVRPy95WwzDiep23QJ4BPqyJfeAKnUsfvViyHQ==
+      integrity: sha512-J5x/tpwSGI0Ql+SYn5VikcTEgtcvoIPzFBmhwMjTOZuhyRYIgjic7edSB7sxuDeHuSt1bWL1Jh+qX74BJVH6Kw==
       tarball: file:projects/website.tgz
     version: 0.0.0
 specifiers:
@@ -17558,11 +17557,10 @@ specifiers:
   isomorphic-fetch: 3.0.0
   isomorphic-ws: 4.0.1
   jest: 26.6.3
-  jsrx: 0.0.10
+  jsrx: 0.0.11
   moize: 5.4.7
   node-fetch: 2.6.1
   playwright: 1.11.1
-  prettier: 2.2.1
   process: 0.11.10
   prompts: 2.4.1
   ps-list: 7.2.0
