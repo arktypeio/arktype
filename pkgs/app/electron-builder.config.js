@@ -1,4 +1,5 @@
 const { shell } = require("@re-do/node-utils")
+const { writeFileSync } = require("fs")
 const { join } = require("path")
 
 /**
@@ -36,7 +37,21 @@ const config = {
                 : "resources",
             "app"
         )
-        shell("npm i --save-prod", {
+        // Only install non-bundled dependencies
+        const packageJsonContents = require("./package.json")
+        writeFileSync(
+            join(resourceDir, "package.json"),
+            JSON.stringify({
+                ...packageJsonContents,
+                dependencies: {
+                    playwright: packageJsonContents.dependencies.playwright,
+                    "electron-redux":
+                        packageJsonContents.dependencies["electron-redux"]
+                },
+                devDependencies: {}
+            })
+        )
+        shell("npm install", {
             cwd: resourceDir
         })
     }

@@ -9,7 +9,6 @@ const isDev = () => process.env.NODE_ENV === "development"
 
 const externals = [
     "electron",
-    "electron-updater",
     "electron-redux",
     "playwright",
     ...builtinModules

@@ -16,6 +16,7 @@
         "build": "jsrx build",
         "dryRun": "jsrx dryRun",
         "publish": "jsrx publish",
+        "runProd": "jsrx runProd",
         "buildProd": "jsrx buildProd",
         "jsrxGen": "jsrx jsrxGen"
     },
