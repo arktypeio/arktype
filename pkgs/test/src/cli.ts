@@ -1,17 +1,17 @@
 #!/usr/bin/env node
 import { Command } from "commander"
 import { shell } from "@re-do/node-utils"
-import { getPath } from "./install"
+import { getPath, version } from "./install"
 
 const cli = new Command()
 
-cli.version(require("../package.json").version)
+cli.version(version)
 
 cli.command("launch")
     .description("Launch the Redo app")
     .action(async () => {
         console.log("Launching the app...")
-        shell(await getPath())
+        shell(await getPath(version))
     })
 
 cli.command("test")

@@ -26,13 +26,3 @@ export const getOs = () => {
     }
     return supportedOsMap[platform as SupportedPlatform]
 }
-
-type ExecutableSuffixes = { [Os in SupportedOs]: string }
-
-export const executableSuffixes: ExecutableSuffixes = {
-    mac: "-mac.zip",
-    linux: ".AppImage",
-    windows: ".exe"
-}
-
-export const EXECUTABLE_SUFFIX = executableSuffixes[getOs()]

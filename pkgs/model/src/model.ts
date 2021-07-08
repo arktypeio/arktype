@@ -33,3 +33,10 @@ export type Test = {
     steps: Step[]
     tags: Tag[]
 }
+
+export type RedoData = {
+    tests: Test[]
+    elements: Element[]
+    steps: Step[]
+    tags: Tag[]
+}

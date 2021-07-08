@@ -2,8 +2,7 @@
     "extends": "@re-do/configs/tsconfig.base",
     "compilerOptions": {
         "baseUrl": "src",
-        "outDir": "dist",
-        "declaration": false
+        "outDir": "dist"
     },
     "include": ["src"],
     "exclude": ["**/__tests__"]
