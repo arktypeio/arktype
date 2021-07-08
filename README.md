@@ -40,3 +40,9 @@ Our current and planned work can always be found [here](https://github.com/redo-
 
 This project is licensed under the terms of the
 [MIT license](/LICENSE).
+
+## Contributors
+
+Thank you to our awesome contributors! 😻
+
+Twitch user drummer10251

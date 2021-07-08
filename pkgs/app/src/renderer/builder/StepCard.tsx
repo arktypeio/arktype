@@ -10,7 +10,7 @@ import {
 import { Fab } from "@material-ui/core"
 import { store } from "renderer/common"
 import { UnsavedStep } from "common"
-import { Element } from "../../../../model/dist/cjs"
+import { Element } from "@re-do/model"
 
 export type StepCardProps = {
     step: UnsavedStep

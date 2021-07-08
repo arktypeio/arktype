@@ -59,7 +59,7 @@ export const launchBrowser = async (
         await page.evaluate(browserJs)
     })
     const notify = (eventData: EventData) => {
-        if (deepEquals(eventData, lastEventData)) {
+        if (eventData.timeStamp === lastEventData?.timeStamp) {
             // looks like a duplicate, ignoring
             return
         }
