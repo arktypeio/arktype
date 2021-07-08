@@ -1,7 +1,7 @@
-export {}
+import { getTests, run } from "@re-do/test"
 
-describe("website", () => {
-    test("nothing", () => {
-        expect(true).toBe(true)
+describe.each(getTests())("", ({ name, id }) => {
+    test(name, async () => {
+        await run({ id })
     })
 })

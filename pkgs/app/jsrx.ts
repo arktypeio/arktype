@@ -19,16 +19,16 @@ const buildAll = async () => {
 
 let mainProcess: ChildProcess | undefined
 
-const cmdString = `${electronPath} --inspect=9222 --remote-debugging-port=9223 .`
+const startElectronCmd = `${electronPath} --inspect=9222 --remote-debugging-port=9223 .`
 
 const restartMain = (startIfNotRunning: boolean) => {
     if (mainProcess && !mainProcess.killed) {
         treeKill(mainProcess.pid, () => {
             killExisting()
-            mainProcess = shellAsync(cmdString)
+            mainProcess = shellAsync(startElectronCmd)
         })
     } else if (startIfNotRunning) {
-        mainProcess = shellAsync(cmdString)
+        mainProcess = shellAsync(startElectronCmd)
     }
 }
 
@@ -73,6 +73,14 @@ const start = async () => {
     await watchMain()
 }
 
+const createRelease = (publish: boolean) => {
+    shell(
+        `electron-builder --config.asar=false --config electron-builder.config.js --publish ${
+            publish ? "always" : "never"
+        }`
+    )
+}
+
 jsrx(
     {
         dev: {
@@ -82,11 +90,9 @@ jsrx(
             test: $(`jest`)
         },
         prod: {
-            release: () => {
-                shell(
-                    `electron-builder build --config electron-builder.config.js --dir --config.asar=false`
-                )
-            }
+            dryRun: () => createRelease(false),
+            publish: () => createRelease(true),
+            runProd: () => shellAsync(startElectronCmd)
         },
         shared: {
             build: () => buildAll()

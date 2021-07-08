@@ -1,7 +1,7 @@
 import { readFileSync } from "fs"
 import { BrowserWindow } from "electron"
 import { join } from "path"
-import { launch, Step } from "@re-do/test"
+import { launch, Step } from "@re-do/run"
 import { deepEquals } from "@re-do/utils"
 import { Browser } from "playwright"
 import { Root } from "common"

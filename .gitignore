@@ -71,6 +71,7 @@ package-deps.json
 .serverless
 .webpack
 .env.production
+redo.json
 release
 generated
 **/prisma/client

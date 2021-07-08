@@ -1,10 +1,6 @@
 const { shell } = require("@re-do/node-utils")
+const { writeFileSync } = require("fs")
 const { join } = require("path")
-
-const now = new Date()
-const buildVersion = `${now.getFullYear() - 2000}.${
-    now.getMonth() + 1
-}.${now.getDate()}`
 
 /**
  * @type {import('electron-builder').Configuration}
@@ -12,17 +8,52 @@ const buildVersion = `${now.getFullYear() - 2000}.${
  */
 const config = {
     directories: {
-        output: "release"
+        output: "release",
+        buildResources: join(__dirname, "src", "assets")
     },
     files: ["dist/**"],
+    appId: "redo",
     extraMetadata: {
-        version: buildVersion
+        name: "redo"
+    },
+    artifactName: "redo-${version}-${os}.${ext}",
+    linux: {
+        target: "zip"
+    },
+    mac: {
+        target: "zip"
+    },
+    win: {
+        target: "zip"
     },
     beforeBuild: async (ctx) => {
         return false
     },
     afterPack: async (ctx) => {
-        shell("pnpm i --prod", { cwd: join(ctx.appOutDir, "resources", "app") })
+        const resourceDir = join(
+            ctx.appOutDir,
+            ctx.appOutDir.endsWith("mac")
+                ? "redo.app/Contents/Resources"
+                : "resources",
+            "app"
+        )
+        // Only install non-bundled dependencies
+        const packageJsonContents = require("./package.json")
+        writeFileSync(
+            join(resourceDir, "package.json"),
+            JSON.stringify({
+                ...packageJsonContents,
+                dependencies: {
+                    playwright: packageJsonContents.dependencies.playwright,
+                    "electron-redux":
+                        packageJsonContents.dependencies["electron-redux"]
+                },
+                devDependencies: {}
+            })
+        )
+        shell("npm install", {
+            cwd: resourceDir
+        })
     }
 }
 

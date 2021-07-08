@@ -1,4 +1,4 @@
-import type { BrowserName } from "@re-do/test"
+import type { BrowserName } from "@re-do/run"
 import type { Step, Tag, Element, Test } from "@re-do/model"
 import type { ShallowModel } from "persist-statelessly"
 

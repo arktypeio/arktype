@@ -12,7 +12,8 @@ jsrx(
     {
         dev: {
             start,
-            test: $("jest")
+            test: $("jest"),
+            redo: $("redo launch")
         },
         prod: {},
         shared: {

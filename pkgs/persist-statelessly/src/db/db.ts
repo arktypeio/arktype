@@ -86,7 +86,7 @@ export type Interactions<O extends object, IdFieldName extends string> = {
     ) => Data<O, IdFieldName, U>
     all: <U extends boolean = true>(
         options?: InteractionOptions<U>
-    ) => Data<O, IdFieldName, U>
+    ) => Data<O, IdFieldName, U>[]
     find: <U extends boolean = true>(
         by: FindBy<Data<O, IdFieldName, U>>,
         options?: InteractionOptions<U>
@@ -94,7 +94,7 @@ export type Interactions<O extends object, IdFieldName extends string> = {
     filter: <U extends boolean = true>(
         by: FindBy<Data<O, IdFieldName, U>>,
         options?: InteractionOptions<U>
-    ) => Data<O, IdFieldName, U>
+    ) => Data<O, IdFieldName, U>[]
     remove: <U extends boolean = true>(
         by: FindBy<Data<O, IdFieldName, U>>,
         options?: RemoveOptions
