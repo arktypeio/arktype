@@ -14,11 +14,22 @@ export type SetArgs = {
     value: string
 }
 
+export type AssertTextArgs = {
+    kind: "assertText"
+    element: Element
+    value: string
+}
+
 export type ScreenshotArgs = {
     kind: "screenshot"
 }
 
-export type Step = ClickArgs | GoArgs | SetArgs | ScreenshotArgs
+export type Step =
+    | ClickArgs
+    | GoArgs
+    | SetArgs
+    | ScreenshotArgs
+    | AssertTextArgs
 
 export type Tag = {
     value: string
