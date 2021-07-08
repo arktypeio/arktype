@@ -5,44 +5,19 @@ import { forwardToRenderer, replayActionMain } from "electron-redux"
 import { launchBrowser, closeBrowser } from "./launchBrowser"
 import { mainWindow, builderWindow } from "./windows"
 import { ValueOf } from "@re-do/utils"
-import { createFileDb, ShallowModel } from "persist-statelessly"
-import { join } from "path"
+import { createRedoFileDb } from "@re-do/model"
 
 const DEFAULT_BUILDER_WIDTH = 300
 const ELECTRON_TITLEBAR_SIZE = 37
 
-export const defaultRedoJsonPath = join(process.cwd(), "redo.json")
-export const defaultRedoData: ShallowModel<RedoData, "id"> = {
-    tests: [],
-    elements: [],
-    steps: [],
-    tags: []
-}
-
 export let store: Store<Root, MainActionFunctions>
 
-export const db = createFileDb<RedoData>({
-    path: defaultRedoJsonPath,
-    onNoFile: () => defaultRedoData,
+export const db = createRedoFileDb({
     onChange: (change, context) => {
         // Forward changes from local store to app state store
         if (store) {
             store.update({ data: context.store.getState() })
         }
-    },
-    relationships: {
-        tests: {
-            steps: "steps",
-            tags: "tags"
-        },
-        elements: {},
-        steps: {
-            element: "elements"
-        },
-        tags: {}
-    },
-    validate: (state, { store }) => {
-        return true
     }
 })
 

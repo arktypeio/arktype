@@ -1,7 +1,7 @@
-import { redo } from "@re-do/test"
+import { getTests, run } from "@re-do/test"
 
-describe("website", () => {
-    test("Sign Up", async () => {
-        await redo({ id: 1 })
+describe.each(getTests())("", ({ name, id }) => {
+    test(name, async () => {
+        await run({ id })
     })
 })
