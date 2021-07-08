@@ -5,7 +5,7 @@ import { forwardToRenderer, replayActionMain } from "electron-redux"
 import { launchBrowser, closeBrowser } from "./launchBrowser"
 import { mainWindow, builderWindow } from "./windows"
 import { ValueOf } from "@re-do/utils"
-import { createRedoFileDb } from "@re-do/model"
+import { createRedoFileDb } from "@re-do/model/fileDb"
 
 const DEFAULT_BUILDER_WIDTH = 300
 const ELECTRON_TITLEBAR_SIZE = 37

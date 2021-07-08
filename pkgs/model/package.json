@@ -5,10 +5,25 @@
     "description": "Redo's storage model",
     "main": "dist/cjs/index.js",
     "module": "dist/mjs/index.js",
+    "types": "./dist/cjs/index.d.ts",
     "exports": {
         ".": {
             "import": "./dist/mjs/index.js",
             "require": "./dist/cjs/index.js"
+        },
+        "./fileDb": {
+            "import": "./dist/mjs/fileDb.js",
+            "require": "./dist/cjs/fileDb.js"
+        }
+    },
+    "typesVersions": {
+        "*": {
+            "dist/cjs/index.d.ts": [
+                "dist/cjs/index.d.ts"
+            ],
+            "*": [
+                "dist/cjs/*"
+            ]
         }
     },
     "scripts": {

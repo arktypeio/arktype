@@ -1,4 +1,5 @@
-import { createRedoFileDb, Test } from "@re-do/model"
+import { Test } from "@re-do/model"
+import { createRedoFileDb } from "@re-do/model/fileDb"
 import { test } from "@re-do/run"
 import { WithIds } from "persist-statelessly"
 
