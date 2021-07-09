@@ -18,7 +18,7 @@ describe("installation", () => {
         rmSync(REDO_DIR, { recursive: true, force: true })
     })
     test("works", async () => {
-        await install(VERSION_DIR, version)
+        await install(VERSION_DIR)
         redoMainProcess = shellAsync(getExecutablePath(VERSION_DIR))
         let redoRendererProcesses: ProcessDescriptor[] = []
         await waitUntil(

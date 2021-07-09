@@ -10,10 +10,10 @@ import {
 import Zip from "adm-zip"
 import { Octokit } from "@octokit/rest"
 import { join } from "path"
+import { version } from "../package.json"
+export { version } from "../package.json"
 
-export const version = "0.0.17"
-
-export const install = async (versionDir: string, version: string) => {
+export const install = async (versionDir: string) => {
     console.log(`Installing Redo (version ${version})...`)
     ensureDir(versionDir)
     const gitHub = new Octokit().rest
@@ -48,7 +48,7 @@ export const getPath = async (version: string) => {
     const versionDir = fromRedo(version)
     const executablePath = getExecutablePath(versionDir)
     if (!existsSync(executablePath)) {
-        await install(versionDir, version)
+        await install(versionDir)
     }
     return executablePath
 }

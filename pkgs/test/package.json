@@ -4,7 +4,7 @@
     "author": "redo.qa",
     "description": "CLI for Redo",
     "license": "MIT",
-    "main": "dist/cjs/index.js",
+    "main": "dist/cjs/src/index.js",
     "scripts": {
         "build": "redo-build",
         "redo": "ts-node src/cli.ts",
@@ -22,7 +22,8 @@
         "@re-do/run": "0.0.1",
         "persist-statelessly": "0.0.2",
         "adm-zip": "0.5.5",
-        "@re-do/model": "0.0.1"
+        "@re-do/model": "0.0.1",
+        "@re-do/data": "0.0.1"
     },
     "devDependencies": {
         "@re-do/configs": "0.0.2",

@@ -1,6 +1,6 @@
 import { Test } from "@re-do/model"
-import { createRedoFileDb } from "@re-do/model/fileDb"
-import { test } from "@re-do/run"
+import { test as runTest } from "@re-do/run"
+import { createRedoFileDb } from "@re-do/data"
 import { WithIds } from "persist-statelessly"
 
 const db = createRedoFileDb({})
@@ -11,7 +11,7 @@ export type RedoArgs = {
 
 export const run = async ({ id }: RedoArgs) => {
     const { steps } = db.tests.find((test) => test.id === id)
-    await test(steps)
+    await runTest(steps)
 }
 
 export const getTests = (): WithIds<Test, "id">[] => db.tests.all()
