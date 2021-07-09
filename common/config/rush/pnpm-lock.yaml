@@ -14886,7 +14886,7 @@ packages:
     optional: true
     resolution:
       integrity: sha512-CHhPh+UNHD2GTXNYhPWLnU8ONHdI+5DI+4EYIAOaiD63rHeYlZvyh8P+in5999TTSFgUYuKUAjzRI4mdh/p+2A==
-  /rollup/2.53.0:
+  /rollup/2.53.1:
     dev: false
     engines:
       node: '>=10.0.0'
@@ -14894,7 +14894,7 @@ packages:
     optionalDependencies:
       fsevents: 2.3.2
     resolution:
-      integrity: sha512-spgrY78Toh+m0+zaOoeaayJKuzFuWy6o1PdFIBMVwRcuxT0xCOX9A5rChyKe+2ruL4lePKWUMImS4mMW1QAkmQ==
+      integrity: sha512-yiTCvcYXZEulNWNlEONOQVlhXA/hgxjelFSjNcrwAAIfYx/xqjSHwqg/cCaWOyFRKr+IQBaXwt723m8tCaIUiw==
   /rst-selector-parser/2.2.3:
     dependencies:
       lodash.flattendeep: 4.4.0
@@ -16554,7 +16554,7 @@ packages:
       integrity: sha512-514ppYHBaKwfJRK/pNC6c/OxfGa0obSnAl106u97Ed0I625Nin96KAjttZF6ZL3e1XLtphxnqrOi9iWgm+u+bg==
   /upper-case/2.0.2:
     dependencies:
-      tslib: 2.1.0
+      tslib: 2.2.0
     dev: false
     resolution:
       integrity: sha512-KgdgDGJt2TpuwBUIjgG6lzw2GWFRCW9Qkfkiv0DxqHHLYJHmtmdUIKcZd8rHgFSjopVTlw6ggzCm1b8MFQwikg==
@@ -16803,7 +16803,7 @@ packages:
       esbuild: 0.9.7
       postcss: 8.3.5
       resolve: 1.20.0
-      rollup: 2.53.0
+      rollup: 2.53.1
     dev: false
     engines:
       node: '>=12.0.0'
@@ -17310,12 +17310,14 @@ packages:
       '@material-ui/core': 4.11.2_c9b97d0291e0c7f7ae91672f3bb47b49
       '@material-ui/styles': 4.11.2_c9b97d0291e0c7f7ae91672f3bb47b49
       '@medv/finder': 2.0.0
+      '@types/adm-zip': 0.4.34
       '@types/dotenv': 8.2.0
       '@types/electron-devtools-installer': 2.2.0
       '@types/jest': 26.0.20
       '@types/node': 15.0.2
       '@types/react': 17.0.5
       '@types/react-dom': 17.0.3
+      adm-zip: 0.5.5
       dotenv: 9.0.0
       electron: 11.4.5
       electron-builder: 22.11.7
@@ -17337,7 +17339,7 @@ packages:
     dev: false
     name: '@rush-temp/app'
     resolution:
-      integrity: sha512-Yjll14I5v3Cux2Wc0zT+WoEtxNNjrCWOGyCID7YN8bWs41Rfv/etvExxpf62A2EreuZMjoU/uwcvhBEvTY+dzQ==
+      integrity: sha512-aXmrb5DyIHg0yoSKHH/mi675XfvG12EeGd0H7qmcrJH/oKUJRN0AcU8XEn5HLadSEeACHxsYLGA/RcbnXt/s2Q==
       tarball: file:projects/app.tgz
     version: 0.0.0
   file:projects/components.tgz_ts-node@9.1.1:
@@ -17622,7 +17624,7 @@ packages:
     peerDependencies:
       graphql: '*'
     resolution:
-      integrity: sha512-epy2ekZ/t94++H5YW6SgtMA0ZRRslwjU7DBc+HeQv1vGy47q8Zsl/sc49YWOPDexuk46wcAhPHkIDqHL6jSBJA==
+      integrity: sha512-DOWfFEnpLK1z0BMYVCq1cP7/wh7Xp+jTEo/5KOqj9cTABTQ6EgViCE4JFEOiS+0H/+4adXoric6MdCmZDbaOIA==
       tarball: file:projects/website.tgz
     version: 0.0.0
 specifiers:

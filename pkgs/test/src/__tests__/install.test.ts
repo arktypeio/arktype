@@ -25,12 +25,15 @@ describe("installation", () => {
             async () => {
                 const allProcesses = await psList()
                 redoRendererProcesses = allProcesses.filter(
-                    (_) => _.cmd && _.cmd.search("redo --type=renderer") !== -1
+                    ({ cmd }) =>
+                        cmd &&
+                        cmd.search("redo") !== -1 &&
+                        cmd.search("--type=renderer") !== -1
                 )
                 return !!redoRendererProcesses.length
             },
-            { timeout: 5000 }
+            { timeout: 60000 }
         )
         expect(redoRendererProcesses.length).toBe(1)
-    }, 60000)
+    }, 120000)
 })

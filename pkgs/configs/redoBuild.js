@@ -2,6 +2,7 @@
 const execa = require("execa")
 const { basename } = require("path")
 const { writeFile } = require("fs/promises")
+const { existsSync, readFileSync, writeFileSync } = require("fs")
 
 const cwd = process.cwd()
 const pkg = basename(cwd)
@@ -11,6 +12,24 @@ const run = async (cmd, args) => {
     execution.stdout.pipe(process.stdout)
     execution.stderr.pipe(process.stderr)
     return await execution
+}
+
+const addTypeToPackageJson = (name) => {
+    const packageJsonPath = `dist/${name}/package.json`
+    const existingContent = existsSync(packageJsonPath)
+        ? JSON.parse(readFileSync(packageJsonPath).toString())
+        : {}
+    writeFileSync(
+        packageJsonPath,
+        JSON.stringify(
+            {
+                ...existingContent,
+                type: name === "cjs" ? "commonjs" : "module"
+            },
+            null,
+            4
+        )
+    )
 }
 
 const build = async () => {
@@ -24,7 +43,7 @@ const build = async () => {
             "--target",
             "esnext"
         ])
-        await writeFile("dist/mjs/package.json", `{"type": "module"}`)
+        addTypeToPackageJson("mjs")
         await run("tsc", [
             "--module",
             "commonjs",
@@ -33,7 +52,7 @@ const build = async () => {
             "--target",
             "es2015"
         ])
-        await writeFile("dist/cjs/package.json", `{"type": "commonjs"}`)
+        addTypeToPackageJson("cjs")
         console.log(`redo-build🔨: Finished building ${pkg}.`)
     } catch (e) {
         console.log(
