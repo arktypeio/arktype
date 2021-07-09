@@ -1,10 +1,14 @@
-import { ValueFrom, DeepPartial, isRecursible, fromEntries } from "./common"
+import { DeepPartial, isRecursible, fromEntries, ValueOf } from "./common"
 
-export type FilterFunction = Parameters<ValueFrom<Array<any>, "filter">>[0]
+export type FilterFunction<T> = (
+    value: T,
+    index: number,
+    context: T[]
+) => boolean
 
-export type FilterOptions<IsDeep extends boolean = false> = {
-    objectFilter?: FilterFunction
-    arrayFilter?: FilterFunction
+export type FilterOptions<Filterable, IsDeep extends boolean = false> = {
+    objectFilter?: FilterFunction<[keyof Filterable, ValueOf<Filterable>]>
+    arrayFilter?: FilterFunction<[keyof Filterable, ValueOf<Filterable>]>
     deep?: IsDeep
 }
 
@@ -16,18 +20,18 @@ export const filter = <
     IsDeep extends boolean = false
 >(
     o: ObjectType,
-    options: FilterOptions<IsDeep>
+    options: FilterOptions<ObjectType, IsDeep>
 ): ReturnType => {
     if (isRecursible(o)) {
         const { objectFilter, arrayFilter, deep } = options
         const filterFunction = Array.isArray(o) ? arrayFilter : objectFilter
         const shallow = Object.entries(o).filter(
-            filterFunction ? filterFunction : () => true
+            filterFunction ? (filterFunction as any) : () => true
         )
         return fromEntries(
             deep ? shallow.map(([k, v]) => [k, filter(v, options)]) : shallow,
             Array.isArray(o)
         ) as ReturnType
     }
-    return (o as any) as ReturnType
+    return o as any as ReturnType
 }

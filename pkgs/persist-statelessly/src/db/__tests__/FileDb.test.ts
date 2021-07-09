@@ -1,6 +1,7 @@
 import { rmSync } from "fs"
 import { join } from "path"
 import { createFileDb, FileDb, Relationships } from ".."
+import { FileDbArgs } from "../.."
 
 const path = join(__dirname, "store.json")
 
@@ -48,13 +49,14 @@ const relationships: Relationships<Root> = {
 
 let db: FileDb<Root>
 
-const getDb = () => {
+const getDb = (opts: Partial<FileDbArgs<Root>> = {}) => {
     rmSync(path)
     return createFileDb<Root>({
         relationships,
         path,
         bidirectional: false,
-        onNoFile: () => ({ users: [], groups: [] })
+        onNoFile: () => ({ users: [], groups: [] }),
+        ...opts
     })
 }
 const expectedShallowUser = { ...shallowUserData, id: 1 }
@@ -122,6 +124,30 @@ describe("create", () => {
         expect(() =>
             db.users.create({ ...shallowUserData, unknown: {} } as any)
         ).toThrow()
+    })
+    test("doesn't create object matching existing function", () => {
+        db = getDb({
+            reuseExisting: {
+                users: (newUser, existingUser) =>
+                    existingUser.name === newUser.name
+            }
+        })
+        db.users.create(shallowUserData)
+        db.users.create(shallowUserData)
+        expect(db.users.all()).toStrictEqual([expectedShallowUser])
+    })
+    test("doesn't create object matching existing boolean", () => {
+        db = getDb({
+            reuseExisting: {
+                groups: true,
+                users: true
+            }
+        })
+        db.groups.create(deepGroupData)
+        db.groups.create(deepGroupData)
+        expect(db.groups.all({ unpack: false })).toStrictEqual([
+            expectedDeepGroupShallow
+        ])
     })
 })
 

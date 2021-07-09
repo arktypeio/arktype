@@ -1,10 +1,10 @@
-import { transform, withDefaults } from "@re-do/utils"
+import { deepEquals, excludeKeys, transform, withDefaults } from "@re-do/utils"
 import {
     FileDbContext,
     getUnknownEntityErrorMessage,
     Model,
-    Shallow,
-    KeyName
+    KeyName,
+    CheckForMatch
 } from "./common"
 import { unpack } from "./find"
 
@@ -23,7 +23,7 @@ export const create = <T extends Model, U extends boolean = true>(
     options: CreateOptions<U> = {}
 ) => {
     const { unpack: unpackResult } = addDefaultCreateOptions(options)
-    const storedData = transform(value, ([k, v]) => {
+    const dataToStore = transform(value, ([k, v]) => {
         if (k === context.idFieldName) {
             throw new Error(
                 `The field name '${context.idFieldName}', found on ${typeName}, is not allowed.` +
@@ -47,9 +47,26 @@ export const create = <T extends Model, U extends boolean = true>(
         }
         return [k, storedValue]
     })
-    const existing = context.store.get(typeName as any) as Shallow<any, any>[]
-    const storedDataWithId = {
-        ...storedData,
+    const existing = context.store.get(typeName as any) as any[]
+    const reuseExisting = context.reuseExisting[typeName]
+    if (reuseExisting) {
+        let possibleMatch
+        const checkForMatch =
+            typeof reuseExisting === "boolean"
+                ? deepEquals
+                : (reuseExisting as CheckForMatch<any>)
+        possibleMatch = existing.find((o) =>
+            checkForMatch(excludeKeys(o, [context.idFieldName]), dataToStore)
+        )
+        if (possibleMatch) {
+            return unpackResult
+                ? unpack(typeName, possibleMatch, context)
+                : possibleMatch
+        }
+    }
+
+    const dataToStoreWithId = {
+        ...dataToStore,
         [context.idFieldName]:
             existing.reduce(
                 (maxId, currentElement) =>
@@ -60,9 +77,9 @@ export const create = <T extends Model, U extends boolean = true>(
             ) + 1
     }
     context.store.update({
-        [typeName]: (_: any[]) => _.concat(storedDataWithId)
+        [typeName]: (_: any[]) => _.concat(dataToStoreWithId)
     } as any)
     return unpackResult
-        ? unpack(typeName, storedDataWithId, context)
-        : storedDataWithId
+        ? unpack(typeName, dataToStoreWithId, context)
+        : dataToStoreWithId
 }

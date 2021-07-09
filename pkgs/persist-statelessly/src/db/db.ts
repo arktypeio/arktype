@@ -1,4 +1,4 @@
-import { DeepUpdate, transform, Unlisted } from "@re-do/utils"
+import { DeepUpdate, FilterFunction, transform, Unlisted } from "@re-do/utils"
 import { FileStore, FileStoreOptions } from ".."
 import {
     Model,
@@ -7,7 +7,8 @@ import {
     Relationships,
     FileDbContext,
     FindBy,
-    ShallowModel
+    ShallowModel,
+    ReuseExisting
 } from "./common"
 import { createDependentsMap } from "./relationships"
 import { create, CreateOptions } from "./create"
@@ -21,6 +22,7 @@ export type FileDbArgs<
 > = FileStoreOptions<ShallowModel<T, IdFieldName>> & {
     relationships: Relationships<T>
     idFieldName?: IdFieldName
+    reuseExisting?: ReuseExisting<T>
 }
 
 export const createFileDb = <
@@ -29,6 +31,7 @@ export const createFileDb = <
 >({
     relationships,
     idFieldName,
+    reuseExisting,
     ...fileStoreOptions
 }: FileDbArgs<T, IdFieldName extends undefined ? "id" : IdFieldName>): FileDb<
     T,
@@ -42,7 +45,8 @@ export const createFileDb = <
         store,
         relationships,
         dependents: createDependentsMap(relationships),
-        idFieldName: idFieldName ?? "id"
+        idFieldName: idFieldName ?? "id",
+        reuseExisting: reuseExisting ?? {}
     }
     const interactions = transform(relationships, ([k, v]: [string, any]) => [
         k,
