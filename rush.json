@@ -55,6 +55,10 @@
         {
             "packageName": "@re-do/node-utils",
             "projectFolder": "pkgs/node-utils"
+        },
+        {
+            "packageName": "@re-do/data",
+            "projectFolder": "pkgs/data"
         }
     ]
 }

@@ -1,6 +1,6 @@
 import { createFileDb, FileDbArgs, ShallowModel } from "persist-statelessly"
 import { join } from "path"
-import { RedoData } from "./model"
+import { RedoData } from "@re-do/model"
 
 export const defaultRedoJsonPath = join(process.cwd(), "redo.json")
 export const defaultRedoData: ShallowModel<RedoData, "id"> = {

@@ -1,6 +1,7 @@
+const { getJestConfig } = require("@re-do/configs")
 const { join } = require("path")
 
 module.exports = {
-    ...require("@re-do/configs/jest"),
+    ...getJestConfig(),
     setupFiles: [join(__dirname, "jest.setup.js")]
 }
