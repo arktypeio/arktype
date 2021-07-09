@@ -18,7 +18,7 @@
     "dependencies": {
         "@re-do/model": "0.0.1",
         "@re-do/utils": "0.0.12",
-        "playwright": "1.11.1"
+        "playwright": "1.12.3"
     },
     "devDependencies": {
         "@re-do/configs": "0.0.2",
