@@ -6,7 +6,14 @@ export type FileDbContext<T extends Model> = {
     relationships: Relationships<T>
     dependents: Dependents<T>
     idFieldName: string
+    reuseExisting: ReuseExisting<T>
 }
+
+export type ReuseExisting<T extends Model> = {
+    [K in keyof T]?: boolean | CheckForMatch<Shallow<Unlisted<T[K]>>>
+}
+
+export type CheckForMatch<O extends object> = (first: O, second: O) => boolean
 
 export type KeyName<T extends Model> = string & keyof T
 
@@ -18,24 +25,28 @@ export type Data<
     O extends object,
     IdFieldName extends string,
     Unpacked extends boolean
-> = Unpacked extends true ? WithIds<O, IdFieldName> : Shallow<O, IdFieldName>
+> = Unpacked extends true
+    ? WithIds<O, IdFieldName>
+    : ShallowWithId<O, IdFieldName>
 
 export type FindBy<O extends object> = (o: O) => boolean
 
 export type ShallowModel<T extends Model, IdFieldName extends string> = {
-    [K in keyof T]: Shallow<Unlisted<T[K]>, IdFieldName>[]
+    [K in keyof T]: ShallowWithId<Unlisted<T[K]>, IdFieldName>[]
 }
 
-export type Shallow<O extends object, IdFieldName extends string> = WithId<
-    {
-        [K in keyof O]: Unlisted<O[K]> extends object
-            ? O[K] extends any[]
-                ? number[]
-                : number
-            : O[K]
-    },
-    IdFieldName
->
+export type Shallow<O extends object> = {
+    [K in keyof O]: Unlisted<O[K]> extends object
+        ? O[K] extends any[]
+            ? number[]
+            : number
+        : O[K]
+}
+
+export type ShallowWithId<
+    O extends object,
+    IdFieldName extends string
+> = WithId<Shallow<O>, IdFieldName>
 
 export type WithId<O extends object, IdFieldName extends string> = O &
     Record<IdFieldName extends string ? IdFieldName : never, number>

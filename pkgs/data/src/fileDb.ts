@@ -25,6 +25,11 @@ export const createRedoFileDb = (opts: Partial<FileDbArgs<RedoData>>) =>
             },
             tags: {}
         },
+        reuseExisting: {
+            elements: true,
+            steps: true,
+            tags: true
+        },
         validate: (state, { store }) => {
             return true
         },
