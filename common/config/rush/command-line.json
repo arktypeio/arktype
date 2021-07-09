@@ -5,6 +5,13 @@
             "commandKind": "bulk",
             "name": "build",
             "allowWarningsInSuccessfulBuild": true
+        },
+        {
+            "commandKind": "bulk",
+            "name": "test",
+            "summary": "Test packages.",
+            "description": "Executes automated tests.",
+            "enableParallelism": true
         }
     ],
     "parameters": []

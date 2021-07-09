@@ -13,7 +13,7 @@
     },
     "scripts": {
         "build": "redo-build",
-        "test": "jest"
+        "test": "echo 'This package has no tests.'"
     },
     "dependencies": {
         "@re-do/utils": "0.0.12",

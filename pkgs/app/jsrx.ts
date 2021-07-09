@@ -87,7 +87,7 @@ jsrx(
             start,
             lint: $(`prettier --write`),
             typecheck: $(`tsc --noEmit`),
-            test: $(`jest`)
+            test: $(`echo 'This package has no tests.'`)
         },
         prod: {
             dryRun: () => createRelease(false),
