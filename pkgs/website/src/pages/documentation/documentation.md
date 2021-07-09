@@ -1,109 +1,38 @@
-# A demo of `react-markdown`
+# Getting started
 
-`react-markdown` is a markdown component for React.
+Before you can start testing you'll need to install redo using your package manager of choice (npm, yarn, pnpm, etc.):
 
-👉 Changes are re-rendered as you type.
+```bash
+npm install @re-do/test
+```
 
-👈 Try writing some markdown on the left.
+Now you can launch the app, which will install your release automatically:
 
-## Overview
+```bash
+npx redo launch
+```
 
--   Follows [CommonMark](https://commonmark.org)
--   Optionally follows [GitHub Flavored Markdown](https://github.github.com/gfm/)
--   Renders actual React elements instead of using `dangerouslySetInnerHTML`
--   Lets you define your own components (to render `MyHeading` instead of `h1`)
--   Has a lot of plugins
+After you click the "+" icon in the top left corner of the app to create a new test, a browser will launch. Use it to navigate to the site you'd like to test, and start interacting with it the way you would normally. You'll see steps
+representing each action you take. Highlighting a text value will assert its presence.
 
-## Table of contents
+When you're done with your test, name it and click the "✔" icon to save.
 
-Here is an example of a plugin in action
-([`remark-toc`](https://github.com/remarkjs/remark-toc)).
-This section is replaced by an actual table of contents.
-
-## Syntax highlighting
-
-Here is an example of a plugin to highlight code:
-[`rehype-highlight`](https://github.com/rehypejs/rehype-highlight).
+All of the data needed to run your test will be stored in a `redo.json` file in your current directory. Your tests can be easily integrated with test runners like `jest` as follows:
 
 ```js
-import React from "react"
-import ReactDOM from "react-dom"
-import Markdown from "react-markdown"
-import rehypeHighlight from "rehype-highlight"
+import { getTests, run } from "@re-do/test"
 
-ReactDOM.render(
-    <Markdown rehypePlugins={[rehypeHighlight]}>
-        {"# Your markdown here"}
-    </Markdown>,
-    document.querySelector("#content")
+describe.each(getTests())(
+    "",
+    ({ name, id }) => {
+        test(name, async () => {
+            await run({ id })
+        })
+    },
+    30000
 )
 ```
 
-Pretty neat, eh?
+The snippet above tells jest to run every test in your `redo.json` data.
 
-## GitHub flavored markdown (GFM)
-
-For GFM, you can _also_ use a plugin:
-[`remark-gfm`](https://github.com/remarkjs/react-markdown#use).
-It adds support for GitHub-specific extensions to the language:
-tables, strikethrough, tasklists, and literal URLs.
-
-These features **do not work by default**.
-👆 Use the toggle above to add the plugin.
-
-|    Feature | Support              |
-| ---------: | :------------------- |
-| CommonMark | 100%                 |
-|        GFM | 100% w/ `remark-gfm` |
-
-~~strikethrough~~
-
--   [ ] task list
--   [x] checked item
-
-https://example.com
-
-## HTML in markdown
-
-⚠️ HTML in markdown is quite unsafe, but if you want to support it, you can
-use [`rehype-raw`](https://github.com/rehypejs/rehype-raw).
-You should probably combine it with
-[`rehype-sanitize`](https://github.com/rehypejs/rehype-sanitize).
-
-<blockquote>
-  👆 Use the toggle above to add the plugin.
-</blockquote>
-
-## Components
-
-You can pass components to change things:
-
-```js
-import React from "react"
-import ReactDOM from "react-dom"
-import Markdown from "react-markdown"
-import MyFancyRule from "./components/my-fancy-rule.js"
-
-ReactDOM.render(
-    <Markdown
-        components={{
-            // Use h2s instead of h1s
-            h1: "h2",
-            // Use a component instead of hrs
-            hr: ({ node, ...props }) => <MyFancyRule {...props} />
-        }}
-    >
-        # Your markdown here
-    </Markdown>,
-    document.querySelector("#content")
-)
-```
-
-## More info?
-
-Much more info is available in the
-[readme on GitHub](https://github.com/remarkjs/react-markdown)!
-
----
-
-A component by [Espen Hovlandsdal](https://espen.codes/)
+We are still in beta and have lots more functionality to document and build, but we've love to hear your feedback! If you run into any problems or would like to suggest a feature, please create an issue for us [on GitHub](https://github.com/re-do/redo) or email me at david@redo.qa 😻

@@ -14,15 +14,6 @@ cli.command("launch")
         shell(await getPath(version))
     })
 
-cli.command("test")
-    .description("Run Redo tests")
-    .action(() => {
-        console.log("Running tests...")
-    })
-
-cli.command("create")
-    .description("Create a new test")
-    .action(() => console.log("Creating a new test..."))
 
 const run = async () => await cli.parseAsync(process.argv)
 run()

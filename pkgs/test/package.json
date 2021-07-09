@@ -1,10 +1,17 @@
 {
     "name": "@re-do/test",
-    "version": "0.0.18",
+    "version": "0.1.0",
     "author": "redo.qa",
     "description": "CLI for Redo",
     "license": "MIT",
     "main": "dist/cjs/src/index.js",
+    "module": "dist/mjs/src/index.js",
+    "exports": {
+        ".": {
+            "import": "./dist/mjs/src/index.js",
+            "require": "./dist/cjs/src/index.js"
+        }
+    },
     "scripts": {
         "build": "redo-build",
         "redo": "ts-node src/cli.ts",
