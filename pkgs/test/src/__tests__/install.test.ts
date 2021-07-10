@@ -7,7 +7,9 @@ import { rmSync } from "fs"
 import { version, install, getExecutablePath } from "../install"
 
 const REDO_DIR = join(__dirname, ".redo")
-const VERSION_DIR = join(REDO_DIR, version)
+const testVersion = "0.0.17"
+// const VERSION_DIR = join(REDO_DIR, version)
+const VERSION_DIR = join(REDO_DIR, testVersion)
 let redoMainProcess: ChildProcess | undefined
 
 describe("installation", () => {
@@ -17,7 +19,7 @@ describe("installation", () => {
         }
         rmSync(REDO_DIR, { recursive: true, force: true })
     })
-    test("works", async () => {
+    test("installs and has redo version 0.0.17 process running", async () => {
         await install(VERSION_DIR)
         redoMainProcess = shellAsync(getExecutablePath(VERSION_DIR))
         let redoRendererProcesses: ProcessDescriptor[] = []
@@ -25,7 +27,7 @@ describe("installation", () => {
             async () => {
                 const allProcesses = await psList()
                 redoRendererProcesses = allProcesses.filter(
-                    (_) => _.cmd && _.cmd.search("redo --type=renderer") !== -1
+                    (_) => _.cmd && (_.cmd.search("/.redo") !== -1) && (_.cmd.includes(testVersion))
                 )
                 return !!redoRendererProcesses.length
             },
