@@ -47,7 +47,6 @@
         "react-statelessly": "0.0.5",
         "persist-statelessly": "0.0.2",
         "isomorphic-ws": "4.0.1",
-        "playwright": "1.11.1",
         "electron-redux": "1.5.4"
     },
     "devDependencies": {

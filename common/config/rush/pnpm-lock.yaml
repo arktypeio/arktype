@@ -73,7 +73,7 @@ dependencies:
   jsrx: 0.0.11
   moize: 5.4.7
   node-fetch: 2.6.1
-  playwright: 1.11.1
+  playwright: 1.12.3
   process: 0.11.10
   prompts: 2.4.1
   ps-list: 7.2.0
@@ -13458,6 +13458,29 @@ packages:
     requiresBuild: true
     resolution:
       integrity: sha512-UuMrYuvzttbJXUD7sTVcQBsGRojelGepvuQPD+QtVm/n5zyKvkiUErU/DGRXfX8VDZRdQ5D6qVqZndrydC2b4w==
+  /playwright/1.12.3:
+    dependencies:
+      commander: 6.2.1
+      debug: 4.3.2
+      extract-zip: 2.0.1
+      https-proxy-agent: 5.0.0
+      jpeg-js: 0.4.3
+      mime: 2.5.2
+      pngjs: 5.0.0
+      progress: 2.0.3
+      proper-lockfile: 4.1.2
+      proxy-from-env: 1.1.0
+      rimraf: 3.0.2
+      stack-utils: 2.0.3
+      ws: 7.5.2
+      yazl: 2.5.1
+    dev: false
+    engines:
+      node: '>=12'
+    hasBin: true
+    requiresBuild: true
+    resolution:
+      integrity: sha512-eyhHvZV7dMAUltqjQsgJ9CjZM8dznzN1+rcfCI6W6lfQ7IlPvTFGLuKOCcI4ETbjfbxqaS5FKIkb1WDDzq2Nww==
   /plist/3.0.2:
     dependencies:
       base64-js: 1.5.1
@@ -17263,7 +17286,7 @@ packages:
     dev: false
     name: '@rush-temp/app'
     resolution:
-      integrity: sha512-qKMUMdc9VsL1SPs3Z0x8xCDzBqrMYA1t3isN+Bz8VnBz2UkuSbgNwzLPWfQbWMUmrvdPHqgJ/JsKeoMUkdIE1Q==
+      integrity: sha512-Yjll14I5v3Cux2Wc0zT+WoEtxNNjrCWOGyCID7YN8bWs41Rfv/etvExxpf62A2EreuZMjoU/uwcvhBEvTY+dzQ==
       tarball: file:projects/app.tgz
     version: 0.0.0
   file:projects/components.tgz_ts-node@9.1.1:
@@ -17436,7 +17459,7 @@ packages:
     dependencies:
       '@types/jest': 26.0.20
       jest: 26.6.3_ts-node@9.1.1
-      playwright: 1.11.1
+      playwright: 1.12.3
       ts-jest: 26.5.6_jest@26.6.3+typescript@4.2.3
       typescript: 4.2.3
     dev: false
@@ -17445,7 +17468,7 @@ packages:
     peerDependencies:
       ts-node: '*'
     resolution:
-      integrity: sha512-T6U2awaNN4N7K3yOTxO7UjK7oi3C8Y4Pm4KleO2txGwDjWLMW2DD6+VT3ogcYBd7s0RRfM0lYPIomq7ZiTI/Fg==
+      integrity: sha512-PP0yDCvIbxmOK16gy+6W0IU6ajcWQCb8rMygXNteehiNch5Q5vbQPlanQ75pRmxQuILh8oDWDobUHalCCCvlaA==
       tarball: file:projects/run.tgz
     version: 0.0.0
   file:projects/statelessly.tgz_ts-node@9.1.1:
@@ -17630,7 +17653,7 @@ specifiers:
   jsrx: 0.0.11
   moize: 5.4.7
   node-fetch: 2.6.1
-  playwright: 1.11.1
+  playwright: 1.12.3
   process: 0.11.10
   prompts: 2.4.1
   ps-list: 7.2.0
