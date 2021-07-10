@@ -24,12 +24,18 @@ export type ScreenshotArgs = {
     kind: "screenshot"
 }
 
+export type CustomStepArgs = {
+    kind: string
+    [argName: string]: any
+}
+
 export type Step =
     | ClickArgs
     | GoArgs
     | SetArgs
     | ScreenshotArgs
     | AssertTextArgs
+    | CustomStepArgs
 
 export type Tag = {
     value: string

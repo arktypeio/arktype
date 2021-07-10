@@ -58,7 +58,7 @@ export class FileStore<
         })
         this.fileStateContext = fileStateContext
         if (bidirectional) {
-            watch(path, {}, (event) => {
+            watch(path, { persistent: false }, (event) => {
                 this.syncFromFile()
             })
         }
