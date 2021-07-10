@@ -8,6 +8,8 @@ import {
     getObserverConfig
 } from "./viteConfigs"
 import { join } from "path"
+import { mkdirSync, renameSync, rmSync, writeFileSync } from "fs"
+import { PLAYWRIGHT_VERSION } from "@re-do/run"
 
 const electronPath = require("electron")
 
@@ -73,9 +75,40 @@ const start = async () => {
     await watchMain()
 }
 
+const prepareRelease = () => {
+    const dependenciesDir = join(__dirname, "release", "dependencies")
+    rmSync(dependenciesDir, { recursive: true, force: true })
+    mkdirSync(dependenciesDir, { recursive: true })
+    // Only install non-bundled dependencies
+    const packageJsonContents = require("./package.json")
+    const electronReduxVersion =
+        packageJsonContents.dependencies["electron-redux"]
+    const releaseDependencies = {
+        playwright: PLAYWRIGHT_VERSION,
+        "electron-redux": electronReduxVersion
+    }
+    const releasePackageJsonContents = JSON.stringify({
+        ...packageJsonContents,
+        dependencies: releaseDependencies,
+        devDependencies: {}
+    })
+    writeFileSync(
+        join(dependenciesDir, "package.json"),
+        releasePackageJsonContents
+    )
+    shell("npm install", {
+        cwd: dependenciesDir
+    })
+    const nodeModulesSrcDir = join(dependenciesDir, "node_modules")
+    const nodeModulesDestDir = join(dependenciesDir, "external")
+    renameSync(nodeModulesSrcDir, nodeModulesDestDir)
+    rmSync(join(nodeModulesDestDir, ".bin"), { recursive: true, force: true })
+}
+
 const createRelease = (publish: boolean) => {
+    prepareRelease()
     shell(
-        `electron-builder --config.asar=false --config electron-builder.config.js --publish ${
+        `electron-builder --config electron-builder.config.js --publish ${
             publish ? "always" : "never"
         }`
     )

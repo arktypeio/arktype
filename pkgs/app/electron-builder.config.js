@@ -1,6 +1,7 @@
-const { shell } = require("@re-do/node-utils")
-const { writeFileSync } = require("fs")
 const { join } = require("path")
+const { getRedoZipFileName, getOs } = require("@re-do/node-utils")
+const Zip = require("adm-zip")
+const { version } = require("./package.json")
 
 /**
  * @type {import('electron-builder').Configuration}
@@ -11,49 +12,40 @@ const config = {
         output: "release",
         buildResources: join(__dirname, "src", "assets")
     },
-    files: ["dist/**"],
+    files: [
+        "dist/**/*",
+        {
+            from: "release/dependencies/external",
+            to: "node_modules"
+        }
+    ],
     appId: "redo",
     extraMetadata: {
         name: "redo"
     },
-    artifactName: "redo-${version}-${os}.${ext}",
     linux: {
-        target: "zip"
+        target: "dir"
     },
     mac: {
-        target: "zip"
+        target: "dir"
     },
     win: {
-        target: "zip"
+        target: "dir"
     },
     beforeBuild: async (ctx) => {
         return false
     },
-    afterPack: async (ctx) => {
-        const resourceDir = join(
-            ctx.appOutDir,
-            ctx.appOutDir.endsWith("mac")
-                ? "redo.app/Contents/Resources"
-                : "resources",
-            "app"
+    afterAllArtifactBuild: async (ctx) => {
+        const os = getOs()
+        const zip = new Zip()
+        const releaseDir = join(
+            ctx.outDir,
+            `${os === "windows" ? "win" : os}-unpacked`
         )
-        // Only install non-bundled dependencies
-        const packageJsonContents = require("./package.json")
-        writeFileSync(
-            join(resourceDir, "package.json"),
-            JSON.stringify({
-                ...packageJsonContents,
-                dependencies: {
-                    playwright: packageJsonContents.dependencies.playwright,
-                    "electron-redux":
-                        packageJsonContents.dependencies["electron-redux"]
-                },
-                devDependencies: {}
-            })
-        )
-        shell("npm install", {
-            cwd: resourceDir
-        })
+        const releaseZip = join(ctx.outDir, getRedoZipFileName(os, version))
+        zip.addLocalFolder(releaseDir)
+        zip.writeZip(releaseZip)
+        return [releaseZip]
     }
 }
 
