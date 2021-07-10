@@ -11,17 +11,26 @@ import Zip from "adm-zip"
 import { Octokit } from "@octokit/rest"
 import { join } from "path"
 import { version } from "../package.json"
+import { latestVersionAvailable } from "./helpers"
 export { version } from "../package.json"
 
-export const install = async (versionDir: string) => {
-    console.log(`Installing Redo (version ${version})...`)
-    ensureDir(versionDir)
+export const getRelease = async (version:string) => {
     const gitHub = new Octokit().rest
     const { data } = await gitHub.repos.getReleaseByTag({
         owner: "re-do",
         repo: "redo",
         tag: `v${version}`
     })
+    return data
+}
+
+export const install = async (versionDir: string) => {
+    let version = "0.0.17"
+
+    console.log(`Installing Redo (version ${version})...`)
+    ensureDir(versionDir)
+    // const data = await latestVersionAvailable()
+    const data = await getRelease(version)
     const os = getOs()
     const zipName = `redo-${version}-${os === "windows" ? "win" : os}.zip`
     const appRelease = data.assets.find((asset) => asset.name === zipName)

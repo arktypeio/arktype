@@ -19,7 +19,7 @@ describe("installation", () => {
         }
         rmSync(REDO_DIR, { recursive: true, force: true })
     })
-    test("installs and has redo version 0.0.17 process running", async () => {
+    test("installs redo version 0.0.17 and has process running", async () => {
         await install(VERSION_DIR)
         redoMainProcess = shellAsync(getExecutablePath(VERSION_DIR))
         let redoRendererProcesses: ProcessDescriptor[] = []

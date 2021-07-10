@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 import { Command } from "commander"
 import { shell } from "@re-do/node-utils"
-import { getPath, version } from "./install"
+import { getPath, install, version } from "./install"
+import { isCurrentPackageOutdated, latestVersionAvailable } from "helpers"
 
 const cli = new Command()
 
@@ -12,8 +13,18 @@ cli.command("launch")
     .action(async () => {
         console.log("Launching the app...")
         shell(await getPath(version))
-    })
 
+        if (isCurrentPackageOutdated()) {
+            console.log("New Update is Avaiable. You can Upgrade to the latest version with redo update.")
+        }
+    })
+cli.command("upgrade")
+    .description("Upgrade Redo to the lastest available version")
+    .action(async () => {
+        isCurrentPackageOutdated()  
+            ? install(await getPath((await latestVersionAvailable()).tag_name.substring(1)))
+            : console.log("Redo is up to date!")
+    })
 cli.command("test")
     .description("Run Redo tests")
     .action(() => {
