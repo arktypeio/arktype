@@ -1,5 +1,5 @@
-import React, { useState } from "react"
-import { SignUpDialog } from "../../signUp/SignUp"
+import React from "react"
+import { Link } from "@re-do/components"
 import { GetStartedDesktop } from "./GetStartedDesktop"
 import { GetStartedMobile } from "./GetStartedMobile"
 
@@ -12,23 +12,13 @@ export const GetStarted = ({
     mobile,
     animateScroll
 }: GetStartedButtonProps) => {
-    const [dialogOpen, setDialogOpen] = useState(false)
-    const openDialog = () => setDialogOpen(true)
-    const getStartedProps = {
-        onClick: openDialog,
-        animateScroll
-    }
     return (
-        <>
+        <Link to={"documentation"}>
             {mobile ? (
-                <GetStartedMobile {...getStartedProps} />
+                <GetStartedMobile animateScroll={animateScroll} />
             ) : (
-                <GetStartedDesktop {...getStartedProps} />
+                <GetStartedDesktop animateScroll={animateScroll} />
             )}
-            <SignUpDialog
-                open={dialogOpen}
-                onClose={() => setDialogOpen(false)}
-            />
-        </>
+        </Link>
     )
 }
