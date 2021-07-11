@@ -3,12 +3,12 @@
     "version": "0.0.1",
     "author": "redo.qa",
     "description": "Delightful web testing that writes itself 🖋",
-    "main": "dist/cjs/index.js",
-    "module": "dist/mjs/index.js",
+    "main": "dist/cjs/src/index.js",
+    "module": "dist/mjs/src/index.js",
     "exports": {
         ".": {
-            "import": "./dist/mjs/index.js",
-            "require": "./dist/cjs/index.js"
+            "import": "./dist/mjs/src/index.js",
+            "require": "./dist/cjs/src/index.js"
         }
     },
     "scripts": {

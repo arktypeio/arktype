@@ -17258,12 +17258,14 @@ packages:
       '@material-ui/core': 4.11.2_c9b97d0291e0c7f7ae91672f3bb47b49
       '@material-ui/styles': 4.11.2_c9b97d0291e0c7f7ae91672f3bb47b49
       '@medv/finder': 2.0.0
+      '@types/adm-zip': 0.4.34
       '@types/dotenv': 8.2.0
       '@types/electron-devtools-installer': 2.2.0
       '@types/jest': 26.0.20
       '@types/node': 15.0.2
       '@types/react': 17.0.5
       '@types/react-dom': 17.0.3
+      adm-zip: 0.5.5
       dotenv: 9.0.0
       electron: 11.4.5
       electron-builder: 22.11.7
@@ -17286,7 +17288,7 @@ packages:
     dev: false
     name: '@rush-temp/app'
     resolution:
-      integrity: sha512-Yjll14I5v3Cux2Wc0zT+WoEtxNNjrCWOGyCID7YN8bWs41Rfv/etvExxpf62A2EreuZMjoU/uwcvhBEvTY+dzQ==
+      integrity: sha512-aXmrb5DyIHg0yoSKHH/mi675XfvG12EeGd0H7qmcrJH/oKUJRN0AcU8XEn5HLadSEeACHxsYLGA/RcbnXt/s2Q==
       tarball: file:projects/app.tgz
     version: 0.0.0
   file:projects/components.tgz_ts-node@9.1.1:
