@@ -9,12 +9,10 @@ import {
 import { layout, animations } from "../../../constants"
 
 export type GetStartedDesktopProps = {
-    onClick: () => void
     animateScroll?: boolean
 }
 
 export const GetStartedDesktop = ({
-    onClick,
     animateScroll
 }: GetStartedDesktopProps) => {
     const { scrollY } = useViewportScroll()
@@ -53,7 +51,6 @@ export const GetStartedDesktop = ({
                     }}
                     textColor="inherit"
                     fontSize={18}
-                    onClick={onClick}
                 >
                     Get Started
                 </Button>

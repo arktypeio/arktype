@@ -4,14 +4,10 @@ import { motion, useViewportScroll, useTransform } from "framer-motion"
 import { animations } from "../../../constants"
 
 export type GetStartedMobileProps = {
-    onClick: () => void
     animateScroll?: boolean
 }
 
-export const GetStartedMobile = ({
-    animateScroll,
-    onClick
-}: GetStartedMobileProps) => {
+export const GetStartedMobile = ({ animateScroll }: GetStartedMobileProps) => {
     const { scrollY } = useViewportScroll()
     // Setting the scroll range to [0, 0] renders components in the end state of their animation
     const scrollBoundaries = animateScroll
@@ -40,7 +36,6 @@ export const GetStartedMobile = ({
                 }}
                 textColor="white"
                 fontSize={18}
-                onClick={onClick}
             >
                 Get Started
             </Button>

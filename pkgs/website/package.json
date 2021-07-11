@@ -26,7 +26,8 @@
         "react-typist": "2.0.5",
         "framer-motion": "4.1.11",
         "uuid": "8.3.2",
-        "validator": "13.5.2"
+        "validator": "13.5.2",
+        "react-markdown": "6.0.2"
     },
     "devDependencies": {
         "@re-do/test": "0.0.18",
