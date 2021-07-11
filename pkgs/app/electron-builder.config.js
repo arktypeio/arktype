@@ -3,6 +3,12 @@ const { getRedoZipFileName, getOs } = require("@re-do/node-utils")
 const Zip = require("adm-zip")
 const { version } = require("./package.json")
 
+const releaseDirNames = {
+    linux: "linux-unpacked",
+    mac: "mac",
+    windows: "win-unpacked"
+}
+
 /**
  * @type {import('electron-builder').Configuration}
  * @see https://www.electron.build/configuration/configuration
@@ -38,10 +44,7 @@ const config = {
     afterAllArtifactBuild: async (ctx) => {
         const os = getOs()
         const zip = new Zip()
-        const releaseDir = join(
-            ctx.outDir,
-            `${os === "windows" ? "win" : os}-unpacked`
-        )
+        const releaseDir = join(ctx.outDir, releaseDirNames[os])
         const releaseZip = join(ctx.outDir, getRedoZipFileName(os, version))
         zip.addLocalFolder(releaseDir)
         zip.writeZip(releaseZip)
