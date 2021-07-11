@@ -5,7 +5,8 @@ import {
     streamToFile,
     fromRedo,
     getOs,
-    ensureDir
+    ensureDir,
+    getRedoZipFileName
 } from "@re-do/node-utils"
 import Zip from "adm-zip"
 import { Octokit } from "@octokit/rest"
@@ -22,8 +23,7 @@ export const install = async (versionDir: string) => {
         repo: "redo",
         tag: `v${version}`
     })
-    const os = getOs()
-    const zipName = `redo-${version}-${os === "windows" ? "win" : os}.zip`
+    const zipName = getRedoZipFileName(getOs(), version)
     const appRelease = data.assets.find((asset) => asset.name === zipName)
     if (!appRelease) {
         throw new Error(`Unable to find a Redo release for your platform.`)

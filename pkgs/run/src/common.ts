@@ -1,5 +1,8 @@
 import { Page, Browser } from "playwright"
+import { dependencies } from "../package.json"
 export type { Page, Browser } from "playwright"
+
+export const PLAYWRIGHT_VERSION = dependencies.playwright
 
 export type StepKinds = Record<
     string,
