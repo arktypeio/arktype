@@ -11,10 +11,10 @@ import Zip from "adm-zip"
 import { Octokit } from "@octokit/rest"
 import { join } from "path"
 import { version } from "../package.json"
-import { latestVersionAvailable } from "./helpers"
+import { extractVersionFromDirString } from "./installHelpers"
 export { version } from "../package.json"
 
-export const getRelease = async (version:string) => {
+export const getRelease = async (version:any) => {
     const gitHub = new Octokit().rest
     const { data } = await gitHub.repos.getReleaseByTag({
         owner: "re-do",
@@ -23,16 +23,13 @@ export const getRelease = async (version:string) => {
     })
     return data
 }
-
 export const install = async (versionDir: string) => {
-    let version = "0.0.17"
-
-    console.log(`Installing Redo (version ${version})...`)
+    let wantedVersion = versionDir.includes(version) ? version : extractVersionFromDirString(versionDir)
+    console.log(`Installing Redo (version ${wantedVersion})...`)
     ensureDir(versionDir)
-    // const data = await latestVersionAvailable()
-    const data = await getRelease(version)
+    const data = await getRelease(wantedVersion)
     const os = getOs()
-    const zipName = `redo-${version}-${os === "windows" ? "win" : os}.zip`
+    const zipName = `redo-${wantedVersion}-${os === "windows" ? "win" : os}.zip`
     const appRelease = data.assets.find((asset) => asset.name === zipName)
     if (!appRelease) {
         throw new Error(`Unable to find a Redo release for your platform.`)

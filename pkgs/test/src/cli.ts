@@ -2,7 +2,7 @@
 import { Command } from "commander"
 import { shell } from "@re-do/node-utils"
 import { getPath, install, version } from "./install"
-import { isCurrentPackageOutdated, latestVersionAvailable } from "helpers"
+import { isCurrentPackageOutdated, getReleaseV2 } from "./installHelpers"
 
 const cli = new Command()
 
@@ -14,15 +14,17 @@ cli.command("launch")
         console.log("Launching the app...")
         shell(await getPath(version))
 
-        if (isCurrentPackageOutdated()) {
+        if (isCurrentPackageOutdated(version)) {
             console.log("New Update is Avaiable. You can Upgrade to the latest version with redo update.")
         }
     })
 cli.command("upgrade")
     .description("Upgrade Redo to the lastest available version")
     .action(async () => {
-        isCurrentPackageOutdated()  
-            ? install(await getPath((await latestVersionAvailable()).tag_name.substring(1)))
+        const release = await getReleaseV2()
+        const releaseTag:any = release?.tag_name.trim().substring(1)
+        isCurrentPackageOutdated(version)  
+            ? install(await getPath(releaseTag))
             : console.log("Redo is up to date!")
     })
 cli.command("test")
