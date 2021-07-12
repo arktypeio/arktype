@@ -24,6 +24,7 @@ export const getRelease = async (version:any) => {
     })
     return data
 }
+//possible edgecase? Someone's directory contains the exact version
 export const install = async (versionDir: string) => {
     let wantedVersion = versionDir.includes(version) ? version : extractVersionFromDirString(versionDir)
     console.log(`Installing Redo (version ${wantedVersion})...`)

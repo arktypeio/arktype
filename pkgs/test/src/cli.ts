@@ -13,7 +13,6 @@ cli.command("launch")
     .action(async () => {
         console.log("Launching the app...")
         shell(await getPath(version))
-
         if (isCurrentPackageOutdated(version)) {
             console.log("New Update is Avaiable. You can Upgrade to the latest version with redo update.")
         }
