@@ -1,6 +1,6 @@
 export * from "./click"
 export * from "./go"
-export * from "./perform"
+export * from "./step"
 export * from "./screenshot"
 export * from "./set"
 export * from "./assertText"

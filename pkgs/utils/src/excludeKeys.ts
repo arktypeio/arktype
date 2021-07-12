@@ -25,9 +25,9 @@ export const excludeKeys = <O, K extends Key[], D extends boolean = false>(
     keys: K,
     deep?: D
 ) =>
-    (filter(o, {
-        objectFilter: ([k]) => !keys.includes(k),
+    filter(o, {
+        objectFilter: ([k]) => !keys.includes(k as Key),
         deep
-    }) as any) as D extends true
+    }) as any as D extends true
         ? DeepExcludedByKeys<O, K>
         : ExcludedByKeys<O, K>

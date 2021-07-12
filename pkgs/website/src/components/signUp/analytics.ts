@@ -2,7 +2,6 @@ import { v4 } from "uuid"
 import reactGA from "react-ga"
 
 reactGA.initialize("UA-173540201-1", {
-    debug: false,
     alwaysSendToDefaultTracker: true
 })
 reactGA.pageview(window.location.pathname + window.location.search)

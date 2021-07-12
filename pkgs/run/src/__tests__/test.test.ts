@@ -4,19 +4,19 @@ describe("test", () => {
     const signUpSteps: Step[] = [
         { kind: "go", url: "https://redo.qa" },
         { kind: "click", element: { selector: "'Get Started'" } },
-        {
-            kind: "set",
-            element: {
-                selector: "[name='email']"
-            },
-            value: "david@redo.qa"
-        },
-        {
-            kind: "click",
-            element: {
-                selector: "'Keep me posted!'"
-            }
-        }
+        // {
+        //     kind: "set",
+        //     element: {
+        //         selector: "[name='email']"
+        //     },
+        //     value: "david@redo.qa"
+        // },
+        // {
+        //     kind: "click",
+        //     element: {
+        //         selector: "'Keep me posted!'"
+        //     }
+        // }
     ]
     test("works with default options", async () => {
         await redoTest(signUpSteps)

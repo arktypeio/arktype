@@ -1,6 +1,6 @@
 {
     "name": "@re-do/app",
-    "version": "0.0.18",
+    "version": "0.1.0",
     "private": true,
     "main": "dist/main/index.js",
     "repository": {
@@ -47,7 +47,6 @@
         "react-statelessly": "0.0.5",
         "persist-statelessly": "0.0.2",
         "isomorphic-ws": "4.0.1",
-        "playwright": "1.11.1",
         "electron-redux": "1.5.4"
     },
     "devDependencies": {
@@ -58,6 +57,8 @@
         "@types/dotenv": "8.2.0",
         "@types/jest": "26.0.20",
         "@re-do/configs": "0.0.2",
+        "@types/adm-zip": "0.4.34",
+        "adm-zip": "0.5.5",
         "electron": "11.4.5",
         "electron-builder": "22.11.7",
         "electron-devtools-installer": "3.2.0",
