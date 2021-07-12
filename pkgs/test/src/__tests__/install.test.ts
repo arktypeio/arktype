@@ -3,7 +3,7 @@ import { join } from "path"
 import { waitUntil } from "async-wait-until"
 import treeKill from "tree-kill"
 import psList, { ProcessDescriptor } from "ps-list"
-import { rmSync, existsSync, mkdirSync } from "fs"
+import { rmSync, mkdirSync } from "fs"
 import { version, install, getExecutablePath } from "../install"
 import { latestVersionAvailable } from "../installHelpers"
 
@@ -17,25 +17,25 @@ describe("installation", () => {
         killProcessesAndRemoveRedo()
     })
     test("installs current redo package", async () => {
-        assertRedoInstalledAndStarts(VERSION_DIR)
-    }, 120000)
+        await assertRedoInstalledAndStarts(VERSION_DIR)
+    }, 60000)
 })
-describe("update installs newest version of redo", () => {
-    let latestVersion: any
-    let latestVersionTag: string
-    beforeEach(async () => {
-        latestVersion = await latestVersionAvailable()
-        const FAKE_DIR = join(REDO_DIR, "0.0.16")
-        mkdirSync(FAKE_DIR, { recursive: true })
-    })
-    afterEach(() => {
-        killProcessesAndRemoveRedo()
-    })
-    test("update redo to latest available", async () => {
-        const LATEST_DIR = join(REDO_DIR, latestVersion)
-        await assertRedoInstalledAndStarts(LATEST_DIR)
-    }, 120000)
-})
+// describe("update installs newest version of redo", () => {
+//     let latestVersion: any
+//     let latestVersionTag: string
+//     beforeEach(async () => {
+//         latestVersion = await latestVersionAvailable()
+//         const FAKE_DIR = join(REDO_DIR, "0.0.16")
+//         mkdirSync(FAKE_DIR, { recursive: true })
+//     })
+//     afterEach(() => {
+//         killProcessesAndRemoveRedo()
+//     })
+//     test("update redo to latest available", async () => {
+//         const LATEST_DIR = join(REDO_DIR, latestVersion)
+//         await assertRedoInstalledAndStarts(LATEST_DIR)
+//     }, 60000)
+// })
 const assertRedoInstalledAndStarts = async (dir: string) => {
     await install(dir)
     redoMainProcess = shellAsync(getExecutablePath(dir))
@@ -59,7 +59,7 @@ const assertRedoInstalledAndStarts = async (dir: string) => {
 
 const killProcessesAndRemoveRedo = () => {
     if (redoMainProcess && !redoMainProcess.killed) {
-        treeKill(redoMainProcess.pid)
+        process.kill(redoMainProcess.pid, 'SIGTERM')
     }
     rmSync(REDO_DIR, { recursive: true, force: true })
 }
