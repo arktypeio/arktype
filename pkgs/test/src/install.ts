@@ -15,7 +15,7 @@ import { version } from "../package.json"
 import { extractVersionFromDirString } from "./installHelpers"
 export { version } from "../package.json"
 
-export const getRelease = async (version:any) => {
+export const getRelease = async (version: any) => {
     const gitHub = new Octokit().rest
     const { data } = await gitHub.repos.getReleaseByTag({
         owner: "re-do",
@@ -24,7 +24,7 @@ export const getRelease = async (version:any) => {
     })
     return data
 }
-//possible edgecase? Someone's directory contains the exact version
+
 export const install = async (versionDir: string) => {
     let wantedVersion = versionDir.includes(version) ? version : extractVersionFromDirString(versionDir)
     console.log(`Installing Redo (version ${wantedVersion})...`)

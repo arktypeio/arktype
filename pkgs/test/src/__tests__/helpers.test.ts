@@ -19,15 +19,7 @@ describe("Helper functions", () => {
             expect(extractVersionFromDirString(testcases[test].dir)).toBe(testcases[test].expected)
         }
     }, 60000)
-    test("versionStringToArray", () => {
-        const version = "1.45.5"
-        const expected = ["1", "45", "5"]
-        for (let num in expected) {
-            expect(versionStringToArray(version)).toContain(expected[num])
-        }
-
-    }, 60000)
-    //wastes calls to isNewVersionAvailable but.. it works
+    //wastes calls to isNewVersionAvailable but if you need proof it works. 
     // test("isNewVersionAvailable", async () => {
     //     const testcases = [
     //         { package: "0.0.18", expected: true },
