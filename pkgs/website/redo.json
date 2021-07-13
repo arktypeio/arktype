@@ -5,6 +5,12 @@
             "tags": [],
             "steps": [1, 2, 3],
             "id": 1
+        },
+        {
+            "name": "Visit Website",
+            "tags": [],
+            "steps": [1, 4],
+            "id": 2
         }
     ],
     "elements": [
@@ -33,6 +39,11 @@
             "element": 2,
             "value": "npm install @re-do/test",
             "id": 3
+        },
+        {
+            "kind": "assertUrl",
+            "url": "https://redo.qa/",
+            "id": 4
         }
     ],
     "tags": []
