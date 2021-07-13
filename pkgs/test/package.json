@@ -1,6 +1,6 @@
 {
     "name": "@re-do/test",
-    "version": "0.1.0",
+    "version": "0.1.1",
     "author": "redo.qa",
     "description": "CLI for Redo",
     "license": "MIT",
