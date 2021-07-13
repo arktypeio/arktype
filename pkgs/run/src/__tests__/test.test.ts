@@ -4,21 +4,6 @@ describe("test", () => {
     const readDocumentationSteps: Step[] = [
         { kind: "go", url: "https://redo.qa" },
         { kind: "click", element: { selector: "'Get Started'" } },
-<<<<<<< HEAD
-        // {
-        //     kind: "set",
-        //     element: {
-        //         selector: "[name='email']"
-        //     },
-        //     value: "david@redo.qa"
-        // },
-        // {
-        //     kind: "click",
-        //     element: {
-        //         selector: "'Keep me posted!'"
-        //     }
-        // }
-=======
         {
             kind: "assertText",
             element: {
@@ -26,7 +11,6 @@ describe("test", () => {
             },
             value: "npm install @re-do/test"
         }
->>>>>>> master
     ]
     test("works with default options", async () => {
         await redoTest(readDocumentationSteps)
