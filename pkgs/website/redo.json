@@ -1,0 +1,39 @@
+{
+    "tests": [
+        {
+            "name": "Read Documentation",
+            "tags": [],
+            "steps": [1, 2, 3],
+            "id": 1
+        }
+    ],
+    "elements": [
+        {
+            "selector": ".MuiButton-label",
+            "id": 1
+        },
+        {
+            "selector": "pre:nth-child(3) > .hljs",
+            "id": 2
+        }
+    ],
+    "steps": [
+        {
+            "kind": "go",
+            "url": "https://redo.qa/",
+            "id": 1
+        },
+        {
+            "kind": "click",
+            "element": 1,
+            "id": 2
+        },
+        {
+            "kind": "assertText",
+            "element": 2,
+            "value": "npm install @re-do/test",
+            "id": 3
+        }
+    ],
+    "tags": []
+}

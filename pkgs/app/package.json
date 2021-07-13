@@ -1,6 +1,6 @@
 {
     "name": "@re-do/app",
-    "version": "0.1.0",
+    "version": "0.1.1",
     "private": true,
     "main": "dist/main/index.js",
     "repository": {
@@ -47,7 +47,8 @@
         "react-statelessly": "0.0.5",
         "persist-statelessly": "0.0.2",
         "isomorphic-ws": "4.0.1",
-        "electron-redux": "1.5.4"
+        "electron-redux": "1.5.4",
+        "playwright": "1.12.3"
     },
     "devDependencies": {
         "@types/electron-devtools-installer": "2.2.0",

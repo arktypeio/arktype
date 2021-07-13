@@ -68,11 +68,9 @@ package-deps.json
 .DS_Store
 
 # Redo
-.serverless
-.webpack
 .env.production
-redo.json
+**/test/redo.json
+**/app/redo.json
 release
 generated
-**/prisma/client
 .build
