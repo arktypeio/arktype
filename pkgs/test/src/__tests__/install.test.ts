@@ -19,7 +19,7 @@ describe("installation", () => {
         await assertRedoInstalledAndStarts(VERSION_DIR)
     }, 100000)
 })
-describe("update installs newest version of redo", () => {
+describe("installs newest version of redo", () => {
     let latestVersion: any
     let latestVersionTag: string
     beforeEach(async () => {
