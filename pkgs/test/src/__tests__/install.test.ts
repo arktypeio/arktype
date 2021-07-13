@@ -20,17 +20,11 @@ describe("installation", () => {
     }, 100000)
 })
 describe("installs newest version of redo", () => {
-    let latestVersion: any
-    let latestVersionTag: string
-    beforeEach(async () => {
-        latestVersion = await latestVersionAvailable()
-        const FAKE_DIR = join(REDO_DIR, "0.0.16")
-        mkdirSync(FAKE_DIR, { recursive: true })
-    })
     afterEach(() => {
         killProcessesAndRemoveRedo()
     })
     test("update redo to latest available", async () => {
+        const latestVersion = await latestVersionAvailable()
         const LATEST_DIR = join(REDO_DIR, latestVersion)
         await assertRedoInstalledAndStarts(LATEST_DIR)
     }, 100000)
@@ -59,7 +53,7 @@ const assertRedoInstalledAndStarts = async (dir: string) => {
 
 const killProcessesAndRemoveRedo = () => {
     if (redoMainProcess && !redoMainProcess.killed) {
-        process.kill(redoMainProcess.pid, 'SIGTERM')
+        process.kill(redoMainProcess.pid)
     }
     rmSync(REDO_DIR, { recursive: true, force: true })
 }

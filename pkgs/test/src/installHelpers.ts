@@ -8,7 +8,6 @@ export const latestVersionAvailable = async () => {
     })
     return data.tag_name.trim().substring(1)
 }
-
 export const isCurrentPackageOutdated = async (current:string) => {
     const latestVersion = await latestVersionAvailable()
     const v1 = versionStringToArray(latestVersion)
