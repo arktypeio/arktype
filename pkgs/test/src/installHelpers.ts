@@ -8,16 +8,19 @@ export const latestVersionAvailable = async () => {
     })
     return data.tag_name.trim().substring(1)
 }
-export const isCurrentPackageOutdated = async (current:string) => {
+export const isNewVersionAvailable = async (current:string) => {
     const latestVersion = await latestVersionAvailable()
     const v1 = versionStringToArray(latestVersion)
     const v2 = versionStringToArray(current)
     for (let i = 0; i < v1.length; i++) {
         if(parseInt(v1[i]) > parseInt(v2[i]) && (parseInt(v2[i]) !== parseInt(v1[i]))) {
-            return true
+            return {
+                release: latestVersion,
+                outdated: true
+            }
         }
     }
-    return false
+    return {release:null, outdated: false}
 }
 export const versionStringToArray = (version: string) => {
     return version.trim().split(".")
