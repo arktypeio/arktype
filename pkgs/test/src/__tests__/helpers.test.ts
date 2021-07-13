@@ -1,6 +1,6 @@
 import {
     extractVersionFromDirString,
-    isCurrentPackageOutdated,
+    isNewVersionAvailable,
     latestVersionAvailable,
     versionStringToArray
 }
@@ -27,15 +27,16 @@ describe("Helper functions", () => {
         }
 
     }, 60000)
-    test("isCurrentPackageOutdated", async () => {
-        const testcases = [
-            { package: "0.0.16", expected: true },
-            { package: "0.0.18", expected: true },
-            { package: await latestVersionAvailable(), expected: false }
-        ]
-        for (let test in testcases) {
-            let got = await isCurrentPackageOutdated(testcases[test].package as string)
-            expect(got).toEqual(testcases[test].expected)
-        }
-    }, 60000)
+    //wastes calls to isNewVersionAvailable but.. it works
+    // test("isNewVersionAvailable", async () => {
+    //     const testcases = [
+    //         { package: "0.0.18", expected: true },
+    //         { package: await latestVersionAvailable(), expected: false },
+    //         { package: "99.99.99", expected: false }
+    //     ]
+    //     for (let test in testcases) {
+    //         let {outdated} = await isNewVersionAvailable(testcases[test].package as string)
+    //         expect(outdated).toEqual(testcases[test].expected)
+    //     }
+    // }, 60000)
 })

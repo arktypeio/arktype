@@ -1,6 +1,6 @@
 import { defaultStepKinds, Step } from "./steps"
 import { launch, BrowserName, LaunchOptions } from "./launch"
-import { StepKinds } from "./common"
+import { Page, Browser, StepKinds } from "./common"
 
 export type TestOptions = LaunchOptions & {
     browser?: BrowserName
@@ -8,17 +8,26 @@ export type TestOptions = LaunchOptions & {
 }
 
 export const test = async (steps: Step[], options: TestOptions = {}) => {
-    const {
-        browser: browserName = "chrome",
-        customStepKinds,
-        ...rest
-    } = options
-    const { page, browser } = await launch(browserName, rest)
-    const stepKinds = { ...defaultStepKinds, ...customStepKinds }
-    for (const step of steps) {
-        const { kind, ...args } = step
-        await stepKinds[kind](args as any, { browser, page })
+    let page: Page | undefined
+    let browser: Browser | undefined
+    try {
+        const {
+            browser: browserName = "chrome",
+            customStepKinds,
+            ...rest
+        } = options
+        ;({ page, browser } = await launch(browserName, rest))
+        const stepKinds = { ...defaultStepKinds, ...customStepKinds }
+        for (const step of steps) {
+            const { kind, ...args } = step
+            await stepKinds[kind](args as any, { browser, page })
+        }
+    } finally {
+        if (page && !page.isClosed()) {
+            await page.close()
+        }
+        if (browser && browser.isConnected()) {
+            await browser.close()
+        }
     }
-    await page.close()
-    await browser.close()
 }

@@ -1,60 +1,57 @@
-import { ChildProcess, shell, shellAsync } from "@re-do/node-utils"
+import { ChildProcess, shellAsync } from "@re-do/node-utils"
 import { join } from "path"
 import { waitUntil } from "async-wait-until"
+import treeKill from "tree-kill"
 import psList, { ProcessDescriptor } from "ps-list"
-import { rmSync, mkdirSync } from "fs"
+import { rmSync } from "fs"
 import { version, install, getExecutablePath } from "../install"
-import { latestVersionAvailable } from "../installHelpers"
 
 const REDO_DIR = join(__dirname, ".redo")
 const VERSION_DIR = join(REDO_DIR, version)
+const EXECUTABLE_PATH = getExecutablePath(VERSION_DIR)
+
 let redoMainProcess: ChildProcess | undefined
 
+const getTestRendererProcesses = async () => {
+    const allProcesses = await psList()
+    return allProcesses.filter(
+        ({ cmd }) =>
+            cmd &&
+            cmd.search(VERSION_DIR) !== -1 &&
+            cmd.search("renderer") !== -1
+    )
+}
+
+const killOldTestProcesses = async () => {
+    const oldProcesses = await getTestRendererProcesses()
+    oldProcesses.forEach((p) => process.kill(p.pid))
+}
+
+const deleteTestDir = () => rmSync(REDO_DIR, { recursive: true, force: true })
 
 describe("installation", () => {
-    afterEach(() => {
-        killProcessesAndRemoveRedo()
+    beforeEach(async () => {
+        await killOldTestProcesses()
+        deleteTestDir()
     })
-    test("installs current redo package", async () => {
-        await assertRedoInstalledAndStarts(VERSION_DIR)
-    }, 100000)
-})
-describe("installs newest version of redo", () => {
-    afterEach(() => {
-        killProcessesAndRemoveRedo()
+    afterEach(async () => {
+        if (redoMainProcess && !redoMainProcess.killed) {
+            treeKill(redoMainProcess.pid)
+        }
+        await killOldTestProcesses()
+        deleteTestDir()
     })
-    test("update redo to latest available", async () => {
-        const latestVersion = await latestVersionAvailable()
-        const LATEST_DIR = join(REDO_DIR, latestVersion)
-        await assertRedoInstalledAndStarts(LATEST_DIR)
-    }, 100000)
+    test("works", async () => {
+        await install(VERSION_DIR)
+        redoMainProcess = shellAsync(EXECUTABLE_PATH, { stdio: "ignore" })
+        let redoRendererProcesses: ProcessDescriptor[] = []
+        await waitUntil(
+            async () => {
+                redoRendererProcesses = await getTestRendererProcesses()
+                return !!redoRendererProcesses.length
+            },
+            { timeout: 60000 }
+        )
+        expect(redoRendererProcesses.length).toBe(1)
+    }, 120000)
 })
-
-const assertRedoInstalledAndStarts = async (dir: string) => {
-    await install(dir)
-    redoMainProcess = shellAsync(getExecutablePath(dir))
-    let redoRendererProcesses: ProcessDescriptor[] = []
-    await waitUntil(
-        async () => {
-            const allProcesses = await psList()
-            redoRendererProcesses = allProcesses.filter(
-                ({ cmd }) =>
-                    cmd &&
-                    cmd.search("redo") !== -1 &&
-                    cmd.search("--type=renderer") !== -1
-            )
-            return !!redoRendererProcesses.length
-        },
-        { timeout: 60000 }
-    )
-    expect(redoRendererProcesses.length).toBe(1)
-}
-
-
-const killProcessesAndRemoveRedo = () => {
-    if (redoMainProcess && !redoMainProcess.killed) {
-        process.kill(redoMainProcess.pid)
-    }
-    rmSync(REDO_DIR, { recursive: true, force: true })
-}
-
