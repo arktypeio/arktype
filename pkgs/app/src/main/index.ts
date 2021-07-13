@@ -1,7 +1,7 @@
-import { app, BrowserWindow } from "electron"
+import { app } from "electron"
 import { installDevTools } from "./installDevTools"
 import { createMainWindow, createBuilderWindow } from "./windows"
-import { isDev, shell } from "@re-do/node-utils"
+import { isDev } from "@re-do/node-utils"
 
 app.on("ready", async () => {
     if (isDev()) {
