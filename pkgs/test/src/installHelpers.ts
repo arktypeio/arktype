@@ -20,7 +20,7 @@ export const isNewVersionAvailable = async (current:string) => {
             }
         }
     }
-    return {release:null, outdated: false}
+    return {outdated: false}
 }
 export const versionStringToArray = (version: string) => {
     return version.trim().split(".")

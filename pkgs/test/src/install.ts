@@ -30,7 +30,7 @@ export const install = async (versionDir: string) => {
     console.log(`Installing Redo (version ${wantedVersion})...`)
     ensureDir(versionDir)
     const data = await getRelease(wantedVersion)
-    const zipName = getRedoZipFileName(getOs(), version)
+    const zipName = getRedoZipFileName(getOs(), wantedVersion!)
     const appRelease = data.assets.find((asset) => asset.name === zipName)
     if (!appRelease) {
         throw new Error(`Unable to find a Redo release for your platform.`)
