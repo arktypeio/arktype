@@ -1,4 +1,4 @@
-import { app, BrowserWindow } from "electron"
+import { app } from "electron"
 import { installDevTools } from "./installDevTools"
 import { createMainWindow, createBuilderWindow } from "./windows"
 
