@@ -3,22 +3,25 @@ import {
     BrowserWindowConstructorOptions,
     nativeImage
 } from "electron"
-import { isDev } from "@re-do/node-utils"
 import icon from "assets/icon.png"
 import { store } from "./store"
+import { writeFileSync } from "fs"
+import { join } from "path"
 
 export let mainWindow: BrowserWindow
 export let builderWindow: BrowserWindow
 
-const BASE_URL = isDev()
-    ? `http://localhost:${process.env["DEV_SERVER_PORT"]}`
-    : `file://${__dirname}/../renderer/index.html`
+const BASE_URL =
+    process.env["NODE_ENV"] === "development"
+        ? `http://localhost:${process.env["VITE_DEV_SERVER_PORT"]}`
+        : `file://${__dirname}/../renderer/index.html`
+
+const preloadScriptPath = join(__dirname, "preload.js")
+writeFileSync(preloadScriptPath, `require("electron-redux/preload")`)
 
 const defaultElectronOptions: BrowserWindowConstructorOptions = {
     webPreferences: {
-        nodeIntegration: true,
-        contextIsolation: false,
-        enableRemoteModule: true
+        preload: preloadScriptPath
     },
     icon: nativeImage.createFromDataURL(icon),
     autoHideMenuBar: true,
