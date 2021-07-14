@@ -32,6 +32,7 @@ cli.command("upgrade")
 cli.command("clean")
     .description("Remove all instances of redo older than version found in package.json")
     .action(async () => {
+        console.log(`Removing any versions of redo older than ${version}`)
         const REDO_DIR = ensureRedoDir()
         readdir(REDO_DIR,(_, content)=>{
             content.forEach((file)=>{
