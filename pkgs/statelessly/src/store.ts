@@ -1,6 +1,8 @@
 import {
     configureStore,
+    ConfigureStoreOptions,
     Middleware,
+    StoreEnhancer,
     Store as ReduxStore
 } from "@reduxjs/toolkit"
 import {
@@ -17,9 +19,14 @@ import { Query, Update, Actions, ActionData, StoreActions } from "./common"
 import { createOnChangeMiddleware, OnChangeMiddlewareArgs } from "./onChange"
 import { createValidationMiddleware, ValidationFunction } from "./validate"
 
+export type ReduxOptions = Omit<
+    ConfigureStoreOptions,
+    "preloadedState" | "reducer"
+>
+
 export type StoreOptions<T extends object> = {
     onChange?: OnChangeMiddlewareArgs<T>
-    middleware?: Middleware[]
+    reduxOptions?: ReduxOptions
     validate?: ValidationFunction<T>
 }
 
@@ -28,6 +35,7 @@ export type UpdateOptions = {
     bypassOnChange?: boolean
     meta?: Record<string, any>
 }
+
 export class Store<T extends object, A extends Actions<T>> {
     underlying: ReduxStore<T, ActionData<T>>
     actions: StoreActions<T, A>
@@ -36,16 +44,29 @@ export class Store<T extends object, A extends Actions<T>> {
     constructor(
         initial: T,
         actions: A,
-        { onChange, middleware, validate }: StoreOptions<T> = {}
+        { onChange, validate, reduxOptions = {} }: StoreOptions<T> = {}
     ) {
-        const middlewares = middleware ? [...middleware] : []
+        const statelesslyMiddleware: Middleware[] = []
         if (validate) {
-            middlewares.push(createValidationMiddleware(validate, this))
+            statelesslyMiddleware.push(
+                createValidationMiddleware(validate, this)
+            )
         }
         if (onChange) {
-            middlewares.push(createOnChangeMiddleware(onChange, this))
+            statelesslyMiddleware.push(createOnChangeMiddleware(onChange, this))
         }
-        this.underlying = this.getReduxStore(initial, middlewares)
+        const middleware = reduxOptions.middleware
+            ? typeof reduxOptions.middleware === "function"
+                ? (getDefaultMiddleware: any) =>
+                      (reduxOptions.middleware as any)(
+                          getDefaultMiddleware().concat(statelesslyMiddleware)
+                      )
+                : reduxOptions.middleware.concat(statelesslyMiddleware)
+            : statelesslyMiddleware
+        this.underlying = this.getReduxStore(initial, {
+            ...reduxOptions,
+            middleware
+        })
         this.actions = this.defineActions(actions)
         this.$ = this.actions
     }
@@ -80,10 +101,9 @@ export class Store<T extends object, A extends Actions<T>> {
         }
     }
 
-    private getReduxStore = (initial: T, middleware: Middleware[]) =>
+    private getReduxStore = (initial: T, options: ReduxOptions) =>
         configureStore<T, ActionData<T>, any>({
             preloadedState: initial,
-            middleware,
             reducer: (state: T | undefined, { payload, meta }) => {
                 if (!state) {
                     return initial
@@ -95,7 +115,8 @@ export class Store<T extends object, A extends Actions<T>> {
                 // in the action function, at this point all mapping functions have been
                 // converted to their resultant serializable values
                 return updateMap(state, payload as any)
-            }
+            },
+            ...options
         })
 
     private defineActions = (actions: A): StoreActions<T, A> =>

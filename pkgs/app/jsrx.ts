@@ -67,7 +67,7 @@ const start = async () => {
     const viteDevServer = await createServer({
         ...getRendererConfig({ watch: true }),
         server: {
-            port: Number(process.env.DEV_SERVER_PORT)
+            port: Number(process.env.VITE_DEV_SERVER_PORT)
         }
     })
     await viteDevServer.listen()

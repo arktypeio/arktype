@@ -4,19 +4,16 @@ import {
     createHttpLink,
     ApolloLink
 } from "@apollo/client"
-import {
-    forwardToMain,
-    replayActionRenderer,
-    getInitialStateRenderer
-} from "electron-redux"
+import { stateSyncEnhancer } from "electron-redux/renderer"
 import { Root } from "common"
 import { Store } from "react-statelessly"
 
 const httpLink = createHttpLink({
-    uri:
-        process.env.NODE_ENV === "development"
-            ? `http://localhost:${process.env.GRAPHQL_SERVER_PORT}/dev/graphql`
-            : "https://tpru7v18yi.execute-api.us-east-1.amazonaws.com/dev/graphql"
+    uri: import.meta.env.DEV
+        ? `http://localhost:${
+              import.meta.env.VITE_GRAPHQL_SERVER_PORT
+          }/dev/graphql`
+        : "https://tpru7v18yi.execute-api.us-east-1.amazonaws.com/dev/graphql"
 })
 
 const contextLink = new ApolloLink((operation, forward) => {
@@ -34,9 +31,11 @@ export const client = new ApolloClient({
 })
 
 export const store = new Store(
-    getInitialStateRenderer<Root>(),
+    {} as Root,
     {},
-    { middleware: [forwardToMain] }
+    {
+        reduxOptions: {
+            enhancers: (enhancers) => [stateSyncEnhancer()].concat(enhancers)
+        }
+    }
 )
-
-replayActionRenderer(store.underlying as any)
