@@ -17,5 +17,5 @@ app.on("window-all-closed", () => {
 })
 app.on("before-quit", (e) => {
     e.preventDefault();
-    setTimeout(() => { process.exit(0) }, 500)
+    process.exit(0)
 })
