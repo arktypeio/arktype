@@ -1,7 +1,7 @@
 import { Update, Store, BaseStore } from "react-statelessly"
 import { test as runTest } from "@re-do/run"
 import { MainActions, Root } from "common"
-import { forwardToRenderer, replayActionMain } from "electron-redux"
+import { stateSyncEnhancer } from "electron-redux/main"
 import { launchBrowser, closeBrowser } from "./launchBrowser"
 import { mainWindow, builderWindow } from "./windows"
 import { ValueOf } from "@re-do/utils"
@@ -84,19 +84,21 @@ const mainActions: MainActionFunctions = {
 }
 
 store = new Store(initialState, mainActions, {
-    middleware: [forwardToRenderer],
-    onChange: {
-        main: async (changes) => {
-            const requiredActions = Object.entries(changes).filter(
-                ([name, args]) => !!args
-            ) as [keyof MainActions, ValueOf<MainActions>][]
-            for (const action of requiredActions) {
-                const [name, args] = action
-                await store.actions[name](args as any)
-                store.update({ main: { [name]: null } })
+    reduxOptions: {
+        enhancers: (enhancers) => [stateSyncEnhancer()].concat(enhancers)
+    },
+    onChange: [
+        {
+            main: async (changes) => {
+                const requiredActions = Object.entries(changes).filter(
+                    ([name, args]) => !!args
+                ) as [keyof MainActions, ValueOf<MainActions>][]
+                for (const action of requiredActions) {
+                    const [name, args] = action
+                    await store.actions[name](args as any)
+                    store.update({ main: { [name]: null } })
+                }
             }
         }
-    }
+    ]
 })
-
-replayActionMain(store.underlying as any)

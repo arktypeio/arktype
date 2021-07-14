@@ -1,10 +1,9 @@
 import { app, BrowserWindow } from "electron"
 import { installDevTools } from "./installDevTools"
 import { createMainWindow, createBuilderWindow } from "./windows"
-import { isDev, shell } from "@re-do/node-utils"
 
 app.on("ready", async () => {
-    if (isDev()) {
+    if (process.env["NODE_ENV"] === "development") {
         await installDevTools()
     }
     await createMainWindow()
