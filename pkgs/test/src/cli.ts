@@ -1,15 +1,13 @@
 #!/usr/bin/env node
 import { Command } from "commander"
-import { shell } from "@re-do/node-utils"
-import { getPath, install, version } from "./install"
-import { isNewVersionAvailable } from "./installHelpers"
-
-const greenText = "\x1b[32m"
+import { ensureRedoDir, fromRedo, shell } from "@re-do/node-utils"
+import { getPath, version } from "./install"
+import { isNewVersionAvailable, isCurrentVersionOutdated } from "./installHelpers"
+import { readdir, rmSync } from "fs"
 
 const cli = new Command()
 
 cli.version(version)
-
 cli.command("launch")
     .description("Launch the Redo app")
     .action(async () => {
@@ -26,10 +24,24 @@ cli.command("upgrade")
         const {outdated, release} = await isNewVersionAvailable(version)
         if (outdated) {
             shell(await getPath(release!))
-            console.log("Redo has been updated to", greenText, release)
+            console.log("Redo has been updated to " + release)
         } else {
             console.log("Redo is up to date!")
         }
+    })
+cli.command("clean")
+    .description("Remove all instances of redo older than version found in package.json")
+    .action(async () => {
+        const REDO_DIR = ensureRedoDir()
+        readdir(REDO_DIR,(_, content)=>{
+            content.forEach((file)=>{
+                if(isCurrentVersionOutdated(file, version)){
+                    const path = `${fromRedo()}/${file}`
+                    rmSync(path, {recursive:true, force:true})
+                    console.log(`Removed version v${file} from /.redo directory`)
+                }
+            })
+        })
     })
 cli.command("test")
     .description("Run Redo tests")

@@ -1,8 +1,6 @@
 import {
     extractVersionFromDirString,
-    isNewVersionAvailable,
-    latestVersionAvailable,
-    versionStringToArray
+    isCurrentVersionOutdated
 }
     from "../installHelpers"
 
@@ -16,19 +14,22 @@ describe("Helper functions", () => {
             { dir: "/0.2.3", expected: undefined }
         ]
         for (let test in testcases) {
-            expect(extractVersionFromDirString(testcases[test].dir)).toBe(testcases[test].expected)
+            const {dir, expected} = testcases[test]
+            expect(extractVersionFromDirString(dir)).toBe(expected)
         }
     }, 60000)
-    //wastes calls to isNewVersionAvailable but if you need proof it works. 
-    // test("isNewVersionAvailable", async () => {
-    //     const testcases = [
-    //         { package: "0.0.18", expected: true },
-    //         { package: await latestVersionAvailable(), expected: false },
-    //         { package: "99.99.99", expected: false }
-    //     ]
-    //     for (let test in testcases) {
-    //         let {outdated} = await isNewVersionAvailable(testcases[test].package as string)
-    //         expect(outdated).toEqual(testcases[test].expected)
-    //     }
-    // }, 60000)
+
+    test("isCurrentVersionOutdated", async () => {
+        const testcases = [
+            { current: "0.0.18", newVersion: "0.1.1", expected: true },
+            { current: "0.1.0", newVersion: "0.1.1", expected: true },
+            { current: "0.1.1", newVersion: "0.1.1", expected: false },
+            { current: "99.99.99", newVersion: "0.1.1", expected: false }
+        ]
+        for (let test in testcases) {
+            const {current, newVersion} = testcases[test]
+            let outdated = isCurrentVersionOutdated(current, newVersion)
+            expect(outdated).toEqual(testcases[test].expected)
+        }
+    }, 60000)
 })
