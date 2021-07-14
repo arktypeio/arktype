@@ -8,20 +8,19 @@ import { readdir, rmSync } from "fs"
 const cli = new Command()
 
 cli.version(version)
+
 cli.command("launch")
     .description("Launch the Redo app")
     .action(async () => {
         console.log("Launching the app...")
-        const {outdated} = await isNewVersionAvailable(version)
-        if (outdated) {
-            console.log("New Update is Avaiable. You can Upgrade to the latest version with redo update.")
-        }
+        const { outdated } = await isNewVersionAvailable(version)
+        if (outdated) { console.log("New Update is Avaiable. You can Upgrade to the latest version with redo update.") }
         shell(await getPath(version))
     })
 cli.command("upgrade")
     .description("Upgrade Redo to the latest available version")
     .action(async () => {
-        const {outdated, release} = await isNewVersionAvailable(version)
+        const { outdated, release } = await isNewVersionAvailable(version)
         if (outdated) {
             shell(await getPath(release!))
             console.log("Redo has been updated to " + release)
@@ -29,16 +28,17 @@ cli.command("upgrade")
             console.log("Redo is up to date!")
         }
     })
+//TODO: move logic elsewhere to clean file up
 cli.command("clean")
     .description("Remove all instances of redo older than version found in package.json")
     .action(async () => {
         console.log(`Removing any versions of redo older than ${version}`)
         const REDO_DIR = ensureRedoDir()
-        readdir(REDO_DIR,(_, content)=>{
-            content.forEach((file)=>{
-                if(isCurrentVersionOutdated(file, version)){
+        readdir(REDO_DIR, (_, content) => {
+            content.forEach((file) => {
+                if (isCurrentVersionOutdated(file, version)) {
                     const path = `${fromRedo()}/${file}`
-                    rmSync(path, {recursive:true, force:true})
+                    rmSync(path, { recursive: true, force: true })
                     console.log(`Removed version v${file} from /.redo directory`)
                 }
             })
