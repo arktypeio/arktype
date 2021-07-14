@@ -2,7 +2,7 @@
     "compilerOptions": {
         "module": "esnext",
         "target": "esnext",
-        "moduleResolution": "Node",
+        "moduleResolution": "node",
         "sourceMap": true,
         "skipLibCheck": true,
         "strict": true,
@@ -12,11 +12,5 @@
         "declaration": true,
         "lib": ["ESNext", "dom", "dom.iterable"],
         "jsx": "react"
-    },
-    "ts-node": {
-        "transpileOnly": true,
-        "compilerOptions": {
-            "module": "CommonJS"
-        }
     }
 }

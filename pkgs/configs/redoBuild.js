@@ -1,7 +1,6 @@
 #!/usr/bin/env node
 const execa = require("execa")
 const { basename } = require("path")
-const { writeFile } = require("fs/promises")
 const { existsSync, readFileSync, writeFileSync } = require("fs")
 
 const cwd = process.cwd()

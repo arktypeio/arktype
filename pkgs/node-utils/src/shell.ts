@@ -54,7 +54,7 @@ export const shellAsync = (
 export const $ = (cmd: string, options?: ShellOptions) => () =>
     shell(cmd, options)
 
-export type PromptOptions = Omit<PromptObject, "message" | "type">
+export type PromptOptions = Omit<PromptObject, "message" | "type" | "name">
 
 export const prompt = async (
     message: string,

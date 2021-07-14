@@ -1,2 +1,2 @@
-export * from "./getViteConfig"
-export * from "./getJestConfig"
+export * from "./getViteConfig.js"
+export * from "./getJestConfig.js"

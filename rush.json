@@ -59,6 +59,10 @@
         {
             "packageName": "@re-do/data",
             "projectFolder": "pkgs/data"
+        },
+        {
+            "packageName": "jsrx",
+            "projectFolder": "pkgs/jsrx"
         }
     ]
 }

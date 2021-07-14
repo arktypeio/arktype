@@ -1,6 +1,20 @@
 import { finder } from "@medv/finder"
 import { Step } from "@re-do/model"
 
+const getRecorder = async () => {
+    const { Recorder } = await import(
+        // @ts-ignore
+        join(
+            __dirname,
+            "node_modules",
+            "playwright/lib/server/supplements/injected/recorder"
+        )
+    )
+
+    console.log(Recorder)
+    return Recorder
+}
+
 const browserWindow: Window & {
     notify: (e: Step & { timeStamp: number }) => void
 } = window as any
@@ -42,6 +56,8 @@ const listeners = {
     select: setListener,
     mouseup: mouseUpListener
 }
+
+getRecorder()
 
 Object.entries(listeners).forEach(([eventName, listener]) =>
     browserWindow.addEventListener(eventName, listener, true)
