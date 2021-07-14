@@ -40,7 +40,7 @@ describe("installation", () => {
         version_dir = join(REDO_DIR, "0.0.17")
         await assertRedoInstalledAndRuns()
     }, 120000)
-    test("installs and runs lasest version", async () => {
+    test("installs and runs latest version", async () => {
         const release = await latestVersionAvailable()
         version_dir = join(REDO_DIR, release)
         await assertRedoInstalledAndRuns()

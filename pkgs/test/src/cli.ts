@@ -19,7 +19,7 @@ cli.command("launch")
         shell(await getPath(version))
     })
 cli.command("upgrade")
-    .description("Upgrade Redo to the lastest available version")
+    .description("Upgrade Redo to the latest available version")
     .action(async () => {
         const {outdated, release} = await isNewVersionAvailable(version)
         if (outdated) {
