@@ -25,7 +25,7 @@ export const isCurrentVersionOutdated = (current:string, comparitor:string) => {
     return false
 }
 
-export const versionStringToArray = (version: string) => {
+const versionStringToArray = (version: string) => {
     return version.trim().split(".")
 }
 
