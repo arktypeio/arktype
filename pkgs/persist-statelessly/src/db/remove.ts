@@ -1,5 +1,5 @@
 import { withDefaults, split } from "@re-do/utils"
-import { FileDbContext, FindBy, KeyName, Model } from "./common"
+import { FileDbContext, FindBy, KeyName, Model } from "./common.js"
 
 export type RemoveOptions = {
     prune?: boolean

@@ -4,7 +4,7 @@ import { Merge } from "@re-do/utils"
 import { ErrorText } from "../text"
 import { TextInput, TextInputProps } from "../inputs"
 import { Column } from "../layouts"
-import { FormInputProps, getDefaultErrorMessage } from "./FormInput"
+import { FormInputProps, getDefaultErrorMessage } from "./FormInput.js"
 
 export type FormTextProps = Merge<TextInputProps, FormInputProps<string>>
 

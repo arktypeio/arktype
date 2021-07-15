@@ -1,4 +1,4 @@
-import { isRecursible, fromEntries, ValueOf, NonRecursible } from "./common"
+import { isRecursible, fromEntries, ValueOf, NonRecursible } from "./common.js"
 
 export type UpdateFunction<T> = (currentValuealue: T) => T
 

@@ -1,4 +1,4 @@
-import { FindBy, FileDbContext, Model, KeyName } from "./common"
+import { FindBy, FileDbContext, Model, KeyName } from "./common.js"
 import { DeepUpdate, updateMap } from "@re-do/utils"
 
 export const update = <T extends Model>(

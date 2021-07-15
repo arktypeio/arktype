@@ -1,7 +1,7 @@
 import { useContext } from "react"
 import { Store as BaseStore, Actions, Query } from "statelessly"
 import { shapeFilter, valueAtPath } from "@re-do/utils"
-import { StatelessContext } from "./context"
+import { StatelessContext } from "./context.js"
 
 export class Store<T extends object, A extends Actions<T>> extends BaseStore<
     T,

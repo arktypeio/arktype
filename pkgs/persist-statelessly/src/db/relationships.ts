@@ -1,5 +1,5 @@
 import { transform, isEmpty } from "@re-do/utils"
-import { Model, Relationships, Dependents } from "./common"
+import { Model, Relationships, Dependents } from "./common.js"
 
 export const createDependentsMap = <T extends Model>(
     relationships: Relationships<T>

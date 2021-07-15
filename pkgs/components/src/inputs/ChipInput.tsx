@@ -1,7 +1,7 @@
 import React from "react"
 import { Chip } from "@material-ui/core"
 import { Autocomplete as MuiAutoComplete } from "@material-ui/lab"
-import { TextInput } from "./TextInput"
+import { TextInput } from "./TextInput.js"
 
 export type ChipInputProps = {
     possibleSuggestions?: string[]

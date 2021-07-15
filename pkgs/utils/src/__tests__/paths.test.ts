@@ -1,5 +1,4 @@
 import { valueAtPath } from "../paths"
-import { Object } from "ts-toolbelt"
 
 const obj = {
     a: {

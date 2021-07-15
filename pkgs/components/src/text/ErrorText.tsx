@@ -2,7 +2,7 @@ import React from "react"
 import { Tooltip } from "@material-ui/core"
 import { TooltipProps } from "@material-ui/core/Tooltip"
 import { listify, ValueFrom, Merge } from "@re-do/utils"
-import { Text, TextProps } from "./Text"
+import { Text, TextProps } from "./Text.js"
 import { usePalette, makeStyles, Theme } from "../styles"
 
 const stylize = makeStyles((theme: Theme) => ({

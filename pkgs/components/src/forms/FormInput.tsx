@@ -1,4 +1,3 @@
-import { ValueFrom } from "@re-do/utils"
 import { RegisterOptions, FieldError } from "react-hook-form"
 import { TooltipPlacement } from "../text"
 

@@ -1,7 +1,10 @@
 import { Object, String } from "ts-toolbelt"
-import { AutoPath } from "./AutoPath"
+import { AutoPath } from "./AutoPath.js"
 
-export type ValueAtPath<O extends object, P extends string> = Object.Path<O, String.Split<P, "/">>
+export type ValueAtPath<O extends object, P extends string> = Object.Path<
+    O,
+    String.Split<P, "/">
+>
 
 export function valueAtPath<O extends object, P extends string>(
     obj: O,

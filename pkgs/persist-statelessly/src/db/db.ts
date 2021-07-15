@@ -1,4 +1,4 @@
-import { DeepUpdate, FilterFunction, transform, Unlisted } from "@re-do/utils"
+import { DeepUpdate, transform, Unlisted } from "@re-do/utils"
 import { FileStore, FileStoreOptions } from ".."
 import {
     Model,
@@ -9,12 +9,12 @@ import {
     FindBy,
     ShallowModel,
     ReuseExisting
-} from "./common"
-import { createDependentsMap } from "./relationships"
-import { create, CreateOptions } from "./create"
-import { remove, RemoveOptions } from "./remove"
-import { find } from "./find"
-import { update } from "./update"
+} from "./common.js"
+import { createDependentsMap } from "./relationships.js"
+import { create, CreateOptions } from "./create.js"
+import { remove, RemoveOptions } from "./remove.js"
+import { find } from "./find.js"
+import { update } from "./update.js"
 
 export type FileDbArgs<
     T extends Model,

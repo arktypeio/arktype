@@ -27,7 +27,7 @@ import code from "@material-ui/icons/Code"
 import settings from "@material-ui/icons/Settings"
 import cancel from "@material-ui/icons/Cancel"
 import SvgIcon, { SvgIconProps } from "@material-ui/core/SvgIcon"
-import { twitchPath } from "./paths"
+import { twitchPath } from "./paths.js"
 
 const toIcon = (path: string) => (props: SvgIconProps) =>
     (

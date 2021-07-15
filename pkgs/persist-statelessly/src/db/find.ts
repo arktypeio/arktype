@@ -1,4 +1,4 @@
-import { FindBy, FileDbContext, Model, KeyName } from "./common"
+import { FindBy, FileDbContext, Model, KeyName } from "./common.js"
 import { transform, withDefaults } from "@re-do/utils"
 
 export type FindOptions = {

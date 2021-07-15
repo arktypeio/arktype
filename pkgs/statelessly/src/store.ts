@@ -2,7 +2,6 @@ import {
     configureStore,
     ConfigureStoreOptions,
     Middleware,
-    StoreEnhancer,
     Store as ReduxStore
 } from "@reduxjs/toolkit"
 import {
@@ -15,9 +14,9 @@ import {
     deepEquals,
     diff
 } from "@re-do/utils"
-import { Query, Update, Actions, ActionData, StoreActions } from "./common"
-import { createOnChangeMiddleware, OnChangeMiddlewareArgs } from "./onChange"
-import { createValidationMiddleware, ValidationFunction } from "./validate"
+import { Query, Update, Actions, ActionData, StoreActions } from "./common.js"
+import { createOnChangeMiddleware, OnChangeMiddlewareArgs } from "./onChange.js"
+import { createValidationMiddleware, ValidationFunction } from "./validate.js"
 
 export type ReduxOptions = Omit<
     ConfigureStoreOptions,

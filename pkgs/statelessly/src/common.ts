@@ -1,5 +1,5 @@
 import { DeepPartial, NonRecursible, Unlisted, DeepUpdate } from "@re-do/utils"
-import type { Store } from "./store"
+import type { Store } from "./store.js"
 export type { Middleware } from "redux"
 
 export type Actions<T extends object> = Record<

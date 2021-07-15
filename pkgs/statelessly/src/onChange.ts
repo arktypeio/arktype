@@ -1,7 +1,7 @@
 import { Middleware } from "@reduxjs/toolkit"
 import { DeepPartial, listify } from "@re-do/utils"
-import { ActionData } from "./common"
-import { Store } from "./store"
+import { ActionData } from "./common.js"
+import { Store } from "./store.js"
 
 export type OnChangeMiddlewareArgs<T extends object> =
     | Listener<T, T>

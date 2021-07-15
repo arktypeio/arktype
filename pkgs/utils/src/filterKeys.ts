@@ -1,5 +1,5 @@
-import { Key, NonRecursible, Unlisted } from "./common"
-import { filter } from "./filter"
+import { Key, NonRecursible, Unlisted } from "./common.js"
+import { filter } from "./filter.js"
 
 export type FilteredByKeys<O, K extends Key[]> = Pick<
     O,

@@ -1,4 +1,4 @@
-import { isRecursible, fromEntries, DeepPartial, deepEquals } from "./common"
+import { isRecursible, fromEntries, DeepPartial, deepEquals } from "./common.js"
 
 const diffable = (o: any) => isRecursible(o) && !Array.isArray(o)
 

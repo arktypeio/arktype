@@ -1,11 +1,11 @@
-import React, { MutableRefObject } from "react"
+import React from "react"
 import MuiPopper, {
     PopperProps as MuiPopperProps
 } from "@material-ui/core/Popper"
-import { MenuList, Paper } from "@material-ui/core"
+import { Paper } from "@material-ui/core"
 import MuiClickAwayListener from "@material-ui/core/ClickAwayListener"
 import { MenuItemProps as MuiMenuItemProps } from "@material-ui/core/MenuItem"
-import { MenuItem } from "./MenuItem"
+import { MenuItem } from "./MenuItem.js"
 
 export type MenuOptions = Record<string, () => any>
 

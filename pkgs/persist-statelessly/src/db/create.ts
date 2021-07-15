@@ -5,8 +5,8 @@ import {
     Model,
     KeyName,
     CheckForMatch
-} from "./common"
-import { unpack } from "./find"
+} from "./common.js"
+import { unpack } from "./find.js"
 
 export type CreateOptions<Unpack extends boolean> = {
     unpack?: Unpack

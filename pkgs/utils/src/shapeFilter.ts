@@ -1,11 +1,11 @@
-import { isRecursible, fromEntries, Unlisted, NonRecursible } from "./common"
+import { isRecursible, fromEntries, Unlisted, NonRecursible } from "./common.js"
 
 export type ShapeFilter<O, S> = O extends NonRecursible
     ? O
     : {
-          [K in S extends object ? Extract<keyof O, keyof S> : keyof O]: Array<
-              any
-          > extends O[K]
+          [K in S extends object
+              ? Extract<keyof O, keyof S>
+              : keyof O]: Array<any> extends O[K]
               ?
                     | Array<
                           ShapeFilter<
@@ -33,7 +33,7 @@ export const shapeFilter = <O, S>(o: O, shape: S): ShapeFilter<O, S> => {
     const recurse = (o: O, shape: S): ShapeFilter<O, S> =>
         (isRecursible(shape)
             ? Array.isArray(o)
-                ? o.map(value => recurse(value, shape))
+                ? o.map((value) => recurse(value, shape))
                 : fromEntries(
                       Object.entries(o)
                           .filter(([key]) => key in shape)
