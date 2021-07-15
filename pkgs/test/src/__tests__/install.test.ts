@@ -17,7 +17,7 @@ const getTestRendererProcesses = async () => {
     return allProcesses.filter(
         ({ cmd }) =>
             cmd &&
-            cmd.search(EXECUTABLE_PATH) !== -1 &&
+            cmd.search(VERSION_DIR) !== -1 &&
             cmd.search("renderer") !== -1
     )
 }
