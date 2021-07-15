@@ -2,7 +2,7 @@
 import { Command } from "commander"
 import { shell } from "@re-do/node-utils"
 import { getPath, version } from "./install"
-import { promptIfNewReleaseAvailable } from "./updateCheck"
+import { promptIfNewReleaseAvailable } from "./updateChecker"
 
 const cli = new Command()
 
@@ -15,6 +15,5 @@ cli.command("launch")
         await promptIfNewReleaseAvailable(version)
         shell(await getPath(version))
     })
-
 const run = async () => await cli.parseAsync(process.argv)
 run()

@@ -13,7 +13,7 @@ export const promptIfNewReleaseAvailable = async (version: string) => {
     const { tag_name } = await latestRelease()
     if (`v${version}` !== tag_name) {
         console.log(
-            `${tag_name} is available to download. npm i re-do/test... or something like that`
+            `${tag_name} is available to download! (npm i re-do/test@latest)`
         )
     }
 }
