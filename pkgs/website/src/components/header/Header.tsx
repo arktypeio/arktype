@@ -11,25 +11,31 @@ export type HeaderProps = {
     mobile: boolean
     animateScroll?: boolean
     displaySubHeader?: boolean
+    displayGetStarted?: boolean
+    overrideMobile?: boolean
 }
 
 export const Header = ({
     displaySubHeader,
     animateScroll,
-    mobile
+    mobile,
+    displayGetStarted,
+    overrideMobile
 }: HeaderProps) => {
     const angle = -Math.tan(slantHeight / window.innerWidth)
     return (
         <Column full align="center" style={{ paddingBottom: slantHeight }}>
             <NavBar skewAngle={angle} mobile={mobile} />
-            {mobile || displaySubHeader ? (
+            {!overrideMobile && (mobile || displaySubHeader) ? (
                 <SubHeader
                     skewAngle={angle}
                     mobile={mobile}
                     animateScroll={animateScroll}
                 />
             ) : null}
-            <GetStarted animateScroll={animateScroll} mobile={mobile} />
+            {displayGetStarted && (
+                <GetStarted animateScroll={animateScroll} mobile={mobile} />
+            )}
         </Column>
     )
 }

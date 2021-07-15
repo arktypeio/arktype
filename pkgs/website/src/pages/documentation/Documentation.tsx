@@ -7,7 +7,7 @@ import rehypeHighlight from "rehype-highlight"
 
 export const Documentation = () => {
     return (
-        <Page>
+        <Page subHeader={false} getStarted={false} overrideMobile={true}>
             <div style={{ maxWidth: 600 }}>
                 <ReactMarkdown rehypePlugins={[rehypeHighlight]}>
                     {documentation}

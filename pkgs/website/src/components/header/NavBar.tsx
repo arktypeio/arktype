@@ -62,6 +62,7 @@ const DesktopNav = () => (
             mobile={false}
         />
         <NavBarLink to="/blog" text="Blog" mobile={false} />
+        <NavBarLink to="/documentation" text="Docs" mobile={false} />
     </>
 )
 
@@ -84,6 +85,8 @@ const MobileNav = () => {
                 onClose={() => setOpen(false)}
             >
                 <List component="nav">
+                    {console.log(Icons)}
+
                     <NavBarLink
                         Icon={Icons.home}
                         to="/"
@@ -100,6 +103,12 @@ const MobileNav = () => {
                         Icon={Icons.blog}
                         to="/blog"
                         text="Blog"
+                        mobile={true}
+                    />
+                    <NavBarLink
+                        Icon={Icons.menuBook}
+                        to="/documentation"
+                        text="Docs"
                         mobile={true}
                     />
                 </List>
