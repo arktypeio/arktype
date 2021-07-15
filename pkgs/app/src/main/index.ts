@@ -15,3 +15,7 @@ app.on("window-all-closed", () => {
         app.quit()
     }
 })
+app.on("before-quit", (e) => {
+    e.preventDefault();
+    process.exit(0)
+})
