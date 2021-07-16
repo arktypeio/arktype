@@ -85,8 +85,6 @@ const MobileNav = () => {
                 onClose={() => setOpen(false)}
             >
                 <List component="nav">
-                    {console.log(Icons)}
-
                     <NavBarLink
                         Icon={Icons.home}
                         to="/"
