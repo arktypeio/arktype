@@ -3,7 +3,6 @@
     "version": "0.0.4",
     "author": "redo.qa",
     "description": "Common UI components consumed by Redo",
-    "type": "module",
     "main": "dist/cjs/index.js",
     "module": "dist/mjs/index.js",
     "exports": {
