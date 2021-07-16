@@ -8,6 +8,7 @@ import {
 } from "execa"
 import { Merge } from "@re-do/utils"
 import prompts, { PromptObject, PromptType } from "prompts"
+import { getOs } from "./os.js"
 
 type CommonOptions = {
     suppressCmdStringLogging?: boolean
@@ -49,6 +50,24 @@ export const shellAsync = (
         console.log(`Running command '${cmd}'...`)
     }
     return command(cmd, execaOptions)
+}
+
+export type RunTypescriptOptions = {
+    commonjs?: boolean
+}
+
+export const runTypescript = (path: string, options?: RunTypescriptOptions) => {
+    const shellCmd = options?.commonjs
+        ? `ts-node -O ${
+              getOs() === "windows"
+                  ? `"{""module"": ""commonjs"", ""isolatedModules"": false}"`
+                  : `'{"module": "commonjs", "isolatedModules": false}'`
+          } ${path}`
+        : `node --loader ts-node/esm ${path}`
+    const shellOptions = {
+        env: { NODE_NO_WARNINGS: "1" }
+    }
+    return shell(shellCmd, shellOptions)
 }
 
 export const $ = (cmd: string, options?: ShellOptions) => () =>

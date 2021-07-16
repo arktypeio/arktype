@@ -1,4 +1,4 @@
-import { writeJsonSync, readFileSync } from "fs-extra"
+import { writeFileSync, readFileSync } from "fs"
 import { join } from "path"
 import { ScriptMap } from "./common.js"
 
@@ -15,16 +15,19 @@ export const updatePackageJson = (
     const useFourSpaces =
         packageJsonLines.length > 2 && packageJsonLines[1].startsWith("    ")
     const packageJsonConfig = JSON.parse(packageJsonContents)
-    writeJsonSync(
+    writeFileSync(
         packageJsonFile,
-        {
-            ...packageJsonConfig,
-            scripts: {
-                ...(!excludeOthers && packageJsonConfig.scripts),
-                ...jsrxScripts,
-                jsrxGen: "jsrx jsrxGen"
-            }
-        },
-        { spaces: useFourSpaces ? 4 : 2 }
+        JSON.stringify(
+            {
+                ...packageJsonConfig,
+                scripts: {
+                    ...(!excludeOthers && packageJsonConfig.scripts),
+                    ...jsrxScripts,
+                    jsrxGen: "jsrx jsrxGen"
+                }
+            },
+            null,
+            useFourSpaces ? 4 : 2
+        )
     )
 }

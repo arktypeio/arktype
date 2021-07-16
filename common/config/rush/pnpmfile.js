@@ -19,11 +19,5 @@ function readPackage(packageJson, context) {
         )
         packageJson.dependencies["dmg-license"] = "1.0.9"
     }
-    if (packageJson.name === "vite-plugin-mdx") {
-        context.log(
-            "Adding '@mdx-js/react' as a dependency of 'vite-plugin-mdx'..."
-        )
-        packageJson.dependencies["@mdx-js/react"] = "1.6.22"
-    }
     return packageJson
 }

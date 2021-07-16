@@ -1,4 +1,4 @@
-import { readJsonSync, writeFileSync } from "fs-extra"
+import { readFileSync, writeFileSync } from "fs"
 import { join } from "path"
 import { prompt, shell } from "@re-do/node-utils"
 
@@ -39,7 +39,9 @@ jsrx({
 
 export const generateJsrx = (options: GenerateJsrxOptions) => {
     const packageJsonFile = join(process.cwd(), "package.json")
-    const packageJsonContents = readJsonSync(packageJsonFile)
+    const packageJsonContents = JSON.parse(
+        readFileSync(packageJsonFile).toString()
+    )
     const scripts = packageJsonContents.scripts ?? {}
     const fileToGenerate = join(
         process.cwd(),

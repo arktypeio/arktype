@@ -8,11 +8,15 @@ import {
     statSync
 } from "fs"
 import { homedir } from "os"
-import { join } from "path"
+import { join, dirname } from "path"
 import { once } from "events"
 import { promisify } from "util"
 import { finished } from "stream"
+
 const streamFinished = promisify(finished)
+
+export const filePath = (fileUrl: string) => new URL(fileUrl).pathname
+export const dirPath = (fileUrl: string) => dirname(filePath(fileUrl))
 
 export const HOME = homedir()
 

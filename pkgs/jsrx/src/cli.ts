@@ -1,6 +1,6 @@
-import { readdirSync } from "fs-extra"
 import { shell } from "@re-do/node-utils"
 import { promptForJsrxFile } from "./generateJsrx.js"
+import { readdirSync } from "fs"
 
 export const cli = async () => {
     const cwd = process.cwd()
@@ -26,7 +26,9 @@ export const cli = async () => {
     }
     const scriptName = process.argv[jsrxArgIndex + 1]
 
-    shell(`${runner} ${jsrxConfigFile} ${scriptName}`)
+    shell(`${runner} ${jsrxConfigFile} ${scriptName}`, {
+        env: { NODE_NO_WARNINGS: "1" }
+    })
 }
 
 cli()

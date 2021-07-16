@@ -21,7 +21,7 @@ dependencies:
   '@rush-temp/data': file:projects/data.tgz_ts-node@10.1.0
   '@rush-temp/jsrx': file:projects/jsrx.tgz_ts-node@10.1.0
   '@rush-temp/model': file:projects/model.tgz_react@17.0.2
-  '@rush-temp/node-utils': file:projects/node-utils.tgz_ts-node@10.1.0
+  '@rush-temp/node-utils': file:projects/node-utils.tgz
   '@rush-temp/persist-statelessly': file:projects/persist-statelessly.tgz_ts-node@10.1.0
   '@rush-temp/react-statelessly': file:projects/react-statelessly.tgz_ts-node@10.1.0
   '@rush-temp/run': file:projects/run.tgz_ts-node@10.1.0
@@ -36,7 +36,6 @@ dependencies:
   '@types/adm-zip': 0.4.34
   '@types/electron-devtools-installer': 2.2.0
   '@types/enzyme': 3.10.8
-  '@types/fs-extra': 9.0.11
   '@types/jest': 26.0.24
   '@types/node': 15.0.2
   '@types/node-fetch': 2.5.8
@@ -66,7 +65,6 @@ dependencies:
   execa: 5.0.0
   fast-deep-equal: 3.1.3
   framer-motion: 4.1.11_react-dom@17.0.2+react@17.0.2
-  fs-extra: 10.0.0
   gqlize: 0.0.3
   graphql: 15.5.0
   graphql-tag: 2.12.4_graphql@15.5.0
@@ -90,7 +88,7 @@ dependencies:
   redux: 4.0.5
   redux-devtools-extension: 2.13.8_redux@4.0.5
   rehype-highlight: 4.1.0
-  storybook-builder-vite: 0.0.12_vite@2.2.4
+  storybook-builder-vite: 0.0.12_react@17.0.2+vite@2.2.4
   tree-kill: 1.2.2
   ts-jest: 27.0.3_jest@27.0.6+typescript@4.2.3
   ts-node: 10.1.0_d62272bef50584f1245531e58be9aac0
@@ -16799,7 +16797,7 @@ packages:
       react-dom: ^16.8.0 || ^17.0.0
     resolution:
       integrity: sha512-Qvv9X86CoONbi+kYY78zQcTGmCgFaewYnOVR6WL7aOFJoW7TrLiIc/O4hH5X9PsEPZFqjfXEPUPENWVUQim6yw==
-  /storybook-builder-vite/0.0.12_vite@2.2.4:
+  /storybook-builder-vite/0.0.12_react@17.0.2+vite@2.2.4:
     dependencies:
       '@mdx-js/mdx': 1.6.22
       '@storybook/csf-tools': 6.3.4
@@ -16807,9 +16805,10 @@ packages:
       es-module-lexer: 0.7.1
       glob-promise: 4.2.0
       vite: 2.2.4
-      vite-plugin-mdx: 3.5.6_@mdx-js+mdx@1.6.22+vite@2.2.4
+      vite-plugin-mdx: 3.5.6_79d026a337e7217d97bcf9e2436e5d74
     dev: false
     peerDependencies:
+      react: '*'
       vite: ^2.4.1
     resolution:
       integrity: sha512-XVSCb/WVHn1qzhQBv0AKTFk3Ux12CBa3+/dIxXOYxqk5BBmkYJVViK+fTv0WdKRNQBlTsq56dxbhpmVKaQzmXg==
@@ -18164,10 +18163,11 @@ packages:
     dev: false
     resolution:
       integrity: sha512-XRFsdFos/D1Dam0t40qBM+8b1Mrn5vH6aOwaTt8CW5myGx9uKivFXPukP2CsEo6cSukbPlBImsL1voiV6e3o5w==
-  /vite-plugin-mdx/3.5.6_@mdx-js+mdx@1.6.22+vite@2.2.4:
+  /vite-plugin-mdx/3.5.6_79d026a337e7217d97bcf9e2436e5d74:
     dependencies:
       '@alloc/quick-lru': 5.2.0
       '@mdx-js/mdx': 1.6.22
+      '@mdx-js/react': 1.6.22_react@17.0.2
       esbuild: 0.8.57
       resolve: 1.20.0
       unified: 9.2.2
@@ -18175,6 +18175,7 @@ packages:
     dev: false
     peerDependencies:
       '@mdx-js/mdx': '*'
+      react: '*'
       vite: '*'
     resolution:
       integrity: sha512-KRc6/MN/ZSJEv3PxfPEM3p5NRAnhknK9RO3h86GqOcFCCaaB88WpsLxBWPqg5cWoI3uJm+Fp/ZGfs1Fd7cQnSw==
@@ -18755,7 +18756,7 @@ packages:
       react-dom: 17.0.2_react@17.0.2
       react-hook-form: 7.0.4_react@17.0.2
       react-router-dom: 5.2.0_react@17.0.2
-      storybook-builder-vite: 0.0.12_vite@2.2.4
+      storybook-builder-vite: 0.0.12_react@17.0.2+vite@2.2.4
       ts-jest: 27.0.3_jest@27.0.6+typescript@4.2.3
       typeface-ubuntu: 1.1.13
       typescript: 4.2.3
@@ -18825,7 +18826,7 @@ packages:
     peerDependencies:
       ts-node: '*'
     resolution:
-      integrity: sha512-avKz5pq5UpAgfAuwGO5xQEKwqAFh83LRHJdfj4wI3G1k9Rp2ooDQJBKDQDDbM1hj5AOUClnW9/Pv6EbDV+KHjA==
+      integrity: sha512-MiZGMDLdIvma7z4w1EoKFUvh9MdYpVSKWJ8Sr8LEQcSGp1lo7eFjzPc28GV+MydIqOoI+cTRpulczUqFfN9ukg==
       tarball: file:projects/jsrx.tgz
     version: 0.0.0
   file:projects/model.tgz_react@17.0.2:
@@ -18859,9 +18860,8 @@ packages:
       integrity: sha512-sgRjTroZgV4oU8OUjz5As3h4dgVPWhJsXZ7b83bys47AQzNrQyvrpOGOPOW76yeHQVp2Y3BohcFE5IY9QbUAWQ==
       tarball: file:projects/model.tgz
     version: 0.0.0
-  file:projects/node-utils.tgz_ts-node@10.1.0:
+  file:projects/node-utils.tgz:
     dependencies:
-      '@jest/types': 27.0.6
       '@types/jest': 26.0.24
       '@types/node': 15.0.2
       '@types/prompts': 2.0.11
@@ -18871,15 +18871,13 @@ packages:
       moize: 5.4.7
       prompts: 2.4.1
       ts-jest: 27.0.3_jest@27.0.6+typescript@4.2.3
+      ts-node: 10.1.0_d62272bef50584f1245531e58be9aac0
       typescript: 4.2.3
       validator: 13.5.2
     dev: false
-    id: file:projects/node-utils.tgz
     name: '@rush-temp/node-utils'
-    peerDependencies:
-      ts-node: '*'
     resolution:
-      integrity: sha512-hOSyMfWrmKha/5rpl1m1gpxAIHGsnAzn0JZT2DsYWgiDhLJ6Hl67+RzIvXp+CEeK6GLXHBK5MI7YuvRrwy/FXg==
+      integrity: sha512-0jq7OOUeDKMjCFGJM+7KQhKtLu1v5DOs6Rtod6URCe2ayUlsc+9aT65LifZXf2ev5nCNeuogJ3hl5YMUfVT42A==
       tarball: file:projects/node-utils.tgz
     version: 0.0.0
   file:projects/persist-statelessly.tgz_ts-node@10.1.0:
@@ -19094,7 +19092,6 @@ specifiers:
   '@types/adm-zip': 0.4.34
   '@types/electron-devtools-installer': 2.2.0
   '@types/enzyme': 3.10.8
-  '@types/fs-extra': 9.0.11
   '@types/jest': 26.0.24
   '@types/node': 15.0.2
   '@types/node-fetch': 2.5.8
@@ -19124,7 +19121,6 @@ specifiers:
   execa: 5.0.0
   fast-deep-equal: 3.1.3
   framer-motion: 4.1.11
-  fs-extra: 10.0.0
   gqlize: 0.0.3
   graphql: 15.5.0
   graphql-tag: 2.12.4
