@@ -1,12 +1,5 @@
 import React from "react"
-import {
-    Button,
-    TogglableMenu,
-    Icons,
-    Modal,
-    Text,
-    Row
-} from "@re-do/components"
+import { Button, TogglableMenu, Icons, Modal } from "@re-do/components"
 import {
     FormControl,
     FormLabel,

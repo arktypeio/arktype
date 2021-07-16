@@ -1,7 +1,7 @@
 import React from "react"
 import { Button } from "@re-do/components"
 import { motion, useViewportScroll, useTransform } from "framer-motion"
-import { animations } from "../../../constants"
+import { animations } from "../../../constants.js"
 
 export type GetStartedMobileProps = {
     animateScroll?: boolean

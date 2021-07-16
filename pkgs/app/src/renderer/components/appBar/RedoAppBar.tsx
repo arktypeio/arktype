@@ -1,10 +1,9 @@
 import React, { ComponentType } from "react"
-import { Row } from "@re-do/components"
-import { FloatBar } from "@re-do/components"
-import { SearchBar } from "./SearchBar"
-import { HomeButton } from "./HomeButton"
-import { NewTestButton } from "./NewTestButton"
-import { AccountSection } from "./AccountSection"
+import { Row, FloatBar } from "@re-do/components"
+import { SearchBar } from "./SearchBar.js"
+import { HomeButton } from "./HomeButton.js"
+import { NewTestButton } from "./NewTestButton.js"
+import { AccountSection } from "./AccountSection.js"
 
 const leftItems = {
     home: HomeButton,

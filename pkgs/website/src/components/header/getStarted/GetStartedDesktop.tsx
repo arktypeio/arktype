@@ -6,7 +6,7 @@ import {
     useViewportScroll,
     useTransform
 } from "framer-motion"
-import { layout, animations } from "../../../constants"
+import { layout, animations } from "../../../constants.js"
 
 export type GetStartedDesktopProps = {
     animateScroll?: boolean

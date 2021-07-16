@@ -1,1 +1,1 @@
-export * from "./GetStarted"
+export * from "./GetStarted.js"

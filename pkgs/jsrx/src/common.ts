@@ -1,3 +1,6 @@
+import { existsSync, readFileSync } from "fs"
+import { join } from "path"
+
 export type ScriptFunction = () => any
 export type ScriptMap = Record<string, ScriptFunction>
 
@@ -16,4 +19,14 @@ export type JsrxOptions = {
         dev?: string
         prod?: string
     }
+}
+
+export const getPackageJsonContents = () => {
+    const expectedPackageJsonPath = join(process.cwd(), "package.json")
+    if (!existsSync(expectedPackageJsonPath)) {
+        throw new Error(
+            `File ${expectedPackageJsonPath} didn't exist. You must run jsrx from the root of your package. `
+        )
+    }
+    return JSON.parse(readFileSync(expectedPackageJsonPath).toString())
 }

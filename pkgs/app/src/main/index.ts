@@ -1,6 +1,6 @@
 import { app } from "electron"
-import { installDevTools } from "./installDevTools"
-import { createMainWindow, createBuilderWindow } from "./windows"
+import { installDevTools } from "./installDevTools.js"
+import { createMainWindow, createBuilderWindow } from "./electronWindows.js"
 
 app.on("ready", async () => {
     if (process.env["NODE_ENV"] === "development") {
@@ -16,6 +16,6 @@ app.on("window-all-closed", () => {
     }
 })
 app.on("before-quit", (e) => {
-    e.preventDefault();
+    e.preventDefault()
     process.exit(0)
 })

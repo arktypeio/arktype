@@ -52,23 +52,37 @@ export const shellAsync = (
     return command(cmd, execaOptions)
 }
 
-export type RunTypescriptOptions = {
-    commonjs?: boolean
+export type RunScriptOptions = {
+    esm?: boolean
+    processArgs?: string[]
 }
 
-export const runTypescript = (path: string, options?: RunTypescriptOptions) => {
-    const shellCmd = options?.commonjs
-        ? `ts-node -O ${
+export const getTsNodeCmd = (esm: boolean = false) =>
+    esm
+        ? `node --loader ts-node/esm`
+        : `ts-node -O ${
               getOs() === "windows"
                   ? `"{""module"": ""commonjs"", ""isolatedModules"": false}"`
                   : `'{"module": "commonjs", "isolatedModules": false}'`
-          } ${path}`
-        : `node --loader ts-node/esm ${path}`
-    const shellOptions = {
-        env: { NODE_NO_WARNINGS: "1" }
+          }`
+
+export const getRunScriptCmd = (
+    fileToRun: string,
+    options?: RunScriptOptions
+) => {
+    let cmd = fileToRun.endsWith(".ts") ? getTsNodeCmd(options?.esm) : "node"
+    cmd += ` ${fileToRun}`
+    if (options?.processArgs && options.processArgs.length) {
+        cmd += ` ${options.processArgs.join(" ")}`
     }
-    return shell(shellCmd, shellOptions)
+    return cmd
 }
+
+export const runScript = (path: string, options?: RunScriptOptions) =>
+    shell(getRunScriptCmd(path, options))
+
+export const runScriptAsync = (path: string, options?: RunScriptOptions) =>
+    shellAsync(getRunScriptCmd(path, options))
 
 export const $ = (cmd: string, options?: ShellOptions) => () =>
     shell(cmd, options)

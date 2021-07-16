@@ -2,8 +2,12 @@ import { jsrx, $, shell } from "jsrx"
 import { join } from "path"
 import { createServer, build } from "vite"
 import { getWebConfig } from "@re-do/configs"
+import { dirPath } from "@re-do/node-utils"
 
-const pkgRoot = join(__dirname, "src")
+// @ts-ignore
+const dirName = dirPath(import.meta.url)
+
+const pkgRoot = join(dirName, "src")
 
 const localResolves = [
     { find: "components", replacement: join(pkgRoot, "components") },
@@ -25,7 +29,7 @@ type GetConfigArgs = {
 const getWebsiteConfig = ({ watch }: GetConfigArgs = {}) =>
     getWebConfig({
         srcDir: pkgRoot,
-        outDir: join(__dirname, "dist"),
+        outDir: join(dirName, "dist"),
         watch,
         options: {
             resolve: {
@@ -58,8 +62,8 @@ jsrx(
     {
         excludeOthers: true,
         envFiles: {
-            dev: join(__dirname, ".env"),
-            prod: join(__dirname, ".env.production")
+            dev: join(dirName, ".env"),
+            prod: join(dirName, ".env.production")
         }
     }
 )

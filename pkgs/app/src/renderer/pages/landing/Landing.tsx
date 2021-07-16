@@ -2,8 +2,8 @@ import React, { useLayoutEffect, useState } from "react"
 import { motion } from "framer-motion"
 import { Column, Card, Button, Row, AnimatedLogo } from "@re-do/components"
 import { store } from "renderer/common"
-import { SignIn } from "./SignIn"
-import { SignUp } from "./SignUp"
+import { SignIn } from "./SignIn.js"
+import { SignUp } from "./SignUp.js"
 
 export type LandingProps = {
     page: "SIGN_IN" | "SIGN_UP"
@@ -12,8 +12,9 @@ export type LandingProps = {
 const slideBetween = [<SignIn />, <SignUp />]
 
 export const Landing = ({ page }: LandingProps) => {
-    const [sliderWidth, setSliderWidth] =
-        useState<string | undefined>(undefined)
+    const [sliderWidth, setSliderWidth] = useState<string | undefined>(
+        undefined
+    )
     const isSignIn = page === "SIGN_IN"
     useLayoutEffect(() => {
         // A rerender is required to get the layout right

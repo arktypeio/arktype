@@ -3,7 +3,6 @@ import { builtinModules } from "module"
 import merge from "deepmerge"
 import { UserConfig, Terser } from "vite"
 import reactRefreshPlugin from "@vitejs/plugin-react-refresh"
-import commonJsExternalsPlugin from "vite-plugin-commonjs-externals"
 
 const isDev = () => process.env.NODE_ENV === "development"
 
@@ -14,20 +13,10 @@ const externals = [
     ...builtinModules
 ]
 
-const materialUiResolves = [
-    {
-        find: /^@material-ui\/icons\/(.*)/,
-        replacement: "@material-ui/icons/esm/$1"
-    },
-    {
-        find: /^@material-ui\/core\/(.+)/,
-        replacement: "@material-ui/core/es/$1"
-    },
-    {
-        find: /^@material-ui\/core$/,
-        replacement: "@material-ui/core/es"
-    }
-]
+export const resolveModulesWithoutJsExtension = {
+    find: /^(\.{1,2}\/.*)\.js$/,
+    replacement: "$1"
+}
 
 const terserOptions: Terser.MinifyOptions = {
     ecma: 2020,
@@ -40,7 +29,7 @@ const terserOptions: Terser.MinifyOptions = {
 const getBaseConfig = (): UserConfig => ({
     mode: isDev() ? "development" : "production",
     resolve: {
-        alias: [...materialUiResolves]
+        alias: [resolveModulesWithoutJsExtension]
     },
     build: {
         sourcemap: "inline",
@@ -53,8 +42,7 @@ const getBaseConfig = (): UserConfig => ({
             }
         },
         emptyOutDir: true
-    },
-    plugins: [commonJsExternalsPlugin({ externals })]
+    }
 })
 
 export type GetConfigArgs = {
@@ -95,7 +83,6 @@ export const getWebConfig = ({
         root: srcDir,
         build: {
             target: "chrome89",
-            polyfillDynamicImport: false,
             outDir,
             watch: watch ? {} : undefined
         },

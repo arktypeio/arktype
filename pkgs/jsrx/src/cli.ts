@@ -1,6 +1,7 @@
-import { shell } from "@re-do/node-utils"
-import { promptForJsrxFile } from "./generateJsrx.js"
+import { shell, runScript } from "@re-do/node-utils"
 import { readdirSync } from "fs"
+import { promptForJsrxFile } from "./generateJsrx.js"
+import { getPackageJsonContents } from "./common.js"
 
 export const cli = async () => {
     const cwd = process.cwd()
@@ -11,9 +12,8 @@ export const cli = async () => {
     if (!jsrxConfigFile) {
         jsrxConfigFile = await promptForJsrxFile()
     }
-
-    const runner =
-        jsrxConfigFile === "jsrx.js" ? "node" : `node --loader ts-node/esm`
+    const { type } = getPackageJsonContents()
+    const esm = type === "module"
 
     const jsrxArgIndex = process.argv.findIndex((arg) =>
         arg.endsWith("jsrx/cli.js")
@@ -24,10 +24,9 @@ export const cli = async () => {
             "'jsrx' requires a positional argument representing the name of the script to run, e.g. 'jsrx build'."
         )
     }
-    const scriptName = process.argv[jsrxArgIndex + 1]
-
-    shell(`${runner} ${jsrxConfigFile} ${scriptName}`, {
-        env: { NODE_NO_WARNINGS: "1" }
+    runScript(jsrxConfigFile, {
+        esm,
+        processArgs: process.argv.slice(jsrxArgIndex + 1)
     })
 }
 

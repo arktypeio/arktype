@@ -13,11 +13,11 @@
         }
     },
     "bin": {
-        "runTypescript": "./runTypescript.js"
+        "runTypescript": "./runScript.js"
     },
     "scripts": {
         "build": "redo-build",
-        "runTypescript": "./runTypescript.js",
+        "runScript": "./runScript.js",
         "test": "echo 'This package has no tests.'"
     },
     "dependencies": {

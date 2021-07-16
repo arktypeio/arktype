@@ -1,6 +1,7 @@
-import { readFileSync, writeFileSync } from "fs"
+import { writeFileSync } from "fs"
 import { join } from "path"
 import { prompt, shell } from "@re-do/node-utils"
+import { getPackageJsonContents } from "./common.js"
 
 export type GenerateJsrxOptions = {
     language: "js" | "ts"
@@ -38,10 +39,7 @@ jsrx({
 `
 
 export const generateJsrx = (options: GenerateJsrxOptions) => {
-    const packageJsonFile = join(process.cwd(), "package.json")
-    const packageJsonContents = JSON.parse(
-        readFileSync(packageJsonFile).toString()
-    )
+    const packageJsonContents = getPackageJsonContents()
     const scripts = packageJsonContents.scripts ?? {}
     const fileToGenerate = join(
         process.cwd(),

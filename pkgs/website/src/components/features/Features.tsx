@@ -1,6 +1,6 @@
 import React from "react"
 import { Row } from "@re-do/components"
-import { FeatureSummary, FeatureSummaryProps } from "./FeatureSummary"
+import { FeatureSummary, FeatureSummaryProps } from "./FeatureSummary.js"
 
 export type FeaturesProps = {
     content: FeatureSummaryProps[]

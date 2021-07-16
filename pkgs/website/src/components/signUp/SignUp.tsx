@@ -1,7 +1,7 @@
 import React from "react"
 import { Dialog } from "@material-ui/core"
 import { Text, Row } from "@re-do/components"
-import { SignUpForm } from "./SignUpForm"
+import { SignUpForm } from "./SignUpForm.js"
 import launchSvg from "assets/launch.svg"
 
 export type SignUpDialogProps = {
