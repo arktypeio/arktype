@@ -26,10 +26,11 @@ import blog from "@material-ui/icons/Notes"
 import code from "@material-ui/icons/Code"
 import settings from "@material-ui/icons/Settings"
 import cancel from "@material-ui/icons/Cancel"
+import menuBook from "@material-ui/icons/MenuBook"
 import SvgIcon, { SvgIconProps } from "@material-ui/core/SvgIcon"
 import { twitchPath } from "./paths"
 
-const toIcon = (path: string) => (props: SvgIconProps) =>
+const toIcon = (path: string) => (props: SvgIconProps) => 
     (
         <SvgIcon {...props}>
             <path d={path} />
@@ -66,5 +67,6 @@ export const Icons: Record<string, typeof SvgIcon> = {
     video,
     menu,
     settings,
-    cancel
+    cancel,
+    menuBook
 }
