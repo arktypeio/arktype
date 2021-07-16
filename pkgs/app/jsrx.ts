@@ -87,9 +87,10 @@ export const getObserverConfig = ({ watch }: GetConfigArgs = {}) =>
         srcDir: join(pkgRoot, "observer"),
         outDir: join(outRoot, "observer"),
         watch,
+        formats: ["es"],
         options: {
             build: {
-                target: "chrome89"
+                target: "esnext"
             },
             resolve: {
                 alias: localResolves

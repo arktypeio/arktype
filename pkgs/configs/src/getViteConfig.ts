@@ -1,7 +1,7 @@
 import { join } from "path"
 import { builtinModules } from "module"
 import merge from "deepmerge"
-import { UserConfig, Terser } from "vite"
+import { UserConfig, Terser, LibraryFormats } from "vite"
 import reactRefreshPlugin from "@vitejs/plugin-react-refresh"
 
 const isDev = () => process.env.NODE_ENV === "development"
@@ -52,12 +52,17 @@ export type GetConfigArgs = {
     options?: UserConfig
 }
 
+export type GetNodeConfigArgs = GetConfigArgs & {
+    formats?: LibraryFormats[]
+}
+
 export const getNodeConfig = ({
     srcDir,
     outDir,
     watch,
-    options = {}
-}: GetConfigArgs) => {
+    options = {},
+    formats = ["cjs"]
+}: GetNodeConfigArgs) => {
     const baseNodeConfig = merge<UserConfig>(getBaseConfig(), {
         root: srcDir,
         build: {
@@ -65,7 +70,7 @@ export const getNodeConfig = ({
             outDir,
             lib: {
                 entry: join(srcDir, "index.ts"),
-                formats: ["cjs"]
+                formats
             },
             watch: watch ? {} : undefined
         }
