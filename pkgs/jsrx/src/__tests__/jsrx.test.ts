@@ -1,4 +1,4 @@
-import { jsrx } from "../jsrx"
+import { jsrx } from ".."
 
 it("calls the right script", () => {
     const shouldBeCalled = jest.fn()
