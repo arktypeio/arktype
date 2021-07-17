@@ -13,6 +13,7 @@
         "lint": "jsrx lint",
         "typecheck": "jsrx typecheck",
         "test": "jsrx test",
+        "getPlaywrightRecorder": "jsrx getPlaywrightRecorder",
         "build": "jsrx build",
         "dryRun": "jsrx dryRun",
         "publish": "jsrx publish",
@@ -48,7 +49,10 @@
         "persist-statelessly": "0.0.2",
         "isomorphic-ws": "4.0.1",
         "electron-redux": "2.0.0-alpha.9",
-        "playwright": "1.12.3"
+        "playwright": "1.12.3",
+        "extract-zip": "2.0.1",
+        "rimraf": "3.0.2",
+        "commander": "8.0.0"
     },
     "devDependencies": {
         "@types/electron-devtools-installer": "2.2.0",

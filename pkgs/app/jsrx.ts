@@ -5,7 +5,8 @@ import {
     createRelease,
     pkgRoot,
     startDev,
-    startElectronCmd
+    startElectronCmd,
+    getPlaywrightRecorder
 } from "./scripts"
 import { join } from "path"
 
@@ -15,7 +16,8 @@ jsrx(
             start: startDev,
             lint: $(`prettier --write`),
             typecheck: $(`tsc --noEmit`),
-            test: $(`echo 'This package has no tests.'`)
+            test: $(`echo 'This package has no tests.'`),
+            getPlaywrightRecorder
         },
         prod: {
             dryRun: () => createRelease(false),

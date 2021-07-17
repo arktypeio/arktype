@@ -1,4 +1,5 @@
 import { chromium, firefox, webkit } from "playwright"
+import {} from "playwright/lib/generated/recorderSource"
 
 export type LaunchOptions = {
     size?: {
@@ -35,9 +36,11 @@ export const launch = async (
         headless: false,
         args
     })
-    const page = await instance.newPage({ viewport: null })
+    const context = await instance.newContext({ viewport: null })
+    const page = await context.newPage()
     return {
         browser: instance,
+        context,
         page
     }
 }

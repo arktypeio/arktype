@@ -5,6 +5,10 @@ import { launch, Step, Browser } from "@re-do/run"
 import { deepEquals } from "@re-do/utils"
 import { Root } from "common"
 import { Store } from "react-statelessly"
+// // @ts-ignore
+// const {
+//     RecorderSupplement
+// } = require("playwright/lib/server/supplements/recorderSupplement")
 
 type EventData = Step & { timeStamp: number }
 
@@ -25,17 +29,27 @@ export const launchBrowser = async (
 ) => {
     // Use size and position from the Redo app to launch browser
     const { height, width, x, y } = mainWindow.getBounds()
-    const { page, browser } = await launch(store.get("defaultBrowser"), {
-        position: {
-            x: x + DEFAULT_LEARNER_WIDTH,
-            y: y - BROWSER_WINDOW_TITLEBAR_SIZE
-        },
-        size: {
-            height: height - 16,
-            width: width - DEFAULT_LEARNER_WIDTH
+    const { page, browser, context } = await launch(
+        store.get("defaultBrowser"),
+        {
+            position: {
+                x: x + DEFAULT_LEARNER_WIDTH,
+                y: y - BROWSER_WINDOW_TITLEBAR_SIZE
+            },
+            size: {
+                height: height - 16,
+                width: width - DEFAULT_LEARNER_WIDTH
+            }
         }
-    })
+    )
     lastConnectedBrowser = browser
+
+    // @ts-ignore
+    await context._enableRecorder({
+        language: "test",
+        startRecording: true
+    })
+
     const getNewStepId = () => {
         const existingSteps = store.get("builder/steps")
         if (!existingSteps.length) {

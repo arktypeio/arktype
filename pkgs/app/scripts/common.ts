@@ -3,9 +3,9 @@ import { join } from "path"
 import { readFileSync } from "fs"
 
 export const pkgRoot = join(__dirname, "..")
-export const srcDir = join(pkgRoot, "src")
 export const distDir = join(pkgRoot, "dist")
 export const releaseDir = join(pkgRoot, "release")
+export const srcDir = join(pkgRoot, "src")
 
 export const packageJsonContents = JSON.parse(
     readFileSync(join(pkgRoot, "package.json")).toString()
