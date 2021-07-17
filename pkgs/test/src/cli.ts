@@ -1,4 +1,3 @@
-#!/usr/bin/env node
 import { Command } from "commander"
 import { shell } from "@re-do/node-utils"
 import { getPath, version } from "./install"
@@ -13,7 +12,6 @@ cli.command("launch")
         console.log("Launching the app...")
         shell(await getPath(version))
     })
-
 
 const run = async () => await cli.parseAsync(process.argv)
 run()
