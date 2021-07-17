@@ -15,11 +15,11 @@
     },
     "scripts": {
         "build": "redo-build",
-        "redo": "./cli.js",
+        "redo": "./cli.cjs",
         "test": "jest"
     },
     "bin": {
-        "redo": "./cli.js"
+        "redo": "./cli.cjs"
     },
     "dependencies": {
         "commander": "6.2.1",

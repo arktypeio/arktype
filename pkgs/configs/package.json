@@ -12,11 +12,12 @@
         }
     },
     "scripts": {
-        "build": "node redoBuild.js",
-        "test": "echo 'This package has no tests!'"
+        "build": "./redoBuild.cjs",
+        "test": "echo 'This package has no tests!'",
+        "redo-build": "./redoBuild.cjs"
     },
     "bin": {
-        "redo-build": "./redoBuild.js"
+        "redo-build": "./redoBuild.cjs"
     },
     "dependencies": {
         "execa": "5.0.0",

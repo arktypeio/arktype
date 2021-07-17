@@ -13,7 +13,7 @@
         }
     },
     "scripts": {
-        "build": "runTypescript src/generateSchema.ts && graphql-codegen && redo-build",
+        "build": "runScript --esm src/generateSchema.ts && graphql-codegen && redo-build",
         "test": "echo 'This package has no tests.'"
     },
     "dependencies": {

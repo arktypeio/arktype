@@ -15,10 +15,10 @@
     "scripts": {
         "build": "redo-build",
         "test": "jest",
-        "jsrx": "./cli.js"
+        "jsrx": "./cli.cjs"
     },
     "bin": {
-        "jsrx": "./cli.js"
+        "jsrx": "./cli.cjs"
     },
     "dependencies": {
         "@re-do/utils": "0.0.12",

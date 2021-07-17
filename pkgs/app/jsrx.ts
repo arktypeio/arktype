@@ -5,8 +5,8 @@ import { ChildProcess, shellAsync } from "@re-do/node-utils"
 import { join } from "path"
 import { mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from "fs"
 import { getNodeConfig, getWebConfig } from "@re-do/configs"
+import { dirName } from "./dirName"
 
-const dirName = __dirname
 const packageJsonContents = JSON.parse(
     readFileSync(join(dirName, "package.json")).toString()
 )

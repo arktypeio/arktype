@@ -13,7 +13,7 @@
         }
     },
     "bin": {
-        "runTypescript": "./runScript.js"
+        "runScript": "./runScript.js"
     },
     "scripts": {
         "build": "redo-build",
