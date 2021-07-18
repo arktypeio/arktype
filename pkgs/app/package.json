@@ -13,7 +13,6 @@
         "lint": "jsrx lint",
         "typecheck": "jsrx typecheck",
         "test": "jsrx test",
-        "getPlaywrightRecorder": "jsrx getPlaywrightRecorder",
         "build": "jsrx build",
         "dryRun": "jsrx dryRun",
         "publish": "jsrx publish",

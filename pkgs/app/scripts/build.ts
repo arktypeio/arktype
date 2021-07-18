@@ -110,5 +110,7 @@ export const buildRenderer = async () => build(getRendererConfig())
 
 export const buildObserver = async () => build(getObserverConfig())
 
-export const buildAll = async () =>
-    Promise.all([buildMain(), buildRenderer(), buildObserver()])
+export const buildAll = async () => {
+    await Promise.all([buildRenderer(), buildObserver()])
+    return await buildMain()
+}

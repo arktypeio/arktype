@@ -5,10 +5,11 @@ import { launch, Step, Browser } from "@re-do/run"
 import { deepEquals } from "@re-do/utils"
 import { Root } from "common"
 import { Store } from "react-statelessly"
-// // @ts-ignore
-// const {
-//     RecorderSupplement
-// } = require("playwright/lib/server/supplements/recorderSupplement")
+import playwright from "playwright"
+
+const {
+    RecorderSupplement
+} = require("playwright/lib/server/supplements/recorderSupplement")
 
 type EventData = Step & { timeStamp: number }
 
@@ -44,11 +45,15 @@ export const launchBrowser = async (
     )
     lastConnectedBrowser = browser
 
-    // @ts-ignore
-    await context._enableRecorder({
+    // await (context as any)._enableRecorder()
+
+    const serverContext = (playwright as any)._toImpl(context)
+    const recorder = await RecorderSupplement.show(serverContext, {
         language: "test",
         startRecording: true
     })
+
+    console.log(recorder)
 
     const getNewStepId = () => {
         const existingSteps = store.get("builder/steps")
