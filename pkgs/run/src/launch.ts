@@ -1,5 +1,4 @@
 import { chromium, firefox, webkit } from "playwright"
-import {} from "playwright/lib/generated/recorderSource"
 
 export type LaunchOptions = {
     size?: {
