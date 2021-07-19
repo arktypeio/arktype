@@ -9,13 +9,13 @@ export type OnChangeMiddlewareArgs<T extends object> =
     | Array<Listener<T, T> | ListenerMap<T, T>>
 
 export type OnChangeContext<T extends object> = {
-    store: Store<T, any>
+    store: Store<T, any, any, any>
     action: ActionData<T>
 }
 
 export const createOnChangeMiddleware = <T extends object>(
     onChange: OnChangeMiddlewareArgs<T>,
-    store: Store<T, any>
+    store: Store<T, any, any, any>
 ): Middleware => {
     const handlers: Listener<T, T>[] = []
     for (const listener of listify(onChange)) {

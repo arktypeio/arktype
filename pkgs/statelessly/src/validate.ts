@@ -8,13 +8,13 @@ export type ValidationFunction<T extends object> = (
 ) => true | T
 
 export type ValidationContext<T extends object> = {
-    store: Store<T, any>
+    store: Store<T, any, any, any>
     action: ActionData<T>
 }
 
 export const createValidationMiddleware = <T extends object>(
     validate: ValidationFunction<T>,
-    store: Store<T, any>
+    store: Store<T, any, any, any>
 ): Middleware => {
     return (reduxStore) => (next) => (action: ActionData<T>) => {
         const result = next(action)

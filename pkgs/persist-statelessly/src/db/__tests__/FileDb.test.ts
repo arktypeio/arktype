@@ -1,7 +1,6 @@
 import { rmSync } from "fs"
 import { join } from "path"
-import { createFileDb, FileDb, Relationships } from ".."
-import { FileDbArgs } from "../.."
+import { createFileDb, FileDb, Relationships, FileDbArgs } from "../.."
 
 const path = join(__dirname, "store.json")
 

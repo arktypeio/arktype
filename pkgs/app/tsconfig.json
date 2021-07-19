@@ -6,6 +6,5 @@
         "types": ["vite/client"],
         "declaration": false
     },
-    "include": ["src"],
-    "exclude": ["**/__tests__"]
+    "include": ["src"]
 }

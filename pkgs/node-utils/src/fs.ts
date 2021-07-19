@@ -63,17 +63,22 @@ export const streamToFile = async (
     return path
 }
 
-export const walk = (dir: string): [string, any][] =>
-    readdirSync(dir).map((item) => [
-        item,
-        lstatSync(join(dir, item)).isDirectory() ? walk(join(dir, item)) : null
-    ])
+export type WalkOptions = {
+    excludeFiles: boolean
+    excludeDirs: boolean
+}
 
-export const walkPaths = (dir: string): string[] =>
+export const walkPaths = (dir: string, options: WalkOptions): string[] =>
     readdirSync(dir).reduce((paths, item) => {
         const path = join(dir, item)
         return [
             ...paths,
-            ...(lstatSync(path).isDirectory() ? walkPaths(path) : [path])
+            ...(lstatSync(path).isDirectory()
+                ? walkPaths(path, options).concat(
+                      options.excludeDirs ? [] : path
+                  )
+                : options.excludeFiles
+                ? []
+                : [path])
         ]
     }, [] as string[])

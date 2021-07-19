@@ -1,13 +1,23 @@
 import { DeepPartial, NonRecursible, Unlisted, DeepUpdate } from "@re-do/utils"
+import { Paths } from "addIds.js"
 import type { Store } from "./store.js"
 export type { Middleware } from "redux"
 
-export type Actions<T extends object> = Record<
+export type Actions<
+    T extends object,
+    AddIdFields extends Paths<T>,
+    IdFieldName extends string
+> = Record<
     string,
     | Update<T>
     | ((
           args: any,
-          context: Store<T, Actions<T>>
+          context: Store<
+              T,
+              Actions<T, AddIdFields, IdFieldName>,
+              AddIdFields,
+              IdFieldName
+          >
       ) => Update<T> | Promise<Update<T>>)
 >
 
@@ -28,7 +38,12 @@ export type ActionData<T> = {
     }
 }
 
-export type StoreActions<T extends object, A extends Actions<T>> = {
+export type StoreActions<
+    T extends object,
+    A extends Actions<T, AddIdFields, IdFieldName>,
+    AddIdFields extends Paths<T>,
+    IdFieldName extends string
+> = {
     [K in keyof A]: A[K] extends (...args: any) => any
         ? (
               ...args: RemoveContextFromArgs<Parameters<A[K]>>
@@ -43,7 +58,7 @@ export type StoreActions<T extends object, A extends Actions<T>> = {
 type RemoveContextFromArgs<T extends unknown[]> = T extends []
     ? []
     : T extends [infer Current, ...infer Rest]
-    ? Current extends Store<any, any>
+    ? Current extends Store<any, any, any, any>
         ? RemoveContextFromArgs<Rest>
         : [Current, ...RemoveContextFromArgs<Rest>]
     : T

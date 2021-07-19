@@ -15,11 +15,12 @@ import { create, CreateOptions } from "./create.js"
 import { remove, RemoveOptions } from "./remove.js"
 import { find } from "./find.js"
 import { update } from "./update.js"
+import { Paths } from "statelessly"
 
 export type FileDbArgs<
     T extends Model,
     IdFieldName extends string = "id"
-> = FileStoreOptions<ShallowModel<T, IdFieldName>> & {
+> = FileStoreOptions<ShallowModel<T, IdFieldName>, [], IdFieldName> & {
     relationships: Relationships<T>
     idFieldName?: IdFieldName
     reuseExisting?: ReuseExisting<T>
@@ -37,9 +38,9 @@ export const createFileDb = <
     T,
     IdFieldName extends undefined ? "id" : IdFieldName
 > => {
-    const store = new FileStore<ShallowModel<T, IdFieldName>>(
+    const store = new FileStore<ShallowModel<T, IdFieldName>, {}>(
         {},
-        fileStoreOptions
+        fileStoreOptions as any
     )
     const context: FileDbContext<T> = {
         store,

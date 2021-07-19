@@ -1,4 +1,11 @@
-import { Store, Actions, StoreOptions, Listener, Update } from "statelessly"
+import {
+    Store,
+    Actions,
+    StoreOptions,
+    Listener,
+    Update,
+    Paths
+} from "statelessly"
 import { listify, withDefaults } from "@re-do/utils"
 import { existsSync, watch, readFileSync, writeFileSync } from "fs"
 
@@ -12,16 +19,24 @@ export type FileStoreOnlyOptions<T extends object> = {
     bidirectional?: boolean
 }
 
-export type FileStoreOptions<T extends object> = StoreOptions<T> &
-    FileStoreOnlyOptions<T>
+export type FileStoreOptions<
+    T extends object,
+    AddIdPaths extends Paths<T>,
+    IdFieldName extends string = "id"
+> = StoreOptions<T, AddIdPaths, IdFieldName> & FileStoreOnlyOptions<T>
 
 export class FileStore<
     T extends object,
-    A extends Actions<T> = {}
-> extends Store<T, A> {
+    A extends Actions<T, AddIdPaths, IdFieldName>,
+    AddIdPaths extends Paths<T> = [],
+    IdFieldName extends string = "id"
+> extends Store<T, A, AddIdPaths, IdFieldName> {
     private fileStateContext: FileStateContext<T>
 
-    constructor(actions: A, options: FileStoreOptions<T>) {
+    constructor(
+        actions: A,
+        options: FileStoreOptions<T, AddIdPaths, IdFieldName>
+    ) {
         const withDefaultFileStoreOptions = withDefaults<
             FileStoreOnlyOptions<any>
         >({
@@ -37,7 +52,11 @@ export class FileStore<
         })
         const { path, bidirectional, onBadFile, onNoFile, ...rest } =
             withDefaultFileStoreOptions(options)
-        const baseStoreOptions = rest as StoreOptions<T>
+        const baseStoreOptions = rest as StoreOptions<
+            T,
+            AddIdPaths,
+            IdFieldName
+        >
         const fileStateContext: FileStateContext<T> = {
             path,
             onBadFile,

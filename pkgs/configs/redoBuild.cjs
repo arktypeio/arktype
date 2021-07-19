@@ -1,10 +1,12 @@
 #!/usr/bin/env node
 const execa = require("execa")
-const { basename } = require("path")
-const { existsSync, readFileSync, writeFileSync } = require("fs")
+const { basename, join } = require("path")
+const { existsSync, readFileSync, writeFileSync, rmSync } = require("fs")
+const { walkPaths } = require("@re-do/node-utils")
 
 const cwd = process.cwd()
 const pkg = basename(cwd)
+const outDir = join(cwd, "dist")
 
 const run = async (cmd, args) => {
     const execution = execa(cmd, args)
@@ -52,6 +54,9 @@ const build = async () => {
             "es2015"
         ])
         addTypeToPackageJson("cjs")
+        walkPaths(outDir, { excludeFiles: true })
+            .filter((path) => basename(path) === "__tests__")
+            .forEach((path) => rmSync(path, { recursive: true, force: true }))
         console.log(`redo-build🔨: Finished building ${pkg}.`)
     } catch (e) {
         console.log(

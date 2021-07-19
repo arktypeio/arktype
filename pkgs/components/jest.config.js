@@ -1,6 +1,6 @@
-import { getJestConfig } from "@re-do/configs"
+const { getJestConfig } = require("@re-do/configs")
 
-export default {
+module.exports = {
     ...getJestConfig(),
     testEnvironment: "jsdom",
     setupFiles: ["./jest.setup.js"]

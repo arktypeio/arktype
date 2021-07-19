@@ -47,13 +47,13 @@ export type UpdateOptions = {
 
 export class Store<
     T extends object,
-    A extends Actions<T>,
-    AddIdPaths extends Paths<T> = [],
-    IdFieldName extends string = "id"
+    A extends Actions<T, AddIdPaths, IdFieldName>,
+    AddIdPaths extends Paths<T>,
+    IdFieldName extends string
 > {
     underlying: ReduxStore<T, ActionData<T>>
-    actions: StoreActions<T, A>
-    $: StoreActions<T, A>
+    actions: StoreActions<T, A, AddIdPaths, IdFieldName>
+    $: StoreActions<T, A, AddIdPaths, IdFieldName>
 
     constructor(
         initial: T,
@@ -141,7 +141,9 @@ export class Store<
             ...options
         })
 
-    private defineActions = (actions: A): StoreActions<T, A> =>
+    private defineActions = (
+        actions: A
+    ): StoreActions<T, A, AddIdPaths, IdFieldName> =>
         transform(actions, ([actionType, actionValue]) => {
             return [
                 actionType,
