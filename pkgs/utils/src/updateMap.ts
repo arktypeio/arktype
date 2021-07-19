@@ -1,6 +1,6 @@
 import { isRecursible, fromEntries, ValueOf, NonRecursible } from "./common.js"
 
-export type UpdateFunction<T> = (currentValuealue: T) => T
+export type UpdateFunction<T> = (currentValue: T) => T
 
 export type ShallowUpdate<T> = T | UpdateFunction<T>
 
@@ -11,33 +11,37 @@ export type DeepUpdate<T> = {
         : DeepUpdate<T[P]>
 }
 
-export const updateMap = <T>(current: T, updater: DeepUpdate<T>): T => {
-    const keys = Object.keys({ ...current, ...updater })
-    return fromEntries(
-        keys.map((k) => {
-            const key = k as keyof T
-            const currentValue = current[key]
-            const updaterValue = updater[key]
-            if (!(k in updater)) {
-                return [k, currentValue]
-            }
-            if (typeof updaterValue === "function") {
-                const update = updaterValue as any as UpdateFunction<ValueOf<T>>
-                return [k, update(currentValue)]
-            } else {
-                return isRecursible(currentValue) &&
-                    isRecursible(updaterValue) &&
-                    !Array.isArray(updaterValue)
-                    ? Array.isArray(currentValue)
-                        ? [
-                              k,
-                              currentValue.map((item) =>
-                                  updateMap(item, updaterValue as any)
-                              )
-                          ]
-                        : [k, updateMap(currentValue, updaterValue as any)]
-                    : [k, updaterValue]
-            }
-        })
-    ) as T
+export const updateMap = <T>(obj: T, updates: DeepUpdate<T>): T => {
+    const recurse = (currentObj: any, currentUpdates: any): any => {
+        const keys = Object.keys({ ...currentObj, ...currentUpdates })
+        return fromEntries(
+            keys.map((k) => {
+                const currentValue = currentObj[k]
+                const updaterValue = currentUpdates[k]
+                if (!(k in currentUpdates)) {
+                    return [k, currentValue]
+                }
+                if (typeof updaterValue === "function") {
+                    const update = updaterValue as any as UpdateFunction<
+                        ValueOf<T>
+                    >
+                    return [k, update(currentValue)]
+                } else {
+                    return isRecursible(currentValue) &&
+                        isRecursible(updaterValue) &&
+                        !Array.isArray(updaterValue)
+                        ? Array.isArray(currentValue)
+                            ? [
+                                  k,
+                                  currentValue.map((item) =>
+                                      recurse(item, updaterValue as any)
+                                  )
+                              ]
+                            : [k, recurse(currentValue, updaterValue as any)]
+                        : [k, updaterValue]
+                }
+            })
+        )
+    }
+    return recurse(obj, updates)
 }

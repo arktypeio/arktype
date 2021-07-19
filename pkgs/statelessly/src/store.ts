@@ -17,16 +17,26 @@ import {
 import { Query, Update, Actions, ActionData, StoreActions } from "./common.js"
 import { createOnChangeMiddleware, OnChangeMiddlewareArgs } from "./onChange.js"
 import { createValidationMiddleware, ValidationFunction } from "./validate.js"
+import {
+    createAddIdsMiddleware,
+    CreateAddIdsMiddlewareArgs,
+    Paths
+} from "./addIds.js"
 
 export type ReduxOptions = Omit<
     ConfigureStoreOptions,
     "preloadedState" | "reducer"
 >
 
-export type StoreOptions<T extends object> = {
+export type StoreOptions<
+    T extends object,
+    AddIdPaths extends Paths<T>,
+    IdFieldName extends string
+> = {
     onChange?: OnChangeMiddlewareArgs<T>
-    reduxOptions?: ReduxOptions
+    addIds?: CreateAddIdsMiddlewareArgs<T, AddIdPaths, IdFieldName>
     validate?: ValidationFunction<T>
+    reduxOptions?: ReduxOptions
 }
 
 export type UpdateOptions = {
@@ -35,7 +45,12 @@ export type UpdateOptions = {
     meta?: Record<string, any>
 }
 
-export class Store<T extends object, A extends Actions<T>> {
+export class Store<
+    T extends object,
+    A extends Actions<T>,
+    AddIdPaths extends Paths<T> = [],
+    IdFieldName extends string = "id"
+> {
     underlying: ReduxStore<T, ActionData<T>>
     actions: StoreActions<T, A>
     $: StoreActions<T, A>
@@ -43,9 +58,17 @@ export class Store<T extends object, A extends Actions<T>> {
     constructor(
         initial: T,
         actions: A,
-        { onChange, validate, reduxOptions = {} }: StoreOptions<T> = {}
+        {
+            onChange,
+            addIds,
+            validate,
+            reduxOptions = {}
+        }: StoreOptions<T, AddIdPaths, IdFieldName> = {}
     ) {
         const statelesslyMiddleware: Middleware[] = []
+        if (addIds) {
+            statelesslyMiddleware.push(createAddIdsMiddleware(addIds))
+        }
         if (validate) {
             statelesslyMiddleware.push(
                 createValidationMiddleware(validate, this)

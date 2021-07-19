@@ -13,7 +13,7 @@ export const installDevTools = async () => {
     for (const [name, reference] of Object.entries(extensions)) {
         try {
             console.log(`Installing ${name}...`)
-            await electronDevtoolsInstaller(reference)
+            await electronDevtoolsInstaller(reference.id)
         } catch (e) {
             console.log(`Failed to install ${name}:`)
             console.log(e)

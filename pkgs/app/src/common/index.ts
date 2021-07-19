@@ -1,6 +1,8 @@
 import type { BrowserName } from "@re-do/run"
 import type { Step, Tag, Element, Test } from "@re-do/model"
 import type { ShallowModel } from "persist-statelessly"
+import type { Action } from "./recorderActions"
+export * from "./recorderActions"
 
 export type RedoData = {
     tests: Test[]
@@ -21,6 +23,7 @@ export type Root = {
     builder: {
         active: boolean
         steps: UnsavedStep[]
+        actions: Action[]
     }
     main: MainActions
     renderer: RendererActions

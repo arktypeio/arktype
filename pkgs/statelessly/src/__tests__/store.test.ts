@@ -16,12 +16,21 @@ type A = {
 
 type B = {
     a: number[]
+    b: C[]
 }
+
+type C = {
+    a: number
+}
+
+const initialB: B = Object.freeze({
+    a: [0],
+    b: [{ a: 0 }]
+})
+
 const initialA: A = Object.freeze({
     a: 0,
-    b: {
-        a: [0]
-    }
+    b: initialB
 })
 
 const initialRoot: Root = Object.freeze({
@@ -39,7 +48,7 @@ const fakeUpload = () =>
         setTimeout(() => resolve(fakeResponse), 100)
     )
 
-const getStore = (options: StoreOptions<Root> = {}) =>
+const getStore = (options: StoreOptions<Root, any, any> = {}) =>
     new Store(
         initialRoot,
         {
@@ -315,5 +324,48 @@ describe("validation", () => {
     })
     test("non-fixable", () => {
         expect(() => store.update({ c: "invalid" })).toThrow("invalid")
+    })
+})
+
+describe("add ids", () => {
+    beforeEach(() => {
+        store = getStore({
+            addIds: { paths: [["d"], ["a", "b", "b"]] }
+        })
+    })
+    test("shallow", () => {
+        store.update({ d: (_) => _.concat(initialA) })
+        expect(store.getState()).toStrictEqual({
+            ...initialRoot,
+            d: [
+                { ...initialA, id: 1 },
+                { ...initialA, id: 1 },
+                { ...initialA, id: 1 }
+            ]
+        })
+    })
+    test("nested", () => {
+        store.update({
+            a: { b: { b: [{ a: 0 }, { a: 1 }] } }
+        })
+        expect(store.getState()).toStrictEqual({
+            ...initialRoot,
+            a: {
+                ...initialA,
+                b: {
+                    ...initialB,
+                    b: [
+                        { a: 0, id: 1 },
+                        { a: 1, id: 1 }
+                    ]
+                }
+            }
+        })
+    })
+    test("errors on add ID to non-array", () => {
+        const badStore = getStore({ addIds: { paths: [["a", "b"]] } })
+        expect(() => badStore.update({ a: { b: { a: [1] } } })).toThrowError(
+            "a/b"
+        )
     })
 })

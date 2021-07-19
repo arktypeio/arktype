@@ -45,23 +45,20 @@ export const launchBrowser = async (
     )
     lastConnectedBrowser = browser
 
-    // await (context as any)._enableRecorder()
-
     const serverContext = (playwright as any)._toImpl(context)
     const recorder = await RecorderSupplement.show(serverContext, {
         language: "test",
         startRecording: true
     })
 
-    console.log(recorder)
+    recorder._generator.on("change", () => {
+        store.update({
+            builder: {
+                actions: (_) => _.concat({ ...navigationStep, id: getNextId() })
+            }
+        })
+    })
 
-    const getNewStepId = () => {
-        const existingSteps = store.get("builder/steps")
-        if (!existingSteps.length) {
-            return 1
-        }
-        return existingSteps[existingSteps.length - 1].id + 1
-    }
     let lastNavigationStep: Step
     page.on("framenavigated", async (frame) => {
         const navigationStep = { kind: "go" as const, url: frame.url() }
@@ -70,7 +67,7 @@ export const launchBrowser = async (
             store.update({
                 builder: {
                     steps: (_) =>
-                        _.concat({ ...navigationStep, id: getNewStepId() })
+                        _.concat({ ...navigationStep, id: getNextId() })
                 }
             })
         }
@@ -84,7 +81,7 @@ export const launchBrowser = async (
         const { timeStamp, ...step } = eventData
         store.update({
             builder: {
-                steps: (steps) => [...steps, { ...step, id: getNewStepId() }]
+                steps: (steps) => [...steps, { ...step, id: getNextId() }]
             }
         })
         lastEventData = eventData

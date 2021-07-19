@@ -35,7 +35,8 @@ const initialState: Root = {
     defaultBrowser: "chrome",
     builder: {
         steps: [],
-        active: false
+        active: false,
+        actions: []
     },
     main: emptyMainActions,
     renderer: {},
