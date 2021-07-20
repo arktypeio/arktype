@@ -17,11 +17,7 @@ import {
 import { Query, Update, Actions, ActionData, StoreActions } from "./common.js"
 import { createOnChangeMiddleware, OnChangeMiddlewareArgs } from "./onChange.js"
 import { createValidationMiddleware, ValidationFunction } from "./validate.js"
-import {
-    createAddIdsMiddleware,
-    CreateAddIdsMiddlewareArgs,
-    Paths
-} from "./addIds.js"
+import { createAddIdsMiddleware, CreateAddIdsMiddlewareArgs } from "./addIds.js"
 import { Relationships } from "./db"
 
 export type ReduxOptions = Omit<

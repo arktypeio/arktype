@@ -1,5 +1,4 @@
 import { Middleware } from "@reduxjs/toolkit"
-import { O } from "ts-toolbelt"
 import {
     deepMap,
     mapPaths,
@@ -8,10 +7,6 @@ import {
     valueAtPath
 } from "@re-do/utils"
 import { ActionData } from "./common.js"
-
-// TODO: Add path like "AutoPath" from get to this
-// Also should only return paths at which the values are arrays
-export type Paths<T extends object> = O.Paths<T>[]
 
 export type CreateAddIdsMiddlewareArgs<
     T extends object,

@@ -1,4 +1,4 @@
-import { NonObject, NonRecursible, Unlisted } from "common.js"
+import { NonRecursible, Unlisted } from "./common.js"
 import { Object, String, List } from "ts-toolbelt"
 import { AutoPath } from "./AutoPath.js"
 
@@ -59,69 +59,54 @@ type Join<K, P, Delimiter extends string = "/"> = K extends string | number
 
 export type Segment = string | number
 
-export type Leaves<
-    T,
-    LeafConstraints extends Constraints<Filter, Exclude, TreatAsLeaf> = {},
-    Delimiter extends string = "/",
-    Depth extends number = 10,
-    Start extends string = "",
-    Filter = LeafConstraints extends { filter: infer F } ? F : any,
-    Exclude = LeafConstraints extends { exclude: infer X } ? X : never,
-    TreatAsLeaf = LeafConstraints extends { treatAsLeaf: infer L }
-        ? L
-        : NonRecursible,
-    InArray = false
-> = [Depth] extends [never]
+export type Leaves<T, O extends C = {}, D extends number = 10> = [D] extends [
+    never
+]
     ? never
-    : T extends TreatAsLeaf | NonRecursible
-    ? InArray extends true
-        ? never
-        : T extends Filter
-        ? T extends Exclude
-            ? never
-            : Start
-        : never
-    : T extends any[]
-    ? Leaves<
-          Unlisted<T>,
-          LeafConstraints,
-          Delimiter,
-          Depth,
-          Start,
-          Filter,
-          Exclude,
-          TreatAsLeaf,
-          true
-      >
-    : {
-          [K in keyof T]-?: K extends Segment
-              ? Leaves<
-                    T[K],
-                    LeafConstraints,
-                    Delimiter,
-                    Prev[Depth],
-                    Start extends "" ? K : Join<Start, K, Delimiter>,
-                    Filter,
-                    Exclude,
-                    TreatAsLeaf
-                >
-              : never
+    : T extends O["treatAsLeaf"]
+    ? ""
+    : T extends object
+    ? {
+          [K in keyof T]-?: Join<K, Leaves<T[K], O, Prev[D]>>
       }[keyof T]
+    : ""
+
+// export type Leaves<
+//     T,
+//     TreatAsLeaf = NonRecursible,
+//     Delimiter extends string = "/",
+//     Depth extends number = 10,
+//     CurrentPath extends string = ""
+// > = [Depth] extends [never]
+//     ? never
+//     : T extends TreatAsLeaf | NonRecursible
+//     ? CurrentPath
+//     : {
+//           [K in keyof T]-?: Leaves<
+//               Unlisted<T[K]>,
+//               TreatAsLeaf,
+//               Delimiter,
+//               Prev[Depth],
+//               CurrentPath extends "" ? K : Join<CurrentPath, K, Delimiter>
+//           >
+//       }[keyof T]
 
 type PathsFromLeaves<
-    Leaves extends string,
+    Leaves extends any,
     Delimiter extends string = "/"
-> = Leaves extends ""
-    ? never
-    :
-          | Leaves
-          | PathsFromLeaves<
-                String.Join<
-                    List.Pop<String.Split<Leaves, Delimiter>>,
+> = Leaves extends string
+    ? Leaves extends ""
+        ? never
+        :
+              | Leaves
+              | PathsFromLeaves<
+                    String.Join<
+                        List.Pop<String.Split<Leaves, Delimiter>>,
+                        Delimiter
+                    >,
                     Delimiter
-                >,
-                Delimiter
-            >
+                >
+    : never
 
 export type Constraints<Filter, Exclude, TreatAsLeaf> = {
     filter?: Filter
@@ -129,27 +114,32 @@ export type Constraints<Filter, Exclude, TreatAsLeaf> = {
     treatAsLeaf?: TreatAsLeaf
 }
 
-export type Paths<
-    T,
-    LeafConstraints extends Constraints<Filter, Exclude, TreatAsLeaf> = {},
-    Delimiter extends string = "/",
-    Depth extends number = 10,
-    Start extends string = "",
-    Filter = LeafConstraints extends { filter: infer F } ? F : any,
-    Exclude = LeafConstraints extends { exclude: infer X } ? X : never,
-    TreatAsLeaf = LeafConstraints extends { treatAsLeaf: infer L }
-        ? L
-        : NonRecursible
-> = PathsFromLeaves<
-    Leaves<
-        T,
-        LeafConstraints,
-        Delimiter,
-        Depth,
-        Start,
-        Filter,
-        Exclude,
-        TreatAsLeaf
-    >,
-    Delimiter
->
+export type C = {
+    filter?: any
+    exclude?: any
+    treatAsLeaf?: any
+    skipArrays?: boolean
+}
+
+// export type Paths<
+//     T,
+//     LeafConstraints extends C = {},
+//     Delimiter extends string = "/",
+//     Depth extends number = 10,
+//     Start extends string = ""
+// > = PathsFromLeaves<
+//     Leaves<T, LeafConstraints, Delimiter, Depth, Start>,
+//     Delimiter
+// >
+
+export const getLeaves = <T>(value: T): Leaves<T, any[]> => "" as any
+
+// const x =
+
+// type XType = typeof x
+
+const f = getLeaves({
+    a: { b: "foop", c: true, d: [{ c: true }, { c: true }, { c: true }] }
+})
+
+// type F = Leaves<XType>

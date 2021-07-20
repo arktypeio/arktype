@@ -14,7 +14,7 @@
     },
     "scripts": {
         "build": "redo-build",
-        "test": "jest" 
+        "test": "jest"
     },
     "dependencies": {
         "deepmerge": "4.2.2",
