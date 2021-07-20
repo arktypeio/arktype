@@ -54,8 +54,9 @@ export type DeepWriteable<T> = { -readonly [P in keyof T]: DeepWriteable<T[P]> }
 export type ValueOf<T> = T[keyof T]
 export type ValueFrom<T, K extends keyof T> = Pick<T, K>[K]
 
-export type Primitive = string | number | boolean | symbol
-export type NonRecursible = Primitive | Function | null | undefined
+export type Primitive = string | number | boolean | symbol | bigint
+export type NonObject = Primitive | null | undefined
+export type NonRecursible = NonObject | Function
 export type Unpromisified<T> = T extends Promise<infer U> ? U : never
 
 export const isRecursible = (o: any) => o && typeof o === "object"
