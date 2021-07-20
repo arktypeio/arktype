@@ -1,5 +1,5 @@
 import { DeepPartial } from "@re-do/utils"
-import { Store, ListenerMap, StoreOptions } from ".."
+import { Store, ListenerMap, StoreOptions, Paths } from ".."
 
 type Root = {
     a: A
@@ -369,3 +369,5 @@ describe("add ids", () => {
         )
     })
 })
+
+type X = Paths<Root>

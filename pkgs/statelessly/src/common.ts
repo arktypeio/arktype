@@ -1,23 +1,13 @@
 import { DeepPartial, NonRecursible, Unlisted, DeepUpdate } from "@re-do/utils"
-import { Paths } from "addIds.js"
 import type { Store } from "./store.js"
 export type { Middleware } from "redux"
 
-export type Actions<
-    T extends object,
-    AddIdFields extends Paths<T>,
-    IdFieldName extends string
-> = Record<
+export type Actions<T extends object> = Record<
     string,
     | Update<T>
     | ((
           args: any,
-          context: Store<
-              T,
-              Actions<T, AddIdFields, IdFieldName>,
-              AddIdFields,
-              IdFieldName
-          >
+          context: Store<T, Actions<T>>
       ) => Update<T> | Promise<Update<T>>)
 >
 

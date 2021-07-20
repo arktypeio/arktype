@@ -22,19 +22,16 @@ import {
     CreateAddIdsMiddlewareArgs,
     Paths
 } from "./addIds.js"
+import { Relationships } from "./db"
 
 export type ReduxOptions = Omit<
     ConfigureStoreOptions,
     "preloadedState" | "reducer"
 >
 
-export type StoreOptions<
-    T extends object,
-    AddIdPaths extends Paths<T>,
-    IdFieldName extends string
-> = {
+export type StoreOptions<Input extends object> = {
+    relationships?: Relationships<Input>
     onChange?: OnChangeMiddlewareArgs<T>
-    addIds?: CreateAddIdsMiddlewareArgs<T, AddIdPaths, IdFieldName>
     validate?: ValidationFunction<T>
     reduxOptions?: ReduxOptions
 }
@@ -45,9 +42,11 @@ export type UpdateOptions = {
     meta?: Record<string, any>
 }
 
+export type Stored<Input extends object> = Input
+
 export class Store<
-    T extends object,
-    A extends Actions<T, AddIdPaths, IdFieldName>,
+    Input extends object,
+    A extends Actions<T>,
     AddIdPaths extends Paths<T>,
     IdFieldName extends string
 > {
