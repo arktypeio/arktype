@@ -61,27 +61,25 @@ export type Segment = string | number
 
 export type Leaves<
     T,
-    LeafConstraints extends Constraints<Filter, Exclude, Leaf> = {},
+    LeafConstraints extends Constraints<Filter, Exclude, TreatAsLeaf> = {},
     Delimiter extends string = "/",
     Depth extends number = 10,
     Start extends string = "",
     Filter = LeafConstraints extends { filter: infer F } ? F : any,
     Exclude = LeafConstraints extends { exclude: infer X } ? X : never,
-    Leaf = LeafConstraints extends { leaf: infer L } ? L : NonRecursible,
+    TreatAsLeaf = LeafConstraints extends { treatAsLeaf: infer L }
+        ? L
+        : NonRecursible,
     InArray = false
 > = [Depth] extends [never]
     ? never
-    : T extends Leaf | NonRecursible
+    : T extends TreatAsLeaf | NonRecursible
     ? InArray extends true
         ? never
         : T extends Filter
         ? T extends Exclude
             ? never
-            : T extends Leaf
-            ? Start
-            : Leaf extends NonRecursible
-            ? Start
-            : never
+            : Start
         : never
     : T extends any[]
     ? Leaves<
@@ -92,7 +90,7 @@ export type Leaves<
           Start,
           Filter,
           Exclude,
-          Leaf,
+          TreatAsLeaf,
           true
       >
     : {
@@ -105,7 +103,7 @@ export type Leaves<
                     Start extends "" ? K : Join<Start, K, Delimiter>,
                     Filter,
                     Exclude,
-                    Leaf
+                    TreatAsLeaf
                 >
               : never
       }[keyof T]
@@ -125,36 +123,33 @@ type PathsFromLeaves<
                 Delimiter
             >
 
-export type Constraints<Filter, Exclude, Leaf> = {
+export type Constraints<Filter, Exclude, TreatAsLeaf> = {
     filter?: Filter
     exclude?: Exclude
-    leaf?: Leaf
+    treatAsLeaf?: TreatAsLeaf
 }
 
 export type Paths<
     T,
-    LeafConstraints extends Constraints<Filter, Exclude, Leaf> = {},
+    LeafConstraints extends Constraints<Filter, Exclude, TreatAsLeaf> = {},
     Delimiter extends string = "/",
     Depth extends number = 10,
     Start extends string = "",
     Filter = LeafConstraints extends { filter: infer F } ? F : any,
     Exclude = LeafConstraints extends { exclude: infer X } ? X : never,
-    Leaf = LeafConstraints extends { leaf: infer L } ? L : NonRecursible
+    TreatAsLeaf = LeafConstraints extends { treatAsLeaf: infer L }
+        ? L
+        : NonRecursible
 > = PathsFromLeaves<
-    Leaves<T, LeafConstraints, Delimiter, Depth, Start, Filter, Exclude, Leaf>,
+    Leaves<
+        T,
+        LeafConstraints,
+        Delimiter,
+        Depth,
+        Start,
+        Filter,
+        Exclude,
+        TreatAsLeaf
+    >,
     Delimiter
 >
-
-export type X = {
-    a: {
-        b: {
-            c: {
-                f: string[]
-            }
-            d: string
-        }[]
-        e: boolean
-    }
-}
-
-type Result = Leaves<X, { leaf: string }>
