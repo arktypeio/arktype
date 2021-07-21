@@ -145,6 +145,10 @@ export const transform = <K extends Key, V>(
 
 export type ItemOrList<T> = T | T[]
 export type Unlisted<T> = T extends (infer V)[] ? V : T
+export type FlatUnlisted<T> = T extends (infer V)[] ? FlatUnlisted<V> : T
+export type DeepUnlisted<T> = T extends object
+    ? { [K in keyof T]: DeepUnlisted<FlatUnlisted<T[K]>> }
+    : T
 export type FilterByValue<T extends object, ValueType> = Pick<
     T,
     {

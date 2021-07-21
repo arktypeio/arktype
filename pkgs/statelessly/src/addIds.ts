@@ -4,12 +4,13 @@ import {
     mapPaths,
     isEmpty,
     updateMap,
-    valueAtPath
+    valueAtPath,
+    Paths
 } from "@re-do/utils"
 import { ActionData } from "./common.js"
 
 export type CreateAddIdsMiddlewareArgs<
-    T extends object,
+    T,
     AddIdPaths extends Paths<T>,
     IdFieldName extends string
 > = {

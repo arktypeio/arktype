@@ -1,4 +1,6 @@
 #!/usr/bin/env node
+
+// Based on https://www.sensedeep.com/blog/posts/2021/how-to-create-single-source-npm-module.html
 const execa = require("execa")
 const { basename, join } = require("path")
 const { existsSync, readFileSync, writeFileSync, rmSync } = require("fs")

@@ -12,7 +12,8 @@ import {
     ValueAtPath,
     transform,
     deepEquals,
-    diff
+    diff,
+    Paths
 } from "@re-do/utils"
 import { Query, Update, Actions, ActionData, StoreActions } from "./common.js"
 import { createOnChangeMiddleware, OnChangeMiddlewareArgs } from "./onChange.js"

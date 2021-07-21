@@ -1,5 +1,5 @@
-import { Store, Actions, StoreOptions, Listener, Update, Paths } from "."
-import { listify, withDefaults } from "@re-do/utils"
+import { Store, Actions, StoreOptions, Listener, Update } from "."
+import { listify, withDefaults, Paths } from "@re-do/utils"
 import { existsSync, watch, readFileSync, writeFileSync } from "fs"
 
 export type OnBadFile<T extends object> = (contents: string) => T

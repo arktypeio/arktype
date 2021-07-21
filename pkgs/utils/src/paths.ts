@@ -1,4 +1,4 @@
-import { NonRecursible, Unlisted } from "./common.js"
+import { FlatUnlisted, NonRecursible } from "./common.js"
 import { Object, String, List } from "ts-toolbelt"
 import { AutoPath } from "./AutoPath.js"
 
@@ -24,6 +24,8 @@ export function valueAtPath<O extends object, P extends string>(
     }
     return value as any
 }
+
+export type Fallback<Value, Default> = unknown extends Value ? Default : Value
 
 type Prev = [
     never,
@@ -51,95 +53,99 @@ type Prev = [
     ...0[]
 ]
 
-type Join<K, P, Delimiter extends string = "/"> = K extends string | number
-    ? P extends string | number
-        ? `${K}${"" extends P ? "" : Delimiter}${P}`
-        : never
-    : never
-
 export type Segment = string | number
 
-export type Leaves<T, O extends C = {}, D extends number = 10> = [D] extends [
-    never
-]
-    ? never
-    : T extends O["treatAsLeaf"]
-    ? ""
-    : T extends object
-    ? {
-          [K in keyof T]-?: Join<K, Leaves<T[K], O, Prev[D]>>
-      }[keyof T]
-    : ""
+export type DefaultDelimiter = "/"
+export type DefaultDepthLimit = 10
 
-// export type Leaves<
-//     T,
-//     TreatAsLeaf = NonRecursible,
-//     Delimiter extends string = "/",
-//     Depth extends number = 10,
-//     CurrentPath extends string = ""
-// > = [Depth] extends [never]
-//     ? never
-//     : T extends TreatAsLeaf | NonRecursible
-//     ? CurrentPath
-//     : {
-//           [K in keyof T]-?: Leaves<
-//               Unlisted<T[K]>,
-//               TreatAsLeaf,
-//               Delimiter,
-//               Prev[Depth],
-//               CurrentPath extends "" ? K : Join<CurrentPath, K, Delimiter>
-//           >
-//       }[keyof T]
-
-type PathsFromLeaves<
-    Leaves extends any,
-    Delimiter extends string = "/"
-> = Leaves extends string
-    ? Leaves extends ""
-        ? never
-        :
-              | Leaves
-              | PathsFromLeaves<
-                    String.Join<
-                        List.Pop<String.Split<Leaves, Delimiter>>,
-                        Delimiter
-                    >,
-                    Delimiter
-                >
-    : never
-
-export type Constraints<Filter, Exclude, TreatAsLeaf> = {
-    filter?: Filter
-    exclude?: Exclude
-    treatAsLeaf?: TreatAsLeaf
-}
-
-export type C = {
+export type PathConstraints = {
     filter?: any
     exclude?: any
     treatAsLeaf?: any
-    skipArrays?: boolean
+    includeArrayIndices?: boolean
 }
 
-// export type Paths<
-//     T,
-//     LeafConstraints extends C = {},
-//     Delimiter extends string = "/",
-//     Depth extends number = 10,
-//     Start extends string = ""
-// > = PathsFromLeaves<
-//     Leaves<T, LeafConstraints, Delimiter, Depth, Start>,
-//     Delimiter
-// >
+export type LeafLists<
+    T,
+    Constraints extends PathConstraints = {},
+    Depth extends number = DefaultDepthLimit
+> = Extract<
+    {
+        [K in keyof T]-?: T[K] extends
+            | NonRecursible
+            | Fallback<Constraints["treatAsLeaf"], never>
+            ? T[K] extends Fallback<Constraints["exclude"], never>
+                ? never
+                : T[K] extends Fallback<Constraints["filter"], any>
+                ? [K]
+                : never
+            : [
+                  K,
+                  ...LeafLists<
+                      Fallback<
+                          Constraints["includeArrayIndices"],
+                          true
+                      > extends true
+                          ? T[K]
+                          : FlatUnlisted<T[K]>,
+                      Constraints,
+                      Prev[Depth]
+                  >
+              ]
+    }[keyof T],
+    Segment[]
+>
 
-export const getLeaves = <T>(value: T): Leaves<T, any[]> => "" as any
+export type Join<
+    Segments extends Segment[],
+    Delimiter extends string = DefaultDelimiter
+> = Segments extends []
+    ? ""
+    : Segments extends [Segment]
+    ? `${Segments[0]}`
+    : Segments extends [Segment, ...infer Remaining]
+    ? `${Segments[0]}${Delimiter}${Join<
+          Remaining extends Segment[] ? Remaining : never,
+          Delimiter
+      >}`
+    : string
 
-// const x =
+export type Leaves<
+    T,
+    Constraints extends PathConstraints = {},
+    Delimiter extends string = DefaultDelimiter,
+    Depth extends number = DefaultDepthLimit
+> = Join<LeafLists<T, Constraints, Depth>, Delimiter>
 
-// type XType = typeof x
+type PathListsFromLeafLists<Segments extends Segment[]> = Segments extends []
+    ? never
+    :
+          | Segments
+          | (Segments extends [Segment, ...infer Remaining]
+                ? PathListsFromLeafLists<
+                      Remaining extends Segment[] ? Remaining : never
+                  >
+                : never)
 
-const f = getLeaves({
-    a: { b: "foop", c: true, d: [{ c: true }, { c: true }, { c: true }] }
-})
+export type PathLists<
+    T,
+    Constraints extends PathConstraints = {},
+    Depth extends number = DefaultDepthLimit
+> = PathListsFromLeafLists<LeafLists<T, Constraints, Depth>>
 
-// type F = Leaves<XType>
+export type Paths<
+    T,
+    Constraints extends PathConstraints = {},
+    Delimiter extends string = DefaultDelimiter,
+    Depth extends number = DefaultDepthLimit
+> = Join<PathLists<T, Constraints, Depth>, Delimiter>
+
+// export const x = <
+//     T extends object,
+//     SomePaths extends Paths<T, { filter: boolean }>
+// >(
+//     o: T,
+//     f: SomePaths
+// ) => "" as any
+
+// x({ a: { b: "", c: true } }, "a/c")
