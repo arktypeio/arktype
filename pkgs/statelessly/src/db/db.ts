@@ -5,7 +5,9 @@ import {
     Paths,
     NonCyclic,
     ValueAtPath,
-    Leaves
+    Leaves,
+    NonRecursible,
+    FilterByValue
 } from "@re-do/utils"
 import { FileStore, FileStoreOptions } from "./FileStore"
 import {
@@ -49,13 +51,22 @@ type Group = {
 
 const fallback = {
     users: [] as User[],
-    groups: [] as Group[]
+    groups: [] as Group[],
+    state: {
+        currentUsers: [] as User[]
+    }
 }
 
 type Test = typeof fallback
 
 const x: Model<Test> = {
-    users: []
+    users: {
+        friends: "users",
+        groups: "groups"
+    },
+    groups: {
+        users: "users"
+    }
 }
 
 export type CandidateModelPaths<Input extends object> = Leaves<
@@ -65,7 +76,12 @@ export type CandidateModelPaths<Input extends object> = Leaves<
 
 export type Model<Input extends object> = {
     [K in CandidateModelPaths<Input>]?: {
-        [K2 in keyof ValueAtPath<Input, K>]: {}
+        [K2 in keyof FilterByValue<
+            Unlisted<ValueAtPath<Input, K>>,
+            object
+        >]: Unlisted<ValueAtPath<Input, K>>[K2] extends NonRecursible
+            ? never
+            : CandidateModelPaths<Input>
     }
 } & { _meta?: ModelMetaOptions<any> }
 
@@ -87,16 +103,19 @@ export const createModelMiddleware = <
                     unpack: options.unpack ?? true,
                     exactlyOne: false
                 }),
-            find: (by: FindBy<T>, options: InteractionOptions<any> = {}) =>
+            find: (by: FindBy<Input>, options: InteractionOptions<any> = {}) =>
                 find(k, by, context, { unpack: options.unpack ?? true }),
-            filter: (by: FindBy<T>, options: InteractionOptions<any> = {}) =>
+            filter: (
+                by: FindBy<Input>,
+                options: InteractionOptions<any> = {}
+            ) =>
                 find(k, by, context, {
                     unpack: options.unpack ?? true,
                     exactlyOne: false
                 }),
-            remove: (by: FindBy<T>, options: RemoveOptions = {}) =>
+            remove: (by: FindBy<Input>, options: RemoveOptions = {}) =>
                 remove(k, by, context, options),
-            update: (where: FindBy<T>, changes: DeepUpdate<T>) =>
+            update: (where: FindBy<Input>, changes: DeepUpdate<Input>) =>
                 update(k, where, changes, context)
         }
     ]) as any
