@@ -7,7 +7,8 @@ const obj = {
         }
     },
     d: [{ e: true }, "redo"] as const,
-    f: [255]
+    f: [255],
+    g: [{ a: true }, { a: false }]
 }
 
 test("retrieves primitive at path", () => {
@@ -27,5 +28,10 @@ test("returns undefined on nonexistent path", () => {
     expect(valueAtPath(obj, "fake/fake")).toBe(undefined)
 })
 test("non-default delimiter", () => {
-    expect(valueAtPath(obj, "a.b.c", ".")).toBe(31)
+    expect(valueAtPath(obj, "a.b.c", { delimiter: "." })).toBe(31)
+})
+test("skip array paths", () => {
+    expect(
+        valueAtPath(obj, "g/a", { excludeArrayIndices: true })
+    ).toStrictEqual([true, false])
 })

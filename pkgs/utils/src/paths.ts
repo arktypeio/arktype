@@ -9,47 +9,75 @@ import { String } from "ts-toolbelt"
 
 export type ValueAtPath<
     O,
-    Path extends Paths<O, {}, Delimiter>,
-    Delimiter extends string = "/"
-> = ValueAtPathList<O, String.Split<Path, Delimiter>>
+    Path extends Paths<
+        O,
+        { excludeArrayIndices: ExcludeArrayIndices },
+        Delimiter
+    >,
+    Delimiter extends string = "/",
+    ExcludeArrayIndices extends boolean = false
+> = ValueAtPathList<O, String.Split<Path, Delimiter>, ExcludeArrayIndices>
 
-export type ValueAtPathList<O, Segments extends Segment[]> = Segments extends [
-    infer Current,
-    ...infer Remaining
-]
+export type ValueAtPathList<
+    O,
+    Segments extends Segment[],
+    ExcludeArrayIndices extends boolean = false
+> = Segments extends [infer Current, ...infer Remaining]
     ? Current extends keyof O
         ? ValueAtPathList<
-              O[Current],
-              Remaining extends Segment[] ? Remaining : never
+              ExcludeArrayIndices extends true
+                  ? FlatUnlisted<O[Current]>
+                  : O[Current],
+              Remaining extends Segment[] ? Remaining : never,
+              ExcludeArrayIndices
           >
         : undefined
     : O
 
+export type ValueAtPathOptions<
+    Delimiter extends string,
+    ExcludeArrayIndices extends boolean
+> = {
+    delimiter?: Delimiter
+    excludeArrayIndices?: ExcludeArrayIndices
+}
+
 export const valueAtPath = <
     O,
-    Path extends Paths<O, {}, Delimiter>,
-    Delimiter extends string = "/"
+    Path extends Paths<
+        O,
+        { excludeArrayIndices: ExcludeArrayIndices },
+        Delimiter
+    >,
+    Delimiter extends string = "/",
+    ExcludeArrayIndices extends boolean = false
 >(
     o: O,
     path: Path,
-    delimiter?: Delimiter
-): ValueAtPath<O, Path, Delimiter> => {
-    // if (Array.isArray(o) && !includeArrayIndices) {
-    //     return o.map((_) =>
-    //         // @ts-ignore
-    //         valueAtPath(_, path, options)
-    //     ) as any
-    // }
+    options: ValueAtPathOptions<Delimiter, ExcludeArrayIndices> = {}
+): ValueAtPath<O, Path, Delimiter, ExcludeArrayIndices> => {
+    const { delimiter, excludeArrayIndices } = withDefaults<
+        ValueAtPathOptions<string, boolean>
+    >({
+        delimiter: "/",
+        excludeArrayIndices: false
+    })(options as any)
+    if (Array.isArray(o) && excludeArrayIndices) {
+        return o.map((_) =>
+            // @ts-ignore
+            valueAtPath(_, path, options)
+        ) as any
+    }
     if (path === "") {
         return o as any
     }
-    const [segment, ...remaining] = path.split(delimiter ?? "/")
+    const [segment, ...remaining] = path.split(delimiter)
     if (isRecursible(o) && segment in o) {
         // @ts-ignore
         return valueAtPath(
             (o as any)[segment],
-            remaining.join(delimiter ?? "/"),
-            delimiter
+            remaining.join(delimiter),
+            options
         )
     } else {
         return undefined as any
@@ -67,7 +95,7 @@ export type PathConstraints = {
     filter?: any
     exclude?: any
     treatAsLeaf?: any
-    includeArrayIndices?: boolean
+    excludeArrayIndices?: boolean
 }
 
 export type LeafLists<
@@ -90,11 +118,11 @@ export type LeafLists<
                         K,
                         ...LeafLists<
                             Fallback<
-                                Constraints["includeArrayIndices"],
-                                true
+                                Constraints["excludeArrayIndices"],
+                                false
                             > extends true
-                                ? T[K]
-                                : FlatUnlisted<T[K]>,
+                                ? FlatUnlisted<T[K]>
+                                : T[K],
                             Constraints,
                             MinusOne<Depth>
                         >
