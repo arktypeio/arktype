@@ -7,7 +7,8 @@ import {
     ValueAtPath,
     Leaves,
     NonRecursible,
-    FilterByValue
+    FilterByValue,
+    EntryOf
 } from "@re-do/utils"
 import { FileStore, FileStoreOptions } from "./FileStore"
 import {
@@ -23,6 +24,7 @@ import { createDependentsMap } from "./relationships.js"
 import { create, CreateOptions } from "./create.js"
 import { remove, RemoveOptions } from "./remove.js"
 import { find } from "./find.js"
+import { Function } from "ts-toolbelt"
 import { update } from "./update.js"
 
 type ModelMetaOptions<IdFieldName extends string> = {
@@ -93,32 +95,38 @@ export const createModelMiddleware = <
     ...model
 }: M) => {
     const context = {} as any
-    return transform(model, ([k, v]: [string, any]) => [
-        k,
-        {
-            create: (o: any, options?: CreateOptions<any>) =>
-                create(k, o, context, options),
-            all: (options: InteractionOptions<any> = {}) =>
-                find(k, (_) => true, context, {
-                    unpack: options.unpack ?? true,
-                    exactlyOne: false
-                }),
-            find: (by: FindBy<Input>, options: InteractionOptions<any> = {}) =>
-                find(k, by, context, { unpack: options.unpack ?? true }),
-            filter: (
-                by: FindBy<Input>,
-                options: InteractionOptions<any> = {}
-            ) =>
-                find(k, by, context, {
-                    unpack: options.unpack ?? true,
-                    exactlyOne: false
-                }),
-            remove: (by: FindBy<Input>, options: RemoveOptions = {}) =>
-                remove(k, by, context, options),
-            update: (where: FindBy<Input>, changes: DeepUpdate<Input>) =>
-                update(k, where, changes, context)
-        }
-    ]) as any
+    return transform(model, ([k, v]) => {
+        const path = String(k)
+        return [
+            k,
+            {
+                create: (o: any, options?: CreateOptions<any>) =>
+                    create(path, o, context, options),
+                all: (options: InteractionOptions<any> = {}) =>
+                    find(path, (_) => true, context, {
+                        unpack: options.unpack ?? true,
+                        exactlyOne: false
+                    }),
+                find: (
+                    by: FindBy<Input>,
+                    options: InteractionOptions<any> = {}
+                ) =>
+                    find(path, by, context, { unpack: options.unpack ?? true }),
+                filter: (
+                    by: FindBy<Input>,
+                    options: InteractionOptions<any> = {}
+                ) =>
+                    find(path, by, context, {
+                        unpack: options.unpack ?? true,
+                        exactlyOne: false
+                    }),
+                remove: (by: FindBy<Input>, options: RemoveOptions = {}) =>
+                    remove(path, by, context, options),
+                update: (where: FindBy<Input>, changes: DeepUpdate<Input>) =>
+                    update(path, where, changes, context)
+            }
+        ]
+    }) as any
 }
 
 // export type FileDb<T extends Model, IdFieldName extends string = "id"> = {

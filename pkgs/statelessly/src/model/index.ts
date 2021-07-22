@@ -1,2 +1,2 @@
-export * from "./db.js"
+export * from "./model.js"
 export * from "./common.js"

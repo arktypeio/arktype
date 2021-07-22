@@ -7,11 +7,21 @@ const o = {
 }
 
 describe("transform", () => {
-    test("transforms objects", () => {
-        expect(transform(o, ([k, v]) => [k.toUpperCase(), -v])).toStrictEqual({
+    test("objects", () => {
+        expect(
+            transform(o, ([k, v]) => [String(k).toUpperCase(), -v])
+        ).toStrictEqual({
             A: -1,
             B: -2,
             C: -3
+        })
+    })
+    test("value type change", () => {
+        const result: { [k: number]: string } = transform(o, ([k, v]) => [v, k])
+        expect(result).toStrictEqual({
+            1: "a",
+            2: "b",
+            3: "c"
         })
     })
     test("errors on invalid objects", () => {

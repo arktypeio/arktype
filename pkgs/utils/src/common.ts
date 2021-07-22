@@ -52,6 +52,7 @@ export type Writeable<T> = { -readonly [P in keyof T]: T[P] }
 export type DeepWriteable<T> = { -readonly [P in keyof T]: DeepWriteable<T[P]> }
 
 export type ValueOf<T> = T[keyof T]
+export type EntryOf<T> = { [K in keyof T]: [K, T[K]] }[keyof T]
 export type ValueFrom<T, K extends keyof T> = Pick<T, K>[K]
 
 export type Primitive = string | number | boolean | symbol | bigint
@@ -133,14 +134,16 @@ export const mapPaths = (paths: string[][]) => {
     )
 }
 
-export const transform = <K extends Key, V>(
-    o: Record<K, V>,
-    map: MapFunction<K, V>
+export const transform = <O extends object, MapReturnType extends Entry>(
+    o: O,
+    map: MapFunction<EntryOf<O>, MapReturnType>
 ) => {
     if (!o || typeof o !== "object") {
         throw new Error(`Can only transform objects. Received: ${o}.`)
     }
-    return fromEntries(Object.entries(o).map(map as any)) as Record<K, V>
+    return fromEntries(Object.entries(o).map(map as any)) as {
+        [K in MapReturnType[0]]: MapReturnType[1]
+    }
 }
 
 export type ItemOrList<T> = T | T[]
@@ -170,9 +173,11 @@ export type OptionalOnly<T extends object> = Pick<
 
 export const listify = <T>(o: ItemOrList<T>) => ([] as T[]).concat(o)
 
-export type Key = string | number
+export type Key = string | number | symbol
 export type Entry = [Key, any]
-export type MapFunction<K extends Key, V> = Parameters<Array<[K, V]>["map"]>[0]
+export type MapFunction<T, ReturnType> = (
+    ..._: Parameters<Parameters<Array<T>["map"]>[0]>
+) => ReturnType
 
 export const fromEntries = (entries: Entry[], asArray = false) => {
     const obj: any = asArray ? [] : {}
