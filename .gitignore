@@ -35,6 +35,9 @@ build/Release
 node_modules/
 jspm_packages/
 
+# This is just a symlink to the TS rush installs so that VSCode can resolve it
+!/node_modules
+
 # Optional npm cache directory
 .npm
 
