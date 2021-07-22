@@ -18,7 +18,7 @@ export type ShellOptions = Merge<Omit<SyncOptions, "shell">, CommonOptions>
 
 export type ShellAsyncOptions = Merge<Omit<Options, "shell">, CommonOptions>
 
-const defaultOptions: SyncOptions & Options = {
+const defaultOptions: SyncOptions = {
     stdio: "inherit",
     shell: true
 }

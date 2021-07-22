@@ -72,7 +72,7 @@ export const getNodeConfig = ({
                 entry: join(srcDir, "index.ts"),
                 formats
             },
-            watch: watch ? {} : undefined
+            watch: watch ? {} : null
         }
     })
     return merge<UserConfig>(baseNodeConfig, options)
@@ -89,7 +89,7 @@ export const getWebConfig = ({
         build: {
             target: "chrome89",
             outDir,
-            watch: watch ? {} : undefined
+            watch: watch ? {} : null
         },
         plugins: [reactRefreshPlugin()]
     })

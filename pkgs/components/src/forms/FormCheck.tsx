@@ -21,7 +21,7 @@ export const FormCheck = ({
                 name,
                 control,
                 defaultValue: defaultValue ?? false,
-                rules,
+                rules: rules ?? {},
                 render: ({ field }) => (
                     <FormControlLabel
                         control={<Checkbox {...rest} {...field} />}

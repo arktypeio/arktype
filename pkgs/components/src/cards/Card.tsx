@@ -8,7 +8,7 @@ export const Card = ({ style, sizeToContent, ...rest }: CardProps) => {
     return (
         <MuiCard
             style={{
-                width: sizeToContent ? "max-content" : undefined,
+                width: sizeToContent ? "max-content" : "auto",
                 padding: 8,
                 ...style
             }}

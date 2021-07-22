@@ -37,7 +37,7 @@ export const FormText = ({
                     ...register(name, {
                         required: !optional,
                         ...rules,
-                        setValueAs: transform
+                        ...(transform ? { setValueAs: transform } : undefined)
                     })
                 }}
                 {...rest}

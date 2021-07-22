@@ -47,8 +47,14 @@ export const ErrorText = ({
                     <br />
                 </>
             ))}
-            placement={tooltipPlacement}
-            {...tooltipProps}
+            // TODO: Figure out a better way to accomodate TS's "exactOptionalPropertyTypes" in React components
+            // https://github.com/re-do/redo/issues/277
+            {...{
+                ...(tooltipPlacement
+                    ? { placement: tooltipPlacement }
+                    : undefined),
+                ...tooltipProps
+            }}
         >
             <div
                 style={{

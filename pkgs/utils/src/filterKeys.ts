@@ -30,7 +30,7 @@ export const filterKeys = <O, K extends Key[], D extends boolean = false>(
 ) =>
     filter(o, {
         objectFilter: ([k]) => keys.includes(k as Key),
-        deep
+        deep: !!deep
     }) as any as D extends true
         ? DeepFilteredByKeys<O, K>
         : FilteredByKeys<O, K>
