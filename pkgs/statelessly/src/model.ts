@@ -5,27 +5,13 @@ import {
     isEmpty,
     updateMap,
     valueAtPath,
-    Paths
+    Unlisted
 } from "@re-do/utils"
-import { ActionData } from "./common.js"
+import { ActionData, StoreInput } from "./common.js"
 
-export type CreateAddIdsMiddlewareArgs<
-    T,
-    AddIdPaths extends Paths<T>,
-    IdFieldName extends string
-> = {
-    paths: AddIdPaths
-    keyName?: IdFieldName
-}
-
-export const createAddIdsMiddleware = <
-    T extends object,
-    AddIdPaths extends Paths<T>,
-    IdFieldName extends string
->({
-    paths,
-    keyName
-}: CreateAddIdsMiddlewareArgs<T, AddIdPaths, IdFieldName>): Middleware => {
+export const createModelMiddleware = <T extends StoreInput>(
+    model: Model<T>
+): Middleware => {
     // Q: Is this a good variable name?
     // A:  ↓
     const idK = keyName ?? "id"

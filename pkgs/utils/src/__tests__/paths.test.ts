@@ -26,3 +26,6 @@ test("returns undefined on nonexistent path", () => {
     // @ts-ignore
     expect(valueAtPath(obj, "fake/fake")).toBe(undefined)
 })
+test("non-default delimiter", () => {
+    expect(valueAtPath(obj, "a.b.c", ".")).toBe(31)
+})

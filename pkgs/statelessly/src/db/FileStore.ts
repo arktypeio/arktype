@@ -1,4 +1,4 @@
-import { Store, Actions, StoreOptions, Listener, Update } from "."
+import { Store, Actions, StoreOptions, Listener, Update } from ".."
 import { listify, withDefaults, Paths } from "@re-do/utils"
 import { existsSync, watch, readFileSync, writeFileSync } from "fs"
 

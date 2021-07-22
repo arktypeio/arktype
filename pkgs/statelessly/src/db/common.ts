@@ -1,5 +1,11 @@
-import { FileStore } from "../FileStore"
-import { FilterByValue, Unlisted, withDefaults, Key } from "@re-do/utils"
+import { FileStore } from "./FileStore"
+import {
+    FilterByValue,
+    Unlisted,
+    withDefaults,
+    Key,
+    LimitDepth
+} from "@re-do/utils"
 
 export type FileDbContext<T extends Model> = {
     store: FileStore<ShallowModel<T, any>, {}>
@@ -35,13 +41,9 @@ export type ShallowModel<T extends Model, IdFieldName extends string> = {
     [K in keyof T]: ShallowWithId<Unlisted<T[K]>, IdFieldName>[]
 }
 
-export type Shallow<O extends object> = {
-    [K in keyof O]: Unlisted<O[K]> extends object
-        ? O[K] extends any[]
-            ? number[]
-            : number
-        : O[K]
-}
+export type Shallow<O> = LimitDepth<O, 0, number>
+
+export type DepthOne<O> = LimitDepth<O, 1, number>
 
 export type ShallowWithId<
     O extends object,
@@ -59,8 +61,6 @@ export type WithIds<O extends object, IdFieldName extends string> = WithId<
 >
 
 export type Model = Record<string, Record<string, any>[]>
-
-export type CandidateEntityPath<Input extends object> = {}
 
 export type Relationships<T extends Model> = {
     [K in keyof T]: {

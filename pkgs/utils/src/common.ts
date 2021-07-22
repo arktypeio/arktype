@@ -1,7 +1,7 @@
 import moize from "moize"
 import isDeepEqual from "fast-deep-equal"
 import deepMerge from "deepmerge"
-import { Object as O } from "ts-toolbelt"
+import { Number, Object as O } from "ts-toolbelt"
 
 export const merge = deepMerge
 export const memoize = moize as <F extends (...args: any[]) => any>(f: F) => F
@@ -226,3 +226,33 @@ export const withDefaults =
     (provided: T) => {
         return { ...defaults, ...provided }
     }
+
+export type LimitDepth<O, MaxDepth extends number, OnMaxDepth = any> = {
+    [K in keyof O]: O[K] extends NonRecursible
+        ? O[K]
+        : AsListIfList<
+              MaxDepth extends 1
+                  ? OnMaxDepth
+                  : LimitDepth<Unlisted<O[K]>, MinusOne<MaxDepth>, OnMaxDepth>,
+              O[K]
+          >
+}
+
+export type AsListIfList<AsList, IfList> = IfList extends any[]
+    ? AsList extends any[]
+        ? AsList
+        : AsList[]
+    : AsList
+
+export type NonCyclic<O, OnCycle = any, Seen = never> = {
+    [K in keyof O]: O[K] extends NonRecursible
+        ? O[K]
+        : AsListIfList<
+              O[K] extends Seen
+                  ? OnCycle
+                  : NonCyclic<Unlisted<O[K]>, OnCycle, Seen | O[K]>,
+              O[K]
+          >
+}
+
+export type MinusOne<N extends number> = Number.Sub<N, 1>

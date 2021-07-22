@@ -1,57 +1,62 @@
-import { FlatUnlisted, NonRecursible } from "./common.js"
-import { Object, String, List } from "ts-toolbelt"
-import { AutoPath } from "./AutoPath.js"
+import {
+    FlatUnlisted,
+    isRecursible,
+    MinusOne,
+    NonRecursible,
+    withDefaults
+} from "./common.js"
+import { String } from "ts-toolbelt"
 
 export type ValueAtPath<
-    O extends object,
-    P extends string,
+    O,
+    Path extends Paths<O, {}, Delimiter>,
     Delimiter extends string = "/"
-> = Object.Path<O, String.Split<P, Delimiter>>
+> = ValueAtPathList<O, String.Split<Path, Delimiter>>
 
-export function valueAtPath<O extends object, P extends string>(
-    obj: O,
-    path: AutoPath<O, P, "/">
-): ValueAtPath<O, P> {
-    const segments = path.split("/")
-    let value = obj
-    for (let segment of segments) {
-        if (typeof value === "object" && segment in value) {
-            value = (value as any)[segment]
-        } else {
-            // This should never happen if the provided types are accurate
-            return undefined as any
-        }
+export type ValueAtPathList<O, Segments extends Segment[]> = Segments extends [
+    infer Current,
+    ...infer Remaining
+]
+    ? Current extends keyof O
+        ? ValueAtPathList<
+              O[Current],
+              Remaining extends Segment[] ? Remaining : never
+          >
+        : undefined
+    : O
+
+export const valueAtPath = <
+    O,
+    Path extends Paths<O, {}, Delimiter>,
+    Delimiter extends string = "/"
+>(
+    o: O,
+    path: Path,
+    delimiter?: Delimiter
+): ValueAtPath<O, Path, Delimiter> => {
+    // if (Array.isArray(o) && !includeArrayIndices) {
+    //     return o.map((_) =>
+    //         // @ts-ignore
+    //         valueAtPath(_, path, options)
+    //     ) as any
+    // }
+    if (path === "") {
+        return o as any
     }
-    return value as any
+    const [segment, ...remaining] = path.split(delimiter ?? "/")
+    if (isRecursible(o) && segment in o) {
+        // @ts-ignore
+        return valueAtPath(
+            (o as any)[segment],
+            remaining.join(delimiter ?? "/"),
+            delimiter
+        )
+    } else {
+        return undefined as any
+    }
 }
 
 export type Fallback<Value, Default> = unknown extends Value ? Default : Value
-
-type Prev = [
-    never,
-    0,
-    1,
-    2,
-    3,
-    4,
-    5,
-    6,
-    7,
-    8,
-    9,
-    10,
-    11,
-    12,
-    13,
-    14,
-    15,
-    16,
-    17,
-    18,
-    19,
-    20,
-    ...0[]
-]
 
 export type Segment = string | number
 
@@ -69,32 +74,34 @@ export type LeafLists<
     T,
     Constraints extends PathConstraints = {},
     Depth extends number = DefaultDepthLimit
-> = Extract<
-    {
-        [K in keyof T]-?: T[K] extends
-            | NonRecursible
-            | Fallback<Constraints["treatAsLeaf"], never>
-            ? T[K] extends Fallback<Constraints["exclude"], never>
-                ? never
-                : T[K] extends Fallback<Constraints["filter"], any>
-                ? [K]
-                : never
-            : [
-                  K,
-                  ...LeafLists<
-                      Fallback<
-                          Constraints["includeArrayIndices"],
-                          true
-                      > extends true
-                          ? T[K]
-                          : FlatUnlisted<T[K]>,
-                      Constraints,
-                      Prev[Depth]
-                  >
-              ]
-    }[keyof T],
-    Segment[]
->
+> = Depth extends 0
+    ? never
+    : Extract<
+          {
+              [K in keyof T]-?: T[K] extends
+                  | NonRecursible
+                  | Fallback<Constraints["treatAsLeaf"], never>
+                  ? T[K] extends Fallback<Constraints["exclude"], never>
+                      ? never
+                      : T[K] extends Fallback<Constraints["filter"], any>
+                      ? [K]
+                      : never
+                  : [
+                        K,
+                        ...LeafLists<
+                            Fallback<
+                                Constraints["includeArrayIndices"],
+                                true
+                            > extends true
+                                ? T[K]
+                                : FlatUnlisted<T[K]>,
+                            Constraints,
+                            MinusOne<Depth>
+                        >
+                    ]
+          }[keyof T],
+          Segment[]
+      >
 
 export type Join<
     Segments extends Segment[],
@@ -121,7 +128,7 @@ type PathListsFromLeafLists<Segments extends Segment[]> = Segments extends []
     ? never
     :
           | Segments
-          | (Segments extends [Segment, ...infer Remaining]
+          | (Segments extends [...infer Remaining, Segment]
                 ? PathListsFromLeafLists<
                       Remaining extends Segment[] ? Remaining : never
                   >
@@ -139,13 +146,3 @@ export type Paths<
     Delimiter extends string = DefaultDelimiter,
     Depth extends number = DefaultDepthLimit
 > = Join<PathLists<T, Constraints, Depth>, Delimiter>
-
-// export const x = <
-//     T extends object,
-//     SomePaths extends Paths<T, { filter: boolean }>
-// >(
-//     o: T,
-//     f: SomePaths
-// ) => "" as any
-
-// x({ a: { b: "", c: true } }, "a/c")
