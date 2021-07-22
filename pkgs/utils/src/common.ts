@@ -232,16 +232,21 @@ export const withDefaults =
         return { ...defaults, ...provided }
     }
 
-export type LimitDepth<O, MaxDepth extends number, OnMaxDepth = any> = {
-    [K in keyof O]: O[K] extends NonRecursible
-        ? O[K]
-        : AsListIfList<
-              MaxDepth extends 1
-                  ? OnMaxDepth
-                  : LimitDepth<Unlisted<O[K]>, MinusOne<MaxDepth>, OnMaxDepth>,
-              O[K]
-          >
-}
+export type LimitDepth<
+    O,
+    MaxDepth extends number,
+    OnMaxDepth = any
+> = MaxDepth extends 0
+    ? OnMaxDepth
+    : {
+          [K in keyof O]: O[K] extends NonRecursible
+              ? O[K]
+              : LimitDepth<
+                    O[K],
+                    O[K] extends any[] ? MaxDepth : MinusOne<MaxDepth>,
+                    OnMaxDepth
+                >
+      }
 
 export type AsListIfList<AsList, IfList> = IfList extends any[]
     ? AsList extends any[]
@@ -252,12 +257,47 @@ export type AsListIfList<AsList, IfList> = IfList extends any[]
 export type NonCyclic<O, OnCycle = any, Seen = never> = {
     [K in keyof O]: O[K] extends NonRecursible
         ? O[K]
-        : AsListIfList<
-              O[K] extends Seen
-                  ? OnCycle
-                  : NonCyclic<Unlisted<O[K]>, OnCycle, Seen | O[K]>,
-              O[K]
-          >
+        : O[K] extends Seen
+        ? OnCycle
+        : NonCyclic<O[K], OnCycle, Seen | (O[K] extends any[] ? never : O[K])>
 }
 
 export type MinusOne<N extends number> = Number.Sub<N, 1>
+
+type User = {
+    name: string
+    friends: User[]
+    groups: Group[]
+}
+
+type Group = {
+    name: string
+    description: string
+    users: User[]
+}
+
+const fallback = {
+    users: [] as User[],
+    groups: [] as Group[],
+    currentUser: "",
+    preferences: {
+        darkMode: false,
+        nicknames: [] as string[]
+    }
+}
+
+type Root = typeof fallback
+
+const x: Partial<NonCyclic<Root>> = {
+    users: [
+        {
+            name: "",
+            friends: [],
+            groups: [{ description: "d", name: "", users: [{ friends: "" }] }]
+        }
+    ],
+    preferences: {
+        darkMode: true,
+        nicknames: ["boop"]
+    }
+}

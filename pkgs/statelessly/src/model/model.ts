@@ -24,7 +24,6 @@ import { createDependentsMap } from "./relationships.js"
 import { create, CreateOptions } from "./create.js"
 import { remove, RemoveOptions } from "./remove.js"
 import { find } from "./find.js"
-import { Function } from "ts-toolbelt"
 import { update } from "./update.js"
 
 type ModelMetaOptions<IdFieldName extends string> = {
