@@ -2,6 +2,7 @@ import {
     FlatUnlisted,
     isRecursible,
     MinusOne,
+    NonCyclic,
     NonRecursible,
     withDefaults
 } from "./common.js"
@@ -9,14 +10,13 @@ import { String } from "ts-toolbelt"
 
 export type ValueAtPath<
     O,
-    Path extends Paths<
+    P extends Path<
         O,
-        { excludeArrayIndices: ExcludeArrayIndices },
-        Delimiter
+        { excludeArrayIndices: ExcludeArrayIndices; delimiter: Delimiter }
     >,
     Delimiter extends string = "/",
     ExcludeArrayIndices extends boolean = false
-> = ValueAtPathList<O, String.Split<Path, Delimiter>, ExcludeArrayIndices>
+> = ValueAtPathList<O, String.Split<P, Delimiter>, ExcludeArrayIndices>
 
 export type ValueAtPathList<
     O,
@@ -44,18 +44,17 @@ export type ValueAtPathOptions<
 
 export const valueAtPath = <
     O,
-    Path extends Paths<
+    P extends Path<
         O,
-        { excludeArrayIndices: ExcludeArrayIndices },
-        Delimiter
+        { excludeArrayIndices: ExcludeArrayIndices; delimiter: Delimiter }
     >,
     Delimiter extends string = "/",
     ExcludeArrayIndices extends boolean = false
 >(
     o: O,
-    path: Path,
+    path: P,
     options: ValueAtPathOptions<Delimiter, ExcludeArrayIndices> = {}
-): ValueAtPath<O, Path, Delimiter, ExcludeArrayIndices> => {
+): ValueAtPath<O, P, Delimiter, ExcludeArrayIndices> => {
     const { delimiter, excludeArrayIndices } = withDefaults<
         ValueAtPathOptions<string, boolean>
     >({
@@ -85,24 +84,38 @@ export const valueAtPath = <
 }
 
 export type Fallback<Value, Default> = unknown extends Value ? Default : Value
+export type EnsureValue<Value, Default> = NonNullable<Fallback<Value, Default>>
 
 export type Segment = string | number
 
 export type DefaultDelimiter = "/"
-export type DefaultDepthLimit = 10
 
 export type PathConstraints = {
     filter?: any
     exclude?: any
     treatAsLeaf?: any
     excludeArrayIndices?: boolean
+    maxDepth?: number
 }
 
-export type LeafLists<
+export type StringPathConstraints = PathConstraints & {
+    delimiter?: string
+}
+
+export type LeafList<
     T,
-    Constraints extends PathConstraints = {},
-    Depth extends number = DefaultDepthLimit
-> = Depth extends 0
+    Constraints extends PathConstraints = {}
+> = LeafListRecurse<
+    NonCyclic<T, {}>,
+    Constraints,
+    EnsureValue<Constraints["maxDepth"], 10>
+>
+
+type LeafListRecurse<
+    T,
+    Constraints extends PathConstraints,
+    DepthRemaining extends number
+> = DepthRemaining extends 0
     ? never
     : Extract<
           {
@@ -116,7 +129,7 @@ export type LeafLists<
                       : never
                   : [
                         K,
-                        ...LeafLists<
+                        ...LeafListRecurse<
                             Fallback<
                                 Constraints["excludeArrayIndices"],
                                 false
@@ -124,7 +137,7 @@ export type LeafLists<
                                 ? FlatUnlisted<T[K]>
                                 : T[K],
                             Constraints,
-                            MinusOne<Depth>
+                            MinusOne<DepthRemaining>
                         >
                     ]
           }[keyof T],
@@ -145,32 +158,27 @@ export type Join<
       >}`
     : string
 
-export type Leaves<
-    T,
-    Constraints extends PathConstraints = {},
-    Delimiter extends string = DefaultDelimiter,
-    Depth extends number = DefaultDepthLimit
-> = Join<LeafLists<T, Constraints, Depth>, Delimiter>
+export type Leaf<T, Constraints extends StringPathConstraints = {}> = Join<
+    LeafList<T, Constraints>,
+    EnsureValue<Constraints["delimiter"], DefaultDelimiter>
+>
 
-type PathListsFromLeafLists<Segments extends Segment[]> = Segments extends []
+type PathListFromLeafList<Segments extends Segment[]> = Segments extends []
     ? never
     :
           | Segments
           | (Segments extends [...infer Remaining, Segment]
-                ? PathListsFromLeafLists<
+                ? PathListFromLeafList<
                       Remaining extends Segment[] ? Remaining : never
                   >
                 : never)
 
-export type PathLists<
+export type PathList<
     T,
-    Constraints extends PathConstraints = {},
-    Depth extends number = DefaultDepthLimit
-> = PathListsFromLeafLists<LeafLists<T, Constraints, Depth>>
+    Constraints extends PathConstraints = {}
+> = PathListFromLeafList<LeafList<T, Constraints>>
 
-export type Paths<
-    T,
-    Constraints extends PathConstraints = {},
-    Delimiter extends string = DefaultDelimiter,
-    Depth extends number = DefaultDepthLimit
-> = Join<PathLists<T, Constraints, Depth>, Delimiter>
+export type Path<T, Constraints extends StringPathConstraints = {}> = Join<
+    PathList<T, Constraints>,
+    EnsureValue<Constraints["delimiter"], DefaultDelimiter>
+>
