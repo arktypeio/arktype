@@ -1,47 +1,95 @@
-import { DeepUnlisted, NonCyclic, Paths, ValueAtPath } from "@re-do/utils"
+import {
+    DeepUnlisted,
+    NonCyclic,
+    NonRecursible,
+    PathOf,
+    Unlisted,
+    LeafOf,
+    ValueAtPath,
+    Join,
+    Segment
+} from "@re-do/utils"
 import { Actions } from "./common.js"
-import { Model } from "./model/model.js"
 
-export type SuperModel<Input extends object> = {
-    [Path in Paths<NonCyclic<Input, number>>]?: PathConfig<Input, Path>
-}
+export type OnCycle = "__cycle__"
 
-// export type Model<Input extends object> = {
-//     [K in CandidateModelPaths<Input>]?: {
-//         [K2 in keyof FilterByValue<
-//             Unlisted<ValueAtPath<Input, K>>,
-//             object
-//         >]: Unlisted<ValueAtPath<Input, K>>[K2] extends NonRecursible
-//             ? never
-//             : CandidateModelPaths<Input>
-//     }
-// } & { _meta?: ModelMetaOptions<any> }
+export type Model<Input extends object> = ModelRecurse<
+    NonCyclic<Input, OnCycle>,
+    NonCyclic<Input, OnCycle>,
+    []
+>
 
-const x: SuperModel<Root> = {
-    users: [
-        {
-            name: "",
-            friends: [],
-            groups: [{ name: "", description: "", users: [] }]
+export type CandidateEntityPath<Input extends object> = LeafOf<
+    Input,
+    { filter: object[]; treatAsLeaf: object[] }
+>
+
+type ModelRecurse<
+    Root,
+    Current,
+    CurrentPath extends Segment[]
+> = Current extends NonRecursible
+    ? ModelConfig<Current>
+    :
+          | Exclude<
+                LeafOf<
+                    Root,
+                    {
+                        filter: Unlisted<Current>[]
+                        treatAsLeaf: Unlisted<Current>[]
+                        excludeArrayIndices: true
+                    }
+                >,
+                Join<CurrentPath>
+            >
+          | {
+                [K in Extract<keyof Current, Segment>]?:
+                    | ModelRecurse<
+                          Root,
+                          Unlisted<Current[K]>,
+                          [...CurrentPath, K]
+                      >
+                    | [
+                          ModelRecurse<
+                              Root,
+                              Unlisted<Current[K]>,
+                              [...CurrentPath, K]
+                          >,
+                          ModelConfig<Current[K]>
+                      ]
+            }
+
+const x: Model<Test> = {
+    users: {
+        groups: {
+            name: {
+                onChange: (_) => console.log(_)
+            },
+            description: {},
+            users: {}
         }
-    ]
+    }
 }
 
-// type F = SuperModel<Root>
+type X = LeafOf<
+    Test,
+    {
+        filter: Group[]
+        treatAsLeaf: Group[]
+    }
+>
 
-export type PathConfig<
-    Input extends object,
-    Path extends Paths<NonCyclic<Input>>
-> = ValueAtPath<Input, Path> extends object[] ? {} : {}
+export type ModelConfig<T> = {
+    validate?: (_: T) => boolean
+    onChange?: (_: T) => void
+}
 
 export type CreateStoreOptions<Input extends object> = {
     model?: Model<Input>
     actions?: Actions<Input>
 }
 
-export const createStore = <Input extends object>(
-    model: SuperModel<Input>
-) => {}
+export const createStore = <Input extends object>(model: Model<Input>) => {}
 
 // const store = createStore<Root>({})
 
@@ -67,4 +115,4 @@ const fallback = {
     }
 }
 
-type Root = typeof fallback
+type Test = typeof fallback

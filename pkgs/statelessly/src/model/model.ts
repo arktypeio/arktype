@@ -70,19 +70,19 @@ const x: Model<Test> = {
     }
 }
 
-export type CandidateModelPaths<Input extends object> = Leaves<
+export type CandidateModelPath<Input extends object> = Leaves<
     Input,
     { filter: object[]; treatAsLeaf: object[] }
 >
 
 export type Model<Input extends object> = {
-    [K in CandidateModelPaths<Input>]?: {
+    [K in CandidateModelPath<Input>]?: {
         [K2 in keyof FilterByValue<
             Unlisted<ValueAtPath<Input, K>>,
             object
         >]: Unlisted<ValueAtPath<Input, K>>[K2] extends NonRecursible
             ? never
-            : CandidateModelPaths<Input>
+            : CandidateModelPath<Input>
     }
 } & { _meta?: ModelMetaOptions<any> }
 

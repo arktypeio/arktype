@@ -254,50 +254,12 @@ export type AsListIfList<AsList, IfList> = IfList extends any[]
         : AsList[]
     : AsList
 
-export type NonCyclic<O, OnCycle = any, Seen = never> = {
-    [K in keyof O]: O[K] extends NonRecursible
-        ? O[K]
-        : O[K] extends Seen
-        ? OnCycle
-        : NonCyclic<O[K], OnCycle, Seen | (O[K] extends any[] ? never : O[K])>
-}
+export type NonCyclic<O, OnCycle = any, Seen = never> = O extends Seen
+    ? OnCycle
+    : {
+          [K in keyof O]: O[K] extends NonRecursible
+              ? O[K]
+              : NonCyclic<O[K], OnCycle, Seen | (O extends any[] ? never : O)>
+      }
 
 export type MinusOne<N extends number> = Number.Sub<N, 1>
-
-type User = {
-    name: string
-    friends: User[]
-    groups: Group[]
-}
-
-type Group = {
-    name: string
-    description: string
-    users: User[]
-}
-
-const fallback = {
-    users: [] as User[],
-    groups: [] as Group[],
-    currentUser: "",
-    preferences: {
-        darkMode: false,
-        nicknames: [] as string[]
-    }
-}
-
-type Root = typeof fallback
-
-const x: Partial<NonCyclic<Root>> = {
-    users: [
-        {
-            name: "",
-            friends: [],
-            groups: [{ description: "d", name: "", users: [{ friends: "" }] }]
-        }
-    ],
-    preferences: {
-        darkMode: true,
-        nicknames: ["boop"]
-    }
-}

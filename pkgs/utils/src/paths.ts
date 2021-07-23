@@ -10,7 +10,7 @@ import { String } from "ts-toolbelt"
 
 export type ValueAtPath<
     O,
-    P extends Path<
+    P extends PathOf<
         O,
         { excludeArrayIndices: ExcludeArrayIndices; delimiter: Delimiter }
     >,
@@ -44,7 +44,7 @@ export type ValueAtPathOptions<
 
 export const valueAtPath = <
     O,
-    P extends Path<
+    P extends PathOf<
         O,
         { excludeArrayIndices: ExcludeArrayIndices; delimiter: Delimiter }
     >,
@@ -70,6 +70,7 @@ export const valueAtPath = <
     if (path === "") {
         return o as any
     }
+    // @ts-ignore
     const [segment, ...remaining] = path.split(delimiter)
     if (isRecursible(o) && segment in o) {
         // @ts-ignore
@@ -102,20 +103,24 @@ export type StringPathConstraints = PathConstraints & {
     delimiter?: string
 }
 
-export type LeafList<
+export type LeafListOf<
     T,
     Constraints extends PathConstraints = {}
-> = LeafListRecurse<
-    NonCyclic<T, {}>,
+> = LeafListOfRecurse<
+    T,
     Constraints,
-    EnsureValue<Constraints["maxDepth"], 10>
+    EnsureValue<Constraints["maxDepth"], 8>,
+    never
 >
 
-type LeafListRecurse<
+type LeafListOfRecurse<
     T,
     Constraints extends PathConstraints,
-    DepthRemaining extends number
+    DepthRemaining extends number,
+    Seen
 > = DepthRemaining extends 0
+    ? never
+    : T extends Seen
     ? never
     : Extract<
           {
@@ -129,7 +134,7 @@ type LeafListRecurse<
                       : never
                   : [
                         K,
-                        ...LeafListRecurse<
+                        ...LeafListOfRecurse<
                             Fallback<
                                 Constraints["excludeArrayIndices"],
                                 false
@@ -137,7 +142,8 @@ type LeafListRecurse<
                                 ? FlatUnlisted<T[K]>
                                 : T[K],
                             Constraints,
-                            MinusOne<DepthRemaining>
+                            MinusOne<DepthRemaining>,
+                            Seen | (T extends any[] ? never : T)
                         >
                     ]
           }[keyof T],
@@ -147,19 +153,21 @@ type LeafListRecurse<
 export type Join<
     Segments extends Segment[],
     Delimiter extends string = DefaultDelimiter
-> = Segments extends []
-    ? ""
-    : Segments extends [Segment]
-    ? `${Segments[0]}`
-    : Segments extends [Segment, ...infer Remaining]
-    ? `${Segments[0]}${Delimiter}${Join<
-          Remaining extends Segment[] ? Remaining : never,
-          Delimiter
-      >}`
-    : string
+> = Extract<
+    Segments extends []
+        ? ""
+        : Segments extends [Segment, ...infer Remaining]
+        ? `${Segments[0]}${Remaining extends [] ? "" : Delimiter}${Join<
+              Remaining extends Segment[] ? Remaining : never,
+              Delimiter
+          >}`
+        : never,
+    // Will always be a string anyways, but TS can't figure that out
+    string
+>
 
-export type Leaf<T, Constraints extends StringPathConstraints = {}> = Join<
-    LeafList<T, Constraints>,
+export type LeafOf<T, Constraints extends StringPathConstraints = {}> = Join<
+    LeafListOf<T, Constraints>,
     EnsureValue<Constraints["delimiter"], DefaultDelimiter>
 >
 
@@ -173,12 +181,12 @@ type PathListFromLeafList<Segments extends Segment[]> = Segments extends []
                   >
                 : never)
 
-export type PathList<
+export type PathListOf<
     T,
     Constraints extends PathConstraints = {}
-> = PathListFromLeafList<LeafList<T, Constraints>>
+> = PathListFromLeafList<LeafListOf<T, Constraints>>
 
-export type Path<T, Constraints extends StringPathConstraints = {}> = Join<
-    PathList<T, Constraints>,
+export type PathOf<T, Constraints extends StringPathConstraints = {}> = Join<
+    PathListOf<T, Constraints>,
     EnsureValue<Constraints["delimiter"], DefaultDelimiter>
 >
