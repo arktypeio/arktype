@@ -109,7 +109,7 @@ export type LeafListOf<
 > = LeafListOfRecurse<
     T,
     Constraints,
-    EnsureValue<Constraints["maxDepth"], 8>,
+    EnsureValue<Constraints["maxDepth"], 10>,
     never
 >
 
@@ -188,3 +188,12 @@ export type PathOf<T, Constraints extends StringPathConstraints = {}> = Join<
     PathListOf<T, Constraints>,
     EnsureValue<Constraints["delimiter"], DefaultDelimiter>
 >
+
+export type PathTo<
+    T,
+    To,
+    Constraints extends Omit<
+        StringPathConstraints,
+        "filter" | "treatAsLeaf"
+    > = {}
+> = LeafOf<T, { filter: To; treatAsLeaf: To } & Constraints>

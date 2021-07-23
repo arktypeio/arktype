@@ -7,22 +7,14 @@ import {
     LeafOf,
     ValueAtPath,
     Join,
-    Segment
+    Segment,
+    PathTo
 } from "@re-do/utils"
 import { Actions } from "./common.js"
 
-export type OnCycle = "__cycle__"
+export type Model<Input extends object> = ModelRecurse<Input, Input, []>
 
-export type Model<Input extends object> = ModelRecurse<
-    NonCyclic<Input, OnCycle>,
-    NonCyclic<Input, OnCycle>,
-    []
->
-
-export type CandidateEntityPath<Input extends object> = LeafOf<
-    Input,
-    { filter: object[]; treatAsLeaf: object[] }
->
+type WithOptionalTuple<T, O> = T | [T, O]
 
 type ModelRecurse<
     Root,
@@ -30,54 +22,39 @@ type ModelRecurse<
     CurrentPath extends Segment[]
 > = Current extends NonRecursible
     ? ModelConfig<Current>
-    :
+    : WithOptionalTuple<
           | Exclude<
-                LeafOf<
+                PathTo<
                     Root,
+                    Current[],
                     {
-                        filter: Unlisted<Current>[]
-                        treatAsLeaf: Unlisted<Current>[]
                         excludeArrayIndices: true
                     }
                 >,
                 Join<CurrentPath>
             >
           | {
-                [K in Extract<keyof Current, Segment>]?:
-                    | ModelRecurse<
-                          Root,
-                          Unlisted<Current[K]>,
-                          [...CurrentPath, K]
-                      >
-                    | [
-                          ModelRecurse<
-                              Root,
-                              Unlisted<Current[K]>,
-                              [...CurrentPath, K]
-                          >,
-                          ModelConfig<Current[K]>
-                      ]
-            }
+                [K in Extract<keyof Current, Segment>]?: ModelRecurse<
+                    Root,
+                    Unlisted<Current[K]>,
+                    [...CurrentPath, K]
+                >
+            },
+          ModelConfig<Current>
+      >
 
 const x: Model<Test> = {
     users: {
-        groups: {
-            name: {
-                onChange: (_) => console.log(_)
-            },
-            description: {},
-            users: {}
-        }
+        groups: ["groups", { onChange: () => {} }]
+    },
+    groups: {
+        name: {
+            onChange: (_) => console.log(_)
+        },
+        description: {},
+        users: {}
     }
 }
-
-type X = LeafOf<
-    Test,
-    {
-        filter: Group[]
-        treatAsLeaf: Group[]
-    }
->
 
 export type ModelConfig<T> = {
     validate?: (_: T) => boolean
@@ -90,8 +67,6 @@ export type CreateStoreOptions<Input extends object> = {
 }
 
 export const createStore = <Input extends object>(model: Model<Input>) => {}
-
-// const store = createStore<Root>({})
 
 type User = {
     name: string
