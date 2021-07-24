@@ -153,18 +153,16 @@ type LeafListOfRecurse<
 export type Join<
     Segments extends Segment[],
     Delimiter extends string = DefaultDelimiter
-> = Extract<
-    Segments extends []
-        ? ""
-        : Segments extends [Segment, ...infer Remaining]
-        ? `${Segments[0]}${Remaining extends [] ? "" : Delimiter}${Join<
-              Remaining extends Segment[] ? Remaining : never,
-              Delimiter
-          >}`
-        : never,
-    // Will always be a string anyways, but TS can't figure that out
-    string
->
+> = Segments extends []
+    ? ""
+    : Segments extends [Segment]
+    ? `${Segments[0]}`
+    : Segments extends [Segment, ...infer Remaining]
+    ? `${Segments[0]}${Delimiter}${Join<
+          Remaining extends Segment[] ? Remaining : never,
+          Delimiter
+      >}`
+    : never
 
 export type LeafOf<T, Constraints extends StringPathConstraints = {}> = Join<
     LeafListOf<T, Constraints>,
