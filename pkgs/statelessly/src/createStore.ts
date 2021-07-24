@@ -11,7 +11,6 @@ import {
     PathTo,
     AsListIfList
 } from "@re-do/utils"
-import { T } from "../../utils/node_modules/ts-toolbelt/out/index.js"
 import { Actions } from "./common.js"
 
 export type Model<Input extends object> = ModelRecurse<
@@ -26,7 +25,7 @@ type AsListIf<T, Condition extends boolean> = Condition extends true ? T[] : T
 type IfList<T, IfList, IfNotList> = T extends any[] ? IfList : IfNotList
 type IsList<T> = IfList<T, true, false>
 
-type WithOptionalTuple<T, Optional> = T | [T] | [T, Optional]
+type WithOptionalTuple<T, Optional> = Readonly<T | [T] | [T, Optional]>
 
 type AvailableReferencePaths<
     Root,
@@ -44,7 +43,7 @@ type AvailableReferencePaths<
 >
 
 type ModeledProperties<Root, Current, CurrentPath extends Segment[], Seen> = {
-    [K in Extract<keyof Current, Segment>]?: ModelRecurse<
+    readonly [K in Extract<keyof Current, Segment>]?: ModelRecurse<
         Root,
         Unlisted<Current[K]>,
         [...CurrentPath, K],
@@ -52,6 +51,12 @@ type ModeledProperties<Root, Current, CurrentPath extends Segment[], Seen> = {
         Seen | Current
     >
 }
+
+type ModelValue<Root, Current, CurrentPath extends Segment[], Seen> =
+    | AvailableReferencePaths<Root, Current, CurrentPath>
+    | (Current extends Seen
+          ? never
+          : ModeledProperties<Root, Current, CurrentPath, Seen>)
 
 type ModelRecurse<
     Root,
@@ -62,10 +67,7 @@ type ModelRecurse<
 > = Current extends NonRecursible
     ? ModelConfig<Current, InArray>
     : WithOptionalTuple<
-          | AvailableReferencePaths<Root, Current, CurrentPath>
-          | (Current extends Seen
-                ? never
-                : ModeledProperties<Root, Current, CurrentPath, Seen>),
+          ModelValue<Root, Current, CurrentPath, Seen>,
           ModelConfig<Current, InArray, CurrentPath extends [] ? true : false>
       >
 
@@ -105,19 +107,33 @@ export type CreateStoreOptions<
     actions?: A
 }
 
+export type Store<
+    Input extends object,
+    M extends Model<Input>,
+    A extends Actions<Input>
+> = M extends readonly [infer Value, infer Config] ? Value : false
+
+//     {
+//     [K in keyof Input]: M extends WithOptionalTuple<infer Value, infer Config>
+//         ? K extends keyof Value
+//             ? Value[K]
+//             : never
+//         : never
+// }
+
 export const createStore = <
     Input extends object,
     M extends Model<Input>,
     A extends Actions<Input>
->({
-    initial,
-    model,
-    actions
-}: CreateStoreOptions<Input, M, A>) => {}
+>(
+    initial: Input,
+    model?: M,
+    actions?: A
+): Store<Input, M, A> => "" as any
 
-createStore({
-    initial: "" as any as Test,
-    model: [
+const x = createStore(
+    {} as any as Test,
+    [
         {
             users: {
                 groups: ["groups", { onChange: () => {} }]
@@ -142,8 +158,8 @@ createStore({
             }
         },
         {}
-    ]
-})
+    ] as const
+)
 
 type User = {
     name: string
