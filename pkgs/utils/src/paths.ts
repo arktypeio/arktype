@@ -6,80 +6,90 @@ import {
     MinusOne,
     NonCyclic,
     NonRecursible,
-    withDefaults
+    withDefaults,
+    And,
+    Merge,
+    If
 } from "./common.js"
-import { String, T } from "ts-toolbelt"
+import { String, O, F } from "ts-toolbelt"
 
 export type ValueAtPath<
     O,
-    P extends PathOf<
-        O,
-        { excludeArrayIndices: ExcludeArrayIndices; delimiter: Delimiter }
-    >,
-    Delimiter extends string = "/",
-    ExcludeArrayIndices extends boolean = false
-> = ValueAtPathList<O, String.Split<P, Delimiter>, ExcludeArrayIndices>
+    P extends PathOf<O, Options>,
+    Options extends ValueAtPathOptions = {}
+> = ValueAtPathList<
+    O,
+    String.Split<P, EnsureValue<Options["delimiter"], "/">>,
+    EnsureValue<Options["excludeArrayIndices"], false>
+>
 
 export type ValueAtPathList<
     O,
     Segments extends Segment[],
     ExcludeArrayIndices extends boolean = false
-> = Segments extends [infer Current, ...infer Remaining]
+> = And<ExcludeArrayIndices, IsList<O>> extends true
+    ? ValueAtPathList<FlatUnlisted<O>, Segments, ExcludeArrayIndices>[]
+    : Segments extends [infer Current, ...infer Remaining]
     ? Current extends keyof O
         ? ValueAtPathList<
-              ExcludeArrayIndices extends true
-                  ? FlatUnlisted<O[Current]>
-                  : O[Current],
+              O[Current],
               Remaining extends Segment[] ? Remaining : never,
               ExcludeArrayIndices
           >
         : undefined
     : O
 
-export type ValueAtPathOptions<
-    Delimiter extends string,
-    ExcludeArrayIndices extends boolean
-> = {
-    delimiter?: Delimiter
-    excludeArrayIndices?: ExcludeArrayIndices
+export type ValueAtPathOptions = {
+    delimiter?: string
+    excludeArrayIndices?: boolean
 }
 
 export const valueAtPath = <
     O,
-    P extends PathOf<
-        O,
-        { excludeArrayIndices: ExcludeArrayIndices; delimiter: Delimiter }
-    >,
-    Delimiter extends string = "/",
-    ExcludeArrayIndices extends boolean = false
+    P extends PathOf<O, Options>,
+    Options extends ValueAtPathOptions = {}
 >(
     o: O,
     path: P,
-    options: ValueAtPathOptions<Delimiter, ExcludeArrayIndices> = {}
-): ValueAtPath<O, P, Delimiter, ExcludeArrayIndices> => {
-    const { delimiter, excludeArrayIndices } = withDefaults<
-        ValueAtPathOptions<string, boolean>
-    >({
-        delimiter: "/",
-        excludeArrayIndices: false
-    })(options as any)
+    options?: Options
+): ValueAtPath<O, P, Options> => {
+    const { delimiter, excludeArrayIndices } = withDefaults<ValueAtPathOptions>(
+        {
+            delimiter: "/",
+            excludeArrayIndices: false
+        }
+    )(options)
+    return valueAtPathList(
+        o,
+        (path as string).split(delimiter),
+        excludeArrayIndices
+    ) as any
+}
+
+export const valueAtPathList = <
+    O,
+    P extends Segment[],
+    ExcludeArrayIndices extends boolean = false
+>(
+    o: O,
+    segments: P,
+    excludeArrayIndices: boolean = false
+): ValueAtPathList<O, P, ExcludeArrayIndices> => {
     if (Array.isArray(o) && excludeArrayIndices) {
         return o.map((_) =>
-            // @ts-ignore
-            valueAtPath(_, path, options)
+            valueAtPathList(_, segments, excludeArrayIndices)
         ) as any
     }
-    if (path === "") {
+    if (!segments.length) {
         return o as any
     }
-    // @ts-ignore
-    const [segment, ...remaining] = path.split(delimiter)
+    const [segment, ...remaining] = segments
     if (isRecursible(o) && segment in o) {
-        return valueAtPath(
+        return valueAtPathList(
             (o as any)[segment],
-            remaining.join(delimiter) as any,
-            options
-        )
+            remaining,
+            excludeArrayIndices
+        ) as any
     } else {
         return undefined as any
     }
@@ -92,7 +102,7 @@ export type Segment = string | number
 
 export type DefaultDelimiter = "/"
 
-export type PathConstraints = {
+export type PathConstraintOptions = {
     filter?: any
     exclude?: any
     treatAsLeaf?: any
@@ -100,39 +110,44 @@ export type PathConstraints = {
     maxDepth?: number
 }
 
-export type StringPathConstraints = PathConstraints & {
+export type PathConstraints = Required<PathConstraintOptions>
+
+export type DefaultPathConstraints = {
+    filter: any
+    exclude: never
+    treatAsLeaf: never
+    excludeArrayIndices: false
+    maxDepth: 10
+}
+
+export type StringPathConstraintOptions = PathConstraintOptions & {
     delimiter?: string
 }
 
 export type LeafListOf<
     T,
-    Constraints extends PathConstraints = {}
+    Constraints extends PathConstraintOptions = {}
 > = LeafListOfRecurse<
     T,
-    Constraints,
-    EnsureValue<Constraints["maxDepth"], 5>,
+    O.Merge<Constraints, DefaultPathConstraints>,
+    EnsureValue<Constraints["maxDepth"], DefaultPathConstraints["maxDepth"]>,
     never
 >
 
-type And<A, B> = A extends true ? (B extends true ? true : false) : false
-
 type LeafListOfRecurse<
     T,
-    Constraints extends PathConstraints,
+    Constraints extends Required<PathConstraintOptions>,
     DepthRemaining extends number,
     Seen
 > = DepthRemaining extends 0
     ? never
-    : T extends NonRecursible | Fallback<Constraints["treatAsLeaf"], never>
-    ? T extends Fallback<Constraints["exclude"], never>
+    : T extends NonRecursible | Constraints["treatAsLeaf"]
+    ? T extends Constraints["exclude"]
         ? never
-        : T extends Fallback<Constraints["filter"], any>
+        : T extends Constraints["filter"]
         ? []
         : never
-    : And<
-          IsList<T>,
-          Fallback<Constraints["excludeArrayIndices"], false>
-      > extends true
+    : And<IsList<T>, Constraints["excludeArrayIndices"]> extends true
     ? LeafListOfRecurse<
           FlatUnlisted<T>,
           Constraints,
@@ -170,7 +185,10 @@ export type Join<
       >}`
     : never
 
-export type LeafOf<T, Constraints extends StringPathConstraints = {}> = Join<
+export type LeafOf<
+    T,
+    Constraints extends StringPathConstraintOptions = {}
+> = Join<
     LeafListOf<T, Constraints>,
     EnsureValue<Constraints["delimiter"], DefaultDelimiter>
 >
@@ -188,10 +206,13 @@ export type PathListFromLeafList<Segments extends Segment[]> =
 
 export type PathListOf<
     T,
-    Constraints extends PathConstraints = {}
+    Constraints extends PathConstraintOptions = {}
 > = PathListFromLeafList<LeafListOf<T, Constraints>>
 
-export type PathOf<T, Constraints extends StringPathConstraints = {}> = Join<
+export type PathOf<
+    T,
+    Constraints extends StringPathConstraintOptions = {}
+> = Join<
     PathListOf<T, Constraints>,
     EnsureValue<Constraints["delimiter"], DefaultDelimiter>
 >
@@ -199,37 +220,57 @@ export type PathOf<T, Constraints extends StringPathConstraints = {}> = Join<
 export type PathListTo<
     T,
     To,
-    Constraints extends Omit<PathConstraints, "filter" | "treatAsLeaf"> = {}
+    Constraints extends Omit<
+        PathConstraintOptions,
+        "filter" | "treatAsLeaf"
+    > = {}
 > = LeafListOf<T, { filter: To; treatAsLeaf: To } & Constraints>
 
 export type PathTo<
     T,
     To,
     Constraints extends Omit<
-        StringPathConstraints,
+        StringPathConstraintOptions,
         "filter" | "treatAsLeaf"
     > = {}
 > = LeafOf<T, { filter: To; treatAsLeaf: To } & Constraints>
 
-type B = { foop: A }
-
-type A = {
-    a: B[]
-    c: B[]
-    d: {
-        b: B[]
-    }[]
-}
-
 export type CyclicPathList<
     T,
-    Constraints extends Omit<PathConstraints, "filter" | "treatAsLeaf"> = {}
+    Constraints extends Omit<
+        PathConstraintOptions,
+        "filter" | "treatAsLeaf"
+    > = {}
 > = PathListTo<NonCyclic<T, "__cycle__">, "__cycle__", Constraints>
 
 export type CyclicPath<
     T,
     Constraints extends Omit<
-        StringPathConstraints,
+        StringPathConstraintOptions,
         "filter" | "treatAsLeaf"
     > = {}
 > = PathTo<NonCyclic<T, "__cycle__">, "__cycle__", Constraints>
+
+type User = {
+    name: string
+    friends: User[]
+    groups: Group[]
+}
+
+type Group = {
+    name: string
+    description: string
+    users: User[]
+}
+
+const fallback = {
+    users: [] as User[],
+    groups: [] as Group[],
+    currentUser: "",
+    preferences: {
+        darkMode: false,
+        nicknames: [] as string[]
+    }
+}
+
+type Test = typeof fallback

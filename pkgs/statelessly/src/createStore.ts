@@ -14,7 +14,8 @@ import {
     valueAtPath,
     CyclicPathList,
     IsList,
-    AsListIf
+    AsListIf,
+    PathListFromLeafList
 } from "@re-do/utils"
 import { O } from "ts-toolbelt"
 import { Actions } from "./common.js"
@@ -23,7 +24,9 @@ export type Model<Input> = ModelRecurse<
     Input,
     Input,
     [],
-    CyclicPathList<Input, { excludeArrayIndices: true; maxDepth: 8 }>,
+    PathListFromLeafList<
+        CyclicPathList<Input, { excludeArrayIndices: true; maxDepth: 5 }>
+    >,
     never,
     IsList<Input>
 >
@@ -40,7 +43,6 @@ type AvailableReferencePath<
         Current[],
         {
             excludeArrayIndices: true
-            maxDepth: 10
         }
     >,
     Join<CurrentPath>
@@ -99,10 +101,18 @@ type ModelRecurse<
     Seen,
     InArray extends boolean
 > = Current extends NonRecursible
-    ? ModelConfig<Current, InArray>
+    ? Readonly<ModelConfig<Current, InArray>>
     : WithOptionalTuple<
-          ModelValue<Root, Current, CurrentPath, MandatoryPaths, Seen>,
-          ModelConfig<Current, InArray, CurrentPath extends [] ? true : false>
+          Readonly<
+              ModelValue<Root, Current, CurrentPath, MandatoryPaths, Seen>
+          >,
+          Readonly<
+              ModelConfig<
+                  Current,
+                  InArray,
+                  CurrentPath extends [] ? true : false
+              >
+          >
       >
 
 export type ModelConfig<
@@ -145,18 +155,18 @@ export const createStore = <
     Input extends object,
     M extends Model<Input>,
     A extends Actions<Input>
->({
-    initial,
-    model,
-    actions
-}: CreateStoreOptions<Input, M, A>) => "" as Store<Input, M, A>
+>(
+    initial: Input,
+    model?: M,
+    actions?: A
+) => "" as Store<Input, M, A>
 
-const x = createStore({
-    initial: {} as any as Test,
-    model: [
+const x = createStore(
+    {} as any as Test,
+    [
         {
             users: {
-                groups: ["groups", { onChange: () => {} }],
+                groups: ["groups", { onChange: (_) => {} }],
                 friends: "users"
             },
             groups: [
@@ -176,25 +186,27 @@ const x = createStore({
                 }
             }
         },
-        {}
-    ]
-})
+        {
+            validate: (_) => true
+        }
+    ] as const
+)
 
 export type Store<
     Input extends object,
     M extends Model<Input>,
     A extends Actions<Input>
-> = StoreRecurse<Input, Input, IsList<Input>, never, M>
+> = StoreRecurse<Input, Input, never, M>
 
 type StoreRecurse<
     Root extends object,
     Current,
-    InArray extends boolean,
     Seen,
     M
-    // M extends ModelRecurse<Current, Current, CurrentPath, InArray, Seen>
 > = Current extends NonRecursible
     ? Current
+    : Current extends any[]
+    ? StoreRecurse<Root, Unlisted<Current>, Seen, M>[]
     : {
           [K in keyof Current]: M extends WithOptionalTuple<
               infer Value,
@@ -203,13 +215,7 @@ type StoreRecurse<
               ? K extends keyof Value
                   ? Value[K] extends string
                       ? `Reference to ${Extract<Value[K], string>}`
-                      : StoreRecurse<
-                            Root,
-                            Unlisted<Current[K]>,
-                            IsList<Current[K]>,
-                            Seen | Current,
-                            Value[K]
-                        >
+                      : StoreRecurse<Root, Current[K], Seen | Current, Value[K]>
                   : // No config provided
                     Current[K]
               : Current[K]

@@ -28,10 +28,12 @@ test("returns undefined on nonexistent path", () => {
     expect(valueAtPath(obj, "fake/fake")).toBe(undefined)
 })
 test("non-default delimiter", () => {
-    expect(valueAtPath(obj, "a.b.c", { delimiter: "." })).toBe(31)
+    const result = valueAtPath(obj, "a.b.c", { delimiter: "." })
+    expect(result).toBe(31)
 })
 test("skip array paths", () => {
-    expect(
-        valueAtPath(obj, "g/a", { excludeArrayIndices: true })
-    ).toStrictEqual([true, false])
+    const result = valueAtPath(obj, "g/a", {
+        excludeArrayIndices: true
+    })
+    expect(result).toStrictEqual([true, false])
 })

@@ -15,7 +15,7 @@ export type Merge<
     E extends object = {},
     F extends object = {},
     G extends object = {}
-> = O.Assign<A, [B, C, D, E, F, G]>
+> = O.Assign<A, [G, F, E, D, C, B]>
 
 export type MapReturn<F, V> = F extends (value: V) => infer R ? R : any
 
@@ -234,7 +234,7 @@ export type FilterUp<T, UpfilteredKey> = {
 
 export const withDefaults =
     <T extends Record<string, any>>(defaults: Required<OptionalOnly<T>>) =>
-    (provided: T) => {
+    (provided: T | undefined) => {
         return { ...defaults, ...provided }
     }
 
@@ -265,7 +265,43 @@ export type NonCyclic<O, OnCycle = any, Seen = never> = O extends Seen
     : {
           [K in keyof O]: O[K] extends NonRecursible
               ? O[K]
-              : NonCyclic<O[K], OnCycle, Seen | (O extends any[] ? never : O)>
+              : NonCyclic<O[K], OnCycle, Seen | O>
       }
 
 export type MinusOne<N extends number> = Number.Sub<N, 1>
+
+export type And<A extends boolean, B extends boolean> = {
+    true: {
+        true: true
+        false: false
+    }
+    false: {
+        true: false
+        false: false
+    }
+}[`${A}`][`${B}`]
+
+export type Or<A extends boolean, B extends boolean> = {
+    true: {
+        true: true
+        false: true
+    }
+    false: {
+        true: true
+        false: false
+    }
+}[`${A}`][`${B}`]
+
+export type Not<A extends boolean> = {
+    true: false
+    false: true
+}[`${A}`]
+
+export type If<
+    Condition extends boolean,
+    ValueIfTrue,
+    ValueIfFalse
+> = Condition extends true ? ValueIfTrue : ValueIfFalse
+
+export type IfExtends<T, CheckIfExtended, ValueIfTrue, ValueIfFalse> =
+    T extends CheckIfExtended ? ValueIfTrue : ValueIfFalse
