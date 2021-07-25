@@ -15,21 +15,13 @@ import {
     CyclicPathList,
     IsList,
     AsListIf,
-    PathListFromLeafList
+    PathListFromLeafList,
+    FilterByValue,
+    ExcludeByValue
 } from "@re-do/utils"
-import { O } from "ts-toolbelt"
 import { Actions } from "./common.js"
 
-export type Model<Input> = ModelRecurse<
-    Input,
-    Input,
-    [],
-    PathListFromLeafList<
-        CyclicPathList<Input, { excludeArrayIndices: true; maxDepth: 5 }>
-    >,
-    never,
-    IsList<Input>
->
+export type Model<Input> = ModelRecurse<Input, Input, [], never, IsList<Input>>
 
 type WithOptionalTuple<T, Optional> = T | Readonly<[T] | [T, Optional]>
 
@@ -48,64 +40,32 @@ type AvailableReferencePath<
     Join<CurrentPath>
 >
 
-type ModeledProperties<
-    Root,
-    Current,
-    CurrentPath extends Segment[],
-    MandatoryPaths extends Segment[],
-    Seen
-> = O.Required<
-    {
-        [K in Extract<keyof Current, Segment>]?: ModelRecurse<
-            Root,
-            Unlisted<Current[K]>,
-            [...CurrentPath, K],
-            MandatoryPaths,
-            Seen | Current,
-            IsList<Current[K]>
-        >
-    },
-    MandatoryKeys<Current, CurrentPath, MandatoryPaths>
->
+type ModeledProperties<Root, Current, CurrentPath extends Segment[], Seen> = {
+    [K in Extract<keyof Current, Segment>]?: ModelRecurse<
+        Root,
+        Unlisted<Current[K]>,
+        [...CurrentPath, K],
+        Seen | Current,
+        IsList<Current[K]>
+    >
+}
 
-type MandatoryKeys<
-    Current,
-    CurrentPath extends Segment[],
-    MandatoryPaths extends Segment[]
-> = Extract<
-    {
-        [K in keyof Current]: [...CurrentPath, K] extends MandatoryPaths
-            ? K
-            : never
-    }[keyof Current],
-    Segment
->
-
-type ModelValue<
-    Root,
-    Current,
-    CurrentPath extends Segment[],
-    MandatoryPaths extends Segment[],
-    Seen
-> =
+type ModelValue<Root, Current, CurrentPath extends Segment[], Seen> =
     | AvailableReferencePath<Root, Current, CurrentPath>
     | (Current extends Seen
           ? never
-          : ModeledProperties<Root, Current, CurrentPath, MandatoryPaths, Seen>)
+          : ModeledProperties<Root, Current, CurrentPath, Seen>)
 
 type ModelRecurse<
     Root,
     Current,
     CurrentPath extends Segment[],
-    MandatoryPaths extends Segment[],
     Seen,
     InArray extends boolean
 > = Current extends NonRecursible
     ? Readonly<ModelConfig<Current, InArray>>
     : WithOptionalTuple<
-          Readonly<
-              ModelValue<Root, Current, CurrentPath, MandatoryPaths, Seen>
-          >,
+          Readonly<ModelValue<Root, Current, CurrentPath, Seen>>,
           Readonly<
               ModelConfig<
                   Current,
@@ -140,16 +100,6 @@ type ModelConfigType<T, InArray extends boolean> = AsListIf<
     T extends boolean ? boolean : T,
     InArray
 >
-
-export type CreateStoreOptions<
-    Input extends object,
-    M extends Model<Input>,
-    A extends Actions<Input>
-> = {
-    initial: Input
-    model?: M
-    actions?: A
-}
 
 export const createStore = <
     Input extends object,
