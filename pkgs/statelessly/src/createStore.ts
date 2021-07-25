@@ -12,25 +12,23 @@ import {
     AsListIfList,
     PathListOf,
     valueAtPath,
-    CyclicPathList
+    CyclicPathList,
+    IsList,
+    AsListIf
 } from "@re-do/utils"
-import { current } from "@reduxjs/toolkit"
+import { O } from "ts-toolbelt"
 import { Actions } from "./common.js"
 
 export type Model<Input> = ModelRecurse<
     Input,
     Input,
     [],
-    CyclicPathList<Input, { excludeArrayIndices: true; maxDepth: 10 }>,
+    CyclicPathList<Input, { excludeArrayIndices: true; maxDepth: 8 }>,
     never,
     IsList<Input>
 >
 
-type AsListIf<T, Condition extends boolean> = Condition extends true ? T[] : T
-type IfList<T, IfList, IfNotList> = T extends any[] ? IfList : IfNotList
-type IsList<T> = IfList<T, true, false>
-
-type WithOptionalTuple<T, Optional> = Readonly<T | [T] | [T, Optional]>
+type WithOptionalTuple<T, Optional> = T | Readonly<[T] | [T, Optional]>
 
 type AvailableReferencePath<
     Root,
@@ -42,17 +40,11 @@ type AvailableReferencePath<
         Current[],
         {
             excludeArrayIndices: true
+            maxDepth: 10
         }
     >,
     Join<CurrentPath>
 >
-
-type WithMandatoryKeys<T, Keys extends keyof T> = {
-    [K in Exclude<keyof T, Keys>]: T[K]
-} &
-    {
-        [K in Keys]-?: T[K]
-    }
 
 type ModeledProperties<
     Root,
@@ -60,9 +52,9 @@ type ModeledProperties<
     CurrentPath extends Segment[],
     MandatoryPaths extends Segment[],
     Seen
-> = WithMandatoryKeys<
+> = O.Required<
     {
-        readonly [K in Extract<keyof Current, Segment>]?: ModelRecurse<
+        [K in Extract<keyof Current, Segment>]?: ModelRecurse<
             Root,
             Unlisted<Current[K]>,
             [...CurrentPath, K],
@@ -153,15 +145,15 @@ export const createStore = <
     Input extends object,
     M extends Model<Input>,
     A extends Actions<Input>
->(
-    initial: Input,
-    model?: M,
-    actions?: A
-): Store<Input, M, A> => "" as any
+>({
+    initial,
+    model,
+    actions
+}: CreateStoreOptions<Input, M, A>) => "" as Store<Input, M, A>
 
-const x = createStore(
-    {} as any as Test,
-    [
+const x = createStore({
+    initial: {} as any as Test,
+    model: [
         {
             users: {
                 groups: ["groups", { onChange: () => {} }],
@@ -185,8 +177,8 @@ const x = createStore(
             }
         },
         {}
-    ] as const
-)
+    ]
+})
 
 export type Store<
     Input extends object,

@@ -152,6 +152,12 @@ export type FlatUnlisted<T> = T extends (infer V)[] ? FlatUnlisted<V> : T
 export type DeepUnlisted<T> = T extends object
     ? { [K in keyof T]: DeepUnlisted<FlatUnlisted<T[K]>> }
     : T
+export type AsListIf<T, Condition extends boolean> = Condition extends true
+    ? T[]
+    : T
+export type IfList<T, IfList, IfNotList> = T extends any[] ? IfList : IfNotList
+export type IsList<T> = IfList<T, true, false>
+
 export type FilterByValue<T extends object, ValueType> = Pick<
     T,
     {

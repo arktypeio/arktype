@@ -1,5 +1,6 @@
 import {
     FlatUnlisted,
+    IsList,
     isRecursible,
     ItemOrList,
     MinusOne,
@@ -71,6 +72,7 @@ export const valueAtPath = <
     if (path === "") {
         return o as any
     }
+    // @ts-ignore
     const [segment, ...remaining] = path.split(delimiter)
     if (isRecursible(o) && segment in o) {
         return valueAtPath(
@@ -112,6 +114,8 @@ export type LeafListOf<
     never
 >
 
+type And<A, B> = A extends true ? (B extends true ? true : false) : false
+
 type LeafListOfRecurse<
     T,
     Constraints extends PathConstraints,
@@ -125,28 +129,28 @@ type LeafListOfRecurse<
         : T extends Fallback<Constraints["filter"], any>
         ? []
         : never
+    : And<
+          IsList<T>,
+          Fallback<Constraints["excludeArrayIndices"], false>
+      > extends true
+    ? LeafListOfRecurse<
+          FlatUnlisted<T>,
+          Constraints,
+          MinusOne<DepthRemaining>,
+          Seen
+      >
     : T extends Seen
     ? never
     : Extract<
           {
               [K in keyof T]: [
                   K,
-                  ...(Fallback<
-                      Constraints["excludeArrayIndices"],
-                      false
-                  > extends true
-                      ? LeafListOfRecurse<
-                            FlatUnlisted<T[K]>,
-                            Constraints,
-                            MinusOne<DepthRemaining>,
-                            Seen | FlatUnlisted<T>
-                        >
-                      : LeafListOfRecurse<
-                            T[K],
-                            Constraints,
-                            MinusOne<DepthRemaining>,
-                            Seen | (T extends any[] ? never : T)
-                        >)
+                  ...LeafListOfRecurse<
+                      T[K],
+                      Constraints,
+                      MinusOne<DepthRemaining>,
+                      Seen | T
+                  >
               ]
           }[keyof T],
           Segment[]
@@ -206,6 +210,16 @@ export type PathTo<
         "filter" | "treatAsLeaf"
     > = {}
 > = LeafOf<T, { filter: To; treatAsLeaf: To } & Constraints>
+
+type B = { foop: A }
+
+type A = {
+    a: B[]
+    c: B[]
+    d: {
+        b: B[]
+    }[]
+}
 
 export type CyclicPathList<
     T,
