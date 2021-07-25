@@ -1,29 +1,18 @@
 import {
-    DeepUnlisted,
-    NonCyclic,
     NonRecursible,
-    PathOf,
     Unlisted,
-    LeafOf,
-    ValueAtPath,
     Join,
     Segment,
     PathTo,
-    AsListIfList,
-    PathListOf,
-    valueAtPath,
-    CyclicPathList,
     IsList,
     AsListIf,
-    PathListFromLeafList,
-    FilterByValue,
-    ExcludeByValue
+    Narrow
 } from "@re-do/utils"
 import { Actions } from "./common.js"
 
 export type Model<Input> = ModelRecurse<Input, Input, [], never, IsList<Input>>
 
-type WithOptionalTuple<T, Optional> = T | Readonly<[T] | [T, Optional]>
+type WithOptionalTuple<T, Optional> = T | [T] | [T, Optional]
 
 type AvailableReferencePath<
     Root,
@@ -63,33 +52,21 @@ type ModelRecurse<
     Seen,
     InArray extends boolean
 > = Current extends NonRecursible
-    ? Readonly<ModelConfig<Current, InArray>>
+    ? ModelConfig<Current, InArray>
     : WithOptionalTuple<
-          Readonly<ModelValue<Root, Current, CurrentPath, Seen>>,
-          Readonly<
-              ModelConfig<
-                  Current,
-                  InArray,
-                  CurrentPath extends [] ? true : false
-              >
-          >
+          ModelValue<Root, Current, CurrentPath, Seen>,
+          ModelConfig<Current, InArray>
       >
 
 export type ModelConfig<
     T,
-    InArray extends boolean = false,
-    IsRootConfig extends boolean = false
-> = IsRootConfig extends true
-    ? RootModelConfig<ModelConfigType<T, InArray>>
-    : BaseModelConfig<ModelConfigType<T, InArray>>
+    InArray extends boolean = false
+> = ModelConfigOptions<ModelConfigType<T, InArray>>
 
-type BaseModelConfig<T> = {
+type ModelConfigOptions<T> = {
+    idKey?: string
     validate?: (_: T) => boolean
     onChange?: (_: T) => void
-}
-
-type RootModelConfig<T> = BaseModelConfig<T> & {
-    idKey?: string
 }
 
 /**
@@ -107,40 +84,40 @@ export const createStore = <
     A extends Actions<Input>
 >(
     initial: Input,
-    model?: M,
+    model?: Narrow<M>,
     actions?: A
-) => "" as Store<Input, M, A>
+) => {
+    return model as any as Store<Input, M, A>
+}
 
-const x = createStore(
-    {} as any as Test,
-    [
-        {
-            users: {
-                groups: ["groups", { onChange: (_) => {} }],
-                friends: "users"
-            },
-            groups: [
-                {
-                    name: {
-                        onChange: (_) => console.log(_)
-                    },
-                    description: {},
-                    users: "users"
-                }
-            ],
-            preferences: {
-                nicknames: {},
-                darkMode: {
-                    validate: (_) => true,
-                    onChange: (_) => console.log(_)
-                }
-            }
+const x = createStore({} as any as Test, [
+    {
+        users: {
+            groups: ["groups", { onChange: (_) => {} }],
+            friends: "users"
         },
-        {
-            validate: (_) => true
+        groups: [
+            {
+                name: {
+                    onChange: (_) => console.log(_)
+                },
+                description: {},
+                users: "users"
+            }
+        ],
+        preferences: {
+            nicknames: {},
+            darkMode: {
+                validate: (_) => true,
+                onChange: (_) => console.log(_)
+            }
         }
-    ] as const
-)
+    },
+    {
+        idKey: "",
+        validate: (_) => true
+    }
+])
 
 export type Store<
     Input extends object,

@@ -1,7 +1,7 @@
 import moize from "moize"
 import isDeepEqual from "fast-deep-equal"
 import deepMerge from "deepmerge"
-import { Number, Object as O } from "ts-toolbelt"
+import { Any, Number, Object as O } from "ts-toolbelt"
 
 export const merge = deepMerge
 export const memoize = moize as <F extends (...args: any[]) => any>(f: F) => F
@@ -305,3 +305,18 @@ export type If<
 
 export type IfExtends<T, CheckIfExtended, ValueIfTrue, ValueIfFalse> =
     T extends CheckIfExtended ? ValueIfTrue : ValueIfFalse
+
+export type Cast<A, B> = A extends B ? A : B
+
+type NarrowRecurse<T> =
+    | (T extends [] ? [] : never)
+    | (T extends Narrowable ? T : never)
+    | {
+          [K in keyof T]: T[K] extends Function ? T[K] : Narrow<T[K]>
+      }
+
+type NarrowRoot<T, Narrowed = NarrowRecurse<T>> = Narrowed | Cast<T, Narrowed>
+
+type Narrowable = string | number | bigint | boolean
+
+export type Narrow<T> = NarrowRoot<T>
