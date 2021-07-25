@@ -1,12 +1,13 @@
 import {
     FlatUnlisted,
     isRecursible,
+    ItemOrList,
     MinusOne,
     NonCyclic,
     NonRecursible,
     withDefaults
 } from "./common.js"
-import { String } from "ts-toolbelt"
+import { String, T } from "ts-toolbelt"
 
 export type ValueAtPath<
     O,
@@ -70,13 +71,11 @@ export const valueAtPath = <
     if (path === "") {
         return o as any
     }
-    // @ts-ignore
     const [segment, ...remaining] = path.split(delimiter)
     if (isRecursible(o) && segment in o) {
-        // @ts-ignore
         return valueAtPath(
             (o as any)[segment],
-            remaining.join(delimiter),
+            remaining.join(delimiter) as any,
             options
         )
     } else {
@@ -109,7 +108,7 @@ export type LeafListOf<
 > = LeafListOfRecurse<
     T,
     Constraints,
-    EnsureValue<Constraints["maxDepth"], 10>,
+    EnsureValue<Constraints["maxDepth"], 5>,
     never
 >
 
@@ -120,32 +119,35 @@ type LeafListOfRecurse<
     Seen
 > = DepthRemaining extends 0
     ? never
+    : T extends NonRecursible | Fallback<Constraints["treatAsLeaf"], never>
+    ? T extends Fallback<Constraints["exclude"], never>
+        ? never
+        : T extends Fallback<Constraints["filter"], any>
+        ? []
+        : never
     : T extends Seen
     ? never
     : Extract<
           {
-              [K in keyof T]-?: T[K] extends
-                  | NonRecursible
-                  | Fallback<Constraints["treatAsLeaf"], never>
-                  ? T[K] extends Fallback<Constraints["exclude"], never>
-                      ? never
-                      : T[K] extends Fallback<Constraints["filter"], any>
-                      ? [K]
-                      : never
-                  : [
-                        K,
-                        ...LeafListOfRecurse<
-                            Fallback<
-                                Constraints["excludeArrayIndices"],
-                                false
-                            > extends true
-                                ? FlatUnlisted<T[K]>
-                                : T[K],
+              [K in keyof T]: [
+                  K,
+                  ...(Fallback<
+                      Constraints["excludeArrayIndices"],
+                      false
+                  > extends true
+                      ? LeafListOfRecurse<
+                            FlatUnlisted<T[K]>,
+                            Constraints,
+                            MinusOne<DepthRemaining>,
+                            Seen | FlatUnlisted<T>
+                        >
+                      : LeafListOfRecurse<
+                            T[K],
                             Constraints,
                             MinusOne<DepthRemaining>,
                             Seen | (T extends any[] ? never : T)
-                        >
-                    ]
+                        >)
+              ]
           }[keyof T],
           Segment[]
       >
@@ -169,15 +171,16 @@ export type LeafOf<T, Constraints extends StringPathConstraints = {}> = Join<
     EnsureValue<Constraints["delimiter"], DefaultDelimiter>
 >
 
-type PathListFromLeafList<Segments extends Segment[]> = Segments extends []
-    ? never
-    :
-          | Segments
-          | (Segments extends [...infer Remaining, Segment]
-                ? PathListFromLeafList<
-                      Remaining extends Segment[] ? Remaining : never
-                  >
-                : never)
+export type PathListFromLeafList<Segments extends Segment[]> =
+    Segments extends []
+        ? never
+        :
+              | Segments
+              | (Segments extends [...infer Remaining, Segment]
+                    ? PathListFromLeafList<
+                          Remaining extends Segment[] ? Remaining : never
+                      >
+                    : never)
 
 export type PathListOf<
     T,
@@ -189,6 +192,12 @@ export type PathOf<T, Constraints extends StringPathConstraints = {}> = Join<
     EnsureValue<Constraints["delimiter"], DefaultDelimiter>
 >
 
+export type PathListTo<
+    T,
+    To,
+    Constraints extends Omit<PathConstraints, "filter" | "treatAsLeaf"> = {}
+> = LeafListOf<T, { filter: To; treatAsLeaf: To } & Constraints>
+
 export type PathTo<
     T,
     To,
@@ -197,3 +206,16 @@ export type PathTo<
         "filter" | "treatAsLeaf"
     > = {}
 > = LeafOf<T, { filter: To; treatAsLeaf: To } & Constraints>
+
+export type CyclicPathList<
+    T,
+    Constraints extends Omit<PathConstraints, "filter" | "treatAsLeaf"> = {}
+> = PathListTo<NonCyclic<T, "__cycle__">, "__cycle__", Constraints>
+
+export type CyclicPath<
+    T,
+    Constraints extends Omit<
+        StringPathConstraints,
+        "filter" | "treatAsLeaf"
+    > = {}
+> = PathTo<NonCyclic<T, "__cycle__">, "__cycle__", Constraints>
