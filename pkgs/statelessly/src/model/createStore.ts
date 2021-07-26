@@ -51,18 +51,17 @@ type ModelRecurse<
     Current,
     CurrentPath extends Segment[],
     Seen,
-    InArray extends boolean
+    InList extends boolean
 > = Current extends NonRecursible
-    ? ModelConfig<Current, InArray>
+    ? ModelConfig<Current, InList>
     : WithOptionalTuple<
           ModelValue<Root, Current, CurrentPath, Seen>,
-          ModelConfig<Current, InArray>
+          ModelConfig<Current, InList>
       >
 
-export type ModelConfig<
-    T,
-    InArray extends boolean = false
-> = ModelConfigOptions<ModelConfigType<T, InArray>>
+export type ModelConfig<T, InList extends boolean = false> = ModelConfigOptions<
+    ModelConfigType<T, InList>
+>
 
 type ModelConfigOptions<T> = {
     idKey?: string
@@ -74,9 +73,9 @@ type ModelConfigOptions<T> = {
  * TS sometimes fails to identify true | false as boolean without this.
  * Unfortunately, this means we will mistake an explicitly typed true/false for a boolean,
  * but the use case of those types in a state seems very niche.**/
-type ModelConfigType<T, InArray extends boolean> = AsListIf<
+type ModelConfigType<T, InList extends boolean> = AsListIf<
     T extends boolean ? boolean : T,
-    InArray
+    InList
 >
 
 export const createStore = <
@@ -104,7 +103,8 @@ const store = createStore({} as any as Test, [
                     onChange: (_) => console.log(_)
                 },
                 description: {},
-                users: "users"
+                members: "users",
+                owner: "users"
             },
             { idKey: "croop" }
         ],
@@ -120,59 +120,70 @@ const store = createStore({} as any as Test, [
         idKey: "foop",
         validate: (_) => true
     }
-])
+]).groups.owner
 
 export type Store<
     Input extends object,
     M extends Model<Input>,
     A extends Actions<Input>
-> = StoreRecurse<Input, Input, never, M, "id", []>
+> = StoreRecurse<Input, M, IsList<Input>, "id">
 
 type StoreRecurse<
-    Root extends object,
-    Current,
-    Seen,
-    M,
-    idKey extends string,
-    Path extends Segment[]
-> = Current extends NonRecursible
-    ? Current
-    : Current extends any[]
-    ? StoreRecurse<Root, Unlisted<Current>, Seen, M, idKey, Path>[]
+    Input,
+    Model,
+    InList extends boolean,
+    IdKey extends string
+> = Input extends NonRecursible
+    ? Model extends ModelConfig<any>
+        ? Input
+        : Input
+    : Input extends any[]
+    ? StoreRecurse<Unlisted<Input>, Model, true, IdKey>
     : {
-          [K in keyof Current]: M extends WithOptionalTuple<
-              infer Value,
-              infer Config
+          [K in keyof Input]: Model extends WithOptionalTuple<
+              infer ModelProps,
+              infer ModelConfig
           >
-              ? K extends keyof Value
-                  ? Value[K] extends string
-                      ? Interactions<
-                            Extract<Current[K], object>,
-                            Extract<KeyValuate<Config, "idKey", idKey>, string>
-                        >
+              ? K extends keyof ModelProps
+                  ? ModelProps[K] extends string
+                      ? Input[K] extends any[]
+                          ? Interactions<
+                                Extract<Unlisted<Input[K]>, object>,
+                                Extract<
+                                    KeyValuate<ModelConfig, "idKey", IdKey>,
+                                    string
+                                >
+                            >
+                          : `Single reference to ${Extract<
+                                ModelProps[K],
+                                string
+                            >}`
                       : StoreRecurse<
-                            Root,
-                            Current[K],
-                            Seen | Current,
-                            Value[K],
-                            Extract<KeyValuate<Config, "idKey", idKey>, string>,
-                            [...Path, Extract<K, Segment>]
+                            Input[K],
+                            ModelProps[K],
+                            false,
+                            Extract<
+                                KeyValuate<ModelConfig, "idKey", IdKey>,
+                                string
+                            >
                         >
                   : // No config provided
-                    Current[K]
-              : Current[K]
+                    "no config"
+              : "cant infer value"
       }
 
 type User = {
     name: string
     friends: User[]
     groups: Group[]
+    bestFriend: User
 }
 
 type Group = {
     name: string
     description: string
-    users: User[]
+    members: User[]
+    owner: User
 }
 
 const fallback = {
