@@ -1,10 +1,10 @@
 import moize from "moize"
 import isDeepEqual from "fast-deep-equal"
 import deepMerge from "deepmerge"
-import { Any, Number, Object as O } from "ts-toolbelt"
+import { Number, Object as O } from "ts-toolbelt"
 
 export const merge = deepMerge
-export const memoize = moize as <F extends (...args: any[]) => any>(f: F) => F
+export const memoize = moize as <F extends Function>(f: F) => F
 export const deepEquals = isDeepEqual
 
 export type Merge<
@@ -320,3 +320,15 @@ type NarrowRoot<T, Narrowed = NarrowRecurse<T>> = Narrowed | Cast<T, Narrowed>
 type Narrowable = string | number | bigint | boolean
 
 export type Narrow<T> = NarrowRoot<T>
+
+export type KeyValuate<T, K, Fallback = undefined> = K extends keyof T
+    ? T[K]
+    : Fallback
+
+const TypeErrorTag: unique symbol = Symbol("TypeErrorTag")
+
+export type TypeError<Message> = {
+    [x in keyof Message | typeof TypeErrorTag]: x extends keyof Message
+        ? Message[x & keyof Message]
+        : { readonly [TypeErrorTag]: unique symbol }
+}

@@ -6,9 +6,10 @@ import {
     PathTo,
     IsList,
     AsListIf,
-    Narrow
+    Narrow,
+    KeyValuate
 } from "@re-do/utils"
-import { Actions } from "./common.js"
+import { Actions, Interactions } from "./common.js"
 
 export type Model<Input> = ModelRecurse<Input, Input, [], never, IsList<Input>>
 
@@ -90,8 +91,9 @@ export const createStore = <
     return model as any as Store<Input, M, A>
 }
 
-const x = createStore({} as any as Test, [
+const store = createStore({} as any as Test, [
     {
+        snoozers: "users",
         users: {
             groups: ["groups", { onChange: (_) => {} }],
             friends: "users"
@@ -103,7 +105,8 @@ const x = createStore({} as any as Test, [
                 },
                 description: {},
                 users: "users"
-            }
+            },
+            { idKey: "croop" }
         ],
         preferences: {
             nicknames: {},
@@ -114,7 +117,7 @@ const x = createStore({} as any as Test, [
         }
     },
     {
-        idKey: "",
+        idKey: "foop",
         validate: (_) => true
     }
 ])
@@ -123,17 +126,19 @@ export type Store<
     Input extends object,
     M extends Model<Input>,
     A extends Actions<Input>
-> = StoreRecurse<Input, Input, never, M>
+> = StoreRecurse<Input, Input, never, M, "id", []>
 
 type StoreRecurse<
     Root extends object,
     Current,
     Seen,
-    M
+    M,
+    idKey extends string,
+    Path extends Segment[]
 > = Current extends NonRecursible
     ? Current
     : Current extends any[]
-    ? StoreRecurse<Root, Unlisted<Current>, Seen, M>[]
+    ? StoreRecurse<Root, Unlisted<Current>, Seen, M, idKey, Path>[]
     : {
           [K in keyof Current]: M extends WithOptionalTuple<
               infer Value,
@@ -141,8 +146,18 @@ type StoreRecurse<
           >
               ? K extends keyof Value
                   ? Value[K] extends string
-                      ? `Reference to ${Extract<Value[K], string>}`
-                      : StoreRecurse<Root, Current[K], Seen | Current, Value[K]>
+                      ? Interactions<
+                            Extract<Current[K], object>,
+                            Extract<KeyValuate<Config, "idKey", idKey>, string>
+                        >
+                      : StoreRecurse<
+                            Root,
+                            Current[K],
+                            Seen | Current,
+                            Value[K],
+                            Extract<KeyValuate<Config, "idKey", idKey>, string>,
+                            [...Path, Extract<K, Segment>]
+                        >
                   : // No config provided
                     Current[K]
               : Current[K]
@@ -163,6 +178,7 @@ type Group = {
 const fallback = {
     users: [] as User[],
     groups: [] as Group[],
+    snoozers: [] as User[],
     currentUser: "",
     preferences: {
         darkMode: false,

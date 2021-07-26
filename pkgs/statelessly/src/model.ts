@@ -7,7 +7,7 @@ import {
     valueAtPath,
     Unlisted
 } from "@re-do/utils"
-import { ActionData, StoreInput } from "./common.js"
+import { ActionData, StoreInput } from "./model/common.js"
 
 export const createModelMiddleware = <T extends StoreInput>(
     model: Model<T>

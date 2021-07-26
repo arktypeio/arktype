@@ -15,7 +15,13 @@ import {
     diff,
     Paths
 } from "@re-do/utils"
-import { Query, Update, Actions, ActionData, StoreActions } from "./common.js"
+import {
+    Query,
+    Update,
+    Actions,
+    ActionData,
+    StoreActions
+} from "./model/common.js"
 import { createOnChangeMiddleware, OnChangeMiddlewareArgs } from "./onChange.js"
 import { createValidationMiddleware, ValidationFunction } from "./validate.js"
 // import { createAddIdsMiddleware, CreateAddIdsMiddlewareArgs } from "./addIds.js"

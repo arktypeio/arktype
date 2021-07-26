@@ -1,30 +1,78 @@
-import { FileStore } from "./FileStore"
 import {
-    FilterByValue,
+    DeepPartial,
+    NonRecursible,
     Unlisted,
-    withDefaults,
-    Key,
+    DeepUpdate,
     LimitDepth
 } from "@re-do/utils"
+import type { Store } from "../store.js"
+export type { Middleware } from "redux"
 
-export type FileDbContext<T extends Model> = {
-    store: FileStore<ShallowModel<T, any>, {}>
-    relationships: Relationships<T>
-    dependents: Dependents<T>
-    idFieldName: string
-    reuseExisting: ReuseExisting<T>
+export type StoreInput = Record<string, any>
+
+export type UpdateFunction<Input extends StoreInput> = (
+    args: any,
+    context: Store<Input, any, any>
+) => Update<Input> | Promise<Update<Input>>
+
+export type Actions<Input> = Record<
+    string,
+    Update<Input> | UpdateFunction<Input>
+>
+
+export type Query<T> = {
+    [P in keyof T]?: Unlisted<T[P]> extends NonRecursible
+        ? true
+        : Query<Unlisted<T[P]>> | true
 }
 
-export type ReuseExisting<T extends Model> = {
-    [K in keyof T]?: boolean | CheckForMatch<Shallow<Unlisted<T[K]>>>
+export type Update<T> = DeepUpdate<T>
+
+export type ActionData<T> = {
+    type: string
+    payload: DeepPartial<T>
+    meta: {
+        statelessly: true
+        bypassOnChange?: boolean
+    }
 }
 
-export type CheckForMatch<O extends object> = (first: O, second: O) => boolean
+export type StoreActions<A extends Actions<StoreInput>> = {
+    [K in keyof A]: A[K] extends (...args: any) => any
+        ? (
+              ...args: RemoveContextFromArgs<Parameters<A[K]>>
+          ) => ReturnType<A[K]> extends Promise<any> ? Promise<void> : void
+        : () => void
+}
 
-export type KeyName<T extends Model> = string & keyof T
+// This allows us to convert from the user provided actions, which can use context to access
+// the store in their definitions, to actions as they are attached to the Store, which do not
+// require context as a parameter as it is passed internally
 
-export type Dependents<T extends Model> = {
-    [K in keyof T]: { [K in keyof T]?: string[] }
+type RemoveContextFromArgs<T extends unknown[]> = T extends []
+    ? []
+    : T extends [infer Current, ...infer Rest]
+    ? Current extends Store<any, any, any>
+        ? RemoveContextFromArgs<Rest>
+        : [Current, ...RemoveContextFromArgs<Rest>]
+    : T
+
+export type Interactions<O extends object, IdFieldName extends string> = {
+    create: <U extends boolean = true>(o: O) => Data<O, IdFieldName, U>
+    all: <U extends boolean = true>() => Data<O, IdFieldName, U>[]
+    find: <U extends boolean = true>(
+        by: FindBy<Data<O, IdFieldName, U>>
+    ) => Data<O, IdFieldName, U>
+    filter: <U extends boolean = true>(
+        by: FindBy<Data<O, IdFieldName, U>>
+    ) => Data<O, IdFieldName, U>[]
+    remove: <U extends boolean = true>(
+        by: FindBy<Data<O, IdFieldName, U>>
+    ) => void
+    update: (
+        by: FindBy<Data<O, IdFieldName, false>>,
+        update: DeepUpdate<Data<O, IdFieldName, false>>
+    ) => void
 }
 
 export type Data<
@@ -37,13 +85,7 @@ export type Data<
 
 export type FindBy<O extends object> = (o: O) => boolean
 
-export type ShallowModel<T extends Model, IdFieldName extends string> = {
-    [K in keyof T]: ShallowWithId<Unlisted<T[K]>, IdFieldName>[]
-}
-
-export type Shallow<O> = LimitDepth<O, 0, number>
-
-export type DepthOne<O> = LimitDepth<O, 1, number>
+export type Shallow<O> = LimitDepth<O, 1, number>
 
 export type ShallowWithId<
     O extends object,
@@ -59,25 +101,3 @@ export type WithIds<O extends object, IdFieldName extends string> = WithId<
     },
     IdFieldName
 >
-
-export type Model = Record<string, Record<string, any>[]>
-
-export type Relationships<T extends Model> = {
-    [K in keyof T]: {
-        [K2 in keyof FilterByValue<Required<Unlisted<T[K]>>, object>]: keyof T
-    }
-}
-
-export type InteractionOptions<Unpack extends boolean = true> = {
-    unpack?: Unpack
-}
-
-export const addDefaultInteractionOptions = withDefaults<
-    InteractionOptions<any>
->({
-    unpack: true
-})
-
-export const getUnknownEntityErrorMessage = (typeName: string, key: Key) =>
-    `Unable to determine entity associated with key '${key}' from type '${typeName}'.` +
-    `Try adding specifying its type by adding it to the DB's relationships.`
