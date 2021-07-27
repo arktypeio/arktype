@@ -7,7 +7,8 @@ import {
     IsList,
     AsListIf,
     Narrow,
-    KeyValuate
+    KeyValuate,
+    Or
 } from "@re-do/utils"
 import { Actions, Interactions } from "./common.js"
 
@@ -59,14 +60,18 @@ type ModelRecurse<
           ModelConfig<Current, InList>
       >
 
-export type ModelConfig<T, InList extends boolean = false> = ModelConfigOptions<
-    ModelConfigType<T, InList>
->
+export type ModelConfig<T, InList extends boolean = false> = InList extends true
+    ? ListModelConfigOptions<ModelConfigType<T, InList>>
+    : BaseModelConfigOptions<ModelConfigType<T, InList>>
 
-type ModelConfigOptions<T> = {
+type BaseModelConfigOptions<T> = {
     idKey?: string
     validate?: (_: T) => boolean
     onChange?: (_: T) => void
+}
+
+type ListModelConfigOptions<T> = BaseModelConfigOptions<T> & {
+    defines?: string
 }
 
 /**
@@ -120,7 +125,9 @@ const store = createStore({} as any as Test, [
         idKey: "foop",
         validate: (_) => true
     }
-]).groups.owner
+])
+
+store.groups
 
 export type Store<
     Input extends object,
@@ -154,10 +161,15 @@ type StoreRecurse<
                                     string
                                 >
                             >
-                          : `Single reference to ${Extract<
-                                ModelProps[K],
+                          : Input[K]
+                      : Input[K] extends any[]
+                      ? Interactions<
+                            Extract<Unlisted<Input[K]>, object>,
+                            Extract<
+                                KeyValuate<ModelConfig, "idKey", IdKey>,
                                 string
-                            >}`
+                            >
+                        >
                       : StoreRecurse<
                             Input[K],
                             ModelProps[K],
@@ -168,8 +180,8 @@ type StoreRecurse<
                             >
                         >
                   : // No config provided
-                    "no config"
-              : "cant infer value"
+                    Input[K]
+              : Input[K]
       }
 
 type User = {
