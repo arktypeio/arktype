@@ -12,51 +12,51 @@ import {
 } from "@re-do/utils"
 import { Actions, Interactions } from "./common.js"
 
-export type Model<Input> = ModelRecurse<Input, Input, [], never, IsList<Input>>
+export type Model<Input, Types> = ModelRecurse<
+    Input,
+    [],
+    never,
+    Input,
+    Types,
+    IsList<Input>
+>
 
 type WithOptionalTuple<T, Optional> = T | [T] | [T, Optional]
 
-type AvailableReferencePath<
-    Root,
+type ModeledProperties<
     Current,
-    CurrentPath extends Segment[]
-> = Exclude<
-    PathTo<
-        Root,
-        Current[],
-        {
-            excludeArrayIndices: true
-        }
-    >,
-    Join<CurrentPath>
->
-
-type ModeledProperties<Root, Current, CurrentPath extends Segment[], Seen> = {
+    CurrentPath extends Segment[],
+    Seen,
+    Root,
+    Types
+> = {
     [K in Extract<keyof Current, Segment>]?: ModelRecurse<
-        Root,
         Unlisted<Current[K]>,
         [...CurrentPath, K],
         Seen | Current,
+        Root,
+        Types,
         IsList<Current[K]>
     >
 }
 
-type ModelValue<Root, Current, CurrentPath extends Segment[], Seen> =
-    | AvailableReferencePath<Root, Current, CurrentPath>
+type ModelValue<Current, CurrentPath extends Segment[], Seen, Root, Types> =
+    | keyof (PrimitiveTypes & Types)
     | (Current extends Seen
           ? never
-          : ModeledProperties<Root, Current, CurrentPath, Seen>)
+          : ModeledProperties<Current, CurrentPath, Seen, Root, Types>)
 
 type ModelRecurse<
-    Root,
     Current,
     CurrentPath extends Segment[],
     Seen,
+    Root,
+    Types,
     InList extends boolean
 > = Current extends NonRecursible
     ? ModelConfig<Current, InList>
     : WithOptionalTuple<
-          ModelValue<Root, Current, CurrentPath, Seen>,
+          ModelValue<Current, CurrentPath, Seen, Root, Types>,
           ModelConfig<Current, InList>
       >
 
@@ -83,55 +83,90 @@ type ModelConfigType<T, InList extends boolean> = AsListIf<
     InList
 >
 
+type PrimitiveTypes = {
+    string: string
+    boolean: boolean
+}
+
+type TypeDefinitions<T> = {
+    [K in keyof T]: Record<Segment, keyof PrimitiveTypes | keyof T>
+}
+
+type GetType<T extends TypeDefinitions<T>, Name extends keyof T> = {
+    [K in keyof T[Name]]: T[Name][K] extends keyof PrimitiveTypes
+        ? PrimitiveTypes[T[Name][K]]
+        : never
+}
+
+const getType = <T extends TypeDefinitions<T>, Name extends keyof T>(
+    t: T,
+    name: Name
+) => "" as any as GetType<T, Name>
+
+const x = getType(
+    { user: { name: "string", male: "boolean", bestFriend: "user" } },
+    "user"
+)
+
+type F = typeof x
+
 export const createStore = <
     Input extends object,
-    M extends Model<Input>,
-    A extends Actions<Input>
+    M extends Model<Input, T>,
+    T extends TypeDefinitions<T> = {},
+    A extends Actions<Input> = {}
 >(
     initial: Input,
     model?: Narrow<M>,
+    types?: Narrow<T>,
     actions?: A
 ) => {
-    return model as any as Store<Input, M, A>
+    return model as any as Store<Input, M, T, A>
 }
 
-const store = createStore({} as any as Test, [
-    {
-        snoozers: "users",
-        users: {
-            groups: ["groups", { onChange: (_) => {} }],
-            friends: "users"
-        },
-        groups: [
-            {
-                name: {
-                    onChange: (_) => console.log(_)
-                },
-                description: {},
-                members: "users",
-                owner: "users"
+const store = createStore(
+    {} as any as Test,
+    [
+        {
+            snoozers: "user",
+            currentUser: "users",
+            users: {
+                groups: ["groups", { onChange: (_) => {} }],
+                friends: "users"
             },
-            { idKey: "croop" }
-        ],
-        preferences: {
-            nicknames: {},
-            darkMode: {
-                validate: (_) => true,
-                onChange: (_) => console.log(_)
+            groups: [
+                {
+                    name: {
+                        onChange: (_) => console.log(_)
+                    },
+                    description: {},
+                    members: "users",
+                    owner: "users"
+                },
+                { idKey: "croop" }
+            ],
+            preferences: {
+                nicknames: {},
+                darkMode: {
+                    validate: (_) => true,
+                    onChange: (_) => console.log(_)
+                }
             }
+        },
+        {
+            idKey: "foop",
+            validate: (_) => true
         }
-    },
-    {
-        idKey: "foop",
-        validate: (_) => true
-    }
-])
+    ],
+    { user: {} }
+)
 
-store.groups
+store.currentUser.bestFriend
 
 export type Store<
     Input extends object,
-    M extends Model<Input>,
+    M extends Model<Input, T>,
+    T extends TypeDefinitions<T>,
     A extends Actions<Input>
 > = StoreRecurse<Input, M, IsList<Input>, "id">
 
@@ -161,7 +196,7 @@ type StoreRecurse<
                                     string
                                 >
                             >
-                          : Input[K]
+                          : Operations<Input[K]>
                       : Input[K] extends any[]
                       ? Interactions<
                             Extract<Unlisted<Input[K]>, object>,
@@ -180,9 +215,14 @@ type StoreRecurse<
                             >
                         >
                   : // No config provided
-                    Input[K]
-              : Input[K]
+                    Operations<Input[K]>
+              : Operations<Input[K]>
       }
+
+type Operations<T> = T & {
+    get: () => T
+    set: (value: T) => void
+}
 
 type User = {
     name: string
@@ -202,7 +242,7 @@ const fallback = {
     users: [] as User[],
     groups: [] as Group[],
     snoozers: [] as User[],
-    currentUser: "",
+    currentUser: null as null | User,
     preferences: {
         darkMode: false,
         nicknames: [] as string[]
