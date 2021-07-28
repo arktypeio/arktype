@@ -1,6 +1,6 @@
 {
     "name": "@re-do/test",
-    "version": "0.1.2",
+    "version": "0.1.3",
     "author": "redo.qa",
     "description": "CLI for Redo",
     "license": "MIT",
@@ -25,7 +25,7 @@
         "node-fetch": "2.6.1",
         "@octokit/rest": "18.6.6",
         "@re-do/utils": "0.0.12",
-        "@re-do/node-utils": "0.0.3",
+        "@re-do/node-utils": "0.0.4",
         "@re-do/run": "0.0.1",
         "persist-statelessly": "0.0.2",
         "adm-zip": "0.5.5",

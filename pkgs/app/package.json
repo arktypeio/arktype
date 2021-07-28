@@ -36,7 +36,7 @@
         "@re-do/model": "0.0.1",
         "@re-do/run": "0.0.1",
         "@re-do/utils": "0.0.12",
-        "@re-do/node-utils": "0.0.3",
+        "@re-do/node-utils": "0.0.4",
         "@re-do/data": "0.0.1",
         "dotenv": "9.0.0",
         "framer-motion": "4.1.11",
