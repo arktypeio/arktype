@@ -11,7 +11,12 @@ import {
     Merge,
     If
 } from "./common.js"
-import { String, O, F } from "ts-toolbelt"
+import { String, O, F, S } from "ts-toolbelt"
+
+export type Split<S extends string, Delimiter extends string> = String.Split<
+    S,
+    Delimiter
+>
 
 export type ValueAtPath<
     O,
@@ -19,7 +24,7 @@ export type ValueAtPath<
     Options extends ValueAtPathOptions = {}
 > = ValueAtPathList<
     O,
-    String.Split<P, EnsureValue<Options["delimiter"], "/">>,
+    Split<P, EnsureValue<Options["delimiter"], "/">>,
     EnsureValue<Options["excludeArrayIndices"], false>
 >
 
