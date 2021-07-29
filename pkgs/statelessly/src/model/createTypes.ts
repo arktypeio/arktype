@@ -2,6 +2,7 @@ import {
     ExcludeByValue,
     FilterByValue,
     KeyValuate,
+    LimitDepth,
     Narrow,
     NonCyclic
 } from "@re-do/utils"
@@ -22,9 +23,12 @@ type OrPropDef<
     Second extends string = string
 > = `${First} | ${Second}`
 
+type PropDefGroup<Group extends string = string> = `(${Group})`
+
 type OptionalPropDef<OptionalType extends string = string> = `${OptionalType}?`
 
-type PropDefGroup<Group extends string = string> = `(${Group})`
+type ReferencePropDef<ReferencedType extends string = string> =
+    `@${ReferencedType}`
 
 type ValidatedPropDefRecurse<
     Definitions,
@@ -143,18 +147,6 @@ const x = getTypes(types)
 
 type ModelConfig<
     Types,
-    PropDef extends string,
-    T = ParsePropType<Types, PropDef>
-> = {
-    type: ValidatedPropDef<Types, PropDef>
-    idKey?: string
-    initial?: T
-    validate?: (_: T) => boolean
-    onChange?: (_: T) => void
-}
-
-type ModelDefinition<
-    Types,
     Type extends string,
     T = NonCyclic<ParsePropType<Types, Type>>
 > = {
@@ -167,9 +159,9 @@ type ModelDefinition<
 
 export type ModelDefinitions<
     Types,
-    Root extends Record<string, ModelDefinition<Types, any>>
+    Root extends Record<string, ModelConfig<Types, any>>
 > = {
-    [K in keyof Root]: ModelDefinition<Types, Root[K]["type"]>
+    [K in keyof Root]: ModelConfig<Types, Root[K]["type"]>
 }
 
 const getModelDefs = <Def extends ModelDefinitions<TestTypes, Def>>(
