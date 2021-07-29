@@ -44,7 +44,7 @@ type ModeledProperties<
 }
 
 type ModelValue<Current, CurrentPath extends Segment[], Seen, Root, Types> =
-    | keyof (PrimitiveTypes & Types)
+    | keyof Types
     | (Current extends Seen
           ? never
           : ModeledProperties<Current, CurrentPath, Seen, Root, Types>)
@@ -85,86 +85,6 @@ type ModelConfigType<T, InList extends boolean> = AsListIf<
     T extends boolean ? boolean : T,
     InList
 >
-
-type PrimitiveTypes = {
-    string: string
-    boolean: boolean
-    number: number
-}
-
-type BasePropDef<T> = string & keyof (PrimitiveTypes & T)
-
-type ListPropDef<ListItem extends string = string> = `${ListItem}[]`
-
-type OrPropDef<
-    First extends string = string,
-    Second extends string = string
-> = `${First} | ${Second}`
-
-type OptionalPropDef<OptionalType extends string = string> = {}
-
-type ValidatedPropDef<
-    Root,
-    Current extends string
-> = Current extends ListPropDef<infer ListItem>
-    ? `${ValidatedPropDef<Root, ListItem>}[]`
-    : Current extends OrPropDef<infer First, infer Second>
-    ? `${ValidatedPropDef<Root, First>} | ${ValidatedPropDef<Root, Second>}`
-    : Current extends BasePropDef<Root>
-    ? Current
-    : `Unable to determine the type of '${Current}'.`
-
-type TypeDefinition<Root, TypeName extends keyof Root> = {
-    [PropName in keyof Root[TypeName]]: ValidatedPropDef<
-        Root,
-        Root[TypeName][PropName]
-    >
-}
-
-type TypeDefinitions<Root> = {
-    [TypeName in keyof Root]: TypeDefinition<Root, TypeName>
-}
-
-type ParsePropType<
-    Definitions extends TypeDefinitions<Definitions>,
-    Definition extends string
-> = Definition extends ListPropDef<infer ListItem>
-    ? ParsePropType<Definitions, ListItem>[]
-    : Definition extends OrPropDef<infer First, infer Second>
-    ? ParsePropType<Definitions, First> | ParsePropType<Definitions, Second>
-    : Definition extends keyof Definitions
-    ? GetType<Definitions, Definition>
-    : Definition extends keyof PrimitiveTypes
-    ? PrimitiveTypes[Definition]
-    : never
-
-type GetTypes<Definitions extends TypeDefinitions<Definitions>> = {
-    [TypeName in keyof Definitions]: GetType<Definitions, TypeName>
-}
-
-type GetType<T extends TypeDefinitions<T>, Name extends keyof T> = {
-    [K in keyof T[Name]]: ParsePropType<T, T[Name][K]>
-}
-
-const getType = <T extends TypeDefinitions<T>, Name extends keyof T>(
-    t: Narrow<T>,
-    name: Name
-) => "" as any as GetType<T, Name>
-//as GetType < T, Name >
-
-const x = getType(
-    {
-        user: {
-            name: "string",
-            male: "boolean | string | number",
-            bestFriend: "user",
-            friends: "user[]"
-        }
-    },
-    "user"
-)
-
-type F = typeof x
 
 export const createStore = <
     Input extends object,
@@ -229,17 +149,6 @@ const store = createStore(
         }
     }
 )
-
-const fallback = {
-    users: [] as User[],
-    groups: [] as Group[],
-    snoozers: [] as User[],
-    currentUser: null as null | User,
-    preferences: {
-        darkMode: false,
-        nicknames: [] as string[]
-    }
-}
 
 store.currentUser.bestFriend
 
