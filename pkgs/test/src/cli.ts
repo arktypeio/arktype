@@ -14,6 +14,5 @@ cli.command("launch")
         shell(await getPath(version))
     })
 
-
 const run = async () => await cli.parseAsync(process.argv)
 run()

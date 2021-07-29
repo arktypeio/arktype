@@ -84,7 +84,7 @@ const prepareRelease = () => {
     const electronReduxVersion =
         packageJsonContents.dependencies["electron-redux"]
     const releaseDependencies = {
-        playwright: PLAYWRIGHT_VERSION,
+        "playwright-core": PLAYWRIGHT_VERSION,
         "electron-redux": electronReduxVersion
     }
     const releasePackageJsonContents = JSON.stringify({

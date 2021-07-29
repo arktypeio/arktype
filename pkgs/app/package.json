@@ -48,7 +48,7 @@
         "persist-statelessly": "0.0.2",
         "isomorphic-ws": "4.0.1",
         "electron-redux": "2.0.0-alpha.9",
-        "playwright": "1.12.3"
+        "playwright-core": "1.12.3"
     },
     "devDependencies": {
         "@types/electron-devtools-installer": "2.2.0",
