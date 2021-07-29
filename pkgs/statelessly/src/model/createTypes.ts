@@ -1,4 +1,10 @@
-import { ExcludeByValue, FilterByValue, Narrow } from "@re-do/utils"
+import {
+    ExcludeByValue,
+    FilterByValue,
+    KeyValuate,
+    Narrow,
+    NonCyclic
+} from "@re-do/utils"
 
 type PrimitiveTypes = {
     string: string
@@ -54,21 +60,21 @@ export type TypeDefinitions<Root> = {
     [TypeName in keyof Root]: TypeDefinition<Root, TypeName>
 }
 
-type ParsePropType<
+export type ParsePropType<
     Definitions extends TypeDefinitions<Definitions>,
-    Definition extends string
-> = Definition extends PropDefGroup<infer Group>
+    PropDefinition extends string
+> = PropDefinition extends PropDefGroup<infer Group>
     ? ParsePropType<Definitions, Group>
-    : Definition extends OptionalPropDef<infer OptionalType>
+    : PropDefinition extends OptionalPropDef<infer OptionalType>
     ? ParsePropType<Definitions, OptionalType> | undefined
-    : Definition extends ListPropDef<infer ListItem>
+    : PropDefinition extends ListPropDef<infer ListItem>
     ? ParsePropType<Definitions, ListItem>[]
-    : Definition extends OrPropDef<infer First, infer Second>
+    : PropDefinition extends OrPropDef<infer First, infer Second>
     ? ParsePropType<Definitions, First> | ParsePropType<Definitions, Second>
-    : Definition extends keyof Definitions
-    ? ParseType<Definitions, Definition>
-    : Definition extends keyof PrimitiveTypes
-    ? PrimitiveTypes[Definition]
+    : PropDefinition extends keyof Definitions
+    ? ParseType<Definitions, PropDefinition>
+    : PropDefinition extends keyof PrimitiveTypes
+    ? PrimitiveTypes[PropDefinition]
     : never
 
 export type ParseTypes<Definitions extends TypeDefinitions<Definitions>> = {
@@ -103,7 +109,22 @@ const getType = <T extends TypeDefinitions<T>, Name extends keyof T>(
 const getTypes = <T extends TypeDefinitions<T>>(t: Narrow<T>) =>
     "" as any as ParseTypes<T>
 
-const x = getTypes({
+type TestTypes = {
+    user: {
+        name: "string"
+        bestFriend: "user"
+        friends: "user[]"
+        groups: "group[]"
+    }
+    group: {
+        name: "string"
+        description: "string?"
+        members: "user[]"
+        owner: "user"
+    }
+}
+
+const types: TestTypes = {
     user: {
         name: "string",
         bestFriend: "user",
@@ -115,5 +136,51 @@ const x = getTypes({
         description: "string?",
         members: "user[]",
         owner: "user"
+    }
+}
+
+const x = getTypes(types)
+
+type ModelConfig<
+    Types,
+    PropDef extends string,
+    T = ParsePropType<Types, PropDef>
+> = {
+    type: ValidatedPropDef<Types, PropDef>
+    idKey?: string
+    initial?: T
+    validate?: (_: T) => boolean
+    onChange?: (_: T) => void
+}
+
+type ModelDefinition<
+    Types,
+    Type extends string,
+    T = NonCyclic<ParsePropType<Types, Type>>
+> = {
+    type: ValidatedPropDef<Types, Type>
+    idKey?: string
+    initial?: T
+    validate?: (_: T) => boolean
+    onChange?: (_: T) => void
+}
+
+export type ModelDefinitions<
+    Types,
+    Root extends Record<string, ModelDefinition<Types, any>>
+> = {
+    [K in keyof Root]: ModelDefinition<Types, Root[K]["type"]>
+}
+
+const getModelDefs = <Def extends ModelDefinitions<TestTypes, Def>>(
+    def: Narrow<Def>
+) => ({} as any as Def)
+
+getModelDefs({
+    users: {
+        type: "user",
+        validate: (u) => {
+            return true
+        }
     }
 })

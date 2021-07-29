@@ -12,9 +12,13 @@ import {
     Or,
     Split
 } from "@re-do/utils"
-import { List } from "ts-toolbelt"
+import { List, M } from "ts-toolbelt"
 import { Actions, Interactions } from "./common.js"
-import { TypeDefinitions, ValidatedPropDef } from "./createTypes.js"
+import {
+    ParsePropType,
+    TypeDefinitions,
+    ValidatedPropDef
+} from "./createTypes.js"
 
 export type Model<Input, Types> = ModelRecurse<
     Input,
@@ -63,6 +67,57 @@ type ModelRecurse<
           ModelValue<Current, CurrentPath, Seen, Root, Types>,
           ModelConfig<Current, InList>
       >
+
+type ModelConfig2<
+    Types,
+    PropDef extends string,
+    T = ParsePropType<Types, PropDef>
+> = {
+    type: ValidatedPropDef<Types, PropDef>
+    idKey?: string
+    initial?: T
+    validate?: (_: T) => boolean
+    onChange?: (_: T) => void
+}
+
+type Model2<
+    Model extends Record<string, ModelConfig2<Types, string>>,
+    Types
+> = {
+    [K in keyof Model]: ModelConfig2<Types, Narrow<Model[K]["type"]> & string>
+}
+
+const buildModel = <
+    M extends Record<string, ModelConfig2<typeof types, string>>
+>(
+    m: Narrow<M>
+) => {}
+
+buildModel({
+    users: {
+        type: "user[]"
+    }
+})
+
+const types = {
+    user: {
+        name: "string",
+        friends: "user[]",
+        bestFriend: "user",
+        groups: "group[]"
+    },
+    group: {
+        name: "string",
+        description: "string",
+        members: "user[]",
+        owner: "user"
+    }
+} as const
+
+const x: ModelConfig2<typeof types, "user[]"> = {
+    initial: [],
+    type: "user[]"
+}
 
 export type ModelConfig<T, InList extends boolean = false> = InList extends true
     ? ListModelConfigOptions<ModelConfigType<T, InList>>
