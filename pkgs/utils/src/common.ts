@@ -38,11 +38,27 @@ export type WithOptionalKeys<T extends object, Keys extends keyof T> = Omit<
 > &
     { [K in Keys]?: T[K] }
 
+export type WithOptionalValues<
+    T extends object,
+    OptionalValueType,
+    InvertExtendsCheck extends boolean = false
+> = ExcludeByValue<T, OptionalValueType, InvertExtendsCheck> &
+    Partial<FilterByValue<T, OptionalValueType, InvertExtendsCheck>>
+
 export type WithRequiredKeys<T extends object, Keys extends keyof T> = Omit<
     T,
     Keys
 > &
     { [K in Keys]-?: T[K] }
+
+export type WithRequiredValues<
+    T extends object,
+    RequiredValueType,
+    InvertExtendsCheck extends boolean = false
+> = T &
+    Required<
+        FilterByValue<T, RequiredValueType | undefined, InvertExtendsCheck>
+    >
 
 export type DeepPartial<T> = {
     [P in keyof T]?: T[P] extends NonRecursible ? T[P] : DeepPartial<T[P]>
@@ -158,23 +174,60 @@ export type AsListIf<T, Condition extends boolean> = Condition extends true
 export type IfList<T, IfList, IfNotList> = T extends any[] ? IfList : IfNotList
 export type IsList<T> = IfList<T, true, false>
 
-export type FilterByValue<T extends object, ValueType> = Pick<
+export type ExtendsCheck<
+    A,
+    B,
+    Invert extends boolean = false,
+    ValueIfTrue = true,
+    ValueIfFalse = false
+> = (Invert extends true ? B : A) extends (Invert extends true ? A : B)
+    ? ValueIfTrue
+    : ValueIfFalse
+
+export type FilterByValue<
+    T extends object,
+    ValueType,
+    InvertExtendsCheck extends boolean = false
+> = Pick<
     T,
     {
-        [K in keyof T]: T[K] extends ValueType ? K : never
+        [K in keyof T]: ExtendsCheck<
+            T[K],
+            ValueType,
+            InvertExtendsCheck,
+            K,
+            never
+        >
     }[keyof T]
 >
-export type ExcludeByValue<T extends object, ValueType> = Pick<
+export type ExcludeByValue<
+    T extends object,
+    ValueType,
+    InvertExtendsCheck extends boolean = false
+> = Pick<
     T,
     {
-        [K in keyof T]: T[K] extends ValueType ? never : K
+        [K in keyof T]: ExtendsCheck<
+            T[K],
+            ValueType,
+            InvertExtendsCheck,
+            never,
+            K
+        >
     }[keyof T]
 >
+
 export type OptionalOnly<T extends object> = Pick<
     T,
     {
         [K in keyof T]: undefined extends T[K] ? K : never
     }[keyof T]
+>
+
+export type WithOptionalUndefineds<T extends object> = WithOptionalValues<
+    T,
+    undefined,
+    true
 >
 
 export const listify = <T>(o: ItemOrList<T>) => ([] as T[]).concat(o)

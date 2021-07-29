@@ -1,4 +1,4 @@
-import { Narrow, WithOptionalKeys } from "@re-do/utils"
+import { ExcludeByValue, FilterByValue, Narrow } from "@re-do/utils"
 
 type PrimitiveTypes = {
     string: string
@@ -36,7 +36,7 @@ type ValidatedPropDefRecurse<
     ? Fragment
     : `Unable to determine the type of '${Fragment}'.`
 
-type ValidatedPropDef<
+export type ValidatedPropDef<
     Definitions,
     PropDef extends string
 > = PropDef extends OptionalPropDef<infer OptionalType>
@@ -50,69 +50,70 @@ type TypeDefinition<Root, TypeName extends keyof Root> = {
     >
 }
 
-type TypeDefinitions<Root> = {
+export type TypeDefinitions<Root> = {
     [TypeName in keyof Root]: TypeDefinition<Root, TypeName>
 }
 
-type ParsePropTypeRecurse<
+type ParsePropType<
     Definitions extends TypeDefinitions<Definitions>,
     Definition extends string
 > = Definition extends PropDefGroup<infer Group>
-    ? ParsePropTypeRecurse<Definitions, Group>
+    ? ParsePropType<Definitions, Group>
     : Definition extends OptionalPropDef<infer OptionalType>
-    ? ParsePropTypeRecurse<Definitions, OptionalType> | undefined
+    ? ParsePropType<Definitions, OptionalType> | undefined
     : Definition extends ListPropDef<infer ListItem>
-    ? ParsePropTypeRecurse<Definitions, ListItem>[]
+    ? ParsePropType<Definitions, ListItem>[]
     : Definition extends OrPropDef<infer First, infer Second>
-    ?
-          | ParsePropTypeRecurse<Definitions, First>
-          | ParsePropTypeRecurse<Definitions, Second>
+    ? ParsePropType<Definitions, First> | ParsePropType<Definitions, Second>
     : Definition extends keyof Definitions
     ? ParseType<Definitions, Definition>
     : Definition extends keyof PrimitiveTypes
     ? PrimitiveTypes[Definition]
     : never
 
-type ParsePropType<
-    Definitions extends TypeDefinitions<Definitions>,
-    Definition extends string
-> = Definition extends OptionalPropDef<infer OptionalType>
-    ? ParsePropTypeRecurse<Definitions, OptionalType> | undefined
-    : ParsePropTypeRecurse<Definitions, Definition>
-
-type ParseTypes<Definitions extends TypeDefinitions<Definitions>> = {
+export type ParseTypes<Definitions extends TypeDefinitions<Definitions>> = {
     [TypeName in keyof Definitions]: ParseType<Definitions, TypeName>
 }
 
-type ParseType<
+export type ParseType<
     Definitions extends TypeDefinitions<Definitions>,
     TypeName extends keyof Definitions
 > = {
-    [PropName in keyof Definitions[TypeName]]: ParsePropType<
-        Definitions,
-        Definitions[TypeName][PropName]
-    >
-}
+    [PropName in keyof ExcludeByValue<
+        Definitions[TypeName],
+        OptionalPropDef
+    >]: ParsePropType<Definitions, Definitions[TypeName][PropName]>
+} &
+    {
+        [PropName in keyof FilterByValue<
+            Definitions[TypeName],
+            OptionalPropDef
+        >]?: Definitions[TypeName][PropName] extends OptionalPropDef<
+            infer OptionalType
+        >
+            ? ParsePropType<Definitions, OptionalType>
+            : never
+    }
 
 const getType = <T extends TypeDefinitions<T>, Name extends keyof T>(
     t: Narrow<T>,
     name: Name
 ) => "" as any as ParseType<T, Name>
 
-const x = getType(
-    {
-        user: {
-            name: "string",
-            bestFriend: "user",
-            friends: "user[]",
-            groups: "group[]"
-        },
-        group: {
-            name: "string",
-            description: "string?",
-            members: "user[]",
-            owner: "user"
-        }
+const getTypes = <T extends TypeDefinitions<T>>(t: Narrow<T>) =>
+    "" as any as ParseTypes<T>
+
+const x = getTypes({
+    user: {
+        name: "string",
+        bestFriend: "user",
+        friends: "user[]",
+        groups: "group[]"
     },
-    "group"
-)
+    group: {
+        name: "string",
+        description: "string?",
+        members: "user[]",
+        owner: "user"
+    }
+})

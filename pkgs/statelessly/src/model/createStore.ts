@@ -14,6 +14,7 @@ import {
 } from "@re-do/utils"
 import { List } from "ts-toolbelt"
 import { Actions, Interactions } from "./common.js"
+import { TypeDefinitions, ValidatedPropDef } from "./createTypes.js"
 
 export type Model<Input, Types> = ModelRecurse<
     Input,
