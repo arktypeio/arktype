@@ -30,7 +30,7 @@ const config = {
     },
     win: {
         target: "zip",
-        artifactName: "${name}-${version}-${os}.${ext}"
+        artifactName: "${name}-${version}-windows.${ext}"
     },
     beforeBuild: async (ctx) => {
         return false
