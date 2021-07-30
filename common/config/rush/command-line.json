@@ -4,7 +4,8 @@
         {
             "commandKind": "bulk",
             "name": "build",
-            "allowWarningsInSuccessfulBuild": true
+            "summary": "Build packages.",
+            "enableParallelism": true
         },
         {
             "commandKind": "bulk",
@@ -12,6 +13,14 @@
             "summary": "Test packages.",
             "description": "Executes automated tests.",
             "enableParallelism": true
+        },
+        {
+            "name": "prettier",
+            "commandKind": "global",
+            "summary": "Used by the pre-commit Git hook. This command invokes Prettier to reformat staged changes.",
+            "safeForSimultaneousRushProcesses": true,
+            "autoinstallerName": "rush-prettier",
+            "shellCommand": "pretty-quick --staged"
         }
     ],
     "parameters": []

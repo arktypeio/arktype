@@ -27,4 +27,5 @@ export const getOs = () => {
     return supportedOsMap[platform as SupportedPlatform]
 }
 
-export const getRedoZipFileName = (os: SupportedOs, version: string) => `redo-${version}-${os}.zip`
+export const getRedoZipFileName = (os: SupportedOs, version: string) =>
+    `redo-${version}-${os}.zip`
