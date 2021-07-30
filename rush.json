@@ -5,7 +5,7 @@
     "nodeSupportedVersionRange": ">=14.16.1",
     "ensureConsistentVersions": true,
     "repository": {
-        "url": "https://github.com/redo-qa/redo"
+        "url": "https://github.com/re-do/redo"
     },
     "projects": [
         {

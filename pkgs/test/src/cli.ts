@@ -10,8 +10,9 @@ cli.version(version)
 cli.command("launch")
     .description("Launch the Redo app")
     .action(async () => {
+        const executablePath = await getPath(version)
         console.log("Launching the app...")
-        shell(await getPath(version))
+        shell(executablePath)
     })
 
 const run = async () => await cli.parseAsync(process.argv)
