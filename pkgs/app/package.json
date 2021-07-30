@@ -1,6 +1,6 @@
 {
     "name": "@re-do/app",
-    "version": "0.1.1",
+    "version": "0.1.5",
     "private": true,
     "main": "dist/main/index.js",
     "repository": {
@@ -59,12 +59,12 @@
         "@re-do/configs": "0.0.2",
         "@types/adm-zip": "0.4.34",
         "adm-zip": "0.5.5",
-        "electron": "13.1.6",
-        "electron-builder": "22.11.7",
+        "electron": "13.1.7",
+        "electron-builder": "22.11.11",
         "electron-devtools-installer": "3.2.0",
         "typescript": "4.2.3",
         "ts-node": "9.1.1",
-        "vite": "2.2.4",
+        "vite": "2.4.4",
         "jsrx": "0.0.11",
         "tree-kill": "1.2.2",
         "jest": "26.6.3",
