@@ -4,7 +4,7 @@ import { createRedoFileDb } from "@re-do/data"
 import { WithIds } from "persist-statelessly"
 import { join } from "path"
 
-const db = createRedoFileDb({})
+const db = createRedoFileDb({ bidirectional: false })
 const defaultRedoConfigPath = join(process.cwd(), "redo.config")
 
 export type RedoArgs = {

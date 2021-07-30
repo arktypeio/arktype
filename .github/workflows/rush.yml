@@ -24,4 +24,5 @@ jobs:
             - run: node common/scripts/install-run-rush.js change -v
             - run: node common/scripts/install-run-rush.js install
             - run: node common/scripts/install-run-rush.js build
+            - run: npx playwright install-deps
             - run: node common/scripts/install-run-rush.js test

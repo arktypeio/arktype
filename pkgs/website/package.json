@@ -31,7 +31,7 @@
         "rehype-highlight": "4.1.0"
     },
     "devDependencies": {
-        "@re-do/test": "0.1.2",
+        "@re-do/test": "0.1.5",
         "@re-do/configs": "0.0.2",
         "@types/node": "15.0.2",
         "@types/react": "17.0.5",

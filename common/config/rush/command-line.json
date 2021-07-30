@@ -3,12 +3,6 @@
     "commands": [
         {
             "commandKind": "bulk",
-            "name": "build",
-            "summary": "Build packages.",
-            "enableParallelism": true
-        },
-        {
-            "commandKind": "bulk",
             "name": "test",
             "summary": "Test packages.",
             "description": "Executes automated tests.",
