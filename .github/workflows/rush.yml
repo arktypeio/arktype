@@ -19,8 +19,7 @@ jobs:
               uses: actions/setup-node@v2
               with:
                   node-version: ${{ matrix.node-version }}
+            - run: node common/scripts/install-run-rush.js change -v
             - run: node common/scripts/install-run-rush.js install
-            - run: rush change -v
-            - run: rush update
-            - run: rush build
-            - run: rush test
+            - run: node common/scripts/install-run-rush.js build
+            - run: node common/scripts/install-run-rush.js test
