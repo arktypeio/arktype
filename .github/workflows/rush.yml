@@ -1,0 +1,27 @@
+name: Validate build
+
+on:
+    push:
+        branches: [master]
+    pull_request:
+        branches: [master]
+
+jobs:
+    build:
+        runs-on: ${{ matrix.os }}
+        strategy:
+            matrix:
+                node-version: [14.x, 16.x]
+                os: [ubuntu-latest, windows-latest, macOS-latest]
+        steps:
+            - uses: actions/checkout@v2
+            - name: Use Node.js ${{ matrix.node-version }}
+              uses: actions/setup-node@v2
+              with:
+                  node-version: ${{ matrix.node-version }}
+                  cache: "pnpm"
+            - run: node common/scripts/install-run-rush.js install
+            - run: rush change -v
+            - run: rush update
+            - run: rush build
+            - run: rush test
