@@ -96,7 +96,7 @@ dependencies:
   typescript: 4.2.3
   uuid: 8.3.2
   validator: 13.5.2
-  vite: 2.4.4
+  vite: 2.2.4
   vite-plugin-commonjs-externals: 0.1.1
 lockfileVersion: 5.2
 packages:
@@ -8775,12 +8775,12 @@ packages:
     dev: false
     resolution:
       integrity: sha512-EmTr31wppcaIAgblChZiuN/l9Y7DPyw8Xtbg7fIVngn6zMW+IEBJDJngeKC3x6wr0V/vcA2wqeFnaw1bFJbDdA==
-  /esbuild/0.12.17:
+  /esbuild/0.9.7:
     dev: false
     hasBin: true
     requiresBuild: true
     resolution:
-      integrity: sha512-GshKJyVYUnlSXIZj/NheC2O0Kblh42CS7P1wJyTbbIHevTG4jYMS9NNw8EOd8dDWD0dzydYHS01MpZoUcQXB4g==
+      integrity: sha512-VtUf6aQ89VTmMLKrWHYG50uByMF4JQlVysb8dmg6cOgW8JnFCipmz7p+HNBl+RR3LLCuBxFGVauAe2wfnF9bLg==
   /escalade/3.1.1:
     dev: false
     engines:
@@ -17062,9 +17062,9 @@ packages:
     dev: false
     resolution:
       integrity: sha512-XRFsdFos/D1Dam0t40qBM+8b1Mrn5vH6aOwaTt8CW5myGx9uKivFXPukP2CsEo6cSukbPlBImsL1voiV6e3o5w==
-  /vite/2.4.4:
+  /vite/2.2.4:
     dependencies:
-      esbuild: 0.12.17
+      esbuild: 0.9.7
       postcss: 8.3.6
       resolve: 1.20.0
       rollup: 2.52.7
@@ -17075,7 +17075,7 @@ packages:
     optionalDependencies:
       fsevents: 2.3.2
     resolution:
-      integrity: sha512-m1wK6pFJKmaYA6AeZIUXyiAgUAAJzVXhIMYCdZUpCaFMGps0v0IlNJtbmPvkUhVEyautalajmnW5X6NboUPsnw==
+      integrity: sha512-vnIwSNci+phFMp6krhy+FbYzKL0R67Sdt9mVZ96S27AewrApSJjTqncJcalk8sf60BgcbW4+1C6DFIWkxquO9g==
   /vm-browserify/1.1.2:
     dev: false
     resolution:
@@ -17601,14 +17601,14 @@ packages:
       ts-jest: 26.5.6_jest@26.6.3+typescript@4.2.3
       ts-node: 10.1.0_d62272bef50584f1245531e58be9aac0
       typescript: 4.2.3
-      vite: 2.4.4
+      vite: 2.2.4
     dev: false
     id: file:projects/app.tgz
     name: '@rush-temp/app'
     peerDependencies:
       redux: '*'
     resolution:
-      integrity: sha512-2QDBNxkLYxbtZUwVGxZkI1a1JSfFOXocUK3pZLAZpbsRdTcg4ACdoFrfo181VKn8thRXeKfldYCZfp5vkkyjwg==
+      integrity: sha512-u8UJq9svvX5ftEyOV0asOgEplYPBmU6zAEd0RkRJ0qxrjLlIfVNKFBrgO+oLtlgyZ5aHJolTgzvXZ4oHd2yPiQ==
       tarball: file:projects/app.tgz
     version: 0.0.0
   file:projects/components.tgz_ts-node@10.1.0:
@@ -17659,12 +17659,12 @@ packages:
       deepmerge: 4.2.2
       execa: 5.0.0
       typescript: 4.2.3
-      vite: 2.4.4
+      vite: 2.2.4
       vite-plugin-commonjs-externals: 0.1.1
     dev: false
     name: '@rush-temp/configs'
     resolution:
-      integrity: sha512-R1MmYwoCeDk67UGk2s0t+HW+6Q8OxAM/z1FONsO85oT9gqtdN6go3MYkZJW06IeMpSF8kC2JVKSdyad4ziKfag==
+      integrity: sha512-x6IR9CHWqE8rhZtd8O5Wy5ajMGrPoCTK3Rv0CJqxUpsI6IenlHkRmDovZLRptPBwwuR1xqy2Hh6L1CmyP04abA==
       tarball: file:projects/configs.tgz
     version: 0.0.0
   file:projects/data.tgz_ts-node@10.1.0:
@@ -17896,14 +17896,14 @@ packages:
       typescript: 4.2.3
       uuid: 8.3.2
       validator: 13.5.2
-      vite: 2.4.4
+      vite: 2.2.4
     dev: false
     id: file:projects/website.tgz
     name: '@rush-temp/website'
     peerDependencies:
       graphql: '*'
     resolution:
-      integrity: sha512-MNVvVwFJIYv956FIjubQzPQBWPFKry+unGvmiUlPU8kTrKCWTm6VSaRKVffdJUVCA4zjRhAsolo/u6rvLOAjrA==
+      integrity: sha512-BoKrrskEyrarQnLEKYLxSJyo8ccDQ7edI2bLriCvS9ZcTSIb77bkrU6I2qKWtusPoRl9dAVJ3ybyDBfVtW0awA==
       tarball: file:projects/website.tgz
     version: 0.0.0
 specifiers:
@@ -18004,5 +18004,5 @@ specifiers:
   typescript: 4.2.3
   uuid: 8.3.2
   validator: 13.5.2
-  vite: 2.4.4
+  vite: 2.2.4
   vite-plugin-commonjs-externals: 0.1.1
