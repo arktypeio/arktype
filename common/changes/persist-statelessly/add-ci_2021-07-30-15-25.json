@@ -1,0 +1,11 @@
+{
+    "changes": [
+        {
+            "packageName": "persist-statelessly",
+            "comment": "Prettier.",
+            "type": "patch"
+        }
+    ],
+    "packageName": "persist-statelessly",
+    "email": "david@redo.qa"
+}

@@ -1,0 +1,11 @@
+{
+    "changes": [
+        {
+            "packageName": "react-statelessly",
+            "comment": "Prettier.",
+            "type": "patch"
+        }
+    ],
+    "packageName": "react-statelessly",
+    "email": "david@redo.qa"
+}
