@@ -5,7 +5,11 @@ import { stateSyncEnhancer } from "electron-redux/main"
 import { launchBrowser, closeBrowser } from "./launchBrowser"
 import { mainWindow, builderWindow } from "./windows"
 import { ValueOf } from "@re-do/utils"
+import { fromRedo, ensureDir, fromDir } from "@re-do/node-utils"
 import { createRedoFileDb } from "@re-do/data"
+import { existsSync, readFileSync, writeFileSync } from "fs"
+import { join } from "path"
+import { version } from "../../package.json"
 
 const DEFAULT_BUILDER_WIDTH = 300
 const ELECTRON_TITLEBAR_SIZE = 37
@@ -28,9 +32,33 @@ const emptyMainActions: MainActions = {
     closeBuilder: null
 }
 
+const versionDir = fromRedo(version)
+const cacheFile = join(versionDir, ".redo-cache.json")
+
+type RedoCache = {
+    token?: string
+}
+
+const getCache = () => {
+    let cache: RedoCache = {}
+    try {
+        cache = JSON.parse(readFileSync(cacheFile).toString())
+    } catch {
+        ensureDir(versionDir)
+        writeFileSync(cacheFile, JSON.stringify({}))
+    }
+    return cache
+}
+
+const updateCache = (updates: Partial<RedoCache>) =>
+    writeFileSync(
+        cacheFile,
+        JSON.stringify({ ...getCache(), ...updates }, null, 4)
+    )
+
 const initialState: Root = {
     page: "HOME",
-    token: "",
+    token: getCache().token ?? "",
     cardFilter: "",
     defaultBrowser: "chrome",
     builder: {
@@ -89,6 +117,9 @@ store = new Store(initialState, mainActions, {
     },
     onChange: [
         {
+            token: (token) => {
+                updateCache({ token })
+            },
             main: async (changes) => {
                 const requiredActions = Object.entries(changes).filter(
                     ([name, args]) => !!args
