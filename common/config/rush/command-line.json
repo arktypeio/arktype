@@ -13,7 +13,8 @@
             "name": "test",
             "summary": "Test packages.",
             "description": "Executes automated tests.",
-            "enableParallelism": true
+            "enableParallelism": true,
+            "allowWarningsInSuccessfulBuild": true
         },
         {
             "name": "prettier",
