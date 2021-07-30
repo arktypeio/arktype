@@ -1,6 +1,6 @@
 {
     "name": "@re-do/app",
-    "version": "0.1.1",
+    "version": "0.1.5",
     "private": true,
     "main": "dist/main/index.js",
     "repository": {
@@ -48,10 +48,7 @@
         "persist-statelessly": "0.0.2",
         "isomorphic-ws": "4.0.1",
         "electron-redux": "2.0.0-alpha.9",
-        "playwright": "1.12.3",
-        "extract-zip": "2.0.1",
-        "rimraf": "3.0.2",
-        "commander": "8.0.0"
+        "playwright-core": "1.12.3"
     },
     "devDependencies": {
         "@types/electron-devtools-installer": "2.2.0",
@@ -61,12 +58,12 @@
         "@re-do/configs": "0.0.2",
         "@types/adm-zip": "0.4.34",
         "adm-zip": "0.5.5",
-        "electron": "13.1.6",
-        "electron-builder": "22.11.7",
+        "electron": "13.1.7",
+        "electron-builder": "22.11.11",
         "electron-devtools-installer": "3.2.0",
         "typescript": "4.4.0-beta",
         "ts-node": "10.1.0",
-        "vite": "2.4.2",
+        "vite": "2.4.4",
         "jsrx": "0.0.13",
         "tree-kill": "1.2.2",
         "jest": "27.0.6",

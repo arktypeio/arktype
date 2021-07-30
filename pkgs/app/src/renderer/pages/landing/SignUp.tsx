@@ -10,26 +10,15 @@ export const SignUp = () => {
     return (
         <Form<SignUpMutationVariables>
             submit={async (data) => {
-                const result = await submit({ variables: data })
+                const result = await submit({
+                    variables: { ...data, first: "", last: "" }
+                })
                 store.update({ token: result?.data?.signUp })
             }}
             grow
             full
             justify="center"
         >
-            <Row spacing={1}>
-                <FormText
-                    name="first"
-                    errorTooltipPlacement="left"
-                    disabled={disabled}
-                    autoFocus
-                />
-                <FormText
-                    name="last"
-                    errorTooltipPlacement="right"
-                    disabled={disabled}
-                />
-            </Row>
             <FormText
                 name="email"
                 errorTooltipPlacement="right"

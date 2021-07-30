@@ -8,7 +8,7 @@ const prepareRelease = () => {
     ensureDir(releaseDependenciesDir)
     // Only install non-bundled dependencies
     const releaseDependencies = {
-        playwright: packageJsonContents.dependencies["playwright"],
+        "playwright-core": packageJsonContents.dependencies["playwright-core"],
         "electron-redux": packageJsonContents.dependencies["electron-redux"]
     }
     const releasePackageJsonContents = JSON.stringify({

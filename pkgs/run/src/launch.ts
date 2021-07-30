@@ -1,4 +1,6 @@
-import { chromium, firefox, webkit } from "playwright"
+import { chromium, firefox, webkit } from "playwright-core"
+import { existsSync } from "fs"
+import { shell } from "@re-do/node-utils"
 
 export type LaunchOptions = {
     size?: {
@@ -17,6 +19,12 @@ export const browserHandlers = {
     safari: webkit
 }
 
+export const playwrightBrowserNames = {
+    chrome: "chromium",
+    firefox: "firefox",
+    safari: "webkit"
+}
+
 export type BrowserName = keyof typeof browserHandlers
 
 export const launch = async (
@@ -24,6 +32,13 @@ export const launch = async (
     { size, position }: LaunchOptions = {}
 ) => {
     const browserHandler = browserHandlers[browser]
+    const expectedBrowserPath = browserHandler.executablePath()
+    if (!existsSync(expectedBrowserPath)) {
+        console.log(
+            `Didn't find ${browser} at ${expectedBrowserPath}. Installing...`
+        )
+        shell(`npx playwright install ${playwrightBrowserNames[browser]}`)
+    }
     const args = []
     if (position) {
         args.push(`--window-position=${position.x},${position.y}`)

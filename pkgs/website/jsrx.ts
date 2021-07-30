@@ -26,7 +26,7 @@ type GetConfigArgs = {
     watch?: boolean
 }
 
-const getWebsiteConfig = ({ watch }: GetConfigArgs = {}) =>
+const getWebsiteConfig = ({ watch = false }: GetConfigArgs = {}) =>
     getWebConfig({
         srcDir: pkgRoot,
         outDir: join(dirName, "dist"),
