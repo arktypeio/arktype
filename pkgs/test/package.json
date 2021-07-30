@@ -15,7 +15,8 @@
     "scripts": {
         "build": "redo-build",
         "redo": "ts-node src/cli.ts",
-        "test": "jest"
+        "devTest": "jest",
+        "test": "echo No tests for this package"
     },
     "bin": {
         "redo": "./cli.js"
