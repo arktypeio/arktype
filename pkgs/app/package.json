@@ -20,13 +20,6 @@
         "buildProd": "jsrx buildProd",
         "jsrxGen": "jsrx jsrxGen"
     },
-    "simple-git-hooks": {
-        "pre-commit": "npx lint-staged",
-        "pre-push": "npm run typecheck"
-    },
-    "lint-staged": {
-        "*.{js,ts}": "prettier --write"
-    },
     "dependencies": {
         "@apollo/client": "3.3.7",
         "@material-ui/core": "4.11.2",
