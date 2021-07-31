@@ -35,15 +35,6 @@ const config = {
     beforeBuild: async (ctx) => {
         return false
     }
-    // afterAllArtifactBuild: async (ctx) => {
-    //     const os = getOs()
-    //     const zip = new Zip()
-    //     const releaseDir = join(ctx.outDir, releaseDirNames[os])
-    //     const releaseZip = join(ctx.outDir, getRedoZipFileName(os, version))
-    //     zip.addLocalFolder(releaseDir)
-    //     zip.writeZip(releaseZip)
-    //     return [releaseZip]
-    // }
 }
 
 module.exports = config

@@ -64,7 +64,6 @@ dist
 
 # Rush files
 common/temp/**
-common/scripts/**
 package-deps.json
 
 # OS files

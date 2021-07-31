@@ -1,4 +1,9 @@
-import { chromium, firefox, webkit } from "playwright-core"
+import {
+    chromium,
+    firefox,
+    webkit,
+    LaunchOptions as PlaywrightLaunchOptions
+} from "playwright-core"
 import { existsSync } from "fs"
 import { shell } from "@re-do/node-utils"
 
@@ -11,7 +16,7 @@ export type LaunchOptions = {
         x: number
         y: number
     }
-}
+} & PlaywrightLaunchOptions
 
 export const browserHandlers = {
     chrome: chromium,
@@ -29,7 +34,7 @@ export type BrowserName = keyof typeof browserHandlers
 
 export const launch = async (
     browser: BrowserName,
-    { size, position }: LaunchOptions = {}
+    { size, position, ...playwrightOptions }: LaunchOptions = {}
 ) => {
     const browserHandler = browserHandlers[browser]
     const expectedBrowserPath = browserHandler.executablePath()
@@ -47,8 +52,8 @@ export const launch = async (
         args.push(`--window-size=${size.width},${size.height}`)
     }
     const instance = await browserHandler.launch({
-        headless: false,
-        args
+        ...playwrightOptions,
+        args: [...args, ...(playwrightOptions.args || [])]
     })
     const context = await instance.newContext({ viewport: null })
     const page = await context.newPage()

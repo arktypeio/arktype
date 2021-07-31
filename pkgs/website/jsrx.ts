@@ -51,7 +51,8 @@ jsrx(
     {
         dev: {
             start,
-            test: $("jest"),
+            test: $("echo No tests for this package"),
+            devTest: $("jest"),
             redo: $("redo launch")
         },
         prod: {},

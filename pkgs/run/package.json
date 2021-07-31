@@ -14,7 +14,8 @@
     },
     "scripts": {
         "build": "redo-build",
-        "test": "jest"
+        "test": "echo No tests for this package",
+        "devTest": "jest"
     },
     "dependencies": {
         "@re-do/model": "0.0.1",

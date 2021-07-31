@@ -30,7 +30,7 @@ import menuBook from "@material-ui/icons/MenuBook"
 import SvgIcon, { SvgIconProps } from "@material-ui/core/SvgIcon"
 import { twitchPath } from "./paths.js"
 
-const toIcon = (path: string) => (props: SvgIconProps) => 
+const toIcon = (path: string) => (props: SvgIconProps) =>
     (
         <SvgIcon {...props}>
             <path d={path} />

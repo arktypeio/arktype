@@ -29,11 +29,9 @@ const prepareRelease = () => {
     rmSync(join(nodeModulesDestDir, ".bin"), { recursive: true, force: true })
 }
 
-export const createRelease = (publish: boolean) => {
+export const createRelease = () => {
     prepareRelease()
     shell(
-        `electron-builder --config electron-builder.config.js --publish ${
-            publish ? "always" : "never"
-        }`
+        `electron-builder --config electron-builder.config.js --publish never`
     )
 }

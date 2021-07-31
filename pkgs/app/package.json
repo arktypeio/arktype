@@ -10,22 +10,13 @@
     },
     "scripts": {
         "start": "jsrx start",
-        "lint": "jsrx lint",
         "typecheck": "jsrx typecheck",
         "test": "jsrx test",
         "build": "jsrx build",
-        "dryRun": "jsrx dryRun",
-        "publish": "jsrx publish",
+        "release": "jsrx release",
         "runProd": "jsrx runProd",
         "buildProd": "jsrx buildProd",
         "jsrxGen": "jsrx jsrxGen"
-    },
-    "simple-git-hooks": {
-        "pre-commit": "npx lint-staged",
-        "pre-push": "npm run typecheck"
-    },
-    "lint-staged": {
-        "*.{js,ts}": "prettier --write"
     },
     "dependencies": {
         "@apollo/client": "3.3.7",

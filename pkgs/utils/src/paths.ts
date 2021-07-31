@@ -8,10 +8,9 @@ import {
     NonRecursible,
     withDefaults,
     And,
-    Merge,
-    If
+    Merge
 } from "./common.js"
-import { String, O, F, S } from "ts-toolbelt"
+import { String } from "ts-toolbelt"
 
 export type Split<S extends string, Delimiter extends string> = String.Split<
     S,
@@ -131,10 +130,10 @@ export type StringPathConstraintOptions = PathConstraintOptions & {
 
 export type LeafListOf<
     T,
-    Constraints extends PathConstraintOptions = {}
+    Constraints extends PathConstraintOptions = DefaultPathConstraints
 > = LeafListOfRecurse<
     T,
-    O.Merge<Constraints, DefaultPathConstraints>,
+    Merge<DefaultPathConstraints, Constraints>,
     EnsureValue<Constraints["maxDepth"], DefaultPathConstraints["maxDepth"]>,
     never
 >
