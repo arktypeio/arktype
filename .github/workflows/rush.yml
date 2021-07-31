@@ -34,3 +34,4 @@ jobs:
                   draft: true
                   artifacts: "pkgs/app/release/*.zip"
                   token: ${{ secrets.GITHUB_TOKEN }}
+                  tag: ${{ env.GITHUB_HEAD_REF }}
