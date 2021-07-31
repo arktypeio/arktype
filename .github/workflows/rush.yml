@@ -20,8 +20,9 @@ jobs:
               with:
                   node-version: ${{ matrix.node-version }}
             - run: node common/scripts/install-run-rush.js change -v
-            - run: node common/scripts/install-run-rush.js install
-            - run: node common/scripts/install-run-rush.js build
+            - run: node common/scripts/install-run-rush.js install --no-link
+            - run: node common/scripts/install-run-rush.js link
+            - run: node common/scripts/install-run-rush.js rebuild --verbose
             - run: npx playwright install-deps
             - run: node common/scripts/install-run-rush.js test
             - name: Create electron release
