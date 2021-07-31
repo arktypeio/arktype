@@ -17,8 +17,7 @@ jsrx(
             test: $(`echo 'This package has no tests.'`)
         },
         prod: {
-            dryRun: () => createRelease(false),
-            publish: () => createRelease(true),
+            release: () => createRelease(),
             runProd: () => shellAsync(startElectronCmd)
         },
         shared: {

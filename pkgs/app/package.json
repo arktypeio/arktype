@@ -13,8 +13,7 @@
         "typecheck": "jsrx typecheck",
         "test": "jsrx test",
         "build": "jsrx build",
-        "dryRun": "jsrx dryRun",
-        "publish": "jsrx publish",
+        "release": "jsrx release",
         "runProd": "jsrx runProd",
         "buildProd": "jsrx buildProd",
         "jsrxGen": "jsrx jsrxGen"

@@ -27,7 +27,7 @@ jobs:
             - run: node common/scripts/install-run-rush.js test
             - name: Create electron release
               working-directory: pkgs/app
-              run: node ../../common/scripts/install-run-rushx.js dryRun
+              run: npm run release
             - uses: ncipollo/release-action@v1
               with:
                   allowUpdates: true
