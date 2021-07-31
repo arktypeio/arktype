@@ -14,5 +14,5 @@ const InnerLink = React.forwardRef<RouterLink, RouterLinkProps>(
 )
 
 export const Link = (props: LinkProps) => (
-    <MuiLink component={InnerLink} {...props as any} />
+    <MuiLink component={InnerLink} {...(props as any)} />
 )

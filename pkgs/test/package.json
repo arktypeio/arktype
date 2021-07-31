@@ -15,7 +15,8 @@
     "scripts": {
         "build": "redo-build",
         "redo": "ts-node src/cli.ts",
-        "test": "jest"
+        "devTest": "jest",
+        "test": "echo No tests for this package"
     },
     "bin": {
         "redo": "./cli.js"
@@ -36,7 +37,7 @@
         "@re-do/configs": "0.0.2",
         "@types/node": "15.0.2",
         "@types/adm-zip": "0.4.34",
-        "ts-node": "9.1.1",
+        "ts-node": "10.1.0",
         "typescript": "4.2.3",
         "@types/node-fetch": "2.5.8",
         "@types/jest": "26.0.20",

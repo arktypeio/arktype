@@ -40,13 +40,8 @@ type UseKindOptions = {
 
 const useKind = makeKinds<MuiTextFieldProps>()(
     ({ state, colors }: UseKindOptions) => {
-        const {
-            baseClass,
-            errorClass,
-            focusedClass,
-            hoveredClass,
-            textClass
-        } = stylize(colors)
+        const { baseClass, errorClass, focusedClass, hoveredClass, textClass } =
+            stylize(colors)
         const { focused, hovered, error } = state
         const borderClass = focused
             ? focusedClass
@@ -141,9 +136,8 @@ export const useTextFieldProps = ({
         error: false,
         hovered: false
     })
-    const { border: paletteBorderColors, text: paletteTextColor } = useColors(
-        colorTemplate
-    )
+    const { border: paletteBorderColors, text: paletteTextColor } =
+        useColors(colorTemplate)
     const kindProps = useKind(kind, {
         state,
         colors: {
@@ -153,27 +147,27 @@ export const useTextFieldProps = ({
     })
     return {
         margin: "dense",
-        onFocus: e => {
+        onFocus: (e) => {
             setState({ ...state, focused: true })
             onFocus && onFocus(e)
         },
-        onBlur: e => {
+        onBlur: (e) => {
             setState({ ...state, focused: false })
             onBlur && onBlur(e)
         },
-        onError: e => {
+        onError: (e) => {
             setState({ ...state, error: true })
             onError && onError(e)
         },
-        onReset: e => {
+        onReset: (e) => {
             setState({ ...state, error: false })
             onReset && onReset(e)
         },
-        onMouseOver: e => {
+        onMouseOver: (e) => {
             setState({ ...state, hovered: true })
             onMouseOver && onMouseOver(e)
         },
-        onMouseOut: e => {
+        onMouseOut: (e) => {
             setState({ ...state, hovered: false })
             onMouseOut && onMouseOut(e)
         },

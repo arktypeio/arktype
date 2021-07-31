@@ -1,0 +1,11 @@
+{
+    "changes": [
+        {
+            "packageName": "@re-do/utils",
+            "comment": "Improve capitalize return type.",
+            "type": "patch"
+        }
+    ],
+    "packageName": "@re-do/utils",
+    "email": "david@redo.qa"
+}

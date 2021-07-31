@@ -18,19 +18,19 @@ export const transformSubstring = ({
 export const camelCase = (words: string[]) =>
     `${words[0].toLowerCase()}${capsCase(words.slice(1))}`
 
-export const capitalize = (word: string) =>
+export const capitalize = <W extends string>(word: W) =>
     transformSubstring({
         original: word,
-        transform: _ => _.toUpperCase(),
+        transform: (_) => _.toUpperCase(),
         end: 1
-    })
+    }) as Capitalize<W>
 
 export const lettersAfterFirstToLower = (word: string) =>
     transformSubstring({
         original: word,
-        transform: _ => _.toLowerCase(),
+        transform: (_) => _.toLowerCase(),
         start: 1
     })
 
 export const capsCase = (words: string[]) =>
-    words.map(word => capitalize(lettersAfterFirstToLower(word))).join("")
+    words.map((word) => capitalize(lettersAfterFirstToLower(word))).join("")

@@ -3,9 +3,14 @@ import { Context } from "../common"
 
 export type { SetArgs } from "@re-do/model"
 
-export const assertText = async ({ element, value }: AssertTextArgs, { page }: Context) => {
+export const assertText = async (
+    { element, value }: AssertTextArgs,
+    { page }: Context
+) => {
     const text = await page.textContent(element.selector)
-    if (!(text?.includes(value))) {
-        throw new Error(`Element ${element.selector} had text value ${text}. Expected ${value}.`)
-    }   
+    if (!text?.includes(value)) {
+        throw new Error(
+            `Element ${element.selector} had text value ${text}. Expected ${value}.`
+        )
+    }
 }
