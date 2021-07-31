@@ -1,8 +1,6 @@
 name: Validate build
 
 on:
-    push:
-        branches: [master]
     pull_request:
         branches: [master]
 
@@ -26,3 +24,12 @@ jobs:
             - run: node common/scripts/install-run-rush.js build
             - run: npx playwright install-deps
             - run: node common/scripts/install-run-rush.js test
+            - name: Create electron release
+              working-directory: pkgs/app
+              run: node ../../common/scripts/install-run-rushx.js dryRun
+            - uses: ncipollo/release-action@v1
+              with:
+                  allowUpdates: true
+                  draft: true
+                  artifacts: "pkgs/app/release/*.zip"
+                  token: ${{ secrets.GITHUB_TOKEN }}
