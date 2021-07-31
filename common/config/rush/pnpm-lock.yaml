@@ -63,8 +63,8 @@ dependencies:
   enzyme: 3.11.0
   execa: 5.0.0
   fast-deep-equal: 3.1.3
-  filedirname: 2.7.0
   framer-motion: 4.1.11_react-dom@17.0.2+react@17.0.2
+  get-current-line: 6.6.0
   gqlize: 0.0.3
   graphql: 15.5.0
   graphql-tag: 2.12.4_graphql@15.5.0
@@ -17952,6 +17952,7 @@ packages:
       deepmerge: 4.2.2
       execa: 5.0.0
       filedirname: 2.7.0
+      get-current-line: 6.6.0
       jest: 27.0.6_ts-node@10.1.0
       moize: 5.4.7
       prompts: 2.4.1
@@ -17962,7 +17963,7 @@ packages:
     dev: false
     name: '@rush-temp/node-utils'
     resolution:
-      integrity: sha512-l9mFzALBLjgjIq4qeof+KIp5mX/s6XU1KmxeXH7O1g890dMqNSd3XiyRJa5euWh7tE0oaXjf6pE8qy48B2a4Iw==
+      integrity: sha512-H6yb1aIht7mfFlyb87LjTHn1bWeMWdLVD25KMOtTgV/GbeiSnVQ/C9Mq/fvsNakdjpxd42RlEkrral/twt/qPg==
       tarball: file:projects/node-utils.tgz
     version: 0.0.0
   file:projects/persist-statelessly.tgz_ts-node@10.1.0:
@@ -18218,8 +18219,8 @@ specifiers:
   enzyme: 3.11.0
   execa: 5.0.0
   fast-deep-equal: 3.1.3
-  filedirname: 2.7.0
   framer-motion: 4.1.11
+  get-current-line: 6.6.0
   gqlize: 0.0.3
   graphql: 15.5.0
   graphql-tag: 2.12.4

@@ -9,8 +9,7 @@ import {
 import { Merge } from "@re-do/utils"
 import prompts, { PromptObject, PromptType } from "prompts"
 import { getOs } from "./os.js"
-import { dirNameCompatible } from "./fs.js"
-import { join } from "path"
+import { dirName } from "./fs.js"
 
 type CommonOptions = {
     suppressCmdStringLogging?: boolean
@@ -57,10 +56,9 @@ export const shellAsync = (
 export type RunScriptOptions = {
     esm?: boolean
     processArgs?: string[]
-    tsconfig?: string
 }
 
-export const getTsNodeCmd = ({ esm, tsconfig }: RunScriptOptions) => {
+export const getTsNodeCmd = ({ esm }: RunScriptOptions) => {
     let cmd = esm
         ? `node --loader ts-node/esm`
         : `ts-node -O ${
@@ -68,19 +66,11 @@ export const getTsNodeCmd = ({ esm, tsconfig }: RunScriptOptions) => {
                   ? `"{""module"": ""commonjs"", ""isolatedModules"": false}"`
                   : `'{"module": "commonjs", "isolatedModules": false}'`
           }`
-    if (tsconfig) {
-        cmd += ` --project ${tsconfig}`
-    }
     return cmd
 }
 
 const getFilterWarningsArg = () =>
-    `-r ${join(
-        dirNameCompatible(new Error()),
-        "..",
-        "..",
-        "filterWarnings.cjs"
-    )}`
+    `-r ${dirName("..", "..", "filterWarnings.cjs")}`
 
 export const getRunScriptCmd = (
     fileToRun: string,

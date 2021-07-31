@@ -29,7 +29,7 @@
         "validator": "13.5.2",
         "prompts": "2.4.1",
         "ts-node": "10.1.0",
-        "filedirname": "2.7.0"
+        "get-current-line": "6.6.0"
     },
     "devDependencies": {
         "@re-do/configs": "0.0.2",

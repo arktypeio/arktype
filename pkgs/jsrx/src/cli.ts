@@ -24,14 +24,10 @@ export const cli = async () => {
             "'jsrx' requires a positional argument representing the name of the script to run, e.g. 'jsrx build'."
         )
     }
-    const runScriptOptions: RunScriptOptions = {
+    runScript(jsrxConfigFile, {
         esm,
         processArgs: process.argv.slice(jsrxArgIndex + 1)
-    }
-    if (existsSync("tsconfig.scripts.json")) {
-        runScriptOptions.tsconfig = "tsconfig.scripts.json"
-    }
-    runScript(jsrxConfigFile, runScriptOptions)
+    })
 }
 
 cli()

@@ -7,22 +7,19 @@ import {
     mkdirSync,
     statSync
 } from "fs"
+import { fileURLToPath, URL } from "url"
+import getCurrentLine from "get-current-line"
 import { homedir } from "os"
 import { join, dirname } from "path"
 import { once } from "events"
 import { promisify } from "util"
 import { finished } from "stream"
-import filedirname from "filedirname"
 
 const streamFinished = promisify(finished)
 
 export const filePath = (fileUrl: string) => new URL(fileUrl).pathname
-export const dirPath = (fileUrl: string) => dirname(filePath(fileUrl))
 export const fromDirPath = (fileUrl: string, ...segments: string[]) =>
     join(dirPath(fileUrl), ...segments)
-
-export const fileNameCompatible = (e: Error) => filedirname(e)[0]
-export const dirNameCompatible = (e: Error) => filedirname(e)[1]
 
 export const isEsm = () => {
     try {
@@ -96,3 +93,30 @@ export const walkPaths = (dir: string, options: WalkOptions): string[] =>
                 : [path])
         ]
     }, [] as string[])
+
+/** Fetch the file and directory paths from a path, uri, or `import.meta.url` */
+export const dirPath = (path: string) => {
+    let file
+    if (path.includes("://")) {
+        // is a url, e.g. file://, or https://
+        const url = new URL(path)
+        file = url.protocol === "file:" ? fileURLToPath(url) : url.href
+    } else {
+        // is already a typical path
+        file = path
+    }
+    return dirname(file)
+}
+
+/** Fetch the file and directory paths from the caller. */
+export const dirName = (...joinWith: string[]) =>
+    join(
+        dirPath(
+            getCurrentLine({
+                method: "dirName",
+                frames: 0,
+                immediate: false
+            }).file
+        ),
+        ...joinWith
+    )
