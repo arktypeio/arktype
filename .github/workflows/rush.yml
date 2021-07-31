@@ -35,3 +35,4 @@ jobs:
                   artifacts: "pkgs/app/release/*.zip"
                   token: ${{ secrets.GITHUB_TOKEN }}
                   tag: ${{ env.GITHUB_HEAD_REF }}
+                  commit: ${{ env.GITHUB_HEAD_REF }}
