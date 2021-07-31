@@ -69,6 +69,11 @@
             "shouldPublish": true
         },
         {
+            "packageName": "statelessly-2",
+            "projectFolder": "pkgs/statelessly-2",
+            "shouldPublish": false
+        },
+        {
             "packageName": "@re-do/website",
             "projectFolder": "pkgs/website",
             "shouldPublish": false

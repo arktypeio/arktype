@@ -63,7 +63,7 @@ export const getMainConfig = ({ watch }: GetConfigArgs = {}) =>
     getNodeConfig({
         srcDir: join(srcDir, "main"),
         outDir: join(distDir, "main"),
-        watch,
+        watch: watch ?? false,
         options: {
             resolve: {
                 alias: localResolves
@@ -78,7 +78,7 @@ export const getRendererConfig = ({ watch }: GetConfigArgs = {}) =>
     getWebConfig({
         srcDir: join(srcDir, "renderer"),
         outDir: join(distDir, "renderer"),
-        watch,
+        watch: watch ?? false,
         options: {
             base: "./",
             resolve: {
@@ -91,7 +91,7 @@ export const getObserverConfig = ({ watch }: GetConfigArgs = {}) =>
     getNodeConfig({
         srcDir: join(srcDir, "observer"),
         outDir: join(distDir, "observer"),
-        watch,
+        watch: watch ?? false,
         formats: ["es"],
         options: {
             build: {

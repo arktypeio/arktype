@@ -9,6 +9,8 @@ import {
 import { Merge } from "@re-do/utils"
 import prompts, { PromptObject, PromptType } from "prompts"
 import { getOs } from "./os.js"
+import { dirNameCompatible } from "./fs.js"
+import { join } from "path"
 
 type CommonOptions = {
     suppressCmdStringLogging?: boolean
@@ -55,22 +57,37 @@ export const shellAsync = (
 export type RunScriptOptions = {
     esm?: boolean
     processArgs?: string[]
+    tsconfig?: string
 }
 
-export const getTsNodeCmd = (esm: boolean = false) =>
-    esm
+export const getTsNodeCmd = ({ esm, tsconfig }: RunScriptOptions) => {
+    let cmd = esm
         ? `node --loader ts-node/esm`
         : `ts-node -O ${
               getOs() === "windows"
                   ? `"{""module"": ""commonjs"", ""isolatedModules"": false}"`
                   : `'{"module": "commonjs", "isolatedModules": false}'`
           }`
+    if (tsconfig) {
+        cmd += ` --project ${tsconfig}`
+    }
+    return cmd
+}
+
+const getFilterWarningsArg = () =>
+    `-r ${join(
+        dirNameCompatible(new Error()),
+        "..",
+        "..",
+        "filterWarnings.cjs"
+    )}`
 
 export const getRunScriptCmd = (
     fileToRun: string,
-    options?: RunScriptOptions
+    options: RunScriptOptions = {}
 ) => {
-    let cmd = fileToRun.endsWith(".ts") ? getTsNodeCmd(options?.esm) : "node"
+    let cmd = fileToRun.endsWith(".ts") ? getTsNodeCmd(options) : "node"
+    cmd += ` ${getFilterWarningsArg()}`
     cmd += ` ${fileToRun}`
     if (options?.processArgs && options.processArgs.length) {
         cmd += ` ${options.processArgs.join(" ")}`

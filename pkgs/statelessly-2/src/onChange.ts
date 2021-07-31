@@ -1,7 +1,7 @@
 import { Middleware } from "@reduxjs/toolkit"
 import { DeepPartial, listify } from "@re-do/utils"
-import { ActionData } from "./common"
-import { Store } from "./store"
+import { ActionData } from "./model/common.js"
+import { Store } from "./store.js"
 
 export type OnChangeMiddlewareArgs<T extends object> =
     | Listener<T, T>
@@ -9,13 +9,13 @@ export type OnChangeMiddlewareArgs<T extends object> =
     | Array<Listener<T, T> | ListenerMap<T, T>>
 
 export type OnChangeContext<T extends object> = {
-    store: Store<T, any>
+    store: Store<T, any, any, any>
     action: ActionData<T>
 }
 
 export const createOnChangeMiddleware = <T extends object>(
     onChange: OnChangeMiddlewareArgs<T>,
-    store: Store<T, any>
+    store: Store<T, any, any, any>
 ): Middleware => {
     const handlers: Listener<T, T>[] = []
     for (const listener of listify(onChange)) {

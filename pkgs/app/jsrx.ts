@@ -13,7 +13,6 @@ jsrx(
     {
         dev: {
             start: startDev,
-            typecheck: $(`tsc --noEmit`),
             test: $(`echo 'This package has no tests.'`)
         },
         prod: {

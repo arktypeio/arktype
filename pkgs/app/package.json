@@ -10,7 +10,6 @@
     },
     "scripts": {
         "start": "jsrx start",
-        "typecheck": "jsrx typecheck",
         "test": "jsrx test",
         "build": "jsrx build",
         "release": "jsrx release",

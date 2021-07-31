@@ -1,28 +1,18 @@
 import React, { ReactNode, createContext } from "react"
 import { Provider as ReduxProvider, useSelector } from "react-redux"
-import { Actions, Paths } from "statelessly"
+import { Actions } from "statelessly"
 import type { Store } from "./store.js"
 
 export const StatelessContext = createContext<any>({} as any)
 
-export type StoreProviderProps<
-    T extends object,
-    A extends Actions<T, AddIdPaths, IdFieldName>,
-    AddIdPaths extends Paths<T>,
-    IdFieldName extends string
-> = {
+export type StoreProviderProps<T extends object, A extends Actions<T>> = {
     children: ReactNode
-    store: Store<T, A, AddIdPaths, IdFieldName>
+    store: Store<T, A>
 }
 
-const InnerStatelessProvider = <
-    T extends object,
-    A extends Actions<T, AddIdPaths, IdFieldName>,
-    AddIdPaths extends Paths<T>,
-    IdFieldName extends string
->({
+const InnerStatelessProvider = <T extends object, A extends Actions<T>>({
     children
-}: StoreProviderProps<T, A, AddIdPaths, IdFieldName>) => {
+}: StoreProviderProps<T, A>) => {
     const data = useSelector((state) => state)
     return (
         <StatelessContext.Provider value={data}>
@@ -31,15 +21,10 @@ const InnerStatelessProvider = <
     )
 }
 
-export const StatelessProvider = <
-    T extends object,
-    A extends Actions<T, AddIdPaths, IdFieldName>,
-    AddIdPaths extends Paths<T>,
-    IdFieldName extends string
->({
+export const StatelessProvider = <T extends object, A extends Actions<T>>({
     children,
     store
-}: StoreProviderProps<T, A, AddIdPaths, IdFieldName>) => {
+}: StoreProviderProps<T, A>) => {
     return (
         <ReduxProvider store={store.underlying}>
             <InnerStatelessProvider store={store as any}>

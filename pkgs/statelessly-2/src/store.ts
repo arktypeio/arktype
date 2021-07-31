@@ -2,7 +2,6 @@ import {
     configureStore,
     ConfigureStoreOptions,
     Middleware,
-    StoreEnhancer,
     Store as ReduxStore
 } from "@reduxjs/toolkit"
 import {
@@ -14,21 +13,34 @@ import {
     transform,
     deepEquals,
     diff,
-    PathOf
+    Paths
 } from "@re-do/utils"
-import { Query, Update, Actions, ActionData, StoreActions } from "./common"
-import { createOnChangeMiddleware, OnChangeMiddlewareArgs } from "./onChange"
-import { createValidationMiddleware, ValidationFunction } from "./validate"
+import {
+    Query,
+    Update,
+    Actions,
+    ActionData,
+    StoreActions
+} from "./model/common.js"
+import { createOnChangeMiddleware, OnChangeMiddlewareArgs } from "./onChange.js"
+import { createValidationMiddleware, ValidationFunction } from "./validate.js"
+// import { createAddIdsMiddleware, CreateAddIdsMiddlewareArgs } from "./addIds.js"
 
 export type ReduxOptions = Omit<
     ConfigureStoreOptions,
     "preloadedState" | "reducer"
 >
 
-export type StoreOptions<T extends object> = {
-    onChange?: OnChangeMiddlewareArgs<T>
+export type StoreOptions<
+    Input extends object,
+    Model,
+    A extends Actions<Input>
+> = {
+    model?: any
+    actions?: A
+    onChange?: OnChangeMiddlewareArgs<Input>
+    validate?: ValidationFunction<Input>
     reduxOptions?: ReduxOptions
-    validate?: ValidationFunction<T>
 }
 
 export type UpdateOptions = {
@@ -37,17 +49,28 @@ export type UpdateOptions = {
     meta?: Record<string, any>
 }
 
-export class Store<T extends object, A extends Actions<T>> {
-    underlying: ReduxStore<T, ActionData<T>>
-    actions: StoreActions<T, A>
-    $: StoreActions<T, A>
+export type Stored<Input extends object> = Input
 
-    constructor(
-        initial: T,
-        actions: A,
-        { onChange, validate, reduxOptions = {} }: StoreOptions<T> = {}
-    ) {
+export class Store<
+    Input extends object,
+    Model = {},
+    A extends Actions<Input> = {}
+> {
+    underlying: ReduxStore<Input, ActionData<Input>>
+    actions: StoreActions<Input, A, AddIdPaths, IdFieldName>
+    $: StoreActions<Input, A, AddIdPaths, IdFieldName>
+
+    constructor({
+        model,
+        onChange,
+        actions,
+        validate,
+        reduxOptions = {}
+    }: StoreOptions<Input, Model, A> = {}) {
         const statelesslyMiddleware: Middleware[] = []
+        // if (addIds) {
+        //     statelesslyMiddleware.push(createAddIdsMiddleware(addIds))
+        // }
         if (validate) {
             statelesslyMiddleware.push(
                 createValidationMiddleware(validate, this)
@@ -75,19 +98,17 @@ export class Store<T extends object, A extends Actions<T>> {
     getState = () => this.underlying.getState()
 
     // Defining the entire function type together avoids excessive stack depth TS error
-    get: <P extends PathOf<T>>(path: P) => ValueAtPath<T, P> = (path: any) =>
+    get: <P extends string>(
+        path: AutoPath<Input, P, "/">
+    ) => ValueAtPath<Input, P> = (path: any) =>
         valueAtPath(this.underlying.getState(), path) as any
 
-    query = <Q extends Query<T>>(q: Q) =>
+    query = <Q extends Query<Input>>(q: Q) =>
         shapeFilter(this.underlying.getState(), q)
 
-    update = <U extends Update<T>>(
+    update = <U extends Update<Input>>(
         u: U,
-        {
-            actionType = "update",
-            bypassOnChange = false,
-            meta
-        }: UpdateOptions = {}
+        { actionType = "update", bypassOnChange, meta }: UpdateOptions = {}
     ) => {
         const state = this.getState()
         const updatedState = updateMap(state, u)
@@ -105,10 +126,10 @@ export class Store<T extends object, A extends Actions<T>> {
         }
     }
 
-    private getReduxStore = (initial: T, options: ReduxOptions) =>
-        configureStore<T, ActionData<T>, any>({
+    private getReduxStore = (initial: Input, options: ReduxOptions) =>
+        configureStore<Input, ActionData<Input>, any>({
             preloadedState: initial,
-            reducer: (state: T | undefined, { payload, meta }) => {
+            reducer: (state: Input | undefined, { payload, meta }) => {
                 if (!state) {
                     return initial
                 }
@@ -123,29 +144,32 @@ export class Store<T extends object, A extends Actions<T>> {
             ...options
         })
 
-    private defineActions = (actions: A): StoreActions<T, A> =>
+    private defineActions = (
+        actions: A
+    ): StoreActions<Input, A, AddIdPaths, IdFieldName> =>
         transform(actions, ([actionType, actionValue]) => {
             return [
                 actionType,
                 (args: any) => {
-                    let update: Update<T>
+                    let update: Update<Input>
                     if (actionValue instanceof Function) {
                         const returnValue = actionValue(args, this as any)
                         if (returnValue instanceof Promise) {
                             returnValue.then((resolvedValue) => {
-                                this.update(resolvedValue, {
-                                    actionType: actionType as string
-                                })
+                                this.update(resolvedValue, { actionType })
                             })
                             return returnValue
                         } else {
-                            update = actionValue(args, this as any) as Update<T>
+                            update = actionValue(
+                                args,
+                                this as any
+                            ) as Update<Input>
                         }
                     } else {
                         // args shouldn't exist if updater was not a function
                         update = actionValue
                     }
-                    this.update(update, { actionType: actionType as string })
+                    this.update(update, { actionType })
                 }
             ]
         }) as any

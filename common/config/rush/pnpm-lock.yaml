@@ -26,6 +26,7 @@ dependencies:
   '@rush-temp/react-statelessly': file:projects/react-statelessly.tgz_ts-node@10.1.0
   '@rush-temp/run': file:projects/run.tgz_f490898522d78911566e2c8fc8a57ae2
   '@rush-temp/statelessly': file:projects/statelessly.tgz_ts-node@10.1.0
+  '@rush-temp/statelessly-2': file:projects/statelessly-2.tgz_ts-node@10.1.0
   '@rush-temp/test': file:projects/test.tgz
   '@rush-temp/utils': file:projects/utils.tgz_ts-node@10.1.0
   '@rush-temp/website': file:projects/website.tgz_graphql@15.5.0
@@ -62,6 +63,7 @@ dependencies:
   enzyme: 3.11.0
   execa: 5.0.0
   fast-deep-equal: 3.1.3
+  filedirname: 2.7.0
   framer-motion: 4.1.11_react-dom@17.0.2+react@17.0.2
   gqlize: 0.0.3
   graphql: 15.5.0
@@ -7291,7 +7293,7 @@ packages:
   /camel-case/4.1.2:
     dependencies:
       pascal-case: 3.1.2
-      tslib: 2.0.3
+      tslib: 2.1.0
     dev: false
     resolution:
       integrity: sha512-gxGWBrTT1JuMx6R+o5PTXMmUnhnVzLQ9SNutD4YqKtI6ap897t3tKECYla6gCWEkplXnlNybEkZg9GEGxKFCgw==
@@ -7870,7 +7872,7 @@ packages:
   /constant-case/3.0.4:
     dependencies:
       no-case: 3.0.4
-      tslib: 2.2.0
+      tslib: 2.1.0
       upper-case: 2.0.2
     dev: false
     resolution:
@@ -9503,6 +9505,14 @@ packages:
     optional: true
     resolution:
       integrity: sha512-0Zt+s3L7Vf1biwWZ29aARiVYLx7iMGnEUl9x33fbB/j3jR81u/O2LbqK+Bm1CDSNDKVtJ/YjwY7TUd5SkeLQLw==
+  /filedirname/2.7.0:
+    dependencies:
+      get-current-line: 6.6.0
+    dev: false
+    engines:
+      node: '>=10'
+    resolution:
+      integrity: sha512-rw4NZ0XCpm4EeBp0NK2b1WUkCm/LSDg6mJR8ywV2JYvIiwe+fimMgwVxjgd94lbmx4rOOmxybeVHsB6SRNeaXQ==
   /filelist/1.0.2:
     dependencies:
       minimatch: 3.0.4
@@ -9884,6 +9894,12 @@ packages:
       node: 6.* || 8.* || >= 10.*
     resolution:
       integrity: sha512-DyFP3BM/3YHTQOCUL/w0OZHR0lpKeGrxotcHWcqNEdnltqFwXVfhEBQ94eIo34AfQpo0rGki4cyIiftY06h2Fg==
+  /get-current-line/6.6.0:
+    dev: false
+    engines:
+      node: '>=10'
+    resolution:
+      integrity: sha512-9q/tqdL4+GMb0P28N/oSFruQE/8Sa1l9ew73AWS4j/KEMY32wD8+5QRB8LSTgt9HUZuLplmi8vc5dFFf5OvROA==
   /get-intrinsic/1.1.1:
     dependencies:
       function-bind: 1.1.1
@@ -13169,7 +13185,7 @@ packages:
   /no-case/3.0.4:
     dependencies:
       lower-case: 2.0.2
-      tslib: 2.0.3
+      tslib: 2.2.0
     dev: false
     resolution:
       integrity: sha512-fgAN3jGAh+RoxUGZHTSOLJIqUc2wmoBwGR4tbpNAKmmovFoWq0OdRkb0VkldReO2a2iBT/OEulG9XSUc10r3zg==
@@ -13730,7 +13746,7 @@ packages:
   /pascal-case/3.1.2:
     dependencies:
       no-case: 3.0.4
-      tslib: 2.0.3
+      tslib: 2.2.0
     dev: false
     resolution:
       integrity: sha512-uWlGT3YSnK9x3BQJaOdcZwrnV6hPpd8jFH1/ucpiLRPh/2zCVJKS19E4GvYHvaCcACn3foXZ0cLB9Wrx1KGe5g==
@@ -17935,6 +17951,7 @@ packages:
       '@types/prompts': 2.0.11
       deepmerge: 4.2.2
       execa: 5.0.0
+      filedirname: 2.7.0
       jest: 27.0.6_ts-node@10.1.0
       moize: 5.4.7
       prompts: 2.4.1
@@ -17945,7 +17962,7 @@ packages:
     dev: false
     name: '@rush-temp/node-utils'
     resolution:
-      integrity: sha512-x3YctL2WF566VJYRt0NbWEHKeUQyJDaY0doFH2PVGB/2xVWRJKmNuoP3U9R2+7KsT7sAGG3VGIwRMYCAbVDcMg==
+      integrity: sha512-l9mFzALBLjgjIq4qeof+KIp5mX/s6XU1KmxeXH7O1g890dMqNSd3XiyRJa5euWh7tE0oaXjf6pE8qy48B2a4Iw==
       tarball: file:projects/node-utils.tgz
     version: 0.0.0
   file:projects/persist-statelessly.tgz_ts-node@10.1.0:
@@ -18007,6 +18024,29 @@ packages:
     resolution:
       integrity: sha512-xA5E4CkOdz5Dxyvr9MxhhkabtLYv8lLB/u3FSv20S7gVm5Mk9CKdBsSadX6yB/wNMpXIScQYDesiTdvTRNEazw==
       tarball: file:projects/run.tgz
+    version: 0.0.0
+  file:projects/statelessly-2.tgz_ts-node@10.1.0:
+    dependencies:
+      '@reduxjs/toolkit': 1.5.0
+      '@types/jest': 26.0.24
+      '@types/node': 15.0.2
+      deepmerge: 4.2.2
+      isomorphic-fetch: 3.0.0
+      jest: 27.0.6_ts-node@10.1.0
+      moize: 5.4.7
+      redux: 4.0.5
+      redux-devtools-extension: 2.13.8_redux@4.0.5
+      ts-jest: 27.0.3_c1e0131ba2fe0821c3a9f65b91a2cd6a
+      ts-toolbelt: 9.5.10
+      typescript: 4.4.0-beta
+    dev: false
+    id: file:projects/statelessly-2.tgz
+    name: '@rush-temp/statelessly-2'
+    peerDependencies:
+      ts-node: '*'
+    resolution:
+      integrity: sha512-ccD392JYkMXB27TP8yH1OvXWJ1x8n0aKHAquyhJBbsUp23nMx2chJzC0S8U+4CJttkVNLRpAcW0hafRWfYhcUg==
+      tarball: file:projects/statelessly-2.tgz
     version: 0.0.0
   file:projects/statelessly.tgz_ts-node@10.1.0:
     dependencies:
@@ -18141,6 +18181,7 @@ specifiers:
   '@rush-temp/react-statelessly': file:./projects/react-statelessly.tgz
   '@rush-temp/run': file:./projects/run.tgz
   '@rush-temp/statelessly': file:./projects/statelessly.tgz
+  '@rush-temp/statelessly-2': file:./projects/statelessly-2.tgz
   '@rush-temp/test': file:./projects/test.tgz
   '@rush-temp/utils': file:./projects/utils.tgz
   '@rush-temp/website': file:./projects/website.tgz
@@ -18177,6 +18218,7 @@ specifiers:
   enzyme: 3.11.0
   execa: 5.0.0
   fast-deep-equal: 3.1.3
+  filedirname: 2.7.0
   framer-motion: 4.1.11
   gqlize: 0.0.3
   graphql: 15.5.0

@@ -5,7 +5,7 @@ import { launch, Step, Browser } from "@re-do/run"
 import { deepEquals } from "@re-do/utils"
 import { Root } from "common"
 import { Store } from "react-statelessly"
-import playwright from "playwright"
+import playwright from "playwright-core"
 
 const {
     RecorderSupplement

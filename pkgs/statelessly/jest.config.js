@@ -1,3 +1,3 @@
-import { getJestConfig } from "@re-do/configs"
+const { getJestConfig } = require("@re-do/configs")
 
-export default getJestConfig()
+module.exports = getJestConfig()

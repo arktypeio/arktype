@@ -1,5 +1,5 @@
-import { shell, runScript } from "@re-do/node-utils"
-import { readdirSync } from "fs"
+import { runScript, RunScriptOptions } from "@re-do/node-utils"
+import { existsSync, readdirSync } from "fs"
 import { promptForJsrxFile } from "./generateJsrx.js"
 import { getPackageJsonContents } from "./common.js"
 
@@ -24,10 +24,14 @@ export const cli = async () => {
             "'jsrx' requires a positional argument representing the name of the script to run, e.g. 'jsrx build'."
         )
     }
-    runScript(jsrxConfigFile, {
+    const runScriptOptions: RunScriptOptions = {
         esm,
         processArgs: process.argv.slice(jsrxArgIndex + 1)
-    })
+    }
+    if (existsSync("tsconfig.scripts.json")) {
+        runScriptOptions.tsconfig = "tsconfig.scripts.json"
+    }
+    runScript(jsrxConfigFile, runScriptOptions)
 }
 
 cli()

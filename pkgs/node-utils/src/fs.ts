@@ -12,11 +12,25 @@ import { join, dirname } from "path"
 import { once } from "events"
 import { promisify } from "util"
 import { finished } from "stream"
+import filedirname from "filedirname"
 
 const streamFinished = promisify(finished)
 
 export const filePath = (fileUrl: string) => new URL(fileUrl).pathname
 export const dirPath = (fileUrl: string) => dirname(filePath(fileUrl))
+export const fromDirPath = (fileUrl: string, ...segments: string[]) =>
+    join(dirPath(fileUrl), ...segments)
+
+export const fileNameCompatible = (e: Error) => filedirname(e)[0]
+export const dirNameCompatible = (e: Error) => filedirname(e)[1]
+
+export const isEsm = () => {
+    try {
+        return !__dirname
+    } catch {
+        return true
+    }
+}
 
 export const HOME = homedir()
 
