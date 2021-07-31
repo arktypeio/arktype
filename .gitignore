@@ -61,7 +61,6 @@ dist
 
 # Rush files
 common/temp/**
-common/scripts/**
 package-deps.json
 
 # OS files
@@ -74,4 +73,3 @@ package-deps.json
 release
 generated
 .build
-.redo-cache.json

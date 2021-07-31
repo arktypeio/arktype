@@ -12,3 +12,6 @@ yarn.lock                    merge=binary
 # For more information, see this issue: https://github.com/Microsoft/web-build-tools/issues/1088
 #
 *.json                       linguist-language=JSON-with-Comments
+
+# Ensure consistent line endings
+*	text=auto

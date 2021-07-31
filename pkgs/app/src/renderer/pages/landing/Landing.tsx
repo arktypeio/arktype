@@ -12,8 +12,9 @@ export type LandingProps = {
 const slideBetween = [<SignIn />, <SignUp />]
 
 export const Landing = ({ page }: LandingProps) => {
-    const [sliderWidth, setSliderWidth] =
-        useState<string | undefined>(undefined)
+    const [sliderWidth, setSliderWidth] = useState<string | undefined>(
+        undefined
+    )
     const isSignIn = page === "SIGN_IN"
     useLayoutEffect(() => {
         // A rerender is required to get the layout right

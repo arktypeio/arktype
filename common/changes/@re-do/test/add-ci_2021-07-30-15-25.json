@@ -1,0 +1,11 @@
+{
+    "changes": [
+        {
+            "packageName": "@re-do/test",
+            "comment": "Prettier.",
+            "type": "patch"
+        }
+    ],
+    "packageName": "@re-do/test",
+    "email": "david@redo.qa"
+}

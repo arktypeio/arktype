@@ -1,64 +1,77 @@
 {
     "$schema": "https://developer.microsoft.com/json-schemas/rush/v5/rush.schema.json",
-    "rushVersion": "5.47.0",
+    "rushVersion": "5.40.0",
     "pnpmVersion": "5.15.2",
     "nodeSupportedVersionRange": ">=14.16.1",
     "ensureConsistentVersions": true,
     "repository": {
-        "url": "https://github.com/redo-qa/redo"
+        "url": "https://github.com/re-do/redo"
     },
     "projects": [
         {
             "packageName": "@re-do/configs",
-            "projectFolder": "pkgs/configs"
+            "projectFolder": "pkgs/configs",
+            "shouldPublish": true
         },
         {
             "packageName": "@re-do/utils",
-            "projectFolder": "pkgs/utils"
+            "projectFolder": "pkgs/utils",
+            "shouldPublish": true
         },
         {
             "packageName": "statelessly",
-            "projectFolder": "pkgs/statelessly"
+            "projectFolder": "pkgs/statelessly",
+            "shouldPublish": true
         },
         {
             "packageName": "react-statelessly",
-            "projectFolder": "pkgs/react-statelessly"
+            "projectFolder": "pkgs/react-statelessly",
+            "shouldPublish": true
         },
         {
             "packageName": "persist-statelessly",
-            "projectFolder": "pkgs/persist-statelessly"
+            "projectFolder": "pkgs/persist-statelessly",
+            "shouldPublish": true
         },
         {
             "packageName": "@re-do/model",
-            "projectFolder": "pkgs/model"
+            "projectFolder": "pkgs/model",
+            "shouldPublish": true
         },
         {
             "packageName": "@re-do/components",
-            "projectFolder": "pkgs/components"
-        },
-        {
-            "packageName": "@re-do/website",
-            "projectFolder": "pkgs/website"
+            "projectFolder": "pkgs/components",
+            "shouldPublish": true
         },
         {
             "packageName": "@re-do/run",
-            "projectFolder": "pkgs/run"
+            "projectFolder": "pkgs/run",
+            "shouldPublish": true
         },
         {
             "packageName": "@re-do/test",
-            "projectFolder": "pkgs/test"
-        },
-        {
-            "packageName": "@re-do/app",
-            "projectFolder": "pkgs/app"
+            "projectFolder": "pkgs/test",
+            "shouldPublish": true
         },
         {
             "packageName": "@re-do/node-utils",
-            "projectFolder": "pkgs/node-utils"
+            "projectFolder": "pkgs/node-utils",
+            "shouldPublish": true
         },
         {
             "packageName": "@re-do/data",
-            "projectFolder": "pkgs/data"
+            "projectFolder": "pkgs/data",
+            "shouldPublish": true
+        },
+        {
+            "packageName": "@re-do/website",
+            "projectFolder": "pkgs/website",
+            "shouldPublish": false
+        },
+        {
+            "packageName": "@re-do/app",
+            "projectFolder": "pkgs/app",
+            "shouldPublish": false
         }
     ]
 }
