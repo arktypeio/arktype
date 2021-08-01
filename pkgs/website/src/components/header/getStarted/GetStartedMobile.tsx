@@ -4,7 +4,7 @@ import { motion, useViewportScroll, useTransform } from "framer-motion"
 import { animations } from "../../../constants.js"
 
 export type GetStartedMobileProps = {
-    animateScroll?: boolean
+    animateScroll?: boolean | undefined
 }
 
 export const GetStartedMobile = ({ animateScroll }: GetStartedMobileProps) => {

@@ -1,9 +1,9 @@
 import { app } from "electron"
+import { installDevTools } from "./installDevTools"
 import { createMainWindow, createBuilderWindow } from "./electronWindows.js"
 
 app.on("ready", async () => {
     if (process.env["NODE_ENV"] === "development") {
-        const { installDevTools } = await import("./installDevTools.js")
         await installDevTools()
     }
     await createMainWindow()

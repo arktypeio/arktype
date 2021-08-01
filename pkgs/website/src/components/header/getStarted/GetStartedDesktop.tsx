@@ -9,7 +9,7 @@ import {
 import { layout, animations } from "../../../constants.js"
 
 export type GetStartedDesktopProps = {
-    animateScroll?: boolean
+    animateScroll?: boolean | undefined
 }
 
 export const GetStartedDesktop = ({

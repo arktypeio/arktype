@@ -19,8 +19,8 @@ const Step = ({ summary, details, defaultExpanded, ...rest }: StepProps) => {
                 background: "transparent"
             }}
             elevation={0}
-            defaultExpanded={defaultExpanded}
             onChange={(_, open) => setExpanded(open)}
+            defaultExpanded={defaultExpanded ?? false}
             {...rest}
         >
             <AccordionSummary expandIcon={<Icons.expandDown />}>

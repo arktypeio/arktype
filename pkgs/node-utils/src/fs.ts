@@ -75,11 +75,11 @@ export const streamToFile = async (
 }
 
 export type WalkOptions = {
-    excludeFiles: boolean
-    excludeDirs: boolean
+    excludeFiles?: boolean
+    excludeDirs?: boolean
 }
 
-export const walkPaths = (dir: string, options: WalkOptions): string[] =>
+export const walkPaths = (dir: string, options: WalkOptions = {}): string[] =>
     readdirSync(dir).reduce((paths, item) => {
         const path = join(dir, item)
         return [

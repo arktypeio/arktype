@@ -4,7 +4,7 @@ import { GetStartedDesktop } from "./GetStartedDesktop.js"
 import { GetStartedMobile } from "./GetStartedMobile.js"
 
 export type GetStartedButtonProps = {
-    animateScroll?: boolean
+    animateScroll?: boolean | undefined
     mobile: boolean
 }
 

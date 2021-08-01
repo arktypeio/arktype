@@ -69,7 +69,7 @@ export const getTsNodeCmd = ({ esm }: RunScriptOptions) => {
     return cmd
 }
 
-const getFilterWarningsArg = () =>
+export const getFilterWarningsArg = () =>
     `-r ${dirName("..", "..", "filterWarnings.cjs")}`
 
 export const getRunScriptCmd = (

@@ -9,7 +9,7 @@ const { slantHeight } = layout.header
 
 export type HeaderProps = {
     mobile: boolean
-    animateScroll?: boolean
+    animateScroll?: boolean | undefined
     displaySubHeader?: boolean
     displayGetStarted?: boolean
     overrideMobile?: boolean

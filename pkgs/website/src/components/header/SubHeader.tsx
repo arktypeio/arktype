@@ -7,7 +7,7 @@ import { motion, useViewportScroll } from "framer-motion"
 export type SubHeaderProps = {
     skewAngle: number
     mobile: boolean
-    animateScroll?: boolean
+    animateScroll?: boolean | undefined
 }
 
 export const SubHeader = ({
