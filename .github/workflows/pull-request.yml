@@ -21,13 +21,8 @@ jobs:
               uses: actions/setup-node@v2
               with:
                   node-version: ${{ matrix.node-version }}
-            - run: node common/scripts/install-run-rush.js change -v
-            - run: node common/scripts/install-run-rush.js install --no-link
-            - run: node common/scripts/install-run-rush.js link
-            - run: node common/scripts/install-run-rush.js build
-            - run: npx playwright install-deps
-            - run: node common/scripts/install-run-rush.js test
-            - name: Create electron release
+            - run: node common/scripts/install-run-rush.js release
+            - name: Create electron release for ${{ matrix.os }}
               working-directory: pkgs/app
               run: npm run release
             - uses: ncipollo/release-action@v1

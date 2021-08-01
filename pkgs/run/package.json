@@ -21,7 +21,7 @@
         "@re-do/model": "0.0.1",
         "@re-do/utils": "0.0.12",
         "playwright-core": "1.12.3",
-        "@re-do/node-utils": "0.0.4"
+        "@re-do/node-utils": "0.0.6"
     },
     "devDependencies": {
         "@re-do/configs": "0.0.2",
