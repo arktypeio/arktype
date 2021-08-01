@@ -1,8 +1,8 @@
-import { shell } from "@re-do/node-utils"
+import { shell, dirName } from "@re-do/node-utils"
 import { join } from "path"
 import { readFileSync } from "fs"
 
-export const pkgRoot = join(__dirname, "..")
+export const pkgRoot = dirName("..")
 export const distDir = join(pkgRoot, "dist")
 export const releaseDir = join(pkgRoot, "release")
 export const srcDir = join(pkgRoot, "src")

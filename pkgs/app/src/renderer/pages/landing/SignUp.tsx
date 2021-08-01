@@ -13,7 +13,7 @@ export const SignUp = () => {
                 const result = await submit({
                     variables: { ...data, first: "", last: "" }
                 })
-                store.update({ token: result?.data?.signUp })
+                store.update({ token: result?.data?.signUp ?? "" })
             }}
             grow
             full

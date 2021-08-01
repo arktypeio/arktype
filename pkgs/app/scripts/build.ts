@@ -3,7 +3,7 @@ import { join } from "path"
 import { writeFileSync } from "fs"
 import { build } from "vite"
 import { getNodeConfig, getWebConfig } from "@re-do/configs"
-import { ChildProcess, shellAsync } from "@re-do/node-utils"
+import { ChildProcess, shell, shellAsync } from "@re-do/node-utils"
 import { startElectronCmd, killExisting, srcDir, distDir } from "./common"
 
 let mainProcess: ChildProcess | undefined
@@ -111,6 +111,7 @@ export const buildRenderer = async () => build(getRendererConfig())
 export const buildObserver = async () => build(getObserverConfig())
 
 export const buildAll = async () => {
+    shell("tsc --noEmit")
     await Promise.all([buildRenderer(), buildObserver()])
     return await buildMain()
 }

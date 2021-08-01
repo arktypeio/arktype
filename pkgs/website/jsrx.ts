@@ -2,12 +2,9 @@ import { jsrx, $, shell } from "jsrx"
 import { join } from "path"
 import { createServer, build } from "vite"
 import { getWebConfig } from "@re-do/configs"
-import { dirPath } from "@re-do/node-utils"
+import { dirName } from "@re-do/node-utils"
 
-// @ts-ignore
-const dirName = dirPath(import.meta.url)
-
-const pkgRoot = join(dirName, "src")
+const pkgRoot = dirName("src")
 
 const localResolves = [
     { find: "components", replacement: join(pkgRoot, "components") },
@@ -29,7 +26,7 @@ type GetConfigArgs = {
 const getWebsiteConfig = ({ watch = false }: GetConfigArgs = {}) =>
     getWebConfig({
         srcDir: pkgRoot,
-        outDir: join(dirName, "dist"),
+        outDir: dirName("dist"),
         watch,
         options: {
             resolve: {
@@ -57,14 +54,17 @@ jsrx(
         },
         prod: {},
         shared: {
-            build: () => build(getWebsiteConfig())
+            build: async () => {
+                shell("tsc --noEmit")
+                await build(getWebsiteConfig())
+            }
         }
     },
     {
         excludeOthers: true,
         envFiles: {
-            dev: join(dirName, ".env"),
-            prod: join(dirName, ".env.production")
+            dev: dirName(".env"),
+            prod: dirName(".env.production")
         }
     }
 )

@@ -3,18 +3,10 @@
     "commands": [
         {
             "commandKind": "bulk",
-            "name": "build",
-            "summary": "Build packages.",
-            "enableParallelism": true,
-            "allowWarningsInSuccessfulBuild": true
-        },
-        {
-            "commandKind": "bulk",
             "name": "test",
             "summary": "Test packages.",
             "description": "Executes automated tests.",
-            "enableParallelism": true,
-            "allowWarningsInSuccessfulBuild": true
+            "enableParallelism": true
         },
         {
             "name": "prettier",

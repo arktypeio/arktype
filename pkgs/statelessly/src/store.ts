@@ -75,7 +75,10 @@ export class Store<T extends object, A extends Actions<T>> {
     getState = () => this.underlying.getState()
 
     // Defining the entire function type together avoids excessive stack depth TS error
-    get: <P extends PathOf<T>>(path: P) => ValueAtPath<T, P> = (path: any) =>
+    get: <P extends PathOf<T, { excludeArrayIndices: true }>>(
+        path: P
+        // @ts-ignore
+    ) => ValueAtPath<T, P> = (path: any) =>
         valueAtPath(this.underlying.getState(), path) as any
 
     query = <Q extends Query<T>>(q: Q) =>

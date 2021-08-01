@@ -143,8 +143,6 @@ const types: TestTypes = {
     }
 }
 
-const x = getTypes(types)
-
 type ModelConfig<
     Types,
     Type extends string,

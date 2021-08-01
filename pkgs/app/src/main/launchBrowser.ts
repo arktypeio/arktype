@@ -5,11 +5,11 @@ import { launch, Step, Browser } from "@re-do/run"
 import { deepEquals } from "@re-do/utils"
 import { Root } from "common"
 import { Store } from "react-statelessly"
-import playwright from "playwright-core"
+// import playwright from "playwright-core"
 
-const {
-    RecorderSupplement
-} = require("playwright/lib/server/supplements/recorderSupplement")
+// const {
+//     RecorderSupplement
+// } = require("playwright/lib/server/supplements/recorderSupplement")
 
 type EventData = Step & { timeStamp: number }
 
@@ -44,20 +44,26 @@ export const launchBrowser = async (
         }
     )
     lastConnectedBrowser = browser
+    const getNextId = () => {
+        const existingSteps = store.get("builder/steps")
+        if (!existingSteps.length) {
+            return 1
+        }
+        return existingSteps[existingSteps.length - 1].id + 1
+    }
+    // const serverContext = (playwright as any)._toImpl(context)
+    // const recorder = await RecorderSupplement.show(serverContext, {
+    //     language: "test",
+    //     startRecording: true
+    // })
 
-    const serverContext = (playwright as any)._toImpl(context)
-    const recorder = await RecorderSupplement.show(serverContext, {
-        language: "test",
-        startRecording: true
-    })
-
-    recorder._generator.on("change", () => {
-        store.update({
-            builder: {
-                actions: (_) => _.concat({ ...navigationStep, id: getNextId() })
-            }
-        })
-    })
+    // recorder._generator.on("change", () => {
+    //     store.update({
+    //         builder: {
+    //             actions: (_) => _.concat({ ...navigationStep, id: getNextId() })
+    //         }
+    //     })
+    // })
 
     let lastNavigationStep: Step
     page.on("framenavigated", async (frame) => {

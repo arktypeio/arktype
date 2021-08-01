@@ -86,6 +86,7 @@ dependencies:
   react-typist: 2.0.5_react-dom@17.0.2+react@17.0.2
   redux: 4.0.5
   redux-devtools-extension: 2.13.8_redux@4.0.5
+  semver: 7.3.5
   storybook-builder-vite: 0.0.12_vite@2.4.4
   tree-kill: 1.2.2
   ts-jest: 27.0.3_c1e0131ba2fe0821c3a9f65b91a2cd6a
@@ -3770,15 +3771,6 @@ packages:
     dev: false
     resolution:
       integrity: sha512-W6CLUJ2eBMw3Rec70qrsEW0jOm/3twwJv21mrmj2yORiaVmVYGS4sSS5yUwvQc1ZlDLYGPnClVWmUUMagKNsfA==
-  /@mrmlnc/readdir-enhanced/2.2.1:
-    dependencies:
-      call-me-maybe: 1.0.1
-      glob-to-regexp: 0.3.0
-    dev: false
-    engines:
-      node: '>=4'
-    resolution:
-      integrity: sha512-bPHp6Ji8b41szTOcaP63VlnbbO5Ny6dwAATtY6JTjh5N2OLrb5Qk/Th5cRkRQhkWCt+EJsYrNB0MiL+Gpn6e3g==
   /@n1ru4l/graphql-live-query/0.7.1_graphql@15.5.0:
     dependencies:
       graphql: 15.5.0
@@ -3796,12 +3788,6 @@ packages:
       node: '>= 8'
     resolution:
       integrity: sha512-vq24Bq3ym5HEQm2NKCr3yXDwjc7vTsEThRDnkp2DK9p1uqLR+DHurm/NOTo0KG7HYHU7eppKZj3MyqYuMBf62g==
-  /@nodelib/fs.stat/1.1.3:
-    dev: false
-    engines:
-      node: '>= 6'
-    resolution:
-      integrity: sha512-shAmDyaQC4H92APFoIaVDHCx5bStIocgvbwQyxPRrbUY20V1EYTbSDchWbuwlMG3V17cprZhA6+78JfB+3DTPw==
   /@nodelib/fs.stat/2.0.5:
     dev: false
     engines:
@@ -7273,10 +7259,6 @@ packages:
     dev: false
     resolution:
       integrity: sha512-7O+FbCihrB5WGbFYesctwmTKae6rOiIzmz1icreWJ+0aA7LJfuqhEso2T9ncpcFtzMQtzXf2QGGueWJGTYsqrA==
-  /call-me-maybe/1.0.1:
-    dev: false
-    resolution:
-      integrity: sha1-JtII6onje1y95gJQoV8DHBak1ms=
   /callsites/3.1.0:
     dev: false
     engines:
@@ -7293,7 +7275,7 @@ packages:
   /camel-case/4.1.2:
     dependencies:
       pascal-case: 3.1.2
-      tslib: 2.1.0
+      tslib: 2.0.3
     dev: false
     resolution:
       integrity: sha512-gxGWBrTT1JuMx6R+o5PTXMmUnhnVzLQ9SNutD4YqKtI6ap897t3tKECYla6gCWEkplXnlNybEkZg9GEGxKFCgw==
@@ -9370,20 +9352,7 @@ packages:
     dev: false
     resolution:
       integrity: sha512-4WKW0AL5+WEqO0zWavAfYGY1qwLsBgE//DN4TTcVEN2UlINgkv9b3vm2iHicoenWKSX9mKWmGOsU/iI5IST7pQ==
-  /fast-glob/2.2.7:
-    dependencies:
-      '@mrmlnc/readdir-enhanced': 2.2.1
-      '@nodelib/fs.stat': 1.1.3
-      glob-parent: 3.1.0
-      is-glob: 4.0.1
-      merge2: 1.4.1
-      micromatch: 3.1.10
-    dev: false
-    engines:
-      node: '>=4.0.0'
-    resolution:
-      integrity: sha512-g1KuQwHOZAmOZMuBtHdxDtju+T2RT8jgCC9aANsbpdiDDTSnjgfuVsIBNKbUeJI3oKMRExcfNDtJl4OhbffMsw==
-  /fast-glob/3.2.7:
+  /fast-glob/3.2.6:
     dependencies:
       '@nodelib/fs.stat': 2.0.5
       '@nodelib/fs.walk': 1.2.8
@@ -9394,7 +9363,7 @@ packages:
     engines:
       node: '>=8'
     resolution:
-      integrity: sha512-rYGMRwip6lUMvYD3BTScMwT1HtAs2d71SMv66Vrxs0IekGZEjhM0pcMfjQPnknBt2zeCwQMEupiN02ZP4DiT1Q==
+      integrity: sha512-GnLuqj/pvQ7pX8/L4J84nijv6sAnlwvSDpMkJi9i7nPmPxGtRPkBSStfvDW5l6nMdX9VWe+pkKWFTgD+vF2QSQ==
   /fast-json-parse/1.0.3:
     dev: false
     resolution:
@@ -9505,14 +9474,6 @@ packages:
     optional: true
     resolution:
       integrity: sha512-0Zt+s3L7Vf1biwWZ29aARiVYLx7iMGnEUl9x33fbB/j3jR81u/O2LbqK+Bm1CDSNDKVtJ/YjwY7TUd5SkeLQLw==
-  /filedirname/2.7.0:
-    dependencies:
-      get-current-line: 6.6.0
-    dev: false
-    engines:
-      node: '>=10'
-    resolution:
-      integrity: sha512-rw4NZ0XCpm4EeBp0NK2b1WUkCm/LSDg6mJR8ywV2JYvIiwe+fimMgwVxjgd94lbmx4rOOmxybeVHsB6SRNeaXQ==
   /filelist/1.0.2:
     dependencies:
       minimatch: 3.0.4
@@ -9968,6 +9929,7 @@ packages:
       is-glob: 3.1.0
       path-dirname: 1.0.2
     dev: false
+    optional: true
     resolution:
       integrity: sha1-nmr2KZ2NO9K9QEMIMr0RPfkGxa4=
   /glob-parent/5.1.2:
@@ -9999,10 +9961,6 @@ packages:
       glob: ^7.1.6
     resolution:
       integrity: sha512-XQlQamNoMi++Sd5c8Y3l/FE2aqia+Lo1ghXEJZiqXdOvWOosA/zVetMahrdfRwwPjCXcFjg3fUogryAMa7IRQQ==
-  /glob-to-regexp/0.3.0:
-    dev: false
-    resolution:
-      integrity: sha1-jFoUlNIGbFcMw7/kSWF1rMTVAqs=
   /glob/7.1.7:
     dependencies:
       fs.realpath: 1.0.0
@@ -10092,7 +10050,7 @@ packages:
     dependencies:
       array-union: 2.1.0
       dir-glob: 3.0.1
-      fast-glob: 3.2.7
+      fast-glob: 3.2.6
       ignore: 5.1.8
       merge2: 1.4.1
       slash: 3.0.0
@@ -10105,7 +10063,7 @@ packages:
     dependencies:
       array-union: 2.1.0
       dir-glob: 3.0.1
-      fast-glob: 3.2.7
+      fast-glob: 3.2.6
       ignore: 5.1.8
       merge2: 1.4.1
       slash: 3.0.0
@@ -10118,7 +10076,7 @@ packages:
     dependencies:
       array-union: 2.1.0
       dir-glob: 3.0.1
-      fast-glob: 3.2.7
+      fast-glob: 3.2.6
       ignore: 5.1.8
       merge2: 1.4.1
       slash: 3.0.0
@@ -10132,7 +10090,7 @@ packages:
       '@types/glob': 7.1.4
       array-union: 1.0.2
       dir-glob: 2.2.2
-      fast-glob: 2.2.7
+      fast-glob: 3.2.6
       glob: 7.1.7
       ignore: 4.0.6
       pify: 4.0.1
@@ -13185,7 +13143,7 @@ packages:
   /no-case/3.0.4:
     dependencies:
       lower-case: 2.0.2
-      tslib: 2.2.0
+      tslib: 2.0.3
     dev: false
     resolution:
       integrity: sha512-fgAN3jGAh+RoxUGZHTSOLJIqUc2wmoBwGR4tbpNAKmmovFoWq0OdRkb0VkldReO2a2iBT/OEulG9XSUc10r3zg==
@@ -13746,7 +13704,7 @@ packages:
   /pascal-case/3.1.2:
     dependencies:
       no-case: 3.0.4
-      tslib: 2.2.0
+      tslib: 2.0.3
     dev: false
     resolution:
       integrity: sha512-uWlGT3YSnK9x3BQJaOdcZwrnV6hPpd8jFH1/ucpiLRPh/2zCVJKS19E4GvYHvaCcACn3foXZ0cLB9Wrx1KGe5g==
@@ -13769,6 +13727,7 @@ packages:
       integrity: sha512-qO4qCFjXqVTrcbPt/hQfhTQ+VhFsqNKOPtytgNKkKxSoEp3XPUQ8ObFuePylOIok5gjn69ry8XiULxCwot3Wfg==
   /path-dirname/1.0.2:
     dev: false
+    optional: true
     resolution:
       integrity: sha1-zDPSTVJeCZpTiMAzbG4yuRYGCeA=
   /path-exists/3.0.0:
@@ -15292,6 +15251,20 @@ packages:
     optional: true
     resolution:
       integrity: sha512-CHhPh+UNHD2GTXNYhPWLnU8ONHdI+5DI+4EYIAOaiD63rHeYlZvyh8P+in5999TTSFgUYuKUAjzRI4mdh/p+2A==
+  /rollup-plugin-visualizer/5.5.2:
+    dependencies:
+      nanoid: 3.1.23
+      open: 7.4.2
+      source-map: 0.7.3
+      yargs: 16.2.0
+    dev: false
+    engines:
+      node: '>=10.16'
+    hasBin: true
+    peerDependencies:
+      rollup: ^2.0.0
+    resolution:
+      integrity: sha512-sh+P9KhuWTzeStyRA5yNZpoEFGuj5Ph34JLMa9+muhU8CneFf9L0XE4fmAwAojJLWp//uLUEyytBPSCdZEg5AA==
   /rollup/2.55.1:
     dev: false
     engines:
@@ -17810,6 +17783,8 @@ packages:
       playwright-core: 1.12.3
       react: 17.0.2
       react-dom: 17.0.2_react@17.0.2
+      rollup-plugin-visualizer: 5.5.2
+      semver: 7.3.5
       tree-kill: 1.2.2
       ts-jest: 27.0.3_c1e0131ba2fe0821c3a9f65b91a2cd6a
       ts-node: 10.1.0_130b8e5122b157e299dd702775fffa2f
@@ -17821,7 +17796,7 @@ packages:
     peerDependencies:
       redux: '*'
     resolution:
-      integrity: sha512-o5gslsQ4j+ct3e8FflYkcjjHRCMZJE3vV7bpY+U7aX94P8ExlCjYQu3tcHZupR8KLOQZwTF/89jaHBB426XpTg==
+      integrity: sha512-Q0wZMTtoGsM1jciF/7f9Fga/SCsh/MJUFzLSVwYKIsd2dZrMiFNNGSwQSfnkFU3nSsRrXtTXZ/9OGllzUF6lnA==
       tarball: file:projects/app.tgz
     version: 0.0.0
   file:projects/components.tgz_ts-node@10.1.0+vite@2.4.4:
@@ -17951,7 +17926,6 @@ packages:
       '@types/prompts': 2.0.11
       deepmerge: 4.2.2
       execa: 5.0.0
-      filedirname: 2.7.0
       get-current-line: 6.6.0
       jest: 27.0.6_ts-node@10.1.0
       moize: 5.4.7
@@ -18242,6 +18216,7 @@ specifiers:
   react-typist: 2.0.5
   redux: 4.0.5
   redux-devtools-extension: 2.13.8
+  semver: 7.3.5
   storybook-builder-vite: 0.0.12
   tree-kill: 1.2.2
   ts-jest: 27.0.3

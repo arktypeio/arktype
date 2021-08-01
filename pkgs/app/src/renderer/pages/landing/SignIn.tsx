@@ -11,7 +11,7 @@ export const SignIn = () => {
         <Form<SignInMutationVariables>
             submit={async (data) => {
                 const result = await submit({ variables: data })
-                store.update({ token: result?.data?.signIn })
+                store.update({ token: result?.data?.signIn ?? "" })
             }}
             grow
             full
