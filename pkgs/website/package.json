@@ -32,8 +32,8 @@
     },
     "devDependencies": {
         "@re-do/test": "0.1.5",
-        "@re-do/node-utils": "0.0.6",
-        "@re-do/configs": "0.0.2",
+        "@re-do/node-utils": "0.0.7",
+        "@re-do/configs": "0.0.3",
         "@types/node": "15.0.2",
         "@types/react": "17.0.5",
         "@types/react-dom": "17.0.3",

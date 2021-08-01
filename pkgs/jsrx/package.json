@@ -21,12 +21,12 @@
         "jsrx": "./cli.cjs"
     },
     "dependencies": {
-        "@re-do/utils": "0.0.12",
-        "@re-do/node-utils": "0.0.6",
+        "@re-do/utils": "0.0.13",
+        "@re-do/node-utils": "0.0.7",
         "dotenv": "9.0.0"
     },
     "devDependencies": {
-        "@re-do/configs": "0.0.2",
+        "@re-do/configs": "0.0.3",
         "@types/node": "15.0.2",
         "jest": "27.0.6",
         "@types/jest": "26.0.24",

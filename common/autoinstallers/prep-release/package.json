@@ -3,6 +3,6 @@
     "version": "1.0.0",
     "private": true,
     "dependencies": {
-        "@re-do/node-utils": "@latest"
+        "@re-do/node-utils": "latest"
     }
 }

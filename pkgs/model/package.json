@@ -23,8 +23,8 @@
         "graphql-tag": "2.12.4"
     },
     "devDependencies": {
-        "@re-do/configs": "0.0.2",
-        "@re-do/node-utils": "0.0.6",
+        "@re-do/configs": "0.0.3",
+        "@re-do/node-utils": "0.0.7",
         "@types/node": "15.0.2",
         "@graphql-codegen/cli": "1.20.1",
         "@graphql-codegen/typescript": "1.20.2",

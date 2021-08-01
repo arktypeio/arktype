@@ -1,18 +1,18 @@
 lockfileVersion: 5.3
 
 specifiers:
-  '@re-do/node-utils': 0.0.5
+  '@re-do/node-utils': latest
 
 dependencies:
-  '@re-do/node-utils': 0.0.5
+  '@re-do/node-utils': 0.0.6
 
 packages:
 
-  /@re-do/node-utils/0.0.5:
-    resolution: {integrity: sha512-wPdtgb4qmk0pL+/pW7MyCnFvbkeP88KGQsjq/kIX95K8BxXTLPJDPmdOmlZu4zn8ysVF0YmQChXCShVzmUv5nw==}
+  /@re-do/node-utils/0.0.6:
+    resolution: {integrity: sha512-Mc9ZWCE3AjJumHfBxtVdv+6O52FMBIEFg4Dii9wLn3wnwIeim7ncjhkUBYuxWseqQZhK3PreFPq/LkeEBJGl1Q==}
     hasBin: true
     dependencies:
-      '@re-do/utils': 0.0.12
+      '@re-do/utils': 0.0.13
       deepmerge: 4.2.2
       execa: 5.0.0
       get-current-line: 6.6.0
@@ -27,8 +27,8 @@ packages:
       - typescript
     dev: false
 
-  /@re-do/utils/0.0.12:
-    resolution: {integrity: sha512-cWyNT8U5cEtMZEEN47HFe+AtnHedawOHFGZr37JnD4SFjddf6r0oA4mwZQmC2KI0+Dq44ETrqY3p9MMS6sFodA==}
+  /@re-do/utils/0.0.13:
+    resolution: {integrity: sha512-odixK7d6GJzQg9W+MNaQWmwE0iZYwztU99GodHCXN1mb8vjQxEL+bG9UqZnY67/hglqsN8ztuF95UqS5cswjdg==}
     dependencies:
       deepmerge: 4.2.2
       fast-deep-equal: 3.1.3

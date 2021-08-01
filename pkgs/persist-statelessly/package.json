@@ -18,10 +18,10 @@
     },
     "dependencies": {
         "statelessly": "0.0.3",
-        "@re-do/utils": "0.0.12"
+        "@re-do/utils": "0.0.13"
     },
     "devDependencies": {
-        "@re-do/configs": "0.0.2",
+        "@re-do/configs": "0.0.3",
         "@types/node": "15.0.2",
         "jest": "27.0.6",
         "@types/jest": "26.0.24",
