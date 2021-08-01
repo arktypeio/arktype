@@ -2,7 +2,7 @@
     "$schema": "https://developer.microsoft.com/json-schemas/rush/v5/rush.schema.json",
     "rushVersion": "5.50.0",
     "pnpmVersion": "5.15.2",
-    "nodeSupportedVersionRange": ">=14.16.1",
+    "nodeSupportedVersionRange": ">=16.0.0",
     "ensureConsistentVersions": true,
     "repository": {
         "url": "https://github.com/re-do/redo"
@@ -71,17 +71,17 @@
         {
             "packageName": "statelessly-2",
             "projectFolder": "pkgs/statelessly-2",
-            "shouldPublish": false
+            "shouldPublish": true
         },
         {
             "packageName": "@re-do/website",
             "projectFolder": "pkgs/website",
-            "shouldPublish": false
+            "shouldPublish": true
         },
         {
             "packageName": "@re-do/app",
             "projectFolder": "pkgs/app",
-            "shouldPublish": false
+            "shouldPublish": true
         }
     ]
 }

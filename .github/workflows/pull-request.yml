@@ -3,12 +3,14 @@ name: Validate build
 on:
     pull_request:
         branches: [master]
+    push:
+        branches: [master]
 
 jobs:
     build:
         strategy:
             matrix:
-                node-version: [14.x]
+                node-version: [16.x]
                 os: [ubuntu-latest, windows-latest, macOS-latest]
         runs-on: ${{ matrix.os }}
         steps:
