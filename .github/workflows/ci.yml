@@ -1,4 +1,4 @@
-name: Validate build
+name: Redo CI
 
 on:
     pull_request:
@@ -22,15 +22,16 @@ jobs:
               uses: actions/setup-node@v2
               with:
                   node-version: ${{ matrix.node-version }}
+                  registry-url: "https://registry.npmjs.org"
             - run: node common/scripts/install-run-rush.js change -v
             - run: node common/scripts/install-run-rush.js install --no-link
             - run: node common/scripts/install-run-rush.js link
             - run: node common/scripts/install-run-rush.js build
             - run: npx playwright install-deps
-            - name: Create electron release for ${{ matrix.os }}
+            - name: Create electron build for ${{ matrix.os }}
               working-directory: pkgs/app
               run: npm run release
-            - name: Create ${{ matrix.os }} release for pull request
+            - name: Create github app release for pull request
               if: ${{ github.event_name == 'pull_request' }}
               uses: ncipollo/release-action@v1
               with:
@@ -40,16 +41,22 @@ jobs:
                   token: ${{ secrets.GITHUB_TOKEN }}
                   tag: ${{ github.head_ref }}
                   commit: ${{ github.head_ref }}
-            - name: Create release for publish
-              if: ${{ github.event_name == 'workflow_dispatch' && matrix.os == 'ubuntu-latest' }}
-              run: |
-                  node common/scripts/install-run-rush.js publish --apply --pack --include-all
-                  node common/scripts/install-run-rush.js publish --publish --target-branch master
-            - name: Create ${{ matrix.os }} release for publish
+            - name: Set app release version
+              if: ${{ github.event_name == 'workflow_dispatch'
+              run: echo APP_RELEASE_VERSION=$(rush publish | grep "@re-do/app to " | awk '{print $NF}') >> $GITHUB_ENV
+            - name: Update packages for publish
+              if: ${{ github.event_name == 'workflow_dispatch' && matrix.os == 'ubuntu-latest' && matrix.node-version == '16.5.0' }}
+              run: node common/scripts/install-run-rush.js publish --apply --pack --include-all --release-folder release --target-branch ${{ github.ref }}
+            - name: Publish packages to npm
+              if: ${{ github.event_name == 'workflow_dispatch' && matrix.os == 'ubuntu-latest' && matrix.node-version == '16.5.0' }}
+              env:
+                  NODE_AUTH_TOKEN: ${{ secrets.NPM_AUTH_TOKEN }}
+              run: for f in release/*.tgz; do npm publish $f; done
+            - name: Create full github release for version ${{ env.APP_RELEASE_VERSION }}
               if: ${{ github.event_name == 'workflow_dispatch' }}
               uses: ncipollo/release-action@v1
               with:
                   allowUpdates: true
                   prerelease: true
-                  artifacts: "pkgs/app/release/*.zip"
+                  artifacts: "pkgs/app/release/*.zip,release/*"
                   token: ${{ secrets.GITHUB_TOKEN }}
