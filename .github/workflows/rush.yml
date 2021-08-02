@@ -53,9 +53,3 @@ jobs:
                   prerelease: true
                   artifacts: "pkgs/app/release/*.zip"
                   token: ${{ secrets.GITHUB_TOKEN }}
-            - name: fdfsd
-              run: |
-                  node common/scripts/install-run-rush.js publish --apply --pack --include-all
-
-                  node common/scripts/install-run-rush.js publish --publish --target-branch master
-            -
