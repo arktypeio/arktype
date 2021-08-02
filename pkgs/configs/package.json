@@ -12,9 +12,9 @@
         }
     },
     "scripts": {
-        "build": "./redoBuild.cjs",
+        "build": "node ./redoBuild.cjs",
         "test": "echo 'This package has no tests!'",
-        "redo-build": "./redoBuild.cjs"
+        "redo-build": "node ./redoBuild.cjs"
     },
     "bin": {
         "redo-build": "./redoBuild.cjs"

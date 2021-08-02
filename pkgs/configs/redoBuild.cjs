@@ -18,7 +18,7 @@ const run = async (cmd, args) => {
 }
 
 const addTypeToPackageJson = (name) => {
-    const packageJsonPath = `dist/${name}/package.json`
+    const packageJsonPath = join("dist", name, "package.json")
     const existingContent = existsSync(packageJsonPath)
         ? JSON.parse(readFileSync(packageJsonPath).toString())
         : {}
