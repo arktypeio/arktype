@@ -31,6 +31,7 @@ export const launchBrowser = async (
     // Use size and position from the Redo app to launch browser
     const { height, width, x, y } = mainWindow.getBounds()
     const { page, browser, context } = await launch(
+        // @ts-ignore
         store.get("defaultBrowser"),
         {
             position: {

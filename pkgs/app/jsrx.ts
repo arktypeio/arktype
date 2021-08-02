@@ -8,6 +8,7 @@ import {
     startElectronCmd
 } from "./scripts"
 import { join } from "path"
+import { version } from "./package.json"
 
 jsrx(
     {
@@ -17,7 +18,8 @@ jsrx(
         },
         prod: {
             release: () => createRelease(),
-            runProd: () => shellAsync(startElectronCmd)
+            runProd: () => shellAsync(startElectronCmd),
+            version: $(`echo ${version}`)
         },
         shared: {
             build: buildAll

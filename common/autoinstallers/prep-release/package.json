@@ -1,8 +1,0 @@
-{
-    "name": "prep-release",
-    "version": "1.0.0",
-    "private": true,
-    "dependencies": {
-        "@re-do/node-utils": "latest"
-    }
-}

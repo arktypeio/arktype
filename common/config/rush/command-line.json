@@ -15,14 +15,6 @@
             "safeForSimultaneousRushProcesses": true,
             "autoinstallerName": "rush-prettier",
             "shellCommand": "pretty-quick --staged"
-        },
-        {
-            "name": "prep-release",
-            "commandKind": "global",
-            "summary": "Prepare release artifacts",
-            "safeForSimultaneousRushProcesses": true,
-            "autoinstallerName": "prep-release",
-            "shellCommand": "runScript common/autoinstallers/prep-release/index.ts"
         }
     ],
     "parameters": []
