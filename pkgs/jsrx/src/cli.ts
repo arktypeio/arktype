@@ -1,7 +1,8 @@
 import { runScript, RunScriptOptions } from "@re-do/node-utils"
-import { existsSync, readdirSync } from "fs"
+import { readdirSync } from "fs"
 import { promptForJsrxFile } from "./generateJsrx.js"
 import { getPackageJsonContents } from "./common.js"
+import { join } from "path"
 
 export const cli = async () => {
     const cwd = process.cwd()
@@ -16,7 +17,7 @@ export const cli = async () => {
     const esm = type === "module"
 
     const jsrxArgIndex = process.argv.findIndex((arg) =>
-        arg.endsWith("jsrx/cli.cjs")
+        arg.endsWith(join("jsrx", "cli.cjs"))
     )
     // If 'jsrx' was not found or was the last arg, quit
     if (jsrxArgIndex === -1 || jsrxArgIndex >= process.argv.length - 1) {
