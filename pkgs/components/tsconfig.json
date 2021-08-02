@@ -3,7 +3,8 @@
     "compilerOptions": {
         "baseUrl": "src",
         "outDir": "dist",
-        "isolatedModules": false
+        "isolatedModules": false,
+        "exactOptionalPropertyTypes": false
     },
     "include": ["src"]
 }

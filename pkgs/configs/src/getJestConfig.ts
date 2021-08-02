@@ -1,4 +1,5 @@
 import type { Config } from "@jest/types"
+import { dirName } from "@re-do/node-utils"
 
 process.env.TS_JEST_DISABLE_VER_CHECKER = "1"
 
@@ -11,7 +12,7 @@ export const getJestConfig = (): Config.InitialOptions => ({
     moduleNameMapper: {
         "^(\\.{1,2}/.*)\\.js$": "$1"
     },
-    slowTestThreshold: 60,
+    reporters: [dirName("jestStdout")],
     globals: {
         "ts-jest": {
             useESM: true

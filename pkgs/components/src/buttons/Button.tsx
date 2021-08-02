@@ -1,4 +1,5 @@
 import React from "react"
+import { Merge } from "@re-do/utils"
 import MuiButton, {
     ButtonProps as MuiButtonProps
 } from "@material-ui/core/Button"
@@ -19,13 +20,16 @@ const useKind = makeKinds<MuiButtonProps>()({
     }
 })
 
-export type ButtonProps = ButtonBaseProps & {
-    kind?: KindFrom<typeof useKind>
-    Icon?: any
-    fontSize?: number
-    textColor?: string
-    color?: string
-}
+export type ButtonProps = Merge<
+    ButtonBaseProps,
+    {
+        kind?: KindFrom<typeof useKind>
+        Icon?: any
+        fontSize?: number
+        textColor?: string
+        color?: string
+    }
+>
 
 export const Button = ({
     kind = "primary",

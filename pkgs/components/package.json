@@ -17,18 +17,19 @@
         "test": "jest"
     },
     "dependencies": {
-        "@material-ui/core": "4.11.2",
-        "@material-ui/icons": "4.11.2",
-        "@material-ui/lab": "4.0.0-alpha.57",
-        "@material-ui/pickers": "3.2.10",
-        "@material-ui/styles": "4.11.2",
+        "@material-ui/core": "5.0.0-beta.2",
+        "@material-ui/icons": "5.0.0-beta.1",
+        "@material-ui/lab": "5.0.0-alpha.41",
+        "@material-ui/styles": "5.0.0-beta.2",
         "@re-do/utils": "0.0.13",
         "framer-motion": "4.1.11",
         "react": "17.0.2",
         "react-dom": "17.0.2",
         "react-hook-form": "7.0.4",
         "react-router-dom": "5.2.0",
-        "typeface-ubuntu": "1.1.13"
+        "typeface-ubuntu": "1.1.13",
+        "@emotion/react": "11.4.0",
+        "@emotion/styled": "11.3.0"
     },
     "devDependencies": {
         "@re-do/configs": "0.0.3",

@@ -56,8 +56,12 @@ const build = async () => {
             "es2015"
         ])
         addTypeToPackageJson("cjs")
-        walkPaths(outDir, { excludeFiles: true })
-            .filter((path) => basename(path) === "__tests__")
+        walkPaths(outDir)
+            .filter(
+                (path) =>
+                    basename(path) === "__tests__" ||
+                    basename(path).endsWith(".stories.tsx")
+            )
             .forEach((path) => rmSync(path, { recursive: true, force: true }))
         console.log(`redo-build🔨: Finished building ${pkg}.`)
     } catch (e) {

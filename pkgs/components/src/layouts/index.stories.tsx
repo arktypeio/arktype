@@ -1,5 +1,6 @@
 import React from "react"
-import { defaultTheme, ThemeProvider } from "../styles"
+import { ThemeProvider } from "@material-ui/core"
+import { defaultTheme } from "../styles"
 import { Card } from "../cards"
 import { Row, Column } from "."
 
@@ -46,10 +47,12 @@ const Context = ({ children }: any) => (
     <ThemeProvider
         theme={{
             ...defaultTheme,
-            overrides: {
+            components: {
                 MuiGrid: {
-                    container: {
-                        border: `solid ${defaultTheme.palette.primary.main}`
+                    styleOverrides: {
+                        container: {
+                            border: `solid ${defaultTheme.palette.primary.main}`
+                        }
                     }
                 }
             }

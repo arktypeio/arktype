@@ -1,5 +1,5 @@
 import React from "react"
-import { Column, Link, Text, TextProps } from "@re-do/components"
+import { Column, Text, TextProps } from "@re-do/components"
 import { Page } from "../../components"
 
 const docTextStyle = { marginBottom: 16, whiteSpace: "pre-wrap" as const }

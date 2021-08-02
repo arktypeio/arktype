@@ -34,8 +34,7 @@ const getWebsiteConfig = ({ watch = false }: GetConfigArgs = {}) =>
             },
             server: {
                 port: Number(process.env.VITE_DEV_SERVER_PORT)
-            },
-            assetsInclude: ["**/*.md"]
+            }
         }
     })
 

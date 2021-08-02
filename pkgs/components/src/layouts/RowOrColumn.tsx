@@ -1,9 +1,10 @@
 import { CSSProperties } from "react"
-import { GridProps, GridItemsAlignment } from "@material-ui/core/Grid"
+import { GridProps } from "@material-ui/core/Grid"
 import { ValueFrom } from "@re-do/utils"
 
 export type RowOrColumnProps = Omit<GridProps, "direction"> & {
-    align?: GridItemsAlignment
+    align?: CSSProperties["alignItems"]
+    justify?: CSSProperties["justifyContent"]
     grow?: boolean
     reverse?: boolean
     height?: ValueFrom<CSSProperties, "height">
