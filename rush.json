@@ -3,6 +3,7 @@
     "rushVersion": "5.50.0",
     "pnpmVersion": "5.15.2",
     "nodeSupportedVersionRange": ">=16.0.0 <=16.5.0",
+    "suppressNodeLtsWarning": true,
     "ensureConsistentVersions": true,
     "repository": {
         "url": "https://github.com/re-do/redo"

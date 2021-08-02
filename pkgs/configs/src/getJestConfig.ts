@@ -1,5 +1,7 @@
 import type { Config } from "@jest/types"
 
+process.env.TS_JEST_DISABLE_VER_CHECKER = "1"
+
 export const getJestConfig = (): Config.InitialOptions => ({
     preset: "ts-jest/presets/default-esm",
     clearMocks: true,
@@ -9,6 +11,7 @@ export const getJestConfig = (): Config.InitialOptions => ({
     moduleNameMapper: {
         "^(\\.{1,2}/.*)\\.js$": "$1"
     },
+    slowTestThreshold: 60,
     globals: {
         "ts-jest": {
             useESM: true

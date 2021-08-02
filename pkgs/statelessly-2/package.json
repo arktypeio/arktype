@@ -16,7 +16,8 @@
     "scripts": {
         "build": "echo No build required",
         "buildDev": "redo-build",
-        "test": "jest"
+        "test": "echo No tests",
+        "testDev": "jest"
     },
     "dependencies": {
         "@re-do/utils": "0.0.13",

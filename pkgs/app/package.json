@@ -14,6 +14,7 @@
         "build": "jsrx build",
         "release": "jsrx release",
         "runProd": "jsrx runProd",
+        "version": "jsrx version",
         "buildProd": "jsrx buildProd",
         "jsrxGen": "jsrx jsrxGen"
     },
