@@ -1,0 +1,10 @@
+{
+    "changes": [
+        {
+            "packageName": "@re-do/test",
+            "comment": "Test bump version-policy",
+            "type": "none"
+        }
+    ],
+    "packageName": "@re-do/test"
+}

@@ -5,8 +5,10 @@ import {
     createWriteStream,
     existsSync,
     mkdirSync,
-    statSync
+    statSync,
+    readFileSync
 } from "fs"
+import { readFile } from "fs/promises"
 import { fileURLToPath, URL } from "url"
 import getCurrentLine from "get-current-line"
 import { homedir } from "os"
@@ -73,6 +75,12 @@ export const streamToFile = async (
     await streamFinished(fileStream)
     return path
 }
+
+export const readJson = (path: string) =>
+    JSON.parse(readFileSync(path, { encoding: "utf8" }))
+
+export const readJsonAsync = async (path: string) =>
+    JSON.parse(await readFile(path, { encoding: "utf8" }))
 
 export type WalkOptions = {
     excludeFiles?: boolean

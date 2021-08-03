@@ -15,9 +15,8 @@
     },
     "scripts": {
         "build": "redo-build",
-        "redo": "./cli.cjs",
-        "devTest": "jest",
-        "test": "echo No tests for this package"
+        "redo": "node ./cli.cjs",
+        "test": "jest"
     },
     "bin": {
         "redo": "./cli.cjs"

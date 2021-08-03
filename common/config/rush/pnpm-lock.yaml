@@ -6,6 +6,7 @@ dependencies:
   '@graphql-codegen/typescript': 1.20.2_graphql@15.5.0
   '@graphql-codegen/typescript-operations': 1.17.14_graphql@15.5.0
   '@graphql-codegen/typescript-react-apollo': 2.2.1_40432b02aa1d807544a0316aee68525c
+  '@jest/core': 27.0.6_ts-node@10.1.0
   '@jest/reporters': 27.0.6
   '@jest/types': 27.0.6
   '@material-ui/core': 5.0.0-beta.2_2bc838781c695dafca5d8a1f99a60c03
@@ -32,6 +33,7 @@ dependencies:
   '@rush-temp/test': file:projects/test.tgz
   '@rush-temp/utils': file:projects/utils.tgz_ts-node@10.1.0
   '@rush-temp/website': file:projects/website.tgz_224069f3103dedf73b51a75b1102df3b
+  '@rushstack/node-core-library': 3.39.1
   '@storybook/addon-essentials': 6.3.4_c5794e4a52f183a4d07213cf699c708e
   '@storybook/addon-knobs': 6.3.0_8e07d757d7716a4b3bb8d9cc6464d4ec
   '@storybook/addons': 6.3.4_react-dom@17.0.2+react@17.0.2
@@ -4267,6 +4269,20 @@ packages:
       node: '>= 8.0.0'
     resolution:
       integrity: sha512-clDjivHqWGXi7u+0d2r2sBi4Ie6VLEAzWMIkvJLnDmxoOhBYOTfzGbOQBA32THHm11/LiJbd01tJUpJsbshSWQ==
+  /@rushstack/node-core-library/3.39.1:
+    dependencies:
+      '@types/node': 10.17.13
+      colors: 1.2.5
+      fs-extra: 7.0.1
+      import-lazy: 4.0.0
+      jju: 1.4.0
+      resolve: 1.17.0
+      semver: 7.3.5
+      timsort: 0.3.0
+      z-schema: 3.18.4
+    dev: false
+    resolution:
+      integrity: sha512-HHgMEHZTXQ3NjpQzWd5+fSt2Eod9yFwj6qBPbaeaNtDNkOL8wbLoxVimQNtcH0Qhn4wxF5u2NTDNFsxf2yd1jw==
   /@samverschueren/stream-to-observable/0.3.1_rxjs@6.6.7:
     dependencies:
       any-observable: 0.3.0
@@ -5749,6 +5765,10 @@ packages:
     dev: false
     resolution:
       integrity: sha512-fbjI6ja0N5ZA8TV53RUqzsKNkl9fv8Oj3T7zxW7FGv1GSH7gwJaNF8dzCjrqKaxKeUpTz4yT1DaJFq/omNpGfw==
+  /@types/node/10.17.13:
+    dev: false
+    resolution:
+      integrity: sha512-pMCcqU2zT4TjqYFrWtYHKal7Sl30Ims6ulZ4UFXxI4xbtQqK/qqKwkDoBFCfooRqqmRu9vY3xaJRwxSh673aYg==
   /@types/node/14.17.7:
     dev: false
     resolution:
@@ -7951,6 +7971,12 @@ packages:
       node: '>=0.1.90'
     resolution:
       integrity: sha1-BDP0TYCWgP3rYO0mDxsMJi6CpAs=
+  /colors/1.2.5:
+    dev: false
+    engines:
+      node: '>=0.1.90'
+    resolution:
+      integrity: sha512-erNRLao/Y3Fv54qUa0LBB+//Uf3YwMUmdJinN20yMXm9zdKKqH9wt7R9IIVZ+K7ShzfpLV/Zg8+VyrBJYB4lpg==
   /colors/1.4.0:
     dev: false
     engines:
@@ -9984,6 +10010,16 @@ packages:
       node: '>=12'
     resolution:
       integrity: sha512-C5owb14u9eJwizKGdchcDUQeFtlSHHthBk8pbX9Vc1PFZrLombudjDnNns88aYslCyF6IY5SUw3Roz6xShcEIQ==
+  /fs-extra/7.0.1:
+    dependencies:
+      graceful-fs: 4.2.6
+      jsonfile: 4.0.0
+      universalify: 0.1.2
+    dev: false
+    engines:
+      node: '>=6 <7 || >=8'
+    resolution:
+      integrity: sha512-YJDaCJZEnBmcbw13fvdAM9AwNOJwOzrE4pqMqBq5nFiEqXUqHwlK4B+3pUw6JNvfSPtX05xFHtYy/1ni01eGCw==
   /fs-extra/8.1.0:
     dependencies:
       graceful-fs: 4.2.6
@@ -10952,6 +10988,12 @@ packages:
       node: '>=4'
     resolution:
       integrity: sha1-BWmOPUXIjo1+nZLLBYTnfwlvPkM=
+  /import-lazy/4.0.0:
+    dev: false
+    engines:
+      node: '>=8'
+    resolution:
+      integrity: sha512-rKtvo6a868b5Hu3heneU+L4yEQ4jYKLtjpnPeUdK7h0yzXGmyBTypknlkCvHFBqfX9YlorEiMM6Dnq/5atfHkw==
   /import-local/3.0.2:
     dependencies:
       pkg-dir: 4.2.0
@@ -12258,6 +12300,10 @@ packages:
         optional: true
     resolution:
       integrity: sha512-EjV8aETrsD0wHl7CKMibKwQNQc3gIRBXlTikBmmHUeVMKaPFxdcUIBfoDqTSXDoGJIivAYGqCWVlzCSaVjPQsA==
+  /jju/1.4.0:
+    dev: false
+    resolution:
+      integrity: sha1-o6vicYryQaKykE+EpiWXDzia4yo=
   /jpeg-js/0.4.3:
     dev: false
     resolution:
@@ -15403,6 +15449,12 @@ packages:
     dev: false
     resolution:
       integrity: sha1-LGN/53yJOv0qZj/iGqkIAGjiBSo=
+  /resolve/1.17.0:
+    dependencies:
+      path-parse: 1.0.7
+    dev: false
+    resolution:
+      integrity: sha512-ic+7JYiV8Vi2yzQGFWOkiZD5Z9z7O2Zhm9XMaTxdJExKasieFCr+yXZ/WmXsckHiKl12ar0y6XiXDx3m4RHn1w==
   /resolve/1.20.0:
     dependencies:
       is-core-module: 2.5.0
@@ -16645,6 +16697,10 @@ packages:
       node: '>=0.6.0'
     resolution:
       integrity: sha512-9phl76Cqm6FhSX9Xe1ZUAMLtm1BLkKj2Qd5ApyWkXzsMRaA7dgr81kf4wJmQf/hAvg8EEyJxDo3du/0KlhPiKQ==
+  /timsort/0.3.0:
+    dev: false
+    resolution:
+      integrity: sha1-QFQRqOfmM5/mTbmiNN4R3DHgK9Q=
   /tiny-invariant/1.1.0:
     dev: false
     resolution:
@@ -17420,6 +17476,12 @@ packages:
       node: '>= 0.10'
     resolution:
       integrity: sha512-mD45p0rvHVBlY2Zuy3F3ESIe1h5X58GPfAtslBjY7EtTqGquZTj+VX/J4RnHWN8FKq0C9WRVt1oWAcytWRuYLQ==
+  /validator/8.2.0:
+    dev: false
+    engines:
+      node: '>= 0.10'
+    resolution:
+      integrity: sha512-Yw5wW34fSv5spzTXNkokD6S6/Oq92d8q/t14TqsS3fAiA1RYnxSFSIZ+CY3n6PGGRCq5HhJTSepQvFUS2QUDxA==
   /value-equal/1.0.1:
     dev: false
     resolution:
@@ -17984,6 +18046,17 @@ packages:
       node: '>=10'
     resolution:
       integrity: sha512-rVksvsnNCdJ/ohGc6xgPwyN8eheCxsiLM8mxuE/t/mOVqJewPuO1miLpTHQiRgTKCLexL4MeAFVagts7HmNZ2Q==
+  /z-schema/3.18.4:
+    dependencies:
+      lodash.get: 4.4.2
+      lodash.isequal: 4.5.0
+      validator: 8.2.0
+    dev: false
+    hasBin: true
+    optionalDependencies:
+      commander: 2.20.3
+    resolution:
+      integrity: sha512-DUOKC/IhbkdLKKiV89gw9DUauTV8U/8yJl1sjf6MtDmzevLKOF2duNJ495S3MFVjqZarr+qNGCPbkg4mu4PpLw==
   /zen-observable/0.8.15:
     dev: false
     resolution:
@@ -18078,9 +18151,11 @@ packages:
     version: 0.0.0
   file:projects/configs.tgz_ts-node@10.1.0:
     dependencies:
+      '@jest/core': 27.0.6_ts-node@10.1.0
       '@jest/reporters': 27.0.6
       '@jest/types': 27.0.6
       '@re-do/node-utils': 0.0.6_130b8e5122b157e299dd702775fffa2f
+      '@rushstack/node-core-library': 3.39.1
       '@types/jest': 26.0.24
       '@types/node': 15.0.2
       '@vitejs/plugin-react-refresh': 1.3.5
@@ -18096,7 +18171,7 @@ packages:
     peerDependencies:
       ts-node: '*'
     resolution:
-      integrity: sha512-FAWeRpqJCPaDicVh66NU4bzE7H+V7Iwu7de1o6nFvt7Uv56rkYyEWSZnl5J6nIUgvbwO+ZAu50e33Fm6O4l/bg==
+      integrity: sha512-P9QJh2dn83u5eDJDdTbdZt/4Q3ASiYuSCXVrcP/XreikswW9+knPCwHttUrO0C/z0zTeVojEysTPIzTgtsFFog==
       tarball: file:projects/configs.tgz
     version: 0.0.0
   file:projects/data.tgz_ts-node@10.1.0:
@@ -18374,6 +18449,7 @@ specifiers:
   '@graphql-codegen/typescript': 1.20.2
   '@graphql-codegen/typescript-operations': 1.17.14
   '@graphql-codegen/typescript-react-apollo': 2.2.1
+  '@jest/core': 27.0.6
   '@jest/reporters': 27.0.6
   '@jest/types': 27.0.6
   '@material-ui/core': 5.0.0-beta.2
@@ -18400,6 +18476,7 @@ specifiers:
   '@rush-temp/test': file:./projects/test.tgz
   '@rush-temp/utils': file:./projects/utils.tgz
   '@rush-temp/website': file:./projects/website.tgz
+  '@rushstack/node-core-library': 3.39.1
   '@storybook/addon-essentials': 6.3.4
   '@storybook/addon-knobs': 6.3.0
   '@storybook/addons': 6.3.4

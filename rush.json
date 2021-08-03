@@ -51,11 +51,6 @@
             "shouldPublish": true
         },
         {
-            "packageName": "@re-do/test",
-            "projectFolder": "pkgs/test",
-            "shouldPublish": true
-        },
-        {
             "packageName": "@re-do/node-utils",
             "projectFolder": "pkgs/node-utils",
             "shouldPublish": true
@@ -72,18 +67,20 @@
         },
         {
             "packageName": "statelessly-2",
-            "projectFolder": "pkgs/statelessly-2",
+            "projectFolder": "pkgs/statelessly-2"
+        },
+        {
+            "packageName": "@re-do/test",
+            "projectFolder": "pkgs/test",
             "shouldPublish": true
         },
         {
             "packageName": "@re-do/website",
-            "projectFolder": "pkgs/website",
-            "shouldPublish": true
+            "projectFolder": "pkgs/website"
         },
         {
             "packageName": "@re-do/app",
-            "projectFolder": "pkgs/app",
-            "shouldPublish": true
+            "projectFolder": "pkgs/app"
         }
     ]
 }

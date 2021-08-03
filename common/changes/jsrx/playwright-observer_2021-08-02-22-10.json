@@ -1,0 +1,10 @@
+{
+    "changes": [
+        {
+            "packageName": "jsrx",
+            "comment": "X",
+            "type": "patch"
+        }
+    ],
+    "packageName": "jsrx"
+}
