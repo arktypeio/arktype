@@ -63,9 +63,7 @@ function applyPatch(): void {
             FileSystem.readFile(baseWorkerPoolPath)
 
         // Add boilerplate so that eval() will return the exports
-        let patchedCode: string =
-            `process.stdout.write("PATCHING LIKE A MOFO")\n` +
-            originalFileContent
+        let patchedCode: string = originalFileContent
 
         // Apply the patch.  We will replace this:
         //
