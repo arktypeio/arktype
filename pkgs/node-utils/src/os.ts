@@ -1,4 +1,9 @@
 import { ValueOf, isIn } from "@re-do/utils"
+import { join } from "path"
+import killTreeCallback from "tree-kill"
+import { promisify } from "util"
+
+export const killTree = promisify(killTreeCallback)
 
 const supportedOsMap = {
     darwin: "mac",
@@ -29,3 +34,14 @@ export const getOs = () => {
 
 export const getRedoZipFileName = (os: SupportedOs, version: string) =>
     `redo-${version}-${os}.zip`
+
+export const getRedoExecutablePath = (baseDir: string) => {
+    const os = getOs()
+    if (os === "windows") {
+        return join(baseDir, "redo.exe")
+    } else if (os === "linux") {
+        return join(baseDir, "redo")
+    } else {
+        return join(baseDir, "redo.app", "Contents", "MacOS", "redo")
+    }
+}

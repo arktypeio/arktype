@@ -11,11 +11,11 @@
     "scripts": {
         "start": "jsrx start",
         "test": "jsrx test",
-        "build": "jsrx build",
         "release": "jsrx release",
+        "testRelease": "jsrx testRelease",
         "runProd": "jsrx runProd",
         "version": "jsrx version",
-        "buildProd": "jsrx buildProd",
+        "build": "jsrx build",
         "jsrxGen": "jsrx jsrxGen"
     },
     "dependencies": {

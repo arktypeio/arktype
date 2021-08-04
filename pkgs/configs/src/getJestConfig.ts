@@ -1,11 +1,7 @@
 import type { Config } from "@jest/types"
-import { fromHere, fromPackageRoot, runScript } from "@re-do/node-utils"
+import { fromHere } from "@re-do/node-utils"
 
 process.env.TS_JEST_DISABLE_VER_CHECKER = "1"
-
-runScript(fromPackageRoot("dist", "cjs", "jestIgnoreOpenHandlesPatch.js"), {
-    esm: false
-})
 
 export const getJestConfig = (): Config.InitialOptions => ({
     preset: "ts-jest/presets/default-esm",

@@ -29,7 +29,8 @@ const emptyMainActions: MainActions = {
     saveTest: null,
     runTest: null,
     launchBuilder: null,
-    closeBuilder: null
+    closeBuilder: null,
+    __rendererLaunched: null
 }
 
 const versionDir = fromRedo(version)
@@ -108,6 +109,12 @@ const mainActions: MainActionFunctions = {
     },
     saveTest: async ([test]) => {
         db.tests.create(test)
+        return {}
+    },
+    __rendererLaunched: () => {
+        if (process.env["ENABLE_TEST_HOOKS"]) {
+            writeFileSync(join(process.cwd(), "renderer.launched"), "")
+        }
         return {}
     }
 }

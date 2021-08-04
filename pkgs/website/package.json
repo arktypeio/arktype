@@ -10,7 +10,6 @@
         "devTest": "jsrx devTest",
         "redo": "jsrx redo",
         "build": "jsrx build",
-        "buildProd": "jsrx buildProd",
         "jsrxGen": "jsrx jsrxGen"
     },
     "dependencies": {

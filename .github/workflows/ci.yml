@@ -14,7 +14,7 @@ jobs:
         runs-on: ${{ matrix.os }}
         env:
             NODE_ENV: "production"
-            NODE_OPTIONS: "--unhandled-rejections=strict"
+            NODE_OPTIONS: "--unhandled-rejections"
             DISPLAY: ":99"
         steps:
             - uses: actions/checkout@v2
@@ -35,9 +35,11 @@ jobs:
                   sudo apt-get install xvfb
                   Xvfb :99 -screen 0 1024x768x24 > /dev/null 2>&1 &
             - run: node common/scripts/install-run-rush.js test
-            - name: Create electron build for ${{ matrix.os }}
+            - name: Create and test electron build for ${{ matrix.os }}
               working-directory: pkgs/app
-              run: npm run release
+              run: |
+                  npm run release
+                  npm run testRelease
             - name: Create github app release for pull request
               if: ${{ github.event_name == 'pull_request' }}
               uses: ncipollo/release-action@v1

@@ -51,8 +51,7 @@ jsrx(
             devTest: $("jest"),
             redo: $("redo launch")
         },
-        prod: {},
-        shared: {
+        prod: {
             build: async () => {
                 shell("tsc --noEmit")
                 await build(getWebsiteConfig())

@@ -6,7 +6,8 @@ import {
     fromRedo,
     getOs,
     ensureDir,
-    getRedoZipFileName
+    getRedoZipFileName,
+    getRedoExecutablePath
 } from "@re-do/node-utils"
 import Zip from "adm-zip"
 import { Octokit } from "@octokit/rest"
@@ -34,7 +35,7 @@ export const install = async (versionDir: string) => {
     const zipContents = new Zip(zipPath)
     zipContents.extractAllTo(versionDir, true)
     rmSync(zipPath)
-    const executablePath = getExecutablePath(versionDir)
+    const executablePath = getRedoExecutablePath(versionDir)
     if (!existsSync(executablePath)) {
         throw new Error(
             `Installation failed: expected file at ${executablePath} did not exist.`
@@ -46,20 +47,9 @@ export const install = async (versionDir: string) => {
 
 export const getPath = async (version: string) => {
     const versionDir = fromRedo(version)
-    const executablePath = getExecutablePath(versionDir)
+    const executablePath = getRedoExecutablePath(versionDir)
     if (!existsSync(executablePath)) {
         await install(versionDir)
     }
     return executablePath
-}
-
-export const getExecutablePath = (versionDir: string) => {
-    const os = getOs()
-    if (os === "windows") {
-        return join(versionDir, "redo.exe")
-    } else if (os === "linux") {
-        return join(versionDir, "redo")
-    } else {
-        return join(versionDir, "redo.app", "Contents", "MacOS", "redo")
-    }
 }

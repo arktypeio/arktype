@@ -17557,7 +17557,7 @@ packages:
     dev: false
 
   file:projects/node-utils.tgz:
-    resolution: {integrity: sha512-qTrU7p7fhzSI0pdMuSdQ0xk8Fe5uzyl8gPmx1F80YMEv8fKg/jIsOAvRPin+dO82RNYNkuqYzSTfAb4lo5i3Kw==, tarball: file:projects/node-utils.tgz}
+    resolution: {integrity: sha512-CJjJF+oCGYAbx7EwXdkNtg57u4ZpOmDe8ckLUwhJQDr/zRXfFy40/0XvDv3tNdpihFzCYEfJYCYVVU5AhHiZVg==, tarball: file:projects/node-utils.tgz}
     name: '@rush-temp/node-utils'
     version: 0.0.0
     dependencies:
@@ -17570,6 +17570,7 @@ packages:
       jest: 27.0.6_ts-node@10.1.0
       moize: 5.4.7
       prompts: 2.4.1
+      tree-kill: 1.2.2
       ts-jest: 27.0.3_c1e0131ba2fe0821c3a9f65b91a2cd6a
       ts-node: 10.1.0_130b8e5122b157e299dd702775fffa2f
       typescript: 4.4.0-beta
@@ -17740,13 +17741,14 @@ packages:
     dev: false
 
   file:projects/utils.tgz_ts-node@10.1.0:
-    resolution: {integrity: sha512-bFbflar9kVem0XsQqF+tDjAfjcngbUvEGp1h0y8IxzX1gy+Qrtlxnig9OambMPYuszmnK67rTboTptvPXmobbw==, tarball: file:projects/utils.tgz}
+    resolution: {integrity: sha512-ETmT6ePFQVfAl9szoBKbLVag1T4vY5CyOPjb2UPiTN3Wfk+mPzwSfvzNnf7aLnGlircZHiI1FvXNHHyV26OPFA==, tarball: file:projects/utils.tgz}
     id: file:projects/utils.tgz
     name: '@rush-temp/utils'
     version: 0.0.0
     dependencies:
       '@types/jest': 26.0.24
       '@types/node': 15.0.2
+      async-wait-until: 2.0.7
       deepmerge: 4.2.2
       fast-deep-equal: 3.1.3
       jest: 27.0.6_ts-node@10.1.0

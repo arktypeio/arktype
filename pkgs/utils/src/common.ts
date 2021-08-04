@@ -2,10 +2,32 @@ import moize from "moize"
 import isDeepEqual from "fast-deep-equal"
 import deepMerge from "deepmerge"
 import { Number, Object as TSO } from "ts-toolbelt"
+import { setTimeout } from "timers/promises"
 
 export const merge = deepMerge
 export const memoize = moize as <F extends Function>(f: F) => F
 export const deepEquals = isDeepEqual
+
+export type UntilOptions = {
+    timeoutSeconds?: number
+    intervalSeconds?: number
+}
+
+export const until = async (
+    condition: () => boolean,
+    { timeoutSeconds = 10, intervalSeconds = 0.1 }: UntilOptions = {}
+) => {
+    const timesOutAt = Date.now() + timeoutSeconds * 1000
+    while (!condition()) {
+        if (Date.now() >= timesOutAt) {
+            throw new Error(
+                `Timed out waiting for condition after ${timeoutSeconds} seconds.`
+            )
+        }
+        await setTimeout(intervalSeconds * 1000)
+    }
+    return true
+}
 
 export type Merge<A extends object, B extends object> = TSO.Merge<B, A>
 

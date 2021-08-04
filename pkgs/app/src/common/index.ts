@@ -35,6 +35,7 @@ export type MainActions = {
     saveTest: [Test] | null
     launchBuilder: [] | null
     closeBuilder: [] | null
+    __rendererLaunched: [] | null
 }
 
 export type RendererActions = {}
