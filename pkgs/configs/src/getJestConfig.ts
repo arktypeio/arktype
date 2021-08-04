@@ -1,9 +1,9 @@
 import type { Config } from "@jest/types"
-import { dirName, runScript } from "@re-do/node-utils"
+import { fromHere, fromPackageRoot, runScript } from "@re-do/node-utils"
 
 process.env.TS_JEST_DISABLE_VER_CHECKER = "1"
 
-runScript(dirName("..", "..", "src", "jestIgnoreOpenHandlesPatch.ts"), {
+runScript(fromPackageRoot("dist", "cjs", "jestIgnoreOpenHandlesPatch.js"), {
     esm: false
 })
 
@@ -16,7 +16,7 @@ export const getJestConfig = (): Config.InitialOptions => ({
     moduleNameMapper: {
         "^(\\.{1,2}/.*)\\.js$": "$1"
     },
-    reporters: [dirName("jestStderrOnFailOnlyReporter")],
+    reporters: [fromHere("jestStderrOnFailOnlyReporter")],
     globals: {
         "ts-jest": {
             useESM: true

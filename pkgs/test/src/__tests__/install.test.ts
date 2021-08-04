@@ -1,4 +1,4 @@
-import { ChildProcess, shellAsync, dirName } from "@re-do/node-utils"
+import { ChildProcess, shellAsync, fromHere } from "@re-do/node-utils"
 import { join } from "path"
 import { waitUntil } from "async-wait-until"
 import treeKillCallback from "tree-kill"
@@ -7,7 +7,7 @@ import { rmSync } from "fs"
 import { version, install, getExecutablePath } from "../install"
 import { promisify } from "util"
 
-const REDO_DIR = dirName(".redo")
+const REDO_DIR = fromHere(".redo")
 const VERSION_DIR = join(REDO_DIR, version)
 const EXECUTABLE_PATH = getExecutablePath(VERSION_DIR)
 

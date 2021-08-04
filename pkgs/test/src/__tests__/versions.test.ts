@@ -1,7 +1,7 @@
-import { dirName, fromDir, readJson } from "@re-do/node-utils"
+import { fromHere, fromDir, readJson } from "@re-do/node-utils"
 import { version as testVersion } from "../install"
 
-const repoRoot = dirName("..", "..", "..", "..")
+const repoRoot = fromHere("..", "..", "..", "..")
 const fromRepoRoot = fromDir(repoRoot)
 
 test("Matches policy version", () => {

@@ -2,9 +2,9 @@ import { jsrx, $, shell } from "jsrx"
 import { join } from "path"
 import { createServer, build } from "vite"
 import { getWebConfig } from "@re-do/configs"
-import { dirName } from "@re-do/node-utils"
+import { fromHere } from "@re-do/node-utils"
 
-const pkgRoot = dirName("src")
+const pkgRoot = fromHere("src")
 
 const localResolves = [
     { find: "components", replacement: join(pkgRoot, "components") },
@@ -26,7 +26,7 @@ type GetConfigArgs = {
 const getWebsiteConfig = ({ watch = false }: GetConfigArgs = {}) =>
     getWebConfig({
         srcDir: pkgRoot,
-        outDir: dirName("dist"),
+        outDir: fromHere("dist"),
         watch,
         options: {
             resolve: {
@@ -62,8 +62,8 @@ jsrx(
     {
         excludeOthers: true,
         envFiles: {
-            dev: dirName(".env"),
-            prod: dirName(".env.production")
+            dev: fromHere(".env"),
+            prod: fromHere(".env.production")
         }
     }
 )

@@ -6,22 +6,19 @@ import {
     existsSync,
     mkdirSync,
     statSync,
-    readFileSync
+    readFileSync,
+    writeFileSync
 } from "fs"
-import { readFile } from "fs/promises"
+import { readFile, writeFile } from "fs/promises"
 import { fileURLToPath, URL } from "url"
 import getCurrentLine from "get-current-line"
 import { homedir } from "os"
-import { join, dirname } from "path"
+import { join, dirname, parse } from "path"
 import { once } from "events"
 import { promisify } from "util"
 import { finished } from "stream"
 
 const streamFinished = promisify(finished)
-
-export const filePath = (fileUrl: string) => new URL(fileUrl).pathname
-export const fromDirPath = (fileUrl: string, ...segments: string[]) =>
-    join(dirPath(fileUrl), ...segments)
 
 export const isEsm = () => {
     try {
@@ -79,8 +76,14 @@ export const streamToFile = async (
 export const readJson = (path: string) =>
     JSON.parse(readFileSync(path, { encoding: "utf8" }))
 
+export const writeJson = (path: string, data: object) =>
+    writeFileSync(path, JSON.stringify(data, null, 4))
+
 export const readJsonAsync = async (path: string) =>
     JSON.parse(await readFile(path, { encoding: "utf8" }))
+
+export const writeJsonAsync = async (path: string, data: object) =>
+    writeFile(path, JSON.stringify(data, null, 4))
 
 export type WalkOptions = {
     excludeFiles?: boolean
@@ -103,7 +106,7 @@ export const walkPaths = (dir: string, options: WalkOptions = {}): string[] =>
     }, [] as string[])
 
 /** Fetch the file and directory paths from a path, uri, or `import.meta.url` */
-export const dirPath = (path: string) => {
+export const filePath = (path: string) => {
     let file
     if (path.includes("://")) {
         // is a url, e.g. file://, or https://
@@ -113,18 +116,40 @@ export const dirPath = (path: string) => {
         // is already a typical path
         file = path
     }
-    return dirname(file)
+    return file
 }
 
-/** Fetch the file and directory paths from the caller. */
-export const dirName = (...joinWith: string[]) =>
-    join(
-        dirPath(
-            getCurrentLine({
-                method: "dirName",
-                frames: 0,
-                immediate: false
-            }).file
-        ),
-        ...joinWith
+const getCallerFile = (methodName: string) =>
+    filePath(
+        getCurrentLine({
+            method: methodName,
+            frames: 0,
+            immediate: false
+        }).file
     )
+
+export const fileName = () => getCallerFile("fileName")
+
+export const dirName = () => dirname(getCallerFile("dirName"))
+
+export const fromHere = (...joinWith: string[]) =>
+    join(dirname(getCallerFile("fromHere")), ...joinWith)
+
+export const fsRoot = parse(process.cwd()).root
+
+export const fromPackageRoot = (...joinWith: string[]) => {
+    const callerDir = dirname(getCallerFile("fromPackageRoot"))
+    let dirToCheck = callerDir
+    while (dirToCheck !== fsRoot) {
+        try {
+            const contents = readJson(join(dirToCheck, "package.json"))
+            // If the file is just a stub with no package name, don't consider
+            // it a package root
+            if (contents.name) {
+                return join(dirToCheck, ...joinWith)
+            }
+        } catch {}
+        dirToCheck = join(dirToCheck, "..")
+    }
+    throw new Error(`${callerDir} is not part of a node package.`)
+}

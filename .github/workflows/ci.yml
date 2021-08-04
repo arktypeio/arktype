@@ -9,7 +9,7 @@ jobs:
     build:
         strategy:
             matrix:
-                node-version: [16.5.0]
+                node-version: [16.6.1]
                 os: [ubuntu-latest, windows-latest, macOS-latest]
         runs-on: ${{ matrix.os }}
         env:

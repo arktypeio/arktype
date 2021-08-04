@@ -22,7 +22,7 @@
     },
     "dependencies": {
         "@re-do/utils": "0.0.13",
-        "@re-do/node-utils": "0.0.7",
+        "@re-do/node-utils": "0.0.8",
         "dotenv": "9.0.0"
     },
     "devDependencies": {

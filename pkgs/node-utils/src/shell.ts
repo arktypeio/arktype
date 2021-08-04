@@ -9,7 +9,7 @@ import {
 import { Merge } from "@re-do/utils"
 import prompts, { PromptObject, PromptType } from "prompts"
 import { getOs } from "./os.js"
-import { dirName } from "./fs.js"
+import { fromPackageRoot } from "./fs.js"
 
 type CommonOptions = {
     suppressCmdStringLogging?: boolean
@@ -70,7 +70,7 @@ export const getTsNodeCmd = ({ esm }: RunScriptOptions) => {
 }
 
 export const getFilterWarningsArg = () =>
-    `-r ${dirName("..", "..", "filterWarnings.cjs")}`
+    `-r ${fromPackageRoot("filterWarnings.cjs")}`
 
 export const getRunScriptCmd = (
     fileToRun: string,
