@@ -34,6 +34,7 @@ const getBaseConfig = (): UserConfig => ({
     build: {
         sourcemap: "inline",
         minify: isDev() ? false : "terser",
+        chunkSizeWarningLimit: 5000,
         terserOptions,
         rollupOptions: {
             external: externals,
