@@ -22,9 +22,7 @@ const getTestRendererProcesses = async () => {
 
 const getAllTestProcesses = async () => {
     const allProcesses = await psList()
-    return allProcesses.filter(
-        ({ cmd }) => cmd && cmd.search(VERSION_DIR) !== -1
-    )
+    return allProcesses.filter(({ cmd }) => cmd?.includes(VERSION_DIR))
 }
 
 const killOldTestProcesses = async () => {
@@ -54,7 +52,7 @@ describe("installation", () => {
     })
     test("works", async () => {
         await install(VERSION_DIR)
-        redoMainProcess = shellAsync(EXECUTABLE_PATH)
+        redoMainProcess = shellAsync(`${EXECUTABLE_PATH} --trace-warnings`)
         let redoRendererProcesses: ProcessDescriptor[] = []
         await waitUntil(
             async () => {

@@ -14,6 +14,8 @@ jobs:
         runs-on: ${{ matrix.os }}
         env:
             NODE_ENV: "production"
+            NODE_OPTIONS: "--unhandled-rejections=strict"
+            DISPLAY: ":99"
         steps:
             - uses: actions/checkout@v2
               with:
@@ -27,14 +29,12 @@ jobs:
             - run: node common/scripts/install-run-rush.js install
             - run: node common/scripts/install-run-rush.js build
             - run: npx playwright install-deps
-            - name: Run tests on linux os
+            - name: Setup display server for linux
               if: ${{ matrix.os == 'ubuntu-latest' }}
               run: |
                   sudo apt-get install xvfb
-                  xvfb-run --auto-servernum -- node common/scripts/install-run-rush.js test
-            - name: Run tests on non-linux os
-              if: ${{ matrix.os != 'ubuntu-latest' }}
-              run: node common/scripts/install-run-rush.js test
+                  Xvfb :99 -screen 0 1024x768x24 > /dev/null 2>&1 &
+            - run: node common/scripts/install-run-rush.js test
             - name: Create electron build for ${{ matrix.os }}
               working-directory: pkgs/app
               run: npm run release
