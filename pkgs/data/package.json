@@ -16,11 +16,11 @@
         "test": "echo 'This package has no tests.'"
     },
     "dependencies": {
-        "@re-do/model": "0.0.1",
-        "persist-statelessly": "0.0.2"
+        "@re-do/model": "workspace:*",
+        "persist-statelessly": "workspace:*"
     },
     "devDependencies": {
-        "@re-do/configs": "0.0.3",
+        "@re-do/configs": "workspace:*",
         "@types/node": "15.0.2",
         "typescript": "4.4.0-beta",
         "jest": "27.0.6",

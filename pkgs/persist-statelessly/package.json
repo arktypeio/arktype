@@ -17,11 +17,11 @@
         "test": "jest"
     },
     "dependencies": {
-        "statelessly": "0.0.3",
-        "@re-do/utils": "0.0.13"
+        "statelessly": "workspace:*",
+        "@re-do/utils": "workspace:*"
     },
     "devDependencies": {
-        "@re-do/configs": "0.0.3",
+        "@re-do/configs": "workspace:*",
         "@types/node": "15.0.2",
         "jest": "27.0.6",
         "@types/jest": "26.0.24",

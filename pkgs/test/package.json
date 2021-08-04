@@ -25,16 +25,16 @@
         "commander": "8.0.0",
         "node-fetch": "2.6.1",
         "@octokit/rest": "18.6.6",
-        "@re-do/utils": "0.0.13",
-        "@re-do/node-utils": "0.0.8",
-        "@re-do/run": "0.0.1",
-        "persist-statelessly": "0.0.2",
+        "@re-do/utils": "workspace:*",
+        "@re-do/node-utils": "workspace:*",
+        "@re-do/run": "workspace:*",
+        "persist-statelessly": "workspace:*",
         "adm-zip": "0.5.5",
-        "@re-do/model": "0.0.1",
-        "@re-do/data": "0.0.1"
+        "@re-do/model": "workspace:*",
+        "@re-do/data": "workspace:*"
     },
     "devDependencies": {
-        "@re-do/configs": "0.0.3",
+        "@re-do/configs": "workspace:*",
         "@types/node": "15.0.2",
         "@types/adm-zip": "0.4.34",
         "ts-node": "10.1.0",

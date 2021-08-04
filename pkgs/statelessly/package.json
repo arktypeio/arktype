@@ -16,7 +16,7 @@
         "test": "jest"
     },
     "dependencies": {
-        "@re-do/utils": "0.0.13",
+        "@re-do/utils": "workspace:*",
         "deepmerge": "4.2.2",
         "isomorphic-fetch": "3.0.0",
         "moize": "5.4.7",
@@ -25,7 +25,7 @@
         "@reduxjs/toolkit": "1.5.0"
     },
     "devDependencies": {
-        "@re-do/configs": "0.0.3",
+        "@re-do/configs": "workspace:*",
         "jest": "27.0.6",
         "@types/jest": "26.0.24",
         "ts-jest": "27.0.3",

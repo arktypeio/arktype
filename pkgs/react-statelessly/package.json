@@ -17,15 +17,15 @@
         "test": "jest"
     },
     "dependencies": {
-        "@re-do/utils": "0.0.13",
+        "@re-do/utils": "workspace:*",
         "react": "17.0.2",
         "react-dom": "17.0.2",
         "react-redux": "7.2.2",
         "redux": "4.0.5",
-        "statelessly": "0.0.3"
+        "statelessly": "workspace:*"
     },
     "devDependencies": {
-        "@re-do/configs": "0.0.3",
+        "@re-do/configs": "workspace:*",
         "@types/enzyme": "3.10.8",
         "@types/node": "15.0.2",
         "@types/react": "17.0.5",
