@@ -54,9 +54,7 @@ describe("installation", () => {
     })
     test("works", async () => {
         await install(VERSION_DIR)
-        redoMainProcess = shellAsync(EXECUTABLE_PATH, {
-            stdio: "ignore"
-        })
+        redoMainProcess = shellAsync(EXECUTABLE_PATH)
         let redoRendererProcesses: ProcessDescriptor[] = []
         await waitUntil(
             async () => {
