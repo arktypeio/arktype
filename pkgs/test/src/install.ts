@@ -13,12 +13,10 @@ import Zip from "adm-zip"
 import { Octokit } from "@octokit/rest"
 import { createActionAuth } from "@octokit/auth-action"
 import { join } from "path"
-import { version } from "../package.json"
-export { version } from "../package.json"
 
-export const install = async (versionDir: string) => {
+export const install = async (version: string, toDir: string) => {
     console.log(`Installing Redo (version ${version})...`)
-    ensureDir(versionDir)
+    ensureDir(toDir)
     const gitHub = new Octokit(
         process.env.GITHUB_TOKEN
             ? { auth: (await createActionAuth()()).token }
@@ -35,26 +33,26 @@ export const install = async (versionDir: string) => {
         throw new Error(`Unable to find a Redo release for your platform.`)
     }
     const { body } = await fetch(appRelease.browser_download_url)
-    const zipPath = join(versionDir, zipName)
+    const zipPath = join(toDir, zipName)
     await streamToFile(body, zipPath)
     const zipContents = new Zip(zipPath)
-    zipContents.extractAllTo(versionDir, true)
+    zipContents.extractAllTo(toDir, true)
     rmSync(zipPath)
-    const executablePath = getRedoExecutablePath(versionDir)
+    const executablePath = getRedoExecutablePath(toDir)
     if (!existsSync(executablePath)) {
         throw new Error(
             `Installation failed: expected file at ${executablePath} did not exist.`
         )
     }
     makeExecutable(executablePath)
-    console.log(`Succesfully installed Redo (${data.tag_name})!`)
+    console.log(`Succesfully installed Redo (version ${version})!`)
 }
 
 export const getPath = async (version: string) => {
     const versionDir = fromRedo(version)
     const executablePath = getRedoExecutablePath(versionDir)
     if (!existsSync(executablePath)) {
-        await install(versionDir)
+        await install(version, versionDir)
     }
     return executablePath
 }

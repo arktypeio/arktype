@@ -26,6 +26,13 @@ jobs:
                   node-version: ${{ matrix.node-version }}
                   registry-url: "https://registry.npmjs.org"
             - run: node common/scripts/install-run-rush.js change -v
+            - name: Bump versions
+              if: ${{ github.event_name == 'workflow_dispatch' && matrix.os == 'ubuntu-latest' && matrix.node-version == '16.6.1' }}
+              run: node common/scripts/install-run-rush.js publish --apply
+            - name: Set app release version
+              if: ${{ github.event_name == 'workflow_dispatch' }}
+              working-directory: pkgs/app
+              run: echo APP_RELEASE_VERSION=$(npm run version) >> $GITHUB_ENV
             - run: node common/scripts/install-run-rush.js install
             - run: node common/scripts/install-run-rush.js build
             - run: npx playwright install-deps
@@ -54,12 +61,16 @@ jobs:
                   commit: ${{ github.head_ref }}
             - name: Update packages for publish
               if: ${{ github.event_name == 'workflow_dispatch' && matrix.os == 'ubuntu-latest' && matrix.node-version == '16.6.1' }}
-              run: node common/scripts/install-run-rush.js publish --apply --pack --include-all --release-folder release --target-branch ${{ github.ref }}
+              run: node common/scripts/install-run-rush.js publish --pack --include-all --release-folder release --target-branch master
             - name: Publish packages to npm
               if: ${{ github.event_name == 'workflow_dispatch' && matrix.os == 'ubuntu-latest' && matrix.node-version == '16.6.1' }}
               env:
                   NODE_AUTH_TOKEN: ${{ secrets.NPM_AUTH_TOKEN }}
-              run: "for f in release/*.tgz; do npm publish $f; done"
+              run: |
+                  for file in ./release/*.tgz; do
+                    [ -e "$file" ] || continue
+                    npm publish "$file"
+                  done
             - name: Create/update github release
               if: ${{ github.event_name == 'workflow_dispatch' }}
               uses: ncipollo/release-action@v1
@@ -68,5 +79,5 @@ jobs:
                   prerelease: true
                   artifacts: "pkgs/app/release/*.zip,release/*"
                   token: ${{ secrets.GITHUB_TOKEN }}
-                  tag: ${{ github.ref }}
+                  tag: v${{ env.APP_RELEASE_VERSION }}
                   commit: ${{ github.ref }}
