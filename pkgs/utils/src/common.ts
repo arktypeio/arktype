@@ -28,7 +28,7 @@ export const until = async (
         }
         await sleep(intervalSeconds)
     }
-    return true
+    return
 }
 
 export type Merge<A extends object, B extends object> = TSO.Merge<B, A>
