@@ -1,21 +1,13 @@
 #!/usr/bin/env node
 
 // Based on https://www.sensedeep.com/blog/posts/2021/how-to-create-single-source-npm-module.html
-const execa = require("execa")
 const { basename, join } = require("path")
 const { existsSync, readFileSync, writeFileSync, rmSync } = require("fs")
-const { walkPaths } = require("@re-do/node-utils")
+const { walkPaths, shell } = require("@re-do/node-utils")
 
 const cwd = process.cwd()
 const pkg = basename(cwd)
 const outDir = join(cwd, "dist")
-
-const run = async (cmd, args) => {
-    const execution = execa(cmd, args)
-    execution.stdout.pipe(process.stdout)
-    execution.stderr.pipe(process.stderr)
-    return await execution
-}
 
 const addTypeToPackageJson = (name) => {
     const packageJsonPath = join("dist", name, "package.json")
@@ -35,10 +27,10 @@ const addTypeToPackageJson = (name) => {
     )
 }
 
-const build = async () => {
+const build = () => {
     try {
         console.log(`redo-build🔨: Building ${pkg}...`)
-        await run("tsc", [
+        shell("tsc", [
             "--module",
             "esnext",
             "--outDir",
@@ -47,7 +39,7 @@ const build = async () => {
             "esnext"
         ])
         addTypeToPackageJson("mjs")
-        await run("tsc", [
+        shell("tsc", [
             "--module",
             "commonjs",
             "--outDir",
