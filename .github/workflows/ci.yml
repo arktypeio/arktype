@@ -13,7 +13,6 @@ jobs:
                 os: [ubuntu-latest, windows-latest, macOS-latest]
         runs-on: ${{ matrix.os }}
         env:
-            NODE_ENV: "production"
             NODE_OPTIONS: "--unhandled-rejections=strict"
             DISPLAY: ":99"
         steps:
@@ -26,7 +25,7 @@ jobs:
                   node-version: ${{ matrix.node-version }}
                   registry-url: "https://registry.npmjs.org"
             - run: node common/scripts/install-run-rush.js change -v
-            - run: node common/scripts/install-run-rush.js install --debug-package-manager
+            - run: node common/scripts/install-run-rush.js install
             - run: node common/scripts/install-run-rush.js build
             - run: npx playwright install-deps
             - name: Setup display server for linux
