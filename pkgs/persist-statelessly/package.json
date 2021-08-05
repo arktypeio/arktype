@@ -3,6 +3,11 @@
     "version": "0.0.2",
     "author": "redo.qa",
     "description": "Seemlessly persist objects to a local file",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/re-do/redo.git",
+        "directory": "pkgs/persist-statelessly"
+    },
     "type": "module",
     "main": "dist/cjs/index.js",
     "module": "dist/mjs/index.js",

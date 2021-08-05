@@ -3,6 +3,11 @@
     "version": "0.0.4",
     "author": "redo.qa",
     "description": "Common UI components consumed by Redo",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/re-do/redo.git",
+        "directory": "pkgs/components"
+    },
     "main": "dist/cjs/index.js",
     "module": "dist/mjs/index.js",
     "exports": {

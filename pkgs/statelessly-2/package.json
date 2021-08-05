@@ -4,6 +4,11 @@
     "private": true,
     "author": "redo.qa",
     "description": "💪-typed state management with simple shapes🔷",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/re-do/redo.git",
+        "directory": "pkgs/statelessly-2"
+    },
     "type": "module",
     "main": "dist/cjs/index.js",
     "module": "dist/mjs/index.js",

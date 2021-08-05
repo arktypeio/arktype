@@ -5,7 +5,7 @@
     "main": "dist/main/index.js",
     "repository": {
         "type": "git",
-        "url": "https://github.com/redo-qa/redo.git",
+        "url": "https://github.com/re-do/redo.git",
         "directory": "pkgs/app"
     },
     "scripts": {
