@@ -20,7 +20,9 @@ export const install = async (versionDir: string) => {
     console.log(`Installing Redo (version ${version})...`)
     ensureDir(versionDir)
     const gitHub = new Octokit(
-        process.env.GITHUB_TOKEN ? { auth: await createActionAuth()() } : {}
+        process.env.GITHUB_TOKEN
+            ? { auth: (await createActionAuth()()).token }
+            : {}
     ).rest
     const { data } = await gitHub.repos.getReleaseByTag({
         owner: "re-do",
