@@ -11,7 +11,12 @@ import {
 import { until } from "@re-do/utils"
 import { existsSync, rmSync } from "fs"
 
-const unpackedRelease = fromPackageRoot("release", `${getOs()}-unpacked`)
+const unpackedReleaseDirs = {
+    mac: "mac",
+    windows: "win-unpacked",
+    linux: "linux-unpacked"
+}
+const unpackedRelease = fromPackageRoot("release", unpackedReleaseDirs[getOs()])
 const fromRelease = fromDir(unpackedRelease)
 const executable = getRedoExecutablePath(unpackedRelease)
 
