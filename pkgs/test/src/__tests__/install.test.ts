@@ -32,8 +32,15 @@ describe("installation", () => {
         await install(VERSION_DIR)
         redoMainProcess = shellAsync(EXECUTABLE_PATH, {
             cwd: VERSION_DIR,
-            stdio: "ignore"
+            stdio: "pipe",
+            all: true
         })
-        await until(() => existsSync(join(VERSION_DIR, "redo.json")))
+        try {
+            await until(() => existsSync(join(VERSION_DIR, "redo.json")))
+        } catch {
+            throw new Error(
+                `Timed out waiting for installed redo app to launch. Output:\n${redoMainProcess.all?.read()}`
+            )
+        }
     }, 120000)
 })
