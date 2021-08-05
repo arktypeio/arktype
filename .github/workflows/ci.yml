@@ -57,7 +57,7 @@ jobs:
               run: echo APP_RELEASE_VERSION=$(rush publish | grep "@re-do/app to " | awk '{print $NF}') >> $GITHUB_ENV
             - name: Update packages for publish
               if: ${{ github.event_name == 'workflow_dispatch' && matrix.os == 'ubuntu-latest' && matrix.node-version == '16.6.1' }}
-              run: node common/scripts/install-run-rush.js publish --apply --pack --include-all --release-folder release --target-branch master
+              run: node common/scripts/install-run-rush.js publish --apply --pack --include-all --release-folder release --target-branch ${{ github.ref }}
             - name: Publish packages to npm
               if: ${{ github.event_name == 'workflow_dispatch' && matrix.os == 'ubuntu-latest' && matrix.node-version == '16.6.1' }}
               env:
@@ -71,3 +71,5 @@ jobs:
                   prerelease: true
                   artifacts: "pkgs/app/release/*.zip,release/*"
                   token: ${{ secrets.GITHUB_TOKEN }}
+                  tag: ${{ github.ref }}
+                  commit: ${{ github.ref }}
