@@ -79,5 +79,5 @@ jobs:
                   prerelease: true
                   artifacts: "pkgs/app/release/*.zip,release/*"
                   token: ${{ secrets.GITHUB_TOKEN }}
-                  tag: "v${{ env.APP_RELEASE_VERSION }}"
+                  tag: ${{ env.APP_RELEASE_VERSION }}
                   commit: ${{ github.ref }}
