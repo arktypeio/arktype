@@ -29,10 +29,6 @@ jobs:
             - name: Bump versions
               if: ${{ github.event_name == 'workflow_dispatch' && matrix.os == 'ubuntu-latest' && matrix.node-version == '16.6.1' }}
               run: node common/scripts/install-run-rush.js publish --apply
-            - name: Set app release version
-              if: ${{ github.event_name == 'workflow_dispatch' }}
-              working-directory: pkgs/app
-              run: echo APP_RELEASE_VERSION=$(npm run version) >> $GITHUB_ENV
             - run: node common/scripts/install-run-rush.js install
             - run: node common/scripts/install-run-rush.js build
             - run: npx playwright install-deps
@@ -44,7 +40,11 @@ jobs:
             - run: node common/scripts/install-run-rush.js test
               env:
                   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-            - name: Create and test electron build for ${{ matrix.os }}
+            - name: Set app release version
+              if: ${{ github.event_name == 'workflow_dispatch' }}
+              working-directory: pkgs/app
+              run: echo APP_RELEASE_VERSION=$(npm run version) >> $GITHUB_ENV
+            - name: Create and test electron release for ${{ matrix.os }}
               working-directory: pkgs/app
               run: |
                   npm run release
@@ -79,5 +79,5 @@ jobs:
                   prerelease: true
                   artifacts: "pkgs/app/release/*.zip,release/*"
                   token: ${{ secrets.GITHUB_TOKEN }}
-                  tag: v${{ env.APP_RELEASE_VERSION }}
+                  tag: "v${{ env.APP_RELEASE_VERSION }}"
                   commit: ${{ github.ref }}
