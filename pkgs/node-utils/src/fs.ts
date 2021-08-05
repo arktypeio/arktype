@@ -15,10 +15,7 @@ import getCurrentLine from "get-current-line"
 import { homedir } from "os"
 import { join, dirname, parse } from "path"
 import { once } from "events"
-import { promisify } from "util"
-import { finished } from "stream"
-
-const streamFinished = promisify(finished)
+import { finished } from "stream/promises"
 
 export const isEsm = () => {
     try {
@@ -69,7 +66,8 @@ export const streamToFile = async (
         }
     }
     fileStream.end()
-    await streamFinished(fileStream)
+    await finished(fileStream)
+    await finished(stream)
     return path
 }
 

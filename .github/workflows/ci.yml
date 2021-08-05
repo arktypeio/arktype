@@ -52,9 +52,6 @@ jobs:
                   token: ${{ secrets.GITHUB_TOKEN }}
                   tag: ${{ github.head_ref }}
                   commit: ${{ github.head_ref }}
-            - name: Set app release version
-              if: ${{ github.event_name == 'workflow_dispatch' }}
-              run: echo APP_RELEASE_VERSION=$(rush publish | grep "@re-do/app to " | awk '{print $NF}') >> $GITHUB_ENV
             - name: Update packages for publish
               if: ${{ github.event_name == 'workflow_dispatch' && matrix.os == 'ubuntu-latest' && matrix.node-version == '16.6.1' }}
               run: node common/scripts/install-run-rush.js publish --apply --pack --include-all --release-folder release --target-branch ${{ github.ref }}
@@ -62,7 +59,7 @@ jobs:
               if: ${{ github.event_name == 'workflow_dispatch' && matrix.os == 'ubuntu-latest' && matrix.node-version == '16.6.1' }}
               env:
                   NODE_AUTH_TOKEN: ${{ secrets.NPM_AUTH_TOKEN }}
-              run: for f in release/*.tgz; do npm publish $f; done
+              run: "for f in release/*.tgz; do npm publish $f; done"
             - name: Create/update github release
               if: ${{ github.event_name == 'workflow_dispatch' }}
               uses: ncipollo/release-action@v1
