@@ -10,7 +10,7 @@ const pkg = basename(cwd)
 const outDir = join(cwd, "dist")
 
 const addTypeToPackageJson = (name) => {
-    const packageJsonPath = join("dist", name, "package.json")
+    const packageJsonPath = join(outDir, name, "package.json")
     const existingContent = existsSync(packageJsonPath)
         ? JSON.parse(readFileSync(packageJsonPath).toString())
         : {}
