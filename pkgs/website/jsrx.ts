@@ -2,10 +2,9 @@ import { jsrx, $, shell } from "jsrx"
 import { join } from "path"
 import { createServer, build } from "vite"
 import { getWebConfig } from "@re-do/configs"
+import { fromHere } from "@re-do/node-utils"
 
-const dirName = __dirname
-
-const pkgRoot = join(dirName, "src")
+const pkgRoot = fromHere("src")
 
 const localResolves = [
     { find: "components", replacement: join(pkgRoot, "components") },
@@ -27,7 +26,7 @@ type GetConfigArgs = {
 const getWebsiteConfig = ({ watch = false }: GetConfigArgs = {}) =>
     getWebConfig({
         srcDir: pkgRoot,
-        outDir: join(dirName, "dist"),
+        outDir: fromHere("dist"),
         watch,
         options: {
             resolve: {
@@ -35,8 +34,7 @@ const getWebsiteConfig = ({ watch = false }: GetConfigArgs = {}) =>
             },
             server: {
                 port: Number(process.env.VITE_DEV_SERVER_PORT)
-            },
-            assetsInclude: ["**/*.md"]
+            }
         }
     })
 
@@ -53,16 +51,18 @@ jsrx(
             devTest: $("jest"),
             redo: $("redo launch")
         },
-        prod: {},
-        shared: {
-            build: () => build(getWebsiteConfig())
+        prod: {
+            build: async () => {
+                shell("tsc --noEmit")
+                await build(getWebsiteConfig())
+            }
         }
     },
     {
         excludeOthers: true,
         envFiles: {
-            dev: join(dirName, ".env"),
-            prod: join(dirName, ".env.production")
+            dev: fromHere(".env"),
+            prod: fromHere(".env.production")
         }
     }
 )

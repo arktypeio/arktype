@@ -1,6 +1,5 @@
 import React from "react"
 import { mount, ReactWrapper } from "enzyme"
-import { Menu as MuiMenu } from "@material-ui/core"
 import { Button } from "../../buttons"
 import { TogglableMenu, Menu, MenuItem } from ".."
 

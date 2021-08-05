@@ -77,5 +77,7 @@ export const addDefaultInteractionOptions = withDefaults<
 })
 
 export const getUnknownEntityErrorMessage = (typeName: string, key: Key) =>
-    `Unable to determine entity associated with key '${key}' from type '${typeName}'.` +
+    `Unable to determine entity associated with key '${String(
+        key
+    )}' from type '${typeName}'.` +
     `Try adding specifying its type by adding it to the DB's relationships.`

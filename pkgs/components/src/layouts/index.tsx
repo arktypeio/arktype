@@ -1,4 +1,7 @@
-export * from "./Column"
-export * from "./Row"
-export { Hidden as HideFor } from "@material-ui/core"
-export * from "./AppContents"
+export * from "./Column.js"
+export * from "./Row.js"
+export * from "./AppContents.js"
+
+import { ComponentType } from "react"
+import { Hidden, HiddenProps } from "@material-ui/core"
+export const HideFor: ComponentType<HiddenProps> = Hidden

@@ -1,5 +1,5 @@
 import React, { cloneElement, useState, MouseEvent } from "react"
-import { MenuOptions, Menu } from "./Menu"
+import { MenuOptions, Menu } from "./Menu.js"
 import { PopperProps as MuiPopperProps } from "@material-ui/core/Popper"
 
 export type TogglableMenuProps = Partial<MuiPopperProps> & {

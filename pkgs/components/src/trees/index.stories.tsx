@@ -15,9 +15,7 @@ export const Basic = () => <Tree source={getData()} />
 export const WithHiddenKeys = () => (
     <Tree
         source={getData()}
-        transform={({ key }) =>
-            key === "metadata" ? { render: null } : { render: undefined }
-        }
+        transform={({ key }) => (key === "metadata" ? { render: null } : {})}
     />
 )
 

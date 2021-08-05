@@ -21,7 +21,7 @@ export type AnimatedLogoProps = {
     style?: CSSProperties
 }
 
-export const AnimatedLogo = ({ style }: AnimatedLogoProps) => {
+export const AnimatedLogo = ({ style = {} }: AnimatedLogoProps) => {
     const { primary, secondary } = usePalette()
     return (
         <motion.svg style={style} viewBox="0 0 1823 575">

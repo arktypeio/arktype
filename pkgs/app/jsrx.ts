@@ -8,19 +8,19 @@ import {
     startElectronCmd
 } from "./scripts"
 import { join } from "path"
+import { version } from "./package.json"
 
 jsrx(
     {
         dev: {
             start: startDev,
-            typecheck: $(`tsc --noEmit`),
             test: $(`echo 'This package has no tests.'`)
         },
         prod: {
             release: () => createRelease(),
-            runProd: () => shellAsync(startElectronCmd)
-        },
-        shared: {
+            testRelease: $("jest"),
+            runProd: () => shellAsync(startElectronCmd),
+            version: $(`echo ${version}`),
             build: buildAll
         }
     },

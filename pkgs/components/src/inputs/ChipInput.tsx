@@ -1,7 +1,7 @@
 import React from "react"
 import { Chip } from "@material-ui/core"
 import { Autocomplete as MuiAutoComplete } from "@material-ui/lab"
-import { TextInput } from "./TextInput"
+import { TextInput } from "./TextInput.js"
 
 export type ChipInputProps = {
     possibleSuggestions?: string[]
@@ -18,9 +18,9 @@ export const ChipInput = ({
         multiple
         freeSolo
         options={possibleSuggestions}
-        onChange={
-            onChange ? (event, value) => onChange(value as string[]) : undefined
-        }
+        {...(onChange
+            ? { onChange: (event, value) => onChange(value as string[]) }
+            : undefined)}
         renderTags={(suggestions, getTagProps) =>
             suggestions.map((suggestion, index) => (
                 <Chip
@@ -30,6 +30,6 @@ export const ChipInput = ({
                 />
             ))
         }
-        renderInput={(params) => <TextInput label={label} {...params} />}
+        renderInput={(params: any) => <TextInput label={label} {...params} />}
     />
 )

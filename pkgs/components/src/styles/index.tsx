@@ -1,12 +1,12 @@
 import React from "react"
-import createMuiTheme, {
-    ThemeOptions
-} from "@material-ui/core/styles/createMuiTheme"
-import { useTheme as useMuiTheme, ThemeProvider } from "@material-ui/styles"
-import { CssBaseline } from "@material-ui/core"
-import { responsiveFontSizes } from "@material-ui/core/styles"
-
-export { ThemeProvider, makeStyles } from "@material-ui/styles"
+import {
+    CssBaseline,
+    useTheme as useMuiTheme,
+    createTheme as createMuiTheme,
+    ThemeOptions,
+    responsiveFontSizes,
+    ThemeProvider
+} from "@material-ui/core"
 
 export const defaultConfig: ThemeOptions = {
     palette: {
@@ -23,11 +23,13 @@ export const defaultConfig: ThemeOptions = {
             textTransform: "none"
         }
     },
-    overrides: {
+    components: {
         MuiCssBaseline: {
-            "@global": {
-                ".MuiAccordion-root:before": {
-                    height: "0 !important"
+            styleOverrides: {
+                "@global": {
+                    ".MuiAccordion-root:before": {
+                        height: "0 !important"
+                    }
                 }
             }
         }

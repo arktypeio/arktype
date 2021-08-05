@@ -2,7 +2,7 @@ import React from "react"
 import { Form, FormText, Row, FormSubmit } from "@re-do/components"
 import { useSignUpMutation, SignUpMutationVariables } from "@re-do/model"
 import { store } from "renderer/common"
-import { formatEmail } from "./common"
+import { formatEmail } from "./common.js"
 
 export const SignUp = () => {
     const [submit] = useSignUpMutation()
@@ -13,7 +13,7 @@ export const SignUp = () => {
                 const result = await submit({
                     variables: { ...data, first: "", last: "" }
                 })
-                store.update({ token: result?.data?.signUp })
+                store.update({ token: result?.data?.signUp ?? "" })
             }}
             grow
             full

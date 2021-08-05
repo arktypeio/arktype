@@ -1,7 +1,7 @@
 import React from "react"
 import { Text, Column } from "@re-do/components"
 import { steps } from "content"
-import { Steps } from "./Steps"
+import { Steps } from "./Steps.js"
 import redoDemoMp4 from "assets/RedoDemo.mp4"
 
 export const HowItWorks = () => {

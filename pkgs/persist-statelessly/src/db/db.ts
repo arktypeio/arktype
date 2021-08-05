@@ -1,4 +1,4 @@
-import { DeepUpdate, FilterFunction, transform, Unlisted } from "@re-do/utils"
+import { DeepUpdate, transform, Unlisted } from "@re-do/utils"
 import { FileStore, FileStoreOptions } from ".."
 import {
     Model,
@@ -9,12 +9,12 @@ import {
     FindBy,
     ShallowModel,
     ReuseExisting
-} from "./common"
-import { createDependentsMap } from "./relationships"
-import { create, CreateOptions } from "./create"
-import { remove, RemoveOptions } from "./remove"
-import { find } from "./find"
-import { update } from "./update"
+} from "./common.js"
+import { createDependentsMap } from "./relationships.js"
+import { create, CreateOptions } from "./create.js"
+import { remove, RemoveOptions } from "./remove.js"
+import { find } from "./find.js"
+import { update } from "./update.js"
 
 export type FileDbArgs<
     T extends Model,
@@ -37,9 +37,9 @@ export const createFileDb = <
     T,
     IdFieldName extends undefined ? "id" : IdFieldName
 > => {
-    const store = new FileStore<ShallowModel<T, IdFieldName>>(
+    const store = new FileStore<ShallowModel<T, IdFieldName>, {}>(
         {},
-        fileStoreOptions
+        fileStoreOptions as any
     )
     const context: FileDbContext<T> = {
         store,
@@ -48,29 +48,35 @@ export const createFileDb = <
         idFieldName: idFieldName ?? "id",
         reuseExisting: reuseExisting ?? {}
     }
-    const interactions = transform(relationships, ([k, v]: [string, any]) => [
-        k,
-        {
-            create: (o: any, options?: CreateOptions<any>) =>
-                create(k, o, context, options),
-            all: (options: InteractionOptions<any> = {}) =>
-                find(k, (_) => true, context, {
-                    unpack: options.unpack ?? true,
-                    exactlyOne: false
-                }),
-            find: (by: FindBy<T>, options: InteractionOptions<any> = {}) =>
-                find(k, by, context, { unpack: options.unpack ?? true }),
-            filter: (by: FindBy<T>, options: InteractionOptions<any> = {}) =>
-                find(k, by, context, {
-                    unpack: options.unpack ?? true,
-                    exactlyOne: false
-                }),
-            remove: (by: FindBy<T>, options: RemoveOptions = {}) =>
-                remove(k, by, context, options),
-            update: (where: FindBy<T>, changes: DeepUpdate<T>) =>
-                update(k, where, changes, context)
-        }
-    ]) as any
+    const interactions = transform(relationships, ([k, v]) => {
+        const key = String(k)
+        return [
+            k,
+            {
+                create: (o: any, options?: CreateOptions<any>) =>
+                    create(key, o, context, options),
+                all: (options: InteractionOptions<any> = {}) =>
+                    find(key, (_) => true, context, {
+                        unpack: options.unpack ?? true,
+                        exactlyOne: false
+                    }),
+                find: (by: FindBy<T>, options: InteractionOptions<any> = {}) =>
+                    find(key, by, context, { unpack: options.unpack ?? true }),
+                filter: (
+                    by: FindBy<T>,
+                    options: InteractionOptions<any> = {}
+                ) =>
+                    find(key, by, context, {
+                        unpack: options.unpack ?? true,
+                        exactlyOne: false
+                    }),
+                remove: (by: FindBy<T>, options: RemoveOptions = {}) =>
+                    remove(key, by, context, options),
+                update: (where: FindBy<T>, changes: DeepUpdate<T>) =>
+                    update(key, where, changes, context)
+            }
+        ]
+    }) as any
     return {
         ...interactions,
         all: () => store.getState()

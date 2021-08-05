@@ -1,2 +1,2 @@
-export * from "./gql"
-export * from "./model"
+export * from "./gql.js"
+export * from "./model.js"

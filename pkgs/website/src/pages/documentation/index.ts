@@ -1,1 +1,1 @@
-export * from "./Documentation"
+export * from "./Documentation.js"

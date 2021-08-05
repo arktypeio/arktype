@@ -1,0 +1,36 @@
+{
+    "name": "jsrx",
+    "version": "0.0.13",
+    "author": "redo.qa",
+    "description": "Seamlessly write your npm scripts in JS 💊📜",
+    "type": "module",
+    "main": "dist/cjs/index.js",
+    "module": "dist/mjs/index.js",
+    "exports": {
+        ".": {
+            "import": "./dist/mjs/index.js",
+            "require": "./dist/cjs/index.js"
+        }
+    },
+    "scripts": {
+        "build": "redo-build",
+        "test": "jest",
+        "jsrx": "./cli.cjs"
+    },
+    "bin": {
+        "jsrx": "./cli.cjs"
+    },
+    "dependencies": {
+        "@re-do/utils": "workspace:*",
+        "@re-do/node-utils": "workspace:*",
+        "dotenv": "9.0.0"
+    },
+    "devDependencies": {
+        "@re-do/configs": "workspace:*",
+        "@types/node": "15.0.2",
+        "jest": "27.0.6",
+        "@types/jest": "26.0.24",
+        "typescript": "4.4.0-beta",
+        "ts-jest": "27.0.3"
+    }
+}

@@ -1,2 +1,2 @@
-export * from "./ErrorText"
-export * from "./Text"
+export * from "./ErrorText.js"
+export * from "./Text.js"

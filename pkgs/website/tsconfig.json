@@ -4,8 +4,8 @@
         "baseUrl": "src",
         "outDir": "dist",
         "types": ["vite/client", "jest"],
-        "declaration": false
+        "declaration": false,
+        "exactOptionalPropertyTypes": false
     },
-    "include": ["src"],
-    "exclude": ["**/__tests__"]
+    "include": ["src"]
 }

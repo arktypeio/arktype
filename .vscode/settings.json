@@ -11,5 +11,7 @@
         "test/**/__snapshots__": true,
         "pnpm-lock.*": true,
         "*.lock": true
-    }
+    },
+    "files.eol": "\n",
+    "typescript.tsdk": "./node_modules/typescript/lib"
 }

@@ -19,7 +19,7 @@ export const Form = <Inputs extends object>({
             await context.handleSubmit(submit)()
         } catch (e) {
             // Propagate a non-field-specific error to FormSubmit
-            setSubmitError(e)
+            setSubmitError(String(e))
         }
     }
     return (

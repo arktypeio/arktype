@@ -1,4 +1,3 @@
-#!/usr/bin/env node
 import { Command } from "commander"
 import { shell } from "@re-do/node-utils"
 import { getPath, version } from "./install"

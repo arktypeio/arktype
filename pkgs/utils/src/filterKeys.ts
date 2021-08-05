@@ -1,5 +1,5 @@
-import { Key, NonRecursible, Unlisted } from "./common"
-import { filter } from "./filter"
+import { Key, NonRecursible, Unlisted } from "./common.js"
+import { filter } from "./filter.js"
 
 export type FilteredByKeys<O, K extends Key[]> = Pick<
     O,
@@ -30,7 +30,7 @@ export const filterKeys = <O, K extends Key[], D extends boolean = false>(
 ) =>
     filter(o, {
         objectFilter: ([k]) => keys.includes(k as Key),
-        deep
+        deep: !!deep
     }) as any as D extends true
         ? DeepFilteredByKeys<O, K>
         : FilteredByKeys<O, K>

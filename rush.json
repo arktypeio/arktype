@@ -1,8 +1,12 @@
 {
     "$schema": "https://developer.microsoft.com/json-schemas/rush/v5/rush.schema.json",
-    "rushVersion": "5.40.0",
-    "pnpmVersion": "5.15.2",
-    "nodeSupportedVersionRange": ">=14.16.1",
+    "rushVersion": "5.50.0",
+    "pnpmVersion": "6.11.0",
+    "pnpmOptions": {
+        "useWorkspaces": true
+    },
+    "nodeSupportedVersionRange": ">=16.0.0",
+    "suppressNodeLtsWarning": true,
     "ensureConsistentVersions": true,
     "repository": {
         "url": "https://github.com/re-do/redo"
@@ -11,7 +15,8 @@
         {
             "packageName": "@re-do/configs",
             "projectFolder": "pkgs/configs",
-            "shouldPublish": true
+            "shouldPublish": true,
+            "cyclicDependencyProjects": ["@re-do/node-utils"]
         },
         {
             "packageName": "@re-do/utils",
@@ -49,11 +54,6 @@
             "shouldPublish": true
         },
         {
-            "packageName": "@re-do/test",
-            "projectFolder": "pkgs/test",
-            "shouldPublish": true
-        },
-        {
             "packageName": "@re-do/node-utils",
             "projectFolder": "pkgs/node-utils",
             "shouldPublish": true
@@ -64,14 +64,26 @@
             "shouldPublish": true
         },
         {
+            "packageName": "jsrx",
+            "projectFolder": "pkgs/jsrx",
+            "shouldPublish": true
+        },
+        {
+            "packageName": "statelessly-2",
+            "projectFolder": "pkgs/statelessly-2"
+        },
+        {
+            "packageName": "@re-do/test",
+            "projectFolder": "pkgs/test",
+            "shouldPublish": true
+        },
+        {
             "packageName": "@re-do/website",
-            "projectFolder": "pkgs/website",
-            "shouldPublish": false
+            "projectFolder": "pkgs/website"
         },
         {
             "packageName": "@re-do/app",
-            "projectFolder": "pkgs/app",
-            "shouldPublish": false
+            "projectFolder": "pkgs/app"
         }
     ]
 }

@@ -4,12 +4,5 @@
         "baseUrl": "src",
         "outDir": "dist"
     },
-    "ts-node": {
-        "transpileOnly": true,
-        "compilerOptions": {
-            "module": "CommonJS"
-        }
-    },
-    "include": ["src"],
-    "exclude": ["**/__tests__"]
+    "include": ["src"]
 }

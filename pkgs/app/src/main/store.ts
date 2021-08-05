@@ -2,12 +2,12 @@ import { Update, Store, BaseStore } from "react-statelessly"
 import { test as runTest } from "@re-do/run"
 import { MainActions, Root } from "common"
 import { stateSyncEnhancer } from "electron-redux/main"
-import { launchBrowser, closeBrowser } from "./launchBrowser"
-import { mainWindow, builderWindow } from "./windows"
+import { launchBrowser, closeBrowser } from "./launchBrowser.js"
+import { mainWindow, builderWindow } from "./electronWindows.js"
 import { ValueOf } from "@re-do/utils"
-import { fromRedo, ensureDir, fromDir } from "@re-do/node-utils"
+import { fromRedo, ensureDir } from "@re-do/node-utils"
 import { createRedoFileDb } from "@re-do/data"
-import { existsSync, readFileSync, writeFileSync } from "fs"
+import { readFileSync, writeFileSync } from "fs"
 import { join } from "path"
 import { version } from "../../package.json"
 
@@ -29,7 +29,8 @@ const emptyMainActions: MainActions = {
     saveTest: null,
     runTest: null,
     launchBuilder: null,
-    closeBuilder: null
+    closeBuilder: null,
+    __rendererLaunched: null
 }
 
 const versionDir = fromRedo(version)
@@ -63,7 +64,8 @@ const initialState: Root = {
     defaultBrowser: "chrome",
     builder: {
         steps: [],
-        active: false
+        active: false,
+        actions: []
     },
     main: emptyMainActions,
     renderer: {},
@@ -107,6 +109,12 @@ const mainActions: MainActionFunctions = {
     },
     saveTest: async ([test]) => {
         db.tests.create(test)
+        return {}
+    },
+    __rendererLaunched: () => {
+        if (process.env["ENABLE_TEST_HOOKS"]) {
+            writeFileSync(join(process.cwd(), "renderer.launched"), "")
+        }
         return {}
     }
 }

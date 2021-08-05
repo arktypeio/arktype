@@ -1,4 +1,4 @@
-import { DeepPartial, isRecursible, fromEntries, ValueOf } from "./common"
+import { DeepPartial, isRecursible, fromEntries, ValueOf } from "./common.js"
 
 export type FilterFunction<T> = (
     value: T,

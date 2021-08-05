@@ -1,5 +1,4 @@
 import React from "react"
-import { storiesOf } from "@storybook/react"
 import { Modal } from "."
 import { Button } from "../buttons"
 import { Text } from "../text"

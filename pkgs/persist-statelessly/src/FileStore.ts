@@ -15,10 +15,10 @@ export type FileStoreOnlyOptions<T extends object> = {
 export type FileStoreOptions<T extends object> = StoreOptions<T> &
     FileStoreOnlyOptions<T>
 
-export class FileStore<
-    T extends object,
-    A extends Actions<T> = {}
-> extends Store<T, A> {
+export class FileStore<T extends object, A extends Actions<T>> extends Store<
+    T,
+    A
+> {
     private fileStateContext: FileStateContext<T>
 
     constructor(actions: A, options: FileStoreOptions<T>) {

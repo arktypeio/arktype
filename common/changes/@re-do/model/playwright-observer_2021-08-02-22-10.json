@@ -1,0 +1,10 @@
+{
+    "changes": [
+        {
+            "packageName": "@re-do/model",
+            "comment": "X",
+            "type": "patch"
+        }
+    ],
+    "packageName": "@re-do/model"
+}

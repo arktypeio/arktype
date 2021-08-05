@@ -4,6 +4,7 @@ import { writeFileSync, renameSync, rmSync } from "fs"
 import { releaseDir, packageJsonContents } from "./common"
 
 const prepareRelease = () => {
+    rmSync(releaseDir, { recursive: true, force: true })
     const releaseDependenciesDir = join(releaseDir, "dependencies")
     ensureDir(releaseDependenciesDir)
     // Only install non-bundled dependencies

@@ -1,0 +1,10 @@
+{
+    "changes": [
+        {
+            "packageName": "@re-do/app",
+            "comment": "More changes.",
+            "type": "none"
+        }
+    ],
+    "packageName": "@re-do/app"
+}

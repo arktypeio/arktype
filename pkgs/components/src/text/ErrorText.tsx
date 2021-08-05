@@ -1,9 +1,10 @@
 import React from "react"
 import { Tooltip } from "@material-ui/core"
 import { TooltipProps } from "@material-ui/core/Tooltip"
+import { makeStyles } from "@material-ui/styles"
 import { listify, ValueFrom, Merge } from "@re-do/utils"
-import { Text, TextProps } from "./Text"
-import { usePalette, makeStyles, Theme } from "../styles"
+import { Text, TextProps } from "./Text.js"
+import { usePalette, Theme } from "../styles"
 
 const stylize = makeStyles((theme: Theme) => ({
     tooltip: {
@@ -47,6 +48,8 @@ export const ErrorText = ({
                     <br />
                 </>
             ))}
+            // TODO: Figure out a better way to accomodate TS's "exactOptionalPropertyTypes" in React components
+            // https://github.com/re-do/redo/issues/277
             placement={tooltipPlacement}
             {...tooltipProps}
         >
