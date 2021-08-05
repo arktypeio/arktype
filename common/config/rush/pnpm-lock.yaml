@@ -166,6 +166,7 @@ importers:
       '@types/node': 15.0.2
       '@vitejs/plugin-react-refresh': 1.3.5
       deepmerge: 4.2.2
+      execa: 5.0.0
       jest: 27.0.6
       ts-jest: 27.0.3
       typescript: 4.4.0-beta
@@ -175,6 +176,7 @@ importers:
       '@re-do/node-utils': 0.0.8_130b8e5122b157e299dd702775fffa2f
       '@vitejs/plugin-react-refresh': 1.3.5
       deepmerge: 4.2.2
+      execa: 5.0.0
       vite: 2.4.4
     devDependencies:
       '@jest/types': 27.0.6
