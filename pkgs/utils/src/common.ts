@@ -2,7 +2,6 @@ import moize from "moize"
 import isDeepEqual from "fast-deep-equal"
 import deepMerge from "deepmerge"
 import { Number, Object as TSO } from "ts-toolbelt"
-import { setTimeout } from "timers/promises"
 
 export const merge = deepMerge
 export const memoize = moize as <F extends Function>(f: F) => F
@@ -12,6 +11,9 @@ export type UntilOptions = {
     timeoutSeconds?: number
     intervalSeconds?: number
 }
+
+export const sleep = async (seconds: number) =>
+    new Promise<void>((resolve) => setTimeout(() => resolve(), seconds * 1000))
 
 export const until = async (
     condition: () => boolean,
@@ -24,7 +26,7 @@ export const until = async (
                 `Timed out waiting for condition after ${timeoutSeconds} seconds.`
             )
         }
-        await setTimeout(intervalSeconds * 1000)
+        await sleep(intervalSeconds)
     }
     return true
 }

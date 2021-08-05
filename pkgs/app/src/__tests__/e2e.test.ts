@@ -43,11 +43,21 @@ describe("installation", () => {
     test("app release launches", async () => {
         mainProcess = shellAsync(executable, {
             cwd: unpackedRelease,
-            env: { ENABLE_TEST_HOOKS: "1" }
+            env: { ENABLE_TEST_HOOKS: "1" },
+            all: true,
+            stdio: "pipe"
         })
-        // redo.json should be created when main launches
-        await until(() => existsSync(fromRelease("redo.json")))
-        // renderer.launched should be created when renderer launches
-        await until(() => existsSync(fromRelease("renderer.launched")))
+        try {
+            // redo.json should be created when main launches
+            await until(() => existsSync(fromRelease("redo.json")))
+            // renderer.launched should be created when renderer launches
+            await until(() => existsSync(fromRelease("renderer.launched")))
+        } catch (e) {
+            throw new Error(
+                `Failed to launch app from release. Error message:\n${String(
+                    e
+                )}\n` + `Output from app: \n${mainProcess.all?.read()}`
+            )
+        }
     }, 30000)
 })
