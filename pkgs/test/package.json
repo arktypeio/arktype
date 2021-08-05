@@ -25,6 +25,7 @@
         "commander": "8.0.0",
         "node-fetch": "2.6.1",
         "@octokit/rest": "18.6.6",
+        "@octokit/auth-action": "1.3.3",
         "@re-do/utils": "workspace:*",
         "@re-do/node-utils": "workspace:*",
         "@re-do/run": "workspace:*",

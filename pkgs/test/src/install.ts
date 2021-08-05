@@ -11,6 +11,7 @@ import {
 } from "@re-do/node-utils"
 import Zip from "adm-zip"
 import { Octokit } from "@octokit/rest"
+import { createActionAuth } from "@octokit/auth-action"
 import { join } from "path"
 import { version } from "../package.json"
 export { version } from "../package.json"
@@ -19,7 +20,7 @@ export const install = async (versionDir: string) => {
     console.log(`Installing Redo (version ${version})...`)
     ensureDir(versionDir)
     const gitHub = new Octokit(
-        process.env.GITHUB_TOKEN ? { auth: process.env.GITHUB_TOKEN } : {}
+        process.env.GITHUB_TOKEN ? { auth: await createActionAuth()() } : {}
     ).rest
     const { data } = await gitHub.repos.getReleaseByTag({
         owner: "re-do",
