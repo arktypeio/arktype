@@ -18,7 +18,9 @@ export { version } from "../package.json"
 export const install = async (versionDir: string) => {
     console.log(`Installing Redo (version ${version})...`)
     ensureDir(versionDir)
-    const gitHub = new Octokit().rest
+    const gitHub = new Octokit(
+        process.env.GITHUB_TOKEN ? { auth: process.env.GITHUB_TOKEN } : {}
+    ).rest
     const { data } = await gitHub.repos.getReleaseByTag({
         owner: "re-do",
         repo: "redo",
