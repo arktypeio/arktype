@@ -1,0 +1,10 @@
+{
+    "changes": [
+        {
+            "packageName": "persist-statelessly",
+            "comment": "Init.",
+            "type": "minor"
+        }
+    ],
+    "packageName": "persist-statelessly"
+}

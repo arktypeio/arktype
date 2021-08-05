@@ -1,0 +1,10 @@
+{
+    "changes": [
+        {
+            "packageName": "@re-do/node-utils",
+            "comment": "Init.",
+            "type": "minor"
+        }
+    ],
+    "packageName": "@re-do/node-utils"
+}

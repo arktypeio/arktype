@@ -3,6 +3,11 @@
     "version": "0.0.1",
     "author": "redo.qa",
     "description": "Delightful web testing that writes itself 🖋",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/re-do/redo.git",
+        "directory": "pkgs/run"
+    },
     "type": "module",
     "main": "dist/cjs/src/index.js",
     "module": "dist/mjs/src/index.js",

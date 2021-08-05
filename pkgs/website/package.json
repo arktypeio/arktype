@@ -2,6 +2,11 @@
     "name": "@re-do/website",
     "version": "0.1.5",
     "description": "Redo's website (https://redo.qa)",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/re-do/redo.git",
+        "directory": "pkgs/website"
+    },
     "private": true,
     "type": "module",
     "scripts": {

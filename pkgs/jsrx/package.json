@@ -3,6 +3,11 @@
     "version": "0.0.13",
     "author": "redo.qa",
     "description": "Seamlessly write your npm scripts in JS 💊📜",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/re-do/redo.git",
+        "directory": "pkgs/jsrx"
+    },
     "type": "module",
     "main": "dist/cjs/index.js",
     "module": "dist/mjs/index.js",

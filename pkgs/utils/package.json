@@ -3,6 +3,11 @@
     "version": "0.0.13",
     "author": "redo.qa",
     "description": "Common utilities consumed by Redo",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/re-do/redo.git",
+        "directory": "pkgs/utils"
+    },
     "type": "module",
     "main": "dist/cjs/index.js",
     "module": "dist/mjs/index.js",
