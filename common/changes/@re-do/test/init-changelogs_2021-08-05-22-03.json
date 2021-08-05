@@ -1,0 +1,10 @@
+{
+    "changes": [
+        {
+            "packageName": "@re-do/test",
+            "comment": "Init.",
+            "type": "minor"
+        }
+    ],
+    "packageName": "@re-do/test"
+}

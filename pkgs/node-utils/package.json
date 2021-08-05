@@ -3,6 +3,11 @@
     "version": "0.0.8",
     "author": "redo.qa",
     "description": "Node utilities consumed by Redo",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/re-do/redo.git",
+        "directory": "pkgs/node-utils"
+    },
     "type": "module",
     "main": "dist/cjs/index.js",
     "module": "dist/mjs/index.js",

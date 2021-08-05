@@ -75,18 +75,17 @@
         {
             "packageName": "@re-do/test",
             "projectFolder": "pkgs/test",
-            "shouldPublish": true,
-            "versionPolicyName": "redoMain"
+            "shouldPublish": true
         },
         {
             "packageName": "@re-do/website",
             "projectFolder": "pkgs/website",
-            "versionPolicyName": "redoMain"
+            "shouldPublish": true
         },
         {
             "packageName": "@re-do/app",
             "projectFolder": "pkgs/app",
-            "versionPolicyName": "redoMain"
+            "shouldPublish": true
         }
     ]
 }

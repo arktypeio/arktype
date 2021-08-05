@@ -1,10 +1,18 @@
-import { Test } from "@re-do/model"
+import { Test, RedoData } from "@re-do/model"
 import { test as runTest, BrowserName, Context } from "@re-do/run"
 import { createRedoFileDb } from "@re-do/data"
-import { WithIds } from "persist-statelessly"
+import { WithIds, FileDb } from "persist-statelessly"
 import { join } from "path"
 
-const db = createRedoFileDb({ bidirectional: false })
+let _db: FileDb<RedoData>
+
+const db = () => {
+    if (!_db) {
+        _db = createRedoFileDb({ bidirectional: false })
+    }
+    return _db
+}
+
 const defaultRedoConfigPath = join(process.cwd(), "redo.config")
 
 export type RedoArgs = {
@@ -25,11 +33,11 @@ export const run = async ({ id }: RedoArgs) => {
     const {
         default: { defaultBrowser, customStepKinds }
     } = await import(defaultRedoConfigPath)
-    const { steps } = db.tests.find((test) => test.id === id)
+    const { steps } = db().tests.find((test) => test.id === id)
     await runTest(steps, {
         browser: defaultBrowser,
         customStepKinds
     })
 }
 
-export const getTests = (): WithIds<Test, "id">[] => db.tests.all()
+export const getTests = (): WithIds<Test, "id">[] => db().tests.all()
