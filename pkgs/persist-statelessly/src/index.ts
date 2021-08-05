@@ -1,2 +1,2 @@
-export * from "./FileStore"
+export * from "./FileStore.js"
 export * from "./db"

@@ -1,0 +1,10 @@
+{
+    "changes": [
+        {
+            "packageName": "persist-statelessly",
+            "comment": "Bump.",
+            "type": "patch"
+        }
+    ],
+    "packageName": "persist-statelessly"
+}

@@ -13,7 +13,8 @@ import {
     ValueAtPath,
     transform,
     deepEquals,
-    diff
+    diff,
+    PathOf
 } from "@re-do/utils"
 import { Query, Update, Actions, ActionData, StoreActions } from "./common"
 import { createOnChangeMiddleware, OnChangeMiddlewareArgs } from "./onChange"
@@ -74,16 +75,22 @@ export class Store<T extends object, A extends Actions<T>> {
     getState = () => this.underlying.getState()
 
     // Defining the entire function type together avoids excessive stack depth TS error
-    get: <P extends string>(path: AutoPath<T, P, "/">) => ValueAtPath<T, P> = (
-        path: any
-    ) => valueAtPath(this.underlying.getState(), path) as any
+    get: <P extends PathOf<T>>(
+        path: P
+        // @ts-ignore
+    ) => ValueAtPath<T, P> = (path: any) =>
+        valueAtPath(this.underlying.getState(), path) as any
 
     query = <Q extends Query<T>>(q: Q) =>
         shapeFilter(this.underlying.getState(), q)
 
     update = <U extends Update<T>>(
         u: U,
-        { actionType = "update", bypassOnChange, meta }: UpdateOptions = {}
+        {
+            actionType = "update",
+            bypassOnChange = false,
+            meta
+        }: UpdateOptions = {}
     ) => {
         const state = this.getState()
         const updatedState = updateMap(state, u)
@@ -129,7 +136,9 @@ export class Store<T extends object, A extends Actions<T>> {
                         const returnValue = actionValue(args, this as any)
                         if (returnValue instanceof Promise) {
                             returnValue.then((resolvedValue) => {
-                                this.update(resolvedValue, { actionType })
+                                this.update(resolvedValue, {
+                                    actionType: actionType as string
+                                })
                             })
                             return returnValue
                         } else {
@@ -139,7 +148,7 @@ export class Store<T extends object, A extends Actions<T>> {
                         // args shouldn't exist if updater was not a function
                         update = actionValue
                     }
-                    this.update(update, { actionType })
+                    this.update(update, { actionType: actionType as string })
                 }
             ]
         }) as any

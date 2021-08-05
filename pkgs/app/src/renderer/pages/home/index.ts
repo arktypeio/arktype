@@ -1,1 +1,1 @@
-export * from "./Home"
+export * from "./Home.js"

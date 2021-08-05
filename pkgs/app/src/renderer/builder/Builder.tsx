@@ -8,7 +8,7 @@ import {
     ChipInput
 } from "@re-do/components"
 import { Tag } from "@re-do/model"
-import { StepCard } from "./StepCard"
+import { StepCard } from "./StepCard.js"
 import { store } from "renderer/common"
 
 const initialState = {

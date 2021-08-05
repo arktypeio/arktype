@@ -1,23 +1,23 @@
 query me {
-    me {
-        email
-        first
-        id
-        last
-        password
-    }
+  me {
+    email
+    first
+    id
+    last
+    password
+  }
 }
 mutation signIn($email: String!, $password: String!) {
-    signIn(email: $email, password: $password)
+  signIn(email: $email, password: $password)
 }
 mutation signUp(
-    $email: String!
-    $first: String!
-    $last: String!
-    $password: String!
+  $email: String!
+  $first: String!
+  $last: String!
+  $password: String!
 ) {
-    signUp(email: $email, first: $first, last: $last, password: $password)
+  signUp(email: $email, first: $first, last: $last, password: $password)
 }
 mutation subscribe($email: String!) {
-    subscribe(email: $email)
+  subscribe(email: $email)
 }

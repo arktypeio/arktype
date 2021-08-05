@@ -80,7 +80,8 @@ function _parsePackageSpecifier(rawPackageSpecifier) {
  * IMPORTANT: THIS CODE SHOULD BE KEPT UP TO DATE WITH Utilities.copyAndTrimNpmrcFile()
  */
 function _copyAndTrimNpmrcFile(sourceNpmrcPath, targetNpmrcPath) {
-    console.log(`Copying ${sourceNpmrcPath} --> ${targetNpmrcPath}`); // Verbose
+    console.log(`Transforming ${sourceNpmrcPath}`); // Verbose
+    console.log(`  --> "${targetNpmrcPath}"`);
     let npmrcFileLines = fs.readFileSync(sourceNpmrcPath).toString().split('\n');
     npmrcFileLines = npmrcFileLines.map((line) => (line || '').trim());
     const resultLines = [];
@@ -411,9 +412,15 @@ function installAndRun(packageName, packageVersion, packageBinName, packageBinAr
     const originalEnvPath = process.env.PATH || '';
     let result;
     try {
+        // Node.js on Windows can not spawn a file when the path has a space on it
+        // unless the path gets wrapped in a cmd friendly way and shell mode is used
+        const shouldUseShell = binPath.includes(' ') && os.platform() === 'win32';
+        const platformBinPath = shouldUseShell ? `"${binPath}"` : binPath;
         process.env.PATH = [binFolderPath, originalEnvPath].join(path.delimiter);
-        result = childProcess.spawnSync(binPath, packageBinArgs, {
+        result = childProcess.spawnSync(platformBinPath, packageBinArgs, {
             stdio: 'inherit',
+            windowsVerbatimArguments: false,
+            shell: shouldUseShell,
             cwd: process.cwd(),
             env: process.env
         });

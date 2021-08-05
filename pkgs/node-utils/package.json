@@ -1,8 +1,9 @@
 {
     "name": "@re-do/node-utils",
-    "version": "0.0.3",
+    "version": "0.0.8",
     "author": "redo.qa",
     "description": "Node utilities consumed by Redo",
+    "type": "module",
     "main": "dist/cjs/index.js",
     "module": "dist/mjs/index.js",
     "exports": {
@@ -11,25 +12,33 @@
             "require": "./dist/cjs/index.js"
         }
     },
+    "bin": {
+        "runScript": "./runScript.js"
+    },
     "scripts": {
         "build": "redo-build",
+        "runScript": "./runScript.js",
+        "filterWarnings": "./filterWarnings.cjs",
         "test": "echo 'This package has no tests.'"
     },
     "dependencies": {
-        "@re-do/utils": "0.0.12",
+        "@re-do/utils": "workspace:*",
         "deepmerge": "4.2.2",
         "execa": "5.0.0",
         "moize": "5.4.7",
         "validator": "13.5.2",
-        "prompts": "2.4.1"
+        "prompts": "2.4.1",
+        "ts-node": "10.1.0",
+        "get-current-line": "6.6.0",
+        "tree-kill": "1.2.2"
     },
     "devDependencies": {
-        "@re-do/configs": "0.0.2",
-        "@types/jest": "26.0.20",
+        "@re-do/configs": "workspace:*",
         "@types/node": "15.0.2",
         "@types/prompts": "2.0.11",
-        "jest": "26.6.3",
-        "ts-jest": "26.5.6",
-        "typescript": "4.2.3"
+        "jest": "27.0.6",
+        "@types/jest": "26.0.24",
+        "ts-jest": "27.0.3",
+        "typescript": "4.4.0-beta"
     }
 }

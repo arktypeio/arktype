@@ -1,7 +1,7 @@
 import React, { useState } from "react"
 import { Form, FormText, FormSubmit } from "@re-do/components"
 import { useSubscribeMutation } from "@re-do/model"
-import { track } from "./analytics"
+import { track } from "./analytics.js"
 
 export const SignUpForm = () => {
     const [submitted, setSubmitted] = useState(false)

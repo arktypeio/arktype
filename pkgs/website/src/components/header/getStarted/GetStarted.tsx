@@ -1,10 +1,10 @@
 import React from "react"
 import { Link } from "@re-do/components"
-import { GetStartedDesktop } from "./GetStartedDesktop"
-import { GetStartedMobile } from "./GetStartedMobile"
+import { GetStartedDesktop } from "./GetStartedDesktop.js"
+import { GetStartedMobile } from "./GetStartedMobile.js"
 
 export type GetStartedButtonProps = {
-    animateScroll?: boolean
+    animateScroll?: boolean | undefined
     mobile: boolean
 }
 

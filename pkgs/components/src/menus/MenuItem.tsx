@@ -8,4 +8,4 @@ export type MenuItemProps = MuiMenuItemProps & { button?: true }
 
 export const MenuItem = React.forwardRef<HTMLLIElement, MenuItemProps>(
     (props, ref) => <MuiMenuItem ref={ref} {...props} />
-)
+) as React.FunctionComponent<MenuItemProps>

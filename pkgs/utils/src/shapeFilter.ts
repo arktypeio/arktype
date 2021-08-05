@@ -1,4 +1,4 @@
-import { isRecursible, fromEntries, Unlisted, NonRecursible } from "./common"
+import { isRecursible, fromEntries, Unlisted, NonRecursible } from "./common.js"
 
 export type ShapeFilter<O, S> = O extends NonRecursible
     ? O

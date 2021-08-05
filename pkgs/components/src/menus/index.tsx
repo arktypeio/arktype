@@ -1,3 +1,3 @@
-export * from "./Menu"
-export * from "./MenuItem"
-export * from "./TogglableMenu"
+export * from "./Menu.js"
+export * from "./MenuItem.js"
+export * from "./TogglableMenu.js"

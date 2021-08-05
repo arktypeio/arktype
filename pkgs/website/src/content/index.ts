@@ -1,3 +1,3 @@
-export * from "./features"
-export * from "./steps"
-export * from "./posts"
+export * from "./features.js"
+export * from "./steps.js"
+export * from "./posts.js"

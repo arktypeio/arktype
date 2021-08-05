@@ -1,7 +1,7 @@
 import React from "react"
-import { FormText, FormSubmit, Form, Button, Column } from "@re-do/components"
+import { FormText, FormSubmit, Form } from "@re-do/components"
 import { store } from "renderer/common"
-import { formatEmail } from "./common"
+import { formatEmail } from "./common.js"
 import { useSignInMutation, SignInMutationVariables } from "@re-do/model"
 
 export const SignIn = () => {
@@ -11,7 +11,7 @@ export const SignIn = () => {
         <Form<SignInMutationVariables>
             submit={async (data) => {
                 const result = await submit({ variables: data })
-                store.update({ token: result?.data?.signIn })
+                store.update({ token: result?.data?.signIn ?? "" })
             }}
             grow
             full

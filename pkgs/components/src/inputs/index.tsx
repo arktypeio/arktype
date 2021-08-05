@@ -1,2 +1,2 @@
-export * from "./ChipInput"
-export * from "./TextInput"
+export * from "./ChipInput.js"
+export * from "./TextInput.js"

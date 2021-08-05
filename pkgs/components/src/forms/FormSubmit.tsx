@@ -28,7 +28,7 @@ export const FormSubmit = ({
                 type="submit"
                 disabled={
                     !isValid ||
-                    (disableAfterValidSubmission && isSubmitSuccessful)
+                    (!!disableAfterValidSubmission && isSubmitSuccessful)
                 }
             >
                 {children ?? "Submit"}

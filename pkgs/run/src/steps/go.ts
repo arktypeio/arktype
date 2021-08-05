@@ -1,5 +1,5 @@
 import { GoArgs } from "@re-do/model"
-import { Context } from "../common"
+import { Context } from "../common.js"
 
 export type { GoArgs } from "@re-do/model"
 

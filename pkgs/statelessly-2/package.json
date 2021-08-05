@@ -1,0 +1,40 @@
+{
+    "name": "statelessly-2",
+    "version": "0.0.3",
+    "private": true,
+    "author": "redo.qa",
+    "description": "💪-typed state management with simple shapes🔷",
+    "type": "module",
+    "main": "dist/cjs/index.js",
+    "module": "dist/mjs/index.js",
+    "exports": {
+        ".": {
+            "import": "./dist/mjs/index.js",
+            "require": "./dist/cjs/index.js"
+        }
+    },
+    "scripts": {
+        "build": "echo No build required",
+        "buildDev": "redo-build",
+        "test": "echo No tests",
+        "testDev": "jest"
+    },
+    "dependencies": {
+        "@re-do/utils": "workspace:*",
+        "deepmerge": "4.2.2",
+        "isomorphic-fetch": "3.0.0",
+        "moize": "5.4.7",
+        "redux": "4.0.5",
+        "redux-devtools-extension": "2.13.8",
+        "@reduxjs/toolkit": "1.5.0"
+    },
+    "devDependencies": {
+        "@re-do/configs": "workspace:*",
+        "jest": "27.0.6",
+        "@types/jest": "26.0.24",
+        "ts-jest": "27.0.3",
+        "@types/node": "15.0.2",
+        "ts-toolbelt": "9.5.10",
+        "typescript": "4.4.0-beta"
+    }
+}

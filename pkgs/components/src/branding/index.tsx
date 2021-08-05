@@ -1,1 +1,1 @@
-export * from "./AnimatedLogo"
+export * from "./AnimatedLogo.js"

@@ -1,6 +1,6 @@
 {
     "name": "@re-do/configs",
-    "version": "0.0.2",
+    "version": "0.0.3",
     "author": "redo.qa",
     "description": "Shared set of default configurations for Redo's packages",
     "main": "dist/cjs/index.js",
@@ -12,21 +12,26 @@
         }
     },
     "scripts": {
-        "build": "node redoBuild.js",
+        "build": "node ./redoBuild.cjs",
         "test": "echo 'This package has no tests!'"
     },
     "bin": {
-        "redo-build": "./redoBuild.js"
+        "redo-build": "./redoBuild.cjs"
     },
     "dependencies": {
         "execa": "5.0.0",
         "deepmerge": "4.2.2",
-        "vite": "2.2.4",
-        "@vitejs/plugin-react-refresh": "1.3.3",
-        "vite-plugin-commonjs-externals": "0.1.1"
+        "vite": "2.4.4",
+        "@vitejs/plugin-react-refresh": "1.3.5",
+        "@re-do/node-utils": "latest",
+        "@jest/reporters": "27.0.6"
     },
     "devDependencies": {
         "@types/node": "15.0.2",
-        "typescript": "4.2.3"
+        "typescript": "4.4.0-beta",
+        "jest": "27.0.6",
+        "@jest/types": "27.0.6",
+        "@types/jest": "26.0.24",
+        "ts-jest": "27.0.3"
     }
 }

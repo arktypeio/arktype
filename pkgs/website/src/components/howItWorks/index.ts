@@ -1,1 +1,1 @@
-export * from "./HowItWorks"
+export * from "./HowItWorks.js"

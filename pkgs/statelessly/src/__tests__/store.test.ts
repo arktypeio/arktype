@@ -114,7 +114,7 @@ describe("gets", () => {
         expect(store.get("a/b/a")).toStrictEqual([0])
     })
     test("from array", () => {
-        expect(store.get("d/0/a")).toBe(0)
+        expect(store.get("d/1/a")).toBe(0)
     })
 })
 
@@ -230,7 +230,7 @@ const expectedContext = (
         type,
         payload,
         meta: {
-            bypassOnChange: undefined,
+            bypassOnChange: false,
             statelessly: true,
             ...meta
         }

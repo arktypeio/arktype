@@ -1,5 +1,5 @@
 import { ClickArgs } from "@re-do/model"
-import { Context } from "../common"
+import { Context } from "../common.js"
 
 export type { ClickArgs } from "@re-do/model"
 

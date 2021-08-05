@@ -3,9 +3,8 @@
     "compilerOptions": {
         "baseUrl": "src",
         "outDir": "dist",
-        "types": ["vite/client"],
+        "types": ["vite/client", "jest"],
         "declaration": false
     },
-    "include": ["src"],
-    "exclude": ["**/__tests__"]
+    "include": ["src"]
 }

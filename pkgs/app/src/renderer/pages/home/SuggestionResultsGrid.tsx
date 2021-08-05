@@ -1,10 +1,10 @@
 import React from "react"
 import { Unlisted } from "@re-do/utils"
-import { SuggestionCard } from "./SuggestionCard"
+import { SuggestionCard } from "./SuggestionCard.js"
 import { store } from "renderer/common"
 import { Card, Row, Button, Icons } from "@re-do/components"
 import { Test } from "@re-do/model"
-import type { Shallow } from "persist-statelessly"
+import type { ShallowWithId } from "persist-statelessly"
 
 const welcomeSuggestion = {
     title: "👆Hey there!",
@@ -34,7 +34,7 @@ const useSuggestions = (): Suggestion<UserItemKind>[] => {
         : []
 }
 
-type UserData = { tests: Shallow<Test, "id"> }
+type UserData = { tests: ShallowWithId<Test, "id"> }
 
 type UserItemKind = keyof UserData
 

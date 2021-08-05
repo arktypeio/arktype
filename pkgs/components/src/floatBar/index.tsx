@@ -1,1 +1,1 @@
-export * from "./FloatBar"
+export * from "./FloatBar.js"

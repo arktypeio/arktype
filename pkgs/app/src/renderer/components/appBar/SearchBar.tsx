@@ -1,5 +1,5 @@
 import React from "react"
-import { SearchInput } from "./SearchInput"
+import { SearchInput } from "./SearchInput.js"
 
 export const SearchBar = () => (
     <SearchInput

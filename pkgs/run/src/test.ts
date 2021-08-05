@@ -1,6 +1,6 @@
 import { defaultStepKinds, Step } from "./steps"
-import { launch, BrowserName, LaunchOptions } from "./launch"
-import { Page, Browser, StepKinds } from "./common"
+import { launch, BrowserName, LaunchOptions } from "./launch.js"
+import { Page, Browser, StepKinds } from "./common.js"
 
 export type TestOptions = LaunchOptions & {
     browser?: BrowserName

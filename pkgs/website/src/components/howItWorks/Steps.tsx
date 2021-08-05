@@ -3,7 +3,7 @@ import { Row, Text, Column, Icons } from "@re-do/components"
 import Accordion, { AccordionProps } from "@material-ui/core/Accordion"
 import AccordionSummary from "@material-ui/core/AccordionSummary"
 import AccordionDetails from "@material-ui/core/AccordionDetails"
-import { AnimatedCheckbox } from "./AnimatedCheckbox"
+import { AnimatedCheckbox } from "./AnimatedCheckbox.js"
 
 type StepProps = Partial<AccordionProps> & {
     summary: string
@@ -19,8 +19,8 @@ const Step = ({ summary, details, defaultExpanded, ...rest }: StepProps) => {
                 background: "transparent"
             }}
             elevation={0}
-            defaultExpanded={defaultExpanded}
             onChange={(_, open) => setExpanded(open)}
+            defaultExpanded={defaultExpanded ?? false}
             {...rest}
         >
             <AccordionSummary expandIcon={<Icons.expandDown />}>

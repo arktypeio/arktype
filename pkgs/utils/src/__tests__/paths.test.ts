@@ -1,5 +1,4 @@
 import { valueAtPath } from "../paths"
-import { Object } from "ts-toolbelt"
 
 const obj = {
     a: {
@@ -8,7 +7,8 @@ const obj = {
         }
     },
     d: [{ e: true }, "redo"] as const,
-    f: [255]
+    f: [255],
+    g: [{ a: true }, { a: false }]
 }
 
 test("retrieves primitive at path", () => {
@@ -26,4 +26,14 @@ test("retrieves primitive from object in array", () => {
 test("returns undefined on nonexistent path", () => {
     // @ts-ignore
     expect(valueAtPath(obj, "fake/fake")).toBe(undefined)
+})
+test("non-default delimiter", () => {
+    const result = valueAtPath(obj, "a.b.c", { delimiter: "." })
+    expect(result).toBe(31)
+})
+test("skip array paths", () => {
+    const result = valueAtPath(obj, "g/a", {
+        excludeArrayIndices: true
+    })
+    expect(result).toStrictEqual([true, false])
 })
