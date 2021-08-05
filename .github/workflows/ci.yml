@@ -43,7 +43,7 @@ jobs:
             - name: Set app release version
               if: ${{ github.event_name == 'workflow_dispatch' }}
               working-directory: pkgs/app
-              run: echo APP_RELEASE_VERSION=$(npm run version) >> $GITHUB_ENV
+              run: echo APP_RELEASE_VERSION=$(echo$(npm run version) | awk '{print $NF}') >> $GITHUB_ENV
             - name: Create and test electron release for ${{ matrix.os }}
               working-directory: pkgs/app
               run: |
@@ -61,13 +61,13 @@ jobs:
                   commit: ${{ github.head_ref }}
             - name: Update packages for publish
               if: ${{ github.event_name == 'workflow_dispatch' && matrix.os == 'ubuntu-latest' && matrix.node-version == '16.6.1' }}
-              run: node common/scripts/install-run-rush.js publish --pack --include-all --release-folder release --target-branch master
+              run: node common/scripts/install-run-rush.js publish --apply --pack --include-all --release-folder release --target-branch master
             - name: Publish packages to npm
               if: ${{ github.event_name == 'workflow_dispatch' && matrix.os == 'ubuntu-latest' && matrix.node-version == '16.6.1' }}
               env:
                   NODE_AUTH_TOKEN: ${{ secrets.NPM_AUTH_TOKEN }}
               run: |
-                  for file in ./release/*.tgz; do
+                  for file in release/*.tgz; do
                     [ -e "$file" ] || continue
                     npm publish "$file"
                   done
