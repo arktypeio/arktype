@@ -1,0 +1,10 @@
+{
+    "changes": [
+        {
+            "packageName": "jsrx",
+            "comment": "Init.",
+            "type": "minor"
+        }
+    ],
+    "packageName": "jsrx"
+}
