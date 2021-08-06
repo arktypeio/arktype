@@ -65,16 +65,12 @@ jobs:
                   commit: ${{ github.head_ref }}
             - name: Update packages for publish
               if: ${{ github.event_name == 'workflow_dispatch' && matrix.os == 'ubuntu-latest' && matrix.node-version == '16.6.1' }}
-              run: node common/scripts/install-run-rush.js publish --publish --apply --pack --include-all --release-folder release --target-branch master
+              run: node common/scripts/install-run-rush.js publish --publish --pack --include-all --release-folder release --target-branch master
             - name: Publish packages to npm
               if: ${{ github.event_name == 'workflow_dispatch' && matrix.os == 'ubuntu-latest' && matrix.node-version == '16.6.1' }}
               env:
-                  NODE_AUTH_TOKEN: ${{ secrets.NPM_AUTH_TOKEN }}
-              run: |
-                  for file in ./release/*.tgz; do
-                    [ -e "$file" ] || continue
-                    npm publish "$file"
-                  done
+                  NPM_AUTH_TOKEN: ${{ secrets.NPM_AUTH_TOKEN }}
+              run: node common/scripts/install-run-rush.js publish --publish --include-all
             - name: Create/update github release
               if: ${{ github.event_name == 'workflow_dispatch' }}
               uses: ncipollo/release-action@v1
