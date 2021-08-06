@@ -71,7 +71,7 @@ jobs:
               env:
                   NODE_AUTH_TOKEN: ${{ secrets.NPM_AUTH_TOKEN }}
               run: |
-                  for file in release/*.tgz; do
+                  for file in ./release/*.tgz; do
                     [ -e "$file" ] || continue
                     npm publish "$file"
                   done
@@ -81,7 +81,10 @@ jobs:
               with:
                   allowUpdates: true
                   prerelease: true
-                  artifacts: ${{ (matrix.os == 'ubuntu-latest' && 'pkgs/app/release/*.zip,release/*') || 'pkgs/app/release/*.zip' }}
+                  artifacts: "pkgs/app/release/*.zip,release/*"
                   token: ${{ secrets.GITHUB_TOKEN }}
                   tag: ${{ env.APP_RELEASE_VERSION }}
                   commit: ${{ github.ref }}
+            - name: Push the changes
+              if: ${{ github.event_name == 'workflow_dispatch' && matrix.os == 'ubuntu-latest' && matrix.node-version == '16.6.1' }}
+              run: git push
