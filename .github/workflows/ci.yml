@@ -24,6 +24,7 @@ jobs:
             - uses: actions/checkout@v2
               with:
                   fetch-depth: 0
+                  token: ${{ secrets.PUSH_TOKEN }}
             - name: Use Node.js ${{ matrix.node-version }}
               uses: actions/setup-node@v2
               with:
@@ -69,12 +70,7 @@ jobs:
                   commit: ${{ github.head_ref }}
             - name: Create package artifacts
               if: ${{ github.event_name == 'workflow_dispatch' && matrix.os == 'ubuntu-latest' && matrix.node-version == '16.6.1' }}
-              run: node common/scripts/install-run-rush.js publish --publish --pack --include-all --release-folder release --target-branch master
-            - name: Publish packages to npm
-              if: ${{ github.event_name == 'workflow_dispatch' && matrix.os == 'ubuntu-latest' && matrix.node-version == '16.6.1' }}
-              env:
-                  NODE_AUTH_TOKEN: ${{ secrets.NPM_AUTH_TOKEN }}
-              run: node common/scripts/install-run-rush.js publish --publish --include-all
+              run: node common/scripts/install-run-rush.js publish --publish --pack --include-all --release-folder release
             - name: Create/update github release
               if: ${{ github.event_name == 'workflow_dispatch' }}
               uses: ncipollo/release-action@v1
@@ -84,10 +80,11 @@ jobs:
                   token: ${{ secrets.GITHUB_TOKEN }}
                   tag: ${{ format('v{0}', env.APP_RELEASE_VERSION) }}
                   commit: ${{ github.ref }}
-            - name: Push the changes
+            - name: Publish packages to NPM and push to GitHub
               if: ${{ github.event_name == 'workflow_dispatch' && matrix.os == 'ubuntu-latest' && matrix.node-version == '16.6.1' }}
+              env:
+                  NODE_AUTH_TOKEN: ${{ secrets.NPM_AUTH_TOKEN }}
               run: |
-                  git config --global user.email "github@redo.qa"
+                  git config --global user.email "ci@redo.qa"
                   git config --global user.name "Github Actions"
-                  git commit -m "Bump versions for release $APP_RELEASE_VERSION."
-                  git push
+                  node common/scripts/install-run-rush.js publish --publish --include-all --target-branch master
