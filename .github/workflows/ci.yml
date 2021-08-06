@@ -88,5 +88,7 @@ jobs:
               if: ${{ github.event_name == 'workflow_dispatch' && matrix.os == 'ubuntu-latest' && matrix.node-version == '16.6.1' }}
               run: |
                   git add .
+                  git config --global user.email "github@redo.qa"
+                  git config --global user.name "Github Actions"
                   git commit -m "Bump versions for release $APP_RELEASE_VERSION."
                   git push
