@@ -21,6 +21,7 @@
     "scripts": {
         "build": "redo-build",
         "redo": "node ./cli.cjs",
+        "syncVersions": "runScript --esm syncVersions.ts",
         "test": "jest"
     },
     "bin": {

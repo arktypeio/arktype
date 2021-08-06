@@ -79,13 +79,11 @@
         },
         {
             "packageName": "@re-do/website",
-            "projectFolder": "pkgs/website",
-            "shouldPublish": true
+            "projectFolder": "pkgs/website"
         },
         {
             "packageName": "@re-do/app",
-            "projectFolder": "pkgs/app",
-            "shouldPublish": true
+            "projectFolder": "pkgs/app"
         }
     ]
 }
