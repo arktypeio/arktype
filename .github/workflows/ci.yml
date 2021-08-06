@@ -31,12 +31,12 @@ jobs:
                   registry-url: "https://registry.npmjs.org"
             - run: node common/scripts/install-run-rush.js change -v
             - name: Bump package versions
-              if: ${{ github.event_name == 'workflow_dispatch' && matrix.os == 'ubuntu-latest' && matrix.node-version == '16.6.1' }}
+              if: ${{ github.event_name == 'workflow_dispatch' }}
               run: node common/scripts/install-run-rush.js publish --apply
             - run: node common/scripts/install-run-rush.js install
             - run: node common/scripts/install-run-rush.js build
             - name: Bump unpublished versions
-              if: ${{ github.event_name == 'workflow_dispatch' && matrix.os == 'ubuntu-latest' && matrix.node-version == '16.6.1' }}
+              if: ${{ github.event_name == 'workflow_dispatch' }}
               working-directory: pkgs/test
               run: npm run syncVersions
             - run: npx playwright install-deps
@@ -67,7 +67,7 @@ jobs:
                   token: ${{ secrets.GITHUB_TOKEN }}
                   tag: ${{ github.head_ref }}
                   commit: ${{ github.head_ref }}
-            - name: Update packages for publish
+            - name: Create package artifacts
               if: ${{ github.event_name == 'workflow_dispatch' && matrix.os == 'ubuntu-latest' && matrix.node-version == '16.6.1' }}
               run: node common/scripts/install-run-rush.js publish --publish --pack --include-all --release-folder release --target-branch master
             - name: Publish packages to npm
@@ -80,11 +80,13 @@ jobs:
               uses: ncipollo/release-action@v1
               with:
                   allowUpdates: true
-                  prerelease: true
                   artifacts: "pkgs/app/release/*.zip,release/*"
                   token: ${{ secrets.GITHUB_TOKEN }}
-                  tag: ${{ env.APP_RELEASE_VERSION }}
+                  tag: ${{ format('v{0}', env.APP_RELEASE_VERSION) }}
                   commit: ${{ github.ref }}
             - name: Push the changes
               if: ${{ github.event_name == 'workflow_dispatch' && matrix.os == 'ubuntu-latest' && matrix.node-version == '16.6.1' }}
-              run: git push
+              run: |
+                  git add .
+                  git commit -m "Bump versions for release $APP_RELEASE_VERSION."
+                  git push
