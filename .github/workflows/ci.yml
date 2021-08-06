@@ -30,11 +30,15 @@ jobs:
                   node-version: ${{ matrix.node-version }}
                   registry-url: "https://registry.npmjs.org"
             - run: node common/scripts/install-run-rush.js change -v
-            - name: Bump versions
+            - name: Bump package versions
               if: ${{ github.event_name == 'workflow_dispatch' && matrix.os == 'ubuntu-latest' && matrix.node-version == '16.6.1' }}
               run: node common/scripts/install-run-rush.js publish --apply
             - run: node common/scripts/install-run-rush.js install
             - run: node common/scripts/install-run-rush.js build
+            - name: Bump unpublished versions
+              if: ${{ github.event_name == 'workflow_dispatch' && matrix.os == 'ubuntu-latest' && matrix.node-version == '16.6.1' }}
+              working-directory: pkgs/test
+              run: npm run syncVersions
             - run: npx playwright install-deps
             - name: Setup display server for linux
               if: ${{ matrix.os == 'ubuntu-latest' }}
