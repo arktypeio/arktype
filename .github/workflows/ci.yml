@@ -80,7 +80,7 @@ jobs:
                   token: ${{ secrets.GITHUB_TOKEN }}
                   tag: ${{ format('v{0}', env.APP_RELEASE_VERSION) }}
                   commit: ${{ github.ref }}
-            - name: Publish packages to NPM and push to GitHub
+            - name: Publish packages to NPM and push version updates to master
               if: ${{ github.event_name == 'workflow_dispatch' && matrix.os == 'ubuntu-latest' && matrix.node-version == '16.6.1' }}
               env:
                   NODE_AUTH_TOKEN: ${{ secrets.NPM_AUTH_TOKEN }}
@@ -88,3 +88,5 @@ jobs:
                   git config --global user.email "ci@redo.qa"
                   git config --global user.name "Github Actions"
                   node common/scripts/install-run-rush.js publish --publish --include-all --target-branch master
+                  git commit -a -m "Bump versions."
+                  git push
