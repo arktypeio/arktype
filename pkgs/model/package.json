@@ -22,7 +22,7 @@
         "test": "echo 'This package has no tests.'"
     },
     "dependencies": {
-        "@apollo/client": "3.3.7",
+        "@apollo/client": "3.4.5",
         "gqlize": "0.0.3",
         "graphql": "15.5.0",
         "graphql-tag": "2.12.4"

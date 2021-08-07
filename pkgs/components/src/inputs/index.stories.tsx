@@ -5,7 +5,9 @@ export default {
     title: "Inputs"
 }
 
-export const Text = (props: TextInputProps) => <TextInput {...props} />
+export const Text = (props: TextInputProps) => (
+    <TextInput label="example" {...props} />
+)
 
 Text.argTypes = {
     kind: { control: { type: "radio", options: ["outlined", "underlined"] } }
