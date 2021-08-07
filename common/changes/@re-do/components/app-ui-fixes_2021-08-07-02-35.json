@@ -1,0 +1,10 @@
+{
+    "changes": [
+        {
+            "packageName": "@re-do/components",
+            "comment": "Fix bug causing layout props to get overriden.",
+            "type": "patch"
+        }
+    ],
+    "packageName": "@re-do/components"
+}
