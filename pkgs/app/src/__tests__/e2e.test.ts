@@ -28,6 +28,7 @@ const ensureCleanEnv = async () => {
     rmSync(fromRelease("browser.listening"), { force: true })
     if (mainProcess && !mainProcess.killed) {
         await killTree(mainProcess.pid)
+        mainProcess.kill()
     }
 }
 
@@ -50,7 +51,7 @@ describe("installation", () => {
         mainProcess = shellAsync(executable, {
             cwd: unpackedRelease,
             env: { ENABLE_TEST_HOOKS: "1" },
-            stdio: "inherit"
+            stdio: "ignore"
         })
         try {
             // redo.json should be created when main launches
