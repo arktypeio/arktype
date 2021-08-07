@@ -1,0 +1,10 @@
+{
+    "changes": [
+        {
+            "packageName": "@re-do/test",
+            "comment": "Make default test execution in app non-headless.",
+            "type": "patch"
+        }
+    ],
+    "packageName": "@re-do/test"
+}
