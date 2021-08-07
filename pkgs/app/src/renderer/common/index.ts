@@ -8,13 +8,11 @@ import { stateSyncEnhancer } from "electron-redux/renderer"
 import { Root } from "common"
 import { Store } from "react-statelessly"
 
-const httpLink = createHttpLink({
-    uri: import.meta.env.DEV
-        ? `http://localhost:${
-              import.meta.env.VITE_GRAPHQL_SERVER_PORT
-          }/dev/graphql`
-        : "https://tpru7v18yi.execute-api.us-east-1.amazonaws.com/dev/graphql"
-})
+const uri = import.meta.env.DEV
+    ? `http://localhost:${import.meta.env.VITE_GRAPHQL_SERVER_PORT}/dev/graphql`
+    : "https://tpru7v18yi.execute-api.us-east-1.amazonaws.com/dev/graphql"
+
+const httpLink = createHttpLink({ uri })
 
 const contextLink = new ApolloLink((operation, forward) => {
     operation.setContext({

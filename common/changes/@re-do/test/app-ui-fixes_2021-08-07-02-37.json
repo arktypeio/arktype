@@ -1,0 +1,10 @@
+{
+    "changes": [
+        {
+            "packageName": "@re-do/test",
+            "comment": "Fix apollo client crash in prod.",
+            "type": "patch"
+        }
+    ],
+    "packageName": "@re-do/test"
+}

@@ -19,5 +19,13 @@ function readPackage(packageJson, context) {
         )
         packageJson.dependencies["dmg-license"] = "1.0.9"
     }
+    if (packageJson.name === "@apollo/client") {
+        context.log("Fixing @apollo/client peer dependencies...")
+        packageJson.dependencies = {
+            ...packageJson.dependencies,
+            ...packageJson.peerDependencies
+        }
+        packageJson.peerDependencies = {}
+    }
     return packageJson
 }
