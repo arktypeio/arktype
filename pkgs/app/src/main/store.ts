@@ -106,7 +106,9 @@ const mainActions: MainActionFunctions = {
         return { builder: { active: false, steps: [] } }
     },
     runTest: async ([id]) => {
-        await runTest(db.tests.find((test) => test.id === id).steps)
+        await runTest(db.tests.find((test) => test.id === id).steps, {
+            headless: false
+        })
         return {}
     },
     saveTest: async ([test]) => {
