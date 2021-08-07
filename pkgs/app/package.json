@@ -19,7 +19,7 @@
         "jsrxGen": "jsrx jsrxGen"
     },
     "dependencies": {
-        "@apollo/client": "3.3.7",
+        "@apollo/client": "3.4.5",
         "@material-ui/core": "5.0.0-beta.2",
         "@material-ui/styles": "5.0.0-beta.2",
         "@medv/finder": "2.0.0",

@@ -1,0 +1,10 @@
+{
+    "changes": [
+        {
+            "packageName": "@re-do/model",
+            "comment": "Bump apollo client.",
+            "type": "patch"
+        }
+    ],
+    "packageName": "@re-do/model"
+}

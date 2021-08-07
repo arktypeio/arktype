@@ -57,6 +57,9 @@ const useKind = makeKinds<MuiTextFieldProps>()(
                     classes: {
                         root: textClass,
                         notchedOutline: borderClass
+                    },
+                    style: {
+                        maxHeight: 40
                     }
                 }
             },
@@ -66,6 +69,9 @@ const useKind = makeKinds<MuiTextFieldProps>()(
                     classes: {
                         root: textClass,
                         underline: borderClass
+                    },
+                    style: {
+                        maxHeight: 40
                     }
                 }
             }

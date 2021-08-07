@@ -2,7 +2,7 @@ import React from "react"
 import { ThemeProvider } from "@material-ui/core"
 import { defaultTheme } from "../styles"
 import { Card } from "../cards"
-import { Row, Column } from "."
+import { Row, Column, AppContents } from "."
 
 export default {
     title: "Layouts"
@@ -58,7 +58,7 @@ const Context = ({ children }: any) => (
             }
         }}
     >
-        <div style={{ height: "95vh", width: "95vw" }}>{children}</div>
+        <AppContents>{children}</AppContents>
     </ThemeProvider>
 )
 
