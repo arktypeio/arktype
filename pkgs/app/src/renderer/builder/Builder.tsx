@@ -5,7 +5,9 @@ import {
     FloatBar,
     Icons,
     Button,
-    ChipInput
+    ChipInput,
+    Text,
+    LoadingAnimation
 } from "@re-do/components"
 import { Tag } from "@re-do/model"
 import { StepCard } from "./StepCard.js"
@@ -19,7 +21,8 @@ const initialState = {
 export const Builder = () => {
     const [state, setState] = useState(initialState)
     const { name, tags } = state
-    const { active, steps } = store.useGet("builder")
+    // @ts-ignore
+    const { active, steps, installingBrowser } = store.useGet("builder")
     if (!active && (name || tags.length)) {
         setState(initialState)
     }
@@ -49,15 +52,22 @@ export const Builder = () => {
                     />
                 </Column>
             </FloatBar>
-            <div style={{ paddingBottom: 45 }}>
-                {steps.map((step, i) => (
-                    <StepCard
-                        step={step}
-                        cardProps={{ style: { margin: 16 } }}
-                        key={i}
-                    />
-                ))}
-            </div>
+            {installingBrowser ? (
+                <Column full justify="center" align="center">
+                    <Text>Installing {installingBrowser}...</Text>
+                    <LoadingAnimation />
+                </Column>
+            ) : (
+                <div style={{ paddingBottom: 45 }}>
+                    {steps.map((step, i) => (
+                        <StepCard
+                            step={step}
+                            cardProps={{ style: { margin: 16 } }}
+                            key={i}
+                        />
+                    ))}
+                </div>
+            )}
             <FloatBar kind="bottom" justify="space-around">
                 <Button
                     Icon={Icons.close}

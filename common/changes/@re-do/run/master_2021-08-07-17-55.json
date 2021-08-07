@@ -1,0 +1,10 @@
+{
+    "changes": [
+        {
+            "packageName": "@re-do/run",
+            "comment": "Add utilities to manage browser installation.",
+            "type": "minor"
+        }
+    ],
+    "packageName": "@re-do/run"
+}

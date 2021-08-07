@@ -1,13 +1,5 @@
-# @re-do/cli
+# @re-do/test
 
-### create
-
-Create a new test
-
-### test
-
-Run an existing test
-
-### app
+### launch
 
 Launch the redo app

@@ -6,6 +6,16 @@ import { Builder } from "./builder"
 import { Page } from "../common"
 
 export const Router = () => {
+    // Test hook, second useEffect parameter ensures it only runs once
+    useEffect(() => {
+        store.update({
+            main: {
+                __rendererLaunched: [
+                    window.location.hash === "#builder" ? "builder" : "renderer"
+                ]
+            }
+        })
+    }, [])
     // This URL is loaded if and only if we're in the builder window
     if (window.location.hash === "#builder") {
         return (

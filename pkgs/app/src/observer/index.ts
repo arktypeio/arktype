@@ -46,3 +46,7 @@ const listeners = {
 Object.entries(listeners).forEach(([eventName, listener]) =>
     browserWindow.addEventListener(eventName, listener, true)
 )
+
+browserWindow.notify({
+    kind: "init"
+} as any)

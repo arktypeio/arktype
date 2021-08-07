@@ -5,7 +5,7 @@ import {
     LaunchOptions as PlaywrightLaunchOptions
 } from "playwright-core"
 import { existsSync } from "fs"
-import { shell } from "@re-do/node-utils"
+import { shell, shellAsync } from "@re-do/node-utils"
 
 export type LaunchOptions = {
     size?: {
@@ -32,18 +32,34 @@ export const playwrightBrowserNames = {
 
 export type BrowserName = keyof typeof browserHandlers
 
+export const isBrowserInstalled = (browser: BrowserName) =>
+    existsSync(browserHandlers[browser].executablePath())
+
+export const ensureBrowserInstalled = async (browser: BrowserName) => {
+    const expectedBrowserPath = browserHandlers[browser].executablePath()
+    if (!isBrowserInstalled(browser)) {
+        console.log(
+            `Didn't find ${browser} at ${expectedBrowserPath}. Installing...`
+        )
+        const installationResult = await shellAsync(
+            `npx playwright install ${playwrightBrowserNames[browser]}`,
+            { all: true }
+        )
+        if (!isBrowserInstalled(browser)) {
+            throw new Error(
+                `Tried to install ${browser} but didn't find it at expected location ${expectedBrowserPath}. Output:\n` +
+                    installationResult.all
+            )
+        }
+    }
+}
+
 export const launch = async (
     browser: BrowserName,
     { size, position, ...playwrightOptions }: LaunchOptions = {}
 ) => {
+    await ensureBrowserInstalled(browser)
     const browserHandler = browserHandlers[browser]
-    const expectedBrowserPath = browserHandler.executablePath()
-    if (!existsSync(expectedBrowserPath)) {
-        console.log(
-            `Didn't find ${browser} at ${expectedBrowserPath}. Installing...`
-        )
-        shell(`npx playwright install ${playwrightBrowserNames[browser]}`)
-    }
     const args = []
     if (position) {
         args.push(`--window-position=${position.x},${position.y}`)

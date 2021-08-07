@@ -1,13 +1,21 @@
 import { app } from "electron"
 import { installDevTools } from "./installDevTools"
-import { createMainWindow, createBuilderWindow } from "./electronWindows.js"
+import {
+    createMainWindow,
+    createBuilderWindow,
+    loadMainWindow,
+    loadBuilderWindow
+} from "./electronWindows.js"
 
 app.on("ready", async () => {
     if (process.env["NODE_ENV"] === "development") {
         await installDevTools()
     }
-    await createMainWindow()
-    await createBuilderWindow()
+    const main = createMainWindow()
+    createBuilderWindow()
+    await loadMainWindow()
+    await loadBuilderWindow()
+    main.maximize()
 })
 
 app.on("window-all-closed", () => {

@@ -30,7 +30,8 @@ const emptyMainActions: MainActions = {
     runTest: null,
     launchBuilder: null,
     closeBuilder: null,
-    __rendererLaunched: null
+    __rendererLaunched: null,
+    __browserLaunched: null
 }
 
 const versionDir = fromRedo(version)
@@ -65,6 +66,7 @@ const initialState: Root = {
     builder: {
         steps: [],
         active: false,
+        installingBrowser: "",
         actions: []
     },
     main: emptyMainActions,
@@ -111,9 +113,16 @@ const mainActions: MainActionFunctions = {
         db.tests.create(test)
         return {}
     },
-    __rendererLaunched: () => {
+    __rendererLaunched: ([location]) => {
         if (process.env["ENABLE_TEST_HOOKS"]) {
-            writeFileSync(join(process.cwd(), "renderer.launched"), "")
+            writeFileSync(join(process.cwd(), `${location}.launched`), "")
+            return { main: { launchBuilder: [] } }
+        }
+        return {}
+    },
+    __browserLaunched: () => {
+        if (process.env["ENABLE_TEST_HOOKS"]) {
+            writeFileSync(join(process.cwd(), "browser.listening"), "")
         }
         return {}
     }
