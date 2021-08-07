@@ -18,7 +18,7 @@ jsrx(
         },
         prod: {
             release: () => createRelease(),
-            testRelease: $("jest"),
+            testRelease: $("jest --detectOpenHandles"),
             runProd: () => shellAsync(startElectronCmd),
             version: $(`echo ${version}`),
             build: buildAll

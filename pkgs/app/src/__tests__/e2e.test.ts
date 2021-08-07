@@ -25,6 +25,7 @@ let mainProcess: ChildProcess | undefined
 const ensureCleanEnv = async () => {
     rmSync(fromRelease("redo.json"), { force: true })
     rmSync(fromRelease("renderer.launched"), { force: true })
+    rmSync(fromRelease("browser.listening"), { force: true })
     if (mainProcess && !mainProcess.killed) {
         await killTree(mainProcess.pid)
     }
@@ -49,20 +50,24 @@ describe("installation", () => {
         mainProcess = shellAsync(executable, {
             cwd: unpackedRelease,
             env: { ENABLE_TEST_HOOKS: "1" },
-            all: true,
-            stdio: "pipe"
+            stdio: "inherit"
         })
         try {
             // redo.json should be created when main launches
             await until(() => existsSync(fromRelease("redo.json")))
             // renderer.launched should be created when renderer launches
             await until(() => existsSync(fromRelease("renderer.launched")))
+            // browser.listening should be created when injected browser script runs
+            await until(() => existsSync(fromRelease("browser.listening")), {
+                // Longer timeout in case browser needs to be installed
+                timeoutSeconds: 30
+            })
         } catch (e) {
             throw new Error(
                 `Failed to launch app from release. Error message:\n${String(
                     e
-                )}\n` + `Output from app: \n${mainProcess.all?.read()}`
+                )}`
             )
         }
-    }, 30000)
+    }, 60000)
 })

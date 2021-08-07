@@ -25,14 +25,16 @@ const defaultElectronOptions: BrowserWindowConstructorOptions = {
     show: false
 }
 
-export const createMainWindow = async () => {
+export const createMainWindow = () => {
     mainWindow = new BrowserWindow({
         ...defaultElectronOptions,
         title: "Redo"
     })
+    return mainWindow
+}
+
+export const loadMainWindow = async () => {
     await mainWindow.loadURL(BASE_URL)
-    mainWindow.maximize()
-    mainWindow.show()
 }
 
 export const createBuilderWindow = async () => {
@@ -45,5 +47,9 @@ export const createBuilderWindow = async () => {
         store.$.closeBuilder()
         createBuilderWindow()
     })
+    return builderWindow
+}
+
+export const loadBuilderWindow = async () => {
     await builderWindow.loadURL(`${BASE_URL}#builder`)
 }

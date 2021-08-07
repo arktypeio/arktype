@@ -37,6 +37,3 @@ export const store = new Store(
         }
     }
 )
-
-// Test hook
-store.update({ main: { __rendererLaunched: [] } })

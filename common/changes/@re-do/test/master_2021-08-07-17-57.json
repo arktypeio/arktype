@@ -1,0 +1,10 @@
+{
+    "changes": [
+        {
+            "packageName": "@re-do/test",
+            "comment": "Fix an issue causing browsers to launch in headless mode from app.",
+            "type": "patch"
+        }
+    ],
+    "packageName": "@re-do/test"
+}

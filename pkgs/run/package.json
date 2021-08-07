@@ -19,8 +19,7 @@
     },
     "scripts": {
         "build": "redo-build",
-        "test": "echo No tests for this package",
-        "devTest": "jest"
+        "test": "jest"
     },
     "dependencies": {
         "@re-do/model": "workspace:*",

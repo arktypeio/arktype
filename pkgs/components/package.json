@@ -24,7 +24,6 @@
     "dependencies": {
         "@material-ui/core": "5.0.0-beta.2",
         "@material-ui/icons": "5.0.0-beta.1",
-        "@material-ui/lab": "5.0.0-alpha.41",
         "@material-ui/styles": "5.0.0-beta.2",
         "@re-do/utils": "workspace:*",
         "framer-motion": "4.1.11",
