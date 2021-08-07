@@ -19,7 +19,8 @@
     },
     "scripts": {
         "build": "redo-build",
-        "test": "jest"
+        "test": "echo 'To run tests manually, use npm run devTest'",
+        "devTest": "jest"
     },
     "dependencies": {
         "@re-do/model": "workspace:*",
