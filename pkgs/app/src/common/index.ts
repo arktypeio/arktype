@@ -22,6 +22,7 @@ export type Root = {
     defaultBrowser: BrowserName
     builder: {
         active: boolean
+        installingBrowser: string
         steps: UnsavedStep[]
         actions: Action[]
     }
@@ -35,7 +36,8 @@ export type MainActions = {
     saveTest: [Test] | null
     launchBuilder: [] | null
     closeBuilder: [] | null
-    __rendererLaunched: [] | null
+    __rendererLaunched: [string] | null
+    __browserLaunched: [] | null
 }
 
 export type RendererActions = {}

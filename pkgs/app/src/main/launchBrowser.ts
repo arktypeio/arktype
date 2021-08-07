@@ -1,7 +1,13 @@
 import { readFileSync } from "fs"
 import { BrowserWindow } from "electron"
 import { join } from "path"
-import { launch, Step, Browser } from "@re-do/run"
+import {
+    launch,
+    Step,
+    Browser,
+    isBrowserInstalled,
+    ensureBrowserInstalled
+} from "@re-do/run"
 import { deepEquals } from "@re-do/utils"
 import { Root } from "common"
 import { Store } from "react-statelessly"
@@ -30,20 +36,24 @@ export const launchBrowser = async (
 ) => {
     // Use size and position from the Redo app to launch browser
     const { height, width, x, y } = mainWindow.getBounds()
-    const { page, browser, context } = await launch(
-        // @ts-ignore
-        store.get("defaultBrowser"),
-        {
-            position: {
-                x: x + DEFAULT_LEARNER_WIDTH,
-                y: y - BROWSER_WINDOW_TITLEBAR_SIZE
-            },
-            size: {
-                height: height - 16,
-                width: width - DEFAULT_LEARNER_WIDTH
-            }
-        }
-    )
+    // @ts-ignore
+    const browserName = store.get("defaultBrowser")
+    if (!isBrowserInstalled(browserName)) {
+        store.update({ builder: { installingBrowser: browserName } })
+        await ensureBrowserInstalled(browserName)
+        store.update({ builder: { installingBrowser: "" } })
+    }
+    const { page, browser, context } = await launch(browserName, {
+        position: {
+            x: x + DEFAULT_LEARNER_WIDTH,
+            y: y - BROWSER_WINDOW_TITLEBAR_SIZE
+        },
+        size: {
+            height: height - 16,
+            width: width - DEFAULT_LEARNER_WIDTH
+        },
+        headless: false
+    })
     lastConnectedBrowser = browser
     const getNextId = () => {
         const existingSteps = store.get("builder/steps")
@@ -81,6 +91,10 @@ export const launchBrowser = async (
         await page.evaluate(browserJs)
     })
     const notify = (eventData: EventData) => {
+        if (eventData.kind === "init") {
+            store.update({ main: { __browserLaunched: [] } })
+            return
+        }
         if (eventData.timeStamp === lastEventData?.timeStamp) {
             // looks like a duplicate, ignoring
             return
@@ -94,6 +108,7 @@ export const launchBrowser = async (
         lastEventData = eventData
     }
     await page.exposeFunction("notify", notify)
+    await page.evaluate(browserJs)
 }
 
 export const closeBrowser = async () => {

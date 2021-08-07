@@ -1,0 +1,10 @@
+{
+    "changes": [
+        {
+            "packageName": "@re-do/components",
+            "comment": "Remove deprecated Autocomplete import.",
+            "type": "patch"
+        }
+    ],
+    "packageName": "@re-do/components"
+}

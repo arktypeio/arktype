@@ -19,7 +19,7 @@
     },
     "scripts": {
         "build": "redo-build",
-        "test": "echo No tests for this package",
+        "test": "echo 'To run tests manually, use npm run devTest'",
         "devTest": "jest"
     },
     "dependencies": {
