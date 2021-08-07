@@ -1,6 +1,6 @@
 {
     "name": "@re-do/website",
-    "version": "0.2.3",
+    "version": "0.2.4",
     "description": "Redo's website (https://redo.qa)",
     "repository": {
         "type": "git",
