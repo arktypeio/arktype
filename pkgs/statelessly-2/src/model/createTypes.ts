@@ -4,7 +4,8 @@ import {
     KeyValuate,
     LimitDepth,
     Narrow,
-    NonCyclic
+    NonCyclic,
+    WithOptionalValues
 } from "@re-do/utils"
 
 type PrimitiveTypes = {
@@ -14,7 +15,11 @@ type PrimitiveTypes = {
     null: null
 }
 
-type BasePropDef<T> = string & keyof (PrimitiveTypes & T)
+type PrimitivePropDef = string & keyof PrimitiveTypes
+
+type DefinedPropDef<T> = string & keyof T
+
+type AtomicPropDef<T> = DefinedPropDef<T> | PrimitivePropDef
 
 type ListPropDef<ListItem extends string = string> = `${ListItem}[]`
 
@@ -26,9 +31,6 @@ type OrPropDef<
 type PropDefGroup<Group extends string = string> = `(${Group})`
 
 type OptionalPropDef<OptionalType extends string = string> = `${OptionalType}?`
-
-type ReferencePropDef<ReferencedType extends string = string> =
-    `@${ReferencedType}`
 
 type ValidatedPropDefRecurse<
     Definitions,
@@ -42,16 +44,36 @@ type ValidatedPropDefRecurse<
           Definitions,
           First
       >} | ${ValidatedPropDefRecurse<Definitions, Second>}`
-    : Fragment extends BasePropDef<Definitions>
+    : Fragment extends AtomicPropDef<Definitions>
     ? Fragment
     : `Unable to determine the type of '${Fragment}'.`
 
-export type ValidatedPropDef<
+// type ValidatedReferencePropDefRecurse<
+//     Definitions,
+//     Fragment extends string
+// > = Fragment extends OptionalPropDef<infer OptionalType>
+//     ? OptionalType extends DefinedPropDef<Definitions>
+//         ? Fragment
+//         : `${DefinedPropDef<Definitions>}?`
+//     : Fragment extends ListPropDef<infer ListItem>
+//     ? ListItem extends DefinedPropDef<Definitions>
+//         ? Fragment
+//         : `${DefinedPropDef<Definitions>}[]`
+//     : Fragment extends DefinedPropDef<Definitions>
+//     ? Fragment
+//     : DefinedPropDef<Definitions>
+
+type ValidatedMetaPropDef<
     Definitions,
     PropDef extends string
 > = PropDef extends OptionalPropDef<infer OptionalType>
     ? `${ValidatedPropDefRecurse<Definitions, OptionalType>}?`
     : ValidatedPropDefRecurse<Definitions, PropDef>
+
+export type ValidatedPropDef<
+    Definitions,
+    PropDef extends string
+> = ValidatedMetaPropDef<Definitions, PropDef>
 
 type TypeDefinition<Root, TypeName extends keyof Root> = {
     [PropName in keyof Root[TypeName]]: ValidatedPropDef<
@@ -67,14 +89,26 @@ export type TypeDefinitions<Root> = {
 export type ParsePropType<
     Definitions extends TypeDefinitions<Definitions>,
     PropDefinition extends string
+> = ParseMetaPropType<Definitions, PropDefinition>
+
+type ParseMetaPropType<
+    Definitions extends TypeDefinitions<Definitions>,
+    PropDefinition extends string
+> = PropDefinition extends OptionalPropDef<infer OptionalType>
+    ? ParsePropTypeRecurse<Definitions, OptionalType> | undefined
+    : ParsePropTypeRecurse<Definitions, PropDefinition>
+
+type ParsePropTypeRecurse<
+    Definitions extends TypeDefinitions<Definitions>,
+    PropDefinition extends string
 > = PropDefinition extends PropDefGroup<infer Group>
-    ? ParsePropType<Definitions, Group>
-    : PropDefinition extends OptionalPropDef<infer OptionalType>
-    ? ParsePropType<Definitions, OptionalType> | undefined
+    ? ParsePropTypeRecurse<Definitions, Group>
     : PropDefinition extends ListPropDef<infer ListItem>
-    ? ParsePropType<Definitions, ListItem>[]
+    ? ParsePropTypeRecurse<Definitions, ListItem>[]
     : PropDefinition extends OrPropDef<infer First, infer Second>
-    ? ParsePropType<Definitions, First> | ParsePropType<Definitions, Second>
+    ?
+          | ParsePropTypeRecurse<Definitions, First>
+          | ParsePropTypeRecurse<Definitions, Second>
     : PropDefinition extends keyof Definitions
     ? ParseType<Definitions, PropDefinition>
     : PropDefinition extends keyof PrimitiveTypes
@@ -113,22 +147,7 @@ const getType = <T extends TypeDefinitions<T>, Name extends keyof T>(
 const getTypes = <T extends TypeDefinitions<T>>(t: Narrow<T>) =>
     "" as any as ParseTypes<T>
 
-type TestTypes = {
-    user: {
-        name: "string"
-        bestFriend: "user"
-        friends: "user[]"
-        groups: "group[]"
-    }
-    group: {
-        name: "string"
-        description: "string?"
-        members: "user[]"
-        owner: "user"
-    }
-}
-
-const types: TestTypes = {
+getTypes({
     user: {
         name: "string",
         bestFriend: "user",
@@ -141,7 +160,7 @@ const types: TestTypes = {
         members: "user[]",
         owner: "user"
     }
-}
+}).group.owner
 
 type ModelConfig<
     Types,
@@ -162,15 +181,36 @@ export type ModelDefinitions<
     [K in keyof Root]: ModelConfig<Types, Root[K]["type"]>
 }
 
-const getModelDefs = <Def extends ModelDefinitions<TestTypes, Def>>(
-    def: Narrow<Def>
-) => ({} as any as Def)
+const getModelDefs = <
+    T,
+    Definitions extends TypeDefinitions<T>,
+    Config extends ModelDefinitions<Definitions, Config>
+>(
+    definitions: Narrow<Definitions>,
+    config: Narrow<Config>
+) => ({} as any as Config)
 
-getModelDefs({
-    users: {
-        type: "user",
-        validate: (u) => {
-            return true
+getModelDefs(
+    {
+        user: {
+            name: "string",
+            bestFriend: "user",
+            friends: "user[]",
+            groups: "group[]"
+        },
+        group: {
+            name: "string",
+            description: "string?",
+            members: "user[]",
+            owner: "user"
+        }
+    },
+    {
+        users: {
+            type: "user",
+            validate: (u) => {
+                return true
+            }
         }
     }
-})
+)

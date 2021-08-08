@@ -15,7 +15,7 @@ import {
 import { List, M } from "ts-toolbelt"
 import { Actions, Interactions } from "./common.js"
 import {
-    ParsePropType,
+    ParsePropTypeRecurse,
     TypeDefinitions,
     ValidatedPropDef
 } from "./createTypes.js"
@@ -71,7 +71,7 @@ type ModelRecurse<
 type ModelConfig2<
     Types,
     PropDef extends string,
-    T = ParsePropType<Types, PropDef>
+    T = ParsePropTypeRecurse<Types, PropDef>
 > = {
     type: ValidatedPropDef<Types, PropDef>
     idKey?: string
