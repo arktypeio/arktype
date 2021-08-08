@@ -75,15 +75,15 @@ export type ValidatedPropDef<
     PropDef extends string
 > = ValidatedMetaPropDef<Definitions, PropDef>
 
-type TypeDefinition<Root, TypeName extends keyof Root> = {
-    [PropName in keyof Root[TypeName]]: ValidatedPropDef<
-        Root,
-        Root[TypeName][PropName]
+type TypeDefinition<Definitions, TypeName extends keyof Definitions> = {
+    [PropName in keyof Definitions[TypeName]]: ValidatedPropDef<
+        Definitions,
+        Definitions[TypeName][PropName]
     >
 }
 
-export type TypeDefinitions<Root> = {
-    [TypeName in keyof Root]: TypeDefinition<Root, TypeName>
+export type TypeDefinitions<Definitions> = {
+    [TypeName in keyof Definitions]: TypeDefinition<Definitions, TypeName>
 }
 
 export type ParsePropType<
@@ -139,13 +139,17 @@ export type ParseType<
             : never
     }
 
-const getType = <T extends TypeDefinitions<T>, Name extends keyof T>(
-    t: Narrow<T>,
+const getType = <
+    Definitions extends TypeDefinitions<Definitions>,
+    Name extends keyof Definitions
+>(
+    t: Narrow<Definitions>,
     name: Name
-) => "" as any as ParseType<T, Name>
+) => "" as any as ParseType<Definitions, Name>
 
-const getTypes = <T extends TypeDefinitions<T>>(t: Narrow<T>) =>
-    "" as any as ParseTypes<T>
+const getTypes = <Definitions extends TypeDefinitions<Definitions>>(
+    t: Narrow<Definitions>
+) => "" as any as ParseTypes<Definitions>
 
 getTypes({
     user: {
@@ -163,28 +167,38 @@ getTypes({
 }).group.owner
 
 type ModelConfig<
-    Types,
+    Definitions,
     Type extends string,
-    T = NonCyclic<ParsePropType<Types, Type>>
+    T = NonCyclic<ParsePropType<Definitions, Type>>
 > = {
-    type: ValidatedPropDef<Types, Type>
+    type: ValidatedPropDef<Definitions, Type>
     idKey?: string
     initial?: T
     validate?: (_: T) => boolean
     onChange?: (_: T) => void
 }
 
-export type ModelDefinitions<
-    Types,
-    Root extends Record<string, ModelConfig<Types, any>>
-> = {
-    [K in keyof Root]: ModelConfig<Types, Root[K]["type"]>
+export type ModelConfigs<Definitions, Configs> = {
+    [K in Extract<keyof Configs, string>]: ModelConfig<
+        Definitions,
+        Configs[K]["type"]
+    >
 }
 
+// type TypeDefinition<Root, TypeName extends keyof Root> = {
+//     [PropName in keyof Root[TypeName]]: ValidatedPropDef<
+//         Root,
+//         Root[TypeName][PropName]
+//     >
+// }
+
+// export type TypeDefinitions<Root> = {
+//     [TypeName in keyof Root]: TypeDefinition<Root, TypeName>
+// }
+
 const getModelDefs = <
-    T,
-    Definitions extends TypeDefinitions<T>,
-    Config extends ModelDefinitions<Definitions, Config>
+    Definitions extends TypeDefinitions<Definitions>,
+    Config extends ModelConfigs<Definitions, Config>
 >(
     definitions: Narrow<Definitions>,
     config: Narrow<Config>
