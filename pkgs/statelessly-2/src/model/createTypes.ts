@@ -178,23 +178,12 @@ type ModelConfig<
     onChange?: (_: T) => void
 }
 
-export type ModelConfigs<Definitions, Configs> = {
-    [K in Extract<keyof Configs, string>]: ModelConfig<
-        Definitions,
-        Configs[K]["type"]
-    >
+export type ModelConfigs<
+    Definitions,
+    Configs extends Record<string, ModelConfig<Definitions, any, any>>
+> = {
+    [K in keyof Configs]: ModelConfig<Definitions, Configs[K]["type"]>
 }
-
-// type TypeDefinition<Root, TypeName extends keyof Root> = {
-//     [PropName in keyof Root[TypeName]]: ValidatedPropDef<
-//         Root,
-//         Root[TypeName][PropName]
-//     >
-// }
-
-// export type TypeDefinitions<Root> = {
-//     [TypeName in keyof Root]: TypeDefinition<Root, TypeName>
-// }
 
 const getModelDefs = <
     Definitions extends TypeDefinitions<Definitions>,
@@ -220,11 +209,13 @@ getModelDefs(
         }
     },
     {
-        users: {
-            type: "user",
-            validate: (u) => {
-                return true
-            }
+        users: "user[]",
+        groups: {
+            type: "group[]",
+            fields: {}
+        },
+        preferences: {
+            darkMode: "boolean"
         }
     }
 )
