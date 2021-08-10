@@ -5,6 +5,7 @@ import {
     LimitDepth,
     Narrow,
     NonCyclic,
+    Unlisted,
     WithOptionalValues
 } from "@re-do/utils"
 
@@ -47,21 +48,6 @@ type ValidatedPropDefRecurse<
     : Fragment extends AtomicPropDef<Definitions>
     ? Fragment
     : `Unable to determine the type of '${Fragment}'.`
-
-// type ValidatedReferencePropDefRecurse<
-//     Definitions,
-//     Fragment extends string
-// > = Fragment extends OptionalPropDef<infer OptionalType>
-//     ? OptionalType extends DefinedPropDef<Definitions>
-//         ? Fragment
-//         : `${DefinedPropDef<Definitions>}?`
-//     : Fragment extends ListPropDef<infer ListItem>
-//     ? ListItem extends DefinedPropDef<Definitions>
-//         ? Fragment
-//         : `${DefinedPropDef<Definitions>}[]`
-//     : Fragment extends DefinedPropDef<Definitions>
-//     ? Fragment
-//     : DefinedPropDef<Definitions>
 
 type ValidatedMetaPropDef<
     Definitions,
@@ -166,23 +152,41 @@ getTypes({
     }
 }).group.owner
 
-type ModelConfig<
+type TypeDefWithOptionalConfig<
     Definitions,
-    Type extends string,
-    T = NonCyclic<ParsePropType<Definitions, Type>>
-> = {
-    type: ValidatedPropDef<Definitions, Type>
+    TypeDef extends string,
+    Config extends ModelConfigRecurse<
+        NonCyclic<ParsePropType<Definitions, TypeDef>>
+    >
+> = TypeDef | [TypeDef] | [TypeDef, Config]
+
+type RootModelConfig<
+    Definitions,
+    Configs,
+    ModelPath extends keyof Configs
+> = Configs[ModelPath] extends TypeDefWithOptionalConfig<
+    Definitions,
+    infer TypeDef,
+    infer Config
+>
+    ? TypeDefWithOptionalConfig<Definitions, TypeDef, Config>
+    : never
+
+type ModelConfigRecurse<T> = {
+    isPrimary?: boolean
+    referenceTo?: string
     idKey?: string
     initial?: T
     validate?: (_: T) => boolean
     onChange?: (_: T) => void
 }
 
-export type ModelConfigs<
-    Definitions,
-    Configs extends Record<string, ModelConfig<Definitions, any, any>>
-> = {
-    [K in keyof Configs]: ModelConfig<Definitions, Configs[K]["type"]>
+export type ModelConfigs<Definitions, Configs> = {
+    [ModelPath in keyof Configs]: RootModelConfig<
+        Definitions,
+        Configs,
+        ModelPath
+    >
 }
 
 const getModelDefs = <
@@ -210,12 +214,6 @@ getModelDefs(
     },
     {
         users: "user[]",
-        groups: {
-            type: "group[]",
-            fields: {}
-        },
-        preferences: {
-            darkMode: "boolean"
-        }
+        groups: ["group[]", { idKey: "" }]
     }
 )
