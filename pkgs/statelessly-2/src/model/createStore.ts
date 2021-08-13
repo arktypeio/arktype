@@ -1,18 +1,14 @@
 import {
     NonRecursible,
     Unlisted,
-    Join,
     Segment,
-    PathTo,
     IsList,
     AsListIf,
     Narrow,
     KeyValuate,
-    TypeError,
-    Or,
-    Split
+    NonCyclic,
+    Exact
 } from "@re-do/utils"
-import { List, M } from "ts-toolbelt"
 import { Actions, Interactions } from "./common.js"
 import {
     ParsePropType,
@@ -68,33 +64,6 @@ type ModelRecurse<
           ModelConfig<Current, InList>
       >
 
-type ModelConfig2<
-    Types,
-    PropDef extends string,
-    T = ParsePropType<Types, PropDef>
-> = {
-    type: ValidatedPropDef<Types, PropDef>
-    idKey?: string
-    initial?: T
-    validate?: (_: T) => boolean
-    onChange?: (_: T) => void
-}
-
-const types = {
-    user: {
-        name: "string",
-        friends: "user[]",
-        bestFriend: "user",
-        groups: "group[]"
-    },
-    group: {
-        name: "string",
-        description: "string",
-        members: "user[]",
-        owner: "user"
-    }
-} as const
-
 export type ModelConfig<T, InList extends boolean = false> = InList extends true
     ? ListModelConfigOptions<ModelConfigType<T, InList>>
     : BaseModelConfigOptions<ModelConfigType<T, InList>>
@@ -119,18 +88,79 @@ type ModelConfigType<T, InList extends boolean> = AsListIf<
 >
 
 export const createStore = <
-    Input extends object,
-    M extends Model<Input, T>,
-    T extends TypeDefinitions<T> = {},
-    A extends Actions<Input> = {}
+    Configs extends ModelConfigs<Definitions, Configs>,
+    Definitions extends TypeDefinitions<Definitions> = {},
+    A extends Actions<any> = {}
 >(
-    initial: Input,
-    model?: Narrow<M>,
-    types?: Narrow<T>,
+    types?: Narrow<Definitions>,
+    model?: Narrow<Configs>,
     actions?: A
 ) => {
     return model as any as Store<Input, M, T, A>
 }
+
+type ModelConfigRecurse<T> = {
+    isPrimary?: boolean
+    referenceTo?: string
+    idKey?: string
+    initial?: T
+    validate?: (_: T) => boolean
+    onChange?: (_: T) => void
+}
+
+type TypeDefOnly<TypeDef extends string> = TypeDef | [TypeDef]
+
+type TypeDefWithConfig<TypeDef extends string, Config> = [TypeDef, Config]
+
+export type ModelConfigs<Definitions, Configs> = {
+    [ModelPath in keyof Configs]: Configs[ModelPath] extends TypeDefOnly<
+        infer TypeDef
+    >
+        ? ValidatedPropDef<Definitions, TypeDef>
+        : Configs[ModelPath] extends TypeDefWithConfig<
+              infer TypeDef,
+              infer Config
+          >
+        ? [
+              ValidatedPropDef<Definitions, TypeDef>,
+              Exact<
+                  Config,
+                  ModelConfigRecurse<
+                      NonCyclic<ParsePropType<Definitions, TypeDef>>
+                  >
+              >
+          ]
+        : never
+}
+
+const getModelDefs = <
+    Definitions extends TypeDefinitions<Definitions>,
+    Config extends ModelConfigs<Definitions, Config>
+>(
+    definitions: Narrow<Definitions>,
+    config: Narrow<Config>
+) => ({} as any as Config)
+
+getModelDefs(
+    {
+        user: {
+            name: "string",
+            bestFriend: "user",
+            friends: "user[]",
+            groups: "group[]"
+        },
+        group: {
+            name: "string",
+            description: "string?",
+            members: "user[]",
+            owner: "user"
+        }
+    },
+    {
+        users: "user[]",
+        groups: ["group[]", { idKey: "" }]
+    }
+)
 
 const store = createStore(
     {} as any as Test,
