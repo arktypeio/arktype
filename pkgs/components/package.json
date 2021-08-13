@@ -22,9 +22,9 @@
         "test": "jest"
     },
     "dependencies": {
-        "@material-ui/core": "5.0.0-beta.2",
+        "@material-ui/core": "5.0.0-beta.3",
         "@material-ui/icons": "5.0.0-beta.1",
-        "@material-ui/styles": "5.0.0-beta.2",
+        "@material-ui/styles": "5.0.0-beta.3",
         "@re-do/utils": "workspace:*",
         "framer-motion": "4.1.11",
         "react": "17.0.2",

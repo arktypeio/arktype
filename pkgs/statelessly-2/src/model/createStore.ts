@@ -15,7 +15,7 @@ import {
 import { List, M } from "ts-toolbelt"
 import { Actions, Interactions } from "./common.js"
 import {
-    ParsePropTypeRecurse,
+    ParsePropType,
     TypeDefinitions,
     ValidatedPropDef
 } from "./createTypes.js"
@@ -71,7 +71,7 @@ type ModelRecurse<
 type ModelConfig2<
     Types,
     PropDef extends string,
-    T = ParsePropTypeRecurse<Types, PropDef>
+    T = ParsePropType<Types, PropDef>
 > = {
     type: ValidatedPropDef<Types, PropDef>
     idKey?: string
@@ -79,25 +79,6 @@ type ModelConfig2<
     validate?: (_: T) => boolean
     onChange?: (_: T) => void
 }
-
-type Model2<
-    Model extends Record<string, ModelConfig2<Types, string>>,
-    Types
-> = {
-    [K in keyof Model]: ModelConfig2<Types, Narrow<Model[K]["type"]> & string>
-}
-
-const buildModel = <
-    M extends Record<string, ModelConfig2<typeof types, string>>
->(
-    m: Narrow<M>
-) => {}
-
-buildModel({
-    users: {
-        type: "user[]"
-    }
-})
 
 const types = {
     user: {
@@ -113,11 +94,6 @@ const types = {
         owner: "user"
     }
 } as const
-
-const x: ModelConfig2<typeof types, "user[]"> = {
-    initial: [],
-    type: "user[]"
-}
 
 export type ModelConfig<T, InList extends boolean = false> = InList extends true
     ? ListModelConfigOptions<ModelConfigType<T, InList>>

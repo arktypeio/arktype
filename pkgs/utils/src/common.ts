@@ -1,7 +1,12 @@
 import moize from "moize"
 import isDeepEqual from "fast-deep-equal"
 import deepMerge from "deepmerge"
-import { Number, Object as TSO } from "ts-toolbelt"
+import {
+    Number as NumberToolbelt,
+    Object as ObjectToolbelt,
+    Function as FunctionToolbelt,
+    A
+} from "ts-toolbelt"
 
 export const merge = deepMerge
 export const memoize = moize as <F extends Function>(f: F) => F
@@ -31,7 +36,12 @@ export const until = async (
     return
 }
 
-export type Merge<A extends object, B extends object> = TSO.Merge<B, A>
+export type Merge<A extends object, B extends object> = ObjectToolbelt.Merge<
+    B,
+    A
+>
+
+export type Exact<A, B> = FunctionToolbelt.Exact<A, B>
 
 export type MapReturn<F, V> = F extends (value: V) => infer R ? R : any
 
@@ -337,7 +347,7 @@ export type NonCyclic<O, OnCycle = any, Seen = never> = O extends Seen
               : NonCyclic<O[K], OnCycle, Seen | O>
       }
 
-export type MinusOne<N extends number> = Number.Sub<N, 1>
+export type MinusOne<N extends number> = NumberToolbelt.Sub<N, 1>
 
 export type And<A extends boolean, B extends boolean> = {
     true: {

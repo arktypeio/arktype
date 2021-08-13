@@ -19,8 +19,8 @@
     },
     "dependencies": {
         "@apollo/client": "3.4.5",
-        "@material-ui/core": "5.0.0-beta.2",
-        "@material-ui/styles": "5.0.0-beta.2",
+        "@material-ui/core": "5.0.0-beta.3",
+        "@material-ui/styles": "5.0.0-beta.3",
         "@mdx-js/react": "1.6.22",
         "@re-do/components": "workspace:*",
         "@re-do/model": "workspace:*",

@@ -1,12 +1,9 @@
 import {
     ExcludeByValue,
     FilterByValue,
-    KeyValuate,
-    LimitDepth,
     Narrow,
     NonCyclic,
-    Unlisted,
-    WithOptionalValues
+    Exact
 } from "@re-do/utils"
 
 type PrimitiveTypes = {
@@ -152,26 +149,6 @@ getTypes({
     }
 }).group.owner
 
-type TypeDefWithOptionalConfig<
-    Definitions,
-    TypeDef extends string,
-    Config extends ModelConfigRecurse<
-        NonCyclic<ParsePropType<Definitions, TypeDef>>
-    >
-> = TypeDef | [TypeDef] | [TypeDef, Config]
-
-type RootModelConfig<
-    Definitions,
-    Configs,
-    ModelPath extends keyof Configs
-> = Configs[ModelPath] extends TypeDefWithOptionalConfig<
-    Definitions,
-    infer TypeDef,
-    infer Config
->
-    ? TypeDefWithOptionalConfig<Definitions, TypeDef, Config>
-    : never
-
 type ModelConfigRecurse<T> = {
     isPrimary?: boolean
     referenceTo?: string
@@ -181,12 +158,33 @@ type ModelConfigRecurse<T> = {
     onChange?: (_: T) => void
 }
 
+type TypeDefOnly<TypeDef extends string> = TypeDef | [TypeDef]
+
+type TypeDefWithConfig<TypeDef extends string, Config> = [TypeDef, Config]
+
 export type ModelConfigs<Definitions, Configs> = {
-    [ModelPath in keyof Configs]: RootModelConfig<
-        Definitions,
-        Configs,
-        ModelPath
+    [ModelPath in keyof Configs]: Configs[ModelPath] extends TypeDefOnly<
+        infer TypeDef
     >
+        ? ValidatedPropDef<Definitions, TypeDef>
+        : Configs[ModelPath] extends TypeDefWithConfig<
+              infer TypeDef,
+              infer Config
+          >
+        ? [
+              ValidatedPropDef<Definitions, TypeDef>,
+              Exact<
+                  Config,
+                  ModelConfigRecurse<
+                      NonCyclic<ParsePropType<Definitions, TypeDef>>
+                  >
+              >
+          ]
+        : never
+}
+
+export type TypeDefinitions2<Definitions> = {
+    [TypeName in keyof Definitions]: TypeDefinition<Definitions, TypeName>
 }
 
 const getModelDefs = <
