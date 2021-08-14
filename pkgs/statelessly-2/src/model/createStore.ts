@@ -112,28 +112,23 @@ type ModelConfigRecurse<T> = {
     onChange?: (_: T) => void
 }
 
-type TypeDefOnly<TypeDef extends string> = TypeDef | [TypeDef]
+type TypeDefOnly<TypeDef extends string> = TypeDef
 
-type TypeDefWithConfig<TypeDef extends string, Config> = [TypeDef, Config]
+type TypedConfig<TypeDef extends string> = {
+    type: TypeDef
+}
+
+type RootModelConfig<Definitions, TypeDef extends string> = {
+    type: ValidatedPropDef<Definitions, TypeDef>
+} & ModelConfigRecurse<ExcludeCyclic<ParsePropType<Definitions, TypeDef>>>
 
 export type ModelConfigs<Definitions, Configs> = {
     [ModelPath in keyof Configs]: Configs[ModelPath] extends TypeDefOnly<
         infer TypeDef
     >
         ? ValidatedPropDef<Definitions, TypeDef>
-        : Configs[ModelPath] extends TypeDefWithConfig<
-              infer TypeDef,
-              infer Config
-          >
-        ? [
-              ValidatedPropDef<Definitions, TypeDef>,
-              Exact<
-                  Config,
-                  ModelConfigRecurse<
-                      ExcludeCyclic<ParsePropType<Definitions, TypeDef>>
-                  >
-              >
-          ]
+        : Configs[ModelPath] extends TypedConfig<infer TypeDef>
+        ? Exact<Configs[ModelPath], RootModelConfig<Definitions, TypeDef>>
         : never
 }
 
@@ -162,7 +157,12 @@ getModelDefs(
     },
     {
         users: "user[]",
-        groups: ["group[]", { idKey: "" }]
+        groups: {
+            type: "group[]",
+            idKey: "",
+            onChange: (groups) =>
+                console.log(groups.map((_) => _.name).join(","))
+        }
     }
 )
 
@@ -170,36 +170,30 @@ const store = createStore(
     {
         snoozers: "user[]",
         currentUser: "user",
-        users: [
-            "user[]",
-            {
-                fields: {
-                    groups: { onChange: (_) => {} }
+        users: {
+            type: "user[]",
+            fields: {
+                groups: { onChange: (_) => {} }
+            }
+        },
+        groups: {
+            type: "group[]",
+            fields: {
+                name: {
+                    onChange: (_) => console.log(_)
                 }
             }
-        ],
-        groups: [
-            "group[]",
-            {
-                fields: {
-                    name: {
-                        onChange: (_) => console.log(_)
-                    }
+        },
+        preferences: {
+            type: "preferences",
+            fields: {
+                nicknames: {},
+                darkMode: {
+                    validate: (_) => true,
+                    onChange: (_) => console.log(_)
                 }
             }
-        ],
-        preferences: [
-            "preferences",
-            {
-                fields: {
-                    nicknames: {},
-                    darkMode: {
-                        validate: (_) => true,
-                        onChange: (_) => console.log(_)
-                    }
-                }
-            }
-        ]
+        }
     },
     {
         user: {
