@@ -92,11 +92,11 @@ export const createStore = <
     Definitions extends TypeDefinitions<Definitions> = {},
     A extends Actions<any> = {}
 >(
+    model: Narrow<Configs>,
     types?: Narrow<Definitions>,
-    model?: Narrow<Configs>,
     actions?: A
 ) => {
-    return model as any as Store<Input, M, T, A>
+    return model as any
 }
 
 type ModelConfigRecurse<T> = {
@@ -163,7 +163,6 @@ getModelDefs(
 )
 
 const store = createStore(
-    {} as any as Test,
     [
         {
             snoozers: "user",
