@@ -7,6 +7,7 @@ import {
     Narrow,
     KeyValuate,
     NonCyclic,
+    ExcludeCyclic,
     Exact
 } from "@re-do/utils"
 import { Actions, Interactions } from "./common.js"
@@ -100,6 +101,9 @@ export const createStore = <
 }
 
 type ModelConfigRecurse<T> = {
+    fields?: T extends NonRecursible
+        ? never
+        : { [K in keyof Unlisted<T>]?: ModelConfigRecurse<Unlisted<T>[K]> }
     isPrimary?: boolean
     referenceTo?: string
     idKey?: string
@@ -126,7 +130,7 @@ export type ModelConfigs<Definitions, Configs> = {
               Exact<
                   Config,
                   ModelConfigRecurse<
-                      NonCyclic<ParsePropType<Definitions, TypeDef>>
+                      ExcludeCyclic<ParsePropType<Definitions, TypeDef>>
                   >
               >
           ]
@@ -163,38 +167,40 @@ getModelDefs(
 )
 
 const store = createStore(
-    [
-        {
-            snoozers: "user",
-            currentUser: "user",
-            users: {
-                groups: ["group", { onChange: (_) => {} }],
-                friends: "user"
-            },
-            groups: [
-                {
-                    name: {
-                        onChange: (_) => console.log(_)
-                    },
-                    description: {},
-                    members: "user",
-                    owner: "user"
-                },
-                { idKey: "croop" }
-            ],
-            preferences: {
-                nicknames: {},
-                darkMode: {
-                    validate: (_) => true,
-                    onChange: (_) => console.log(_)
+    {
+        snoozers: "user[]",
+        currentUser: "user",
+        users: [
+            "user[]",
+            {
+                fields: {
+                    groups: { onChange: (_) => {} }
                 }
             }
-        },
-        {
-            idKey: "foop",
-            validate: (_) => true
-        }
-    ],
+        ],
+        groups: [
+            "group[]",
+            {
+                fields: {
+                    name: {
+                        onChange: (_) => console.log(_)
+                    }
+                }
+            }
+        ],
+        preferences: [
+            "preferences",
+            {
+                fields: {
+                    nicknames: {},
+                    darkMode: {
+                        validate: (_) => true,
+                        onChange: (_) => console.log(_)
+                    }
+                }
+            }
+        ]
+    },
     {
         user: {
             name: "string",
@@ -207,6 +213,10 @@ const store = createStore(
             description: "string",
             members: "user[]",
             owner: "user"
+        },
+        preferences: {
+            nicknames: "string[]",
+            darkMode: "boolean"
         }
     }
 )

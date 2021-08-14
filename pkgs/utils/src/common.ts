@@ -5,7 +5,8 @@ import {
     Number as NumberToolbelt,
     Object as ObjectToolbelt,
     Function as FunctionToolbelt,
-    A
+    A,
+    O
 } from "ts-toolbelt"
 
 export const merge = deepMerge
@@ -346,6 +347,8 @@ export type NonCyclic<O, OnCycle = any, Seen = never> = O extends Seen
               ? O[K]
               : NonCyclic<O[K], OnCycle, Seen | O>
       }
+
+export type ExcludeCyclic<O> = NonCyclic<O, never>
 
 export type MinusOne<N extends number> = NumberToolbelt.Sub<N, 1>
 
