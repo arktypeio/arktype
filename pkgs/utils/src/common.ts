@@ -340,15 +340,26 @@ export type AsListIfList<AsList, IfList> = IfList extends any[]
         : AsList[]
     : AsList
 
-export type NonCyclic<O, OnCycle = any, Seen = never> = O extends Seen
-    ? OnCycle
+export type TransformCyclic<
+    O,
+    ValueOnCycle = any,
+    Seen = never
+> = O extends Seen
+    ? ValueOnCycle
     : {
           [K in keyof O]: O[K] extends NonRecursible
               ? O[K]
-              : NonCyclic<O[K], OnCycle, Seen | O>
+              : TransformCyclic<O[K], ValueOnCycle, Seen | O>
       }
 
-export type ExcludeCyclic<O> = NonCyclic<O, never>
+export type ExcludeCyclic<
+    O extends object,
+    Seen = Unlisted<O> | Unlisted<O>[]
+> = {
+    [K in keyof ExcludeByValue<O, Seen>]: O[K] extends NonRecursible
+        ? O[K]
+        : ExcludeCyclic<O[K], Seen | Unlisted<O[K]> | Unlisted<O[K]>[]>
+}
 
 export type MinusOne<N extends number> = NumberToolbelt.Sub<N, 1>
 

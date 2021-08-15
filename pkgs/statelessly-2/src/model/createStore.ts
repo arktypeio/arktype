@@ -6,9 +6,10 @@ import {
     AsListIf,
     Narrow,
     KeyValuate,
-    NonCyclic,
     ExcludeCyclic,
-    Exact
+    Exact,
+    TransformCyclic,
+    TypeError
 } from "@re-do/utils"
 import { Actions, Interactions } from "./common.js"
 import {
@@ -17,76 +18,92 @@ import {
     ValidatedPropDef
 } from "./createTypes.js"
 
-export type Model<Input, Types> = ModelRecurse<
-    Input,
-    [],
-    never,
-    Input,
-    Types,
-    IsList<Input>
->
+// export type Model<Input, Types> = ModelRecurse<
+//     Input,
+//     [],
+//     never,
+//     Input,
+//     Types,
+//     IsList<Input>
+// >
 
-type WithOptionalTuple<T, Optional> = T | [T] | [T, Optional]
+// type WithOptionalTuple<T, Optional> = T | [T] | [T, Optional]
 
-type ModeledProperties<
-    Current,
-    CurrentPath extends Segment[],
-    Seen,
-    Root,
-    Types
-> = {
-    [K in Extract<keyof Current, Segment>]?: ModelRecurse<
-        Unlisted<Current[K]>,
-        [...CurrentPath, K],
-        Seen | Current,
-        Root,
-        Types,
-        IsList<Current[K]>
-    >
-}
+// type ModeledProperties<
+//     Current,
+//     CurrentPath extends Segment[],
+//     Seen,
+//     Root,
+//     Types
+// > = {
+//     [K in Extract<keyof Current, Segment>]?: ModelRecurse<
+//         Unlisted<Current[K]>,
+//         [...CurrentPath, K],
+//         Seen | Current,
+//         Root,
+//         Types,
+//         IsList<Current[K]>
+//     >
+// }
 
-type ModelValue<Current, CurrentPath extends Segment[], Seen, Root, Types> =
-    | keyof Types
-    | (Current extends Seen
-          ? never
-          : ModeledProperties<Current, CurrentPath, Seen, Root, Types>)
+// type ModelValue<Current, CurrentPath extends Segment[], Seen, Root, Types> =
+//     | keyof Types
+//     | (Current extends Seen
+//           ? never
+//           : ModeledProperties<Current, CurrentPath, Seen, Root, Types>)
 
-type ModelRecurse<
-    Current,
-    CurrentPath extends Segment[],
-    Seen,
-    Root,
-    Types,
-    InList extends boolean
-> = Current extends NonRecursible
-    ? ModelConfig<Current, InList>
-    : WithOptionalTuple<
-          ModelValue<Current, CurrentPath, Seen, Root, Types>,
-          ModelConfig<Current, InList>
-      >
+// type ModelRecurse<
+//     Current,
+//     CurrentPath extends Segment[],
+//     Seen,
+//     Root,
+//     Types,
+//     InList extends boolean
+// > = Current extends NonRecursible
+//     ? ModelConfig<Current, InList>
+//     : WithOptionalTuple<
+//           ModelValue<Current, CurrentPath, Seen, Root, Types>,
+//           ModelConfig<Current, InList>
+//       >
 
-export type ModelConfig<T, InList extends boolean = false> = InList extends true
-    ? ListModelConfigOptions<ModelConfigType<T, InList>>
-    : BaseModelConfigOptions<ModelConfigType<T, InList>>
+type ModelConfig<T> = ModelConfigRecurse<T>
+
+type ModelConfigRecurse<T> = BaseModelConfigOptions<T> &
+    (Unlisted<T> extends NonRecursible
+        ? {}
+        : RecursibleModelConfigOptions<T> &
+              (T extends any[] ? RecursibleListModelConfigOptions<T> : {}))
 
 type BaseModelConfigOptions<T> = {
-    idKey?: string
+    initial?: T
     validate?: (_: T) => boolean
-    onChange?: (_: T) => void
+    onChange?: (updates: T, original: T) => void
 }
 
-type ListModelConfigOptions<T> = BaseModelConfigOptions<T> & {
-    defines?: string
+type RecursibleModelConfigOptions<T> = {
+    fields?: {
+        [K in keyof Unlisted<T>]?: ModelConfigRecurse<Unlisted<T>[K]>
+    }
+    idKey?: string
+    references?: string
 }
 
-/**
- * TS sometimes fails to identify true | false as boolean without this.
- * Unfortunately, this means we will mistake an explicitly typed true/false for a boolean,
- * but the use case of those types in a state seems very niche.**/
-type ModelConfigType<T, InList extends boolean> = AsListIf<
-    T extends boolean ? boolean : T,
-    InList
->
+type RecursibleListModelConfigOptions<T> = {
+    resolves?: string
+}
+
+type RootModelConfig<Definitions, TypeDef extends string> = {
+    type: ValidatedPropDef<Definitions, TypeDef>
+} & ModelConfig<TransformCyclic<ParsePropType<Definitions, TypeDef>, number>>
+
+// /**
+//  * TS sometimes fails to identify true | false as boolean without this.
+//  * Unfortunately, this means we will mistake an explicitly typed true/false for a boolean,
+//  * but the use case of those types in a state seems very niche.**/
+// type ModelConfigType<T, InList extends boolean> = AsListIf<
+//     T extends boolean ? boolean : T,
+//     InList
+// >
 
 export const createStore = <
     Configs extends ModelConfigs<Definitions, Configs>,
@@ -100,27 +117,11 @@ export const createStore = <
     return model as any
 }
 
-type ModelConfigRecurse<T> = {
-    fields?: T extends NonRecursible
-        ? never
-        : { [K in keyof Unlisted<T>]?: ModelConfigRecurse<Unlisted<T>[K]> }
-    isPrimary?: boolean
-    referenceTo?: string
-    idKey?: string
-    initial?: T
-    validate?: (_: T) => boolean
-    onChange?: (_: T) => void
-}
-
 type TypeDefOnly<TypeDef extends string> = TypeDef
 
 type TypedConfig<TypeDef extends string> = {
     type: TypeDef
 }
-
-type RootModelConfig<Definitions, TypeDef extends string> = {
-    type: ValidatedPropDef<Definitions, TypeDef>
-} & ModelConfigRecurse<ExcludeCyclic<ParsePropType<Definitions, TypeDef>>>
 
 export type ModelConfigs<Definitions, Configs> = {
     [ModelPath in keyof Configs]: Configs[ModelPath] extends TypeDefOnly<
@@ -129,7 +130,7 @@ export type ModelConfigs<Definitions, Configs> = {
         ? ValidatedPropDef<Definitions, TypeDef>
         : Configs[ModelPath] extends TypedConfig<infer TypeDef>
         ? Exact<Configs[ModelPath], RootModelConfig<Definitions, TypeDef>>
-        : never
+        : TypeError<`Model configs must either be a type string (e.g. 'string[]' or 'user?') or a config object with such a value as its 'type' property.`>
 }
 
 const getModelDefs = <
@@ -160,6 +161,17 @@ getModelDefs(
         groups: {
             type: "group[]",
             idKey: "",
+            fields: {
+                name: {
+                    onChange: (_) => console.log(_)
+                },
+                members: {
+                    onChange: (updated, original) => {},
+                    fields: {
+                        groups: {}
+                    }
+                }
+            },
             onChange: (groups) =>
                 console.log(groups.map((_) => _.name).join(","))
         }
@@ -217,61 +229,61 @@ const store = createStore(
 
 store.currentUser.bestFriend
 
-export type Store<
-    Input extends object,
-    M extends Model<Input, T>,
-    T extends TypeDefinitions<T>,
-    A extends Actions<Input>
-> = StoreRecurse<Input, M, IsList<Input>, "id">
+// export type Store<
+//     Input extends object,
+//     M extends Model<Input, T>,
+//     T extends TypeDefinitions<T>,
+//     A extends Actions<Input>
+// > = StoreRecurse<Input, M, IsList<Input>, "id">
 
-type StoreRecurse<
-    Input,
-    Model,
-    InList extends boolean,
-    IdKey extends string
-> = Input extends NonRecursible
-    ? Model extends ModelConfig<any>
-        ? Input
-        : Input
-    : Input extends any[]
-    ? StoreRecurse<Unlisted<Input>, Model, true, IdKey>
-    : {
-          [K in keyof Input]: Model extends WithOptionalTuple<
-              infer ModelProps,
-              infer ModelConfig
-          >
-              ? K extends keyof ModelProps
-                  ? ModelProps[K] extends string
-                      ? Input[K] extends any[]
-                          ? Interactions<
-                                Extract<Unlisted<Input[K]>, object>,
-                                Extract<
-                                    KeyValuate<ModelConfig, "idKey", IdKey>,
-                                    string
-                                >
-                            >
-                          : Operations<Input[K]>
-                      : Input[K] extends any[]
-                      ? Interactions<
-                            Extract<Unlisted<Input[K]>, object>,
-                            Extract<
-                                KeyValuate<ModelConfig, "idKey", IdKey>,
-                                string
-                            >
-                        >
-                      : StoreRecurse<
-                            Input[K],
-                            ModelProps[K],
-                            false,
-                            Extract<
-                                KeyValuate<ModelConfig, "idKey", IdKey>,
-                                string
-                            >
-                        >
-                  : // No config provided
-                    Operations<Input[K]>
-              : Operations<Input[K]>
-      }
+// type StoreRecurse<
+//     Input,
+//     Model,
+//     InList extends boolean,
+//     IdKey extends string
+// > = Input extends NonRecursible
+//     ? Model extends ModelConfig<any>
+//         ? Input
+//         : Input
+//     : Input extends any[]
+//     ? StoreRecurse<Unlisted<Input>, Model, true, IdKey>
+//     : {
+//           [K in keyof Input]: Model extends WithOptionalTuple<
+//               infer ModelProps,
+//               infer ModelConfig
+//           >
+//               ? K extends keyof ModelProps
+//                   ? ModelProps[K] extends string
+//                       ? Input[K] extends any[]
+//                           ? Interactions<
+//                                 Extract<Unlisted<Input[K]>, object>,
+//                                 Extract<
+//                                     KeyValuate<ModelConfig, "idKey", IdKey>,
+//                                     string
+//                                 >
+//                             >
+//                           : Operations<Input[K]>
+//                       : Input[K] extends any[]
+//                       ? Interactions<
+//                             Extract<Unlisted<Input[K]>, object>,
+//                             Extract<
+//                                 KeyValuate<ModelConfig, "idKey", IdKey>,
+//                                 string
+//                             >
+//                         >
+//                       : StoreRecurse<
+//                             Input[K],
+//                             ModelProps[K],
+//                             false,
+//                             Extract<
+//                                 KeyValuate<ModelConfig, "idKey", IdKey>,
+//                                 string
+//                             >
+//                         >
+//                   : // No config provided
+//                     Operations<Input[K]>
+//               : Operations<Input[K]>
+//       }
 
 type Operations<T> = T & {
     get: () => T

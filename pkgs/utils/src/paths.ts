@@ -4,7 +4,7 @@ import {
     isRecursible,
     ItemOrList,
     MinusOne,
-    NonCyclic,
+    TransformCyclic,
     NonRecursible,
     withDefaults,
     And,
@@ -245,7 +245,7 @@ export type CyclicPathList<
         PathConstraintOptions,
         "filter" | "treatAsLeaf"
     > = {}
-> = PathListTo<NonCyclic<T, "__cycle__">, "__cycle__", Constraints>
+> = PathListTo<TransformCyclic<T, "__cycle__">, "__cycle__", Constraints>
 
 export type CyclicPath<
     T,
@@ -253,7 +253,7 @@ export type CyclicPath<
         StringPathConstraintOptions,
         "filter" | "treatAsLeaf"
     > = {}
-> = PathTo<NonCyclic<T, "__cycle__">, "__cycle__", Constraints>
+> = PathTo<TransformCyclic<T, "__cycle__">, "__cycle__", Constraints>
 
 type User = {
     name: string
