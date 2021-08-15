@@ -130,7 +130,11 @@ export type ModelConfigs<Definitions, Configs> = {
         ? ValidatedPropDef<Definitions, TypeDef>
         : Configs[ModelPath] extends TypedConfig<infer TypeDef>
         ? Exact<Configs[ModelPath], RootModelConfig<Definitions, TypeDef>>
-        : TypeError<`Model configs must either be a type string (e.g. 'string[]' or 'user?') or a config object with such a value as its 'type' property.`>
+        : TypeError<{
+              message: `Model configs must either be a type string (e.g. 'string[]' or 'user?') or a config object with such a value as its 'type' property.`
+              key: ModelPath
+              value: Configs[ModelPath]
+          }>
 }
 
 const getModelDefs = <
