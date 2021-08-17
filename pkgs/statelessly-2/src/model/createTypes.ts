@@ -1,10 +1,4 @@
-import {
-    ExcludeByValue,
-    FilterByValue,
-    Narrow,
-    NonCyclic,
-    Exact
-} from "@re-do/utils"
+import { ExcludeByValue, FilterByValue, Narrow, Exact } from "@re-do/utils"
 
 type PrimitiveTypes = {
     string: string

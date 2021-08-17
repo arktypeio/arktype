@@ -66,30 +66,27 @@ import {
 //           ModelConfig<Current, InList>
 //       >
 
-type ModelConfig<T> = ModelConfigRecurse<T>
+type ModelConfig<T> = ModelConfigRecurse<T, false>
 
-type ModelConfigRecurse<T> = BaseModelConfigOptions<T> &
+type ModelConfigRecurse<T, InList extends boolean> = BaseModelConfigOptions<T> &
     (Unlisted<T> extends NonRecursible
         ? {}
-        : RecursibleModelConfigOptions<T> &
-              (T extends any[] ? RecursibleListModelConfigOptions<T> : {}))
+        : RecursibleModelConfigOptions<T, InList>) &
+    (InList extends false ? { idKey?: string } : {})
 
 type BaseModelConfigOptions<T> = {
-    initial?: T
     validate?: (_: T) => boolean
     onChange?: (updates: T, original: T) => void
 }
 
-type RecursibleModelConfigOptions<T> = {
+type RecursibleModelConfigOptions<T, InList extends boolean> = {
     fields?: {
-        [K in keyof Unlisted<T>]?: ModelConfigRecurse<Unlisted<T>[K]>
+        [K in keyof Unlisted<T>]?: ModelConfigRecurse<
+            Unlisted<T>[K],
+            T extends any[] ? true : false | InList
+        >
     }
-    idKey?: string
     references?: string
-}
-
-type RecursibleListModelConfigOptions<T> = {
-    resolves?: string
 }
 
 type RootModelConfig<Definitions, TypeDef extends string> = {
