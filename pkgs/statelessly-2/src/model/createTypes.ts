@@ -7,11 +7,9 @@ type PrimitiveTypes = {
     null: null
 }
 
-type PrimitivePropDef = string & keyof PrimitiveTypes
+type PrimitivePropDef = keyof PrimitiveTypes
 
-type DefinedPropDef<T> = string & keyof T
-
-type AtomicPropDef<T> = DefinedPropDef<T> | PrimitivePropDef
+type AtomicPropDef<DefinedType extends string> = DefinedType | PrimitivePropDef
 
 type ListPropDef<ListItem extends string = string> = `${ListItem}[]`
 
@@ -25,48 +23,58 @@ type PropDefGroup<Group extends string = string> = `(${Group})`
 type OptionalPropDef<OptionalType extends string = string> = `${OptionalType}?`
 
 type ValidatedPropDefRecurse<
-    Definitions,
+    DefinedType extends string,
     Fragment extends string
 > = Fragment extends PropDefGroup<infer Group>
-    ? `(${ValidatedPropDefRecurse<Definitions, Group>})`
+    ? `(${ValidatedPropDefRecurse<DefinedType, Group>})`
     : Fragment extends ListPropDef<infer ListItem>
-    ? `${ValidatedPropDefRecurse<Definitions, ListItem>}[]`
+    ? `${ValidatedPropDefRecurse<DefinedType, ListItem>}[]`
     : Fragment extends OrPropDef<infer First, infer Second>
     ? `${ValidatedPropDefRecurse<
-          Definitions,
+          DefinedType,
           First
-      >} | ${ValidatedPropDefRecurse<Definitions, Second>}`
-    : Fragment extends AtomicPropDef<Definitions>
+      >} | ${ValidatedPropDefRecurse<DefinedType, Second>}`
+    : Fragment extends AtomicPropDef<DefinedType>
     ? Fragment
     : `Unable to determine the type of '${Fragment}'.`
 
 type ValidatedMetaPropDef<
-    Definitions,
+    DefinedType extends string,
     PropDef extends string
 > = PropDef extends OptionalPropDef<infer OptionalType>
-    ? `${ValidatedPropDefRecurse<Definitions, OptionalType>}?`
-    : ValidatedPropDefRecurse<Definitions, PropDef>
+    ? `${ValidatedPropDefRecurse<DefinedType, OptionalType>}?`
+    : ValidatedPropDefRecurse<DefinedType, PropDef>
 
 export type ValidatedPropDef<
-    Definitions,
+    DefinedType extends string,
     PropDef extends string
-> = ValidatedMetaPropDef<Definitions, PropDef>
+> = ValidatedMetaPropDef<DefinedType, PropDef>
 
-type TypeDefinition<Definitions, TypeName extends keyof Definitions> = {
-    [PropName in keyof Definitions[TypeName]]: ValidatedPropDef<
-        Definitions,
-        Definitions[TypeName][PropName]
-    >
+type TypeDefinition<Root, Fields, TypeName extends keyof Fields> = {
+    [PropName in keyof Fields[TypeName]]:
+        | TypeDefinition<Root, Fields[TypeName], PropName>
+        | ValidatedPropDef<keyof Root & string, Fields[TypeName][PropName]>
 }
 
 export type TypeDefinitions<Definitions> = {
-    [TypeName in keyof Definitions]: TypeDefinition<Definitions, TypeName>
+    [TypeName in keyof Definitions]: TypeDefinition<
+        Definitions,
+        Definitions,
+        TypeName
+    >
 }
 
 export type ParsePropType<
     Definitions extends TypeDefinitions<Definitions>,
-    PropDefinition extends string
-> = ParseMetaPropType<Definitions, PropDefinition>
+    PropDefinition extends string | object
+> = PropDefinition extends string
+    ? ParseMetaPropType<Definitions, PropDefinition & string>
+    : {
+          [KeyName in keyof PropDefinition]: ParsePropType<
+              Definitions,
+              PropDefinition[KeyName] & (string | object)
+          >
+      }
 
 type ParseMetaPropType<
     Definitions extends TypeDefinitions<Definitions>,
@@ -133,7 +141,12 @@ getTypes({
         name: "string",
         bestFriend: "user",
         friends: "user[]",
-        groups: "group[]"
+        groups: "group[]",
+        nested: {
+            another: "string",
+            user: "user[]",
+            foop: 5
+        }
     },
     group: {
         name: "string",
@@ -141,4 +154,4 @@ getTypes({
         members: "user[]",
         owner: "user"
     }
-}).group.owner
+}).group.owner.nested.user
