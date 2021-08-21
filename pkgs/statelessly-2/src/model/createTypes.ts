@@ -1,4 +1,11 @@
-import { ExcludeByValue, FilterByValue, Narrow, Exact } from "@re-do/utils"
+import {
+    ExcludeByValue,
+    FilterByValue,
+    Narrow,
+    Exact,
+    TypeError,
+    NonRecursible
+} from "@re-do/utils"
 
 type PrimitiveTypes = {
     string: string
@@ -9,7 +16,9 @@ type PrimitiveTypes = {
 
 type PrimitivePropDef = keyof PrimitiveTypes
 
-type AtomicPropDef<DefinedType extends string> = DefinedType | PrimitivePropDef
+type AtomicPropDef<DefinedTypeName extends string> =
+    | DefinedTypeName
+    | PrimitivePropDef
 
 type ListPropDef<ListItem extends string = string> = `${ListItem}[]`
 
@@ -23,116 +32,122 @@ type PropDefGroup<Group extends string = string> = `(${Group})`
 type OptionalPropDef<OptionalType extends string = string> = `${OptionalType}?`
 
 type ValidatedPropDefRecurse<
-    DefinedType extends string,
+    DefinedTypeName extends string,
     Fragment extends string
 > = Fragment extends PropDefGroup<infer Group>
-    ? `(${ValidatedPropDefRecurse<DefinedType, Group>})`
+    ? `(${ValidatedPropDefRecurse<DefinedTypeName, Group>})`
     : Fragment extends ListPropDef<infer ListItem>
-    ? `${ValidatedPropDefRecurse<DefinedType, ListItem>}[]`
+    ? `${ValidatedPropDefRecurse<DefinedTypeName, ListItem>}[]`
     : Fragment extends OrPropDef<infer First, infer Second>
     ? `${ValidatedPropDefRecurse<
-          DefinedType,
+          DefinedTypeName,
           First
-      >} | ${ValidatedPropDefRecurse<DefinedType, Second>}`
-    : Fragment extends AtomicPropDef<DefinedType>
+      >} | ${ValidatedPropDefRecurse<DefinedTypeName, Second>}`
+    : Fragment extends AtomicPropDef<DefinedTypeName>
     ? Fragment
     : `Unable to determine the type of '${Fragment}'.`
 
 type ValidatedMetaPropDef<
-    DefinedType extends string,
+    DefinedTypeName extends string,
     PropDef extends string
 > = PropDef extends OptionalPropDef<infer OptionalType>
-    ? `${ValidatedPropDefRecurse<DefinedType, OptionalType>}?`
-    : ValidatedPropDefRecurse<DefinedType, PropDef>
+    ? `${ValidatedPropDefRecurse<DefinedTypeName, OptionalType>}?`
+    : ValidatedPropDefRecurse<DefinedTypeName, PropDef>
 
 export type ValidatedPropDef<
-    DefinedType extends string,
+    DefinedTypeName extends string,
     PropDef extends string
-> = ValidatedMetaPropDef<DefinedType, PropDef>
+> = ValidatedMetaPropDef<DefinedTypeName, PropDef>
 
-type TypeDefinition<Root, Fields, TypeName extends keyof Fields> = {
-    [PropName in keyof Fields[TypeName]]:
-        | TypeDefinition<Root, Fields[TypeName], PropName>
-        | ValidatedPropDef<keyof Root & string, Fields[TypeName][PropName]>
-}
-
-export type TypeDefinitions<Definitions> = {
-    [TypeName in keyof Definitions]: TypeDefinition<
-        Definitions,
-        Definitions,
-        TypeName
+// Check for all non-object types other than string (which are illegal) as validating
+// that Definition[PropName] extends string directly results in type widening
+type TypeDefinitionRecurse<DefinedTypeSet, Definition> = {
+    [PropName in keyof Definition]: Definition[PropName] extends Exclude<
+        NonRecursible | any[],
+        string
     >
+        ? TypeError<{
+              message: `A type definition must be an object whose keys are either strings or nested type definitions.`
+              value: Definition[PropName]
+          }>
+        : Definition[PropName] extends object
+        ? Exact<
+              Definition[PropName],
+              TypeDefinitionRecurse<DefinedTypeSet, Definition[PropName]>
+          >
+        : ValidatedPropDef<
+              keyof DefinedTypeSet & string,
+              Definition[PropName] & string
+          >
 }
 
-export type ParsePropType<
-    Definitions extends TypeDefinitions<Definitions>,
-    PropDefinition extends string | object
-> = PropDefinition extends string
-    ? ParseMetaPropType<Definitions, PropDefinition & string>
-    : {
-          [KeyName in keyof PropDefinition]: ParsePropType<
-              Definitions,
-              PropDefinition[KeyName] & (string | object)
-          >
-      }
+export type DefinedTypeSet<Definitions> = TypeDefinitionRecurse<
+    Definitions,
+    Definitions
+>
 
-type ParseMetaPropType<
-    Definitions extends TypeDefinitions<Definitions>,
+type ParseTypeString<
+    Definitions extends DefinedTypeSet<Definitions>,
     PropDefinition extends string
 > = PropDefinition extends OptionalPropDef<infer OptionalType>
-    ? ParsePropTypeRecurse<Definitions, OptionalType> | undefined
-    : ParsePropTypeRecurse<Definitions, PropDefinition>
+    ? ParseTypeStringRecurse<Definitions, OptionalType> | undefined
+    : ParseTypeStringRecurse<Definitions, PropDefinition>
 
-type ParsePropTypeRecurse<
-    Definitions extends TypeDefinitions<Definitions>,
+type ParseTypeStringRecurse<
+    Definitions extends DefinedTypeSet<Definitions>,
     PropDefinition extends string
 > = PropDefinition extends PropDefGroup<infer Group>
-    ? ParsePropTypeRecurse<Definitions, Group>
+    ? ParseTypeStringRecurse<Definitions, Group>
     : PropDefinition extends ListPropDef<infer ListItem>
-    ? ParsePropTypeRecurse<Definitions, ListItem>[]
+    ? ParseTypeStringRecurse<Definitions, ListItem>[]
     : PropDefinition extends OrPropDef<infer First, infer Second>
     ?
-          | ParsePropTypeRecurse<Definitions, First>
-          | ParsePropTypeRecurse<Definitions, Second>
+          | ParseTypeStringRecurse<Definitions, First>
+          | ParseTypeStringRecurse<Definitions, Second>
     : PropDefinition extends keyof Definitions
-    ? ParseType<Definitions, PropDefinition>
+    ? ParseType<Definitions, Definitions[PropDefinition]>
     : PropDefinition extends keyof PrimitiveTypes
     ? PrimitiveTypes[PropDefinition]
     : never
 
-export type ParseTypes<Definitions extends TypeDefinitions<Definitions>> = {
-    [TypeName in keyof Definitions]: ParseType<Definitions, TypeName>
+export type ParseTypes<Definitions extends DefinedTypeSet<Definitions>> = {
+    [TypeName in keyof Definitions]: ParseType<
+        Definitions,
+        Definitions[TypeName]
+    >
 }
 
 export type ParseType<
-    Definitions extends TypeDefinitions<Definitions>,
-    TypeName extends keyof Definitions
+    Definitions extends DefinedTypeSet<Definitions>,
+    Definition
+> = Definition extends string
+    ? ParseTypeString<Definitions, Definition>
+    : Definition extends object
+    ? ParseTypeObject<Definitions, Definition>
+    : TypeError<{
+          message: `A type definition must be an object whose keys are either strings or nested type definitions.`
+          value: Definition
+      }>
+
+type ParseTypeObject<
+    Definitions extends DefinedTypeSet<Definitions>,
+    Definition
 > = {
     [PropName in keyof ExcludeByValue<
-        Definitions[TypeName],
+        Definition & object,
         OptionalPropDef
-    >]: ParsePropType<Definitions, Definitions[TypeName][PropName]>
+    >]: ParseType<Definitions, Definition[PropName]>
 } &
     {
         [PropName in keyof FilterByValue<
-            Definitions[TypeName],
+            Definition & object,
             OptionalPropDef
-        >]?: Definitions[TypeName][PropName] extends OptionalPropDef<
-            infer OptionalType
-        >
-            ? ParsePropType<Definitions, OptionalType>
+        >]?: Definition[PropName] extends OptionalPropDef<infer OptionalType>
+            ? ParseType<Definitions, OptionalType>
             : never
     }
 
-const getType = <
-    Definitions extends TypeDefinitions<Definitions>,
-    Name extends keyof Definitions
->(
-    t: Narrow<Definitions>,
-    name: Name
-) => "" as any as ParseType<Definitions, Name>
-
-const getTypes = <Definitions extends TypeDefinitions<Definitions>>(
+const getTypes = <Definitions extends DefinedTypeSet<Definitions>>(
     t: Narrow<Definitions>
 ) => "" as any as ParseTypes<Definitions>
 
@@ -144,8 +159,7 @@ getTypes({
         groups: "group[]",
         nested: {
             another: "string",
-            user: "user[]",
-            foop: 5
+            user: "user[]"
         }
     },
     group: {
@@ -154,4 +168,4 @@ getTypes({
         members: "user[]",
         owner: "user"
     }
-}).group.owner.nested.another
+}).group.owner
