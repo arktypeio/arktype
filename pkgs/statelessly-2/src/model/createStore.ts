@@ -90,7 +90,7 @@ type RecursibleModelConfigOptions<T, InList extends boolean> = {
 }
 
 type RootModelConfig<Definitions, TypeDef extends string> = {
-    type: ValidatedPropDef<Definitions, TypeDef>
+    type: TypeDef
 } & ModelConfig<TransformCyclic<ParsePropType<Definitions, TypeDef>, number>>
 
 // /**

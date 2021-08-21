@@ -50,87 +50,79 @@ export type ValidatedPropDef<
     PropDef extends string
 > = ValidatedMetaPropDef<DefinedType, PropDef>
 
-type TypeDefinition<Root, Fields, TypeName extends keyof Fields> = {
-    [PropName in keyof Fields[TypeName]]:
-        | TypeDefinition<Root, Fields[TypeName], PropName>
-        | ValidatedPropDef<keyof Root & string, Fields[TypeName][PropName]>
+type TypeDefinition<Root, Definition> = {
+    [PropName in keyof Definition]:
+        | ValidatedPropDef<keyof Root & string, Definition[PropName] & string>
+        | Exact<
+              Definition,
+              TypeDefinition<Root, Definition[PropName] & (string | object)>
+          >
 }
 
-export type TypeDefinitions<Definitions> = {
+export type TypeDefinitions<
+    Definitions extends Record<string, string | object>
+> = {
     [TypeName in keyof Definitions]: TypeDefinition<
         Definitions,
-        Definitions,
-        TypeName
+        Definitions[TypeName]
     >
 }
 
-export type ParsePropType<
-    Definitions extends TypeDefinitions<Definitions>,
-    PropDefinition extends string | object
-> = PropDefinition extends string
-    ? ParseMetaPropType<Definitions, PropDefinition & string>
-    : {
-          [KeyName in keyof PropDefinition]: ParsePropType<
-              Definitions,
-              PropDefinition[KeyName] & (string | object)
-          >
-      }
-
-type ParseMetaPropType<
+type ParseTypeString<
     Definitions extends TypeDefinitions<Definitions>,
     PropDefinition extends string
 > = PropDefinition extends OptionalPropDef<infer OptionalType>
-    ? ParsePropTypeRecurse<Definitions, OptionalType> | undefined
-    : ParsePropTypeRecurse<Definitions, PropDefinition>
+    ? ParseTypeStringRecurse<Definitions, OptionalType> | undefined
+    : ParseTypeStringRecurse<Definitions, PropDefinition>
 
-type ParsePropTypeRecurse<
+type ParseTypeStringRecurse<
     Definitions extends TypeDefinitions<Definitions>,
     PropDefinition extends string
 > = PropDefinition extends PropDefGroup<infer Group>
-    ? ParsePropTypeRecurse<Definitions, Group>
+    ? ParseTypeStringRecurse<Definitions, Group>
     : PropDefinition extends ListPropDef<infer ListItem>
-    ? ParsePropTypeRecurse<Definitions, ListItem>[]
+    ? ParseTypeStringRecurse<Definitions, ListItem>[]
     : PropDefinition extends OrPropDef<infer First, infer Second>
     ?
-          | ParsePropTypeRecurse<Definitions, First>
-          | ParsePropTypeRecurse<Definitions, Second>
+          | ParseTypeStringRecurse<Definitions, First>
+          | ParseTypeStringRecurse<Definitions, Second>
     : PropDefinition extends keyof Definitions
-    ? ParseType<Definitions, PropDefinition>
+    ? ParseType<Definitions, Definitions[PropDefinition]>
     : PropDefinition extends keyof PrimitiveTypes
     ? PrimitiveTypes[PropDefinition]
     : never
 
 export type ParseTypes<Definitions extends TypeDefinitions<Definitions>> = {
-    [TypeName in keyof Definitions]: ParseType<Definitions, TypeName>
+    [TypeName in keyof Definitions]: ParseType<
+        Definitions,
+        Definitions[TypeName]
+    >
 }
 
 export type ParseType<
     Definitions extends TypeDefinitions<Definitions>,
-    TypeName extends keyof Definitions
+    Definition extends string | object
+> = Definition extends string
+    ? ParseTypeString<Definitions, Definition>
+    : ParseTypeObject<Definitions, Definition>
+
+type ParseTypeObject<
+    Definitions extends TypeDefinitions<Definitions>,
+    Definition
 > = {
     [PropName in keyof ExcludeByValue<
-        Definitions[TypeName],
+        Definition & object,
         OptionalPropDef
-    >]: ParsePropType<Definitions, Definitions[TypeName][PropName]>
+    >]: ParseType<Definitions, Definition[PropName]>
 } &
     {
         [PropName in keyof FilterByValue<
-            Definitions[TypeName],
+            Definition & object,
             OptionalPropDef
-        >]?: Definitions[TypeName][PropName] extends OptionalPropDef<
-            infer OptionalType
-        >
-            ? ParsePropType<Definitions, OptionalType>
+        >]?: Definition[PropName] extends OptionalPropDef<infer OptionalType>
+            ? ParseType<Definitions, OptionalType>
             : never
     }
-
-const getType = <
-    Definitions extends TypeDefinitions<Definitions>,
-    Name extends keyof Definitions
->(
-    t: Narrow<Definitions>,
-    name: Name
-) => "" as any as ParseType<Definitions, Name>
 
 const getTypes = <Definitions extends TypeDefinitions<Definitions>>(
     t: Narrow<Definitions>
@@ -144,8 +136,7 @@ getTypes({
         groups: "group[]",
         nested: {
             another: "string",
-            user: "user[]",
-            foop: 5
+            user: "user[]"
         }
     },
     group: {
