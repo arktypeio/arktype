@@ -87,14 +87,14 @@ export type DefinedTypeSet<Definitions> = TypeDefinitionRecurse<
 >
 
 type ParseTypeString<
-    Definitions extends DefinedTypeSet<Definitions>,
+    Definitions,
     PropDefinition extends string
 > = PropDefinition extends OptionalPropDef<infer OptionalType>
     ? ParseTypeStringRecurse<Definitions, OptionalType> | undefined
     : ParseTypeStringRecurse<Definitions, PropDefinition>
 
 type ParseTypeStringRecurse<
-    Definitions extends DefinedTypeSet<Definitions>,
+    Definitions,
     PropDefinition extends string
 > = PropDefinition extends PropDefGroup<infer Group>
     ? ParseTypeStringRecurse<Definitions, Group>
@@ -110,17 +110,14 @@ type ParseTypeStringRecurse<
     ? PrimitiveTypes[PropDefinition]
     : never
 
-export type ParseTypes<Definitions extends DefinedTypeSet<Definitions>> = {
+export type ParseTypes<Definitions> = {
     [TypeName in keyof Definitions]: ParseType<
         Definitions,
         Definitions[TypeName]
     >
 }
 
-export type ParseType<
-    Definitions extends DefinedTypeSet<Definitions>,
-    Definition
-> = Definition extends string
+export type ParseType<Definitions, Definition> = Definition extends string
     ? ParseTypeString<Definitions, Definition>
     : Definition extends object
     ? ParseTypeObject<Definitions, Definition>
@@ -129,10 +126,7 @@ export type ParseType<
           value: Definition
       }>
 
-type ParseTypeObject<
-    Definitions extends DefinedTypeSet<Definitions>,
-    Definition
-> = {
+type ParseTypeObject<Definitions, Definition> = {
     [PropName in keyof ExcludeByValue<
         Definition & object,
         OptionalPropDef
@@ -168,4 +162,4 @@ getTypes({
         members: "user[]",
         owner: "user"
     }
-}).group.owner
+}).group.owner.nested.another
