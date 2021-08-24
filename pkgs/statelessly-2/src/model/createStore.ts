@@ -1,11 +1,4 @@
-import {
-    Narrow,
-    Exact,
-    TypeError,
-    NonRecursible,
-    TransformCyclic,
-    Unlisted
-} from "@re-do/utils"
+import { Narrow, Exact, TypeError, NonRecursible, Unlisted } from "@re-do/utils"
 import { ParseType, ValidatedPropDef, DefinedTypeSet } from "./createTypes"
 
 type TypeDefOnly<TypeDef extends string> = TypeDef
@@ -14,16 +7,20 @@ type TypedConfig<TypeDef extends string> = {
     type: TypeDef
 }
 
-type ModelConfig<T> = ModelConfigRecurse<T, false>
+type ModelConfig<T> = ModelConfigRecurse<T, false, never>
 
 type RootModelConfig<Definitions, TypeDef extends string> = {
-    type: TypeDef
-} & ModelConfig<TransformCyclic<ParseType<Definitions, TypeDef>, number>>
+    type: ValidatedPropDef<keyof Definitions & string, TypeDef>
+} & ModelConfig<ParseType<Definitions, TypeDef>>
 
-type ModelConfigRecurse<T, InList extends boolean> = BaseModelConfigOptions<T> &
-    (Unlisted<T> extends NonRecursible
+type ModelConfigRecurse<
+    T,
+    InList extends boolean,
+    Seen
+> = BaseModelConfigOptions<T> &
+    (Unlisted<T> extends NonRecursible | Seen
         ? {}
-        : RecursibleModelConfigOptions<T, InList>) &
+        : RecursibleModelConfigOptions<T, InList, Seen>) &
     (InList extends false ? { idKey?: string } : {})
 
 type BaseModelConfigOptions<T> = {
@@ -31,14 +28,16 @@ type BaseModelConfigOptions<T> = {
     onChange?: (updates: T, original: T) => void
 }
 
-type RecursibleModelConfigOptions<T, InList extends boolean> = {
+type RecursibleModelConfigOptions<T, InList extends boolean, Seen> = {
     fields?: {
         [K in keyof Unlisted<T>]?: ModelConfigRecurse<
             Unlisted<T>[K],
-            T extends any[] ? true : false | InList
+            T extends any[] ? true : false | InList,
+            Seen | Unlisted<T>
         >
     }
     references?: string
+    defines?: string
 }
 
 export type ModelConfigs<Definitions, Configs> = {
@@ -47,7 +46,11 @@ export type ModelConfigs<Definitions, Configs> = {
     >
         ? ValidatedPropDef<keyof Definitions & string, TypeDef>
         : Configs[ModelPath] extends TypedConfig<infer TypeDef>
-        ? Exact<Configs[ModelPath], RootModelConfig<Definitions, TypeDef>>
+        ? Exact<
+              Configs[ModelPath],
+              RootModelConfig<Definitions, TypeDef>
+              //   ModelConfig<ParseType<Definitions, TypeDef>>
+          >
         : TypeError<{
               message: `Model configs must either be a type string (e.g. 'string[]' or 'user?') or a config object with such a value as its 'type' property.`
               key: ModelPath
@@ -61,7 +64,10 @@ const createStore = <
 >(
     definitions: Narrow<Definitions>,
     config: Narrow<Config>
-) => {}
+) => {
+    return {}
+    // as { types: ModeledTypes<Config> }
+}
 
 createStore(
     {
@@ -86,6 +92,7 @@ createStore(
         users: "user[]",
         groups: {
             type: "group[]",
+            defines: "group",
             idKey: "",
             fields: {
                 name: {
@@ -103,3 +110,15 @@ createStore(
         }
     }
 )
+
+// type DefinedConfig<DefinedType extends string> = {
+//     defines: DefinedType
+// }
+
+// type ModeledTypes<Configs> = {
+//     [ModelPath in keyof Configs]: Configs[ModelPath] extends DefinedConfig<
+//         infer DefinedType
+//     >
+//         ? DefinedType
+//         : never
+// }[keyof Configs]
