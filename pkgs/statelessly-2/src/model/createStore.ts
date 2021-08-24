@@ -1,55 +1,122 @@
-import { Narrow, Exact, TypeError, NonRecursible, Unlisted } from "@re-do/utils"
-import { ParseType, ValidatedPropDef, DefinedTypeSet } from "./createTypes"
+import {
+    Narrow,
+    Exact,
+    TypeError,
+    NonRecursible,
+    Unlisted,
+    KeyValuate,
+    ExcludeCyclic
+} from "@re-do/utils"
+import {
+    ParseType,
+    ValidatedPropDef,
+    DefinedTypeSet,
+    TypeDefinition,
+    ParseTypes
+} from "./createTypes"
+import { Object as ToolbeltObject } from "ts-toolbelt"
 
 type TypeDefOnly<TypeDef extends string> = TypeDef
 
-type TypedConfig<TypeDef extends string> = {
+type ConfigWithType<TypeDef extends string> = {
     type: TypeDef
 }
 
-type ModelConfig<T> = ModelConfigRecurse<T, false, never>
+type ConfigWithFields<Fields extends object> = {
+    fields: Fields
+}
 
-type RootModelConfig<Definitions, TypeDef extends string> = {
-    type: ValidatedPropDef<keyof Definitions & string, TypeDef>
-} & ModelConfig<ParseType<Definitions, TypeDef>>
+type ModelConfig<T, TypeSet, Config> = ModelConfigRecurse<
+    T,
+    false,
+    false,
+    never,
+    TypeSet,
+    Config
+>
+
+// type RootModelConfig<Definitions, TypeDef extends string> = {
+//     type: ValidatedPropDef<keyof Definitions & string, TypeDef>
+// } & ModelConfig<ParseType<Definitions, TypeDef>>
 
 type ModelConfigRecurse<
     T,
+    IsTyped extends boolean,
     InList extends boolean,
-    Seen
-> = BaseModelConfigOptions<T> &
+    Seen,
+    TypeSet,
+    Config
+> = BaseModelConfigOptions<T, TypeSet, Config> &
     (Unlisted<T> extends NonRecursible | Seen
         ? {}
-        : RecursibleModelConfigOptions<T, InList, Seen>) &
+        : RecursibleModelConfigOptions<
+              T,
+              IsTyped,
+              InList,
+              Seen,
+              TypeSet,
+              Config
+          >) &
     (InList extends false ? { idKey?: string } : {})
 
-type BaseModelConfigOptions<T> = {
+type ModelTypeOptions<
+    TypeSet,
+    Config,
+    IsTyped extends boolean
+> = IsTyped extends true
+    ? {}
+    : {
+          type?: TypeDefinition<TypeSet, KeyValuate<Config, "type">>
+      }
+
+type BaseModelConfigOptions<T, TypeSet, Config> = {
     validate?: (_: T) => boolean
     onChange?: (updates: T, original: T) => void
 }
 
-type RecursibleModelConfigOptions<T, InList extends boolean, Seen> = {
+type RecursibleModelConfigOptions<
+    T,
+    IsTyped extends boolean,
+    InList extends boolean,
+    Seen,
+    TypeSet,
+    Config
+> = {
     fields?: {
         [K in keyof Unlisted<T>]?: ModelConfigRecurse<
             Unlisted<T>[K],
-            T extends any[] ? true : false | InList,
-            Seen | Unlisted<T>
+            Config extends ConfigWithType<string> ? true : IsTyped,
+            T extends any[] ? true : InList,
+            Seen | Unlisted<T>,
+            TypeSet,
+            KeyValuate<Config, K>
         >
     }
-    references?: string
     defines?: string
 }
 
-export type ModelConfigs<Definitions, Configs> = {
+export type ModelConfigs<TypeSet, Configs> = {
     [ModelPath in keyof Configs]: Configs[ModelPath] extends TypeDefOnly<
         infer TypeDef
     >
-        ? ValidatedPropDef<keyof Definitions & string, TypeDef>
-        : Configs[ModelPath] extends TypedConfig<infer TypeDef>
+        ? ValidatedPropDef<keyof TypeSet & string, TypeDef>
+        : Configs[ModelPath] extends ConfigWithType<infer TypeDef>
         ? Exact<
               Configs[ModelPath],
-              RootModelConfig<Definitions, TypeDef>
-              //   ModelConfig<ParseType<Definitions, TypeDef>>
+              ModelConfig<
+                  ParseType<TypeSet, TypeDef>,
+                  TypeSet,
+                  Configs[ModelPath]
+              >
+          >
+        : Configs[ModelPath] extends ConfigWithFields<infer TypeDef>
+        ? Exact<
+              Configs[ModelPath],
+              ModelConfig<
+                  ParseType<TypeSet, TypeDef>,
+                  TypeSet,
+                  Configs[ModelPath]
+              >
           >
         : TypeError<{
               message: `Model configs must either be a type string (e.g. 'string[]' or 'user?') or a config object with such a value as its 'type' property.`
@@ -59,66 +126,82 @@ export type ModelConfigs<Definitions, Configs> = {
 }
 
 const createStore = <
-    Definitions extends DefinedTypeSet<Definitions>,
-    Config extends ModelConfigs<Definitions, Config>
+    Config
+    // extends ModelConfigs<DefinedTypeSet<ModeledTypes<Config>>, Config>
 >(
-    definitions: Narrow<Definitions>,
     config: Narrow<Config>
 ) => {
-    return {}
-    // as { types: ModeledTypes<Config> }
+    return {} as ParseTypes<ModeledTypes<Config>>
 }
 
-createStore(
-    {
-        user: {
+const store = createStore({
+    users: {
+        defines: "user",
+        fields: {
             name: "string",
             bestFriend: "user",
-            friends: "user[]",
+            friends: {
+                type: "user[]"
+            },
             groups: "group[]",
             nested: {
-                another: "string",
-                user: "user[]"
+                fields: {
+                    another: "string",
+                    user: "user[]"
+                }
             }
-        },
-        group: {
+        }
+    },
+    groups: {
+        defines: "group",
+        fields: {
             name: "string",
             description: "string?",
             members: "user[]",
             owner: "user"
         }
-    },
-    {
-        users: "user[]",
-        groups: {
-            type: "group[]",
-            defines: "group",
-            idKey: "",
-            fields: {
-                name: {
-                    onChange: (_) => console.log(_)
-                },
-                members: {
-                    onChange: (updated, original) => {},
-                    fields: {
-                        groups: {}
-                    }
-                }
-            },
-            onChange: (groups) =>
-                console.log(groups.map((_) => _.name).join(","))
-        }
+        // idKey: "",
+        // fields: {
+        //     name: {
+        //         onChange: (_) => console.log(_)
+        //     },
+        //     members: {
+        //         onChange: (updated, original) => {},
+        //         fields: {
+        //             groups: {}
+        //         }
+        //     }
+        // },
+        // onChange: (groups) => console.log(groups.map((_) => _.name).join(","))
     }
-)
+})
 
-// type DefinedConfig<DefinedType extends string> = {
-//     defines: DefinedType
-// }
+type DefinedConfig<DefinedType extends string> = {
+    defines: DefinedType
+}
 
-// type ModeledTypes<Configs> = {
-//     [ModelPath in keyof Configs]: Configs[ModelPath] extends DefinedConfig<
-//         infer DefinedType
-//     >
-//         ? DefinedType
-//         : never
-// }[keyof Configs]
+type ModeledTypeNames<Configs> = ToolbeltObject.Invert<
+    {
+        [ModelPath in keyof Configs]: Configs[ModelPath] extends DefinedConfig<
+            infer DefinedType
+        >
+            ? DefinedType
+            : never
+    }
+>
+
+type UpfilterTypes<Config> = Config extends TypeDefOnly<infer TypeDef>
+    ? TypeDef
+    : Config extends ConfigWithType<infer TypeDef>
+    ? TypeDef
+    : Config extends ConfigWithFields<infer Fields>
+    ? {
+          [K in keyof Fields]: UpfilterTypes<Fields[K]>
+      }
+    : never
+
+type ModeledTypes<Configs> = {
+    [TypeName in keyof ModeledTypeNames<Configs>]: UpfilterTypes<
+        KeyValuate<Configs, ModeledTypeNames<Configs>[TypeName]>
+    >
+}

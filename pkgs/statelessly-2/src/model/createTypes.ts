@@ -61,7 +61,7 @@ export type ValidatedPropDef<
 
 // Check for all non-object types other than string (which are illegal) as validating
 // that Definition[PropName] extends string directly results in type widening
-type TypeDefinitionRecurse<DefinedTypeSet, Definition> = {
+type TypeDefinitionRecurse<TypeSet, Definition> = {
     [PropName in keyof Definition]: Definition[PropName] extends Exclude<
         NonRecursible | any[],
         string
@@ -73,13 +73,17 @@ type TypeDefinitionRecurse<DefinedTypeSet, Definition> = {
         : Definition[PropName] extends object
         ? Exact<
               Definition[PropName],
-              TypeDefinitionRecurse<DefinedTypeSet, Definition[PropName]>
+              TypeDefinitionRecurse<TypeSet, Definition[PropName]>
           >
         : ValidatedPropDef<
-              keyof DefinedTypeSet & string,
+              keyof TypeSet & string,
               Definition[PropName] & string
           >
 }
+
+export type TypeDefinition<TypeSet, Definition> = Definition extends string
+    ? ValidatedPropDef<keyof TypeSet & string, Definition & string>
+    : TypeDefinitionRecurse<TypeSet, Definition>
 
 export type DefinedTypeSet<Definitions> = TypeDefinitionRecurse<
     Definitions,
