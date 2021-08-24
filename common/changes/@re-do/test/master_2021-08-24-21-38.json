@@ -1,0 +1,10 @@
+{
+  "changes": [
+    {
+      "packageName": "@re-do/test",
+      "comment": "Fix hidden main window on Big Sur.",
+      "type": "patch"
+    }
+  ],
+  "packageName": "@re-do/test"
+}
