@@ -16,6 +16,7 @@ app.on("ready", async () => {
     await loadMainWindow()
     await loadBuilderWindow()
     main.maximize()
+    main.show()
 })
 
 app.on("window-all-closed", () => {
