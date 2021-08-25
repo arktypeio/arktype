@@ -59,13 +59,12 @@ export type ValidatedPropDef<
     PropDef extends string
 > = ValidatedMetaPropDef<DefinedTypeName, PropDef>
 
+export type NonStringOrRecord = Exclude<NonRecursible | any[], string>
+
 // Check for all non-object types other than string (which are illegal) as validating
 // that Definition[PropName] extends string directly results in type widening
 type TypeDefinitionRecurse<TypeSet, Definition> = {
-    [PropName in keyof Definition]: Definition[PropName] extends Exclude<
-        NonRecursible | any[],
-        string
-    >
+    [PropName in keyof Definition]: Definition[PropName] extends NonStringOrRecord
         ? TypeError<{
               message: `A type definition must be an object whose keys are either strings or nested type definitions.`
               value: Definition[PropName]
