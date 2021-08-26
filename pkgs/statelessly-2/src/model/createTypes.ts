@@ -111,7 +111,7 @@ type ParseTypeStringRecurse<
     ? ParseType<Definitions, Definitions[PropDefinition]>
     : PropDefinition extends keyof BuiltInTypes
     ? BuiltInTypes[PropDefinition]
-    : never
+    : TypeError<`Unable to parse the type of '${PropDefinition}'.`>
 
 export type ParseTypes<Definitions> = {
     [TypeName in keyof Definitions]: ParseType<
@@ -138,12 +138,13 @@ type ParseTypeObject<Definitions, Definition> = {
             OptionalPropDef
         >]?: Definition[PropName] extends OptionalPropDef<infer OptionalType>
             ? ParseType<Definitions, OptionalType>
-            : never
+            : TypeError<`Expected property ${PropName &
+                  (string | number)} to be optional.`>
     }
 
 const getTypes = <Definitions extends DefinedTypeSet<Definitions>>(
     t: Narrow<Definitions>
-) => "" as any as ForceEvaluate<ParseTypes<Definitions>>
+) => "" as any as ParseTypes<Definitions>
 
 getTypes({
     user: {

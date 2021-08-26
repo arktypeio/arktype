@@ -1,12 +1,20 @@
 import { NonRecursible, Unlisted, KeyValuate } from "@re-do/utils"
-import { Object as ToolbeltObject } from "ts-toolbelt"
+import { Object as ToolbeltObject, T } from "ts-toolbelt"
 import {
     ParseType,
     ValidatedPropDef,
     TypeDefinition,
     NonStringOrRecord
 } from "./createTypes"
-import { TypeError, Narrow, Exact, ForceEvaluate } from "./utils"
+import {
+    TypeError,
+    Narrow,
+    Exact,
+    ForceEvaluate,
+    IsAny,
+    StringifyPossibleTypes,
+    StringifyKeys
+} from "./utils"
 
 type DefinedConfig<DefinedType extends string> = {
     defines: DefinedType
@@ -30,7 +38,7 @@ type UpfilterTypes<Config> = Config extends TypeDefOnly<infer TypeDef>
     ? {
           [K in keyof Fields]: UpfilterTypes<Fields[K]>
       }
-    : TypeError<`Untyped config`>
+    : TypeError<`Untyped config with keys: ${StringifyKeys<Config>}`>
 
 type TypeSetFromConfig<Config> = {
     [TypeName in keyof DefinedTypeNames<Config>]: UpfilterTypes<
@@ -96,7 +104,8 @@ type ModelConfigOptions<
 
 type BaseModelConfigOptions<T, Config, IsTyped extends boolean, TypeSet> = {
     // validate?: (_: N) => boolean
-    onChange?: (updates: string) => number
+    onChange?: (updates: string) => void
+    another?: number
 } & (IsTyped extends true
     ? {}
     : {
@@ -131,7 +140,7 @@ type RecursibleModelConfigOptions<
 export type ModelConfig<
     Config,
     TypeSet = TypeSetFromConfig<Config>,
-    ConfigType = TypeFromConfig<Config>
+    ConfigType = TypeFromConfig<Config, TypeSet>
 > = {
     [ModelPath in keyof Config]: RootModelConfig<
         KeyValuate<ConfigType, ModelPath>,
@@ -143,81 +152,88 @@ export type ModelConfig<
 const createStore = <Config extends ModelConfig<Config>>(
     config: Narrow<Config>
 ) => {
-    return {} as TypeSetFromConfig<Config>
+    return {} as Config
 }
 
 const store = createStore({
     users: {
         defines: "user",
         fields: {
-            name: {
+            x: {
                 type: "string",
                 onChange: () => {}
-            },
-            bestFriend: "user",
-            friends: {
-                type: "user[]"
-            },
-            groups: {
-                type: "group[]",
-                fields: {
-                    name: {
-                        onChange: () => {}
-                    }
-                }
-            },
-            nested: {
-                fields: {
-                    another: {
-                        type: "string",
-                        onChange: () => {}
-                    },
-                    user: {
-                        type: "user[]",
-                        onChange: () => {}
-                    }
-                }
             }
         }
-    },
-    str: "string",
-    grp: {
-        type: "group | user"
-    },
-    preferences: {
-        fields: {
-            darkMode: "boolean",
-            advanced: {
-                fields: {
-                    bff: "user?"
-                }
-            }
-        }
-    },
-    groups: {
-        defines: "group",
-        idKey: "",
-        fields: {
-            name: {
-                type: "string",
-                onChange: () => {}
-            },
-            description: "string?",
-            members: "user[]",
-            owner: "user"
-        }
-        // idKey: "",
-        // fields: {
-        //     name: {
-        //         onChange: (_) => console.log(_)
-        //     },
-        //     members: {
-        //         onChange: (updated, original) => {},
-        //         fields: {
-        //             groups: {}
-        //         }
-        //     }
-        // },
-        // onChange: (groups) => console.log(groups.map((_) => _.name).join(","))
     }
 })
+
+let typeSet: ForceEvaluate<typeof store>
+
+// const store = createStore({
+//     users: {
+//         defines: "user",
+//         fields: {
+//             name: {
+//                 type: "string",
+//                 onChange: (_) => {},
+//                 another: 5
+//             },
+//             unknownF: {
+//                 type: "string",
+//                 onChange: () => {}
+//             },
+//             bestFriend: "user",
+//             friends: {
+//                 type: "user[]"
+//             },
+//             groups: {
+//                 type: "group[]",
+//                 fields: {
+//                     name: {
+//                         onChange: () => {}
+//                     }
+//                 }
+//             },
+//             nested: {
+//                 fields: {
+//                     another: {
+//                         type: "string",
+//                         onChange: () => {}
+//                     },
+//                     user: {
+//                         type: "user[]",
+//                         onChange: () => {}
+//                     }
+//                 }
+//             }
+//         }
+//     },
+//     str: "string",
+//     grp: {
+//         type: "group | user"
+//     },
+//     zo: "group",
+//     preferences: {
+//         fields: {
+//             darkMode: "boolean",
+//             advanced: {
+//                 fields: {
+//                     bff: "user?"
+//                 }
+//             }
+//         }
+//     },
+//     groups: {
+//         defines: "group",
+//         idKey: "",
+//         fields: {
+//             name: {
+//                 type: "string",
+//                 onChange: () => {}
+//             },
+//             description: "string?",
+//             members: "user[]",
+//             owner: "user"
+//         }
+//     }
+// })

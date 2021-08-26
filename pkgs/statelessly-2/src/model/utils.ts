@@ -3,7 +3,8 @@ import {
     Union as ToolbeltUnion,
     List as ToolbeltList,
     Any as ToolbeltAny,
-    Function as ToolbeltFunction
+    Function as ToolbeltFunction,
+    T
 } from "ts-toolbelt"
 
 import {
@@ -59,25 +60,37 @@ export type ListPossibleTypes<U> = ListPossibleTypesRecurse<U> extends infer X
     ? Cast<X, any[]>
     : never
 
-export type StringifyPossibleTypes<U extends string | number> = Join<
+export type StringifyPossibleTypes<U extends StringifiableType> = Join<
     ListPossibleTypes<U>,
     ", "
 >
+
+export type StringifyKeys<O> = StringifyPossibleTypes<
+    keyof O & StringifiableType
+>
+
+export type StringifiableType =
+    | string
+    | number
+    | bigint
+    | boolean
+    | null
+    | undefined
 
 type ExactFunction<F extends Function, ExpectedType> = F extends (
     ...args: infer Args
 ) => infer Return
     ? ExpectedType extends (...args: infer ExpectedArgs) => infer ExpectedReturn
         ? (...args: Exact<Args, ExpectedArgs>) => Exact<Return, ExpectedReturn>
-        : never
-    : never
+        : F
+    : F
 
 export type Exact<T, ExpectedType> = ExpectedType extends unknown
     ? T extends ExpectedType
         ? T extends NonObject
             ? T
             : T extends Function
-            ? any // ExactFunction<T, ExpectedType>
+            ? ExactFunction<T, ExpectedType>
             : {
                   [K in keyof T]: K extends keyof ExpectedType
                       ? Exact<T[K], ExpectedType[K]>
@@ -85,13 +98,23 @@ export type Exact<T, ExpectedType> = ExpectedType extends unknown
                             (
                                 | string
                                 | number
-                            )}'. Valid properties are: ${StringifyPossibleTypes<
-                            keyof ExpectedType & (string | number)
-                        >}`>
+                            )}'. Valid properties are: ${StringifyKeys<ExpectedType>}`>
               }
         : ExpectedType
-    : never
+    : TypeError<`ExpectedType didn't extend unknown.`>
 
-const exact = <T>(t: Exact<T, () => { a: 5 }>) => {}
+const exact = <T>(t: Exact<T, { x: (_: string) => { a: 5 } }>) => {}
 
-exact(() => ({ a: 5 }))
+exact({ x: (_) => ({ a: 5 }) })
+
+// type Z<F> = F extends (...args: infer Args) => infer Return
+//     ? [Args, Return]
+//     : false
+
+// type X = Z<(_) => {}>
+
+export type IsAny<T> = (any extends T ? true : false) extends true
+    ? true
+    : false
+
+// type a = (any extends string ? true : false) extends true ? true : false
