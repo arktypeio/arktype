@@ -7,18 +7,21 @@ import {
 } from "@re-do/utils"
 import { TypeError, ForceEvaluate } from "./utils"
 
-type PrimitiveTypes = {
+type BuiltInTypes = {
     string: string
     boolean: boolean
     number: number
     null: null
+    undefined: undefined
+    unknown: unknown
+    any: any
 }
 
-type PrimitivePropDef = keyof PrimitiveTypes
+type BuiltInPropDef = keyof BuiltInTypes
 
 type AtomicPropDef<DefinedTypeName extends string> =
     | DefinedTypeName
-    | PrimitivePropDef
+    | BuiltInPropDef
 
 type ListPropDef<ListItem extends string = string> = `${ListItem}[]`
 
@@ -106,8 +109,8 @@ type ParseTypeStringRecurse<
           | ParseTypeStringRecurse<Definitions, Second>
     : PropDefinition extends keyof Definitions
     ? ParseType<Definitions, Definitions[PropDefinition]>
-    : PropDefinition extends keyof PrimitiveTypes
-    ? PrimitiveTypes[PropDefinition]
+    : PropDefinition extends keyof BuiltInTypes
+    ? BuiltInTypes[PropDefinition]
     : never
 
 export type ParseTypes<Definitions> = {

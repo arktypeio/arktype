@@ -30,7 +30,7 @@ type UpfilterTypes<Config> = Config extends TypeDefOnly<infer TypeDef>
     ? {
           [K in keyof Fields]: UpfilterTypes<Fields[K]>
       }
-    : never
+    : TypeError<`Untyped config`>
 
 type TypeSetFromConfig<Config> = {
     [TypeName in keyof DefinedTypeNames<Config>]: UpfilterTypes<
@@ -38,9 +38,9 @@ type TypeSetFromConfig<Config> = {
     >
 }
 
-type ConfigType<Config> = {
+type TypeFromConfig<Config, TypeSet = TypeSetFromConfig<Config>> = {
     [ModelPath in keyof Config]: ParseType<
-        TypeSetFromConfig<Config>,
+        TypeSet,
         UpfilterTypes<Config[ModelPath]>
     >
 }
@@ -96,8 +96,7 @@ type ModelConfigOptions<
 
 type BaseModelConfigOptions<T, Config, IsTyped extends boolean, TypeSet> = {
     // validate?: (_: N) => boolean
-    onChange?: (updates: T) => number
-    // original: N
+    onChange?: (updates: string) => number
 } & (IsTyped extends true
     ? {}
     : {
@@ -129,17 +128,19 @@ type RecursibleModelConfigOptions<
           idKey?: string
       })
 
-export type ModelConfigs<TypeSet, Configs> = {
-    [ModelPath in keyof Configs]: RootModelConfig<
-        ParseType<TypeSet, UpfilterTypes<Configs[ModelPath]>>,
-        Configs[ModelPath],
+export type ModelConfig<
+    Config,
+    TypeSet = TypeSetFromConfig<Config>,
+    ConfigType = TypeFromConfig<Config>
+> = {
+    [ModelPath in keyof Config]: RootModelConfig<
+        KeyValuate<ConfigType, ModelPath>,
+        Config[ModelPath],
         TypeSet
     >
 }
 
-const createStore = <
-    Config extends ModelConfigs<TypeSetFromConfig<Config>, Config>
->(
+const createStore = <Config extends ModelConfig<Config>>(
     config: Narrow<Config>
 ) => {
     return {} as TypeSetFromConfig<Config>
