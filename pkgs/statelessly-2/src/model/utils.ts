@@ -2,7 +2,8 @@ import {
     Object as ToolbeltObject,
     Union as ToolbeltUnion,
     List as ToolbeltList,
-    Any as ToolbeltAny
+    Any as ToolbeltAny,
+    Function as ToolbeltFunction
 } from "ts-toolbelt"
 
 import {
@@ -36,6 +37,10 @@ type Narrowable = string | number | bigint | boolean
 
 export type Narrow<T> = NarrowRoot<T>
 
+const narrow = <T>(t: Narrow<T>): T => [] as any as T
+
+const f = narrow((x: [1, "f", true, [3, "af"]]) => [true, false, ["a", 5]])
+
 type ListPossibleTypesRecurse<
     U,
     LN extends any[] = [],
@@ -61,17 +66,7 @@ export type Exact<T, ExpectedType> = ExpectedType extends unknown
     ? T extends ExpectedType
         ? T extends NonRecursible
             ? T
-            : // T extends (...args: infer Args) => infer Return
-              //             ? (
-              //                   ...args: Exact<
-              //                       Args,
-              //                       Parameters<ExpectedType & ((...args: any[]) => any)>
-              //                   >
-              //               ) => Exact<
-              //                   Return,
-              //                   ReturnType<ExpectedType & ((...args: any[]) => any)>
-              //               > :
-              {
+            : {
                   [K in keyof T]: K extends keyof ExpectedType
                       ? Exact<T[K], ExpectedType[K]>
                       : TypeError<`Invalid property '${K &
@@ -84,3 +79,7 @@ export type Exact<T, ExpectedType> = ExpectedType extends unknown
               }
         : ExpectedType
     : never
+
+const exact = <T>(t: Exact<T, () => { a: 5 }>) => {}
+
+exact(() => ({ a: 5, b: true }))
