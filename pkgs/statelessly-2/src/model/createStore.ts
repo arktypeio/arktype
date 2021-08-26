@@ -152,7 +152,7 @@ export type ModelConfig<
 const createStore = <Config extends ModelConfig<Config>>(
     config: Narrow<Config>
 ) => {
-    return {} as Config
+    return {} as TypeSetFromConfig<Config>
 }
 
 const store = createStore({
@@ -161,7 +161,8 @@ const store = createStore({
         fields: {
             x: {
                 type: "string",
-                onChange: () => {}
+                // another: ""
+                onChange: (a: number) => ""
             }
         }
     }

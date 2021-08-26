@@ -107,14 +107,6 @@ const exact = <T>(t: Exact<T, { x: (_: string) => { a: 5 } }>) => {}
 
 exact({ x: (_) => ({ a: 5 }) })
 
-// type Z<F> = F extends (...args: infer Args) => infer Return
-//     ? [Args, Return]
-//     : false
-
-// type X = Z<(_) => {}>
-
 export type IsAny<T> = (any extends T ? true : false) extends true
     ? true
     : false
-
-// type a = (any extends string ? true : false) extends true ? true : false
