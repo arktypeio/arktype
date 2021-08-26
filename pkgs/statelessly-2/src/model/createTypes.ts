@@ -3,9 +3,9 @@ import {
     FilterByValue,
     Narrow,
     Exact,
-    TypeError,
     NonRecursible
 } from "@re-do/utils"
+import { TypeError, ForceEvaluate } from "./utils"
 
 type PrimitiveTypes = {
     string: string
@@ -45,7 +45,7 @@ type ValidatedPropDefRecurse<
       >} | ${ValidatedPropDefRecurse<DefinedTypeName, Second>}`
     : Fragment extends AtomicPropDef<DefinedTypeName>
     ? Fragment
-    : `Unable to determine the type of '${Fragment}'.`
+    : TypeError<`Unable to determine the type of '${Fragment}'.`>
 
 type ValidatedMetaPropDef<
     DefinedTypeName extends string,
@@ -65,10 +65,7 @@ export type NonStringOrRecord = Exclude<NonRecursible | any[], string>
 // that Definition[PropName] extends string directly results in type widening
 type TypeDefinitionRecurse<TypeSet, Definition> = {
     [PropName in keyof Definition]: Definition[PropName] extends NonStringOrRecord
-        ? TypeError<{
-              message: `A type definition must be an object whose keys are either strings or nested type definitions.`
-              value: Definition[PropName]
-          }>
+        ? TypeError<`A type definition must be an object whose keys are either strings or nested type definitions.`>
         : Definition[PropName] extends object
         ? Exact<
               Definition[PropName],
@@ -121,13 +118,10 @@ export type ParseTypes<Definitions> = {
 }
 
 export type ParseType<Definitions, Definition> = Definition extends string
-    ? ParseTypeString<Definitions, Definition>
+    ? ForceEvaluate<ParseTypeString<Definitions, Definition>, false>
     : Definition extends object
-    ? ParseTypeObject<Definitions, Definition>
-    : TypeError<{
-          message: `A type definition must be an object whose keys are either strings or nested type definitions.`
-          value: Definition
-      }>
+    ? ForceEvaluate<ParseTypeObject<Definitions, Definition>, false>
+    : TypeError<`A type definition must be an object whose keys are either strings or nested type definitions.`>
 
 type ParseTypeObject<Definitions, Definition> = {
     [PropName in keyof ExcludeByValue<
@@ -146,7 +140,7 @@ type ParseTypeObject<Definitions, Definition> = {
 
 const getTypes = <Definitions extends DefinedTypeSet<Definitions>>(
     t: Narrow<Definitions>
-) => "" as any as ParseTypes<Definitions>
+) => "" as any as ForceEvaluate<ParseTypes<Definitions>>
 
 getTypes({
     user: {

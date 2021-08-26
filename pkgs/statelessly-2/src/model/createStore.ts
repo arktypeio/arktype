@@ -1,18 +1,12 @@
-import {
-    Narrow,
-    Exact,
-    TypeError,
-    NonRecursible,
-    Unlisted,
-    KeyValuate
-} from "@re-do/utils"
+import { NonRecursible, Unlisted, KeyValuate } from "@re-do/utils"
+import { Object as ToolbeltObject } from "ts-toolbelt"
 import {
     ParseType,
     ValidatedPropDef,
     TypeDefinition,
     NonStringOrRecord
 } from "./createTypes"
-import { Object as ToolbeltObject } from "ts-toolbelt"
+import { TypeError, Narrow, Exact, ForceEvaluate } from "./utils"
 
 type DefinedConfig<DefinedType extends string> = {
     defines: DefinedType
@@ -36,10 +30,7 @@ type UpfilterTypes<Config> = Config extends TypeDefOnly<infer TypeDef>
     ? {
           [K in keyof Fields]: UpfilterTypes<Fields[K]>
       }
-    : TypeError<{
-          message: `Untyped config value`
-          value: Config
-      }>
+    : never
 
 type TypeSetFromConfig<Config> = {
     [TypeName in keyof DefinedTypeNames<Config>]: UpfilterTypes<
@@ -84,24 +75,12 @@ export type ModelConfigRecurse<
     Seen,
     TypeSet
 > = Config extends NonStringOrRecord
-    ? TypeError<{
-          message: `Config must be a type string (e.g. 'user[]?') or an object.`
-          value: Config
-      }>
-    : Config extends object
-    ? ModelConfigOptions<T, Config, IsTyped, InDefinition, Seen, TypeSet>
+    ? TypeError<`Config must be a type string (e.g. 'user[]?') or an object.`>
     : Config extends TypeDefOnly<infer TypeDef>
     ? IsTyped extends true
-        ? TypeError<{
-              message: `A type has already been determined from an ancestor of this config`
-              providedType: Config
-              inferredType: T
-          }>
+        ? TypeError<`A type has already been determined from an ancestor of this config.`>
         : ValidatedPropDef<keyof TypeSet & string, TypeDef>
-    : TypeError<{
-          message: `Unexpected config value`
-          value: Config
-      }>
+    : ModelConfigOptions<T, Config, IsTyped, InDefinition, Seen, TypeSet>
 
 type ModelConfigOptions<
     T,
@@ -115,16 +94,22 @@ type ModelConfigOptions<
         ? {}
         : RecursibleModelConfigOptions<
               T,
+              Config,
               IsTyped,
               InDefinition,
               Seen,
-              TypeSet,
-              Config
+              TypeSet
           >)
 
 type BaseModelConfigOptions<T, Config, IsTyped extends boolean, TypeSet> = {
-    validate?: (_: T) => boolean
-    onChange?: (updates: T, original: T) => void
+    // validate?: (_: N) => boolean
+    onChange?: (updates: {
+        T: T
+        Config: Config
+        IsTyped: IsTyped
+        TypeSet: ForceEvaluate<TypeSet>
+    }) => number
+    // original: N
 } & (IsTyped extends true
     ? {}
     : {
@@ -133,11 +118,11 @@ type BaseModelConfigOptions<T, Config, IsTyped extends boolean, TypeSet> = {
 
 type RecursibleModelConfigOptions<
     T,
+    Config,
     IsTyped extends boolean,
     InDefinition extends boolean,
     Seen,
-    TypeSet,
-    Config
+    TypeSet
 > = {
     fields?: {
         [K in keyof Unlisted<T>]?: ModelConfigRecurse<
@@ -165,14 +150,17 @@ const createStore = <
 >(
     config: Narrow<Config>
 ) => {
-    return {} as ConfigType<Config>
+    return {} as TypeSetFromConfig<Config>
 }
 
 const store = createStore({
     users: {
         defines: "user",
         fields: {
-            name: "string",
+            name: {
+                type: "string",
+                onChange: () => {}
+            },
             bestFriend: "user",
             friends: {
                 type: "user[]"
@@ -187,7 +175,10 @@ const store = createStore({
             },
             nested: {
                 fields: {
-                    another: "string",
+                    another: {
+                        type: "string",
+                        onChange: () => {}
+                    },
                     user: {
                         type: "user[]",
                         onChange: () => {}
@@ -212,8 +203,12 @@ const store = createStore({
     },
     groups: {
         defines: "group",
+        idKey: "",
         fields: {
-            name: "string",
+            name: {
+                type: "string",
+                onChange: () => {}
+            },
             description: "string?",
             members: "user[]",
             owner: "user"
