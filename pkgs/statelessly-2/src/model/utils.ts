@@ -39,7 +39,9 @@ export type Narrow<T> = NarrowRoot<T>
 
 const narrow = <T>(t: Narrow<T>): T => [] as any as T
 
-const f = narrow((x: [1, "f", true, [3, "af"]]) => [true, false, ["a", 5]])
+const f = narrow({
+    z: (x: [1, "f", true, [3, "af"]]) => [true, false, ["a", 5]]
+})
 
 type ListPossibleTypesRecurse<
     U,
@@ -62,10 +64,20 @@ export type StringifyPossibleTypes<U extends string | number> = Join<
     ", "
 >
 
+type ExactFunction<F extends Function, ExpectedType> = F extends (
+    ...args: infer Args
+) => infer Return
+    ? ExpectedType extends (...args: infer ExpectedArgs) => infer ExpectedReturn
+        ? (...args: Exact<Args, ExpectedArgs>) => Exact<Return, ExpectedReturn>
+        : never
+    : never
+
 export type Exact<T, ExpectedType> = ExpectedType extends unknown
     ? T extends ExpectedType
-        ? T extends NonRecursible
+        ? T extends NonObject
             ? T
+            : T extends Function
+            ? any // ExactFunction<T, ExpectedType>
             : {
                   [K in keyof T]: K extends keyof ExpectedType
                       ? Exact<T[K], ExpectedType[K]>
@@ -82,4 +94,4 @@ export type Exact<T, ExpectedType> = ExpectedType extends unknown
 
 const exact = <T>(t: Exact<T, () => { a: 5 }>) => {}
 
-exact(() => ({ a: 5, b: true }))
+exact(() => ({ a: 5 }))

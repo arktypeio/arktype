@@ -55,16 +55,9 @@ type ConfigWithFields<Fields extends object> = {
     fields: Fields
 }
 
-type RootModelConfig<Config, TypeSet> = Exact<
+type RootModelConfig<T, Config, TypeSet> = Exact<
     Config,
-    ModelConfigRecurse<
-        ParseType<TypeSet, UpfilterTypes<Config>>,
-        Config,
-        false,
-        false,
-        never,
-        TypeSet
-    >
+    ModelConfigRecurse<T, Config, false, false, never, TypeSet>
 >
 
 export type ModelConfigRecurse<
@@ -103,12 +96,7 @@ type ModelConfigOptions<
 
 type BaseModelConfigOptions<T, Config, IsTyped extends boolean, TypeSet> = {
     // validate?: (_: N) => boolean
-    onChange?: (updates: {
-        T: T
-        Config: Config
-        IsTyped: IsTyped
-        TypeSet: ForceEvaluate<TypeSet>
-    }) => number
+    onChange?: (updates: T) => number
     // original: N
 } & (IsTyped extends true
     ? {}
@@ -142,7 +130,11 @@ type RecursibleModelConfigOptions<
       })
 
 export type ModelConfigs<TypeSet, Configs> = {
-    [ModelPath in keyof Configs]: RootModelConfig<Configs[ModelPath], TypeSet>
+    [ModelPath in keyof Configs]: RootModelConfig<
+        ParseType<TypeSet, UpfilterTypes<Configs[ModelPath]>>,
+        Configs[ModelPath],
+        TypeSet
+    >
 }
 
 const createStore = <
