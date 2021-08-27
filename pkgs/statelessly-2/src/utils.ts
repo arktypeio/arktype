@@ -24,18 +24,42 @@ export type ForceEvaluate<T, Deep extends boolean = true> = ToolbeltAny.Compute<
 
 export type Cast<A, B> = A extends B ? A : B
 
+export type SimpleFunction = (...args: any[]) => any
+
+// type NarrowFunction<T> = T extends (...args: infer Args) => infer Return
+//     ? (...args: Narrow<Args>) => Narrow<Return>
+//     : never
+
 type NarrowRecurse<T> =
     | (T extends [] ? [] : never)
-    | (T extends Narrowable ? T : never)
+    | (T extends NonRecursible ? T : never)
     | {
-          [K in keyof T]: T[K] extends Function ? T[K] : NarrowRecurse<T[K]>
+          [K in keyof T]:
+              | (IsAnyOrUnknown<T[K]> extends true ? T[K] : never)
+              | NarrowRecurse<T[K]>
       }
 
-type Narrowable = string | number | bigint | boolean
-
-export type Narrow<T> = Cast<T, NarrowRecurse<T>>
+// type Narrowable = string | number | bigint | boolean
 
 const narrow = <T>(t: Narrow<T>): T => [] as any
+
+type Zfds = Narrow<{ a: any }>
+
+const result = narrow({
+    a: {
+        b: {
+            c: {} as unknown,
+            d: (a: { a: 5; b: ["a", true] }) => ({
+                a: 5,
+                b: true
+            }),
+            e: 5,
+            h: ["z", true]
+        }
+    }
+})
+
+export type Narrow<T> = Cast<T, NarrowRecurse<T>>
 
 // const z = narrow({
 //     users: {
@@ -43,20 +67,26 @@ const narrow = <T>(t: Narrow<T>): T => [] as any
 //         fields: {
 //             x: {
 //                 type: "string",
-//                 onChange: (_) => ""
+//                 onChange: (_) => "",
+//                 z: {} as unknown,
+//                 d: {} as any
 //             }
 //         }
 //     },
 //     groups: {
 //         defines: "group",
 //         fields: {
-//             members: "string"
+//             members: "string",
+//             another: {
+//                 type: "boolean",
+//                 onChange: (_) => ""
+//             }
 //         }
 //     }
 // })
 
 const f = narrow({
-    z: (x: [1, "f", true, [3, "af"]]) => [true, false, ["a", 5]]
+    z: (x: [1, "f", true, unknown, [3, "af"]]) => [true, false, ["a", 5]]
 })
 
 type ListPossibleTypesRecurse<
@@ -100,10 +130,42 @@ export type StringifiableType =
 //         : (...args: ExpectedArgs) => ExpectedReturn
 //     : ExpectedType
 
-type ExactFunction<T, ExpectedType> = T extends (
+// type ExactFunction<T, ExpectedType> = ExtractFunction<T> extends (
+//     ...args: infer Args
+// ) => infer Return
+//     ? ExtractFunction<ExpectedType> extends (
+//           ...args: infer ExpectedArgs
+//       ) => infer ExpectedReturn
+//         ? (
+//               ...args: Exact<Args, ExpectedArgs> & any[]
+//           ) => Exact<Return, ExpectedReturn>
+//         : never
+//     : never
+
+// export type Exact<T, ExpectedType> = ExpectedType extends unknown
+//     ? T extends ExpectedType
+//         ? T extends NonRecursible
+//             ? T
+//             :
+//                   | ExactFunction<T, ExpectedType>
+//                   | {
+//                         [K in keyof T]: K extends keyof ExpectedType
+//                             ? Exact<T[K], ExpectedType[K]>
+//                             : TypeError<`Invalid property '${K &
+//                                   (
+//                                       | string
+//                                       | number
+//                                   )}'. Valid properties are: ${StringifyKeys<ExpectedType>}`>
+//                     }
+//         : ExpectedType
+//     : ``
+
+type ExtractFunction<T> = Extract<T, SimpleFunction>
+
+type ExactFunction<T, ExpectedType> = ExtractFunction<T> extends (
     ...args: infer Args
 ) => infer Return
-    ? NonNullable<ExpectedType> extends (
+    ? ExtractFunction<ExpectedType> extends (
           ...args: infer ExpectedArgs
       ) => infer ExpectedReturn
         ? (...args: Exact<Args, ExpectedArgs>) => Exact<Return, ExpectedReturn>
@@ -114,11 +176,11 @@ export type Exact<T, ExpectedType> = ExpectedType extends unknown
     ? T extends ExpectedType
         ? T extends NonObject
             ? T
-            : T extends (...args: any[]) => any
-            ? ExactFunction<T, ExpectedType>
             : {
                   [K in keyof T]: K extends keyof ExpectedType
-                      ? Exact<T[K], ExpectedType[K]>
+                      ? ExtractFunction<T[K]> extends never
+                          ? Exact<T[K], ExpectedType[K]>
+                          : ExactFunction<T[K], ExpectedType[K]>
                       : TypeError<`Invalid property '${K &
                             (
                                 | string
@@ -132,35 +194,49 @@ type ExactObject<O, Reference> = {
     [K in keyof O]: Exact<O[K], KeyValuate<Reference, K>>
 }
 
-type Ref = {
-    x?: { a?: (_: string) => { a: number } }
-    y?: { a?: (_: string) => { a: number } }
-    b: string
+type Ref<T> = {
+    [K in keyof T]: Exact<
+        T[K],
+        {
+            x?: { a?: (_: string) => { a: number } }
+            y?: { a?: (_: string) => { a: number } }
+            b: string
+        }
+    >
 }
 
-type SimpleRef = {
-    a: string
-    b?: number
-    c: {
-        d: boolean
-        e: (_: string) => boolean
-    }
-}
+const exact = <T>(t: Ref<T>) => [] as any as T
 
-const exact = <T>(t: Exact<T, SimpleRef>) => [] as any as T
+type Z = Exact<() => {}, () => { a: true }>
 
 const t = exact({
-    a: "narrow",
-    b: 5,
-    c: {
-        d: true,
-        e: (_) => true
+    shmope: {
+        x: { a: (_) => ({ a: 5 }) },
+        y: { a: (_) => ({ a: 5, b: true }) },
+        b: "narrow"
+    },
+    brope: {
+        x: { a: (_) => ({ a: 5 }) },
+        b: "na"
     }
-    // x: { a: (_: string) => ({ a: 5 }) },
-    // y: { a: (_: string) => ({ a: 5 }) },
-    // b: "narrow"
 })
 
-export type IsAny<T> = (any extends T ? true : false) extends true
+export type IsAnyOrUnknown<T> = (any extends T ? true : false) extends true
+    ? true
+    : false
+
+export type IsAny<T> = (any extends T ? AnyIsAny<T> : false) extends true
+    ? true
+    : false
+
+export type IsUnknown<T> = (
+    any extends T ? AnyIsUnknown<T> : false
+) extends true
+    ? true
+    : false
+
+type AnyIsAny<T> = (T extends {} ? true : false) extends false ? false : true
+
+type AnyIsUnknown<T> = (T extends {} ? true : false) extends false
     ? true
     : false

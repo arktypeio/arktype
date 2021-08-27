@@ -178,7 +178,7 @@ const store = createStore({
         fields: {
             name: {
                 type: "string",
-                onChange: (_) => ""
+                onChange: () => ""
             }
         }
     }
