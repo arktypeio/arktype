@@ -29,16 +29,32 @@ type NarrowRecurse<T> =
     | (T extends [] ? [] : never)
     | (T extends Narrowable ? T : never)
     | {
-          [K in keyof T]: T[K] extends Function ? T[K] : Narrow<T[K]>
+          [K in keyof T]: T[K] extends Function ? T[K] : NarrowRecurse<T[K]>
       }
-
-type NarrowRoot<T, Narrowed = NarrowRecurse<T>> = Narrowed | Cast<T, Narrowed>
 
 type Narrowable = string | number | bigint | boolean
 
-export type Narrow<T> = NarrowRoot<T>
+export type Narrow<T> = Cast<T, NarrowRecurse<T>>
 
-const narrow = <T>(t: Narrow<T>): T => [] as any as T
+const narrow = <T>(t: Narrow<T>): T => [] as any
+
+// const z = narrow({
+//     users: {
+//         defines: "user",
+//         fields: {
+//             x: {
+//                 type: "string",
+//                 onChange: (_) => ""
+//             }
+//         }
+//     },
+//     groups: {
+//         defines: "group",
+//         fields: {
+//             members: "string"
+//         }
+//     }
+// })
 
 const f = narrow({
     z: (x: [1, "f", true, [3, "af"]]) => [true, false, ["a", 5]]
@@ -77,19 +93,29 @@ export type StringifiableType =
     | null
     | undefined
 
-type ExactFunction<F extends Function, ExpectedType> = F extends (
+// type ExactFunction<F, ExpectedType> = ExpectedType extends (
+//     ...args: infer ExpectedArgs
+// ) => infer ExpectedReturn
+//     ? F extends (...args: infer Args) => infer Return
+//         ? (...args: Exact<Args, ExpectedArgs>) => Exact<Return, ExpectedReturn>
+//         : (...args: ExpectedArgs) => ExpectedReturn
+//     : ExpectedType
+
+type ExactFunction<F, ExpectedType> = F extends (
     ...args: infer Args
 ) => infer Return
-    ? ExpectedType extends (...args: infer ExpectedArgs) => infer ExpectedReturn
+    ? NonNullable<ExpectedType> extends (
+          ...args: infer ExpectedArgs
+      ) => infer ExpectedReturn
         ? (...args: Exact<Args, ExpectedArgs>) => Exact<Return, ExpectedReturn>
-        : F
+        : (...args: Args) => Return
     : F
 
 export type Exact<T, ExpectedType> = ExpectedType extends unknown
     ? T extends ExpectedType
         ? T extends NonObject
             ? T
-            : T extends Function
+            : T extends (...args: any[]) => any
             ? ExactFunction<T, ExpectedType>
             : {
                   [K in keyof T]: K extends keyof ExpectedType
@@ -103,7 +129,7 @@ export type Exact<T, ExpectedType> = ExpectedType extends unknown
         : ExpectedType
     : TypeError<`ExpectedType didn't extend unknown.`>
 
-const exact = <T>(t: Exact<T, { x: (_: string) => { a: 5 } }>) => {}
+const exact = <T>(t: Exact<Narrow<T>, { x: (_: string) => { a: 5 } }>) => {}
 
 exact({ x: (_) => ({ a: 5 }) })
 

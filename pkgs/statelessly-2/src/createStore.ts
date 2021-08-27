@@ -1,5 +1,8 @@
 import { NonRecursible, Unlisted, KeyValuate } from "@re-do/utils"
-import { Object as ToolbeltObject, T } from "ts-toolbelt"
+import {
+    Object as ToolbeltObject,
+    Function as ToolbeltFunction
+} from "ts-toolbelt"
 import {
     ParseType,
     ValidatedPropDef,
@@ -38,7 +41,7 @@ type UpfilterTypes<Config> = Config extends TypeDefOnly<infer TypeDef>
     ? {
           [K in keyof Fields]: UpfilterTypes<Fields[K]>
       }
-    : TypeError<`Untyped config with keys: ${StringifyKeys<Config>}`>
+    : TypeError<`Untyped config`>
 
 type TypeSetFromConfig<Config> = {
     [TypeName in keyof DefinedTypeNames<Config>]: UpfilterTypes<
@@ -105,7 +108,12 @@ type ModelConfigOptions<
 type BaseModelConfigOptions<T, Config, IsTyped extends boolean, TypeSet> = {
     // validate?: (_: N) => boolean
     onChange?: (updates: string) => void
-    another?: number
+    another?: {
+        a: {
+            b: number
+        }
+        C: string
+    }
 } & (IsTyped extends true
     ? {}
     : {
@@ -152,17 +160,25 @@ export type ModelConfig<
 const createStore = <Config extends ModelConfig<Config>>(
     config: Narrow<Config>
 ) => {
-    return {} as TypeSetFromConfig<Config>
+    return {} as ForceEvaluate<TypeSetFromConfig<Config>>
 }
 
 const store = createStore({
     users: {
         defines: "user",
         fields: {
-            x: {
+            name: {
                 type: "string",
-                // another: ""
-                onChange: (a: number) => ""
+                onChange: (_) => ""
+            }
+        }
+    },
+    groups: {
+        defines: "group",
+        fields: {
+            name: {
+                type: "string",
+                onChange: (_) => ""
             }
         }
     }
@@ -176,8 +192,7 @@ let typeSet: ForceEvaluate<typeof store>
 //         fields: {
 //             name: {
 //                 type: "string",
-//                 onChange: (_) => {},
-//                 another: 5
+//                 onChange: (_) => {}
 //             },
 //             unknownF: {
 //                 type: "string",

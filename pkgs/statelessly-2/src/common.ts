@@ -5,7 +5,7 @@ import {
     DeepUpdate,
     LimitDepth
 } from "@re-do/utils"
-import type { Store } from "../store.js"
+import type { Store } from "../old/store.js"
 export type { Middleware } from "redux"
 
 export type StoreInput = Record<string, any>
