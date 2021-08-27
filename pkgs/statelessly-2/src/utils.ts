@@ -3,8 +3,7 @@ import {
     Union as ToolbeltUnion,
     List as ToolbeltList,
     Any as ToolbeltAny,
-    Function as ToolbeltFunction,
-    T
+    Function as ToolbeltFunction
 } from "ts-toolbelt"
 
 import {
@@ -101,7 +100,7 @@ export type StringifiableType =
 //         : (...args: ExpectedArgs) => ExpectedReturn
 //     : ExpectedType
 
-type ExactFunction<F, ExpectedType> = F extends (
+type ExactFunction<T, ExpectedType> = T extends (
     ...args: infer Args
 ) => infer Return
     ? NonNullable<ExpectedType> extends (
@@ -109,7 +108,7 @@ type ExactFunction<F, ExpectedType> = F extends (
       ) => infer ExpectedReturn
         ? (...args: Exact<Args, ExpectedArgs>) => Exact<Return, ExpectedReturn>
         : (...args: Args) => Return
-    : F
+    : T
 
 export type Exact<T, ExpectedType> = ExpectedType extends unknown
     ? T extends ExpectedType
@@ -129,9 +128,38 @@ export type Exact<T, ExpectedType> = ExpectedType extends unknown
         : ExpectedType
     : TypeError<`ExpectedType didn't extend unknown.`>
 
-const exact = <T>(t: Exact<Narrow<T>, { x: (_: string) => { a: 5 } }>) => {}
+type ExactObject<O, Reference> = {
+    [K in keyof O]: Exact<O[K], KeyValuate<Reference, K>>
+}
 
-exact({ x: (_) => ({ a: 5 }) })
+type Ref = {
+    x?: { a?: (_: string) => { a: number } }
+    y?: { a?: (_: string) => { a: number } }
+    b: string
+}
+
+type SimpleRef = {
+    a: string
+    b?: number
+    c: {
+        d: boolean
+        e: (_: string) => boolean
+    }
+}
+
+const exact = <T>(t: Exact<T, SimpleRef>) => [] as any as T
+
+const t = exact({
+    a: "narrow",
+    b: 5,
+    c: {
+        d: true,
+        e: (_) => true
+    }
+    // x: { a: (_: string) => ({ a: 5 }) },
+    // y: { a: (_: string) => ({ a: 5 }) },
+    // b: "narrow"
+})
 
 export type IsAny<T> = (any extends T ? true : false) extends true
     ? true
