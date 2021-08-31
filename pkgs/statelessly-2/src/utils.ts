@@ -3,7 +3,8 @@ import {
     Union as ToolbeltUnion,
     List as ToolbeltList,
     Any as ToolbeltAny,
-    Function as ToolbeltFunction
+    Function as ToolbeltFunction,
+    A
 } from "ts-toolbelt"
 
 import {
@@ -12,7 +13,9 @@ import {
     KeyValuate,
     ExcludeCyclic,
     Join,
-    NonObject
+    NonObject,
+    SimpleFunction,
+    Not
 } from "@re-do/utils"
 
 export type TypeError<Description extends string> = Description
@@ -23,8 +26,6 @@ export type ForceEvaluate<T, Deep extends boolean = true> = ToolbeltAny.Compute<
 >
 
 export type Cast<A, B> = A extends B ? A : B
-
-export type SimpleFunction = (...args: any[]) => any
 
 type Recursible<T> = T extends NonRecursible ? never : T
 
@@ -137,46 +138,64 @@ type ExactFunction<T, ExpectedType> = ExtractFunction<T> extends (
     ? ExtractFunction<ExpectedType> extends (
           ...args: infer ExpectedArgs
       ) => infer ExpectedReturn
-        ? (...args: Exact<Args, ExpectedArgs>) => Exact<Return, ExpectedReturn>
-        : (...args: Args) => Return
-    : T
-
-export type Exact<T, ExpectedType> = ExpectedType extends unknown
-    ? T extends ExpectedType
-        ? T extends NonObject
-            ? T
-            : {
-                  [K in keyof T]: K extends keyof ExpectedType
-                      ? ExtractFunction<T[K]> extends never
-                          ? Exact<T[K], ExpectedType[K]>
-                          : ExactFunction<T[K], ExpectedType[K]>
-                      : TypeError<`Invalid property '${K &
-                            (
-                                | string
-                                | number
-                            )}'. Valid properties are: ${StringifyKeys<ExpectedType>}`>
-              }
+        ? (
+              ...args: Extract<Exact<Args, ExpectedArgs>, any[]>
+          ) => Exact<Return, ExpectedReturn>
         : ExpectedType
+    : ExpectedType
+
+type InferFunction<F> = ExtractFunction<F> extends (
+    ...args: infer Args
+) => infer Return
+    ? [Args, Return]
+    : never
+
+type ZQPO = InferFunction<() => void>
+
+type res = ((_: any) => {}) extends (_: string) => {} ? true : false
+
+type fs = ["a", "b"]
+
+type Zzs<T> = { [K in keyof T]: T[K] }
+type fdosih = Zzs<fs>
+
+export type Exact<T, ExpectedType, Seen = never> = ExpectedType extends unknown
+    ?
+          | (IsAnyOrUnknown<T> extends true ? ExpectedType : never)
+          | (T extends NonObject ? Extract<T, ExpectedType> : never)
+          //   | (T extends SimpleFunction ? ExactFunction<T, ExpectedType> : never)
+          | {
+                [K in keyof T]: K extends keyof ExpectedType
+                    ? Exact<T[K], ExpectedType[K], Seen | T>
+                    : TypeError<`Invalid property '${Extract<
+                          K,
+                          string | number
+                      >}'. Valid properties are: ${StringifyKeys<ExpectedType>}`>
+            }
     : TypeError<`ExpectedType didn't extend unknown.`>
+
+const ex = <A, B>(a: A, b: B) => [] as any as Exact<A, B>
+const result2 = ex({ a: (_: any) => [] }, { a: (_: string) => [] })
+const result3 = ex(
+    (a: { a: 1; b: 2 }) => {},
+    (a: { a: number }) => {}
+)
 
 type ExactObject<O, Reference> = {
     [K in keyof O]: Exact<O[K], KeyValuate<Reference, K>>
 }
 
 type Ref<T> = {
-    [K in keyof T]: Exact<
-        T[K],
-        {
-            x?: { a?: (_: string) => { a: number } }
-            y?: { a?: (_: string) => { a: number } }
-            b: string
-        }
-    >
+    [K in keyof T]: {
+        x?: { a?: (_: string) => { a: number } }
+        y?: { a?: (_: string) => { a: number } }
+        b: string
+    }
 }
 
-const exact = <T>(t: Ref<T>) => [] as any as T
+const exact = <T>(t: Exact<T, Ref<T>>) => [] as any as T
 
-type Z = Exact<() => {}, () => { a: true }>
+type Z = Exact<() => { a: 5 }, (_: string) => { a: number }>
 
 const t = exact({
     shmope: {

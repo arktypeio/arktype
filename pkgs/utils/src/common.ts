@@ -10,7 +10,7 @@ import {
 } from "ts-toolbelt"
 
 export const merge = deepMerge
-export const memoize = moize as <F extends Function>(f: F) => F
+export const memoize = moize as <F extends SimpleFunction>(f: F) => F
 export const deepEquals = isDeepEqual
 
 export type UntilOptions = {
@@ -98,9 +98,11 @@ export type ValueOf<T> = T[keyof T]
 export type EntryOf<T> = { [K in keyof T]: [K, T[K]] }[keyof T]
 export type ValueFrom<T, K extends keyof T> = Pick<T, K>[K]
 
+export type SimpleFunction = (...args: any[]) => any
 export type Primitive = string | number | boolean | symbol | bigint
-export type NonObject = Primitive | null | undefined
-export type NonRecursible = NonObject | Function
+export type NonObject = Primitive | null | undefined | void
+
+export type NonRecursible = NonObject | SimpleFunction
 export type Unpromisified<T> = T extends Promise<infer U> ? U : never
 
 export const isRecursible = (o: any) => o && typeof o === "object"
