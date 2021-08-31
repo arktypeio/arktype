@@ -26,9 +26,7 @@ export type Cast<A, B> = A extends B ? A : B
 
 export type SimpleFunction = (...args: any[]) => any
 
-// type NarrowFunction<T> = T extends (...args: infer Args) => infer Return
-//     ? (...args: Narrow<Args>) => Narrow<Return>
-//     : never
+type Recursible<T> = T extends NonRecursible ? never : T
 
 type NarrowRecurse<T> =
     | (T extends [] ? [] : never)
@@ -39,11 +37,9 @@ type NarrowRecurse<T> =
               | NarrowRecurse<T[K]>
       }
 
-// type Narrowable = string | number | bigint | boolean
+export type Narrow<T> = Cast<T, NarrowRecurse<T>>
 
 const narrow = <T>(t: Narrow<T>): T => [] as any
-
-type Zfds = Narrow<{ a: any }>
 
 const result = narrow({
     a: {
@@ -57,36 +53,6 @@ const result = narrow({
             h: ["z", true]
         }
     }
-})
-
-export type Narrow<T> = Cast<T, NarrowRecurse<T>>
-
-// const z = narrow({
-//     users: {
-//         defines: "user",
-//         fields: {
-//             x: {
-//                 type: "string",
-//                 onChange: (_) => "",
-//                 z: {} as unknown,
-//                 d: {} as any
-//             }
-//         }
-//     },
-//     groups: {
-//         defines: "group",
-//         fields: {
-//             members: "string",
-//             another: {
-//                 type: "boolean",
-//                 onChange: (_) => ""
-//             }
-//         }
-//     }
-// })
-
-const f = narrow({
-    z: (x: [1, "f", true, unknown, [3, "af"]]) => [true, false, ["a", 5]]
 })
 
 type ListPossibleTypesRecurse<
@@ -162,6 +128,9 @@ export type StringifiableType =
 
 type ExtractFunction<T> = Extract<T, SimpleFunction>
 
+type Zf<T> = T extends boolean ? T : never
+type ZFG = Zf<null | { hi: "" } | true>
+
 type ExactFunction<T, ExpectedType> = ExtractFunction<T> extends (
     ...args: infer Args
 ) => infer Return
@@ -212,7 +181,7 @@ type Z = Exact<() => {}, () => { a: true }>
 const t = exact({
     shmope: {
         x: { a: (_) => ({ a: 5 }) },
-        y: { a: (_) => ({ a: 5, b: true }) },
+        y: { a: (_) => ({ a: 5 }) },
         b: "narrow"
     },
     brope: {
