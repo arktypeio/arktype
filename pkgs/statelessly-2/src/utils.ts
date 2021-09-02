@@ -129,18 +129,13 @@ export type StringifiableType =
 
 type ExtractFunction<T> = Extract<T, SimpleFunction>
 
-type Zf<T> = T extends boolean ? T : never
-type ZFG = Zf<null | { hi: "" } | true>
-
 type ExactFunction<T, ExpectedType> = ExtractFunction<T> extends (
     ...args: infer Args
 ) => infer Return
     ? ExtractFunction<ExpectedType> extends (
           ...args: infer ExpectedArgs
       ) => infer ExpectedReturn
-        ? (
-              ...args: Extract<Exact<Args, ExpectedArgs>, any[]>
-          ) => Exact<Return, ExpectedReturn>
+        ? (...args: Exact<Args, ExpectedArgs>) => Exact<Return, ExpectedReturn>
         : ExpectedType
     : ExpectedType
 
@@ -150,40 +145,30 @@ type InferFunction<F> = ExtractFunction<F> extends (
     ? [Args, Return]
     : never
 
-type ZQPO = InferFunction<() => void>
-
-type res = ((_: any) => {}) extends (_: string) => {} ? true : false
-
-type fs = ["a", "b"]
-
-type Zzs<T> = { [K in keyof T]: T[K] }
-type fdosih = Zzs<fs>
-
-export type Exact<T, ExpectedType, Seen = never> = ExpectedType extends unknown
-    ?
-          | (IsAnyOrUnknown<T> extends true ? ExpectedType : never)
-          | (T extends NonObject ? Extract<T, ExpectedType> : never)
-          //   | (T extends SimpleFunction ? ExactFunction<T, ExpectedType> : never)
-          | {
-                [K in keyof T]: K extends keyof ExpectedType
-                    ? Exact<T[K], ExpectedType[K], Seen | T>
-                    : TypeError<`Invalid property '${Extract<
-                          K,
-                          string | number
-                      >}'. Valid properties are: ${StringifyKeys<ExpectedType>}`>
-            }
-    : TypeError<`ExpectedType didn't extend unknown.`>
+export type Exact<T, ExpectedType> = T extends NonObject
+    ? T extends ExpectedType
+        ? T
+        : ExpectedType
+    : {
+          [K in keyof T]: K extends keyof ExpectedType
+              ? T[K] extends SimpleFunction
+                  ? ExactFunction<T[K], ExpectedType[K]>
+                  : Exact<T[K], ExpectedType[K]>
+              : TypeError<`Invalid property '${Extract<
+                    K,
+                    string | number
+                >}'. Valid properties are: ${StringifyKeys<ExpectedType>}`>
+      }
 
 const ex = <A, B>(a: A, b: B) => [] as any as Exact<A, B>
-const result2 = ex({ a: (_: any) => [] }, { a: (_: string) => [] })
 const result3 = ex(
-    (a: { a: 1; b: 2 }) => {},
-    (a: { a: number }) => {}
+    {
+        a: (a: { a: 1; b: 2 }) => {}
+    },
+    {
+        a: (a: { a: number }) => {}
+    }
 )
-
-type ExactObject<O, Reference> = {
-    [K in keyof O]: Exact<O[K], KeyValuate<Reference, K>>
-}
 
 type Ref<T> = {
     [K in keyof T]: {
@@ -199,12 +184,12 @@ type Z = Exact<() => { a: 5 }, (_: string) => { a: number }>
 
 const t = exact({
     shmope: {
-        x: { a: (_) => ({ a: 5 }) },
-        y: { a: (_) => ({ a: 5 }) },
+        x: { a: (_: string) => ({ a: 5 }) },
+        y: { a: (_: string) => ({ a: 5 }) },
         b: "narrow"
     },
     brope: {
-        x: { a: (_) => ({ a: 5 }) },
+        x: { a: (_: string) => ({ a: 5 }) },
         b: "na"
     }
 })
