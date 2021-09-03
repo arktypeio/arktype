@@ -16,7 +16,8 @@ import {
     ForceEvaluate,
     IsAny,
     StringifyPossibleTypes,
-    StringifyKeys
+    StringifyKeys,
+    Recursible
 } from "./utils"
 
 type DefinedConfig<DefinedType extends string> = {
@@ -25,9 +26,9 @@ type DefinedConfig<DefinedType extends string> = {
 
 type DefinedTypeNames<Configs> = ToolbeltObject.Invert<
     {
-        [ModelPath in keyof Configs]: Configs[ModelPath] extends DefinedConfig<
-            infer DefinedType
-        >
+        [ModelPath in keyof Configs]: Recursible<
+            Configs[ModelPath]
+        > extends DefinedConfig<infer DefinedType>
             ? DefinedType
             : never
     }
@@ -35,9 +36,9 @@ type DefinedTypeNames<Configs> = ToolbeltObject.Invert<
 
 type UpfilterTypes<Config> = Config extends TypeDefOnly<infer TypeDef>
     ? TypeDef
-    : Config extends ConfigWithType<infer TypeDef>
+    : Recursible<Config> extends ConfigWithType<infer TypeDef>
     ? TypeDef
-    : Config extends ConfigWithFields<infer Fields>
+    : Recursible<Config> extends ConfigWithFields<infer Fields>
     ? {
           [K in keyof Fields]: UpfilterTypes<Fields[K]>
       }
@@ -108,12 +109,7 @@ type ModelConfigOptions<
 type BaseModelConfigOptions<T, Config, IsTyped extends boolean, TypeSet> = {
     // validate?: (_: N) => boolean
     onChange?: (updates: string) => void
-    another?: {
-        a: {
-            b: number
-        }
-        C: string
-    }
+    another?: { T: T; Config: Config }
 } & (IsTyped extends true
     ? {}
     : {
@@ -160,7 +156,7 @@ export type ModelConfig<
 const createStore = <Config extends ModelConfig<Config>>(
     config: Narrow<Config>
 ) => {
-    return {} as ForceEvaluate<TypeSetFromConfig<Config>>
+    return {} as ForceEvaluate<Config>
 }
 
 const store = createStore({
@@ -178,13 +174,11 @@ const store = createStore({
         fields: {
             name: {
                 type: "string",
-                onChange: () => ""
+                onChange: (_) => ""
             }
         }
     }
 })
-
-let typeSet: ForceEvaluate<typeof store>
 
 // const store = createStore({
 //     users: {

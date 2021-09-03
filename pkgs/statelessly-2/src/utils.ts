@@ -27,10 +27,9 @@ export type ForceEvaluate<T, Deep extends boolean = true> = ToolbeltAny.Compute<
 
 export type Cast<A, B> = A extends B ? A : B
 
-type Recursible<T> = T extends NonRecursible ? never : T
+export type Recursible<T> = T extends NonRecursible ? never : T
 
 type NarrowRecurse<T> =
-    | (T extends [] ? [] : never)
     | (T extends NonRecursible ? T : never)
     | {
           [K in keyof T]:
@@ -43,15 +42,22 @@ export type Narrow<T> = Cast<T, NarrowRecurse<T>>
 const narrow = <T>(t: Narrow<T>): T => [] as any
 
 const result = narrow({
-    a: {
-        b: {
-            c: {} as unknown,
-            d: (a: { a: 5; b: ["a", true] }) => ({
-                a: 5,
-                b: true
-            }),
-            e: 5,
-            h: ["z", true]
+    users: {
+        defines: "user",
+        fields: {
+            name: {
+                type: "string",
+                onChange: {} as unknown
+            }
+        }
+    },
+    groups: {
+        defines: "group",
+        fields: {
+            name: {
+                type: "string",
+                onChange: () => ""
+            }
         }
     }
 })
@@ -78,7 +84,7 @@ export type StringifyPossibleTypes<U extends StringifiableType> = Join<
 >
 
 export type StringifyKeys<O> = StringifyPossibleTypes<
-    keyof O & StringifiableType
+    O extends any[] ? keyof O & number : keyof O & string
 >
 
 export type StringifiableType =
@@ -89,45 +95,22 @@ export type StringifiableType =
     | null
     | undefined
 
-// type ExactFunction<F, ExpectedType> = ExpectedType extends (
-//     ...args: infer ExpectedArgs
-// ) => infer ExpectedReturn
-//     ? F extends (...args: infer Args) => infer Return
-//         ? (...args: Exact<Args, ExpectedArgs>) => Exact<Return, ExpectedReturn>
-//         : (...args: ExpectedArgs) => ExpectedReturn
-//     : ExpectedType
-
-// type ExactFunction<T, ExpectedType> = ExtractFunction<T> extends (
-//     ...args: infer Args
-// ) => infer Return
-//     ? ExtractFunction<ExpectedType> extends (
-//           ...args: infer ExpectedArgs
-//       ) => infer ExpectedReturn
-//         ? (
-//               ...args: Exact<Args, ExpectedArgs> & any[]
-//           ) => Exact<Return, ExpectedReturn>
-//         : never
-//     : never
-
-// export type Exact<T, ExpectedType> = ExpectedType extends unknown
-//     ? T extends ExpectedType
-//         ? T extends NonRecursible
-//             ? T
-//             :
-//                   | ExactFunction<T, ExpectedType>
-//                   | {
-//                         [K in keyof T]: K extends keyof ExpectedType
-//                             ? Exact<T[K], ExpectedType[K]>
-//                             : TypeError<`Invalid property '${K &
-//                                   (
-//                                       | string
-//                                       | number
-//                                   )}'. Valid properties are: ${StringifyKeys<ExpectedType>}`>
-//                     }
-//         : ExpectedType
-//     : ``
-
 type ExtractFunction<T> = Extract<T, SimpleFunction>
+
+type z = ExactFunction<(_: unknown) => {}, () => {}>
+
+type oifdsh = InferFunction<(_: unknown) => {}>
+type Oz = InferFunction<() => {}>
+
+type fdsoih = Exact<[], [_: unknown]>
+
+type foodfd = Recursible<[_: unknown]>
+
+type InferFunction<T> = ExtractFunction<T> extends (
+    ...args: infer Args
+) => infer Return
+    ? [Args, Return]
+    : never
 
 type ExactFunction<T, ExpectedType> = ExtractFunction<T> extends (
     ...args: infer Args
@@ -139,21 +122,17 @@ type ExactFunction<T, ExpectedType> = ExtractFunction<T> extends (
         : ExpectedType
     : ExpectedType
 
-type InferFunction<F> = ExtractFunction<F> extends (
-    ...args: infer Args
-) => infer Return
-    ? [Args, Return]
-    : never
-
-export type Exact<T, ExpectedType> = T extends NonObject
+export type Exact<T, ExpectedType> = IsAnyOrUnknown<T> extends true
+    ? ExpectedType
+    : T extends NonObject
     ? T extends ExpectedType
         ? T
         : ExpectedType
+    : T extends SimpleFunction
+    ? ExactFunction<T, ExpectedType>
     : {
-          [K in keyof T]: K extends keyof ExpectedType
-              ? T[K] extends SimpleFunction
-                  ? ExactFunction<T[K], ExpectedType[K]>
-                  : Exact<T[K], ExpectedType[K]>
+          [K in keyof T]: K extends keyof Recursible<ExpectedType>
+              ? Exact<T[K], Recursible<ExpectedType>[K]>
               : TypeError<`Invalid property '${Extract<
                     K,
                     string | number
