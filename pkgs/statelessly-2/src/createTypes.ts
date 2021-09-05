@@ -138,8 +138,10 @@ type ParseTypeObject<Definitions, Definition> = {
             OptionalPropDef
         >]?: Definition[PropName] extends OptionalPropDef<infer OptionalType>
             ? ParseType<Definitions, OptionalType>
-            : TypeError<`Expected property ${PropName &
-                  (string | number)} to be optional.`>
+            : TypeError<`Expected property ${Extract<
+                  PropName,
+                  string | number
+              >} to be optional.`>
     }
 
 const getTypes = <Definitions extends DefinedTypeSet<Definitions>>(

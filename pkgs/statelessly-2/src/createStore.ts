@@ -34,15 +34,15 @@ type DefinedTypeNames<Configs> = ToolbeltObject.Invert<
     }
 >
 
-type UpfilterTypes<Config> = Config extends TypeDefOnly<infer TypeDef>
-    ? TypeDef
-    : Recursible<Config> extends ConfigWithType<infer TypeDef>
-    ? TypeDef
-    : Recursible<Config> extends ConfigWithFields<infer Fields>
-    ? {
-          [K in keyof Fields]: UpfilterTypes<Fields[K]>
-      }
-    : TypeError<`Untyped config`>
+type UpfilterTypes<Config> = {
+    [K in keyof Config]: Config[K] extends TypeDefOnly<infer TypeDef>
+        ? TypeDef
+        : Recursible<Config[K]> extends ConfigWithType<infer TypeDef>
+        ? TypeDef
+        : "fields" extends keyof Config[K]
+        ? UpfilterTypes<Config[K]["fields"]>
+        : { UpfilterMissing: "fields"; On: Recursible<Config[K]> }
+}
 
 type TypeSetFromConfig<Config> = {
     [TypeName in keyof DefinedTypeNames<Config>]: UpfilterTypes<
@@ -50,12 +50,14 @@ type TypeSetFromConfig<Config> = {
     >
 }
 
-type TypeFromConfig<Config, TypeSet = TypeSetFromConfig<Config>> = {
-    [ModelPath in keyof Config]: ParseType<
-        TypeSet,
-        UpfilterTypes<Config[ModelPath]>
-    >
-}
+type TypeFromConfig<
+    Config,
+    TypeSet = TypeSetFromConfig<Config>
+> = UpfilterTypes<Config>
+// ParseType <
+//     TypeSet,
+
+// >
 
 type TypeDefOnly<TypeDef extends string> = TypeDef
 
@@ -79,9 +81,7 @@ export type ModelConfigRecurse<
     InDefinition extends boolean,
     Seen,
     TypeSet
-> = Config extends NonStringOrRecord
-    ? TypeError<`Config must be a type string (e.g. 'user[]?') or an object.`>
-    : Config extends TypeDefOnly<infer TypeDef>
+> = Config extends TypeDefOnly<infer TypeDef>
     ? IsTyped extends true
         ? TypeError<`A type has already been determined from an ancestor of this config.`>
         : ValidatedPropDef<keyof TypeSet & string, TypeDef>
@@ -109,7 +109,7 @@ type ModelConfigOptions<
 type BaseModelConfigOptions<T, Config, IsTyped extends boolean, TypeSet> = {
     // validate?: (_: N) => boolean
     onChange?: (updates: string) => void
-    another?: { T: T; Config: Config }
+    // another?: { T: T; Config: Config }
 } & (IsTyped extends true
     ? {}
     : {
@@ -156,7 +156,7 @@ export type ModelConfig<
 const createStore = <Config extends ModelConfig<Config>>(
     config: Narrow<Config>
 ) => {
-    return {} as ForceEvaluate<Config>
+    return {} as ForceEvaluate<TypeFromConfig<Config>>
 }
 
 const store = createStore({
@@ -165,7 +165,7 @@ const store = createStore({
         fields: {
             name: {
                 type: "string",
-                onChange: (_) => ""
+                onChange: () => ":-)"
             }
         }
     },
@@ -179,6 +179,8 @@ const store = createStore({
         }
     }
 })
+
+type Store = typeof store
 
 // const store = createStore({
 //     users: {

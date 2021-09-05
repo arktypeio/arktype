@@ -118,25 +118,28 @@ type ExactFunction<T, ExpectedType> = ExtractFunction<T> extends (
     ? ExtractFunction<ExpectedType> extends (
           ...args: infer ExpectedArgs
       ) => infer ExpectedReturn
-        ? (...args: Exact<Args, ExpectedArgs>) => Exact<Return, ExpectedReturn>
+        ? (
+              ...args: Exact<Args, ExpectedArgs> & any[]
+          ) => Exact<Return, ExpectedReturn>
         : ExpectedType
     : ExpectedType
 
 export type Exact<T, ExpectedType> = IsAnyOrUnknown<T> extends true
     ? ExpectedType
-    : T extends NonObject
+    : T extends NonRecursible
     ? T extends ExpectedType
         ? T
         : ExpectedType
-    : T extends SimpleFunction
-    ? ExactFunction<T, ExpectedType>
-    : {
-          [K in keyof T]: K extends keyof Recursible<ExpectedType>
-              ? Exact<T[K], Recursible<ExpectedType>[K]>
-              : TypeError<`Invalid property '${Extract<
-                    K,
-                    string | number
-                >}'. Valid properties are: ${StringifyKeys<ExpectedType>}`>
+    : //     T extends SimpleFunction
+      // ? ExactFunction<T, ExpectedType> :
+      {
+          [K in keyof Recursible<T>]: K extends keyof Recursible<ExpectedType>
+              ? Exact<Recursible<T>[K], Recursible<ExpectedType>[K]>
+              : { Missing: K; On: Recursible<ExpectedType> }
+          //   TypeError<`Invalid property '${Extract<
+          //         K,
+          //         string | number
+          //     >}'. Valid properties are: ${StringifyKeys<ExpectedType>}`>
       }
 
 const ex = <A, B>(a: A, b: B) => [] as any as Exact<A, B>
