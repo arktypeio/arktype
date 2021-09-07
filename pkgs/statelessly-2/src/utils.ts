@@ -95,86 +95,44 @@ export type StringifiableType =
     | null
     | undefined
 
-type ExtractFunction<T> = Extract<T, SimpleFunction>
+export type ExtractFunction<T> = Extract<T, SimpleFunction>
 
-type z = ExactFunction<(_: unknown) => {}, () => {}>
-
-type oifdsh = InferFunction<(_: unknown) => {}>
-type Oz = InferFunction<() => {}>
-
-type fdsoih = Exact<[], [_: unknown]>
-
-type foodfd = Recursible<[_: unknown]>
-
-type InferFunction<T> = ExtractFunction<T> extends (
-    ...args: infer Args
-) => infer Return
-    ? [Args, Return]
-    : never
-
-type ExactFunction<T, ExpectedType> = ExtractFunction<T> extends (
-    ...args: infer Args
-) => infer Return
-    ? ExtractFunction<ExpectedType> extends (
-          ...args: infer ExpectedArgs
-      ) => infer ExpectedReturn
-        ? (
-              ...args: Exact<Args, ExpectedArgs> & any[]
-          ) => Exact<Return, ExpectedReturn>
+export type ExactFunction<T, ExpectedType> = T extends ExpectedType
+    ? ExtractFunction<T> extends (...args: infer Args) => infer Return
+        ? ExtractFunction<ExpectedType> extends (
+              ...args: infer ExpectedArgs
+          ) => infer ExpectedReturn
+            ? (
+                  ...args: Exact<Args, ExpectedArgs>
+              ) => Exact<Return, ExpectedReturn>
+            : ExpectedType
         : ExpectedType
     : ExpectedType
 
+export type Exact2<A, W> = W extends unknown
+    ? A extends W
+        ? A extends NonObject
+            ? A
+            : {
+                  [K in keyof A]: K extends keyof W ? Exact<A[K], W[K]> : never
+              }
+        : W
+    : never
+
 export type Exact<T, ExpectedType> = IsAnyOrUnknown<T> extends true
     ? ExpectedType
-    : T extends NonRecursible
-    ? T extends ExpectedType
+    : T extends ExpectedType
+    ? T extends NonObject
         ? T
-        : ExpectedType
-    : //     T extends SimpleFunction
-      // ? ExactFunction<T, ExpectedType> :
-      {
-          [K in keyof Recursible<T>]: K extends keyof Recursible<ExpectedType>
-              ? Exact<Recursible<T>[K], Recursible<ExpectedType>[K]>
-              : { Missing: K; On: Recursible<ExpectedType> }
-          //   TypeError<`Invalid property '${Extract<
-          //         K,
-          //         string | number
-          //     >}'. Valid properties are: ${StringifyKeys<ExpectedType>}`>
-      }
-
-const ex = <A, B>(a: A, b: B) => [] as any as Exact<A, B>
-const result3 = ex(
-    {
-        a: (a: { a: 1; b: 2 }) => {}
-    },
-    {
-        a: (a: { a: number }) => {}
-    }
-)
-
-type Ref<T> = {
-    [K in keyof T]: {
-        x?: { a?: (_: string) => { a: number } }
-        y?: { a?: (_: string) => { a: number } }
-        b: string
-    }
-}
-
-const exact = <T>(t: Exact<T, Ref<T>>) => [] as any as T
-
-type Z = Exact<() => { a: 5 }, (_: string) => { a: number }>
-
-const t = exact({
-    shmope: {
-        x: { a: (_: string) => ({ a: 5 }) },
-        y: { a: (_: string) => ({ a: 5 }) },
-        b: "narrow"
-    },
-    brope: {
-        x: { a: (_: string) => ({ a: 5 }) },
-        b: "na"
-    }
-})
+        : {
+              [K in keyof T]: K extends keyof Recursible<ExpectedType>
+                  ? Exact<T[K], Recursible<ExpectedType>[K]>
+                  : TypeError<`Invalid property '${Extract<
+                        K,
+                        string | number
+                    >}'. Valid properties are: ${StringifyKeys<ExpectedType>}`>
+          }
+    : ExpectedType
 
 export type IsAnyOrUnknown<T> = (any extends T ? true : false) extends true
     ? true

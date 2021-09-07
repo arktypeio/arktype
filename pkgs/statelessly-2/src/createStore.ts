@@ -1,4 +1,10 @@
-import { NonRecursible, Unlisted, KeyValuate } from "@re-do/utils"
+import {
+    NonRecursible,
+    Unlisted,
+    KeyValuate,
+    ValueAtPath,
+    ValueAtPathList
+} from "@re-do/utils"
 import {
     Object as ToolbeltObject,
     Function as ToolbeltFunction
@@ -17,57 +23,43 @@ import {
     IsAny,
     StringifyPossibleTypes,
     StringifyKeys,
-    Recursible
+    Recursible,
+    Exact2
 } from "./utils"
 
-type DefinedConfig<DefinedType extends string> = {
-    defines: DefinedType
-}
-
-type DefinedTypeNames<Configs> = ToolbeltObject.Invert<
+type TypeNamesToKeys<Config> = ToolbeltObject.Invert<
     {
-        [ModelPath in keyof Configs]: Recursible<
-            Configs[ModelPath]
-        > extends DefinedConfig<infer DefinedType>
-            ? DefinedType
+        [K in keyof Config]: "defines" extends keyof Config[K]
+            ? Extract<Config[K]["defines"], string>
             : never
     }
 >
 
-type UpfilterTypes<Config> = {
-    [K in keyof Config]: Config[K] extends TypeDefOnly<infer TypeDef>
-        ? TypeDef
-        : Recursible<Config[K]> extends ConfigWithType<infer TypeDef>
-        ? TypeDef
+type TypeDefFromConfig<Config> = {
+    [K in keyof Config]: Config[K] extends string
+        ? Config[K]
+        : "type" extends keyof Config[K]
+        ? Config[K]["type"]
         : "fields" extends keyof Config[K]
-        ? UpfilterTypes<Config[K]["fields"]>
-        : { UpfilterMissing: "fields"; On: Recursible<Config[K]> }
+        ? TypeDefFromConfig<Config[K]["fields"]>
+        : TypeError<`Untyped config`>
 }
 
-type TypeSetFromConfig<Config> = {
-    [TypeName in keyof DefinedTypeNames<Config>]: UpfilterTypes<
-        KeyValuate<Config, DefinedTypeNames<Config>[TypeName]>
+type TypeSetFromConfig<
+    Config,
+    DefinedTypes = TypeNamesToKeys<Config>,
+    TypeDef = TypeDefFromConfig<Config>
+> = {
+    [TypeName in keyof DefinedTypes]: KeyValuate<
+        TypeDef,
+        DefinedTypes[TypeName]
     >
 }
 
-type TypeFromConfig<
-    Config,
-    TypeSet = TypeSetFromConfig<Config>
-> = UpfilterTypes<Config>
-// ParseType <
-//     TypeSet,
-
-// >
-
-type TypeDefOnly<TypeDef extends string> = TypeDef
-
-type ConfigWithType<TypeDef extends string> = {
-    type: TypeDef
-}
-
-type ConfigWithFields<Fields extends object> = {
-    fields: Fields
-}
+type TypeFromConfig<Config, TypeSet = TypeSetFromConfig<Config>> = ParseType<
+    TypeSet,
+    TypeDefFromConfig<Config>
+>
 
 type RootModelConfig<T, Config, TypeSet> = Exact<
     Config,
@@ -81,10 +73,10 @@ export type ModelConfigRecurse<
     InDefinition extends boolean,
     Seen,
     TypeSet
-> = Config extends TypeDefOnly<infer TypeDef>
+> = Config extends string
     ? IsTyped extends true
         ? TypeError<`A type has already been determined from an ancestor of this config.`>
-        : ValidatedPropDef<keyof TypeSet & string, TypeDef>
+        : ValidatedPropDef<Extract<keyof TypeSet, string>, Config>
     : ModelConfigOptions<T, Config, IsTyped, InDefinition, Seen, TypeSet>
 
 type ModelConfigOptions<
@@ -107,9 +99,8 @@ type ModelConfigOptions<
           >)
 
 type BaseModelConfigOptions<T, Config, IsTyped extends boolean, TypeSet> = {
-    // validate?: (_: N) => boolean
-    onChange?: (updates: string) => void
-    // another?: { T: T; Config: Config }
+    validate?: (value: T) => boolean
+    onChange?: (updates: T) => void
 } & (IsTyped extends true
     ? {}
     : {
@@ -124,12 +115,13 @@ type RecursibleModelConfigOptions<
     Seen,
     TypeSet
 > = {
+    // mandatory: string
     fields?: {
         [K in keyof Unlisted<T>]?: ModelConfigRecurse<
             Unlisted<T>[K],
-            KeyValuate<KeyValuate<Config, "fields">, K>,
-            Config extends ConfigWithType<string> ? true : IsTyped,
-            Config extends DefinedConfig<string> ? true : InDefinition,
+            ValueAtPathList<Config, ["fields", Extract<K, string | number>]>,
+            "type" extends keyof Config ? true : IsTyped,
+            "defines" extends keyof Config ? true : InDefinition,
             Seen | Unlisted<T>,
             TypeSet
         >
@@ -141,11 +133,7 @@ type RecursibleModelConfigOptions<
           idKey?: string
       })
 
-export type ModelConfig<
-    Config,
-    TypeSet = TypeSetFromConfig<Config>,
-    ConfigType = TypeFromConfig<Config, TypeSet>
-> = {
+export type ModelConfig<Config, TypeSet, ConfigType> = {
     [ModelPath in keyof Config]: RootModelConfig<
         KeyValuate<ConfigType, ModelPath>,
         Config[ModelPath],
@@ -153,10 +141,14 @@ export type ModelConfig<
     >
 }
 
-const createStore = <Config extends ModelConfig<Config>>(
+const createStore = <
+    Config extends ModelConfig<Config, TypeSet, ConfigType>,
+    TypeSet = TypeSetFromConfig<Config>,
+    ConfigType = TypeFromConfig<Config, TypeSet>
+>(
     config: Narrow<Config>
 ) => {
-    return {} as ForceEvaluate<TypeFromConfig<Config>>
+    return {} as ConfigType
 }
 
 const store = createStore({
@@ -166,6 +158,9 @@ const store = createStore({
             name: {
                 type: "string",
                 onChange: () => ":-)"
+            },
+            groups: {
+                type: "group[]"
             }
         }
     },
@@ -180,9 +175,7 @@ const store = createStore({
     }
 })
 
-type Store = typeof store
-
-// const store = createStore({
+// const store2 = createStore({
 //     users: {
 //         defines: "user",
 //         fields: {
@@ -200,9 +193,11 @@ type Store = typeof store
 //             },
 //             groups: {
 //                 type: "group[]",
+//                 onChange: (_) =>
+//                     _.forEach((group) => console.log(group.description)),
 //                 fields: {
 //                     name: {
-//                         onChange: () => {}
+//                         onChange: (_) => {}
 //                     }
 //                 }
 //             },
