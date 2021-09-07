@@ -109,16 +109,6 @@ export type ExactFunction<T, ExpectedType> = T extends ExpectedType
         : ExpectedType
     : ExpectedType
 
-export type Exact2<A, W> = W extends unknown
-    ? A extends W
-        ? A extends NonObject
-            ? A
-            : {
-                  [K in keyof A]: K extends keyof W ? Exact<A[K], W[K]> : never
-              }
-        : W
-    : never
-
 export type Exact<T, ExpectedType> = IsAnyOrUnknown<T> extends true
     ? ExpectedType
     : T extends ExpectedType

@@ -3,29 +3,13 @@ import {
     Unlisted,
     KeyValuate,
     ValueAtPath,
-    ValueAtPathList
+    ValueAtPathList,
+    Segment,
+    Join
 } from "@re-do/utils"
-import {
-    Object as ToolbeltObject,
-    Function as ToolbeltFunction
-} from "ts-toolbelt"
-import {
-    ParseType,
-    ValidatedPropDef,
-    TypeDefinition,
-    NonStringOrRecord
-} from "./createTypes"
-import {
-    TypeError,
-    Narrow,
-    Exact,
-    ForceEvaluate,
-    IsAny,
-    StringifyPossibleTypes,
-    StringifyKeys,
-    Recursible,
-    Exact2
-} from "./utils"
+import { Object as ToolbeltObject } from "ts-toolbelt"
+import { ParseType, ValidatedPropDef, TypeDefinition } from "./createTypes"
+import { TypeError, Narrow, Exact, ForceEvaluate } from "./utils"
 
 type TypeNamesToKeys<Config> = ToolbeltObject.Invert<
     {
@@ -61,85 +45,136 @@ type TypeFromConfig<Config, TypeSet = TypeSetFromConfig<Config>> = ParseType<
     TypeDefFromConfig<Config>
 >
 
-type RootModelConfig<T, Config, TypeSet> = Exact<
-    Config,
-    ModelConfigRecurse<T, Config, false, false, never, TypeSet>
->
+export type ModelConfig<Config, TypeSet, ConfigType> = {
+    [ModelPath in keyof Config]: Exact<
+        Config,
+        ModelConfigRecurse<
+            KeyValuate<ConfigType, ModelPath>,
+            Config[ModelPath],
+            null,
+            false,
+            never,
+            [],
+            TypeSet
+        >
+    >
+}
 
-export type ModelConfigRecurse<
+type ModelConfigRecurse<
     T,
     Config,
-    IsTyped extends boolean,
+    PathToType extends Segment[] | null,
     InDefinition extends boolean,
     Seen,
+    Path extends Segment[],
     TypeSet
 > = Config extends string
-    ? IsTyped extends true
-        ? TypeError<`A type has already been determined from an ancestor of this config.`>
+    ? PathToType extends Segment[]
+        ? TypeError<`A type has already been determined via ${Join<PathToType>}.`>
         : ValidatedPropDef<Extract<keyof TypeSet, string>, Config>
-    : ModelConfigOptions<T, Config, IsTyped, InDefinition, Seen, TypeSet>
+    : ModelConfigOptions<
+          T,
+          Config,
+          PathToType,
+          InDefinition,
+          Seen,
+          Path,
+          TypeSet
+      >
 
 type ModelConfigOptions<
     T,
     Config,
-    IsTyped extends boolean,
+    PathToType extends Segment[] | null,
     InDefinition extends boolean,
     Seen,
+    Path extends Segment[],
     TypeSet
-> = BaseModelConfigOptions<T, Config, IsTyped, TypeSet> &
-    (Unlisted<T> extends NonRecursible | Seen
-        ? {}
-        : RecursibleModelConfigOptions<
-              T,
-              Config,
-              IsTyped,
-              InDefinition,
-              Seen,
-              TypeSet
-          >)
+> = ModelConfigBaseOptions<T> &
+    ModelConfigTypeOptions<T, Config, PathToType, Path, TypeSet> &
+    ModelConfigFieldOptions<
+        T,
+        Config,
+        PathToType,
+        InDefinition,
+        Seen,
+        Path,
+        TypeSet
+    > &
+    ModelConfigDefinitionOptions<T, InDefinition, Seen>
 
-type BaseModelConfigOptions<T, Config, IsTyped extends boolean, TypeSet> = {
+type ModelConfigBaseOptions<T> = {
     validate?: (value: T) => boolean
     onChange?: (updates: T) => void
-} & (IsTyped extends true
-    ? {}
-    : {
-          type?: TypeDefinition<TypeSet, KeyValuate<Config, "type">>
-      })
+}
 
-type RecursibleModelConfigOptions<
+type ModelConfigTypeOptions<
     T,
     Config,
-    IsTyped extends boolean,
+    PathToType extends Segment[] | null,
+    Path extends Segment[],
+    TypeSet
+> = PathToType extends null
+    ? "fields" extends keyof Config
+        ? {
+              type?: TypeDefinition<TypeSet, KeyValuate<Config, "type">>
+          }
+        : {
+              type: "type" extends keyof Config
+                  ? TypeDefinition<TypeSet, KeyValuate<Config, "type">>
+                  : TypeError<`Unable to determine the type of ${Join<Path>}.`>
+          }
+    : {}
+
+type ConfigIfRecursible<T, Seen, ValueIfRecursible> = Unlisted<T> extends
+    | NonRecursible
+    | Seen
+    ? {}
+    : ValueIfRecursible
+
+type ModelConfigDefinitionOptions<
+    T,
+    InDefinition extends boolean,
+    Seen
+> = ConfigIfRecursible<
+    T,
+    Seen,
+    InDefinition extends false
+        ? {
+              defines?: string
+              idKey?: string
+          }
+        : {}
+>
+
+type ModelConfigFieldOptions<
+    T,
+    Config,
+    PathToType extends Segment[] | null,
     InDefinition extends boolean,
     Seen,
+    Path extends Segment[],
     TypeSet
-> = {
-    // mandatory: string
-    fields?: {
-        [K in keyof Unlisted<T>]?: ModelConfigRecurse<
-            Unlisted<T>[K],
-            ValueAtPathList<Config, ["fields", Extract<K, string | number>]>,
-            "type" extends keyof Config ? true : IsTyped,
-            "defines" extends keyof Config ? true : InDefinition,
-            Seen | Unlisted<T>,
-            TypeSet
-        >
+> = ConfigIfRecursible<
+    T,
+    Seen,
+    {
+        fields?: {
+            [K in keyof Unlisted<T>]?: ModelConfigRecurse<
+                Unlisted<T>[K],
+                ValueAtPathList<
+                    Config,
+                    ["fields", Extract<K, string | number>]
+                >,
+                "type" extends keyof Config ? Path : PathToType,
+                "defines" extends keyof Config ? true : InDefinition,
+                Seen | Unlisted<T>,
+                [...Path, Extract<K, Segment>],
+                TypeSet
+            >
+        }
     }
-} & (InDefinition extends true
-    ? {}
-    : {
-          defines?: string
-          idKey?: string
-      })
-
-export type ModelConfig<Config, TypeSet, ConfigType> = {
-    [ModelPath in keyof Config]: RootModelConfig<
-        KeyValuate<ConfigType, ModelPath>,
-        Config[ModelPath],
-        TypeSet
-    >
-}
+>
 
 const createStore = <
     Config extends ModelConfig<Config, TypeSet, ConfigType>,
@@ -244,3 +279,59 @@ const store = createStore({
 //         }
 //     }
 // })
+
+// export type Store<
+//     Input extends object,
+//     M extends Model<Input, T>,
+//     T extends TypeDefinitions<T>,
+//     A extends Actions<Input>
+// > = StoreRecurse<Input, M, IsList<Input>, "id">
+
+// type StoreRecurse<
+//     Input,
+//     Model,
+//     InList extends boolean,
+//     IdKey extends string
+// > = Input extends NonRecursible
+//     ? Model extends ModelConfig<any>
+//         ? Input
+//         : Input
+//     : Input extends any[]
+//     ? StoreRecurse<Unlisted<Input>, Model, true, IdKey>
+//     : {
+//           [K in keyof Input]: Model extends WithOptionalTuple<
+//               infer ModelProps,
+//               infer ModelConfig
+//           >
+//               ? K extends keyof ModelProps
+//                   ? ModelProps[K] extends string
+//                       ? Input[K] extends any[]
+//                           ? Interactions<
+//                                 Extract<Unlisted<Input[K]>, object>,
+//                                 Extract<
+//                                     KeyValuate<ModelConfig, "idKey", IdKey>,
+//                                     string
+//                                 >
+//                             >
+//                           : Operations<Input[K]>
+//                       : Input[K] extends any[]
+//                       ? Interactions<
+//                             Extract<Unlisted<Input[K]>, object>,
+//                             Extract<
+//                                 KeyValuate<ModelConfig, "idKey", IdKey>,
+//                                 string
+//                             >
+//                         >
+//                       : StoreRecurse<
+//                             Input[K],
+//                             ModelProps[K],
+//                             false,
+//                             Extract<
+//                                 KeyValuate<ModelConfig, "idKey", IdKey>,
+//                                 string
+//                             >
+//                         >
+//                   : // No config provided
+//                     Operations<Input[K]>
+//               : Operations<Input[K]>
+//       }
