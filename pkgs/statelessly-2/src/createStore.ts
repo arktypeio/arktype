@@ -40,21 +40,22 @@ type TypeSetFromConfig<
     >
 }
 
-type TypeFromConfig<Config, TypeSet = TypeSetFromConfig<Config>> = ParseType<
-    TypeSet,
-    TypeDefFromConfig<Config>
->
+type TypeFromConfig<Config, TypeSet = TypeSetFromConfig<Config>> = {
+    [K in keyof Config]: "defines" extends keyof Config[K]
+        ? ParseType<TypeSet, TypeDefFromConfig<Config>[K]>[]
+        : ParseType<TypeSet, TypeDefFromConfig<Config>[K]>
+}
 
 export type ModelConfig<Config, TypeSet, ConfigType> = {
-    [ModelPath in keyof Config]: Exact<
-        Config,
+    [K in keyof Config]: Exact<
+        Config[K],
         ModelConfigRecurse<
-            KeyValuate<ConfigType, ModelPath>,
-            Config[ModelPath],
+            KeyValuate<ConfigType, K>,
+            Config[K],
             null,
             false,
             never,
-            [],
+            [Extract<K, Segment>],
             TypeSet
         >
     >
