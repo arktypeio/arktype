@@ -3,9 +3,23 @@ import {
     FilterByValue,
     Narrow,
     Exact,
-    NonRecursible
+    NonRecursible,
+    TransformCyclic,
+    Unlisted
 } from "@re-do/utils"
-import { TypeError, ForceEvaluate } from "./utils"
+import {
+    TypeError,
+    ForceEvaluate,
+    Recursible,
+    IsAny,
+    IsAnyOrUnknown
+} from "./utils"
+
+type Evaluate<T> = T extends NonRecursible
+    ? T
+    : {
+          [K in keyof T]: T[K]
+      }
 
 type BuiltInTypes = {
     string: string
@@ -90,54 +104,62 @@ export type DefinedTypeSet<Definitions> = TypeDefinitionRecurse<
 >
 
 type ParseTypeString<
-    Definitions,
+    TypeSet,
     PropDefinition extends string
 > = PropDefinition extends OptionalPropDef<infer OptionalType>
-    ? ParseTypeStringRecurse<Definitions, OptionalType> | undefined
-    : ParseTypeStringRecurse<Definitions, PropDefinition>
+    ? ParseTypeStringRecurse<TypeSet, OptionalType> | undefined
+    : ParseTypeStringRecurse<TypeSet, PropDefinition>
 
 type ParseTypeStringRecurse<
-    Definitions,
+    TypeSet,
     PropDefinition extends string
 > = PropDefinition extends PropDefGroup<infer Group>
-    ? ParseTypeStringRecurse<Definitions, Group>
+    ? ParseTypeStringRecurse<TypeSet, Group>
     : PropDefinition extends ListPropDef<infer ListItem>
-    ? ParseTypeStringRecurse<Definitions, ListItem>[]
+    ? ParseTypeStringRecurse<TypeSet, ListItem>[]
     : PropDefinition extends OrPropDef<infer First, infer Second>
     ?
-          | ParseTypeStringRecurse<Definitions, First>
-          | ParseTypeStringRecurse<Definitions, Second>
-    : PropDefinition extends keyof Definitions
-    ? ParseType<Definitions, Definitions[PropDefinition]>
+          | ParseTypeStringRecurse<TypeSet, First>
+          | ParseTypeStringRecurse<TypeSet, Second>
+    : PropDefinition extends keyof TypeSet
+    ? ParseType<TypeSet, TypeSet[PropDefinition], PropDefinition>
     : PropDefinition extends keyof BuiltInTypes
     ? BuiltInTypes[PropDefinition]
     : TypeError<`Unable to parse the type of '${PropDefinition}'.`>
 
-export type ParseTypes<Definitions> = {
-    [TypeName in keyof Definitions]: ParseType<
-        Definitions,
-        Definitions[TypeName]
-    >
+export type ParseTypeSet<TypeSet> = {
+    [TypeName in keyof TypeSet]: ParseType<TypeSet, TypeSet[TypeName]>
 }
 
-export type ParseType<Definitions, Definition> = Definition extends string
-    ? ForceEvaluate<ParseTypeString<Definitions, Definition>, false>
+export type ParseType<
+    TypeSet,
+    Definition,
+    RecursiveTypeName extends keyof TypeSet | null = null
+> = Definition extends string
+    ? ParseTypeString<TypeSet, Definition>
     : Definition extends object
-    ? ForceEvaluate<ParseTypeObject<Definitions, Definition>, false>
+    ? RecursiveTypeName extends keyof TypeSet
+        ? Evaluate<ParseTypeObject<TypeSet, Definition>> // Type<RecursiveTypeName, TypeSet>
+        : Evaluate<ParseTypeObject<TypeSet, Definition>>
     : TypeError<`A type definition must be an object whose keys are either strings or nested type definitions.`>
 
-type ParseTypeObject<Definitions, Definition> = {
+type Type<Name extends keyof TypeSet, TypeSet> = ParseTypeObject<
+    TypeSet,
+    TypeSet[Name]
+>
+
+type ParseTypeObject<TypeSet, Definition> = {
     [PropName in keyof ExcludeByValue<
         Definition & object,
         OptionalPropDef
-    >]: ParseType<Definitions, Definition[PropName]>
+    >]: ParseType<TypeSet, Definition[PropName]>
 } &
     {
         [PropName in keyof FilterByValue<
             Definition & object,
             OptionalPropDef
         >]?: Definition[PropName] extends OptionalPropDef<infer OptionalType>
-            ? ParseType<Definitions, OptionalType>
+            ? ParseType<TypeSet, OptionalType>
             : TypeError<`Expected property ${Extract<
                   PropName,
                   string | number
@@ -146,7 +168,26 @@ type ParseTypeObject<Definitions, Definition> = {
 
 const getTypes = <Definitions extends DefinedTypeSet<Definitions>>(
     t: Narrow<Definitions>
-) => "" as any as ParseTypes<Definitions>
+) => "" as any as ParseTypeSet<Definitions>
+
+type Store = ParseTypeSet<{
+    user: {
+        name: "string"
+        bestFriend: "user"
+        friends: "user[]"
+        groups: "group[]"
+        nested: {
+            another: "string"
+            user: "user[]"
+        }
+    }
+    group: {
+        name: "string"
+        description: "string?"
+        members: "user[]"
+        owner: "user"
+    }
+}>
 
 getTypes({
     user: {
