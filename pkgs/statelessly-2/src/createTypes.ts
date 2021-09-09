@@ -122,7 +122,7 @@ type ParseTypeStringRecurse<
           | ParseTypeStringRecurse<TypeSet, First>
           | ParseTypeStringRecurse<TypeSet, Second>
     : PropDefinition extends keyof TypeSet
-    ? ParseType<TypeSet, TypeSet[PropDefinition], PropDefinition>
+    ? ParseType<TypeSet, TypeSet[PropDefinition]>
     : PropDefinition extends keyof BuiltInTypes
     ? BuiltInTypes[PropDefinition]
     : TypeError<`Unable to parse the type of '${PropDefinition}'.`>
@@ -131,32 +131,21 @@ export type ParseTypeSet<TypeSet> = {
     [TypeName in keyof TypeSet]: ParseType<TypeSet, TypeSet[TypeName]>
 }
 
-export type ParseType<
-    TypeSet,
-    Definition,
-    RecursiveTypeName extends keyof TypeSet | null = null
-> = Definition extends string
+export type ParseType<TypeSet, Definition> = Definition extends string
     ? ParseTypeString<TypeSet, Definition>
     : Definition extends object
-    ? RecursiveTypeName extends keyof TypeSet
-        ? Evaluate<ParseTypeObject<TypeSet, Definition>> // Type<RecursiveTypeName, TypeSet>
-        : Evaluate<ParseTypeObject<TypeSet, Definition>>
+    ? Evaluate<ParseTypeObject<TypeSet, Definition>>
     : TypeError<`A type definition must be an object whose keys are either strings or nested type definitions.`>
 
-type Type<Name extends keyof TypeSet, TypeSet> = ParseTypeObject<
-    TypeSet,
-    TypeSet[Name]
->
-
-type ParseTypeObject<TypeSet, Definition> = {
-    [PropName in keyof ExcludeByValue<
-        Definition & object,
-        OptionalPropDef
-    >]: ParseType<TypeSet, Definition[PropName]>
+type ParseTypeObject<TypeSet, Definition extends object> = {
+    [PropName in keyof ExcludeByValue<Definition, OptionalPropDef>]: ParseType<
+        TypeSet,
+        Definition[PropName]
+    >
 } &
     {
         [PropName in keyof FilterByValue<
-            Definition & object,
+            Definition,
             OptionalPropDef
         >]?: Definition[PropName] extends OptionalPropDef<infer OptionalType>
             ? ParseType<TypeSet, OptionalType>
