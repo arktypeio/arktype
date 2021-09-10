@@ -4,18 +4,12 @@ import {
     Narrow,
     Exact,
     NonRecursible,
-    TransformCyclic,
-    Unlisted
+    Entry,
+    Merge
 } from "@re-do/utils"
-import {
-    TypeError,
-    ForceEvaluate,
-    Recursible,
-    IsAny,
-    IsAnyOrUnknown
-} from "./utils"
+import { TypeError } from "./utils"
 
-type Evaluate<T> = T extends NonRecursible
+export type Evaluate<T> = T extends NonRecursible
     ? T
     : {
           [K in keyof T]: T[K]
@@ -80,26 +74,26 @@ export type NonStringOrRecord = Exclude<NonRecursible | any[], string>
 
 // Check for all non-object types other than string (which are illegal) as validating
 // that Definition[PropName] extends string directly results in type widening
-type TypeDefinitionRecurse<TypeSet, Definition> = {
+export type ValidatedObjectDef<DefinedTypeName extends string, Definition> = {
     [PropName in keyof Definition]: Definition[PropName] extends NonStringOrRecord
         ? TypeError<`A type definition must be an object whose keys are either strings or nested type definitions.`>
         : Definition[PropName] extends object
         ? Exact<
               Definition[PropName],
-              TypeDefinitionRecurse<TypeSet, Definition[PropName]>
+              ValidatedObjectDef<DefinedTypeName, Definition[PropName]>
           >
-        : ValidatedPropDef<
-              keyof TypeSet & string,
-              Definition[PropName] & string
-          >
+        : ValidatedPropDef<DefinedTypeName, Definition[PropName] & string>
 }
 
-export type TypeDefinition<TypeSet, Definition> = Definition extends string
-    ? ValidatedPropDef<keyof TypeSet & string, Definition & string>
-    : TypeDefinitionRecurse<TypeSet, Definition>
+export type TypeDefinition<
+    DefinedTypeName extends string,
+    Definition
+> = Definition extends string
+    ? ValidatedPropDef<DefinedTypeName, Definition>
+    : ValidatedObjectDef<DefinedTypeName, Definition>
 
-export type DefinedTypeSet<Definitions> = TypeDefinitionRecurse<
-    Definitions,
+export type DefinedTypeSet<Definitions> = ValidatedObjectDef<
+    Extract<keyof Definitions, string>,
     Definitions
 >
 

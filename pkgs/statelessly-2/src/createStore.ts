@@ -114,15 +114,16 @@ type ModelConfigTypeOptions<
     Config,
     PathToType extends Segment[] | null,
     Path extends Segment[],
-    TypeSet
+    TypeSet,
+    DefinedTypeName extends string = Extract<keyof TypeSet, string>
 > = PathToType extends null
     ? "fields" extends keyof Config
         ? {
-              type?: TypeDefinition<TypeSet, KeyValuate<Config, "type">>
+              type?: TypeDefinition<DefinedTypeName, KeyValuate<Config, "type">>
           }
         : {
               type: "type" extends keyof Config
-                  ? TypeDefinition<TypeSet, KeyValuate<Config, "type">>
+                  ? TypeDefinition<DefinedTypeName, KeyValuate<Config, "type">>
                   : TypeError<`Unable to determine the type of ${Join<Path>}.`>
           }
     : {}
