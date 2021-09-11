@@ -1,12 +1,10 @@
-import { createModel, createModel2, declare } from "./model"
+import { createModel, declareTypes } from "./model"
 import { user } from "./user"
 import { group } from "./group"
 
-// export const model = createModel(user, group)
+export const { define } = declareTypes("user", "group")
 
-export const define = declare("user", "group")
-
-define.group.as({ a: "user[]" })
+export const model = createModel(user, group)
 
 // model.define("new", {
 //     prop: "string",

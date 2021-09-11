@@ -1,9 +1,12 @@
 import { Key, NonRecursible, Unlisted } from "./common.js"
 import { filter } from "./filter.js"
 
-type ExcludedByKeys<O, K extends Key[]> = Pick<O, Exclude<keyof O, K[number]>>
+export type ExcludedByKeys<O, K extends Key[]> = Pick<
+    O,
+    Exclude<keyof O, K[number]>
+>
 
-type DeepExcludedByKeys<O, K extends Key[]> = O extends NonRecursible
+export type DeepExcludedByKeys<O, K extends Key[]> = O extends NonRecursible
     ? O
     : {
           [P in keyof ExcludedByKeys<O, K>]: Array<any> extends O[P]

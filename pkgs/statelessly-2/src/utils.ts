@@ -9,13 +9,11 @@ import {
 
 import {
     NonRecursible,
-    Unlisted,
-    KeyValuate,
-    ExcludeCyclic,
     Join,
     NonObject,
     SimpleFunction,
-    Not
+    IsAnyOrUnknown,
+    Cast
 } from "@re-do/utils"
 
 export type TypeError<Description extends string> = Description
@@ -24,8 +22,6 @@ export type ForceEvaluate<T, Deep extends boolean = true> = ToolbeltAny.Compute<
     T,
     Deep extends true ? "deep" : "flat"
 >
-
-export type Cast<A, B> = A extends B ? A : B
 
 export type Recursible<T> = T extends NonRecursible ? never : T
 
@@ -123,23 +119,3 @@ export type Exact<T, ExpectedType> = IsAnyOrUnknown<T> extends true
                     >}'. Valid properties are: ${StringifyKeys<ExpectedType>}`>
           }
     : ExpectedType
-
-export type IsAnyOrUnknown<T> = (any extends T ? true : false) extends true
-    ? true
-    : false
-
-export type IsAny<T> = (any extends T ? AnyIsAny<T> : false) extends true
-    ? true
-    : false
-
-export type IsUnknown<T> = (
-    any extends T ? AnyIsUnknown<T> : false
-) extends true
-    ? true
-    : false
-
-type AnyIsAny<T> = (T extends {} ? true : false) extends false ? false : true
-
-type AnyIsUnknown<T> = (T extends {} ? true : false) extends false
-    ? true
-    : false

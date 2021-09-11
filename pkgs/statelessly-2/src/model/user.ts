@@ -1,9 +1,6 @@
-import { define } from "./model"
-import { m3 } from "./types"
+import { define } from "./types"
 
-export const user = "user"
-
-m3.define("user", {
+export const user = define.user({
     name: "string",
     bestFriend: "user",
     friends: "user[]",

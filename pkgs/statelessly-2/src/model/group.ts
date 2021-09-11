@@ -1,6 +1,6 @@
-import { define } from "./model"
+import { define } from "./types"
 
-export const group = define("group", {
+export const group = define.group({
     name: "string",
     description: "string?",
     members: "user[]",

@@ -8,15 +8,13 @@ import {
     Key,
     ValueOf,
     ValueFrom,
-    Unlisted
+    Unlisted,
+    transform,
+    SimpleFunction,
+    ExcludedByKeys
 } from "@re-do/utils"
 import { ParseTypeSet, Evaluate } from "../createTypes"
 import { TypeDefinition, ValidatedObjectDef } from ".."
-
-export const define = <Name extends string, Definition>(
-    name: Name,
-    definition: Narrow<Definition>
-) => [name, definition] as [Name, Definition]
 
 type EntryIteration<Current extends Entry, Remaining extends Entry[]> = [
     Current,
@@ -68,23 +66,36 @@ export const createModel = <
     ) => [name, definition] as [Name, Definition]
 })
 
-export const declare = <TypeNames extends string[]>(...args: TypeNames) =>
-    Object.fromEntries(
-        args.map((typeName) => [
-            typeName,
-            {
-                as: (definition: any) => [typeName, definition]
-            }
-        ])
-    ) as {
-        [TypeName in Unlisted<TypeNames>]: {
-            as: <
-                Definition extends ValidatedObjectDef<
-                    Unlisted<TypeNames>,
-                    Definition
-                >
-            >(
-                definition: Narrow<Definition>
-            ) => Definition
-        }
+const createDefineFunctionMap = <DeclaredTypeNames extends string[]>(
+    typeNames: DeclaredTypeNames
+) =>
+    transform(typeNames, ([index, typeName]) => [
+        typeName as string,
+        createDefineFunction()
+    ]) as {
+        [DefinedTypeName in Unlisted<DeclaredTypeNames>]: DefineFunction<
+            Unlisted<DeclaredTypeNames>,
+            DefinedTypeName
+        >
     }
+
+type DefineFunction<
+    DeclaredTypeName extends string,
+    DefinedTypeName extends DeclaredTypeName
+> = <Definition extends ValidatedObjectDef<DeclaredTypeName, Definition>>(
+    definition: Narrow<Definition>
+) => Entry<DefinedTypeName, Definition>
+
+const createDefineFunction =
+    <
+        DeclaredTypeName extends string,
+        DefinedTypeName extends DeclaredTypeName
+    >(): DefineFunction<DeclaredTypeName, DefinedTypeName> =>
+    (definition: any) =>
+        definition
+
+export const declareTypes = <TypeNames extends string[]>(
+    ...typeNames: Narrow<TypeNames>
+) => ({
+    define: createDefineFunctionMap(typeNames)
+})

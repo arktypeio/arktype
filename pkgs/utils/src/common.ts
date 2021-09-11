@@ -404,17 +404,34 @@ export type IfExtends<T, CheckIfExtended, ValueIfTrue, ValueIfFalse> =
 export type Cast<A, B> = A extends B ? A : B
 
 type NarrowRecurse<T> =
-    | (T extends [] ? [] : never)
-    | (T extends Narrowable ? T : never)
+    | (T extends NonRecursible ? T : never)
     | {
-          [K in keyof T]: T[K] extends Function ? T[K] : Narrow<T[K]>
+          [K in keyof T]:
+              | (IsAnyOrUnknown<T[K]> extends true ? T[K] : never)
+              | NarrowRecurse<T[K]>
       }
 
-type NarrowRoot<T, Narrowed = NarrowRecurse<T>> = Narrowed | Cast<T, Narrowed>
+export type Narrow<T> = Cast<T, NarrowRecurse<T>>
 
-type Narrowable = string | number | bigint | boolean
+export type IsAnyOrUnknown<T> = (any extends T ? true : false) extends true
+    ? true
+    : false
 
-export type Narrow<T> = NarrowRoot<T>
+export type IsAny<T> = (any extends T ? AnyIsAny<T> : false) extends true
+    ? true
+    : false
+
+export type IsUnknown<T> = (
+    any extends T ? AnyIsUnknown<T> : false
+) extends true
+    ? true
+    : false
+
+type AnyIsAny<T> = (T extends {} ? true : false) extends false ? false : true
+
+type AnyIsUnknown<T> = (T extends {} ? true : false) extends false
+    ? true
+    : false
 
 export type KeyValuate<T, K, Fallback = undefined> = K extends keyof T
     ? T[K]
