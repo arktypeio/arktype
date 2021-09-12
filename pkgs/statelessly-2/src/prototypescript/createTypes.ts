@@ -7,7 +7,7 @@ import {
     Entry,
     Merge
 } from "@re-do/utils"
-import { TypeError } from "./utils"
+import { TypeError } from "../utils"
 
 export type Evaluate<T> = T extends NonRecursible
     ? T

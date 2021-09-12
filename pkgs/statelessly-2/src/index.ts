@@ -1,3 +1,3 @@
 export * from "./createStore"
-export * from "./createTypes"
 export * from "./utils"
+export * from "./prototypescript"

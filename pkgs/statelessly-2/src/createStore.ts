@@ -8,7 +8,12 @@ import {
     Join
 } from "@re-do/utils"
 import { Object as ToolbeltObject } from "ts-toolbelt"
-import { ParseType, ValidatedPropDef, TypeDefinition } from "./createTypes"
+import {
+    ParseType,
+    ValidatedPropDef,
+    TypeDefinition,
+    DefinedTypeSet
+} from "./prototypescript/createTypes"
 import { TypeError, Narrow, Exact, ForceEvaluate } from "./utils"
 
 type TypeNamesToKeys<Config> = ToolbeltObject.Invert<
@@ -178,12 +183,16 @@ type ModelConfigFieldOptions<
     }
 >
 
-const createStore = <
+export const createStore = <
     Config extends ModelConfig<Config, TypeSet, ConfigType>,
+    OptionsTypeSet,
     TypeSet = TypeSetFromConfig<Config>,
     ConfigType = TypeFromConfig<Config, TypeSet>
 >(
-    config: Narrow<Config>
+    config: Narrow<Config>,
+    options?: {
+        predefined?: DefinedTypeSet<OptionsTypeSet>
+    }
 ) => {
     return {} as ConfigType
 }
