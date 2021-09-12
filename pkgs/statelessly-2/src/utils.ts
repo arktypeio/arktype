@@ -1,19 +1,16 @@
 import {
-    Object as ToolbeltObject,
     Union as ToolbeltUnion,
     List as ToolbeltList,
-    Any as ToolbeltAny,
-    Function as ToolbeltFunction,
-    A
+    Any as ToolbeltAny
 } from "ts-toolbelt"
-
 import {
     NonRecursible,
     Join,
     NonObject,
     SimpleFunction,
     IsAnyOrUnknown,
-    Cast
+    Cast,
+    Key
 } from "@re-do/utils"
 
 export type TypeError<Description extends string> = Description
@@ -22,6 +19,8 @@ export type ForceEvaluate<T, Deep extends boolean = true> = ToolbeltAny.Compute<
     T,
     Deep extends true ? "deep" : "flat"
 >
+
+export type Entry<K extends Key = Key, V = any> = [K, V]
 
 export type Recursible<T> = T extends NonRecursible ? never : T
 
@@ -34,29 +33,6 @@ type NarrowRecurse<T> =
       }
 
 export type Narrow<T> = Cast<T, NarrowRecurse<T>>
-
-const narrow = <T>(t: Narrow<T>): T => [] as any
-
-const result = narrow({
-    users: {
-        defines: "user",
-        fields: {
-            name: {
-                type: "string",
-                onChange: {} as unknown
-            }
-        }
-    },
-    groups: {
-        defines: "group",
-        fields: {
-            name: {
-                type: "string",
-                onChange: () => ""
-            }
-        }
-    }
-})
 
 type ListPossibleTypesRecurse<
     U,

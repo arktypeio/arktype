@@ -10,5 +10,3 @@ export const user = define.user({
         user: "user[]"
     }
 })
-
-// export const userDefinition = m3.define("user")

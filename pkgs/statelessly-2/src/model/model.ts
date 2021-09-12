@@ -1,20 +1,6 @@
-import {
-    ExcludeByValue,
-    FilterByValue,
-    Narrow,
-    Exact,
-    NonRecursible,
-    Merge,
-    Key,
-    ValueOf,
-    ValueFrom,
-    Unlisted,
-    transform,
-    SimpleFunction,
-    ExcludedByKeys
-} from "@re-do/utils"
+import { Narrow, Merge, Key, Unlisted, transform } from "@re-do/utils"
 import { ParseTypeSet, Evaluate } from "../createTypes"
-import { TypeDefinition, ValidatedObjectDef } from ".."
+import { ValidatedObjectDef, Entry } from ".."
 
 type EntryIteration<Current extends Entry, Remaining extends Entry[]> = [
     Current,
@@ -28,50 +14,20 @@ type FromEntries<
     ? FromEntries<Remaining, Merge<Result, { [K in Current[0]]: Current[1] }>>
     : Result
 
-type ParseModel<Definitions extends Entry[]> = Evaluate<
+type ParseDefinitionEntries<Definitions extends Entry[]> = Evaluate<
     ParseTypeSet<FromEntries<Definitions>>
 >
 
-const model = <Definitions extends Entry[]>(...definitions: Definitions) =>
-    Object.fromEntries(definitions) as Evaluate<
-        ParseTypeSet<FromEntries<Definitions>>
-    >
-
-type Entry<K extends Key = Key, V = any> = [K, V]
-
-type KeyOfEntries<
-    Entries extends Entry[],
-    Result = never
-> = Entries extends EntryIteration<infer Current, infer Remaining>
-    ? KeyOfEntries<Remaining, Result | Current[0]>
-    : Result
-
-type ModeledTypeName<Definitions extends Entry[]> = Extract<
-    KeyOfEntries<Definitions>,
-    string
->
-
-export const createModel = <
-    Definitions extends Entry[],
-    DefinedTypeName extends string = ModeledTypeName<Definitions>
->(
+export const createTypes = <Definitions extends Entry[]>(
     ...definitions: Definitions
-) => ({
-    define: <
-        Name extends string,
-        Definition extends ValidatedObjectDef<DefinedTypeName, Definition>
-    >(
-        name: Name,
-        definition: Narrow<Definition>
-    ) => [name, definition] as [Name, Definition]
-})
+) => Object.fromEntries(definitions) as ParseDefinitionEntries<Definitions>
 
 const createDefineFunctionMap = <DeclaredTypeNames extends string[]>(
     typeNames: DeclaredTypeNames
 ) =>
     transform(typeNames, ([index, typeName]) => [
         typeName as string,
-        createDefineFunction()
+        createDefineFunction(typeName as string)
     ]) as {
         [DefinedTypeName in Unlisted<DeclaredTypeNames>]: DefineFunction<
             Unlisted<DeclaredTypeNames>,
@@ -87,12 +43,11 @@ type DefineFunction<
 ) => Entry<DefinedTypeName, Definition>
 
 const createDefineFunction =
-    <
-        DeclaredTypeName extends string,
-        DefinedTypeName extends DeclaredTypeName
-    >(): DefineFunction<DeclaredTypeName, DefinedTypeName> =>
+    <DeclaredTypeName extends string, DefinedTypeName extends DeclaredTypeName>(
+        definedTypeName: DefinedTypeName
+    ): DefineFunction<DeclaredTypeName, DefinedTypeName> =>
     (definition: any) =>
-        definition
+        [definedTypeName, definition]
 
 export const declareTypes = <TypeNames extends string[]>(
     ...typeNames: Narrow<TypeNames>
