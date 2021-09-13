@@ -1,4 +1,4 @@
-import { createTypes, declareTypes } from "./model"
+import { createTypes, declareTypes } from "../model"
 import { user } from "./user"
 import { group } from "./group"
 

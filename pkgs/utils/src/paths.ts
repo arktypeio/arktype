@@ -2,13 +2,15 @@ import {
     FlatUnlisted,
     IsList,
     isRecursible,
-    ItemOrList,
     MinusOne,
     TransformCyclic,
     NonRecursible,
     withDefaults,
     And,
-    Merge
+    Merge,
+    Segment,
+    Join,
+    DefaultDelimiter
 } from "./common.js"
 import { String } from "ts-toolbelt"
 
@@ -102,10 +104,6 @@ export const valueAtPathList = <
 export type Fallback<Value, Default> = unknown extends Value ? Default : Value
 export type EnsureValue<Value, Default> = NonNullable<Fallback<Value, Default>>
 
-export type Segment = string | number
-
-export type DefaultDelimiter = "/"
-
 export type PathConstraintOptions = {
     filter?: any
     exclude?: any
@@ -174,20 +172,6 @@ type LeafListOfRecurse<
           }[keyof T],
           Segment[]
       >
-
-export type Join<
-    Segments extends Segment[],
-    Delimiter extends string = DefaultDelimiter
-> = Segments extends []
-    ? ""
-    : Segments extends [Segment]
-    ? `${Segments[0]}`
-    : Segments extends [Segment, ...infer Remaining]
-    ? `${Segments[0]}${Delimiter}${Join<
-          Remaining extends Segment[] ? Remaining : never,
-          Delimiter
-      >}`
-    : never
 
 export type LeafOf<
     T,

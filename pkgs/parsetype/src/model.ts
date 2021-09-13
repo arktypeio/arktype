@@ -1,6 +1,12 @@
-import { Narrow, Merge, Key, Unlisted, transform } from "@re-do/utils"
-import { ParseTypeSet, Evaluate } from "./createTypes"
-import { ValidatedObjectDef, Entry } from ".."
+import {
+    Narrow,
+    Merge,
+    Unlisted,
+    transform,
+    Entry,
+    Evaluate
+} from "@re-do/utils"
+import { ParseTypeSet, ValidatedObjectDef } from ".."
 
 type EntryIteration<Current extends Entry, Remaining extends Entry[]> = [
     Current,

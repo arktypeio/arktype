@@ -73,6 +73,11 @@
             "projectFolder": "pkgs/statelessly-2"
         },
         {
+            "packageName": "parsetype",
+            "projectFolder": "pkgs/parsetype",
+            "shouldPublish": true
+        },
+        {
             "packageName": "@re-do/test",
             "projectFolder": "pkgs/test",
             "shouldPublish": true

@@ -302,6 +302,27 @@ importers:
       ts-jest: 27.0.3_jest@27.0.6+typescript@4.4.2
       typescript: 4.4.2
 
+  ../../pkgs/parsetype:
+    specifiers:
+      '@re-do/configs': workspace:*
+      '@re-do/utils': workspace:*
+      '@types/jest': 26.0.24
+      '@types/node': 15.0.2
+      jest: 27.0.6
+      ts-jest: 27.0.3
+      ts-toolbelt: 9.5.10
+      typescript: 4.4.2
+    dependencies:
+      '@re-do/utils': link:../utils
+    devDependencies:
+      '@re-do/configs': link:../configs
+      '@types/jest': 26.0.24
+      '@types/node': 15.0.2
+      jest: 27.0.6
+      ts-jest: 27.0.3_jest@27.0.6+typescript@4.4.2
+      ts-toolbelt: 9.5.10
+      typescript: 4.4.2
+
   ../../pkgs/persist-statelessly:
     specifiers:
       '@re-do/configs': workspace:*
@@ -431,6 +452,7 @@ importers:
       isomorphic-fetch: 3.0.0
       jest: 27.0.6
       moize: 5.4.7
+      parsetype: workspace:*
       redux: 4.0.5
       redux-devtools-extension: 2.13.8
       ts-jest: 27.0.3
@@ -442,6 +464,7 @@ importers:
       deepmerge: 4.2.2
       isomorphic-fetch: 3.0.0
       moize: 5.4.7
+      parsetype: link:../parsetype
       redux: 4.0.5
       redux-devtools-extension: 2.13.8_redux@4.0.5
     devDependencies:

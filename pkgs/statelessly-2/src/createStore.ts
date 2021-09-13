@@ -2,10 +2,12 @@ import {
     NonRecursible,
     Unlisted,
     KeyValuate,
-    ValueAtPath,
     ValueAtPathList,
     Segment,
-    Join
+    Join,
+    TypeError,
+    Narrow,
+    Exact
 } from "@re-do/utils"
 import { Object as ToolbeltObject } from "ts-toolbelt"
 import {
@@ -13,8 +15,7 @@ import {
     ValidatedPropDef,
     TypeDefinition,
     DefinedTypeSet
-} from "./prototypescript/createTypes"
-import { TypeError, Narrow, Exact, ForceEvaluate } from "./utils"
+} from "parsetype"
 
 type TypeNamesToKeys<Config> = ToolbeltObject.Invert<
     {

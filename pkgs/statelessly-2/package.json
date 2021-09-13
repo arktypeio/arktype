@@ -26,6 +26,7 @@
     },
     "dependencies": {
         "@re-do/utils": "workspace:*",
+        "parsetype": "workspace:*",
         "deepmerge": "4.2.2",
         "isomorphic-fetch": "3.0.0",
         "moize": "5.4.7",
