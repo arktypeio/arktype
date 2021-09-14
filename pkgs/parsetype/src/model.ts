@@ -5,7 +5,7 @@ import {
     transform,
     Entry,
     Evaluate,
-    ValueFrom
+    ElementOf
 } from "@re-do/utils"
 import { ParseTypeSet, ValidatedObjectDef } from ".."
 
@@ -32,26 +32,23 @@ const createDefineFunctionMap = <DeclaredTypeNames extends string[]>(
         typeName as string,
         createDefineFunction(typeName as string)
     ]) as {
-        [DefinedTypeName in Unlisted<DeclaredTypeNames>]: DefineFunction<
-            Unlisted<DeclaredTypeNames>,
+        [DefinedTypeName in ElementOf<DeclaredTypeNames>]: DefineFunction<
+            ElementOf<DeclaredTypeNames>,
             DefinedTypeName
         >
     }
 
 type DefineFunction<
-    DeclaredTypeNames extends string[],
-    DefinedTypeName extends ValueFrom<DeclaredTypeName>
+    DeclaredTypeName extends string,
+    DefinedTypeName extends DeclaredTypeName
 > = <Definition extends ValidatedObjectDef<DeclaredTypeName, Definition>>(
     definition: Narrow<Definition>
 ) => Entry<DefinedTypeName, Definition>
 
 const createDefineFunction =
-    <
-        DeclaredTypeNames extends string[],
-        DefinedTypeName extends ValueFrom<DeclaredTypeNames>
-    >(
+    <DeclaredTypeName extends string, DefinedTypeName extends DeclaredTypeName>(
         definedTypeName: DefinedTypeName
-    ): DefineFunction<DeclaredTypeNames, DefinedTypeName> =>
+    ): DefineFunction<DeclaredTypeName, DefinedTypeName> =>
     (definition: any) =>
         [definedTypeName, definition]
 
