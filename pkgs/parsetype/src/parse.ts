@@ -13,31 +13,31 @@ import {
     BuiltInTypeMap
 } from "./builtin"
 
-type ParseTypeString<
+type ParseStringDefinition<
     TypeSet,
     PropDefinition extends string
 > = PropDefinition extends OptionalType<infer OptionalType>
-    ? ParseTypeStringRecurse<TypeSet, OptionalType> | undefined
-    : ParseTypeStringRecurse<TypeSet, PropDefinition>
+    ? ParseStringDefinitionRecurse<TypeSet, OptionalType> | undefined
+    : ParseStringDefinitionRecurse<TypeSet, PropDefinition>
 
-type ParseTypeStringRecurse<
+type ParseStringDefinitionRecurse<
     TypeSet,
     PropDefinition extends string
 > = PropDefinition extends GroupedType<infer Group>
-    ? ParseTypeStringRecurse<TypeSet, Group>
+    ? ParseStringDefinitionRecurse<TypeSet, Group>
     : PropDefinition extends ListType<infer ListItem>
-    ? ParseTypeStringRecurse<TypeSet, ListItem>[]
+    ? ParseStringDefinitionRecurse<TypeSet, ListItem>[]
     : PropDefinition extends OrType<infer First, infer Second>
     ?
-          | ParseTypeStringRecurse<TypeSet, First>
-          | ParseTypeStringRecurse<TypeSet, Second>
+          | ParseStringDefinitionRecurse<TypeSet, First>
+          | ParseStringDefinitionRecurse<TypeSet, Second>
     : PropDefinition extends keyof TypeSet
     ? ParseType<TypeSet, TypeSet[PropDefinition]>
     : PropDefinition extends BuiltInType
     ? BuiltInTypeMap[PropDefinition]
     : TypeError<`Unable to parse the type of '${PropDefinition}'.`>
 
-type ParseTypeObject<TypeSet, Definition extends object> = {
+type ParseObjectDefinition<TypeSet, Definition extends object> = {
     [PropName in keyof ExcludeByValue<Definition, OptionalType>]: ParseType<
         TypeSet,
         Definition[PropName]
@@ -55,12 +55,12 @@ type ParseTypeObject<TypeSet, Definition extends object> = {
               >} to be optional.`>
     }
 
-export type ParseTypeSet<TypeSet> = {
+export type ParseDiscreteTypeSet<TypeSet> = {
     [TypeName in keyof TypeSet]: ParseType<TypeSet, TypeSet[TypeName]>
 }
 
 export type ParseType<TypeSet, Definition> = Definition extends string
-    ? ParseTypeString<TypeSet, Definition>
+    ? ParseStringDefinition<TypeSet, Definition>
     : Definition extends object
-    ? Evaluate<ParseTypeObject<TypeSet, Definition>>
+    ? Evaluate<ParseObjectDefinition<TypeSet, Definition>>
     : TypeError<`A type definition must be an object whose keys are either strings or nested type definitions.`>

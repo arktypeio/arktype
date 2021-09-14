@@ -4,7 +4,8 @@ import {
     Unlisted,
     transform,
     Entry,
-    Evaluate
+    Evaluate,
+    ValueFrom
 } from "@re-do/utils"
 import { ParseTypeSet, ValidatedObjectDef } from ".."
 
@@ -24,10 +25,6 @@ type ParseDefinitionEntries<Definitions extends Entry[]> = Evaluate<
     ParseTypeSet<FromEntries<Definitions>>
 >
 
-export const createTypes = <Definitions extends Entry[]>(
-    ...definitions: Definitions
-) => Object.fromEntries(definitions) as ParseDefinitionEntries<Definitions>
-
 const createDefineFunctionMap = <DeclaredTypeNames extends string[]>(
     typeNames: DeclaredTypeNames
 ) =>
@@ -42,21 +39,28 @@ const createDefineFunctionMap = <DeclaredTypeNames extends string[]>(
     }
 
 type DefineFunction<
-    DeclaredTypeName extends string,
-    DefinedTypeName extends DeclaredTypeName
+    DeclaredTypeNames extends string[],
+    DefinedTypeName extends ValueFrom<DeclaredTypeName>
 > = <Definition extends ValidatedObjectDef<DeclaredTypeName, Definition>>(
     definition: Narrow<Definition>
 ) => Entry<DefinedTypeName, Definition>
 
 const createDefineFunction =
-    <DeclaredTypeName extends string, DefinedTypeName extends DeclaredTypeName>(
+    <
+        DeclaredTypeNames extends string[],
+        DefinedTypeName extends ValueFrom<DeclaredTypeNames>
+    >(
         definedTypeName: DefinedTypeName
-    ): DefineFunction<DeclaredTypeName, DefinedTypeName> =>
+    ): DefineFunction<DeclaredTypeNames, DefinedTypeName> =>
     (definition: any) =>
         [definedTypeName, definition]
 
-export const declareTypes = <TypeNames extends string[]>(
-    ...typeNames: Narrow<TypeNames>
+export const declareTypes = <DeclaredTypeNames extends string[]>(
+    ...names: Narrow<DeclaredTypeNames>
 ) => ({
-    define: createDefineFunctionMap(typeNames)
+    define: createDefineFunctionMap(names)
 })
+
+export const createTypes = <Definitions extends Entry[]>(
+    ...definitions: Definitions
+) => Object.fromEntries(definitions) as ParseDefinitionEntries<Definitions>

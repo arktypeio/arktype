@@ -97,9 +97,10 @@ export type DeepPartial<T> = {
 export type Writeable<T> = { -readonly [P in keyof T]: T[P] }
 export type DeepWriteable<T> = { -readonly [P in keyof T]: DeepWriteable<T[P]> }
 
-export type ValueOf<T> = T[keyof T]
+export type PropertyOf<T> = T[keyof T]
+export type ElementOf<T extends any[]> = T[number]
+
 export type EntryOf<T> = { [K in keyof T]: [K, T[K]] }[keyof T]
-export type ValueFrom<T, K extends keyof T> = Pick<T, K>[K]
 
 export type SimpleFunction = (...args: any[]) => any
 export type Primitive = string | number | boolean | symbol | bigint

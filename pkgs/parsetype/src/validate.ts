@@ -7,59 +7,56 @@ import {
     BuiltInType
 } from "./builtin"
 
-type AtomicType<DefinedTypeName extends string> = DefinedTypeName | BuiltInType
+type AtomicStringDefinition<DeclaredName extends string> =
+    | DeclaredName
+    | BuiltInType
 
-type ValidatedPropDefRecurse<
-    DefinedTypeName extends string,
-    Fragment extends string
+type StringDefinitionRecurse<
+    Fragment extends string,
+    DeclaredName extends string
 > = Fragment extends GroupedType<infer Group>
-    ? `(${ValidatedPropDefRecurse<DefinedTypeName, Group>})`
+    ? `(${StringDefinitionRecurse<DeclaredName, Group>})`
     : Fragment extends ListType<infer ListItem>
-    ? `${ValidatedPropDefRecurse<DefinedTypeName, ListItem>}[]`
+    ? `${StringDefinitionRecurse<DeclaredName, ListItem>}[]`
     : Fragment extends OrType<infer First, infer Second>
-    ? `${ValidatedPropDefRecurse<
-          DefinedTypeName,
+    ? `${StringDefinitionRecurse<
+          DeclaredName,
           First
-      >} | ${ValidatedPropDefRecurse<DefinedTypeName, Second>}`
-    : Fragment extends AtomicType<DefinedTypeName>
+      >} | ${StringDefinitionRecurse<DeclaredName, Second>}`
+    : Fragment extends AtomicStringDefinition<DeclaredName>
     ? Fragment
     : TypeError<`Unable to determine the type of '${Fragment}'.`>
 
-type ValidatedMetaPropDef<
-    DefinedTypeName extends string,
-    PropDef extends string
-> = PropDef extends OptionalType<infer OptionalType>
-    ? `${ValidatedPropDefRecurse<DefinedTypeName, OptionalType>}?`
-    : ValidatedPropDefRecurse<DefinedTypeName, PropDef>
+type StringDefinition<
+    Definition extends string,
+    DeclaredName extends string
+> = Definition extends OptionalType<infer OptionalType>
+    ? `${StringDefinitionRecurse<DeclaredName, OptionalType>}?`
+    : StringDefinitionRecurse<DeclaredName, Definition>
 
-export type ValidatedPropDef<
-    DefinedTypeName extends string,
-    PropDef extends string
-> = ValidatedMetaPropDef<DefinedTypeName, PropDef>
-
-export type NonStringOrRecord = Exclude<NonRecursible | any[], string>
+type NonStringOrRecord = Exclude<NonRecursible | any[], string>
 
 // Check for all non-object types other than string (which are illegal) as validating
 // that Definition[PropName] extends string directly results in type widening
-export type ValidatedObjectDef<DefinedTypeName extends string, Definition> = {
+type ObjectDefinition<Definition, DeclaredName extends string> = {
     [PropName in keyof Definition]: Definition[PropName] extends NonStringOrRecord
         ? TypeError<`A type definition must be an object whose keys are either strings or nested type definitions.`>
         : Definition[PropName] extends object
         ? Exact<
               Definition[PropName],
-              ValidatedObjectDef<DefinedTypeName, Definition[PropName]>
+              ObjectDefinition<Definition[PropName], DeclaredName>
           >
-        : ValidatedPropDef<DefinedTypeName, Definition[PropName] & string>
+        : StringDefinition<Definition[PropName] & string, DeclaredName>
 }
 
 export type TypeDefinition<
-    DefinedTypeName extends string,
-    Definition
+    Definition,
+    DeclaredName extends string = never
 > = Definition extends string
-    ? ValidatedPropDef<DefinedTypeName, Definition>
-    : ValidatedObjectDef<DefinedTypeName, Definition>
+    ? StringDefinition<Definition, DeclaredName>
+    : ObjectDefinition<Definition, DeclaredName>
 
-export type DefinedTypeSet<Definitions> = ValidatedObjectDef<
-    Extract<keyof Definitions, string>,
-    Definitions
+export type DiscreteTypeSet<TypeSet extends object> = ObjectDefinition<
+    TypeSet,
+    Extract<keyof TypeSet, string>
 >

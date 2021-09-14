@@ -1,4 +1,4 @@
-import { DeepPartial, isRecursible, fromEntries, ValueOf } from "./common.js"
+import { DeepPartial, isRecursible, fromEntries, PropertyOf } from "./common.js"
 
 export type FilterFunction<T> = (
     value: T,
@@ -7,8 +7,8 @@ export type FilterFunction<T> = (
 ) => boolean
 
 export type FilterOptions<Filterable, IsDeep extends boolean = false> = {
-    objectFilter?: FilterFunction<[keyof Filterable, ValueOf<Filterable>]>
-    arrayFilter?: FilterFunction<[keyof Filterable, ValueOf<Filterable>]>
+    objectFilter?: FilterFunction<[keyof Filterable, PropertyOf<Filterable>]>
+    arrayFilter?: FilterFunction<[keyof Filterable, PropertyOf<Filterable>]>
     deep?: IsDeep
 }
 
