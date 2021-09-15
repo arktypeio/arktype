@@ -5,7 +5,7 @@ import {
     ListType,
     OptionalType,
     BuiltInType
-} from "./builtin"
+} from "./common"
 
 type AtomicStringDefinition<DeclaredName extends string> =
     | DeclaredName
@@ -38,7 +38,7 @@ type NonStringOrRecord = Exclude<NonRecursible | any[], string>
 
 // Check for all non-object types other than string (which are illegal) as validating
 // that Definition[PropName] extends string directly results in type widening
-type ObjectDefinition<Definition, DeclaredName extends string> = {
+export type ObjectDefinition<Definition, DeclaredName extends string> = {
     [PropName in keyof Definition]: Definition[PropName] extends NonStringOrRecord
         ? TypeError<`A type definition must be an object whose keys are either strings or nested type definitions.`>
         : Definition[PropName] extends object
@@ -51,7 +51,7 @@ type ObjectDefinition<Definition, DeclaredName extends string> = {
 
 export type TypeDefinition<
     Definition,
-    DeclaredName extends string = never
+    DeclaredName extends string
 > = Definition extends string
     ? StringDefinition<Definition, DeclaredName>
     : ObjectDefinition<Definition, DeclaredName>

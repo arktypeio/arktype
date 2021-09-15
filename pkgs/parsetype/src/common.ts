@@ -15,7 +15,7 @@ export type ListType<ListItem extends string = string> = `${ListItem}[]`
 export type OrType<
     First extends string = string,
     Second extends string = string
-> = `${First} | ${Second}`
+> = `${First}|${Second}`
 
 export type GroupedType<Group extends string = string> = `(${Group})`
 

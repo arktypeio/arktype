@@ -2,8 +2,10 @@ import {
     ExcludeByValue,
     FilterByValue,
     TypeError,
-    Evaluate
+    Evaluate,
+    Narrow
 } from "@re-do/utils"
+import { DiscreteTypeSet, ObjectDefinition, TypeDefinition } from "validate"
 import {
     GroupedType,
     OrType,
@@ -11,7 +13,7 @@ import {
     OptionalType,
     BuiltInType,
     BuiltInTypeMap
-} from "./builtin"
+} from "./common"
 
 type ParseStringDefinition<
     TypeSet,
@@ -64,3 +66,16 @@ export type ParseType<TypeSet, Definition> = Definition extends string
     : Definition extends object
     ? Evaluate<ParseObjectDefinition<TypeSet, Definition>>
     : TypeError<`A type definition must be an object whose keys are either strings or nested type definitions.`>
+
+// export const parse = <
+//     Definition extends ObjectDefinition<
+//         Definition,
+//         Extract<keyof DeclaredTypeSet, string>
+//     >,
+//     DeclaredTypeSet extends DiscreteTypeSet<DeclaredTypeSet>
+// >(
+//     definition: Narrow<Definition>,
+//     declaredTypeSet?: DeclaredTypeSet
+// ) => [] as any as ParseType<DeclaredTypeSet, Definition>
+
+// const result = parse({ a: "string" })

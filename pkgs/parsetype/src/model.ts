@@ -1,15 +1,14 @@
 import {
     Narrow,
-    Merge,
-    Unlisted,
     transform,
     Entry,
     Evaluate,
-    ElementOf
+    ElementOf,
+    NonRecursible
 } from "@re-do/utils"
-import { ParseTypeSet, ValidatedObjectDef } from ".."
+import { ParseTypeSet, TypeDefinition, ValidatedObjectDef } from ".."
 
-type EntryIteration<Current extends Entry, Remaining extends Entry[]> = [
+type Iteration<T, Current extends T, Remaining extends T[]> = [
     Current,
     ...Remaining
 ]
@@ -17,12 +16,32 @@ type EntryIteration<Current extends Entry, Remaining extends Entry[]> = [
 type FromEntries<
     Entries extends Entry[],
     Result extends object = {}
-> = Entries extends EntryIteration<infer Current, infer Remaining>
+> = Entries extends Iteration<Entry, infer Current, infer Remaining>
     ? FromEntries<Remaining, Merge<Result, { [K in Current[0]]: Current[1] }>>
     : Result
 
-type ParseDefinitionEntries<Definitions extends Entry[]> = Evaluate<
-    ParseTypeSet<FromEntries<Definitions>>
+type Merge<A, B> = A extends any[] | NonRecursible
+    ? B
+    : {
+          [K in keyof A | keyof B]: K extends keyof A
+              ? K extends keyof B
+                  ? B[K]
+                  : A[K]
+              : K extends keyof B
+              ? B[K]
+              : never
+      }
+
+type MergeAll<Objects, Result extends object = {}> = Objects extends Iteration<
+    any,
+    infer Current,
+    infer Remaining
+>
+    ? MergeAll<Remaining, Merge<Result, Current>>
+    : Result
+
+type ParseDefinitions<Definitions> = Evaluate<
+    ParseTypeSet<MergeAll<Definitions>>
 >
 
 const createDefineFunctionMap = <DeclaredTypeNames extends string[]>(
@@ -43,14 +62,14 @@ type DefineFunction<
     DefinedTypeName extends DeclaredTypeName
 > = <Definition extends ValidatedObjectDef<DeclaredTypeName, Definition>>(
     definition: Narrow<Definition>
-) => Entry<DefinedTypeName, Definition>
+) => { [K in DefinedTypeName]: Definition }
 
 const createDefineFunction =
     <DeclaredTypeName extends string, DefinedTypeName extends DeclaredTypeName>(
         definedTypeName: DefinedTypeName
     ): DefineFunction<DeclaredTypeName, DefinedTypeName> =>
     (definition: any) =>
-        [definedTypeName, definition]
+        ({ [definedTypeName]: definition } as any)
 
 export const declareTypes = <DeclaredTypeNames extends string[]>(
     ...names: Narrow<DeclaredTypeNames>
@@ -58,6 +77,18 @@ export const declareTypes = <DeclaredTypeNames extends string[]>(
     define: createDefineFunctionMap(names)
 })
 
-export const createTypes = <Definitions extends Entry[]>(
-    ...definitions: Definitions
-) => Object.fromEntries(definitions) as ParseDefinitionEntries<Definitions>
+type ValidatedDefinitions<
+    Definitions,
+    DeclaredTypeName extends string = Extract<
+        keyof MergeAll<Definitions>,
+        string
+    >
+> = {
+    [K in keyof Definitions]: TypeDefinition<DeclaredTypeName, Definitions[K]>
+}
+
+export const createTypes = <
+    Definitions extends ValidatedDefinitions<Definitions>
+>(
+    definitions: Narrow<Definitions>
+) => [] as any as ParseDefinitions<Definitions>

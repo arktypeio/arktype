@@ -438,6 +438,7 @@ export type Entry<K extends Key = Key, V = any> = [K, V]
 export type Recursible<T> = T extends NonRecursible ? never : T
 
 type NarrowRecurse<T> =
+    | (T extends [] ? [] : never)
     | (T extends NonRecursible ? T : never)
     | {
           [K in keyof T]:
