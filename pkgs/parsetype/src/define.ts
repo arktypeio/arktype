@@ -1,11 +1,39 @@
-import { Exact, NonRecursible, TypeError } from "@re-do/utils"
 import {
     GroupedType,
     OrType,
     ListType,
     OptionalType,
-    BuiltInType
+    BuiltInType,
+    MergeAll
 } from "./common"
+import {
+    Narrow,
+    transform,
+    ElementOf,
+    Exact,
+    NonRecursible,
+    TypeError
+} from "@re-do/utils"
+
+const createDefineFunctionMap = <DeclaredTypeNames extends string[]>(
+    typeNames: DeclaredTypeNames
+) =>
+    transform(typeNames, ([index, typeName]) => [
+        typeName as string,
+        createDefineFunction(typeName as string)
+    ]) as {
+        [DefinedTypeName in ElementOf<DeclaredTypeNames>]: DefineFunction<
+            ElementOf<DeclaredTypeNames>,
+            DefinedTypeName
+        >
+    }
+
+type DefineFunction<
+    DeclaredTypeName extends string,
+    DefinedTypeName extends DeclaredTypeName
+> = <Definition extends ObjectDefinition<Definition, DeclaredTypeName>>(
+    definition: Narrow<Definition>
+) => { [K in DefinedTypeName]: Definition }
 
 type AtomicStringDefinition<DeclaredName extends string> =
     | DeclaredName
@@ -56,7 +84,30 @@ export type TypeDefinition<
     ? StringDefinition<Definition, DeclaredName>
     : ObjectDefinition<Definition, DeclaredName>
 
-export type DiscreteTypeSet<TypeSet extends object> = ObjectDefinition<
-    TypeSet,
-    Extract<keyof TypeSet, string>
->
+// export type DiscreteTypeSet<TypeSet extends object> = ObjectDefinition<
+//     TypeSet,
+//     Extract<keyof TypeSet, string>
+// >
+
+export type TypeSet<
+    Definitions,
+    DeclaredTypeName extends string = Extract<
+        keyof MergeAll<Definitions>,
+        string
+    >
+> = {
+    [K in keyof Definitions]: TypeDefinition<Definitions[K], DeclaredTypeName>
+}
+
+const createDefineFunction =
+    <DeclaredTypeName extends string, DefinedTypeName extends DeclaredTypeName>(
+        definedTypeName: DefinedTypeName
+    ): DefineFunction<DeclaredTypeName, DefinedTypeName> =>
+    (definition: any) =>
+        ({ [definedTypeName]: definition } as any)
+
+export const declareTypes = <DeclaredTypeNames extends string[]>(
+    ...names: Narrow<DeclaredTypeNames>
+) => ({
+    define: createDefineFunctionMap(names)
+})

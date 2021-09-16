@@ -5,14 +5,15 @@ import {
     Evaluate,
     Narrow
 } from "@re-do/utils"
-import { DiscreteTypeSet, ObjectDefinition, TypeDefinition } from "validate"
+import { TypeSet, ObjectDefinition, TypeDefinition } from "./define"
 import {
     GroupedType,
     OrType,
     ListType,
     OptionalType,
     BuiltInType,
-    BuiltInTypeMap
+    BuiltInTypeMap,
+    MergeAll
 } from "./common"
 
 type ParseStringDefinition<
@@ -57,9 +58,14 @@ type ParseObjectDefinition<TypeSet, Definition extends object> = {
               >} to be optional.`>
     }
 
-export type ParseDiscreteTypeSet<TypeSet> = {
-    [TypeName in keyof TypeSet]: ParseType<TypeSet, TypeSet[TypeName]>
-}
+export type ParseTypeSet<
+    Definitions,
+    Merged = MergeAll<Definitions>
+> = Evaluate<
+    {
+        [TypeName in keyof Merged]: ParseType<Merged, Merged[TypeName]>
+    }
+>
 
 export type ParseType<TypeSet, Definition> = Definition extends string
     ? ParseStringDefinition<TypeSet, Definition>
@@ -79,3 +85,7 @@ export type ParseType<TypeSet, Definition> = Definition extends string
 // ) => [] as any as ParseType<DeclaredTypeSet, Definition>
 
 // const result = parse({ a: "string" })
+
+export const parse = <Definitions extends TypeSet<Definitions>>(
+    definitions: Narrow<Definitions>
+) => [] as any as ParseTypeSet<Definitions>
