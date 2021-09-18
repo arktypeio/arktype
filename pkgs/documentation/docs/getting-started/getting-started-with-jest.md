@@ -2,7 +2,7 @@
 sidebar_position: 1
 ---
 
-# Getting started with Mocha
+# Getting started with Jest
 
 ## Installing Redo
 
@@ -18,13 +18,11 @@ Or install Redo using ```yarn```:
 yarn add --dev @re-do/test
 ```
 
-## How to use Redo
+## How to use Redo with Jest
 
 You can use Redo with your favorite testing package. Two of the most popular are Jest and Mocha.
 
-### How to use Redo with Jest
-
-#### Step 1: Install Jest
+### Step 1: Install Jest
 
 Install Jest using  ```npm```:
 
@@ -38,7 +36,7 @@ Or install Redo using ```yarn```:
 yarn add --dev jest
 ```
 
-#### Step 2: Add a file to hold the test
+### Step 2: Add a file to hold the test
 
 Add a \__tests__ folder in your `src` folder so Jest knows where to look for the tests.
 
@@ -46,7 +44,7 @@ Add an index test file in your \__tests___ folder. For example, your structure c
 
 `src/__tests__/index.test.js`
 
-#### Step 3: Add the Jest code
+### Step 3: Add the Jest code
 
 Add the following code to your `src/__tests__/index.test.js` file.
 
@@ -64,7 +62,7 @@ describe.each(getTests())("", ({ name, id }) => {
 });
 ```
 
-#### Step 4: Launch Redo
+### Step 4: Launch Redo
 
 From your command line, run:
 
@@ -72,30 +70,12 @@ From your command line, run:
 npx redo launch
 ```
 
-#### Step 5: Launch Redo
-
-From your command line, run:
+### Step 5: Create a free account
 
 ```bash
 npx redo launch
 ```
 
-#### Step 6: Create a free account
+### Step 6: Create your first test
 
-So that we can make:
-
-```bash
-npx redo launch
-```
-
-## Create your first Markdown Page
-
-Create a file at `src/pages/my-markdown-page.md`:
-
-```mdx title="src/pages/my-markdown-page.md"
-# My Markdown page
-
-This is a Markdown page
-```
-
-A new page is now available at `http://localhost:3000/my-markdown-page`.
+To learn how to create your first test, see the guide entitled, Creating your first test.
