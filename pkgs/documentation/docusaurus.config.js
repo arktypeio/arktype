@@ -3,32 +3,31 @@ const darkCodeTheme = require("prism-react-renderer/themes/dracula")
 
 /** @type {import('@docusaurus/types').DocusaurusConfig} */
 module.exports = {
-    title: "My Site",
-    tagline: "Dinosaurs are cool",
-    url: "https://your-docusaurus-test-site.com",
+    title: "Redo Documentation",
+    tagline: "Web testing rewritten",
+    url: "https://redo.qa/",
     baseUrl: "/",
     onBrokenLinks: "throw",
     onBrokenMarkdownLinks: "warn",
     favicon: "img/favicon.ico",
-    organizationName: "facebook", // Usually your GitHub org/user name.
-    projectName: "docusaurus", // Usually your repo name.
+    organizationName: "Redo", // Usually your GitHub org/user name.
+    projectName: "redo-documentation", // Usually your repo name.
     themeConfig: {
         navbar: {
-            title: "My Site",
+            title: "Redo Docs",
             logo: {
-                alt: "My Site Logo",
+                alt: "Redo Logo",
                 src: "img/logo.svg"
             },
             items: [
                 {
                     type: "doc",
                     docId: "intro",
-                    position: "left",
-                    label: "Tutorial"
+                    position: "right",
+                    label: "Back to Redo.qa"
                 },
-                { to: "/blog", label: "Blog", position: "left" },
                 {
-                    href: "https://github.com/facebook/docusaurus",
+                    href: "https://github.com/re-do/redo",
                     label: "GitHub",
                     position: "right"
                 }
@@ -38,46 +37,24 @@ module.exports = {
             style: "dark",
             links: [
                 {
-                    title: "Docs",
+                    title: "Links",
                     items: [
                         {
-                            label: "Tutorial",
-                            to: "/docs/intro"
-                        }
-                    ]
-                },
-                {
-                    title: "Community",
-                    items: [
-                        {
-                            label: "Stack Overflow",
-                            href: "https://stackoverflow.com/questions/tagged/docusaurus"
+                            label: "Redo website",
+                            to: "https://redo.qa"
                         },
-                        {
-                            label: "Discord",
-                            href: "https://discordapp.com/invite/docusaurus"
-                        },
-                        {
-                            label: "Twitter",
-                            href: "https://twitter.com/docusaurus"
-                        }
-                    ]
-                },
-                {
-                    title: "More",
-                    items: [
                         {
                             label: "Blog",
-                            to: "/blog"
+                            to: "https://redo.qa/blog"
                         },
                         {
                             label: "GitHub",
-                            href: "https://github.com/facebook/docusaurus"
+                            href: "https://github.com/re-do/redo"
                         }
                     ]
                 }
             ],
-            copyright: `Copyright © ${new Date().getFullYear()} My Project, Inc. Built with Docusaurus.`
+            copyright: `Copyright © ${new Date().getFullYear()} Redo.`
         },
         prism: {
             theme: lightCodeTheme,
@@ -91,14 +68,12 @@ module.exports = {
                 docs: {
                     sidebarPath: require.resolve("./sidebars.js"),
                     // Please change this to your repo.
-                    editUrl:
-                        "https://github.com/facebook/docusaurus/edit/master/website/"
+                    editUrl: "https://github.com/re-do/redo"
                 },
                 blog: {
                     showReadingTime: true,
                     // Please change this to your repo.
-                    editUrl:
-                        "https://github.com/facebook/docusaurus/edit/master/website/blog/"
+                    editUrl: "https://github.com/re-do/redo"
                 },
                 theme: {
                     customCss: require.resolve("./src/css/custom.css")

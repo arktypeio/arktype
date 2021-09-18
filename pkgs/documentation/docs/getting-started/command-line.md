@@ -13,9 +13,3 @@ Here are the most common options available in the command line.
 ```
 npx redo launch
 ```
-
-### Run test
-
-```
-npx redo launch
-```

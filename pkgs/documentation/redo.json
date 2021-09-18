@@ -1,0 +1,39 @@
+{
+    "tests": [
+        {
+            "name": "my first test",
+            "tags": [1],
+            "steps": [1, 2, 3],
+            "id": 1
+        }
+    ],
+    "elements": [
+        {
+            "selector": ".navbar__item:nth-child(3)",
+            "id": 1
+        }
+    ],
+    "steps": [
+        {
+            "kind": "go",
+            "url": "http://localhost:3000/",
+            "id": 1
+        },
+        {
+            "kind": "click",
+            "element": 1,
+            "id": 2
+        },
+        {
+            "kind": "go",
+            "url": "http://localhost:3000/docs/intro",
+            "id": 3
+        }
+    ],
+    "tags": [
+        {
+            "value": "desktop",
+            "id": 1
+        }
+    ]
+}
