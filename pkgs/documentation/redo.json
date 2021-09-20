@@ -1,15 +1,21 @@
 {
     "tests": [
         {
-            "name": "my first test",
-            "tags": [1],
-            "steps": [1, 2, 3],
+            "name": "Page Loads",
+            "tags": [],
+            "steps": [1],
             "id": 1
+        },
+        {
+            "name": "Homepage says Why Redo?",
+            "tags": [],
+            "steps": [1, 2],
+            "id": 2
         }
     ],
     "elements": [
         {
-            "selector": ".navbar__item:nth-child(3)",
+            "selector": "h1",
             "id": 1
         }
     ],
@@ -20,20 +26,11 @@
             "id": 1
         },
         {
-            "kind": "click",
+            "kind": "assertText",
             "element": 1,
+            "value": "Why Redo?",
             "id": 2
-        },
-        {
-            "kind": "go",
-            "url": "http://localhost:3000/docs/intro",
-            "id": 3
         }
     ],
-    "tags": [
-        {
-            "value": "desktop",
-            "id": 1
-        }
-    ]
+    "tags": []
 }

@@ -24,7 +24,8 @@ module.exports = {
                     type: "doc",
                     docId: "intro",
                     position: "right",
-                    label: "Back to Redo.qa"
+                    label: "Redo.qa",
+                    href: "https://redo.qa/"
                 },
                 {
                     href: "https://github.com/re-do/redo",

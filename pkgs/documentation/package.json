@@ -28,7 +28,10 @@
     },
     "devDependencies": {
         "@re-do/test": "workspace:*",
-        "jest": "27.0.6"
+        "@re-do/configs": "workspace:*",
+        "jest": "27.0.6",
+        "@types/jest": "26.0.24",
+        "ts-jest": "27.0.3"
     },
     "browserslist": {
         "production": [
