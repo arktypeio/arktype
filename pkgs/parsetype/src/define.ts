@@ -54,10 +54,8 @@ export type ObjectDefinition<Definition, DeclaredTypeNames extends string[]> = {
               Definition[PropName],
               ObjectDefinition<Definition[PropName], DeclaredTypeNames>
           >
-        : StringDefinition<
-              Extract<Definition[PropName], string>,
-              DeclaredTypeNames
-          >
+        : // As of TS 4.42, Extract<Definition[PropName], string> mysteriously breaks this type. Maybe some faulty caching?
+          StringDefinition<Definition[PropName] & string, DeclaredTypeNames>
 }
 
 export type TypeDefinition<
