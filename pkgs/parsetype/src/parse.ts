@@ -13,7 +13,8 @@ import {
     OptionalType,
     BuiltInType,
     BuiltInTypeMap,
-    MergeAll
+    MergeAll,
+    Merge
 } from "./common"
 
 type ParseStringDefinition<
@@ -78,7 +79,7 @@ export type ParseType<TypeSet, Definition> = Definition extends string
 //         Definition,
 //         Extract<keyof DeclaredTypeSet, string>
 //     >,
-//     DeclaredTypeSet extends DiscreteTypeSet<DeclaredTypeSet>
+//     DeclaredTypeSet extends TypeSet<DeclaredTypeSet>
 // >(
 //     definition: Narrow<Definition>,
 //     declaredTypeSet?: DeclaredTypeSet
@@ -86,6 +87,31 @@ export type ParseType<TypeSet, Definition> = Definition extends string
 
 // const result = parse({ a: "string" })
 
-export const parse = <Definitions extends TypeSet<Definitions>>(
+// export type ParsableTypeDefinition<
+//     Definition,
+//     DeclaredTypeName extends string
+// > = {
+//     [K in keyof Definition]: TypeDefinition<Definition[K], DeclaredTypeName>
+// }
+
+// export const parse = <
+//     Definition extends ParsableTypeDefinition<
+//         Definition,
+//         Extract<keyof DeclaredTypeSet, string>
+//     >,
+//     DeclaredTypeSet extends TypeSet<DeclaredTypeSet>
+// >(
+//     definition: Narrow<Definition>,
+//     declaredTypeSet?: DeclaredTypeSet
+// ) => [] as any as ParseType<DeclaredTypeSet, Definition>
+
+// parse({ a: "string" })
+
+export const createTypeSet = <Definitions extends TypeSet<Definitions>>(
     definitions: Narrow<Definitions>
-) => [] as any as ParseTypeSet<Definitions>
+) =>
+    [] as any as {
+        types: ParseTypeSet<Definitions>
+    }
+
+createTypeSet([{ user: { b: "user" }, b: { c: "user" } }])
