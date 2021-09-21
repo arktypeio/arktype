@@ -7,5 +7,5 @@ export const { define } = declareTypes("user", "group")
 
 export const { types } = createTypeSet(user, group)
 
-export type User = typeof types.user
-export type Group = typeof types.group
+export type User = typeof types.type.user
+export type Group = typeof types.type.group
