@@ -1,35 +1,18 @@
 {
     "tests": [
         {
-            "name": "Page Loads",
+            "name": "The Website Launches",
             "tags": [],
             "steps": [1],
             "id": 1
-        },
-        {
-            "name": "Homepage says Why Redo?",
-            "tags": [],
-            "steps": [1, 2],
-            "id": 2
         }
     ],
-    "elements": [
-        {
-            "selector": "h1",
-            "id": 1
-        }
-    ],
+    "elements": [],
     "steps": [
         {
             "kind": "go",
             "url": "http://localhost:3000/",
             "id": 1
-        },
-        {
-            "kind": "assertText",
-            "element": 1,
-            "value": "Why Redo?",
-            "id": 2
         }
     ],
     "tags": []

@@ -2,7 +2,7 @@
 sidebar_position: 1
 ---
 
-# Getting started with Jest
+# Get started with Jest
 
 ## Installing Redo
 
@@ -78,4 +78,4 @@ npx redo launch
 
 ### Step 6: Create your first test
 
-To learn how to create your first test, see the guide entitled, Creating your first test.
+To learn how to create your first test, see the guide entitled, [Creating your first test](/guides/creating-your-first-test).

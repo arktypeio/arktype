@@ -2,7 +2,7 @@
 sidebar_position: 2
 ---
 
-# Getting started with Mocha
+# Get started with Mocha
 
 ## Installing Redo
 

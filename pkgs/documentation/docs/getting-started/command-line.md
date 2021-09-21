@@ -6,9 +6,9 @@ sidebar_position: 4
 
 ## Examples
 
-Here are the most common options available in the command line.
+Today there is only one command. As Redo grows, we will include the most common commands below.
 
-### Run test
+### Launch Redo
 
 ```
 npx redo launch

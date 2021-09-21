@@ -4,98 +4,48 @@ sidebar_position: 1
 
 # Creating your first test
 
-## Installing Redo
+## Step 1: Launch Redo
 
-Install Redo using  ```npm```:
-
-```bash
-npm install --save-dev @re-do/test
-```
-
-Or install Redo using ```yarn```: 
-
-```bash
-yarn add --dev @re-do/test
-```
-
-## How to use Redo
-
-You can use Redo with your favorite testing package. Two of the most popular are Jest and Mocha.
-
-### How to use Redo with Jest
-
-#### Step 1: Install Jest
-
-Install Jest using  ```npm```:
-
-```bash
-npm install --save-dev jest
-```
-
-Or install Redo using ```yarn```: 
-
-```bash
-yarn add --dev jest
-```
-
-#### Step 2: Add a file to hold the test
-
-Add a \__tests__ folder in your `src` folder so Jest knows where to look for the tests.
-
-Add an index test file in your \__tests___ folder. For example, your structure could look like:
-
-`src/__tests__/index.test.js`
-
-#### Step 3: Add the Jest code
-
-Add the following code to your `src/__tests__/index.test.js` file.
-
-```jsx title="src/__tests__/index.test.js"
-import { getTests, run } from "@re-do/test";
-
-describe.each(getTests())("", ({ name, id }) => {
-  test(
-    name,
-    async () => {
-      await run({ id });
-    },
-    30000
-  );
-});
-```
-
-#### Step 4: Launch Redo
-
-From your command line, run:
+After installing Redo and getting started [with Jest](/getting-started/getting-started-with-jest) or [with Mocha](/getting-started/getting-started-with-mocha), launch the Redo app from the command line with:
 
 ```bash
 npx redo launch
 ```
 
-#### Step 5: Launch Redo
+## Step 2: Create an account
 
-From your command line, run:
+Redo is free and open source, and your data stays in your repo, not our servers. We ask for your email today so that we know who to contact to get feedback on the app.
+
+![a screenshot showing the create account button](/img/screenshots/create-an-account-screenshot.png)
+
+## Step 3: Create a new test
+
+Create a new test it will pop up two windows, one to name the test and the other to track your clicks.
+
+![a screenshot showing that you can select the plus button in the top left to create a new test](/img/screenshots/create-a-new-test-screenshot.png)
+
+## Step 4: Navigate to your website
+
+Enter the url of your website in the address bar at the top. For example, localhost:3000.
+
+![a screenshot showing where to navigate to your website](/img/screenshots/navigate-to-your-site-screenshot.png)
+
+## Step 5: Name your test
+
+Use whichever naming convention makes sense to you.
+
+![a screenshot showing that you can name the test in the top left](/img/screenshots/name-your-test-screenshot.png)
+
+## Step 6: Save the test
+
+Select the check mark in the bottom left to save your test.
+
+![a screenshot showing how to save your test](/img/screenshots/save-your-test-screenshot.png)
+
+## Step 7: Run the test
+
+From the command line, run your test with Jest or Mocha:
 
 ```bash
-npx redo launch
+npm test
 ```
-
-#### Step 6: Create a free account
-
-So that we can make:
-
-```bash
-npx redo launch
-```
-
-## Create your first Markdown Page
-
-Create a file at `src/pages/my-markdown-page.md`:
-
-```mdx title="src/pages/my-markdown-page.md"
-# My Markdown page
-
-This is a Markdown page
-```
-
-A new page is now available at `http://localhost:3000/my-markdown-page`.
