@@ -12,7 +12,8 @@ import {
     ElementOf,
     Exact,
     NonRecursible,
-    TypeError
+    TypeError,
+    ListPossibleTypes
 } from "@re-do/utils"
 
 type AtomicStringDefinition<DeclaredTypeNames extends string[]> =
@@ -65,14 +66,23 @@ export type TypeDefinition<
     ? StringDefinition<Definition, DeclaredTypeNames>
     : ObjectDefinition<Definition, DeclaredTypeNames>
 
-export type TypeSet<
+export type TypeDefinitions<
     Definitions,
-    DeclaredTypeNames extends string[] = Extract<
-        keyof MergeAll<Definitions>,
-        string
-    >[]
+    DeclaredTypeNames extends string[] = ListPossibleTypes<
+        keyof MergeAll<Definitions>
+    >
 > = {
     [K in keyof Definitions]: TypeDefinition<Definitions[K], DeclaredTypeNames>
+}
+
+export type TypeSet<
+    TypeSet,
+    TypeNames extends keyof TypeSet & string = keyof TypeSet & string
+> = {
+    [TypeName in TypeNames]: TypeDefinition<
+        TypeSet[TypeName],
+        ListPossibleTypes<TypeNames>
+    >
 }
 
 const createDefineFunctionMap = <DeclaredTypeNames extends string[]>(
