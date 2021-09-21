@@ -38,6 +38,8 @@ export type FromEntries<
 
 export type Merge<A, B> = A extends any[] | NonRecursible
     ? B
+    : B extends any[] | NonRecursible
+    ? A
     : {
           [K in keyof A | keyof B]: K extends keyof A
               ? K extends keyof B

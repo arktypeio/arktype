@@ -3,9 +3,17 @@ import {
     FilterByValue,
     TypeError,
     Evaluate,
-    Narrow
+    Narrow,
+    ListPossibleTypes,
+    ElementOf,
+    Exact
 } from "@re-do/utils"
-import { TypeSet, ObjectDefinition, TypeDefinition } from "./define"
+import {
+    TypeDefinitions,
+    ObjectDefinition,
+    TypeDefinition,
+    TypeSet
+} from "./define"
 import {
     GroupedType,
     OrType,
@@ -13,38 +21,37 @@ import {
     OptionalType,
     BuiltInType,
     BuiltInTypeMap,
-    MergeAll,
-    Merge
+    MergeAll
 } from "./common"
 
 type ParseStringDefinition<
-    TypeSet,
-    PropDefinition extends string
-> = PropDefinition extends OptionalType<infer OptionalType>
-    ? ParseStringDefinitionRecurse<TypeSet, OptionalType> | undefined
-    : ParseStringDefinitionRecurse<TypeSet, PropDefinition>
+    Definition extends string,
+    TypeSet
+> = Definition extends OptionalType<infer OptionalType>
+    ? ParseStringDefinitionRecurse<OptionalType, TypeSet> | undefined
+    : ParseStringDefinitionRecurse<Definition, TypeSet>
 
 type ParseStringDefinitionRecurse<
-    TypeSet,
-    PropDefinition extends string
-> = PropDefinition extends GroupedType<infer Group>
-    ? ParseStringDefinitionRecurse<TypeSet, Group>
-    : PropDefinition extends ListType<infer ListItem>
-    ? ParseStringDefinitionRecurse<TypeSet, ListItem>[]
-    : PropDefinition extends OrType<infer First, infer Second>
+    Fragment extends string,
+    TypeSet
+> = Fragment extends GroupedType<infer Group>
+    ? ParseStringDefinitionRecurse<Group, TypeSet>
+    : Fragment extends ListType<infer ListItem>
+    ? ParseStringDefinitionRecurse<ListItem, TypeSet>[]
+    : Fragment extends OrType<infer First, infer Second>
     ?
-          | ParseStringDefinitionRecurse<TypeSet, First>
-          | ParseStringDefinitionRecurse<TypeSet, Second>
-    : PropDefinition extends keyof TypeSet
-    ? ParseType<TypeSet, TypeSet[PropDefinition]>
-    : PropDefinition extends BuiltInType
-    ? BuiltInTypeMap[PropDefinition]
-    : TypeError<`Unable to parse the type of '${PropDefinition}'.`>
+          | ParseStringDefinitionRecurse<First, TypeSet>
+          | ParseStringDefinitionRecurse<Second, TypeSet>
+    : Fragment extends keyof TypeSet
+    ? ParseType<TypeSet[Fragment], TypeSet>
+    : Fragment extends BuiltInType
+    ? BuiltInTypeMap[Fragment]
+    : TypeError<`Unable to parse the type of '${Fragment}'.`>
 
-type ParseObjectDefinition<TypeSet, Definition extends object> = {
+type ParseObjectDefinition<Definition extends object, TypeSet> = {
     [PropName in keyof ExcludeByValue<Definition, OptionalType>]: ParseType<
-        TypeSet,
-        Definition[PropName]
+        Definition[PropName],
+        TypeSet
     >
 } &
     {
@@ -52,26 +59,26 @@ type ParseObjectDefinition<TypeSet, Definition extends object> = {
             Definition,
             OptionalType
         >]?: Definition[PropName] extends OptionalType<infer OptionalType>
-            ? ParseType<TypeSet, OptionalType>
+            ? ParseType<OptionalType, TypeSet>
             : TypeError<`Expected property ${Extract<
                   PropName,
                   string | number
               >} to be optional.`>
     }
 
-export type ParseTypeSet<
+export type ParseDefinitions<
     Definitions,
     Merged = MergeAll<Definitions>
 > = Evaluate<
     {
-        [TypeName in keyof Merged]: ParseType<Merged, Merged[TypeName]>
+        [TypeName in keyof Merged]: ParseType<Merged[TypeName], Merged>
     }
 >
 
-export type ParseType<TypeSet, Definition> = Definition extends string
-    ? ParseStringDefinition<TypeSet, Definition>
+export type ParseType<Definition, TypeSet> = Definition extends string
+    ? ParseStringDefinition<Definition, TypeSet>
     : Definition extends object
-    ? Evaluate<ParseObjectDefinition<TypeSet, Definition>>
+    ? Evaluate<ParseObjectDefinition<Definition, TypeSet>>
     : TypeError<`A type definition must be an object whose keys are either strings or nested type definitions.`>
 
 // export const parse = <
@@ -89,29 +96,30 @@ export type ParseType<TypeSet, Definition> = Definition extends string
 
 // export type ParsableTypeDefinition<
 //     Definition,
-//     DeclaredTypeName extends string
+//     DeclaredTypeNames extends string[] = []
 // > = {
-//     [K in keyof Definition]: TypeDefinition<Definition[K], DeclaredTypeName>
+//     [K in keyof Definition]: TypeDefinition<Definition[K], DeclaredTypeNames>
 // }
 
-// export const parse = <
-//     Definition extends ParsableTypeDefinition<
-//         Definition,
-//         Extract<keyof DeclaredTypeSet, string>
-//     >,
-//     DeclaredTypeSet extends TypeSet<DeclaredTypeSet>
-// >(
-//     definition: Narrow<Definition>,
-//     declaredTypeSet?: DeclaredTypeSet
-// ) => [] as any as ParseType<DeclaredTypeSet, Definition>
+export const parse = <Definition, DeclaredTypeSet>(
+    definition: TypeDefinition<
+        Definition,
+        ListPossibleTypes<keyof DeclaredTypeSet>
+    >,
+    declaredTypeSet?: Exact<DeclaredTypeSet, TypeSet<DeclaredTypeSet>>
+) => null as ParseType<Definition, DeclaredTypeSet>
 
-// parse({ a: "string" })
+const result = parse({ a: "boolean" }, { boolen: "any" })
 
-export const createTypeSet = <Definitions extends TypeSet<Definitions>>(
-    definitions: Narrow<Definitions>
+export const createTypeSet = <Definitions extends any[]>(
+    ...definitions: TypeDefinitions<Definitions>
 ) =>
     [] as any as {
-        types: ParseTypeSet<Definitions>
+        types: ParseDefinitions<Definitions>
     }
 
-createTypeSet([{ user: { b: "user" }, b: { c: "user" } }])
+const { types } = createTypeSet(
+    { user: { b: "user", c: "boolean" } },
+    { b: { c: "user" } },
+    "user"
+)
