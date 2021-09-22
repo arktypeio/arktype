@@ -48,7 +48,7 @@ Add an index test file in your \__tests___ folder. For example, your structure c
 
 Add the following code to your `src/__tests__/index.test.js` file.
 
-```jsx title="src/__tests__/index.test.js"
+```javascript title="src/__tests__/index.test.js"
 import { getTests, run } from "@re-do/test";
 
 describe.each(getTests())("", ({ name, id }) => {
