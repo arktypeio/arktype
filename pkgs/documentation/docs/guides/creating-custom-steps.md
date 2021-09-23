@@ -12,11 +12,15 @@ You can see the default step kinds [here](/guides/reading-the-redo-json-file#kin
 
 ## Creating a custom assertUrl step kind
 
-### Step 1: Add the custom code
+### Step 1: Create a redo.config file
 
-Add the following code to your `src/__tests__/index.test.js` file.
+Create redo.config file in your root directory.
 
-```javascript title="src/__tests__/index.test.js"
+### Step 2: Add the custom code
+
+Add the following code to your `redo.config`.
+
+```javascript title="redo.config"
 import { defineConfig } from "@re-do/test"
 
 export default defineConfig({

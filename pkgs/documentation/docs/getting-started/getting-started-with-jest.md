@@ -62,6 +62,8 @@ describe.each(getTests())("", ({ name, id }) => {
 });
 ```
 
+Note: If you are using Typescript, make sure you have ts-jest installed.
+
 ### Step 4: Create your first test
 
 To learn how to create your first test, see the guide entitled, [Creating your first test](/guides/creating-your-first-test).

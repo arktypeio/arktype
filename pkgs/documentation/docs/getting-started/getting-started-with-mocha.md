@@ -49,17 +49,16 @@ Add a ```test.js``` test file in your test folder. For example, your structure c
 Add the following code to your `test/test.js` file.
 
 ```javascript title="test/test.js"
-import { getTests, run } from "@re-do/test";
+import { getTests, run } from "@re-do/test"
 
-describe.each(getTests())("", ({ name, id }) => {
-  it(
-    name,
-    async () => {
-      await run({ id });
-    },
-    30000
-  );
-});
+describe("tests run with mocha", () => {
+    const tests = getTests()
+    tests.forEach(({ id, name }) => {
+        it(name, async () => {
+            await run({ id })
+        })
+    })
+})
 ```
 
 ### Step 4: Create your first test
