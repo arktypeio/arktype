@@ -45,7 +45,7 @@ You can then add the custom step kind and url value to your redo.json file. For 
 } 
 ```
 
- A test that goes to the redo.qa homepage and tests that the url is https://redo.qa/ will look like the following:
+ A test that goes to the redo.qa homepage and tests that the url is [https://redo.qa/](https://redo.qa/) will look like the following:
 
 ```json title="redo.json"
 {

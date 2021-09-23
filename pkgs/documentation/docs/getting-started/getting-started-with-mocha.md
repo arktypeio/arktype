@@ -12,7 +12,7 @@ Install Redo using  ```npm```:
 npm install --save-dev @re-do/test
 ```
 
-Or install Redo using ```yarn```: 
+Or install Redo using ```yarn```:
 
 ```bash
 yarn add --dev @re-do/test
@@ -30,7 +30,7 @@ Install Mocha using  ```npm```:
 npm install --save-dev mocha
 ```
 
-Or install Redo using ```yarn```: 
+Or install Redo using ```yarn```:
 
 ```bash
 yarn add --dev mocha
@@ -38,17 +38,17 @@ yarn add --dev mocha
 
 ### Step 2: Add a file to hold the test
 
-Add a \__tests__ folder in your `src` folder so Mocha knows where to look for the tests.
+Add a test folder in your root directory so Mocha knows where to look for the tests.
 
-Add an index test file in your \__tests___ folder. For example, your structure could look like:
+Add a ```test.js``` test file in your test folder. For example, your structure could look like:
 
-`src/__tests__/index.test.js`
+`test/test.js`
 
 ### Step 3: Add the Mocha code
 
-Add the following code to your `src/__tests__/index.test.js` file.
+Add the following code to your `test/test.js` file.
 
-```jsx title="src/__tests__/index.test.js"
+```javascript title="test/test.js"
 import { getTests, run } from "@re-do/test";
 
 describe.each(getTests())("", ({ name, id }) => {
@@ -62,20 +62,6 @@ describe.each(getTests())("", ({ name, id }) => {
 });
 ```
 
-### Step 4: Launch Redo
+### Step 4: Create your first test
 
-From your command line, run:
-
-```bash
-npx redo launch
-```
-
-### Step 5: Create a free account
-
-```bash
-npx redo launch
-```
-
-### Step 6: Create your first test
-
-To learn how to create your first test, see the guide entitled, Creating your first test.
+To learn how to create your first test, see the guide entitled, [Creating your first test](/guides/creating-your-first-test).

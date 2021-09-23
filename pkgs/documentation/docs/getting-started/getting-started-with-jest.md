@@ -12,7 +12,7 @@ Install Redo using  ```npm```:
 npm install --save-dev @re-do/test
 ```
 
-Or install Redo using ```yarn```: 
+Or install Redo using ```yarn```:
 
 ```bash
 yarn add --dev @re-do/test
@@ -62,20 +62,6 @@ describe.each(getTests())("", ({ name, id }) => {
 });
 ```
 
-### Step 4: Launch Redo
-
-From your command line, run:
-
-```bash
-npx redo launch
-```
-
-### Step 5: Create a free account
-
-```bash
-npx redo launch
-```
-
-### Step 6: Create your first test
+### Step 4: Create your first test
 
 To learn how to create your first test, see the guide entitled, [Creating your first test](/guides/creating-your-first-test).

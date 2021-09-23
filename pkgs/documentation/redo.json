@@ -11,12 +11,22 @@
             "tags": [],
             "steps": [1, 2],
             "id": 2
+        },
+        {
+            "name": "Clicking the redo.qa Link Goes to redo.qa",
+            "tags": [],
+            "steps": [1, 3, 4],
+            "id": 3
         }
     ],
     "elements": [
         {
             "selector": "h1",
             "id": 1
+        },
+        {
+            "selector": ".navbar__link--active > span",
+            "id": 2
         }
     ],
     "steps": [
@@ -30,6 +40,16 @@
             "element": 1,
             "value": "Why Redo?",
             "id": 2
+        },
+        {
+            "kind": "click",
+            "element": 2,
+            "id": 3
+        },
+        {
+            "kind": "assertUrl",
+            "url": "https://redo.qa/",
+            "id": 4
         }
     ],
     "tags": []
