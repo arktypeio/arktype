@@ -69,12 +69,10 @@ module.exports = {
                 docs: {
                     routeBasePath: "/",
                     sidebarPath: require.resolve("./sidebars.js"),
-                    // Please change this to your repo.
                     editUrl: "https://github.com/re-do/redo"
                 },
                 blog: {
                     showReadingTime: true,
-                    // Please change this to your repo.
                     editUrl: "https://github.com/re-do/redo"
                 },
                 theme: {
