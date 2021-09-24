@@ -30,7 +30,7 @@ Install Jest using  ```npm```:
 npm install --save-dev jest
 ```
 
-Or install Redo using ```yarn```: 
+Or install Redo using ```yarn```:
 
 ```bash
 yarn add --dev jest
@@ -58,11 +58,11 @@ describe.each(getTests())("", ({ name, id }) => {
       await run({ id });
     },
     30000
-  );
-});
+  )
+})
 ```
 
-Note: If you are using Typescript, make sure you have ts-jest installed.
+Note: If you are using TypeScript, you will likely need to either update babel (see the Jest with TypeScript documentation [here](https://jestjs.io/docs/getting-started#using-typescript)) or install and use ts-jest (see ts-jest [here](https://www.npmjs.com/package/ts-jest)).
 
 ### Step 4: Create your first test
 

@@ -51,15 +51,16 @@ Add the following code to your `test/test.js` file.
 ```javascript title="test/test.js"
 import { getTests, run } from "@re-do/test"
 
-describe("tests run with mocha", () => {
-    const tests = getTests()
-    tests.forEach(({ id, name }) => {
+describe("", () => {
+    getTests().forEach(({ id, name }) => {
         it(name, async () => {
             await run({ id })
         })
     })
 })
 ```
+
+Note: If you are using TypeScript, you may install and use ts-mocha (see ts-mocha [here](https://www.npmjs.com/package/ts-mocha)).
 
 ### Step 4: Create your first test
 
