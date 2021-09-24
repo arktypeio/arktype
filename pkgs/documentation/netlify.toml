@@ -1,6 +1,6 @@
+[build]
+  command = "npm run build"
+  publish = "build"
 [build.environment]
   NODE_ENV = "production"
-[build]
-  command = "yarn run build"
-  publish = "build"
 
