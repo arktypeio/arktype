@@ -1,6 +1,4 @@
-[build.environment]
-  NODE_ENV = "production"
 [build]
-  command = "npm install -g @microsoft/rush@5.50.0 && rush update && npm run build"
+  command = "npm install -g yarn && yarn run build"
   publish = "build"
 
