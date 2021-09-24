@@ -1,4 +1,6 @@
+[build.environment]
+  NODE_ENV = production
 [build]
-  command = "npm install -g yarn && yarn run build"
+  command = "npm run build"
   publish = "build"
 
