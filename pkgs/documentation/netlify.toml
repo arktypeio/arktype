@@ -1,5 +1,5 @@
 [build.environment]
-  NODE_ENV = production
+  NODE_ENV = "production"
 [build]
   command = "npm run build"
   publish = "build"
