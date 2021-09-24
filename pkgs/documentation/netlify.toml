@@ -1,4 +1,5 @@
 [build]
   command = "yarn run build"
   publish = "build"
-  environment = { NODE_ENV = "production" }
+[build.environment]
+  NODE_ENV = "production"
