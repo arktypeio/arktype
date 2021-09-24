@@ -3,16 +3,14 @@ import {
     FilterByValue,
     TypeError,
     Evaluate,
-    Narrow,
     ListPossibleTypes,
-    ElementOf,
     Exact
 } from "@re-do/utils"
 import {
     TypeDefinitions,
-    ObjectDefinition,
     TypeDefinition,
-    TypeSet
+    TypeSet,
+    TypeSetFromDefinitions
 } from "./define"
 import {
     GroupedType,
@@ -66,40 +64,15 @@ type ParseObjectDefinition<Definition extends object, TypeSet> = {
               >} to be optional.`>
     }
 
-export type ParseDefinitions<
-    Definitions,
-    Merged = MergeAll<Definitions>
-> = Evaluate<
-    {
-        [TypeName in keyof Merged]: ParseType<Merged[TypeName], Merged>
-    }
->
+export type ParseDefinitions<Definitions, Merged = MergeAll<Definitions>> = {
+    [TypeName in keyof Merged]: ParseType<Merged[TypeName], Merged>
+}
 
 export type ParseType<Definition, TypeSet> = Definition extends string
     ? ParseStringDefinition<Definition, TypeSet>
     : Definition extends object
     ? Evaluate<ParseObjectDefinition<Definition, TypeSet>>
     : TypeError<`A type definition must be an object whose keys are either strings or nested type definitions.`>
-
-// export const parse = <
-//     Definition extends ObjectDefinition<
-//         Definition,
-//         Extract<keyof DeclaredTypeSet, string>
-//     >,
-//     DeclaredTypeSet extends TypeSet<DeclaredTypeSet>
-// >(
-//     definition: Narrow<Definition>,
-//     declaredTypeSet?: DeclaredTypeSet
-// ) => [] as any as ParseType<DeclaredTypeSet, Definition>
-
-// const result = parse({ a: "string" })
-
-// export type ParsableTypeDefinition<
-//     Definition,
-//     DeclaredTypeNames extends string[] = []
-// > = {
-//     [K in keyof Definition]: TypeDefinition<Definition[K], DeclaredTypeNames>
-// }
 
 export const parse = <Definition, DeclaredTypeSet>(
     definition: TypeDefinition<
@@ -109,16 +82,19 @@ export const parse = <Definition, DeclaredTypeSet>(
     declaredTypeSet?: Exact<DeclaredTypeSet, TypeSet<DeclaredTypeSet>>
 ) => null as ParseType<Definition, DeclaredTypeSet>
 
-const result = parse({ a: "boolean" }, { boolen: "any" })
-
-export const createTypeSet = <Definitions extends any[]>(
+export const typeSet = <Definitions extends any[]>(
     ...definitions: TypeDefinitions<Definitions>
-) =>
-    [] as any as {
-        types: ParseDefinitions<Definitions>
-    }
+) => ({
+    parse: <Definition, DeclaredTypeSet = TypeSetFromDefinitions<Definitions>>(
+        definition: TypeDefinition<
+            Definition,
+            ListPossibleTypes<keyof DeclaredTypeSet>
+        >
+    ) => null as ParseType<Definition, DeclaredTypeSet>,
+    types: {} as ParseDefinitions<Definitions>
+})
 
-const { types } = createTypeSet(
+const { types, parse: parseThis } = typeSet(
     { user: { b: "user", c: "boolean" } },
     { b: { c: "user" } },
     "user"

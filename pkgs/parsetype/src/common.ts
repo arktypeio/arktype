@@ -8,6 +8,12 @@ export type BuiltInTypeMap = {
     undefined: undefined
     unknown: unknown
     any: any
+    true: true
+    false: false
+    object: object
+    void: void
+    symbol: symbol
+    never: never
 }
 
 export type BuiltInType = keyof BuiltInTypeMap

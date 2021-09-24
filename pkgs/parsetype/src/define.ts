@@ -4,7 +4,8 @@ import {
     ListType,
     OptionalType,
     BuiltInType,
-    MergeAll
+    MergeAll,
+    Iteration
 } from "./common"
 import {
     Narrow,
@@ -13,8 +14,16 @@ import {
     Exact,
     NonRecursible,
     TypeError,
-    ListPossibleTypes
+    ListPossibleTypes,
+    Evaluate,
+    StringifyPossibleTypes,
+    Stringifiable,
+    PropertyOf,
+    Cast,
+    Or,
+    And
 } from "@re-do/utils"
+import { typeSet, ParseType, ParseDefinitions } from "./parse"
 
 type AtomicStringDefinition<DeclaredTypeNames extends string[]> =
     | ElementOf<DeclaredTypeNames>
@@ -47,24 +56,37 @@ type NonStringOrRecord = Exclude<NonRecursible | any[], string>
 
 // Check for all non-object types other than string (which are illegal) as validating
 // that Definition[PropName] extends string directly results in type widening
-export type ObjectDefinition<Definition, DeclaredTypeNames extends string[]> = {
-    [PropName in keyof Definition]: Definition[PropName] extends NonStringOrRecord
-        ? TypeError<`A type definition must be an object whose keys are either strings or nested type definitions.`>
-        : Definition[PropName] extends object
-        ? Exact<
-              Definition[PropName],
-              ObjectDefinition<Definition[PropName], DeclaredTypeNames>
-          >
-        : // As of TS 4.42, Extract<Definition[PropName], string> mysteriously breaks this type. Maybe some faulty caching?
-          StringDefinition<Definition[PropName] & string, DeclaredTypeNames>
-}
+type ObjectDefinition<
+    Definition,
+    DeclaredTypeNames extends string[],
+    AllowedProp extends string = string
+> = Evaluate<
+    {
+        [PropName in keyof Definition]: PropName extends AllowedProp
+            ? Definition[PropName] extends NonStringOrRecord
+                ? TypeError<`A type definition must be an object whose keys are either strings or nested type definitions.`>
+                : Definition[PropName] extends object
+                ? Exact<
+                      Definition[PropName],
+                      ObjectDefinition<Definition[PropName], DeclaredTypeNames>
+                  >
+                : // As of TS 4.42, Extract<Definition[PropName], string> mysteriously breaks this type. Maybe some faulty caching?
+                  StringDefinition<
+                      Definition[PropName] & string,
+                      DeclaredTypeNames
+                  >
+            : TypeError<`Defined type '${PropName &
+                  string}' was never declared.`>
+    }
+>
 
 export type TypeDefinition<
     Definition,
-    DeclaredTypeNames extends string[]
+    DeclaredTypeNames extends string[],
+    AllowedProp extends string = keyof Definition & string
 > = Definition extends string
     ? StringDefinition<Definition, DeclaredTypeNames>
-    : ObjectDefinition<Definition, DeclaredTypeNames>
+    : ObjectDefinition<Definition, DeclaredTypeNames, AllowedProp>
 
 export type TypeDefinitions<
     Definitions,
@@ -72,7 +94,10 @@ export type TypeDefinitions<
         keyof MergeAll<Definitions>
     >
 > = {
-    [K in keyof Definitions]: TypeDefinition<Definitions[K], DeclaredTypeNames>
+    [Index in keyof Definitions]: TypeDefinition<
+        Definitions[Index],
+        DeclaredTypeNames
+    >
 }
 
 export type TypeSet<
@@ -84,6 +109,10 @@ export type TypeSet<
         ListPossibleTypes<TypeNames>
     >
 }
+
+export type TypeSetFromDefinitions<Definitions> = MergeAll<
+    TypeDefinitions<Definitions>
+>
 
 const createDefineFunctionMap = <DeclaredTypeNames extends string[]>(
     typeNames: DeclaredTypeNames
@@ -116,12 +145,65 @@ const createDefineFunction =
     (definition: any) =>
         ({ [definedTypeName]: definition } as any)
 
-export const declareTypes = <DeclaredTypeNames extends string[]>(
+type DiffResult<Missing extends any[], Extraneous extends any[]> = {
+    missing: Missing
+    extraneous: Extraneous
+}
+
+type Diff<Expected, Actual> = DiffResult<
+    Cast<
+        ListPossibleTypes<Expected extends Actual ? never : Expected>,
+        Expected[]
+    >,
+    Cast<ListPossibleTypes<Actual extends Expected ? never : Actual>, Actual[]>
+>
+
+type DeclaredDefinitions<
+    Definitions,
+    DeclaredTypeNames extends string[],
+    DeclaredTypeName extends string = ElementOf<DeclaredTypeNames>,
+    DefinedTypeName extends string = keyof MergeAll<Definitions> & string,
+    TypeNameDiff = Diff<DeclaredTypeName, DefinedTypeName>,
+    MissingTypesError extends string | {} = TypeNameDiff extends DiffResult<
+        infer Missing,
+        any
+    >
+        ? Missing extends []
+            ? {}
+            : `Declared types ${StringifyPossibleTypes<`'${ElementOf<Missing>}'`>} were never defined.`
+        : never
+> = {
+    [Index in keyof Definitions]: TypeDefinition<
+        Definitions[Index],
+        ListPossibleTypes<DefinedTypeName>,
+        DeclaredTypeName
+    >
+} &
+    MissingTypesError
+
+export const declare = <DeclaredTypeNames extends string[]>(
     ...names: Narrow<DeclaredTypeNames>
 ) => ({
-    define: createDefineFunctionMap(names)
+    define: createDefineFunctionMap(names),
+    create: <Definitions extends any[]>(
+        ...definitions: DeclaredDefinitions<Definitions, DeclaredTypeNames>
+    ) => ({
+        parse: <
+            Definition,
+            DeclaredTypeSet = TypeSetFromDefinitions<Definitions>
+        >(
+            definition: TypeDefinition<
+                Definition,
+                ListPossibleTypes<keyof DeclaredTypeSet>
+            >
+        ) => null as ParseType<Definition, DeclaredTypeSet>,
+        types: {} as Evaluate<ParseDefinitions<Definitions>>
+    })
 })
 
-export const { define } = declareTypes("user", "group")
+export const { define, create } = declare("user", "group", "jorb", "foop")
 
-define.group({ a: "string", b: "user" })
+const groupDef = define.group({ a: "string", b: "user" })
+const userDef = define.user({ a: "number", b: "group" })
+
+const { types } = create(groupDef, userDef, { jorb: "string", foop: "boolean" })
