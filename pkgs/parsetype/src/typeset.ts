@@ -16,7 +16,9 @@ import {
     UnvalidatedObjectDefinition
 } from "./validate"
 
-export type TypeNamesFrom<Definitions> = keyof MergeAll<Definitions> & string
+export type TypeNamesFrom<Definitions> = ListPossibleTypes<
+    keyof MergeAll<Definitions> & string
+>
 
 export type MissingTypesError<DeclaredTypeName, DefinedTypeName> = Diff<
     DeclaredTypeName,
@@ -30,8 +32,13 @@ export type MissingTypesError<DeclaredTypeName, DefinedTypeName> = Diff<
 export type ValidateTypeSetDefinitions<
     Definitions,
     DeclaredTypeNames extends string[] = [],
-    DeclaredTypeName extends string = ElementOf<DeclaredTypeNames>,
-    DefinedTypeName extends string = TypeNamesFrom<Definitions>
+    DefinedTypeNames extends string[] = TypeNamesFrom<Definitions>,
+    DefinedTypeName extends string = ElementOf<DefinedTypeNames>,
+    // If no names are declared, just copy the names from the definitions
+    // to ensure a valid Diff result
+    DeclaredTypeName extends string = ElementOf<
+        DeclaredTypeNames extends [] ? DefinedTypeNames : DeclaredTypeNames
+    >
 > = {
     [Index in keyof Definitions]: ValidateTypeDefinition<
         Definitions[Index],
@@ -72,14 +79,21 @@ export const declare = <DeclaredTypeNames extends string[]>(
     })
 })
 
-export const compile = <Definitions extends any[]>(
-    ...definitions: ValidateTypeSetDefinitions<Definitions>
-) => ({
-    parse: <Definition, DeclaredTypeSet = TypeSetFromDefinitions<Definitions>>(
-        definition: ValidateTypeDefinition<
-            Definition,
-            ListPossibleTypes<keyof DeclaredTypeSet>
-        >
-    ) => null as ParseType<Definition, DeclaredTypeSet>,
-    types: {} as Evaluate<ParseTypeSetDefinitions<Definitions>>
-})
+export const { compile } = declare()
+
+const { types } = compile({ a: "boolean" })
+
+//     <
+//     Definitions extends any[],
+//     DeclaredTypeNames extends string[] = []
+// >(
+//     ...definitions: ValidateTypeSetDefinitions<Definitions, DeclaredTypeNames>
+// ) => ({
+//     parse: <Definition, DeclaredTypeSet = TypeSetFromDefinitions<Definitions>>(
+//         definition: ValidateTypeDefinition<
+//             Definition,
+//             ListPossibleTypes<keyof DeclaredTypeSet>
+//         >
+//     ) => null as ParseType<Definition, DeclaredTypeSet>,
+//     types: {} as Evaluate<ParseTypeSetDefinitions<Definitions>>
+// })

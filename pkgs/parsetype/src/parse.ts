@@ -13,8 +13,7 @@ import {
     ListType,
     OptionalType,
     BuiltInType,
-    BuiltInTypeMap,
-    MergeAll
+    BuiltInTypeMap
 } from "./common"
 
 export type ParseStringDefinition<
