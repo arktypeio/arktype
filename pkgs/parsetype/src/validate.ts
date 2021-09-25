@@ -3,8 +3,7 @@ import {
     OrType,
     ListType,
     OptionalType,
-    BuiltInType,
-    MergeAll
+    BuiltInType
 } from "./common"
 import {
     Narrow,
@@ -15,7 +14,11 @@ import {
     TypeError,
     ListPossibleTypes,
     Evaluate,
-    Key
+    Key,
+    StringifyPossibleTypes,
+    MergeAll,
+    Diff,
+    DiffResult
 } from "@re-do/utils"
 
 export type StringDefinitionRecurse<
@@ -150,3 +153,36 @@ export const createDefineFunction =
     ): DefineFunction<DefinedTypeName, DeclaredTypeNames> =>
     (definition: any) =>
         ({ [definedTypeName]: definition } as any)
+
+export type TypeNamesFrom<Definitions> = ListPossibleTypes<
+    keyof MergeAll<Definitions> & string
+>
+
+export type MissingTypesError<DeclaredTypeName, DefinedTypeName> = Diff<
+    DeclaredTypeName,
+    DefinedTypeName
+> extends DiffResult<infer Missing, any>
+    ? Missing extends []
+        ? {}
+        : `Declared types ${StringifyPossibleTypes<`'${ElementOf<Missing>}'`>} were never defined.`
+    : never
+
+export type ValidateTypeSetDefinitions<
+    Definitions,
+    DeclaredTypeNames extends string[] = [],
+    DefinedTypeNames extends string[] = TypeNamesFrom<Definitions>,
+    DefinedTypeName extends string = ElementOf<DefinedTypeNames>,
+    // If no names are declared, just copy the names from the definitions
+    // to ensure a valid DiffResult
+    DeclaredTypeName extends string = ElementOf<
+        DeclaredTypeNames extends [] ? DefinedTypeNames : DeclaredTypeNames
+    >
+> = {
+    [Index in keyof Definitions]: ValidateTypeDefinition<
+        Definitions[Index],
+        ListPossibleTypes<DefinedTypeName>,
+        DeclaredTypeName
+    > &
+        UnvalidatedObjectDefinition
+} &
+    MissingTypesError<DeclaredTypeName, DefinedTypeName>

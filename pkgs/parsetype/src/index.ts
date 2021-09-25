@@ -1,3 +1,1 @@
-export { parse } from "./parse"
-export {} from "./validate"
-export { declare, compile } from "./typeset"
+export { declare, compile, parse } from "./parse"

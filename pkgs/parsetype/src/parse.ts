@@ -4,9 +4,18 @@ import {
     TypeError,
     Evaluate,
     ListPossibleTypes,
-    Exact
+    Exact,
+    Narrow,
+    IsUnknown,
+    MergeAll
 } from "@re-do/utils"
-import { ValidateTypeDefinition, ValidateTypeSet } from "./validate"
+import {
+    ValidateTypeDefinition,
+    ValidateTypeSet,
+    TypeSetFromDefinitions,
+    createDefineFunctionMap,
+    ValidateTypeSetDefinitions
+} from "./validate"
 import {
     GroupedType,
     OrType,
@@ -64,10 +73,45 @@ export type ParseType<Definition, TypeSet> = Definition extends string
     ? Evaluate<ParseObjectDefinition<Definition, TypeSet>>
     : TypeError<`A type definition must be an object whose keys are either strings or nested type definitions.`>
 
-export const parse = <Definition, DeclaredTypeSet>(
-    definition: ValidateTypeDefinition<
-        Definition,
-        ListPossibleTypes<keyof DeclaredTypeSet>
-    >,
-    declaredTypeSet?: Exact<DeclaredTypeSet, ValidateTypeSet<DeclaredTypeSet>>
-) => null as ParseType<Definition, DeclaredTypeSet>
+export type ParseTypeSetDefinitions<
+    Definitions,
+    Merged = MergeAll<Definitions>
+> = {
+    [TypeName in keyof Merged]: ParseType<Merged[TypeName], Merged>
+}
+
+export const declare = <DeclaredTypeNames extends string[]>(
+    ...names: Narrow<DeclaredTypeNames>
+) => ({
+    define: createDefineFunctionMap(names),
+    compile: <Definitions extends any[]>(
+        ...definitions: ValidateTypeSetDefinitions<
+            Definitions,
+            DeclaredTypeNames
+        >
+    ) => ({
+        parse: <
+            Definition,
+            TypeSet,
+            CompiledTypeSet = TypeSetFromDefinitions<Definitions>,
+            ActiveTypeSet = IsUnknown<TypeSet> extends true
+                ? CompiledTypeSet
+                : TypeSet
+        >(
+            definition: ValidateTypeDefinition<
+                Definition,
+                ListPossibleTypes<keyof ActiveTypeSet>
+            >,
+            typeSet?: Exact<TypeSet, ValidateTypeSet<TypeSet>>
+        ) => null as ParseType<Definition, ActiveTypeSet>,
+        types: {} as Evaluate<ParseTypeSetDefinitions<Definitions>>
+    })
+})
+
+// Exported compile function is equivalent to compile from an empty declare call
+// and will not validate missing or extraneous definitions
+export const { compile } = declare()
+
+// Exported parse function is equivalent to parse from an empty compile call,
+// but optionally accepts a typeset as its second parameter
+export const { parse } = compile()

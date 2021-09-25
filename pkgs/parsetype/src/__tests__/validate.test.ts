@@ -5,7 +5,12 @@ export const { define, compile } = declare("user", "group", "jorb", "foop")
 const group = define.group({ a: "string", b: "user" })
 const user = define.user({ a: "number", b: "group" })
 
-const { types } = compile(group, user, { jorb: "string", foop: "boolean" })
+const { types, parse } = compile(group, user, {
+    jorb: "string",
+    foop: "boolean"
+})
+
+const jorbEater = parse({ breakfast: "jorb", lunch: "jorb" })
 
 describe("validation", () => {
     test("built-in", () => {})

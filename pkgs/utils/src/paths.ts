@@ -131,7 +131,7 @@ export type LeafListOf<
     Constraints extends PathConstraintOptions = DefaultPathConstraints
 > = LeafListOfRecurse<
     T,
-    Merge<DefaultPathConstraints, Constraints>,
+    Merge<DefaultPathConstraints, Constraints, undefined>,
     EnsureValue<Constraints["maxDepth"], DefaultPathConstraints["maxDepth"]>,
     never
 >
