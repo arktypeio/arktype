@@ -22,14 +22,14 @@ import {
     MergeAll
 } from "./common"
 
-type ParseStringDefinition<
+export type ParseStringDefinition<
     Definition extends string,
     TypeSet
 > = Definition extends OptionalType<infer OptionalType>
     ? ParseStringDefinitionRecurse<OptionalType, TypeSet> | undefined
     : ParseStringDefinitionRecurse<Definition, TypeSet>
 
-type ParseStringDefinitionRecurse<
+export type ParseStringDefinitionRecurse<
     Fragment extends string,
     TypeSet
 > = Fragment extends GroupedType<infer Group>
@@ -46,7 +46,7 @@ type ParseStringDefinitionRecurse<
     ? BuiltInTypeMap[Fragment]
     : TypeError<`Unable to parse the type of '${Fragment}'.`>
 
-type ParseObjectDefinition<Definition extends object, TypeSet> = {
+export type ParseObjectDefinition<Definition extends object, TypeSet> = {
     [PropName in keyof ExcludeByValue<Definition, OptionalType>]: ParseType<
         Definition[PropName],
         TypeSet
@@ -82,7 +82,7 @@ export const parse = <Definition, DeclaredTypeSet>(
     declaredTypeSet?: Exact<DeclaredTypeSet, TypeSet<DeclaredTypeSet>>
 ) => null as ParseType<Definition, DeclaredTypeSet>
 
-export const typeSet = <Definitions extends any[]>(
+export const typeset = <Definitions extends any[]>(
     ...definitions: TypeDefinitions<Definitions>
 ) => ({
     parse: <Definition, DeclaredTypeSet = TypeSetFromDefinitions<Definitions>>(
@@ -93,9 +93,3 @@ export const typeSet = <Definitions extends any[]>(
     ) => null as ParseType<Definition, DeclaredTypeSet>,
     types: {} as ParseDefinitions<Definitions>
 })
-
-const { types, parse: parseThis } = typeSet(
-    { user: { b: "user", c: "boolean" } },
-    { b: { c: "user" } },
-    "user"
-)

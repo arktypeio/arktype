@@ -4,8 +4,7 @@ import {
     ListType,
     OptionalType,
     BuiltInType,
-    MergeAll,
-    Iteration
+    MergeAll
 } from "./common"
 import {
     Narrow,
@@ -17,19 +16,15 @@ import {
     ListPossibleTypes,
     Evaluate,
     StringifyPossibleTypes,
-    Stringifiable,
-    PropertyOf,
-    Cast,
-    Or,
-    And
+    Cast
 } from "@re-do/utils"
-import { typeSet, ParseType, ParseDefinitions } from "./parse"
+import { ParseType, ParseDefinitions } from "./parse"
 
-type AtomicStringDefinition<DeclaredTypeNames extends string[]> =
+export type AtomicStringDefinition<DeclaredTypeNames extends string[]> =
     | ElementOf<DeclaredTypeNames>
     | BuiltInType
 
-type StringDefinitionRecurse<
+export type StringDefinitionRecurse<
     Fragment extends string,
     DeclaredTypeNames extends string[]
 > = Fragment extends GroupedType<infer Group>
@@ -45,18 +40,18 @@ type StringDefinitionRecurse<
     ? Fragment
     : TypeError<`Unable to determine the type of '${Fragment}'.`>
 
-type StringDefinition<
+export type StringDefinition<
     Definition extends string,
     DeclaredTypeNames extends string[]
 > = Definition extends OptionalType<infer OptionalType>
     ? `${StringDefinitionRecurse<OptionalType, DeclaredTypeNames>}?`
     : StringDefinitionRecurse<Definition, DeclaredTypeNames>
 
-type NonStringOrRecord = Exclude<NonRecursible | any[], string>
+export type NonStringOrRecord = Exclude<NonRecursible | any[], string>
 
 // Check for all non-object types other than string (which are illegal) as validating
 // that Definition[PropName] extends string directly results in type widening
-type ObjectDefinition<
+export type ObjectDefinition<
     Definition,
     DeclaredTypeNames extends string[],
     AllowedProp extends string = string
@@ -83,7 +78,7 @@ type ObjectDefinition<
 export type TypeDefinition<
     Definition,
     DeclaredTypeNames extends string[],
-    AllowedProp extends string = keyof Definition & string
+    AllowedProp extends string = string
 > = Definition extends string
     ? StringDefinition<Definition, DeclaredTypeNames>
     : ObjectDefinition<Definition, DeclaredTypeNames, AllowedProp>
@@ -114,7 +109,7 @@ export type TypeSetFromDefinitions<Definitions> = MergeAll<
     TypeDefinitions<Definitions>
 >
 
-const createDefineFunctionMap = <DeclaredTypeNames extends string[]>(
+export const createDefineFunctionMap = <DeclaredTypeNames extends string[]>(
     typeNames: DeclaredTypeNames
 ) =>
     transform(typeNames, ([index, typeName]) => [
@@ -127,14 +122,14 @@ const createDefineFunctionMap = <DeclaredTypeNames extends string[]>(
         >
     }
 
-type DefineFunction<
+export type DefineFunction<
     DefinedTypeName extends ElementOf<DeclaredTypeNames>,
     DeclaredTypeNames extends string[]
 > = <Definition extends ObjectDefinition<Definition, DeclaredTypeNames>>(
     definition: Narrow<Definition>
 ) => { [K in DefinedTypeName]: Definition }
 
-const createDefineFunction =
+export const createDefineFunction =
     <
         DefinedTypeName extends ElementOf<DeclaredTypeNames>,
         DeclaredTypeNames extends string[]
@@ -145,12 +140,12 @@ const createDefineFunction =
     (definition: any) =>
         ({ [definedTypeName]: definition } as any)
 
-type DiffResult<Missing extends any[], Extraneous extends any[]> = {
+export type DiffResult<Missing extends any[], Extraneous extends any[]> = {
     missing: Missing
     extraneous: Extraneous
 }
 
-type Diff<Expected, Actual> = DiffResult<
+export type Diff<Expected, Actual> = DiffResult<
     Cast<
         ListPossibleTypes<Expected extends Actual ? never : Expected>,
         Expected[]
@@ -158,7 +153,7 @@ type Diff<Expected, Actual> = DiffResult<
     Cast<ListPossibleTypes<Actual extends Expected ? never : Actual>, Actual[]>
 >
 
-type DeclaredDefinitions<
+export type DeclaredDefinitions<
     Definitions,
     DeclaredTypeNames extends string[],
     DeclaredTypeName extends string = ElementOf<DeclaredTypeNames>,
@@ -201,9 +196,9 @@ export const declare = <DeclaredTypeNames extends string[]>(
     })
 })
 
-export const { define, create } = declare("user", "group", "jorb", "foop")
+// export const { define, create } = declare("user", "group", "jorb", "foop")
 
-const groupDef = define.group({ a: "string", b: "user" })
-const userDef = define.user({ a: "number", b: "group" })
+// const group = define.group({ a: "string", b: "user" })
+// const user = define.user({ a: "number", b: "group" })
 
-const { types } = create(groupDef, userDef, { jorb: "string", foop: "boolean" })
+// const { types } = create(group, user, { jorb: "string", foop: "boolean" })
