@@ -1,4 +1,4 @@
-import { Entry, NonRecursible } from "@re-do/utils"
+import { Cast, Entry, ListPossibleTypes, NonRecursible } from "@re-do/utils"
 
 export type BuiltInTypeMap = {
     string: string
@@ -62,3 +62,16 @@ export type MergeAll<
 > = Objects extends Iteration<any, infer Current, infer Remaining>
     ? MergeAll<Remaining, Merge<Result, Current>>
     : Result
+
+export type DiffResult<Missing extends any[], Extraneous extends any[]> = {
+    missing: Missing
+    extraneous: Extraneous
+}
+
+export type Diff<Expected, Actual> = DiffResult<
+    Cast<
+        ListPossibleTypes<Expected extends Actual ? never : Expected>,
+        Expected[]
+    >,
+    Cast<ListPossibleTypes<Actual extends Expected ? never : Actual>, Actual[]>
+>

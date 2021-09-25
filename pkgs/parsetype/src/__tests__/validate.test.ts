@@ -1,11 +1,11 @@
-import { declare } from "../define"
+import { declare } from ".."
 
-export const { define, create } = declare("user", "group", "jorb", "foop")
+export const { define, compile } = declare("user", "group", "jorb", "foop")
 
 const group = define.group({ a: "string", b: "user" })
 const user = define.user({ a: "number", b: "group" })
 
-const { types } = create(group, user, { jorb: "string", foop: "boolean" })
+const { types } = compile(group, user, { jorb: "string", foop: "boolean" })
 
 describe("validation", () => {
     test("built-in", () => {})

@@ -6,12 +6,7 @@ import {
     ListPossibleTypes,
     Exact
 } from "@re-do/utils"
-import {
-    TypeDefinitions,
-    TypeDefinition,
-    TypeSet,
-    TypeSetFromDefinitions
-} from "./define"
+import { ValidateTypeDefinition, ValidateTypeSet } from "./validate"
 import {
     GroupedType,
     OrType,
@@ -64,10 +59,6 @@ export type ParseObjectDefinition<Definition extends object, TypeSet> = {
               >} to be optional.`>
     }
 
-export type ParseDefinitions<Definitions, Merged = MergeAll<Definitions>> = {
-    [TypeName in keyof Merged]: ParseType<Merged[TypeName], Merged>
-}
-
 export type ParseType<Definition, TypeSet> = Definition extends string
     ? ParseStringDefinition<Definition, TypeSet>
     : Definition extends object
@@ -75,21 +66,9 @@ export type ParseType<Definition, TypeSet> = Definition extends string
     : TypeError<`A type definition must be an object whose keys are either strings or nested type definitions.`>
 
 export const parse = <Definition, DeclaredTypeSet>(
-    definition: TypeDefinition<
+    definition: ValidateTypeDefinition<
         Definition,
         ListPossibleTypes<keyof DeclaredTypeSet>
     >,
-    declaredTypeSet?: Exact<DeclaredTypeSet, TypeSet<DeclaredTypeSet>>
+    declaredTypeSet?: Exact<DeclaredTypeSet, ValidateTypeSet<DeclaredTypeSet>>
 ) => null as ParseType<Definition, DeclaredTypeSet>
-
-export const typeset = <Definitions extends any[]>(
-    ...definitions: TypeDefinitions<Definitions>
-) => ({
-    parse: <Definition, DeclaredTypeSet = TypeSetFromDefinitions<Definitions>>(
-        definition: TypeDefinition<
-            Definition,
-            ListPossibleTypes<keyof DeclaredTypeSet>
-        >
-    ) => null as ParseType<Definition, DeclaredTypeSet>,
-    types: {} as ParseDefinitions<Definitions>
-})
