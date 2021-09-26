@@ -1,12 +1,7 @@
-import { define } from "./types"
+import { define } from "./multifile.test"
 
 export const user = define.user({
     name: "string",
-    bestFriend: "user",
-    friends: "user[]",
-    groups: "group[]",
-    nested: {
-        another: "string",
-        user: "user[]"
-    }
+    bestFriend: "user?",
+    groups: "group[]"
 })

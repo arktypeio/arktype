@@ -1,8 +1,6 @@
-import { define } from "./types"
+import { define } from "./multifile.test"
 
 export const group = define.group({
     name: "string",
-    description: "string?",
-    members: "user[]",
-    owner: "user"
+    members: "user[]"
 })

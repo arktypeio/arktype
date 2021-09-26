@@ -1,10 +1,4 @@
-import {
-    GroupedType,
-    OrType,
-    ListType,
-    OptionalType,
-    BuiltInType
-} from "./common"
+import { OrType, ListType, OptionalType, BuiltInType } from "./common"
 import {
     Narrow,
     transform,
@@ -24,9 +18,7 @@ import {
 export type StringDefinitionRecurse<
     Fragment extends string,
     DeclaredTypeNames extends string[]
-> = Fragment extends GroupedType<infer Group>
-    ? `(${StringDefinitionRecurse<Group, DeclaredTypeNames>})`
-    : Fragment extends ListType<infer ListItem>
+> = Fragment extends ListType<infer ListItem>
     ? `${StringDefinitionRecurse<ListItem, DeclaredTypeNames>}[]`
     : Fragment extends OrType<infer First, infer Second>
     ? `${StringDefinitionRecurse<
@@ -58,6 +50,9 @@ export type UnvalidatedObjectDefinition = {
     [K in string]: UnvalidatedDefinition
 }
 
+export type InvalidTypeDefError =
+    TypeError<`A type definition must be an object whose keys are strings and whose values are strings or nested type definitions.`>
+
 // Check for all non-object types other than string (which are illegal) as validating
 // that Definition[PropName] extends string directly results in type widening
 export type ValidateObjectDefinition<
@@ -68,7 +63,7 @@ export type ValidateObjectDefinition<
     {
         [PropName in keyof Definition]: PropName extends AllowedProp
             ? Definition[PropName] extends NonStringOrRecord
-                ? TypeError<`A type definition must be an object whose keys are either strings or nested type definitions.`>
+                ? InvalidTypeDefError
                 : Definition[PropName] extends object
                 ? Exact<
                       Definition[PropName],

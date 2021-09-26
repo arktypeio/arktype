@@ -14,10 +14,10 @@ import {
     ValidateTypeSet,
     TypeSetFromDefinitions,
     createDefineFunctionMap,
-    ValidateTypeSetDefinitions
+    ValidateTypeSetDefinitions,
+    InvalidTypeDefError
 } from "./validate"
 import {
-    GroupedType,
     OrType,
     ListType,
     OptionalType,
@@ -35,9 +35,7 @@ export type ParseStringDefinition<
 export type ParseStringDefinitionRecurse<
     Fragment extends string,
     TypeSet
-> = Fragment extends GroupedType<infer Group>
-    ? ParseStringDefinitionRecurse<Group, TypeSet>
-    : Fragment extends ListType<infer ListItem>
+> = Fragment extends ListType<infer ListItem>
     ? ParseStringDefinitionRecurse<ListItem, TypeSet>[]
     : Fragment extends OrType<infer First, infer Second>
     ?
@@ -71,7 +69,7 @@ export type ParseType<Definition, TypeSet> = Definition extends string
     ? ParseStringDefinition<Definition, TypeSet>
     : Definition extends object
     ? Evaluate<ParseObjectDefinition<Definition, TypeSet>>
-    : TypeError<`A type definition must be an object whose keys are either strings or nested type definitions.`>
+    : InvalidTypeDefError
 
 export type ParseTypeSetDefinitions<
     Definitions,
@@ -79,6 +77,10 @@ export type ParseTypeSetDefinitions<
 > = {
     [TypeName in keyof Merged]: ParseType<Merged[TypeName], Merged>
 }
+
+export const typeDef: any = new Proxy({}, { get: () => getTypeDef() })
+
+export const getTypeDef = () => typeDef
 
 export const declare = <DeclaredTypeNames extends string[]>(
     ...names: Narrow<DeclaredTypeNames>
@@ -103,8 +105,8 @@ export const declare = <DeclaredTypeNames extends string[]>(
                 ListPossibleTypes<keyof ActiveTypeSet>
             >,
             typeSet?: Exact<TypeSet, ValidateTypeSet<TypeSet>>
-        ) => null as ParseType<Definition, ActiveTypeSet>,
-        types: {} as Evaluate<ParseTypeSetDefinitions<Definitions>>
+        ) => typeDef as ParseType<Definition, ActiveTypeSet>,
+        types: typeDef as Evaluate<ParseTypeSetDefinitions<Definitions>>
     })
 })
 

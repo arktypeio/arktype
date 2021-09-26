@@ -23,7 +23,5 @@ export type OrType<
     Second extends string = string
 > = `${First}|${Second}`
 
-export type GroupedType<Group extends string = string> = `(${Group})`
-
 export type OptionalType<OptionalType extends string = string> =
     `${OptionalType}?`
