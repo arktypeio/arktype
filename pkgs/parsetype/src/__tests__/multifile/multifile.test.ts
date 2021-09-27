@@ -8,9 +8,6 @@ import { group } from "./group"
 
 export const { types, parse } = compile(user, group)
 
-export type User = typeof types.user
-export type Group = typeof types.group
-
 export type ExpectedUser = {
     name: string
     bestFriend?: ExpectedUser
@@ -27,7 +24,13 @@ describe("multifile", () => {
         expectType<ExpectedUser>(types.user)
         expectType<ExpectedGroup>(types.group)
         expectType<ExpectedUser | undefined>(types.user.bestFriend)
-        const { foozler } = parse({ foozler: "user" })
-        expectType<any>(foozler)
+        // Writing the next statement as
+        // const { foozler } = parse({ foozler: "user" })
+        // results in TS parsing type of "user" as generic string and breaks the type
+        // No idea why
+        const doozler = parse({ foozler: "user", choozler: "group[]" })
+        expectType<{ foozler: ExpectedUser; choozler: ExpectedGroup[] }>(
+            doozler
+        )
     })
 })
