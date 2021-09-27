@@ -1,7 +1,8 @@
 [build.environment]
   NODE_ENV = "production"
   NETLIFY_USE_YARN = "true"
+  YARN_FLAGS = "--production=true"
 [build]
-  command = "yarn remove @re-do/test && yarn remove @re-do/configs && yarn run build"
+  command = "yarn run build"
   publish = "build"
 
