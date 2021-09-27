@@ -2,6 +2,6 @@
   NODE_ENV = "production"
   NETLIFY_USE_YARN = "true"
 [build]
-  command = "yarn run build"
+  command = "yarn remove @re-do/test && yarn remove @re-do/configs && yarn run build"
   publish = "build"
 
