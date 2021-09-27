@@ -28,8 +28,8 @@
         "url-loader": "4.1.1"
     },
     "devDependencies": {
-        "@re-do/test": "workspace:*",
-        "@re-do/configs": "workspace:*",
+        "@re-do/test": "0.2.6",
+        "@re-do/configs": "0.1.0",
         "jest": "27.0.6",
         "@types/jest": "26.0.24",
         "ts-jest": "27.0.3",
