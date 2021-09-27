@@ -132,10 +132,8 @@ export const createDefineFunctionMap = <DeclaredTypeNames extends string[]>(
 export type DefineFunction<
     DefinedTypeName extends ElementOf<DeclaredTypeNames>,
     DeclaredTypeNames extends string[]
-> = <
-    Definition extends ValidateObjectDefinition<Definition, DeclaredTypeNames>
->(
-    definition: Narrow<Definition>
+> = <Definition>(
+    definition: ValidateTypeDefinition<Definition, DeclaredTypeNames>
 ) => { [K in DefinedTypeName]: Definition }
 
 export const createDefineFunction =
@@ -172,12 +170,12 @@ export type ValidateTypeSetDefinitions<
     DeclaredTypeName extends string = ElementOf<
         DeclaredTypeNames extends [] ? DefinedTypeNames : DeclaredTypeNames
     >
-> = {
-    [Index in keyof Definitions]: ValidateTypeDefinition<
-        Definitions[Index],
-        ListPossibleTypes<DefinedTypeName>,
-        DeclaredTypeName
-    > &
-        UnvalidatedObjectDefinition
-} &
-    MissingTypesError<DeclaredTypeName, DefinedTypeName>
+> = MissingTypesError<DeclaredTypeName, DefinedTypeName> &
+    {
+        [Index in keyof Definitions]: ValidateTypeDefinition<
+            Definitions[Index],
+            ListPossibleTypes<DefinedTypeName>,
+            DeclaredTypeName
+        > &
+            UnvalidatedObjectDefinition
+    }

@@ -7,20 +7,19 @@ import {
     Join,
     TypeError,
     Narrow,
-    Exact
+    Exact,
+    ElementOf,
+    Evaluate,
+    ListPossibleTypes
 } from "@re-do/utils"
 import { Object as ToolbeltObject } from "ts-toolbelt"
-import {
-    ParseType,
-    ValidatedPropDef,
-    TypeDefinition,
-    DefinedTypeSet
-} from "parsetype"
+import { ParseType, ValidateTypeDefinition, ValidateTypeSet } from "parsetype"
+import { Actions, Interactions } from "common"
 
 type TypeNamesToKeys<Config> = ToolbeltObject.Invert<
     {
         [K in keyof Config]: "defines" extends keyof Config[K]
-            ? Extract<Config[K]["defines"], string>
+            ? Config[K]["defines"] & string
             : never
     }
 >
@@ -48,8 +47,8 @@ type TypeSetFromConfig<
 
 type TypeFromConfig<Config, TypeSet = TypeSetFromConfig<Config>> = {
     [K in keyof Config]: "defines" extends keyof Config[K]
-        ? ParseType<TypeSet, TypeDefFromConfig<Config>[K]>[]
-        : ParseType<TypeSet, TypeDefFromConfig<Config>[K]>
+        ? ParseType<TypeDefFromConfig<Config>[K], TypeSet>[]
+        : ParseType<TypeDefFromConfig<Config>[K], TypeSet>
 }
 
 export type ModelConfig<Config, TypeSet, ConfigType> = {
@@ -61,7 +60,7 @@ export type ModelConfig<Config, TypeSet, ConfigType> = {
             null,
             false,
             never,
-            [Extract<K, Segment>],
+            [K & Segment],
             TypeSet
         >
     >
@@ -74,11 +73,14 @@ type ModelConfigRecurse<
     InDefinition extends boolean,
     Seen,
     Path extends Segment[],
-    TypeSet
+    TypeSet,
+    DeclaredTypeNames extends string[] = ListPossibleTypes<
+        keyof TypeSet & string
+    >
 > = Config extends string
     ? PathToType extends Segment[]
         ? TypeError<`A type has already been determined via ${Join<PathToType>}.`>
-        : ValidatedPropDef<Extract<keyof TypeSet, string>, Config>
+        : ValidateTypeDefinition<Config, DeclaredTypeNames>
     : ModelConfigOptions<
           T,
           Config,
@@ -86,7 +88,8 @@ type ModelConfigRecurse<
           InDefinition,
           Seen,
           Path,
-          TypeSet
+          TypeSet,
+          DeclaredTypeNames
       >
 
 type ModelConfigOptions<
@@ -96,9 +99,17 @@ type ModelConfigOptions<
     InDefinition extends boolean,
     Seen,
     Path extends Segment[],
-    TypeSet
+    TypeSet,
+    DeclaredTypeNames extends string[]
 > = ModelConfigBaseOptions<T> &
-    ModelConfigTypeOptions<T, Config, PathToType, Path, TypeSet> &
+    ModelConfigTypeOptions<
+        T,
+        Config,
+        PathToType,
+        Path,
+        TypeSet,
+        DeclaredTypeNames
+    > &
     ModelConfigFieldOptions<
         T,
         Config,
@@ -121,15 +132,21 @@ type ModelConfigTypeOptions<
     PathToType extends Segment[] | null,
     Path extends Segment[],
     TypeSet,
-    DefinedTypeName extends string = Extract<keyof TypeSet, string>
+    DeclaredTypeNames extends string[]
 > = PathToType extends null
     ? "fields" extends keyof Config
         ? {
-              type?: TypeDefinition<DefinedTypeName, KeyValuate<Config, "type">>
+              type?: ValidateTypeDefinition<
+                  KeyValuate<Config, "type">,
+                  DeclaredTypeNames
+              >
           }
         : {
               type: "type" extends keyof Config
-                  ? TypeDefinition<DefinedTypeName, KeyValuate<Config, "type">>
+                  ? ValidateTypeDefinition<
+                        KeyValuate<Config, "type">,
+                        DeclaredTypeNames
+                    >
                   : TypeError<`Unable to determine the type of ${Join<Path>}.`>
           }
     : {}
@@ -150,7 +167,6 @@ type ModelConfigDefinitionOptions<
     InDefinition extends false
         ? {
               defines?: string
-              idKey?: string
           }
         : {}
 >
@@ -170,14 +186,11 @@ type ModelConfigFieldOptions<
         fields?: {
             [K in keyof Unlisted<T>]?: ModelConfigRecurse<
                 Unlisted<T>[K],
-                ValueAtPathList<
-                    Config,
-                    ["fields", Extract<K, string | number>]
-                >,
+                ValueAtPathList<Config, ["fields", K & Segment]>,
                 "type" extends keyof Config ? Path : PathToType,
                 "defines" extends keyof Config ? true : InDefinition,
                 Seen | Unlisted<T>,
-                [...Path, Extract<K, Segment>],
+                [...Path, K & Segment],
                 TypeSet
             >
         }
@@ -188,14 +201,16 @@ export const createStore = <
     Config extends ModelConfig<Config, TypeSet, ConfigType>,
     OptionsTypeSet,
     TypeSet = TypeSetFromConfig<Config>,
-    ConfigType = TypeFromConfig<Config, TypeSet>
+    ConfigType = TypeFromConfig<Config, TypeSet>,
+    A extends Actions<ConfigType> = {}
 >(
     config: Narrow<Config>,
     options?: {
-        predefined?: DefinedTypeSet<OptionsTypeSet>
+        predefined?: ValidateTypeSet<OptionsTypeSet>
+        actions?: A
     }
 ) => {
-    return {} as ConfigType
+    return {} as Store<ConfigType>
 }
 
 const store = createStore({
@@ -221,6 +236,12 @@ const store = createStore({
         }
     }
 })
+
+export type Store<Data, IdKey extends string = "id"> = {
+    [K in keyof Data]: Data[K] extends object[]
+        ? Interactions<ElementOf<Data[K]>, IdKey>
+        : Data[K]
+}
 
 // const store2 = createStore({
 //     users: {
@@ -291,59 +312,3 @@ const store = createStore({
 //         }
 //     }
 // })
-
-// export type Store<
-//     Input extends object,
-//     M extends Model<Input, T>,
-//     T extends TypeDefinitions<T>,
-//     A extends Actions<Input>
-// > = StoreRecurse<Input, M, IsList<Input>, "id">
-
-// type StoreRecurse<
-//     Input,
-//     Model,
-//     InList extends boolean,
-//     IdKey extends string
-// > = Input extends NonRecursible
-//     ? Model extends ModelConfig<any>
-//         ? Input
-//         : Input
-//     : Input extends any[]
-//     ? StoreRecurse<Unlisted<Input>, Model, true, IdKey>
-//     : {
-//           [K in keyof Input]: Model extends WithOptionalTuple<
-//               infer ModelProps,
-//               infer ModelConfig
-//           >
-//               ? K extends keyof ModelProps
-//                   ? ModelProps[K] extends string
-//                       ? Input[K] extends any[]
-//                           ? Interactions<
-//                                 Extract<Unlisted<Input[K]>, object>,
-//                                 Extract<
-//                                     KeyValuate<ModelConfig, "idKey", IdKey>,
-//                                     string
-//                                 >
-//                             >
-//                           : Operations<Input[K]>
-//                       : Input[K] extends any[]
-//                       ? Interactions<
-//                             Extract<Unlisted<Input[K]>, object>,
-//                             Extract<
-//                                 KeyValuate<ModelConfig, "idKey", IdKey>,
-//                                 string
-//                             >
-//                         >
-//                       : StoreRecurse<
-//                             Input[K],
-//                             ModelProps[K],
-//                             false,
-//                             Extract<
-//                                 KeyValuate<ModelConfig, "idKey", IdKey>,
-//                                 string
-//                             >
-//                         >
-//                   : // No config provided
-//                     Operations<Input[K]>
-//               : Operations<Input[K]>
-//       }

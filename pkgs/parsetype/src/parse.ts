@@ -117,7 +117,3 @@ export const { compile } = declare()
 // Exported parse function is equivalent to parse from an empty compile call,
 // but optionally accepts a typeset as its second parameter
 export const { parse } = compile()
-
-const { define, compile: compile2 } = declare("a", "b")
-const { parse: parse2 } = compile2(define.a("b"), define.b("false"))
-const result = parse2({ f: "a" })
