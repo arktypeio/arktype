@@ -2,6 +2,6 @@
   NODE_ENV = "production"
   NETLIFY_USE_YARN = true
 [build]
-  command = "npm run build"
+  command = "yarn run build"
   publish = "build"
 
