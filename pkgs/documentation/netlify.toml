@@ -1,6 +1,8 @@
 [build.environment]
   NODE_VERSION = "16.6.1"
+  NETLIFY_USE_YARN = "true"
+  
 [build]
-  command = "ls && npm install -g @microsoft/rush@5.50.0 && rush update && rush build --to @re-do/website"
+  command = "npm install -g @microsoft/rush@5.50.0 && rush update && rush build --to @re-do/website"
   publish = "pkgs/documentation/build"
 
