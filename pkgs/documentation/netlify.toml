@@ -2,6 +2,6 @@
   NODE_ENV = "production"
   NETLIFY_USE_YARN = "false"
 [build]
-  command = "npm install -g @microsoft/rush@5.50.0 && rush update && npm run build"
+  command = "npm install @re-do/test && npm install @re-do/configs && npm run build"
   publish = "build"
 
