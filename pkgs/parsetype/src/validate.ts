@@ -1,4 +1,11 @@
-import { OrType, ListType, OptionalType, BuiltInType } from "./common"
+import {
+    OrDefinition,
+    ListDefinition,
+    OptionalDefinition,
+    BuiltInDefinition,
+    ObjectListDefinition,
+    ObjectDefinition
+} from "./common"
 import {
     Narrow,
     transform,
@@ -15,40 +22,75 @@ import {
     DiffResult
 } from "@re-do/utils"
 
-export type StringDefinitionRecurse<
-    Fragment extends string,
+export type BaseNameOfStringDefinition<
+    Definition extends string,
     DeclaredTypeNames extends string[]
-> = Fragment extends ListType<infer ListItem>
-    ? `${StringDefinitionRecurse<ListItem, DeclaredTypeNames>}[]`
-    : Fragment extends OrType<infer First, infer Second>
-    ? `${StringDefinitionRecurse<
+> = ValidateStringDefinition<Definition, DeclaredTypeNames, true>
+
+export type OrDefinitionRecurse<
+    First extends string,
+    Second extends string,
+    Root extends string,
+    DeclaredTypeNames extends string[],
+    ReturnBaseType extends boolean,
+    ValidateFirst = ValidateStringDefinitionRecurse<
+        First,
+        First,
+        DeclaredTypeNames,
+        ReturnBaseType
+    >,
+    ValidateSecond = ValidateStringDefinitionRecurse<
+        Second,
+        Second,
+        DeclaredTypeNames,
+        ReturnBaseType
+    >
+> = ReturnBaseType extends true
+    ? ValidateFirst | ValidateSecond
+    : First extends ValidateFirst
+    ? Second extends ValidateSecond
+        ? Root
+        : ValidateSecond
+    : ValidateFirst
+
+export type ValidateStringDefinitionRecurse<
+    Fragment extends string,
+    Root extends string,
+    DeclaredTypeNames extends string[],
+    ReturnBaseType extends boolean
+> = Fragment extends ListDefinition<infer ListItem>
+    ? ValidateStringDefinitionRecurse<
+          ListItem,
+          Root,
+          DeclaredTypeNames,
+          ReturnBaseType
+      >
+    : Fragment extends OrDefinition<infer First, infer Second>
+    ? OrDefinitionRecurse<
           First,
-          DeclaredTypeNames
-      >}|${StringDefinitionRecurse<Second, DeclaredTypeNames>}`
-    : Fragment extends ElementOf<DeclaredTypeNames> | BuiltInType
-    ? Fragment
+          Second,
+          Root,
+          DeclaredTypeNames,
+          ReturnBaseType
+      >
+    : Fragment extends ElementOf<DeclaredTypeNames> | BuiltInDefinition
+    ? ReturnBaseType extends true
+        ? Fragment
+        : Root
     : TypeError<`Unable to determine the type of '${Fragment}'.`>
 
 export type ValidateStringDefinition<
     Definition extends string,
-    DeclaredTypeNames extends string[]
-> = Definition extends OptionalType<infer OptionalType>
-    ? `${StringDefinitionRecurse<OptionalType, DeclaredTypeNames>}?`
-    : StringDefinitionRecurse<Definition, DeclaredTypeNames>
-
-export type NonStringOrRecord = Exclude<NonRecursible | any[], string>
-
-export type TreeOf<T, KeyType extends Key = string> =
-    | T
-    | {
-          [K in string]: TreeOf<T, KeyType>
-      }
-
-export type UnvalidatedDefinition = TreeOf<string>
-
-export type UnvalidatedObjectDefinition = {
-    [K in string]: UnvalidatedDefinition
-}
+    DeclaredTypeNames extends string[],
+    ReturnBaseName extends boolean = false
+> = ValidateStringDefinitionRecurse<
+    Definition extends OptionalDefinition<infer Optional>
+        ? Optional
+        : Definition,
+    Definition,
+    DeclaredTypeNames,
+    ReturnBaseName
+>
 
 export type InvalidTypeDefError =
     TypeError<`A type definition must be an object whose keys are strings and whose values are strings or nested type definitions.`>
@@ -62,21 +104,7 @@ export type ValidateObjectDefinition<
 > = Evaluate<
     {
         [PropName in keyof Definition]: PropName extends AllowedProp
-            ? Definition[PropName] extends NonStringOrRecord
-                ? InvalidTypeDefError
-                : Definition[PropName] extends object
-                ? Exact<
-                      Definition[PropName],
-                      ValidateObjectDefinition<
-                          Definition[PropName] & object,
-                          DeclaredTypeNames
-                      >
-                  >
-                : // As of TS 4.42, Extract<Definition[PropName], string> mysteriously breaks this type. Maybe some faulty caching?
-                  ValidateStringDefinition<
-                      Definition[PropName] & string,
-                      DeclaredTypeNames
-                  >
+            ? ValidateTypeDefinition<Definition[PropName], DeclaredTypeNames>
             : TypeError<`Defined type '${PropName &
                   string}' was never declared.`>
     }
@@ -88,7 +116,13 @@ export type ValidateTypeDefinition<
     AllowedProp extends string = string
 > = Definition extends string
     ? ValidateStringDefinition<Definition, DeclaredTypeNames>
-    : ValidateObjectDefinition<Definition, DeclaredTypeNames, AllowedProp>
+    : Definition extends ObjectListDefinition<infer InnerObjectDefinition>
+    ? ObjectListDefinition<
+          ValidateObjectDefinition<InnerObjectDefinition, DeclaredTypeNames>
+      >
+    : Definition extends ObjectDefinition<Definition>
+    ? ValidateObjectDefinition<Definition, DeclaredTypeNames, AllowedProp>
+    : InvalidTypeDefError
 
 export type ValidateTypeDefinitions<
     Definitions,
@@ -133,7 +167,7 @@ export type DefineFunction<
     DefinedTypeName extends ElementOf<DeclaredTypeNames>,
     DeclaredTypeNames extends string[]
 > = <Definition>(
-    definition: ValidateTypeDefinition<Definition, DeclaredTypeNames>
+    definition: Narrow<ValidateTypeDefinition<Definition, DeclaredTypeNames>>
 ) => { [K in DefinedTypeName]: Definition }
 
 export const createDefineFunction =
@@ -172,10 +206,13 @@ export type ValidateTypeSetDefinitions<
     >
 > = MissingTypesError<DeclaredTypeName, DefinedTypeName> &
     {
-        [Index in keyof Definitions]: ValidateTypeDefinition<
-            Definitions[Index],
-            ListPossibleTypes<DefinedTypeName>,
-            DeclaredTypeName
-        > &
-            UnvalidatedObjectDefinition
+        [Index in keyof Definitions]: Definitions[Index] extends ObjectDefinition<
+            Definitions[Index]
+        >
+            ? ValidateTypeDefinition<
+                  Definitions[Index],
+                  ListPossibleTypes<DefinedTypeName>,
+                  DeclaredTypeName
+              >
+            : TypeError<`Definitions must be objects with string keys representing defined type names.`>
     }

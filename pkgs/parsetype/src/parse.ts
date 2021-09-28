@@ -18,46 +18,48 @@ import {
     InvalidTypeDefError
 } from "./validate"
 import {
-    OrType,
-    ListType,
-    OptionalType,
-    BuiltInType,
-    BuiltInTypeMap
+    OrDefinition,
+    ListDefinition,
+    OptionalDefinition,
+    BuiltInDefinition,
+    BuiltInDefinitionMap,
+    ObjectListDefinition,
+    ObjectDefinition
 } from "./common"
 
 export type ParseStringDefinition<
     Definition extends string,
     TypeSet
-> = Definition extends OptionalType<infer OptionalType>
+> = Definition extends OptionalDefinition<infer OptionalType>
     ? ParseStringDefinitionRecurse<OptionalType, TypeSet> | undefined
     : ParseStringDefinitionRecurse<Definition, TypeSet>
 
 export type ParseStringDefinitionRecurse<
     Fragment extends string,
     TypeSet
-> = Fragment extends ListType<infer ListItem>
+> = Fragment extends ListDefinition<infer ListItem>
     ? ParseStringDefinitionRecurse<ListItem, TypeSet>[]
-    : Fragment extends OrType<infer First, infer Second>
+    : Fragment extends OrDefinition<infer First, infer Second>
     ?
           | ParseStringDefinitionRecurse<First, TypeSet>
           | ParseStringDefinitionRecurse<Second, TypeSet>
     : Fragment extends keyof TypeSet
     ? ParseType<TypeSet[Fragment], TypeSet>
-    : Fragment extends BuiltInType
-    ? BuiltInTypeMap[Fragment]
+    : Fragment extends BuiltInDefinition
+    ? BuiltInDefinitionMap[Fragment]
     : TypeError<`Unable to parse the type of '${Fragment}'.`>
 
 export type ParseObjectDefinition<Definition extends object, TypeSet> = {
-    [PropName in keyof ExcludeByValue<Definition, OptionalType>]: ParseType<
-        Definition[PropName],
-        TypeSet
-    >
+    [PropName in keyof ExcludeByValue<
+        Definition,
+        OptionalDefinition
+    >]: ParseType<Definition[PropName], TypeSet>
 } &
     {
         [PropName in keyof FilterByValue<
             Definition,
-            OptionalType
-        >]?: Definition[PropName] extends OptionalType<infer OptionalType>
+            OptionalDefinition
+        >]?: Definition[PropName] extends OptionalDefinition<infer OptionalType>
             ? ParseType<OptionalType, TypeSet>
             : TypeError<`Expected property ${Extract<
                   PropName,
@@ -67,7 +69,9 @@ export type ParseObjectDefinition<Definition extends object, TypeSet> = {
 
 export type ParseType<Definition, TypeSet> = Definition extends string
     ? ParseStringDefinition<Definition, TypeSet>
-    : Definition extends object
+    : Definition extends ObjectListDefinition<infer InnerDefinition>
+    ? Evaluate<ParseObjectDefinition<InnerDefinition, TypeSet>>[]
+    : Definition extends ObjectDefinition<Definition>
     ? Evaluate<ParseObjectDefinition<Definition, TypeSet>>
     : InvalidTypeDefError
 
@@ -101,7 +105,7 @@ export const declare = <DeclaredTypeNames extends string[]>(
                 : TypeSet
         >(
             definition: ValidateTypeDefinition<
-                Definition,
+                Narrow<Definition>,
                 ListPossibleTypes<keyof ActiveTypeSet>
             >,
             typeSet?: Exact<TypeSet, ValidateTypeSet<TypeSet>>

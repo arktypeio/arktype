@@ -44,4 +44,8 @@ describe("parse", () => {
         const result = parse({ snorf: "borf[]" }, { borf: "boolean" })
         expectType<{ snorf: boolean[] }>(result)
     })
+    test("object definition list", () => {
+        const result = parse([{ a: "boolean" }])
+        expectType<{ a: boolean }[]>(result)
+    })
 })

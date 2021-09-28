@@ -1,3 +1,7 @@
 export { declare, compile, parse } from "./parse"
 export type { ParseType } from "./parse"
-export type { ValidateTypeDefinition, ValidateTypeSet } from "./validate"
+export type {
+    ValidateTypeDefinition,
+    ValidateTypeSet,
+    BaseNameOfStringDefinition
+} from "./validate"

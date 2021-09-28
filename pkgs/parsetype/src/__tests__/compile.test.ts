@@ -41,6 +41,14 @@ describe("compile", () => {
         // @ts-expect-error
         types.a.b.a.b.c
     })
+    test("object list", () => {
+        expectType<{ c: string }[]>(
+            compile({ a: "string" }, { b: [{ c: "a" }] }).types.b
+        )
+        // Can't pass in object list directly to compile
+        // @ts-expect-error
+        const result = compile([{ b: { c: "string" } }]).types
+    })
     test("can parse from compiled types", () => {
         const { parse } = compile({ a: { b: "b" } }, { b: { a: "a" } })
         expectType<{ b: { a: any } } | { a: { b: any } } | null>(

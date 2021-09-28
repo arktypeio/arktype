@@ -58,21 +58,19 @@ type RemoveContextFromArgs<T extends unknown[]> = T extends []
         : [Current, ...RemoveContextFromArgs<Rest>]
     : T
 
-export type Interactions<O extends object, IdFieldName extends string> = {
-    create: <U extends boolean = true>(o: O) => Data<O, IdFieldName, U>
-    all: <U extends boolean = true>() => Data<O, IdFieldName, U>[]
+export type Interactions<O extends object, IdKey extends string> = {
+    create: <U extends boolean = true>(o: O) => Data<O, IdKey, U>
+    all: <U extends boolean = true>() => Data<O, IdKey, U>[]
     find: <U extends boolean = true>(
-        by: FindBy<Data<O, IdFieldName, U>>
-    ) => Data<O, IdFieldName, U>
+        by: FindBy<Data<O, IdKey, U>>
+    ) => Data<O, IdKey, U>
     filter: <U extends boolean = true>(
-        by: FindBy<Data<O, IdFieldName, U>>
-    ) => Data<O, IdFieldName, U>[]
-    remove: <U extends boolean = true>(
-        by: FindBy<Data<O, IdFieldName, U>>
-    ) => void
+        by: FindBy<Data<O, IdKey, U>>
+    ) => Data<O, IdKey, U>[]
+    remove: <U extends boolean = true>(by: FindBy<Data<O, IdKey, U>>) => void
     update: (
-        by: FindBy<Data<O, IdFieldName, false>>,
-        update: DeepUpdate<Data<O, IdFieldName, false>>
+        by: FindBy<Data<O, IdKey, false>>,
+        update: DeepUpdate<Data<O, IdKey, false>>
     ) => void
 }
 
