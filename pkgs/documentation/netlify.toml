@@ -2,6 +2,6 @@
   NODE_ENV = "production"
   NETLIFY_USE_YARN = "false"
 [build]
-  command = "cd ../.. && npm install -g @microsoft/rush@5.50.0 && rush update && rush build"
-  publish = "pkgs/documentation/build"
+  command = "npm install -g @microsoft/rush@5.50.0 && rush update && rush build"
+  publish = "build"
 
