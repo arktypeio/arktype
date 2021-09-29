@@ -42,7 +42,7 @@ const toIcon = (path: string, name: string): typeof SvgIcon => {
 
 const twitch = toIcon(twitchPath, "twitch")
 
-export const Icons: Record<string, typeof SvgIcon> = {
+export const Icons = {
     add,
     code,
     collapse,

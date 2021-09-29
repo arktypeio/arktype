@@ -1,7 +1,8 @@
 export { declare, compile, parse } from "./parse"
+export { validate, typeOf } from "./validate"
 export type { ParseType } from "./parse"
 export type {
-    ValidateTypeDefinition,
-    ValidateTypeSet,
-    BaseNameOfStringDefinition
-} from "./validate"
+    TypeDefinition as ValidateTypeDefinition,
+    TypeSet as ValidateTypeSet,
+    ComponentTypesOfStringDefinition as BaseNameOfStringDefinition
+} from "./definitions"

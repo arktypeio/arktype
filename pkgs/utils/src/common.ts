@@ -4,12 +4,28 @@ import deepMerge from "deepmerge"
 import {
     Number as NumberToolbelt,
     Union as ToolbeltUnion,
-    List as ToolbeltList
+    List as ToolbeltList,
+    String as ToolbeltString
 } from "ts-toolbelt"
+import { Replace } from "ts-toolbelt/out/Union/Replace"
 
 export const merge = deepMerge
 export const memoize = moize as <F extends SimpleFunction>(f: F) => F
 export const deepEquals = isDeepEqual
+
+type Z = ToolbeltString.Replace<"H d     dfdfds ", " ", "">
+
+export type StringReplace<
+    Original extends string,
+    Find extends string,
+    ReplaceWith extends string
+> = ToolbeltString.Replace<Original, Find, ReplaceWith>
+
+export type RemoveSpaces<FromString extends string> = StringReplace<
+    FromString,
+    " ",
+    ""
+>
 
 export type UntilOptions = {
     timeoutSeconds?: number

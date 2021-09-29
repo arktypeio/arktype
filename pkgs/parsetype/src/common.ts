@@ -18,6 +18,11 @@ export type BuiltInDefinitionMap = {
 
 export type BuiltInDefinition = keyof BuiltInDefinitionMap
 
+export type FunctionDefinition<
+    Parameters extends string = string,
+    Return extends string = string
+> = `(${Parameters})=>${Return}`
+
 export type ListDefinition<Definition extends string = string> =
     `${Definition}[]`
 
@@ -29,18 +34,17 @@ export type OrDefinition<
 export type OptionalDefinition<Definition extends string = string> =
     `${Definition}?`
 
-export type ObjectDefinition<Definition = object> = Definition extends any[]
-    ? never
-    : { [K in string]: any }
+export type UnvalidatedObjectDefinition<Definition = object> =
+    Definition extends any[] ? never : { [K in string]: any }
 
-export type ObjectListDefinition<
-    Definition extends ObjectDefinition = ObjectDefinition
+export type UnvalidatedObjectListDefinition<
+    Definition extends UnvalidatedObjectDefinition = UnvalidatedObjectDefinition
 > = [Definition]
 
 export type UnvalidatedDefinition =
     | string
-    | ObjectDefinition
-    | ObjectListDefinition
+    | UnvalidatedObjectDefinition
+    | UnvalidatedObjectListDefinition
 
 export type TreeOf<T, KeyType extends Key = string> =
     | T

@@ -7,37 +7,69 @@ import {
     Exact,
     Narrow,
     IsUnknown,
-    MergeAll
+    MergeAll,
+    RemoveSpaces,
+    Split,
+    Cast
 } from "@re-do/utils"
 import {
-    ValidateTypeDefinition,
-    ValidateTypeSet,
+    TypeDefinition,
+    TypeSet,
     TypeSetFromDefinitions,
     createDefineFunctionMap,
-    ValidateTypeSetDefinitions,
+    TypeSetDefinitions,
     InvalidTypeDefError
-} from "./validate"
+} from "./definitions"
 import {
     OrDefinition,
     ListDefinition,
     OptionalDefinition,
     BuiltInDefinition,
     BuiltInDefinitionMap,
-    ObjectListDefinition,
-    ObjectDefinition
+    UnvalidatedObjectListDefinition,
+    UnvalidatedObjectDefinition,
+    FunctionDefinition
 } from "./common"
 
 export type ParseStringDefinition<
     Definition extends string,
-    TypeSet
-> = Definition extends OptionalDefinition<infer OptionalType>
+    TypeSet,
+    ParsableDefinition extends string = RemoveSpaces<Definition>
+> = ParsableDefinition extends OptionalDefinition<infer OptionalType>
     ? ParseStringDefinitionRecurse<OptionalType, TypeSet> | undefined
-    : ParseStringDefinitionRecurse<Definition, TypeSet>
+    : ParseStringDefinitionRecurse<ParsableDefinition, TypeSet>
+
+export type ParseStringTupleDefinitionRecurse<
+    Definitions extends string,
+    TypeSet,
+    DefinitionList extends string[] = Split<Definitions, ",">
+> = Definitions extends ""
+    ? []
+    : [
+          ...{
+              [Index in keyof DefinitionList]: ParseStringDefinitionRecurse<
+                  DefinitionList[Index] & string,
+                  TypeSet
+              >
+          }
+      ]
+
+export type ParseStringFunctionDefinitionRecurse<
+    Parameters extends string,
+    Return extends string,
+    TypeSet
+> = Evaluate<
+    (
+        ...args: ParseStringTupleDefinitionRecurse<Parameters, TypeSet>
+    ) => ParseStringDefinitionRecurse<Return, TypeSet>
+>
 
 export type ParseStringDefinitionRecurse<
     Fragment extends string,
     TypeSet
-> = Fragment extends ListDefinition<infer ListItem>
+> = Fragment extends FunctionDefinition<infer Parameters, infer Return>
+    ? ParseStringFunctionDefinitionRecurse<Parameters, Return, TypeSet>
+    : Fragment extends ListDefinition<infer ListItem>
     ? ParseStringDefinitionRecurse<ListItem, TypeSet>[]
     : Fragment extends OrDefinition<infer First, infer Second>
     ?
@@ -69,9 +101,9 @@ export type ParseObjectDefinition<Definition extends object, TypeSet> = {
 
 export type ParseType<Definition, TypeSet> = Definition extends string
     ? ParseStringDefinition<Definition, TypeSet>
-    : Definition extends ObjectListDefinition<infer InnerDefinition>
+    : Definition extends UnvalidatedObjectListDefinition<infer InnerDefinition>
     ? Evaluate<ParseObjectDefinition<InnerDefinition, TypeSet>>[]
-    : Definition extends ObjectDefinition<Definition>
+    : Definition extends UnvalidatedObjectDefinition<Definition>
     ? Evaluate<ParseObjectDefinition<Definition, TypeSet>>
     : InvalidTypeDefError
 
@@ -91,24 +123,21 @@ export const declare = <DeclaredTypeNames extends string[]>(
 ) => ({
     define: createDefineFunctionMap(names),
     compile: <Definitions extends any[]>(
-        ...definitions: ValidateTypeSetDefinitions<
-            Definitions,
-            DeclaredTypeNames
-        >
+        ...definitions: TypeSetDefinitions<Definitions, DeclaredTypeNames>
     ) => ({
         parse: <
             Definition,
-            TypeSet,
+            SpecifiedTypeSet,
             CompiledTypeSet = TypeSetFromDefinitions<Definitions>,
-            ActiveTypeSet = IsUnknown<TypeSet> extends true
+            ActiveTypeSet = IsUnknown<SpecifiedTypeSet> extends true
                 ? CompiledTypeSet
-                : TypeSet
+                : SpecifiedTypeSet
         >(
-            definition: ValidateTypeDefinition<
+            definition: TypeDefinition<
                 Narrow<Definition>,
                 ListPossibleTypes<keyof ActiveTypeSet>
             >,
-            typeSet?: Exact<TypeSet, ValidateTypeSet<TypeSet>>
+            typeSet?: Exact<SpecifiedTypeSet, TypeSet<SpecifiedTypeSet>>
         ) => typeDef as ParseType<Definition, ActiveTypeSet>,
         types: typeDef as Evaluate<ParseTypeSetDefinitions<Definitions>>
     })

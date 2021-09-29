@@ -1,5 +1,5 @@
 import { parse } from ".."
-import { InvalidTypeDefError } from "../validate"
+import { InvalidTypeDefError } from "../definitions"
 import { expectType, expectError } from "tsd"
 
 describe("parse", () => {
@@ -13,6 +13,28 @@ describe("parse", () => {
         expectError<"Unable to parse the type of '[]number'.">(
             // @ts-expect-error
             parse("string|[]number")
+        )
+    })
+    test("string tuple", () => {})
+    test("string function", () => {
+        const result = parse("(string, number) => boolean[]")
+        expectType<(x: string, y: number) => boolean[]>(result)
+        expectType<() => void>(parse("()=>void"))
+        // @ts-expect-error
+        parse("()=>")
+        // @ts-expect-error
+        const badParameterResult = parse("(foop, string, nufmber) => boolean[]")
+        expectError<
+            (
+                args_0: "Unable to parse the type of 'foop'.",
+                args_1: string,
+                args_2: "Unable to parse the type of 'nufmber'."
+            ) => boolean[]
+        >(badParameterResult)
+        // @ts-expect-error
+        const badReturnResult = parse("()=>fork")
+        expectError<() => "Unable to parse the type of 'fork'.">(
+            badReturnResult
         )
     })
     test("object", () => {
@@ -47,5 +69,10 @@ describe("parse", () => {
     test("object definition list", () => {
         const result = parse([{ a: "boolean" }])
         expectType<{ a: boolean }[]>(result)
+    })
+    test("whitespace is ignored when parsing strings", () => {
+        expectType<boolean | null>(parse("    boolean      |    null       "))
+        const result = parse({ nested: "number|    true" })
+        expectType<{ nested: number | true }>(result)
     })
 })
