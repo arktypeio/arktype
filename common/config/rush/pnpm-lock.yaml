@@ -541,6 +541,7 @@ importers:
       process: 0.11.10
       ts-jest: 27.0.3
       ts-toolbelt: 9.5.10
+      tsd: 0.17.0
       typescript: 4.5.0-dev.20210924
       validator: 13.5.2
     dependencies:
@@ -556,6 +557,7 @@ importers:
       '@types/node': 15.0.2
       jest: 27.0.6
       ts-jest: 27.0.3_43f984c94b5d4eb343a1060b8a78909c
+      tsd: 0.17.0
       typescript: 4.5.0-dev.20210924
 
   ../../pkgs/website:

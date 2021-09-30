@@ -8,7 +8,6 @@ import {
     FunctionDefinition
 } from "./common"
 import {
-    Narrow,
     transform,
     ElementOf,
     Exact,
@@ -29,7 +28,11 @@ import {
     FilterByValue,
     PropertyOf,
     Cast,
-    IsAnyOrUnknown
+    IsAnyOrUnknown,
+    NonObject,
+    SimpleFunction,
+    IfExtends,
+    Narrow
 } from "@re-do/utils"
 
 export type ComponentTypesOfStringDefinition<
@@ -241,25 +244,11 @@ export const createDefineFunctionMap = <DeclaredTypeNames extends string[]>(
         >
     }
 
-type NarrowRecurse<T> = {
-    [K in keyof T]: IsAnyOrUnknown<T[K]> extends true
-        ? T[K]
-        : T extends [] | NonRecursible
-        ? T
-        : NarrowRecurse<T[K]>
-}
-
-import { Function as FunctionToolbelt } from "ts-toolbelt"
-
-export type Narrow2<T> = Cast<T, NarrowRecurse<T>>
-
 export type DefineFunction<
     DefinedTypeName extends ElementOf<DeclaredTypeNames>,
     DeclaredTypeNames extends string[]
 > = <Definition>(
-    definition: FunctionToolbelt.Narrow<
-        TypeDefinition<Definition, DeclaredTypeNames>
-    >
+    definition: Narrow<TypeDefinition<Definition, DeclaredTypeNames>>
 ) => {
     [K in DefinedTypeName]: Definition
 }

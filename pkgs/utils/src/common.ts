@@ -447,17 +447,6 @@ export type Entry<K extends Key = Key, V = any> = [K, V]
 
 export type Recursible<T> = T extends NonRecursible ? never : T
 
-type NarrowRecurse<T> =
-    | (T extends [] ? [] : never)
-    | (T extends NonRecursible ? T : never)
-    | {
-          [K in keyof T]:
-              | (IsAnyOrUnknown<T[K]> extends true ? T[K] : never)
-              | NarrowRecurse<T[K]>
-      }
-
-export type Narrow<T> = Cast<T, NarrowRecurse<T>>
-
 type ListPossibleTypesRecurse<
     U,
     LN extends any[] = [],
@@ -570,6 +559,12 @@ export type MergeAll<
 > = Objects extends Iteration<any, infer Current, infer Remaining>
     ? MergeAll<Remaining, Merge<Result, Current>>
     : Result
+
+export type TreeOf<T, KeyType extends Key = string> =
+    | T
+    | {
+          [K in string]: TreeOf<T, KeyType>
+      }
 
 export type DiffResult<Missing extends any[], Extraneous extends any[]> = {
     missing: Missing
