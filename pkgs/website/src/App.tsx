@@ -2,7 +2,7 @@ import React from "react"
 import { AppContents, DefaultTheme } from "@re-do/components"
 import { ApolloProvider, ApolloClient, InMemoryCache } from "@apollo/client"
 import { BrowserRouter as Router, Route, Switch } from "react-router-dom"
-import { Home, Blog, Documentation } from "./pages"
+import { Home, Blog } from "./pages"
 
 export const client = new ApolloClient({
     uri: import.meta.env.DEV
@@ -22,10 +22,6 @@ export const App = () => {
                         <Switch>
                             <Route exact path="/" component={Home} />
                             <Route path="/blog" component={Blog} />
-                            <Route
-                                path="/documentation"
-                                component={Documentation}
-                            />
                         </Switch>
                     </Router>
                 </AppContents>
