@@ -211,6 +211,8 @@ importers:
       '@docusaurus/mdx-loader': 2.0.0-beta.6
       '@docusaurus/preset-classic': 2.0.0-beta.6
       '@mdx-js/react': 1.6.22
+      '@re-do/configs': workspace:*
+      '@re-do/test': workspace:*
       '@svgr/webpack': 5.5.0
       '@types/jest': 26.0.24
       '@types/mocha': 9.0.0
@@ -237,6 +239,8 @@ importers:
       react-dom: 17.0.2_react@17.0.2
       url-loader: 4.1.1_file-loader@6.2.0
     devDependencies:
+      '@re-do/configs': link:../configs
+      '@re-do/test': link:../test
       '@types/jest': 26.0.24
       '@types/mocha': 9.0.0
       jest: 27.0.6

@@ -1,7 +1,8 @@
 {
+    "extends": "@re-do/configs/tsconfig.base",
     "compilerOptions": {
         "baseUrl": "src",
-        "outDir": "dist",
+        "outDir": "build",
         "module": "commonjs"
     },
     "include": ["src", "test"]

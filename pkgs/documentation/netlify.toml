@@ -1,7 +1,6 @@
-[build.environment]
-  NODE_ENV = "production"
-  NETLIFY_USE_YARN = "true"
 [build]
-  command = "yarn build"
-  publish = "build"
-
+  command = "npm install -g @microsoft/rush@5.50.0 && rush update && rush build --to @re-do/documentation"
+  publish = "pkgs/documentation/build"
+[build.environment]
+  NODE_VERSION = "16.6.1"
+  NPM_FLAGS = "--omit dev"
