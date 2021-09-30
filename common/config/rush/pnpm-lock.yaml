@@ -208,6 +208,7 @@ importers:
   ../../pkgs/documentation:
     specifiers:
       '@docusaurus/core': 2.0.0-beta.6
+      '@docusaurus/mdx-loader': 2.0.0-beta.6
       '@docusaurus/preset-classic': 2.0.0-beta.6
       '@mdx-js/react': 1.6.22
       '@re-do/configs': workspace:*
@@ -227,6 +228,7 @@ importers:
       url-loader: 4.1.1
     dependencies:
       '@docusaurus/core': 2.0.0-beta.6_react-dom@17.0.2+react@17.0.2
+      '@docusaurus/mdx-loader': 2.0.0-beta.6_react-dom@17.0.2+react@17.0.2
       '@docusaurus/preset-classic': 2.0.0-beta.6_cf03b7458ee8070c9e09362c20b6f0a1
       '@mdx-js/react': 1.6.22_react@17.0.2
       '@svgr/webpack': 5.5.0
