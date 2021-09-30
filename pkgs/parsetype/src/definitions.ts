@@ -1,4 +1,20 @@
 import {
+    transform,
+    ElementOf,
+    TypeError,
+    ListPossibleTypes,
+    Evaluate,
+    StringifyPossibleTypes,
+    MergeAll,
+    Diff,
+    DiffResult,
+    RemoveSpaces,
+    Split,
+    Join,
+    Unlisted,
+    Narrow
+} from "@re-do/utils"
+import {
     OrDefinition,
     ListDefinition,
     OptionalDefinition,
@@ -6,34 +22,7 @@ import {
     UnvalidatedObjectListDefinition,
     UnvalidatedObjectDefinition,
     FunctionDefinition
-} from "./common"
-import {
-    transform,
-    ElementOf,
-    Exact,
-    NonRecursible,
-    TypeError,
-    ListPossibleTypes,
-    Evaluate,
-    Key,
-    StringifyPossibleTypes,
-    MergeAll,
-    Diff,
-    DiffResult,
-    RemoveSpaces,
-    Split,
-    ExcludeByValue,
-    Join,
-    Unlisted,
-    FilterByValue,
-    PropertyOf,
-    Cast,
-    IsAnyOrUnknown,
-    NonObject,
-    SimpleFunction,
-    IfExtends,
-    Narrow
-} from "@re-do/utils"
+} from "./common.js"
 
 export type ComponentTypesOfStringDefinition<
     Definition extends string,

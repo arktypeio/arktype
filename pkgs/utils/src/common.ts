@@ -7,13 +7,21 @@ import {
     List as ToolbeltList,
     String as ToolbeltString
 } from "ts-toolbelt"
-import { Replace } from "ts-toolbelt/out/Union/Replace"
+import { Narrow } from "./Narrow"
 
 export const merge = deepMerge
 export const memoize = moize as <F extends SimpleFunction>(f: F) => F
 export const deepEquals = isDeepEqual
 
-type Z = ToolbeltString.Replace<"H d     dfdfds ", " ", "">
+export const mergeAll = <Objects extends object[]>(
+    ...objects: Narrow<Objects>
+): MergeAll<Objects> =>
+    (objects.length
+        ? {
+              ...objects[0],
+              ...mergeAll(...objects.slice(1))
+          }
+        : {}) as MergeAll<Objects>
 
 export type StringReplace<
     Original extends string,
@@ -110,7 +118,9 @@ export type DeepWriteable<T> = { -readonly [P in keyof T]: DeepWriteable<T[P]> }
 export type PropertyOf<T> = T[keyof T]
 export type ElementOf<T extends any[]> = T[number]
 
-export type EntryOf<T> = { [K in keyof T]: [K, T[K]] }[keyof T]
+export type EntryOf<T> = { [K in keyof T]: [K, T[K]] }[T extends any[]
+    ? keyof T & number
+    : keyof T]
 
 export type SimpleFunction = (...args: any[]) => any
 export type Primitive = string | number | boolean | symbol | bigint
@@ -118,6 +128,7 @@ export type NonObject = Primitive | null | undefined | void
 
 export type NonRecursible = NonObject | SimpleFunction
 export type Unpromisified<T> = T extends Promise<infer U> ? U : never
+export type NumericString<N extends number = number> = `${N}`
 
 export const isRecursible = (o: any) => o && typeof o === "object"
 
@@ -191,18 +202,6 @@ export const mapPaths = (paths: string[][]) => {
         (finalMap, path) => recurse(finalMap, path),
         {} as PathMap
     )
-}
-
-export const transform = <O extends object, MapReturnType extends Entry>(
-    o: O,
-    map: MapFunction<EntryOf<O>, MapReturnType>
-) => {
-    if (!o || typeof o !== "object") {
-        throw new Error(`Can only transform objects. Received: ${o}.`)
-    }
-    return fromEntries(Object.entries(o).map(map as any)) as {
-        [K in MapReturnType[0]]: MapReturnType[1]
-    }
 }
 
 export type ItemOrList<T> = T | T[]
@@ -483,6 +482,13 @@ export type Join<
     : never
 
 export type Segment = string | number
+
+export const isNumericString = <S>(s: S) =>
+    !isNaN(Number.parseInt(String(s))) as S extends NumericString
+        ? true
+        : string extends S
+        ? boolean
+        : false
 
 export type DefaultDelimiter = "/"
 

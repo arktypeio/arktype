@@ -1,4 +1,4 @@
-import { Exact, Key, LimitDepth } from "@re-do/utils"
+import { Key } from "@re-do/utils"
 
 // These are the types we can extract from a value at runtime
 export type ExtractableDefinitionMap = {
@@ -68,3 +68,7 @@ export type TreeOf<T, KeyType extends Key = string> =
     | {
           [K in string]: TreeOf<T, KeyType>
       }
+
+export const typeDefProxy: any = new Proxy({}, { get: () => getTypeDef() })
+
+export const getTypeDef = () => typeDefProxy

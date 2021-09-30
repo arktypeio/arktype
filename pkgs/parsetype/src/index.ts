@@ -1,8 +1,8 @@
-export { declare, compile, parse } from "./parse"
-export { validate, typeOf } from "./validate"
-export type { ParseType } from "./parse"
+export * from "./main.js"
+export { typeOf } from "./validate.js"
+export type { ParseType } from "./parse.js"
 export type {
-    TypeDefinition as ValidateTypeDefinition,
-    TypeSet as ValidateTypeSet,
-    ComponentTypesOfStringDefinition as BaseNameOfStringDefinition
-} from "./definitions"
+    TypeDefinition,
+    TypeSet,
+    ComponentTypesOfStringDefinition
+} from "./definitions.js"

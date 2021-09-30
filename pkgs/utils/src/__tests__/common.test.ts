@@ -1,35 +1,11 @@
-import { deepMap, EntryMapper, mapPaths, transform } from "../common"
+import { expectType } from "tsd"
+import { deepMap, EntryMapper, mapPaths, mergeAll } from ".."
 
 const o = {
     a: 1,
     b: 2,
     c: 3
 }
-
-describe("transform", () => {
-    test("objects", () => {
-        expect(
-            transform(o, ([k, v]) => [String(k).toUpperCase(), -v])
-        ).toStrictEqual({
-            A: -1,
-            B: -2,
-            C: -3
-        })
-    })
-    test("value type change", () => {
-        const result: { [k: number]: string } = transform(o, ([k, v]) => [v, k])
-        expect(result).toStrictEqual({
-            1: "a",
-            2: "b",
-            3: "c"
-        })
-    })
-    test("errors on invalid objects", () => {
-        expect(() => transform(null as any, (_) => _)).toThrow()
-        expect(() => transform(undefined as any, (_) => _)).toThrow()
-        expect(() => transform(true as any, (_) => _)).toThrow()
-    })
-})
 
 const deepO = {
     a: o,
@@ -53,6 +29,16 @@ const mapLeavesToPaths: EntryMapper = ([k, v], { path }) => [
     k,
     path.length === 2 ? path : v
 ]
+
+test("mergeAll", () => {
+    const result = mergeAll(
+        { a: "fromA", b: "fromA" },
+        { b: "fromB", c: "fromB" },
+        { c: "fromC" }
+    )
+    expectType<{ a: "fromA"; b: "fromB"; c: "fromC" }>(result)
+    expect(result).toStrictEqual({ a: "fromA", b: "fromB", c: "fromC" })
+})
 
 test("deepMap", () => {
     const result = deepMap(deepO, mapLeavesToPaths)

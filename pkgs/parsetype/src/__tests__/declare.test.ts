@@ -12,7 +12,7 @@ describe("declare", () => {
         const { types, parse } = compile(GottaDefineThis)
         expectType<boolean>(types.GottaDefineThis)
         const result = parse({ a: "GottaDefineThis" })
-        expectType<{ a: boolean }>(result)
+        expectType<{ a: boolean }>(result.type)
     })
     test("errors on compile with declared type undefined", () => {
         const { define, compile } = declare(

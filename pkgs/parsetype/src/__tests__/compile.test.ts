@@ -52,10 +52,10 @@ describe("compile", () => {
     test("can parse from compiled types", () => {
         const { parse } = compile({ a: { b: "b" } }, { b: { a: "a" } })
         expectType<{ b: { a: any } } | { a: { b: any } } | null>(
-            parse("a|b|null")
+            parse("a|b|null").type
         )
         // @ts-expect-error
-        const result = parse({ nested: { a: "a", b: "b", c: "c" } })
+        const result = parse({ nested: { a: "a", b: "b", c: "c" } }).type
         expectError<{
             nested: {
                 a: {

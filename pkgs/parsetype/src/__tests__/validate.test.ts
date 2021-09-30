@@ -1,5 +1,4 @@
-import { validate, typeOf } from ".."
-import { expectType, expectError } from "tsd"
+import { parse, typeOf } from ".."
 
 describe("typeOf", () => {
     test("string", () => expect(typeOf("")).toBe("string"))
@@ -31,6 +30,16 @@ describe("typeOf", () => {
         expect(typeOf((someParam: any) => "someReturn")).toBe("function")
     })
     test("array", () => {
-        expect(typeOf([7, "up"])).toBe(["number", "string"])
+        expect(typeOf([7, "up"])).toStrictEqual(["number", "string"])
     })
+    test("complex", () => {
+        expect(typeOf([true, { a: ["ok", [() => {}]] }])).toStrictEqual([
+            "true",
+            { a: ["string", ["function"]] }
+        ])
+    })
+})
+
+describe("validate", () => {
+    test("", () => {})
 })

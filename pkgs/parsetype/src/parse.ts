@@ -3,23 +3,11 @@ import {
     FilterByValue,
     TypeError,
     Evaluate,
-    ListPossibleTypes,
-    Exact,
-    Narrow,
-    IsUnknown,
     MergeAll,
     RemoveSpaces,
-    Split,
-    Cast
+    Split
 } from "@re-do/utils"
-import {
-    TypeDefinition,
-    TypeSet,
-    TypeSetFromDefinitions,
-    createDefineFunctionMap,
-    TypeSetDefinitions,
-    InvalidTypeDefError
-} from "./definitions"
+import { InvalidTypeDefError } from "./definitions.js"
 import {
     OrDefinition,
     ListDefinition,
@@ -29,7 +17,7 @@ import {
     UnvalidatedObjectListDefinition,
     UnvalidatedObjectDefinition,
     FunctionDefinition
-} from "./common"
+} from "./common.js"
 
 export type ParseStringDefinition<
     Definition extends string,
@@ -113,40 +101,3 @@ export type ParseTypeSetDefinitions<
 > = {
     [TypeName in keyof Merged]: ParseType<Merged[TypeName], Merged>
 }
-
-export const typeDef: any = new Proxy({}, { get: () => getTypeDef() })
-
-export const getTypeDef = () => typeDef
-
-export const declare = <DeclaredTypeNames extends string[]>(
-    ...names: Narrow<DeclaredTypeNames>
-) => ({
-    define: createDefineFunctionMap(names),
-    compile: <Definitions extends any[]>(
-        ...definitions: TypeSetDefinitions<Definitions, DeclaredTypeNames>
-    ) => ({
-        parse: <
-            Definition,
-            SpecifiedTypeSet,
-            CompiledTypeSet = TypeSetFromDefinitions<Definitions>,
-            ActiveTypeSet = IsUnknown<SpecifiedTypeSet> extends true
-                ? CompiledTypeSet
-                : SpecifiedTypeSet
-        >(
-            definition: TypeDefinition<
-                Narrow<Definition>,
-                ListPossibleTypes<keyof ActiveTypeSet>
-            >,
-            typeSet?: Exact<SpecifiedTypeSet, TypeSet<SpecifiedTypeSet>>
-        ) => typeDef as ParseType<Definition, ActiveTypeSet>,
-        types: typeDef as Evaluate<ParseTypeSetDefinitions<Definitions>>
-    })
-})
-
-// Exported compile function is equivalent to compile from an empty declare call
-// and will not validate missing or extraneous definitions
-export const { compile } = declare()
-
-// Exported parse function is equivalent to parse from an empty compile call,
-// but optionally accepts a typeset as its second parameter
-export const { parse } = compile()
