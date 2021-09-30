@@ -1,20 +1,37 @@
 import { Exact, Key, LimitDepth } from "@re-do/utils"
 
-export type BuiltInDefinitionMap = {
+// These are the types we can extract from a value at runtime
+export type ExtractableDefinitionMap = {
+    bigint: bigint
     string: string
-    boolean: boolean
-    number: number
-    null: null
-    undefined: undefined
-    unknown: unknown
-    any: any
     true: true
     false: false
-    object: object
-    void: void
+    number: number
+    null: null
     symbol: symbol
+    undefined: undefined
+    function: (...args: any[]) => any
+}
+
+export type ExtractableDefinition = keyof ExtractableDefinitionMap
+
+/**
+ * These types can be used to specify a type definition but
+ * will never be used to represent a value at runtime, either
+ * because they are abstract type constructs (e.g. "never") or
+ * because a more specific type will always be extracted (e.g.
+ * "boolean", which will always evaluate as "true" or "false")
+ */
+export type DefinitionOnlyMap = {
+    unknown: unknown
+    any: any
+    object: object
+    boolean: boolean
+    void: void
     never: never
 }
+
+export type BuiltInDefinitionMap = ExtractableDefinitionMap & DefinitionOnlyMap
 
 export type BuiltInDefinition = keyof BuiltInDefinitionMap
 
