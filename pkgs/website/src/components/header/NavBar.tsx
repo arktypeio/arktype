@@ -62,7 +62,7 @@ const DesktopNav = () => (
             mobile={false}
         />
         <NavBarLink to="/blog" text="Blog" mobile={false} />
-        <NavBarLink to="/documentation" text="Docs" mobile={false} />
+        <NavBarLink to="https://docs.redo.qa" text="Docs" mobile={false} />
     </>
 )
 
@@ -105,7 +105,7 @@ const MobileNav = () => {
                     />
                     <NavBarLink
                         Icon={Icons.menuBook}
-                        to="/documentation"
+                        to="https://docs.redo.qa"
                         text="Docs"
                         mobile={true}
                     />
