@@ -4,7 +4,8 @@
     "private": true,
     "scripts": {
         "docusaurus": "docusaurus",
-        "test": "jest",
+        "test": "echo No tests required!",
+        "test-with-jest": "jest",
         "test-with-mocha": "ts-mocha src/**/__tests__/*.spec.ts",
         "start": "docusaurus start",
         "build": "docusaurus build",
