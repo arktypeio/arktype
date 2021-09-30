@@ -1,0 +1,52 @@
+{
+    "tests": [
+        {
+            "name": "The Website Launches",
+            "tags": [],
+            "steps": [1],
+            "id": 1
+        },
+        {
+            "name": "Why Redo? Is The Title",
+            "tags": [],
+            "steps": [1, 2],
+            "id": 2
+        },
+        {
+            "name": "Clicking Get Started With Jest Goes To The Correct URL",
+            "tags": [],
+            "steps": [1, 3, 4],
+            "id": 3
+        }
+    ],
+    "elements": [
+        {
+            "selector": "h1",
+            "id": 1
+        }
+    ],
+    "steps": [
+        {
+            "kind": "go",
+            "url": "http://localhost:3000/",
+            "id": 1
+        },
+        {
+            "kind": "assertText",
+            "element": 1,
+            "value": "Why Redo?",
+            "id": 2
+        },
+        {
+            "kind": "go",
+            "url": "http://localhost:3000/getting-started/getting-started-with-jest",
+            "id": 3
+        },
+        {
+            "kind": "assertUrl",
+            "url": "http://localhost:3000/getting-started/getting-started-with-jest",
+            "id": 4
+        }
+    ],
+    "tags": []
+}
