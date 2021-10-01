@@ -74,9 +74,11 @@ export const satisfies = (
                     definition
                 )
             )
+        } else {
+            if (Array.isArray(extractedType)) {
+                throwUnassignableError(extractedType, definedType)
+            }
         }
-
-        return Object.values(definedType)
     }
     // if ([])
     //     if (typeof definedType === "string") {

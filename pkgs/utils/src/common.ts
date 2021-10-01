@@ -579,16 +579,3 @@ export type TreeOf<T, KeyType extends Key = string> =
 export type DeepTreeOf<T, KeyType extends Key = string> = {
     [K in KeyType]: TreeOf<T, KeyType>
 }
-
-export type DiffResult<Missing extends any[], Extraneous extends any[]> = {
-    missing: Missing
-    extraneous: Extraneous
-}
-
-export type Diff<Expected, Actual> = DiffResult<
-    Cast<
-        ListPossibleTypes<Expected extends Actual ? never : Expected>,
-        Expected[]
-    >,
-    Cast<ListPossibleTypes<Actual extends Expected ? never : Actual>, Actual[]>
->
