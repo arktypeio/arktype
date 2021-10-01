@@ -31,6 +31,9 @@ describe("declare", () => {
         const { define, compile } = declare("GottaDefineThis")
         const GottaDefineThis = define.GottaDefineThis("boolean")
         // @ts-expect-error
-        compile(GottaDefineThis, { CantDefineThis: "boolean" })
+        compile(GottaDefineThis, {
+            CantDefineThis: "boolean",
+            WontDefineThis: "string"
+        })
     })
 })

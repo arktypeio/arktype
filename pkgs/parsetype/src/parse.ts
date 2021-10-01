@@ -14,7 +14,6 @@ import {
     OptionalDefinition,
     BuiltInDefinition,
     BuiltInDefinitionMap,
-    UnvalidatedObjectListDefinition,
     UnvalidatedObjectDefinition,
     FunctionDefinition
 } from "./common.js"
@@ -52,6 +51,21 @@ export type ParseStringFunctionDefinitionRecurse<
     ) => ParseStringDefinitionRecurse<Return, TypeSet>
 >
 
+export type ParseError<Fragment extends string = string> =
+    TypeError<`Unable to parse the type of '${Fragment}'.`>
+
+export type ParseStringOrDefinitionRecurse<
+    First extends string,
+    Second extends string,
+    TypeSet,
+    FirstParseResult = ParseStringDefinitionRecurse<First, TypeSet>,
+    SecondParseResult = ParseStringDefinitionRecurse<Second, TypeSet>
+> = FirstParseResult extends ParseError
+    ? FirstParseResult
+    : SecondParseResult extends ParseError
+    ? SecondParseResult
+    : FirstParseResult | SecondParseResult
+
 export type ParseStringDefinitionRecurse<
     Fragment extends string,
     TypeSet
@@ -60,14 +74,12 @@ export type ParseStringDefinitionRecurse<
     : Fragment extends ListDefinition<infer ListItem>
     ? ParseStringDefinitionRecurse<ListItem, TypeSet>[]
     : Fragment extends OrDefinition<infer First, infer Second>
-    ?
-          | ParseStringDefinitionRecurse<First, TypeSet>
-          | ParseStringDefinitionRecurse<Second, TypeSet>
+    ? ParseStringOrDefinitionRecurse<First, Second, TypeSet>
     : Fragment extends keyof TypeSet
     ? ParseType<TypeSet[Fragment], TypeSet>
     : Fragment extends BuiltInDefinition
     ? BuiltInDefinitionMap[Fragment]
-    : TypeError<`Unable to parse the type of '${Fragment}'.`>
+    : ParseError<Fragment>
 
 export type ParseObjectDefinition<Definition extends object, TypeSet> = {
     [PropName in keyof ExcludeByValue<
@@ -87,12 +99,16 @@ export type ParseObjectDefinition<Definition extends object, TypeSet> = {
               >} to be optional.`>
     }
 
+export type ParseListDefinition<Definition extends any[], TypeSet> = {
+    [Index in keyof Definition]: ParseType<Definition[Index], TypeSet>
+}
+
 export type ParseType<Definition, TypeSet> = Definition extends string
     ? ParseStringDefinition<Definition, TypeSet>
-    : Definition extends UnvalidatedObjectListDefinition<infer InnerDefinition>
-    ? Evaluate<ParseObjectDefinition<InnerDefinition, TypeSet>>[]
-    : Definition extends UnvalidatedObjectDefinition<Definition>
-    ? Evaluate<ParseObjectDefinition<Definition, TypeSet>>
+    : Definition extends UnvalidatedObjectDefinition
+    ? Definition extends any[]
+        ? Evaluate<ParseListDefinition<Definition, TypeSet>>
+        : Evaluate<ParseObjectDefinition<Definition, TypeSet>>
     : InvalidTypeDefError
 
 export type ParseTypeSetDefinitions<

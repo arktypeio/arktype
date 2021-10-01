@@ -566,11 +566,19 @@ export type MergeAll<
     ? MergeAll<Remaining, Merge<Result, Current>>
     : Result
 
+export type CastWithExclusion<T, CastTo, Excluded> = T extends Excluded
+    ? T
+    : CastTo
+
 export type TreeOf<T, KeyType extends Key = string> =
     | T
     | {
-          [K in string]: TreeOf<T, KeyType>
+          [K in KeyType]: TreeOf<T, KeyType>
       }
+
+export type DeepTreeOf<T, KeyType extends Key = string> = {
+    [K in KeyType]: TreeOf<T, KeyType>
+}
 
 export type DiffResult<Missing extends any[], Extraneous extends any[]> = {
     missing: Missing

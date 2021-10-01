@@ -24,11 +24,7 @@ describe("multifile", () => {
         expectType<ExpectedUser>(types.user)
         expectType<ExpectedGroup>(types.group)
         expectType<ExpectedUser | undefined>(types.user.bestFriend)
-        // Writing the next statement as
-        // const { foozler } = parse({ foozler: "user" })
-        // results in TS parsing type of "user" as generic string and breaks the type
-        // No idea why
-        const doozler = parse({ foozler: "user", choozler: "group[]" })
+        const doozler = parse({ foozler: "user", choozler: "group[]" }).type
         expectType<{ foozler: ExpectedUser; choozler: ExpectedGroup[] }>(
             doozler
         )

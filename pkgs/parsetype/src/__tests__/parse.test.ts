@@ -4,24 +4,24 @@ import { expectType, expectError } from "tsd"
 
 describe("parse", () => {
     test("built-in", () => {
-        expectType<string>(parse("string").type)
+        const result = parse("string").type
+        expectType<string>(result)
         // @ts-expect-error
-        expectError<"Unable to parse the type of 'strig'.">(parse("strig"))
+        const badResult = parse("strig").type
+        expectError<"Unable to parse the type of 'strig'.">(badResult)
     })
     test("string", () => {
-        expectType<(string | number)[] | undefined>(
-            parse("string|number[]?").type
-        )
-        expectError<"Unable to parse the type of '[]number'.">(
-            // @ts-expect-error
-            parse("string|[]number")
-        )
+        const result = parse("string|number[]?").type
+        expectType<(string | number)[] | undefined>(result)
+        // @ts-expect-error
+        const badResult = parse("string|[]number").type
+        expectError<"Unable to parse the type of '[]number'.">(badResult)
     })
-    test("string tuple", () => {})
     test("string function", () => {
         const result = parse("(string, number) => boolean[]")
         expectType<(x: string, y: number) => boolean[]>(result.type)
-        expectType<() => void>(parse("()=>void").type)
+        const emptyFunction = parse("()=>void").type
+        expectType<() => void>(emptyFunction)
         // @ts-expect-error
         parse("()=>")
         // @ts-expect-error
@@ -64,19 +64,19 @@ describe("parse", () => {
         expectError<{ bad: InvalidTypeDefError }>(result.type)
     })
     test("with typeset", () => {
-        expectType<boolean>(parse("borf", { borf: "boolean" }).type)
-        const result = parse({ snorf: "borf[]" }, { borf: "boolean" })
-        expectType<{ snorf: boolean[] }>(result.type)
+        const stringResult = parse("borf", { borf: "boolean" }).type
+        expectType<boolean>(stringResult)
+        const objectResult = parse({ snorf: "borf[]" }, { borf: "boolean" })
+        expectType<{ snorf: boolean[] }>(objectResult.type)
     })
-    test("object definition list", () => {
-        const result = parse([{ a: "boolean" }])
-        expectType<{ a: boolean }[]>(result.type)
+    test("list definition", () => {
+        const result = parse([{ a: "boolean" }, { b: "string?" }])
+        expectType<[{ a: boolean }, { b?: string }]>(result.type)
     })
     test("whitespace is ignored when parsing strings", () => {
-        expectType<boolean | null>(
-            parse("    boolean      |    null       ").type
-        )
-        const result = parse({ nested: "number|    true" })
-        expectType<{ nested: number | true }>(result.type)
+        const stringResult = parse("    boolean      |    null       ").type
+        expectType<boolean | null>(stringResult)
+        const objectResult = parse({ nested: "number|    true" })
+        expectType<{ nested: number | true }>(objectResult.type)
     })
 })

@@ -1,4 +1,4 @@
-import { Key } from "@re-do/utils"
+import { DeepTreeOf, Key, TreeOf } from "@re-do/utils"
 
 // These are the types we can extract from a value at runtime
 export type ExtractableDefinitionMap = {
@@ -51,23 +51,9 @@ export type OrDefinition<
 export type OptionalDefinition<Definition extends string = string> =
     `${Definition}?`
 
-export type UnvalidatedObjectDefinition<Definition = object> =
-    Definition extends any[] ? never : { [K in string]: any }
+export type UnvalidatedDefinition = string | UnvalidatedObjectDefinition
 
-export type UnvalidatedObjectListDefinition<
-    Definition extends UnvalidatedObjectDefinition = UnvalidatedObjectDefinition
-> = [Definition]
-
-export type UnvalidatedDefinition =
-    | string
-    | UnvalidatedObjectDefinition
-    | UnvalidatedObjectListDefinition
-
-export type TreeOf<T, KeyType extends Key = string> =
-    | T
-    | {
-          [K in string]: TreeOf<T, KeyType>
-      }
+export type UnvalidatedObjectDefinition = { [K in string | number]: any }
 
 export const typeDefProxy: any = new Proxy({}, { get: () => getTypeDef() })
 

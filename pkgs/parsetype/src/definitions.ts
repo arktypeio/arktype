@@ -19,7 +19,6 @@ import {
     ListDefinition,
     OptionalDefinition,
     BuiltInDefinition,
-    UnvalidatedObjectListDefinition,
     UnvalidatedObjectDefinition,
     FunctionDefinition
 } from "./common.js"
@@ -163,35 +162,27 @@ export type StringDefinition<
 >
 
 export type InvalidTypeDefError =
-    TypeError<`A type definition must be an object whose keys are strings and whose values are strings or nested type definitions.`>
+    TypeError<`A type definition must be an object whose values are strings or nested type definitions.`>
 
 export type ObjectDefinition<
     Definition,
-    DeclaredTypeNames extends string[],
-    AllowedProp extends string = string
+    DeclaredTypeNames extends string[]
 > = Evaluate<
     {
-        [PropName in keyof Definition]: PropName extends AllowedProp
-            ? TypeDefinition<Definition[PropName], DeclaredTypeNames>
-            : TypeError<`Defined type '${PropName &
-                  string}' was never declared.`>
+        [PropName in keyof Definition]: TypeDefinition<
+            Definition[PropName],
+            DeclaredTypeNames
+        >
     }
 >
 
 export type TypeDefinition<
     Definition,
-    DeclaredTypeNames extends string[],
-    AllowedProp extends string = string
+    DeclaredTypeNames extends string[]
 > = Definition extends string
     ? StringDefinition<Definition, DeclaredTypeNames>
-    : Definition extends UnvalidatedObjectListDefinition<
-          infer InnerObjectDefinition
-      >
-    ? UnvalidatedObjectListDefinition<
-          ObjectDefinition<InnerObjectDefinition, DeclaredTypeNames>
-      >
-    : Definition extends UnvalidatedObjectDefinition<Definition>
-    ? ObjectDefinition<Definition, DeclaredTypeNames, AllowedProp>
+    : Definition extends UnvalidatedObjectDefinition
+    ? ObjectDefinition<Definition, DeclaredTypeNames>
     : InvalidTypeDefError
 
 export type TypeDefinitions<
@@ -278,13 +269,17 @@ export type TypeSetDefinitions<
     >
 > = MissingTypesError<DeclaredTypeName, DefinedTypeName> &
     {
-        [Index in keyof Definitions]: Definitions[Index] extends UnvalidatedObjectDefinition<
-            Definitions[Index]
-        >
-            ? TypeDefinition<
-                  Definitions[Index],
-                  ListPossibleTypes<DefinedTypeName>,
-                  DeclaredTypeName
-              >
+        [Index in keyof Definitions]: Definitions[Index] extends UnvalidatedObjectDefinition
+            ? keyof Definitions[Index] extends DeclaredTypeName
+                ? TypeDefinition<
+                      Definitions[Index],
+                      ListPossibleTypes<DefinedTypeName>
+                  >
+                : TypeError<`Defined types '${StringifyPossibleTypes<
+                      Exclude<
+                          keyof Definitions[Index] & string,
+                          DeclaredTypeName
+                      >
+                  >}' were never declared.`>
             : TypeError<`Definitions must be objects with string keys representing defined type names.`>
     }

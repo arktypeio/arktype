@@ -5,7 +5,7 @@ import {
     UnvalidatedDefinition
 } from "./common.js"
 
-export type ExtractedDefinition = TreeOf<ExtractableDefinition>
+export type ExtractedDefinition = TreeOf<ExtractableDefinition, string | number>
 
 export const typeOf = (value: any): ExtractedDefinition => {
     if (typeof value === "boolean") {
@@ -41,6 +41,17 @@ const validateStringOrObject = (value: any) => {
     }
 }
 
+const throwUnassignableError = (
+    extractedType: ExtractedDefinition,
+    definedType: UnvalidatedDefinition
+) => {
+    throw new Error(
+        `Extracted type ${JSON.stringify(
+            extractedType
+        )} is not assignable to defined type ${JSON.stringify(definedType)}.`
+    )
+}
+
 export const satisfies = (
     extractedType: ExtractedDefinition,
     definedType: UnvalidatedDefinition
@@ -49,10 +60,22 @@ export const satisfies = (
     validateStringOrObject(definedType)
     if (typeof definedType === "object") {
         if (Array.isArray(definedType)) {
-            if (definedType.length === 1) {
-                // Object list definition
+            if (!Array.isArray(extractedType)) {
+                throwUnassignableError(extractedType, definedType)
             }
+            if (definedType.length !== extractedType.length) {
+                throw new Error(
+                    `List ${extractedType} of length ${extractedType.length} is not assignable to list ${definedType} of length ${definedType.length}.`
+                )
+            }
+            definedType.forEach((definition, index) =>
+                satisfies(
+                    extractedType[index] as ExtractedDefinition,
+                    definition
+                )
+            )
         }
+
         return Object.values(definedType)
     }
     // if ([])

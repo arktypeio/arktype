@@ -24,7 +24,7 @@ describe("typeOf", () => {
     test("function", () => {
         expect(
             typeOf(function saySomething() {
-                console.log("something")
+                console.log("I'm giving up on you")
             })
         ).toBe("function")
         expect(typeOf((someParam: any) => "someReturn")).toBe("function")

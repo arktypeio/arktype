@@ -1,7 +1,7 @@
-import { NonRecursible, IfExtends } from "./common"
+import { NonRecursible, CastWithExclusion } from "./common"
 
 type NarrowRecurse<T> = {
     [K in keyof T]: T[K] extends NonRecursible ? T[K] : NarrowRecurse<T[K]>
 }
 
-export type Narrow<T> = IfExtends<T, [], T, NarrowRecurse<T>>
+export type Narrow<T> = CastWithExclusion<T, NarrowRecurse<T>, []>

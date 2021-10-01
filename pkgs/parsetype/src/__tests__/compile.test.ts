@@ -3,29 +3,25 @@ import { expectType, expectError } from "tsd"
 
 describe("compile", () => {
     test("single", () => {
-        expectType<string>(compile({ a: "string" }).types.a)
-        expectError<"Unable to parse the type of 'strig'.">(
-            // @ts-expect-error
-            compile({ a: "strig" }).types.a
-        )
+        const a = compile({ a: "string" }).types.a
+        expectType<string>(a)
+        // @ts-expect-error
+        const badA = compile({ a: "strig" }).types.a
+        expectError<"Unable to parse the type of 'strig'.">(badA)
     })
     test("independent", () => {
-        expectType<boolean>(
-            compile({ a: "string" }, { b: { c: "boolean" } }).types.b.c
-        )
-        expectError<"Unable to parse the type of 'uhoh'.">(
-            // @ts-expect-error
-            compile({ a: "string" }, { b: { c: "uhoh" } }).types.b.c
-        )
+        const c = compile({ a: "string" }, { b: { c: "boolean" } }).types.b.c
+        expectType<boolean>(c)
+        // @ts-expect-error
+        const badC = compile({ a: "string" }, { b: { c: "uhoh" } }).types.b.c
+        expectError<"Unable to parse the type of 'uhoh'.">(badC)
     })
     test("interdependent", () => {
-        expectType<string>(
-            compile({ a: "string" }, { b: { c: "a" } }).types.b.c
-        )
-        expectError<"Unable to parse the type of 'uhoh'.">(
-            // @ts-expect-error
-            compile({ a: "uhoh" }, { b: { c: "a" } }).types.b.c
-        )
+        const c = compile({ a: "string" }, { b: { c: "a" } }).types.b.c
+        expectType<string>(c)
+        // @ts-expect-error
+        const badC = compile({ a: "uhoh" }, { b: { c: "a" } }).types.b.c
+        expectError<"Unable to parse the type of 'uhoh'.">(badC)
     })
     test("recursive", () => {
         const { types } = compile({ a: { dejaVu: "a?" } })
@@ -42,20 +38,18 @@ describe("compile", () => {
         types.a.b.a.b.c
     })
     test("object list", () => {
-        expectType<{ c: string }[]>(
-            compile({ a: "string" }, { b: [{ c: "a" }] }).types.b
-        )
+        const b = compile({ a: "string" }, { b: [{ c: "a" }] }).types.b
+        expectType<{ c: string }[]>(b)
         // Can't pass in object list directly to compile
         // @ts-expect-error
-        const result = compile([{ b: { c: "string" } }]).types
+        const badResult = compile([{ b: { c: "string" } }]).types
     })
     test("can parse from compiled types", () => {
         const { parse } = compile({ a: { b: "b" } }, { b: { a: "a" } })
-        expectType<{ b: { a: any } } | { a: { b: any } } | null>(
-            parse("a|b|null").type
-        )
+        const result = parse("a|b|null").type
+        expectType<{ b: { a: any } } | { a: { b: any } } | null>(result)
         // @ts-expect-error
-        const result = parse({ nested: { a: "a", b: "b", c: "c" } }).type
+        const badResult = parse({ nested: { a: "a", b: "b", c: "c" } }).type
         expectError<{
             nested: {
                 a: {
@@ -68,6 +62,6 @@ describe("compile", () => {
                 }
                 c: "Unable to parse the type of 'c'."
             }
-        }>(result)
+        }>(badResult)
     })
 })
