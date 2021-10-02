@@ -55,6 +55,8 @@ export type UnvalidatedDefinition = string | UnvalidatedObjectDefinition
 
 export type UnvalidatedObjectDefinition = { [K in string | number]: any }
 
+export type UnvalidatedTypeSet = { [K in string]: UnvalidatedDefinition }
+
 export const typeDefProxy: any = new Proxy({}, { get: () => getTypeDef() })
 
 export const getTypeDef = () => typeDefProxy

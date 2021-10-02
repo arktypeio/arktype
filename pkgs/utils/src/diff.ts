@@ -53,7 +53,8 @@ export type DiffOptions = {
     excludeAdded?: boolean
     excludeRemoved?: boolean
     excludeChanged?: boolean
-    shallowArrayResults?: boolean
+    shallowListResults?: boolean
+    enforceListOrder?: boolean
 }
 
 export const diff = <Base, Compare>(
@@ -63,7 +64,7 @@ export const diff = <Base, Compare>(
 ): DeepDiffResult<Base, Compare> => {
     const isDiffable = (value: any) =>
         isRecursible(value) &&
-        !(options.shallowArrayResults && Array.isArray(value))
+        !(options.shallowListResults && Array.isArray(value))
     if (!isDiffable(base) || !isDiffable(compare)) {
         // Using deepEquals in case we're shallow comparing arrays
         return deepEquals(base, compare) ? undefined : { base, compare }
@@ -103,13 +104,40 @@ export const diff = <Base, Compare>(
     return isEmpty(result) ? undefined : result
 }
 
+export type DiffSetsOptions = {}
+
+export const diffSets = <Base extends any[], Compare extends any[]>(
+    base: Base,
+    compare: Compare
+) => {
+    const added = compare.filter(
+        (compareItem) =>
+            !base.find((baseItem) => deepEquals(compareItem, baseItem))
+    )
+    const removed = base.filter(
+        (baseItem) =>
+            !compare.find((compareItem) => deepEquals(baseItem, compareItem))
+    )
+    if (added.length) {
+        if (removed.length) {
+            return { added, removed }
+        }
+        return { added }
+    } else {
+        if (removed.length) {
+            return { removed }
+        }
+        return undefined
+    }
+}
+
 export const addedOrChanged = <Base, Compare>(
     base: Base,
     compare: Compare
 ): DeepPartial<Compare> => {
     const diffResult = diff(base, compare, {
         excludeRemoved: true,
-        shallowArrayResults: true
+        shallowListResults: true
     })
     if (!diffResult) {
         return {}

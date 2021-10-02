@@ -59,9 +59,13 @@ describe("parse", () => {
         }>(badResult.type)
     })
     test("bad type def type", () => {
-        // @ts-expect-error
-        const result = parse({ bad: true })
-        expectError<{ bad: InvalidTypeDefError }>(result.type)
+        expect(() => {
+            // @ts-expect-error
+            const result = parse({ bad: true })
+            expectError<{ bad: InvalidTypeDefError }>(result.type)
+        }).toThrowError(
+            "Unable to parse definition 'true' of type 'boolean'. Definition must be strings or objects."
+        )
     })
     test("with typeset", () => {
         const stringResult = parse("borf", { borf: "boolean" }).type

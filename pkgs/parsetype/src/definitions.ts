@@ -6,8 +6,8 @@ import {
     Evaluate,
     StringifyPossibleTypes,
     MergeAll,
-    Diff,
-    DiffResult,
+    DiffUnions,
+    UnionDiffResult,
     RemoveSpaces,
     Split,
     Join,
@@ -248,10 +248,10 @@ export type TypeNamesFrom<Definitions> = ListPossibleTypes<
     keyof MergeAll<Definitions> & string
 >
 
-export type MissingTypesError<DeclaredTypeName, DefinedTypeName> = Diff<
+export type MissingTypesError<DeclaredTypeName, DefinedTypeName> = DiffUnions<
     DeclaredTypeName,
     DefinedTypeName
-> extends DiffResult<infer Missing, any>
+> extends UnionDiffResult<infer Missing, any>
     ? Missing extends []
         ? {}
         : `Declared types ${StringifyPossibleTypes<`'${ElementOf<Missing>}'`>} were never defined.`
