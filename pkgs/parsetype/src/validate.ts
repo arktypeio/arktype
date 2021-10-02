@@ -60,7 +60,7 @@ export const satisfies = (
 export type ValidationErrors = Record<string, string>
 
 const extractableDefinitions: ExtractableDefinitionMap = {
-    bigint: 0n,
+    bigint: BigInt(0),
     string: "",
     true: true,
     false: false,

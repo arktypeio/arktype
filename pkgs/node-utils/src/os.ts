@@ -1,4 +1,4 @@
-import { ValueOf, isIn } from "@re-do/utils"
+import { PropertyOf, isIn } from "@re-do/utils"
 import { join } from "path"
 import killTreeCallback from "tree-kill"
 import { promisify } from "util"
@@ -19,7 +19,7 @@ export const supportedPlatforms = Object.keys(
     supportedOsMap
 ) as SupportedPlatform[]
 
-type SupportedOs = ValueOf<SupportedOsMap>
+type SupportedOs = PropertyOf<SupportedOsMap>
 export const supportedOs = [...Object.values(supportedOsMap)] as SupportedOs[]
 
 export const getOs = () => {

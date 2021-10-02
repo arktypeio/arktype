@@ -3,7 +3,7 @@ import { parse, typeOf } from ".."
 describe("typeOf", () => {
     test("string", () => expect(typeOf("")).toBe("string"))
     test("number", () => expect(typeOf(0)).toBe("number"))
-    test("bigint", () => expect(typeOf(0n)).toBe("bigint"))
+    test("bigint", () => expect(typeOf(BigInt(0))).toBe("bigint"))
     test("boolean", () => {
         expect(typeOf(true)).toBe("true")
         expect(typeOf(false)).toBe("false")
@@ -47,7 +47,7 @@ describe("validate", () => {
         expect(validate(5)).toBe(undefined)
     })
     test("number", () => expect(typeOf(0)).toBe("number"))
-    test("bigint", () => expect(typeOf(0n)).toBe("bigint"))
+    test("bigint", () => expect(typeOf(BigInt(0))).toBe("bigint"))
     test("boolean", () => {
         expect(typeOf(true)).toBe("true")
         expect(typeOf(false)).toBe("false")

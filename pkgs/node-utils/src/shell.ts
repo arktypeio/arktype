@@ -26,7 +26,10 @@ const defaultOptions: SyncOptions = {
 
 export type ShellResult = ExecaSyncReturnValue
 
-export const shell = (cmd: string, options: ShellOptions = {}): ShellResult => {
+export const shell = (
+    cmd: string,
+    options: Partial<ShellOptions> = {}
+): ShellResult => {
     const { suppressCmdStringLogging, ...execaOptions } = {
         ...defaultOptions,
         ...options
@@ -41,7 +44,7 @@ export type ChildProcess = ExecaChildProcess
 
 export const shellAsync = (
     cmd: string,
-    options: ShellAsyncOptions = {}
+    options: Partial<ShellAsyncOptions> = {}
 ): ChildProcess => {
     const { suppressCmdStringLogging, ...execaOptions } = {
         ...defaultOptions,
@@ -91,7 +94,7 @@ export const runScript = (path: string, options?: RunScriptOptions) =>
 export const runScriptAsync = (path: string, options?: RunScriptOptions) =>
     shellAsync(getRunScriptCmd(path, options))
 
-export const $ = (cmd: string, options?: ShellOptions) => () =>
+export const $ = (cmd: string, options?: Partial<ShellOptions>) => () =>
     shell(cmd, options)
 
 export type PromptOptions = Omit<PromptObject, "message" | "type" | "name">
