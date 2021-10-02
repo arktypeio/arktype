@@ -223,6 +223,8 @@ importers:
       prism-react-renderer: 1.2.1
       react: 17.0.2
       react-dom: 17.0.2
+      react-router: 5.2.0
+      react-router-dom: 5.2.0
       ts-jest: 27.0.3
       ts-mocha: 8.0.0
       url-loader: 4.1.1
@@ -237,6 +239,8 @@ importers:
       prism-react-renderer: 1.2.1_react@17.0.2
       react: 17.0.2
       react-dom: 17.0.2_react@17.0.2
+      react-router: 5.2.0_react@17.0.2
+      react-router-dom: 5.2.0_react@17.0.2
       url-loader: 4.1.1_file-loader@6.2.0
     devDependencies:
       '@re-do/configs': link:../configs
@@ -3157,8 +3161,8 @@ packages:
       react-helmet: 6.1.0_react@17.0.2
       react-loadable: 5.5.0_react@17.0.2
       react-loadable-ssr-addon-v5-slorber: 1.0.1_c303aae00d61febf9fa6a38df7853928
-      react-router: 5.2.1_react@17.0.2
-      react-router-config: 5.1.1_react-router@5.2.1+react@17.0.2
+      react-router: 5.2.0_react@17.0.2
+      react-router-config: 5.1.1_react-router@5.2.0+react@17.0.2
       react-router-dom: 5.2.0_react@17.0.2
       remark-admonitions: 1.2.1
       resolve-pathname: 3.0.0
@@ -17104,7 +17108,7 @@ packages:
     engines: {node: '>=0.10.0'}
     dev: true
 
-  /react-router-config/5.1.1_react-router@5.2.1+react@17.0.2:
+  /react-router-config/5.1.1_react-router@5.2.0+react@17.0.2:
     resolution: {integrity: sha512-DuanZjaD8mQp1ppHjgnnUnyOlqYXZVjnov/JzFhjLEwd3Z4dYjMSnqrEzzGThH47vpCOqPPwJM2FtthLeJ8Pbg==}
     peerDependencies:
       react: '>=15'
@@ -17112,7 +17116,7 @@ packages:
     dependencies:
       '@babel/runtime': 7.15.4
       react: 17.0.2
-      react-router: 5.2.1_react@17.0.2
+      react-router: 5.2.0_react@17.0.2
     dev: false
 
   /react-router-dom/5.2.0_react@17.0.2:
@@ -17132,24 +17136,6 @@ packages:
 
   /react-router/5.2.0_react@17.0.2:
     resolution: {integrity: sha512-smz1DUuFHRKdcJC0jobGo8cVbhO3x50tCL4icacOlcwDOEQPq4TMqwx3sY1TP+DvtTgz4nm3thuo7A+BK2U0Dw==}
-    peerDependencies:
-      react: '>=15'
-    dependencies:
-      '@babel/runtime': 7.15.4
-      history: 4.10.1
-      hoist-non-react-statics: 3.3.2
-      loose-envify: 1.4.0
-      mini-create-react-context: 0.4.1_prop-types@15.7.2+react@17.0.2
-      path-to-regexp: 1.8.0
-      prop-types: 15.7.2
-      react: 17.0.2
-      react-is: 16.13.1
-      tiny-invariant: 1.1.0
-      tiny-warning: 1.0.3
-    dev: false
-
-  /react-router/5.2.1_react@17.0.2:
-    resolution: {integrity: sha512-lIboRiOtDLFdg1VTemMwud9vRVuOCZmUIT/7lUoZiSpPODiiH1UQlfXy+vPLC/7IWdFYnhRwAyNqA/+I7wnvKQ==}
     peerDependencies:
       react: '>=15'
     dependencies:

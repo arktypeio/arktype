@@ -4,7 +4,7 @@ import { MainActions, Root } from "common"
 import { stateSyncEnhancer } from "electron-redux/main"
 import { launchBrowser, closeBrowser } from "./launchBrowser.js"
 import { mainWindow, builderWindow } from "./electronWindows.js"
-import { ValueOf } from "@re-do/utils"
+import { EntryOf } from "@re-do/utils"
 import { fromRedo, ensureDir } from "@re-do/node-utils"
 import { createRedoFileDb } from "@re-do/data"
 import { readFileSync, writeFileSync } from "fs"
@@ -142,7 +142,7 @@ store = new Store(initialState, mainActions, {
             main: async (changes) => {
                 const requiredActions = Object.entries(changes).filter(
                     ([name, args]) => !!args
-                ) as [keyof MainActions, ValueOf<MainActions>][]
+                ) as EntryOf<MainActions>[]
                 for (const action of requiredActions) {
                     const [name, args] = action
                     await store.actions[name](args as any)
