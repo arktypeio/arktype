@@ -1,5 +1,4 @@
-import { expectType } from "tsd"
-import { deepMap, EntryMapper, mapPaths, mergeAll } from ".."
+import { deepMap, EntryMapper, mapPaths } from ".."
 
 const o = {
     a: 1,
@@ -29,16 +28,6 @@ const mapLeavesToPaths: EntryMapper = ([k, v], { path }) => [
     k,
     path.length === 2 ? path : v
 ]
-
-test("mergeAll", () => {
-    const result = mergeAll(
-        { a: "fromA", b: "fromA" },
-        { b: "fromB", c: "fromB" },
-        { c: "fromC" }
-    )
-    expectType<{ a: "fromA"; b: "fromB"; c: "fromC" }>(result)
-    expect(result).toStrictEqual({ a: "fromA", b: "fromB", c: "fromC" })
-})
 
 test("deepMap", () => {
     const result = deepMap(deepO, mapLeavesToPaths)

@@ -7,11 +7,12 @@ import {
     NonRecursible,
     withDefaults,
     And,
-    Merge,
     Segment,
     Join,
-    DefaultDelimiter
+    DefaultDelimiter,
+    Cast
 } from "./common.js"
+import { Merge } from "./merge.js"
 import { String } from "ts-toolbelt"
 
 export type Split<S extends string, Delimiter extends string> = String.Split<
@@ -128,10 +129,19 @@ export type StringPathConstraintOptions = PathConstraintOptions & {
 
 export type LeafListOf<
     T,
-    Constraints extends PathConstraintOptions = DefaultPathConstraints
+    ProvidedConstraints extends Partial<PathConstraints> = {},
+    // This shouldn't have to be cast but oh well...
+    Constraints extends PathConstraints = Cast<
+        Merge<
+            DefaultPathConstraints,
+            ProvidedConstraints,
+            { preserveRequired: true }
+        >,
+        PathConstraints
+    >
 > = LeafListOfRecurse<
     T,
-    Merge<DefaultPathConstraints, Constraints, undefined>,
+    Constraints,
     EnsureValue<Constraints["maxDepth"], DefaultPathConstraints["maxDepth"]>,
     never
 >

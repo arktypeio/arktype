@@ -8,10 +8,10 @@ import {
     Or,
     split,
     Entry,
-    isEmpty,
-    mergeAll
+    isEmpty
 } from "./common.js"
 import { transform } from "./transform.js"
+import { mergeAll } from "./merge.js"
 
 export type UnionDiffResult<Added extends any[], Removed extends any[]> = {
     added: Added

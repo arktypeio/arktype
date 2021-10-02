@@ -1,7 +1,5 @@
-import { Narrow } from ".."
+import { Narrow, narrow } from ".."
 import { expectType } from "tsd"
-
-const narrow = <T>(arg: Narrow<T>) => arg as T
 
 describe("Narrow", () => {
     test("literals", () => {

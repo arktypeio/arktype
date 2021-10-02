@@ -5,3 +5,5 @@ type NarrowRecurse<T> = {
 }
 
 export type Narrow<T> = CastWithExclusion<T, NarrowRecurse<T>, []>
+
+export const narrow = <T>(arg: Narrow<T>) => arg as T

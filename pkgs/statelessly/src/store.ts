@@ -13,7 +13,7 @@ import {
     ValueAtPath,
     transform,
     deepEquals,
-    diff,
+    addedOrChanged,
     PathOf
 } from "@re-do/utils"
 import { Query, Update, Actions, ActionData, StoreActions } from "./common"
@@ -94,7 +94,7 @@ export class Store<T extends object, A extends Actions<T>> {
     ) => {
         const state = this.getState()
         const updatedState = updateMap(state, u)
-        const changes = diff(state, updatedState)
+        const changes = addedOrChanged(state, updatedState)
         if (!deepEquals(changes, {})) {
             this.underlying.dispatch({
                 type: actionType,

@@ -1,27 +1,15 @@
 import moize from "moize"
 import isDeepEqual from "fast-deep-equal"
-import deepMerge from "deepmerge"
 import {
     Number as NumberToolbelt,
     Union as ToolbeltUnion,
     List as ToolbeltList,
     String as ToolbeltString
 } from "ts-toolbelt"
-import { Narrow } from "./Narrow"
+import { Merge } from "./merge.js"
 
-export const merge = deepMerge
 export const memoize = moize as <F extends SimpleFunction>(f: F) => F
 export const deepEquals = isDeepEqual
-
-export const mergeAll = <Objects extends object[]>(
-    ...objects: Narrow<Objects>
-): MergeAll<Objects> =>
-    (objects.length
-        ? {
-              ...objects[0],
-              ...mergeAll(...objects.slice(1))
-          }
-        : {}) as MergeAll<Objects>
 
 export type StringReplace<
     Original extends string,
@@ -97,7 +85,14 @@ export type WithRequiredKeys<T extends object, Keys extends keyof T> = Omit<
     T,
     Keys
 > &
-    { [K in Keys]-?: T[K] }
+    {
+        [K in Keys]-?: T[K]
+    }
+
+export type WithRequiredKeysIfPresent<T, K> = WithRequiredKeys<
+    T & object,
+    K & keyof T
+>
 
 export type WithRequiredValues<
     T extends object,
@@ -215,6 +210,10 @@ export type AsListIf<T, Condition extends boolean> = Condition extends true
     : T
 export type IfList<T, IfList, IfNotList> = T extends any[] ? IfList : IfNotList
 export type IsList<T> = IfList<T, true, false>
+
+export type GetRequiredKeys<O extends object> = {
+    [K in keyof O]-?: {} extends Pick<O, K> ? never : K
+}[keyof O]
 
 export type ExtendsCheck<
     A,
@@ -543,27 +542,6 @@ export type FromEntries<
     Result extends object = {}
 > = Entries extends Iteration<Entry, infer Current, infer Remaining>
     ? FromEntries<Remaining, Merge<Result, { [K in Current[0]]: Current[1] }>>
-    : Result
-
-export type Merge<A, B, UnmergedTypes = never> = A extends any[] | NonRecursible
-    ? B
-    : B extends any[] | NonRecursible
-    ? A
-    : {
-          [K in keyof A | keyof B]: K extends keyof A
-              ? K extends keyof B
-                  ? Exclude<B[K], UnmergedTypes>
-                  : A[K]
-              : K extends keyof B
-              ? B[K]
-              : never
-      }
-
-export type MergeAll<
-    Objects,
-    Result extends object = {}
-> = Objects extends Iteration<any, infer Current, infer Remaining>
-    ? MergeAll<Remaining, Merge<Result, Current>>
     : Result
 
 export type CastWithExclusion<T, CastTo, Excluded> = T extends Excluded
