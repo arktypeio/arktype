@@ -1,0 +1,6 @@
+[build]
+  command = "npm install -g @microsoft/rush@5.50.0 && rush update && rush build --to @re-do/documentation"
+  publish = "build"
+[build.environment]
+  NODE_VERSION = "16.6.1"
+  NPM_FLAGS = "--help"
