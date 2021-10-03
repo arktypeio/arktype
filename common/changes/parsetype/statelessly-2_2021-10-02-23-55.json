@@ -1,0 +1,10 @@
+{
+    "changes": [
+        {
+            "packageName": "parsetype",
+            "comment": "Initial implementation.",
+            "type": "major"
+        }
+    ],
+    "packageName": "parsetype"
+}

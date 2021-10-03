@@ -6,7 +6,7 @@ export type FilteredByKeys<O, K extends Key[]> = Pick<
     Extract<keyof O, K[number]>
 >
 
-type DeepFilteredByKeys<O, K extends Key[]> = O extends NonRecursible
+export type DeepFilteredByKeys<O, K extends Key[]> = O extends NonRecursible
     ? O
     : {
           [P in keyof FilteredByKeys<O, K>]: Array<any> extends O[P]

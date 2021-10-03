@@ -4,7 +4,8 @@
         "baseUrl": "src",
         "outDir": "dist",
         "isolatedModules": false,
-        "exactOptionalPropertyTypes": false
+        "exactOptionalPropertyTypes": false,
+        "noErrorTruncation": false
     },
     "include": ["src"]
 }

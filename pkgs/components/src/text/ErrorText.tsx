@@ -2,7 +2,7 @@ import React from "react"
 import { Tooltip } from "@material-ui/core"
 import { TooltipProps } from "@material-ui/core/Tooltip"
 import { makeStyles } from "@material-ui/styles"
-import { listify, ValueFrom, Merge } from "@re-do/utils"
+import { listify, Merge } from "@re-do/utils"
 import { Text, TextProps } from "./Text.js"
 import { usePalette, Theme } from "../styles"
 
@@ -13,7 +13,7 @@ const stylize = makeStyles((theme: Theme) => ({
     }
 }))
 
-export type TooltipPlacement = ValueFrom<TooltipProps, "placement">
+export type TooltipPlacement = TooltipProps["placement"]
 
 export type ErrorTextProps = Merge<
     TextProps,
