@@ -1,9 +1,9 @@
 [build]
-  command = "node ../../common/scripts/install-run-rush.js install && node ../../common/scripts/install-run-rush.js build --to @re-do/website"
-  publish = "dist"
+  base = "../.."
+  command = "node common/scripts/install-run-rush.js install && node common/scripts/install-run-rush.js build --to @re-do/website"
+  publish = "pkgs/website/dist"
 [build.environment]
   NODE_VERSION = "16.8.0"
-  NPM_FLAGS = "--help"
 [[redirects]]
   from = "/*"
   to = "/index.html"

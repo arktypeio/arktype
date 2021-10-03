@@ -1,6 +1,7 @@
 [build]
-  command = "node ../../common/scripts/install-run-rush.js install && node ../../common/scripts/install-run-rush.js build --to @re-do/docs"
-  publish = "build"
+  base = "../.."
+  command = "node common/scripts/install-run-rush.js install && node common/scripts/install-run-rush.js build --to @re-do/docs"
+  publish = "pkgs/docs/dist"
 [build.environment]
   NODE_VERSION = "16.8.0"
   NPM_FLAGS = "--help"
