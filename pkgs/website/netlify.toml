@@ -1,5 +1,5 @@
 [build]
-  base = "../.."
+  base = ""
   command = "node common/scripts/install-run-rush.js install && node common/scripts/install-run-rush.js build --to @re-do/website"
   publish = "pkgs/website/dist"
 [build.environment]
