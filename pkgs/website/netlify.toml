@@ -3,6 +3,7 @@
   publish = "dist"
 [build.environment]
   NODE_VERSION = "16.8.0"
+  NPM_FLAGS = "--help"
 [[redirects]]
   from = "/*"
   to = "/index.html"
