@@ -1,11 +1,27 @@
 import moize from "moize"
 import isDeepEqual from "fast-deep-equal"
-import deepMerge from "deepmerge"
-import { Number, Object as TSO } from "ts-toolbelt"
+import {
+    Number as NumberToolbelt,
+    Union as ToolbeltUnion,
+    List as ToolbeltList,
+    String as ToolbeltString
+} from "ts-toolbelt"
+import { Merge } from "./merge.js"
 
-export const merge = deepMerge
-export const memoize = moize as <F extends Function>(f: F) => F
+export const memoize = moize as <F extends SimpleFunction>(f: F) => F
 export const deepEquals = isDeepEqual
+
+export type StringReplace<
+    Original extends string,
+    Find extends string,
+    ReplaceWith extends string
+> = ToolbeltString.Replace<Original, Find, ReplaceWith>
+
+export type RemoveSpaces<FromString extends string> = StringReplace<
+    FromString,
+    " ",
+    ""
+>
 
 export type UntilOptions = {
     timeoutSeconds?: number
@@ -31,7 +47,11 @@ export const until = async (
     return
 }
 
-export type Merge<A extends object, B extends object> = TSO.Merge<B, A>
+export type Evaluate<T> = T extends NonRecursible
+    ? T
+    : {
+          [K in keyof T]: T[K]
+      }
 
 export type MapReturn<F, V> = F extends (value: V) => infer R ? R : any
 
@@ -65,7 +85,14 @@ export type WithRequiredKeys<T extends object, Keys extends keyof T> = Omit<
     T,
     Keys
 > &
-    { [K in Keys]-?: T[K] }
+    {
+        [K in Keys]-?: T[K]
+    }
+
+export type WithRequiredKeysIfPresent<T, K> = WithRequiredKeys<
+    T & object,
+    K & keyof T
+>
 
 export type WithRequiredValues<
     T extends object,
@@ -83,14 +110,20 @@ export type DeepPartial<T> = {
 export type Writeable<T> = { -readonly [P in keyof T]: T[P] }
 export type DeepWriteable<T> = { -readonly [P in keyof T]: DeepWriteable<T[P]> }
 
-export type ValueOf<T> = T[keyof T]
-export type EntryOf<T> = { [K in keyof T]: [K, T[K]] }[keyof T]
-export type ValueFrom<T, K extends keyof T> = Pick<T, K>[K]
+export type PropertyOf<T> = T[keyof T]
+export type ElementOf<T extends any[]> = T[number]
 
+export type EntryOf<T> = { [K in keyof T]: [K, T[K]] }[T extends any[]
+    ? keyof T & number
+    : keyof T]
+
+export type SimpleFunction = (...args: any[]) => any
 export type Primitive = string | number | boolean | symbol | bigint
-export type NonObject = Primitive | null | undefined
-export type NonRecursible = NonObject | Function
+export type NonObject = Primitive | null | undefined | void
+
+export type NonRecursible = NonObject | SimpleFunction
 export type Unpromisified<T> = T extends Promise<infer U> ? U : never
+export type NumericString<N extends number = number> = `${N}`
 
 export const isRecursible = (o: any) => o && typeof o === "object"
 
@@ -166,18 +199,6 @@ export const mapPaths = (paths: string[][]) => {
     )
 }
 
-export const transform = <O extends object, MapReturnType extends Entry>(
-    o: O,
-    map: MapFunction<EntryOf<O>, MapReturnType>
-) => {
-    if (!o || typeof o !== "object") {
-        throw new Error(`Can only transform objects. Received: ${o}.`)
-    }
-    return fromEntries(Object.entries(o).map(map as any)) as {
-        [K in MapReturnType[0]]: MapReturnType[1]
-    }
-}
-
 export type ItemOrList<T> = T | T[]
 export type Unlisted<T> = T extends (infer V)[] ? V : T
 export type FlatUnlisted<T> = T extends (infer V)[] ? FlatUnlisted<V> : T
@@ -189,6 +210,10 @@ export type AsListIf<T, Condition extends boolean> = Condition extends true
     : T
 export type IfList<T, IfList, IfNotList> = T extends any[] ? IfList : IfNotList
 export type IsList<T> = IfList<T, true, false>
+
+export type GetRequiredKeys<O extends object> = {
+    [K in keyof O]-?: {} extends Pick<O, K> ? never : K
+}[keyof O]
 
 export type ExtendsCheck<
     A,
@@ -249,7 +274,7 @@ export type WithOptionalUndefineds<T extends object> = WithOptionalValues<
 export const listify = <T>(o: ItemOrList<T>) => ([] as T[]).concat(o)
 
 export type Key = string | number | symbol
-export type Entry = [Key, any]
+
 export type MapFunction<T, ReturnType> = (
     ..._: Parameters<Parameters<Array<T>["map"]>[0]>
 ) => ReturnType
@@ -329,15 +354,28 @@ export type AsListIfList<AsList, IfList> = IfList extends any[]
         : AsList[]
     : AsList
 
-export type NonCyclic<O, OnCycle = any, Seen = never> = O extends Seen
-    ? OnCycle
+export type TransformCyclic<
+    O,
+    ValueOnCycle = any,
+    Seen = never
+> = O extends Seen
+    ? ValueOnCycle
     : {
           [K in keyof O]: O[K] extends NonRecursible
               ? O[K]
-              : NonCyclic<O[K], OnCycle, Seen | O>
+              : TransformCyclic<O[K], ValueOnCycle, Seen | O>
       }
 
-export type MinusOne<N extends number> = Number.Sub<N, 1>
+export type ExcludeCyclic<
+    O extends object,
+    Seen = Unlisted<O> | Unlisted<O>[]
+> = {
+    [K in keyof ExcludeByValue<O, Seen>]: O[K] extends NonRecursible
+        ? O[K]
+        : ExcludeCyclic<O[K], Seen | Unlisted<O[K]> | Unlisted<O[K]>[]>
+}
+
+export type MinusOne<N extends number> = NumberToolbelt.Sub<N, 1>
 
 export type And<A extends boolean, B extends boolean> = {
     true: {
@@ -377,27 +415,145 @@ export type IfExtends<T, CheckIfExtended, ValueIfTrue, ValueIfFalse> =
 
 export type Cast<A, B> = A extends B ? A : B
 
-type NarrowRecurse<T> =
-    | (T extends [] ? [] : never)
-    | (T extends Narrowable ? T : never)
-    | {
-          [K in keyof T]: T[K] extends Function ? T[K] : Narrow<T[K]>
-      }
+export type IsAnyOrUnknown<T> = (any extends T ? true : false) extends true
+    ? true
+    : false
 
-type NarrowRoot<T, Narrowed = NarrowRecurse<T>> = Narrowed | Cast<T, Narrowed>
+export type IsAny<T> = (any extends T ? AnyIsAny<T> : false) extends true
+    ? true
+    : false
 
-type Narrowable = string | number | bigint | boolean
+export type IsUnknown<T> = (
+    any extends T ? AnyIsUnknown<T> : false
+) extends true
+    ? true
+    : false
 
-export type Narrow<T> = NarrowRoot<T>
+type AnyIsAny<T> = (T extends {} ? true : false) extends false ? false : true
+
+type AnyIsUnknown<T> = (T extends {} ? true : false) extends false
+    ? true
+    : false
 
 export type KeyValuate<T, K, Fallback = undefined> = K extends keyof T
     ? T[K]
     : Fallback
 
-const TypeErrorTag: unique symbol = Symbol("TypeErrorTag")
+export type TypeError<Description extends string> = Description
 
-export type TypeError<Message> = {
-    [x in keyof Message | typeof TypeErrorTag]: x extends keyof Message
-        ? Message[x & keyof Message]
-        : { readonly [TypeErrorTag]: unique symbol }
+export type Entry<K extends Key = Key, V = any> = [K, V]
+
+export type Recursible<T> = T extends NonRecursible ? never : T
+
+type ListPossibleTypesRecurse<
+    U,
+    LN extends any[] = [],
+    LastU = ToolbeltUnion.Last<U>
+> = {
+    0: ListPossibleTypesRecurse<
+        Exclude<U, LastU>,
+        ToolbeltList.Prepend<LN, LastU>
+    >
+    1: LN
+}[[U] extends [never] ? 1 : 0]
+
+export type ListPossibleTypes<U> = ListPossibleTypesRecurse<U> extends infer X
+    ? Cast<X, any[]>
+    : never
+
+export type StringifyPossibleTypes<U extends Stringifiable> = Join<
+    ListPossibleTypes<U>,
+    ", "
+>
+
+export type Join<
+    Segments extends Stringifiable[],
+    Delimiter extends string = DefaultDelimiter
+> = Segments extends []
+    ? ""
+    : Segments extends [Stringifiable]
+    ? `${Segments[0]}`
+    : Segments extends [Stringifiable, ...infer Remaining]
+    ? `${Segments[0]}${Delimiter}${Join<
+          Remaining extends Stringifiable[] ? Remaining : never,
+          Delimiter
+      >}`
+    : never
+
+export type Segment = string | number
+
+export const isNumericString = <S>(s: S) =>
+    !isNaN(Number.parseInt(String(s))) as S extends NumericString
+        ? true
+        : string extends S
+        ? boolean
+        : false
+
+export type DefaultDelimiter = "/"
+
+export type StringifyKeys<O> = StringifyPossibleTypes<
+    O extends any[] ? keyof O & number : keyof O & string
+>
+
+export type Stringifiable =
+    | string
+    | number
+    | bigint
+    | boolean
+    | null
+    | undefined
+
+export type ExtractFunction<T> = Extract<T, SimpleFunction>
+
+export type ExactFunction<T, ExpectedType> = T extends ExpectedType
+    ? ExtractFunction<T> extends (...args: infer Args) => infer Return
+        ? ExtractFunction<ExpectedType> extends (
+              ...args: infer ExpectedArgs
+          ) => infer ExpectedReturn
+            ? (
+                  ...args: Exact<Args, ExpectedArgs>
+              ) => Exact<Return, ExpectedReturn>
+            : ExpectedType
+        : ExpectedType
+    : ExpectedType
+
+export type Exact<T, ExpectedType> = IsAnyOrUnknown<T> extends true
+    ? ExpectedType
+    : T extends ExpectedType
+    ? T extends NonObject
+        ? T
+        : {
+              [K in keyof T]: K extends keyof Recursible<ExpectedType>
+                  ? Exact<T[K], Recursible<ExpectedType>[K]>
+                  : TypeError<`Invalid property '${Extract<
+                        K,
+                        string | number
+                    >}'. Valid properties are: ${StringifyKeys<ExpectedType>}`>
+          }
+    : ExpectedType
+
+export type Iteration<T, Current extends T, Remaining extends T[]> = [
+    Current,
+    ...Remaining
+]
+
+export type FromEntries<
+    Entries extends Entry[],
+    Result extends object = {}
+> = Entries extends Iteration<Entry, infer Current, infer Remaining>
+    ? FromEntries<Remaining, Merge<Result, { [K in Current[0]]: Current[1] }>>
+    : Result
+
+export type CastWithExclusion<T, CastTo, Excluded> = T extends Excluded
+    ? T
+    : CastTo
+
+export type TreeOf<T, KeyType extends Key = string> =
+    | T
+    | {
+          [K in KeyType]: TreeOf<T, KeyType>
+      }
+
+export type DeepTreeOf<T, KeyType extends Key = string> = {
+    [K in KeyType]: TreeOf<T, KeyType>
 }

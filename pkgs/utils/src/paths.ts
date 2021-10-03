@@ -2,14 +2,17 @@ import {
     FlatUnlisted,
     IsList,
     isRecursible,
-    ItemOrList,
     MinusOne,
-    NonCyclic,
+    TransformCyclic,
     NonRecursible,
     withDefaults,
     And,
-    Merge
+    Segment,
+    Join,
+    DefaultDelimiter,
+    Cast
 } from "./common.js"
+import { Merge } from "./merge.js"
 import { String } from "ts-toolbelt"
 
 export type Split<S extends string, Delimiter extends string> = String.Split<
@@ -102,10 +105,6 @@ export const valueAtPathList = <
 export type Fallback<Value, Default> = unknown extends Value ? Default : Value
 export type EnsureValue<Value, Default> = NonNullable<Fallback<Value, Default>>
 
-export type Segment = string | number
-
-export type DefaultDelimiter = "/"
-
 export type PathConstraintOptions = {
     filter?: any
     exclude?: any
@@ -130,10 +129,19 @@ export type StringPathConstraintOptions = PathConstraintOptions & {
 
 export type LeafListOf<
     T,
-    Constraints extends PathConstraintOptions = DefaultPathConstraints
+    ProvidedConstraints extends Partial<PathConstraints> = {},
+    // This shouldn't have to be cast but oh well...
+    Constraints extends PathConstraints = Cast<
+        Merge<
+            DefaultPathConstraints,
+            ProvidedConstraints,
+            { preserveRequired: true }
+        >,
+        PathConstraints
+    >
 > = LeafListOfRecurse<
     T,
-    Merge<DefaultPathConstraints, Constraints>,
+    Constraints,
     EnsureValue<Constraints["maxDepth"], DefaultPathConstraints["maxDepth"]>,
     never
 >
@@ -174,20 +182,6 @@ type LeafListOfRecurse<
           }[keyof T],
           Segment[]
       >
-
-export type Join<
-    Segments extends Segment[],
-    Delimiter extends string = DefaultDelimiter
-> = Segments extends []
-    ? ""
-    : Segments extends [Segment]
-    ? `${Segments[0]}`
-    : Segments extends [Segment, ...infer Remaining]
-    ? `${Segments[0]}${Delimiter}${Join<
-          Remaining extends Segment[] ? Remaining : never,
-          Delimiter
-      >}`
-    : never
 
 export type LeafOf<
     T,
@@ -245,7 +239,7 @@ export type CyclicPathList<
         PathConstraintOptions,
         "filter" | "treatAsLeaf"
     > = {}
-> = PathListTo<NonCyclic<T, "__cycle__">, "__cycle__", Constraints>
+> = PathListTo<TransformCyclic<T, "__cycle__">, "__cycle__", Constraints>
 
 export type CyclicPath<
     T,
@@ -253,7 +247,7 @@ export type CyclicPath<
         StringPathConstraintOptions,
         "filter" | "treatAsLeaf"
     > = {}
-> = PathTo<NonCyclic<T, "__cycle__">, "__cycle__", Constraints>
+> = PathTo<TransformCyclic<T, "__cycle__">, "__cycle__", Constraints>
 
 type User = {
     name: string

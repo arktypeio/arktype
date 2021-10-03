@@ -1,0 +1,10 @@
+{
+    "changes": [
+        {
+            "packageName": "react-statelessly",
+            "comment": "Integrate new utils.",
+            "type": "patch"
+        }
+    ],
+    "packageName": "react-statelessly"
+}

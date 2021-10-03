@@ -45,7 +45,7 @@
         "@types/node": "15.0.2",
         "@types/adm-zip": "0.4.34",
         "ts-node": "10.1.0",
-        "typescript": "4.4.0-beta",
+        "typescript": "4.5.0-dev.20210924",
         "@types/node-fetch": "2.5.8",
         "jest": "27.0.6",
         "@types/jest": "26.0.24",

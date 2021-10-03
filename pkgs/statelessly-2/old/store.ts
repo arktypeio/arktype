@@ -21,7 +21,7 @@ import {
     Actions,
     ActionData,
     StoreActions
-} from "./model/common.js"
+} from "../src/model/common.js"
 import { createOnChangeMiddleware, OnChangeMiddlewareArgs } from "./onChange.js"
 import { createValidationMiddleware, ValidationFunction } from "./validate.js"
 // import { createAddIdsMiddleware, CreateAddIdsMiddlewareArgs } from "./addIds.js"

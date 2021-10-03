@@ -1,5 +1,4 @@
 import React from "react"
-import { Link } from "@re-do/components"
 import { GetStartedDesktop } from "./GetStartedDesktop.js"
 import { GetStartedMobile } from "./GetStartedMobile.js"
 
@@ -13,12 +12,12 @@ export const GetStarted = ({
     animateScroll
 }: GetStartedButtonProps) => {
     return (
-        <Link to={"documentation"}>
+        <a href={"https://docs.redo.qa"} target="_blank">
             {mobile ? (
                 <GetStartedMobile animateScroll={animateScroll} />
             ) : (
                 <GetStartedDesktop animateScroll={animateScroll} />
             )}
-        </Link>
+        </a>
     )
 }

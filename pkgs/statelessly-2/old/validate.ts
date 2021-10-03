@@ -1,5 +1,5 @@
 import { Middleware } from "@reduxjs/toolkit"
-import { ActionData } from "./model/common.js"
+import { ActionData } from "../src/model/common.js"
 import { Store } from "./store.js"
 
 export type ValidationFunction<T extends object> = (

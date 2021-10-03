@@ -1,0 +1,10 @@
+{
+    "changes": [
+        {
+            "packageName": "@re-do/run",
+            "comment": "Integrate new utils.",
+            "type": "patch"
+        }
+    ],
+    "packageName": "@re-do/run"
+}

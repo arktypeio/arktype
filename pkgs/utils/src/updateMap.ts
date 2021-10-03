@@ -1,4 +1,9 @@
-import { isRecursible, fromEntries, ValueOf, NonRecursible } from "./common.js"
+import {
+    isRecursible,
+    fromEntries,
+    PropertyOf,
+    NonRecursible
+} from "./common.js"
 
 export type UpdateFunction<T> = (currentValue: T) => T
 
@@ -23,7 +28,7 @@ export const updateMap = <T>(obj: T, updates: DeepUpdate<T>): T => {
                 }
                 if (typeof updaterValue === "function") {
                     const update = updaterValue as any as UpdateFunction<
-                        ValueOf<T>
+                        PropertyOf<T>
                     >
                     return [k, update(currentValue)]
                 } else {

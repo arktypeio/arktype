@@ -1,0 +1,10 @@
+{
+    "changes": [
+        {
+            "packageName": "persist-statelessly",
+            "comment": "Integrate new utils.",
+            "type": "patch"
+        }
+    ],
+    "packageName": "persist-statelessly"
+}

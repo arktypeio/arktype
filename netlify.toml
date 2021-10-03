@@ -1,9 +1,0 @@
-[build]
-  command = "npm install -g @microsoft/rush@5.50.0 && rush update && rush build --to @re-do/website"
-  publish = "pkgs/website/dist"
-[build.environment]
-  NODE_VERSION = "16.6.1"
-[[redirects]]
-  from = "/*"
-  to = "/index.html"
-  status = 200

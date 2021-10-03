@@ -73,6 +73,11 @@
             "projectFolder": "pkgs/statelessly-2"
         },
         {
+            "packageName": "parsetype",
+            "projectFolder": "pkgs/parsetype",
+            "shouldPublish": true
+        },
+        {
             "packageName": "@re-do/test",
             "projectFolder": "pkgs/test",
             "shouldPublish": true
@@ -82,8 +87,8 @@
             "projectFolder": "pkgs/website"
         },
         {
-            "packageName": "@re-do/documentation",
-            "projectFolder": "pkgs/documentation"
+            "packageName": "@re-do/docs",
+            "projectFolder": "pkgs/docs"
         },
         {
             "packageName": "@re-do/app",

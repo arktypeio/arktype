@@ -26,6 +26,7 @@
     },
     "dependencies": {
         "@re-do/utils": "workspace:*",
+        "parsetype": "workspace:*",
         "deepmerge": "4.2.2",
         "isomorphic-fetch": "3.0.0",
         "moize": "5.4.7",
@@ -40,6 +41,6 @@
         "ts-jest": "27.0.3",
         "@types/node": "15.0.2",
         "ts-toolbelt": "9.5.10",
-        "typescript": "4.4.0-beta"
+        "typescript": "4.5.0-dev.20210924"
     }
 }
