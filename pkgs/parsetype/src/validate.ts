@@ -47,12 +47,18 @@ const unassignableErrorMessage = (
 // Validation errors or undefined if there are none
 export type ValidationResult = ValidationErrors | undefined
 
-export const satisfies = (
+export const assert = (
+    extractedType: ExtractedDefinition,
+    definedType: UnvalidatedDefinition,
+    typeSet: UnvalidatedTypeSet = {}
+) => {}
+
+export const validate = (
     extractedType: ExtractedDefinition,
     definedType: UnvalidatedDefinition,
     typeSet: UnvalidatedTypeSet = {}
 ) => {
-    const errors = satisfiesRecurse(extractedType, definedType, "/", typeSet)
+    const errors = satisfiesRecurse(extractedType, definedType, "", typeSet)
     return isEmpty(errors) ? undefined : errors
 }
 
