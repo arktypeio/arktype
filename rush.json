@@ -87,8 +87,8 @@
             "projectFolder": "pkgs/website"
         },
         {
-            "packageName": "@re-do/documentation",
-            "projectFolder": "pkgs/documentation"
+            "packageName": "@re-do/docs",
+            "projectFolder": "pkgs/docs"
         },
         {
             "packageName": "@re-do/app",

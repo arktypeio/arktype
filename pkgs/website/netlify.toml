@@ -1,5 +1,5 @@
 [build]
-  command = "npm install -g @microsoft/rush@5.50.0 && rush update && rush build --to @re-do/website"
+  command = "node common/scripts/install-run-rush.js install && node common/scripts/install-run-rush.js build --to @re-do/website"
   publish = "pkgs/website/dist"
 [build.environment]
   NODE_VERSION = "16.8.0"
