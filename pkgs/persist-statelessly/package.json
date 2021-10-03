@@ -1,6 +1,6 @@
 {
     "name": "persist-statelessly",
-    "version": "0.1.0",
+    "version": "0.1.1",
     "author": "redo.qa",
     "description": "Seemlessly persist objects to a local file",
     "repository": {
