@@ -1,6 +1,6 @@
 {
     "name": "@re-do/configs",
-    "version": "0.1.0",
+    "version": "0.1.1",
     "author": "redo.qa",
     "description": "Shared set of default configurations for Redo's packages",
     "repository": {

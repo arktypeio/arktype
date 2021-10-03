@@ -1,6 +1,6 @@
 {
     "name": "@re-do/node-utils",
-    "version": "0.1.0",
+    "version": "0.1.1",
     "author": "redo.qa",
     "description": "Node utilities consumed by Redo",
     "repository": {
