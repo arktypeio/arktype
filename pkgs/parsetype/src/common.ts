@@ -1,4 +1,20 @@
-import { DeepTreeOf, Key, TreeOf } from "@re-do/utils"
+import { DeepTreeOf, Key, transform, TreeOf } from "@re-do/utils"
+
+export const formatTypes = <T>(definition: T): T => {
+    if (typeof definition === "string") {
+        return definition.replace(" ", "") as any
+    }
+    if (typeof definition === "object") {
+        return transform(definition as any, ([k, v]) => [
+            k,
+            formatTypes(v)
+        ]) as any
+    }
+    throw new Error(
+        `Unable to parse definition '${definition}' of type '${typeof definition}'. ` +
+            `Definition must be strings or objects.`
+    )
+}
 
 // These are the types we can extract from a value at runtime
 export type ExtractableDefinitionMap = {

@@ -14,29 +14,9 @@ import {
     createDefineFunctionMap,
     TypeSetDefinitions
 } from "./definitions.js"
-import {
-    typeDefProxy,
-    UnvalidatedDefinition,
-    UnvalidatedTypeSet
-} from "./common.js"
+import { typeDefProxy, UnvalidatedTypeSet, formatTypes } from "./common.js"
 import { ParseType, ParseTypeSetDefinitions } from "./parse.js"
-import { satisfies, typeOf } from "./validate.js"
-
-export const formatTypes = <T>(definition: T): T => {
-    if (typeof definition === "string") {
-        return definition.replace(" ", "") as any
-    }
-    if (typeof definition === "object") {
-        return transform(definition as any, ([k, v]) => [
-            k,
-            formatTypes(v)
-        ]) as any
-    }
-    throw new Error(
-        `Unable to parse definition '${definition}' of type '${typeof definition}'. ` +
-            `Definition must be strings or objects.`
-    )
-}
+import { validate, assert, typeOf } from "./validate.js"
 
 export const declare = <DeclaredTypeNames extends string[]>(
     ...names: Narrow<DeclaredTypeNames>
@@ -65,13 +45,10 @@ export const declare = <DeclaredTypeNames extends string[]>(
                     definition: formattedDefinition,
                     type: typeDefProxy as ParseType<Definition, ActiveTypeSet>,
                     typeSet: activeTypeSet,
-                    validate: (value: unknown) => {
-                        return satisfies(
-                            typeOf(value),
-                            formattedDefinition,
-                            activeTypeSet
-                        )
-                    }
+                    validate: (value: unknown) =>
+                        validate(value, formattedDefinition, activeTypeSet),
+                    assert: (value: unknown) =>
+                        assert(value, formattedDefinition, activeTypeSet)
                 }
             },
             types: typeDefProxy as Evaluate<

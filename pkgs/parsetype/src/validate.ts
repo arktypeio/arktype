@@ -8,6 +8,7 @@ import {
 import {
     ExtractableDefinition,
     ExtractableDefinitionMap,
+    formatTypes,
     UnvalidatedDefinition,
     UnvalidatedTypeSet
 } from "./common.js"
@@ -48,19 +49,45 @@ const unassignableErrorMessage = (
 export type ValidationResult = ValidationErrors | undefined
 
 export const assert = (
-    extractedType: ExtractedDefinition,
-    definedType: UnvalidatedDefinition,
-    typeSet: UnvalidatedTypeSet = {}
-) => {}
-
-export const validate = (
-    extractedType: ExtractedDefinition,
+    value: unknown,
     definedType: UnvalidatedDefinition,
     typeSet: UnvalidatedTypeSet = {}
 ) => {
-    const errors = satisfiesRecurse(extractedType, definedType, "", typeSet)
-    return isEmpty(errors) ? undefined : errors
+    const errorMessage = validate(value, definedType, typeSet)
+    if (errorMessage) {
+        throw new Error(errorMessage)
+    }
 }
+
+export const validate = (
+    value: unknown,
+    definedType: UnvalidatedDefinition,
+    typeSet: UnvalidatedTypeSet = {}
+) => {
+    const errors = validateRecurse(
+        typeOf(value),
+        formatTypes(definedType),
+        "",
+        typeSet
+    )
+    const errorPaths = Object.keys(errors)
+    if (errorPaths.length === 0) {
+        return undefined
+    }
+    if (errorPaths.length === 1) {
+        const errorPath = errorPaths[0]
+        return `Validation error${
+            errorPath ? ` at path '${errorPath}'` : ""
+        }: ${errors[errorPath]}`
+    }
+    return `Multiple validation errors: ${stringify(errors)}`
+}
+
+export const errorsAtPaths = (
+    value: unknown,
+    definedType: UnvalidatedDefinition,
+    typeSet: UnvalidatedTypeSet = {}
+) => validateRecurse(typeOf(value), formatTypes(definedType), "", typeSet)
 
 // Paths at which errors occur mapped to their messages
 export type ValidationErrors = Record<string, string>
@@ -77,7 +104,7 @@ const extractableDefinitions: ExtractableDefinitionMap = {
     function: () => {}
 }
 
-export const satisfiesRecurse = (
+export const validateRecurse = (
     extractedType: ExtractedDefinition,
     definedType: UnvalidatedDefinition,
     path: string,
@@ -128,7 +155,7 @@ export const satisfiesRecurse = (
                 }
             }
         }
-        return objectSatisfies(extractedType, resolvedDefinition, path, typeSet)
+        return validateObject(extractedType, resolvedDefinition, path, typeSet)
     } else if (extractedType in extractableDefinitions) {
         if (typeof definedType !== "string") {
             // No extractable string type is assignable to a defined object type
@@ -136,13 +163,13 @@ export const satisfiesRecurse = (
                 [path]: unassignableErrorMessage(extractedType, definedType)
             }
         }
-        return shallowSatisfies(extractedType, definedType, path, typeSet)
+        return shallowvalidate(extractedType, definedType, path, typeSet)
     } else {
         return { [path]: `Unexpected extracted definition ${extractedType}.` }
     }
 }
 
-export const objectSatisfies = (
+export const validateObject = (
     extractedType: ExtractedDefinition & object,
     definedType: UnvalidatedDefinition & object,
     path: string,
@@ -181,10 +208,10 @@ export const objectSatisfies = (
     return Object.entries(extractedType).reduce<ValidationErrors>(
         (errors, [k, extractedDefinition]) => ({
             ...errors,
-            ...satisfiesRecurse(
+            ...validateRecurse(
                 extractedDefinition,
                 (definedType as any)[k],
-                `${path}/${k}`,
+                path ? `${path}/${k}` : k,
                 typeSet
             )
         }),
@@ -195,7 +222,7 @@ export const objectSatisfies = (
 export const stringify = (value: any) =>
     isRecursible(value) ? JSON.stringify(value, null, 4) : String(value)
 
-export const shallowSatisfies = (
+export const shallowvalidate = (
     extractedType: ExtractedDefinition & string,
     definedType: UnvalidatedDefinition & string,
     path: string,

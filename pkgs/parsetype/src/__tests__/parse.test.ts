@@ -39,6 +39,10 @@ describe("parse", () => {
             badReturnResult.type
         )
     })
+    test("empty object", () => {
+        const result = parse({})
+        expectType<{}>(result)
+    })
     test("object", () => {
         const result = parse({
             a: "string",
