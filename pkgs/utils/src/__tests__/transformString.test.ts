@@ -3,7 +3,13 @@ import {
     camelCase,
     capitalize,
     capsCase,
-    lettersAfterFirstToLower
+    lettersAfterFirstToLower,
+    isAlphaNumeric,
+    isAlpha,
+    isDigits,
+    isNumeric,
+    asNumber,
+    filterChars
 } from ".."
 
 const original = "hello"
@@ -77,5 +83,38 @@ describe("capitalize", () => {
 describe("lettersAfterFirstToLower", () => {
     test("works", () => {
         expect(lettersAfterFirstToLower("HELLO")).toEqual("Hello")
+    })
+})
+
+describe("alphanumeric regex", () => {
+    test("isAlphaNumeric", () => {
+        expect(isAlphaNumeric("aB0")).toBe(true)
+        expect(isAlphaNumeric("aB0!")).toBe(false)
+        expect(isAlphaNumeric(" ")).toBe(false)
+    })
+    test("isAlpha", () => {
+        expect(isAlpha("aB")).toBe(true)
+        expect(isAlpha("aB0")).toBe(false)
+        expect(isAlpha(" ")).toBe(false)
+    })
+    test("isDigits", () => {
+        expect(isDigits("01")).toBe(true)
+        expect(isDigits("01A")).toBe(false)
+        expect(isDigits("5.0")).toBe(false)
+        expect(isDigits(" ")).toBe(false)
+    })
+    test("isNumeric", () => {
+        expect(isNumeric("7.5")).toBe(true)
+        expect(isNumeric(7.5)).toBe(true)
+        expect(isNumeric("f")).toBe(false)
+        expect(asNumber("7.5")).toBe(7)
+        expect(asNumber("-3.14159", { asFloat: true })).toBe(-3.14159)
+        expect(asNumber("I'm a number ;-)")).toBe(null)
+        expect(asNumber(5 + 7)).toBe(12)
+    })
+    test("filterChars", () => {
+        const s = "aB0 !a"
+        expect(filterChars(s, isAlpha)).toBe("aBa")
+        expect(filterChars(s, (char) => char === "a")).toBe("aa")
     })
 })

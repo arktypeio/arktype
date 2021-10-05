@@ -1,19 +1,38 @@
-import { DeepTreeOf, Key, TreeOf } from "@re-do/utils"
+import { Recursible, stringify, transform } from "@re-do/utils"
+import { definitionTypeError } from "./errors.js"
 
-// These are the types we can extract from a value at runtime
-export type ExtractableDefinitionMap = {
-    bigint: bigint
-    string: string
-    true: true
-    false: false
-    number: number
-    null: null
-    symbol: symbol
-    undefined: undefined
-    function: (...args: any[]) => any
+export const formatTypes = <T>(definition: T): T => {
+    const recurse = (definition: unknown, path: string[]): any => {
+        if (typeof definition === "string") {
+            return definition.replace(" ", "") as any
+        } else if (typeof definition === "object") {
+            return transform(definition as any, ([k, v]) => [
+                k,
+                recurse(v, [...path, k])
+            ])
+        } else {
+            throw new Error(definitionTypeError(definition, path))
+        }
+    }
+    return recurse(definition, [])
 }
 
-export type ExtractableDefinition = keyof ExtractableDefinitionMap
+// These are the types we can extract from a value at runtime
+export const extractableTypes = {
+    bigint: BigInt(0),
+    string: "",
+    true: true as true,
+    false: false as false,
+    number: 0,
+    null: null,
+    symbol: Symbol(),
+    undefined: undefined,
+    function: (...args: any[]) => null as any
+}
+
+export type ExtractableTypes = typeof extractableTypes
+
+export type ExtractableTypeName = keyof ExtractableTypes
 
 /**
  * These types can be used to specify a type definition but
@@ -22,18 +41,24 @@ export type ExtractableDefinition = keyof ExtractableDefinitionMap
  * because a more specific type will always be extracted (e.g.
  * "boolean", which will always evaluate as "true" or "false")
  */
-export type DefinitionOnlyMap = {
-    unknown: unknown
-    any: any
-    object: object
-    boolean: boolean
-    void: void
-    never: never
+let placeholder: any
+export const unextractableTypes = {
+    unknown: placeholder as unknown,
+    any: placeholder as any,
+    object: placeholder as object,
+    boolean: placeholder as boolean,
+    void: placeholder as void,
+    never: placeholder as never
 }
+export type UnextractableTypes = typeof unextractableTypes
 
-export type BuiltInDefinitionMap = ExtractableDefinitionMap & DefinitionOnlyMap
+export type UnextractableTypeName = keyof UnextractableTypes
 
-export type BuiltInDefinition = keyof BuiltInDefinitionMap
+export const builtInTypes = { ...extractableTypes, ...unextractableTypes }
+
+export type BuiltInTypes = typeof builtInTypes
+
+export type BuiltInTypeName = keyof BuiltInTypes
 
 export type FunctionDefinition<
     Parameters extends string = string,
@@ -53,10 +78,15 @@ export type OptionalDefinition<Definition extends string = string> =
 
 export type UnvalidatedDefinition = string | UnvalidatedObjectDefinition
 
-export type UnvalidatedObjectDefinition = { [K in string | number]: any }
+export type UnvalidatedObjectDefinition<Definition = any> =
+    Definition extends Recursible<Definition>
+        ? {
+              [K in string | number]: any
+          }
+        : never
 
 export type UnvalidatedTypeSet = { [K in string]: UnvalidatedDefinition }
 
-export const typeDefProxy: any = new Proxy({}, { get: () => getTypeDef() })
+export const typeDefProxy: any = new Proxy({}, { get: () => getTypeDefProxy() })
 
-export const getTypeDef = () => typeDefProxy
+export const getTypeDefProxy = () => typeDefProxy

@@ -1,0 +1,10 @@
+{
+    "changes": [
+        {
+            "packageName": "parsetype",
+            "comment": "Added validation.",
+            "type": "major"
+        }
+    ],
+    "packageName": "parsetype"
+}

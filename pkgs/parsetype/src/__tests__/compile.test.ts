@@ -7,21 +7,21 @@ describe("compile", () => {
         expectType<string>(a)
         // @ts-expect-error
         const badA = compile({ a: "strig" }).types.a
-        expectError<"Unable to parse the type of 'strig'.">(badA)
+        expectError<"Unable to determine the type of 'strig'.">(badA)
     })
     test("independent", () => {
         const c = compile({ a: "string" }, { b: { c: "boolean" } }).types.b.c
         expectType<boolean>(c)
         // @ts-expect-error
         const badC = compile({ a: "string" }, { b: { c: "uhoh" } }).types.b.c
-        expectError<"Unable to parse the type of 'uhoh'.">(badC)
+        expectError<"Unable to determine the type of 'uhoh'.">(badC)
     })
     test("interdependent", () => {
         const c = compile({ a: "string" }, { b: { c: "a" } }).types.b.c
         expectType<string>(c)
         // @ts-expect-error
         const badC = compile({ a: "uhoh" }, { b: { c: "a" } }).types.b.c
-        expectError<"Unable to parse the type of 'uhoh'.">(badC)
+        expectError<"Unable to determine the type of 'uhoh'.">(badC)
     })
     test("recursive", () => {
         const { types } = compile({ a: { dejaVu: "a?" } })
@@ -60,7 +60,7 @@ describe("compile", () => {
                 b: {
                     a: any
                 }
-                c: "Unable to parse the type of 'c'."
+                c: "Unable to determine the type of 'c'."
             }
         }>(badResult)
     })

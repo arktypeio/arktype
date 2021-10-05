@@ -1,5 +1,5 @@
 export * from "./main.js"
-export { typeOf } from "./validate.js"
+export { typeOf, checkErrors, assert, errorsAtPaths } from "./validate.js"
 export type { ParseType } from "./parse.js"
 export type {
     TypeDefinition,

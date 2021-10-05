@@ -3,9 +3,7 @@ import {
     ListPossibleTypes,
     Exact,
     Narrow,
-    mergeAll,
-    deepMap,
-    transform
+    mergeAll
 } from "@re-do/utils"
 import {
     TypeDefinition,
@@ -14,29 +12,9 @@ import {
     createDefineFunctionMap,
     TypeSetDefinitions
 } from "./definitions.js"
-import {
-    typeDefProxy,
-    UnvalidatedDefinition,
-    UnvalidatedTypeSet
-} from "./common.js"
+import { typeDefProxy, UnvalidatedTypeSet, formatTypes } from "./common.js"
 import { ParseType, ParseTypeSetDefinitions } from "./parse.js"
-import { satisfies, typeOf } from "./validate.js"
-
-export const formatTypes = <T>(definition: T): T => {
-    if (typeof definition === "string") {
-        return definition.replace(" ", "") as any
-    }
-    if (typeof definition === "object") {
-        return transform(definition as any, ([k, v]) => [
-            k,
-            formatTypes(v)
-        ]) as any
-    }
-    throw new Error(
-        `Unable to parse definition '${definition}' of type '${typeof definition}'. ` +
-            `Definition must be strings or objects.`
-    )
-}
+import { checkErrors, assert, ValidateOptions } from "./validate.js"
 
 export const declare = <DeclaredTypeNames extends string[]>(
     ...names: Narrow<DeclaredTypeNames>
@@ -65,13 +43,23 @@ export const declare = <DeclaredTypeNames extends string[]>(
                     definition: formattedDefinition,
                     type: typeDefProxy as ParseType<Definition, ActiveTypeSet>,
                     typeSet: activeTypeSet,
-                    validate: (value: unknown) => {
-                        return satisfies(
-                            typeOf(value),
+                    checkErrors: (
+                        value: unknown,
+                        options: ValidateOptions = {}
+                    ) =>
+                        checkErrors(
+                            value,
                             formattedDefinition,
-                            activeTypeSet
+                            activeTypeSet,
+                            options
+                        ),
+                    assert: (value: unknown, options: ValidateOptions = {}) =>
+                        assert(
+                            value,
+                            formattedDefinition,
+                            activeTypeSet,
+                            options
                         )
-                    }
                 }
             },
             types: typeDefProxy as Evaluate<

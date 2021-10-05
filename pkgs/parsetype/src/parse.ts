@@ -7,16 +7,16 @@ import {
     RemoveSpaces,
     Split
 } from "@re-do/utils"
-import { InvalidTypeDefError } from "./definitions.js"
 import {
     OrDefinition,
     ListDefinition,
     OptionalDefinition,
-    BuiltInDefinition,
-    BuiltInDefinitionMap,
+    BuiltInTypeName,
+    BuiltInTypes,
     UnvalidatedObjectDefinition,
     FunctionDefinition
 } from "./common.js"
+import { DefinitionTypeError, UnknownTypeError } from "./errors.js"
 
 export type ParseStringDefinition<
     Definition extends string,
@@ -51,35 +51,32 @@ export type ParseStringFunctionDefinitionRecurse<
     ) => ParseStringDefinitionRecurse<Return, TypeSet>
 >
 
-export type ParseError<Fragment extends string = string> =
-    TypeError<`Unable to parse the type of '${Fragment}'.`>
-
 export type ParseStringOrDefinitionRecurse<
     First extends string,
     Second extends string,
     TypeSet,
     FirstParseResult = ParseStringDefinitionRecurse<First, TypeSet>,
     SecondParseResult = ParseStringDefinitionRecurse<Second, TypeSet>
-> = FirstParseResult extends ParseError
+> = FirstParseResult extends UnknownTypeError
     ? FirstParseResult
-    : SecondParseResult extends ParseError
+    : SecondParseResult extends UnknownTypeError
     ? SecondParseResult
     : FirstParseResult | SecondParseResult
 
 export type ParseStringDefinitionRecurse<
     Fragment extends string,
     TypeSet
-> = Fragment extends FunctionDefinition<infer Parameters, infer Return>
+> = Fragment extends OrDefinition<infer First, infer Second>
+    ? ParseStringOrDefinitionRecurse<First, Second, TypeSet>
+    : Fragment extends FunctionDefinition<infer Parameters, infer Return>
     ? ParseStringFunctionDefinitionRecurse<Parameters, Return, TypeSet>
     : Fragment extends ListDefinition<infer ListItem>
     ? ParseStringDefinitionRecurse<ListItem, TypeSet>[]
-    : Fragment extends OrDefinition<infer First, infer Second>
-    ? ParseStringOrDefinitionRecurse<First, Second, TypeSet>
     : Fragment extends keyof TypeSet
     ? ParseType<TypeSet[Fragment], TypeSet>
-    : Fragment extends BuiltInDefinition
-    ? BuiltInDefinitionMap[Fragment]
-    : ParseError<Fragment>
+    : Fragment extends BuiltInTypeName
+    ? BuiltInTypes[Fragment]
+    : UnknownTypeError<Fragment>
 
 export type ParseObjectDefinition<Definition extends object, TypeSet> = {
     [PropName in keyof ExcludeByValue<
@@ -109,7 +106,7 @@ export type ParseType<Definition, TypeSet> = Definition extends string
     ? Definition extends any[]
         ? Evaluate<ParseListDefinition<Definition, TypeSet>>
         : Evaluate<ParseObjectDefinition<Definition, TypeSet>>
-    : InvalidTypeDefError
+    : DefinitionTypeError
 
 export type ParseTypeSetDefinitions<
     Definitions,

@@ -1,5 +1,4 @@
 import moize from "moize"
-import isDeepEqual from "fast-deep-equal"
 import {
     Number as NumberToolbelt,
     Union as ToolbeltUnion,
@@ -7,9 +6,9 @@ import {
     String as ToolbeltString
 } from "ts-toolbelt"
 import { Merge } from "./merge.js"
+import { transform } from "./transform.js"
 
 export const memoize = moize as <F extends SimpleFunction>(f: F) => F
-export const deepEquals = isDeepEqual
 
 export type StringReplace<
     Original extends string,
@@ -22,6 +21,30 @@ export type RemoveSpaces<FromString extends string> = StringReplace<
     " ",
     ""
 >
+
+export type StringifyOptions = {
+    indent?: number
+}
+
+export const stringify = (value: any) => {
+    const recurse = (value: any, seen: any[]): string => {
+        if (!isRecursible(value)) {
+            return String(value)
+        }
+        if (seen.includes(value)) {
+            return "(cyclic value)"
+        }
+        if (Array.isArray(value)) {
+            return `[${value
+                .map((v) => recurse(v, [...seen, value]))
+                .join(", ")}]`
+        }
+        return `{${Object.entries(value)
+            .map(([k, v]) => `${k}: ${recurse(v, [...seen, value])}`)
+            .join(", ")}}`
+    }
+    return recurse(value, [])
+}
 
 export type UntilOptions = {
     timeoutSeconds?: number
@@ -64,9 +87,6 @@ export type DeepRequired<T> = {
         ? Required<T[P]>
         : DeepRequired<T[P]>
 }
-
-export const isEmpty = (value: object | any[]) =>
-    deepEquals(value, {}) || deepEquals(value, [])
 
 export type WithOptionalKeys<T extends object, Keys extends keyof T> = Omit<
     T,
@@ -123,9 +143,17 @@ export type NonObject = Primitive | null | undefined | void
 
 export type NonRecursible = NonObject | SimpleFunction
 export type Unpromisified<T> = T extends Promise<infer U> ? U : never
-export type NumericString<N extends number = number> = `${N}`
 
 export const isRecursible = (o: any) => o && typeof o === "object"
+
+export const isEmpty = (value: object | any[]) => {
+    if (!isRecursible(value)) {
+        throw new Error(
+            `isEmpty required an object. Received ${stringify(value)}`
+        )
+    }
+    return isRecursible(value) ? !Object.keys(value).length : false
+}
 
 export const asserted = <T>(value: T, description?: string) => {
     if (!value) {
@@ -481,13 +509,6 @@ export type Join<
     : never
 
 export type Segment = string | number
-
-export const isNumericString = <S>(s: S) =>
-    !isNaN(Number.parseInt(String(s))) as S extends NumericString
-        ? true
-        : string extends S
-        ? boolean
-        : false
 
 export type DefaultDelimiter = "/"
 
