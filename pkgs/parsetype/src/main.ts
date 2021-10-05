@@ -3,9 +3,7 @@ import {
     ListPossibleTypes,
     Exact,
     Narrow,
-    mergeAll,
-    deepMap,
-    transform
+    mergeAll
 } from "@re-do/utils"
 import {
     TypeDefinition,
@@ -16,7 +14,7 @@ import {
 } from "./definitions.js"
 import { typeDefProxy, UnvalidatedTypeSet, formatTypes } from "./common.js"
 import { ParseType, ParseTypeSetDefinitions } from "./parse.js"
-import { validate, assert, typeOf } from "./validate.js"
+import { validate, assert, ValidateOptions } from "./validate.js"
 
 export const declare = <DeclaredTypeNames extends string[]>(
     ...names: Narrow<DeclaredTypeNames>
@@ -45,10 +43,20 @@ export const declare = <DeclaredTypeNames extends string[]>(
                     definition: formattedDefinition,
                     type: typeDefProxy as ParseType<Definition, ActiveTypeSet>,
                     typeSet: activeTypeSet,
-                    validate: (value: unknown) =>
-                        validate(value, formattedDefinition, activeTypeSet),
-                    assert: (value: unknown) =>
-                        assert(value, formattedDefinition, activeTypeSet)
+                    validate: (value: unknown, options: ValidateOptions = {}) =>
+                        validate(
+                            value,
+                            formattedDefinition,
+                            activeTypeSet,
+                            options
+                        ),
+                    assert: (value: unknown, options: ValidateOptions = {}) =>
+                        assert(
+                            value,
+                            formattedDefinition,
+                            activeTypeSet,
+                            options
+                        )
                 }
             },
             types: typeDefProxy as Evaluate<

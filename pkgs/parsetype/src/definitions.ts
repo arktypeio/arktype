@@ -18,10 +18,11 @@ import {
     OrDefinition,
     ListDefinition,
     OptionalDefinition,
-    BuiltInDefinition,
+    BuiltInTypeName,
     UnvalidatedObjectDefinition,
     FunctionDefinition
 } from "./common.js"
+import { DefinitionTypeError, UnknownTypeError } from "./errors.js"
 
 export type ComponentTypesOfStringDefinition<
     Definition extends string,
@@ -54,9 +55,6 @@ export type OrDefinitionRecurse<
         : ValidateSecond
     : ValidateFirst
 
-export type InvalidTypeError<Fragment extends string = string> =
-    TypeError<`Unable to determine the type of '${Fragment}'.`>
-
 export type TupleDefinitionRecurse<
     Definition extends string,
     Root extends string,
@@ -80,7 +78,7 @@ export type TupleDefinitionRecurse<
     ? Root
     : Unlisted<
           {
-              [I in keyof ValidateDefinitions]: ValidateDefinitions[I] extends InvalidTypeError
+              [I in keyof ValidateDefinitions]: ValidateDefinitions[I] extends UnknownTypeError
                   ? ValidateDefinitions[I]
                   : never
           }
@@ -118,7 +116,15 @@ export type StringDefinitionRecurse<
     Root extends string,
     DeclaredTypeNames extends string[],
     ReturnComponentTypes extends boolean
-> = Fragment extends FunctionDefinition<infer Parameters, infer Return>
+> = Fragment extends OrDefinition<infer First, infer Second>
+    ? OrDefinitionRecurse<
+          First,
+          Second,
+          Root,
+          DeclaredTypeNames,
+          ReturnComponentTypes
+      >
+    : Fragment extends FunctionDefinition<infer Parameters, infer Return>
     ? FunctionDefinitionRecurse<
           Parameters,
           Return,
@@ -133,19 +139,11 @@ export type StringDefinitionRecurse<
           DeclaredTypeNames,
           ReturnComponentTypes
       >
-    : Fragment extends OrDefinition<infer First, infer Second>
-    ? OrDefinitionRecurse<
-          First,
-          Second,
-          Root,
-          DeclaredTypeNames,
-          ReturnComponentTypes
-      >
-    : Fragment extends ElementOf<DeclaredTypeNames> | BuiltInDefinition
+    : Fragment extends ElementOf<DeclaredTypeNames> | BuiltInTypeName
     ? ReturnComponentTypes extends true
         ? Fragment
         : Root
-    : InvalidTypeError<Fragment>
+    : UnknownTypeError<Fragment>
 
 export type StringDefinition<
     Definition extends string,
@@ -160,9 +158,6 @@ export type StringDefinition<
     DeclaredTypeNames,
     ReturnBaseName
 >
-
-export type InvalidTypeDefError =
-    TypeError<`A type definition must be an object whose values are strings or nested type definitions.`>
 
 export type ObjectDefinition<
     Definition,
@@ -181,9 +176,9 @@ export type TypeDefinition<
     DeclaredTypeNames extends string[]
 > = Definition extends string
     ? StringDefinition<Definition, DeclaredTypeNames>
-    : Definition extends UnvalidatedObjectDefinition
+    : Definition extends UnvalidatedObjectDefinition<Definition>
     ? ObjectDefinition<Definition, DeclaredTypeNames>
-    : InvalidTypeDefError
+    : DefinitionTypeError
 
 export type TypeDefinitions<
     Definitions,

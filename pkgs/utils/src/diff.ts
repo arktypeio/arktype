@@ -1,13 +1,13 @@
 import {
     isRecursible,
     DeepPartial,
-    deepEquals,
     Cast,
     ListPossibleTypes,
     NonRecursible,
     Or,
     split,
     Entry,
+    stringify,
     isEmpty
 } from "./common.js"
 import { transform } from "./transform.js"
@@ -54,20 +54,35 @@ export type DiffOptions = {
     excludeRemoved?: boolean
     excludeChanged?: boolean
     shallowListResults?: boolean
-    enforceListOrder?: boolean
+    ignoreListOrder?: boolean
 }
+
+export type DeepEqualsOptions = Pick<DiffOptions, "ignoreListOrder">
+
+export const deepEquals = (
+    base: any,
+    compare: any,
+    options: DeepEqualsOptions = {}
+) => !diff(base, compare, options)
 
 export const diff = <Base, Compare>(
     base: Base,
     compare: Compare,
     options: DiffOptions = {}
 ): DeepDiffResult<Base, Compare> => {
-    const isDiffable = (value: any) =>
-        isRecursible(value) &&
-        !(options.shallowListResults && Array.isArray(value))
-    if (!isDiffable(base) || !isDiffable(compare)) {
-        // Using deepEquals in case we're shallow comparing arrays
-        return deepEquals(base, compare) ? undefined : { base, compare }
+    if (
+        Array.isArray(base) &&
+        Array.isArray(compare) &&
+        options.shallowListResults
+    ) {
+        return deepEquals(base, compare, {
+            ignoreListOrder: options.ignoreListOrder ?? false
+        })
+            ? undefined
+            : { base, compare }
+    }
+    if (!isRecursible(base) || !isRecursible(compare)) {
+        return base === (compare as unknown) ? undefined : { base, compare }
     }
     const result: ObjectDiffResult<Base, Compare> = {}
     const baseKeys = Object.keys(base) as (keyof Base)[]
@@ -106,10 +121,14 @@ export const diff = <Base, Compare>(
 
 export type DiffSetsOptions = {}
 
-export const diffSets = <Base extends any[], Compare extends any[]>(
-    base: Base,
-    compare: Compare
-) => {
+export type DiffSetsResult<T = any> =
+    | undefined
+    | {
+          added?: T[]
+          removed?: T[]
+      }
+
+export const diffSets = <T>(base: T[], compare: T[]) => {
     const added = compare.filter(
         (compareItem) =>
             !base.find((baseItem) => deepEquals(compareItem, baseItem))

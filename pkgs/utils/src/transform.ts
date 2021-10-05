@@ -1,4 +1,5 @@
-import { isNumericString, MapFunction, EntryOf, Entry } from "./common.js"
+import { MapFunction, EntryOf, Entry } from "./common.js"
+import { isNumeric, NumericString } from "./transformString.js"
 
 export type TransformOptions = {
     asValueArray?: boolean
@@ -34,8 +35,7 @@ export const transform = <
     const mappedEntries = Object.entries(o).map(map as any) as MapReturnType[]
     const asArray =
         options?.asValueArray ??
-        (Array.isArray(o) &&
-            mappedEntries.every(([k, v]) => isNumericString(k)))
+        (Array.isArray(o) && mappedEntries.every(([k, v]) => isNumeric(k)))
     const mappedResult = asArray
         ? Array.from(mappedEntries, ([i, v]) => v)
         : Object.fromEntries(mappedEntries)

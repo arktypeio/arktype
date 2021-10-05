@@ -1,4 +1,5 @@
-import { diff, addedOrChanged, diffSets } from ".."
+import { assert } from "console"
+import { diff, addedOrChanged, diffSets, deepEquals } from ".."
 import { o } from "./common"
 
 const updatedO = Object.freeze({
@@ -88,4 +89,14 @@ test("diff sets", () => {
         added: ["c"],
         removed: ["a"]
     })
+})
+
+test("deepEquals", () => {
+    expect(deepEquals(o, { ...o })).toBe(true)
+    expect(
+        deepEquals(o, {
+            ...o,
+            e: [{ a: ["old"], b: "extraneous" }, { a: ["old"] }]
+        })
+    ).toBe(false)
 })
