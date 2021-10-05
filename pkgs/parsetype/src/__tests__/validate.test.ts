@@ -1,4 +1,5 @@
 import { compile, errorsAtPaths, parse, typeOf } from ".."
+import { user } from "./multifile/user.js"
 
 describe("typeOf", () => {
     test("string", () => expect(typeOf("")).toBe("string"))
@@ -43,28 +44,28 @@ describe("typeOf", () => {
 
 describe("validate", () => {
     test("string", () => {
-        const { validate } = parse("string")
+        const { checkErrors: validate } = parse("string")
         expect(validate("")).toBeFalsy()
         expect(validate(5)).toMatchInlineSnapshot(
             `"Extracted type 'number' is not assignable to defined type 'string'."`
         )
     })
     test("number", () => {
-        const { validate } = parse("number")
+        const { checkErrors: validate } = parse("number")
         expect(validate(4.669)).toBeFalsy()
         expect(validate({ keyWithNumberValue: 5 })).toMatchInlineSnapshot(
             `"Extracted type '{keyWithNumberValue: number}' is not assignable to defined type 'number'."`
         )
     })
     test("bigint", () => {
-        const { validate } = parse("bigint")
+        const { checkErrors: validate } = parse("bigint")
         expect(validate(BigInt(0))).toBeFalsy()
         expect(validate(0)).toMatchInlineSnapshot(
             `"Extracted type 'number' is not assignable to defined type 'bigint'."`
         )
     })
     test("boolean", () => {
-        const { validate } = parse("boolean")
+        const { checkErrors: validate } = parse("boolean")
         expect(validate(true)).toBeFalsy()
         expect(validate(false)).toBeFalsy()
         expect(validate(1)).toMatchInlineSnapshot(
@@ -72,14 +73,14 @@ describe("validate", () => {
         )
     })
     test("symbol", () => {
-        const { validate } = parse("symbol")
+        const { checkErrors: validate } = parse("symbol")
         expect(validate(Symbol())).toBeFalsy()
         expect(validate("symbol")).toMatchInlineSnapshot(
             `"Extracted type 'string' is not assignable to defined type 'symbol'."`
         )
     })
     test("undefined", () => {
-        const { validate } = parse("undefined")
+        const { checkErrors: validate } = parse("undefined")
         expect(validate(undefined)).toBeFalsy()
         expect(validate("defined")).toMatchInlineSnapshot(
             `"Extracted type 'string' is not assignable to defined type 'undefined'."`
@@ -89,25 +90,25 @@ describe("validate", () => {
         )
     })
     test("empty object", () => {
-        expect(parse({}).validate({})).toBeFalsy()
+        expect(parse({}).checkErrors({})).toBeFalsy()
     })
     const simpleObject = parse({
         a: { b: "string", c: "number", d: { deep: "null" } }
     })
     test("simple object", () => {
         expect(
-            simpleObject.validate({
+            simpleObject.checkErrors({
                 a: { b: "nested", c: 5, d: { deep: null } }
             })
         ).toBeFalsy()
         const badValue = { a: { b: "nested", c: 5, d: { deep: {} } } }
-        expect(simpleObject.validate(badValue)).toMatchInlineSnapshot(
+        expect(simpleObject.checkErrors(badValue)).toMatchInlineSnapshot(
             `"At path 'a/d/deep', extracted type '{}' is not assignable to defined type 'null'."`
         )
     })
     test("can ignore extraneous keys", () => {
         expect(
-            simpleObject.validate(
+            simpleObject.checkErrors(
                 {
                     a: {
                         b: "nested",
@@ -120,7 +121,7 @@ describe("validate", () => {
         ).toBeFalsy()
         // But still errors on missing required keys
         expect(
-            simpleObject.validate({}, { ignoreExtraneousKeys: true })
+            simpleObject.checkErrors({}, { ignoreExtraneousKeys: true })
         ).toMatchInlineSnapshot(`"Required keys a were missing."`)
     })
     test("multiple errors", () => {
@@ -143,12 +144,12 @@ describe("validate", () => {
             }
         `)
         // Let's make sure once that multiple errors are
-        expect(simpleObject.validate(reallyBadValue)).toMatchInlineSnapshot(
+        expect(simpleObject.checkErrors(reallyBadValue)).toMatchInlineSnapshot(
             `"{a/b: Extracted type 'null' is not assignable to defined type 'string'., a/c: Extracted type 'symbol' is not assignable to defined type 'number'., a/d: Keys shallow were unexpected.}"`
         )
     })
     test("generic function", () => {
-        const { validate } = parse("function")
+        const { checkErrors: validate } = parse("function")
         expect(
             validate(function saySomething() {
                 console.log("I'm giving up on you")
@@ -159,14 +160,14 @@ describe("validate", () => {
         )
     })
     test("defined function treated as generic for validation", () => {
-        const { validate } = parse("(number,object)=>string")
+        const { checkErrors: validate } = parse("(number,object)=>string")
         expect(validate(() => {})).toBeFalsy()
         expect(validate("I promise I'm a function")).toMatchInlineSnapshot(
             `"Extracted type 'string' is not assignable to defined type '(number,object)=>string'."`
         )
     })
     test("array", () => {
-        const { validate } = parse(["number", "string"])
+        const { checkErrors: validate } = parse(["number", "string"])
         expect(validate([7, "up"])).toBeFalsy()
         expect(validate([7, 7])).toMatchInlineSnapshot(
             `"At path '1', extracted type 'number' is not assignable to defined type 'string'."`
@@ -183,7 +184,7 @@ describe("validate", () => {
         `)
     })
     test("or type", () => {
-        const { validate } = parse("string|number")
+        const { checkErrors: validate } = parse("string|number")
         expect(validate("heyo")).toBeFalsy()
         expect(validate(0)).toBeFalsy()
         expect(validate(["listen what I say-o"])).toMatchInlineSnapshot(`
@@ -192,7 +193,10 @@ describe("validate", () => {
         `)
     })
     test("complex", () => {
-        const { validate } = parse(["true", { a: ["string", ["() => void"]] }])
+        const { checkErrors: validate } = parse([
+            "true",
+            { a: ["string", ["() => void"]] }
+        ])
         expect(validate([true, { a: ["ok", [() => {}]] }])).toBeFalsy()
         expect(
             validate([true, { a: ["ok", [() => {}], "extraElement"] }])
@@ -213,7 +217,7 @@ describe("validate", () => {
             }
         )
         expect(
-            groceries.validate({
+            groceries.checkErrors({
                 fruits: [
                     { length: 10 },
                     { circumference: 4.832321, type: "Granny Smith" },
@@ -222,7 +226,7 @@ describe("validate", () => {
             })
         ).toBeFalsy()
         expect(
-            groceries.validate({
+            groceries.checkErrors({
                 fruits: [
                     {
                         length: 5000,
@@ -245,7 +249,7 @@ describe("validate", () => {
             "shallowly"
         )
         const shallowCyclic = parse("a", { a: "b", b: "c", c: "a|b|c" })
-        expect(() => shallowCyclic.validate(["what's a b?"])).toThrowError(
+        expect(() => shallowCyclic.checkErrors(["what's a b?"])).toThrowError(
             "shallowly"
         )
     })
@@ -259,7 +263,7 @@ describe("validate", () => {
             }
         )
         expect(
-            bicycle.validate({
+            bicycle.checkErrors({
                 a: {
                     isA: true,
                     a: { isA: true },
@@ -273,7 +277,7 @@ describe("validate", () => {
             })
         ).toBeFalsy()
         expect(
-            bicycle.validate({
+            bicycle.checkErrors({
                 a: {
                     isA: true,
                     a: {

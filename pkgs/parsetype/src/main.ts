@@ -14,7 +14,7 @@ import {
 } from "./definitions.js"
 import { typeDefProxy, UnvalidatedTypeSet, formatTypes } from "./common.js"
 import { ParseType, ParseTypeSetDefinitions } from "./parse.js"
-import { validate, assert, ValidateOptions } from "./validate.js"
+import { checkErrors, assert, ValidateOptions } from "./validate.js"
 
 export const declare = <DeclaredTypeNames extends string[]>(
     ...names: Narrow<DeclaredTypeNames>
@@ -43,8 +43,11 @@ export const declare = <DeclaredTypeNames extends string[]>(
                     definition: formattedDefinition,
                     type: typeDefProxy as ParseType<Definition, ActiveTypeSet>,
                     typeSet: activeTypeSet,
-                    validate: (value: unknown, options: ValidateOptions = {}) =>
-                        validate(
+                    checkErrors: (
+                        value: unknown,
+                        options: ValidateOptions = {}
+                    ) =>
+                        checkErrors(
                             value,
                             formattedDefinition,
                             activeTypeSet,

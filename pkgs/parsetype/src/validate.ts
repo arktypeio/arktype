@@ -2,9 +2,7 @@ import {
     diffSets,
     DiffSetsResult,
     filterChars,
-    FilterFunction,
     isAlphaNumeric,
-    isEmpty,
     isRecursible,
     stringify,
     transform,
@@ -14,12 +12,12 @@ import {
 import {
     ExtractableTypeName,
     extractableTypes,
-    ExtractableTypes,
     formatTypes,
     FunctionDefinition,
     UnextractableTypeName,
     unextractableTypes,
     UnvalidatedDefinition,
+    UnvalidatedObjectDefinition,
     UnvalidatedTypeSet
 } from "./common.js"
 import { definitionTypeError, unknownTypeError } from "./errors.js"
@@ -48,7 +46,7 @@ export const assert = (
     typeSet: UnvalidatedTypeSet = {},
     options: ValidateOptions = {}
 ) => {
-    const errorMessage = validate(value, definedType, typeSet, options)
+    const errorMessage = checkErrors(value, definedType, typeSet, options)
     if (errorMessage) {
         throw new Error(errorMessage)
     }
@@ -62,7 +60,7 @@ export type ValidateOptions = {
     ignoreExtraneousKeys?: boolean
 }
 
-export const validate = (
+export const checkErrors = (
     value: unknown,
     definedType: UnvalidatedDefinition,
     typeSet: UnvalidatedTypeSet = {},
@@ -89,7 +87,7 @@ export const errorsAtPaths = (
     typeSet: UnvalidatedTypeSet = {},
     options: ValidateOptions = {}
 ) =>
-    validateRecurse({
+    validate({
         extracted: typeOf(value),
         defined: formatTypes(definedType),
         path: [],
@@ -132,9 +130,12 @@ export const isAFunctionDefinition = <D extends string>(definition: D) =>
         ? true
         : false
 
-export type RecurseArgs = Required<ValidateOptions> & {
-    extracted: ExtractedDefinition
-    defined: UnvalidatedDefinition
+export type RecurseArgs<
+    Defined = UnvalidatedDefinition,
+    Extracted = ExtractedDefinition
+> = Required<ValidateOptions> & {
+    extracted: Extracted
+    defined: Defined
     typeSet: UnvalidatedTypeSet
     path: string[]
     seen: string[]
@@ -153,163 +154,277 @@ const mismatchedKeysError = (keyErrors: DiffSetsResult<string>) => {
     return `${missing}${missing && extraneous ? " " : ""}${extraneous}`
 }
 
+const validationError = (message: string, path: string[]) => ({
+    [path.join("/")]: message
+})
+
 /**
  * Throw if and only if a definition is invalid and unparsable.
  * Otherwise, return a map of unassignable paths to their error messages
  * (meaning the empty object indicates a valid assignment).
  */
-export const validateRecurse = (args: RecurseArgs): ValidationErrors => {
-    const { extracted, defined, path, typeSet, seen, ignoreExtraneousKeys } =
-        args
-    const pathKey = path.join("/")
-    const unassignable = { [pathKey]: unassignableError(args) }
-    if (typeof defined === "string") {
-        if (defined.endsWith("?")) {
-            if (extracted === "undefined") {
-                return {}
-            }
-            return validateRecurse({ ...args, defined: defined.slice(0, -1) })
+export const validate = (args: RecurseArgs): ValidationErrors => {
+    const findMatchingValidator = (
+        startingValidator: RecursiveValidator<any>
+    ): Validator<any> => {
+        if ("validate" in startingValidator) {
+            return startingValidator
         }
-        if (defined.includes("|")) {
-            const orTypes = defined.split("|")
-            const orTypeErrors: OrTypeErrors = {}
-            for (const orType of orTypes) {
-                const validationResult = stringifyErrors(
-                    validateRecurse({
-                        ...args,
-                        defined: orType
-                    })
-                )
-                if (!validationResult) {
-                    // If one of the or types doesn't return any errors, the whole type is valid
-                    return {}
-                }
-                orTypeErrors[orType] = validationResult
+        for (const candidate of startingValidator.delegate()) {
+            if (candidate.when(args)) {
+                return findMatchingValidator(candidate)
             }
-            // If we make it out of the for loop without returning, none of the or types are valid
-            return { [pathKey]: orValidationError(args, orTypeErrors) }
         }
-        if (isAFunctionDefinition(defined)) {
-            if (extracted === "function") {
-                return {}
-            }
-            return unassignable
+        return startingValidator.fallback(args)
+    }
+    const validator = findMatchingValidator(rootValidator)
+    return validator.validate(args)
+}
+
+const rootValidator: RecursiveValidator<unknown> = {
+    when: () => true,
+    delegate: () => [stringValidator, objectValidator],
+    fallback: (args) => {
+        throw new Error(definitionTypeError(args.defined, args.path))
+    }
+}
+
+const stringValidator: RecursiveValidator<unknown, string> = {
+    when: ({ defined }) => typeof defined === "string",
+    delegate: () => [
+        optionalValidator,
+        orValidator,
+        functionValidator,
+        listValidator,
+        definedTypeValidator,
+        unextractableTypeValidator,
+        extractableTypeValidator
+    ],
+    fallback: ({ defined }) => {
+        throw new Error(unknownTypeError(defined))
+    }
+}
+
+const objectValidator: RecursiveValidator<
+    unknown,
+    UnvalidatedObjectDefinition
+> = {
+    when: ({ defined }) => isRecursible(defined),
+    delegate: () => [tupleValidator, nontupleValidator],
+    fallback: ({ defined, path }) => {
+        throw new Error(definitionTypeError(defined, path))
+    }
+}
+
+const optionalValidator: RecursiveValidator<string> = {
+    when: ({ defined }) => defined.endsWith("?"),
+    validate: (args) => {
+        if (args.extracted === "undefined") {
+            return {}
         }
-        if (defined.endsWith("[]")) {
-            const listItemDefinition = defined.slice(0, -2)
-            if (Array.isArray(extracted)) {
-                // Convert the defined list to a tuple of the same length as extracted
-                return validateRecurse({
+        return validate({ ...args, defined: args.defined.slice(0, -1) })
+    }
+}
+
+const orValidator: RecursiveValidator<string> = {
+    when: ({ defined }) => defined.includes("|"),
+    validate: (args) => {
+        const orTypes = args.defined.split("|")
+        const orTypeErrors: OrTypeErrors = {}
+        for (const orType of orTypes) {
+            const validationResult = stringifyErrors(
+                validate({
                     ...args,
-                    defined: [...Array(extracted.length)].map(
-                        () => listItemDefinition
-                    )
+                    defined: orType
                 })
+            )
+            if (!validationResult) {
+                // If one of the or types doesn't return any errors, the whole type is valid
+                return {}
             }
-            return unassignable
+            orTypeErrors[orType] = validationResult
         }
-        if (defined in typeSet) {
-            /**
-             * Keep track of definitions we've seen since last resolving to an object or built-in.
-             * If we encounter the same definition twice, we're dealing with a shallow cyclic typeSet
-             * like {user: "person", person: "user"}.
-             **/
-            if (seen.includes(defined)) {
-                throw new Error(shallowCycleError(args))
-            }
-            // If defined refers to a new type in typeSet, start resolving its definition
-            return validateRecurse({
+        // If we make it out of the for loop without returning, none of the or types are valid
+        return validationError(orValidationError(args, orTypeErrors), args.path)
+    }
+}
+
+const functionValidator: RecursiveValidator<string> = {
+    when: ({ defined }) => isAFunctionDefinition(defined),
+    validate: (args) => {
+        if (args.extracted === "function") {
+            return {}
+        }
+        return validationError(unassignableError(args), args.path)
+    }
+}
+
+const listValidator: RecursiveValidator<string> = {
+    when: ({ defined }) => defined.endsWith("[]"),
+    validate: (args) => {
+        const listItemDefinition = args.defined.slice(0, -2)
+        if (Array.isArray(args.extracted)) {
+            // Convert the defined list to a tuple of the same length as extracted
+            return validate({
                 ...args,
-                defined: typeSet[defined],
-                seen: [...seen, defined]
+                defined: [...Array(args.extracted.length)].map(
+                    () => listItemDefinition
+                )
             })
         }
-        if (defined in unextractableTypes) {
-            const unextractableTypeAssignabilityMap: {
-                [K in UnextractableTypeName]: (
-                    extracted: ExtractedDefinition
-                ) => boolean
-            } = {
-                any: () => true,
-                unknown: () => true,
-                boolean: (_) => _ === "true" || _ === "false",
-                object: (_) => typeof _ === "object",
-                void: (_) => _ === "undefined",
-                never: (_) => false
-            }
-            if (
-                unextractableTypeAssignabilityMap[
-                    defined as UnextractableTypeName
-                ](extracted)
-            ) {
-                return {}
-            }
-            return unassignable
-        }
-        if (defined in extractableTypes) {
-            return extracted === defined ? {} : unassignable
-        }
-        throw new Error(unknownTypeError(defined))
-    } else if (isRecursible(defined)) {
-        if (Array.isArray(defined) !== Array.isArray(extracted)) {
-            // One type is an array, the other is an object with string keys (will never be assignable)
-            return unassignable
-        } else if (Array.isArray(defined)) {
-            // Both types are arrays, validate numeric keys
-            if (defined.length !== extracted.length) {
-                return {
-                    [pathKey]: tupleLengthError(args)
-                }
-            }
-        } else {
-            // Neither type is an array, validate keys as a set
-            const keyDiff = diffSets(
-                Object.keys(defined),
-                Object.keys(extracted)
-            )
-            const keyErrors = keyDiff
-                ? Object.entries(keyDiff).reduce((diff, [k, v]) => {
-                      if (k === "added" && !ignoreExtraneousKeys) {
-                          return { ...diff, added: v }
-                      }
-                      if (k === "removed") {
-                          // Omit keys defined optional from 'removed'
-                          const illegallyRemoved = v.filter(
-                              (removedKey) =>
-                                  typeof defined[removedKey] !== "string" ||
-                                  !defined[removedKey].endsWith("?")
-                          )
-                          return illegallyRemoved.length
-                              ? { ...diff, removed: illegallyRemoved }
-                              : diff
-                      }
-                      return diff
-                  }, undefined as DiffSetsResult<string>)
-                : undefined
-            if (keyErrors) {
-                return { [pathKey]: mismatchedKeysError(keyErrors) }
-            }
-        }
-        /**
-         * If we've made it to this point, extracted's keyset is valid.
-         * Recurse into mutual keys to validate their values.
-         */
-        return Object.keys(extracted)
-            .filter((extractedKey) => extractedKey in defined)
-            .reduce<ValidationErrors>(
-                (errors, mutualKey) => ({
-                    ...errors,
-                    ...validateRecurse({
-                        extracted: (extracted as any)[mutualKey],
-                        defined: (defined as any)[mutualKey],
-                        path: [...path, mutualKey],
-                        typeSet,
-                        seen: [],
-                        ignoreExtraneousKeys
-                    })
-                }),
-                {}
-            )
+        return validationError(unassignableError(args), args.path)
     }
-    throw new Error(definitionTypeError(defined, path))
+}
+
+const definedTypeValidator: RecursiveValidator<string> = {
+    when: ({ defined, typeSet }) => defined in typeSet,
+    validate: (args) => {
+        /**
+         * Keep track of definitions we've seen since last resolving to an object or built-in.
+         * If we encounter the same definition twice, we're dealing with a shallow cyclic typeSet
+         * like {user: "person", person: "user"}.
+         **/
+        if (args.seen.includes(args.defined)) {
+            throw new Error(shallowCycleError(args))
+        }
+        // If defined refers to a new type in typeSet, start resolving its definition
+        return validate({
+            ...args,
+            defined: args.typeSet[args.defined],
+            seen: [...args.seen, args.defined]
+        })
+    }
+}
+
+const unextractableTypeValidator: RecursiveValidator<
+    string,
+    UnextractableTypeName
+> = {
+    when: ({ defined }) => defined in unextractableTypes,
+    validate: (args) => {
+        const unextractableTypeAssignabilityMap: {
+            [K in UnextractableTypeName]: (
+                extracted: ExtractedDefinition
+            ) => boolean
+        } = {
+            any: () => true,
+            unknown: () => true,
+            boolean: (_) => _ === "true" || _ === "false",
+            object: (_) => typeof _ === "object",
+            void: (_) => _ === "undefined",
+            never: (_) => false
+        }
+        if (unextractableTypeAssignabilityMap[args.defined](args.extracted)) {
+            return {}
+        }
+        return validationError(unassignableError(args), args.path)
+    }
+}
+
+const extractableTypeValidator: RecursiveValidator<
+    string,
+    ExtractableTypeName
+> = {
+    when: ({ defined }) => defined in extractableTypes,
+    validate: (args) =>
+        args.extracted === args.defined
+            ? {}
+            : validationError(unassignableError(args), args.path)
+}
+
+const tupleValidator: RecursiveValidator<UnvalidatedObjectDefinition, any[]> = {
+    when: ({ defined }) => Array.isArray(defined),
+    validate: (args) => {
+        if (!Array.isArray(args.extracted)) {
+            // Defined is a tuple, extracted is an object with string keys (will never be assignable)
+            return validationError(unassignableError(args), args.path)
+        }
+        if (args.defined.length !== args.extracted.length) {
+            return validationError(tupleLengthError(args), args.path)
+        }
+        return validateProperties(args)
+    }
+}
+
+const nontupleValidator: RecursiveValidator<
+    UnvalidatedObjectDefinition,
+    Record<string, any>
+> = {
+    when: ({ defined }) => !Array.isArray(defined),
+    validate: (args) => {
+        const { defined, extracted, ignoreExtraneousKeys, path } = args
+        if (Array.isArray(args.extracted)) {
+            // Defined is an object with string keys, extracted is a tuple (will never be assignable)
+            return validationError(unassignableError(args), args.path)
+        }
+        // Neither type is a tuple, validate keys as a set
+        const keyDiff = diffSets(Object.keys(defined), Object.keys(extracted))
+        const keyErrors = keyDiff
+            ? Object.entries(keyDiff).reduce((diff, [k, v]) => {
+                  if (k === "added" && !ignoreExtraneousKeys) {
+                      return { ...diff, added: v }
+                  }
+                  if (k === "removed") {
+                      // Omit keys defined optional from 'removed'
+                      const illegallyRemoved = v.filter(
+                          (removedKey) =>
+                              typeof defined[removedKey] !== "string" ||
+                              !defined[removedKey].endsWith("?")
+                      )
+                      return illegallyRemoved.length
+                          ? { ...diff, removed: illegallyRemoved }
+                          : diff
+                  }
+                  return diff
+              }, undefined as DiffSetsResult<string>)
+            : undefined
+        if (keyErrors) {
+            return validationError(mismatchedKeysError(keyErrors), path)
+        }
+        return validateProperties(args)
+    }
+}
+
+/**
+ * Recurse into the properties of two objects/tuples with
+ * keysets that have already been validated as compatible.
+ */
+const validateProperties = ({
+    defined,
+    extracted,
+    typeSet,
+    path,
+    ignoreExtraneousKeys
+}: RecurseArgs<UnvalidatedObjectDefinition>) => {
+    return Object.keys(defined)
+        .filter((definedKey) => definedKey in (extracted as object))
+        .reduce<ValidationErrors>(
+            (errors, mutualKey) => ({
+                ...errors,
+                ...validate({
+                    extracted: (extracted as any)[mutualKey],
+                    defined: (defined as any)[mutualKey],
+                    path: [...path, mutualKey],
+                    typeSet,
+                    seen: [],
+                    ignoreExtraneousKeys
+                })
+            }),
+            {}
+        )
+}
+
+export type RecursiveValidator<Checked, Validated = Checked> =
+    | Validator<Checked, Validated>
+    | Delegator<Checked, Validated>
+
+export type Validator<Checked, Validated = Checked> = {
+    when: (args: RecurseArgs<Checked>) => boolean
+    validate: (args: RecurseArgs<Validated>) => ValidationErrors
+}
+
+export type Delegator<Checked, Validated = Checked> = {
+    when: (args: RecurseArgs<Checked>) => boolean
+    delegate: () => RecursiveValidator<Validated, any>[]
+    fallback: (args: RecurseArgs<Validated>) => any
 }
