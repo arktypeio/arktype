@@ -1,5 +1,4 @@
-import { compile, errorsAtPaths, parse, typeOf } from ".."
-import { user } from "./multifile/user.js"
+import { errorsAtPaths, parse, typeOf } from ".."
 
 describe("typeOf", () => {
     test("string", () => expect(typeOf("")).toBe("string"))
@@ -47,21 +46,21 @@ describe("validate", () => {
         const { checkErrors: validate } = parse("string")
         expect(validate("")).toBeFalsy()
         expect(validate(5)).toMatchInlineSnapshot(
-            `"Extracted type 'number' is not assignable to defined type 'string'."`
+            `"number is not assignable to string."`
         )
     })
     test("number", () => {
         const { checkErrors: validate } = parse("number")
         expect(validate(4.669)).toBeFalsy()
         expect(validate({ keyWithNumberValue: 5 })).toMatchInlineSnapshot(
-            `"Extracted type '{keyWithNumberValue: number}' is not assignable to defined type 'number'."`
+            `"{keyWithNumberValue: number} is not assignable to number."`
         )
     })
     test("bigint", () => {
         const { checkErrors: validate } = parse("bigint")
         expect(validate(BigInt(0))).toBeFalsy()
         expect(validate(0)).toMatchInlineSnapshot(
-            `"Extracted type 'number' is not assignable to defined type 'bigint'."`
+            `"number is not assignable to bigint."`
         )
     })
     test("boolean", () => {
@@ -69,24 +68,24 @@ describe("validate", () => {
         expect(validate(true)).toBeFalsy()
         expect(validate(false)).toBeFalsy()
         expect(validate(1)).toMatchInlineSnapshot(
-            `"Extracted type 'number' is not assignable to defined type 'boolean'."`
+            `"number is not assignable to boolean."`
         )
     })
     test("symbol", () => {
         const { checkErrors: validate } = parse("symbol")
         expect(validate(Symbol())).toBeFalsy()
         expect(validate("symbol")).toMatchInlineSnapshot(
-            `"Extracted type 'string' is not assignable to defined type 'symbol'."`
+            `"string is not assignable to symbol."`
         )
     })
     test("undefined", () => {
         const { checkErrors: validate } = parse("undefined")
         expect(validate(undefined)).toBeFalsy()
         expect(validate("defined")).toMatchInlineSnapshot(
-            `"Extracted type 'string' is not assignable to defined type 'undefined'."`
+            `"string is not assignable to undefined."`
         )
         expect(validate(null)).toMatchInlineSnapshot(
-            `"Extracted type 'null' is not assignable to defined type 'undefined'."`
+            `"null is not assignable to undefined."`
         )
     })
     test("empty object", () => {
@@ -103,7 +102,7 @@ describe("validate", () => {
         ).toBeFalsy()
         const badValue = { a: { b: "nested", c: 5, d: { deep: {} } } }
         expect(simpleObject.checkErrors(badValue)).toMatchInlineSnapshot(
-            `"At path 'a/d/deep', extracted type '{}' is not assignable to defined type 'null'."`
+            `"At path a/d/deep, {} is not assignable to null."`
         )
     })
     test("can ignore extraneous keys", () => {
@@ -138,14 +137,14 @@ describe("validate", () => {
         expect(errorsAtPaths(reallyBadValue, simpleObject.definition))
             .toMatchInlineSnapshot(`
             Object {
-              "a/b": "Extracted type 'null' is not assignable to defined type 'string'.",
-              "a/c": "Extracted type 'symbol' is not assignable to defined type 'number'.",
+              "a/b": "null is not assignable to string.",
+              "a/c": "symbol is not assignable to number.",
               "a/d": "Keys shallow were unexpected.",
             }
         `)
         // Let's make sure once that multiple errors are
         expect(simpleObject.checkErrors(reallyBadValue)).toMatchInlineSnapshot(
-            `"{a/b: Extracted type 'null' is not assignable to defined type 'string'., a/c: Extracted type 'symbol' is not assignable to defined type 'number'., a/d: Keys shallow were unexpected.}"`
+            `"{a/b: null is not assignable to string., a/c: symbol is not assignable to number., a/d: Keys shallow were unexpected.}"`
         )
     })
     test("generic function", () => {
@@ -156,30 +155,30 @@ describe("validate", () => {
             })
         ).toBeFalsy()
         expect(validate({})).toMatchInlineSnapshot(
-            `"Extracted type '{}' is not assignable to defined type 'function'."`
+            `"{} is not assignable to function."`
         )
     })
     test("defined function treated as generic for validation", () => {
         const { checkErrors: validate } = parse("(number,object)=>string")
         expect(validate(() => {})).toBeFalsy()
         expect(validate("I promise I'm a function")).toMatchInlineSnapshot(
-            `"Extracted type 'string' is not assignable to defined type '(number,object)=>string'."`
+            `"string is not assignable to (number,object)=>string."`
         )
     })
     test("array", () => {
         const { checkErrors: validate } = parse(["number", "string"])
         expect(validate([7, "up"])).toBeFalsy()
         expect(validate([7, 7])).toMatchInlineSnapshot(
-            `"At path '1', extracted type 'number' is not assignable to defined type 'string'."`
+            `"At index 1, number is not assignable to string."`
         )
         expect(validate([7, "up", 7])).toMatchInlineSnapshot(
-            `"Tuple of length 3 is not assignable to defined tuple of length 2."`
+            `"Tuple of length 3 is not assignable to tuple of length 2."`
         )
         expect(errorsAtPaths(["up", 7], ["number", "string"]))
             .toMatchInlineSnapshot(`
             Object {
-              "0": "Extracted type 'string' is not assignable to defined type 'number'.",
-              "1": "Extracted type 'number' is not assignable to defined type 'string'.",
+              "0": "string is not assignable to number.",
+              "1": "number is not assignable to string.",
             }
         `)
     })
@@ -188,8 +187,8 @@ describe("validate", () => {
         expect(validate("heyo")).toBeFalsy()
         expect(validate(0)).toBeFalsy()
         expect(validate(["listen what I say-o"])).toMatchInlineSnapshot(`
-            "'[string]' is not assignable to any of 'string|number':
-            {string: Extracted type '[string]' is not assignable to defined type 'string'., number: Extracted type '[string]' is not assignable to defined type 'number'.}"
+            "[string] is not assignable to any of string|number:
+            {string: [string] is not assignable to string., number: [string] is not assignable to number.}"
         `)
     })
     test("complex", () => {
@@ -201,10 +200,10 @@ describe("validate", () => {
         expect(
             validate([true, { a: ["ok", [() => {}], "extraElement"] }])
         ).toMatchInlineSnapshot(
-            `"At path '1/a', tuple of length 3 is not assignable to defined tuple of length 2."`
+            `"At path 1/a, tuple of length 3 is not assignable to tuple of length 2."`
         )
         expect(validate([false, { a: [0, [0, 1, 2]] }])).toMatchInlineSnapshot(
-            `"{0: Extracted type 'false' is not assignable to defined type 'true'., 1/a/0: Extracted type 'number' is not assignable to defined type 'string'., 1/a/1: Tuple of length 3 is not assignable to defined tuple of length 1.}"`
+            `"{0: false is not assignable to true., 1/a/0: number is not assignable to string., 1/a/1: Tuple of length 3 is not assignable to tuple of length 1.}"`
         )
     })
     test("simple typeset", () => {
@@ -238,9 +237,9 @@ describe("validate", () => {
                 ]
             })
         ).toMatchInlineSnapshot(`
-            "{fruits/0: '{length: number, description: string, peel: string}' is not assignable to any of 'banana|apple':
-            {banana: At path 'fruits/0', keys peel were unexpected., apple: At path 'fruits/0', required keys circumference, type were missing. Keys length, description, peel were unexpected.}, fruits/1: '{type: string}' is not assignable to any of 'banana|apple':
-            {banana: At path 'fruits/1', required keys length were missing. Keys type were unexpected., apple: At path 'fruits/1', required keys circumference were missing.}}"
+            "{fruits/0: {length: number, description: string, peel: string} is not assignable to any of banana|apple:
+            {banana: At path fruits/0, keys peel were unexpected., apple: At path fruits/0, required keys circumference, type were missing. Keys length, description, peel were unexpected.}, fruits/1: {type: string} is not assignable to any of banana|apple:
+            {banana: At path fruits/1, required keys length were missing. Keys type were unexpected., apple: At path fruits/1, required keys circumference were missing.}}"
         `)
     })
     test("errors on shallow cycle", () => {
@@ -294,7 +293,6 @@ describe("validate", () => {
                         }
                     }
                 },
-
                 b: {
                     isA: false,
                     b: {
@@ -311,7 +309,6 @@ describe("validate", () => {
                         }
                     }
                 },
-
                 c: [
                     { isA: true },
                     { isA: false },
@@ -325,8 +322,8 @@ describe("validate", () => {
                 ]
             })
         ).toMatchInlineSnapshot(`
-            "{a/a/a/a/a/a/a/isA: Extracted type 'false' is not assignable to defined type 'true'., b/b/b/b/b/b/b/isA: Extracted type 'true' is not assignable to defined type 'false'., c/8: '{isA: string}' is not assignable to any of 'a|b':
-            {a: At path 'c/8/isA', extracted type 'string' is not assignable to defined type 'true'., b: At path 'c/8/isA', extracted type 'string' is not assignable to defined type 'false'.}}"
+            "{a/a/a/a/a/a/a/isA: false is not assignable to true., b/b/b/b/b/b/b/isA: true is not assignable to false., c/8: {isA: string} is not assignable to any of a|b:
+            {a: At path c/8/isA, string is not assignable to true., b: At path c/8/isA, string is not assignable to false.}}"
         `)
     })
 })

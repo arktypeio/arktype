@@ -3,6 +3,7 @@ import {
     DiffSetsResult,
     filterChars,
     isAlphaNumeric,
+    isDigits,
     isRecursible,
     stringify,
     transform,
@@ -74,9 +75,11 @@ export const stringifyErrors = (errors: ValidationErrors) => {
     }
     if (errorPaths.length === 1) {
         const errorPath = errorPaths[0]
-        return `${errorPath ? `At path '${errorPath}', ` : ""}${
-            errorPath ? uncapitalize(errors[errorPath]) : errors[errorPath]
-        }`
+        return `${
+            errorPath
+                ? `At ${isDigits(errorPath) ? "index" : "path"} ${errorPath}, `
+                : ""
+        }${errorPath ? uncapitalize(errors[errorPath]) : errors[errorPath]}`
     }
     return stringify(errors)
 }
@@ -110,20 +113,19 @@ export const orValidationError = (
     { defined, extracted }: RecurseArgs,
     orTypeErrors: OrTypeErrors
 ) =>
-    `'${stringify(
+    `${stringify(
         extracted
-    )}' is not assignable to any of '${defined}':\n${stringify(orTypeErrors)}`
+    )} is not assignable to any of ${defined}:\n${stringify(orTypeErrors)}`
 
 export const unassignableError = ({ extracted, defined }: RecurseArgs) =>
-    `Extracted type '${stringify(
-        extracted
-    )}' is not assignable to defined type '${stringify(defined)}'.`
+    `${stringify(extracted)} is not assignable to ${stringify(defined)}.`
 
 export const shallowCycleError = ({ defined, seen, typeSet }: RecurseArgs) =>
-    `'${stringify(defined)}' shallowly references itself ` +
-    `in typeSet '${stringify(
-        typeSet
-    )}' via the following set of resolutions: ${seen.join("=>")}.`
+    `${stringify(defined)} shallowly references itself ` +
+    `in typeSet ${stringify(typeSet)} via the following set of resolutions: ${[
+        ...seen,
+        defined
+    ].join("=>")}.`
 
 export const isAFunctionDefinition = <D extends string>(definition: D) =>
     /\(.*\)\=\>.*/.test(definition) as D extends FunctionDefinition
@@ -142,7 +144,7 @@ export type RecurseArgs<
 }
 
 const tupleLengthError = ({ defined, extracted }: RecurseArgs) =>
-    `Tuple of length ${extracted.length} is not assignable to defined tuple of length ${defined.length}.`
+    `Tuple of length ${extracted.length} is not assignable to tuple of length ${defined.length}.`
 
 const mismatchedKeysError = (keyErrors: DiffSetsResult<string>) => {
     const missing = keyErrors?.removed?.length
