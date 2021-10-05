@@ -1,6 +1,6 @@
 import { parse } from ".."
-import { InvalidTypeDefError } from "../definitions"
 import { expectType, expectError } from "tsd"
+import { DefinitionTypeError } from "../errors.js"
 
 describe("parse", () => {
     test("built-in", () => {
@@ -8,14 +8,14 @@ describe("parse", () => {
         expectType<string>(result)
         // @ts-expect-error
         const badResult = parse("strig").type
-        expectError<"Unable to parse the type of 'strig'.">(badResult)
+        expectError<"Unable to determine the type of 'strig'.">(badResult)
     })
     test("string", () => {
         const result = parse("string|number[]?").type
-        expectType<(string | number)[] | undefined>(result)
+        expectType<string | number[] | undefined>(result)
         // @ts-expect-error
         const badResult = parse("string|[]number").type
-        expectError<"Unable to parse the type of '[]number'.">(badResult)
+        expectError<"Unable to determine the type of '[]number'.">(badResult)
     })
     test("string function", () => {
         const result = parse("(string, number) => boolean[]")
@@ -28,16 +28,20 @@ describe("parse", () => {
         const badParameterResult = parse("(foop, string, nufmber) => boolean[]")
         expectError<
             (
-                args_0: "Unable to parse the type of 'foop'.",
+                args_0: "Unable to determine the type of 'foop'.",
                 args_1: string,
-                args_2: "Unable to parse the type of 'nufmber'."
+                args_2: "Unable to determine the type of 'nufmber'."
             ) => boolean[]
         >(badParameterResult.type)
         // @ts-expect-error
         const badReturnResult = parse("()=>fork")
-        expectError<() => "Unable to parse the type of 'fork'.">(
+        expectError<() => "Unable to determine the type of 'fork'.">(
             badReturnResult.type
         )
+    })
+    test("empty object", () => {
+        const result = parse({})
+        expectType<{}>(result)
     })
     test("object", () => {
         const result = parse({
@@ -54,7 +58,7 @@ describe("parse", () => {
         const badResult = parse({ a: { b: "whoops" } })
         expectError<{
             a: {
-                b: "Unable to parse the type of 'whoops'."
+                b: "Unable to determine the type of 'whoops'."
             }
         }>(badResult.type)
     })
@@ -62,9 +66,9 @@ describe("parse", () => {
         expect(() => {
             // @ts-expect-error
             const result = parse({ bad: true })
-            expectError<{ bad: InvalidTypeDefError }>(result.type)
-        }).toThrowError(
-            "Unable to parse definition 'true' of type 'boolean'. Definition must be strings or objects."
+            expectError<{ bad: DefinitionTypeError }>(result.type)
+        }).toThrowErrorMatchingInlineSnapshot(
+            `"Definition value 'true at path 'bad' is invalid. Definitions must be strings or objects."`
         )
     })
     test("with typeset", () => {
