@@ -14,7 +14,8 @@ import {
     transform,
     deepEquals,
     addedOrChanged,
-    PathOf
+    PathOf,
+    DeepUpdate
 } from "@re-do/utils"
 import { Query, Update, Actions, ActionData, StoreActions } from "./common"
 import { createOnChangeMiddleware, OnChangeMiddlewareArgs } from "./onChange"
@@ -132,7 +133,7 @@ export class Store<T extends object, A extends Actions<T>> {
                 actionType,
                 (args: any) => {
                     let update: Update<T>
-                    if (actionValue instanceof Function) {
+                    if (typeof actionValue === "function") {
                         const returnValue = actionValue(args, this as any)
                         if (returnValue instanceof Promise) {
                             returnValue.then((resolvedValue) => {
@@ -146,7 +147,7 @@ export class Store<T extends object, A extends Actions<T>> {
                         }
                     } else {
                         // args shouldn't exist if updater was not a function
-                        update = actionValue
+                        update = actionValue as DeepUpdate<T>
                     }
                     this.update(update, { actionType: actionType as string })
                 }

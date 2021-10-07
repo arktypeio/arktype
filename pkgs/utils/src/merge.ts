@@ -8,7 +8,9 @@ import {
     And,
     GetRequiredKeys,
     WithRequiredKeysIfPresent,
-    Entry
+    Entry,
+    OptionalOnly,
+    Cast
 } from "./common.js"
 import { ExcludedByKey } from "./excludeKeys.js"
 import { transform } from "./transform.js"
@@ -129,3 +131,16 @@ export const mergeAll = <Objects extends object[]>(
               ...mergeAll(...objects.slice(1))
           }
         : {}) as MergeAll<Objects>
+
+export const withDefaults =
+    <T extends Record<string, any>>(defaults: Required<OptionalOnly<T>>) =>
+    (provided: T | undefined) => {
+        return { ...defaults, ...provided }
+    }
+
+export type WithDefaults<
+    Options extends Record<string, any>,
+    Provided extends Options,
+    Defaults extends Required<Options>,
+    ActiveOptions = Merge<Defaults, Provided>
+> = ActiveOptions extends Required<Options> ? ActiveOptions : Defaults

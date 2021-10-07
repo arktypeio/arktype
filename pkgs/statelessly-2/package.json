@@ -41,6 +41,6 @@
         "ts-jest": "27.0.3",
         "@types/node": "15.0.2",
         "ts-toolbelt": "9.5.10",
-        "typescript": "4.4.3"
+        "typescript": "4.5.0-beta"
     }
 }

@@ -10,7 +10,6 @@
         "esModuleInterop": true,
         "resolveJsonModule": true,
         "exactOptionalPropertyTypes": true,
-        "noErrorTruncation": true,
         "declaration": true,
         "lib": ["ESNext", "dom", "dom.iterable"],
         "jsx": "react"

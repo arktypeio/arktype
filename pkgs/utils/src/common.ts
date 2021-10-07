@@ -23,6 +23,18 @@ export type Split<
     ? Split<Right, Delimiter, [...Result, Left]>
     : [...Result, S]
 
+export type Join<
+    Segments extends Stringifiable[],
+    Delimiter extends string = DefaultDelimiter,
+    Result extends string = ""
+> = Segments extends Iteration<Stringifiable, infer Segment, infer Remaining>
+    ? Join<
+          Remaining,
+          Delimiter,
+          `${Result}${Result extends "" ? "" : Delimiter}${Segment}`
+      >
+    : Result
+
 export type RemoveSpaces<FromString extends string> = StringReplace<
     FromString,
     " ",
@@ -52,6 +64,14 @@ export const until = async (
     }
     return
 }
+
+export type DeepEvaluate<T, Depth extends number = -1> = T extends NonRecursible
+    ? T
+    : Depth extends 0
+    ? T
+    : {
+          [K in keyof T]: DeepEvaluate<T[K], MinusOne<Depth>>
+      }
 
 export type Evaluate<T> = T extends NonRecursible
     ? T
@@ -115,6 +135,11 @@ export type DeepWriteable<T> = { -readonly [P in keyof T]: DeepWriteable<T[P]> }
 
 export type PropertyOf<T> = T[keyof T]
 export type ElementOf<T extends any[]> = T[number]
+export type ValueOf<T> = T extends NonRecursible
+    ? never
+    : T extends any[]
+    ? T[number]
+    : T[keyof T]
 
 export type EntryOf<T> = { [K in keyof T]: [K, T[K]] }[T extends any[]
     ? keyof T & number
@@ -305,12 +330,6 @@ export const split = <T>(list: T[], by: (item: T) => boolean) =>
         [[], []] as SplitResult<T>
     )
 
-export const withDefaults =
-    <T extends Record<string, any>>(defaults: Required<OptionalOnly<T>>) =>
-    (provided: T | undefined) => {
-        return { ...defaults, ...provided }
-    }
-
 export type LimitDepth<
     O,
     MaxDepth extends number,
@@ -446,20 +465,6 @@ export type StringifyPossibleTypes<U extends Stringifiable> = Join<
     ListPossibleTypes<U>,
     ", "
 >
-
-export type Join<
-    Segments extends Stringifiable[],
-    Delimiter extends string = DefaultDelimiter
-> = Segments extends []
-    ? ""
-    : Segments extends [Stringifiable]
-    ? `${Segments[0]}`
-    : Segments extends [Stringifiable, ...infer Remaining]
-    ? `${Segments[0]}${Delimiter}${Join<
-          Remaining extends Stringifiable[] ? Remaining : never,
-          Delimiter
-      >}`
-    : never
 
 export type Segment = string | number
 
