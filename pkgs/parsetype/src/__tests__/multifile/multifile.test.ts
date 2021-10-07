@@ -1,4 +1,4 @@
-import { declare } from "../.."
+import { declare } from "../../main.js"
 import { expectType } from "tsd"
 
 export const { define, compile } = declare("user", "group")
