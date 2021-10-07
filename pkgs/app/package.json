@@ -52,7 +52,7 @@
         "electron": "13.1.7",
         "electron-builder": "22.11.11",
         "unzip-crx-3": "0.2.0",
-        "typescript": "4.5.0-dev.20210924",
+        "typescript": "4.4.3",
         "ts-node": "10.1.0",
         "vite": "2.4.4",
         "jsrx": "workspace:*",

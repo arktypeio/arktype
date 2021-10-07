@@ -7,7 +7,6 @@ import {
     Or,
     split,
     Entry,
-    stringify,
     isEmpty
 } from "./common.js"
 import { transform } from "./transform.js"

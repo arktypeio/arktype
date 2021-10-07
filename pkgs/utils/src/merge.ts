@@ -1,23 +1,18 @@
 import {
     Evaluate,
     isRecursible,
-    ListPossibleTypes,
     NonRecursible,
     Iteration,
     ExcludeByValue,
     ElementOf,
-    KeyValuate,
-    Or,
     And,
-    WithRequiredKeys,
     GetRequiredKeys,
-    WithRequiredKeysIfPresent
+    WithRequiredKeysIfPresent,
+    Entry
 } from "./common.js"
-import { ExcludedByKey, ExcludedByKeys } from "./excludeKeys.js"
+import { ExcludedByKey } from "./excludeKeys.js"
 import { transform } from "./transform.js"
 import { Narrow } from "./Narrow.js"
-import { FilteredByKeys } from "./filterKeys.js"
-
 export type DefaultMergeOptions = {
     deep: false
     unmerged: [undefined]
@@ -62,21 +57,18 @@ export type Merge<
               }
       >
 
-//     Evaluate <
-//       WithRequiredKeys<
-//           MergeResult & object,
-//           Options["preserveRequired"] extends true
-//               ? keyof MergeResult &
-//                     ToolbeltObject.RequiredKeys<Base & object>
-//               : never
-//       >
-//   >
-
 export type MergeAll<
     Objects,
     Result extends object = {}
 > = Objects extends Iteration<any, infer Current, infer Remaining>
     ? MergeAll<Remaining, Merge<Result, Current>>
+    : Result
+
+export type FromEntries<
+    Entries extends Entry[],
+    Result extends object = {}
+> = Entries extends Iteration<Entry, infer Current, infer Remaining>
+    ? FromEntries<Remaining, Merge<Result, { [K in Current[0]]: Current[1] }>>
     : Result
 
 export type MergeOptions = {

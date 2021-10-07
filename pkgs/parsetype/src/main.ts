@@ -1,8 +1,8 @@
 import {
+    Narrow,
     Evaluate,
     ListPossibleTypes,
     Exact,
-    Narrow,
     mergeAll
 } from "@re-do/utils"
 import {

@@ -2,11 +2,8 @@ import moize from "moize"
 import {
     Number as NumberToolbelt,
     Union as ToolbeltUnion,
-    List as ToolbeltList,
-    String as ToolbeltString
+    List as ToolbeltList
 } from "ts-toolbelt"
-import { Merge } from "./merge.js"
-import { transform } from "./transform.js"
 
 export const memoize = moize as <F extends SimpleFunction>(f: F) => F
 
@@ -14,37 +11,23 @@ export type StringReplace<
     Original extends string,
     Find extends string,
     ReplaceWith extends string
-> = ToolbeltString.Replace<Original, Find, ReplaceWith>
+> = Original extends `${infer Left}${Find}${infer Right}`
+    ? StringReplace<`${Left}${ReplaceWith}${Right}`, Find, ReplaceWith>
+    : Original
+
+export type Split<
+    S extends string,
+    Delimiter extends string,
+    Result extends string[] = []
+> = S extends `${infer Left}${Delimiter}${infer Right}`
+    ? Split<Right, Delimiter, [...Result, Left]>
+    : [...Result, S]
 
 export type RemoveSpaces<FromString extends string> = StringReplace<
     FromString,
     " ",
     ""
 >
-
-export type StringifyOptions = {
-    indent?: number
-}
-
-export const stringify = (value: any) => {
-    const recurse = (value: any, seen: any[]): string => {
-        if (!isRecursible(value)) {
-            return String(value)
-        }
-        if (seen.includes(value)) {
-            return "(cyclic value)"
-        }
-        if (Array.isArray(value)) {
-            return `[${value
-                .map((v) => recurse(v, [...seen, value]))
-                .join(", ")}]`
-        }
-        return `{${Object.entries(value)
-            .map(([k, v]) => `${k}: ${recurse(v, [...seen, value])}`)
-            .join(", ")}}`
-    }
-    return recurse(value, [])
-}
 
 export type UntilOptions = {
     timeoutSeconds?: number
@@ -148,9 +131,7 @@ export const isRecursible = (o: any) => o && typeof o === "object"
 
 export const isEmpty = (value: object | any[]) => {
     if (!isRecursible(value)) {
-        throw new Error(
-            `isEmpty required an object. Received ${stringify(value)}`
-        )
+        throw new Error(`isEmpty required an object. Received ${String(value)}`)
     }
     return isRecursible(value) ? !Object.keys(value).length : false
 }
@@ -324,36 +305,6 @@ export const split = <T>(list: T[], by: (item: T) => boolean) =>
         [[], []] as SplitResult<T>
     )
 
-export type FilterUp<T, UpfilteredKey> = {
-    [K in keyof T]: T[K] extends NonRecursible
-        ? T[K]
-        : Array<any> extends T[K]
-        ?
-              | Array<
-                    FilterUp<
-                        UpfilteredKey extends keyof Exclude<
-                            Unlisted<T[K]>,
-                            NonRecursible
-                        >
-                            ? Exclude<
-                                  Unlisted<T[K]>,
-                                  NonRecursible
-                              >[UpfilteredKey]
-                            : Exclude<Unlisted<T[K]>, NonRecursible>,
-                        UpfilteredKey
-                    >
-                >
-              | Extract<T[K], NonRecursible>
-        :
-              | FilterUp<
-                    UpfilteredKey extends keyof Exclude<T[K], NonRecursible>
-                        ? Exclude<T[K], NonRecursible>[UpfilteredKey]
-                        : Exclude<T[K], NonRecursible>,
-                    UpfilteredKey
-                >
-              | Extract<T[K], NonRecursible>
-}
-
 export const withDefaults =
     <T extends Record<string, any>>(defaults: Required<OptionalOnly<T>>) =>
     (provided: T | undefined) => {
@@ -400,7 +351,7 @@ export type ExcludeCyclic<
 > = {
     [K in keyof ExcludeByValue<O, Seen>]: O[K] extends NonRecursible
         ? O[K]
-        : ExcludeCyclic<O[K], Seen | Unlisted<O[K]> | Unlisted<O[K]>[]>
+        : ExcludeCyclic<O[K] & object, Seen | Unlisted<O[K]> | Unlisted<O[K]>[]>
 }
 
 export type MinusOne<N extends number> = NumberToolbelt.Sub<N, 1>
@@ -457,9 +408,11 @@ export type IsUnknown<T> = (
     ? true
     : false
 
-type AnyIsAny<T> = (T extends {} ? true : false) extends false ? false : true
+export type AnyIsAny<T> = (T extends {} ? true : false) extends false
+    ? false
+    : true
 
-type AnyIsUnknown<T> = (T extends {} ? true : false) extends false
+export type AnyIsUnknown<T> = (T extends {} ? true : false) extends false
     ? true
     : false
 
@@ -473,7 +426,7 @@ export type Entry<K extends Key = Key, V = any> = [K, V]
 
 export type Recursible<T> = T extends NonRecursible ? never : T
 
-type ListPossibleTypesRecurse<
+export type ListPossibleTypesRecurse<
     U,
     LN extends any[] = [],
     LastU = ToolbeltUnion.Last<U>
@@ -557,13 +510,6 @@ export type Iteration<T, Current extends T, Remaining extends T[]> = [
     Current,
     ...Remaining
 ]
-
-export type FromEntries<
-    Entries extends Entry[],
-    Result extends object = {}
-> = Entries extends Iteration<Entry, infer Current, infer Remaining>
-    ? FromEntries<Remaining, Merge<Result, { [K in Current[0]]: Current[1] }>>
-    : Result
 
 export type CastWithExclusion<T, CastTo, Excluded> = T extends Excluded
     ? T

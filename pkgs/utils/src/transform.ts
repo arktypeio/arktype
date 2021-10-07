@@ -1,5 +1,5 @@
 import { MapFunction, EntryOf, Entry } from "./common.js"
-import { isNumeric, NumericString } from "./transformString.js"
+import { isNumeric } from "./transformString.js"
 
 export type TransformOptions = {
     asValueArray?: boolean

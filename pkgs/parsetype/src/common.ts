@@ -1,4 +1,4 @@
-import { Recursible, stringify, transform } from "@re-do/utils"
+import { Recursible, transform } from "@re-do/utils"
 import { definitionTypeError } from "./errors.js"
 
 export const formatTypes = <T>(definition: T): T => {
