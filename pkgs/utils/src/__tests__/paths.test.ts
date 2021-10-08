@@ -1,4 +1,4 @@
-import { valueAtPath } from ".."
+import { valueAtPath, valueAtPathList } from ".."
 
 const obj = {
     a: {

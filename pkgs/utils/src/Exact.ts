@@ -29,12 +29,31 @@ export type Exact<T, ExpectedType> = IsAnyOrUnknown<T> extends true
         : {
               [K in keyof T]: K extends keyof Recursible<ExpectedType>
                   ? Exact<T[K], Recursible<ExpectedType>[K]>
-                  : `Invalid property '${Extract<
-                        K,
-                        string | number
-                    >}'. Valid properties are: ${StringifyKeys<ExpectedType>}`
+                  : InvalidPropertyError<ExpectedType, K>
           }
     : ExpectedType
+
+export type ExactProperties<
+    Compare,
+    Base,
+    C = Compare,
+    B = Recursible<Base>
+> = {
+    [K in keyof C]: K extends keyof B
+        ? IsAnyOrUnknown<C[K]> extends true
+            ? B[K]
+            : C[K] extends B[K]
+            ? C[K] extends NonRecursible
+                ? C[K]
+                : ExactProperties<C[K], B[K]>
+            : B[K]
+        : InvalidPropertyError<Base, K>
+}
+
+export type InvalidPropertyError<O, Property> = `Invalid property '${Extract<
+    Property,
+    string | number
+>}'. Valid properties are: ${StringifyKeys<O>}`
 
 export type ExactObject<
     Compare,
@@ -53,7 +72,6 @@ export type ExactObject<
                     : Base[K]
                 : Base[K]
             : ExactObject<Recursible<Compare[K]>, Recursible<Base[K]>>
-        : `Invalid property '${K &
-              (string | number)}'. Valid properties are: ${StringifyKeys<Base>}`
+        : InvalidPropertyError<Base, K>
 } &
     { [K in MissingKeys]: K extends keyof Base ? Base[K] : never }
