@@ -445,6 +445,14 @@ export type Entry<K extends Key = Key, V = any> = [K, V]
 
 export type Recursible<T> = T extends NonRecursible ? never : T
 
+export type RequiredKeys<O> = {
+    [K in keyof O]-?: {} extends Pick<O, K> ? never : K
+}[keyof O]
+
+export type OptionalKeys<O> = {
+    [K in keyof O]-?: {} extends Pick<O, K> ? K : never
+}[keyof O]
+
 export type ListPossibleTypesRecurse<
     U,
     LN extends any[] = [],
@@ -483,33 +491,6 @@ export type Stringifiable =
     | undefined
 
 export type ExtractFunction<T> = Extract<T, SimpleFunction>
-
-export type ExactFunction<T, ExpectedType> = T extends ExpectedType
-    ? ExtractFunction<T> extends (...args: infer Args) => infer Return
-        ? ExtractFunction<ExpectedType> extends (
-              ...args: infer ExpectedArgs
-          ) => infer ExpectedReturn
-            ? (
-                  ...args: Exact<Args, ExpectedArgs>
-              ) => Exact<Return, ExpectedReturn>
-            : ExpectedType
-        : ExpectedType
-    : ExpectedType
-
-export type Exact<T, ExpectedType> = IsAnyOrUnknown<T> extends true
-    ? ExpectedType
-    : T extends ExpectedType
-    ? T extends NonObject
-        ? T
-        : {
-              [K in keyof T]: K extends keyof Recursible<ExpectedType>
-                  ? Exact<T[K], Recursible<ExpectedType>[K]>
-                  : TypeError<`Invalid property '${Extract<
-                        K,
-                        string | number
-                    >}'. Valid properties are: ${StringifyKeys<ExpectedType>}`>
-          }
-    : ExpectedType
 
 export type Iteration<T, Current extends T, Remaining extends T[]> = [
     Current,

@@ -9,8 +9,7 @@ import {
     GetRequiredKeys,
     WithRequiredKeysIfPresent,
     Entry,
-    OptionalOnly,
-    Cast
+    OptionalOnly
 } from "./common.js"
 import { ExcludedByKey } from "./excludeKeys.js"
 import { transform } from "./transform.js"
@@ -133,8 +132,10 @@ export const mergeAll = <Objects extends object[]>(
         : {}) as MergeAll<Objects>
 
 export const withDefaults =
-    <T extends Record<string, any>>(defaults: Required<OptionalOnly<T>>) =>
-    (provided: T | undefined) => {
+    <Options extends Record<string, any>>(
+        defaults: Required<OptionalOnly<Options>>
+    ) =>
+    (provided: Options | undefined) => {
         return { ...defaults, ...provided }
     }
 

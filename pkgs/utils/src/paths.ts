@@ -33,7 +33,7 @@ export type ValueAtPath<
 
 export type ValueAtPathList<
     O,
-    Segments extends string[],
+    Segments extends Segment[],
     ExcludeArrayIndices extends boolean = false
 > = And<ExcludeArrayIndices, IsList<O>> extends true
     ? ValueAtPathList<FlatUnlisted<O>, Segments, ExcludeArrayIndices>[]
@@ -76,7 +76,7 @@ export const valueAtPath = <
 
 export const valueAtPathList = <
     O,
-    P extends string[],
+    P extends Segment[],
     ExcludeArrayIndices extends boolean = false
 >(
     o: O,

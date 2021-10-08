@@ -17,21 +17,31 @@ import {
     ExcludeByValue,
     PathOf,
     LeafOf,
-    ValueAtPath
+    ValueAtPath,
+    Recursible,
+    IsAnyOrUnknown,
+    StringifyKeys,
+    Key,
+    NonObject,
+    RequiredKeys,
+    DeepEvaluate,
+    IsUnknown,
+    ExactObject,
+    SimpleFunction
 } from "@re-do/utils"
-import { O, Object as ToolbeltObject } from "ts-toolbelt"
+import { Object as ToolbeltObject } from "ts-toolbelt"
 import {
     ParseType,
-    ValidateTypeDefinition,
-    ValidateTypeSet,
-    BaseNameOfStringDefinition
+    TypeDefinition,
+    TypeSet,
+    ComponentTypesOfStringDefinition
 } from "parsetype"
 // import { Actions, Interactions } from "common"
 
 type DefinitionsFromConfig<Config> = ExcludeByValue<
     {
         [K in keyof Config]: "defines" extends keyof Config[K]
-            ? Config[K]["defines"] & string
+            ? Config[K]["defines"]
             : "fields" extends keyof Config[K]
             ? DefinitionsFromConfig<Config[K]["fields"]>
             : never
@@ -41,10 +51,13 @@ type DefinitionsFromConfig<Config> = ExcludeByValue<
 
 type PathsToDefinitions<
     Config,
-    ConfigDefinitions = DefinitionsFromConfig<Config>
+    ConfigDefinitions = DefinitionsFromConfig<Config>,
+    DefinitionPaths extends string = LeafOf<ConfigDefinitions>
 > = {
-    [Path in LeafOf<ConfigDefinitions>]: ValueAtPath<ConfigDefinitions, Path> &
+    [Path in DefinitionPaths]: Cast<
+        ValueAtPath<ConfigDefinitions, Path>,
         string
+    >
 }
 
 type TypeNamesToDefinitionPaths<Config> = ToolbeltObject.Invert<
@@ -72,14 +85,38 @@ type TypeSetFromConfig<
     >
 }
 
-type TypeFromConfig<Config, TypeSet = TypeSetFromConfig<Config>> = {
+type TypeFromConfig<Config, ConfigTypeSet = TypeSetFromConfig<Config>> = {
     [K in keyof Config]: "defines" extends keyof Config[K]
-        ? ParseType<TypeDefFromConfig<Config>[K], TypeSet>[]
-        : ParseType<TypeDefFromConfig<Config>[K], TypeSet>
+        ? ParseType<TypeDefFromConfig<Config>[K], ConfigTypeSet>[]
+        : ParseType<TypeDefFromConfig<Config>[K], ConfigTypeSet>
 }
 
-export type ModelConfig<Config, TypeSet, ConfigType> = {
-    [K in keyof Config]: Exact<
+type ETU<
+    A,
+    B,
+    MissingKeys extends Key = Exclude<RequiredKeys<A>, keyof Recursible<B>>
+> = {
+    [K in keyof A]: K extends keyof B
+        ? IsAnyOrUnknown<A[K]> extends true
+            ? B[K]
+            : IsAnyOrUnknown<B[K]> extends true
+            ? A[K]
+            : A[K] extends NonRecursible
+            ? A[K] extends B[K]
+                ? A[K]
+                : B[K]
+            : ETU<A[K], Recursible<B[K]>>
+        : `Invalid property '${Extract<
+              K,
+              string | number
+          >}'. Valid properties are: ${StringifyKeys<B>}`
+}
+//     & {
+//     [K in MissingKeys]: K extends keyof Recursible<B> ? Recursible<B>[K] : never
+// }
+
+export type ModelConfig<Config, ConfigTypeSet, ConfigType> = {
+    [K in keyof Config]: ETU<
         Config[K],
         ModelConfigRecurse<
             KeyValuate<ConfigType, K>,
@@ -88,7 +125,8 @@ export type ModelConfig<Config, TypeSet, ConfigType> = {
             false,
             never,
             [K & Segment],
-            TypeSet
+            ConfigTypeSet,
+            ListPossibleTypes<keyof ConfigTypeSet & string>
         >
     >
 }
@@ -100,14 +138,12 @@ type ModelConfigRecurse<
     InDefinition extends boolean,
     Seen,
     Path extends Segment[],
-    TypeSet,
-    DeclaredTypeNames extends string[] = ListPossibleTypes<
-        keyof TypeSet & string
-    >
+    ConfigTypeSet,
+    DeclaredTypeNames extends string[]
 > = Config extends string
     ? PathToType extends Segment[]
         ? TypeError<`A type has already been determined via ${Join<PathToType>}.`>
-        : ValidateTypeDefinition<Config, DeclaredTypeNames>
+        : TypeDefinition<Config, DeclaredTypeNames>
     : ModelConfigOptions<
           T,
           Config,
@@ -115,7 +151,7 @@ type ModelConfigRecurse<
           InDefinition,
           Seen,
           Path,
-          TypeSet,
+          ConfigTypeSet,
           DeclaredTypeNames
       >
 
@@ -126,15 +162,15 @@ type ModelConfigOptions<
     InDefinition extends boolean,
     Seen,
     Path extends Segment[],
-    TypeSet,
+    ConfigTypeSet,
     DeclaredTypeNames extends string[]
-> = ModelConfigBaseOptions<T> &
+> = ModelConfigBaseOptions<T, Config> &
     ModelConfigTypeOptions<
         T,
         Config,
         PathToType,
         Path,
-        TypeSet,
+        ConfigTypeSet,
         DeclaredTypeNames
     > &
     ModelConfigFieldOptions<
@@ -144,11 +180,12 @@ type ModelConfigOptions<
         InDefinition,
         Seen,
         Path,
-        TypeSet
+        ConfigTypeSet,
+        DeclaredTypeNames
     > &
-    ModelConfigDefinitionOptions<T, InDefinition, Seen>
+    ModelConfigDefinitionOptions<T, Config, InDefinition, Seen>
 
-type ModelConfigBaseOptions<T> = {
+type ModelConfigBaseOptions<T, Config> = {
     validate?: (value: T) => boolean
     onChange?: (updates: T) => void
 }
@@ -158,23 +195,23 @@ type ModelConfigTypeOptions<
     Config,
     PathToType extends Segment[] | null,
     Path extends Segment[],
-    TypeSet,
+    ConfigTypeSet,
     DeclaredTypeNames extends string[]
 > = PathToType extends null
     ? "fields" extends keyof Config
         ? {
-              type?: ValidateTypeDefinition<
+              type?: TypeDefinition<
                   KeyValuate<Config, "type">,
                   DeclaredTypeNames
               >
           }
         : {
-              type: "type" extends keyof Config
-                  ? ValidateTypeDefinition<
+              type?: "type" extends keyof Config
+                  ? TypeDefinition<
                         KeyValuate<Config, "type">,
                         DeclaredTypeNames
                     >
-                  : TypeError<`Unable to determine the type of ${Join<Path>}.`>
+                  : `Unable to determine the type of ${Join<Path>}.`
           }
     : {}
 
@@ -186,6 +223,7 @@ type ConfigIfRecursible<T, Seen, ValueIfRecursible> = Unlisted<T> extends
 
 type ModelConfigDefinitionOptions<
     T,
+    Config,
     InDefinition extends boolean,
     Seen
 > = ConfigIfRecursible<
@@ -205,39 +243,56 @@ type ModelConfigFieldOptions<
     InDefinition extends boolean,
     Seen,
     Path extends Segment[],
-    TypeSet
+    ConfigTypeSet,
+    DeclaredTypeNames extends string[],
+    ConfigFields = "fields" extends keyof Config ? Config["fields"] : never
 > = ConfigIfRecursible<
     T,
     Seen,
     {
         fields?: {
-            [K in keyof Unlisted<T>]?: ModelConfigRecurse<
-                Unlisted<T>[K],
-                ValueAtPathList<Config, ["fields", K & Segment]>,
-                "type" extends keyof Config ? Path : PathToType,
-                "defines" extends keyof Config ? true : InDefinition,
-                Seen | Unlisted<T>,
-                [...Path, K & Segment],
-                TypeSet
-            >
+            [K in keyof Unlisted<T>]?: K extends keyof ConfigFields
+                ? ModelConfigRecurse<
+                      KeyValuate<Unlisted<T>, K>,
+                      ConfigFields[K],
+                      "type" extends keyof Config ? Path : PathToType,
+                      "defines" extends keyof Config ? true : InDefinition,
+                      Seen | Unlisted<T>,
+                      [...Path, K & Segment],
+                      ConfigTypeSet,
+                      DeclaredTypeNames
+                  >
+                : never
         }
     }
 >
 
 export const createStore = <
-    Config extends ModelConfig<Config, TypeSet, ConfigType>,
-    OptionsTypeSet,
-    TypeSet = TypeSetFromConfig<Config>,
-    ConfigType = TypeFromConfig<Config, TypeSet>,
-    A extends Actions<ConfigType> = {}
+    Config extends ModelConfig<Config, ConfigTypeSet, ConfigType>,
+    // OptionsTypeSet,
+    ConfigTypeSet = {
+        user: {
+            name: "string"
+            groups: "group[]"
+        }
+        group: {
+            name: "string"
+        }
+        color: {
+            RGB: "string"
+        }
+    },
+    // TypeSetFromConfig<Config>,
+    ConfigType = TypeFromConfig<Config, ConfigTypeSet>
+    // A extends Actions<ConfigType> = {}
 >(
     config: Narrow<Config>,
     options?: {
-        predefined?: ValidateTypeSet<OptionsTypeSet>
-        actions?: A
+        // predefined?: TypeSet<OptionsTypeSet>
+        // actions?: A
     }
 ) => {
-    return {} as ConfigType //Store<ConfigType, Config, TypeSet>
+    return {} as DeepEvaluate<Config> //Store<ConfigType, Config, TypeSet>
 }
 
 const store = createStore({
@@ -249,7 +304,8 @@ const store = createStore({
                 onChange: () => ":-)"
             },
             groups: {
-                type: "group[]"
+                type: "group[]",
+                onChange: (_) => {}
             }
         }
     },
@@ -278,7 +334,7 @@ const store = createStore({
 export type Store<
     Data,
     Config,
-    TypeSet,
+    ConfigTypeSet,
     Path extends Segment[] = [],
     IdKey extends string = "id",
     DefinitionPathsToTypeNames = PathsToDefinitions<Config>,
@@ -290,7 +346,7 @@ export type Store<
             : Store<
                   Data[K],
                   Config[K],
-                  TypeSet,
+                  ConfigTypeSet,
                   [...Path, K & Segment],
                   IdKey,
                   DefinitionPathsToTypeNames
@@ -386,7 +442,7 @@ export type Unpack<
     SeenEntityName = never,
     EntityNames extends string[] = ListPossibleTypes<keyof Entities>,
     BaseEntityName = Definition extends string
-        ? BaseNameOfStringDefinition<Definition & string, EntityNames>
+        ? ComponentTypesOfStringDefinition<Definition & string, EntityNames>
         : null
 > = {
     [K in keyof O]: K extends keyof Definition
