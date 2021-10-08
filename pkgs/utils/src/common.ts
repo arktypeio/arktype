@@ -443,6 +443,8 @@ export type TypeError<Description extends string> = Description
 
 export type Entry<K extends Key = Key, V = any> = [K, V]
 
+export type List<T = any> = T[] | readonly T[]
+
 export type Recursible<T> = T extends NonRecursible ? never : T
 
 export type RequiredKeys<O> = {
