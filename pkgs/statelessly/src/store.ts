@@ -8,7 +8,6 @@ import {
 import {
     updateMap,
     shapeFilter,
-    AutoPath,
     valueAtPath,
     ValueAtPath,
     transform,
@@ -75,12 +74,8 @@ export class Store<T extends object, A extends Actions<T>> {
 
     getState = () => this.underlying.getState()
 
-    // Defining the entire function type together avoids excessive stack depth TS error
-    get: <P extends PathOf<T>>(
-        path: P
-        // @ts-ignore
-    ) => ValueAtPath<T, P> = (path: any) =>
-        valueAtPath(this.underlying.getState(), path) as any
+    get = <P extends string>(path: PathOf<T, P>) =>
+        valueAtPath(this.underlying.getState(), path)
 
     query = <Q extends Query<T>>(q: Q) =>
         shapeFilter(this.underlying.getState(), q)

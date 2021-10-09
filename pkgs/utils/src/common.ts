@@ -134,7 +134,7 @@ export type Writeable<T> = { -readonly [P in keyof T]: T[P] }
 export type DeepWriteable<T> = { -readonly [P in keyof T]: DeepWriteable<T[P]> }
 
 export type PropertyOf<T> = T[keyof T]
-export type ElementOf<T extends any[]> = T[number]
+export type ElementOf<T extends List> = T[number]
 export type ValueOf<T> = T extends NonRecursible
     ? never
     : T extends any[]
@@ -242,7 +242,7 @@ export type DeepUnlisted<T> = T extends object
 export type AsListIf<T, Condition extends boolean> = Condition extends true
     ? T[]
     : T
-export type IfList<T, IfList, IfNotList> = T extends any[] ? IfList : IfNotList
+export type IfList<T, IfList, IfNotList> = T extends List ? IfList : IfNotList
 export type IsList<T> = IfList<T, true, false>
 
 export type GetRequiredKeys<O extends object> = {
@@ -374,6 +374,8 @@ export type ExcludeCyclic<
 }
 
 export type MinusOne<N extends number> = NumberToolbelt.Sub<N, 1>
+
+export type PlusOne<N extends number> = NumberToolbelt.Add<N, 1>
 
 export type And<A extends boolean, B extends boolean> = {
     true: {

@@ -17,21 +17,7 @@ describe("exact", () => {
             >
         >
         expectType<{ a: "ok"; nested: { on: true } }>(match)
-        const mixed = {} as DeepEvaluate<
-            Exact<
-                { a: string; nested: { on: true } },
-                { a: "hi"; nested: { on: boolean } }
-            >
-        >
-        // expectType<{ a: "hi"; nested: { on: true } }>(mixed)
     })
-
-    // test("any/unknown", () => {
-    //     const first = {} as DeepEvaluate<Exact<{ a: any }, { a: string }>>
-    //     expectType<{ a: string }>(first)
-    //     const second = {} as DeepEvaluate<Exact<{ a: { b: "nested" } }, { a: unknown }>>
-    //     expectType<{ a: { b: "nested" } }>(second)
-    // })
 
     test("unions", () => {
         const subset = {} as DeepEvaluate<
@@ -108,28 +94,24 @@ describe("exact object", () => {
                         b: string | null
                         c: string | boolean
                     }
-                    c: "this is required"
                 }
             >
         >
         expectType<{
             a: "hi"
-            nested: {
-                a: "hello"
-                b: string | null
-                c: string | boolean
-            }
-            c: "this is required"
+            nested:
+                | {
+                      a: string | number
+                      b: string | null
+                      c: string | boolean
+                  }
+                | undefined
         }>(result)
     })
 
     test("any/unknown", () => {
         const first = {} as DeepEvaluate<Exact<{ a: any }, { a: string }>>
         expectType<{ a: string }>(first)
-        const second = {} as DeepEvaluate<
-            ExactObject<{ a: { b: "nested" } }, { a: unknown }>
-        >
-        expectType<{ a: { b: "nested" } }>(second)
     })
 
     test("unions", () => {

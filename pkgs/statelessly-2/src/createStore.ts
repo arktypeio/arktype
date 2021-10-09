@@ -2,74 +2,35 @@ import {
     NonRecursible,
     Unlisted,
     KeyValuate,
-    ValueAtPathList,
     Segment,
     Join,
     TypeError,
     Narrow,
-    Exact,
-    ElementOf,
     ListPossibleTypes,
-    Cast,
-    TransformCyclic,
-    PathTo,
-    Evaluate,
-    ExcludeByValue,
-    PathOf,
     ValueAtPath,
-    Recursible,
-    IsAnyOrUnknown,
-    StringifyKeys,
-    Key,
-    NonObject,
-    RequiredKeys,
-    DeepEvaluate,
-    IsUnknown,
-    // ExactObject,
-    SimpleFunction,
-    FlatUnlisted,
-    IsList,
-    isRecursible,
-    MinusOne,
-    And,
-    DefaultDelimiter,
-    Split,
-    PropertyOf,
-    Stringifiable,
-    ValueOf,
-    WithDefaults,
-    withDefaults
+    FromEntries,
+    ExactObject
 } from "@re-do/utils"
-import { Object as ToolbeltObject } from "ts-toolbelt"
 import {
     ParseType,
     TypeDefinition,
     TypeSet,
     ComponentTypesOfStringDefinition
 } from "parsetype"
-// import { Actions, Interactions } from "common"
 
-// type DefinitionsFromConfig<Config> = ExcludeByValue<
-//     {
-//         [K in keyof Config]: "defines" extends keyof Config[K]
-//             ? Config[K]["defines"]
-//             : "fields" extends keyof Config[K]
-//             ? DefinitionsFromConfig<Config[K]["fields"]>
-//             : never
-//     },
-//     never
-// >
+type TypeNamesToDefinitionPathsRecurse<Config, Path extends string> = {
+    [K in keyof Config]: "defines" extends keyof Config[K]
+        ? [Config[K]["defines"], `${Path}${K & string}`]
+        : "fields" extends keyof Config[K]
+        ? TypeNamesToDefinitionPathsRecurse<
+              Config[K]["fields"],
+              `${Path}${K & string}/`
+          >
+        : never
+}[keyof Config]
 
-type PathsToDefinitions<
-    Config,
-    // ConfigDefinitions = DefinitionsFromConfig<Config>,
-    DefinitionPaths extends string = PathTo<Config, { defines: string }>
-> = {
-    [Path in DefinitionPaths]: Cast<ValueAtPath<Config, Path>, string>
-}
-
-type TypeNamesToDefinitionPaths<Config> = ToolbeltObject.Invert<
-    PathsToDefinitions<Config>
+type TypeNamesToDefinitionPaths<Config> = FromEntries<
+    ListPossibleTypes<TypeNamesToDefinitionPathsRecurse<Config, "">>
 >
 
 type TypeDefFromConfig<Config> = {
@@ -87,9 +48,9 @@ type TypeSetFromConfig<
     DefinedTypes = TypeNamesToDefinitionPaths<Config>,
     TypeDef = TypeDefFromConfig<Config>
 > = {
-    [TypeName in keyof DefinedTypes]: KeyValuate<
+    [TypeName in keyof DefinedTypes]: ValueAtPath<
         TypeDef,
-        DefinedTypes[TypeName]
+        DefinedTypes[TypeName] & string
     >
 }
 
@@ -99,28 +60,8 @@ type TypeFromConfig<Config, ConfigTypeSet = TypeSetFromConfig<Config>> = {
         : ParseType<TypeDefFromConfig<Config>[K], ConfigTypeSet>
 }
 
-export type ExactProperties<
-    Compare,
-    Base,
-    C = Compare,
-    B = Recursible<Base>
-> = {
-    [K in keyof C]: K extends keyof B
-        ? IsAnyOrUnknown<C[K]> extends true
-            ? B[K]
-            : C[K] extends B[K]
-            ? C[K] extends NonRecursible
-                ? C[K]
-                : ExactProperties<C[K], B[K]>
-            : B[K]
-        : `Invalid property '${Extract<
-              K,
-              string | number
-          >}'. Valid properties are: ${StringifyKeys<B>}`
-}
-
 export type ModelConfig<Config, ConfigTypeSet, ConfigType> = {
-    [K in keyof Config]: ExactProperties<
+    [K in keyof Config]: ExactObject<
         Config[K],
         ModelConfigRecurse<
             KeyValuate<ConfigType, K>,
@@ -284,7 +225,7 @@ export const createStore = <
         // actions?: A
     }
 ) => {
-    return {} as ConfigTypeSet //Store<ConfigType, Config, TypeSet>
+    return {} as ConfigType //Store<ConfigType, Config, TypeSet>
 }
 
 const store = createStore({
@@ -307,6 +248,9 @@ const store = createStore({
             name: {
                 type: "string",
                 onChange: (_) => ""
+            },
+            members: {
+                type: "user[]"
             }
         }
     },
@@ -495,12 +439,7 @@ const store = createStore({
 //             groups: {
 //                 type: "group[]",
 //                 onChange: (_) =>
-//                     _.forEach((group) => console.log(group.description)),
-//                 fields: {
-//                     name: {
-//                         onChange: (_) => {}
-//                     }
-//                 }
+//                     _.forEach((group) => console.log(group.description))
 //             },
 //             nested: {
 //                 fields: {
@@ -533,7 +472,6 @@ const store = createStore({
 //     },
 //     groups: {
 //         defines: "group",
-//         idKey: "",
 //         fields: {
 //             name: {
 //                 type: "string",

@@ -2,108 +2,52 @@ import {
     FlatUnlisted,
     IsList,
     isRecursible,
-    MinusOne,
-    TransformCyclic,
-    NonRecursible,
     And,
     Segment,
-    Join,
-    DefaultDelimiter,
-    Cast,
-    Split,
-    ListPossibleTypes,
-    ElementOf,
-    PropertyOf,
-    Evaluate,
-    Stringifiable,
-    ValueOf,
-    Iteration,
     List,
-    Recursible
+    Recursible,
+    ElementOf,
+    PlusOne,
+    MinusOne,
+    KeyValuate,
+    Evaluate,
+    Split
 } from "./common.js"
 import { WithDefaults, withDefaults } from "./merge.js"
-import { Narrow } from "./Narrow.js"
-import { InvalidPropertyError } from "./Exact.js"
+import { narrow } from "./Narrow.js"
+import { NumericString } from "./transformString.js"
 
-export type ValueAtPath<
-    O,
-    P extends string,
-    Options extends ValueAtPathOptions = {}
-> = ValueAtPathList<
-    O,
-    Split<P, EnsureValue<Options["delimiter"], "/">>,
-    EnsureValue<Options["excludeArrayIndices"], false>
->
-
-export type ValueAtPathList<
-    O,
-    Segments extends Segment[],
-    ExcludeArrayIndices extends boolean = false
-> = And<ExcludeArrayIndices, IsList<O>> extends true
-    ? ValueAtPathList<FlatUnlisted<O>, Segments, ExcludeArrayIndices>[]
-    : Segments extends [infer Current, ...infer Remaining]
-    ? Current extends keyof O
-        ? ValueAtPathList<
-              O[Current],
-              Remaining extends string[] ? Remaining : never,
-              ExcludeArrayIndices
-          >
-        : undefined
-    : O
-
-export type ValueAtPathOptions = {
+export type PathOptions = {
     delimiter?: string
     excludeArrayIndices?: boolean
 }
 
-export const defaultValueAtPathOptions = {
+export const defaultPathOptions = narrow({
     delimiter: "/",
     excludeArrayIndices: false
-} as const
+})
 
-export type DefaultValueAtPathOptions = typeof defaultValueAtPathOptions
+export type DefaultPathOptions = typeof defaultPathOptions
 
-const withDefaultValueAtPathOptions = withDefaults<ValueAtPathOptions>(
-    defaultValueAtPathOptions
-)
+const withDefaultValueAtPathOptions =
+    withDefaults<PathOptions>(defaultPathOptions)
 
 export const valueAtPath = <
-    O,
-    P extends string,
-    ProvidedOptions extends ValueAtPathOptions = {},
-    Options extends Required<ValueAtPathOptions> = WithDefaults<
-        ValueAtPathOptions,
+    Obj,
+    Path extends string,
+    ProvidedOptions extends PathOptions = {},
+    Options extends Required<PathOptions> = WithDefaults<
+        PathOptions,
         ProvidedOptions,
-        DefaultValueAtPathOptions
+        DefaultPathOptions
     >
 >(
-    o: O,
-    path: PathOf<P, O>,
+    obj: Obj,
+    path: PathOf<Obj, Path, Options>,
     options?: ProvidedOptions
-): ValueAtPath<O, P, Options> => {
-    const optionsWithDefaults = withDefaultValueAtPathOptions(options)
-    return valueAtPathList(
-        o as any,
-        (path as string).split(optionsWithDefaults.delimiter) as any,
-        withDefaultValueAtPathOptions(optionsWithDefaults) as any
-    )
-}
-
-export const valueAtPathList = <
-    O,
-    P extends Segment[],
-    ProvidedOptions extends ValueAtPathOptions = {},
-    Options extends Required<ValueAtPathOptions> = WithDefaults<
-        ValueAtPathOptions,
-        ProvidedOptions,
-        DefaultValueAtPathOptions
-    >
->(
-    o: O,
-    segments: PathListOf<Narrow<P>, O>,
-    options?: ProvidedOptions
-): ValueAtPathList<O, P, Options["excludeArrayIndices"]> => {
-    const { excludeArrayIndices } = withDefaultValueAtPathOptions(options)
+): ValueAtPath<Obj, Path, Options> => {
+    const { excludeArrayIndices, delimiter } =
+        withDefaultValueAtPathOptions(options)
     const recurse = (value: any, segments: Segment[]): any => {
         if (Array.isArray(value) && excludeArrayIndices) {
             return value.map((_) => recurse(_, segments))
@@ -118,179 +62,137 @@ export const valueAtPathList = <
             return undefined
         }
     }
-    return recurse(o, segments)
+    return recurse(obj, (path as any).split(delimiter) as any)
 }
-
-const obj = {
-    a: {
-        b: {
-            c: 31
-        }
-    },
-    d: [{ e: true }, "redo"] as const,
-    f: [255],
-    g: [{ a: true }, { a: false }]
-}
-
-const x = valueAtPath(obj, "a")
 
 export type Fallback<Value, Default> = unknown extends Value ? Default : Value
 export type EnsureValue<Value, Default> = NonNullable<Fallback<Value, Default>>
 
-export type PathConstraintOptions = {
-    leavesOnly?: boolean
-    filter?: any
-    exclude?: any
-    treatAsLeaf?: any
-    excludeArrayIndices?: boolean
-    maxDepth?: number
-}
+type CountNestedLists<T, Count extends number = 0> = T extends List<infer Item>
+    ? CountNestedLists<Item, PlusOne<Count>>
+    : Count
 
-export type PathConstraints = Required<PathConstraintOptions>
+type NestInLists<T, Count extends number> = Count extends 0
+    ? T
+    : NestInLists<[T], MinusOne<Count>>
 
-export type DefaultPathConstraints = {
-    leavesOnly: false
-    filter: any
-    exclude: never
-    treatAsLeaf: never
-    excludeArrayIndices: false
-    maxDepth: 10
-}
-
-export type StringPathConstraintOptions = PathConstraintOptions & {
-    delimiter?: string
-}
-export type DefaultStringPathConstraints = DefaultPathConstraints & {
-    delimiter: "/"
-}
-
-export type PathListOf<
-    P extends Segment[],
-    T,
-    ProvidedConstraints extends PathConstraintOptions = {},
-    Constraints extends PathConstraints = WithDefaults<
-        PathConstraintOptions,
-        ProvidedConstraints,
-        DefaultPathConstraints
-    >
-> = Cast<PathListOfRecurse<T, P, Constraints, []>, Segment[]>
-
-type PathListOfRecurse<
-    T,
-    PathRemaining extends Segment[],
-    Constraints extends Required<PathConstraintOptions>,
-    PathSoFar extends Segment[]
-> = PathRemaining extends Iteration<Segment, infer Current, infer Remaining>
-    ? Current extends keyof T
-        ? PathListOfRecurse<
-              And<IsList<T>, Constraints["excludeArrayIndices"]> extends true
-                  ? FlatUnlisted<T[Current]>
-                  : T[Current],
-              Remaining,
-              Constraints,
-              [...PathSoFar, Current]
-          >
-        : [...PathSoFar, InvalidPropertyError<T, Current>]
-    : T extends Constraints["exclude"]
-    ? [
-          ...PathSoFar,
-          `The value at path '${Join<
-              PathSoFar,
-              DefaultDelimiter
-          >}' is of an excluded type.`
-      ]
-    : T extends Constraints["filter"]
-    ? [...PathSoFar, ...PathRemaining]
-    : [
-          ...PathSoFar,
-          `The value at path '${Join<
-              PathSoFar,
-              DefaultDelimiter
-          >}' is not of a filtered type.`
-      ]
-
-// type PathOfRecurse<
-//     T,
-//     PathRemaining extends string,
-//     Constraints extends Required<StringPathConstraintOptions>,
-//     PathSoFar extends string
-// > = PathRemaining extends `${infer Current}${Constraints["delimiter"]}${infer Remaining}`
-//     ? Current extends keyof T
-//         ? PathOfRecurse<
-//               And<IsList<T>, Constraints["excludeArrayIndices"]> extends true
-//                   ? FlatUnlisted<T[Current]>
-//                   : T[Current],
-//               Remaining,
-//               Constraints,
-//               `${PathSoFar}${Current}${Constraints["delimiter"]}`
-//           >
-//         : `${PathSoFar}${InvalidPropertyError<T, Current>}`
-//     : PathRemaining extends keyof T
-//     ? `${PathSoFar}${PathRemaining}`
-//     : `${PathSoFar}${InvalidPropertyError<T, PathRemaining>}`
-
-type PathOfRecurse<
-    O,
+export type ValueAtPathRecurse<
+    Obj,
     RemainingPath extends string,
-    Constraints extends Required<StringPathConstraintOptions>,
-    ValidatedPath extends string,
-    T = Recursible<O>,
-    KeyOfT extends keyof T & string = `${keyof T &
-        (T extends List ? number : string)}` &
-        keyof T,
-    PathSuggestions extends string = `${ValidatedPath}${KeyOfT}`
-> = RemainingPath extends `${infer Current}${Constraints["delimiter"]}${infer Remaining}`
-    ? Current extends KeyOfT
-        ? PathOfRecurse<
+    PossiblyUndefined extends boolean,
+    ProvidedOptions extends PathOptions,
+    SkippedListCount extends number,
+    O = Recursible<Obj>,
+    Options extends Required<PathOptions> = WithDefaults<
+        PathOptions,
+        ProvidedOptions,
+        DefaultPathOptions
+    >,
+    KeyOfO extends keyof O = RecursibleKeyOf<O>,
+    NextPossiblyUndefined extends boolean = undefined extends Obj
+        ? true
+        : PossiblyUndefined,
+    CurrentKey extends keyof O = GetRecursibleKey<
+        O,
+        Split<RemainingPath, Options["delimiter"]>[0]
+    >
+> = RemainingPath extends `${infer Current}${Options["delimiter"]}${infer Remaining}`
+    ? CurrentKey extends never
+        ? undefined
+        : ValueAtPathRecurse<
               And<
-                  IsList<T[Current]>,
-                  Constraints["excludeArrayIndices"]
+                  IsList<O[CurrentKey]>,
+                  Options["excludeArrayIndices"]
               > extends true
-                  ? FlatUnlisted<T[Current]>
-                  : T[Current],
+                  ? FlatUnlisted<O[CurrentKey]>
+                  : O[CurrentKey],
               Remaining,
-              Constraints,
-              `${ValidatedPath}${Current}${Constraints["delimiter"]}`
+              NextPossiblyUndefined,
+              Options,
+              Options["excludeArrayIndices"] extends true
+                  ? CountNestedLists<O[CurrentKey], SkippedListCount>
+                  : 0
           >
-        : PathSuggestions
-    : RemainingPath extends keyof T
-    ? `${ValidatedPath}${RemainingPath | KeyOfT}`
+    : StringOrNumericKey<RemainingPath> extends KeyOfO
+    ? NestInLists<
+          | O[StringOrNumericKey<RemainingPath>]
+          | (NextPossiblyUndefined extends true ? undefined : never),
+          SkippedListCount
+      >
+    : undefined
+
+export type ValueAtPath<
+    Obj,
+    Path extends string,
+    ProvidedOptions extends PathOptions = {},
+    Options extends Required<PathOptions> = WithDefaults<
+        PathOptions,
+        ProvidedOptions,
+        DefaultPathOptions
+    >
+> = ValueAtPathRecurse<Obj, Path, false, Options, 0>
+
+type RecursibleKeyOf<Obj, O = Recursible<Obj>> = O extends any[]
+    ? keyof O & number
+    : O extends readonly any[]
+    ? keyof O & NumericString
+    : keyof O & string
+
+type StringOrNumericKey<K extends string> = K extends NumericString<infer Value>
+    ? Value
+    : K
+
+type GetRecursibleKey<Obj, K extends string> = keyof Obj &
+    (Obj extends any[]
+        ? K extends NumericString<infer Value>
+            ? Value
+            : never
+        : K)
+
+export type PathOfRecurse<
+    Obj,
+    RemainingPath extends string,
+    ValidatedPath extends string,
+    ProvidedOptions extends PathOptions,
+    O = Recursible<Obj>,
+    Options extends Required<PathOptions> = WithDefaults<
+        PathOptions,
+        ProvidedOptions,
+        DefaultPathOptions
+    >,
+    KeyOfO extends keyof O & Segment = RecursibleKeyOf<O>,
+    PathSuggestions extends string = KeyOfO extends number
+        ? `${ValidatedPath}${0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9}`
+        : `${ValidatedPath}${KeyOfO}`,
+    CurrentKey extends keyof O = GetRecursibleKey<
+        O,
+        Split<RemainingPath, Options["delimiter"]>[0]
+    >
+> = RemainingPath extends `${infer Current}${Options["delimiter"]}${infer Remaining}`
+    ? CurrentKey extends never
+        ? PathSuggestions
+        : PathOfRecurse<
+              And<
+                  IsList<O[CurrentKey]>,
+                  Options["excludeArrayIndices"]
+              > extends true
+                  ? FlatUnlisted<O[CurrentKey]>
+                  : O[CurrentKey],
+              Remaining,
+              `${ValidatedPath}${Current}${Options["delimiter"]}`,
+              Options
+          >
+    : StringOrNumericKey<RemainingPath> extends KeyOfO
+    ? `${ValidatedPath}${RemainingPath | KeyOfO}`
     : PathSuggestions
 
 export type PathOf<
-    P extends string,
-    T,
-    ProvidedConstraints extends StringPathConstraintOptions = {},
-    Constraints extends Required<StringPathConstraintOptions> = WithDefaults<
-        StringPathConstraintOptions,
-        ProvidedConstraints,
-        DefaultStringPathConstraints
+    Obj,
+    Path extends string,
+    ProvidedOptions extends PathOptions = {},
+    Options extends Required<PathOptions> = WithDefaults<
+        PathOptions,
+        ProvidedOptions,
+        DefaultPathOptions
     >
-> = PathOfRecurse<T, P, Constraints, "">
-
-type Obj = typeof obj
-type XM = Obj["d"] extends any[] ? true : false
-
-type Z = PathOf<"a/x", typeof obj, {}>
-
-type FFDS = {
-    a?: {
-        b?: [""]
-    }
-}
-
-const zf = valueAtPath({} as FFDS, "a/b/0")
-
-export type PathTo<
-    P extends string,
-    T,
-    To,
-    Constraints extends Omit<
-        StringPathConstraintOptions,
-        "filter" | "treatAsLeaf" | "leavesOnly"
-    > = {}
-> = PathOf<
-    P,
-    T,
-    { filter: To; treatAsLeaf: To; leavesOnly: true } & Constraints
->
+> = PathOfRecurse<Obj, Path, "", Options>
