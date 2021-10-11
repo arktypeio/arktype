@@ -327,13 +327,16 @@ export type Store<
     IdKey extends string = "id",
     Path extends string = ""
 > = {
-    [K in keyof Data]: K extends keyof Config
+    [K in keyof Data]: Data[K] extends NonRecursible
+        ? Data[K]
+        : K extends keyof Config
         ? "stores" extends keyof Config[K]
             ? Interactions<Unlisted<Data[K]> & object, IdKey>
             : Store<
                   Data[K],
                   Config[K],
                   ConfigTypeSet,
+                  StoredTypes,
                   `${Path}/${K & Stringifiable}`,
                   IdKey
               >
