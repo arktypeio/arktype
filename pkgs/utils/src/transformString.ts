@@ -16,6 +16,15 @@ export const isNumeric = (s: any) => asNumber(s) !== null
 
 export type AsNumberOptions = { asFloat?: boolean }
 
+export type StringOrNumberFrom<
+    K,
+    Original = K & (string | number)
+> = Original extends number
+    ? Original | `${Original}`
+    : Original extends NumericString<infer Value>
+    ? Value | Original
+    : Original
+
 export const asNumber = (s: any, options?: AsNumberOptions) => {
     const parseNumber = options?.asFloat ? Number.parseFloat : Number.parseInt
     const result = parseNumber(String(s))

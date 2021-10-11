@@ -94,24 +94,28 @@ describe("exact object", () => {
                         b: string | null
                         c: string | boolean
                     }
+                    c: "this is required"
                 }
             >
         >
         expectType<{
             a: "hi"
-            nested:
-                | {
-                      a: string | number
-                      b: string | null
-                      c: string | boolean
-                  }
-                | undefined
+            nested: {
+                a: "hello"
+                b: string | null
+                c: string | boolean
+            }
+            c: "this is required"
         }>(result)
     })
 
     test("any/unknown", () => {
         const first = {} as DeepEvaluate<Exact<{ a: any }, { a: string }>>
         expectType<{ a: string }>(first)
+        const second = {} as DeepEvaluate<
+            ExactObject<{ a: { b: "nested" } }, { a: unknown }>
+        >
+        expectType<{ a: { b: "nested" } }>(second)
     })
 
     test("unions", () => {

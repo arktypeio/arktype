@@ -6,7 +6,8 @@ import {
     NonRecursible,
     Recursible,
     RequiredKeys,
-    StringifyKeys
+    Stringifiable,
+    StringifyPossibleTypes
 } from "./common.js"
 
 export type ExactFunction<Compare, Base> = Compare extends Base
@@ -33,23 +34,30 @@ export type Exact<Compare, Base> = IsAnyOrUnknown<Compare> extends true
           }
     : Base
 
-// Notes:
-// Bails out as soon as it detects Compare is not assignable to Base as opposed to only comparing recursibles
-// Can't detect missing keys at top level
-// Used in statelessly to preserve exact types, as for some reason normal Exact breaks them
-export type ExactObject<Compare, Base, C = Compare, B = Recursible<Base>> = {
+export type ExactObject<
+    Compare,
+    Base,
+    C = Recursible<Compare>,
+    B = Recursible<Base>,
+    MissingKeys extends Key = Exclude<RequiredKeys<B>, keyof C>
+> = {
     [K in keyof C]: K extends keyof B
         ? IsAnyOrUnknown<C[K]> extends true
             ? B[K]
-            : C[K] extends B[K]
-            ? C[K] extends NonRecursible
-                ? C[K]
-                : ExactObject<C[K], B[K]>
-            : B[K]
-        : InvalidPropertyError<Base, K>
-}
+            : IsAnyOrUnknown<B[K]> extends true
+            ? C[K]
+            : C[K] extends NonRecursible
+            ? B[K] extends NonRecursible
+                ? C[K] extends B[K]
+                    ? C[K]
+                    : B[K]
+                : B[K]
+            : ExactObject<Recursible<C[K]>, B[K]>
+        : InvalidPropertyError<B, K>
+} &
+    { [K in MissingKeys]: K extends keyof B ? B[K] : never }
 
-export type InvalidPropertyError<O, Property> = `Invalid property '${Extract<
-    Property,
-    string | number
->}'. Valid properties are: ${StringifyKeys<O>}`
+export type InvalidPropertyError<O, Property> = `Invalid property '${Property &
+    Stringifiable}'. Valid properties are: ${StringifyPossibleTypes<
+    keyof O & Stringifiable
+>}`

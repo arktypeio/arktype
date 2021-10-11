@@ -482,10 +482,6 @@ export type Segment = string | number
 
 export type DefaultDelimiter = "/"
 
-export type StringifyKeys<O> = StringifyPossibleTypes<
-    O extends any[] ? keyof O & number : keyof O & string
->
-
 export type Stringifiable =
     | string
     | number

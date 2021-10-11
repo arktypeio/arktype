@@ -9,7 +9,9 @@ import {
     GetRequiredKeys,
     WithRequiredKeysIfPresent,
     Entry,
-    OptionalOnly
+    OptionalOnly,
+    ListPossibleTypes,
+    Stringifiable
 } from "./common.js"
 import { ExcludedByKey } from "./excludeKeys.js"
 import { transform } from "./transform.js"
@@ -46,17 +48,15 @@ export type Merge<
     ? Merged
     : Merged extends any[] | NonRecursible
     ? Base
-    : Evaluate<
-          TypeToPreserve &
-              {
-                  [K in keyof TypeToMerge]: And<
-                      Options["deep"],
-                      K extends keyof Base ? true : false
-                  > extends true
-                      ? Merge<Base[K & keyof Base], TypeToMerge[K], Options>
-                      : TypeToMerge[K]
-              }
-      >
+    : TypeToPreserve &
+          {
+              [K in keyof TypeToMerge]: And<
+                  Options["deep"],
+                  K extends keyof Base ? true : false
+              > extends true
+                  ? Merge<Base[K & keyof Base], TypeToMerge[K], Options>
+                  : TypeToMerge[K]
+          }
 
 export type MergeAll<
     Objects,
@@ -71,6 +71,10 @@ export type FromEntries<
 > = Entries extends Iteration<Entry, infer Current, infer Remaining>
     ? FromEntries<Remaining, Merge<Result, { [K in Current[0]]: Current[1] }>>
     : Result
+
+export type Invert<O> = FromEntries<
+    ListPossibleTypes<{ [K in keyof O]: [O[K], K] }[keyof O]>
+>
 
 export type MergeOptions = {
     deep?: boolean
