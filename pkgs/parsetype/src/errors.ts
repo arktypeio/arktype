@@ -1,9 +1,9 @@
 import { stringify, StringReplace } from "@re-do/utils"
 
 export const definitionTypeError = (definition: unknown, path: string[]) =>
-    `Definition value '${stringify(definition)} at path '${path.join(
+    `Definition value ${stringify(definition)} at path ${path.join(
         "/"
-    )}' is invalid. ${baseDefinitionTypeError}`
+    )} is invalid. ${baseDefinitionTypeError}`
 
 export const baseDefinitionTypeError = "Definitions must be strings or objects."
 

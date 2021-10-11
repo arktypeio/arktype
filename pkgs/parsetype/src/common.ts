@@ -65,6 +65,11 @@ export type FunctionDefinition<
     Return extends string = string
 > = `(${Parameters})=>${Return}`
 
+export const isAFunctionDefinition = <D extends string>(definition: D) =>
+    /\(.*\)\=\>.*/.test(definition) as D extends FunctionDefinition
+        ? true
+        : false
+
 export type ListDefinition<Definition extends string = string> =
     `${Definition}[]`
 

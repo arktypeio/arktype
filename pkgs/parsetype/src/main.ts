@@ -15,6 +15,7 @@ import {
 import { typeDefProxy, UnvalidatedTypeSet, formatTypes } from "./common.js"
 import { ParseType, ParseTypeSetDefinitions } from "./parse.js"
 import { checkErrors, assert, ValidateOptions } from "./validate.js"
+import { getDefault, GetDefaultOptions } from "./defaults.js"
 
 export const declare = <DeclaredTypeNames extends string[]>(
     ...names: Narrow<DeclaredTypeNames>
@@ -59,7 +60,9 @@ export const declare = <DeclaredTypeNames extends string[]>(
                             formattedDefinition,
                             activeTypeSet,
                             options
-                        )
+                        ),
+                    getDefault: (options: GetDefaultOptions = {}) =>
+                        getDefault(formattedDefinition, activeTypeSet, options)
                 }
             },
             types: typeDefProxy as Evaluate<

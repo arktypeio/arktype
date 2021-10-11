@@ -14,12 +14,12 @@ import {
     ExtractableTypeName,
     extractableTypes,
     formatTypes,
-    FunctionDefinition,
     UnextractableTypeName,
     unextractableTypes,
     UnvalidatedDefinition,
     UnvalidatedObjectDefinition,
-    UnvalidatedTypeSet
+    UnvalidatedTypeSet,
+    isAFunctionDefinition
 } from "./common.js"
 import { definitionTypeError, unknownTypeError } from "./errors.js"
 
@@ -126,11 +126,6 @@ export const shallowCycleError = ({ defined, seen, typeSet }: RecurseArgs) =>
         ...seen,
         defined
     ].join("=>")}.`
-
-export const isAFunctionDefinition = <D extends string>(definition: D) =>
-    /\(.*\)\=\>.*/.test(definition) as D extends FunctionDefinition
-        ? true
-        : false
 
 export type RecurseArgs<
     Defined = UnvalidatedDefinition,

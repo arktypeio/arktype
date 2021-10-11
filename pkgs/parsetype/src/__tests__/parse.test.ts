@@ -68,7 +68,7 @@ describe("parse", () => {
             const result = parse({ bad: true })
             expectError<{ bad: DefinitionTypeError }>(result.type)
         }).toThrowErrorMatchingInlineSnapshot(
-            `"Definition value 'true at path 'bad' is invalid. Definitions must be strings or objects."`
+            `"Definition value true at path bad is invalid. Definitions must be strings or objects."`
         )
     })
     test("with typeset", () => {

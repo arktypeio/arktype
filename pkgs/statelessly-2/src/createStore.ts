@@ -16,7 +16,8 @@ import {
     InvalidPropertyError,
     Evaluate,
     Merge,
-    Invert
+    Invert,
+    updateMap
 } from "@re-do/utils"
 import {
     ParseType,
@@ -24,6 +25,12 @@ import {
     TypeSet,
     ComponentTypesOfStringDefinition
 } from "parsetype"
+import {
+    configureStore,
+    ConfigureStoreOptions,
+    Middleware,
+    Store as ReduxStore
+} from "@reduxjs/toolkit"
 
 /**
  * This is a hacky version of ExactObject from @re-do/utils that accomodates anomalies
@@ -68,8 +75,6 @@ type TypeNamesToResolverPathsRecurse<Config, Path extends string> = {
 type TypeNamesToResolverPaths<Config> = FromEntries<
     ListPossibleTypes<TypeNamesToResolverPathsRecurse<Config, "">>
 >
-
-type ResolverPathsToTypeNames<Config> = Invert<TypeNamesToResolverPaths<Config>>
 
 type TypeDefFromConfig<Config> = {
     [K in keyof Config]: IsAnyOrUnknown<Config[K]> extends true
@@ -255,6 +260,11 @@ type ModelConfigFieldOptions<
     }
 >
 
+export type ReduxOptions = Omit<
+    ConfigureStoreOptions,
+    "preloadedState" | "reducer"
+>
+
 export const createStore = <
     Config extends ModelConfig<Config, ConfigTypeSet, ConfigType>,
     OptionsTypeSet = {},
@@ -267,6 +277,7 @@ export const createStore = <
     options?: {
         predefined?: TypeSet<OptionsTypeSet>
         actions?: A
+        reduxOptions?: ReduxOptions
     }
 ) => {
     return {} as Store<ConfigType, Config, ConfigTypeSet, StoredTypes>
@@ -316,8 +327,6 @@ const store = createStore({
         }
     }
 })
-    .users.all()
-    .map((_) => _.groups)
 
 export type Store<
     Data,
@@ -405,20 +414,17 @@ export type Update<T> = DeepUpdate<T>
 //     user.groups.map((_) => _)
 // })
 
-export type Interactions<O extends object, IdKey extends string> = {
-    // create: <U extends boolean = true>(o: O) => Data<O, IdKey, U>
-    all: () => SimpleUnpack<O, IdKey>[]
-    // find: <U extends boolean = true>(
-    //     by: FindBy<Data<O, IdKey, U>>
-    // ) => Data<O, IdKey, U>
-    // filter: <U extends boolean = true>(
-    //     by: FindBy<Data<O, IdKey, U>>
-    // ) => Data<O, IdKey, U>[]
-    // remove: <U extends boolean = true>(by: FindBy<Data<O, IdKey, U>>) => void
-    // update: (
-    //     by: FindBy<Data<O, IdKey, false>>,
-    //     update: DeepUpdate<Data<O, IdKey, false>>
-    // ) => void
+export type Interactions<
+    O extends object,
+    IdKey extends string,
+    Unpacked extends object = SimpleUnpack<O, IdKey>
+> = {
+    create: (data: O) => Unpacked
+    all: () => Unpacked[]
+    find: (by: FindBy<Unpacked>) => Unpacked
+    filter: (by: FindBy<Unpacked>) => Unpacked
+    remove: (by: FindBy<Unpacked>) => void
+    update: (by: FindBy<Unpacked>, update: DeepUpdate<O>) => Unpacked
 }
 
 // export type Unpack<
@@ -452,7 +458,7 @@ export type Interactions<O extends object, IdKey extends string> = {
 //         : O[K]
 // }
 
-// export type FindBy<O extends object> = (o: O) => boolean
+export type FindBy<O extends object> = (o: O) => boolean
 
 // export type Shallow<O> = LimitDepth<O, 1, number>
 
