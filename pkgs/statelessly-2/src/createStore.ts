@@ -15,9 +15,11 @@ import {
     IsAnyOrUnknown,
     InvalidPropertyError,
     Evaluate,
+    DeepUpdate,
     Merge,
     Invert,
-    updateMap
+    updateMap,
+    DeepEvaluate
 } from "@re-do/utils"
 import {
     ParseType,
@@ -92,12 +94,14 @@ type TypeSetFromConfig<
     Config,
     DefinedTypes = TypeNamesToResolverPaths<Config>,
     TypeDef = TypeDefFromConfig<Config>
-> = {
-    [TypeName in keyof DefinedTypes]: ValueAtPath<
-        TypeDef,
-        DefinedTypes[TypeName] & string
-    >
-}
+> = Evaluate<
+    {
+        [TypeName in keyof DefinedTypes]: ValueAtPath<
+            TypeDef,
+            DefinedTypes[TypeName] & string
+        >
+    }
+>
 
 type TypeFromConfig<Config, ConfigTypeSet> = {
     [K in keyof Config]: "stores" extends keyof Config[K]
@@ -280,7 +284,7 @@ export const createStore = <
         reduxOptions?: ReduxOptions
     }
 ) => {
-    return {} as Store<ConfigType, Config, ConfigTypeSet, StoredTypes>
+    return {} as DeepEvaluate<ConfigType>
 }
 
 const store = createStore({
@@ -339,17 +343,32 @@ export type Store<
     [K in keyof Data]: Data[K] extends NonRecursible
         ? Data[K]
         : K extends keyof Config
-        ? "stores" extends keyof Config[K]
-            ? Interactions<Unlisted<Data[K]> & object, IdKey>
-            : Store<
+        ? InteractionsOrStore<
+              Store<
                   Data[K],
                   Config[K],
                   ConfigTypeSet,
                   StoredTypes,
                   `${Path}/${K & Stringifiable}`,
                   IdKey
-              >
+              >,
+              "stores" extends keyof Config[K] ? true : false
+          >
         : Data[K]
+}
+
+export type InteractionsOrStore<
+    Input,
+    IsStoredType extends boolean
+> = IsStoredType extends true ? Interactions<Input> : Input
+
+export type Interactions<Input, Stored = Input> = {
+    create: (data: Input) => Stored
+    all: () => Stored[]
+    find: (by: FindBy<Stored>) => Stored
+    filter: (by: FindBy<Stored>) => Stored
+    remove: (by: FindBy<Stored>) => void
+    update: (by: FindBy<Stored>, update: DeepUpdate<Input>) => Stored
 }
 
 export type SimpleUnpack<O, IdKey extends string, Seen = O> = {
@@ -357,9 +376,6 @@ export type SimpleUnpack<O, IdKey extends string, Seen = O> = {
         ? number
         : SimpleUnpack<O[K], IdKey, Seen | O> & { [K in IdKey]: number }
 }
-
-import { DeepPartial, DeepUpdate, LimitDepth } from "@re-do/utils"
-export type { Middleware } from "redux"
 
 export type StoreInput = Record<string, any>
 
@@ -373,170 +389,6 @@ export type Actions<Input> = Record<
     Update<Input> | UpdateFunction<Input>
 >
 
-// export type Query<T> = {
-//     [P in keyof T]?: Unlisted<T[P]> extends NonRecursible
-//         ? true
-//         : Query<Unlisted<T[P]>> | true
-// }
+export type FindBy<T> = (t: T) => boolean
 
 export type Update<T> = DeepUpdate<T>
-
-// export type ActionData<T> = {
-//     type: string
-//     payload: DeepPartial<T>
-//     meta: {
-//         statelessly: true
-//         bypassOnChange?: boolean
-//     }
-// }
-
-// export type StoreActions<A extends Actions<StoreInput>> = {
-//     [K in keyof A]: A[K] extends (...args: any) => any
-//         ? (
-//               ...args: RemoveContextFromArgs<Parameters<A[K]>>
-//           ) => ReturnType<A[K]> extends Promise<any> ? Promise<void> : void
-//         : () => void
-// }
-
-// // This allows us to convert from the user provided actions, which can use context to access
-// // the store in their definitions, to actions as they are attached to the Store, which do not
-// // require context as a parameter as it is passed internally
-
-// type RemoveContextFromArgs<T extends unknown[]> = T extends []
-//     ? []
-//     : T extends [infer Current, ...infer Rest]
-//     ? Current extends Store<any, any, any>
-//         ? RemoveContextFromArgs<Rest>
-//         : [Current, ...RemoveContextFromArgs<Rest>]
-//     : T
-
-// store.users.all().forEach((user) => {
-//     user.groups.map((_) => _)
-// })
-
-export type Interactions<
-    O extends object,
-    IdKey extends string,
-    Unpacked extends object = SimpleUnpack<O, IdKey>
-> = {
-    create: (data: O) => Unpacked
-    all: () => Unpacked[]
-    find: (by: FindBy<Unpacked>) => Unpacked
-    filter: (by: FindBy<Unpacked>) => Unpacked
-    remove: (by: FindBy<Unpacked>) => void
-    update: (by: FindBy<Unpacked>, update: DeepUpdate<O>) => Unpacked
-}
-
-// export type Unpack<
-//     O,
-//     Definition,
-//     Entities,
-//     IdKey extends string,
-//     SeenEntityName = never,
-//     EntityNames extends string[] = ListPossibleTypes<keyof Entities>,
-//     BaseEntityName = Definition extends string
-//         ? ComponentTypesOfStringDefinition<Definition & string, EntityNames>
-//         : null
-// > = {
-//     [K in keyof O]: K extends keyof Definition
-//         ? Definition[K] extends string
-//             ? BaseEntityName extends keyof Entities
-//                 ? BaseEntityName extends SeenEntityName
-//                     ? number
-//                     : WithId<
-//                           Unpack<
-//                               O[K],
-//                               Entities[BaseEntityName],
-//                               Entities,
-//                               IdKey,
-//                               SeenEntityName | BaseEntityName
-//                           >,
-//                           IdKey
-//                       >
-//                 : O[K]
-//             : Unpack<O[K], Definition[K], Entities, IdKey, SeenEntityName>
-//         : O[K]
-// }
-
-export type FindBy<O extends object> = (o: O) => boolean
-
-// export type Shallow<O> = LimitDepth<O, 1, number>
-
-// export type ShallowWithId<
-//     O extends object,
-//     IdFieldName extends string
-// > = WithId<Shallow<O>, IdFieldName>
-
-// export type WithId<O extends object, IdFieldName extends string> = O &
-//     Record<IdFieldName extends string ? IdFieldName : never, number>
-
-// export type WithIds<O extends object, IdFieldName extends string> = WithId<
-//     {
-//         [K in keyof O]: O[K] extends object ? WithIds<O[K], IdFieldName> : O[K]
-//     },
-//     IdFieldName
-// >
-
-// const store2 = createStore({
-//     users: {
-//         defines: "user",
-//         fields: {
-//             name: {
-//                 type: "string",
-//                 onChange: (_) => {}
-//             },
-//             unknownF: {
-//                 type: "string",
-//                 onChange: () => {}
-//             },
-//             bestFriend: "user",
-//             friends: {
-//                 type: "user[]"
-//             },
-//             groups: {
-//                 type: "group[]",
-//                 onChange: (_) =>
-//                     _.forEach((group) => console.log(group.description))
-//             },
-//             nested: {
-//                 fields: {
-//                     another: {
-//                         type: "string",
-//                         onChange: () => {}
-//                     },
-//                     user: {
-//                         type: "user[]",
-//                         onChange: () => {}
-//                     }
-//                 }
-//             }
-//         }
-//     },
-//     str: "string",
-//     grp: {
-//         type: "group | user"
-//     },
-//     zo: "group",
-//     preferences: {
-//         fields: {
-//             darkMode: "boolean",
-//             advanced: {
-//                 fields: {
-//                     bff: "user?"
-//                 }
-//             }
-//         }
-//     },
-//     groups: {
-//         defines: "group",
-//         fields: {
-//             name: {
-//                 type: "string",
-//                 onChange: () => {}
-//             },
-//             description: "string?",
-//             members: "user[]",
-//             owner: "user"
-//         }
-//     }
-// })
