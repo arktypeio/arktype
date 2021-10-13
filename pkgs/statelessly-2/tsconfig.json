@@ -2,7 +2,9 @@
     "extends": "@re-do/configs/tsconfig.base",
     "compilerOptions": {
         "baseUrl": "src",
-        "outDir": "dist"
+        "outDir": "dist",
+        "module": "nodenext",
+        "resolveJsonModule": false
     },
     "include": ["src"]
 }

@@ -20,7 +20,7 @@
     },
     "scripts": {
         "build": "echo No build required",
-        "buildDev": "redo-build",
+        "buildDev": "tsc",
         "test": "echo No tests",
         "testDev": "jest"
     },

@@ -19,7 +19,8 @@ import {
     Merge,
     Invert,
     updateMap,
-    DeepEvaluate
+    DeepEvaluate,
+    valueAtPath
 } from "@re-do/utils"
 import {
     ParseType,
@@ -27,6 +28,8 @@ import {
     TypeSet,
     ComponentTypesOfStringDefinition
 } from "parsetype"
+// As of TS 4.5.0-beta, this is required to avoid TS2742
+import { StringDefinition } from "parsetype/dist/cjs/definitions"
 import {
     configureStore,
     ConfigureStoreOptions,
@@ -40,25 +43,18 @@ import {
  * - Assumes Compare is passed as an arg directly and therefore will always be a simple
  *   object, so we don't have to worry about things like optional properties that only exist
  *   on a type. We do still have to worry about any/unknown as they can be inferred.
- * - Bails out as soon as it detects Compare is not assignable to Base as opposed to only
- *   comparing recursibles
  * - Can't detect missing required keys at top level
  */
-export type ValidatedConfig<
-    Compare,
-    Base,
-    C = Compare,
-    B = Recursible<Base>
-> = {
-    [K in keyof C]: K extends keyof B
-        ? IsAnyOrUnknown<C[K]> extends true
-            ? B[K]
-            : C[K] extends B[K]
-            ? C[K] extends NonRecursible
-                ? C[K]
-                : ValidatedConfig<C[K], B[K]>
-            : B[K]
-        : InvalidPropertyError<B, K>
+export type ValidatedConfig<Config, Options, Opts = Recursible<Options>> = {
+    [K in keyof Config]: K extends keyof Opts
+        ? IsAnyOrUnknown<Config[K]> extends true
+            ? Opts[K]
+            : Config[K] extends NonRecursible
+            ? Config[K] extends Opts[K]
+                ? Config[K]
+                : Opts[K]
+            : ValidatedConfig<Config[K], Opts[K]>
+        : InvalidPropertyError<Opts, K>
 }
 
 type TypeNamesToResolverPathsRecurse<Config, Path extends string> = {
@@ -76,6 +72,60 @@ type TypeNamesToResolverPathsRecurse<Config, Path extends string> = {
 
 type TypeNamesToResolverPaths<Config> = FromEntries<
     ListPossibleTypes<TypeNamesToResolverPathsRecurse<Config, "">>
+>
+
+/**
+ * Create an entry whose key represents a path whose type is resolved from the config
+ * to the path at which it is resolved. Will return never for built-in types (e.g. string)
+ * or types that are defined in the options typeset.
+ **/
+type PathResolutionEntry<
+    TypeDef extends string,
+    Path extends string,
+    ResolverPaths,
+    DeclaredTypeNames extends string[],
+    BaseTypes = ComponentTypesOfStringDefinition<TypeDef, DeclaredTypeNames>
+> = BaseTypes extends keyof ResolverPaths
+    ? [Path, ResolverPaths[BaseTypes]]
+    : never
+
+type ResolvedConfigPathsRecurse<
+    TypeDef,
+    Path extends string,
+    ResolverPaths,
+    DeclaredTypeNames extends string[]
+> = Evaluate<
+    {
+        [K in keyof TypeDef]: TypeDef[K] extends string
+            ? PathResolutionEntry<
+                  TypeDef[K],
+                  `${Path}${K & string}`,
+                  ResolverPaths,
+                  DeclaredTypeNames
+              >
+            : ResolvedConfigPathsRecurse<
+                  TypeDef[K],
+                  `${Path}${K & string}/`,
+                  ResolverPaths,
+                  DeclaredTypeNames
+              >
+    }[keyof TypeDef]
+>
+
+type ResolvedConfigPaths<
+    Config,
+    TypeDef = TypeDefFromConfig<Config>,
+    ResolverPaths = TypeNamesToResolverPaths<Config>,
+    DeclaredTypeNames extends string[] = ListPossibleTypes<keyof ResolverPaths>
+> = FromEntries<
+    ListPossibleTypes<
+        ResolvedConfigPathsRecurse<
+            TypeDef,
+            "",
+            ResolverPaths,
+            DeclaredTypeNames
+        >
+    >
 >
 
 type TypeDefFromConfig<Config> = {
@@ -274,8 +324,8 @@ export const createStore = <
     OptionsTypeSet = {},
     ConfigTypeSet = OptionsTypeSet & TypeSetFromConfig<Config>,
     ConfigType = TypeFromConfig<Config, ConfigTypeSet>,
-    A extends Actions<ConfigType> = {},
-    StoredTypes = TypeNamesToResolverPaths<Config>
+    StoredTypeResolutions = ResolvedConfigPaths<Config>,
+    A extends Actions<ConfigType> = {}
 >(
     config: Narrow<Config>,
     options?: {
@@ -284,7 +334,15 @@ export const createStore = <
         reduxOptions?: ReduxOptions
     }
 ) => {
-    return {} as DeepEvaluate<ConfigType>
+    return {} as Store<
+        ConfigType,
+        Config,
+        ConfigTypeSet,
+        Config,
+        StoredTypeResolutions,
+        "",
+        false
+    >
 }
 
 const store = createStore({
@@ -299,7 +357,8 @@ const store = createStore({
                 type: "group[]",
                 onChange: (_) => {}
             },
-            bestFriend: "user"
+            bestFriend: "user",
+            favoriteColor: "color"
         }
     },
     groups: {
@@ -332,35 +391,58 @@ const store = createStore({
     }
 })
 
+// Even if type isn't in config, need to follow a "types" path so it can e.g. go from
+// a type from options typeset back to a stored type from config which allows us to infer
+// IDs should be added
+
 export type Store<
     Data,
     Config,
     ConfigTypeSet,
-    StoredTypes,
-    IdKey extends string = "id",
-    Path extends string = ""
-> = {
-    [K in keyof Data]: Data[K] extends NonRecursible
-        ? Data[K]
-        : K extends keyof Config
-        ? InteractionsOrStore<
-              Store<
-                  Data[K],
-                  Config[K],
+    ConfigRoot,
+    StoredTypeResolutions,
+    Path extends string,
+    Resolved extends boolean
+> = Evaluate<
+    {
+        [K in keyof Data]: Data[K] extends NonRecursible
+            ? Data[K]
+            : InteractionsOrStoreForKey<
+                  K,
+                  Data,
+                  Config,
                   ConfigTypeSet,
-                  StoredTypes,
-                  `${Path}/${K & Stringifiable}`,
-                  IdKey
-              >,
-              "stores" extends keyof Config[K] ? true : false
-          >
-        : Data[K]
-}
+                  ConfigRoot,
+                  StoredTypeResolutions,
+                  `${Path}/${K & string}`,
+                  Resolved
+              >
+    }
+>
 
-export type InteractionsOrStore<
-    Input,
-    IsStoredType extends boolean
-> = IsStoredType extends true ? Interactions<Input> : Input
+export type InteractionsOrStoreForKey<
+    K extends keyof Data,
+    Data,
+    Config,
+    ConfigTypeSet,
+    ConfigRoot,
+    StoredTypeResolutions,
+    Path extends string,
+    Resolved extends boolean,
+    ResolvePath = KeyValuate<StoredTypeResolutions, Path>
+> = "stores" extends keyof Config
+    ? Interactions<Data[K]>
+    : Store<
+          Data[K],
+          ResolvePath extends string
+              ? ValueAtPath<ConfigRoot, ResolvePath>
+              : KeyValuate<Config, K>,
+          ConfigTypeSet,
+          ConfigRoot,
+          StoredTypeResolutions,
+          Path,
+          Resolved | ResolvePath extends string ? true : false
+      >
 
 export type Interactions<Input, Stored = Input> = {
     create: (data: Input) => Stored
