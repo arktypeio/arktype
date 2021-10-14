@@ -12,7 +12,8 @@ import {
     Split,
     Join,
     Unlisted,
-    Narrow
+    Narrow,
+    WithDefaults
 } from "@re-do/utils"
 import {
     OrDefinition,
@@ -23,11 +24,6 @@ import {
     FunctionDefinition
 } from "./common.js"
 import { DefinitionTypeError, UnknownTypeError } from "./errors.js"
-
-export type ComponentTypesOfStringDefinition<
-    Definition extends string,
-    DeclaredTypeNames extends string[]
-> = StringDefinition<Definition, DeclaredTypeNames, true>
 
 export type OrDefinitionRecurse<
     First extends string,
@@ -148,7 +144,7 @@ export type StringDefinitionRecurse<
 export type StringDefinition<
     Definition extends string,
     DeclaredTypeNames extends string[],
-    ReturnBaseName extends boolean = false,
+    ExtractBaseNames extends boolean,
     ParsableDefinition extends string = RemoveSpaces<Definition>
 > = StringDefinitionRecurse<
     ParsableDefinition extends OptionalDefinition<infer Optional>
@@ -156,28 +152,48 @@ export type StringDefinition<
         : ParsableDefinition,
     Definition,
     DeclaredTypeNames,
-    ReturnBaseName
+    ExtractBaseNames
 >
 
 export type ObjectDefinition<
     Definition,
-    DeclaredTypeNames extends string[]
+    DeclaredTypeNames extends string[],
+    ExtractBaseNames extends boolean
 > = Evaluate<
     {
         [PropName in keyof Definition]: TypeDefinition<
             Definition[PropName],
-            DeclaredTypeNames
+            DeclaredTypeNames,
+            { extractBaseNames: ExtractBaseNames }
         >
     }
 >
 
+export type TypeDefinitionOptions = {
+    extractBaseNames?: boolean
+}
+
 export type TypeDefinition<
     Definition,
-    DeclaredTypeNames extends string[]
+    DeclaredTypeNames extends string[],
+    ProvidedOptions extends TypeDefinitionOptions = {},
+    Options extends Required<TypeDefinitionOptions> = WithDefaults<
+        TypeDefinitionOptions,
+        ProvidedOptions,
+        { extractBaseNames: false }
+    >
 > = Definition extends string
-    ? StringDefinition<Definition, DeclaredTypeNames>
+    ? StringDefinition<
+          Definition,
+          DeclaredTypeNames,
+          Options["extractBaseNames"]
+      >
     : Definition extends UnvalidatedObjectDefinition<Definition>
-    ? ObjectDefinition<Definition, DeclaredTypeNames>
+    ? ObjectDefinition<
+          Definition,
+          DeclaredTypeNames,
+          Options["extractBaseNames"]
+      >
     : DefinitionTypeError
 
 export type TypeDefinitions<
@@ -194,12 +210,12 @@ export type TypeDefinitions<
 
 export type TypeSet<
     TypeSet,
-    TypeNames extends keyof TypeSet & string = keyof TypeSet & string
-> = {
-    [TypeName in TypeNames]: TypeDefinition<
-        TypeSet[TypeName],
-        ListPossibleTypes<TypeNames>
+    ExternalTypeName extends string = never,
+    TypeNames extends string[] = ListPossibleTypes<
+        keyof TypeSet | ExternalTypeName
     >
+> = {
+    [TypeName in keyof TypeSet]: TypeDefinition<TypeSet[TypeName], TypeNames>
 }
 
 export type TypeSetFromDefinitions<Definitions> = MergeAll<

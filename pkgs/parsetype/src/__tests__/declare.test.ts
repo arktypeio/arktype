@@ -1,5 +1,6 @@
-import { declare } from ".."
+import { declare, TypeSet } from ".."
 import { expectType, expectError } from "tsd"
+import { Evaluate } from "@re-do/utils"
 
 describe("declare", () => {
     test("single", () => {
@@ -35,5 +36,18 @@ describe("declare", () => {
             CantDefineThis: "boolean",
             WontDefineThis: "string"
         })
+    })
+    test("extends typeset", () => {
+        let t: Evaluate<TypeSet<{ a: "b"; c: { a: "a" } }, "b">>
+        expectType<{
+            a: "b"
+            c: {
+                a: "a"
+            }
+        }>(t!)
+        let broken: Evaluate<TypeSet<{ a: "b" }, "c" | "d">>
+        expectType<{
+            a: "Unable to determine the type of 'b'."
+        }>(broken!)
     })
 })

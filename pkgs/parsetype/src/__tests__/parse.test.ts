@@ -1,4 +1,4 @@
-import { parse } from ".."
+import { parse, TypeDefinition } from ".."
 import { expectType, expectError } from "tsd"
 import { DefinitionTypeError } from "../errors.js"
 
@@ -86,5 +86,39 @@ describe("parse", () => {
         expectType<boolean | null>(stringResult)
         const objectResult = parse({ nested: "number|    true" })
         expectType<{ nested: number | true }>(objectResult.type)
+    })
+    test("extract base names of string", () => {
+        let t: TypeDefinition<
+            "(user[],group[])=>boolean|number|null",
+            ["user", "group"],
+            { extractBaseNames: true }
+        >
+        expectType<"number" | "boolean" | "user" | "group" | "null">(t!)
+    })
+    test("extract base names of object", () => {
+        let t: TypeDefinition<
+            {
+                a: { b: { c: "user[]?" } }
+                listed: [
+                    "group|null",
+                    "user|null",
+                    "(string, number)=>function"
+                ]
+            },
+            ["user", "group"],
+            { extractBaseNames: true }
+        >
+        expectType<{
+            a: {
+                b: {
+                    c: "user"
+                }
+            }
+            listed: [
+                "group" | "null",
+                "user" | "null",
+                "string" | "number" | "function"
+            ]
+        }>(t!)
     })
 })
