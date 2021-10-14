@@ -1,6 +1,5 @@
 import React from "react"
 import {
-    CssBaseline,
     useTheme as useMuiTheme,
     createTheme as createMuiTheme,
     ThemeOptions,
@@ -43,10 +42,7 @@ export type DefaultThemeProps = {
     children: JSX.Element
 }
 export const DefaultTheme = ({ children }: DefaultThemeProps) => (
-    <ThemeProvider theme={defaultTheme}>
-        <CssBaseline />
-        {children}
-    </ThemeProvider>
+    <ThemeProvider theme={defaultTheme}>{children}</ThemeProvider>
 )
 export const T = DefaultTheme
 export type Theme = typeof defaultTheme
