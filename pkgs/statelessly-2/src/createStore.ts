@@ -79,10 +79,6 @@ type GetStoredTypesToPaths<Config> = FromEntries<
     ListPossibleTypes<FindStoredTypesRecurse<Config, "", false>>
 >
 
-type GetStoredPathsToTypes<Config> = FromEntries<
-    ListPossibleTypes<FindStoredTypesRecurse<Config, "", true>>
->
-
 type DefinitionFromConfig<Config, UseStoredTypes extends boolean> = {
     [K in keyof Config]: IsAnyOrUnknown<Config[K]> extends true
         ? never
@@ -100,11 +96,18 @@ type DefinitionFromConfig<Config, UseStoredTypes extends boolean> = {
         : TypeError<`Untyped config`>
 }
 
-type CompileStoredTypeSet<RawModelDefinition, ResolvedTypes> = Evaluate<
+type TypeSetFromConfig<
+    RawModelDefinition,
+    StoredTypesToPaths,
+    ExternalTypeSet
+> = Evaluate<
     {
-        [TypeName in keyof ResolvedTypes]: ValueAtPath<
+        [TypeName in Exclude<
+            keyof StoredTypesToPaths,
+            keyof ExternalTypeSet
+        >]: ValueAtPath<
             RawModelDefinition,
-            ResolvedTypes[TypeName] & string
+            StoredTypesToPaths[TypeName] & string
         >
     }
 >
@@ -273,21 +276,16 @@ export const createStore = <
     Config extends StoreConfig<Config, FullTypeSet, Model>,
     RawModelDefinition = DefinitionFromConfig<Config, false>,
     StoredTypesToPaths = GetStoredTypesToPaths<Config>,
-    StoredTypeSet = CompileStoredTypeSet<
-        RawModelDefinition,
-        StoredTypesToPaths
-    >,
     ExternalTypeSet = {},
-    FullTypeSet = ExternalTypeSet & StoredTypeSet,
+    ConfigTypeSet = TypeSetFromConfig<
+        RawModelDefinition,
+        StoredTypesToPaths,
+        ExternalTypeSet
+    >,
+    FullTypeSet = ExternalTypeSet & ConfigTypeSet,
     ModelDefinition = DefinitionFromConfig<Config, true>,
     Model = ParseType<ModelDefinition, FullTypeSet>,
     DeclaredTypeNames extends string[] = ListPossibleTypes<keyof FullTypeSet>,
-    // StoredTypeReferences = ResolvedConfigPaths<
-    //     RawModelDefinition,
-    //     StoredTypesToPaths,
-    //     DeclaredTypeNames,
-    //     ExternalTypeSet
-    // >,
     A extends Actions<Model> = {}
 >(
     config: Narrow<Config>,
@@ -301,7 +299,7 @@ export const createStore = <
         Model,
         ModelDefinition,
         StoredTypesToPaths,
-        StoredTypeSet,
+        ConfigTypeSet,
         ExternalTypeSet,
         DeclaredTypeNames
     >
@@ -341,9 +339,7 @@ const store = createStore(
                 darkMode: "boolean",
                 colors: {
                     stores: "color",
-                    type: {
-                        RGB: "string"
-                    }
+                    type: "color"
                 }
             }
         },
@@ -361,6 +357,9 @@ const store = createStore(
                 users: "user[]",
                 groups: "group[]",
                 adjacentCities: "city[]"
+            },
+            color: {
+                RGB: "string"
             }
         }
     }
@@ -370,7 +369,7 @@ type Store<
     Model,
     ModelDefinition,
     StoredTypesToPaths,
-    StoredTypeSet,
+    ConfigTypeSet,
     ExternalTypeSet,
     DeclaredTypeNames extends string[]
 > = StoreRecurse<
@@ -383,7 +382,7 @@ type Store<
     "",
     StoredTypesToPaths,
     TypeDefinition<
-        StoredTypeSet,
+        ConfigTypeSet,
         DeclaredTypeNames,
         { extractBaseNames: true }
     >,
@@ -399,70 +398,88 @@ type StoreRecurse<
     TypesReferenced,
     Path extends string,
     StoredTypesToPaths,
-    StoredTypeNames,
+    ConfigTypeNames,
     ExternalTypeNames
 > = Path extends ValueOf<StoredTypesToPaths>
     ? Interactions<Model>
+    : Model extends NonRecursible
+    ? Model
     : Model extends Array<infer Item>
     ? StoreRecurse<
           Item,
           TypesReferenced,
           Path,
           StoredTypesToPaths,
-          StoredTypeNames,
+          ConfigTypeNames,
           ExternalTypeNames
       >[]
-    : ObjectStoreRecurse<
-          Model,
-          TypesReferenced,
-          Path,
-          StoredTypesToPaths,
-          StoredTypeNames,
-          ExternalTypeNames
-      >
+    : (TypesReferenced extends keyof StoredTypesToPaths ? { id: number } : {}) &
+          StoreObject<
+              Model,
+              TypesReferenced,
+              Path,
+              StoredTypesToPaths,
+              ConfigTypeNames,
+              ExternalTypeNames
+          >
 
-type ObjectStoreRecurse<
+type StoreObject<
     Model,
     TypesReferenced,
     Path extends string,
     StoredTypesToPaths,
-    StoredTypeNames,
+    ConfigTypeNames,
     ExternalTypeNames
 > = {
-    [K in keyof Model]: Model[K] extends NonRecursible
-        ? Model[K]
-        : StoreRecurse<
-              Model[K],
-              ResolveTypeReferences<
-                  KeyValuate<TypesReferenced, K>,
-                  never,
-                  StoredTypeNames,
-                  ExternalTypeNames
-              >,
-              `${Path}${Path extends "" ? "" : "/"}${K & string}`,
-              StoredTypesToPaths,
-              StoredTypeNames,
-              ExternalTypeNames
-          >
+    [K in keyof Model]: StoreRecurse<
+        Model[K],
+        ResolveTypeReferences<
+            KeyValuate<TypesReferenced, K>,
+            never,
+            keyof StoredTypesToPaths,
+            ExternalTypeNames
+        >,
+        `${Path}${Path extends "" ? "" : "/"}${K & string}`,
+        StoredTypesToPaths,
+        ConfigTypeNames,
+        ExternalTypeNames
+    >
 }
 
 type ResolveTypeReferences<
     TypesReferenced,
     Seen,
-    StoredBaseNames,
-    ExternalBaseNames
-> = TypesReferenced extends keyof StoredBaseNames
-    ? TypesReferenced
-    : TypesReferenced extends keyof ExternalBaseNames
-    ? TypesReferenced extends Seen
-        ? "seen"
-        : ResolveTypeReferences<
-              ExternalBaseNames[TypesReferenced],
-              Seen | TypesReferenced,
-              StoredBaseNames,
-              ExternalBaseNames
-          >
-    : TypesReferenced
+    StoredTypeName,
+    ExternalBaseNames,
+    TypeReferences = ListPossibleTypes<TypesReferenced>
+> = ValueOf<
+    {
+        [Index in keyof TypeReferences]: TypeReferences[Index] extends StoredTypeName
+            ? TypeReferences[Index]
+            : TypeReferences[Index] extends keyof ExternalBaseNames
+            ? TypeReferences[Index] extends Seen
+                ? TypesReferenced
+                : ResolveTypeReferences<
+                      ExternalBaseNames[TypeReferences[Index]],
+                      Seen | TypeReferences[Index],
+                      StoredTypeName,
+                      ExternalBaseNames
+                  >
+            : TypeReferences[Index]
+    }
+>
+// TypesReferenced extends StoredTypeName
+// ? TypesReferenced
+// : TypesReferenced extends keyof ExternalBaseNames
+// ? TypesReferenced extends Seen
+//     ? TypesReferenced
+//     : ResolveTypeReferences<
+//           ExternalBaseNames[TypesReferenced],
+//           Seen | TypesReferenced,
+//           StoredTypeName,
+//           ExternalBaseNames
+//       >
+// : TypesReferenced
 
 export type Interactions<Model, Input = Unlisted<Model>, Stored = Input> = {
     create: (data: Input) => Stored
