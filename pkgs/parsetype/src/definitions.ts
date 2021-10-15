@@ -30,20 +30,20 @@ export type OrDefinitionRecurse<
     Second extends string,
     Root extends string,
     DeclaredTypeNames extends string[],
-    ReturnComponentTypes extends boolean,
+    ExtractTypesReferenced extends boolean,
     ValidateFirst = StringDefinitionRecurse<
         First,
         First,
         DeclaredTypeNames,
-        ReturnComponentTypes
+        ExtractTypesReferenced
     >,
     ValidateSecond = StringDefinitionRecurse<
         Second,
         Second,
         DeclaredTypeNames,
-        ReturnComponentTypes
+        ExtractTypesReferenced
     >
-> = ReturnComponentTypes extends true
+> = ExtractTypesReferenced extends true
     ? ValidateFirst | ValidateSecond
     : First extends ValidateFirst
     ? Second extends ValidateSecond
@@ -55,7 +55,7 @@ export type TupleDefinitionRecurse<
     Definition extends string,
     Root extends string,
     DeclaredTypeNames extends string[],
-    ReturnComponentTypes extends boolean,
+    ExtractTypesReferenced extends boolean,
     Definitions extends string[] = Split<Definition, ",">,
     ValidateDefinitions extends string[] = Definition extends ""
         ? []
@@ -64,11 +64,11 @@ export type TupleDefinitionRecurse<
                   Definitions[Index] & string,
                   Definitions[Index] & string,
                   DeclaredTypeNames,
-                  ReturnComponentTypes
+                  ExtractTypesReferenced
               >
           },
     ValidatedDefinition extends string = Join<ValidateDefinitions, ",">
-> = ReturnComponentTypes extends true
+> = ExtractTypesReferenced extends true
     ? Unlisted<ValidateDefinitions>
     : Definition extends ValidatedDefinition
     ? Root
@@ -85,21 +85,21 @@ export type FunctionDefinitionRecurse<
     Return extends string,
     Root extends string,
     DeclaredTypeNames extends string[],
-    ReturnComponentTypes extends boolean,
+    ExtractTypesReferenced extends boolean,
     ValidateParameters extends string = TupleDefinitionRecurse<
         Parameters,
         Parameters,
         DeclaredTypeNames,
-        ReturnComponentTypes
+        ExtractTypesReferenced
     > &
         string,
     ValidateReturn extends string = StringDefinitionRecurse<
         Return,
         Return,
         DeclaredTypeNames,
-        ReturnComponentTypes
+        ExtractTypesReferenced
     >
-> = ReturnComponentTypes extends true
+> = ExtractTypesReferenced extends true
     ? ValidateParameters | ValidateReturn
     : Parameters extends ValidateParameters
     ? Return extends ValidateReturn
@@ -111,14 +111,14 @@ export type StringDefinitionRecurse<
     Fragment extends string,
     Root extends string,
     DeclaredTypeNames extends string[],
-    ReturnComponentTypes extends boolean
+    ExtractTypesReferenced extends boolean
 > = Fragment extends OrDefinition<infer First, infer Second>
     ? OrDefinitionRecurse<
           First,
           Second,
           Root,
           DeclaredTypeNames,
-          ReturnComponentTypes
+          ExtractTypesReferenced
       >
     : Fragment extends FunctionDefinition<infer Parameters, infer Return>
     ? FunctionDefinitionRecurse<
@@ -126,17 +126,17 @@ export type StringDefinitionRecurse<
           Return,
           Root,
           DeclaredTypeNames,
-          ReturnComponentTypes
+          ExtractTypesReferenced
       >
     : Fragment extends ListDefinition<infer ListItem>
     ? StringDefinitionRecurse<
           ListItem,
           Root,
           DeclaredTypeNames,
-          ReturnComponentTypes
+          ExtractTypesReferenced
       >
     : Fragment extends ElementOf<DeclaredTypeNames> | BuiltInTypeName
-    ? ReturnComponentTypes extends true
+    ? ExtractTypesReferenced extends true
         ? Fragment
         : Root
     : UnknownTypeError<Fragment>
@@ -144,33 +144,38 @@ export type StringDefinitionRecurse<
 export type StringDefinition<
     Definition extends string,
     DeclaredTypeNames extends string[],
-    ExtractBaseNames extends boolean,
-    ParsableDefinition extends string = RemoveSpaces<Definition>
-> = StringDefinitionRecurse<
-    ParsableDefinition extends OptionalDefinition<infer Optional>
-        ? Optional
-        : ParsableDefinition,
-    Definition,
-    DeclaredTypeNames,
-    ExtractBaseNames
->
+    ExtractTypesReferenced extends boolean,
+    ParsableDefinition extends string = RemoveSpaces<Definition>,
+    ValidationResult extends string = StringDefinitionRecurse<
+        ParsableDefinition extends OptionalDefinition<infer Optional>
+            ? Optional
+            : ParsableDefinition,
+        Definition,
+        DeclaredTypeNames,
+        ExtractTypesReferenced
+    >
+> = ValidationResult
+
+// ExtractTypesReferenced extends true
+// ? ListPossibleTypes<ValidationResult>
+// : ValidationResult
 
 export type ObjectDefinition<
     Definition,
     DeclaredTypeNames extends string[],
-    ExtractBaseNames extends boolean
+    ExtractTypesReferenced extends boolean
 > = Evaluate<
     {
         [PropName in keyof Definition]: TypeDefinition<
             Definition[PropName],
             DeclaredTypeNames,
-            { extractBaseNames: ExtractBaseNames }
+            { extractTypesReferenced: ExtractTypesReferenced }
         >
     }
 >
 
 export type TypeDefinitionOptions = {
-    extractBaseNames?: boolean
+    extractTypesReferenced?: boolean
 }
 
 export type TypeDefinition<
@@ -180,19 +185,19 @@ export type TypeDefinition<
     Options extends Required<TypeDefinitionOptions> = WithDefaults<
         TypeDefinitionOptions,
         ProvidedOptions,
-        { extractBaseNames: false }
+        { extractTypesReferenced: false }
     >
 > = Definition extends string
     ? StringDefinition<
           Definition,
           DeclaredTypeNames,
-          Options["extractBaseNames"]
+          Options["extractTypesReferenced"]
       >
     : Definition extends UnvalidatedObjectDefinition<Definition>
     ? ObjectDefinition<
           Definition,
           DeclaredTypeNames,
-          Options["extractBaseNames"]
+          Options["extractTypesReferenced"]
       >
     : DefinitionTypeError
 

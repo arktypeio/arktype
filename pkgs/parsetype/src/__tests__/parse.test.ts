@@ -1,6 +1,7 @@
 import { parse, TypeDefinition } from ".."
 import { expectType, expectError } from "tsd"
 import { DefinitionTypeError } from "../errors.js"
+import { ElementOf, DeepUnlisted, Unlisted, NumericString } from "@re-do/utils"
 
 describe("parse", () => {
     test("built-in", () => {
@@ -87,16 +88,16 @@ describe("parse", () => {
         const objectResult = parse({ nested: "number|    true" })
         expectType<{ nested: number | true }>(objectResult.type)
     })
-    test("extract base names of string", () => {
-        let t: TypeDefinition<
+    test("extract types referenced from string", () => {
+        type Def = TypeDefinition<
             "(user[],group[])=>boolean|number|null",
             ["user", "group"],
-            { extractBaseNames: true }
+            { extractTypesReferenced: true }
         >
-        expectType<"number" | "boolean" | "user" | "group" | "null">(t!)
+        expectType<"number" | "boolean" | "user" | "group" | "null">({} as Def)
     })
     test("extract base names of object", () => {
-        let t: TypeDefinition<
+        type Def = TypeDefinition<
             {
                 a: { b: { c: "user[]?" } }
                 listed: [
@@ -106,7 +107,7 @@ describe("parse", () => {
                 ]
             },
             ["user", "group"],
-            { extractBaseNames: true }
+            { extractTypesReferenced: true }
         >
         expectType<{
             a: {
@@ -119,6 +120,6 @@ describe("parse", () => {
                 "user" | "null",
                 "string" | "number" | "function"
             ]
-        }>(t!)
+        }>({} as Def)
     })
 })
