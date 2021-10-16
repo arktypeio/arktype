@@ -338,7 +338,7 @@ export const createStore = <
         reduxOptions?: ReduxOptions
     }
 ) => {
-    return {} as DeepEvaluate<Model>
+    return {} as Store<Model, StoredTypesToPaths>
 }
 
 const store = createStore(
@@ -400,6 +400,15 @@ const store = createStore(
         }
     }
 )
+
+export type Store<Model, StoredTypesToPaths, Path extends string = ""> = {
+    [K in keyof Model]: `${Path}${K &
+        string}` extends ValueOf<StoredTypesToPaths>
+        ? Interactions<Model[K]>
+        : Model[K] extends NonRecursible
+        ? Model[K]
+        : Store<Model[K], StoredTypesToPaths, `${Path}${K & string}/`>
+}
 
 export type Interactions<Model, Input = Unlisted<Model>, Stored = Input> = {
     create: (data: Input) => Stored
