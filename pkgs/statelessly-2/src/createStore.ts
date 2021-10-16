@@ -17,7 +17,8 @@ import {
     And,
     ValueOf,
     DeepEvaluate,
-    Or
+    Or,
+    DeepExcludedByKeys
 } from "@re-do/utils"
 import { ParseType, TypeDefinition, TypeSet } from "parsetype"
 import {
@@ -401,6 +402,12 @@ const store = createStore(
     }
 )
 
+const { id } = store.users.create({
+    name: "Hi",
+    groups: [],
+    favoriteColor: { RGB: "255,255,255" }
+})
+
 export type Store<Model, StoredTypesToPaths, Path extends string = ""> = {
     [K in keyof Model]: `${Path}${K &
         string}` extends ValueOf<StoredTypesToPaths>
@@ -410,7 +417,11 @@ export type Store<Model, StoredTypesToPaths, Path extends string = ""> = {
         : Store<Model[K], StoredTypesToPaths, `${Path}${K & string}/`>
 }
 
-export type Interactions<Model, Input = Unlisted<Model>, Stored = Input> = {
+export type Interactions<
+    Model,
+    Input = DeepExcludedByKeys<Unlisted<Model>, ["id"]>,
+    Stored = Unlisted<Model>
+> = {
     create: (data: Input) => Stored
     all: () => Stored[]
     find: (by: FindBy<Stored>) => Stored
