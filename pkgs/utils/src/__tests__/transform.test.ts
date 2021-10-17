@@ -7,6 +7,35 @@ const o = {
     c: 3
 }
 
+const deepO = {
+    a: o,
+    b: o
+}
+
+// const mapLeavesToPaths: EntryMapper = ([k, v], { path }) => [
+//     k,
+//     path.length === 2 ? path : v
+// ]
+
+// test("deepMap", () => {
+//     const result = transform(deepO, mapLeavesToPaths)
+//     expect(result).toStrictEqual(pathsOfDeepO)
+// })
+
+// test("deepMap recurse condition", () => {
+//     const result = transform(deepO, mapLeavesToPaths, {
+//         recurseWhen: ([k, v], { path }) => k === "b" && path.includes("b")
+//     })
+//     expect(result).toStrictEqual({ a: o, b: pathsOfDeepO.b })
+// })
+
+// test("deepMap filter condition", () => {
+//     const result = transform(deepO, (_) => _, {
+//         filterWhen: ([k, v]) => k === "a"
+//     })
+//     expect(result).toStrictEqual({ b: { b: 2, c: 3 } })
+// })
+
 describe("transform", () => {
     test("objects", () => {
         expect(transform(o, ([k, v]) => [k.toUpperCase(), -v])).toStrictEqual({
@@ -34,14 +63,14 @@ describe("transform", () => {
         expectType<boolean[]>(inferredAsArrayResult)
         expect(inferredAsArrayResult).toStrictEqual([false, true])
         const specifiedAsArrayResult = transform(a, ([i, v]) => [i, !v], {
-            asValueArray: false
+            asValueArray: "forceRecord"
         })
         expectType<Record<number, boolean>>(specifiedAsArrayResult)
         expect(specifiedAsArrayResult).toStrictEqual({ 0: false, 1: true })
         const specifiedValueArrayResult = transform(
             { a: 3.14, b: 159 },
             ([k, v]) => [k, `${v}`],
-            { asValueArray: true }
+            { asValueArray: "forceArray" }
         )
         expectType<string[]>(specifiedValueArrayResult)
         expect(specifiedValueArrayResult).toStrictEqual(["3.14", "159"])

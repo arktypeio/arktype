@@ -184,49 +184,6 @@ export const asserted = <T>(value: T, description?: string) => {
     return value as NonNullable<T>
 }
 
-export type DeepMapContext = {
-    path: string[]
-}
-
-export type EntryChecker = (entry: Entry, context: DeepMapContext) => boolean
-
-export type EntryMapper = (entry: Entry, context: DeepMapContext) => Entry
-
-export type DeepMapOptions = {
-    recurseWhen?: EntryChecker
-    filterWhen?: EntryChecker
-}
-
-export const deepMap = <T>(
-    from: T,
-    map: EntryMapper,
-    { recurseWhen, filterWhen }: DeepMapOptions = {}
-): T => {
-    const recurse = (currentFrom: any, { path }: DeepMapContext): any =>
-        fromEntries(
-            Object.entries(currentFrom).reduce((mappedEntries, [k, v]) => {
-                const contextForKey = {
-                    path: path.concat(k)
-                }
-                if (filterWhen && filterWhen([k, v], contextForKey)) {
-                    return mappedEntries
-                }
-                const shouldRecurse =
-                    isRecursible(v) &&
-                    (!recurseWhen || recurseWhen([k, v], contextForKey))
-                return [
-                    ...mappedEntries,
-                    map(
-                        [k, shouldRecurse ? recurse(v, contextForKey) : v],
-                        contextForKey
-                    )
-                ]
-            }, [] as Entry[]),
-            Array.isArray(currentFrom)
-        )
-    return recurse(from, { path: [] })
-}
-
 export type PathMap = { [key: string]: PathMap }
 
 export const mapPaths = (paths: string[][]) => {

@@ -27,7 +27,8 @@ import {
     NeverEmptyObject,
     Iteration,
     IntersectProps,
-    DeepPartial
+    DeepPartial,
+    filter
 } from "@re-do/utils"
 import { ParseType, TypeDefinition, TypeSet } from "parsetype"
 import {
@@ -303,101 +304,12 @@ export const createStore = <
         idKey?: IdKey
     }
 ) => {
-    return {} as Store<Model, StoredLocations, IdKey>
+    const modelTypeSet = filter(config, { deep: true })
+    const getStoreProxy = (): any =>
+        new Proxy({}, { get: () => getStoreProxy() })
+    const store = getStoreProxy()
+    return store as Store<Model, StoredLocations, IdKey>
 }
-
-const store = getStore()
-
-function getStore() {
-    return createStore(
-        {
-            users: {
-                defines: "user",
-                fields: {
-                    name: {
-                        type: "string",
-                        onChange: () => ":-)"
-                    },
-                    groups: {
-                        type: "group[]",
-                        onChange: () => {}
-                    },
-                    bestFriend: "user?",
-                    favoriteColor: "color",
-                    address: {
-                        fields: {
-                            street: "string",
-                            number: "number",
-                            unit: "number?",
-                            city: "city"
-                        }
-                    }
-                }
-            },
-            groups: {
-                defines: "group",
-                fields: {
-                    name: {
-                        type: "string",
-                        onChange: (_) => ""
-                    },
-                    members: {
-                        type: "user[]"
-                    }
-                }
-            },
-            preferences: {
-                fields: {
-                    darkMode: "boolean",
-                    colors: {
-                        stores: "color"
-                    },
-                    others: {
-                        defines: "other",
-                        type: {
-                            other: "string"
-                        }
-                    }
-                }
-            },
-            cache: {
-                fields: {
-                    currentUser: "user|null",
-                    currentCity: "city",
-                    lastObject: "user|group?",
-                    cityOrUser: "user|city"
-                }
-            }
-        },
-        {
-            typeSet: {
-                city: {
-                    users: "user[]",
-                    groups: "group[]",
-                    adjacentCities: "city[]"
-                },
-                color: {
-                    RGB: "string"
-                }
-            }
-        }
-    )
-}
-
-const { id } = getStore().users.create({
-    name: "Hi",
-    groups: [],
-    favoriteColor: 0,
-    address: {
-        street: "Sagamore Rd",
-        number: 5,
-        city: {
-            users: [],
-            groups: [1],
-            adjacentCities: []
-        }
-    }
-})
 
 export type Store<Model, StoredLocations, IdKey extends string> = {
     [K in keyof Model]: K extends keyof StoredLocations
@@ -426,22 +338,34 @@ export type Interactions<
 > = {
     create: (data: Input) => Stored
     all: () => Stored[]
-    find: (by: FindBy<Stored>) => Stored
-    filter: (by: FindBy<Stored>) => Stored[]
-    remove: (by: FindBy<Stored>) => void
-    update: (by: FindBy<Stored>, update: DeepUpdate<Input>) => Stored
+    find: (by: FindArgs<Stored>) => Stored
+    filter: (by: FindArgs<Stored>) => Stored[]
+    with: (by: FindArgs<Stored>) => {
+        remove: () => Stored
+        update: (update: DeepUpdate<Input>) => Stored
+    }
+    where: (by: FindArgs<Stored>) => {
+        remove: () => Stored[]
+        update: (update: DeepUpdate<Input>) => Stored[]
+    }
 }
 
 export type UpdateFunction<Input> = (
     args: any,
     context: any
-) => Update<Input> | Promise<Update<Input>>
+) => DeepUpdate<Input> | Promise<DeepUpdate<Input>>
 
 export type Actions<Input> = Record<
     string,
-    Update<Input> | UpdateFunction<Input>
+    DeepUpdate<Input> | UpdateFunction<Input>
 >
 
-export type FindBy<T> = DeepPartial<T> | ((t: T) => boolean)
+export type FindArgs<T> = DeepPartial<T> | ((t: T) => boolean)
 
-export type Update<T> = DeepUpdate<T>
+export type FindFunction<T, Multiple extends boolean> = <
+    Args extends FindArgs<T>
+>(
+    args: Args
+) => Multiple extends true ? T[] : T
+
+export type FilterFunction<T> = <Args extends FindArgs<T>>(args: Args) => T[]
