@@ -18,7 +18,15 @@ import {
     ValueOf,
     DeepEvaluate,
     Or,
-    DeepExcludedByKeys
+    DeepExcludedByKeys,
+    Not,
+    FilterByValue,
+    Entry,
+    PropertyOf,
+    ExcludeNever,
+    NeverEmptyObject,
+    Iteration,
+    IntersectProps
 } from "@re-do/utils"
 import { ParseType, TypeDefinition, TypeSet } from "parsetype"
 import {
@@ -27,7 +35,6 @@ import {
     Middleware,
     Store as ReduxStore
 } from "@reduxjs/toolkit"
-import { UnvalidatedObjectDefinition } from "../node_modules/parsetype/dist/cjs/common.js"
 
 /**
  * This is a hacky version of ExactObject from @re-do/utils that accomodates anomalies
@@ -49,114 +56,54 @@ export type ValidatedConfig<Config, Options, Opts = Recursible<Options>> = {
         : InvalidPropertyError<Opts, K>
 }
 
-type FindStoredTypesRecurse<
-    Config,
-    Path extends string,
-    PathsAsKeys extends boolean
-> = {
-    [K in keyof Config]: IsAnyOrUnknown<Config[K]> extends false
-        ? "stores" extends keyof Config[K]
-            ? PathsAsKeys extends true
-                ? [`${Path}${K & string}`, Config[K]["stores"]]
-                : [Config[K]["stores"], `${Path}${K & string}`]
-            : "fields" extends keyof Config[K]
-            ? FindStoredTypesRecurse<
-                  Config[K]["fields"],
-                  `${Path}${K & string}/`,
-                  PathsAsKeys
-              >
+type GetStoredTypes<Config> = IntersectProps<
+    {
+        [K in keyof Config]: IsAnyOrUnknown<Config[K]> extends false
+            ? "defines" extends keyof Config[K]
+                ? {
+                      [DefinedType in Config[K]["defines"] &
+                          string]: DefinitionFromField<Config[K], false> & {
+                          id: "number"
+                      }
+                  }
+                : "stores" extends keyof Config[K]
+                ? {
+                      [StoredType in Config[K]["stores"] & string]: {
+                          id: "number"
+                      }
+                  }
+                : "fields" extends keyof Config[K]
+                ? NeverEmptyObject<GetStoredTypes<Config[K]["fields"]>>
+                : never
             : never
-        : never
-}[keyof Config]
-
-type GetStoredTypesToPaths<Config> = FromEntries<
-    ListPossibleTypes<FindStoredTypesRecurse<Config, "", false>>
+    }
 >
-
-type DefinitionFromConfig<Config, UseStoredTypes extends boolean> = {
-    [K in keyof Config]: DefinitionsFromField<Config[K], UseStoredTypes>
-}
-
-type LeafOf<Obj, LeafType = NonRecursible> = Obj extends LeafType
-    ? Obj
-    : Obj extends NonRecursible
-    ? never
-    : ValueOf<
-          {
-              [K in keyof Obj]: LeafOf<Obj[K], LeafType>
-          }
-      >
 
 type UntypedConfigError = "Unable to infer config type."
 
-type DefinitionsFromField<
+type DefinitionFromConfig<Config, UseDefinedTypeNames extends boolean> = {
+    [K in keyof Config]: DefinitionFromField<Config[K], UseDefinedTypeNames>
+}
+
+type DefinitionFromField<
     Config,
-    UseStoredTypes extends boolean,
-    DefinitionsFromNested = "fields" extends keyof Config
-        ? DefinitionFromConfig<Config["fields"], UseStoredTypes>
-        : UntypedConfigError
+    UseDefinedTypeNames extends boolean
 > = IsAnyOrUnknown<Config> extends true
     ? never
     : Config extends string
     ? Config
     : And<
-          Or<
-              UseStoredTypes,
-              LeafOf<DefinitionsFromNested, string> extends UntypedConfigError
-                  ? true
-                  : false
-          >,
-          "stores" extends keyof Config ? true : false
+          UseDefinedTypeNames,
+          "defines" extends keyof Config ? true : false
       > extends true
+    ? `${KeyValuate<Config, "defines"> & string}[]`
+    : "stores" extends keyof Config
     ? `${KeyValuate<Config, "stores"> & string}[]`
     : "type" extends keyof Config
     ? Config["type"]
-    : DefinitionsFromNested
-
-type ResolveStoredType<
-    TypeName extends keyof StoredTypesToPaths,
-    RawModelDefinition,
-    StoredTypesToPaths,
-    ExternalTypeSet,
-    RawStoredTypeDefinition = ValueAtPath<
-        RawModelDefinition,
-        StoredTypesToPaths[TypeName] & string
-    >
-> = RawStoredTypeDefinition extends `${TypeName & string}[]`
-    ? TypeName extends keyof ExternalTypeSet
-        ? ExternalTypeSet[TypeName]
-        : `Unknown stored type '${TypeName &
-              string}'. Either specify a type in its config or add it to your typeSet.`
-    : RawStoredTypeDefinition
-
-type EnsureObjectDefinition<Definition> =
-    Definition extends UnvalidatedObjectDefinition
-        ? Definition
-        : `Stored types must resolve to object definitions. Found '${Definition &
-              string}'.`
-
-type TypeSetFromConfig<
-    RawModelDefinition,
-    StoredTypesToPaths,
-    ExternalTypeSet
-> = Evaluate<
-    {
-        [TypeName in keyof StoredTypesToPaths]: EnsureObjectDefinition<
-            ResolveStoredType<
-                TypeName,
-                RawModelDefinition,
-                StoredTypesToPaths,
-                ExternalTypeSet
-            > & { id: "number" }
-        >
-    } &
-        {
-            [ExternalTypeName in Exclude<
-                keyof ExternalTypeSet,
-                keyof StoredTypesToPaths
-            >]: ExternalTypeSet[ExternalTypeName]
-        }
->
+    : "fields" extends keyof Config
+    ? DefinitionFromConfig<Config["fields"], UseDefinedTypeNames>
+    : UntypedConfigError
 
 export type StoreConfig<Config, ModelTypeSet, ModelType> = {
     [K in keyof Config]: ValidatedConfig<
@@ -178,7 +125,7 @@ type ModelConfigRecurse<
     T,
     Config,
     PathToType extends Segment[] | null,
-    InResolver extends boolean,
+    InStoredType extends boolean,
     Seen,
     Path extends Segment[],
     ModelTypeSet,
@@ -191,7 +138,7 @@ type ModelConfigRecurse<
           T,
           Config,
           PathToType,
-          InResolver,
+          InStoredType,
           Seen,
           Path,
           ModelTypeSet,
@@ -202,7 +149,7 @@ type ModelConfigOptions<
     T,
     Config,
     PathToType extends Segment[] | null,
-    InResolver extends boolean,
+    InStoredType extends boolean,
     Seen,
     Path extends Segment[],
     ModelTypeSet,
@@ -212,7 +159,7 @@ type ModelConfigOptions<
         T,
         Config,
         PathToType,
-        InResolver,
+        InStoredType,
         Path,
         ModelTypeSet,
         DeclaredTypeNames
@@ -221,13 +168,20 @@ type ModelConfigOptions<
         T,
         Config,
         PathToType,
-        InResolver,
+        InStoredType,
         Seen,
         Path,
         ModelTypeSet,
         DeclaredTypeNames
     > &
-    ModelConfigDefinitionOptions<T, Config, InResolver, Seen, DeclaredTypeNames>
+    StoredModelConfigOptions<
+        T,
+        Config,
+        PathToType,
+        InStoredType,
+        Seen,
+        DeclaredTypeNames
+    >
 
 type ModelConfigBaseOptions<T, Config> = {
     validate?: (value: T) => boolean
@@ -238,26 +192,22 @@ type ModelTypeOptions<
     T,
     Config,
     PathToType extends Segment[] | null,
-    InResolver extends boolean,
+    InStoredType extends boolean,
     Path extends Segment[],
     ModelTypeSet,
-    DeclaredTypeNames extends string[]
+    DeclaredTypeNames extends string[],
+    TypeDef = {
+        type: TypeDefinition<KeyValuate<Config, "type">, DeclaredTypeNames>
+    },
+    StoresDef = {
+        stores: keyof ModelTypeSet
+    }
 > = PathToType extends null
-    ? "fields" extends keyof Config
-        ? {
-              type?: TypeDefinition<
-                  KeyValuate<Config, "type">,
-                  DeclaredTypeNames
-              >
-          }
-        : {
-              type: "type" extends keyof Config
-                  ? TypeDefinition<
-                        KeyValuate<Config, "type">,
-                        DeclaredTypeNames
-                    >
-                  : `Unable to determine the type of ${Join<Path>}.`
-          }
+    ? "stores" extends keyof Config
+        ? StoresDef
+        : "fields" extends keyof Config
+        ? Partial<TypeDef>
+        : TypeDef
     : {}
 
 type ConfigIfRecursible<T, Seen, ValueIfRecursible> = Unlisted<T> extends
@@ -266,32 +216,42 @@ type ConfigIfRecursible<T, Seen, ValueIfRecursible> = Unlisted<T> extends
     ? {}
     : ValueIfRecursible
 
-type ModelConfigDefinitionOptions<
+type StoredModelConfigOptions<
     T,
     Config,
-    InResolver extends boolean,
+    PathToType,
+    InStoredType extends boolean,
     Seen,
     DeclaredTypeNames extends string[]
-> = ConfigIfRecursible<
-    T,
-    Seen,
-    InResolver extends false
-        ? {
-              stores?: string
-          }
-        : {}
->
+> = And<PathToType extends null ? true : false, Not<InStoredType>> extends true
+    ? {
+          defines?: string
+      }
+    : {}
 
 type ModelConfigFieldOptions<
     T,
     Config,
     PathToType extends Segment[] | null,
-    InResolver extends boolean,
+    InStoredType extends boolean,
     Seen,
     Path extends Segment[],
     ModelTypeSet,
     DeclaredTypeNames extends string[],
-    ConfigFields = "fields" extends keyof Config ? Config["fields"] : never
+    ConfigFields = "fields" extends keyof Config ? Config["fields"] : never,
+    ConfigHasKey extends Record<"type" | "stores" | "defines", boolean> = {
+        type: "type" extends keyof Config ? true : false
+        stores: "stores" extends keyof Config ? true : false
+        defines: "defines" extends keyof Config ? true : false
+    },
+    DefinitionIsHere extends boolean = Or<
+        ConfigHasKey["type"],
+        ConfigHasKey["stores"]
+    >,
+    StoredTypeIsHere extends boolean = Or<
+        ConfigHasKey["stores"],
+        ConfigHasKey["defines"]
+    >
 > = ConfigIfRecursible<
     T,
     Seen,
@@ -301,8 +261,8 @@ type ModelConfigFieldOptions<
                 ? ModelConfigRecurse<
                       KeyValuate<Unlisted<T>, K>,
                       ConfigFields[K],
-                      "type" extends keyof Config ? Path : PathToType,
-                      "stores" extends keyof Config ? true : InResolver,
+                      DefinitionIsHere extends true ? Path : PathToType,
+                      StoredTypeIsHere extends true ? true : InStoredType,
                       Seen | Unlisted<T>,
                       [...Path, K & Segment],
                       ModelTypeSet,
@@ -320,16 +280,16 @@ export type ReduxOptions = Omit<
 
 export const createStore = <
     Config extends StoreConfig<Config, ModelTypeSet, Model>,
-    RawModelDefinition = DefinitionFromConfig<Config, false>,
-    StoredTypesToPaths = GetStoredTypesToPaths<Config>,
     ExternalTypeSet = {},
-    ModelTypeSet = TypeSetFromConfig<
-        RawModelDefinition,
-        StoredTypesToPaths,
-        ExternalTypeSet
-    >,
+    StoredTypes = GetStoredTypes<Config>,
+    ModelTypeSet = ExternalTypeSet & StoredTypes,
     ModelDefinition = DefinitionFromConfig<Config, true>,
     Model = ParseType<ModelDefinition, ModelTypeSet>,
+    StoredLocations = FilterByValue<
+        Config,
+        { stores: string } | { defines: string },
+        { deep: true; replaceWith: true }
+    >,
     A extends Actions<Model> = {}
 >(
     config: Narrow<Config>,
@@ -339,82 +299,151 @@ export const createStore = <
         reduxOptions?: ReduxOptions
     }
 ) => {
-    return {} as Store<Model, StoredTypesToPaths>
+    return {} as Store<Model, StoredLocations>
 }
 
-const store = createStore(
-    {
-        users: {
-            stores: "user",
-            fields: {
-                name: {
-                    type: "string",
-                    onChange: () => ":-)"
-                },
-                groups: {
-                    type: "group[]",
-                    onChange: () => {}
-                },
-                bestFriend: "user?",
-                favoriteColor: "color"
-            }
-        },
-        groups: {
-            stores: "group",
-            fields: {
-                name: {
-                    type: "string",
-                    onChange: (_) => ""
-                },
-                members: {
-                    type: "user[]"
-                }
-            }
-        },
-        preferences: {
-            fields: {
-                darkMode: "boolean",
-                colors: {
-                    stores: "color"
-                }
-            }
-        },
-        cache: {
-            fields: {
-                currentUser: "user|null",
-                currentCity: "city",
-                lastObject: "user|group?",
-                cityOrUser: "user|city"
-            }
-        }
-    },
-    {
-        typeSet: {
-            city: {
-                users: "user[]",
-                groups: "group[]",
-                adjacentCities: "city[]"
-            },
-            color: {
-                RGB: "string"
-            }
-        }
-    }
-)
+const store = getStore()
 
-const { id } = store.users.create({
+function getStore() {
+    return createStore(
+        {
+            users3: {
+                defines: "user3",
+                fields: {
+                    name: {
+                        type: "string",
+                        onChange: () => ":-)"
+                    },
+                    groups: {
+                        type: "group[]",
+                        onChange: () => {}
+                    },
+                    bestFriend: "user?",
+                    favoriteColor: "color"
+                }
+            },
+            users4: {
+                defines: "user4",
+                fields: {
+                    name: {
+                        type: "string",
+                        onChange: () => ":-)"
+                    },
+                    groups: {
+                        type: "group[]",
+                        onChange: () => {}
+                    },
+                    bestFriend: "user?",
+                    favoriteColor: "color"
+                }
+            },
+            users5: {
+                defines: "user5",
+                fields: {
+                    name: {
+                        type: "string",
+                        onChange: () => ":-)"
+                    },
+                    groups: {
+                        type: "group[]",
+                        onChange: () => {}
+                    },
+                    bestFriend: "user?",
+                    favoriteColor: "color"
+                }
+            },
+            users2: {
+                defines: "user2",
+                fields: {
+                    name: {
+                        type: "string",
+                        onChange: () => ":-)"
+                    },
+                    groups: {
+                        type: "group[]",
+                        onChange: () => {}
+                    },
+                    bestFriend: "user?",
+                    favoriteColor: "color"
+                }
+            },
+            users: {
+                defines: "user",
+                fields: {
+                    name: {
+                        type: "string",
+                        onChange: () => ":-)"
+                    },
+                    groups: {
+                        type: "group[]",
+                        onChange: () => {}
+                    },
+                    bestFriend: "user?",
+                    favoriteColor: "color"
+                }
+            },
+            groups: {
+                defines: "group",
+                fields: {
+                    name: {
+                        type: "string",
+                        onChange: (_) => ""
+                    },
+                    members: {
+                        type: "user[]"
+                    }
+                }
+            },
+            preferences: {
+                fields: {
+                    darkMode: "boolean",
+                    colors: {
+                        stores: "color"
+                    },
+                    others: {
+                        defines: "other",
+                        type: {
+                            other: "string"
+                        }
+                    }
+                }
+            },
+            cache: {
+                fields: {
+                    currentUser: "user|null",
+                    currentCity: "city",
+                    lastObject: "user|group?",
+                    cityOrUser: "user|city"
+                }
+            }
+        },
+        {
+            typeSet: {
+                city: {
+                    users: "user[]",
+                    groups: "group[]",
+                    adjacentCities: "city[]"
+                },
+                color: {
+                    RGB: "string"
+                }
+            }
+        }
+    )
+}
+
+const { id } = getStore().users.create({
     name: "Hi",
     groups: [],
     favoriteColor: { RGB: "255,255,255" }
 })
 
-export type Store<Model, StoredTypesToPaths, Path extends string = ""> = {
-    [K in keyof Model]: `${Path}${K &
-        string}` extends ValueOf<StoredTypesToPaths>
-        ? Interactions<Model[K]>
-        : Model[K] extends NonRecursible
-        ? Model[K]
-        : Store<Model[K], StoredTypesToPaths, `${Path}${K & string}/`>
+export type Store<Model, StoredLocations> = {
+    [K in keyof Model]: K extends keyof StoredLocations
+        ? StoredLocations[K] extends true
+            ? Interactions<Model[K]>
+            : Store<Model[K], KeyValuate<StoredLocations[K], "fields">>
+        : Model[K]
 }
 
 export type Interactions<

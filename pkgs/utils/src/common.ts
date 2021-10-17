@@ -288,6 +288,22 @@ type FilterRecurseOptions = FilterByValueOptions & {
     invertResult?: boolean
 }
 
+export type IntersectOf<U> = (
+    U extends unknown ? (k: U) => void : never
+) extends (k: infer I) => void
+    ? I
+    : never
+
+export type IntersectProps<O> = IntersectOf<O[keyof O]>
+
+export type LeafOf<Obj, LeafType = NonRecursible> = Obj extends LeafType
+    ? Obj
+    : Obj extends NonRecursible
+    ? never
+    : {
+          [K in keyof Obj]: LeafOf<Obj[K], LeafType>
+      }[keyof Obj]
+
 export type NeverEmptyObject<T> = {} extends T ? never : T
 
 export type ExcludeNever<O> = Pick<
