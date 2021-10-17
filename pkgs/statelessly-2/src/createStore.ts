@@ -26,7 +26,8 @@ import {
     ExcludeNever,
     NeverEmptyObject,
     Iteration,
-    IntersectProps
+    IntersectProps,
+    DeepPartial
 } from "@re-do/utils"
 import { ParseType, TypeDefinition, TypeSet } from "parsetype"
 import {
@@ -56,24 +57,25 @@ export type ValidatedConfig<Config, Options, Opts = Recursible<Options>> = {
         : InvalidPropertyError<Opts, K>
 }
 
-type GetStoredTypes<Config> = IntersectProps<
+type GetStoredTypes<Config, IdKey extends string> = IntersectProps<
     {
         [K in keyof Config]: IsAnyOrUnknown<Config[K]> extends false
             ? "defines" extends keyof Config[K]
                 ? {
                       [DefinedType in Config[K]["defines"] &
-                          string]: DefinitionFromField<Config[K], false> & {
-                          id: "number"
-                      }
+                          string]: DefinitionFromField<Config[K], false> &
+                          {
+                              [K in IdKey]: "number"
+                          }
                   }
                 : "stores" extends keyof Config[K]
                 ? {
                       [StoredType in Config[K]["stores"] & string]: {
-                          id: "number"
+                          [K in IdKey]: "number"
                       }
                   }
                 : "fields" extends keyof Config[K]
-                ? NeverEmptyObject<GetStoredTypes<Config[K]["fields"]>>
+                ? NeverEmptyObject<GetStoredTypes<Config[K]["fields"], IdKey>>
                 : never
             : never
     }
@@ -281,7 +283,8 @@ export type ReduxOptions = Omit<
 export const createStore = <
     Config extends StoreConfig<Config, ModelTypeSet, Model>,
     ExternalTypeSet = {},
-    StoredTypes = GetStoredTypes<Config>,
+    IdKey extends string = "id",
+    StoredTypes = GetStoredTypes<Config, IdKey>,
     ModelTypeSet = ExternalTypeSet & StoredTypes,
     ModelDefinition = DefinitionFromConfig<Config, true>,
     Model = ParseType<ModelDefinition, ModelTypeSet>,
@@ -297,9 +300,10 @@ export const createStore = <
         typeSet?: Narrow<ExternalTypeSet>
         actions?: A
         reduxOptions?: ReduxOptions
+        idKey?: IdKey
     }
 ) => {
-    return {} as Store<Model, StoredLocations>
+    return {} as Store<Model, StoredLocations, IdKey>
 }
 
 const store = getStore()
@@ -307,66 +311,6 @@ const store = getStore()
 function getStore() {
     return createStore(
         {
-            users3: {
-                defines: "user3",
-                fields: {
-                    name: {
-                        type: "string",
-                        onChange: () => ":-)"
-                    },
-                    groups: {
-                        type: "group[]",
-                        onChange: () => {}
-                    },
-                    bestFriend: "user?",
-                    favoriteColor: "color"
-                }
-            },
-            users4: {
-                defines: "user4",
-                fields: {
-                    name: {
-                        type: "string",
-                        onChange: () => ":-)"
-                    },
-                    groups: {
-                        type: "group[]",
-                        onChange: () => {}
-                    },
-                    bestFriend: "user?",
-                    favoriteColor: "color"
-                }
-            },
-            users5: {
-                defines: "user5",
-                fields: {
-                    name: {
-                        type: "string",
-                        onChange: () => ":-)"
-                    },
-                    groups: {
-                        type: "group[]",
-                        onChange: () => {}
-                    },
-                    bestFriend: "user?",
-                    favoriteColor: "color"
-                }
-            },
-            users2: {
-                defines: "user2",
-                fields: {
-                    name: {
-                        type: "string",
-                        onChange: () => ":-)"
-                    },
-                    groups: {
-                        type: "group[]",
-                        onChange: () => {}
-                    },
-                    bestFriend: "user?",
-                    favoriteColor: "color"
-                }
-            },
             users: {
                 defines: "user",
                 fields: {
@@ -379,7 +323,15 @@ function getStore() {
                         onChange: () => {}
                     },
                     bestFriend: "user?",
-                    favoriteColor: "color"
+                    favoriteColor: "color",
+                    address: {
+                        fields: {
+                            street: "string",
+                            number: "number",
+                            unit: "number?",
+                            city: "city"
+                        }
+                    }
                 }
             },
             groups: {
@@ -435,26 +387,47 @@ function getStore() {
 const { id } = getStore().users.create({
     name: "Hi",
     groups: [],
-    favoriteColor: { RGB: "255,255,255" }
+    favoriteColor: 0,
+    address: {
+        street: "Sagamore Rd",
+        number: 5,
+        city: {
+            users: [],
+            groups: [1],
+            adjacentCities: []
+        }
+    }
 })
 
-export type Store<Model, StoredLocations> = {
+export type Store<Model, StoredLocations, IdKey extends string> = {
     [K in keyof Model]: K extends keyof StoredLocations
         ? StoredLocations[K] extends true
-            ? Interactions<Model[K]>
-            : Store<Model[K], KeyValuate<StoredLocations[K], "fields">>
+            ? Interactions<Model[K], IdKey>
+            : Store<Model[K], KeyValuate<StoredLocations[K], "fields">, IdKey>
         : Model[K]
 }
 
+type InputFor<Stored, IdKey extends string> =
+    | Omit<
+          {
+              [K in keyof Stored]: Stored[K] extends NonRecursible
+                  ? Stored[K]
+                  : InputFor<Stored[K], IdKey>
+          },
+          IdKey
+      >
+    | (IdKey extends keyof Stored ? number : never)
+
 export type Interactions<
     Model,
-    Input = DeepExcludedByKeys<Unlisted<Model>, ["id"]>,
-    Stored = Unlisted<Model>
+    IdKey extends string,
+    Stored = Unlisted<Model>,
+    Input = InputFor<Stored, IdKey>
 > = {
     create: (data: Input) => Stored
     all: () => Stored[]
     find: (by: FindBy<Stored>) => Stored
-    filter: (by: FindBy<Stored>) => Stored
+    filter: (by: FindBy<Stored>) => Stored[]
     remove: (by: FindBy<Stored>) => void
     update: (by: FindBy<Stored>, update: DeepUpdate<Input>) => Stored
 }
@@ -469,6 +442,6 @@ export type Actions<Input> = Record<
     Update<Input> | UpdateFunction<Input>
 >
 
-export type FindBy<T> = (t: T) => boolean
+export type FindBy<T> = DeepPartial<T> | ((t: T) => boolean)
 
 export type Update<T> = DeepUpdate<T>
