@@ -430,15 +430,7 @@ export type Interactions<
     update: (by: FindBy<Stored>, update: DeepUpdate<Input>) => Stored
 }
 
-export type SimpleUnpack<O, IdKey extends string, Seen = O> = {
-    [K in keyof O]: O[K] extends Seen
-        ? number
-        : SimpleUnpack<O[K], IdKey, Seen | O> & { [K in IdKey]: number }
-}
-
-export type StoreInput = Record<string, any>
-
-export type UpdateFunction<Input extends StoreInput> = (
+export type UpdateFunction<Input> = (
     args: any,
     context: any
 ) => Update<Input> | Promise<Update<Input>>

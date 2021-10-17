@@ -2,8 +2,10 @@ import moize from "moize"
 import {
     Number as NumberToolbelt,
     Union as ToolbeltUnion,
-    List as ToolbeltList
+    List as ToolbeltList,
+    T
 } from "ts-toolbelt"
+import { WithDefaults } from "./merge.js"
 
 export const memoize = moize as <F extends SimpleFunction>(f: F) => F
 
@@ -101,8 +103,18 @@ export type WithOptionalValues<
     T extends object,
     OptionalValueType,
     InvertExtendsCheck extends boolean = false
-> = ExcludeByValue<T, OptionalValueType, InvertExtendsCheck> &
-    Partial<FilterByValue<T, OptionalValueType, InvertExtendsCheck>>
+> = ExcludeByValue<
+    T,
+    OptionalValueType,
+    { invertExtendsCheck: InvertExtendsCheck }
+> &
+    Partial<
+        FilterByValue<
+            T,
+            OptionalValueType,
+            { invertExtendsCheck: InvertExtendsCheck }
+        >
+    >
 
 export type WithRequiredKeys<T extends object, Keys extends keyof T> = Omit<
     T,
@@ -123,7 +135,11 @@ export type WithRequiredValues<
     InvertExtendsCheck extends boolean = false
 > = T &
     Required<
-        FilterByValue<T, RequiredValueType | undefined, InvertExtendsCheck>
+        FilterByValue<
+            T,
+            RequiredValueType | undefined,
+            { invertExtendsCheck: InvertExtendsCheck }
+        >
     >
 
 export type DeepPartial<T> = {
@@ -259,38 +275,87 @@ export type ExtendsCheck<
     ? ValueIfTrue
     : ValueIfFalse
 
+export type ExcludeByValueOptions = {
+    deep?: boolean
+    invertExtendsCheck?: boolean
+}
+
+export type FilterByValueOptions = ExcludeByValueOptions & {
+    replaceWith?: any
+}
+
+type FilterRecurseOptions = FilterByValueOptions & {
+    invertResult?: boolean
+}
+
+export type NeverEmptyObject<T> = {} extends T ? never : T
+
+export type ExcludeNever<O> = Pick<
+    O,
+    { [K in keyof O]: O[K] extends never ? never : K }[keyof O]
+>
+
+export type FilterObjectByValue<
+    T,
+    ValueType,
+    Options extends Required<FilterRecurseOptions>
+> = ExcludeNever<
+    {
+        [K in keyof T]: NeverEmptyObject<
+            FilterPropertyByValue<T[K], ValueType, Options>
+        >
+    }
+>
+
+export type FilterPropertyByValue<
+    T,
+    ValueType,
+    Options extends Required<FilterRecurseOptions>,
+    ReturnOnMatch = Options["replaceWith"] extends never
+        ? T
+        : Options["replaceWith"]
+> = ExtendsCheck<T, ValueType, Options["invertExtendsCheck"]> extends true
+    ? Options["invertResult"] extends true
+        ? never
+        : ReturnOnMatch
+    : And<
+          Options["deep"],
+          Not<T extends NonRecursible ? true : false>
+      > extends true
+    ? FilterObjectByValue<T, ValueType, Options>
+    : Options["invertResult"] extends true
+    ? ReturnOnMatch
+    : never
+
 export type FilterByValue<
-    T extends object,
-    ValueType,
-    InvertExtendsCheck extends boolean = false
-> = Pick<
     T,
-    {
-        [K in keyof T]: ExtendsCheck<
-            T[K],
-            ValueType,
-            InvertExtendsCheck,
-            K,
-            never
-        >
-    }[keyof T]
->
+    ValueType,
+    ProvidedOptions extends FilterByValueOptions = {},
+    Options extends Required<FilterRecurseOptions> = WithDefaults<
+        FilterRecurseOptions,
+        ProvidedOptions,
+        {
+            deep: false
+            invertExtendsCheck: false
+            invertResult: false
+            replaceWith: never
+        }
+    >
+> = FilterObjectByValue<T, ValueType, Options>
+
 export type ExcludeByValue<
-    T extends object,
-    ValueType,
-    InvertExtendsCheck extends boolean = false
-> = Pick<
     T,
-    {
-        [K in keyof T]: ExtendsCheck<
-            T[K],
-            ValueType,
-            InvertExtendsCheck,
-            never,
-            K
-        >
-    }[keyof T]
->
+    ValueType,
+    ProvidedOptions extends ExcludeByValueOptions = {},
+    Options extends Required<FilterRecurseOptions> = {
+        deep: ProvidedOptions["deep"] extends true ? true : false
+        invertExtendsCheck: ProvidedOptions["invertExtendsCheck"] extends true
+            ? true
+            : false
+        replaceWith: never
+        invertResult: true
+    }
+> = FilterObjectByValue<T, ValueType, Options>
 
 export type OptionalOnly<T extends object> = Pick<
     T,
