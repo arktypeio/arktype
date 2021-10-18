@@ -93,7 +93,7 @@ export const diff = <Base, Compare>(
     if (addedKeys.length && !options.excludeAdded) {
         result.added = Object.fromEntries(
             addedKeys.map((k) => [k, compare[k]])
-        ) as Partial<Compare>
+        ) as any as Partial<Compare>
     }
     const removedKeys = baseKeys.filter(
         (baseKey) => !compareKeys.includes(baseKey as any)
@@ -101,7 +101,7 @@ export const diff = <Base, Compare>(
     if (removedKeys.length && !options.excludeRemoved) {
         result.removed = Object.fromEntries(
             removedKeys.map((k) => [k, base[k]])
-        ) as Partial<Base>
+        ) as any as Partial<Base>
     }
     const changedEntries = preserved
         .map(

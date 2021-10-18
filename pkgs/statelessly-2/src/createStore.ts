@@ -28,15 +28,26 @@ import {
     Iteration,
     IntersectProps,
     DeepPartial,
-    filter
+    filter,
+    transform,
+    isRecursible,
+    DeepTreeOf,
+    withDefaults
 } from "@re-do/utils"
-import { ParseType, TypeDefinition, TypeSet } from "parsetype"
+import {
+    ParseType,
+    TypeDefinition,
+    TypeSet,
+    UnvalidatedDefinition,
+    UnvalidatedTypeSet
+} from "parsetype"
 import {
     configureStore,
     ConfigureStoreOptions,
     Middleware,
     Store as ReduxStore
 } from "@reduxjs/toolkit"
+import { type } from "os"
 
 /**
  * This is a hacky version of ExactObject from @re-do/utils that accomodates anomalies
@@ -304,12 +315,104 @@ export const createStore = <
         idKey?: IdKey
     }
 ) => {
-    const modelTypeSet = filter(config, { deep: true })
+    const {
+        typeSet: externalTypeSet,
+        actions,
+        reduxOptions,
+        idKey
+    } = withDefaults({
+        typeSet: {},
+        actions: {},
+        reduxOptions: {},
+        idKey: "id"
+    })(options)
+    const modelTypeDef = extractTypeDef(config)
+    const storedTypeSet = extractTypeSet(config, externalTypeSet)
+    const modelTypeSet = compileModelTypeSet(
+        storedTypeSet,
+        externalTypeSet,
+        idKey
+    )
     const getStoreProxy = (): any =>
         new Proxy({}, { get: () => getStoreProxy() })
-    const store = getStoreProxy()
-    return store as Store<Model, StoredLocations, IdKey>
+    const store = modelTypeSet //getStoreProxy()
+    return store as any as Store<Model, StoredLocations, IdKey>
 }
+
+const compileModelTypeSet = (
+    storedTypeSet: UnvalidatedTypeSet,
+    externalTypeSet: UnvalidatedTypeSet,
+    idKey: string
+) => {
+    const storedTypeSetWithIds = transform(
+        storedTypeSet,
+        ([typeName, definition]) => {
+            if (typeof definition === "string") {
+                throw new Error(`Stored type definitions must be objects.`)
+            }
+            return [typeName, { ...definition, [idKey]: "number" }]
+        }
+    )
+    return { ...externalTypeSet, ...storedTypeSetWithIds }
+}
+
+const extractTypeSet = (
+    config: any,
+    externalTypeSet: UnvalidatedTypeSet
+): UnvalidatedTypeSet =>
+    Object.entries(config).reduce((typeSet, [k, v]) => {
+        if (!isRecursible(v)) {
+            return typeSet
+        }
+        if ("stores" in v) {
+            if (!(v.stores in externalTypeSet)) {
+                throw new Error(
+                    `Stored type '${v.stores}' was not provided in your typeSet via options.` +
+                        ` If you'd like to define it the config, use 'defines' instead of 'stores'.`
+                )
+            }
+            return { ...typeSet, [v.stores]: externalTypeSet[v.stores] }
+        }
+        if ("defines" in v) {
+            if ("type" in v) {
+                return { ...typeSet, [v.defines]: v.type }
+            }
+            if ("fields" in v) {
+                return { ...typeSet, [v.defines]: extractTypeDef(v.fields) }
+            }
+            throw new Error(
+                `Stored type '${v.defines}' was specified via 'defines' but contains no definition.`
+            )
+        }
+        if ("fields" in v) {
+            return { ...typeSet, ...extractTypeSet(v.fields, externalTypeSet) }
+        }
+        return typeSet
+    }, {} as UnvalidatedTypeSet)
+
+const extractTypeDef = (config: any): DeepTreeOf<string> =>
+    transform(config, ([k, v]) => {
+        if (typeof v === "string") {
+            return [k, v]
+        }
+        if (isRecursible(v)) {
+            if ("stores" in v) {
+                return [k, `${v.stores}[]`]
+            }
+            if ("defines" in v) {
+                // Since we're extracting a typeDef, use the defined name
+                // And let the typeSet figure out what the type should be
+                return [k, `${v.defines}[]`]
+            } else if ("type" in v) {
+                return [k, v.type]
+            }
+            if ("fields" in v) {
+                return [k, extractTypeDef(v.fields)]
+            }
+        }
+        // If we haven't already returned, subConfig has no types so don't include it
+        return null
+    })
 
 export type Store<Model, StoredLocations, IdKey extends string> = {
     [K in keyof Model]: K extends keyof StoredLocations

@@ -1,10 +1,4 @@
-import {
-    MapFunction,
-    EntryOf,
-    Entry,
-    fromEntries,
-    isRecursible
-} from "./common.js"
+import { EntryOf, Entry, isRecursible } from "./common.js"
 import { WithDefaults } from "./merge.js"
 import { isNumeric } from "./transformString.js"
 
@@ -14,81 +8,92 @@ export type DeepMapContext = {
 
 export type EntryChecker = (entry: Entry, context: DeepMapContext) => boolean
 
-export type EntryMapper<Original extends Entry, Returned extends Entry> = (
-    entry: Original,
-    context: DeepMapContext
-) => Returned
+export type EntryMapper<
+    Original extends Entry,
+    Returned extends Entry | null
+> = (entry: Original, context: DeepMapContext) => Returned
 
-export type DeepMapOptions = {
+export type TransformOptions<Deep extends boolean = boolean> = {
+    deep?: Deep
     recurseWhen?: EntryChecker
-    filterWhen?: EntryChecker
-    asValueArray?: "infer" | "forceArray" | "forceRecord"
+    asArray?: "infer" | "always" | "never"
 }
 
 export const transform = <
-    O,
-    MapReturnType extends Entry,
-    ProvidedOptions extends DeepMapOptions,
-    Options extends Required<DeepMapOptions> = WithDefaults<
-        DeepMapOptions,
+    From extends object,
+    MapReturnType extends Entry | null,
+    ProvidedOptions extends TransformOptions<Deep>,
+    Options extends Required<TransformOptions> = WithDefaults<
+        TransformOptions,
         ProvidedOptions,
         {
             recurseWhen: () => true
             filterWhen: () => false
-            asValueArray: "infer"
+            asArray: "infer"
+            deep: false
         }
     >,
-    InferredAsArray extends boolean = MapReturnType[0] extends number
-        ? O extends any[]
-            ? true
+    Deep extends boolean = true,
+    InferredAsArray extends boolean = MapReturnType extends Entry
+        ? MapReturnType[0] extends number
+            ? From extends any[]
+                ? true
+                : false
             : false
         : false,
-    AsArray extends boolean = Options["asValueArray"] extends ""
+    AsArray extends boolean = Options["asArray"] extends "infer"
         ? InferredAsArray
-        : Options["asValueArray"] & boolean,
+        : Options["asArray"] extends "always"
+        ? true
+        : false,
     Result = AsArray extends true
-        ? MapReturnType[1][]
+        ? Exclude<MapReturnType, null>[1][]
         : {
-              [K in MapReturnType[0]]: MapReturnType[1]
+              [K in Exclude<MapReturnType, null>[0]]: Exclude<
+                  MapReturnType,
+                  null
+              >[1]
           }
 >(
-    from: O,
-    map: EntryMapper<EntryOf<O>, MapReturnType>,
-    { recurseWhen, filterWhen, asValueArray }: DeepMapOptions = {}
+    from: From,
+    map: EntryMapper<EntryOf<From>, MapReturnType>,
+    options?: ProvidedOptions
 ): Result => {
+    const { recurseWhen, deep, asArray = "infer" } = options ?? {}
     const recurse = (currentFrom: any, { path }: DeepMapContext): any => {
         const mappedEntries = Object.entries(currentFrom).reduce(
-            (mappedEntries, [k, v]) => {
+            (results, [k, v]) => {
                 const contextForKey = {
                     path: path.concat(k)
                 }
-                if (filterWhen && filterWhen([k, v], contextForKey)) {
-                    return mappedEntries
-                }
                 const shouldRecurse =
                     isRecursible(v) &&
+                    deep &&
                     (!recurseWhen || recurseWhen([k, v], contextForKey))
-                return [
-                    ...mappedEntries,
-                    map(
-                        [
-                            k as any,
-                            shouldRecurse ? recurse(v, contextForKey) : v
-                        ],
-                        contextForKey
-                    )
-                ]
+                const mapResult = map(
+                    [k as any, shouldRecurse ? recurse(v, contextForKey) : v],
+                    contextForKey
+                )
+                if (mapResult === null) {
+                    return results
+                }
+                return [...results, mapResult] as Exclude<MapReturnType, null>[]
             },
-            [] as MapReturnType[]
+            [] as Exclude<MapReturnType, null>[]
         )
-        const asArray =
-            asValueArray ??
-            (Array.isArray(currentFrom) &&
-                mappedEntries.every(([k, v]) => isNumeric(k)))
-        const mappedResult = asArray
+        const toArray =
+            asArray === "always"
+                ? true
+                : asArray === "never"
+                ? false
+                : Array.isArray(currentFrom) &&
+                  mappedEntries.every(([k, v]) => isNumeric(k))
+        return toArray
             ? Array.from(mappedEntries, ([i, v]) => v)
             : Object.fromEntries(mappedEntries)
-        return mappedResult
+    }
+    if (!isRecursible(from)) {
+        throw new Error(`Cannot transform non-object ${from}.`)
     }
     return recurse(from, { path: [] })
 }

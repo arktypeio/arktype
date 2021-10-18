@@ -19,10 +19,8 @@
         }
     },
     "scripts": {
-        "build": "echo No build required",
-        "buildDev": "tsc",
-        "test": "echo No tests",
-        "testDev": "jest"
+        "build": "tsc",
+        "test": "jest"
     },
     "dependencies": {
         "@re-do/utils": "workspace:*",

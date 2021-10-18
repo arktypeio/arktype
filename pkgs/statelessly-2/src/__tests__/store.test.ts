@@ -108,6 +108,6 @@ describe("createStore", () => {
         testStore = createTestStore()
     })
     test("works", () => {
-        expect(testStore.users).toBe("hi")
+        expect(testStore).toStrictEqual("hi")
     })
 })

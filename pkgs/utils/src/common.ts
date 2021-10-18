@@ -168,7 +168,10 @@ export type NonObject = Primitive | null | undefined | void
 export type NonRecursible = NonObject | SimpleFunction
 export type Unpromisified<T> = T extends Promise<infer U> ? U : never
 
-export const isRecursible = (o: any) => o && typeof o === "object"
+export const isRecursible = <O>(
+    o: O
+): o is Recursible<O> & (List | Record<Key, any>) =>
+    !!o && typeof o === "object"
 
 export const isEmpty = (value: object | any[]) => {
     if (!isRecursible(value)) {
