@@ -32,9 +32,13 @@ import {
     transform,
     isRecursible,
     DeepTreeOf,
-    withDefaults
+    withDefaults,
+    stringify,
+    Key,
+    WithReadonlyKeys
 } from "@re-do/utils"
 import {
+    parse,
     ParseType,
     TypeDefinition,
     TypeSet,
@@ -333,10 +337,34 @@ export const createStore = <
         externalTypeSet,
         idKey
     )
-    const getStoreProxy = (): any =>
-        new Proxy({}, { get: () => getStoreProxy() })
-    const store = modelTypeSet //getStoreProxy()
-    return store as any as Store<Model, StoredLocations, IdKey>
+    const storedPaths = findStoredPaths(config, "")
+    const model = parse(modelTypeDef, modelTypeSet)
+    const initialState = model.getDefault()
+    // copy the object by value
+    const reduxStore = transform(initialState, ([k, v]) => [k, v], {
+        deep: true
+    })
+    // TODO: Require default value for stored type references
+    const getStoreProxy = (proxyTarget: any, path: string): any =>
+        new Proxy(proxyTarget, {
+            get: (target, prop) => {
+                console.log(`Getting ${String(prop)} at ${path}`)
+                if (!(prop in target)) {
+                    return undefined
+                }
+                const value = target[prop]
+                if (isRecursible(value)) {
+                    return getStoreProxy(value, `${path}${String(prop)}/`)
+                }
+                return value
+            },
+            set: (target, prop, updatedValue) => {
+                target[prop] = updatedValue
+                return true
+            }
+        })
+    const storeRoot = getStoreProxy(reduxStore, "")
+    return storeRoot as Store<Model, StoredLocations, IdKey>
 }
 
 const compileModelTypeSet = (
@@ -390,6 +418,23 @@ const extractTypeSet = (
         return typeSet
     }, {} as UnvalidatedTypeSet)
 
+const findStoredPaths = (config: any, path: string): string[] =>
+    Object.entries(config).reduce((storedPaths, [k, v]) => {
+        if (!isRecursible(v)) {
+            return storedPaths
+        }
+        if ("stores" in v || "defines" in v) {
+            return [...storedPaths, `${path}${k}`]
+        }
+        if ("fields" in v) {
+            return [
+                ...storedPaths,
+                ...findStoredPaths(v.fields, `${path}${k}/`)
+            ]
+        }
+        return storedPaths
+    }, [] as string[])
+
 const extractTypeDef = (config: any): DeepTreeOf<string> =>
     transform(config, ([k, v]) => {
         if (typeof v === "string") {
@@ -403,7 +448,8 @@ const extractTypeDef = (config: any): DeepTreeOf<string> =>
                 // Since we're extracting a typeDef, use the defined name
                 // And let the typeSet figure out what the type should be
                 return [k, `${v.defines}[]`]
-            } else if ("type" in v) {
+            }
+            if ("type" in v) {
                 return [k, v.type]
             }
             if ("fields" in v) {
@@ -414,13 +460,24 @@ const extractTypeDef = (config: any): DeepTreeOf<string> =>
         return null
     })
 
-export type Store<Model, StoredLocations, IdKey extends string> = {
-    [K in keyof Model]: K extends keyof StoredLocations
-        ? StoredLocations[K] extends true
-            ? Interactions<Model[K], IdKey>
-            : Store<Model[K], KeyValuate<StoredLocations[K], "fields">, IdKey>
-        : Model[K]
-}
+export type Store<
+    Model,
+    StoredLocations,
+    IdKey extends string
+> = WithReadonlyKeys<
+    {
+        [K in keyof Model]: K extends keyof StoredLocations
+            ? StoredLocations[K] extends true
+                ? Interactions<Model[K], IdKey>
+                : Store<
+                      Model[K],
+                      KeyValuate<StoredLocations[K], "fields">,
+                      IdKey
+                  >
+            : Model[K]
+    },
+    keyof StoredLocations & keyof Model
+>
 
 type InputFor<Stored, IdKey extends string> =
     | Omit<

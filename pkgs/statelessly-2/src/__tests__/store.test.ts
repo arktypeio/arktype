@@ -38,9 +38,8 @@ function createTestStore() {
                     }
                 }
             },
-            preferences: {
+            nestedStore: {
                 fields: {
-                    darkMode: "boolean",
                     colors: {
                         stores: "color"
                     },
@@ -48,6 +47,18 @@ function createTestStore() {
                         defines: "other",
                         type: {
                             other: "string"
+                        }
+                    }
+                }
+            },
+            preferences: {
+                fields: {
+                    darkMode: "boolean",
+                    background: "color?",
+                    font: {
+                        fields: {
+                            family: "string",
+                            size: "number"
                         }
                     }
                 }
@@ -76,7 +87,9 @@ function createTestStore() {
     )
 }
 
-// const { id } = getStore().users.create({
+// const store = createTestStore()
+
+// const { id } = store.users.create({
 //     name: "Hi",
 //     groups: [],
 //     favoriteColor: 0,
@@ -99,15 +112,55 @@ function createTestStore() {
 // )
 
 // const z = store.users.with({ id: 5 }).remove()
-// const y = store.users.where({ id: 5 }).remove()
+// const y = store.users.where({ name: "David" }).update({ name: "David Blass" })
 
-let testStore: ReturnType<typeof createTestStore>
+let store: ReturnType<typeof createTestStore>
+
+const initial = {
+    users: [],
+    groups: [],
+    nestedStore: { colors: [], others: [] },
+    preferences: { darkMode: false, font: { family: "", size: 0 } },
+    cache: {
+        currentUser: null,
+        currentCity: { users: [], groups: [], adjacentCities: [] },
+        cityOrUser: {
+            name: "",
+            groups: [],
+            favoriteColor: { RGB: "", id: 0 },
+            address: {
+                street: "",
+                number: 0,
+                city: { users: [], groups: [], adjacentCities: [] }
+            },
+            id: 0
+        }
+    }
+}
 
 describe("createStore", () => {
     beforeEach(() => {
-        testStore = createTestStore()
+        store = createTestStore()
     })
-    test("works", () => {
-        expect(testStore).toStrictEqual("hi")
+    test("default value", () => {
+        expect(store).toStrictEqual(initial)
+    })
+    test("get primitive", () => {
+        expect(store.preferences.darkMode).toBe(false)
+    })
+    test("set primitive", () => {
+        store.preferences.darkMode = true
+        expect(store.preferences.darkMode).toBe(true)
+    })
+    test("get object", () => {
+        expect(store.preferences).toStrictEqual(initial.preferences)
+    })
+    test("set object", () => {
+        const updatedValue = {
+            darkMode: true,
+            font: { family: "Ubuntu", size: 16 }
+        }
+        store.preferences = updatedValue
+        expect(store.preferences).toStrictEqual(updatedValue)
     })
 })

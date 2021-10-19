@@ -149,6 +149,16 @@ export type DeepPartial<T> = {
 export type Writeable<T> = { -readonly [P in keyof T]: T[P] }
 export type DeepWriteable<T> = { -readonly [P in keyof T]: DeepWriteable<T[P]> }
 
+export type WithReadonlyKeys<Obj, Keys extends keyof Obj> = Omit<Obj, Keys> &
+    {
+        readonly [K in Keys]: Obj[K]
+    }
+
+export type WithWriteableKeys<Obj, Keys extends keyof Obj> = Omit<Obj, Keys> &
+    {
+        -readonly [K in Keys]: Obj[K]
+    }
+
 export type PropertyOf<T> = T[keyof T]
 export type ElementOf<T extends List> = T[number]
 export type ValueOf<T> = T extends NonRecursible
