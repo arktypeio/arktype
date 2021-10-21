@@ -138,12 +138,9 @@ const initial = {
     }
 }
 
-describe("createStore", () => {
+describe("state", () => {
     beforeEach(() => {
         store = createTestStore()
-    })
-    test("default value", () => {
-        expect(store).toStrictEqual(initial)
     })
     test("get primitive", () => {
         expect(store.preferences.darkMode).toBe(false)
@@ -162,5 +159,20 @@ describe("createStore", () => {
         }
         store.preferences = updatedValue
         expect(store.preferences).toStrictEqual(updatedValue)
+    })
+})
+
+describe("stored types", () => {
+    beforeEach(() => {
+        store = createTestStore()
+    })
+    test("create", () => {
+        store.nestedStore.colors.create({ RGB: "255,255,255" })
+        expect(store.nestedStore.colors.all()).toStrictEqual([
+            {
+                RGB: "255,255,255",
+                id: 1
+            }
+        ])
     })
 })

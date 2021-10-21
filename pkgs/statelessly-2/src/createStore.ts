@@ -348,13 +348,26 @@ export const createStore = <
     const getStoreProxy = (proxyTarget: any, path: string): any =>
         new Proxy(proxyTarget, {
             get: (target, prop) => {
-                console.log(`Getting ${String(prop)} at ${path}`)
+                const pathToProp = path
+                    ? `${path}/${String(prop)}`
+                    : String(prop)
+
                 if (!(prop in target)) {
                     return undefined
                 }
                 const value = target[prop]
+                if (storedPaths.includes(pathToProp)) {
+                    return {
+                        create: (data: any) => {
+                            const result = { ...data, id: 1 }
+                            value.push(result)
+                            return result
+                        },
+                        all: () => value
+                    }
+                }
                 if (isRecursible(value)) {
-                    return getStoreProxy(value, `${path}${String(prop)}/`)
+                    return getStoreProxy(value, pathToProp)
                 }
                 return value
             },
