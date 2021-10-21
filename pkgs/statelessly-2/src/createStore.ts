@@ -35,7 +35,8 @@ import {
     withDefaults,
     stringify,
     Key,
-    WithReadonlyKeys
+    WithReadonlyKeys,
+    TransformCyclic
 } from "@re-do/utils"
 import {
     parse,
@@ -473,24 +474,37 @@ const extractTypeDef = (config: any): DeepTreeOf<string> =>
         return null
     })
 
-export type Store<
-    Model,
-    StoredLocations,
-    IdKey extends string
-> = WithReadonlyKeys<
-    {
-        [K in keyof Model]: K extends keyof StoredLocations
-            ? StoredLocations[K] extends true
-                ? Interactions<Model[K], IdKey>
-                : Store<
-                      Model[K],
-                      KeyValuate<StoredLocations[K], "fields">,
-                      IdKey
-                  >
-            : Model[K]
-    },
-    keyof StoredLocations & keyof Model
->
+createTestStore().cache.currentUser?.bestFriend?.bestFriend?.get()
+
+createTestStore().cache.currentCity.groups[0].members[0].bestFriend?.groups.id
+
+export type Store<Model, StoredLocations, IdKey extends string> = {
+    [K in keyof Model]: K extends keyof StoredLocations
+        ? StoredLocations[K] extends true
+            ? Interactions<Model[K], IdKey>
+            : Store<Model[K], KeyValuate<StoredLocations[K], "fields">, IdKey>
+        : NonCyclicModel<Model[K], IdKey, {}>
+}
+
+export type NonCyclicModel<Model, IdKey extends string, SeenKeySets> = {
+    [K in keyof Model]: keyof Recursible<Model[K]> extends KeyValuate<
+        SeenKeySets,
+        K
+    >
+        ? { [K in IdKey]: number } & {
+              get: () => NonCyclicModel<Model[K], IdKey, {}>
+          }
+        : NonCyclicModel<
+              Model[K],
+              IdKey,
+              SeenKeySets &
+                  {
+                      [CurrentKey in K]:
+                          | keyof Recursible<Model[K]>
+                          | KeyValuate<SeenKeySets, K>
+                  }
+          >
+}
 
 type InputFor<Stored, IdKey extends string> =
     | Omit<
@@ -542,3 +556,90 @@ export type FindFunction<T, Multiple extends boolean> = <
 ) => Multiple extends true ? T[] : T
 
 export type FilterFunction<T> = <Args extends FindArgs<T>>(args: Args) => T[]
+
+function createTestStore() {
+    return createStore(
+        {
+            users: {
+                defines: "user",
+                fields: {
+                    name: {
+                        type: "string",
+                        onChange: () => ":-)"
+                    },
+                    groups: {
+                        type: "group[]",
+                        onChange: () => {}
+                    },
+                    bestFriend: "user?",
+                    favoriteColor: "color",
+                    address: {
+                        fields: {
+                            street: "string",
+                            number: "number",
+                            unit: "number?",
+                            city: "city"
+                        }
+                    }
+                }
+            },
+            groups: {
+                defines: "group",
+                fields: {
+                    name: {
+                        type: "string",
+                        onChange: (_) => ""
+                    },
+                    members: {
+                        type: "user[]"
+                    }
+                }
+            },
+            nestedStore: {
+                fields: {
+                    colors: {
+                        stores: "color"
+                    },
+                    others: {
+                        defines: "other",
+                        type: {
+                            other: "string"
+                        }
+                    }
+                }
+            },
+            preferences: {
+                fields: {
+                    darkMode: "boolean",
+                    background: "color?",
+                    font: {
+                        fields: {
+                            family: "string",
+                            size: "number"
+                        }
+                    }
+                }
+            },
+            cache: {
+                fields: {
+                    currentUser: "user|null",
+                    currentCity: "city",
+                    lastObject: "user|group?",
+                    cityOrUser: "user|city"
+                }
+            }
+        },
+        {
+            typeSet: {
+                city: {
+                    users: "user[]",
+                    groups: "group[]",
+                    adjacentCities: "city[]"
+                },
+                color: {
+                    RGB: "string"
+                }
+            }
+        }
+    )
+}
