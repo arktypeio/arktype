@@ -13,7 +13,12 @@ import {
     TypeSetDefinitions
 } from "./definitions.js"
 import { typeDefProxy, UnvalidatedTypeSet, formatTypes } from "./common.js"
-import { ParseType, ParseTypeSetDefinitions } from "./parse.js"
+import {
+    ParseType,
+    ParseTypeOptions,
+    ParseTypeRecurse,
+    ParseTypeSetDefinitions
+} from "./parse.js"
 import { checkErrors, assert, ValidateOptions } from "./validate.js"
 import { getDefault, GetDefaultOptions } from "./defaults.js"
 
@@ -30,19 +35,25 @@ export const declare = <DeclaredTypeNames extends string[]>(
         return {
             parse: <
                 Definition,
+                ParseOptions extends ParseTypeOptions,
                 ActiveTypeSet = TypeSetFromDefinitions<Definitions>
             >(
                 definition: TypeDefinition<
                     Narrow<Definition>,
                     ListPossibleTypes<keyof ActiveTypeSet>
                 >,
-                typeSet?: Exact<ActiveTypeSet, TypeSet<ActiveTypeSet>>
+                typeSet?: Exact<ActiveTypeSet, TypeSet<ActiveTypeSet>>,
+                options?: Narrow<ParseOptions>
             ) => {
                 const formattedDefinition = formatTypes(definition)
                 const activeTypeSet = typeSet ?? typeSetFromDefinitions
                 return {
                     definition: formattedDefinition,
-                    type: typeDefProxy as ParseType<Definition, ActiveTypeSet>,
+                    type: typeDefProxy as ParseType<
+                        Definition,
+                        ActiveTypeSet,
+                        ParseOptions
+                    >,
                     typeSet: activeTypeSet,
                     checkErrors: (
                         value: unknown,

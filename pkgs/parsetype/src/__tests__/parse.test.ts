@@ -122,4 +122,28 @@ describe("parse", () => {
             ]
         }>({} as Def)
     })
+    test("with onCycle option", () => {
+        const result = parse(
+            { a: "a", b: "b" },
+            {
+                a: { b: "b", isA: "true", isB: "false" },
+                b: { a: "a", isA: "false", isB: "true" }
+            },
+            {
+                onCycle: {
+                    cyclic: "cyclic?"
+                }
+            }
+        )
+        const cycleFromA = result.type.a.b.a.cyclic
+        expectType<[true | undefined, false | undefined]>([
+            cycleFromA?.isA,
+            cycleFromA?.isB
+        ])
+        const cycleFromB = result.type.b.a.b.cyclic
+        expectType<[false | undefined, true | undefined]>([
+            cycleFromB?.isA,
+            cycleFromB?.isB
+        ])
+    })
 })

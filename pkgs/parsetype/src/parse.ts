@@ -5,7 +5,9 @@ import {
     Evaluate,
     MergeAll,
     RemoveSpaces,
-    Split
+    Split,
+    WithDefaults,
+    Or
 } from "@re-do/utils"
 import {
     OrDefinition,
@@ -14,21 +16,24 @@ import {
     BuiltInTypeName,
     BuiltInTypes,
     UnvalidatedObjectDefinition,
-    FunctionDefinition
+    FunctionDefinition,
+    UnvalidatedDefinition
 } from "./common.js"
 import { DefinitionTypeError, UnknownTypeError } from "./errors.js"
 
 export type ParseStringDefinition<
     Definition extends string,
     TypeSet,
+    Options extends Required<ParseTypeRecurseOptions>,
     ParsableDefinition extends string = RemoveSpaces<Definition>
 > = ParsableDefinition extends OptionalDefinition<infer OptionalType>
-    ? ParseStringDefinitionRecurse<OptionalType, TypeSet> | undefined
-    : ParseStringDefinitionRecurse<ParsableDefinition, TypeSet>
+    ? ParseStringDefinitionRecurse<OptionalType, TypeSet, Options> | undefined
+    : ParseStringDefinitionRecurse<ParsableDefinition, TypeSet, Options>
 
 export type ParseStringTupleDefinitionRecurse<
     Definitions extends string,
     TypeSet,
+    Options extends Required<ParseTypeRecurseOptions>,
     DefinitionList extends string[] = Split<Definitions, ",">
 > = Definitions extends ""
     ? []
@@ -36,7 +41,8 @@ export type ParseStringTupleDefinitionRecurse<
           ...{
               [Index in keyof DefinitionList]: ParseStringDefinitionRecurse<
                   DefinitionList[Index] & string,
-                  TypeSet
+                  TypeSet,
+                  Options
               >
           }
       ]
@@ -44,19 +50,21 @@ export type ParseStringTupleDefinitionRecurse<
 export type ParseStringFunctionDefinitionRecurse<
     Parameters extends string,
     Return extends string,
-    TypeSet
+    TypeSet,
+    Options extends Required<ParseTypeRecurseOptions>
 > = Evaluate<
     (
-        ...args: ParseStringTupleDefinitionRecurse<Parameters, TypeSet>
-    ) => ParseStringDefinitionRecurse<Return, TypeSet>
+        ...args: ParseStringTupleDefinitionRecurse<Parameters, TypeSet, Options>
+    ) => ParseStringDefinitionRecurse<Return, TypeSet, Options>
 >
 
 export type ParseStringOrDefinitionRecurse<
     First extends string,
     Second extends string,
     TypeSet,
-    FirstParseResult = ParseStringDefinitionRecurse<First, TypeSet>,
-    SecondParseResult = ParseStringDefinitionRecurse<Second, TypeSet>
+    Options extends Required<ParseTypeRecurseOptions>,
+    FirstParseResult = ParseStringDefinitionRecurse<First, TypeSet, Options>,
+    SecondParseResult = ParseStringDefinitionRecurse<Second, TypeSet, Options>
 > = FirstParseResult extends UnknownTypeError
     ? FirstParseResult
     : SecondParseResult extends UnknownTypeError
@@ -65,52 +73,96 @@ export type ParseStringOrDefinitionRecurse<
 
 export type ParseStringDefinitionRecurse<
     Fragment extends string,
-    TypeSet
+    TypeSet,
+    Options extends Required<ParseTypeRecurseOptions>
 > = Fragment extends OrDefinition<infer First, infer Second>
-    ? ParseStringOrDefinitionRecurse<First, Second, TypeSet>
+    ? ParseStringOrDefinitionRecurse<First, Second, TypeSet, Options>
     : Fragment extends FunctionDefinition<infer Parameters, infer Return>
-    ? ParseStringFunctionDefinitionRecurse<Parameters, Return, TypeSet>
+    ? ParseStringFunctionDefinitionRecurse<Parameters, Return, TypeSet, Options>
     : Fragment extends ListDefinition<infer ListItem>
-    ? ParseStringDefinitionRecurse<ListItem, TypeSet>[]
+    ? ParseStringDefinitionRecurse<ListItem, TypeSet, Options>[]
     : Fragment extends keyof TypeSet
-    ? ParseType<TypeSet[Fragment], TypeSet>
+    ? Or<
+          Options["onCycle"] extends never ? true : false,
+          Fragment extends Options["seen"] ? false : true
+      > extends true
+        ? ParseTypeRecurse<
+              TypeSet[Fragment],
+              TypeSet,
+              { onCycle: Options["onCycle"]; seen: Options["seen"] | Fragment }
+          >
+        : ParseType<Options["onCycle"], TypeSet & { cyclic: Fragment }>
     : Fragment extends BuiltInTypeName
     ? BuiltInTypes[Fragment]
     : UnknownTypeError<Fragment>
 
-export type ParseObjectDefinition<Definition extends object, TypeSet> = {
+export type ParseObjectDefinition<
+    Definition extends object,
+    TypeSet,
+    Options extends Required<ParseTypeRecurseOptions>
+> = {
     [PropName in keyof ExcludeByValue<
         Definition,
         OptionalDefinition
-    >]: ParseType<Definition[PropName], TypeSet>
+    >]: ParseTypeRecurse<Definition[PropName], TypeSet, Options>
 } &
     {
         [PropName in keyof FilterByValue<
             Definition,
             OptionalDefinition
         >]?: Definition[PropName] extends OptionalDefinition<infer OptionalType>
-            ? ParseType<OptionalType, TypeSet>
+            ? ParseTypeRecurse<OptionalType, TypeSet, Options>
             : TypeError<`Expected property ${Extract<
                   PropName,
                   string | number
               >} to be optional.`>
     }
 
-export type ParseListDefinition<Definition extends any[], TypeSet> = {
-    [Index in keyof Definition]: ParseType<Definition[Index], TypeSet>
+export type ParseListDefinition<
+    Definition extends any[],
+    TypeSet,
+    Options extends Required<ParseTypeRecurseOptions>
+> = {
+    [Index in keyof Definition]: ParseTypeRecurse<
+        Definition[Index],
+        TypeSet,
+        Options
+    >
 }
 
-export type ParseType<Definition, TypeSet> = Definition extends string
-    ? ParseStringDefinition<Definition, TypeSet>
+export type ParseTypeRecurseOptions = Required<ParseTypeOptions>
+
+export type ParseTypeOptions = {
+    onCycle?: UnvalidatedDefinition
+    seen?: string
+}
+
+export type ParseTypeRecurse<
+    Definition,
+    TypeSet,
+    Options extends ParseTypeRecurseOptions
+> = Definition extends string
+    ? ParseStringDefinition<Definition, TypeSet, Options>
     : Definition extends UnvalidatedObjectDefinition
     ? Definition extends any[]
-        ? Evaluate<ParseListDefinition<Definition, TypeSet>>
-        : Evaluate<ParseObjectDefinition<Definition, TypeSet>>
+        ? Evaluate<ParseListDefinition<Definition, TypeSet, Options>>
+        : Evaluate<ParseObjectDefinition<Definition, TypeSet, Options>>
     : DefinitionTypeError
+
+export type ParseType<
+    Definition,
+    TypeSet,
+    Options extends ParseTypeOptions = {}
+> = ParseTypeRecurse<
+    Definition,
+    TypeSet,
+    WithDefaults<ParseTypeOptions, Options, { onCycle: never; seen: never }>
+>
 
 export type ParseTypeSetDefinitions<
     Definitions,
+    Options extends ParseTypeOptions = {},
     Merged = MergeAll<Definitions>
 > = {
-    [TypeName in keyof Merged]: ParseType<Merged[TypeName], Merged>
+    [TypeName in keyof Merged]: ParseType<Merged[TypeName], Merged, Options>
 }
