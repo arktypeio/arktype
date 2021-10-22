@@ -46,13 +46,14 @@ import {
     UnvalidatedDefinition,
     UnvalidatedTypeSet
 } from "parsetype"
+// For some reason this prevents createStore from giving an inane "cannot resolve type without reference" error
+import {} from "parsetype/dist/cjs/parse"
 import {
     configureStore,
     ConfigureStoreOptions,
     Middleware,
     Store as ReduxStore
 } from "@reduxjs/toolkit"
-import { type } from "os"
 
 /**
  * This is a hacky version of ExactObject from @re-do/utils that accomodates anomalies
@@ -304,7 +305,15 @@ export const createStore = <
     StoredTypes = GetStoredTypes<Config, IdKey>,
     ModelTypeSet = ExternalTypeSet & StoredTypes,
     ModelDefinition = DefinitionFromConfig<Config, true>,
-    Model = ParseType<ModelDefinition, ModelTypeSet>,
+    Model = ParseType<
+        ModelDefinition,
+        ModelTypeSet,
+        {
+            onCycle: { get: "()=>cyclic" } & {
+                [K in IdKey]: "number"
+            }
+        }
+    >,
     StoredLocations = FilterByValue<
         Config,
         { stores: string } | { defines: string },
@@ -474,36 +483,16 @@ const extractTypeDef = (config: any): DeepTreeOf<string> =>
         return null
     })
 
-createTestStore().cache.currentUser?.bestFriend?.bestFriend?.get()
+// createTestStore().cache.currentUser?.bestFriend?.get()
 
-createTestStore().cache.currentCity.groups[0].members[0].bestFriend?.groups.id
+// createTestStore().cache.currentCity.groups[0].members[0].bestFriend?.id
 
 export type Store<Model, StoredLocations, IdKey extends string> = {
     [K in keyof Model]: K extends keyof StoredLocations
         ? StoredLocations[K] extends true
             ? Interactions<Model[K], IdKey>
             : Store<Model[K], KeyValuate<StoredLocations[K], "fields">, IdKey>
-        : NonCyclicModel<Model[K], IdKey, {}>
-}
-
-export type NonCyclicModel<Model, IdKey extends string, SeenKeySets> = {
-    [K in keyof Model]: keyof Recursible<Model[K]> extends KeyValuate<
-        SeenKeySets,
-        K
-    >
-        ? { [K in IdKey]: number } & {
-              get: () => NonCyclicModel<Model[K], IdKey, {}>
-          }
-        : NonCyclicModel<
-              Model[K],
-              IdKey,
-              SeenKeySets &
-                  {
-                      [CurrentKey in K]:
-                          | keyof Recursible<Model[K]>
-                          | KeyValuate<SeenKeySets, K>
-                  }
-          >
+        : Model[K]
 }
 
 type InputFor<Stored, IdKey extends string> =

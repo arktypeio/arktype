@@ -3,7 +3,8 @@ import {
     Evaluate,
     ListPossibleTypes,
     Exact,
-    mergeAll
+    mergeAll,
+    DeepEvaluate
 } from "@re-do/utils"
 import {
     TypeDefinition,
@@ -16,7 +17,6 @@ import { typeDefProxy, UnvalidatedTypeSet, formatTypes } from "./common.js"
 import {
     ParseType,
     ParseTypeOptions,
-    ParseTypeRecurse,
     ParseTypeSetDefinitions
 } from "./parse.js"
 import { checkErrors, assert, ValidateOptions } from "./validate.js"
@@ -43,7 +43,7 @@ export const declare = <DeclaredTypeNames extends string[]>(
                     ListPossibleTypes<keyof ActiveTypeSet>
                 >,
                 typeSet?: Exact<ActiveTypeSet, TypeSet<ActiveTypeSet>>,
-                options?: Narrow<ParseOptions>
+                options?: DeepEvaluate<Narrow<ParseOptions>>
             ) => {
                 const formattedDefinition = formatTypes(definition)
                 const activeTypeSet = typeSet ?? typeSetFromDefinitions
@@ -73,7 +73,8 @@ export const declare = <DeclaredTypeNames extends string[]>(
                             options
                         ),
                     getDefault: (options: GetDefaultOptions = {}) =>
-                        getDefault(formattedDefinition, activeTypeSet, options)
+                        getDefault(formattedDefinition, activeTypeSet, options),
+                    options: options
                 }
             },
             types: typeDefProxy as Evaluate<
