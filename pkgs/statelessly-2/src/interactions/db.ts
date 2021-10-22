@@ -1,25 +1,74 @@
-import { transform, Unlisted, withDefaults } from "@re-do/utils"
+import {
+    AsListIfList,
+    ExcludeByValue,
+    FilterByValue,
+    NonRecursible,
+    transform,
+    Unlisted,
+    withDefaults
+} from "@re-do/utils"
 
-export type TypeNameFrom<Model> = keyof Model & string
+export type StoredType<IdKey extends string = "id"> = {
+    [K in IdKey]: number
+} &
+    { [K in string]: any }
+
+export type StoredModel<IdKey extends string = "id"> = {
+    [K in string]: StoredType<IdKey>[]
+}
+
+export type Relationships<
+    Model extends StoredModel<IdKey>,
+    IdKey extends string = "id"
+> = {
+    [K in keyof Model]: {
+        [K2 in keyof FilterByValue<
+            Unlisted<Model[K]>,
+            StoredType<IdKey>
+        >]: keyof Model
+    }
+}
+
+export type ShallowStoredType<
+    Stored extends StoredType<IdKey>,
+    IdKey extends string = "id"
+> = {
+    [K in keyof Stored]: Unlisted<Stored[K]> extends StoredType<IdKey>
+        ? AsListIfList<number, Stored[K]>
+        : Stored[K]
+}
+
+export type ShallowInput<
+    Model extends StoredModel<IdKey>,
+    TypeName extends keyof Model,
+    IdKey extends string = "id"
+> = Omit<ShallowStoredType<Unlisted<Model[TypeName]>, IdKey>, IdKey>
+
+export type Input<
+    Model extends StoredModel<IdKey>,
+    Name extends keyof Model,
+    IdKey extends string = "id"
+> = Omit<Unlisted<Model[Name]>, IdKey>
 
 export type Db<
-    Model extends Record<string, any[]>,
-    IdKey extends string = "id",
-    TypeName extends TypeNameFrom<Model> = TypeNameFrom<Model>
+    Model extends StoredModel<IdKey>,
+    IdKey extends string = "id"
 > = {
-    all: <Name extends TypeName>(args: { typeName: Name }) => Model[TypeName]
-    create: <Name extends TypeName>(args: {
+    all: <Name extends keyof Model>(args: {
         typeName: Name
-        data: Omit<Unlisted<Model[Name]>, IdKey>
+    }) => Model[keyof Model]
+    create: <Name extends keyof Model>(args: {
+        typeName: Name
+        data: ShallowInput<Model, Name, IdKey>
     }) => number
-    remove: <Name extends TypeName>(args: {
+    remove: <Name extends keyof Model>(args: {
         typeName: Name
         ids: number[]
     }) => void
-    update: <Name extends TypeName>(args: {
+    update: <Name extends keyof Model>(args: {
         typeName: Name
         // Ids to the updated values of the corresponding objects
-        changes: Record<number, Omit<Unlisted<Model[Name]>, IdKey>>
+        changes: Record<number, ShallowInput<Model, Name, IdKey>>
     }) => void
 }
 
@@ -44,7 +93,7 @@ export const getNextId = <IdKey extends string>(
 }
 
 export const createMemoryDb = <
-    Model extends Record<string, any[]>,
+    Model extends StoredModel<IdKey>,
     IdKey extends string = "id"
 >(
     initial: Model,
@@ -60,7 +109,7 @@ export const createMemoryDb = <
             db[typeName].push({
                 ...data,
                 [idKey]: nextId
-            })
+            } as any)
             return nextId
         },
         remove: ({ typeName, ids }) => {

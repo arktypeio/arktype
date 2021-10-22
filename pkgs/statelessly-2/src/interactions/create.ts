@@ -1,6 +1,20 @@
-export const create = () => {}
+import { Unlisted } from "@re-do/utils"
+import { Db } from "./db.js"
+import { InputFor } from "./interactions.js"
 
-// import { deepEquals, excludeKeys, transform, withDefaults } from "@re-do/utils"
+export const create = <
+    Model extends Record<string, any[]>,
+    IdKey extends string,
+    TypeName extends keyof Model,
+    Stored = Unlisted<Model[TypeName]>,
+    Input = InputFor<Stored, IdKey>
+>(
+    db: Db<Model, IdKey>,
+    typeName: TypeName,
+    data: Input
+) => {}
+
+// import { deepEquals, excludeKeys, transform, withDefaults } frosm "@re-do/utils"
 
 // export const create = <T>(
 //     data: T,
