@@ -54,6 +54,7 @@ import {
     Middleware,
     Store as ReduxStore
 } from "@reduxjs/toolkit"
+import { createMemoryDb } from "./interactions/db.js"
 
 /**
  * This is a hacky version of ExactObject from @re-do/utils that accomodates anomalies
@@ -349,11 +350,11 @@ export const createStore = <
     )
     const storedPaths = findStoredPaths(config, "")
     const model = parse(modelTypeDef, modelTypeSet)
-    const initialState = model.getDefault()
+    const initialState = model.getDefault() as Model
     // copy the object by value
-    const reduxStore = transform(initialState, ([k, v]) => [k, v], {
-        deep: true
-    })
+    const persisted = createMemoryDb(
+        transform(storedPaths, ([i, v]) => [v, []])
+    )
     // TODO: Require default value for stored type references
     const getStoreProxy = (proxyTarget: any, path: string): any =>
         new Proxy(proxyTarget, {
@@ -369,11 +370,13 @@ export const createStore = <
                 if (storedPaths.includes(pathToProp)) {
                     return {
                         create: (data: any) => {
-                            const result = { ...data, id: 1 }
-                            value.push(result)
-                            return result
+                            const id = persisted.create({
+                                typeName: pathToProp,
+                                data
+                            })
+                            return { ...data, id }
                         },
-                        all: () => value
+                        all: () => persisted.all({ typeName: pathToProp })
                     }
                 }
                 if (isRecursible(value)) {
@@ -386,7 +389,7 @@ export const createStore = <
                 return true
             }
         })
-    const storeRoot = getStoreProxy(reduxStore, "")
+    const storeRoot = getStoreProxy(initialState, "")
     return storeRoot as Store<Model, StoredLocations, IdKey>
 }
 

@@ -73,7 +73,11 @@ export const declare = <DeclaredTypeNames extends string[]>(
                             options
                         ),
                     getDefault: (options: GetDefaultOptions = {}) =>
-                        getDefault(formattedDefinition, activeTypeSet, options),
+                        getDefault(
+                            formattedDefinition,
+                            activeTypeSet,
+                            options
+                        ) as ParseType<Definition, ActiveTypeSet, ParseOptions>,
                     options: options
                 }
             },

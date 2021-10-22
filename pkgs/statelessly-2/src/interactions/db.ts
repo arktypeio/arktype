@@ -1,4 +1,4 @@
-import { transform, withDefaults } from "@re-do/utils"
+import { transform, Unlisted, withDefaults } from "@re-do/utils"
 
 export type TypeNameFrom<Model> = keyof Model & string
 
@@ -7,10 +7,10 @@ export type Db<
     IdKey extends string = "id",
     TypeName extends TypeNameFrom<Model> = TypeNameFrom<Model>
 > = {
-    all: <Name extends TypeName>(args: { typeName: Name }) => Model[TypeName][]
+    all: <Name extends TypeName>(args: { typeName: Name }) => Model[TypeName]
     create: <Name extends TypeName>(args: {
         typeName: Name
-        data: Omit<Model[Name], IdKey>
+        data: Omit<Unlisted<Model[Name]>, IdKey>
     }) => number
     remove: <Name extends TypeName>(args: {
         typeName: Name
@@ -19,7 +19,7 @@ export type Db<
     update: <Name extends TypeName>(args: {
         typeName: Name
         // Ids to the updated values of the corresponding objects
-        changes: Record<number, Omit<Model[Name], IdKey>>
+        changes: Record<number, Omit<Unlisted<Model[Name]>, IdKey>>
     }) => void
 }
 
