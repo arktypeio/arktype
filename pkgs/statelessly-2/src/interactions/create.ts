@@ -1,20 +1,26 @@
 import { Unlisted } from "@re-do/utils"
-import { Db } from "./db.js"
-import { InputFor } from "./interactions.js"
+import { Db, StoredModel } from "./db.js"
+import { InputFor, InteractionContext } from "./interactions.js"
 
 export const create = <
-    Model extends Record<string, any[]>,
+    Model extends StoredModel<IdKey>,
     IdKey extends string,
     TypeName extends keyof Model,
     Stored = Unlisted<Model[TypeName]>,
     Input = InputFor<Stored, IdKey>
 >(
-    db: Db<Model, IdKey>,
     typeName: TypeName,
-    data: Input
-) => {}
+    data: Input,
+    { db, idKey, types }: InteractionContext<Model, IdKey>
+) => {
+    // const id = db.create({
+    //     typeName,
+    //     data
+    // })
+    // return { ...data, id }
+}
 
-// import { deepEquals, excludeKeys, transform, withDefaults } frosm "@re-do/utils"
+// import { deepEquals, excludeKeys, transform, withDefaults } from "@re-do/utils"
 
 // export const create = <T>(
 //     data: T,

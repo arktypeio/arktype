@@ -233,12 +233,14 @@ export const createDefineFunctionMap = <DeclaredTypeNames extends string[]>(
     transform(typeNames, ([index, typeName]) => [
         typeName as string,
         createDefineFunction(typeName as string, typeNames)
-    ]) as {
-        [DefinedTypeName in ElementOf<DeclaredTypeNames>]: DefineFunction<
-            DefinedTypeName,
-            DeclaredTypeNames
-        >
-    }
+    ]) as DefineFunctionMap<DeclaredTypeNames>
+
+export type DefineFunctionMap<DeclaredTypeNames extends string[]> = {
+    [DefinedTypeName in ElementOf<DeclaredTypeNames>]: DefineFunction<
+        DefinedTypeName,
+        DeclaredTypeNames
+    >
+}
 
 export type DefineFunction<
     DefinedTypeName extends ElementOf<DeclaredTypeNames>,
@@ -267,7 +269,7 @@ export type TypeNamesFrom<Definitions> = ListPossibleTypes<
 export type MissingTypesError<DeclaredTypeName, DefinedTypeName> = DiffUnions<
     DeclaredTypeName,
     DefinedTypeName
-> extends UnionDiffResult<infer Missing, any>
+> extends UnionDiffResult<any, infer Missing>
     ? Missing extends []
         ? {}
         : `Declared types ${StringifyPossibleTypes<`'${ElementOf<Missing>}'`>} were never defined.`

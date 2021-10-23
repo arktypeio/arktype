@@ -5,6 +5,8 @@ import {
     DeepUpdate,
     DeepPartial
 } from "@re-do/utils"
+import { ParsedType } from "parsetype"
+import { Db, StoredModel } from "./db.js"
 
 export type InputFor<Stored, IdKey extends string> =
     | Omit<
@@ -19,7 +21,7 @@ export type InputFor<Stored, IdKey extends string> =
 
 export type Interactions<
     Model,
-    IdKey extends string,
+    IdKey extends string = "id",
     Stored = Unlisted<Model>,
     Input = InputFor<Stored, IdKey>
 > = {
@@ -35,6 +37,15 @@ export type Interactions<
         remove: () => Stored[]
         update: (update: DeepUpdate<Input>) => Stored[]
     }
+}
+
+export type InteractionContext<
+    Model extends StoredModel<IdKey>,
+    IdKey extends string
+> = {
+    db: Db<Model, IdKey>
+    idKey: IdKey
+    types: ParsedType
 }
 
 export type UpdateFunction<Input> = (
