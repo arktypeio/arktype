@@ -1,7 +1,6 @@
-import { parse, TypeDefinition } from ".."
+import { compile, parse, TypeDefinition } from ".."
 import { expectType, expectError } from "tsd"
 import { DefinitionTypeError } from "../errors.js"
-import { ElementOf, DeepUnlisted, Unlisted, NumericString } from "@re-do/utils"
 
 describe("parse", () => {
     test("built-in", () => {
@@ -73,9 +72,14 @@ describe("parse", () => {
         )
     })
     test("with typeset", () => {
-        const stringResult = parse("borf", { borf: "boolean" }).type
+        const stringResult = parse("borf", {
+            typeSet: { borf: "boolean" }
+        }).type
         expectType<boolean>(stringResult)
-        const objectResult = parse({ snorf: "borf[]" }, { borf: "boolean" })
+        const objectResult = parse(
+            { snorf: "borf[]" },
+            { typeSet: { borf: "boolean" } }
+        )
         expectType<{ snorf: boolean[] }>(objectResult.type)
     })
     test("list definition", () => {
@@ -122,13 +126,13 @@ describe("parse", () => {
             ]
         }>({} as Def)
     })
+    const cyclicTypeSet = compile(
+        { a: { b: "b", isA: "true", isB: "false" } },
+        { b: { a: "a", isA: "false", isB: "true" } }
+    )
     test("with onCycle option", () => {
-        const result = parse(
+        const result = cyclicTypeSet.parse(
             { a: "a", b: "b" },
-            {
-                a: { b: "b", isA: "true", isB: "false" },
-                b: { a: "a", isA: "false", isB: "true" }
-            },
             {
                 onCycle: {
                     cyclic: "cyclic?"
@@ -144,6 +148,22 @@ describe("parse", () => {
         expectType<[false | undefined, true | undefined]>([
             cycleFromB?.isA,
             cycleFromB?.isB
+        ])
+    })
+    test("with deepOnCycleOption", () => {
+        const result = cyclicTypeSet.parse(
+            { a: "a", b: "b" },
+            {
+                deepOnCycle: true,
+                onCycle: {
+                    cyclic: "cyclic?"
+                }
+            }
+        )
+        const cycleFromA = result.type.a.b.a.cyclic?.b.a.cyclic
+        expectType<[true | undefined, false | undefined]>([
+            cycleFromA?.isA,
+            cycleFromA?.isB
         ])
     })
 })

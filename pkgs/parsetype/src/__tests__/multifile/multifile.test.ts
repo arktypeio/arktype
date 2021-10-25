@@ -21,9 +21,9 @@ export type ExpectedGroup = {
 
 describe("multifile", () => {
     test("compiles", () => {
-        expectType<ExpectedUser>(types.user)
-        expectType<ExpectedGroup>(types.group)
-        expectType<ExpectedUser | undefined>(types.user.bestFriend)
+        expectType<ExpectedUser>(types.user.type)
+        expectType<ExpectedGroup>(types.group.type)
+        expectType<ExpectedUser | undefined>(types.user.type.bestFriend)
         const doozler = parse({ foozler: "user", choozler: "group[]" }).type
         expectType<{ foozler: ExpectedUser; choozler: ExpectedGroup[] }>(
             doozler

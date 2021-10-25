@@ -11,7 +11,7 @@ describe("declare", () => {
         // @ts-expect-error
         define.GottaDefineThis("whoops")
         const { types, parse } = compile(GottaDefineThis)
-        expectType<boolean>(types.GottaDefineThis)
+        expectType<boolean>(types.GottaDefineThis.type)
         const result = parse({ a: "GottaDefineThis" })
         expectType<{ a: boolean }>(result.type)
     })

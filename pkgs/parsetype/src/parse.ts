@@ -7,7 +7,8 @@ import {
     RemoveSpaces,
     Split,
     WithDefaults,
-    Or
+    Or,
+    KeyValuate
 } from "@re-do/utils"
 import {
     OrDefinition,
@@ -89,9 +90,23 @@ export type ParseStringDefinitionRecurse<
         ? ParseTypeRecurse<
               TypeSet[Fragment],
               TypeSet,
-              { onCycle: Options["onCycle"]; seen: Options["seen"] | Fragment }
+              {
+                  onCycle: Options["onCycle"]
+                  seen: Options["seen"] | Fragment
+                  deepOnCycle: Options["deepOnCycle"]
+              }
           >
-        : ParseType<Options["onCycle"], TypeSet & { cyclic: Fragment }>
+        : ParseTypeRecurse<
+              Options["onCycle"],
+              TypeSet & { cyclic: Fragment },
+              {
+                  onCycle: Options["deepOnCycle"] extends true
+                      ? Options["onCycle"]
+                      : never
+                  seen: never
+                  deepOnCycle: Options["deepOnCycle"]
+              }
+          >
     : Fragment extends BuiltInTypeName
     ? BuiltInTypes[Fragment]
     : UnknownTypeError<Fragment>
@@ -104,13 +119,15 @@ export type ParseObjectDefinition<
     [PropName in keyof ExcludeByValue<
         Definition,
         OptionalDefinition
-    >]: ParseTypeRecurse<Definition[PropName], TypeSet, Options>
+    >]: ParseTypeRecurse<KeyValuate<Definition, PropName>, TypeSet, Options>
 } &
     {
         [PropName in keyof FilterByValue<
             Definition,
             OptionalDefinition
-        >]?: Definition[PropName] extends OptionalDefinition<infer OptionalType>
+        >]?: KeyValuate<Definition, PropName> extends OptionalDefinition<
+            infer OptionalType
+        >
             ? ParseTypeRecurse<OptionalType, TypeSet, Options>
             : TypeError<`Expected property ${Extract<
                   PropName,
@@ -135,6 +152,7 @@ export type ParseTypeRecurseOptions = Required<ParseTypeOptions>
 export type ParseTypeOptions = {
     onCycle?: UnvalidatedDefinition
     seen?: string
+    deepOnCycle?: boolean
 }
 
 export type ParseTypeRecurse<
@@ -156,7 +174,11 @@ export type ParseType<
 > = ParseTypeRecurse<
     Definition,
     TypeSet,
-    WithDefaults<ParseTypeOptions, Options, { onCycle: never; seen: never }>
+    WithDefaults<
+        ParseTypeOptions,
+        Options,
+        { onCycle: never; seen: never; deepOnCycle: false }
+    >
 >
 
 export type ParseTypeSetDefinitions<

@@ -140,7 +140,7 @@ describe("default values", () => {
                 optionalGroup: "group?",
                 optionalGroups: "group[]?"
             },
-            { group: { name: "string", description: "string?" } }
+            { typeSet: { group: { name: "string", description: "string?" } } }
         ).getDefault()
         expect(defaultValue).toStrictEqual({
             requiredGroup: { name: "" },

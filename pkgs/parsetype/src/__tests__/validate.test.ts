@@ -212,9 +212,11 @@ describe("validate", () => {
         const groceries = parse(
             { fruits: "fruit[]" },
             {
-                banana: { length: "number", description: "string?" },
-                apple: { circumference: "number", type: "string" },
-                fruit: "banana|apple"
+                typeSet: {
+                    banana: { length: "number", description: "string?" },
+                    apple: { circumference: "number", type: "string" },
+                    fruit: "banana|apple"
+                }
             }
         )
         expect(
@@ -245,11 +247,13 @@ describe("validate", () => {
         `)
     })
     test("errors on shallow cycle", () => {
-        const shallowRecursive = parse("a", { a: "a" })
+        const shallowRecursive = parse("a", { typeSet: { a: "a" } })
         expect(() => shallowRecursive.assert("what's an a?")).toThrowError(
             "shallowly"
         )
-        const shallowCyclic = parse("a", { a: "b", b: "c", c: "a|b|c" })
+        const shallowCyclic = parse("a", {
+            typeSet: { a: "b", b: "c", c: "a|b|c" }
+        })
         expect(() => shallowCyclic.checkErrors(["what's a b?"])).toThrowError(
             "shallowly"
         )
@@ -258,9 +262,11 @@ describe("validate", () => {
         const bicycle = parse(
             { a: "a", b: "b", c: "either[]" },
             {
-                a: { a: "a?", b: "b?", isA: "true" },
-                b: { a: "a?", b: "b?", isA: "false" },
-                either: "a|b"
+                typeSet: {
+                    a: { a: "a?", b: "b?", isA: "true" },
+                    b: { a: "a?", b: "b?", isA: "false" },
+                    either: "a|b"
+                }
             }
         )
         expect(
