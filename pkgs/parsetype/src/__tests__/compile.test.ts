@@ -1,5 +1,6 @@
-import { compile } from ".."
+import { compile, parse } from ".."
 import { expectType, expectError } from "tsd"
+import { typeDefProxy } from "../common.js"
 
 describe("compile", () => {
     test("single", () => {
@@ -7,9 +8,7 @@ describe("compile", () => {
         expectType<string>(a)
         // @ts-expect-error
         const badA = compile({ a: "strig" }).types.a.type
-        expectError<"Unable to determine the type of 'Unabletodeterminethetypeof'strig'.'.">(
-            badA
-        )
+        expectError<"Unable to determine the type of 'strig'.">(badA)
     })
     test("independent", () => {
         const c = compile({ a: "string" }, { b: { c: "boolean" } }).types.b.type
@@ -18,18 +17,14 @@ describe("compile", () => {
         // @ts-expect-error
         const badC = compile({ a: "string" }, { b: { c: "uhoh" } }).types.b.type
             .c
-        expectError<"Unable to determine the type of 'Unabletodeterminethetypeof'uhoh'.'.">(
-            badC
-        )
+        expectError<"Unable to determine the type of 'uhoh'.">(badC)
     })
     test("interdependent", () => {
         const c = compile({ a: "string" }, { b: { c: "a" } }).types.b.type.c
         expectType<string>(c)
         // @ts-expect-error
         const badC = compile({ a: "uhoh" }, { b: { c: "a" } }).types.b.type.c
-        expectError<"Unable to determine the type of 'Unabletodeterminethetypeof'uhoh'.'.">(
-            badC
-        )
+        expectError<"Unable to determine the type of 'uhoh'.">(badC)
     })
     test("recursive", () => {
         const { types } = compile({ a: { dejaVu: "a?" } })
@@ -73,5 +68,50 @@ describe("compile", () => {
                 c: "Unable to determine the type of 'c'."
             }
         }>(badResult)
+    })
+    test("compile result", () => {
+        const compileResult = compile({ a: { b: "b?" } }, { b: { a: "a?" } })
+        const { type, ...parseResult } = compileResult.parse("a") as any
+        // Jest cannot compare typeDef proxies for strict equality without throwing
+        expect(type).toBe(typeDefProxy)
+        expect(parseResult).toMatchInlineSnapshot(`
+Object {
+  "assert": [Function],
+  "checkErrors": [Function],
+  "definition": "a",
+  "getDefault": [Function],
+  "typeSet": Object {
+    "a": Object {
+      "b": "b?",
+    },
+    "b": Object {
+      "a": "a?",
+    },
+  },
+}
+`)
+        const { type: preparsedType, ...preparsedResult } = compileResult.types
+            .a as any
+        expect(preparsedType).toBe(typeDefProxy)
+        expect(preparsedResult).toMatchInlineSnapshot(`
+Object {
+  "assert": [Function],
+  "checkErrors": [Function],
+  "definition": Object {
+    "b": "b?",
+  },
+  "getDefault": [Function],
+  "typeSet": Object {
+    "a": Object {
+      "b": "b?",
+    },
+    "b": Object {
+      "a": "a?",
+    },
+  },
+}
+`)
+        // Make sure b is included in types without rechecking all of the above
+        expect(typeof compileResult.types.b).toBe("object")
     })
 })

@@ -40,6 +40,7 @@ import {
 } from "@re-do/utils"
 import {
     parse,
+    ParsedType,
     ParseType,
     TypeDefinition,
     TypeSet,
@@ -349,7 +350,7 @@ export const createStore = <
         idKey
     )
     const storedPaths = findStoredPaths(config, "")
-    const model = parse(modelTypeDef, modelTypeSet)
+    const model = parse(modelTypeDef, { typeSet: modelTypeSet }) as any
     const initialState = model.getDefault() as Model
     // copy the object by value
     const persisted = createMemoryDb(
@@ -461,7 +462,7 @@ const findStoredPaths = (config: any, path: string): string[] =>
         return storedPaths
     }, [] as string[])
 
-const extractTypeDef = (config: any): DeepTreeOf<string> =>
+const extractTypeDef = (config: any): any =>
     transform(config, ([k, v]) => {
         if (typeof v === "string") {
             return [k, v]

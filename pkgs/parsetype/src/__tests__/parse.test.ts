@@ -1,6 +1,7 @@
-import { compile, parse, TypeDefinition } from ".."
+import { compile, parse, ParsedType, TypeDefinition } from ".."
 import { expectType, expectError } from "tsd"
 import { DefinitionTypeError } from "../errors.js"
+import { typeDefProxy } from "../common.js"
 
 describe("parse", () => {
     test("built-in", () => {
@@ -165,5 +166,16 @@ describe("parse", () => {
             cycleFromA?.isA,
             cycleFromA?.isB
         ])
+    })
+    test("parse result", () => {
+        const parseResult = parse("a", {
+            typeSet: { a: "true" }
+        })
+        expect(parseResult.definition).toBe("a")
+        expect(parseResult.typeSet).toStrictEqual({ a: "true" })
+        expect(parseResult.assert(true)).toBe(undefined)
+        expect(parseResult.checkErrors(true)).toBe("")
+        expect(parseResult.getDefault()).toBe(true)
+        expect(parseResult.type).toBe(typeDefProxy)
     })
 })

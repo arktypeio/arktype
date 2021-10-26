@@ -223,8 +223,8 @@ export type TypeSet<
     [TypeName in keyof TypeSet]: TypeDefinition<TypeSet[TypeName], TypeNames>
 }
 
-export type TypeSetFromDefinitions<Definitions> = MergeAll<
-    TypeDefinitions<Definitions>
+export type TypeSetFromDefinitions<Definitions> = Evaluate<
+    MergeAll<TypeDefinitions<Definitions>>
 >
 
 export const createDefineFunctionMap = <DeclaredTypeNames extends string[]>(

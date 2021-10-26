@@ -14,7 +14,13 @@ import {
     TypeSetDefinitions,
     DefineFunctionMap
 } from "./definitions.js"
-import { typeDefProxy, UnvalidatedTypeSet, formatTypes } from "./common.js"
+import {
+    typeDefProxy,
+    UnvalidatedTypeSet,
+    formatTypes,
+    UnvalidatedDefinition,
+    UnvalidatedObjectDefinition
+} from "./common.js"
 import { ParseType, ParseTypeOptions } from "./parse.js"
 import { checkErrors, assert, ValidateOptions } from "./validate.js"
 import { getDefault, GetDefaultOptions } from "./defaults.js"
@@ -47,7 +53,7 @@ const createParseFunction =
                 ActiveTypeSet,
                 ParseOptions
             >,
-            typeSet: activeTypeSet,
+            typeSet: activeTypeSet as ActiveTypeSet,
             checkErrors: (value: unknown, options: ValidateOptions = {}) =>
                 checkErrors(value, formattedDefinition, activeTypeSet, options),
             assert: (value: unknown, options: ValidateOptions = {}) =>
@@ -85,56 +91,72 @@ const createCompileFunction =
                 ]
             ) as {
                 [TypeName in keyof MergedTypeSet]: Evaluate<
-                    ParsedType<MergedTypeSet[TypeName], MergedTypeSet, {}>
+                    ParsedType<TypeName, MergedTypeSet, {}>
                 >
             }
         }
     }
 
-export type Declaration<DeclaredTypeNames extends string[]> = {
+export type Declaration<DeclaredTypeNames extends string[] = string[]> = {
     define: DefineFunctionMap<DeclaredTypeNames>
     compile: CompileFunction<DeclaredTypeNames>
 }
 
-export type CompileFunction<DeclaredTypeNames extends string[]> = <
+export type CompileFunction<DeclaredTypeNames extends string[] = string[]> = <
     Definitions extends any[]
 >(
     ...definitions: TypeSetDefinitions<Definitions, DeclaredTypeNames>
 ) => CompiledTypeSet<Definitions>
 
 export type CompiledTypeSet<
-    Definitions extends any[],
-    MergedTypeSet extends UnvalidatedTypeSet = TypeSetFromDefinitions<Definitions>
+    Definitions extends UnvalidatedObjectDefinition[] = UnvalidatedObjectDefinition[],
+    MergedTypeSet extends UnvalidatedTypeSet = UnvalidatedObjectDefinition[] extends Definitions
+        ? UnvalidatedTypeSet
+        : TypeSetFromDefinitions<Definitions>
 > = {
     parse: ParseFunction<MergedTypeSet>
-    types: {
-        [TypeName in keyof MergedTypeSet]: Evaluate<
-            ParsedType<MergedTypeSet[TypeName], MergedTypeSet, {}>
-        >
-    }
+    types: ParsedTypeSet<MergedTypeSet>
 }
 
-export type ParseFunction<PredefinedTypeSet extends UnvalidatedTypeSet> = <
+export type ParsedTypeSet<
+    TypeSet extends UnvalidatedTypeSet = UnvalidatedTypeSet
+> = UnvalidatedTypeSet extends TypeSet
+    ? Record<string, ParsedType>
+    : {
+          [TypeName in keyof TypeSet]: Evaluate<
+              ParsedType<TypeName, TypeSet, {}>
+          >
+      }
+
+export type ParseFunction<
+    PredefinedTypeSet extends UnvalidatedTypeSet = UnvalidatedTypeSet
+> = <
     Definition,
     Options extends ParseTypeOptions,
     ActiveTypeSet = PredefinedTypeSet
 >(
-    definition: TypeDefinition<
-        Narrow<Definition>,
-        ListPossibleTypes<keyof ActiveTypeSet>
-    >,
+    definition: UnvalidatedTypeSet extends ActiveTypeSet
+        ? UnvalidatedDefinition
+        : TypeDefinition<
+              Narrow<Definition>,
+              ListPossibleTypes<keyof ActiveTypeSet>
+          >,
     options?: Narrow<
         Options & {
             typeSet?: Exact<ActiveTypeSet, TypeSet<ActiveTypeSet>>
         }
     >
-) => ParsedType<Definition, ActiveTypeSet, Options>
+) => UnvalidatedTypeSet extends ActiveTypeSet
+    ? ParsedType
+    : ParsedType<Definition, ActiveTypeSet, Options>
 
 export type ParsedType<
-    Definition,
-    TypeSet,
-    Options,
-    ParseResult = ParseType<Definition, TypeSet, Options>
+    Definition = UnvalidatedDefinition,
+    TypeSet = UnvalidatedTypeSet,
+    Options = {},
+    ParseResult = UnvalidatedDefinition extends Definition
+        ? any
+        : ParseType<Definition, TypeSet, Options>
 > = {
     definition: Definition
     type: ParseResult

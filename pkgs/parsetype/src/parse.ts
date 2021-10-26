@@ -1,7 +1,6 @@
 import {
     ExcludeByValue,
     FilterByValue,
-    TypeError,
     Evaluate,
     MergeAll,
     RemoveSpaces,
@@ -27,9 +26,15 @@ export type ParseStringDefinition<
     TypeSet,
     Options extends Required<ParseTypeRecurseOptions>,
     ParsableDefinition extends string = RemoveSpaces<Definition>
-> = ParsableDefinition extends OptionalDefinition<infer OptionalType>
-    ? ParseStringDefinitionRecurse<OptionalType, TypeSet, Options> | undefined
-    : ParseStringDefinitionRecurse<ParsableDefinition, TypeSet, Options>
+> =
+    // If Definition is an error, e.g. from an invalid TypeSet, return it immediately
+    Definition extends UnknownTypeError
+        ? Definition
+        : ParsableDefinition extends OptionalDefinition<infer OptionalType>
+        ?
+              | ParseStringDefinitionRecurse<OptionalType, TypeSet, Options>
+              | undefined
+        : ParseStringDefinitionRecurse<ParsableDefinition, TypeSet, Options>
 
 export type ParseStringTupleDefinitionRecurse<
     Definitions extends string,
@@ -114,25 +119,28 @@ export type ParseStringDefinitionRecurse<
 export type ParseObjectDefinition<
     Definition extends object,
     TypeSet,
-    Options extends Required<ParseTypeRecurseOptions>
-> = {
-    [PropName in keyof ExcludeByValue<
+    Options extends Required<ParseTypeRecurseOptions>,
+    OptionalKey extends keyof Definition = keyof FilterByValue<
         Definition,
         OptionalDefinition
-    >]: ParseTypeRecurse<KeyValuate<Definition, PropName>, TypeSet, Options>
+    >,
+    RequiredKey extends keyof Definition = Exclude<
+        keyof Definition,
+        OptionalKey
+    >
+> = {
+    [PropName in OptionalKey]?: Definition[PropName] extends OptionalDefinition<
+        infer OptionalType
+    >
+        ? ParseTypeRecurse<OptionalType, TypeSet, Options>
+        : `Expected property ${PropName & string} to be optional.`
 } &
     {
-        [PropName in keyof FilterByValue<
-            Definition,
-            OptionalDefinition
-        >]?: KeyValuate<Definition, PropName> extends OptionalDefinition<
-            infer OptionalType
+        [PropName in RequiredKey]: ParseTypeRecurse<
+            Definition[PropName],
+            TypeSet,
+            Options
         >
-            ? ParseTypeRecurse<OptionalType, TypeSet, Options>
-            : TypeError<`Expected property ${Extract<
-                  PropName,
-                  string | number
-              >} to be optional.`>
     }
 
 export type ParseListDefinition<
