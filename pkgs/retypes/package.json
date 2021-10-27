@@ -1,12 +1,12 @@
 {
-    "name": "parsetype",
+    "name": "retypes",
     "version": "1.0.0",
     "author": "redo.qa",
     "description": "",
     "repository": {
         "type": "git",
         "url": "https://github.com/re-do/redo.git",
-        "directory": "pkgs/parsetype"
+        "directory": "pkgs/retypes"
     },
     "type": "module",
     "main": "dist/cjs/index.js",

@@ -69,12 +69,12 @@
             "shouldPublish": true
         },
         {
-            "packageName": "statelessly-2",
-            "projectFolder": "pkgs/statelessly-2"
+            "packageName": "restates",
+            "projectFolder": "pkgs/restates"
         },
         {
-            "packageName": "parsetype",
-            "projectFolder": "pkgs/parsetype",
+            "packageName": "retypes",
+            "projectFolder": "pkgs/retypes",
             "shouldPublish": true
         },
         {

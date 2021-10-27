@@ -145,20 +145,15 @@ export type StringDefinition<
     Definition extends string,
     DeclaredTypeNames extends string[],
     ExtractTypesReferenced extends boolean,
-    ParsableDefinition extends string = RemoveSpaces<Definition>,
-    ValidationResult extends string = StringDefinitionRecurse<
-        ParsableDefinition extends OptionalDefinition<infer Optional>
-            ? Optional
-            : ParsableDefinition,
-        Definition,
-        DeclaredTypeNames,
-        ExtractTypesReferenced
-    >
-> = ValidationResult
-
-// ExtractTypesReferenced extends true
-// ? ListPossibleTypes<ValidationResult>
-// : ValidationResult
+    ParsableDefinition extends string = RemoveSpaces<Definition>
+> = StringDefinitionRecurse<
+    ParsableDefinition extends OptionalDefinition<infer Optional>
+        ? Optional
+        : ParsableDefinition,
+    Definition,
+    DeclaredTypeNames,
+    ExtractTypesReferenced
+>
 
 export type ObjectDefinition<
     Definition,

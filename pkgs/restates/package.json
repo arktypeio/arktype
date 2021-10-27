@@ -1,5 +1,5 @@
 {
-    "name": "statelessly-2",
+    "name": "restates",
     "version": "0.0.3",
     "private": true,
     "author": "redo.qa",
@@ -7,7 +7,7 @@
     "repository": {
         "type": "git",
         "url": "https://github.com/re-do/redo.git",
-        "directory": "pkgs/statelessly-2"
+        "directory": "pkgs/restates"
     },
     "type": "module",
     "main": "dist/cjs/index.js",
@@ -24,7 +24,7 @@
     },
     "dependencies": {
         "@re-do/utils": "workspace:*",
-        "parsetype": "workspace:*",
+        "retypes": "workspace:*",
         "deepmerge": "4.2.2",
         "isomorphic-fetch": "3.0.0",
         "moize": "5.4.7",

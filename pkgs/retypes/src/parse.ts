@@ -90,25 +90,21 @@ export type ParseStringDefinitionRecurse<
     : Fragment extends keyof TypeSet
     ? Or<
           Options["onCycle"] extends never ? true : false,
-          Fragment extends Options["seen"] ? false : true
+          Fragment extends keyof Options["seen"] ? false : true
       > extends true
         ? ParseTypeRecurse<
               TypeSet[Fragment],
               TypeSet,
-              {
-                  onCycle: Options["onCycle"]
-                  seen: Options["seen"] | Fragment
-                  deepOnCycle: Options["deepOnCycle"]
-              }
+              Options & { seen: { [TypeName in Fragment]: true } }
           >
         : ParseTypeRecurse<
               Options["onCycle"],
-              TypeSet & { cyclic: Fragment },
+              Omit<TypeSet, "cyclic"> & { cyclic: Fragment },
               {
                   onCycle: Options["deepOnCycle"] extends true
                       ? Options["onCycle"]
                       : never
-                  seen: never
+                  seen: {}
                   deepOnCycle: Options["deepOnCycle"]
               }
           >
@@ -159,7 +155,7 @@ export type ParseTypeRecurseOptions = Required<ParseTypeOptions>
 
 export type ParseTypeOptions = {
     onCycle?: UnvalidatedDefinition
-    seen?: string
+    seen?: any
     deepOnCycle?: boolean
 }
 
@@ -185,7 +181,7 @@ export type ParseType<
     WithDefaults<
         ParseTypeOptions,
         Options,
-        { onCycle: never; seen: never; deepOnCycle: false }
+        { onCycle: never; seen: {}; deepOnCycle: false }
     >
 >
 

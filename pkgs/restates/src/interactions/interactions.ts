@@ -1,11 +1,5 @@
-import {
-    NonRecursible,
-    Unlisted,
-    DeepUnlisted,
-    DeepUpdate,
-    DeepPartial
-} from "@re-do/utils"
-import { ParsedType, ParsedTypeSet, UnvalidatedTypeSet } from "parsetype"
+import { NonRecursible, Unlisted, DeepUpdate, DeepPartial } from "@re-do/utils"
+import { ParsedTypeSet, UnvalidatedTypeSet } from "retypes"
 import { Db, StoredModel } from "./db.js"
 
 export type InputFor<Stored, IdKey extends string> =
@@ -41,11 +35,12 @@ export type Interactions<
 
 export type InteractionContext<
     Model extends StoredModel<IdKey>,
-    IdKey extends string
+    IdKey extends string,
+    TypeSet extends UnvalidatedTypeSet
 > = {
     db: Db<Model, IdKey>
     idKey: IdKey
-    types: ParsedTypeSet
+    types: ParsedTypeSet<TypeSet>
 }
 
 export type UpdateFunction<Input> = (

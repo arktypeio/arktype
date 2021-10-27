@@ -11,7 +11,7 @@ export const create = <
 >(
     typeName: TypeName,
     data: Input,
-    { db, idKey, types }: InteractionContext<Model, IdKey>
+    { db, idKey, types }: InteractionContext<Model, IdKey, {}>
 ) => {
     // const id = db.create({
     //     typeName,

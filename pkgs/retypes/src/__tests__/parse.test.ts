@@ -150,6 +150,9 @@ describe("parse", () => {
             cycleFromB?.isA,
             cycleFromB?.isB
         ])
+        // After initial cycle, no more "cyclic" transformations occur since
+        // "deepOnCycle" was not passed
+        expectType<true | undefined>(cycleFromB?.a.b.a.b.a.b.a.b.isB)
     })
     test("with deepOnCycleOption", () => {
         const result = cyclicTypeSet.parse(

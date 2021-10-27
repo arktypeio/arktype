@@ -46,9 +46,9 @@ import {
     TypeSet,
     UnvalidatedDefinition,
     UnvalidatedTypeSet
-} from "parsetype"
+} from "retypes"
 // For some reason this prevents createStore from giving an inane "cannot resolve type without reference" error
-import {} from "parsetype/dist/cjs/parse"
+import {} from "retypes/dist/cjs/parse"
 import {
     configureStore,
     ConfigureStoreOptions,

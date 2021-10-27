@@ -89,11 +89,7 @@ const createCompileFunction =
                         typeSet: typeSetFromDefinitions as any
                     })
                 ]
-            ) as {
-                [TypeName in keyof MergedTypeSet]: Evaluate<
-                    ParsedType<TypeName, MergedTypeSet, {}>
-                >
-            }
+            ) as ParsedTypeSet<MergedTypeSet>
         }
     }
 

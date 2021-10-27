@@ -3,7 +3,6 @@
     "compilerOptions": {
         "baseUrl": "src",
         "outDir": "dist",
-        "module": "nodenext",
         "resolveJsonModule": false
     },
     "include": ["src"]
