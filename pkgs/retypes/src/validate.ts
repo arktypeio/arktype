@@ -1,10 +1,14 @@
 import {
+    asNumber,
     diffSets,
     DiffSetsResult,
     filterChars,
     isAlphaNumeric,
     isDigits,
+    isNumeric,
     isRecursible,
+    List,
+    NumericString,
     stringify,
     transform,
     TreeOf,
@@ -12,22 +16,35 @@ import {
 } from "@re-do/utils"
 import {
     ExtractableTypeName,
-    extractableTypes,
+    NamedExtractableTypeMap,
     formatTypes,
     UnextractableTypeName,
     unextractableTypes,
     UnvalidatedDefinition,
     UnvalidatedObjectDefinition,
     UnvalidatedTypeSet,
-    isAFunctionDefinition
+    isAFunctionDefinition,
+    ExtractableType,
+    namedExtractableTypes,
+    StringLiteralDefinition
 } from "./common.js"
-import { definitionTypeError, unknownTypeError } from "./errors.js"
+import {
+    definitionTypeError,
+    stringifyDefinition,
+    unknownTypeError
+} from "./errors.js"
 
-export type ExtractedDefinition = TreeOf<ExtractableTypeName, string | number>
+export type ExtractedDefinition = TreeOf<ExtractableType, string | number>
 
 export const typeOf = (value: any): ExtractedDefinition => {
     if (typeof value === "boolean") {
         return value ? "true" : "false"
+    }
+    if (typeof value === "string") {
+        return `'${value}'`
+    }
+    if (typeof value === "number") {
+        return value
     }
     if (typeof value === "object") {
         if (value === null) {
@@ -113,15 +130,17 @@ export const orValidationError = (
     { defined, extracted }: RecurseArgs,
     orTypeErrors: OrTypeErrors
 ) =>
-    `${stringify(
+    `${stringifyDefinition(
         extracted
     )} is not assignable to any of ${defined}:\n${stringify(orTypeErrors)}`
 
 export const unassignableError = ({ extracted, defined }: RecurseArgs) =>
-    `${stringify(extracted)} is not assignable to ${stringify(defined)}.`
+    `${stringifyDefinition(
+        extracted
+    )} is not assignable to ${stringifyDefinition(defined)}.`
 
 export const shallowCycleError = ({ defined, seen, typeSet }: RecurseArgs) =>
-    `${stringify(defined)} shallowly references itself ` +
+    `${stringifyDefinition(defined)} shallowly references itself ` +
     `in typeSet ${stringify(typeSet)} via the following set of resolutions: ${[
         ...seen,
         defined
@@ -138,15 +157,15 @@ export type RecurseArgs<
     seen: string[]
 }
 
-const tupleLengthError = ({ defined, extracted }: RecurseArgs) =>
+const tupleLengthError = ({ defined, extracted }: RecurseArgs<List, List>) =>
     `Tuple of length ${extracted.length} is not assignable to tuple of length ${defined.length}.`
 
 const mismatchedKeysError = (keyErrors: DiffSetsResult<string>) => {
     const missing = keyErrors?.removed?.length
-        ? `Required keys ${keyErrors.removed.join(", ")} were missing.`
+        ? `Required keys '${keyErrors.removed.join(", ")}' were missing.`
         : ""
     const extraneous = keyErrors?.added?.length
-        ? `Keys ${keyErrors.added.join(", ")} were unexpected.`
+        ? `Keys '${keyErrors.added.join(", ")}' were unexpected.`
         : ""
     return `${missing}${missing && extraneous ? " " : ""}${extraneous}`
 }
@@ -180,10 +199,18 @@ export const validate = (args: RecurseArgs): ValidationErrors => {
 
 const rootValidator: RecursiveValidator<unknown> = {
     when: () => true,
-    delegate: () => [stringValidator, objectValidator],
+    delegate: () => [numberValidator, stringValidator, objectValidator],
     fallback: (args) => {
         throw new Error(definitionTypeError(args.defined, args.path))
     }
+}
+
+const numberValidator: RecursiveValidator<unknown, number> = {
+    when: ({ defined }) => typeof defined === "number",
+    validate: (args) =>
+        args.defined === args.extracted
+            ? {}
+            : validationError(unassignableError(args), args.path)
 }
 
 const stringValidator: RecursiveValidator<unknown, string> = {
@@ -195,7 +222,9 @@ const stringValidator: RecursiveValidator<unknown, string> = {
         listValidator,
         definedTypeValidator,
         unextractableTypeValidator,
-        extractableTypeValidator
+        extractableTypeValidator,
+        stringLiteralValidator,
+        numericStringLiteralValidator
     ],
     fallback: ({ defined }) => {
         throw new Error(unknownTypeError(defined))
@@ -309,7 +338,9 @@ const unextractableTypeValidator: RecursiveValidator<
             boolean: (_) => _ === "true" || _ === "false",
             object: (_) => typeof _ === "object",
             void: (_) => _ === "undefined",
-            never: (_) => false
+            never: (_) => false,
+            string: (_) => typeof _ === "string" && !!_.match("'.*'"),
+            number: (_) => typeof _ === "number"
         }
         if (unextractableTypeAssignabilityMap[args.defined](args.extracted)) {
             return {}
@@ -322,12 +353,32 @@ const extractableTypeValidator: RecursiveValidator<
     string,
     ExtractableTypeName
 > = {
-    when: ({ defined }) => defined in extractableTypes,
+    when: ({ defined }) => defined in namedExtractableTypes,
     validate: (args) =>
         args.extracted === args.defined
             ? {}
             : validationError(unassignableError(args), args.path)
 }
+
+const stringLiteralValidator: RecursiveValidator<
+    string,
+    StringLiteralDefinition
+> = {
+    when: ({ defined }) => !!defined.match("'.*'"),
+    validate: (args) =>
+        args.extracted === args.defined
+            ? {}
+            : validationError(unassignableError(args), args.path)
+}
+
+const numericStringLiteralValidator: RecursiveValidator<string, NumericString> =
+    {
+        when: ({ defined }) => isNumeric(defined),
+        validate: (args) =>
+            args.extracted === asNumber(args.defined, { assert: true })
+                ? {}
+                : validationError(unassignableError(args), args.path)
+    }
 
 const tupleValidator: RecursiveValidator<UnvalidatedObjectDefinition, any[]> = {
     when: ({ defined }) => Array.isArray(defined),
@@ -337,7 +388,7 @@ const tupleValidator: RecursiveValidator<UnvalidatedObjectDefinition, any[]> = {
             return validationError(unassignableError(args), args.path)
         }
         if (args.defined.length !== args.extracted.length) {
-            return validationError(tupleLengthError(args), args.path)
+            return validationError(tupleLengthError(args as any), args.path)
         }
         return validateProperties(args)
     }

@@ -1,6 +1,6 @@
-import { Unlisted } from "@re-do/utils"
+import { transform, Unlisted } from "@re-do/utils"
 import { Db, StoredModel } from "./db.js"
-import { InputFor, InteractionContext } from "./interactions.js"
+import { InputFor, InteractionContext } from "./store.js"
 
 export const create = <
     Model extends StoredModel<IdKey>,
@@ -13,6 +13,9 @@ export const create = <
     data: Input,
     { db, idKey, types }: InteractionContext<Model, IdKey, {}>
 ) => {
+    const dataToStore = transform(data, ([k, v]) => {
+        return [k, v]
+    })
     // const id = db.create({
     //     typeName,
     //     data

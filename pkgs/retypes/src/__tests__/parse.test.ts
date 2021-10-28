@@ -2,6 +2,7 @@ import { compile, parse, ParsedType, TypeDefinition } from ".."
 import { expectType, expectError } from "tsd"
 import { DefinitionTypeError } from "../errors.js"
 import { typeDefProxy } from "../common.js"
+import { NumericString } from "../utils.js"
 
 describe("parse", () => {
     test("built-in", () => {
@@ -17,6 +18,26 @@ describe("parse", () => {
         // @ts-expect-error
         const badResult = parse("string|[]number").type
         expectError<"Unable to determine the type of '[]number'.">(badResult)
+    })
+    test("string literals", () => {
+        const stringLiteral = parse("'hello'")
+        expectType<"hello">(stringLiteral.type)
+        // As of TS 4.5, I don't think it's possible to parse a number literal from a string type
+        // Runtime functionality like "getDefault" and "validate" will still use the more specific
+        // value, but the TS type is inferred as "number"
+        const numericStringLiteral = parse("4")
+        expectType<number>(numericStringLiteral.type)
+        const floatStringLiteral = parse("1.234")
+        expectType<number>(floatStringLiteral.type)
+    })
+    // Using actual numbers solves the above type widening to "number",
+    // but isn't available directly in the context of string types like lists or functions
+    test("number literals", () => {
+        const intLiteral = parse(0)
+        expectType<0>(intLiteral.type)
+        // Repeating, of course
+        const floatLiteral = parse(32.33)
+        expectType<32.33>(floatLiteral.type)
     })
     test("string function", () => {
         const result = parse("(string, number) => boolean[]")
@@ -48,12 +69,14 @@ describe("parse", () => {
         const result = parse({
             a: "string",
             b: "true|number?",
-            c: { nested: "null[]" }
+            c: { nested: "null[]" },
+            d: 6
         })
         expectType<{
             a: string
             b?: true | number | undefined
             c: { nested: null[] }
+            d: 6
         }>(result.type)
         // @ts-expect-error
         const badResult = parse({ a: { b: "whoops" } })
@@ -69,7 +92,7 @@ describe("parse", () => {
             const result = parse({ bad: true })
             expectError<{ bad: DefinitionTypeError }>(result.type)
         }).toThrowErrorMatchingInlineSnapshot(
-            `"Definition value true at path bad is invalid. Definitions must be strings or objects."`
+            `"Definition value true at path bad is invalid. Definitions must be strings, numbers, or objects."`
         )
     })
     test("with typeset", () => {

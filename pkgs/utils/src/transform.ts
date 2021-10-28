@@ -20,7 +20,7 @@ export type TransformOptions<Deep extends boolean = boolean> = {
 }
 
 export const transform = <
-    From extends object,
+    From,
     MapReturnType extends Entry | null,
     ProvidedOptions extends TransformOptions<Deep>,
     Options extends Required<TransformOptions> = WithDefaults<

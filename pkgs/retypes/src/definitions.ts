@@ -21,7 +21,9 @@ import {
     OptionalDefinition,
     BuiltInTypeName,
     UnvalidatedObjectDefinition,
-    FunctionDefinition
+    FunctionDefinition,
+    StringLiteralDefinition,
+    NumericStringLiteralDefinition
 } from "./common.js"
 import { DefinitionTypeError, UnknownTypeError } from "./errors.js"
 
@@ -135,7 +137,11 @@ export type StringDefinitionRecurse<
           DeclaredTypeNames,
           ExtractTypesReferenced
       >
-    : Fragment extends ElementOf<DeclaredTypeNames> | BuiltInTypeName
+    : Fragment extends
+          | ElementOf<DeclaredTypeNames>
+          | BuiltInTypeName
+          | StringLiteralDefinition
+          | NumericStringLiteralDefinition
     ? ExtractTypesReferenced extends true
         ? Fragment
         : Root
@@ -182,7 +188,9 @@ export type TypeDefinition<
         ProvidedOptions,
         { extractTypesReferenced: false }
     >
-> = Definition extends string
+> = Definition extends number
+    ? number
+    : Definition extends string
     ? StringDefinition<
           Definition,
           DeclaredTypeNames,

@@ -9,9 +9,24 @@ describe("default values", () => {
         expect(typeof getDefault("function")).toBe("function")
         expect(() => getDefault("never")).toThrow()
     })
+    test("number literal", () => {
+        expect(getDefault("5")).toBe(5)
+        expect(getDefault("7.91")).toBe(7.91)
+        expect(getDefault(5)).toBe(5)
+        expect(getDefault(7.91)).toBe(7.91)
+    })
     test("or", () => {
         expect(getDefault("undefined|string")).toBe(undefined)
         expect(getDefault("number|false|()=>undefined")).toBe(false)
+    })
+    test("or literals", () => {
+        const typeSet = {
+            five: 5,
+            duck: "'duck'",
+            func: "(five, duck)=>duck"
+        }
+        expect(getDefault("func|five|duck", typeSet)).toBe(5)
+        expect(getDefault("duck|func", typeSet)).toBe("duck")
     })
     test("arrow function", () => {
         expect(typeof getDefault("(boolean,any)=>void")).toBe("function")
@@ -119,17 +134,17 @@ describe("default values", () => {
     })
     test("unparseable", () => {
         expect(() => getDefault("")).toThrowErrorMatchingInlineSnapshot(
-            `"Could not find a default value satisfying ''."`
+            `"Could not find a default value satisfying ."`
         )
         expect(() =>
             getDefault({ a: { b: { c: "true|false|blorf" } } })
         ).toThrowErrorMatchingInlineSnapshot(
-            `"Could not find a default value satisfying 'blorf' at 'a/b/c'."`
+            `"Could not find a default value satisfying blorf at 'a/b/c'."`
         )
         expect(() =>
             getDefault({ hmm: { seems: { bad: true } } })
         ).toThrowErrorMatchingInlineSnapshot(
-            `"Definition value true at path hmm/seems/bad is invalid. Definitions must be strings or objects."`
+            `"Definition value true at path hmm/seems/bad is invalid. Definitions must be strings, numbers, or objects."`
         )
     })
     test("from parsed", () => {

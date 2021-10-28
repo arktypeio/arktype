@@ -1,4 +1,4 @@
-import { transform, stringify, narrow } from "@re-do/utils"
+import { narrow, isNumeric, asNumber } from "@re-do/utils"
 import {
     BuiltInTypeName,
     formatTypes,
@@ -6,7 +6,7 @@ import {
     UnvalidatedTypeSet,
     isAFunctionDefinition
 } from "./common.js"
-import { definitionTypeError } from "./errors.js"
+import { definitionTypeError, stringifyDefinition } from "./errors.js"
 
 // These values can be directly compared for equality
 export const comparableDefaultValues = narrow({
@@ -34,6 +34,11 @@ export const comparableDefaultValueSet = [
 ]
 
 export const nonComparableDefaultValues = narrow({
+    // These types are comparable, but if they came
+    // from a literal, we should check the type instead
+    // of the value
+    number: 0 as number,
+    string: "" as string,
     object: {},
     symbol: Symbol(),
     function: (...args: any[]) => undefined as any,
@@ -63,9 +68,13 @@ export const getDefault = (
         path: string[],
         seen: string[]
     ): any => {
-        const errorAtPath = `Could not find a default value satisfying ${stringify(
+        const errorAtPath = `Could not find a default value satisfying ${stringifyDefinition(
             subdefinition
         )}${path.length ? ` at '${path.join("/")}'` : ""}.`
+        if (typeof subdefinition === "number") {
+            // Is a number literal, so it represents the only valid value
+            return subdefinition
+        }
         if (typeof subdefinition === "string") {
             if (subdefinition.endsWith("?")) {
                 return undefined
@@ -98,6 +107,18 @@ export const getDefault = (
             if (subdefinition.endsWith("[]")) {
                 return []
             }
+            if (subdefinition.match("'.*'")) {
+                return subdefinition.slice(1, -1)
+            }
+            if (isNumeric(subdefinition)) {
+                return asNumber(subdefinition, { assert: true })
+            }
+            if (subdefinition in builtInDefaultValues) {
+                if (subdefinition === "never") {
+                    throw new Error(errorAtPath)
+                }
+                return builtInDefaultValues[subdefinition as BuiltInTypeName]
+            }
             if (subdefinition in typeSet) {
                 if (seen.includes(subdefinition)) {
                     if (throwOnRequiredCycle) {
@@ -117,12 +138,6 @@ export const getDefault = (
                     subdefinition
                 ])
             }
-            if (subdefinition in builtInDefaultValues) {
-                if (subdefinition === "never") {
-                    throw new Error(errorAtPath)
-                }
-                return builtInDefaultValues[subdefinition as BuiltInTypeName]
-            }
             throw new Error(errorAtPath)
         }
         if (typeof subdefinition === "object") {
@@ -135,8 +150,10 @@ export const getDefault = (
                 Object.entries(subdefinition)
                     .filter(
                         ([k, propertyDefinition]) =>
-                            typeof propertyDefinition !== "string" ||
-                            !propertyDefinition.endsWith("?")
+                            !(
+                                typeof propertyDefinition === "string" &&
+                                propertyDefinition.endsWith("?")
+                            )
                     )
                     .map(([k, propertyDefinition]) => [
                         k,

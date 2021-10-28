@@ -1,7 +1,7 @@
-import { createStore } from "../createStore.js"
+import { createState } from "../state.js"
 
-function createTestStore() {
-    return createStore(
+function createTestState() {
+    return createState(
         {
             users: {
                 defines: "user",
@@ -114,7 +114,7 @@ function createTestStore() {
 // const z = store.users.with({ id: 5 }).remove()
 // const y = store.users.where({ name: "David" }).update({ name: "David Blass" })
 
-let store: ReturnType<typeof createTestStore>
+let state: ReturnType<typeof createTestState>
 
 const initial = {
     users: [],
@@ -140,35 +140,35 @@ const initial = {
 
 describe("state", () => {
     beforeEach(() => {
-        store = createTestStore()
+        state = createTestState()
     })
     test("get primitive", () => {
-        expect(store.preferences.darkMode).toBe(false)
+        expect(state.preferences.darkMode).toBe(false)
     })
     test("set primitive", () => {
-        store.preferences.darkMode = true
-        expect(store.preferences.darkMode).toBe(true)
+        state.preferences.darkMode = true
+        expect(state.preferences.darkMode).toBe(true)
     })
     test("get object", () => {
-        expect(store.preferences).toStrictEqual(initial.preferences)
+        expect(state.preferences).toStrictEqual(initial.preferences)
     })
     test("set object", () => {
         const updatedValue = {
             darkMode: true,
             font: { family: "Ubuntu", size: 16 }
         }
-        store.preferences = updatedValue
-        expect(store.preferences).toStrictEqual(updatedValue)
+        state.preferences = updatedValue
+        expect(state.preferences).toStrictEqual(updatedValue)
     })
 })
 
 describe("stored types", () => {
     beforeEach(() => {
-        store = createTestStore()
+        state = createTestState()
     })
     test("create", () => {
-        store.nestedStore.colors.create({ RGB: "255,255,255" })
-        expect(store.nestedStore.colors.all()).toStrictEqual([
+        state.nestedStore.colors.create({ RGB: "255,255,255" })
+        expect(state.nestedStore.colors.all()).toStrictEqual([
             {
                 RGB: "255,255,255",
                 id: 1

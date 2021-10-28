@@ -7,7 +7,11 @@ import {
     Split,
     WithDefaults,
     Or,
-    KeyValuate
+    KeyValuate,
+    NumericString,
+    Cast,
+    StringOrNumberFrom,
+    ListPossibleTypes
 } from "@re-do/utils"
 import {
     OrDefinition,
@@ -17,7 +21,9 @@ import {
     BuiltInTypes,
     UnvalidatedObjectDefinition,
     FunctionDefinition,
-    UnvalidatedDefinition
+    UnvalidatedDefinition,
+    StringLiteralDefinition,
+    NumericStringLiteralDefinition
 } from "./common.js"
 import { DefinitionTypeError, UnknownTypeError } from "./errors.js"
 
@@ -87,6 +93,13 @@ export type ParseStringDefinitionRecurse<
     ? ParseStringFunctionDefinitionRecurse<Parameters, Return, TypeSet, Options>
     : Fragment extends ListDefinition<infer ListItem>
     ? ParseStringDefinitionRecurse<ListItem, TypeSet, Options>[]
+    : Fragment extends StringLiteralDefinition<infer Literal>
+    ? `${Literal}`
+    : Fragment extends NumericStringLiteralDefinition<infer Value>
+    ? // For now this is always inferred as 'number', even the string is a literal like '5'
+      Value
+    : Fragment extends BuiltInTypeName
+    ? BuiltInTypes[Fragment]
     : Fragment extends keyof TypeSet
     ? Or<
           Options["onCycle"] extends never ? true : false,
@@ -108,8 +121,6 @@ export type ParseStringDefinitionRecurse<
                   deepOnCycle: Options["deepOnCycle"]
               }
           >
-    : Fragment extends BuiltInTypeName
-    ? BuiltInTypes[Fragment]
     : UnknownTypeError<Fragment>
 
 export type ParseObjectDefinition<
@@ -163,7 +174,9 @@ export type ParseTypeRecurse<
     Definition,
     TypeSet,
     Options extends ParseTypeRecurseOptions
-> = Definition extends string
+> = Definition extends number
+    ? Definition
+    : Definition extends string
     ? ParseStringDefinition<Definition, TypeSet, Options>
     : Definition extends UnvalidatedObjectDefinition
     ? Definition extends any[]

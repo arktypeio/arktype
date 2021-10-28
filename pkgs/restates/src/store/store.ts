@@ -1,5 +1,11 @@
-import { NonRecursible, Unlisted, DeepUpdate, DeepPartial } from "@re-do/utils"
-import { ParsedTypeSet, UnvalidatedTypeSet } from "retypes"
+import {
+    NonRecursible,
+    Unlisted,
+    DeepUpdate,
+    DeepPartial,
+    transform
+} from "@re-do/utils"
+import { ParsedTypeSet, ParseType, UnvalidatedTypeSet } from "retypes"
 import { Db, StoredModel } from "./db.js"
 
 export type InputFor<Stored, IdKey extends string> =
@@ -13,10 +19,12 @@ export type InputFor<Stored, IdKey extends string> =
       >
     | (IdKey extends keyof Stored ? number : never)
 
+export type DefaultInputs<Model extends UnvalidatedTypeSet> = {}
+
 export type Interactions<
-    Model,
+    T,
     IdKey extends string = "id",
-    Stored = Unlisted<Model>,
+    Stored = T,
     Input = InputFor<Stored, IdKey>
 > = {
     create: (data: Input) => Stored
@@ -33,6 +41,23 @@ export type Interactions<
     }
 }
 
+export type Store<Model extends UnvalidatedTypeSet> = {
+    [TypeName in keyof Model]: Interactions<ParseType<Model[TypeName], Model>>
+}
+
+export type StoreConfig<Model extends UnvalidatedTypeSet> = {
+    model: Model
+}
+
+export const createStore = <Model extends UnvalidatedTypeSet>({
+    model
+}: StoreConfig<Model>) => {
+    const store = transform(model, ([typeName, definition]) => {
+        return [typeName, definition]
+    }) as Store<Model>
+    return store
+}
+
 export type InteractionContext<
     Model extends StoredModel<IdKey>,
     IdKey extends string,
@@ -47,11 +72,6 @@ export type UpdateFunction<Input> = (
     args: any,
     context: any
 ) => DeepUpdate<Input> | Promise<DeepUpdate<Input>>
-
-export type Actions<Input> = Record<
-    string,
-    DeepUpdate<Input> | UpdateFunction<Input>
->
 
 export type FindArgs<T> = DeepPartial<T> | ((t: T) => boolean)
 

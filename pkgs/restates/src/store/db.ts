@@ -15,18 +15,6 @@ export type StoredModel<IdKey extends string = "id"> = {
     [K in string]: StoredType<IdKey>[]
 }
 
-export type Relationships<
-    Model extends StoredModel<IdKey>,
-    IdKey extends string = "id"
-> = {
-    [K in keyof Model]: {
-        [K2 in keyof FilterByValue<
-            Unlisted<Model[K]>,
-            StoredType<IdKey>
-        >]: keyof Model
-    }
-}
-
 export type ShallowStoredType<
     Stored extends StoredType<IdKey>,
     IdKey extends string = "id"

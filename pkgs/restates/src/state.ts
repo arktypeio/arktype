@@ -47,7 +47,7 @@ import {
     UnvalidatedDefinition,
     UnvalidatedTypeSet
 } from "retypes"
-// For some reason this prevents createStore from giving an inane "cannot resolve type without reference" error
+// For some reason this prevents createState from giving an inane "cannot resolve type without reference" error
 import {} from "retypes/dist/cjs/parse"
 import {
     configureStore,
@@ -55,7 +55,7 @@ import {
     Middleware,
     Store as ReduxStore
 } from "@reduxjs/toolkit"
-import { createMemoryDb } from "./interactions/db.js"
+import { createMemoryDb, Interactions, UpdateFunction } from "./store"
 
 /**
  * This is a hacky version of ExactObject from @re-do/utils that accomodates anomalies
@@ -127,7 +127,7 @@ type DefinitionFromField<
     ? DefinitionFromConfig<Config["fields"], UseDefinedTypeNames>
     : UntypedConfigError
 
-export type StoreConfig<Config, ModelTypeSet, ModelType> = {
+export type StateConfig<Config, ModelTypeSet, ModelType> = {
     [K in keyof Config]: ValidatedConfig<
         Config[K],
         ModelConfigRecurse<
@@ -300,8 +300,8 @@ export type ReduxOptions = Omit<
     "preloadedState" | "reducer"
 >
 
-export const createStore = <
-    Config extends StoreConfig<Config, ModelTypeSet, Model>,
+export const createState = <
+    Config extends StateConfig<Config, ModelTypeSet, Model>,
     ExternalTypeSet = {},
     IdKey extends string = "id",
     StoredTypes = GetStoredTypes<Config, IdKey>,
@@ -357,7 +357,7 @@ export const createStore = <
         transform(storedPaths, ([i, v]) => [v, []])
     )
     // TODO: Require default value for stored type references
-    const getStoreProxy = (proxyTarget: any, path: string): any =>
+    const getStateProxy = (proxyTarget: any, path: string): any =>
         new Proxy(proxyTarget, {
             get: (target, prop) => {
                 const pathToProp = path
@@ -381,7 +381,7 @@ export const createStore = <
                     }
                 }
                 if (isRecursible(value)) {
-                    return getStoreProxy(value, pathToProp)
+                    return getStateProxy(value, pathToProp)
                 }
                 return value
             },
@@ -390,8 +390,8 @@ export const createStore = <
                 return true
             }
         })
-    const storeRoot = getStoreProxy(initialState, "")
-    return storeRoot as Store<Model, StoredLocations, IdKey>
+    const stateRoot = getStateProxy(initialState, "")
+    return stateRoot as State<Model, StoredLocations, IdKey>
 }
 
 const compileModelTypeSet = (
@@ -487,71 +487,25 @@ const extractTypeDef = (config: any): any =>
         return null
     })
 
-// createTestStore().cache.currentUser?.bestFriend?.get()
+// createTestState().cache.currentUser?.bestFriend?.get()
 
-// createTestStore().cache.currentCity.groups[0].members[0].bestFriend?.id
+// createTestState().cache.currentCity.groups[0].members[0].bestFriend?.id
 
-export type Store<Model, StoredLocations, IdKey extends string> = {
+export type State<Model, StoredLocations, IdKey extends string> = {
     [K in keyof Model]: K extends keyof StoredLocations
         ? StoredLocations[K] extends true
-            ? Interactions<Model[K], IdKey>
-            : Store<Model[K], KeyValuate<StoredLocations[K], "fields">, IdKey>
+            ? Interactions<Unlisted<Model[K]>, IdKey>
+            : State<Model[K], KeyValuate<StoredLocations[K], "fields">, IdKey>
         : Model[K]
 }
-
-type InputFor<Stored, IdKey extends string> =
-    | Omit<
-          {
-              [K in keyof Stored]: Stored[K] extends NonRecursible
-                  ? Stored[K]
-                  : InputFor<Stored[K], IdKey>
-          },
-          IdKey
-      >
-    | (IdKey extends keyof Stored ? number : never)
-
-export type Interactions<
-    Model,
-    IdKey extends string,
-    Stored = Unlisted<Model>,
-    Input = InputFor<Stored, IdKey>
-> = {
-    create: (data: Input) => Stored
-    all: () => Stored[]
-    find: (by: FindArgs<Stored>) => Stored
-    filter: (by: FindArgs<Stored>) => Stored[]
-    with: (by: FindArgs<Stored>) => {
-        remove: () => Stored
-        update: (update: DeepUpdate<Input>) => Stored
-    }
-    where: (by: FindArgs<Stored>) => {
-        remove: () => Stored[]
-        update: (update: DeepUpdate<Input>) => Stored[]
-    }
-}
-
-export type UpdateFunction<Input> = (
-    args: any,
-    context: any
-) => DeepUpdate<Input> | Promise<DeepUpdate<Input>>
 
 export type Actions<Input> = Record<
     string,
     DeepUpdate<Input> | UpdateFunction<Input>
 >
 
-export type FindArgs<T> = DeepPartial<T> | ((t: T) => boolean)
-
-export type FindFunction<T, Multiple extends boolean> = <
-    Args extends FindArgs<T>
->(
-    args: Args
-) => Multiple extends true ? T[] : T
-
-export type FilterFunction<T> = <Args extends FindArgs<T>>(args: Args) => T[]
-
-function createTestStore() {
-    return createStore(
+function createTestState() {
+    return createState(
         {
             users: {
                 defines: "user",
