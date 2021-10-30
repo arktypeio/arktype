@@ -1,6 +1,6 @@
 {
     "name": "@re-do/configs",
-    "version": "0.1.1",
+    "version": "0.1.2",
     "author": "redo.qa",
     "description": "Shared set of default configurations for Redo's packages",
     "repository": {
@@ -8,20 +8,21 @@
         "url": "https://github.com/re-do/redo.git",
         "directory": "pkgs/configs"
     },
-    "main": "dist/cjs/index.js",
-    "module": "dist/mjs/index.js",
+    "type": "module",
+    "main": "out/cjs/index.js",
+    "module": "out/esm/index.js",
     "exports": {
         ".": {
-            "import": "./dist/mjs/index.js",
-            "require": "./dist/cjs/index.js"
+            "import": "./out/esm/index.js",
+            "require": "./out/cjs/index.js"
         }
     },
     "scripts": {
-        "build": "node ./redoBuild.cjs",
+        "build": "./redoBuild.js",
         "test": "echo 'This package has no tests!'"
     },
     "bin": {
-        "redo-build": "./redoBuild.cjs"
+        "redoBuild": "./redoBuild.js"
     },
     "dependencies": {
         "execa": "5.0.0",
@@ -37,6 +38,7 @@
         "jest": "27.0.6",
         "@jest/types": "27.0.6",
         "@types/jest": "26.0.24",
-        "ts-jest": "27.0.3"
+        "ts-jest": "27.0.3",
+        "ts-node": "10.4.0"
     }
 }

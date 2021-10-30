@@ -1,17 +1,15 @@
 import { transform, Unlisted } from "@re-do/utils"
-import { Db, StoredModel } from "./db.js"
-import { InputFor, InteractionContext } from "./store.js"
+import { Db, DbContents } from "./db.js"
+import { InteractionContext } from "./store.js"
 
 export const create = <
-    Model extends StoredModel<IdKey>,
-    IdKey extends string,
-    TypeName extends keyof Model,
-    Stored = Unlisted<Model[TypeName]>,
-    Input = InputFor<Stored, IdKey>
+    TypeName extends keyof InteractionContext["model"],
+    Context extends InteractionContext,
+    Modeled extends Context["model"][TypeName] = Context["model"][TypeName]
 >(
     typeName: TypeName,
-    data: Input,
-    { db, idKey, types }: InteractionContext<Model, IdKey, {}>
+    data: Modeled["input"],
+    { db, idKey, model }: InteractionContext
 ) => {
     const dataToStore = transform(data, ([k, v]) => {
         return [k, v]

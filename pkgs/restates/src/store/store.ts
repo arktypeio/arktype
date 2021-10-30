@@ -19,7 +19,7 @@ import {
     UnvalidatedDefinition,
     UnvalidatedTypeSet
 } from "retypes"
-import { Db, StoredModel } from "./db.js"
+import { Db, DbContents } from "./db.js"
 
 export type CompileStoredTypeSet<
     TypeSet extends UnvalidatedTypeSet,
@@ -100,13 +100,13 @@ export type StoreModel<
     StoredTypeSet = ParsedTypeSet,
     InputTypeSet = ParsedTypeSet
 > = {
-    [K in keyof StoredTypeSet]: ModelType<
+    [K in keyof StoredTypeSet]: ModeledType<
         StoredTypeSet[K],
         KeyValuate<InputTypeSet, K>
     >
 }
 
-export type ModelType<Stored = ParsedType, Input = ParsedType> = {
+export type ModeledType<Stored = ParsedType, Input = ParsedType> = {
     stored: Stored
     input: Input
 }
@@ -143,9 +143,9 @@ export type ExtractStored<Model extends StoreModel> = {
 }
 
 export type InteractionContext<
-    Model extends StoreModel,
-    IdKey extends string,
-    StoredType extends StoredModel<IdKey> = ExtractStored<Model>
+    Model extends StoreModel = StoreModel,
+    IdKey extends string = "id",
+    StoredType extends DbContents<IdKey> = ExtractStored<Model>
 > = {
     db: Db<StoredType, IdKey>
     idKey: IdKey

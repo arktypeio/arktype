@@ -1,16 +1,14 @@
 {
     "compilerOptions": {
-        "module": "esnext",
+        "module": "nodenext",
         "target": "esnext",
         "moduleResolution": "node",
-        "sourceMap": true,
+        "inlineSourceMap": true,
         "skipLibCheck": true,
         "strict": true,
         "isolatedModules": true,
         "esModuleInterop": true,
         "resolveJsonModule": true,
-        "exactOptionalPropertyTypes": true,
-        "declaration": true,
         "lib": ["ESNext", "dom", "dom.iterable"],
         "jsx": "react"
     }

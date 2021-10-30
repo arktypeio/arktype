@@ -6,26 +6,26 @@ import {
     withDefaults
 } from "@re-do/utils"
 
-export type StoredType<IdKey extends string = "id"> = {
+export type Entity<IdKey extends string = "id"> = {
     [K in IdKey]: number
 } &
     { [K in string]: any }
 
-export type StoredModel<IdKey extends string = "id"> = {
-    [K in string]: StoredType<IdKey>
+export type DbContents<IdKey extends string = "id"> = {
+    [K in string]: Entity<IdKey>
 }
 
 export type ShallowStoredType<
-    Stored extends StoredType<IdKey>,
+    Stored extends Entity<IdKey>,
     IdKey extends string = "id"
 > = {
-    [K in keyof Stored]: Stored[K] extends StoredType<IdKey>
+    [K in keyof Stored]: Stored[K] extends Entity<IdKey>
         ? AsListIfList<number, Stored[K]>
         : Stored[K]
 }
 
 export type InputTypes<
-    Types extends StoredModel<IdKey>,
+    Types extends DbContents<IdKey>,
     IdKey extends string = "id"
 > = {
     [TypeName in keyof Types]: Omit<
@@ -35,7 +35,7 @@ export type InputTypes<
 }
 
 export type Db<
-    Types extends StoredModel<IdKey>,
+    Types extends DbContents<IdKey>,
     IdKey extends string = "id",
     Inputs extends InputTypes<Types, IdKey> = InputTypes<Types, IdKey>
 > = {
@@ -82,7 +82,7 @@ export type ModelValue<Model> = {
 }
 
 export const createMemoryDb = <
-    Model extends StoredModel<IdKey>,
+    Model extends DbContents<IdKey>,
     IdKey extends string = "id"
 >(
     initial: ModelValue<Model>,

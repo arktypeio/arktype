@@ -17,6 +17,7 @@ import { join, dirname, parse } from "path"
 import { once } from "events"
 import { finished } from "stream"
 import { promisify } from "util"
+import { FilterFunction } from "@re-do/utils"
 
 export const streamFinished = promisify(finished)
 
@@ -89,22 +90,27 @@ export const writeJsonAsync = async (path: string, data: object) =>
 export type WalkOptions = {
     excludeFiles?: boolean
     excludeDirs?: boolean
+    exclude?: FilterFunction<string>
+    include?: FilterFunction<string>
 }
 
 export const walkPaths = (dir: string, options: WalkOptions = {}): string[] =>
-    readdirSync(dir).reduce((paths, item) => {
+    readdirSync(dir).reduce((paths, item, index, siblings) => {
         const path = join(dir, item)
-        return [
-            ...paths,
-            ...(lstatSync(path).isDirectory()
-                ? walkPaths(path, options).concat(
-                      options.excludeDirs ? [] : path
-                  )
-                : options.excludeFiles
-                ? []
-                : [path])
-        ]
+        const isDir = lstatSync(path).isDirectory()
+        const excludeCurrent =
+            (options.excludeDirs && isDir) ||
+            (options.excludeFiles && !isDir) ||
+            (options.exclude && options.exclude(path, index, siblings)) ||
+            (options.include && !options.include(path, index, siblings))
+        const nestedPaths = isDir ? walkPaths(path, options) : []
+        return [...paths, ...(excludeCurrent ? [] : [path]), ...nestedPaths]
     }, [] as string[])
+
+export const mapFilesToContents = (paths: string[]): Record<string, string> =>
+    Object.fromEntries(
+        paths.map((path) => [path, readFileSync(path).toString()])
+    )
 
 /** Fetch the file and directory paths from a path, uri, or `import.meta.url` */
 export const filePath = (path: string) => {

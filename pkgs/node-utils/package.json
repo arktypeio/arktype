@@ -21,10 +21,10 @@
         "runScript": "./runScript.js"
     },
     "scripts": {
-        "build": "redo-build",
+        "build": "redoBuild",
         "runScript": "./runScript.js",
         "filterWarnings": "./filterWarnings.cjs",
-        "test": "echo 'This package has no tests.'"
+        "test": "jest"
     },
     "dependencies": {
         "@re-do/utils": "workspace:*",
@@ -33,9 +33,11 @@
         "moize": "5.4.7",
         "validator": "13.5.2",
         "prompts": "2.4.1",
-        "ts-node": "10.1.0",
+        "ts-node": "10.4.0",
         "get-current-line": "6.6.0",
-        "tree-kill": "1.2.2"
+        "tree-kill": "1.2.2",
+        "typescript": "4.5.0-beta",
+        "retypes": "workspace:*"
     },
     "devDependencies": {
         "@re-do/configs": "workspace:*",
@@ -43,7 +45,6 @@
         "@types/prompts": "2.0.11",
         "jest": "27.0.6",
         "@types/jest": "26.0.24",
-        "ts-jest": "27.0.3",
-        "typescript": "4.5.0-beta"
+        "ts-jest": "27.0.3"
     }
 }
