@@ -30,7 +30,7 @@
         "@reduxjs/toolkit": "1.5.0"
     },
     "devDependencies": {
-        "@re-do/configs": "workspace:*",
+        "@re-do/node-utils": "workspace:*",
         "jest": "27.0.6",
         "@types/jest": "26.0.24",
         "ts-jest": "27.0.3",

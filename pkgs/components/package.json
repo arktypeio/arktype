@@ -36,7 +36,7 @@
         "@emotion/styled": "11.3.0"
     },
     "devDependencies": {
-        "@re-do/configs": "workspace:*",
+        "@re-do/node-utils": "workspace:*",
         "@storybook/addon-essentials": "6.3.4",
         "@storybook/addons": "6.3.4",
         "@storybook/addon-controls": "6.3.4",

@@ -9,7 +9,6 @@ import {
 import { Merge } from "@re-do/utils"
 import prompts, { PromptObject, PromptType } from "prompts"
 import { getOs } from "./os.js"
-import { fromPackageRoot } from "./fs.js"
 
 type CommonOptions = {
     suppressCmdStringLogging?: boolean
@@ -72,15 +71,11 @@ export const getTsNodeCmd = ({ esm }: RunScriptOptions) => {
     return cmd
 }
 
-export const getFilterWarningsArg = () =>
-    `-r ${fromPackageRoot("filterWarnings.cjs")}`
-
 export const getRunScriptCmd = (
     fileToRun: string,
     options: RunScriptOptions = {}
 ) => {
     let cmd = fileToRun.endsWith(".ts") ? getTsNodeCmd(options) : "node"
-    cmd += ` ${getFilterWarningsArg()}`
     cmd += ` ${fileToRun}`
     if (options?.processArgs && options.processArgs.length) {
         cmd += ` ${options.processArgs.join(" ")}`

@@ -41,7 +41,6 @@
         "@re-do/data": "workspace:*"
     },
     "devDependencies": {
-        "@re-do/configs": "workspace:*",
         "@types/node": "15.0.2",
         "@types/adm-zip": "0.4.34",
         "ts-node": "10.4.0",

@@ -31,7 +31,7 @@
         "dotenv": "9.0.0"
     },
     "devDependencies": {
-        "@re-do/configs": "workspace:*",
+        "@re-do/node-utils": "workspace:*",
         "@types/node": "15.0.2",
         "jest": "27.0.6",
         "@types/jest": "26.0.24",

@@ -1,5 +1,5 @@
 import type { Config } from "@jest/types"
-import { fromHere } from "@re-do/node-utils"
+import { fromHere } from ".."
 
 process.env.TS_JEST_DISABLE_VER_CHECKER = "1"
 

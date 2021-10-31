@@ -12,7 +12,6 @@ importers:
       '@material-ui/styles': 5.0.0-beta.3
       '@medv/finder': 2.0.0
       '@re-do/components': workspace:*
-      '@re-do/configs': workspace:*
       '@re-do/data': workspace:*
       '@re-do/model': workspace:*
       '@re-do/node-utils': workspace:*
@@ -71,7 +70,6 @@ importers:
       react-dom: 17.0.2_react@17.0.2
       react-statelessly: link:../react-statelessly
     devDependencies:
-      '@re-do/configs': link:../configs
       '@types/adm-zip': 0.4.34
       '@types/jest': 26.0.24
       '@types/node': 15.0.2
@@ -97,7 +95,7 @@ importers:
       '@material-ui/core': 5.0.0-beta.3
       '@material-ui/icons': 5.0.0-beta.1
       '@material-ui/styles': 5.0.0-beta.3
-      '@re-do/configs': workspace:*
+      '@re-do/node-utils': workspace:*
       '@re-do/utils': workspace:*
       '@storybook/addon-controls': 6.3.4
       '@storybook/addon-essentials': 6.3.4
@@ -136,7 +134,7 @@ importers:
       react-router-dom: 5.2.0_react@17.0.2
       typeface-ubuntu: 1.1.13
     devDependencies:
-      '@re-do/configs': link:../configs
+      '@re-do/node-utils': link:../node-utils
       '@storybook/addon-controls': 6.3.4_c9b97d0291e0c7f7ae91672f3bb47b49
       '@storybook/addon-essentials': 6.3.4_7e5e642b089e1e04a23ee9fd5a51adfe
       '@storybook/addons': 6.3.4_react-dom@17.0.2+react@17.0.2
@@ -155,41 +153,10 @@ importers:
       ts-jest: 27.0.3_6723621923adb52b6baca733c393e782
       typescript: 4.5.0-beta
 
-  ../../pkgs/configs:
-    specifiers:
-      '@jest/reporters': 27.0.6
-      '@jest/types': 27.0.6
-      '@re-do/node-utils': latest
-      '@types/jest': 26.0.24
-      '@types/node': 15.0.2
-      '@vitejs/plugin-react-refresh': 1.3.5
-      deepmerge: 4.2.2
-      execa: 5.0.0
-      jest: 27.0.6
-      ts-jest: 27.0.3
-      ts-node: 10.4.0
-      typescript: 4.5.0-beta
-      vite: 2.4.4
-    dependencies:
-      '@jest/reporters': 27.0.6
-      '@re-do/node-utils': 0.1.1_537597a9ab556ad28281f0091e028eab
-      '@vitejs/plugin-react-refresh': 1.3.5
-      deepmerge: 4.2.2
-      execa: 5.0.0
-      vite: 2.4.4
-    devDependencies:
-      '@jest/types': 27.0.6
-      '@types/jest': 26.0.24
-      '@types/node': 15.0.2
-      jest: 27.0.6_ts-node@10.4.0
-      ts-jest: 27.0.3_6723621923adb52b6baca733c393e782
-      ts-node: 10.4.0_537597a9ab556ad28281f0091e028eab
-      typescript: 4.5.0-beta
-
   ../../pkgs/data:
     specifiers:
-      '@re-do/configs': workspace:*
       '@re-do/model': workspace:*
+      '@re-do/node-utils': workspace:*
       '@types/jest': 26.0.24
       '@types/node': 15.0.2
       jest: 27.0.6
@@ -200,7 +167,7 @@ importers:
       '@re-do/model': link:../model
       persist-statelessly: link:../persist-statelessly
     devDependencies:
-      '@re-do/configs': link:../configs
+      '@re-do/node-utils': link:../node-utils
       '@types/jest': 26.0.24
       '@types/node': 15.0.2
       jest: 27.0.6
@@ -213,7 +180,7 @@ importers:
       '@docusaurus/mdx-loader': 2.0.0-beta.6
       '@docusaurus/preset-classic': 2.0.0-beta.6
       '@mdx-js/react': 1.6.22
-      '@re-do/configs': workspace:*
+      '@re-do/node-utils': workspace:*
       '@re-do/test': workspace:*
       '@svgr/webpack': 5.5.0
       '@types/jest': 26.0.24
@@ -245,7 +212,7 @@ importers:
       react-router-dom: 5.2.0_react@17.0.2
       url-loader: 4.1.1_file-loader@6.2.0
     devDependencies:
-      '@re-do/configs': link:../configs
+      '@re-do/node-utils': link:../node-utils
       '@re-do/test': link:../test
       '@types/jest': 26.0.24
       '@types/mocha': 9.0.0
@@ -256,7 +223,6 @@ importers:
 
   ../../pkgs/jsrx:
     specifiers:
-      '@re-do/configs': workspace:*
       '@re-do/node-utils': workspace:*
       '@re-do/utils': workspace:*
       '@types/jest': 26.0.24
@@ -270,7 +236,6 @@ importers:
       '@re-do/utils': link:../utils
       dotenv: 9.0.0
     devDependencies:
-      '@re-do/configs': link:../configs
       '@types/jest': 26.0.24
       '@types/node': 15.0.2
       jest: 27.0.6
@@ -284,7 +249,6 @@ importers:
       '@graphql-codegen/typescript': 2.0.0
       '@graphql-codegen/typescript-operations': 2.0.1
       '@graphql-codegen/typescript-react-apollo': 3.0.0
-      '@re-do/configs': workspace:*
       '@re-do/node-utils': workspace:*
       '@types/jest': 26.0.24
       '@types/node': 15.0.2
@@ -305,7 +269,6 @@ importers:
       '@graphql-codegen/typescript': 2.0.0_graphql@15.5.0
       '@graphql-codegen/typescript-operations': 2.0.1_graphql@15.5.0
       '@graphql-codegen/typescript-react-apollo': 3.0.0_40432b02aa1d807544a0316aee68525c
-      '@re-do/configs': link:../configs
       '@re-do/node-utils': link:../node-utils
       '@types/jest': 26.0.24
       '@types/node': 15.0.2
@@ -316,11 +279,13 @@ importers:
 
   ../../pkgs/node-utils:
     specifiers:
-      '@re-do/configs': workspace:*
+      '@jest/reporters': 27.3.1
+      '@jest/types': 27.2.5
       '@re-do/utils': workspace:*
       '@types/jest': 26.0.24
       '@types/node': 15.0.2
       '@types/prompts': 2.0.11
+      '@vitejs/plugin-react-refresh': 1.3.6
       deepmerge: 4.2.2
       execa: 5.0.0
       get-current-line: 6.6.0
@@ -333,8 +298,11 @@ importers:
       ts-node: 10.4.0
       typescript: 4.5.0-beta
       validator: 13.5.2
+      vite: 2.4.4
     dependencies:
+      '@jest/reporters': 27.3.1
       '@re-do/utils': link:../utils
+      '@vitejs/plugin-react-refresh': 1.3.6
       deepmerge: 4.2.2
       execa: 5.0.0
       get-current-line: 6.6.0
@@ -345,8 +313,9 @@ importers:
       ts-node: 10.4.0_537597a9ab556ad28281f0091e028eab
       typescript: 4.5.0-beta
       validator: 13.5.2
+      vite: 2.4.4
     devDependencies:
-      '@re-do/configs': link:../configs
+      '@jest/types': 27.2.5
       '@types/jest': 26.0.24
       '@types/node': 15.0.2
       '@types/prompts': 2.0.11
@@ -355,7 +324,7 @@ importers:
 
   ../../pkgs/persist-statelessly:
     specifiers:
-      '@re-do/configs': workspace:*
+      '@re-do/node-utils': workspace:*
       '@re-do/utils': workspace:*
       '@types/jest': 26.0.24
       '@types/node': 15.0.2
@@ -367,7 +336,7 @@ importers:
       '@re-do/utils': link:../utils
       statelessly: link:../statelessly
     devDependencies:
-      '@re-do/configs': link:../configs
+      '@re-do/node-utils': link:../node-utils
       '@types/jest': 26.0.24
       '@types/node': 15.0.2
       jest: 27.0.6
@@ -376,7 +345,7 @@ importers:
 
   ../../pkgs/react-statelessly:
     specifiers:
-      '@re-do/configs': workspace:*
+      '@re-do/node-utils': workspace:*
       '@re-do/utils': workspace:*
       '@types/enzyme': 3.10.8
       '@types/jest': 26.0.24
@@ -402,7 +371,7 @@ importers:
       redux: 4.0.5
       statelessly: link:../statelessly
     devDependencies:
-      '@re-do/configs': link:../configs
+      '@re-do/node-utils': link:../node-utils
       '@types/enzyme': 3.10.8
       '@types/jest': 26.0.24
       '@types/node': 15.0.2
@@ -417,7 +386,7 @@ importers:
 
   ../../pkgs/restates:
     specifiers:
-      '@re-do/configs': workspace:*
+      '@re-do/node-utils': workspace:*
       '@re-do/utils': workspace:*
       '@reduxjs/toolkit': 1.5.0
       '@types/jest': 26.0.24
@@ -442,7 +411,7 @@ importers:
       redux-devtools-extension: 2.13.8_redux@4.0.5
       retypes: link:../retypes
     devDependencies:
-      '@re-do/configs': link:../configs
+      '@re-do/node-utils': link:../node-utils
       '@types/jest': 26.0.24
       '@types/node': 15.0.2
       jest: 27.0.6
@@ -452,7 +421,7 @@ importers:
 
   ../../pkgs/retypes:
     specifiers:
-      '@re-do/configs': workspace:*
+      '@re-do/node-utils': workspace:*
       '@re-do/utils': workspace:*
       '@types/jest': 26.0.24
       '@types/node': 15.0.2
@@ -464,7 +433,7 @@ importers:
     dependencies:
       '@re-do/utils': link:../utils
     devDependencies:
-      '@re-do/configs': link:../configs
+      '@re-do/node-utils': link:../node-utils
       '@types/jest': 26.0.24
       '@types/node': 15.0.2
       jest: 27.0.6
@@ -475,7 +444,6 @@ importers:
 
   ../../pkgs/run:
     specifiers:
-      '@re-do/configs': workspace:*
       '@re-do/model': workspace:*
       '@re-do/node-utils': workspace:*
       '@re-do/utils': workspace:*
@@ -490,7 +458,6 @@ importers:
       '@re-do/utils': link:../utils
       playwright-core: 1.12.3
     devDependencies:
-      '@re-do/configs': link:../configs
       '@types/jest': 26.0.24
       jest: 27.0.6
       ts-jest: 27.0.3_6723621923adb52b6baca733c393e782
@@ -498,7 +465,7 @@ importers:
 
   ../../pkgs/statelessly:
     specifiers:
-      '@re-do/configs': workspace:*
+      '@re-do/node-utils': workspace:*
       '@re-do/utils': workspace:*
       '@reduxjs/toolkit': 1.5.0
       '@types/jest': 26.0.24
@@ -521,7 +488,7 @@ importers:
       redux: 4.0.5
       redux-devtools-extension: 2.13.8_redux@4.0.5
     devDependencies:
-      '@re-do/configs': link:../configs
+      '@re-do/node-utils': link:../node-utils
       '@types/jest': 26.0.24
       '@types/node': 15.0.2
       jest: 27.0.6
@@ -533,7 +500,6 @@ importers:
     specifiers:
       '@octokit/auth-action': 1.3.3
       '@octokit/rest': 18.6.6
-      '@re-do/configs': workspace:*
       '@re-do/data': workspace:*
       '@re-do/model': workspace:*
       '@re-do/node-utils': workspace:*
@@ -567,7 +533,6 @@ importers:
       node-fetch: 2.6.1
       persist-statelessly: link:../persist-statelessly
     devDependencies:
-      '@re-do/configs': link:../configs
       '@types/adm-zip': 0.4.34
       '@types/jest': 26.0.24
       '@types/node': 15.0.2
@@ -582,7 +547,7 @@ importers:
 
   ../../pkgs/utils:
     specifiers:
-      '@re-do/configs': workspace:*
+      '@re-do/node-utils': workspace:*
       '@types/jest': 26.0.24
       '@types/node': 15.0.2
       deepmerge: 4.2.2
@@ -603,7 +568,7 @@ importers:
       ts-toolbelt: 9.5.10
       validator: 13.5.2
     devDependencies:
-      '@re-do/configs': link:../configs
+      '@re-do/node-utils': link:../node-utils
       '@types/jest': 26.0.24
       '@types/node': 15.0.2
       jest: 27.0.6
@@ -618,7 +583,6 @@ importers:
       '@material-ui/styles': 5.0.0-beta.3
       '@mdx-js/react': 1.6.22
       '@re-do/components': workspace:*
-      '@re-do/configs': workspace:*
       '@re-do/model': workspace:*
       '@re-do/node-utils': workspace:*
       '@re-do/test': workspace:*
@@ -660,7 +624,6 @@ importers:
       uuid: 8.3.2
       validator: 13.5.2
     devDependencies:
-      '@re-do/configs': link:../configs
       '@re-do/node-utils': link:../node-utils
       '@re-do/test': link:../test
       '@types/jest': 26.0.24
@@ -4545,43 +4508,6 @@ packages:
       expect: 27.3.1
     dev: true
 
-  /@jest/reporters/27.0.6:
-    resolution: {integrity: sha512-TIkBt09Cb2gptji3yJXb3EE+eVltW6BjO7frO7NEfjI9vSIYoISi5R3aI3KpEDXlB1xwB+97NXIqz84qYeYsfA==}
-    engines: {node: ^10.13.0 || ^12.13.0 || ^14.15.0 || >=15.0.0}
-    peerDependencies:
-      node-notifier: ^8.0.1 || ^9.0.0 || ^10.0.0
-    peerDependenciesMeta:
-      node-notifier:
-        optional: true
-    dependencies:
-      '@bcoe/v8-coverage': 0.2.3
-      '@jest/console': 27.3.1
-      '@jest/test-result': 27.3.1
-      '@jest/transform': 27.3.1
-      '@jest/types': 27.0.6
-      chalk: 4.1.2
-      collect-v8-coverage: 1.0.1
-      exit: 0.1.2
-      glob: 7.2.0
-      graceful-fs: 4.2.8
-      istanbul-lib-coverage: 3.2.0
-      istanbul-lib-instrument: 4.0.3
-      istanbul-lib-report: 3.0.0
-      istanbul-lib-source-maps: 4.0.1
-      istanbul-reports: 3.0.5
-      jest-haste-map: 27.3.1
-      jest-resolve: 27.3.1
-      jest-util: 27.3.1
-      jest-worker: 27.3.1
-      slash: 3.0.0
-      source-map: 0.6.1
-      string-length: 4.0.2
-      terminal-link: 2.1.1
-      v8-to-istanbul: 8.1.0
-    transitivePeerDependencies:
-      - supports-color
-    dev: false
-
   /@jest/reporters/27.3.1:
     resolution: {integrity: sha512-m2YxPmL9Qn1emFVgZGEiMwDntDxRRQ2D58tiDQlwYTg5GvbFOKseYCcHtn0WsI8CG4vzPglo3nqbOiT8ySBT/w==}
     engines: {node: ^10.13.0 || ^12.13.0 || ^14.15.0 || >=15.0.0}
@@ -4618,7 +4544,6 @@ packages:
       v8-to-istanbul: 8.1.0
     transitivePeerDependencies:
       - supports-color
-    dev: true
 
   /@jest/source-map/27.0.6:
     resolution: {integrity: sha512-Fek4mi5KQrqmlY07T23JRi0e7Z9bXTOOD86V/uS0EIW4PClvPDqZOyFlLpNJheS6QI0FNX1CgmPjtJ4EA/2M+g==}
@@ -4705,16 +4630,6 @@ packages:
       '@types/yargs': 15.0.14
       chalk: 4.1.2
     dev: true
-
-  /@jest/types/27.0.6:
-    resolution: {integrity: sha512-aSquT1qa9Pik26JK5/3rvnYb4bGtm1VFNesHKmNTwmPIgOrixvhL2ghIvFRNEpzy3gU+rUgjIF/KodbkFAl++g==}
-    engines: {node: ^10.13.0 || ^12.13.0 || ^14.15.0 || >=15.0.0}
-    dependencies:
-      '@types/istanbul-lib-coverage': 2.0.3
-      '@types/istanbul-reports': 3.0.1
-      '@types/node': 15.0.2
-      '@types/yargs': 16.0.4
-      chalk: 4.1.2
 
   /@jest/types/27.2.5:
     resolution: {integrity: sha512-nmuM4VuDtCZcY+eTpw+0nvstwReMsjPoj7ZR80/BbixulhLaiX+fbv8oeLW8WZlJMcsGQsTmMKT/iTZu1Uy/lQ==}
@@ -5280,26 +5195,6 @@ packages:
   /@popperjs/core/2.10.2:
     resolution: {integrity: sha512-IXf3XA7+XyN7CP9gGh/XB0UxVMlvARGEgGXLubFICsUMGz6Q+DU+i4gGlpOxTjKvXjkJDJC8YdqdKkDj9qZHEQ==}
 
-  /@re-do/node-utils/0.1.1_537597a9ab556ad28281f0091e028eab:
-    resolution: {integrity: sha512-STfIjiSi5z4yCqao9ht9X6eiWqWUvsaSgn8QK81auX0GjfTQfS+0WtPjlqRZOvNd+1+Qf7s69PDC7qc9K7Bx0w==}
-    hasBin: true
-    dependencies:
-      '@re-do/utils': 1.0.0
-      deepmerge: 4.2.2
-      execa: 5.0.0
-      get-current-line: 6.6.0
-      moize: 5.4.7
-      prompts: 2.4.1
-      tree-kill: 1.2.2
-      ts-node: 10.1.0_537597a9ab556ad28281f0091e028eab
-      validator: 13.5.2
-    transitivePeerDependencies:
-      - '@swc/core'
-      - '@swc/wasm'
-      - '@types/node'
-      - typescript
-    dev: false
-
   /@re-do/utils/0.0.10:
     resolution: {integrity: sha512-7M3d4L65MkzpcqKccP9OhYpnBdyKE2uspQWz1SxkTJol7wDL4qciSN545aQm5q2tefc9QSDuoOynS//LiJtQpA==}
     dependencies:
@@ -5309,17 +5204,6 @@ packages:
       execa: 4.0.0
       fs-extra: 8.1.0
       moize: 5.4.4
-    dev: false
-
-  /@re-do/utils/1.0.0:
-    resolution: {integrity: sha512-6bAoJv+Mu3yAAzv15GWnPRFPfv05jTz82Hvj1PnjucHngC9LRBM3ctfh9dYMHHSzKNROKwPhsKCLpt51cMpcmg==}
-    dependencies:
-      deepmerge: 4.2.2
-      fast-deep-equal: 3.1.3
-      moize: 5.4.7
-      process: 0.11.10
-      ts-toolbelt: 9.5.10
-      validator: 13.5.2
     dev: false
 
   /@reach/router/1.3.4_react-dom@17.0.2+react@17.0.2:
@@ -7301,8 +7185,8 @@ packages:
     resolution: {integrity: sha512-sL/cEvJWAnClXw0wHk85/2L0G6Sj8UB0Ctc1TEMbKSsmpRosqhwj9gWgFRZSrBr2f9tiXISwNhCPmlfqUqyb9Q==}
     dev: true
 
-  /@vitejs/plugin-react-refresh/1.3.5:
-    resolution: {integrity: sha512-7c4ELQMygKw5YFCNMLhDHrt4BOgXmROP65gPax/W43mJPNQaYW8ny1kI/bvCDNuzMqZWSK8uf2tEjPVVBnZ5IQ==}
+  /@vitejs/plugin-react-refresh/1.3.6:
+    resolution: {integrity: sha512-iNR/UqhUOmFFxiezt0em9CgmiJBdWR+5jGxB2FihaoJfqGt76kiwaKoVOJVU5NYcDWMdN06LbyN2VIGIoYdsEA==}
     engines: {node: '>=12.0.0'}
     dependencies:
       '@babel/core': 7.15.8
@@ -18623,7 +18507,7 @@ packages:
     dependencies:
       '@mdx-js/mdx': 1.6.22
       '@storybook/csf-tools': 6.3.12
-      '@vitejs/plugin-react-refresh': 1.3.5
+      '@vitejs/plugin-react-refresh': 1.3.6
       es-module-lexer: 0.7.1
       glob-promise: 4.2.2
       vite-plugin-mdx: 3.5.9_@mdx-js+mdx@1.6.22
@@ -19422,35 +19306,6 @@ packages:
     optionalDependencies:
       tsconfig-paths: 3.11.0
     dev: true
-
-  /ts-node/10.1.0_537597a9ab556ad28281f0091e028eab:
-    resolution: {integrity: sha512-6szn3+J9WyG2hE+5W8e0ruZrzyk1uFLYye6IGMBadnOzDh8aP7t8CbFpsfCiEx2+wMixAhjFt7lOZC4+l+WbEA==}
-    engines: {node: '>=12.0.0'}
-    hasBin: true
-    peerDependencies:
-      '@swc/core': '>=1.2.50'
-      '@swc/wasm': '>=1.2.50'
-      '@types/node': '*'
-      typescript: '>=2.7'
-    peerDependenciesMeta:
-      '@swc/core':
-        optional: true
-      '@swc/wasm':
-        optional: true
-    dependencies:
-      '@tsconfig/node10': 1.0.8
-      '@tsconfig/node12': 1.0.9
-      '@tsconfig/node14': 1.0.1
-      '@tsconfig/node16': 1.0.2
-      '@types/node': 15.0.2
-      arg: 4.1.3
-      create-require: 1.1.1
-      diff: 4.0.2
-      make-error: 1.3.6
-      source-map-support: 0.5.20
-      typescript: 4.5.0-beta
-      yn: 3.1.1
-    dev: false
 
   /ts-node/10.4.0_537597a9ab556ad28281f0091e028eab:
     resolution: {integrity: sha512-g0FlPvvCXSIO1JDF6S232P5jPYqBkRL9qly81ZgAOSU7rwI0stphCgd2kLiCrU9DjQCrJMWEqcNSjQL02s6d8A==}

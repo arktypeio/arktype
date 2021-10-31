@@ -36,7 +36,6 @@
     "devDependencies": {
         "@re-do/test": "workspace:*",
         "@re-do/node-utils": "workspace:*",
-        "@re-do/configs": "workspace:*",
         "@types/node": "15.0.2",
         "@types/react": "17.0.5",
         "@types/react-dom": "17.0.3",

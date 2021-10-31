@@ -1,8 +1,7 @@
 import { jsrx, $, shell } from "jsrx"
 import { join } from "path"
 import { createServer, build } from "vite"
-import { getWebConfig } from "@re-do/configs"
-import { fromHere } from "@re-do/node-utils"
+import { fromHere, getWebConfig } from "@re-do/node-utils"
 
 const pkgRoot = fromHere("src")
 

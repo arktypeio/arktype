@@ -9,21 +9,22 @@
         "directory": "pkgs/node-utils"
     },
     "type": "module",
-    "main": "dist/cjs/index.js",
-    "module": "dist/mjs/index.js",
+    "main": "out/cjs/index.js",
+    "types": "out/types/index.d.ts",
     "exports": {
         ".": {
-            "import": "./dist/mjs/index.js",
-            "require": "./dist/cjs/index.js"
+            "import": "./out/esm/index.js",
+            "require": "./out/cjs/index.js",
+            "types": "./out/types/index.d.ts"
         }
     },
     "bin": {
-        "runScript": "./runScript.js"
+        "runScript": "./runScript.js",
+        "redoTsc": "./redoTsc.js"
     },
     "scripts": {
-        "build": "redoBuild",
+        "build": "node --loader ts-node/esm ./src/redoTsc.ts",
         "runScript": "./runScript.js",
-        "filterWarnings": "./filterWarnings.cjs",
         "test": "jest"
     },
     "dependencies": {
@@ -37,14 +38,17 @@
         "get-current-line": "6.6.0",
         "tree-kill": "1.2.2",
         "typescript": "4.5.0-beta",
-        "retypes": "workspace:*"
+        "retypes": "workspace:*",
+        "@jest/reporters": "27.3.1",
+        "vite": "2.4.4",
+        "@vitejs/plugin-react-refresh": "1.3.6"
     },
     "devDependencies": {
-        "@re-do/configs": "workspace:*",
         "@types/node": "15.0.2",
         "@types/prompts": "2.0.11",
         "jest": "27.0.6",
         "@types/jest": "26.0.24",
+        "@jest/types": "27.2.5",
         "ts-jest": "27.0.3"
     }
 }

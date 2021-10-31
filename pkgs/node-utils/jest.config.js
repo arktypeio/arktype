@@ -1,3 +1,3 @@
-import { getJestConfig } from "@re-do/configs"
+import { getJestConfig } from "./src"
 
 export default getJestConfig()

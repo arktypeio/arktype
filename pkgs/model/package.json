@@ -28,7 +28,6 @@
         "graphql-tag": "2.12.4"
     },
     "devDependencies": {
-        "@re-do/configs": "workspace:*",
         "@re-do/node-utils": "workspace:*",
         "@types/node": "15.0.2",
         "@graphql-codegen/cli": "2.0.1",

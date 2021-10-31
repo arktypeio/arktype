@@ -60,9 +60,10 @@ export type Merge<
 
 export type MergeAll<
     Objects,
+    Options extends MergeOptions = DefaultMergeOptions,
     Result extends object = {}
 > = Objects extends Iteration<any, infer Current, infer Remaining>
-    ? MergeAll<Remaining, Merge<Result, Current>>
+    ? MergeAll<Remaining, Merge<Result, Current, Options>>
     : Result
 
 export type FromEntries<
@@ -125,14 +126,15 @@ export const merge = <
     }
 }
 
-export const mergeAll = <Objects extends object[]>(
-    ...objects: Narrow<Objects>
-): MergeAll<Objects> =>
+export const mergeAll = <
+    Objects extends object[],
+    Options extends MergeOptions = DefaultMergeOptions
+>(
+    objects: Narrow<Objects>,
+    options?: Options
+): MergeAll<Objects, Options> =>
     (objects.length
-        ? {
-              ...objects[0],
-              ...mergeAll(...objects.slice(1))
-          }
+        ? merge(objects[0], mergeAll(objects.slice(1)))
         : {}) as MergeAll<Objects>
 
 export const withDefaults =

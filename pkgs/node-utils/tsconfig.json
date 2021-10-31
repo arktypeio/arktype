@@ -1,8 +1,11 @@
 {
-    "extends": "@re-do/configs/tsconfig.base",
+    "extends": "./tsconfig.base",
+    "ts-node": {
+        "transpileOnly": true
+    },
     "compilerOptions": {
         "baseUrl": "src",
-        "outDir": "dist"
+        "outDir": "out"
     },
     "include": ["src"]
 }

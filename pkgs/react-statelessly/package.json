@@ -30,7 +30,7 @@
         "statelessly": "workspace:*"
     },
     "devDependencies": {
-        "@re-do/configs": "workspace:*",
+        "@re-do/node-utils": "workspace:*",
         "@types/enzyme": "3.10.8",
         "@types/node": "15.0.2",
         "@types/react": "17.0.5",

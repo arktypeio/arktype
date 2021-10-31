@@ -2,8 +2,13 @@ import treeKill from "tree-kill"
 import { join } from "path"
 import { writeFileSync } from "fs"
 import { build } from "vite"
-import { getNodeConfig, getWebConfig } from "@re-do/configs"
-import { ChildProcess, shell, shellAsync } from "@re-do/node-utils"
+import {
+    ChildProcess,
+    shell,
+    shellAsync,
+    getNodeConfig,
+    getWebConfig
+} from "@re-do/node-utils"
 import { startElectronCmd, killExisting, srcDir, distDir } from "./common"
 
 let mainProcess: ChildProcess | undefined

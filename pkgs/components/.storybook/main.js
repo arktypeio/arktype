@@ -1,5 +1,5 @@
 const { dirname } = require("path")
-const { resolveModulesWithoutJsExtension } = require("@re-do/configs")
+const { resolveModulesWithoutJsExtension } = require("@re-do/node-utils")
 
 module.exports = {
     stories: ["../src/**/*.stories.tsx"],

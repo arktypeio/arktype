@@ -9,7 +9,10 @@ import {
     readFileSync,
     writeFileSync
 } from "fs"
-import { readFile, writeFile } from "fs/promises"
+import {
+    readFile as readFileAsync,
+    writeFile as writeFileAsync
+} from "fs/promises"
 import { fileURLToPath, URL } from "url"
 import getCurrentLine from "get-current-line"
 import { homedir } from "os"
@@ -75,6 +78,11 @@ export const streamToFile = async (
     return path
 }
 
+export const readFile = (path: string) => readFileSync(path).toString()
+
+export const writeFile = (path: string, contents: string) =>
+    writeFileSync(path, contents)
+
 export const readJson = (path: string) =>
     JSON.parse(readFileSync(path, { encoding: "utf8" }))
 
@@ -82,10 +90,10 @@ export const writeJson = (path: string, data: object) =>
     writeFileSync(path, JSON.stringify(data, null, 4))
 
 export const readJsonAsync = async (path: string) =>
-    JSON.parse(await readFile(path, { encoding: "utf8" }))
+    JSON.parse(await readFileAsync(path, { encoding: "utf8" }))
 
 export const writeJsonAsync = async (path: string, data: object) =>
-    writeFile(path, JSON.stringify(data, null, 4))
+    writeFileAsync(path, JSON.stringify(data, null, 4))
 
 export type WalkOptions = {
     excludeFiles?: boolean
@@ -144,19 +152,19 @@ export const fromHere = (...joinWith: string[]) =>
 
 export const fsRoot = parse(process.cwd()).root
 
-export const fromPackageRoot = (...joinWith: string[]) => {
-    const callerDir = dirname(getCallerFile("fromPackageRoot"))
-    let dirToCheck = callerDir
+export const findPackageRoot = (fromDir?: string) => {
+    const startDir = fromDir ?? dirname(getCallerFile("findPackageRoot"))
+    let dirToCheck = startDir
     while (dirToCheck !== fsRoot) {
         try {
             const contents = readJson(join(dirToCheck, "package.json"))
             // If the file is just a stub with no package name, don't consider
             // it a package root
             if (contents.name) {
-                return join(dirToCheck, ...joinWith)
+                return dirToCheck
             }
         } catch {}
         dirToCheck = join(dirToCheck, "..")
     }
-    throw new Error(`${callerDir} is not part of a node package.`)
+    throw new Error(`${startDir} is not part of a node package.`)
 }
