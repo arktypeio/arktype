@@ -94,16 +94,14 @@ export const tsc = (
 
     // Prepare and emit the d.ts files
     const program = createProgram(sources, options, host)
-    const libFiles = program
-        .getSourceFiles()
-        .map((_) => _.fileName)
-        .filter((name) => !program.getRootFileNames().includes(name))
-    const libFileMap = mapFilesToContents(libFiles)
+    const fileMap = program.getSourceFiles().map((_) => _.fileName)
+    // .filter((name) => !program.getRootFileNames().includes(name))
+    // const libFileMap = mapFilesToContents(libFiles)
     const service = ts.createLanguageService(
         new TypeScriptLanguageServiceHost(
             ts,
-            libFileMap,
-            mapFilesToContents(sources),
+            {},
+            mapFilesToContents(fileMap),
             options
         )
     )

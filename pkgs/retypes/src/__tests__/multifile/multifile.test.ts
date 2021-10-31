@@ -1,5 +1,5 @@
 import { declare } from "../../main.js"
-import { expectType } from "tsd"
+import tsd, { expectType, printType } from "tsd"
 
 export const { define, compile } = declare("user", "group")
 
@@ -19,8 +19,14 @@ export type ExpectedGroup = {
     members: ExpectedUser[]
 }
 
+printType(types.user.type)
+
 describe("multifile", () => {
-    test("compiles", () => {
+    test("compiles", async () => {
+        const diag = await tsd({
+            cwd: ".",
+            testFiles: ["src/__tests__/**/*.test.ts"]
+        })
         expectType<ExpectedUser>(types.user.type)
         expectType<ExpectedGroup>(types.group.type)
         expectType<ExpectedUser | undefined>(types.user.type.bestFriend)

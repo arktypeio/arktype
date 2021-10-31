@@ -409,12 +409,13 @@ const nontupleValidator: RecursiveValidator<
         const keyDiff = diffSets(Object.keys(defined), Object.keys(extracted))
         const keyErrors = keyDiff
             ? Object.entries(keyDiff).reduce((diff, [k, v]) => {
+                  const discrepancies: string[] = v
                   if (k === "added" && !ignoreExtraneousKeys) {
-                      return { ...diff, added: v }
+                      return { ...diff, added: discrepancies }
                   }
                   if (k === "removed") {
                       // Omit keys defined optional from 'removed'
-                      const illegallyRemoved = v.filter(
+                      const illegallyRemoved = discrepancies.filter(
                           (removedKey) =>
                               typeof defined[removedKey] !== "string" ||
                               !defined[removedKey].endsWith("?")
