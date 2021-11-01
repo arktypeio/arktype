@@ -2,7 +2,7 @@
     "extends": "@re-do/configs/tsconfig.base.json",
     "compilerOptions": {
         "baseUrl": "src",
-        "outDir": "dist",
+        "outDir": "out",
         "types": ["vite/client", "jest"],
         "declaration": false
     },

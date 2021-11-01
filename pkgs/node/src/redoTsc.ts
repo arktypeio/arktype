@@ -1,8 +1,9 @@
 import { rmSync } from "fs"
 import { basename, join } from "path"
+import { stdout } from "process"
 import ts from "typescript"
 import { findPackageRoot, walkPaths } from "./fs.js"
-import { shellAsync } from "./shell.js"
+import { shell, shellAsync } from "./shell.js"
 import { transpileTs, findPackageName } from "./ts.js"
 
 const packageRoot = findPackageRoot(process.cwd())
@@ -13,10 +14,11 @@ const esmOut = join(outRoot, "esm")
 const cjsOut = join(outRoot, "cjs")
 
 export const buildTypes = async () => {
-    await shellAsync(
-        `npx tsc --declaration --emitDeclarationOnly --outDir ${typesOut}`,
+    shell(
+        `npx tsc --declaration --emitDeclarationOnly --pretty --outDir ${typesOut}`,
         {
-            cwd: packageRoot
+            cwd: packageRoot,
+            suppressCmdStringLogging: true
         }
     )
     walkPaths(typesOut)
@@ -28,31 +30,29 @@ export const buildTypes = async () => {
         .forEach((path) => rmSync(path, { recursive: true, force: true }))
 }
 
-export const buildEsm = async () =>
+export const buildEsm = async () => {
     transpileTs({
         packageRoot,
         toDir: esmOut,
         module: ts.ModuleKind.ESNext
     })
+}
 
-export const buildCjs = async () =>
+export const buildCjs = async () => {
     transpileTs({
         packageRoot,
         toDir: cjsOut,
         module: ts.ModuleKind.CommonJS
     })
+}
 
 export const redoTsc = async () => {
-    console.log(`redoTsc🔨: Building ${packageName}...`)
+    console.log(`🔨 Building ${packageName}...`)
+    console.log(`⏳ Building types...`)
     await buildTypes()
-    await buildEsm()
-    await buildCjs()
-    console.log(`redoTsc🔨: Finished building ${packageName}.`)
+    console.log(`⌛ Transpiling...`)
+    await Promise.all([buildEsm(), buildCjs()])
+    console.log(`✅ Finished building ${packageName}.`)
 }
 
 redoTsc()
-//  catch (e) {
-//         console.log("redoTsc🔨:❗️Build failed due to the following error:❗️")
-//         console.log(e)
-//         process.exit(1)
-//     }

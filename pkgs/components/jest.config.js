@@ -1,4 +1,4 @@
-const { getJestConfig } = require("@re-do/node-utils")
+const { getJestConfig } = require("@re-do/node")
 
 module.exports = {
     ...getJestConfig(),

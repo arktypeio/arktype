@@ -1,5 +1,5 @@
 import { jsrx, $ } from "jsrx"
-import { shellAsync } from "@re-do/node-utils"
+import { shellAsync } from "@re-do/node"
 import {
     buildAll,
     createRelease,

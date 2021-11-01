@@ -1,4 +1,4 @@
-import { PropertyOf, isIn } from "@re-do/utils"
+import type { PropertyOf } from "@re-do/utils"
 import { join } from "path"
 import killTreeCallback from "tree-kill"
 import { promisify } from "util"
@@ -24,9 +24,11 @@ export const supportedOs = [...Object.values(supportedOsMap)] as SupportedOs[]
 
 export const getOs = () => {
     const platform = process.platform
-    if (!isIn(supportedPlatforms, platform)) {
+    if (platform in supportedPlatforms) {
         throw new Error(
-            `Redo does not support platform '${platform}'. Options are ${supportedPlatforms}.`
+            `Redo does not support platform '${platform}'. Options are ${supportedPlatforms.join(
+                ", "
+            )}.`
         )
     }
     return supportedOsMap[platform as SupportedPlatform]

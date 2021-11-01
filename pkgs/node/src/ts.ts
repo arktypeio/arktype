@@ -1,44 +1,15 @@
-import { readFileSync, rmSync, writeFileSync } from "fs"
-import { basename, dirname, join } from "path"
-import { parseConfigFileTextToJson } from "typescript"
+import { writeFileSync } from "fs"
+import { dirname, join } from "path"
 import {
     findPackageRoot,
     walkPaths,
     fromDir,
     readJson,
     mapFilesToContents,
-    ensureDir,
-    readFile
+    ensureDir
 } from "./fs.js"
-import { shellAsync } from "./shell.js"
 import ts from "typescript"
-import {
-    DefaultMergeOptions,
-    Iteration,
-    Merge,
-    merge,
-    MergeOptions,
-    Narrow
-} from "@re-do/utils"
-
-export type MergeAll<
-    Objects,
-    Options extends MergeOptions = DefaultMergeOptions,
-    Result extends object = {}
-> = Objects extends Iteration<any, infer Current, infer Remaining>
-    ? MergeAll<Remaining, Merge<Result, Current, Options>>
-    : Result
-
-export const mergeAll = <
-    Objects extends object[],
-    Options extends MergeOptions = DefaultMergeOptions
->(
-    objects: Narrow<Objects>,
-    options?: Options
-): MergeAll<Objects, Options> =>
-    (objects.length
-        ? merge(objects[0], mergeAll(objects.slice(1), options), options)
-        : {}) as MergeAll<Objects>
+import { mergeAll } from "@re-do/utils"
 
 export type TranspileTsOptions = ts.CompilerOptions & {
     packageRoot?: string
@@ -81,14 +52,4 @@ export const transpileTs = async ({
         ensureDir(dirname(outFilePath))
         writeFileSync(outFilePath, transpiled)
     })
-
-    // await shellAsync("npx tsc --module esnext --outDir out/esm", {
-    //     cwd: pkgRoot
-    // })
-    // await shellAsync("npx tsc --module commonjs --outDir out/cjs", {
-    //     cwd: pkgRoot
-    // })
-    // await shellAsync(
-    //     "npx tsc --declaration --emitDeclarationOnly --outDir out/types"
-    // )
 }

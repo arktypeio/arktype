@@ -10,12 +10,13 @@
         "directory": "pkgs/restates"
     },
     "type": "module",
-    "main": "dist/cjs/index.js",
-    "module": "dist/mjs/index.js",
+    "main": "out/cjs/index.js",
+    "types": "out/types/index.d.ts",
     "exports": {
         ".": {
-            "import": "./dist/mjs/index.js",
-            "require": "./dist/cjs/index.js"
+            "import": "./out/esm/index.js",
+            "require": "./out/cjs/index.js",
+            "types": "./out/types/index.d.ts"
         }
     },
     "scripts": {
@@ -33,7 +34,7 @@
         "@reduxjs/toolkit": "1.5.0"
     },
     "devDependencies": {
-        "@re-do/node-utils": "workspace:*",
+        "@re-do/node": "workspace:*",
         "jest": "27.0.6",
         "@types/jest": "26.0.24",
         "ts-jest": "27.0.3",

@@ -62,6 +62,7 @@ temp
 
 # Build output
 dist
+out
 
 # Rush files
 common/temp/**

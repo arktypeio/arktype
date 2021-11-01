@@ -1,11 +1,11 @@
-import { streamToFile, walkPaths, ensureDir } from "@re-do/node-utils"
+import { streamToFile, walkPaths, ensureDir } from "@re-do/node"
 import { app, session } from "electron"
 import { existsSync, chmodSync, rmSync } from "fs"
 import { join, resolve } from "path"
 import fetch from "node-fetch"
 // @ts-ignore
 import unzipCrx from "unzip-crx-3"
-import { filterWarnings } from "@re-do/node-utils"
+import { filterWarnings } from "@re-do/node"
 
 export const installDevTools = async () => {
     filterWarnings(["ExtensionLoadWarning"])

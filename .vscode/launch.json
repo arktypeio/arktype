@@ -9,7 +9,7 @@
             "type": "node",
             "request": "attach",
             "cwd": "${workspaceFolder}",
-            "outFiles": ["${workspaceFolder}/dist/**/*.js"],
+            "outFiles": ["${workspaceFolder}/out/**/*.js"],
             "sourceMaps": true,
             "protocol": "inspector",
             "port": 9222,

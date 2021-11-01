@@ -8,7 +8,7 @@ import {
     ensureDir,
     getRedoZipFileName,
     getRedoExecutablePath
-} from "@re-do/node-utils"
+} from "@re-do/node"
 import Zip from "adm-zip"
 import { Octokit } from "@octokit/rest"
 import { createActionAuth } from "@octokit/auth-action"

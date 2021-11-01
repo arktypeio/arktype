@@ -48,9 +48,10 @@
             "shouldPublish": true
         },
         {
-            "packageName": "@re-do/node-utils",
-            "projectFolder": "pkgs/node-utils",
-            "shouldPublish": true
+            "packageName": "@re-do/node",
+            "projectFolder": "pkgs/node",
+            "shouldPublish": true,
+            "cyclicDependencyProjects": ["@re-do/utils"]
         },
         {
             "packageName": "@re-do/data",

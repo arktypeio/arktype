@@ -1,7 +1,7 @@
 import { jsrx, $, shell } from "jsrx"
 import { join } from "path"
 import { createServer, build } from "vite"
-import { fromHere, getWebConfig } from "@re-do/node-utils"
+import { fromHere, getWebConfig } from "@re-do/node"
 
 const pkgRoot = fromHere("src")
 
@@ -25,7 +25,7 @@ type GetConfigArgs = {
 const getWebsiteConfig = ({ watch = false }: GetConfigArgs = {}) =>
     getWebConfig({
         srcDir: pkgRoot,
-        outDir: fromHere("dist"),
+        outDir: fromHere("out"),
         watch,
         options: {
             resolve: {

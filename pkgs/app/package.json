@@ -2,7 +2,7 @@
     "name": "@re-do/app",
     "version": "0.2.7",
     "private": true,
-    "main": "dist/main/index.js",
+    "main": "out/main/index.js",
     "repository": {
         "type": "git",
         "url": "https://github.com/re-do/redo.git",
@@ -27,7 +27,7 @@
         "@re-do/model": "workspace:*",
         "@re-do/run": "workspace:*",
         "@re-do/utils": "workspace:*",
-        "@re-do/node-utils": "workspace:*",
+        "@re-do/node": "workspace:*",
         "@re-do/data": "workspace:*",
         "dotenv": "9.0.0",
         "framer-motion": "4.1.11",

@@ -1,4 +1,4 @@
-import { ensureDir, shell } from "@re-do/node-utils"
+import { ensureDir, shell } from "@re-do/node"
 import { join } from "path"
 import { writeFileSync, renameSync, rmSync } from "fs"
 import { releaseDir, packageJsonContents } from "./common"

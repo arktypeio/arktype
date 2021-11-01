@@ -48,7 +48,7 @@ import {
     UnvalidatedTypeSet
 } from "retypes"
 // For some reason this prevents createState from giving an inane "cannot resolve type without reference" error
-import {} from "retypes/dist/cjs/parse"
+import {} from "retypes/out/cjs/parse"
 import {
     configureStore,
     ConfigureStoreOptions,

@@ -8,8 +8,8 @@ import {
     shellAsync,
     getNodeConfig,
     getWebConfig
-} from "@re-do/node-utils"
-import { startElectronCmd, killExisting, srcDir, distDir } from "./common"
+} from "@re-do/node"
+import { startElectronCmd, killExisting, srcDir, outDir } from "./common"
 
 let mainProcess: ChildProcess | undefined
 
@@ -59,7 +59,7 @@ const addPreloadScriptPlugin = {
     name: "add-renderer-preload-script",
     writeBundle: () =>
         writeFileSync(
-            join(distDir, "main", "preload.js"),
+            join(outDir, "main", "preload.js"),
             `require("electron-redux/preload")`
         )
 }
@@ -67,7 +67,7 @@ const addPreloadScriptPlugin = {
 export const getMainConfig = ({ watch }: GetConfigArgs = {}) =>
     getNodeConfig({
         srcDir: join(srcDir, "main"),
-        outDir: join(distDir, "main"),
+        outDir: join(outDir, "main"),
         watch: watch ?? false,
         options: {
             resolve: {
@@ -82,7 +82,7 @@ export const getMainConfig = ({ watch }: GetConfigArgs = {}) =>
 export const getRendererConfig = ({ watch }: GetConfigArgs = {}) =>
     getWebConfig({
         srcDir: join(srcDir, "renderer"),
-        outDir: join(distDir, "renderer"),
+        outDir: join(outDir, "renderer"),
         watch: watch ?? false,
         options: {
             base: "./",
@@ -95,7 +95,7 @@ export const getRendererConfig = ({ watch }: GetConfigArgs = {}) =>
 export const getObserverConfig = ({ watch }: GetConfigArgs = {}) =>
     getNodeConfig({
         srcDir: join(srcDir, "observer"),
-        outDir: join(distDir, "observer"),
+        outDir: join(outDir, "observer"),
         watch: watch ?? false,
         formats: ["es"],
         options: {

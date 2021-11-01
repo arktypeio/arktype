@@ -1,12 +1,12 @@
 {
-    "name": "@re-do/node-utils",
+    "name": "@re-do/node",
     "version": "0.1.1",
     "author": "redo.qa",
-    "description": "Node utilities consumed by Redo",
+    "description": "NodeJS utilities, build tools, and configs",
     "repository": {
         "type": "git",
         "url": "https://github.com/re-do/redo.git",
-        "directory": "pkgs/node-utils"
+        "directory": "pkgs/node"
     },
     "type": "module",
     "main": "out/cjs/index.js",
@@ -23,8 +23,9 @@
         "redoTsc": "./redoTsc.js"
     },
     "scripts": {
-        "build": "node --loader ts-node/esm ./src/redoTsc.ts",
+        "build": "node --loader ts-node/esm -r ./filterWarnings.cjs ./src/redoTsc.ts",
         "runScript": "./runScript.js",
+        "redoTsc": "./redoTsc.js",
         "test": "jest"
     },
     "dependencies": {
@@ -38,10 +39,12 @@
         "get-current-line": "6.6.0",
         "tree-kill": "1.2.2",
         "typescript": "4.5.0-beta",
-        "retypes": "workspace:*",
         "@jest/reporters": "27.3.1",
         "vite": "2.4.4",
-        "@vitejs/plugin-react-refresh": "1.3.6"
+        "@vitejs/plugin-react-refresh": "1.3.6",
+        "process": "0.11.10",
+        "ts-toolbelt": "9.5.10",
+        "fast-deep-equal": "3.1.3"
     },
     "devDependencies": {
         "@types/node": "15.0.2",
@@ -49,6 +52,7 @@
         "jest": "27.0.6",
         "@types/jest": "26.0.24",
         "@jest/types": "27.2.5",
-        "ts-jest": "27.0.3"
+        "ts-jest": "27.0.3",
+        "tsd": "0.17.0"
     }
 }

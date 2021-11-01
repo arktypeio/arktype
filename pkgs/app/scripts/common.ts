@@ -1,11 +1,11 @@
-import { shell, fromHere } from "@re-do/node-utils"
+import { shell, fromHere } from "@re-do/node"
 import { join } from "path"
 import { readFileSync } from "fs"
 
 export const pkgRoot = fromHere("..")
-export const distDir = join(pkgRoot, "dist")
 export const releaseDir = join(pkgRoot, "release")
 export const srcDir = join(pkgRoot, "src")
+export const outDir = join(pkgRoot, "out")
 
 export const packageJsonContents = JSON.parse(
     readFileSync(join(pkgRoot, "package.json")).toString()

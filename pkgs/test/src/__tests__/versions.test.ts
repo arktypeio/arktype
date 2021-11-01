@@ -1,4 +1,4 @@
-import { fromHere, fromDir, readJson } from "@re-do/node-utils"
+import { fromHere, fromDir, readJson } from "@re-do/node"
 import { version as testVersion } from "../../package.json"
 
 const repoRoot = fromHere("..", "..", "..", "..")

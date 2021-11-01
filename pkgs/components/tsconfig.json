@@ -1,8 +1,8 @@
 {
-    "extends": "@re-do/node-utils/tsconfig.base",
+    "extends": "@re-do/node/tsconfig.base",
     "compilerOptions": {
         "baseUrl": "src",
-        "outDir": "dist",
+        "outDir": "out",
         "isolatedModules": false,
         "exactOptionalPropertyTypes": false,
         "noErrorTruncation": false

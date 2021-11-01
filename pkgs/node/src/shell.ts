@@ -4,11 +4,14 @@ import {
     command,
     Options,
     ExecaSyncReturnValue,
-    ExecaChildProcess
+    ExecaChildProcess,
+    ExecaError,
+    ExecaSyncError
 } from "execa"
-import { Merge } from "@re-do/utils"
+import { isRecursible, Merge } from "@re-do/utils"
 import prompts, { PromptObject, PromptType } from "prompts"
 import { getOs } from "./os.js"
+import { fromPackageRoot } from "./fs.js"
 
 type CommonOptions = {
     suppressCmdStringLogging?: boolean
@@ -19,7 +22,6 @@ export type ShellOptions = Merge<Omit<SyncOptions, "shell">, CommonOptions>
 export type ShellAsyncOptions = Merge<Omit<Options, "shell">, CommonOptions>
 
 const defaultOptions: SyncOptions = {
-    stdio: "inherit",
     shell: true
 }
 
@@ -36,15 +38,29 @@ export const shell = (
     if (!suppressCmdStringLogging) {
         console.log(`Waiting for command '${cmd}'...`)
     }
-    return commandSync(cmd, execaOptions)
+    try {
+        return commandSync(cmd, execaOptions)
+    } catch (e) {
+        if (isRecursible(e) && "exitCode" in e) {
+            const execaError = e as ExecaSyncError
+            throw new Error(
+                `Command '${cmd}' failed with code ${
+                    execaError.exitCode
+                } and the following output:\n${
+                    execaError.stdout + execaError.stderr
+                }`
+            )
+        }
+        throw e
+    }
 }
 
 export type ChildProcess = ExecaChildProcess
 
-export const shellAsync = (
+export const shellAsync = async (
     cmd: string,
     options: Partial<ShellAsyncOptions> = {}
-): ChildProcess => {
+) => {
     const { suppressCmdStringLogging, ...execaOptions } = {
         ...defaultOptions,
         ...options
@@ -71,11 +87,15 @@ export const getTsNodeCmd = ({ esm }: RunScriptOptions) => {
     return cmd
 }
 
+export const getFilterWarningsArg = () =>
+    `-r ${fromPackageRoot("filterWarnings.cjs")}`
+
 export const getRunScriptCmd = (
     fileToRun: string,
     options: RunScriptOptions = {}
 ) => {
     let cmd = fileToRun.endsWith(".ts") ? getTsNodeCmd(options) : "node"
+    cmd += ` ${getFilterWarningsArg()}`
     cmd += ` ${fileToRun}`
     if (options?.processArgs && options.processArgs.length) {
         cmd += ` ${options.processArgs.join(" ")}`

@@ -1,4 +1,4 @@
-import { runScript, RunScriptOptions } from "@re-do/node-utils"
+import { runScript, RunScriptOptions } from "@re-do/node"
 import { readdirSync } from "fs"
 import { promptForJsrxFile } from "./generateJsrx.js"
 import { getPackageJsonContents } from "./common.js"

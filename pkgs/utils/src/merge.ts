@@ -58,14 +58,6 @@ export type Merge<
                   : TypeToMerge[K]
           }
 
-export type MergeAll<
-    Objects,
-    Options extends MergeOptions = DefaultMergeOptions,
-    Result extends object = {}
-> = Objects extends Iteration<any, infer Current, infer Remaining>
-    ? MergeAll<Remaining, Merge<Result, Current, Options>>
-    : Result
-
 export type FromEntries<
     Entries extends Entry[],
     Result extends object = {}
@@ -126,16 +118,27 @@ export const merge = <
     }
 }
 
-export const mergeAll = <
-    Objects extends object[],
-    Options extends MergeOptions = DefaultMergeOptions
->(
+export type MergeAll<
+    Objects,
+    Options extends MergeOptions = DefaultMergeOptions,
+    Result extends object = {}
+> = Objects extends Iteration<any, infer Current, infer Remaining>
+    ? MergeAll<Remaining, Options, Merge<Result, Current, Options>>
+    : Result
+
+export const mergeAll = <Objects, Options extends MergeOptions>(
     objects: Narrow<Objects>,
     options?: Options
-): MergeAll<Objects, Options> =>
-    (objects.length
-        ? merge(objects[0], mergeAll(objects.slice(1)))
-        : {}) as MergeAll<Objects>
+): Evaluate<MergeAll<Objects, Options>> => {
+    if (!Array.isArray(objects)) {
+        throw new Error(`The first argument of mergeAll must be a list.`)
+    }
+    const objectList: any[] = objects
+    const result: any = objects.length
+        ? merge(objectList[0], mergeAll(objectList.slice(1), options), options)
+        : {}
+    return result
+}
 
 export const withDefaults =
     <Options extends Record<string, any>>(

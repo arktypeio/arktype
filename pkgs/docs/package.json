@@ -38,7 +38,7 @@
         "mocha": "9.1.1",
         "@types/mocha": "9.0.0",
         "ts-mocha": "8.0.0",
-        "@re-do/node-utils": "workspace:*",
+        "@re-do/node": "workspace:*",
         "@re-do/test": "workspace:*"
     },
     "browserslist": {

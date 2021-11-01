@@ -2,11 +2,11 @@ import { expectType } from "tsd"
 import { Evaluate, merge, mergeAll } from ".."
 
 test("mergeAll shallow", () => {
-    const result = mergeAll(
+    const result = mergeAll([
         { a: "fromA", b: "fromA" },
         { b: "fromB", c: "fromB" },
         { c: "fromC" }
-    )
+    ])
     expectType<{ a: "fromA"; b: "fromB"; c: "fromC" }>(result)
     expect(result).toStrictEqual({ a: "fromA", b: "fromB", c: "fromC" })
 })

@@ -20,7 +20,7 @@ import { join, dirname, parse } from "path"
 import { once } from "events"
 import { finished } from "stream"
 import { promisify } from "util"
-import { FilterFunction } from "@re-do/utils"
+import type { FilterFunction } from "@re-do/utils"
 
 export const streamFinished = promisify(finished)
 
@@ -167,4 +167,10 @@ export const findPackageRoot = (fromDir?: string) => {
         dirToCheck = join(dirToCheck, "..")
     }
     throw new Error(`${startDir} is not part of a node package.`)
+}
+
+export const fromPackageRoot = (...joinWith: string[]) => {
+    const fromDir = dirname(getCallerFile("fromPackageRoot"))
+    const packageRoot = findPackageRoot(fromDir)
+    return join(packageRoot, ...joinWith)
 }

@@ -1,5 +1,5 @@
 import { Command } from "commander"
-import { shell } from "@re-do/node-utils"
+import { shell } from "@re-do/node"
 import { getPath } from "./install"
 import { version } from "../package.json"
 
