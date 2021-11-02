@@ -1,3 +1,3 @@
-import { getJestConfig } from "./src"
+import { getJestConfig } from "./src/index.js"
 
 export default getJestConfig()

@@ -5,7 +5,6 @@ import {
     Options,
     ExecaSyncReturnValue,
     ExecaChildProcess,
-    ExecaError,
     ExecaSyncError
 } from "execa"
 import { isRecursible, Merge } from "@re-do/utils"

@@ -38,7 +38,7 @@ export type Merge<
             : DefaultMergeOptions["preserveRequired"]
     },
     TypeToMerge = WithRequiredKeysIfPresent<
-        ExcludeByValue<Merged & object, ElementOf<Options["unmerged"]>>,
+        ExcludeByValue<Merged, ElementOf<Options["unmerged"]>>,
         Options["preserveRequired"] extends true
             ? GetRequiredKeys<Base & object>
             : never

@@ -1,6 +1,5 @@
 import { rmSync } from "fs"
 import { basename, join } from "path"
-import { stdout } from "process"
 import ts from "typescript"
 import { findPackageRoot, walkPaths } from "./fs.js"
 import { shell, shellAsync } from "./shell.js"

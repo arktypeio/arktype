@@ -39,12 +39,15 @@ export const transpileTs = async ({
     })
     const sourceContents = mapFilesToContents(sources)
     sources.forEach((path) => {
+        const optionsAtPath: ts.CompilerOptions = {
+            ...tsOptions
+        }
         const outFilePath = path.replace(srcDir, outDir).replace(".ts", ".js")
         const options = mergeAll(
             [
                 readJson(baseTsConfig).compilerOptions,
                 readJson(tsConfig).compilerOptions,
-                tsOptions
+                optionsAtPath
             ],
             { deep: true }
         )

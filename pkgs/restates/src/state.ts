@@ -48,7 +48,7 @@ import {
     UnvalidatedTypeSet
 } from "retypes"
 // For some reason this prevents createState from giving an inane "cannot resolve type without reference" error
-import {} from "retypes/out/cjs/parse"
+// import {} from "retypes/out/cjs/parse"
 import {
     configureStore,
     ConfigureStoreOptions,
@@ -402,7 +402,10 @@ const compileModelTypeSet = (
     const storedTypeSetWithIds = transform(
         storedTypeSet,
         ([typeName, definition]) => {
-            if (typeof definition === "string") {
+            if (
+                typeof definition === "string" ||
+                typeof definition === "number"
+            ) {
                 throw new Error(`Stored type definitions must be objects.`)
             }
             return [typeName, { ...definition, [idKey]: "number" }]

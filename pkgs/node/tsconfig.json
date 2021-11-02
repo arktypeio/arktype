@@ -1,8 +1,5 @@
 {
     "extends": "./tsconfig.base",
-    "ts-node": {
-        "transpileOnly": true
-    },
     "compilerOptions": {
         "baseUrl": "src",
         "outDir": "out"

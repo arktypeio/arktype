@@ -240,10 +240,10 @@ export type ExtendsCheck<
     B,
     Invert extends boolean = false,
     ValueIfTrue = true,
-    ValueIfFalse = false
-> = (Invert extends true ? B : A) extends (Invert extends true ? A : B)
-    ? ValueIfTrue
-    : ValueIfFalse
+    ValueIfFalse = false,
+    ReferenceType = Invert extends true ? A : B,
+    TypeToCheck = Invert extends true ? B : A
+> = TypeToCheck extends ReferenceType ? ValueIfTrue : ValueIfFalse
 
 export type ExcludeByValueOptions = {
     deep?: boolean

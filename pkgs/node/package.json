@@ -23,13 +23,13 @@
         "redoTsc": "./redoTsc.js"
     },
     "scripts": {
-        "build": "node --loader ts-node/esm -r ./filterWarnings.cjs ./src/redoTsc.ts",
+        "build": "node -r ./filterWarnings.cjs --loader ts-node/esm ./src/redoTsc.ts",
         "runScript": "./runScript.js",
         "redoTsc": "./redoTsc.js",
         "test": "jest"
     },
     "dependencies": {
-        "@re-do/utils": "workspace:*",
+        "@re-do/utils": "latest",
         "deepmerge": "4.2.2",
         "execa": "5.0.0",
         "moize": "5.4.7",

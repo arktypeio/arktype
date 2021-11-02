@@ -76,7 +76,7 @@ const createCompileFunction =
         ...definitions: TypeSetDefinitions<Definitions, DeclaredTypeNames>
     ) => {
         const typeSetFromDefinitions = formatTypes(
-            mergeAll(...(definitions as any))
+            mergeAll(definitions as any)
         ) as MergedTypeSet
         const parse = createParseFunction(typeSetFromDefinitions)
         return {

@@ -9,9 +9,7 @@
         "isolatedModules": true,
         "esModuleInterop": true,
         "resolveJsonModule": true,
-        "lib": ["ESNext", "dom", "dom.iterable"]
-    },
-    "ts-node": {
-        "transpileOnly": true
+        "lib": ["ESNext", "dom", "dom.iterable"],
+        "jsx": "react"
     }
 }
