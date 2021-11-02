@@ -11,7 +11,8 @@ import {
     Entry,
     OptionalOnly,
     ListPossibleTypes,
-    Stringifiable
+    Stringifiable,
+    IsAnyOrUnknown
 } from "./common.js"
 import { ExcludedByKey } from "./excludeKeys.js"
 import { transform } from "./transform.js"
@@ -121,7 +122,7 @@ export const merge = <
 export type MergeAll<
     Objects,
     Options extends MergeOptions = DefaultMergeOptions,
-    Result extends object = {}
+    Result = {}
 > = Objects extends Iteration<any, infer Current, infer Remaining>
     ? MergeAll<Remaining, Options, Merge<Result, Current, Options>>
     : Result

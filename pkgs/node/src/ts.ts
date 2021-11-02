@@ -52,23 +52,20 @@ export const transpileTs = async ({
     }
 
     sources.forEach((path) => {
-        const optionsAtPath: TsConfig = {
-            ...tsOptions
-        }
-        if (path.endsWith(".tsx")) {
-            optionsAtPath.jsx = "react"
-        }
         const outFilePath = path
             .replace(srcDir, outDir)
             .replace(".ts", tsOptions.module === "commonjs" ? ".cjs" : ".js")
-        const options = mergeAll(
+        const options: TsConfig = mergeAll(
             [
                 readJson(baseTsConfig),
                 readJson(tsConfig),
-                { compilerOptions: optionsAtPath }
+                { compilerOptions: tsOptions }
             ],
             { deep: true }
         )
+        if (!path.endsWith(".tsx")) {
+            delete options.compilerOptions.jsx
+        }
         const parsedConfigOptions = ts.parseJsonConfigFileContent(
             options,
             fakeParseConfigHost,
