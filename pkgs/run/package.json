@@ -9,12 +9,12 @@
         "directory": "pkgs/run"
     },
     "type": "module",
-    "main": "out/cjs/index.js",
+    "main": "out/cjs/index.cjs",
     "types": "out/types/index.d.ts",
     "exports": {
         ".": {
             "import": "./out/esm/index.js",
-            "require": "./out/cjs/index.js",
+            "require": "./out/cjs/index.cjs",
             "types": "./out/types/index.d.ts"
         }
     },

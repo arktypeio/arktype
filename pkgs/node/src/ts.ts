@@ -11,7 +11,7 @@ import {
 import ts from "typescript"
 import { mergeAll } from "@re-do/utils"
 
-export type TranspileTsOptions = ts.CompilerOptions & {
+export type TranspileTsOptions = Record<keyof ts.CompilerOptions, any> & {
     packageRoot?: string
     toDir?: string
 }
@@ -39,19 +39,24 @@ export const transpileTs = async ({
     })
     const sourceContents = mapFilesToContents(sources)
     sources.forEach((path) => {
-        const optionsAtPath: ts.CompilerOptions = {
-            ...tsOptions
-        }
-        const outFilePath = path.replace(srcDir, outDir).replace(".ts", ".js")
+        const outFilePath = path
+            .replace(srcDir, outDir)
+            .replace(".ts", tsOptions.module === "commonjs" ? ".cjs" : ".js")
         const options = mergeAll(
             [
                 readJson(baseTsConfig).compilerOptions,
                 readJson(tsConfig).compilerOptions,
-                optionsAtPath
+                tsOptions
             ],
             { deep: true }
         )
-        const transpiled = ts.transpile(sourceContents[path], options)
+        let transpiled = ts.transpile(sourceContents[path], options)
+        if (tsOptions.module === "commonjs") {
+            transpiled = transpiled.replace(
+                /require\("\.\/.*\.js"\)/g,
+                (match) => match.replace(".js", ".cjs")
+            )
+        }
         ensureDir(dirname(outFilePath))
         writeFileSync(outFilePath, transpiled)
     })

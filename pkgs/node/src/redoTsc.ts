@@ -1,6 +1,5 @@
 import { rmSync } from "fs"
 import { basename, join } from "path"
-import ts from "typescript"
 import { findPackageRoot, walkPaths } from "./fs.js"
 import { shell, shellAsync } from "./shell.js"
 import { transpileTs, findPackageName } from "./ts.js"
@@ -33,7 +32,7 @@ export const buildEsm = async () => {
     transpileTs({
         packageRoot,
         toDir: esmOut,
-        module: ts.ModuleKind.ESNext
+        module: "esnext"
     })
 }
 
@@ -41,12 +40,13 @@ export const buildCjs = async () => {
     transpileTs({
         packageRoot,
         toDir: cjsOut,
-        module: ts.ModuleKind.CommonJS
+        module: "commonjs"
     })
 }
 
 export const redoTsc = async () => {
     console.log(`🔨 Building ${packageName}...`)
+    rmSync(outRoot, { recursive: true, force: true })
     console.log(`⏳ Building types...`)
     await buildTypes()
     console.log(`⌛ Transpiling...`)
