@@ -8,10 +8,12 @@ import {
     mapFilesToContents,
     ensureDir
 } from "./fs.js"
-import ts from "typescript"
-import { mergeAll } from "@re-do/utils"
+import ts, { ParseConfigFileHost } from "typescript"
+import { mergeAll, stringify } from "@re-do/utils"
 
-export type TranspileTsOptions = Record<keyof ts.CompilerOptions, any> & {
+export type TsConfig = Record<keyof ts.CompilerOptions, any>
+
+export type TranspileTsOptions = TsConfig & {
     packageRoot?: string
     toDir?: string
 }
@@ -38,19 +40,41 @@ export const transpileTs = async ({
         excludeDirs: true
     })
     const sourceContents = mapFilesToContents(sources)
+    const fakeParseConfigHost: ParseConfigFileHost = {
+        getCurrentDirectory: () => pkgRoot,
+        useCaseSensitiveFileNames: false,
+        readDirectory: (...args: any[]) => [],
+        fileExists: () => false,
+        readFile: () => "",
+        onUnRecoverableConfigFileDiagnostic: (e) => {
+            throw new Error(stringify(e))
+        }
+    }
+
     sources.forEach((path) => {
+        const optionsAtPath: TsConfig = {
+            ...tsOptions
+        }
+        if (path.endsWith(".tsx")) {
+            optionsAtPath.jsx = "react"
+        }
         const outFilePath = path
             .replace(srcDir, outDir)
             .replace(".ts", tsOptions.module === "commonjs" ? ".cjs" : ".js")
         const options = mergeAll(
             [
-                readJson(baseTsConfig).compilerOptions,
-                readJson(tsConfig).compilerOptions,
-                tsOptions
+                readJson(baseTsConfig),
+                readJson(tsConfig),
+                { compilerOptions: optionsAtPath }
             ],
             { deep: true }
         )
-        let transpiled = ts.transpile(sourceContents[path], options)
+        const parsedConfigOptions = ts.parseJsonConfigFileContent(
+            options,
+            fakeParseConfigHost,
+            pkgRoot
+        ).options
+        let transpiled = ts.transpile(sourceContents[path], parsedConfigOptions)
         if (tsOptions.module === "commonjs") {
             transpiled = transpiled.replace(
                 /require\("\.\/.*\.js"\)/g,

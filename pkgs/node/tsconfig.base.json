@@ -9,7 +9,6 @@
         "isolatedModules": true,
         "esModuleInterop": true,
         "resolveJsonModule": true,
-        "lib": ["ESNext", "dom", "dom.iterable"],
-        "jsx": "react"
+        "lib": ["ESNext", "dom", "dom.iterable"]
     }
 }

@@ -1,2 +1,2 @@
 #!/usr/bin/env node
-import "./out/esm/runScript.js"
+import "./out/esm/runScriptCli.js"

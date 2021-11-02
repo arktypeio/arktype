@@ -13,7 +13,9 @@ import Zip from "adm-zip"
 import { Octokit } from "@octokit/rest"
 import { createActionAuth } from "@octokit/auth-action"
 import { join } from "path"
+import { fromPackageRoot, readJson } from "@re-do/node"
 
+export const version = readJson(fromPackageRoot("package.json")).version
 export const install = async (version: string, toDir: string) => {
     console.log(`Installing Redo (version ${version})...`)
     ensureDir(toDir)

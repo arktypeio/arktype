@@ -1,2 +1,2 @@
 #!/usr/bin/env node
-import "./out/esm/redoTsc.js"
+import "./out/esm/redoTscCli.js"

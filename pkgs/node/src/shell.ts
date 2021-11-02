@@ -21,7 +21,8 @@ export type ShellOptions = Merge<Omit<SyncOptions, "shell">, CommonOptions>
 export type ShellAsyncOptions = Merge<Omit<Options, "shell">, CommonOptions>
 
 const defaultOptions: SyncOptions = {
-    shell: true
+    shell: true,
+    stdio: "inherit"
 }
 
 export type ShellResult = ExecaSyncReturnValue
@@ -89,24 +90,33 @@ export const getTsNodeCmd = ({ esm }: RunScriptOptions) => {
 export const getFilterWarningsArg = () =>
     `-r ${fromPackageRoot("filterWarnings.cjs")}`
 
-export const getRunScriptCmd = (
+export const getRunScriptArgs = (
     fileToRun: string,
     options: RunScriptOptions = {}
 ) => {
     let cmd = fileToRun.endsWith(".ts") ? getTsNodeCmd(options) : "node"
+    let opts: Partial<ShellOptions & ShellAsyncOptions> = {}
     cmd += ` ${getFilterWarningsArg()}`
     cmd += ` ${fileToRun}`
     if (options?.processArgs && options.processArgs.length) {
         cmd += ` ${options.processArgs.join(" ")}`
     }
-    return cmd
+    if (fileToRun.endsWith(".ts")) {
+        opts = {
+            ...opts,
+            env: {
+                TS_NODE_TRANSPILE_ONLY: "true"
+            }
+        }
+    }
+    return [cmd, opts] as const
 }
 
 export const runScript = (path: string, options?: RunScriptOptions) =>
-    shell(getRunScriptCmd(path, options))
+    shell(...getRunScriptArgs(path, options))
 
 export const runScriptAsync = (path: string, options?: RunScriptOptions) =>
-    shellAsync(getRunScriptCmd(path, options))
+    shellAsync(...getRunScriptArgs(path, options))
 
 export const $ = (cmd: string, options?: Partial<ShellOptions>) => () =>
     shell(cmd, options)

@@ -1,7 +1,8 @@
 import { rmSync } from "fs"
 import { basename, join } from "path"
+import { stdout } from "process"
 import { findPackageRoot, walkPaths } from "./fs.js"
-import { shell, shellAsync } from "./shell.js"
+import { shell } from "./shell.js"
 import { transpileTs, findPackageName } from "./ts.js"
 
 const packageRoot = findPackageRoot(process.cwd())
@@ -10,22 +11,38 @@ const outRoot = join(packageRoot, "out")
 const typesOut = join(outRoot, "types")
 const esmOut = join(outRoot, "esm")
 const cjsOut = join(outRoot, "cjs")
+const successMessage = `🎁 Successfully built ${packageName}!`
 
-export const buildTypes = async () => {
-    shell(
-        `npx tsc --declaration --emitDeclarationOnly --pretty --outDir ${typesOut}`,
-        {
-            cwd: packageRoot,
-            suppressCmdStringLogging: true
-        }
-    )
-    walkPaths(typesOut)
-        .filter(
-            (path) =>
-                basename(path) === "__tests__" ||
-                basename(path).endsWith(".stories.tsx")
+export type BuildTypesOptions = {
+    noEmit?: boolean
+}
+
+export const checkTypes = () => buildTypes({ noEmit: true })
+
+export const buildTypes = ({ noEmit }: BuildTypesOptions = {}) => {
+    stdout.write(
+        `${noEmit ? "🧐 Checking" : "⏳ Building"} types...`.padEnd(
+            successMessage.length
         )
-        .forEach((path) => rmSync(path, { recursive: true, force: true }))
+    )
+    const cmdSuffix = noEmit
+        ? "--noEmit"
+        : `--declaration --emitDeclarationOnly --outDir ${typesOut}`
+    shell(`npx tsc --jsx react --pretty ${cmdSuffix}`, {
+        cwd: packageRoot,
+        stdio: "pipe",
+        suppressCmdStringLogging: true
+    })
+    if (!noEmit) {
+        walkPaths(typesOut)
+            .filter(
+                (path) =>
+                    basename(path) === "__tests__" ||
+                    basename(path).endsWith(".stories.tsx")
+            )
+            .forEach((path) => rmSync(path, { recursive: true, force: true }))
+    }
+    stdout.write(`✅\n`)
 }
 
 export const buildEsm = async () => {
@@ -44,14 +61,16 @@ export const buildCjs = async () => {
     })
 }
 
+export const transpile = async () => {
+    stdout.write(`⌛ Transpiling...`.padEnd(successMessage.length))
+    await Promise.all([buildEsm(), buildCjs()])
+    stdout.write("✅\n")
+}
+
 export const redoTsc = async () => {
     console.log(`🔨 Building ${packageName}...`)
     rmSync(outRoot, { recursive: true, force: true })
-    console.log(`⏳ Building types...`)
-    await buildTypes()
-    console.log(`⌛ Transpiling...`)
-    await Promise.all([buildEsm(), buildCjs()])
-    console.log(`✅ Finished building ${packageName}.`)
+    buildTypes()
+    await transpile()
+    console.log(successMessage)
 }
-
-redoTsc()

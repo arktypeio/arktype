@@ -2,10 +2,7 @@
     "extends": "@re-do/node/tsconfig.base",
     "compilerOptions": {
         "baseUrl": "src",
-        "outDir": "out",
-        "isolatedModules": false,
-        "exactOptionalPropertyTypes": false,
-        "noErrorTruncation": false
+        "outDir": "out"
     },
     "include": ["src"]
 }

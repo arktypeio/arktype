@@ -1,7 +1,7 @@
 import { jsrx, $, shell } from "jsrx"
 import { join } from "path"
 import { createServer, build } from "vite"
-import { fromHere, getWebConfig } from "@re-do/node"
+import { fromHere, getWebConfig, checkTypes } from "@re-do/node"
 
 const pkgRoot = fromHere("src")
 
@@ -52,7 +52,7 @@ jsrx(
         },
         prod: {
             build: async () => {
-                shell("tsc --noEmit")
+                checkTypes()
                 await build(getWebsiteConfig())
             }
         }

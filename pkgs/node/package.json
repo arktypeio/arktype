@@ -23,7 +23,7 @@
         "redoTsc": "./redoTsc.js"
     },
     "scripts": {
-        "build": "node -r ./filterWarnings.cjs --loader ts-node/esm ./src/redoTsc.ts",
+        "build": "TS_NODE_TRANSPILE_ONLY=1 node -r ./filterWarnings.cjs --loader ts-node/esm ./src/redoTscCli.ts",
         "runScript": "./runScript.js",
         "redoTsc": "./redoTsc.js",
         "test": "jest"

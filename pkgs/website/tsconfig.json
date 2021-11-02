@@ -3,9 +3,7 @@
     "compilerOptions": {
         "baseUrl": "src",
         "outDir": "out",
-        "types": ["vite/client", "jest"],
-        "declaration": false,
-        "exactOptionalPropertyTypes": false
+        "types": ["vite/client", "jest"]
     },
     "include": ["src"]
 }
