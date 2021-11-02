@@ -17,7 +17,7 @@ export const cli = async () => {
     const esm = type === "module"
 
     const jsrxArgIndex = process.argv.findIndex((arg) =>
-        arg.endsWith(join("jsrx", "cli.cjs"))
+        arg.endsWith(join("jsrx", "cli.js"))
     )
     // If 'jsrx' was not found or was the last arg, quit
     if (jsrxArgIndex === -1 || jsrxArgIndex >= process.argv.length - 1) {

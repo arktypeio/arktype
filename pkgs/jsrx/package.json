@@ -21,10 +21,10 @@
     "scripts": {
         "build": "redoTsc",
         "test": "jest",
-        "jsrx": "./cli.cjs"
+        "jsrx": "./cli.js"
     },
     "bin": {
-        "jsrx": "./cli.cjs"
+        "jsrx": "./cli.js"
     },
     "dependencies": {
         "@re-do/utils": "workspace:*",
@@ -32,7 +32,6 @@
         "dotenv": "9.0.0"
     },
     "devDependencies": {
-        "@re-do/node": "workspace:*",
         "@types/node": "15.0.2",
         "jest": "27.0.6",
         "@types/jest": "26.0.24",

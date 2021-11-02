@@ -36,7 +36,8 @@ import {
     stringify,
     Key,
     WithReadonlyKeys,
-    TransformCyclic
+    TransformCyclic,
+    Cast
 } from "@re-do/utils"
 import {
     parse,
@@ -55,7 +56,12 @@ import {
     Middleware,
     Store as ReduxStore
 } from "@reduxjs/toolkit"
-import { createMemoryDb, Interactions, UpdateFunction } from "./store"
+import {
+    createMemoryDb,
+    Interactions,
+    StoreModel,
+    UpdateFunction
+} from "./store"
 
 /**
  * This is a hacky version of ExactObject from @re-do/utils that accomodates anomalies
@@ -77,25 +83,16 @@ export type ValidatedConfig<Config, Options, Opts = Recursible<Options>> = {
         : InvalidPropertyError<Opts, K>
 }
 
-type GetStoredTypes<Config, IdKey extends string> = IntersectProps<
+type GetDefinitions<Config, IdKey extends string> = IntersectProps<
     {
         [K in keyof Config]: IsAnyOrUnknown<Config[K]> extends false
             ? "defines" extends keyof Config[K]
                 ? {
                       [DefinedType in Config[K]["defines"] &
-                          string]: DefinitionFromField<Config[K], false> &
-                          {
-                              [K in IdKey]: "number"
-                          }
-                  }
-                : "stores" extends keyof Config[K]
-                ? {
-                      [StoredType in Config[K]["stores"] & string]: {
-                          [K in IdKey]: "number"
-                      }
+                          string]: DefinitionFromField<Config[K], false>
                   }
                 : "fields" extends keyof Config[K]
-                ? NeverEmptyObject<GetStoredTypes<Config[K]["fields"], IdKey>>
+                ? NeverEmptyObject<GetDefinitions<Config[K]["fields"], IdKey>>
                 : never
             : never
     }
@@ -301,15 +298,18 @@ export type ReduxOptions = Omit<
 >
 
 export const createState = <
-    Config extends StateConfig<Config, ModelTypeSet, Model>,
+    Config extends StateConfig<Config, StateTypeSet, StateType>,
     ExternalTypeSet = {},
     IdKey extends string = "id",
-    StoredTypes = GetStoredTypes<Config, IdKey>,
-    ModelTypeSet = ExternalTypeSet & StoredTypes,
-    ModelDefinition = DefinitionFromConfig<Config, true>,
-    Model = ParseType<
-        ModelDefinition,
-        ModelTypeSet,
+    StoredTypes = GetDefinitions<Config, IdKey>,
+    StateTypeSet extends UnvalidatedTypeSet = Cast<
+        ExternalTypeSet & StoredTypes,
+        UnvalidatedTypeSet
+    >,
+    StateDefinition = DefinitionFromConfig<Config, true>,
+    StateType = ParseType<
+        StateDefinition,
+        StateTypeSet,
         {
             onCycle: { get: "()=>cyclic" } & {
                 [K in IdKey]: "number"
@@ -321,7 +321,7 @@ export const createState = <
         { stores: string } | { defines: string },
         { deep: true; replaceWith: true }
     >,
-    A extends Actions<Model> = {}
+    A extends Actions<StateType> = {}
 >(
     config: Narrow<Config>,
     options?: {
@@ -351,7 +351,7 @@ export const createState = <
     )
     const storedPaths = findStoredPaths(config, "")
     const model = parse(modelTypeDef, { typeSet: modelTypeSet }) as any
-    const initialState = model.getDefault() as Model
+    const initialState = model.getDefault() as StateType
     // copy the object by value
     const persisted = createMemoryDb(
         transform(storedPaths, ([i, v]) => [v, []])
@@ -391,7 +391,7 @@ export const createState = <
             }
         })
     const stateRoot = getStateProxy(initialState, "")
-    return stateRoot as State<Model, StoredLocations, IdKey>
+    return stateRoot as StoreModel<StateTypeSet> // State<StateType, StoredLocations, IdKey>
 }
 
 const compileModelTypeSet = (
@@ -494,13 +494,13 @@ const extractTypeDef = (config: any): any =>
 
 // createTestState().cache.currentCity.groups[0].members[0].bestFriend?.id
 
-export type State<Model, StoredLocations, IdKey extends string> = {
-    [K in keyof Model]: K extends keyof StoredLocations
-        ? StoredLocations[K] extends true
-            ? Interactions<Unlisted<Model[K]>, IdKey>
-            : State<Model[K], KeyValuate<StoredLocations[K], "fields">, IdKey>
-        : Model[K]
-}
+// export type State<Model, StoredLocations, IdKey extends string> = {
+//     [K in keyof Model]: K extends keyof StoredLocations
+//         ? StoredLocations[K] extends true
+//             ? Interactions<Unlisted<Model[K]>, IdKey>
+//             : State<Model[K], KeyValuate<StoredLocations[K], "fields">, IdKey>
+//         : Model[K]
+// }
 
 export type Actions<Input> = Record<
     string,

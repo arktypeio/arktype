@@ -8,7 +8,8 @@ import {
     ListPossibleTypes,
     Merge,
     KeyValuate,
-    Cast
+    Cast,
+    Evaluate
 } from "@re-do/utils"
 import {
     ParsedType,
@@ -38,10 +39,7 @@ export type MergeInputDefinitions<
 export type CompileInputTypeSet<
     TypeSet extends UnvalidatedTypeSet,
     Provided extends CustomInputDefinitions<TypeSet>,
-    MergedDefinitions extends UnvalidatedTypeSet = MergeInputDefinitions<
-        TypeSet,
-        Provided
-    >,
+    MergedDefinitions extends UnvalidatedTypeSet = Merge<TypeSet, Provided>,
     DefinitionReferences = TypeDefinition<
         MergedDefinitions,
         ListPossibleTypes<keyof MergedDefinitions>,
@@ -55,22 +53,26 @@ export type CompileInputTypeSetRecurse<
 > = {
     [TypeName in keyof MergedDefinitions]:
         | MergedDefinitions[TypeName]
-        | MergedDefinitions[TypeName] extends NonRecursible
-        ? KeyValuate<
-              DefinitionReferences,
-              TypeName
-          > extends keyof MergedDefinitions
-            ? "number"
-            : never
-        : CompileInputTypeSetRecurse<
-              MergedDefinitions[TypeName],
-              KeyValuate<DefinitionReferences, TypeName>
-          >
+        | (MergedDefinitions[TypeName] extends NonRecursible
+              ? KeyValuate<
+                    DefinitionReferences,
+                    TypeName
+                > extends keyof MergedDefinitions
+                  ? "number"
+                  : never
+              : CompileInputTypeSetRecurse<
+                    MergedDefinitions[TypeName],
+                    KeyValuate<DefinitionReferences, TypeName>
+                >)
+}
+
+export type SomeStoreModel = {
+    [K in string]: ModeledType
 }
 
 export type Interactions<
-    TypeName extends keyof Model,
-    Model extends StoreModel,
+    TypeName extends keyof Model & string = string,
+    Model extends SomeStoreModel = SomeStoreModel,
     Input = Model[TypeName]["input"]["type"],
     Stored = Model[TypeName]["stored"]["type"]
 > = {
@@ -92,15 +94,18 @@ export type CustomInputDefinitions<Model extends UnvalidatedTypeSet> = {
     [K in keyof Model]?: UnvalidatedDefinition
 }
 
-export type Store<Model extends StoreModel> = {
-    [TypeName in keyof Model]: Interactions<TypeName, Model>
+export type Store<Model extends SomeStoreModel> = {
+    [TypeName in keyof Model & string]: Interactions<TypeName, Model>
 }
 
 export type StoreModel<
-    StoredTypeSet = ParsedTypeSet,
-    InputTypeSet = ParsedTypeSet
+    Types extends UnvalidatedTypeSet = UnvalidatedTypeSet,
+    Inputs extends CustomInputDefinitions<Types> = Types,
+    IdKey extends string = "id",
+    StoredTypeSet = ParsedTypeSet<CompileStoredTypeSet<Types, IdKey>>,
+    InputTypeSet = ParsedTypeSet<CompileInputTypeSet<Types, Inputs>>
 > = {
-    [K in keyof StoredTypeSet]: ModeledType<
+    [K in keyof StoredTypeSet & string]: ModeledType<
         StoredTypeSet[K],
         KeyValuate<InputTypeSet, K>
     >
@@ -120,13 +125,11 @@ export type StoreConfig<
 
 export const createStore = <
     Types extends UnvalidatedTypeSet,
-    Inputs extends CustomInputDefinitions<Types>,
+    Inputs extends CustomInputDefinitions<Types> = Types,
     IdKey extends string = "id",
-    StoredTypeSet = ParsedTypeSet<CompileStoredTypeSet<Types, IdKey>>,
-    InputTypeSet = ParsedTypeSet<CompileInputTypeSet<Types, Inputs>>,
-    Model extends StoreModel = Cast<
-        StoreModel<StoredTypeSet, InputTypeSet>,
-        StoreModel
+    Model extends SomeStoreModel = Cast<
+        StoreModel<Types, Inputs, IdKey>,
+        SomeStoreModel
     >
 >(
     types: TypeSet<Types>,
@@ -138,12 +141,12 @@ export const createStore = <
     return store
 }
 
-export type ExtractStored<Model extends StoreModel> = {
+export type ExtractStored<Model extends StoreModel<any>> = {
     [TypeName in keyof Model]: Model[TypeName]["stored"]["type"]
 }
 
 export type InteractionContext<
-    Model extends StoreModel = StoreModel,
+    Model extends StoreModel<any> = StoreModel<any>,
     IdKey extends string = "id",
     StoredType extends DbContents<IdKey> = ExtractStored<Model>
 > = {

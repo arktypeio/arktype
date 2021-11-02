@@ -21,12 +21,12 @@
     },
     "scripts": {
         "build": "redoTsc",
-        "redo": "node ./cli.cjs",
+        "redo": "node ./cli.js",
         "syncVersions": "runScript --esm syncVersions.ts",
         "test": "jest --detectOpenHandles"
     },
     "bin": {
-        "redo": "./cli.cjs"
+        "redo": "./cli.js"
     },
     "dependencies": {
         "commander": "8.0.0",
