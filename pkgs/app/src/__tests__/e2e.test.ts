@@ -20,7 +20,7 @@ const unpackedRelease = fromPackageRoot("release", unpackedReleaseDirs[getOs()])
 const fromRelease = fromDir(unpackedRelease)
 const executable = getRedoExecutablePath(unpackedRelease)
 
-let mainProcess: any
+let mainProcess: ChildProcess | undefined
 
 const ensureCleanEnv = async () => {
     rmSync(fromRelease("redo.json"), { force: true })

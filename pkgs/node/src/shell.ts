@@ -57,7 +57,7 @@ export const shell = (
 
 export type ChildProcess = ExecaChildProcess
 
-export const shellAsync = async (
+export const shellAsync = (
     cmd: string,
     options: Partial<ShellAsyncOptions> = {}
 ) => {

@@ -26,7 +26,7 @@
         "build": "TS_NODE_TRANSPILE_ONLY=1 node -r ./filterWarnings.cjs --loader ts-node/esm ./src/redoTscCli.ts",
         "runScript": "./runScript.js",
         "redoTsc": "./redoTsc.js",
-        "test": "jest"
+        "test": "echo \"This package has no tests (but let's be honest it should)\""
     },
     "dependencies": {
         "@re-do/utils": "latest",

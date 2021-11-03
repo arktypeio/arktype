@@ -8,6 +8,7 @@
         "url": "https://github.com/re-do/redo.git",
         "directory": "pkgs/components"
     },
+    "type": "module",
     "main": "out/cjs/index.cjs",
     "types": "out/types/index.d.ts",
     "exports": {

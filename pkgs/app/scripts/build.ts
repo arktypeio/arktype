@@ -12,7 +12,7 @@ import {
 } from "@re-do/node"
 import { startElectronCmd, killExisting, srcDir, outDir } from "./common"
 
-let mainProcess: any | undefined
+let mainProcess: ChildProcess | undefined
 
 export const restartMain = (startIfNotRunning: boolean) => {
     if (mainProcess && !mainProcess.killed) {
@@ -71,6 +71,9 @@ export const getMainConfig = ({ watch }: GetConfigArgs = {}) =>
         outDir: join(outDir, "main"),
         watch: watch ?? false,
         options: {
+            build: {
+                sourcemap: false
+            },
             resolve: {
                 alias: localResolves
             },
@@ -87,6 +90,9 @@ export const getRendererConfig = ({ watch }: GetConfigArgs = {}) =>
         watch: watch ?? false,
         options: {
             base: "./",
+            build: {
+                sourcemap: false
+            },
             resolve: {
                 alias: localResolves
             }
@@ -101,7 +107,8 @@ export const getObserverConfig = ({ watch }: GetConfigArgs = {}) =>
         formats: ["es"],
         options: {
             build: {
-                target: "esnext"
+                target: "esnext",
+                sourcemap: false
             },
             resolve: {
                 alias: localResolves

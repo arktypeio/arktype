@@ -1,5 +1,7 @@
 import { createState } from "../state.js"
 
+test("Stub", () => {})
+
 // function createTestState() {
 //     return createState(
 //         {
