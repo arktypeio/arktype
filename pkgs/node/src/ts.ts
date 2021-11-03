@@ -74,7 +74,7 @@ export const transpileTs = async ({
         let transpiled = ts.transpile(sourceContents[path], parsedConfigOptions)
         if (tsOptions.module === "commonjs") {
             transpiled = transpiled.replace(
-                /require\("\.\/.*\.js"\)/g,
+                /require\("\.\.?\/.*\.js"\)/g,
                 (match) => match.replace(".js", ".cjs")
             )
         }

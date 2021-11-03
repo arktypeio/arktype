@@ -5,10 +5,8 @@ import { join, resolve } from "path"
 import fetch from "node-fetch"
 // @ts-ignore
 import unzipCrx from "unzip-crx-3"
-import { filterWarnings } from "@re-do/node"
 
 export const installDevTools = async () => {
-    filterWarnings(["ExtensionLoadWarning"])
     const extensions = {
         REACT_DEVELOPER_TOOLS: "ljjemllljcmogpfapbkkighbhhppjdbg",
         APOLLO_DEVELOPER_TOOLS: "jdkknkkbebbapilgoeccciglkfbmbnfm",

@@ -7,11 +7,12 @@ import {
     shell,
     shellAsync,
     getNodeConfig,
-    getWebConfig
+    getWebConfig,
+    checkTypes
 } from "@re-do/node"
 import { startElectronCmd, killExisting, srcDir, outDir } from "./common"
 
-let mainProcess: ChildProcess | undefined
+let mainProcess: any | undefined
 
 export const restartMain = (startIfNotRunning: boolean) => {
     if (mainProcess && !mainProcess.killed) {
@@ -116,7 +117,7 @@ export const buildRenderer = async () => build(getRendererConfig())
 export const buildObserver = async () => build(getObserverConfig())
 
 export const buildAll = async () => {
-    shell("tsc --noEmit")
+    checkTypes()
     await Promise.all([buildRenderer(), buildObserver()])
     return await buildMain()
 }
