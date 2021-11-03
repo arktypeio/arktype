@@ -10,22 +10,23 @@
     },
     "license": "MIT",
     "type": "module",
-    "main": "dist/cjs/src/index.js",
-    "module": "dist/mjs/src/index.js",
+    "main": "out/cjs/index.cjs",
+    "types": "out/types/index.d.ts",
     "exports": {
         ".": {
-            "import": "./dist/mjs/src/index.js",
-            "require": "./dist/cjs/src/index.js"
+            "import": "./out/esm/index.js",
+            "require": "./out/cjs/index.cjs",
+            "types": "./out/types/index.d.ts"
         }
     },
     "scripts": {
-        "build": "redo-build",
-        "redo": "node ./cli.cjs",
+        "build": "redoTsc",
+        "redo": "node ./cli.js",
         "syncVersions": "runScript --esm syncVersions.ts",
         "test": "jest --detectOpenHandles"
     },
     "bin": {
-        "redo": "./cli.cjs"
+        "redo": "./cli.js"
     },
     "dependencies": {
         "commander": "8.0.0",
@@ -33,7 +34,7 @@
         "@octokit/rest": "18.6.6",
         "@octokit/auth-action": "1.3.3",
         "@re-do/utils": "workspace:*",
-        "@re-do/node-utils": "workspace:*",
+        "@re-do/node": "workspace:*",
         "@re-do/run": "workspace:*",
         "persist-statelessly": "workspace:*",
         "adm-zip": "0.5.5",
@@ -41,11 +42,10 @@
         "@re-do/data": "workspace:*"
     },
     "devDependencies": {
-        "@re-do/configs": "workspace:*",
         "@types/node": "15.0.2",
         "@types/adm-zip": "0.4.34",
-        "ts-node": "10.1.0",
-        "typescript": "4.5.0-dev.20210924",
+        "ts-node": "10.4.0",
+        "typescript": "4.5.0-beta",
         "@types/node-fetch": "2.5.8",
         "jest": "27.0.6",
         "@types/jest": "26.0.24",

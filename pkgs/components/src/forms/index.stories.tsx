@@ -36,6 +36,7 @@ export const form = () => {
                 <FormText
                     name="middle"
                     label="middle initial"
+                    // @ts-ignore
                     rules={{ maxLength: 1 }}
                 />
                 <FormText name="last" placeholder="Placeholder Value" />

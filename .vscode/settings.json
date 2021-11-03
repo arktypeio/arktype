@@ -6,6 +6,7 @@
     "search.exclude": {
         "common/temp": true,
         ".git": true,
+        "**/out/*": true,
         "**/dist/*": true,
         "**/node_modules/*": true,
         "test/**/__snapshots__": true,

@@ -14,12 +14,35 @@ export type NumericString<N extends number = number> = `${N}`
 
 export const isNumeric = (s: any) => asNumber(s) !== null
 
-export type AsNumberOptions = { asFloat?: boolean }
+export type AsNumberOptions = {
+    asFloat?: boolean
+    assert?: boolean
+}
 
-export const asNumber = (s: any, options?: AsNumberOptions) => {
-    const parseNumber = options?.asFloat ? Number.parseFloat : Number.parseInt
-    const result = parseNumber(String(s))
-    return isNaN(result) ? null : result
+export type StringOrNumberFrom<
+    K,
+    Original = K & (string | number)
+> = Original extends number
+    ? Original | `${Original}`
+    : Original extends NumericString<infer Value>
+    ? Value | Original
+    : Original
+
+export const asNumber = <Options extends AsNumberOptions>(
+    s: any,
+    options?: Options
+): number | (Options["assert"] extends true ? never : null) => {
+    const parsable = String(s)
+    const asFloat = options?.asFloat ?? parsable.includes(".")
+    const parser = asFloat ? Number.parseFloat : Number.parseInt
+    const result = parser(parsable)
+    if (isNaN(result)) {
+        if (options?.assert) {
+            throw new Error(`'${s}' cannot be converted to a number.`)
+        }
+        return null as any
+    }
+    return result
 }
 
 export const isAlphaNumeric = (s: string) => alphaNumericRegex.test(s)

@@ -9,33 +9,33 @@
         "directory": "pkgs/jsrx"
     },
     "type": "module",
-    "main": "dist/cjs/index.js",
-    "module": "dist/mjs/index.js",
+    "main": "out/cjs/index.cjs",
+    "types": "out/types/index.d.ts",
     "exports": {
         ".": {
-            "import": "./dist/mjs/index.js",
-            "require": "./dist/cjs/index.js"
+            "import": "./out/esm/index.js",
+            "require": "./out/cjs/index.cjs",
+            "types": "./out/types/index.d.ts"
         }
     },
     "scripts": {
-        "build": "redo-build",
+        "build": "redoTsc",
         "test": "jest",
-        "jsrx": "./cli.cjs"
+        "jsrx": "./cli.js"
     },
     "bin": {
-        "jsrx": "./cli.cjs"
+        "jsrx": "./cli.js"
     },
     "dependencies": {
         "@re-do/utils": "workspace:*",
-        "@re-do/node-utils": "workspace:*",
+        "@re-do/node": "workspace:*",
         "dotenv": "9.0.0"
     },
     "devDependencies": {
-        "@re-do/configs": "workspace:*",
         "@types/node": "15.0.2",
         "jest": "27.0.6",
         "@types/jest": "26.0.24",
-        "typescript": "4.5.0-dev.20210924",
+        "typescript": "4.5.0-beta",
         "ts-jest": "27.0.3"
     }
 }

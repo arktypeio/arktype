@@ -1,4 +1,4 @@
-import { jsrx, $, shell } from "jsrx"
+import { jsrx, $, shell } from ".."
 
 jsrx({
     dev: {

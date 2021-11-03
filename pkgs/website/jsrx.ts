@@ -1,8 +1,7 @@
 import { jsrx, $, shell } from "jsrx"
 import { join } from "path"
 import { createServer, build } from "vite"
-import { getWebConfig } from "@re-do/configs"
-import { fromHere } from "@re-do/node-utils"
+import { fromHere, getWebConfig, checkTypes } from "@re-do/node"
 
 const pkgRoot = fromHere("src")
 
@@ -26,7 +25,7 @@ type GetConfigArgs = {
 const getWebsiteConfig = ({ watch = false }: GetConfigArgs = {}) =>
     getWebConfig({
         srcDir: pkgRoot,
-        outDir: fromHere("dist"),
+        outDir: fromHere("out"),
         watch,
         options: {
             resolve: {
@@ -53,7 +52,7 @@ jsrx(
         },
         prod: {
             build: async () => {
-                shell("tsc --noEmit")
+                checkTypes()
                 await build(getWebsiteConfig())
             }
         }

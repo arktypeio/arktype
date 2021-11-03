@@ -17,6 +17,7 @@ export const remove = <T extends Model>(
 ) => {
     const { prune } = addDefaultRemoveOptions(options)
     const [objectsToDelete, objectsToPreserve] = split(
+        // @ts-ignore
         context.store.get(typeName as any) as any,
         by
     )
@@ -32,7 +33,8 @@ export const remove = <T extends Model>(
             const possibleDependentValues =
                 dependentType === typeName
                     ? objectsToPreserve
-                    : (context.store.get(dependentType as any) as any[])
+                    : // @ts-ignore
+                      (context.store.get(dependentType as any) as any[])
             const updatedDependentValues = possibleDependentValues.map(
                 (possibleDependentValue) => {
                     return dependentFields.reduce(

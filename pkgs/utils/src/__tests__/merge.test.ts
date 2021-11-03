@@ -1,12 +1,12 @@
 import { expectType } from "tsd"
-import { merge, mergeAll } from ".."
+import { Evaluate, merge, mergeAll } from ".."
 
 test("mergeAll shallow", () => {
-    const result = mergeAll(
+    const result = mergeAll([
         { a: "fromA", b: "fromA" },
         { b: "fromB", c: "fromB" },
         { c: "fromC" }
-    )
+    ])
     expectType<{ a: "fromA"; b: "fromB"; c: "fromC" }>(result)
     expect(result).toStrictEqual({ a: "fromA", b: "fromB", c: "fromC" })
 })
@@ -28,6 +28,15 @@ test("merge shallow", () => {
     })
 })
 
+test("merge string and numeric keys", () => {
+    const mergeNumeric = merge({ "1": false }, { 1: true })
+    expectType<{ 1: true }>(mergeNumeric)
+    expect(mergeNumeric).toStrictEqual({ 1: true })
+    const mergeString = merge({ 1: false }, { "1": true })
+    expectType<{ 1: true }>(mergeString)
+    expect(mergeString).toStrictEqual({ 1: true })
+})
+
 test("merge exclude values", () => {
     // undefined excluded by default
     const result = merge({ a: "defined" }, { a: undefined })
@@ -38,7 +47,7 @@ test("merge exclude values", () => {
     expect(second).toStrictEqual({ a: "string" })
 })
 
-test("test deep merge", () => {
+test("deep merge", () => {
     const result = merge(
         { nested: { a: "fromA", b: "fromA" } as { a?: "fromA"; b?: "fromA" } },
         { nested: { b: "fromB", c: "fromB" } },

@@ -3,10 +3,9 @@ import {
     Number as NumberToolbelt,
     Union as ToolbeltUnion,
     List as ToolbeltList,
-    String as ToolbeltString
+    T
 } from "ts-toolbelt"
-import { Merge } from "./merge.js"
-import { transform } from "./transform.js"
+import { WithDefaults } from "./merge.js"
 
 export const memoize = moize as <F extends SimpleFunction>(f: F) => F
 
@@ -14,37 +13,35 @@ export type StringReplace<
     Original extends string,
     Find extends string,
     ReplaceWith extends string
-> = ToolbeltString.Replace<Original, Find, ReplaceWith>
+> = Original extends `${infer Left}${Find}${infer Right}`
+    ? StringReplace<`${Left}${ReplaceWith}${Right}`, Find, ReplaceWith>
+    : Original
+
+export type Split<
+    S extends string,
+    Delimiter extends string,
+    Result extends string[] = []
+> = S extends `${infer Left}${Delimiter}${infer Right}`
+    ? Split<Right, Delimiter, [...Result, Left]>
+    : [...Result, S]
+
+export type Join<
+    Segments extends Stringifiable[],
+    Delimiter extends string = DefaultDelimiter,
+    Result extends string = ""
+> = Segments extends Iteration<Stringifiable, infer Segment, infer Remaining>
+    ? Join<
+          Remaining,
+          Delimiter,
+          `${Result}${Result extends "" ? "" : Delimiter}${Segment}`
+      >
+    : Result
 
 export type RemoveSpaces<FromString extends string> = StringReplace<
     FromString,
     " ",
     ""
 >
-
-export type StringifyOptions = {
-    indent?: number
-}
-
-export const stringify = (value: any) => {
-    const recurse = (value: any, seen: any[]): string => {
-        if (!isRecursible(value)) {
-            return String(value)
-        }
-        if (seen.includes(value)) {
-            return "(cyclic value)"
-        }
-        if (Array.isArray(value)) {
-            return `[${value
-                .map((v) => recurse(v, [...seen, value]))
-                .join(", ")}]`
-        }
-        return `{${Object.entries(value)
-            .map(([k, v]) => `${k}: ${recurse(v, [...seen, value])}`)
-            .join(", ")}}`
-    }
-    return recurse(value, [])
-}
 
 export type UntilOptions = {
     timeoutSeconds?: number
@@ -69,6 +66,14 @@ export const until = async (
     }
     return
 }
+
+export type DeepEvaluate<T, Depth extends number = -1> = T extends NonRecursible
+    ? T
+    : Depth extends 0
+    ? T
+    : {
+          [K in keyof T]: DeepEvaluate<T[K], MinusOne<Depth>>
+      }
 
 export type Evaluate<T> = T extends NonRecursible
     ? T
@@ -98,8 +103,18 @@ export type WithOptionalValues<
     T extends object,
     OptionalValueType,
     InvertExtendsCheck extends boolean = false
-> = ExcludeByValue<T, OptionalValueType, InvertExtendsCheck> &
-    Partial<FilterByValue<T, OptionalValueType, InvertExtendsCheck>>
+> = ExcludeByValue<
+    T,
+    OptionalValueType,
+    { invertExtendsCheck: InvertExtendsCheck }
+> &
+    Partial<
+        FilterByValue<
+            T,
+            OptionalValueType,
+            { invertExtendsCheck: InvertExtendsCheck }
+        >
+    >
 
 export type WithRequiredKeys<T extends object, Keys extends keyof T> = Omit<
     T,
@@ -120,7 +135,11 @@ export type WithRequiredValues<
     InvertExtendsCheck extends boolean = false
 > = T &
     Required<
-        FilterByValue<T, RequiredValueType | undefined, InvertExtendsCheck>
+        FilterByValue<
+            T,
+            RequiredValueType | undefined,
+            { invertExtendsCheck: InvertExtendsCheck }
+        >
     >
 
 export type DeepPartial<T> = {
@@ -130,8 +149,23 @@ export type DeepPartial<T> = {
 export type Writeable<T> = { -readonly [P in keyof T]: T[P] }
 export type DeepWriteable<T> = { -readonly [P in keyof T]: DeepWriteable<T[P]> }
 
+export type WithReadonlyKeys<Obj, Keys extends keyof Obj> = Omit<Obj, Keys> &
+    {
+        readonly [K in Keys]: Obj[K]
+    }
+
+export type WithWriteableKeys<Obj, Keys extends keyof Obj> = Omit<Obj, Keys> &
+    {
+        -readonly [K in Keys]: Obj[K]
+    }
+
 export type PropertyOf<T> = T[keyof T]
-export type ElementOf<T extends any[]> = T[number]
+export type ElementOf<T extends List> = T[number]
+export type ValueOf<T> = T extends NonRecursible
+    ? never
+    : T extends any[]
+    ? T[number]
+    : T[keyof T]
 
 export type EntryOf<T> = { [K in keyof T]: [K, T[K]] }[T extends any[]
     ? keyof T & number
@@ -144,13 +178,14 @@ export type NonObject = Primitive | null | undefined | void
 export type NonRecursible = NonObject | SimpleFunction
 export type Unpromisified<T> = T extends Promise<infer U> ? U : never
 
-export const isRecursible = (o: any) => o && typeof o === "object"
+export const isRecursible = <O>(
+    o: O
+): o is Recursible<O> & (List | Record<Key, any>) =>
+    !!o && typeof o === "object"
 
 export const isEmpty = (value: object | any[]) => {
     if (!isRecursible(value)) {
-        throw new Error(
-            `isEmpty required an object. Received ${stringify(value)}`
-        )
+        throw new Error(`isEmpty required an object. Received ${String(value)}`)
     }
     return isRecursible(value) ? !Object.keys(value).length : false
 }
@@ -160,49 +195,6 @@ export const asserted = <T>(value: T, description?: string) => {
         throw Error(`'${value}' is not allowed as a ${description ?? "value"}.`)
     }
     return value as NonNullable<T>
-}
-
-export type DeepMapContext = {
-    path: string[]
-}
-
-export type EntryChecker = (entry: Entry, context: DeepMapContext) => boolean
-
-export type EntryMapper = (entry: Entry, context: DeepMapContext) => Entry
-
-export type DeepMapOptions = {
-    recurseWhen?: EntryChecker
-    filterWhen?: EntryChecker
-}
-
-export const deepMap = <T>(
-    from: T,
-    map: EntryMapper,
-    { recurseWhen, filterWhen }: DeepMapOptions = {}
-): T => {
-    const recurse = (currentFrom: any, { path }: DeepMapContext): any =>
-        fromEntries(
-            Object.entries(currentFrom).reduce((mappedEntries, [k, v]) => {
-                const contextForKey = {
-                    path: path.concat(k)
-                }
-                if (filterWhen && filterWhen([k, v], contextForKey)) {
-                    return mappedEntries
-                }
-                const shouldRecurse =
-                    isRecursible(v) &&
-                    (!recurseWhen || recurseWhen([k, v], contextForKey))
-                return [
-                    ...mappedEntries,
-                    map(
-                        [k, shouldRecurse ? recurse(v, contextForKey) : v],
-                        contextForKey
-                    )
-                ]
-            }, [] as Entry[]),
-            Array.isArray(currentFrom)
-        )
-    return recurse(from, { path: [] })
 }
 
 export type PathMap = { [key: string]: PathMap }
@@ -236,7 +228,7 @@ export type DeepUnlisted<T> = T extends object
 export type AsListIf<T, Condition extends boolean> = Condition extends true
     ? T[]
     : T
-export type IfList<T, IfList, IfNotList> = T extends any[] ? IfList : IfNotList
+export type IfList<T, IfList, IfNotList> = T extends List ? IfList : IfNotList
 export type IsList<T> = IfList<T, true, false>
 
 export type GetRequiredKeys<O extends object> = {
@@ -248,43 +240,108 @@ export type ExtendsCheck<
     B,
     Invert extends boolean = false,
     ValueIfTrue = true,
-    ValueIfFalse = false
-> = (Invert extends true ? B : A) extends (Invert extends true ? A : B)
-    ? ValueIfTrue
-    : ValueIfFalse
+    ValueIfFalse = false,
+    ReferenceType = Invert extends true ? A : B,
+    TypeToCheck = Invert extends true ? B : A
+> = TypeToCheck extends ReferenceType ? ValueIfTrue : ValueIfFalse
+
+export type ExcludeByValueOptions = {
+    deep?: boolean
+    invertExtendsCheck?: boolean
+}
+
+export type FilterByValueOptions = ExcludeByValueOptions & {
+    replaceWith?: any
+}
+
+type FilterRecurseOptions = FilterByValueOptions & {
+    invertResult?: boolean
+}
+
+export type IntersectOf<U> = (
+    U extends unknown ? (k: U) => void : never
+) extends (k: infer I) => void
+    ? I
+    : never
+
+export type IntersectProps<O> = IntersectOf<O[keyof O]>
+
+export type LeafOf<Obj, LeafType = NonRecursible> = Obj extends LeafType
+    ? Obj
+    : Obj extends NonRecursible
+    ? never
+    : {
+          [K in keyof Obj]: LeafOf<Obj[K], LeafType>
+      }[keyof Obj]
+
+export type NeverEmptyObject<T> = {} extends T ? never : T
+
+export type ExcludeNever<O> = Pick<
+    O,
+    { [K in keyof O]: O[K] extends never ? never : K }[keyof O]
+>
+
+export type FilterObjectByValue<
+    T,
+    ValueType,
+    Options extends Required<FilterRecurseOptions>
+> = ExcludeNever<
+    {
+        [K in keyof T]: NeverEmptyObject<
+            FilterPropertyByValue<T[K], ValueType, Options>
+        >
+    }
+>
+
+export type FilterPropertyByValue<
+    T,
+    ValueType,
+    Options extends Required<FilterRecurseOptions>,
+    ReturnOnMatch = Options["replaceWith"] extends never
+        ? T
+        : Options["replaceWith"]
+> = ExtendsCheck<T, ValueType, Options["invertExtendsCheck"]> extends true
+    ? Options["invertResult"] extends true
+        ? never
+        : ReturnOnMatch
+    : And<
+          Options["deep"],
+          Not<T extends NonRecursible ? true : false>
+      > extends true
+    ? FilterObjectByValue<T, ValueType, Options>
+    : Options["invertResult"] extends true
+    ? ReturnOnMatch
+    : never
 
 export type FilterByValue<
-    T extends object,
-    ValueType,
-    InvertExtendsCheck extends boolean = false
-> = Pick<
     T,
-    {
-        [K in keyof T]: ExtendsCheck<
-            T[K],
-            ValueType,
-            InvertExtendsCheck,
-            K,
-            never
-        >
-    }[keyof T]
->
+    ValueType,
+    ProvidedOptions extends FilterByValueOptions = {},
+    Options extends Required<FilterRecurseOptions> = WithDefaults<
+        FilterRecurseOptions,
+        ProvidedOptions,
+        {
+            deep: false
+            invertExtendsCheck: false
+            invertResult: false
+            replaceWith: never
+        }
+    >
+> = FilterObjectByValue<T, ValueType, Options>
+
 export type ExcludeByValue<
-    T extends object,
-    ValueType,
-    InvertExtendsCheck extends boolean = false
-> = Pick<
     T,
-    {
-        [K in keyof T]: ExtendsCheck<
-            T[K],
-            ValueType,
-            InvertExtendsCheck,
-            never,
-            K
-        >
-    }[keyof T]
->
+    ValueType,
+    ProvidedOptions extends ExcludeByValueOptions = {},
+    Options extends Required<FilterRecurseOptions> = {
+        deep: ProvidedOptions["deep"] extends true ? true : false
+        invertExtendsCheck: ProvidedOptions["invertExtendsCheck"] extends true
+            ? true
+            : false
+        replaceWith: never
+        invertResult: true
+    }
+> = FilterObjectByValue<T, ValueType, Options>
 
 export type OptionalOnly<T extends object> = Pick<
     T,
@@ -323,42 +380,6 @@ export const split = <T>(list: T[], by: (item: T) => boolean) =>
                 : [sorted[0], [...sorted[1], item]]) as SplitResult<T>,
         [[], []] as SplitResult<T>
     )
-
-export type FilterUp<T, UpfilteredKey> = {
-    [K in keyof T]: T[K] extends NonRecursible
-        ? T[K]
-        : Array<any> extends T[K]
-        ?
-              | Array<
-                    FilterUp<
-                        UpfilteredKey extends keyof Exclude<
-                            Unlisted<T[K]>,
-                            NonRecursible
-                        >
-                            ? Exclude<
-                                  Unlisted<T[K]>,
-                                  NonRecursible
-                              >[UpfilteredKey]
-                            : Exclude<Unlisted<T[K]>, NonRecursible>,
-                        UpfilteredKey
-                    >
-                >
-              | Extract<T[K], NonRecursible>
-        :
-              | FilterUp<
-                    UpfilteredKey extends keyof Exclude<T[K], NonRecursible>
-                        ? Exclude<T[K], NonRecursible>[UpfilteredKey]
-                        : Exclude<T[K], NonRecursible>,
-                    UpfilteredKey
-                >
-              | Extract<T[K], NonRecursible>
-}
-
-export const withDefaults =
-    <T extends Record<string, any>>(defaults: Required<OptionalOnly<T>>) =>
-    (provided: T | undefined) => {
-        return { ...defaults, ...provided }
-    }
 
 export type LimitDepth<
     O,
@@ -400,10 +421,12 @@ export type ExcludeCyclic<
 > = {
     [K in keyof ExcludeByValue<O, Seen>]: O[K] extends NonRecursible
         ? O[K]
-        : ExcludeCyclic<O[K], Seen | Unlisted<O[K]> | Unlisted<O[K]>[]>
+        : ExcludeCyclic<O[K] & object, Seen | Unlisted<O[K]> | Unlisted<O[K]>[]>
 }
 
 export type MinusOne<N extends number> = NumberToolbelt.Sub<N, 1>
+
+export type PlusOne<N extends number> = NumberToolbelt.Add<N, 1>
 
 export type And<A extends boolean, B extends boolean> = {
     true: {
@@ -457,9 +480,11 @@ export type IsUnknown<T> = (
     ? true
     : false
 
-type AnyIsAny<T> = (T extends {} ? true : false) extends false ? false : true
+export type AnyIsAny<T> = (T extends {} ? true : false) extends false
+    ? false
+    : true
 
-type AnyIsUnknown<T> = (T extends {} ? true : false) extends false
+export type AnyIsUnknown<T> = (T extends {} ? true : false) extends false
     ? true
     : false
 
@@ -471,9 +496,19 @@ export type TypeError<Description extends string> = Description
 
 export type Entry<K extends Key = Key, V = any> = [K, V]
 
+export type List<T = any> = T[] | readonly T[]
+
 export type Recursible<T> = T extends NonRecursible ? never : T
 
-type ListPossibleTypesRecurse<
+export type RequiredKeys<O> = {
+    [K in keyof O]-?: {} extends Pick<O, K> ? never : K
+}[keyof O]
+
+export type OptionalKeys<O> = {
+    [K in keyof O]-?: {} extends Pick<O, K> ? K : never
+}[keyof O]
+
+export type ListPossibleTypesRecurse<
     U,
     LN extends any[] = [],
     LastU = ToolbeltUnion.Last<U>
@@ -494,27 +529,9 @@ export type StringifyPossibleTypes<U extends Stringifiable> = Join<
     ", "
 >
 
-export type Join<
-    Segments extends Stringifiable[],
-    Delimiter extends string = DefaultDelimiter
-> = Segments extends []
-    ? ""
-    : Segments extends [Stringifiable]
-    ? `${Segments[0]}`
-    : Segments extends [Stringifiable, ...infer Remaining]
-    ? `${Segments[0]}${Delimiter}${Join<
-          Remaining extends Stringifiable[] ? Remaining : never,
-          Delimiter
-      >}`
-    : never
-
 export type Segment = string | number
 
 export type DefaultDelimiter = "/"
-
-export type StringifyKeys<O> = StringifyPossibleTypes<
-    O extends any[] ? keyof O & number : keyof O & string
->
 
 export type Stringifiable =
     | string
@@ -526,44 +543,10 @@ export type Stringifiable =
 
 export type ExtractFunction<T> = Extract<T, SimpleFunction>
 
-export type ExactFunction<T, ExpectedType> = T extends ExpectedType
-    ? ExtractFunction<T> extends (...args: infer Args) => infer Return
-        ? ExtractFunction<ExpectedType> extends (
-              ...args: infer ExpectedArgs
-          ) => infer ExpectedReturn
-            ? (
-                  ...args: Exact<Args, ExpectedArgs>
-              ) => Exact<Return, ExpectedReturn>
-            : ExpectedType
-        : ExpectedType
-    : ExpectedType
-
-export type Exact<T, ExpectedType> = IsAnyOrUnknown<T> extends true
-    ? ExpectedType
-    : T extends ExpectedType
-    ? T extends NonObject
-        ? T
-        : {
-              [K in keyof T]: K extends keyof Recursible<ExpectedType>
-                  ? Exact<T[K], Recursible<ExpectedType>[K]>
-                  : TypeError<`Invalid property '${Extract<
-                        K,
-                        string | number
-                    >}'. Valid properties are: ${StringifyKeys<ExpectedType>}`>
-          }
-    : ExpectedType
-
 export type Iteration<T, Current extends T, Remaining extends T[]> = [
     Current,
     ...Remaining
 ]
-
-export type FromEntries<
-    Entries extends Entry[],
-    Result extends object = {}
-> = Entries extends Iteration<Entry, infer Current, infer Remaining>
-    ? FromEntries<Remaining, Merge<Result, { [K in Current[0]]: Current[1] }>>
-    : Result
 
 export type CastWithExclusion<T, CastTo, Excluded> = T extends Excluded
     ? T

@@ -1,4 +1,4 @@
-import { fromHere, getRedoExecutablePath } from "@re-do/node-utils"
+import { fromHere, getRedoExecutablePath } from "@re-do/node"
 import { join } from "path"
 import { existsSync, rmSync } from "fs"
 import { install } from "../install"

@@ -1,0 +1,10 @@
+{
+    "changes": [
+        {
+            "packageName": "persist-statelessly",
+            "comment": "Use ESM",
+            "type": "patch"
+        }
+    ],
+    "packageName": "persist-statelessly"
+}

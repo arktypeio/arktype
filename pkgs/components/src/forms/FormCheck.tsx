@@ -17,18 +17,18 @@ export const FormCheck = ({
     const { control } = useFormContext()
     return (
         <Controller
-            {...{
+            {...({
                 name,
                 control,
                 defaultValue: defaultValue ?? false,
                 rules: rules ?? {},
-                render: ({ field }) => (
+                render: ({ field }: any) => (
                     <FormControlLabel
                         control={<Checkbox {...rest} {...field} />}
                         label={label ?? name}
                     />
                 )
-            }}
+            } as any)}
         ></Controller>
     )
 }

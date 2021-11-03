@@ -1,4 +1,4 @@
-import { ensureDir, shell } from "@re-do/node-utils"
+import { ensureDir, shell } from "@re-do/node"
 import { join } from "path"
 import { writeFileSync, renameSync, rmSync } from "fs"
 import { releaseDir, packageJsonContents } from "./common"
@@ -10,7 +10,8 @@ const prepareRelease = () => {
     // Only install non-bundled dependencies
     const releaseDependencies = {
         "playwright-core": packageJsonContents.dependencies["playwright-core"],
-        "electron-redux": packageJsonContents.dependencies["electron-redux"]
+        "electron-redux": packageJsonContents.dependencies["electron-redux"],
+        "react-refresh": packageJsonContents.dependencies["react-refresh"]
     }
     const releasePackageJsonContents = JSON.stringify({
         ...packageJsonContents,

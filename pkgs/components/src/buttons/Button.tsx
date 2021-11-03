@@ -24,7 +24,7 @@ export type ButtonProps = Merge<
     ButtonBaseProps,
     {
         kind?: KindFrom<typeof useKind>
-        Icon?: any
+        Icon?: (...args: any[]) => JSX.Element
         fontSize?: number
         textColor?: string
         color?: string

@@ -8,13 +8,13 @@ import {
 import {
     updateMap,
     shapeFilter,
-    AutoPath,
     valueAtPath,
     ValueAtPath,
     transform,
     deepEquals,
     addedOrChanged,
-    PathOf
+    PathOf,
+    DeepUpdate
 } from "@re-do/utils"
 import { Query, Update, Actions, ActionData, StoreActions } from "./common"
 import { createOnChangeMiddleware, OnChangeMiddlewareArgs } from "./onChange"
@@ -74,12 +74,8 @@ export class Store<T extends object, A extends Actions<T>> {
 
     getState = () => this.underlying.getState()
 
-    // Defining the entire function type together avoids excessive stack depth TS error
-    get: <P extends PathOf<T>>(
-        path: P
-        // @ts-ignore
-    ) => ValueAtPath<T, P> = (path: any) =>
-        valueAtPath(this.underlying.getState(), path) as any
+    get = <P extends string>(path: PathOf<T, P>) =>
+        valueAtPath(this.underlying.getState(), path)
 
     query = <Q extends Query<T>>(q: Q) =>
         shapeFilter(this.underlying.getState(), q)
@@ -132,7 +128,7 @@ export class Store<T extends object, A extends Actions<T>> {
                 actionType,
                 (args: any) => {
                     let update: Update<T>
-                    if (actionValue instanceof Function) {
+                    if (typeof actionValue === "function") {
                         const returnValue = actionValue(args, this as any)
                         if (returnValue instanceof Promise) {
                             returnValue.then((resolvedValue) => {
@@ -146,7 +142,7 @@ export class Store<T extends object, A extends Actions<T>> {
                         }
                     } else {
                         // args shouldn't exist if updater was not a function
-                        update = actionValue
+                        update = actionValue as DeepUpdate<T>
                     }
                     this.update(update, { actionType: actionType as string })
                 }

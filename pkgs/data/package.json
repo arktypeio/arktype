@@ -8,16 +8,18 @@
         "url": "https://github.com/re-do/redo.git",
         "directory": "pkgs/data"
     },
-    "main": "dist/cjs/index.js",
-    "module": "dist/mjs/index.js",
+    "type": "module",
+    "main": "out/cjs/index.cjs",
+    "types": "out/types/index.d.ts",
     "exports": {
         ".": {
-            "import": "./dist/mjs/index.js",
-            "require": "./dist/cjs/index.js"
+            "import": "./out/esm/index.js",
+            "require": "./out/cjs/index.cjs",
+            "types": "./out/types/index.d.ts"
         }
     },
     "scripts": {
-        "build": "redo-build",
+        "build": "redoTsc",
         "test": "echo 'This package has no tests.'"
     },
     "dependencies": {
@@ -25,9 +27,9 @@
         "persist-statelessly": "workspace:*"
     },
     "devDependencies": {
-        "@re-do/configs": "workspace:*",
+        "@re-do/node": "workspace:*",
         "@types/node": "15.0.2",
-        "typescript": "4.5.0-dev.20210924",
+        "typescript": "4.5.0-beta",
         "jest": "27.0.6",
         "@types/jest": "26.0.24",
         "ts-jest": "27.0.3"

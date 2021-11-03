@@ -1,11 +1,9 @@
 {
-    "extends": "@re-do/configs/tsconfig.base",
+    "extends": "@re-do/node/tsconfig.base",
     "compilerOptions": {
         "baseUrl": "src",
-        "outDir": "dist",
-        "types": ["vite/client", "jest"],
-        "declaration": false,
-        "exactOptionalPropertyTypes": false
+        "outDir": "out",
+        "types": ["vite/client", "jest"]
     },
     "include": ["src"]
 }

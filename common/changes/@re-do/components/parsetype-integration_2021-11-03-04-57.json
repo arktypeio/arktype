@@ -1,0 +1,10 @@
+{
+    "changes": [
+        {
+            "packageName": "@re-do/components",
+            "comment": "Use ESM",
+            "type": "patch"
+        }
+    ],
+    "packageName": "@re-do/components"
+}

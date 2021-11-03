@@ -7,7 +7,8 @@ export const update = <T extends Model>(
     update: DeepUpdate<any>,
     context: FileDbContext<T>
 ) => {
-    const existing = context.store.get(typeName as any) as any[]
+    // @ts-ignore
+    const existing = context.store.get(typeName) as any[]
     const updated = existing.map((o) => (where(o) ? updateMap(o, update) : o))
     // TODO: Add logic for one match, multiple matches etc.
     context.store.update({

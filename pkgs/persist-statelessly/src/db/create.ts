@@ -47,6 +47,7 @@ export const create = <T extends Model, U extends boolean = true>(
         }
         return [k, storedValue]
     })
+    // @ts-ignore
     const existing = context.store.get(typeName as any) as any[]
     const reuseExisting = context.reuseExisting[typeName]
     if (reuseExisting) {

@@ -1,0 +1,10 @@
+{
+    "changes": [
+        {
+            "packageName": "react-statelessly",
+            "comment": "Use ESM",
+            "type": "patch"
+        }
+    ],
+    "packageName": "react-statelessly"
+}

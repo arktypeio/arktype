@@ -1,6 +1,6 @@
 const { join } = require("path")
 const Zip = require("adm-zip")
-const { getRedoZipFileName, getOs } = require("@re-do/node-utils")
+const { getRedoZipFileName, getOs } = require("@re-do/node")
 const { version } = require("./package.json")
 
 const releaseDirNames = {
@@ -19,7 +19,7 @@ const config = {
         buildResources: join(__dirname, "src", "assets")
     },
     files: [
-        "dist/**/*",
+        "out/**/*",
         {
             from: "release/dependencies/external",
             to: "node_modules"

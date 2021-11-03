@@ -1,3 +1,4 @@
+import { CssBaseline } from "@material-ui/core"
 import React, { CSSProperties } from "react"
 
 export type AppContentsProps = {
@@ -13,6 +14,7 @@ export const AppContents = ({ style, children }: AppContentsProps) => (
             ...style
         }}
     >
+        <CssBaseline />
         {children}
     </div>
 )

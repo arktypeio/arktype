@@ -1,6 +1,6 @@
 import { writeFileSync } from "fs"
 import { join } from "path"
-import { prompt, shell } from "@re-do/node-utils"
+import { prompt, shell } from "@re-do/node"
 import { getPackageJsonContents } from "./common.js"
 
 export type GenerateJsrxOptions = {

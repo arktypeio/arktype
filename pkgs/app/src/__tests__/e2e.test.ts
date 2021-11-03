@@ -7,7 +7,7 @@ import {
     shellAsync,
     killTree,
     ChildProcess
-} from "@re-do/node-utils"
+} from "@re-do/node"
 import { until } from "@re-do/utils"
 import { existsSync, rmSync } from "fs"
 
