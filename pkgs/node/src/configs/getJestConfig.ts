@@ -5,7 +5,7 @@ import { fromHere } from "../index.js"
 process.env.TS_JEST_DISABLE_VER_CHECKER = "1"
 
 const getCustomReporterPath = () => {
-    const esmReporterPath = fromHere("jestStderrOnFailOnlyReporter")
+    const esmReporterPath = fromHere("jestStderrOnFailOnlyReporter.js")
     const cjsReporterPath = fromHere("jestStderrOnFailOnlyReporter.cjs")
     return existsSync(esmReporterPath) ? esmReporterPath : cjsReporterPath
 }
