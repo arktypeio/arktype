@@ -10,8 +10,9 @@ export class Store<T extends object, A extends Actions<T>> extends BaseStore<
     useQuery: BaseStore<T, A>["query"] = (q: Query<T>) =>
         shapeFilter(useContext(StatelessContext), q)
 
-    useGet: BaseStore<T, A>["get"] = ((path: any) =>
-        valueAtPath(useContext(StatelessContext), path)) as any
+    useGet: BaseStore<T, A>["get"] = (path: any) =>
+        // @ts-ignore
+        valueAtPath(useContext(StatelessContext), path)
 
     useGetState: BaseStore<T, A>["getState"] = () =>
         useContext(StatelessContext)

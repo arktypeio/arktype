@@ -1,23 +1,22 @@
 import {
     Evaluate,
     isRecursible,
-    ListPossibleTypes,
     NonRecursible,
     Iteration,
     ExcludeByValue,
     ElementOf,
-    KeyValuate,
-    Or,
     And,
-    WithRequiredKeys,
     GetRequiredKeys,
-    WithRequiredKeysIfPresent
+    WithRequiredKeysIfPresent,
+    Entry,
+    OptionalOnly,
+    ListPossibleTypes,
+    Stringifiable,
+    IsAnyOrUnknown
 } from "./common.js"
-import { ExcludedByKey, ExcludedByKeys } from "./excludeKeys.js"
+import { ExcludedByKey } from "./excludeKeys.js"
 import { transform } from "./transform.js"
 import { Narrow } from "./Narrow.js"
-import { FilteredByKeys } from "./filterKeys.js"
-
 export type DefaultMergeOptions = {
     deep: false
     unmerged: [undefined]
@@ -40,7 +39,7 @@ export type Merge<
             : DefaultMergeOptions["preserveRequired"]
     },
     TypeToMerge = WithRequiredKeysIfPresent<
-        ExcludeByValue<Merged & object, ElementOf<Options["unmerged"]>>,
+        ExcludeByValue<Merged, ElementOf<Options["unmerged"]>>,
         Options["preserveRequired"] extends true
             ? GetRequiredKeys<Base & object>
             : never
@@ -50,34 +49,26 @@ export type Merge<
     ? Merged
     : Merged extends any[] | NonRecursible
     ? Base
-    : Evaluate<
-          TypeToPreserve &
-              {
-                  [K in keyof TypeToMerge]: And<
-                      Options["deep"],
-                      K extends keyof Base ? true : false
-                  > extends true
-                      ? Merge<Base[K & keyof Base], TypeToMerge[K], Options>
-                      : TypeToMerge[K]
-              }
-      >
+    : TypeToPreserve &
+          {
+              [K in keyof TypeToMerge]: And<
+                  Options["deep"],
+                  K extends keyof Base ? true : false
+              > extends true
+                  ? Merge<Base[K & keyof Base], TypeToMerge[K], Options>
+                  : TypeToMerge[K]
+          }
 
-//     Evaluate <
-//       WithRequiredKeys<
-//           MergeResult & object,
-//           Options["preserveRequired"] extends true
-//               ? keyof MergeResult &
-//                     ToolbeltObject.RequiredKeys<Base & object>
-//               : never
-//       >
-//   >
-
-export type MergeAll<
-    Objects,
+export type FromEntries<
+    Entries extends Entry[],
     Result extends object = {}
-> = Objects extends Iteration<any, infer Current, infer Remaining>
-    ? MergeAll<Remaining, Merge<Result, Current>>
+> = Entries extends Iteration<Entry, infer Current, infer Remaining>
+    ? FromEntries<Remaining, Merge<Result, { [K in Current[0]]: Current[1] }>>
     : Result
+
+export type Invert<O> = FromEntries<
+    ListPossibleTypes<{ [K in keyof O]: [O[K], K] }[keyof O]>
+>
 
 export type MergeOptions = {
     deep?: boolean
@@ -128,12 +119,39 @@ export const merge = <
     }
 }
 
-export const mergeAll = <Objects extends object[]>(
-    ...objects: Narrow<Objects>
-): MergeAll<Objects> =>
-    (objects.length
-        ? {
-              ...objects[0],
-              ...mergeAll(...objects.slice(1))
-          }
-        : {}) as MergeAll<Objects>
+export type MergeAll<
+    Objects,
+    Options extends MergeOptions = DefaultMergeOptions,
+    Result = {}
+> = Objects extends Iteration<any, infer Current, infer Remaining>
+    ? MergeAll<Remaining, Options, Merge<Result, Current, Options>>
+    : Result
+
+export const mergeAll = <Objects, Options extends MergeOptions>(
+    objects: Narrow<Objects>,
+    options?: Options
+): Evaluate<MergeAll<Objects, Options>> => {
+    if (!Array.isArray(objects)) {
+        throw new Error(`The first argument of mergeAll must be a list.`)
+    }
+    const objectList: any[] = objects
+    const result: any = objects.length
+        ? merge(objectList[0], mergeAll(objectList.slice(1), options), options)
+        : {}
+    return result
+}
+
+export const withDefaults =
+    <Options extends Record<string, any>>(
+        defaults: Required<OptionalOnly<Options>>
+    ) =>
+    (provided: Options | undefined) => {
+        return { ...defaults, ...provided }
+    }
+
+export type WithDefaults<
+    Options extends Record<string, any>,
+    Provided extends Options,
+    Defaults extends Required<Options>,
+    ActiveOptions = Merge<Defaults, Provided>
+> = ActiveOptions extends Required<Options> ? ActiveOptions : Defaults

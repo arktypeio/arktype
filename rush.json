@@ -13,12 +13,6 @@
     },
     "projects": [
         {
-            "packageName": "@re-do/configs",
-            "projectFolder": "pkgs/configs",
-            "shouldPublish": true,
-            "cyclicDependencyProjects": ["@re-do/node-utils"]
-        },
-        {
             "packageName": "@re-do/utils",
             "projectFolder": "pkgs/utils",
             "shouldPublish": true
@@ -54,9 +48,10 @@
             "shouldPublish": true
         },
         {
-            "packageName": "@re-do/node-utils",
-            "projectFolder": "pkgs/node-utils",
-            "shouldPublish": true
+            "packageName": "@re-do/node",
+            "projectFolder": "pkgs/node",
+            "shouldPublish": true,
+            "cyclicDependencyProjects": ["@re-do/utils"]
         },
         {
             "packageName": "@re-do/data",
@@ -69,12 +64,12 @@
             "shouldPublish": true
         },
         {
-            "packageName": "statelessly-2",
-            "projectFolder": "pkgs/statelessly-2"
+            "packageName": "restates",
+            "projectFolder": "pkgs/restates"
         },
         {
-            "packageName": "parsetype",
-            "projectFolder": "pkgs/parsetype",
+            "packageName": "retypes",
+            "projectFolder": "pkgs/retypes",
             "shouldPublish": true
         },
         {

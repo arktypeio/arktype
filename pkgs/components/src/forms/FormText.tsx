@@ -36,7 +36,7 @@ export const FormText = ({
                     ...inputProps,
                     ...register(name, {
                         required: !optional,
-                        ...rules,
+                        ...(rules ?? {}),
                         ...(transform ? { setValueAs: transform } : undefined)
                     })
                 }}

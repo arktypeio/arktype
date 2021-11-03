@@ -1,7 +1,6 @@
 import { Command } from "commander"
-import { shell } from "@re-do/node-utils"
-import { getPath } from "./install"
-import { version } from "../package.json"
+import { shell } from "@re-do/node"
+import { getPath, version } from "./install"
 
 const cli = new Command()
 

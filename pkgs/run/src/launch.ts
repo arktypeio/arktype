@@ -5,7 +5,7 @@ import {
     LaunchOptions as PlaywrightLaunchOptions
 } from "playwright-core"
 import { existsSync } from "fs"
-import { shell, shellAsync } from "@re-do/node-utils"
+import { shell, shellAsync } from "@re-do/node"
 
 export type LaunchOptions = {
     size?: {

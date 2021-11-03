@@ -18,6 +18,7 @@ export const find = <T extends Model>(
     options: FindOptions = {}
 ) => {
     const { unpack: unpackValues, exactlyOne } = addDefaultFindOptions(options)
+    // @ts-ignore
     let objectsToSearch = context.store.get(typeName as any) as object[]
     if (unpackValues) {
         objectsToSearch = objectsToSearch.map((o) =>

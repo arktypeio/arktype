@@ -2,7 +2,7 @@ import dotEnv from "dotenv"
 import { JsrxScripts, JsrxOptions, ScriptFunction } from "./common.js"
 import { updatePackageJson } from "./updatePackageJson.js"
 
-export { shell, $ } from "@re-do/node-utils"
+export { shell, $ } from "@re-do/node"
 
 const addDefaultConfig = (config: JsrxScripts): Required<JsrxScripts> => ({
     dev: {},

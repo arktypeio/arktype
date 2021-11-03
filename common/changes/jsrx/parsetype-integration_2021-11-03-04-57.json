@@ -1,0 +1,10 @@
+{
+    "changes": [
+        {
+            "packageName": "jsrx",
+            "comment": "Use ESM",
+            "type": "patch"
+        }
+    ],
+    "packageName": "jsrx"
+}

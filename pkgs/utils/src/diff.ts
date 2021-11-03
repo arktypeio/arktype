@@ -7,11 +7,10 @@ import {
     Or,
     split,
     Entry,
-    stringify,
     isEmpty
 } from "./common.js"
 import { transform } from "./transform.js"
-import { mergeAll } from "./merge.js"
+import { merge, mergeAll } from "./merge.js"
 
 export type UnionDiffResult<Added extends any[], Removed extends any[]> = {
     added: Added
@@ -94,7 +93,7 @@ export const diff = <Base, Compare>(
     if (addedKeys.length && !options.excludeAdded) {
         result.added = Object.fromEntries(
             addedKeys.map((k) => [k, compare[k]])
-        ) as Partial<Compare>
+        ) as any as Partial<Compare>
     }
     const removedKeys = baseKeys.filter(
         (baseKey) => !compareKeys.includes(baseKey as any)
@@ -102,7 +101,7 @@ export const diff = <Base, Compare>(
     if (removedKeys.length && !options.excludeRemoved) {
         result.removed = Object.fromEntries(
             removedKeys.map((k) => [k, base[k]])
-        ) as Partial<Base>
+        ) as any as Partial<Base>
     }
     const changedEntries = preserved
         .map(
@@ -172,7 +171,7 @@ export const addedOrChanged = <Base, Compare>(
                           extractAddedOrChanged(v)
                       ])
                     : {}
-                return mergeAll(result.added ?? {}, extractedChanged)
+                return merge(result.added ?? {}, extractedChanged)
             }
         }
     }

@@ -1,13 +1,13 @@
-import { O } from "ts-toolbelt"
 import { Key, NonRecursible, Unlisted } from "./common.js"
 import { filter } from "./filter.js"
+import { NumericString, StringOrNumberFrom } from "./transformString.js"
 
 export type ExcludedByKeys<O, K extends Key[]> = Pick<
     O,
     Exclude<keyof O, K[number]>
 >
 
-export type ExcludedByKey<O, K> = Pick<O, Exclude<keyof O, K>>
+export type ExcludedByKey<O, K extends Key> = Omit<O, StringOrNumberFrom<K>>
 
 export type DeepExcludedByKeys<O, K extends Key[]> = O extends NonRecursible
     ? O

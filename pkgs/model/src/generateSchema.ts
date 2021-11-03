@@ -1,6 +1,6 @@
 import gqlize from "gqlize"
 import { writeFileSync } from "fs"
-import { fromHere } from "@re-do/node-utils"
+import { fromHere } from "@re-do/node"
 
 writeFileSync(
     fromHere("..", "queries.gql"),

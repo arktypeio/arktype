@@ -9,16 +9,17 @@
         "directory": "pkgs/run"
     },
     "type": "module",
-    "main": "dist/cjs/src/index.js",
-    "module": "dist/mjs/src/index.js",
+    "main": "out/cjs/index.cjs",
+    "types": "out/types/index.d.ts",
     "exports": {
         ".": {
-            "import": "./dist/mjs/src/index.js",
-            "require": "./dist/cjs/src/index.js"
+            "import": "./out/esm/index.js",
+            "require": "./out/cjs/index.cjs",
+            "types": "./out/types/index.d.ts"
         }
     },
     "scripts": {
-        "build": "redo-build",
+        "build": "redoTsc",
         "test": "echo 'To run tests manually, use npm run devTest'",
         "devTest": "jest"
     },
@@ -26,13 +27,12 @@
         "@re-do/model": "workspace:*",
         "@re-do/utils": "workspace:*",
         "playwright-core": "1.12.3",
-        "@re-do/node-utils": "workspace:*"
+        "@re-do/node": "workspace:*"
     },
     "devDependencies": {
-        "@re-do/configs": "workspace:*",
         "jest": "27.0.6",
         "@types/jest": "26.0.24",
         "ts-jest": "27.0.3",
-        "typescript": "4.5.0-dev.20210924"
+        "typescript": "4.5.0-beta"
     }
 }

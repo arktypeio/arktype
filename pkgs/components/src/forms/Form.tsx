@@ -13,7 +13,10 @@ export const Form = <Inputs extends object>({
     ...columnProps
 }: FormProps<Inputs>) => {
     const [submitError, setSubmitError] = useState("")
-    const context = { ...useForm<Inputs>({ mode: "onChange" }), submitError }
+    const context: any = {
+        ...useForm<Inputs>({ mode: "onChange" }),
+        submitError
+    }
     const onSubmit = async (data: Inputs) => {
         try {
             await context.handleSubmit(submit)()

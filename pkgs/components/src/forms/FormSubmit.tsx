@@ -18,7 +18,10 @@ export const FormSubmit = ({
     const {
         formState: { isValid, isSubmitting, isSubmitSuccessful },
         submitError
-    } = useFormContext() as UseFormReturn & { submitError: string }
+    } = useFormContext() as any as {
+        formState: UseFormReturn["formState"]
+        submitError: string
+    }
     return isSubmitting ? (
         <LoadingAnimation />
     ) : (
