@@ -1,4 +1,4 @@
-import { compile, parse, ParsedType, TypeDefinition } from ".."
+import { compile, parse, ParsedType, ParseType, TypeDefinition } from ".."
 import { expectType, expectError } from "tsd"
 import { DefinitionTypeError } from "../errors.js"
 import { typeDefProxy } from "../common.js"
@@ -187,11 +187,34 @@ describe("parse", () => {
                 }
             }
         )
-        const cycleFromA = result.type.a.b.a.cyclic?.b.a.cyclic
-        expectType<[true | undefined, false | undefined]>([
-            cycleFromA?.isA,
-            cycleFromA?.isB
+        const cycleFromB = result.type.a.b.a.cyclic?.b.a.b.cyclic
+        expectType<[false | undefined, true | undefined]>([
+            cycleFromB?.isA,
+            cycleFromB?.isB
         ])
+    })
+    test("with onResolve option", () => {
+        const result = cyclicTypeSet.parse(
+            {
+                referencesA: "a",
+                noReferences: {
+                    favoriteSoup: "'borscht'"
+                }
+            },
+            {
+                onResolve: {
+                    wasResolved: "true",
+                    resolvedType: "resolved"
+                }
+            }
+        )
+        const AWasResolved = result.type.referencesA.wasResolved
+        expectType<true>(AWasResolved)
+        const deepBWasResolved =
+            result.type.referencesA.resolvedType.b.wasResolved
+        expectType<true>(deepBWasResolved)
+        // @ts-expect-error
+        result.type.noReferences.wasResolved
     })
     test("parse result", () => {
         const parseResult = parse("a", {

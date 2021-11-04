@@ -1,5 +1,4 @@
 import {
-    ExcludeByValue,
     FilterByValue,
     Evaluate,
     MergeAll,
@@ -7,11 +6,8 @@ import {
     Split,
     WithDefaults,
     Or,
-    KeyValuate,
-    NumericString,
-    Cast,
-    StringOrNumberFrom,
-    ListPossibleTypes
+    And,
+    DeepEvaluate
 } from "@re-do/utils"
 import {
     OrDefinition,
@@ -30,7 +26,7 @@ import { DefinitionTypeError, UnknownTypeError } from "./errors.js"
 export type ParseStringDefinition<
     Definition extends string,
     TypeSet,
-    Options extends Required<ParseTypeRecurseOptions>,
+    Options extends ParseTypeRecurseOptions,
     ParsableDefinition extends string = RemoveSpaces<Definition>
 > =
     // If Definition is an error, e.g. from an invalid TypeSet, return it immediately
@@ -45,7 +41,7 @@ export type ParseStringDefinition<
 export type ParseStringTupleDefinitionRecurse<
     Definitions extends string,
     TypeSet,
-    Options extends Required<ParseTypeRecurseOptions>,
+    Options extends ParseTypeRecurseOptions,
     DefinitionList extends string[] = Split<Definitions, ",">
 > = Definitions extends ""
     ? []
@@ -63,7 +59,7 @@ export type ParseStringFunctionDefinitionRecurse<
     Parameters extends string,
     Return extends string,
     TypeSet,
-    Options extends Required<ParseTypeRecurseOptions>
+    Options extends ParseTypeRecurseOptions
 > = Evaluate<
     (
         ...args: ParseStringTupleDefinitionRecurse<Parameters, TypeSet, Options>
@@ -74,7 +70,7 @@ export type ParseStringOrDefinitionRecurse<
     First extends string,
     Second extends string,
     TypeSet,
-    Options extends Required<ParseTypeRecurseOptions>,
+    Options extends ParseTypeRecurseOptions,
     FirstParseResult = ParseStringDefinitionRecurse<First, TypeSet, Options>,
     SecondParseResult = ParseStringDefinitionRecurse<Second, TypeSet, Options>
 > = FirstParseResult extends UnknownTypeError
@@ -83,10 +79,60 @@ export type ParseStringOrDefinitionRecurse<
     ? SecondParseResult
     : FirstParseResult | SecondParseResult
 
+export type ParseResolvedCyclicDefinition<
+    TypeName extends keyof TypeSet,
+    TypeSet,
+    Options extends ParseTypeRecurseOptions
+> = ParseTypeRecurse<
+    Options["onCycle"],
+    Omit<TypeSet, "cyclic"> & { cyclic: TypeSet[TypeName] },
+    {
+        onCycle: Options["deepOnCycle"] extends true
+            ? Options["onCycle"]
+            : never
+        seen: {}
+        onResolve: Options["onResolve"]
+        deepOnCycle: Options["deepOnCycle"]
+    }
+>
+
+export type ParseResolvedNonCyclicDefinition<
+    TypeName extends keyof TypeSet,
+    TypeSet,
+    Options extends ParseTypeRecurseOptions
+> = Or<
+    Options["onResolve"] extends never ? true : false,
+    TypeName extends "resolved" ? true : false
+> extends true
+    ? ParseTypeRecurse<
+          TypeSet[TypeName],
+          TypeSet,
+          Options & {
+              seen: { [K in TypeName]: true }
+          }
+      >
+    : ParseType<
+          Options["onResolve"],
+          Omit<TypeSet, "resolved"> & { resolved: TypeSet[TypeName] },
+          Options & {
+              seen: { [K in TypeName]: true }
+          }
+      >
+
+export type ParseResolvedDefinition<
+    TypeName extends keyof TypeSet,
+    TypeSet,
+    Options extends ParseTypeRecurseOptions
+> = TypeName extends keyof Options["seen"]
+    ? Options["onCycle"] extends never
+        ? ParseResolvedNonCyclicDefinition<TypeName, TypeSet, Options>
+        : ParseResolvedCyclicDefinition<TypeName, TypeSet, Options>
+    : ParseResolvedNonCyclicDefinition<TypeName, TypeSet, Options>
+
 export type ParseStringDefinitionRecurse<
     Fragment extends string,
     TypeSet,
-    Options extends Required<ParseTypeRecurseOptions>
+    Options extends ParseTypeRecurseOptions
 > = Fragment extends OrDefinition<infer First, infer Second>
     ? ParseStringOrDefinitionRecurse<First, Second, TypeSet, Options>
     : Fragment extends FunctionDefinition<infer Parameters, infer Return>
@@ -96,37 +142,18 @@ export type ParseStringDefinitionRecurse<
     : Fragment extends StringLiteralDefinition<infer Literal>
     ? `${Literal}`
     : Fragment extends NumericStringLiteralDefinition<infer Value>
-    ? // For now this is always inferred as 'number', even the string is a literal like '5'
+    ? // For now this is always inferred as 'number', even if the string is a literal like '5'
       Value
     : Fragment extends BuiltInTypeName
     ? BuiltInTypes[Fragment]
     : Fragment extends keyof TypeSet
-    ? Or<
-          Options["onCycle"] extends never ? true : false,
-          Fragment extends keyof Options["seen"] ? false : true
-      > extends true
-        ? ParseTypeRecurse<
-              TypeSet[Fragment],
-              TypeSet,
-              Options & { seen: { [TypeName in Fragment]: true } }
-          >
-        : ParseTypeRecurse<
-              Options["onCycle"],
-              Omit<TypeSet, "cyclic"> & { cyclic: Fragment },
-              {
-                  onCycle: Options["deepOnCycle"] extends true
-                      ? Options["onCycle"]
-                      : never
-                  seen: {}
-                  deepOnCycle: Options["deepOnCycle"]
-              }
-          >
+    ? ParseResolvedDefinition<Fragment, TypeSet, Options>
     : UnknownTypeError<Fragment>
 
 export type ParseObjectDefinition<
     Definition extends object,
     TypeSet,
-    Options extends Required<ParseTypeRecurseOptions>,
+    Options extends ParseTypeRecurseOptions,
     OptionalKey extends keyof Definition = keyof FilterByValue<
         Definition,
         OptionalDefinition
@@ -153,7 +180,7 @@ export type ParseObjectDefinition<
 export type ParseListDefinition<
     Definition extends any[],
     TypeSet,
-    Options extends Required<ParseTypeRecurseOptions>
+    Options extends ParseTypeRecurseOptions
 > = {
     [Index in keyof Definition]: ParseTypeRecurse<
         Definition[Index],
@@ -168,12 +195,14 @@ export type ParseTypeOptions = {
     onCycle?: UnvalidatedDefinition
     seen?: any
     deepOnCycle?: boolean
+    onResolve?: UnvalidatedDefinition
 }
 
 export type DefaultParseTypeOptions = {
     onCycle: never
     seen: {}
     deepOnCycle: false
+    onResolve: never
 }
 
 export type ParseTypeRecurse<

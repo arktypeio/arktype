@@ -42,14 +42,13 @@ import {
 import {
     parse,
     ParsedType,
+    ParsedTypeSet,
     ParseType,
     TypeDefinition,
     TypeSet,
     UnvalidatedDefinition,
     UnvalidatedTypeSet
 } from "retypes"
-// For some reason this prevents createState from giving an inane "cannot resolve type without reference" error
-// import {} from "retypes/out/cjs/parse"
 import {
     configureStore,
     ConfigureStoreOptions,
@@ -62,7 +61,6 @@ import {
     Store,
     UpdateFunction,
     ParseStoredType,
-    ParseInputType,
     CompileInputTypeSet,
     CompileStoredTypeSet
 } from "./store"
@@ -342,12 +340,12 @@ export const createState = <
     StateDefinition = DefinitionFromConfig<Config, true>,
     StateType = ParseStoredType<StateDefinition, StoredTypeSet, IdKey>,
     StoredLocations = ExtractDefinedTypeNames<Config>,
-    A extends Actions<StateType> = {}
+    Actions extends ActionsOf<StateType> = {}
 >(
     config: Narrow<Config>,
     options?: {
         typeSet?: Narrow<ExternalTypeSet>
-        actions?: A
+        actions?: Actions
         reduxOptions?: ReduxOptions
         idKey?: IdKey
     }
@@ -412,10 +410,21 @@ export const createState = <
             }
         })
     const stateRoot = getStateProxy(initialState, "")
-    return stateRoot as State<StateType, InputTypeSet, StoredLocations, IdKey>
+    return stateRoot as State<
+        StateType,
+        InputTypeSet,
+        StoredLocations,
+        IdKey
+    > & {
+        $: {
+            actions: Actions
+        }
+    }
 }
 
-// createTestState().cache.currentUser?.bestFriend?.get()
+// const state = createTestState()
+
+// state.cache.currentUser?.bestFriend?.get()
 
 // createTestState().cache.currentCity.groups[0].members[0].bestFriend?.id
 
@@ -428,15 +437,10 @@ export type State<
     [K in keyof StateType]: K extends keyof StoredLocations
         ? StoredLocations[K] extends string
             ? Interactions<
-                  StateType[K],
-                  ParseInputType<StoredLocations[K], InputTypeSet>
+                  Unlisted<StateType[K]>,
+                  ParseType<StoredLocations[K], InputTypeSet>
               >
-            : State<
-                  StateType[K],
-                  InputTypeSet,
-                  KeyValuate<StoredLocations[K], "fields">,
-                  IdKey
-              >
+            : State<StateType[K], InputTypeSet, StoredLocations[K], IdKey>
         : StateType[K]
 }
 
@@ -536,7 +540,7 @@ const extractTypeDef = (config: any): any =>
         return null
     })
 
-export type Actions<Input> = Record<
+export type ActionsOf<Input> = Record<
     string,
     DeepUpdate<Input> | UpdateFunction<Input>
 >

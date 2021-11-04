@@ -16,7 +16,8 @@ import {
     TypeDefinition,
     TypeSet,
     UnvalidatedDefinition,
-    UnvalidatedTypeSet
+    UnvalidatedTypeSet,
+    ListDefinition
 } from "retypes"
 import { Db, DbContents } from "./db.js"
 
@@ -28,7 +29,7 @@ export type CompileStoredTypeSet<
     [TypeName in keyof FullTypeSet]: TypeName extends StoredTypeNames
         ? FullTypeSet[TypeName] &
               {
-                  [K in IdKey]: number
+                  [K in IdKey]: "number"
               }
         : FullTypeSet[TypeName]
 }
@@ -45,11 +46,6 @@ export type ParseStoredType<
             [K in IdKey]: "number"
         }
     }
->
-
-export type ParseInputType<Definition, InputTypeSet> = ParseType<
-    Definition,
-    InputTypeSet
 >
 
 export type CompileInputTypeSet<
@@ -75,7 +71,9 @@ export type CompileInputTypeSetRecurse<
 > = {
     [K in keyof TypeDefinitions]: TypeDefinitions[K] extends NonRecursible
         ? KeyValuate<DefinitionReferences, K> extends StoredTypeName
-            ? `number|${TypeDefinitions[K] & string}`
+            ? `${TypeDefinitions[K] extends ListDefinition
+                  ? "number[]"
+                  : "number"}|${TypeDefinitions[K] & string}`
             : TypeDefinitions[K]
         : CompileInputTypeSetRecurse<
               StoredTypeName,
@@ -126,7 +124,7 @@ export type Store<
 > = {
     [TypeName in keyof Types]: Interactions<
         ParseStoredType<TypeName, StoredTypeSet, Config["idKey"]>,
-        ParseInputType<TypeName, InputTypeSet>
+        ParseType<TypeName, InputTypeSet>
     >
 }
 

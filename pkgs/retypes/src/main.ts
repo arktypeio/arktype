@@ -114,15 +114,14 @@ export type CompiledTypeSet<
     types: ParsedTypeSet<MergedTypeSet>
 }
 
-export type ParsedTypeSet<
-    TypeSet extends UnvalidatedTypeSet = UnvalidatedTypeSet
-> = UnvalidatedTypeSet extends TypeSet
-    ? Record<string, ParsedType>
-    : {
-          [TypeName in keyof TypeSet]: Evaluate<
-              ParsedType<TypeName, TypeSet, {}>
-          >
-      }
+export type ParsedTypeSet<TypeSet = UnvalidatedTypeSet> =
+    UnvalidatedTypeSet extends TypeSet
+        ? Record<string, ParsedType>
+        : {
+              [TypeName in keyof TypeSet]: Evaluate<
+                  ParsedType<TypeName, TypeSet, {}>
+              >
+          }
 
 export type ParseFunction<
     PredefinedTypeSet extends UnvalidatedTypeSet = UnvalidatedTypeSet
