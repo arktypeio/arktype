@@ -170,6 +170,12 @@ export type ParseTypeOptions = {
     deepOnCycle?: boolean
 }
 
+export type DefaultParseTypeOptions = {
+    onCycle: never
+    seen: {}
+    deepOnCycle: false
+}
+
 export type ParseTypeRecurse<
     Definition,
     TypeSet,
@@ -191,17 +197,18 @@ export type ParseType<
 > = ParseTypeRecurse<
     Definition,
     TypeSet,
-    WithDefaults<
-        ParseTypeOptions,
-        Options,
-        { onCycle: never; seen: {}; deepOnCycle: false }
-    >
+    WithDefaults<ParseTypeOptions, Options, DefaultParseTypeOptions>
 >
+
+export type ParseTypeSet<TypeSet, Options extends ParseTypeOptions = {}> = {
+    [TypeName in keyof TypeSet]: ParseTypeRecurse<
+        TypeName,
+        TypeSet,
+        WithDefaults<ParseTypeOptions, Options, DefaultParseTypeOptions>
+    >
+}
 
 export type ParseTypeSetDefinitions<
     Definitions,
-    Options extends ParseTypeOptions = {},
-    Merged = MergeAll<Definitions>
-> = {
-    [TypeName in keyof Merged]: ParseType<Merged[TypeName], Merged, Options>
-}
+    Options extends ParseTypeOptions = {}
+> = ParseTypeSet<MergeAll<Definitions>, Options>

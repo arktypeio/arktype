@@ -23,10 +23,10 @@ printType(types.user.type)
 
 describe("multifile", () => {
     test("compiles", async () => {
-        const diag = await tsd({
-            cwd: ".",
-            testFiles: ["src/__tests__/**/*.test.ts"]
-        })
+        // const diag = await tsd({
+        //     cwd: ".",
+        //     testFiles: ["src/__tests__/**/*.test.ts"]
+        // })
         expectType<ExpectedUser>(types.user.type)
         expectType<ExpectedGroup>(types.group.type)
         expectType<ExpectedUser | undefined>(types.user.type.bestFriend)

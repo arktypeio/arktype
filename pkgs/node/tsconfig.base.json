@@ -3,7 +3,6 @@
         "module": "esnext",
         "target": "esnext",
         "moduleResolution": "node",
-        "inlineSourceMap": true,
         "skipLibCheck": true,
         "strict": true,
         "isolatedModules": true,

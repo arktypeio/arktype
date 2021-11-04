@@ -1,6 +1,5 @@
 import {
     NonRecursible,
-    Unlisted,
     DeepUpdate,
     DeepPartial,
     transform,
@@ -8,74 +7,72 @@ import {
     ListPossibleTypes,
     Merge,
     KeyValuate,
-    Cast,
-    Evaluate
+    narrow,
+    WithDefaults
 } from "@re-do/utils"
 import {
-    ParsedType,
     ParsedTypeSet,
     ParseType,
     TypeDefinition,
     TypeSet,
     UnvalidatedDefinition,
-    UnvalidatedTypeSet
+    UnvalidatedTypeSet,
+    ParseTypeSet
 } from "retypes"
 import { Db, DbContents } from "./db.js"
 
-export type CompileStoredTypeSet<
-    TypeSet extends UnvalidatedTypeSet,
-    IdKey extends string
-> = {
-    [TypeName in keyof TypeSet]: TypeSet[TypeName] & { [K in IdKey]: number }
+type SelfReference<Definitions> = {
+    [TypeName in keyof Definitions]: TypeName
 }
 
-export type MergeInputDefinitions<
-    TypeSet extends UnvalidatedTypeSet,
-    Provided extends CustomInputDefinitions<TypeSet>
-> = {
-    [TypeName in keyof TypeSet]: Merge<TypeSet, Provided>
-}
+export type CompileStoredTypes<
+    Types,
+    ExternalTypeSet,
+    IdKey extends string,
+    StoredTypeSet = {
+        [TypeName in keyof Types]: Types[TypeName] &
+            {
+                [K in IdKey]: number
+            }
+    },
+    MergedTypeSet = StoredTypeSet & ExternalTypeSet
+> = ParseType<SelfReference<StoredTypeSet>, MergedTypeSet>
 
-export type CompileInputTypeSet<
-    TypeSet extends UnvalidatedTypeSet,
-    Provided extends CustomInputDefinitions<TypeSet>,
-    MergedDefinitions extends UnvalidatedTypeSet = Merge<TypeSet, Provided>,
+export type CompileInputTypes<
+    Types,
+    ExternalTypeSet,
+    CustomInputs = {},
+    InputTypes = Merge<Types, CustomInputs>,
+    MergedTypes = InputTypes & ExternalTypeSet,
     DefinitionReferences = TypeDefinition<
-        MergedDefinitions,
-        ListPossibleTypes<keyof MergedDefinitions>,
+        MergedTypes,
+        ListPossibleTypes<keyof MergedTypes>,
         { extractTypesReferenced: true }
+    >,
+    MergedInputTypeSet = CompileInputTypeSetRecurse<
+        keyof InputTypes,
+        MergedTypes,
+        DefinitionReferences
     >
-> = CompileInputTypeSetRecurse<MergedDefinitions, DefinitionReferences>
+> = ParseType<SelfReference<InputTypes>, MergedInputTypeSet>
 
 export type CompileInputTypeSetRecurse<
-    MergedDefinitions,
+    InputTypeName,
+    TypeDefinitions,
     DefinitionReferences
 > = {
-    [TypeName in keyof MergedDefinitions]:
-        | MergedDefinitions[TypeName]
-        | (MergedDefinitions[TypeName] extends NonRecursible
-              ? KeyValuate<
-                    DefinitionReferences,
-                    TypeName
-                > extends keyof MergedDefinitions
-                  ? "number"
-                  : never
-              : CompileInputTypeSetRecurse<
-                    MergedDefinitions[TypeName],
-                    KeyValuate<DefinitionReferences, TypeName>
-                >)
+    [K in keyof TypeDefinitions]: TypeDefinitions[K] extends NonRecursible
+        ? KeyValuate<DefinitionReferences, K> extends InputTypeName
+            ? `number|${TypeDefinitions[K] & string}`
+            : TypeDefinitions[K]
+        : CompileInputTypeSetRecurse<
+              InputTypeName,
+              TypeDefinitions[K],
+              KeyValuate<DefinitionReferences, K>
+          >
 }
 
-export type SomeStoreModel = {
-    [K in string]: ModeledType
-}
-
-export type Interactions<
-    TypeName extends keyof Model & string = string,
-    Model extends SomeStoreModel = SomeStoreModel,
-    Input = Model[TypeName]["input"]["type"],
-    Stored = Model[TypeName]["stored"]["type"]
-> = {
+export type Interactions<Stored, Input> = {
     create: (data: Input) => Stored
     all: () => Stored[]
     find: (by: FindArgs<Stored>) => Stored
@@ -90,69 +87,71 @@ export type Interactions<
     }
 }
 
-export type CustomInputDefinitions<Model extends UnvalidatedTypeSet> = {
-    [K in keyof Model]?: UnvalidatedDefinition
+export type CustomInputDefinitions<Types> = {
+    [K in keyof Types]?: UnvalidatedDefinition
 }
 
-export type Store<Model extends SomeStoreModel> = {
-    [TypeName in keyof Model & string]: Interactions<TypeName, Model>
-}
-
-export type StoreModel<
-    Types extends UnvalidatedTypeSet = UnvalidatedTypeSet,
-    Inputs extends CustomInputDefinitions<Types> = Types,
-    IdKey extends string = "id",
-    StoredTypeSet = ParsedTypeSet<CompileStoredTypeSet<Types, IdKey>>,
-    InputTypeSet = ParsedTypeSet<CompileInputTypeSet<Types, Inputs>>
+export type Store<
+    Types extends UnvalidatedTypeSet,
+    ProvidedConfig extends StoreConfigOptions<Types> = {},
+    Config extends StoreConfig<Types> = WithDefaults<
+        StoreConfigOptions<Types>,
+        ProvidedConfig,
+        DefaultStoreConfig
+    >,
+    StoredTypes = CompileStoredTypes<
+        Types,
+        Config["referencedTypes"],
+        Config["idKey"]
+    >,
+    InputTypes = CompileInputTypes<
+        Types,
+        Config["referencedTypes"],
+        Config["inputs"]
+    >
 > = {
-    [K in keyof StoredTypeSet & string]: ModeledType<
-        StoredTypeSet[K],
-        KeyValuate<InputTypeSet, K>
+    [K in keyof Types]: Interactions<
+        KeyValuate<StoredTypes, K>,
+        KeyValuate<InputTypes, K>
     >
 }
 
-export type ModeledType<Stored = ParsedType, Input = ParsedType> = {
-    stored: Stored
-    input: Input
+export type StoreConfigOptions<T> = {
+    idKey?: string
+    inputs?: CustomInputDefinitions<T>
+    referencedTypes?: UnvalidatedTypeSet
 }
 
-export type StoreConfig<
-    TypeSet extends UnvalidatedTypeSet,
-    Inputs extends CustomInputDefinitions<TypeSet>
-> = {
-    inputs?: Inputs
-}
+const defaultStoreConfig = narrow({
+    idKey: "id",
+    inputs: {},
+    referencedTypes: {}
+})
+
+export type DefaultStoreConfig = typeof defaultStoreConfig
+
+export type StoreConfig<T> = Required<StoreConfigOptions<T>>
 
 export const createStore = <
     Types extends UnvalidatedTypeSet,
-    Inputs extends CustomInputDefinitions<Types> = Types,
-    IdKey extends string = "id",
-    Model extends SomeStoreModel = Cast<
-        StoreModel<Types, Inputs, IdKey>,
-        SomeStoreModel
-    >
+    ProvidedConfig extends StoreConfigOptions<Types> = {}
 >(
     types: TypeSet<Types>,
-    { inputs }: Narrow<StoreConfig<Types, Inputs>>
+    { inputs }: Narrow<StoreConfigOptions<Types>>
 ) => {
     const store = transform(types, ([typeName, definition]) => {
         return [typeName, definition]
-    }) as Store<Model>
+    }) as Store<Types, ProvidedConfig>
     return store
 }
 
-export type ExtractStored<Model extends StoreModel<any>> = {
-    [TypeName in keyof Model]: Model[TypeName]["stored"]["type"]
-}
-
 export type InteractionContext<
-    Model extends StoreModel<any> = StoreModel<any>,
-    IdKey extends string = "id",
-    StoredType extends DbContents<IdKey> = ExtractStored<Model>
+    Stored extends DbContents<IdKey>,
+    IdKey extends string
 > = {
-    db: Db<StoredType, IdKey>
+    db: Db<Stored, IdKey>
     idKey: IdKey
-    model: Model
+    model: ParsedTypeSet
 }
 
 export type UpdateFunction<Input> = (

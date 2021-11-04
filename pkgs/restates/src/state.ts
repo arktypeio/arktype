@@ -59,8 +59,10 @@ import {
 import {
     createMemoryDb,
     Interactions,
-    StoreModel,
-    UpdateFunction
+    Store,
+    UpdateFunction,
+    CompileStoredTypes,
+    CompileInputTypes
 } from "./store"
 
 /**
@@ -83,20 +85,47 @@ export type ValidatedConfig<Config, Options, Opts = Recursible<Options>> = {
         : InvalidPropertyError<Opts, K>
 }
 
-type GetDefinitions<Config, IdKey extends string> = IntersectProps<
+type GetDefinitions<
+    Config,
+    Collect extends boolean,
+    SelfReference extends boolean
+> = ExcludeNever<
     {
         [K in keyof Config]: IsAnyOrUnknown<Config[K]> extends false
             ? "defines" extends keyof Config[K]
                 ? {
                       [DefinedType in Config[K]["defines"] &
-                          string]: DefinitionFromField<Config[K], false>
+                          string]: SelfReference extends true
+                          ? Config[K]["defines"]
+                          : DefinitionFromField<Config[K], false>
+                  }
+                : "stores" extends keyof Config[K]
+                ? {
+                      [StoredType in Config[K]["stores"] &
+                          string]: SelfReference extends true
+                          ? Config[K]["stores"]
+                          : {}
                   }
                 : "fields" extends keyof Config[K]
-                ? NeverEmptyObject<GetDefinitions<Config[K]["fields"], IdKey>>
+                ? NeverEmptyObject<
+                      Collect extends true
+                          ? CollectDefinitions<Config[K]["fields"]>
+                          : GetDefinitions<
+                                Config[K]["fields"],
+                                Collect,
+                                SelfReference
+                            >
+                  >
                 : never
             : never
     }
 >
+
+type CollectDefinitions<Config> = IntersectProps<
+    GetDefinitions<Config, true, false>
+>
+
+type ExtractDefinedTypeNames<Config> = GetDefinitions<Config, false, true>
 
 type UntypedConfigError = "Unable to infer config type."
 
@@ -301,10 +330,11 @@ export const createState = <
     Config extends StateConfig<Config, StateTypeSet, StateType>,
     ExternalTypeSet = {},
     IdKey extends string = "id",
-    StoredTypes = GetDefinitions<Config, IdKey>,
-    StateTypeSet extends UnvalidatedTypeSet = Cast<
-        ExternalTypeSet & StoredTypes,
-        UnvalidatedTypeSet
+    ConfigDefinitions = CollectDefinitions<Config>,
+    StateTypeSet = ExternalTypeSet & ConfigDefinitions,
+    ConfigTypeSet = Pick<
+        StateTypeSet,
+        keyof ConfigDefinitions & keyof StateTypeSet
     >,
     StateDefinition = DefinitionFromConfig<Config, true>,
     StateType = ParseType<
@@ -316,11 +346,14 @@ export const createState = <
             }
         }
     >,
-    StoredLocations = FilterByValue<
-        Config,
-        { stores: string } | { defines: string },
-        { deep: true; replaceWith: true }
-    >,
+    StoredTypes = CompileStoredTypes<ConfigTypeSet, ExternalTypeSet, IdKey>,
+    InputTypes = CompileInputTypes<ConfigTypeSet, ExternalTypeSet>,
+    StoredLocations = ExtractDefinedTypeNames<Config>,
+    // StoredLocations = FilterByValue<
+    //     Config,
+    //     { stores: string } | { defines: string },
+    //     { deep: true; replaceWith: true }
+    // >,
     A extends Actions<StateType> = {}
 >(
     config: Narrow<Config>,
@@ -391,7 +424,36 @@ export const createState = <
             }
         })
     const stateRoot = getStateProxy(initialState, "")
-    return stateRoot as StoreModel<StateTypeSet> // State<StateType, StoredLocations, IdKey>
+    return stateRoot as State<
+        StateType,
+        StoredLocations,
+        StoredTypes,
+        InputTypes,
+        IdKey
+    >
+}
+
+export type State<
+    StateType,
+    StoredLocations,
+    StoredTypes,
+    InputTypes,
+    IdKey extends string
+> = {
+    [K in keyof StateType]: K extends keyof StoredLocations
+        ? StoredLocations[K] extends string
+            ? Interactions<
+                  KeyValuate<StoredTypes, StoredLocations[K]>,
+                  KeyValuate<InputTypes, StoredLocations[K]>
+              >
+            : State<
+                  StateType[K],
+                  KeyValuate<StoredLocations[K], "fields">,
+                  StoredTypes,
+                  InputTypes,
+                  IdKey
+              >
+        : StateType[K]
 }
 
 const compileModelTypeSet = (
@@ -493,14 +555,6 @@ const extractTypeDef = (config: any): any =>
 // createTestState().cache.currentUser?.bestFriend?.get()
 
 // createTestState().cache.currentCity.groups[0].members[0].bestFriend?.id
-
-// export type State<Model, StoredLocations, IdKey extends string> = {
-//     [K in keyof Model]: K extends keyof StoredLocations
-//         ? StoredLocations[K] extends true
-//             ? Interactions<Unlisted<Model[K]>, IdKey>
-//             : State<Model[K], KeyValuate<StoredLocations[K], "fields">, IdKey>
-//         : Model[K]
-// }
 
 export type Actions<Input> = Record<
     string,
