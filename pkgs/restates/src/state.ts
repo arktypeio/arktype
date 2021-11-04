@@ -61,8 +61,10 @@ import {
     Interactions,
     Store,
     UpdateFunction,
-    CompileStoredTypes,
-    CompileInputTypes
+    ParseStoredType,
+    ParseInputType,
+    CompileInputTypeSet,
+    CompileStoredTypeSet
 } from "./store"
 
 /**
@@ -93,19 +95,18 @@ type GetDefinitions<
     {
         [K in keyof Config]: IsAnyOrUnknown<Config[K]> extends false
             ? "defines" extends keyof Config[K]
-                ? {
-                      [DefinedType in Config[K]["defines"] &
-                          string]: SelfReference extends true
-                          ? Config[K]["defines"]
-                          : DefinitionFromField<Config[K], false>
-                  }
+                ? SelfReference extends true
+                    ? Config[K]["defines"]
+                    : {
+                          [DefinedType in Config[K]["defines"] &
+                              string]: DefinitionFromField<Config[K], false>
+                      }
                 : "stores" extends keyof Config[K]
-                ? {
-                      [StoredType in Config[K]["stores"] &
-                          string]: SelfReference extends true
-                          ? Config[K]["stores"]
-                          : {}
-                  }
+                ? SelfReference extends true
+                    ? Config[K]["stores"]
+                    : {
+                          [StoredType in Config[K]["stores"] & string]: {}
+                      }
                 : "fields" extends keyof Config[K]
                 ? NeverEmptyObject<
                       Collect extends true
@@ -327,33 +328,20 @@ export type ReduxOptions = Omit<
 >
 
 export const createState = <
-    Config extends StateConfig<Config, StateTypeSet, StateType>,
+    Config extends StateConfig<Config, FullTypeSet, StateType>,
     ExternalTypeSet = {},
     IdKey extends string = "id",
-    ConfigDefinitions = CollectDefinitions<Config>,
-    StateTypeSet = ExternalTypeSet & ConfigDefinitions,
-    ConfigTypeSet = Pick<
-        StateTypeSet,
-        keyof ConfigDefinitions & keyof StateTypeSet
+    StoredDefinitions = CollectDefinitions<Config>,
+    FullTypeSet = ExternalTypeSet & StoredDefinitions,
+    StoredTypeSet = CompileStoredTypeSet<
+        FullTypeSet,
+        IdKey,
+        keyof StoredDefinitions
     >,
+    InputTypeSet = CompileInputTypeSet<FullTypeSet, keyof StoredDefinitions>,
     StateDefinition = DefinitionFromConfig<Config, true>,
-    StateType = ParseType<
-        StateDefinition,
-        StateTypeSet,
-        {
-            onCycle: { get: "()=>cyclic" } & {
-                [K in IdKey]: "number"
-            }
-        }
-    >,
-    StoredTypes = CompileStoredTypes<ConfigTypeSet, ExternalTypeSet, IdKey>,
-    InputTypes = CompileInputTypes<ConfigTypeSet, ExternalTypeSet>,
+    StateType = ParseStoredType<StateDefinition, StoredTypeSet, IdKey>,
     StoredLocations = ExtractDefinedTypeNames<Config>,
-    // StoredLocations = FilterByValue<
-    //     Config,
-    //     { stores: string } | { defines: string },
-    //     { deep: true; replaceWith: true }
-    // >,
     A extends Actions<StateType> = {}
 >(
     config: Narrow<Config>,
@@ -424,33 +412,29 @@ export const createState = <
             }
         })
     const stateRoot = getStateProxy(initialState, "")
-    return stateRoot as State<
-        StateType,
-        StoredLocations,
-        StoredTypes,
-        InputTypes,
-        IdKey
-    >
+    return stateRoot as State<StateType, InputTypeSet, StoredLocations, IdKey>
 }
+
+// createTestState().cache.currentUser?.bestFriend?.get()
+
+// createTestState().cache.currentCity.groups[0].members[0].bestFriend?.id
 
 export type State<
     StateType,
+    InputTypeSet,
     StoredLocations,
-    StoredTypes,
-    InputTypes,
     IdKey extends string
 > = {
     [K in keyof StateType]: K extends keyof StoredLocations
         ? StoredLocations[K] extends string
             ? Interactions<
-                  KeyValuate<StoredTypes, StoredLocations[K]>,
-                  KeyValuate<InputTypes, StoredLocations[K]>
+                  StateType[K],
+                  ParseInputType<StoredLocations[K], InputTypeSet>
               >
             : State<
                   StateType[K],
+                  InputTypeSet,
                   KeyValuate<StoredLocations[K], "fields">,
-                  StoredTypes,
-                  InputTypes,
                   IdKey
               >
         : StateType[K]
@@ -551,10 +535,6 @@ const extractTypeDef = (config: any): any =>
         // If we haven't already returned, subConfig has no types so don't include it
         return null
     })
-
-// createTestState().cache.currentUser?.bestFriend?.get()
-
-// createTestState().cache.currentCity.groups[0].members[0].bestFriend?.id
 
 export type Actions<Input> = Record<
     string,

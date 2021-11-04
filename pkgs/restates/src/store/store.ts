@@ -16,57 +16,69 @@ import {
     TypeDefinition,
     TypeSet,
     UnvalidatedDefinition,
-    UnvalidatedTypeSet,
-    ParseTypeSet
+    UnvalidatedTypeSet
 } from "retypes"
 import { Db, DbContents } from "./db.js"
 
-type SelfReference<Definitions> = {
-    [TypeName in keyof Definitions]: TypeName
+export type CompileStoredTypeSet<
+    FullTypeSet,
+    IdKey extends string,
+    StoredTypeNames = string
+> = {
+    [TypeName in keyof FullTypeSet]: TypeName extends StoredTypeNames
+        ? FullTypeSet[TypeName] &
+              {
+                  [K in IdKey]: number
+              }
+        : FullTypeSet[TypeName]
 }
 
-export type CompileStoredTypes<
-    Types,
-    ExternalTypeSet,
-    IdKey extends string,
-    StoredTypeSet = {
-        [TypeName in keyof Types]: Types[TypeName] &
-            {
-                [K in IdKey]: number
-            }
-    },
-    MergedTypeSet = StoredTypeSet & ExternalTypeSet
-> = ParseType<SelfReference<StoredTypeSet>, MergedTypeSet>
+export type ParseStoredType<
+    Definition,
+    StoredTypeSet,
+    IdKey extends string
+> = ParseType<
+    Definition,
+    StoredTypeSet,
+    {
+        onCycle: { get: "()=>cyclic" } & {
+            [K in IdKey]: "number"
+        }
+    }
+>
 
-export type CompileInputTypes<
-    Types,
-    ExternalTypeSet,
+export type ParseInputType<Definition, InputTypeSet> = ParseType<
+    Definition,
+    InputTypeSet
+>
+
+export type CompileInputTypeSet<
+    FullTypeSet,
+    StoredTypeName,
     CustomInputs = {},
-    InputTypes = Merge<Types, CustomInputs>,
-    MergedTypes = InputTypes & ExternalTypeSet,
+    InputDefinitions = Merge<FullTypeSet, CustomInputs>,
     DefinitionReferences = TypeDefinition<
-        MergedTypes,
-        ListPossibleTypes<keyof MergedTypes>,
+        InputDefinitions,
+        ListPossibleTypes<keyof InputDefinitions>,
         { extractTypesReferenced: true }
-    >,
-    MergedInputTypeSet = CompileInputTypeSetRecurse<
-        keyof InputTypes,
-        MergedTypes,
-        DefinitionReferences
     >
-> = ParseType<SelfReference<InputTypes>, MergedInputTypeSet>
+> = CompileInputTypeSetRecurse<
+    StoredTypeName,
+    FullTypeSet,
+    DefinitionReferences
+>
 
 export type CompileInputTypeSetRecurse<
-    InputTypeName,
+    StoredTypeName,
     TypeDefinitions,
     DefinitionReferences
 > = {
     [K in keyof TypeDefinitions]: TypeDefinitions[K] extends NonRecursible
-        ? KeyValuate<DefinitionReferences, K> extends InputTypeName
+        ? KeyValuate<DefinitionReferences, K> extends StoredTypeName
             ? `number|${TypeDefinitions[K] & string}`
             : TypeDefinitions[K]
         : CompileInputTypeSetRecurse<
-              InputTypeName,
+              StoredTypeName,
               TypeDefinitions[K],
               KeyValuate<DefinitionReferences, K>
           >
@@ -99,20 +111,22 @@ export type Store<
         ProvidedConfig,
         DefaultStoreConfig
     >,
-    StoredTypes = CompileStoredTypes<
-        Types,
-        Config["referencedTypes"],
-        Config["idKey"]
+    FullTypeSet = Types & Config["referencedTypes"],
+    StoredTypeName = keyof Types & string,
+    StoredTypeSet = CompileStoredTypeSet<
+        FullTypeSet,
+        Config["idKey"],
+        StoredTypeName
     >,
-    InputTypes = CompileInputTypes<
-        Types,
-        Config["referencedTypes"],
+    InputTypeSet = CompileInputTypeSet<
+        FullTypeSet,
+        StoredTypeName,
         Config["inputs"]
     >
 > = {
-    [K in keyof Types]: Interactions<
-        KeyValuate<StoredTypes, K>,
-        KeyValuate<InputTypes, K>
+    [TypeName in keyof Types]: Interactions<
+        ParseStoredType<TypeName, StoredTypeSet, Config["idKey"]>,
+        ParseInputType<TypeName, InputTypeSet>
     >
 }
 
