@@ -552,12 +552,12 @@ export type CastWithExclusion<T, CastTo, Excluded> = T extends Excluded
     ? T
     : CastTo
 
-export type TreeOf<T, KeyType extends Key = string> =
+export type TreeOf<T, AllowLists extends boolean = false> =
     | T
-    | {
-          [K in KeyType]: TreeOf<T, KeyType>
-      }
+    | DeepTreeOf<T, AllowLists>
 
-export type DeepTreeOf<T, KeyType extends Key = string> = {
-    [K in KeyType]: TreeOf<T, KeyType>
-}
+export type DeepTreeOf<T, AllowLists extends boolean = false> =
+    | {
+          [K in string]: TreeOf<T, AllowLists>
+      }
+    | (AllowLists extends true ? TreeOf<T, AllowLists>[] : never)

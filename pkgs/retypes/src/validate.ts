@@ -34,7 +34,7 @@ import {
     unknownTypeError
 } from "./errors.js"
 
-export type ExtractedDefinition = TreeOf<ExtractableType, string | number>
+export type ExtractedDefinition = TreeOf<ExtractableType, true>
 
 export const typeOf = (value: any): ExtractedDefinition => {
     if (typeof value === "boolean") {

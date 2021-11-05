@@ -1,4 +1,4 @@
-import { compile, parse, ParsedType, ParseType, TypeDefinition } from ".."
+import { compile, parse, TypeDefinition } from ".."
 import { expectType, expectError } from "tsd"
 import { DefinitionTypeError } from "../errors.js"
 import { typeDefProxy } from "../common.js"

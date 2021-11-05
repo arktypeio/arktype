@@ -1,5 +1,5 @@
 import { getDefault } from "../defaults.js"
-import { parse } from "../main.js"
+import { parse } from ".."
 
 describe("default values", () => {
     test("built-in", () => {
