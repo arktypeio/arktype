@@ -1,7 +1,5 @@
 import {
     NonRecursible,
-    DeepUpdate,
-    DeepPartial,
     transform,
     Narrow,
     ListPossibleTypes,
@@ -11,7 +9,6 @@ import {
     WithDefaults
 } from "@re-do/utils"
 import {
-    ParsedTypeSet,
     ParseType,
     TypeDefinition,
     TypeSet,
@@ -19,7 +16,7 @@ import {
     UnvalidatedTypeSet,
     ListDefinition
 } from "retypes"
-import { Db, DbContents } from "./db.js"
+import { Interactions } from "./interactions"
 
 export type CompileStoredTypeSet<
     FullTypeSet,
@@ -82,21 +79,6 @@ export type CompileInputTypeSetRecurse<
           >
 }
 
-export type Interactions<Stored, Input> = {
-    create: (data: Input) => Stored
-    all: () => Stored[]
-    find: (by: FindArgs<Stored>) => Stored
-    filter: (by: FindArgs<Stored>) => Stored[]
-    with: (by: FindArgs<Stored>) => {
-        remove: () => Stored
-        update: (update: DeepUpdate<Input>) => Stored
-    }
-    where: (by: FindArgs<Stored>) => {
-        remove: () => Stored[]
-        update: (update: DeepUpdate<Input>) => Stored[]
-    }
-}
-
 export type CustomInputDefinitions<Types> = {
     [K in keyof Types]?: UnvalidatedDefinition
 }
@@ -156,27 +138,3 @@ export const createStore = <
     }) as Store<Types, ProvidedConfig>
     return store
 }
-
-export type InteractionContext<
-    Stored extends DbContents<IdKey>,
-    IdKey extends string
-> = {
-    db: Db<Stored, IdKey>
-    idKey: IdKey
-    model: ParsedTypeSet
-}
-
-export type UpdateFunction<Input> = (
-    args: any,
-    context: any
-) => DeepUpdate<Input> | Promise<DeepUpdate<Input>>
-
-export type FindArgs<T> = DeepPartial<T> | ((t: T) => boolean)
-
-export type FindFunction<T, Multiple extends boolean> = <
-    Args extends FindArgs<T>
->(
-    args: Args
-) => Multiple extends true ? T[] : T
-
-export type FilterFunction<T> = <Args extends FindArgs<T>>(args: Args) => T[]

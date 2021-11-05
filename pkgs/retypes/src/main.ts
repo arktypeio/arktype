@@ -25,6 +25,17 @@ import { ParseType, ParseTypeOptions } from "./parse.js"
 import { checkErrors, assert, ValidateOptions } from "./validate.js"
 import { getDefault, GetDefaultOptions } from "./defaults.js"
 
+const extractReferences = <Definition, ActiveTypeSet>(
+    definition: Definition,
+    typeSet: ActiveTypeSet
+): TypeDefinition<
+    Definition,
+    ActiveTypeSet,
+    { extractTypesReferenced: true }
+> => {
+    return {} as any
+}
+
 const createParseFunction =
     <PredefinedTypeSet extends UnvalidatedTypeSet>(
         predefinedTypeSet: PredefinedTypeSet

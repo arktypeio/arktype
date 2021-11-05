@@ -7,37 +7,21 @@ import {
     TypeError,
     Narrow,
     ListPossibleTypes,
-    ValueAtPath,
-    FromEntries,
     Recursible,
     IsAnyOrUnknown,
     InvalidPropertyError,
+    DeepEvaluate,
     Evaluate,
     DeepUpdate,
     And,
-    ValueOf,
-    DeepEvaluate,
     Or,
-    DeepExcludedByKeys,
     Not,
-    FilterByValue,
-    Entry,
-    PropertyOf,
     ExcludeNever,
     NeverEmptyObject,
-    Iteration,
     IntersectProps,
-    DeepPartial,
-    filter,
     transform,
     isRecursible,
-    DeepTreeOf,
-    withDefaults,
-    stringify,
-    Key,
-    WithReadonlyKeys,
-    TransformCyclic,
-    Cast
+    withDefaults
 } from "@re-do/utils"
 import {
     parse,
@@ -59,7 +43,6 @@ import {
     createMemoryDb,
     Interactions,
     Store,
-    UpdateFunction,
     ParseStoredType,
     CompileInputTypeSet,
     CompileStoredTypeSet
@@ -422,9 +405,9 @@ export const createState = <
     }
 }
 
-// const state = createTestState()
+const state = createTestState()
 
-// state.cache.currentUser?.bestFriend?.get()
+state.cache.currentUser?.bestFriend?.get()
 
 // createTestState().cache.currentCity.groups[0].members[0].bestFriend?.id
 
@@ -539,6 +522,11 @@ const extractTypeDef = (config: any): any =>
         // If we haven't already returned, subConfig has no types so don't include it
         return null
     })
+
+export type UpdateFunction<Input> = (
+    args: any,
+    context: any
+) => DeepUpdate<Input> | Promise<DeepUpdate<Input>>
 
 export type ActionsOf<Input> = Record<
     string,
