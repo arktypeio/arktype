@@ -13,7 +13,8 @@ import {
     Join,
     Unlisted,
     Narrow,
-    WithDefaults
+    WithDefaults,
+    Or
 } from "@re-do/utils"
 import {
     OrDefinition,
@@ -31,18 +32,18 @@ export type OrDefinitionRecurse<
     First extends string,
     Second extends string,
     Root extends string,
-    DeclaredTypeNames extends string[],
+    DeclaredTypeName extends string,
     ExtractTypesReferenced extends boolean,
     ValidateFirst = StringDefinitionRecurse<
         First,
         First,
-        DeclaredTypeNames,
+        DeclaredTypeName,
         ExtractTypesReferenced
     >,
     ValidateSecond = StringDefinitionRecurse<
         Second,
         Second,
-        DeclaredTypeNames,
+        DeclaredTypeName,
         ExtractTypesReferenced
     >
 > = ExtractTypesReferenced extends true
@@ -56,7 +57,7 @@ export type OrDefinitionRecurse<
 export type TupleDefinitionRecurse<
     Definition extends string,
     Root extends string,
-    DeclaredTypeNames extends string[],
+    DeclaredTypeName extends string,
     ExtractTypesReferenced extends boolean,
     Definitions extends string[] = Split<Definition, ",">,
     ValidateDefinitions extends string[] = Definition extends ""
@@ -65,7 +66,7 @@ export type TupleDefinitionRecurse<
               [Index in keyof Definitions]: StringDefinitionRecurse<
                   Definitions[Index] & string,
                   Definitions[Index] & string,
-                  DeclaredTypeNames,
+                  DeclaredTypeName,
                   ExtractTypesReferenced
               >
           },
@@ -86,19 +87,19 @@ export type FunctionDefinitionRecurse<
     Parameters extends string,
     Return extends string,
     Root extends string,
-    DeclaredTypeNames extends string[],
+    DeclaredTypeName extends string,
     ExtractTypesReferenced extends boolean,
     ValidateParameters extends string = TupleDefinitionRecurse<
         Parameters,
         Parameters,
-        DeclaredTypeNames,
+        DeclaredTypeName,
         ExtractTypesReferenced
     > &
         string,
     ValidateReturn extends string = StringDefinitionRecurse<
         Return,
         Return,
-        DeclaredTypeNames,
+        DeclaredTypeName,
         ExtractTypesReferenced
     >
 > = ExtractTypesReferenced extends true
@@ -112,14 +113,14 @@ export type FunctionDefinitionRecurse<
 export type StringDefinitionRecurse<
     Fragment extends string,
     Root extends string,
-    DeclaredTypeNames extends string[],
+    DeclaredTypeName extends string,
     ExtractTypesReferenced extends boolean
 > = Fragment extends OrDefinition<infer First, infer Second>
     ? OrDefinitionRecurse<
           First,
           Second,
           Root,
-          DeclaredTypeNames,
+          DeclaredTypeName,
           ExtractTypesReferenced
       >
     : Fragment extends FunctionDefinition<infer Parameters, infer Return>
@@ -127,18 +128,18 @@ export type StringDefinitionRecurse<
           Parameters,
           Return,
           Root,
-          DeclaredTypeNames,
+          DeclaredTypeName,
           ExtractTypesReferenced
       >
     : Fragment extends ListDefinition<infer ListItem>
     ? StringDefinitionRecurse<
           ListItem,
           Root,
-          DeclaredTypeNames,
+          DeclaredTypeName,
           ExtractTypesReferenced
       >
     : Fragment extends
-          | ElementOf<DeclaredTypeNames>
+          | DeclaredTypeName
           | BuiltInTypeName
           | StringLiteralDefinition
           | NumericStringLiteralDefinition
@@ -149,7 +150,7 @@ export type StringDefinitionRecurse<
 
 export type StringDefinition<
     Definition extends string,
-    DeclaredTypeNames extends string[],
+    DeclaredTypeName extends string,
     ExtractTypesReferenced extends boolean,
     ParsableDefinition extends string = RemoveSpaces<Definition>
 > = StringDefinitionRecurse<
@@ -157,19 +158,19 @@ export type StringDefinition<
         ? Optional
         : ParsableDefinition,
     Definition,
-    DeclaredTypeNames,
+    DeclaredTypeName,
     ExtractTypesReferenced
 >
 
 export type ObjectDefinition<
     Definition,
-    DeclaredTypeNames extends string[],
+    DeclaredTypeName extends string,
     ExtractTypesReferenced extends boolean
 > = Evaluate<
     {
         [PropName in keyof Definition]: TypeDefinition<
             Definition[PropName],
-            DeclaredTypeNames,
+            DeclaredTypeName,
             { extractTypesReferenced: ExtractTypesReferenced }
         >
     }
@@ -181,7 +182,7 @@ export type TypeDefinitionOptions = {
 
 export type TypeDefinition<
     Definition,
-    DeclaredTypeNames extends string[],
+    DeclaredTypeName extends string,
     ProvidedOptions extends TypeDefinitionOptions = {},
     Options extends Required<TypeDefinitionOptions> = WithDefaults<
         TypeDefinitionOptions,
@@ -193,41 +194,37 @@ export type TypeDefinition<
     : Definition extends string
     ? StringDefinition<
           Definition,
-          DeclaredTypeNames,
+          DeclaredTypeName,
           Options["extractTypesReferenced"]
       >
-    : Definition extends UnvalidatedObjectDefinition<Definition>
+    : Definition extends UnvalidatedObjectDefinition
     ? ObjectDefinition<
           Definition,
-          DeclaredTypeNames,
+          DeclaredTypeName,
           Options["extractTypesReferenced"]
       >
     : DefinitionTypeError
 
 export type TypeDefinitions<
     Definitions,
-    DeclaredTypeNames extends string[] = ListPossibleTypes<
-        keyof MergeAll<Definitions>
-    >
+    DeclaredTypeName extends string = keyof MergeAll<Definitions> & string
 > = {
     [Index in keyof Definitions]: TypeDefinition<
         Definitions[Index],
-        DeclaredTypeNames
+        DeclaredTypeName
     >
 }
 
 export type TypeSet<
     TypeSet,
     ExternalTypeName extends string = never,
-    TypeNames extends string[] = ListPossibleTypes<
-        keyof TypeSet | ExternalTypeName
-    >
+    TypeNames extends string = (keyof TypeSet | ExternalTypeName) & string
 > = {
     [TypeName in keyof TypeSet]: TypeDefinition<TypeSet[TypeName], TypeNames>
 }
 
-export type TypeSetFromDefinitions<Definitions> = Evaluate<
-    MergeAll<TypeDefinitions<Definitions>>
+export type TypeSetFromDefinitions<Definitions> = MergeAll<
+    TypeDefinitions<Definitions>
 >
 
 export const createDefineFunctionMap = <DeclaredTypeNames extends string[]>(
@@ -235,72 +232,54 @@ export const createDefineFunctionMap = <DeclaredTypeNames extends string[]>(
 ) =>
     transform(typeNames, ([index, typeName]) => [
         typeName as string,
-        createDefineFunction(typeName as string, typeNames)
-    ]) as DefineFunctionMap<DeclaredTypeNames>
+        createDefineFunction(typeName as any)
+    ]) as DefineFunctionMap<ElementOf<DeclaredTypeNames>>
 
-export type DefineFunctionMap<DeclaredTypeNames extends string[]> = {
-    [DefinedTypeName in ElementOf<DeclaredTypeNames>]: DefineFunction<
+export type DefineFunctionMap<DeclaredTypeName extends string> = {
+    [DefinedTypeName in DeclaredTypeName]: DefineFunction<
         DefinedTypeName,
-        DeclaredTypeNames
+        DeclaredTypeName
     >
 }
 
 export type DefineFunction<
-    DefinedTypeName extends ElementOf<DeclaredTypeNames>,
-    DeclaredTypeNames extends string[]
+    DefinedTypeName extends DeclaredTypeName,
+    DeclaredTypeName extends string
 > = <Definition>(
-    definition: Narrow<TypeDefinition<Definition, DeclaredTypeNames>>
+    definition: Narrow<TypeDefinition<Definition, DeclaredTypeName>>
 ) => {
     [K in DefinedTypeName]: Definition
 }
 
 export const createDefineFunction =
-    <
-        DefinedTypeName extends ElementOf<DeclaredTypeNames>,
-        DeclaredTypeNames extends string[]
-    >(
-        definedTypeName: DefinedTypeName,
-        declaredTypeNames: DeclaredTypeNames
-    ): DefineFunction<DefinedTypeName, DeclaredTypeNames> =>
+    <DefinedTypeName extends DeclaredTypeName, DeclaredTypeName extends string>(
+        definedTypeName: DefinedTypeName
+    ): DefineFunction<DefinedTypeName, DeclaredTypeName> =>
     (definition: any) =>
         ({ [definedTypeName]: definition } as any)
 
-export type TypeNamesFrom<Definitions> = ListPossibleTypes<
-    keyof MergeAll<Definitions> & string
->
+export type TypeNameFrom<Definitions> = keyof MergeAll<Definitions> & string
 
 export type MissingTypesError<DeclaredTypeName, DefinedTypeName> = DiffUnions<
     DeclaredTypeName,
     DefinedTypeName
-> extends UnionDiffResult<any, infer Missing>
+> extends UnionDiffResult<infer Extraneous, infer Missing>
     ? Missing extends []
-        ? {}
+        ? Extraneous extends []
+            ? {}
+            : `Defined types '${StringifyPossibleTypes<
+                  ElementOf<Extraneous>
+              >}' were never declared.`
         : `Declared types ${StringifyPossibleTypes<`'${ElementOf<Missing>}'`>} were never defined.`
     : never
 
 export type TypeSetDefinitions<
     Definitions,
-    DeclaredTypeNames extends string[] = [],
-    DefinedTypeNames extends string[] = TypeNamesFrom<Definitions>,
-    DefinedTypeName extends string = ElementOf<DefinedTypeNames>,
-    // If no names are declared, just copy the names from the definitions
-    // to ensure a valid DiffResult
-    DeclaredTypeName extends string = ElementOf<
-        DeclaredTypeNames extends [] ? DefinedTypeNames : DeclaredTypeNames
-    >
+    DeclaredTypeName extends string = TypeNameFrom<Definitions>,
+    DefinedTypeName extends string = TypeNameFrom<Definitions>
 > = MissingTypesError<DeclaredTypeName, DefinedTypeName> &
     {
         [Index in keyof Definitions]: Definitions[Index] extends UnvalidatedObjectDefinition
-            ? keyof Definitions[Index] extends DeclaredTypeName
-                ? TypeDefinition<
-                      Definitions[Index],
-                      ListPossibleTypes<DefinedTypeName>
-                  >
-                : TypeError<`Defined types '${StringifyPossibleTypes<
-                      Exclude<
-                          keyof Definitions[Index] & string,
-                          DeclaredTypeName
-                      >
-                  >}' were never declared.`>
+            ? TypeDefinition<Definitions[Index], DefinedTypeName>
             : TypeError<`Definitions must be objects with string keys representing defined type names.`>
     }

@@ -13,5 +13,5 @@ export const create = (
         typeName,
         data: dataToStore
     })
-    return { ...data, id }
+    return { ...data, [idKey]: id }
 }

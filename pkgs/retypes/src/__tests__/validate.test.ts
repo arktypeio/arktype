@@ -1,11 +1,10 @@
 import { errorsAtPaths, parse, typeOf } from ".."
-import { SimpleFunction } from "../utils.js"
+import { SimpleFunction } from "@re-do/utils"
 
 describe("typeOf", () => {
     test("string", () => {
         expect(typeOf("redo")).toBe("'redo'")
         expect(typeOf("")).toBe("''")
-        // With spaces
     })
     test("number", () => {
         expect(typeOf(0)).toBe(0)

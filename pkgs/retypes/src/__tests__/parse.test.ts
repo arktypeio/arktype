@@ -2,7 +2,6 @@ import { compile, parse, ParsedType, ParseType, TypeDefinition } from ".."
 import { expectType, expectError } from "tsd"
 import { DefinitionTypeError } from "../errors.js"
 import { typeDefProxy } from "../common.js"
-import { NumericString } from "../utils.js"
 
 describe("parse", () => {
     test("built-in", () => {
@@ -109,6 +108,12 @@ describe("parse", () => {
     test("list definition", () => {
         const result = parse([{ a: "boolean" }, { b: "string?" }])
         expectType<[{ a: boolean }, { b?: string }]>(result.type)
+        const nestedResult = parse({
+            nestedList: ["string", { yes: "null|true" }]
+        })
+        expectType<{ nestedList: [string, { yes: null | true }] }>(
+            nestedResult.type
+        )
     })
     test("whitespace is ignored when parsing strings", () => {
         const stringResult = parse("    boolean      |    null       ").type
@@ -119,7 +124,7 @@ describe("parse", () => {
     test("extract types referenced from string", () => {
         type Def = TypeDefinition<
             "(user[],group[])=>boolean|number|null",
-            ["user", "group"],
+            "user" | "group",
             { extractTypesReferenced: true }
         >
         expectType<"number" | "boolean" | "user" | "group" | "null">({} as Def)
@@ -134,7 +139,7 @@ describe("parse", () => {
                     "(string, number)=>function"
                 ]
             },
-            ["user", "group"],
+            "user" | "group",
             { extractTypesReferenced: true }
         >
         expectType<{

@@ -19,7 +19,7 @@ export type ExpectedGroup = {
     members: ExpectedUser[]
 }
 
-printType(types.user.type)
+// printType(types.user.type)
 
 describe("multifile", () => {
     test("compiles", async () => {

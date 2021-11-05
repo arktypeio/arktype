@@ -4,7 +4,12 @@ import {
     ListPossibleTypes,
     Exact,
     mergeAll,
-    transform
+    transform,
+    ElementOf,
+    NonRecursible,
+    DeepEvaluate,
+    List,
+    CastWithExclusion
 } from "@re-do/utils"
 import {
     TypeDefinition,
@@ -25,16 +30,36 @@ import { ParseType, ParseTypeOptions } from "./parse.js"
 import { checkErrors, assert, ValidateOptions } from "./validate.js"
 import { getDefault, GetDefaultOptions } from "./defaults.js"
 
+type DeepListPossibleTypes<T> = {
+    [K in keyof T]: T[K] extends NonRecursible
+        ? ListPossibleTypes<T[K]>
+        : DeepListPossibleTypes<T[K]>
+}
+
+type ExtractedReferences<Definition, ActiveTypeSet> = DeepEvaluate<
+    DeepListPossibleTypes<
+        TypeDefinition<
+            Definition,
+            keyof ActiveTypeSet & string,
+            { extractTypesReferenced: true }
+        >
+    >
+>
+
 const extractReferences = <Definition, ActiveTypeSet>(
-    definition: Definition,
-    typeSet: ActiveTypeSet
-): TypeDefinition<
-    Definition,
-    ActiveTypeSet,
-    { extractTypesReferenced: true }
-> => {
+    definition: TypeDefinition<
+        Narrow<Definition>,
+        keyof ActiveTypeSet & string
+    >,
+    typeSet: Narrow<ActiveTypeSet>
+): ExtractedReferences<Definition, ActiveTypeSet> => {
     return {} as any
 }
+
+const f = extractReferences(
+    { a: { b: { c: "(a)=>c", d: ["b", "a", "string"] }, e: "c|a" } },
+    { a: 0, b: 0, c: 0 }
+)
 
 const createParseFunction =
     <PredefinedTypeSet extends UnvalidatedTypeSet>(
@@ -47,7 +72,7 @@ const createParseFunction =
     >(
         definition: TypeDefinition<
             Narrow<Definition>,
-            ListPossibleTypes<keyof ActiveTypeSet>
+            keyof ActiveTypeSet & string
         >,
         options?: Narrow<
             ParseOptions & {
@@ -84,7 +109,9 @@ const createCompileFunction =
         Definitions extends any[],
         MergedTypeSet extends UnvalidatedTypeSet = TypeSetFromDefinitions<Definitions>
     >(
-        ...definitions: TypeSetDefinitions<Definitions, DeclaredTypeNames>
+        ...definitions: DeclaredTypeNames extends []
+            ? TypeSetDefinitions<Definitions>
+            : TypeSetDefinitions<Definitions, ElementOf<DeclaredTypeNames>>
     ) => {
         const typeSetFromDefinitions = formatTypes(
             mergeAll(definitions as any)
@@ -104,15 +131,17 @@ const createCompileFunction =
         }
     }
 
-export type Declaration<DeclaredTypeNames extends string[] = string[]> = {
-    define: DefineFunctionMap<DeclaredTypeNames>
-    compile: CompileFunction<DeclaredTypeNames>
+export type Declaration<DeclaredTypeName extends string = string> = {
+    define: DefineFunctionMap<DeclaredTypeName>
+    compile: CompileFunction<DeclaredTypeName>
 }
 
-export type CompileFunction<DeclaredTypeNames extends string[] = string[]> = <
+export type CompileFunction<DeclaredTypeName extends string = never> = <
     Definitions extends any[]
 >(
-    ...definitions: TypeSetDefinitions<Definitions, DeclaredTypeNames>
+    ...definitions: DeclaredTypeName extends never
+        ? TypeSetDefinitions<Definitions>
+        : TypeSetDefinitions<Definitions, DeclaredTypeName>
 ) => CompiledTypeSet<Definitions>
 
 export type CompiledTypeSet<
@@ -143,10 +172,7 @@ export type ParseFunction<
 >(
     definition: UnvalidatedTypeSet extends ActiveTypeSet
         ? UnvalidatedDefinition
-        : TypeDefinition<
-              Narrow<Definition>,
-              ListPossibleTypes<keyof ActiveTypeSet>
-          >,
+        : TypeDefinition<Narrow<Definition>, keyof ActiveTypeSet & string>,
     options?: Narrow<
         Options & {
             typeSet?: Exact<ActiveTypeSet, TypeSet<ActiveTypeSet>>

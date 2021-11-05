@@ -405,10 +405,6 @@ export const createState = <
     }
 }
 
-const state = createTestState()
-
-state.cache.currentUser?.bestFriend?.get()
-
 // createTestState().cache.currentCity.groups[0].members[0].bestFriend?.id
 
 export type State<
