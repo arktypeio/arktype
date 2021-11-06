@@ -1,44 +1,18 @@
+import { DefinitionTypeError, UnknownTypeError } from "../../errors.js"
+import { ParseTypeRecurseOptions } from "../../parse.js"
 import {
-    transform,
-    ElementOf,
-    TypeError,
-    ListPossibleTypes,
-    Evaluate,
-    StringifyPossibleTypes,
-    MergeAll,
-    DiffUnions,
-    UnionDiffResult,
-    RemoveSpaces,
-    Split,
-    Join,
-    Unlisted,
-    Narrow,
-    WithDefaults
-} from "@re-do/utils"
-import {
-    OrDefinition,
-    ListDefinition,
-    OptionalDefinition,
     BuiltInTypeName,
-    UnvalidatedObjectDefinition,
-    FunctionDefinition,
-    StringLiteralDefinition,
     NumericStringLiteralDefinition,
+    StringLiteralDefinition,
     BuiltInTypes
-} from "../common.js"
-import { DefinitionTypeError, UnknownTypeError } from "../errors.js"
-import {
-    ParseResolvedDefinition,
-    ParseStringDefinitionRecurse,
-    ParseStringFunctionDefinitionRecurse,
-    ParseTypeRecurseOptions
-} from "../parse.js"
+} from "./common.js"
 import { Function } from "./function.js"
+import { List } from "./list.js"
 import { Or } from "./or.js"
 import { Resolution } from "./resolution.js"
 
 export namespace Fragment {
-    export type Definition<Definition extends string = string> = Definition
+    export type Definition<Def extends string = string> = Def
 
     export type Validate<
         Def extends string,
@@ -52,7 +26,7 @@ export namespace Fragment {
               DeclaredTypeName,
               ExtractTypesReferenced
           >
-        : Def extends FunctionDefinition<infer Parameters, infer Return>
+        : Def extends Function.Definition<infer Parameters, infer Return>
         ? Function.Validate<
               Parameters,
               Return,
@@ -60,7 +34,7 @@ export namespace Fragment {
               DeclaredTypeName,
               ExtractTypesReferenced
           >
-        : Def extends ListDefinition<infer ListItem>
+        : Def extends List.Definition<infer ListItem>
         ? Validate<ListItem, Root, DeclaredTypeName, ExtractTypesReferenced>
         : Def extends
               | DeclaredTypeName
@@ -80,8 +54,8 @@ export namespace Fragment {
         ? Or.Parse<Def, TypeSet, Options>
         : Def extends Function.Definition<infer Parameters, infer Return>
         ? Function.Parse<Parameters, Return, TypeSet, Options>
-        : Def extends ListDefinition<infer ListItem>
-        ? ParseStringDefinitionRecurse<ListItem, TypeSet, Options>[]
+        : Def extends List.Definition<infer ListItem>
+        ? Parse<ListItem, TypeSet, Options>[]
         : Def extends StringLiteralDefinition<infer Literal>
         ? `${Literal}`
         : Def extends NumericStringLiteralDefinition<infer Value>

@@ -16,20 +16,7 @@ import {
     WithDefaults,
     Or
 } from "@re-do/utils"
-import {
-    ListDefinition,
-    OptionalDefinition,
-    BuiltInTypeName,
-    UnvalidatedObjectDefinition,
-    FunctionDefinition,
-    StringLiteralDefinition,
-    NumericStringLiteralDefinition
-} from "../common.js"
-import { DefinitionTypeError, UnknownTypeError } from "../errors.js"
-import {
-    ParseStringDefinitionRecurse,
-    ParseTypeRecurseOptions
-} from "../parse.js"
+import { ParseTypeRecurseOptions } from "../../parse.js"
 import {
     ParseSplittable,
     ParseSplittableResult,
@@ -38,9 +25,9 @@ import {
 
 export namespace Or {
     export type Definition<
-        First extends string = string,
-        Second extends string = string
-    > = `${First}|${Second}`
+        Before extends string = string,
+        After extends string = string
+    > = `${Before}|${After}`
 
     export type Parse<
         Def extends Definition,

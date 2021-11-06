@@ -1,4 +1,4 @@
-import { compile, parse, TypeDefinition } from ".."
+import { compile, parse, Root } from ".."
 import { expectType, expectError } from "tsd"
 import { DefinitionTypeError } from "../errors.js"
 import { typeDefProxy } from "../common.js"
@@ -122,7 +122,7 @@ describe("parse", () => {
         expectType<{ nested: number | true }>(objectResult.type)
     })
     test("extract types referenced from string", () => {
-        type Def = TypeDefinition<
+        type Def = Root.Validate<
             "(user[],group[])=>boolean|number|null",
             "user" | "group",
             { extractTypesReferenced: true }
@@ -130,7 +130,7 @@ describe("parse", () => {
         expectType<"number" | "boolean" | "user" | "group" | "null">({} as Def)
     })
     test("extract base names of object", () => {
-        type Def = TypeDefinition<
+        type Def = Root.Validate<
             {
                 a: { b: { c: "user[]?" } }
                 listed: [

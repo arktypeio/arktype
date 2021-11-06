@@ -1,82 +1,19 @@
 import {
-    transform,
     ElementOf,
     TypeError,
-    ListPossibleTypes,
-    Evaluate,
     StringifyPossibleTypes,
     MergeAll,
     DiffUnions,
-    UnionDiffResult,
-    RemoveSpaces,
-    Split,
-    Join,
-    Unlisted,
-    Narrow,
-    WithDefaults
+    UnionDiffResult
 } from "@re-do/utils"
-import {
-    // OrDefinition,
-    ListDefinition,
-    OptionalDefinition,
-    BuiltInTypeName,
-    UnvalidatedObjectDefinition,
-    FunctionDefinition,
-    StringLiteralDefinition,
-    NumericStringLiteralDefinition
-} from "./common.js"
-import { DefinitionTypeError, UnknownTypeError } from "./errors.js"
-import { Or } from "./components/or.js"
-import { String } from "./components/string.js"
-
-export type ObjectDefinition<
-    Definition,
-    DeclaredTypeName extends string,
-    ExtractTypesReferenced extends boolean
-> = Evaluate<
-    {
-        [PropName in keyof Definition]: TypeDefinition<
-            Definition[PropName],
-            DeclaredTypeName,
-            { extractTypesReferenced: ExtractTypesReferenced }
-        >
-    }
->
-
-export type TypeDefinitionOptions = {
-    extractTypesReferenced?: boolean
-}
-
-export type TypeDefinition<
-    Definition,
-    DeclaredTypeName extends string,
-    ProvidedOptions extends TypeDefinitionOptions = {},
-    Options extends Required<TypeDefinitionOptions> = WithDefaults<
-        TypeDefinitionOptions,
-        ProvidedOptions,
-        { extractTypesReferenced: false }
-    >
-> = Definition extends number
-    ? number
-    : Definition extends string
-    ? String.Validate<
-          Definition,
-          DeclaredTypeName,
-          Options["extractTypesReferenced"]
-      >
-    : Definition extends UnvalidatedObjectDefinition
-    ? ObjectDefinition<
-          Definition,
-          DeclaredTypeName,
-          Options["extractTypesReferenced"]
-      >
-    : DefinitionTypeError
+import { UnvalidatedObjectDefinition } from "./common.js"
+import { Root } from "./components"
 
 export type TypeDefinitions<
     Definitions,
     DeclaredTypeName extends string = keyof MergeAll<Definitions> & string
 > = {
-    [Index in keyof Definitions]: TypeDefinition<
+    [Index in keyof Definitions]: Root.Validate<
         Definitions[Index],
         DeclaredTypeName
     >
@@ -87,7 +24,7 @@ export type TypeSet<
     ExternalTypeName extends string = never,
     TypeNames extends string = (keyof TypeSet | ExternalTypeName) & string
 > = {
-    [TypeName in keyof TypeSet]: TypeDefinition<TypeSet[TypeName], TypeNames>
+    [TypeName in keyof TypeSet]: Root.Validate<TypeSet[TypeName], TypeNames>
 }
 
 export type TypeSetFromDefinitions<Definitions> = MergeAll<
@@ -116,6 +53,6 @@ export type TypeSetDefinitions<
 > = MissingTypesError<DeclaredTypeName, DefinedTypeName> &
     {
         [Index in keyof Definitions]: Definitions[Index] extends UnvalidatedObjectDefinition
-            ? TypeDefinition<Definitions[Index], DefinedTypeName>
+            ? Root.Validate<Definitions[Index], DefinedTypeName>
             : TypeError<`Definitions must be objects with string keys representing defined type names.`>
     }

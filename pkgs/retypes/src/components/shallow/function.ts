@@ -24,11 +24,8 @@ import {
     FunctionDefinition,
     StringLiteralDefinition,
     NumericStringLiteralDefinition
-} from "../common.js"
-import {
-    ParseStringDefinitionRecurse,
-    ParseTypeRecurseOptions
-} from "../parse.js"
+} from "../../common.js"
+import { ParseTypeRecurseOptions } from "../../parse.js"
 import {
     ParseSplittable,
     ParseSplittableResult,
@@ -69,18 +66,33 @@ export namespace Function {
             : ValidateReturn
         : ValidateParameters
 
+    export type Parse<
+        Parameters extends string,
+        Return extends string,
+        TypeSet,
+        Options extends ParseTypeRecurseOptions
+    > = Evaluate<
+        (
+            ...args: ParseParameterTuple<Parameters, TypeSet, Options>
+        ) => Fragment.Parse<Return, TypeSet, Options>
+    >
+
     export type ValidateParameterTuple<
         Def extends string,
         Root extends string,
         DeclaredTypeName extends string,
         ExtractTypesReferenced extends boolean
-    > = ValidateSplittable<
-        ",",
-        Def,
-        Root,
-        DeclaredTypeName,
-        ExtractTypesReferenced
-    >
+    > = Def extends ""
+        ? ExtractTypesReferenced extends true
+            ? never
+            : ""
+        : ValidateSplittable<
+              ",",
+              Def,
+              Root,
+              DeclaredTypeName,
+              ExtractTypesReferenced
+          >
 
     export type ParseParameterTuple<
         Def extends string,
@@ -92,16 +104,5 @@ export namespace Function {
             TypeSet,
             Options
         >
-    > = Result["Components"]
-
-    export type Parse<
-        Parameters extends string,
-        Return extends string,
-        TypeSet,
-        Options extends ParseTypeRecurseOptions
-    > = Evaluate<
-        (
-            ...args: ParseParameterTuple<Parameters, TypeSet, Options>
-        ) => Fragment.Parse<Return, TypeSet, Options>
-    >
+    > = Def extends "" ? [] : Result["Components"]
 }

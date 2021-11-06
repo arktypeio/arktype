@@ -1,45 +1,10 @@
-import {
-    transform,
-    ElementOf,
-    TypeError,
-    ListPossibleTypes,
-    Evaluate,
-    StringifyPossibleTypes,
-    MergeAll,
-    DiffUnions,
-    UnionDiffResult,
-    RemoveSpaces,
-    Split,
-    Join,
-    Unlisted,
-    Narrow,
-    WithDefaults,
-    Or as Either
-} from "@re-do/utils"
-import {
-    OrDefinition,
-    ListDefinition,
-    OptionalDefinition,
-    BuiltInTypeName,
-    UnvalidatedObjectDefinition,
-    FunctionDefinition,
-    StringLiteralDefinition,
-    NumericStringLiteralDefinition,
-    BuiltInTypes
-} from "../common.js"
-import { DefinitionTypeError, UnknownTypeError } from "../errors.js"
-import {
-    ParseResolvedDefinition,
-    ParseStringDefinitionRecurse,
-    ParseStringFunctionDefinitionRecurse,
-    ParseTypeRecurseOptions
-} from "../parse.js"
-import { Fragment } from "./fragment.js"
-import { Or } from "./or.js"
-import { Root } from "./root.js"
+import { Or as Either } from "@re-do/utils"
+import { UnknownTypeError } from "./errors.js"
+import { ParseTypeRecurseOptions } from "../common.js"
+import { Root } from "../root.js"
 
 export namespace Resolution {
-    export type Definition<Definition extends string = string> = Definition
+    export type Definition<Def extends string = string> = Def
 
     export type Validate<
         Def extends string,

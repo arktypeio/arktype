@@ -1,2 +1,2 @@
-export * from "./or.js"
 export * from "./root.js"
+export * from "./common.js"

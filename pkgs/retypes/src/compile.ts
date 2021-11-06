@@ -1,11 +1,8 @@
 import { ElementOf, mergeAll, Narrow, transform } from "@re-do/utils"
-import {
-    formatTypes,
-    UnvalidatedObjectDefinition,
-    UnvalidatedTypeSet
-} from "./common.js"
+import { formatTypes, UnvalidatedTypeSet } from "./common.js"
 import { TypeSetDefinitions, TypeSetFromDefinitions } from "./definitions.js"
 import { createParseFunction, ParseFunction, ParsedTypeSet } from "./parse.js"
+import { UnvalidatedRecursibleDefinition } from "./components"
 
 export const createCompileFunction =
     <DeclaredTypeNames extends string[]>(names: Narrow<DeclaredTypeNames>) =>
@@ -50,8 +47,8 @@ export type CompileFunction<DeclaredTypeNames extends string[] = []> = <
 ) => CompiledTypeSet<Definitions>
 
 export type CompiledTypeSet<
-    Definitions extends UnvalidatedObjectDefinition[] = UnvalidatedObjectDefinition[],
-    MergedTypeSet extends UnvalidatedTypeSet = UnvalidatedObjectDefinition[] extends Definitions
+    Definitions extends UnvalidatedRecursibleDefinition[] = UnvalidatedRecursibleDefinition[],
+    MergedTypeSet extends UnvalidatedTypeSet = UnvalidatedRecursibleDefinition[] extends Definitions
         ? UnvalidatedTypeSet
         : TypeSetFromDefinitions<Definitions>
 > = {

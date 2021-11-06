@@ -14,32 +14,22 @@ import {
     Unlisted,
     Narrow,
     WithDefaults,
-    Or
+    Or,
+    List
 } from "@re-do/utils"
 import {
-    ListDefinition,
-    OptionalDefinition,
-    BuiltInTypeName,
-    UnvalidatedObjectDefinition,
-    FunctionDefinition,
-    StringLiteralDefinition,
-    NumericStringLiteralDefinition,
-    UnvalidatedDefinition
-} from "../common.js"
-import { ObjectDefinition } from "../definitions.js"
-import { DefinitionTypeError, UnknownTypeError } from "../errors.js"
-import {
-    ParseListDefinition,
-    ParseObjectDefinition,
-    ParseStringDefinitionRecurse,
-    ParseTypeRecurseOptions
-} from "../parse.js"
-import { String } from "./string.js"
+    UnvalidatedRecursibleDefinition,
+    UnvalidatedDefinition,
+    DefaultParseTypeOptions
+} from "./common.js"
+import { DefinitionTypeError } from "../errors.js"
+import { ParseTypeRecurseOptions } from "../parse.js"
+import { String } from "./shallow"
+import { Obj, Tuple } from "./recursible"
+import { ParseTypeOptions } from "./common.js"
 
 export namespace Root {
-    export type Definition<
-        Def extends UnvalidatedObjectDefinition = UnvalidatedObjectDefinition
-    > = Def
+    export type Definition<Def extends UnvalidatedDefinition> = Def
 
     export type Validate<
         Definition,
@@ -58,55 +48,45 @@ export namespace Root {
               DeclaredTypeName,
               Options["extractTypesReferenced"]
           >
-        : Definition extends UnvalidatedObjectDefinition
-        ? ObjectDefinition<
-              Definition,
-              DeclaredTypeName,
-              Options["extractTypesReferenced"]
-          >
+        : Definition extends UnvalidatedRecursibleDefinition
+        ? Definition extends any[]
+            ? Tuple.Validate<
+                  Definition,
+                  DeclaredTypeName,
+                  Options["extractTypesReferenced"]
+              >
+            : Obj.Validate<
+                  Definition,
+                  DeclaredTypeName,
+                  Options["extractTypesReferenced"]
+              >
         : DefinitionTypeError
 
     export type TypeDefinitionOptions = {
         extractTypesReferenced?: boolean
     }
 
-    export type Parse<
+    export type BaseParse<
         Definition,
         TypeSet,
         Options extends ParseTypeOptions = {}
-    > = ParseTypeRecurse<
+    > = Parse<
         Definition,
         TypeSet,
         WithDefaults<ParseTypeOptions, Options, DefaultParseTypeOptions>
     >
 
-    type ParseTypeRecurse<
-        Definition,
+    export type Parse<
+        Def,
         TypeSet,
         Options extends ParseTypeRecurseOptions
-    > = Definition extends number
-        ? Definition
-        : Definition extends string
-        ? String.Parse<Definition, TypeSet, Options>
-        : Definition extends UnvalidatedObjectDefinition
-        ? Definition extends any[]
-            ? Evaluate<ParseListDefinition<Definition, TypeSet, Options>>
-            : Evaluate<ParseObjectDefinition<Definition, TypeSet, Options>>
+    > = Def extends number
+        ? Def
+        : Def extends string
+        ? String.Parse<Def, TypeSet, Options>
+        : Def extends UnvalidatedRecursibleDefinition
+        ? Def extends any[]
+            ? Evaluate<Tuple.Parse<Def, TypeSet, Options>>
+            : Evaluate<Obj.Parse<Def, TypeSet, Options>>
         : DefinitionTypeError
-
-    export type ParseTypeRecurseOptions = Required<ParseTypeOptions>
-
-    export type ParseTypeOptions = {
-        onCycle?: UnvalidatedDefinition
-        seen?: any
-        deepOnCycle?: boolean
-        onResolve?: UnvalidatedDefinition
-    }
-
-    export type DefaultParseTypeOptions = {
-        onCycle: never
-        seen: {}
-        deepOnCycle: false
-        onResolve: never
-    }
 }
