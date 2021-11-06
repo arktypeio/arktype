@@ -41,8 +41,8 @@ describe("parse", () => {
     test("string function", () => {
         const result = parse("(string, number) => boolean[]")
         expectType<(x: string, y: number) => boolean[]>(result.type)
-        const emptyFunction = parse("()=>void").type
-        expectType<() => void>(emptyFunction)
+        // const emptyFunction = parse("()=>void").type
+        // expectType<() => void>(emptyFunction)
         // @ts-expect-error
         parse("()=>")
         // @ts-expect-error

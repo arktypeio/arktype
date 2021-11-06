@@ -234,7 +234,7 @@ describe("validate", () => {
     test("complex", () => {
         const { checkErrors } = parse([
             "true",
-            { a: ["string", ["() => void"]] }
+            { a: ["string", ["(string) => void"]] }
         ])
         expect(checkErrors([true, { a: ["ok", [() => {}]] }])).toBeFalsy()
         expect(
