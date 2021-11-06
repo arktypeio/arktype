@@ -5,17 +5,22 @@ import {
     RemoveSpaces,
     Split,
     WithDefaults,
-    Or,
+    Or as Either,
     And,
     DeepEvaluate,
     Narrow,
     Exact,
     Segment,
     transform,
-    DeepTreeOf
+    DeepTreeOf,
+    ElementOf,
+    List,
+    Unlisted,
+    ExcludeNever,
+    StringifyPossibleTypes
 } from "@re-do/utils"
 import {
-    OrDefinition,
+    // OrDefinition,
     ListDefinition,
     OptionalDefinition,
     BuiltInTypeName,
@@ -37,6 +42,7 @@ import {
     stringifyDefinition,
     UnknownTypeError
 } from "./errors.js"
+// import { Or } from "./types/or.js"
 import { assert, checkErrors, ValidateOptions } from "./validate.js"
 
 export type ParseStringDefinition<
@@ -116,7 +122,7 @@ export type ParseResolvedNonCyclicDefinition<
     TypeName extends keyof TypeSet,
     TypeSet,
     Options extends ParseTypeRecurseOptions
-> = Or<
+> = Either<
     Options["onResolve"] extends never ? true : false,
     TypeName extends "resolved" ? true : false
 > extends true
@@ -145,12 +151,57 @@ export type ParseResolvedDefinition<
         : ParseResolvedCyclicDefinition<TypeName, TypeSet, Options>
     : ParseResolvedNonCyclicDefinition<TypeName, TypeSet, Options>
 
+export type OrDefinition<
+    First extends string = string,
+    Second extends string = string
+> = `${First}|${Second}`
+
+export type ParseStringTupleDefinitionRecurse2<
+    Definitions extends string,
+    TypeSet,
+    Options extends ParseTypeRecurseOptions,
+    DefinitionList extends string[] = Split<Definitions, ",">
+> = Definitions extends ""
+    ? []
+    : [
+          ...{
+              [Index in keyof DefinitionList]: ParseStringDefinitionRecurse<
+                  DefinitionList[Index] & string,
+                  TypeSet,
+                  Options
+              >
+          }
+      ]
+
+export type OrParse<
+    Def extends OrDefinition,
+    TypeSet,
+    Options extends ParseTypeRecurseOptions,
+    Components extends string[] = Split<Def, "|">,
+    ParsedComponents = {
+        [Index in keyof Components]: ParseStringDefinitionRecurse<
+            Components[Index] & string,
+            TypeSet,
+            Options
+        >
+    },
+    ComponentErrors = {
+        [I in keyof ParsedComponents]: ParsedComponents[I] extends UnknownTypeError
+            ? ParsedComponents[I]
+            : never
+    }
+> = ComponentErrors extends never[]
+    ? Unlisted<ParsedComponents>
+    : StringifyPossibleTypes<
+          Extract<ComponentErrors[keyof ComponentErrors], UnknownTypeError>
+      >
+
 export type ParseStringDefinitionRecurse<
     Fragment extends string,
     TypeSet,
     Options extends ParseTypeRecurseOptions
-> = Fragment extends OrDefinition<infer First, infer Second>
-    ? ParseStringOrDefinitionRecurse<First, Second, TypeSet, Options>
+> = Fragment extends OrDefinition
+    ? OrParse<Fragment, TypeSet, Options>
     : Fragment extends FunctionDefinition<infer Parameters, infer Return>
     ? ParseStringFunctionDefinitionRecurse<Parameters, Return, TypeSet, Options>
     : Fragment extends ListDefinition<infer ListItem>
@@ -353,12 +404,22 @@ export const createParseFunction =
             >,
             typeSet: activeTypeSet as ActiveTypeSet,
             checkErrors: (value: unknown, options: ValidateOptions = {}) =>
-                checkErrors(value, formattedDefinition, activeTypeSet, options),
+                checkErrors(
+                    value,
+                    formattedDefinition as any,
+                    activeTypeSet,
+                    options
+                ),
             assert: (value: unknown, options: ValidateOptions = {}) =>
-                assert(value, formattedDefinition, activeTypeSet, options),
+                assert(
+                    value,
+                    formattedDefinition as any,
+                    activeTypeSet,
+                    options
+                ),
             getDefault: (options: GetDefaultOptions = {}) =>
                 getDefault(
-                    formattedDefinition,
+                    formattedDefinition as any,
                     activeTypeSet,
                     options
                 ) as ParseType<Definition, ActiveTypeSet, ParseOptions>
@@ -368,6 +429,8 @@ export const createParseFunction =
 // Exported parse function is equivalent to parse from an empty compile call,
 // but optionally accepts a typeset as its second parameter
 export const parse = createParseFunction({})
+
+const result = parse({ o: ["string|number"] })
 
 export type ParseTypeSet<TypeSet, Options extends ParseTypeOptions = {}> = {
     [TypeName in keyof TypeSet]: ParseTypeRecurse<

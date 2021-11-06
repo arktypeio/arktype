@@ -13,11 +13,10 @@ import {
     Join,
     Unlisted,
     Narrow,
-    WithDefaults,
-    Or
+    WithDefaults
 } from "@re-do/utils"
 import {
-    OrDefinition,
+    // OrDefinition,
     ListDefinition,
     OptionalDefinition,
     BuiltInTypeName,
@@ -27,32 +26,60 @@ import {
     NumericStringLiteralDefinition
 } from "./common.js"
 import { DefinitionTypeError, UnknownTypeError } from "./errors.js"
+// import { Or } from "./types/or.js"
 
-export type OrDefinitionRecurse<
-    First extends string,
-    Second extends string,
+export type OrDefinition<
+    First extends string = string,
+    Second extends string = string
+> = `${First}|${Second}`
+
+type Z = OrValidate<"string|number|foo[]", "string|number|foo[]", "foo", false>
+
+export type OrValidate<
+    Def extends OrDefinition,
     Root extends string,
     DeclaredTypeName extends string,
     ExtractTypesReferenced extends boolean,
-    ValidateFirst = StringDefinitionRecurse<
-        First,
-        First,
-        DeclaredTypeName,
-        ExtractTypesReferenced
-    >,
-    ValidateSecond = StringDefinitionRecurse<
-        Second,
-        Second,
-        DeclaredTypeName,
-        ExtractTypesReferenced
-    >
+    Components extends string[] = Split<Def, "|">,
+    ValidateDefinitions extends string[] = {
+        [Index in keyof Components]: StringDefinitionRecurse<
+            Components[Index] & string,
+            Components[Index] & string,
+            DeclaredTypeName,
+            ExtractTypesReferenced
+        >
+    },
+    ValidatedDefinition extends string = Join<ValidateDefinitions, "|">
 > = ExtractTypesReferenced extends true
-    ? ValidateFirst | ValidateSecond
-    : First extends ValidateFirst
-    ? Second extends ValidateSecond
-        ? Root
-        : ValidateSecond
-    : ValidateFirst
+    ? Unlisted<ValidateDefinitions>
+    : Def extends ValidatedDefinition
+    ? Root
+    : StringifyPossibleTypes<
+          Extract<
+              ValidateDefinitions[keyof ValidateDefinitions],
+              UnknownTypeError
+          >
+      >
+
+// export type Parse<
+//     Def extends Definition,
+//     TypeSet,
+//     Options extends ParseTypeRecurseOptions,
+//     FirstParseResult = ParseStringDefinitionRecurse<
+//         First,
+//         TypeSet,
+//         Options
+//     >,
+//     SecondParseResult = ParseStringDefinitionRecurse<
+//         Second,
+//         TypeSet,
+//         Options
+//     >
+// > = FirstParseResult extends UnknownTypeError
+//     ? FirstParseResult
+//     : SecondParseResult extends UnknownTypeError
+//     ? SecondParseResult
+//     : FirstParseResult | SecondParseResult
 
 export type TupleDefinitionRecurse<
     Definition extends string,
@@ -116,9 +143,8 @@ export type StringDefinitionRecurse<
     DeclaredTypeName extends string,
     ExtractTypesReferenced extends boolean
 > = Fragment extends OrDefinition<infer First, infer Second>
-    ? OrDefinitionRecurse<
-          First,
-          Second,
+    ? OrValidate<
+          `${First}|${Second}`,
           Root,
           DeclaredTypeName,
           ExtractTypesReferenced
