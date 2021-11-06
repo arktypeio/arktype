@@ -26,60 +26,7 @@ import {
     NumericStringLiteralDefinition
 } from "./common.js"
 import { DefinitionTypeError, UnknownTypeError } from "./errors.js"
-// import { Or } from "./types/or.js"
-
-export type OrDefinition<
-    First extends string = string,
-    Second extends string = string
-> = `${First}|${Second}`
-
-type Z = OrValidate<"string|number|foo[]", "string|number|foo[]", "foo", false>
-
-export type OrValidate<
-    Def extends OrDefinition,
-    Root extends string,
-    DeclaredTypeName extends string,
-    ExtractTypesReferenced extends boolean,
-    Components extends string[] = Split<Def, "|">,
-    ValidateDefinitions extends string[] = {
-        [Index in keyof Components]: StringDefinitionRecurse<
-            Components[Index] & string,
-            Components[Index] & string,
-            DeclaredTypeName,
-            ExtractTypesReferenced
-        >
-    },
-    ValidatedDefinition extends string = Join<ValidateDefinitions, "|">
-> = ExtractTypesReferenced extends true
-    ? Unlisted<ValidateDefinitions>
-    : Def extends ValidatedDefinition
-    ? Root
-    : StringifyPossibleTypes<
-          Extract<
-              ValidateDefinitions[keyof ValidateDefinitions],
-              UnknownTypeError
-          >
-      >
-
-// export type Parse<
-//     Def extends Definition,
-//     TypeSet,
-//     Options extends ParseTypeRecurseOptions,
-//     FirstParseResult = ParseStringDefinitionRecurse<
-//         First,
-//         TypeSet,
-//         Options
-//     >,
-//     SecondParseResult = ParseStringDefinitionRecurse<
-//         Second,
-//         TypeSet,
-//         Options
-//     >
-// > = FirstParseResult extends UnknownTypeError
-//     ? FirstParseResult
-//     : SecondParseResult extends UnknownTypeError
-//     ? SecondParseResult
-//     : FirstParseResult | SecondParseResult
+import { Or } from "./types/or.js"
 
 export type TupleDefinitionRecurse<
     Definition extends string,
@@ -142,8 +89,8 @@ export type StringDefinitionRecurse<
     Root extends string,
     DeclaredTypeName extends string,
     ExtractTypesReferenced extends boolean
-> = Fragment extends OrDefinition<infer First, infer Second>
-    ? OrValidate<
+> = Fragment extends Or.Definition<infer First, infer Second>
+    ? Or.Validate<
           `${First}|${Second}`,
           Root,
           DeclaredTypeName,

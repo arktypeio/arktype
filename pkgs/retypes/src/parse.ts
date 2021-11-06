@@ -42,6 +42,7 @@ import {
     stringifyDefinition,
     UnknownTypeError
 } from "./errors.js"
+import { Or } from "./types/or.js"
 // import { Or } from "./types/or.js"
 import { assert, checkErrors, ValidateOptions } from "./validate.js"
 
@@ -173,35 +174,12 @@ export type ParseStringTupleDefinitionRecurse2<
           }
       ]
 
-export type OrParse<
-    Def extends OrDefinition,
-    TypeSet,
-    Options extends ParseTypeRecurseOptions,
-    Components extends string[] = Split<Def, "|">,
-    ParsedComponents = {
-        [Index in keyof Components]: ParseStringDefinitionRecurse<
-            Components[Index] & string,
-            TypeSet,
-            Options
-        >
-    },
-    ComponentErrors = {
-        [I in keyof ParsedComponents]: ParsedComponents[I] extends UnknownTypeError
-            ? ParsedComponents[I]
-            : never
-    }
-> = ComponentErrors extends never[]
-    ? Unlisted<ParsedComponents>
-    : StringifyPossibleTypes<
-          Extract<ComponentErrors[keyof ComponentErrors], UnknownTypeError>
-      >
-
 export type ParseStringDefinitionRecurse<
     Fragment extends string,
     TypeSet,
     Options extends ParseTypeRecurseOptions
-> = Fragment extends OrDefinition
-    ? OrParse<Fragment, TypeSet, Options>
+> = Fragment extends Or.Definition
+    ? Or.Parse<Fragment, TypeSet, Options>
     : Fragment extends FunctionDefinition<infer Parameters, infer Return>
     ? ParseStringFunctionDefinitionRecurse<Parameters, Return, TypeSet, Options>
     : Fragment extends ListDefinition<infer ListItem>
