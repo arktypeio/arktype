@@ -26,114 +26,8 @@ import {
     NumericStringLiteralDefinition
 } from "./common.js"
 import { DefinitionTypeError, UnknownTypeError } from "./errors.js"
-import { Or } from "./types/or.js"
-
-export type TupleDefinitionRecurse<
-    Definition extends string,
-    Root extends string,
-    DeclaredTypeName extends string,
-    ExtractTypesReferenced extends boolean,
-    Definitions extends string[] = Split<Definition, ",">,
-    ValidateDefinitions extends string[] = Definition extends ""
-        ? []
-        : {
-              [Index in keyof Definitions]: StringDefinitionRecurse<
-                  Definitions[Index] & string,
-                  Definitions[Index] & string,
-                  DeclaredTypeName,
-                  ExtractTypesReferenced
-              >
-          },
-    ValidatedDefinition extends string = Join<ValidateDefinitions, ",">
-> = ExtractTypesReferenced extends true
-    ? Unlisted<ValidateDefinitions>
-    : Definition extends ValidatedDefinition
-    ? Root
-    : Unlisted<
-          {
-              [I in keyof ValidateDefinitions]: ValidateDefinitions[I] extends UnknownTypeError
-                  ? ValidateDefinitions[I]
-                  : never
-          }
-      >
-
-export type FunctionDefinitionRecurse<
-    Parameters extends string,
-    Return extends string,
-    Root extends string,
-    DeclaredTypeName extends string,
-    ExtractTypesReferenced extends boolean,
-    ValidateParameters extends string = TupleDefinitionRecurse<
-        Parameters,
-        Parameters,
-        DeclaredTypeName,
-        ExtractTypesReferenced
-    > &
-        string,
-    ValidateReturn extends string = StringDefinitionRecurse<
-        Return,
-        Return,
-        DeclaredTypeName,
-        ExtractTypesReferenced
-    >
-> = ExtractTypesReferenced extends true
-    ? ValidateParameters | ValidateReturn
-    : Parameters extends ValidateParameters
-    ? Return extends ValidateReturn
-        ? Root
-        : ValidateReturn
-    : ValidateParameters
-
-export type StringDefinitionRecurse<
-    Fragment extends string,
-    Root extends string,
-    DeclaredTypeName extends string,
-    ExtractTypesReferenced extends boolean
-> = Fragment extends Or.Definition<infer First, infer Second>
-    ? Or.Validate<
-          `${First}|${Second}`,
-          Root,
-          DeclaredTypeName,
-          ExtractTypesReferenced
-      >
-    : Fragment extends FunctionDefinition<infer Parameters, infer Return>
-    ? FunctionDefinitionRecurse<
-          Parameters,
-          Return,
-          Root,
-          DeclaredTypeName,
-          ExtractTypesReferenced
-      >
-    : Fragment extends ListDefinition<infer ListItem>
-    ? StringDefinitionRecurse<
-          ListItem,
-          Root,
-          DeclaredTypeName,
-          ExtractTypesReferenced
-      >
-    : Fragment extends
-          | DeclaredTypeName
-          | BuiltInTypeName
-          | StringLiteralDefinition
-          | NumericStringLiteralDefinition
-    ? ExtractTypesReferenced extends true
-        ? Fragment
-        : Root
-    : UnknownTypeError<Fragment>
-
-export type StringDefinition<
-    Definition extends string,
-    DeclaredTypeName extends string,
-    ExtractTypesReferenced extends boolean,
-    ParsableDefinition extends string = RemoveSpaces<Definition>
-> = StringDefinitionRecurse<
-    ParsableDefinition extends OptionalDefinition<infer Optional>
-        ? Optional
-        : ParsableDefinition,
-    Definition,
-    DeclaredTypeName,
-    ExtractTypesReferenced
->
+import { Or } from "./components/or.js"
+import { String } from "./components/string.js"
 
 export type ObjectDefinition<
     Definition,
@@ -165,7 +59,7 @@ export type TypeDefinition<
 > = Definition extends number
     ? number
     : Definition extends string
-    ? StringDefinition<
+    ? String.Validate<
           Definition,
           DeclaredTypeName,
           Options["extractTypesReferenced"]

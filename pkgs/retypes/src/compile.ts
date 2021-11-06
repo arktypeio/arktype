@@ -27,8 +27,10 @@ export const createCompileFunction =
                 typeSetFromDefinitions as any,
                 ([typeName, definition]) => [
                     typeName,
+                    // @ts-ignore
                     parse(definition, {
-                        typeSet: typeSetFromDefinitions as any
+                        // @ts-ignore
+                        typeSet: typeSetFromDefinitions
                     })
                 ]
             ) as ParsedTypeSet<MergedTypeSet>
