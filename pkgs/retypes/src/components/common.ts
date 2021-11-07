@@ -1,7 +1,7 @@
 import { Recursible } from "@re-do/utils"
 import { stringify } from "@re-do/utils"
 
-export type { Root } from "./root.js"
+export * as Root from "./root.js"
 
 export type ParseTypeRecurseOptions = Required<ParseTypeOptions>
 

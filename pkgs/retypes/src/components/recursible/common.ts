@@ -1,7 +1,6 @@
 import { Evaluate } from "@re-do/utils"
-import { Root } from "../root.js"
+import { Root } from "../common.js"
 
-export type { Root } from "../root.js"
 export * from "../common.js"
 
 export type ValidateRecursible<
