@@ -2,11 +2,11 @@ import { narrow, isNumeric, asNumber } from "@re-do/utils"
 import {
     BuiltInTypeName,
     formatTypes,
-    UnvalidatedDefinition,
     UnvalidatedTypeSet,
     isAFunctionDefinition
 } from "./common.js"
 import { definitionTypeError, stringifyDefinition } from "./errors.js"
+import { Root } from "./components"
 
 // These values can be directly compared for equality
 export const comparableDefaultValues = narrow({
@@ -58,13 +58,13 @@ export type GetDefaultOptions = {
 }
 
 export const getDefault = (
-    definition: UnvalidatedDefinition,
+    definition: Root.Definition,
     typeSet: UnvalidatedTypeSet = {},
     options: GetDefaultOptions = {}
 ): any => {
     const throwOnRequiredCycle = !("onRequiredCycle" in options)
     const recurse = (
-        subdefinition: UnvalidatedDefinition,
+        subdefinition: Root.Definition,
         path: string[],
         seen: string[]
     ): any => {

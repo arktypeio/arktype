@@ -8,18 +8,12 @@ import {
     transform,
     DeepTreeOf
 } from "@re-do/utils"
-import {
-    UnvalidatedObjectDefinition,
-    UnvalidatedDefinition,
-    UnvalidatedTypeSet,
-    formatTypes,
-    typeDefProxy,
-    DefinitionLeaf
-} from "./common.js"
+import { UnvalidatedTypeSet, formatTypes, typeDefProxy } from "./common.js"
 import { getDefault, GetDefaultOptions } from "./defaults.js"
-import { TypeSet } from "./definitions.js"
+import { TypeSet } from "./compile.js"
 import { assert, checkErrors, ValidateOptions } from "./validate.js"
-import { Root } from "./components"
+import { Parse, Validate } from "./definition.js"
+import { Recursible, Root, Shallow } from "./components"
 
 // const analyzeOrType = (args: AnalyzeTypeArgs<OrDefinition>) => {}
 
@@ -38,11 +32,11 @@ const analyzeObjectType = ({
     definition,
     path,
     ...rest
-}: AnalyzeTypeArgs<UnvalidatedObjectDefinition>): TypeAnalysis => {
+}: AnalyzeTypeArgs<Recursible.Definition>): TypeAnalysis => {
     const aggregated = getEmptyAggregatedAnalysis()
     const nested = transform(
         definition,
-        ([k, itemDefinition]: [string | number, UnvalidatedDefinition]) => {
+        ([k, itemDefinition]: [string | number, Recursible.Definition]) => {
             const itemAnalysis = analyzeType({
                 definition: itemDefinition,
                 path: [...path, k],
@@ -64,10 +58,10 @@ const analyzeObjectType = ({
 export type ParseTypeRecurseOptions = Required<ParseTypeOptions>
 
 export type ParseTypeOptions = {
-    onCycle?: UnvalidatedDefinition
+    onCycle?: Root.Definition
     seen?: any
     deepOnCycle?: boolean
-    onResolve?: UnvalidatedDefinition
+    onResolve?: Root.Definition
 }
 
 export type DefaultParseTypeOptions = {
@@ -78,7 +72,7 @@ export type DefaultParseTypeOptions = {
 }
 
 export type AnalyzeTypeArgs<
-    Definition extends UnvalidatedDefinition = UnvalidatedDefinition
+    Definition extends Root.Definition = Root.Definition
 > = {
     definition: Definition
     typeSet: UnvalidatedTypeSet
@@ -89,7 +83,7 @@ export type AnalyzeTypeArgs<
 export type TypeAnalysis = {
     path: Segment[]
     defaultValue: any
-    components: DefinitionLeaf[]
+    components: Shallow.Definition[]
     references: string[]
     nested?: DeepTreeOf<TypeAnalysis, true>
 }
@@ -108,9 +102,7 @@ export const analyzeType = (args: AnalyzeTypeArgs): TypeAnalysis => {
         //return analyzeStringType()
     }
     if (typeof definition === "object") {
-        return analyzeObjectType(
-            args as AnalyzeTypeArgs<UnvalidatedObjectDefinition>
-        )
+        return analyzeObjectType(args as AnalyzeTypeArgs<Recursible.Definition>)
     }
     return {} as any
 }
@@ -124,7 +116,7 @@ export const createParseFunction =
         ParseOptions extends ParseTypeOptions,
         ActiveTypeSet = PredefinedTypeSet
     >(
-        definition: Root.Validate<Narrow<Def>, keyof ActiveTypeSet & string>,
+        definition: Validate<Narrow<Def>, keyof ActiveTypeSet & string>,
         options?: Narrow<
             ParseOptions & {
                 typeSet?: Exact<ActiveTypeSet, TypeSet<ActiveTypeSet>>
@@ -135,32 +127,28 @@ export const createParseFunction =
         const activeTypeSet = options?.typeSet ?? predefinedTypeSet
         return {
             definition: formattedDefinition,
-            type: typeDefProxy as Root.BaseParse<
-                Def,
-                ActiveTypeSet,
-                ParseOptions
-            >,
+            type: typeDefProxy as Parse<Def, ActiveTypeSet, ParseOptions>,
             typeSet: activeTypeSet as ActiveTypeSet,
             checkErrors: (value: unknown, options: ValidateOptions = {}) =>
                 checkErrors(
                     value,
                     formattedDefinition as any,
-                    activeTypeSet,
+                    activeTypeSet as any,
                     options
                 ),
             assert: (value: unknown, options: ValidateOptions = {}) =>
                 assert(
                     value,
                     formattedDefinition as any,
-                    activeTypeSet,
+                    activeTypeSet as any,
                     options
                 ),
             getDefault: (options: GetDefaultOptions = {}) =>
                 getDefault(
                     formattedDefinition as any,
-                    activeTypeSet,
+                    activeTypeSet as any,
                     options
-                ) as Root.BaseParse<Def, ActiveTypeSet, ParseOptions>
+                ) as Parse<Def, ActiveTypeSet, ParseOptions>
         }
     }
 
@@ -169,11 +157,7 @@ export const createParseFunction =
 export const parse = createParseFunction({})
 
 export type ParseTypeSet<TypeSet, Options extends ParseTypeOptions = {}> = {
-    [TypeName in keyof TypeSet]: Root.BaseParse<
-        TypeName,
-        TypeSet,
-        WithDefaults<ParseTypeOptions, Options, DefaultParseTypeOptions>
-    >
+    [TypeName in keyof TypeSet]: Parse<TypeName, TypeSet, Options>
 }
 
 export type ParseTypeSetDefinitions<
@@ -198,8 +182,8 @@ export type ParseFunction<
     ActiveTypeSet = PredefinedTypeSet
 >(
     definition: UnvalidatedTypeSet extends ActiveTypeSet
-        ? UnvalidatedDefinition
-        : Root.Validate<Narrow<Definition>, keyof ActiveTypeSet & string>,
+        ? Root.Definition
+        : Validate<Narrow<Definition>, keyof ActiveTypeSet & string>,
     options?: Narrow<
         Options & {
             typeSet?: Exact<ActiveTypeSet, TypeSet<ActiveTypeSet>>
@@ -210,12 +194,12 @@ export type ParseFunction<
     : ParsedType<Definition, ActiveTypeSet, Options>
 
 export type ParsedType<
-    Definition = UnvalidatedDefinition,
+    Definition = Root.Definition,
     TypeSet = UnvalidatedTypeSet,
     Options = {},
-    ParseResult = UnvalidatedDefinition extends Definition
+    ParseResult = Root.Definition extends Definition
         ? any
-        : Root.BaseParse<Definition, TypeSet, Options>
+        : Parse<Definition, TypeSet, Options>
 > = {
     definition: Definition
     type: ParseResult

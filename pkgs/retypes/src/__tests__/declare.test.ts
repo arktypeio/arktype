@@ -1,4 +1,5 @@
-import { declare, TypeSet } from ".."
+import { declare } from ".."
+import { TypeSet } from "../compile.js"
 import { expectType, expectError } from "tsd"
 import { Evaluate } from "@re-do/utils"
 
@@ -21,12 +22,10 @@ describe("declare", () => {
             "GottaDefineThisToo"
         )
         const GottaDefineThis = define.GottaDefineThis({
-            a: "GottaDefineThisToo"
+            a: "string"
         })
-        expectError<"Declared types 'GottaDefineThisToo' were never defined.">(
-            // @ts-expect-error
-            compile(GottaDefineThis)
-        )
+        // @ts-expect-error
+        compile(GottaDefineThis)
     })
     test("errors on compile with undeclared type defined", () => {
         const { define, compile } = declare("GottaDefineThis")

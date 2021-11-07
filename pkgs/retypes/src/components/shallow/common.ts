@@ -1,7 +1,22 @@
 import { StringifyPossibleTypes, Split, Join, Unlisted } from "@re-do/utils"
-import { DefinitionTypeError, UnknownTypeError } from "../../errors.js"
-import { ParseTypeRecurseOptions } from "../../parse.js"
-import { Fragment } from "./fragment.js"
+import {
+    ParseTypeRecurseOptions,
+    UnvalidatedShallowDefinition
+} from "../common.js"
+import { Fragment } from "."
+import { StringReplace } from "@re-do/utils"
+
+export * from "../common.js"
+
+export const baseUnknownTypeError =
+    "Unable to determine the type of '${definition}'."
+
+export type UnknownTypeError<
+    Definition extends UnvalidatedShallowDefinition = UnvalidatedShallowDefinition
+> = StringReplace<typeof baseUnknownTypeError, "${definition}", `${Definition}`>
+
+export const unknownTypeError = <Definition>(definition: Definition) =>
+    baseUnknownTypeError.replace("${definition}", String(definition))
 
 export type ParseSplittableResult<
     Components = any[],

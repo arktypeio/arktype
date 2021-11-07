@@ -1,11 +1,10 @@
 import {
     Narrow,
-    Evaluate,
     ListPossibleTypes,
     NonRecursible,
     DeepEvaluate
 } from "@re-do/utils"
-import { Root } from "./components"
+import { Validate } from "./definition.js"
 
 type DeepListPossibleTypes<T> = {
     [K in keyof T]: T[K] extends NonRecursible
@@ -15,7 +14,7 @@ type DeepListPossibleTypes<T> = {
 
 type ExtractedReferences<Definition, ActiveTypeSet> = DeepEvaluate<
     DeepListPossibleTypes<
-        Root.Validate<
+        Validate<
             Definition,
             keyof ActiveTypeSet & string,
             { extractTypesReferenced: true }
@@ -24,7 +23,7 @@ type ExtractedReferences<Definition, ActiveTypeSet> = DeepEvaluate<
 >
 
 const extractReferences = <Definition, ActiveTypeSet>(
-    definition: Root.Validate<Narrow<Definition>, keyof ActiveTypeSet & string>,
+    definition: Validate<Narrow<Definition>, keyof ActiveTypeSet & string>,
     typeSet: Narrow<ActiveTypeSet>
 ): ExtractedReferences<Definition, ActiveTypeSet> => {
     return {} as any

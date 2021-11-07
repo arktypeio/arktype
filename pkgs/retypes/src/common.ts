@@ -1,4 +1,5 @@
-import { Recursible, transform } from "@re-do/utils"
+import { transform } from "@re-do/utils"
+import { Root } from "./components"
 import { definitionTypeError } from "./errors.js"
 
 export const formatTypes = <T>(definition: T): T => {
@@ -96,21 +97,7 @@ export type OrDefinition<
 export type OptionalDefinition<Definition extends string = string> =
     `${Definition}?`
 
-export type DefinitionLeaf = string | number
-
-export type UnvalidatedDefinition =
-    | string
-    | number
-    | UnvalidatedObjectDefinition
-
-export type UnvalidatedObjectDefinition<Definition = any> =
-    Definition extends Recursible<Definition>
-        ? {
-              [K in string | number]: any
-          }
-        : never
-
-export type UnvalidatedTypeSet = { [K in string]: UnvalidatedDefinition }
+export type UnvalidatedTypeSet = { [K in string]: Root.Definition }
 
 export const typeDefProxy: any = new Proxy({}, { get: () => getTypeDefProxy() })
 

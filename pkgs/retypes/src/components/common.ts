@@ -1,4 +1,7 @@
 import { Recursible } from "@re-do/utils"
+import { stringify } from "@re-do/utils"
+
+export type { Root } from "./root.js"
 
 export type ParseTypeRecurseOptions = Required<ParseTypeOptions>
 
@@ -30,3 +33,16 @@ export type UnvalidatedRecursibleDefinition<Def = any> =
         : never
 
 export type OptionalDefinition<Def extends string = string> = `${Def}?`
+
+export const stringifyDefinition = (definition: unknown) =>
+    stringify(definition, { quotes: "none" })
+
+export const definitionTypeError = (definition: unknown, path: string[]) =>
+    `Definition value ${stringifyDefinition(definition)} ${
+        path.length ? `at path ${path.join("/")} ` : ""
+    }is invalid. ${baseDefinitionTypeError}`
+
+export const baseDefinitionTypeError =
+    "Definitions must be strings, numbers, or objects."
+
+export type DefinitionTypeError = typeof baseDefinitionTypeError

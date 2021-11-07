@@ -16,12 +16,9 @@ import {
 } from "@re-do/utils"
 import {
     ExtractableTypeName,
-    NamedExtractableTypeMap,
     formatTypes,
     UnextractableTypeName,
     unextractableTypes,
-    UnvalidatedDefinition,
-    UnvalidatedObjectDefinition,
     UnvalidatedTypeSet,
     isAFunctionDefinition,
     ExtractableType,
@@ -33,6 +30,7 @@ import {
     stringifyDefinition,
     unknownTypeError
 } from "./errors.js"
+import { Root, Recursible, Shallow } from "./components"
 
 export type ExtractedDefinition = TreeOf<ExtractableType, true>
 
@@ -60,7 +58,7 @@ export type ValidationResult = ValidationErrors | undefined
 
 export const assert = (
     value: unknown,
-    definedType: UnvalidatedDefinition,
+    definedType: Root.Definition,
     typeSet: UnvalidatedTypeSet = {},
     options: ValidateOptions = {}
 ) => {
@@ -80,7 +78,7 @@ export type ValidateOptions = {
 
 export const checkErrors = (
     value: unknown,
-    definedType: UnvalidatedDefinition,
+    definedType: Root.Definition,
     typeSet: UnvalidatedTypeSet = {},
     options: ValidateOptions = {}
 ) => stringifyErrors(errorsAtPaths(value, definedType, typeSet, options))
@@ -103,7 +101,7 @@ export const stringifyErrors = (errors: ValidationErrors) => {
 
 export const errorsAtPaths = (
     value: unknown,
-    definedType: UnvalidatedDefinition,
+    definedType: Root.Definition,
     typeSet: UnvalidatedTypeSet = {},
     options: ValidateOptions = {}
 ) =>
@@ -147,7 +145,7 @@ export const shallowCycleError = ({ defined, seen, typeSet }: RecurseArgs) =>
     ].join("=>")}.`
 
 export type RecurseArgs<
-    Defined = UnvalidatedDefinition,
+    Defined = Root.Definition,
     Extracted = ExtractedDefinition
 > = Required<ValidateOptions> & {
     extracted: Extracted
@@ -231,10 +229,7 @@ const stringValidator: RecursiveValidator<unknown, string> = {
     }
 }
 
-const objectValidator: RecursiveValidator<
-    unknown,
-    UnvalidatedObjectDefinition
-> = {
+const objectValidator: RecursiveValidator<unknown, Recursible.Definition> = {
     when: ({ defined }) => isRecursible(defined),
     delegate: () => [tupleValidator, nontupleValidator],
     fallback: ({ defined, path }) => {
@@ -380,7 +375,7 @@ const numericStringLiteralValidator: RecursiveValidator<string, NumericString> =
                 : validationError(unassignableError(args), args.path)
     }
 
-const tupleValidator: RecursiveValidator<UnvalidatedObjectDefinition, any[]> = {
+const tupleValidator: RecursiveValidator<Recursible.Definition, any[]> = {
     when: ({ defined }) => Array.isArray(defined),
     validate: (args) => {
         if (!Array.isArray(args.extracted)) {
@@ -395,7 +390,7 @@ const tupleValidator: RecursiveValidator<UnvalidatedObjectDefinition, any[]> = {
 }
 
 const nontupleValidator: RecursiveValidator<
-    UnvalidatedObjectDefinition,
+    Recursible.Definition,
     Record<string, any>
 > = {
     when: ({ defined }) => !Array.isArray(defined),
@@ -444,7 +439,7 @@ const validateProperties = ({
     typeSet,
     path,
     ignoreExtraneousKeys
-}: RecurseArgs<UnvalidatedObjectDefinition>) => {
+}: RecurseArgs<Recursible.Definition>) => {
     return Object.keys(defined)
         .filter((definedKey) => definedKey in (extracted as object))
         .reduce<ValidationErrors>(
