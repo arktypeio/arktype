@@ -1,12 +1,19 @@
 import {
     BuiltInTypeName,
-    NumericStringLiteralDefinition,
-    StringLiteralDefinition,
     BuiltInTypes,
     UnknownTypeError,
     ParseTypeRecurseOptions
 } from "./common.js"
-import { ArrowFunction, List, Or, Resolution } from "."
+import {
+    ArrowFunction,
+    List,
+    NumericStringLiteral,
+    Or,
+    Resolution,
+    Str,
+    StringLiteral
+} from "."
+import { Component } from "../component.js"
 
 export type Definition<Def extends string = string> = Def
 
@@ -35,8 +42,8 @@ export type Validate<
     : Def extends
           | DeclaredTypeName
           | BuiltInTypeName
-          | StringLiteralDefinition
-          | NumericStringLiteralDefinition
+          | StringLiteral.Definition
+          | NumericStringLiteral.Definition
     ? ExtractTypesReferenced extends true
         ? Def
         : Root
@@ -52,9 +59,9 @@ export type Parse<
     ? ArrowFunction.Parse<Parameters, Return, TypeSet, Options>
     : Def extends List.Definition<infer ListItem>
     ? Parse<ListItem, TypeSet, Options>[]
-    : Def extends StringLiteralDefinition<infer Literal>
-    ? `${Literal}`
-    : Def extends NumericStringLiteralDefinition<infer Value>
+    : Def extends StringLiteral.Definition<infer Literal>
+    ? Literal
+    : Def extends NumericStringLiteral.Definition<infer Value>
     ? // For now this is always inferred as 'number', even if the string is a literal like '5'
       Value
     : Def extends BuiltInTypeName
@@ -62,3 +69,17 @@ export type Parse<
     : Def extends keyof TypeSet
     ? Resolution.Parse<Def, TypeSet, Options>
     : UnknownTypeError<Def>
+
+export const fragment: Component<Str.Definition, Definition> = {
+    matches: ({ definition }) => typeof definition === "string",
+    children: [
+        // orValidator,
+        // functionValidator,
+        // listValidator,
+        // definedTypeValidator,
+        // unextractableTypeValidator,
+        // extractableTypeValidator,
+        // stringLiteralValidator,
+        // numericStringLiteralValidator
+    ]
+}

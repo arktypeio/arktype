@@ -1,10 +1,9 @@
 import { RemoveSpaces } from "@re-do/utils"
-import {
-    ParseTypeRecurseOptions,
-    UnknownTypeError,
-    OptionalDefinition
-} from "./common.js"
-import { Fragment } from "."
+import { ParseTypeRecurseOptions, UnknownTypeError } from "./common.js"
+import { Fragment, Optional, Shallow } from "."
+import { Component } from "../component.js"
+import { optional } from "./optional.js"
+import { fragment } from "./fragment.js"
 
 export type Definition<Def extends string = string> = Def
 
@@ -14,8 +13,8 @@ export type Validate<
     ExtractTypesReferenced extends boolean,
     ParsableDefinition extends string = RemoveSpaces<Def>
 > = Fragment.Validate<
-    ParsableDefinition extends OptionalDefinition<infer Optional>
-        ? Optional
+    ParsableDefinition extends Optional.Definition<infer OptionalDef>
+        ? OptionalDef
         : ParsableDefinition,
     Def,
     DeclaredTypeName,
@@ -31,6 +30,22 @@ export type Parse<
     // If Definition is an error, e.g. from an invalid TypeSet, return it immediately
     Def extends UnknownTypeError
         ? Def
-        : ParsableDefinition extends OptionalDefinition<infer OptionalType>
-        ? Fragment.Parse<OptionalType, TypeSet, Options> | undefined
+        : ParsableDefinition extends Optional.Definition<infer OptionalDef>
+        ? Fragment.Parse<OptionalDef, TypeSet, Options> | undefined
         : Fragment.Parse<ParsableDefinition, TypeSet, Options>
+
+export const str: Component<Shallow.Definition, Definition> = {
+    matches: ({ definition }) => typeof definition === "string",
+    children: [
+        optional,
+        fragment
+        // orValidator,
+        // functionValidator,
+        // listValidator,
+        // definedTypeValidator,
+        // unextractableTypeValidator,
+        // extractableTypeValidator,
+        // stringLiteralValidator,
+        // numericStringLiteralValidator
+    ]
+}

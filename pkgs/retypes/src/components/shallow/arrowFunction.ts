@@ -6,6 +6,7 @@ import {
     ValidateSplittable
 } from "./common.js"
 import { Fragment } from "."
+import { Component } from "../component.js"
 
 export type Definition<
     Parameters extends string = string,
@@ -78,3 +79,8 @@ export type ParseParameterTuple<
         Options
     >
 > = Def extends "" ? [] : Result["Components"]
+
+export const arrowFunction: Component<Fragment.Definition, Definition> = {
+    matches: ({ definition }) => /\(.*\)\=\>.*/.test(definition),
+    children: []
+}

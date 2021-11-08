@@ -1,6 +1,7 @@
-import { ParseTypeRecurseOptions, DefinitionTypeError } from "./common.js"
+import { ParseTypeRecurseOptions, DefinitionTypeError, Root } from "./common.js"
 import { Shallow } from "./shallow"
 import { Recursible } from "./recursible"
+import { Component } from "./component.js"
 
 export type RootDefinition = Shallow.Definition | Recursible.Definition
 
@@ -29,3 +30,8 @@ export type Parse<
     : Def extends Recursible.Definition
     ? Recursible.Parse<Def, TypeSet, Options>
     : DefinitionTypeError
+
+export const root: Component<Root.Definition> = {
+    matches: () => true,
+    children: []
+}

@@ -1,9 +1,6 @@
 import { StringifyPossibleTypes, Split, Join, Unlisted } from "@re-do/utils"
-import {
-    ParseTypeRecurseOptions,
-    UnvalidatedShallowDefinition
-} from "../common.js"
-import { Fragment } from "."
+import { ParseTypeRecurseOptions } from "../common.js"
+import { Fragment, Num, Shallow, StringLiteral } from "."
 import { StringReplace } from "@re-do/utils"
 
 export * from "../common.js"
@@ -12,7 +9,7 @@ export const baseUnknownTypeError =
     "Unable to determine the type of '${definition}'."
 
 export type UnknownTypeError<
-    Definition extends UnvalidatedShallowDefinition = UnvalidatedShallowDefinition
+    Definition extends Shallow.Definition = Shallow.Definition
 > = StringReplace<typeof baseUnknownTypeError, "${definition}", `${Definition}`>
 
 export const unknownTypeError = <Definition>(definition: Definition) =>
@@ -78,27 +75,6 @@ export type ValidateSplittable<
           >
       >
 
-export type OptionalDefinition<Definition extends string = string> =
-    `${Definition}?`
-
-export type FunctionDefinition<
-    Parameters extends string = string,
-    Return extends string = string
-> = `(${Parameters})=>${Return}`
-
-export const isAFunctionDefinition = <D extends string>(definition: D) =>
-    /\(.*\)\=\>.*/.test(definition) as D extends FunctionDefinition
-        ? true
-        : false
-
-export type StringLiteralDefinition<Definition extends string = string> =
-    Definition extends `${string} ${string}`
-        ? `Spaces are not supported in string literal definitions.`
-        : `'${Definition}'`
-
-export type NumericStringLiteralDefinition<Definition extends number = number> =
-    `${Definition}`
-
 // These are the non-literal types we can extract from a value at runtime
 export const namedExtractableTypes = {
     bigint: BigInt(0),
@@ -116,8 +92,8 @@ export type ExtractableTypeName = keyof NamedExtractableTypeMap
 
 export type ExtractableType =
     | ExtractableTypeName
-    | StringLiteralDefinition
-    | number
+    | StringLiteral.Definition
+    | Num.Definition
 
 /**
  * These types can be used to specify a type definition but
