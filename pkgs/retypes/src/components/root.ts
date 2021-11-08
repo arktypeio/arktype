@@ -12,10 +12,9 @@ export type Validate<
     ExtractTypesReferenced extends boolean
 > = Def extends Shallow.Definition
     ? Shallow.Validate<Def, DeclaredTypeName, ExtractTypesReferenced>
-    : // Def extends Recursible.Definition
-      // ?
-      Recursible.Validate<Def, DeclaredTypeName, ExtractTypesReferenced>
-// : DefinitionTypeError
+    : Def extends Recursible.Definition
+    ? Recursible.Validate<Def, DeclaredTypeName, ExtractTypesReferenced>
+    : DefinitionTypeError
 
 export type TypeDefinitionOptions = {
     extractTypesReferenced?: boolean
