@@ -1,7 +1,7 @@
 import { RemoveSpaces } from "@re-do/utils"
 import { ParseTypeRecurseOptions, UnknownTypeError } from "./common.js"
 import { fragment, Fragment, optional, Optional, Shallow } from "."
-import { ComponentInput } from "../component.js"
+import { component, ComponentInput } from "../component.js"
 
 export namespace Str {
     export type Definition<Def extends string = string> = Def
@@ -34,7 +34,7 @@ export namespace Str {
             : Fragment.Parse<ParsableDefinition, TypeSet, Options>
 }
 
-export const str: ComponentInput<Shallow.Definition, Str.Definition> = {
+export const str = component<Shallow.Definition, Str.Definition>({
     matches: ({ definition }) => typeof definition === "string",
     children: [optional, fragment]
-}
+})

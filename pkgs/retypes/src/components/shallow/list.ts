@@ -1,5 +1,5 @@
 import { ParseTypeRecurseOptions, UnvalidatedTypeSet } from "../common.js"
-import { ComponentInput } from "../component.js"
+import { component, ComponentInput } from "../component.js"
 import { unassignableError, validationError } from "../errors.js"
 import { Fragment } from "./index.js"
 
@@ -7,7 +7,7 @@ export namespace List {
     export type Definition<Item extends string = string> = `${Item}[]`
 }
 
-export const list: ComponentInput<Fragment.Definition, List.Definition> = {
+export const list = component<Fragment.Definition, List.Definition>({
     matches: ({ definition }) => definition.endsWith("[]"),
     children: []
     // allowsAssignment: (args) => {
@@ -23,4 +23,4 @@ export const list: ComponentInput<Fragment.Definition, List.Definition> = {
     //     }
     //     return validationError(unassignableError(args), args.path)
     // }
-}
+})

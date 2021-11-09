@@ -6,7 +6,7 @@ import {
     ValidateSplittable
 } from "./common.js"
 import { Fragment } from "."
-import { ComponentInput } from "../component.js"
+import { component, ComponentInput } from "../component.js"
 
 export namespace ArrowFunction {
     export type Definition<
@@ -82,10 +82,10 @@ export namespace ArrowFunction {
     > = Def extends "" ? [] : Result["Components"]
 }
 
-export const arrowFunction: ComponentInput<
+export const arrowFunction = component<
     Fragment.Definition,
     ArrowFunction.Definition
-> = {
+>({
     matches: ({ definition }) => /\(.*\)\=\>.*/.test(definition),
     children: []
-}
+})

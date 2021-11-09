@@ -1,4 +1,4 @@
-import { ComponentInput } from "../component.js"
+import { component, ComponentInput } from "../component.js"
 import { Fragment } from "."
 
 export namespace Extractable {
@@ -7,13 +7,13 @@ export namespace Extractable {
     > = Def
 }
 
-export const extractable: ComponentInput<
+export const extractable = component<
     Fragment.Definition,
     Extractable.Definition
-> = {
-    matches: (args) => args.definition in extractableTypes,
+>({
+    matches: ({ definition }) => definition in extractableTypes,
     children: []
-}
+})
 
 // These are the non-literal types we can extract from a value at runtime
 export const extractableTypes = {

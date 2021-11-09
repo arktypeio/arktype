@@ -1,4 +1,4 @@
-import { ComponentInput } from "../component.js"
+import { component, ComponentInput } from "../component.js"
 import { validationError, unassignableError } from "../errors.js"
 import { Shallow } from "./index.js"
 
@@ -6,13 +6,11 @@ export namespace Num {
     export type Definition<Value extends number = number> = Value
 }
 
-export const num: ComponentInput<Shallow.Definition, Num.Definition> = {
+export const num = component<Shallow.Definition, Num.Definition>({
     matches: ({ definition }) => typeof definition === "number",
     allows: (args) =>
-        args.definition === args.assignment
-            ? {}
-            : validationError(unassignableError(args), args.path),
+        args.definition === args.assignment ? {} : validationError(args),
     getDefault: ({ definition }) => definition,
     references: ({ definition, includeBuiltIn }) =>
         includeBuiltIn ? [definition] : []
-}
+})

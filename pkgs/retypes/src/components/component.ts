@@ -3,9 +3,12 @@ import { ExtractableDefinition, UnvalidatedTypeSet } from "./common.js"
 
 import { Root } from "./root.js"
 
-export type BaseArgs<definition = Root.Definition> = {
-    definition: definition
+export type MatchesArgs<Def = Root.Definition> = {
+    definition: Def
     typeSet: UnvalidatedTypeSet
+}
+
+export type BaseArgs<Def = Root.Definition> = MatchesArgs<Def> & {
     path: string[]
     seen: string[]
 }
@@ -13,57 +16,60 @@ export type BaseArgs<definition = Root.Definition> = {
 export type AllowsArgs<
     Def = Root.Definition,
     Assignment = ExtractableDefinition
-> = {
+> = BaseArgs<Def> & {
     assignment: Assignment
     ignoreExtraneousKeys: boolean
-} & BaseArgs<Def>
+}
 
-export type ReferencesArgs<Def = Root.Definition> = {
+export type ReferencesArgs<Def = Root.Definition> = BaseArgs<Def> & {
     includeBuiltIn: boolean
-} & BaseArgs<Def>
+}
 
-export type GetDefaultArgs<Def = Root.Definition> = {
+export type GetDefaultArgs<Def = Root.Definition> = BaseArgs<Def> & {
     // By default, we will throw if we encounter a cyclic required type
     // If this options is provided, we will return its value instead
     onRequiredCycle: any
-} & BaseArgs<Def>
+}
 
 // Paths at which errors occur mapped to their messages
 export type ValidationErrors = Record<string, string>
 
 export type ComponentInput<
-    ParentDefinition extends Root.Definition = Root.Definition,
-    ComponentDefinition extends ParentDefinition = ParentDefinition
-> =
-    | DeepComponentInput<ParentDefinition, ComponentDefinition>
-    | ShallowComponentInput<ParentDefinition, ComponentDefinition>
+    Checked extends Root.Definition = Root.Definition,
+    Matched extends Checked = Checked
+> = BaseComponentInput<Checked> &
+    (DeepComponentInput<Matched> | ShallowComponentInput<Matched>)
+
+export type BaseComponentInput<
+    Checked extends Root.Definition = Root.Definition
+> = { matches: (args: BaseArgs<Checked>) => boolean }
 
 export type DeepComponentInput<
-    Checked extends Root.Definition = Root.Definition,
-    Handled extends Checked = Checked
+    Definition extends Root.Definition = Root.Definition
 > = {
-    matches: (args: BaseArgs<Checked>) => boolean
-    children: ComponentInput<Handled, any>[]
-} & Partial<ShallowComponentInput<Checked, Handled>>
+    children: ComponentInput<Definition, any>[]
+} & Partial<ShallowComponentInput<Definition>>
 
 export type ShallowComponentInput<
-    Checked extends Root.Definition = Root.Definition,
-    Handled extends Checked = Checked
+    Definition extends Root.Definition = Root.Definition
 > = {
-    matches: (args: BaseArgs<Checked>) => boolean
-    allows: (args: AllowsArgs<Handled>) => ValidationErrors
-    references: (args: ReferencesArgs<Handled>) => any
-    getDefault: (args: BaseArgs<Handled>) => any
+    allows: (args: AllowsArgs<Definition>) => ValidationErrors
+    references: (args: ReferencesArgs<Definition>) => any
+    getDefault: (args: BaseArgs<Definition>) => any
 }
 
 export type Component<
     Checked extends Root.Definition = Root.Definition,
-    Handled extends Checked = Checked
-> = ShallowComponentInput<Checked, Handled>
+    Matched extends Checked = Checked
+> = BaseComponentInput<Checked> & ShallowComponentInput<Matched>
 
-export type FindMatchingComponentArgs = BaseArgs & {
-    from: ComponentInput
-    method: ComponentMethodName
+export type ResolveHandlerArgs<
+    ParentDef extends Root.Definition,
+    Def extends ParentDef,
+    Method extends ComponentMethodName
+> = {
+    input: ComponentInput<ParentDef, Def>
+    method: Method
 }
 
 type ComponentMethodName = Exclude<keyof ShallowComponentInput, "matches">
@@ -79,45 +85,42 @@ export const component = <
     Def extends ParentDef = ParentDef
 >(
     input: ComponentInput<ParentDef, Def>
-) => {
-    const inferMethodFromChildren =
-        (
-            children: DeepComponentInput["children"],
-            method: ComponentMethodName
-        ) =>
-        (args: any) =>
-            findMatchingComponent({ ...args, method })[method]!(args)
-
+): Component<ParentDef, Def> => {
     const methods = transform(componentMethods, ([i, method]) => [
         method,
-        input[method] ??
-            inferMethodFromChildren(
-                (input as DeepComponentInput).children,
-                method
-            )
+        resolveHandler({ input, method })
     ])
     return {
         matches: input.matches,
         ...methods
-    } as Component<ParentDef, Def>
+    } as any
 }
 
-export const findMatchingComponent = (args: FindMatchingComponentArgs) => {
-    const recurse = (component: ComponentInput): ComponentInput => {
-        if (args.method in component) {
-            return component
-        }
-        if ("children" in component) {
-            for (const subcomponent of component.children) {
-                if (subcomponent.matches(args)) {
-                    return recurse(subcomponent)
+export const resolveHandler =
+    <
+        ParentDef extends Root.Definition,
+        Def extends ParentDef,
+        Method extends ComponentMethodName
+    >(
+        resolveArgs: ResolveHandlerArgs<ParentDef, Def, Method>
+    ) =>
+    (methodArgs: Parameters<Component[Method]>[0]) => {
+        const findMatchingDescendant = (
+            candidate: ComponentInput<any, any>
+        ): ComponentInput => {
+            if (resolveArgs.method in candidate) {
+                return candidate
+            }
+            if ("children" in candidate) {
+                for (const subcomponent of candidate.children) {
+                    if (subcomponent.matches(methodArgs)) {
+                        return findMatchingDescendant(subcomponent)
+                    }
                 }
             }
+            throw new Error(
+                `Unable to find a component to resolve ${resolveArgs.method} for ${methodArgs.definition}.`
+            )
         }
-        throw new Error(
-            `Unable to find a component matching ${args.definition}.`
-        )
+        return findMatchingDescendant(resolveArgs.input)[resolveArgs.method]!
     }
-    const component = recurse(args.from)
-    return component
-}
