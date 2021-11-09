@@ -8,8 +8,8 @@ import {
 } from "@re-do/utils"
 import { Num, StringLiteral } from "./index.js"
 
-export * as Root from "./root.js"
-import * as Root from "./root.js"
+export * from "./root.js"
+import { Root } from "./root.js"
 
 // These are the non-literal types we can extract from a value at runtime
 export const namedExtractableTypes = {
