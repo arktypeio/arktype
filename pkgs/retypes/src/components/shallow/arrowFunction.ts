@@ -84,10 +84,8 @@ export namespace ArrowFunction {
 
 export const arrowFunction = component({
     name: "arrowFunction",
+    def: {} as ArrowFunction.Definition,
     parent: fragment,
-    matches: ({ definition }) =>
-        /\(.*\)\=\>.*/.test(definition)
-            ? (definition as ArrowFunction.Definition)
-            : false,
+    matches: ({ definition }) => /\(.*\)\=\>.*/.test(definition),
     children: []
 })
