@@ -38,5 +38,6 @@ export const root = component({
     def: {} as Root.Definition,
     parent: null,
     matches: ({ definition }) => true,
-    children: ["shallow", "recursible"]
+    children: ["shallow", "recursible"],
+    getDefault: () => {}
 })
