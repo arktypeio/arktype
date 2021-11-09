@@ -1,7 +1,7 @@
+import { ListPossibleTypes, transform } from "@re-do/utils"
 import { ExtractableDefinition, UnvalidatedTypeSet } from "./common.js"
 
-export * as Root from "./root.js"
-import * as Root from "./root.js"
+import { Root } from "./root.js"
 
 export type BaseArgs<definition = Root.Definition> = {
     definition: definition
@@ -62,18 +62,45 @@ export type Component<
 > = ShallowComponentInput<Checked, Handled>
 
 export type FindMatchingComponentArgs = BaseArgs & {
-    method: Exclude<keyof ShallowComponentInput, "matches">
+    from: ComponentInput
+    method: ComponentMethodName
 }
 
-// export const component = <
-//     Input extends ComponentInput<ParentDef, Def>,
-//     ParentDef extends Root.Definition,
-//     Def extends ParentDef
-// >(
-//     input: Input
-// ): Component<ParentDef, Def> => {
+type ComponentMethodName = Exclude<keyof ShallowComponentInput, "matches">
 
-// }
+const componentMethods: ListPossibleTypes<ComponentMethodName> = [
+    "allows",
+    "references",
+    "getDefault"
+]
+
+export const component = <
+    ParentDef extends Root.Definition = Root.Definition,
+    Def extends ParentDef = ParentDef
+>(
+    input: ComponentInput<ParentDef, Def>
+) => {
+    const inferMethodFromChildren =
+        (
+            children: DeepComponentInput["children"],
+            method: ComponentMethodName
+        ) =>
+        (args: any) =>
+            findMatchingComponent({ ...args, method })[method]!(args)
+
+    const methods = transform(componentMethods, ([i, method]) => [
+        method,
+        input[method] ??
+            inferMethodFromChildren(
+                (input as DeepComponentInput).children,
+                method
+            )
+    ])
+    return {
+        matches: input.matches,
+        ...methods
+    } as Component<ParentDef, Def>
+}
 
 export const findMatchingComponent = (args: FindMatchingComponentArgs) => {
     const recurse = (component: ComponentInput): ComponentInput => {
@@ -91,6 +118,6 @@ export const findMatchingComponent = (args: FindMatchingComponentArgs) => {
             `Unable to find a component matching ${args.definition}.`
         )
     }
-    const component = recurse({} as any)
+    const component = recurse(args.from)
     return component
 }

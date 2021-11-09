@@ -1,4 +1,4 @@
-import { ComponentInput } from "../component.js"
+import { component } from "../component.js"
 import { BuiltIn } from "."
 import { typeDefProxy } from "../../common.js"
 
@@ -8,13 +8,13 @@ export namespace Unextractable {
     > = Def
 }
 
-export const unextractable: ComponentInput<
+export const unextractable = component<
     BuiltIn.Definition,
     Unextractable.Definition
-> = {
+>({
     matches: ({ definition }) => definition in unextractableTypes,
     children: []
-}
+})
 
 /**
  * These types can be used to specify a type definition but
