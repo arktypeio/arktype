@@ -1,5 +1,13 @@
-import { ListPossibleTypes, transform } from "@re-do/utils"
-import { ExtractableDefinition, UnvalidatedTypeSet } from "./common.js"
+import {
+    Evaluate,
+    Exact,
+    KeyValuate,
+    ListPossibleTypes,
+    narrow,
+    transform,
+    Unlisted
+} from "@re-do/utils"
+import { ExtractableDefinition, root, UnvalidatedTypeSet } from "./common.js"
 
 import { Root } from "./root.js"
 
@@ -35,92 +43,108 @@ export type GetDefaultArgs<Def = Root.Definition> = BaseArgs<Def> & {
 export type ValidationErrors = Record<string, string>
 
 export type ComponentInput<
-    Checked extends Root.Definition = Root.Definition,
-    Matched extends Checked = Checked
-> = BaseComponentInput<Checked> &
-    (DeepComponentInput<Matched> | ShallowComponentInput<Matched>)
-
-export type BaseComponentInput<
-    Checked extends Root.Definition = Root.Definition
-> = { matches: (args: BaseArgs<Checked>) => boolean }
-
-export type DeepComponentInput<
-    Definition extends Root.Definition = Root.Definition
-> = {
-    children: ComponentInput<Definition, any>[]
-} & Partial<ShallowComponentInput<Definition>>
-
-export type ShallowComponentInput<
-    Definition extends Root.Definition = Root.Definition
-> = {
-    allows: (args: AllowsArgs<Definition>) => ValidationErrors
-    references: (args: ReferencesArgs<Definition>) => any
-    getDefault: (args: BaseArgs<Definition>) => any
+    Def = any,
+    Parent = any,
+    Children extends string[] = any
+> = BaseComponentInput<Def, Parent> & {
+    children?: Children
 }
 
-export type Component<
-    Checked extends Root.Definition = Root.Definition,
-    Matched extends Checked = Checked
-> = BaseComponentInput<Checked> & ShallowComponentInput<Matched>
-
-export type ResolveHandlerArgs<
-    ParentDef extends Root.Definition,
-    Def extends ParentDef,
-    Method extends ComponentMethodName
-> = {
-    input: ComponentInput<ParentDef, Def>
-    method: Method
+export type BaseComponentInput<Def, Parent> = {
+    name: string
+    def: Def
+    parent: Parent
+    matches: (args: MatchesArgs<Def>) => boolean
 }
 
-type ComponentMethodName = Exclude<keyof ShallowComponentInput, "matches">
+export type ComponentMethods<Def> = {
+    allows: (args: AllowsArgs<Def>) => ValidationErrors
+    references: (args: ReferencesArgs<Def>) => any
+    getDefault: (args: BaseArgs<Def>) => any
+}
 
-const componentMethods: ListPossibleTypes<ComponentMethodName> = [
-    "allows",
-    "references",
-    "getDefault"
-]
+export type AvailableComponentMethods<Def, Parent> = Omit<
+    ComponentMethods<Def>,
+    Unlisted<KeyValuate<Parent, "implements">> & string
+>
+
+export type Component<Def = any, Parent = any, Implements = any> = Evaluate<
+    BaseComponentInput<Def, Parent> & {
+        children: () => any[] //Component[]
+        implements: Implements
+    }
+>
+
+export type ResolveHandlerArgs = {
+    input: ComponentInput
+    method: ComponentMethodName
+}
+
+const componentMethods = narrow(["allows", "references", "getDefault"])
+
+type ComponentMethodName = Unlisted<typeof componentMethods>
+
+const registeredComponents: Record<string, Component> = {}
+
+const getComponent = (name: string) => {
+    if (name in registeredComponents) {
+        return registeredComponents[name]
+    }
+    throw new Error(`No component exists with name '${name}'.`)
+}
+
+const registerComponent = (name: string, component: Component) =>
+    (registeredComponents[name] = component)
 
 export const component = <
-    ParentDef extends Root.Definition = Root.Definition,
-    Def extends ParentDef = ParentDef
+    Def extends Parent extends null
+        ? Root.Definition
+        : KeyValuate<Parent, "def">,
+    Parent extends Component | null,
+    Implements extends Children extends []
+        ? AvailableComponentMethods<Def, Parent>
+        : Partial<AvailableComponentMethods<Def, Parent>>,
+    Children extends string[]
 >(
-    input: ComponentInput<ParentDef, Def>
-): Component<ParentDef, Def> => {
+    input: ComponentInput<Def, Parent, Children> & Implements
+): Component<Def, Parent, Implements> => {
     const methods = transform(componentMethods, ([i, method]) => [
         method,
         resolveHandler({ input, method })
     ])
-    return {
+    const componentToRegister = {
+        name: input.name,
+        parent: input.parent,
         matches: input.matches,
+        children: () =>
+            "children" in input
+                ? // @ts-ignore
+                  input.children.map((name) => getComponent(name))
+                : [],
+        implements: componentMethods.filter((method) => method in input),
         ...methods
     } as any
+    registerComponent(input.name, componentToRegister)
+    return componentToRegister
 }
 
 export const resolveHandler =
-    <
-        ParentDef extends Root.Definition,
-        Def extends ParentDef,
-        Method extends ComponentMethodName
-    >(
-        resolveArgs: ResolveHandlerArgs<ParentDef, Def, Method>
-    ) =>
-    (methodArgs: Parameters<Component[Method]>[0]) => {
-        const findMatchingDescendant = (
-            candidate: ComponentInput<any, any>
-        ): ComponentInput => {
-            if (resolveArgs.method in candidate) {
+    (resolveArgs: ResolveHandlerArgs) => (methodArgs: any) => {
+        const findMatchingDescendant = (candidate: Component): Component => {
+            if (candidate.implements.includes(resolveArgs.method)) {
                 return candidate
             }
-            if ("children" in candidate) {
-                for (const subcomponent of candidate.children) {
-                    if (subcomponent.matches(methodArgs)) {
-                        return findMatchingDescendant(subcomponent)
-                    }
+            for (const subcomponent of candidate.children()) {
+                if (subcomponent.matches(methodArgs)) {
+                    return findMatchingDescendant(subcomponent)
                 }
             }
             throw new Error(
                 `Unable to find a component to resolve ${resolveArgs.method} for ${methodArgs.definition}.`
             )
         }
-        return findMatchingDescendant(resolveArgs.input)[resolveArgs.method]!
+        const resolvedComponent = getComponent(resolveArgs.input.name)
+        const matchingDescendent: any =
+            findMatchingDescendant(resolvedComponent)
+        return matchingDescendent[resolveArgs.method]
     }

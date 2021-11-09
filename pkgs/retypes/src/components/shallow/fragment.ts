@@ -11,6 +11,7 @@ import {
     NumericStringLiteral,
     Or,
     Resolution,
+    str,
     Str,
     StringLiteral
 } from "."
@@ -73,16 +74,10 @@ export namespace Fragment {
         : UnknownTypeError<Def>
 }
 
-export const fragment = component<Str.Definition, Fragment.Definition>({
+export const fragment = component({
+    name: "fragment",
+    def: {} as Fragment.Definition,
+    parent: str,
     matches: ({ definition }) => typeof definition === "string",
-    children: [
-        // orValidator,
-        // functionValidator,
-        // listValidator,
-        // definedTypeValidator,
-        // unextractableTypeValidator,
-        // extractableTypeValidator,
-        // stringLiteralValidator,
-        // numericStringLiteralValidator
-    ]
+    children: []
 })

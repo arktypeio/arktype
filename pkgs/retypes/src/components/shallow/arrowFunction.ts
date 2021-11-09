@@ -5,7 +5,7 @@ import {
     ParseSplittableResult,
     ValidateSplittable
 } from "./common.js"
-import { Fragment } from "."
+import { fragment, Fragment } from "."
 import { component, ComponentInput } from "../component.js"
 
 export namespace ArrowFunction {
@@ -82,10 +82,12 @@ export namespace ArrowFunction {
     > = Def extends "" ? [] : Result["Components"]
 }
 
-export const arrowFunction = component<
-    Fragment.Definition,
-    ArrowFunction.Definition
->({
-    matches: ({ definition }) => /\(.*\)\=\>.*/.test(definition),
+export const arrowFunction = component({
+    name: "arrowFunction",
+    parent: fragment,
+    matches: ({ definition }) =>
+        /\(.*\)\=\>.*/.test(definition)
+            ? (definition as ArrowFunction.Definition)
+            : false,
     children: []
 })

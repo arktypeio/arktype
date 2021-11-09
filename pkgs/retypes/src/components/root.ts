@@ -33,7 +33,10 @@ export namespace Root {
         : DefinitionTypeError
 }
 
-export const root = component<Root.Definition, Root.Definition>({
-    matches: () => true,
-    children: [shallow, recursible]
+export const root = component({
+    name: "root",
+    def: {} as Root.Definition,
+    parent: null,
+    matches: ({ definition }) => true,
+    children: ["shallow", "recursible"]
 })

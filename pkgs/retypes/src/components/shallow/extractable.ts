@@ -1,5 +1,5 @@
 import { component, ComponentInput } from "../component.js"
-import { Fragment } from "."
+import { builtIn, Fragment } from "."
 
 export namespace Extractable {
     export type Definition<
@@ -7,10 +7,10 @@ export namespace Extractable {
     > = Def
 }
 
-export const extractable = component<
-    Fragment.Definition,
-    Extractable.Definition
->({
+export const extractable = component({
+    name: "extractable",
+    def: {} as Extractable.Definition,
+    parent: builtIn,
     matches: ({ definition }) => definition in extractableTypes,
     children: []
 })

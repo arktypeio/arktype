@@ -4,7 +4,8 @@ import {
     Extractable,
     Unextractable,
     extractableTypes,
-    unextractableTypes
+    unextractableTypes,
+    fragment
 } from "."
 
 export namespace BuiltIn {
@@ -13,7 +14,9 @@ export namespace BuiltIn {
     export type Parse<Def extends Definition> = BuiltInTypes[Def]
 }
 
-export const builtIn = component<Fragment.Definition, BuiltIn.Definition>({
+export const builtIn = component({
+    name: "builtIn",
+    parent: fragment,
     matches: (args) => args.definition in builtInTypes,
     children: []
 })
