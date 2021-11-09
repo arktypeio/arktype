@@ -1,5 +1,5 @@
 import { asNumber, NumericString } from "@re-do/utils"
-import { Component } from "../component.js"
+import { ComponentInput } from "../component.js"
 import { validationError, unassignableError } from "../errors.js"
 import { Fragment } from "./index.js"
 
@@ -7,7 +7,7 @@ export namespace NumericStringLiteral {
     export type Definition<Value extends number = number> = NumericString<Value>
 }
 
-export const numericStringLiteral: Component<
+export const numericStringLiteral: ComponentInput<
     Fragment.Definition,
     NumericStringLiteral.Definition
 > = {

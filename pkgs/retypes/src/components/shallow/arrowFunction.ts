@@ -6,7 +6,7 @@ import {
     ValidateSplittable
 } from "./common.js"
 import { Fragment } from "."
-import { Component } from "../component.js"
+import { ComponentInput } from "../component.js"
 
 export namespace ArrowFunction {
     export type Definition<
@@ -82,7 +82,7 @@ export namespace ArrowFunction {
     > = Def extends "" ? [] : Result["Components"]
 }
 
-export const arrowFunction: Component<
+export const arrowFunction: ComponentInput<
     Fragment.Definition,
     ArrowFunction.Definition
 > = {

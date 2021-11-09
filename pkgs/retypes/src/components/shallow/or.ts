@@ -1,5 +1,5 @@
 import { Unlisted } from "@re-do/utils"
-import { Component } from "../component.js"
+import { ComponentInput } from "../component.js"
 import { ParseTypeRecurseOptions } from "./common.js"
 import {
     ParseSplittable,
@@ -42,7 +42,7 @@ export namespace Or {
     >
 }
 
-export const or: Component<Fragment.Definition, Or.Definition> = {
+export const or: ComponentInput<Fragment.Definition, Or.Definition> = {
     matches: ({ definition }) => definition.includes("|"),
     children: []
 }

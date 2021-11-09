@@ -1,5 +1,5 @@
 import { Or } from "@re-do/utils"
-import { Component } from "../component.js"
+import { ComponentInput } from "../component.js"
 import { ParseTypeRecurseOptions, UnknownTypeError, Root } from "./common.js"
 import { Fragment } from "./index.js"
 
@@ -66,8 +66,10 @@ export namespace Resolution {
           >
 }
 
-export const resolution: Component<Fragment.Definition, Resolution.Definition> =
-    {
-        matches: ({ definition, typeSet }) => definition in typeSet,
-        children: []
-    }
+export const resolution: ComponentInput<
+    Fragment.Definition,
+    Resolution.Definition
+> = {
+    matches: ({ definition, typeSet }) => definition in typeSet,
+    children: []
+}

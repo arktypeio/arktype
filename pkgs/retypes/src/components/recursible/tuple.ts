@@ -1,5 +1,15 @@
-import { Component } from "../component.js"
-import { ValidateRecursible, Root, ParseTypeRecurseOptions } from "./common.js"
+import { ComponentInput } from "../component.js"
+import {
+    tupleLengthError,
+    unassignableError,
+    validationError
+} from "../errors.js"
+import {
+    ValidateRecursible,
+    Root,
+    ParseTypeRecurseOptions,
+    validateProperties
+} from "./common.js"
 import { Recursible } from "./recursible.js"
 
 export namespace Tuple {
@@ -21,7 +31,20 @@ export namespace Tuple {
     }
 }
 
-export const tuple: Component<Recursible.Definition, Tuple.Definition> = {
-    matches: () => true,
-    children: []
+export const tuple: ComponentInput<Recursible.Definition, Tuple.Definition> = {
+    matches: ({ definition }) => Array.isArray(definition),
+    children: [],
+    allows: (args) => {
+        if (!Array.isArray(args.assignment)) {
+            // Defined is a tuple, extracted is an object with string keys (will never be assignable)
+            return validationError(args)
+        }
+        if (args.definition.length !== args.assignment.length) {
+            return validationError({
+                ...args,
+                message: tupleLengthError(args as any)
+            })
+        }
+        return validateProperties(args)
+    }
 }

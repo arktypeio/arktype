@@ -14,7 +14,7 @@ import {
     Str,
     StringLiteral
 } from "."
-import { Component } from "../component.js"
+import { ComponentInput } from "../component.js"
 
 export namespace Fragment {
     export type Definition<Def extends string = string> = Def
@@ -73,7 +73,7 @@ export namespace Fragment {
         : UnknownTypeError<Def>
 }
 
-export const fragment: Component<Str.Definition, Fragment.Definition> = {
+export const fragment: ComponentInput<Str.Definition, Fragment.Definition> = {
     matches: ({ definition }) => typeof definition === "string",
     children: [
         // orValidator,

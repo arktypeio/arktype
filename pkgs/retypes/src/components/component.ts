@@ -31,22 +31,22 @@ export type GetDefaultArgs<Def = Root.Definition> = {
 // Paths at which errors occur mapped to their messages
 export type ValidationErrors = Record<string, string>
 
-export type Component<
+export type ComponentInput<
     ParentDefinition extends Root.Definition = Root.Definition,
     ComponentDefinition extends ParentDefinition = ParentDefinition
 > =
-    | DeepComponent<ParentDefinition, ComponentDefinition>
-    | ShallowComponent<ParentDefinition, ComponentDefinition>
+    | DeepComponentInput<ParentDefinition, ComponentDefinition>
+    | ShallowComponentInput<ParentDefinition, ComponentDefinition>
 
-export type DeepComponent<
+export type DeepComponentInput<
     Checked extends Root.Definition = Root.Definition,
     Handled extends Checked = Checked
 > = {
     matches: (args: BaseArgs<Checked>) => boolean
-    children: Component<Handled, any>[]
-} & Partial<ShallowComponent<Checked, Handled>>
+    children: ComponentInput<Handled, any>[]
+} & Partial<ShallowComponentInput<Checked, Handled>>
 
-export type ShallowComponent<
+export type ShallowComponentInput<
     Checked extends Root.Definition = Root.Definition,
     Handled extends Checked = Checked
 > = {
@@ -56,13 +56,28 @@ export type ShallowComponent<
     getDefault: (args: BaseArgs<Handled>) => any
 }
 
+export type Component<
+    Checked extends Root.Definition = Root.Definition,
+    Handled extends Checked = Checked
+> = ShallowComponentInput<Checked, Handled>
+
 export type FindMatchingComponentArgs = BaseArgs & {
-    methodName: Exclude<keyof ShallowComponent, "matches">
+    method: Exclude<keyof ShallowComponentInput, "matches">
 }
 
+// export const component = <
+//     Input extends ComponentInput<ParentDef, Def>,
+//     ParentDef extends Root.Definition,
+//     Def extends ParentDef
+// >(
+//     input: Input
+// ): Component<ParentDef, Def> => {
+
+// }
+
 export const findMatchingComponent = (args: FindMatchingComponentArgs) => {
-    const recurse = (component: Component): Component => {
-        if (args.methodName in component) {
+    const recurse = (component: ComponentInput): ComponentInput => {
+        if (args.method in component) {
             return component
         }
         if ("children" in component) {

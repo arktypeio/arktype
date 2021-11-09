@@ -6,11 +6,11 @@ import { AllowsArgs } from "./component.js"
 export type OrTypeErrors = Record<string, string>
 
 export const orValidationError = (
-    { definition, assignment: from }: AllowsArgs,
+    { definition, assignment }: AllowsArgs,
     orTypeErrors: OrTypeErrors
 ) =>
     `${stringifyDefinition(
-        from
+        assignment
     )} is not assignable to any of ${definition}:\n${stringify(orTypeErrors)}`
 
 export const shallowCycleError = ({ definition, seen, typeSet }: AllowsArgs) =>
@@ -20,23 +20,27 @@ export const shallowCycleError = ({ definition, seen, typeSet }: AllowsArgs) =>
         definition
     ].join("=>")}.`
 
-export const validationError = (message: string, path: string[]) => ({
-    [path.join("/")]: message
+export type ValidationErrorArgs = AllowsArgs & {
+    message?: string
+}
+
+export const validationError = ({
+    message,
+    ...allowsArgs
+}: ValidationErrorArgs) => ({
+    [allowsArgs.path.join("/")]: message ?? unassignableError(allowsArgs)
 })
 
-export const unassignableError = ({
-    definition,
-    assignment: from
-}: AllowsArgs) =>
-    `${stringifyDefinition(from)} is not assignable to ${stringifyDefinition(
-        definition
-    )}.`
+export const unassignableError = ({ definition, assignment }: AllowsArgs) =>
+    `${stringifyDefinition(
+        assignment
+    )} is not assignable to ${stringifyDefinition(definition)}.`
 
 export const tupleLengthError = ({
     definition,
-    assignment: from
+    assignment
 }: AllowsArgs<List, List<ExtractableDefinition>>) =>
-    `Tuple of length ${from.length} is not assignable to tuple of length ${definition.length}.`
+    `Tuple of length ${assignment.length} is not assignable to tuple of length ${definition.length}.`
 
 export const mismatchedKeysError = (keyErrors: DiffSetsResult<string>) => {
     const missing = keyErrors?.removed?.length

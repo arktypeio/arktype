@@ -1,4 +1,4 @@
-import { Component } from "../component.js"
+import { ComponentInput } from "../component.js"
 import { Fragment } from "."
 
 export namespace Extractable {
@@ -7,7 +7,7 @@ export namespace Extractable {
     > = Def
 }
 
-export const extractable: Component<
+export const extractable: ComponentInput<
     Fragment.Definition,
     Extractable.Definition
 > = {

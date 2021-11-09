@@ -1,4 +1,4 @@
-import { Component } from "../component.js"
+import { ComponentInput } from "../component.js"
 import {
     Fragment,
     Extractable,
@@ -13,10 +13,11 @@ export namespace BuiltIn {
     export type Parse<Def extends Definition> = BuiltInTypes[Def]
 }
 
-export const builtIn: Component<Fragment.Definition, BuiltIn.Definition> = {
-    matches: (args) => args.definition in builtInTypes,
-    children: []
-}
+export const builtIn: ComponentInput<Fragment.Definition, BuiltIn.Definition> =
+    {
+        matches: (args) => args.definition in builtInTypes,
+        children: []
+    }
 
 export const builtInTypes = {
     ...extractableTypes,

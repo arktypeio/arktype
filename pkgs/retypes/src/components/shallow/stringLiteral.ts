@@ -1,4 +1,4 @@
-import { Component } from "../component.js"
+import { ComponentInput } from "../component.js"
 import { validationError, unassignableError } from "../errors.js"
 import { Fragment } from "./index.js"
 
@@ -9,7 +9,7 @@ export namespace StringLiteral {
             : `'${Definition}'`
 }
 
-export const stringLiteral: Component<
+export const stringLiteral: ComponentInput<
     Fragment.Definition,
     StringLiteral.Definition
 > = {
