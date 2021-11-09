@@ -1,3 +1,3 @@
-export * as Obj from "./obj.js"
-export * as Tuple from "./tuple.js"
-export * as Recursible from "./recursible.js"
+export * from "./obj.js"
+export * from "./tuple.js"
+export * from "./recursible.js"

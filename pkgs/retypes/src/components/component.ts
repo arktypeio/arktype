@@ -10,15 +10,15 @@ export type BaseArgs<definition = Root.Definition> = {
     seen: string[]
 }
 
-export type AllowsAssignmentArgs<
+export type AllowsArgs<
     Def = Root.Definition,
-    From = ExtractableDefinition
+    Assignment = ExtractableDefinition
 > = {
-    from: From
+    assignment: Assignment
     ignoreExtraneousKeys: boolean
 } & BaseArgs<Def>
 
-export type ExtractReferencesArgs<Def = Root.Definition> = {
+export type ReferencesArgs<Def = Root.Definition> = {
     includeBuiltIn: boolean
 } & BaseArgs<Def>
 
@@ -51,8 +51,8 @@ export type ShallowComponent<
     Handled extends Checked = Checked
 > = {
     matches: (args: BaseArgs<Checked>) => boolean
-    allowsAssignment: (args: AllowsAssignmentArgs<Handled>) => ValidationErrors
-    extractReferences: (args: ExtractReferencesArgs<Handled>) => any
+    allows: (args: AllowsArgs<Handled>) => ValidationErrors
+    references: (args: ReferencesArgs<Handled>) => any
     getDefault: (args: BaseArgs<Handled>) => any
 }
 

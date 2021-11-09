@@ -1,11 +1,13 @@
 import { Component } from "../component.js"
-import { fragment } from "./fragment.js"
 import { Fragment, Str } from "./index.js"
 
-export type Definition<Def extends Fragment.Definition = Fragment.Definition> =
-    `${Def}?`
+export namespace Optional {
+    export type Definition<
+        Def extends Fragment.Definition = Fragment.Definition
+    > = `${Def}?`
+}
 
-export const optional: Component<Str.Definition, Definition> = {
+export const optional: Component<Str.Definition, Optional.Definition> = {
     matches: ({ definition }) => definition.endsWith("?"),
     children: []
     // allowsAssignment: (args) => {

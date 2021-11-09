@@ -3,16 +3,20 @@ import { Component } from "../component.js"
 import { validationError, unassignableError } from "../errors.js"
 import { Fragment } from "./index.js"
 
-export type Definition<Value extends number = number> = NumericString<Value>
+export namespace NumericStringLiteral {
+    export type Definition<Value extends number = number> = NumericString<Value>
+}
 
-export const numericStringLiteral: Component<Fragment.Definition, Definition> =
-    {
-        matches: ({ definition }) => typeof definition === "number",
-        allowsAssignment: (args) =>
-            asNumber(args.definition, { assert: true }) === args.from
-                ? {}
-                : validationError(unassignableError(args), args.path),
-        getDefault: ({ definition }) => asNumber(definition, { assert: true }),
-        extractReferences: ({ definition, includeBuiltIn }) =>
-            includeBuiltIn ? [definition] : []
-    }
+export const numericStringLiteral: Component<
+    Fragment.Definition,
+    NumericStringLiteral.Definition
+> = {
+    matches: ({ definition }) => typeof definition === "number",
+    allows: (args) =>
+        asNumber(args.definition, { assert: true }) === args.assignment
+            ? {}
+            : validationError(unassignableError(args), args.path),
+    getDefault: ({ definition }) => asNumber(definition, { assert: true }),
+    references: ({ definition, includeBuiltIn }) =>
+        includeBuiltIn ? [definition] : []
+}
