@@ -39,5 +39,6 @@ export const str = component({
     def: {} as Str.Definition,
     parent: shallow,
     matches: ({ definition }) => typeof definition === "string",
-    children: ["optional", "fragment"]
+    children: ["optional", "fragment"],
+    implements: {}
 })

@@ -45,20 +45,34 @@ export type ValidationErrors = Record<string, string>
 
 export type ParentComponent<
     Def = any,
-    Implemented extends ComponentMethodName[] = ComponentMethodName[]
+    Implements extends Partial<ComponentMethods<Def>> = Partial<
+        ComponentMethods<Def>
+    >,
+    Inherits extends Partial<ComponentMethods<Def>> = Partial<
+        ComponentMethods<Def>
+    >
 > = {
     def: Def
-    implemented: Implemented
+    implements: Implements
+    inherits: Inherits
 }
 
 export type ComponentInput<
     Def,
-    Parent,
-    Methods extends ComponentInputMethods<Def, Parent, Children>,
-    Children extends string[] = []
+    Parent extends ParentComponent,
+    Methods extends ImplementedMethods<Def, Parent, Children>,
+    Children extends string[]
 > = BaseComponentInput<Def, Parent> & {
     children?: Children
-} & Methods
+} & (Children extends never[]
+        ? { implements: Methods }
+        : {
+              implements?: Methods
+          })
+
+export type ImplementedMethods<Def, Parent, Children> = Children extends never[]
+    ? AvailableComponentMethods<Def, Parent>
+    : Partial<AvailableComponentMethods<Def, Parent>>
 
 export type BaseComponentInput<
     Def,
@@ -71,13 +85,6 @@ export type BaseComponentInput<
     matches: (args: MatchesArgs<ParentDef>) => boolean
 }
 
-export type ComponentInputMethods<
-    Def,
-    Parent,
-    Children extends string[],
-    Methods extends Partial<AvailableComponentMethods<Def, Parent>> = {}
-> = Children extends [] ? Required<Methods> : Methods
-
 export type ComponentMethods<Def> = {
     allows: (args: AllowsArgs<Def>) => ValidationErrors
     references: (args: ReferencesArgs<Def>) => any
@@ -86,8 +93,12 @@ export type ComponentMethods<Def> = {
 
 export type AvailableComponentMethods<Def, Parent> = Omit<
     ComponentMethods<Def>,
-    Parent extends ParentComponent<infer ParentDef, infer Implemented>
-        ? Unlisted<Implemented>
+    Parent extends ParentComponent<
+        infer ParentDef,
+        infer Implements,
+        infer Inherits
+    >
+        ? keyof Implements | keyof Inherits
         : never
 >
 
@@ -97,23 +108,19 @@ export type Component<Def, Parent, Methods> = Evaluate<
     BaseComponentInput<Def, Parent> &
         ComponentMethods<Def> & {
             children: () => any[]
-            implemented: ListPossibleTypes<
-                Extract<
-                    ComponentMethodName,
-                    | keyof Methods
-                    | (Parent extends ParentComponent<
-                          infer Def,
-                          infer Implemented
-                      >
-                          ? ElementOf<Implemented>
-                          : never)
-                >
+            inherits: Parent extends ParentComponent<
+                infer Def,
+                infer Implements,
+                infer Inherits
             >
+                ? Implements & Inherits
+                : {}
+            implements: Methods
         }
 >
 
 export type ResolveHandlerArgs = {
-    input: ComponentInput<any, any, any>
+    input: AnyComponent
     method: ComponentMethodName
 }
 
@@ -133,7 +140,12 @@ const getComponent = (name: string) => {
 const registerComponent = (name: string, component: AnyComponent) =>
     (registeredComponents[name] = component)
 
-export const component = <Def, Parent, Methods, Children extends string[]>(
+export const component = <
+    Def,
+    Parent extends ParentComponent,
+    Methods extends ImplementedMethods<Def, Parent, Children>,
+    Children extends string[] = []
+>(
     input: ComponentInput<Def, Parent, Methods, Children>
 ): Component<Def, Parent, Methods> => {
     const methods = transform(componentMethods, ([i, method]) => [
@@ -145,12 +157,12 @@ export const component = <Def, Parent, Methods, Children extends string[]>(
         def: input.def,
         parent: input.parent,
         matches: input.matches,
+        implements: input.implements,
         children: () =>
             "children" in input
                 ? // @ts-ignore
                   input.children.map((name) => getComponent(name))
                 : [],
-        implemented: componentMethods.filter((method) => method in input),
         ...methods
     } as any
     registerComponent(input.name, componentToRegister)
@@ -162,7 +174,7 @@ export const resolveHandler =
         const findMatchingDescendant = (
             candidate: AnyComponent
         ): AnyComponent => {
-            if (candidate.implemented.includes(resolveArgs.method)) {
+            if (candidate.implements.includes(resolveArgs.method)) {
                 return candidate
             }
             for (const subcomponent of candidate.children()) {
