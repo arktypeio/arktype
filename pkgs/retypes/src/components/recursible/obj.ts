@@ -2,7 +2,7 @@ import { OptionalKeys, SimpleFunction } from "@re-do/utils"
 import { ParseTypeRecurseOptions, Root, ValidateRecursible } from "./common.js"
 import { Recursible } from "."
 import { Optional } from "../index.js"
-import { ComponentDefinitionInput } from "../component.js"
+import { NodeInput } from "../parser.js"
 
 export namespace Obj {
     export type Definition<
@@ -32,7 +32,7 @@ export namespace Obj {
             [PropName in RequiredKey]: Root.Parse<
                 Def[PropName],
                 TypeSet,
-                Options
+                OpParserNodeInput
             >
         }
 }

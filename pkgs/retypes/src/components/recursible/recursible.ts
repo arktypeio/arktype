@@ -4,7 +4,7 @@ import {
     Recursible as ExtractRecursible
 } from "@re-do/utils"
 import { Root } from "../common.js"
-import { ComponentDefinitionInput } from "../component.js"
+import { NodeInput } from "../parser.js"
 import { ParseTypeRecurseOptions, DefinitionTypeError } from "./common.js"
 import { Obj, Tuple } from "./index.js"
 import { obj } from "./obj.js"
@@ -36,10 +36,7 @@ export namespace Recursible {
         : DefinitionTypeError
 }
 
-export const recursible: ComponentDefinitionInput<
-    Root.Definition,
-    Recursible.Definition
-> = {
+export const recursible: NodeInput<Root.Definition, Recursible.Definition> = {
     matches: ({ definition }) => isRecursible(definition),
     children: [tuple, obj]
 }

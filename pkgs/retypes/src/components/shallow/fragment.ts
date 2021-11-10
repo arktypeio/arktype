@@ -11,11 +11,11 @@ import {
     NumericStringLiteral,
     Or,
     Resolution,
-    str,
+    strDef,
     Str,
     StringLiteral
 } from "."
-import { defineComponent, ComponentDefinitionInput } from "../component.js"
+import { createNode, NodeInput, createNode } from "../parser.js"
 
 export namespace Fragment {
     export type Definition<Def extends string = string> = Def
@@ -74,10 +74,10 @@ export namespace Fragment {
         : UnknownTypeError<Def>
 }
 
-export const fragment = defineComponent({
-    name: "fragment",
-    def: {} as Fragment.Definition,
-    parent: str,
-    matches: ({ definition }) => typeof definition === "string",
-    children: []
+export const fragmentDef = createNode({
+    type: {} as Fragment.Definition,
+    parent: strDef,
+    matches: ({ definition }) => typeof definition === "string"
 })
+
+export const fragment = createNode(fragmentDef)

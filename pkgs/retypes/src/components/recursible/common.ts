@@ -1,6 +1,6 @@
 import { Evaluate } from "@re-do/utils"
 import { Root } from "../common.js"
-import { AllowsArgs, ValidationErrors } from "../component.js"
+import { AllowsArgs, ValidationErrors } from "../parser.js"
 import { Recursible } from "./recursible.js"
 
 export * from "../common.js"

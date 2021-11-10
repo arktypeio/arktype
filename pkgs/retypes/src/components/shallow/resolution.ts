@@ -1,5 +1,5 @@
 import { Or } from "@re-do/utils"
-import { defineComponent, ComponentDefinitionInput } from "../component.js"
+import { createNode, NodeInput } from "../parser.js"
 import { ParseTypeRecurseOptions, UnknownTypeError, Root } from "./common.js"
 import { Fragment } from "./index.js"
 
@@ -66,7 +66,7 @@ export namespace Resolution {
           >
 }
 
-export const resolution = defineComponent<
+export const resolution = createNode<
     Fragment.Definition,
     Resolution.Definition
 >({

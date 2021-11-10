@@ -1,6 +1,6 @@
 import { DiffSetsResult, List, stringify } from "@re-do/utils"
 import { ExtractableDefinition, stringifyDefinition } from "./common.js"
-import { AllowsArgs } from "./component.js"
+import { AllowsArgs } from "./parser.js"
 
 // Members of an or type to errors that occurred validating those types
 export type OrTypeErrors = Record<string, string>

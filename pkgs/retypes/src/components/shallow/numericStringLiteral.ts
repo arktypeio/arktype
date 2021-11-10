@@ -1,22 +1,24 @@
 import { asNumber, NumericString } from "@re-do/utils"
-import { defineComponent, ComponentDefinitionInput } from "../component.js"
+import { createNode, NodeInput } from "../parser.js"
 import { validationError, unassignableError } from "../errors.js"
+import { fragment, fragmentDef } from "./fragment.js"
 import { Fragment } from "./index.js"
 
 export namespace NumericStringLiteral {
     export type Definition<Value extends number = number> = NumericString<Value>
 }
 
-export const numericStringLiteral = defineComponent<
-    Fragment.Definition,
-    NumericStringLiteral.Definition
->({
+export const numericStringLiteral = createNode({
+    type: {} as NumericStringLiteral.Definition,
+    parent: fragmentDef,
     matches: ({ definition }) => typeof definition === "number",
-    allows: (args) =>
-        asNumber(args.definition, { assert: true }) === args.assignment
-            ? {}
-            : validationError(args),
-    getDefault: ({ definition }) => asNumber(definition, { assert: true }),
-    references: ({ definition, includeBuiltIn }) =>
-        includeBuiltIn ? [definition] : []
+    implements: {
+        allows: (args) =>
+            asNumber(args.definition, { assert: true }) === args.assignment
+                ? {}
+                : validationError(args),
+        getDefault: ({ definition }) => asNumber(definition, { assert: true }),
+        references: ({ definition, includeBuiltIn }) =>
+            includeBuiltIn ? [definition] : []
+    }
 })

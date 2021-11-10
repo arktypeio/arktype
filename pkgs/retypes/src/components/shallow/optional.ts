@@ -1,5 +1,6 @@
-import { defineComponent, ComponentDefinitionInput } from "../component.js"
+import { createNode, NodeInput } from "../parser.js"
 import { Fragment, Str } from "./index.js"
+import { strDef } from "./str.js"
 
 export namespace Optional {
     export type Definition<
@@ -7,9 +8,10 @@ export namespace Optional {
     > = `${Def}?`
 }
 
-export const optional = defineComponent<Str.Definition, Optional.Definition>({
-    matches: ({ definition }) => definition.endsWith("?"),
-    children: []
+export const optional = createNode({
+    type: {} as Optional.Definition,
+    parent: strDef,
+    matches: ({ definition }) => definition.endsWith("?")
     // allowsAssignment: (args) => {
     //     if (args.from === "undefined") {
     //         return {}

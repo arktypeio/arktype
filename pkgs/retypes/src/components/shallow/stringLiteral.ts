@@ -1,6 +1,6 @@
-import { defineComponent, ComponentDefinitionInput } from "../component.js"
+import { createNode, NodeInput } from "../parser.js"
 import { validationError, unassignableError } from "../errors.js"
-import { fragment } from "./fragment.js"
+import { fragmentDef } from "./fragment.js"
 import { Fragment } from "./index.js"
 
 export namespace StringLiteral {
@@ -10,10 +10,10 @@ export namespace StringLiteral {
             : `'${Definition}'`
 }
 
-export const stringLiteral = defineComponent({
+export const stringLiteral = createNode({
     name: "stringLiteral",
-    def: {} as StringLiteral.Definition,
-    parent: fragment,
+    type: {} as StringLiteral.Definition,
+    parent: fragmentDef,
     matches: ({ definition }) => !!definition.match("'.*'"),
     allows: (args) =>
         args.definition === args.assignment ? {} : validationError(args),

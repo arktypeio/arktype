@@ -1,4 +1,4 @@
-import { ComponentDefinitionInput } from "../component.js"
+import { NodeInput } from "../parser.js"
 import {
     tupleLengthError,
     unassignableError,
@@ -31,10 +31,7 @@ export namespace Tuple {
     }
 }
 
-export const tuple: ComponentDefinitionInput<
-    Recursible.Definition,
-    Tuple.Definition
-> = {
+export const tuple: NodeInput<Recursible.Definition, Tuple.Definition> = {
     matches: ({ definition }) => Array.isArray(definition),
     children: [],
     allows: (args) => {

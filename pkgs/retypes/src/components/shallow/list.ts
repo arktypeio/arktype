@@ -1,15 +1,17 @@
 import { ParseTypeRecurseOptions, UnvalidatedTypeSet } from "../common.js"
-import { defineComponent, ComponentDefinitionInput } from "../component.js"
+import { createNode, NodeInput, createNode } from "../parser.js"
 import { unassignableError, validationError } from "../errors.js"
+import { fragmentDef } from "./fragment.js"
 import { Fragment } from "./index.js"
 
 export namespace List {
     export type Definition<Item extends string = string> = `${Item}[]`
 }
 
-export const list = defineComponent<Fragment.Definition, List.Definition>({
-    matches: ({ definition }) => definition.endsWith("[]"),
-    children: []
+export const listDef = createNode({
+    type: {} as List.Definition,
+    parent: fragmentDef,
+    matches: ({ definition }) => definition.endsWith("[]")
     // allowsAssignment: (args) => {
     //     const listItemDefinition = args.definition.slice(0, -2)
     //     if (Array.isArray(args.from)) {
@@ -24,3 +26,5 @@ export const list = defineComponent<Fragment.Definition, List.Definition>({
     //     return validationError(unassignableError(args), args.path)
     // }
 })
+
+export const list = createNode(listDef)

@@ -1,16 +1,22 @@
-import { defineComponent, ComponentDefinitionInput } from "../component.js"
+import { createParser, createNode } from "../parser.js"
 import { validationError, unassignableError } from "../errors.js"
-import { Shallow } from "./index.js"
+import { shallowNode } from "./shallow.js"
 
 export namespace Num {
     export type Definition<Value extends number = number> = Value
 }
 
-export const num = defineComponent<Shallow.Definition, Num.Definition>({
+export const numNode = createNode({
+    type: {} as Num.Definition,
+    parent: shallowNode,
     matches: ({ definition }) => typeof definition === "number",
-    allows: (args) =>
-        args.definition === args.assignment ? {} : validationError(args),
-    getDefault: ({ definition }) => definition,
-    references: ({ definition, includeBuiltIn }) =>
-        includeBuiltIn ? [definition] : []
+    implements: {
+        allows: (args) =>
+            args.definition === args.assignment ? {} : validationError(args),
+        getDefault: ({ definition }) => definition,
+        references: ({ definition, includeBuiltIn }) =>
+            includeBuiltIn ? [definition] : []
+    }
 })
+
+export const num = createParser(numNode)

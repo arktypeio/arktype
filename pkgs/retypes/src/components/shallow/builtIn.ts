@@ -1,11 +1,11 @@
-import { defineComponent, ComponentDefinitionInput } from "../component.js"
+import { createNode, NodeInput, createNode } from "../parser.js"
 import {
     Fragment,
     Extractable,
     Unextractable,
     extractableTypes,
     unextractableTypes,
-    fragment
+    fragmentDef
 } from "."
 
 export namespace BuiltIn {
@@ -14,12 +14,13 @@ export namespace BuiltIn {
     export type Parse<Def extends Definition> = BuiltInTypes[Def]
 }
 
-export const builtIn = defineComponent({
-    name: "builtIn",
-    parent: fragment,
-    matches: (args) => args.definition in builtInTypes,
-    children: []
+export const builtInDef = createNode({
+    type: {} as BuiltIn.Definition,
+    parent: fragmentDef,
+    matches: (args) => args.definition in builtInTypes
 })
+
+export const builtIn = createNode(builtInDef)
 
 export const builtInTypes = {
     ...extractableTypes,

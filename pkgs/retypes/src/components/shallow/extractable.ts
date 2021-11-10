@@ -1,5 +1,5 @@
-import { defineComponent, ComponentDefinitionInput } from "../component.js"
-import { builtIn, Fragment } from "."
+import { createNode, NodeInput, createNode } from "../parser.js"
+import { builtInDef, Fragment } from "."
 
 export namespace Extractable {
     export type Definition<
@@ -7,13 +7,13 @@ export namespace Extractable {
     > = Def
 }
 
-export const extractable = defineComponent({
-    name: "extractable",
-    def: {} as Extractable.Definition,
-    parent: builtIn,
-    matches: ({ definition }) => definition in extractableTypes,
-    children: []
+export const extractableDef = createNode({
+    type: {} as Extractable.Definition,
+    parent: builtInDef,
+    matches: ({ definition }) => definition in extractableTypes
 })
+
+export const extractable = createNode(extractableDef)
 
 // These are the non-literal types we can extract from a value at runtime
 export const extractableTypes = {
