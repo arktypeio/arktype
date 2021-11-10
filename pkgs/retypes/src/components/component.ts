@@ -1,4 +1,5 @@
 import {
+    DiffUnions,
     ElementOf,
     Evaluate,
     Exact,
@@ -8,7 +9,11 @@ import {
     transform,
     Unlisted
 } from "@re-do/utils"
-import { ExtractableDefinition, root, UnvalidatedTypeSet } from "./common.js"
+import {
+    ExtractableDefinition,
+    rootDefinition,
+    UnvalidatedTypeSet
+} from "./common.js"
 
 import { Root } from "./root.js"
 
@@ -57,22 +62,17 @@ export type ParentComponent<
     inherits: Inherits
 }
 
-export type ComponentInput<
+export type ComponentDefinitionInput<
     Def,
     Parent extends ParentComponent,
-    Methods extends ImplementedMethods<Def, Parent, Children>,
-    Children extends string[]
+    Methods extends ImplementedMethods<Def, Parent>
 > = BaseComponentInput<Def, Parent> & {
-    children?: Children
-} & (Children extends never[]
-        ? { implements: Methods }
-        : {
-              implements?: Methods
-          })
+    implements?: Methods
+}
 
-export type ImplementedMethods<Def, Parent, Children> = Children extends never[]
-    ? AvailableComponentMethods<Def, Parent>
-    : Partial<AvailableComponentMethods<Def, Parent>>
+export type ImplementedMethods<Def, Parent> = Partial<
+    AvailableComponentMethods<Def, Parent>
+>
 
 export type BaseComponentInput<
     Def,
@@ -102,25 +102,27 @@ export type AvailableComponentMethods<Def, Parent> = Omit<
         : never
 >
 
-type AnyComponent = Component<any, any, any>
+type AnyComponentDefinition = ComponentDefinition<any, ParentComponent, any>
 
-export type Component<Def, Parent, Methods> = Evaluate<
-    BaseComponentInput<Def, Parent> &
-        ComponentMethods<Def> & {
-            children: () => any[]
-            inherits: Parent extends ParentComponent<
-                infer Def,
-                infer Implements,
-                infer Inherits
-            >
-                ? Implements & Inherits
-                : {}
-            implements: Methods
-        }
+export type ComponentDefinition<
+    Def,
+    Parent extends ParentComponent,
+    Methods extends ImplementedMethods<Def, Parent>
+> = Evaluate<
+    BaseComponentInput<Def, Parent> & {
+        inherits: Parent extends ParentComponent<
+            infer Def,
+            infer Implements,
+            infer Inherits
+        >
+            ? Implements & Inherits
+            : {}
+        implements: Methods
+    }
 >
 
 export type ResolveHandlerArgs = {
-    input: AnyComponent
+    input: AnyComponentDefinition
     method: ComponentMethodName
 }
 
@@ -128,7 +130,7 @@ const componentMethods = narrow(["allows", "references", "getDefault"])
 
 type ComponentMethodName = Unlisted<typeof componentMethods>
 
-const registeredComponents: Record<string, AnyComponent> = {}
+const registeredComponents: Record<string, AnyComponentDefinition> = {}
 
 const getComponent = (name: string) => {
     if (name in registeredComponents) {
@@ -137,46 +139,81 @@ const getComponent = (name: string) => {
     throw new Error(`No component exists with name '${name}'.`)
 }
 
-const registerComponent = (name: string, component: AnyComponent) =>
+const registerComponent = (name: string, component: AnyComponentDefinition) =>
     (registeredComponents[name] = component)
 
-export const component = <
+export const defineComponent = <
     Def,
     Parent extends ParentComponent,
-    Methods extends ImplementedMethods<Def, Parent, Children>,
-    Children extends string[] = []
+    Methods extends ImplementedMethods<Def, Parent>
 >(
-    input: ComponentInput<Def, Parent, Methods, Children>
-): Component<Def, Parent, Methods> => {
-    const methods = transform(componentMethods, ([i, method]) => [
-        method,
-        resolveHandler({ input: input as any, method })
-    ])
-    const componentToRegister = {
-        name: input.name,
-        def: input.def,
-        parent: input.parent,
-        matches: input.matches,
-        implements: input.implements,
-        children: () =>
-            "children" in input
-                ? // @ts-ignore
-                  input.children.map((name) => getComponent(name))
-                : [],
-        ...methods
-    } as any
-    registerComponent(input.name, componentToRegister)
-    return componentToRegister
-}
+    input: ComponentDefinitionInput<Def, Parent, Methods>
+): ComponentDefinition<Def, Parent, Methods> =>
+    ({
+        ...input,
+        inherits: { ...input.parent.inherits, ...input.parent.implements }
+    } as any)
+
+export type Component<Def> = ComponentMethods<Def>
+
+// export type ValidateChild<
+//     Parent extends AnyComponentDefinition,
+//     Children extends Component<any>[],
+//     RequiredMethods extends ComponentMethodName = Exclude<
+//         ComponentMethodName,
+//         keyof Parent["implements"] | keyof Parent["inherits"]
+//     >
+// > = {
+//     [I in keyof Children]: DiffUnions<
+//         RequiredMethods,
+//         keyof Children[I]
+//     > extends { added: []; removed: [] }
+//         ? Children[I]
+//         : DiffUnions<RequiredMethods, keyof Children[I]>
+// }
+
+export type ValidateComponent<
+    Definition extends AnyComponentDefinition,
+    Children extends AnyComponentDefinition[]
+> = Children extends never[]
+    ? Definition["implements"] & Definition["inherits"] extends Component<any>
+        ? Definition
+        : "Missed leaf stuff"
+    : Definition
+
+export const component = <
+    Definition extends AnyComponentDefinition,
+    Children extends AnyComponentDefinition[] = []
+>(
+    component: ValidateComponent<Definition, Children>,
+    children?: Children
+): ComponentMethods<Definition["def"]> => ({} as any)
+//      const methods = transform(componentMethods, ([i, method]) => [
+//         method,
+//         resolveHandler({ input: input as any, method })
+//     ])
+//     const componentToRegister = {
+//         name: input.name,
+//         def: input.def,
+//         parent: input.parent,
+//         matches: input.matches,
+//         inherits: { ...input.parent.inherits, ...input.parent.implements },
+//         implements: input.implements,
+//         ...methods
+//     } as any
+//     registerComponent(input.name, componentToRegister)
+//     return componentToRegister
+// }
 
 export const resolveHandler =
     (resolveArgs: ResolveHandlerArgs) => (methodArgs: any) => {
         const findMatchingDescendant = (
-            candidate: AnyComponent
-        ): AnyComponent => {
+            candidate: AnyComponentDefinition
+        ): AnyComponentDefinition => {
             if (candidate.implements.includes(resolveArgs.method)) {
                 return candidate
             }
+            // @ts-ignore
             for (const subcomponent of candidate.children()) {
                 if (subcomponent.matches(methodArgs)) {
                     return findMatchingDescendant(subcomponent)

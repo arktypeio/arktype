@@ -1,4 +1,4 @@
-import { component, ComponentInput } from "../component.js"
+import { defineComponent, ComponentDefinitionInput } from "../component.js"
 import {
     Fragment,
     Extractable,
@@ -14,7 +14,7 @@ export namespace BuiltIn {
     export type Parse<Def extends Definition> = BuiltInTypes[Def]
 }
 
-export const builtIn = component({
+export const builtIn = defineComponent({
     name: "builtIn",
     parent: fragment,
     matches: (args) => args.definition in builtInTypes,

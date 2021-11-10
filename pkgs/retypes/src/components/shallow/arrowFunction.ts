@@ -6,7 +6,7 @@ import {
     ValidateSplittable
 } from "./common.js"
 import { fragment, Fragment } from "."
-import { component, ComponentInput } from "../component.js"
+import { defineComponent, ComponentDefinitionInput } from "../component.js"
 
 export namespace ArrowFunction {
     export type Definition<
@@ -82,7 +82,7 @@ export namespace ArrowFunction {
     > = Def extends "" ? [] : Result["Components"]
 }
 
-export const arrowFunction = component({
+export const arrowFunction = defineComponent({
     name: "arrowFunction",
     def: {} as ArrowFunction.Definition,
     parent: fragment,

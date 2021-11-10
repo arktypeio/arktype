@@ -2,7 +2,7 @@ import { OptionalKeys, SimpleFunction } from "@re-do/utils"
 import { ParseTypeRecurseOptions, Root, ValidateRecursible } from "./common.js"
 import { Recursible } from "."
 import { Optional } from "../index.js"
-import { ComponentInput } from "../component.js"
+import { ComponentDefinitionInput } from "../component.js"
 
 export namespace Obj {
     export type Definition<
@@ -37,7 +37,10 @@ export namespace Obj {
         }
 }
 
-export const obj: ComponentInput<Recursible.Definition, Obj.Definition> = {
+export const obj: ComponentDefinitionInput<
+    Recursible.Definition,
+    Obj.Definition
+> = {
     matches: () => true,
     children: []
 }

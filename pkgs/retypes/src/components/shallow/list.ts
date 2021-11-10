@@ -1,5 +1,5 @@
 import { ParseTypeRecurseOptions, UnvalidatedTypeSet } from "../common.js"
-import { component, ComponentInput } from "../component.js"
+import { defineComponent, ComponentDefinitionInput } from "../component.js"
 import { unassignableError, validationError } from "../errors.js"
 import { Fragment } from "./index.js"
 
@@ -7,7 +7,7 @@ export namespace List {
     export type Definition<Item extends string = string> = `${Item}[]`
 }
 
-export const list = component<Fragment.Definition, List.Definition>({
+export const list = defineComponent<Fragment.Definition, List.Definition>({
     matches: ({ definition }) => definition.endsWith("[]"),
     children: []
     // allowsAssignment: (args) => {

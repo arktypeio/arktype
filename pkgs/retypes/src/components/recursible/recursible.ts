@@ -4,7 +4,7 @@ import {
     Recursible as ExtractRecursible
 } from "@re-do/utils"
 import { Root } from "../common.js"
-import { ComponentInput } from "../component.js"
+import { ComponentDefinitionInput } from "../component.js"
 import { ParseTypeRecurseOptions, DefinitionTypeError } from "./common.js"
 import { Obj, Tuple } from "./index.js"
 import { obj } from "./obj.js"
@@ -36,7 +36,7 @@ export namespace Recursible {
         : DefinitionTypeError
 }
 
-export const recursible: ComponentInput<
+export const recursible: ComponentDefinitionInput<
     Root.Definition,
     Recursible.Definition
 > = {

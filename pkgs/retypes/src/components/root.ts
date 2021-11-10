@@ -1,7 +1,7 @@
 import { ParseTypeRecurseOptions, DefinitionTypeError } from "./common.js"
-import { shallow, Shallow, Str } from "./shallow"
-import { recursible, Recursible } from "./recursible"
-import { component, ComponentInput } from "./component.js"
+import { shallow, Shallow, shallow2 } from "./shallow"
+import { Recursible } from "./recursible"
+import { defineComponent, component } from "./component.js"
 
 type RootDefinition = Shallow.Definition | Recursible.Definition
 
@@ -33,13 +33,18 @@ export namespace Root {
         : DefinitionTypeError
 }
 
-export const root = component({
+export const rootDefinition = defineComponent({
     name: "root",
     def: {} as Root.Definition,
-    parent: { implements: {}, inherits: {}, def: {} as Root.Definition },
+    parent: {
+        implements: {},
+        inherits: {},
+        def: {} as Root.Definition
+    },
     matches: ({ definition }) => true,
-    children: ["shallow", "recursible"],
     implements: {
         getDefault: ({ definition }) => true
     }
 })
+
+export const root = component(rootDefinition, [shallow])

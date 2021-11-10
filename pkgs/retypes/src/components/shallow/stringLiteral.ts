@@ -1,4 +1,4 @@
-import { component, ComponentInput } from "../component.js"
+import { defineComponent, ComponentDefinitionInput } from "../component.js"
 import { validationError, unassignableError } from "../errors.js"
 import { fragment } from "./fragment.js"
 import { Fragment } from "./index.js"
@@ -10,7 +10,7 @@ export namespace StringLiteral {
             : `'${Definition}'`
 }
 
-export const stringLiteral = component({
+export const stringLiteral = defineComponent({
     name: "stringLiteral",
     def: {} as StringLiteral.Definition,
     parent: fragment,

@@ -15,7 +15,7 @@ import {
     Str,
     StringLiteral
 } from "."
-import { component, ComponentInput } from "../component.js"
+import { defineComponent, ComponentDefinitionInput } from "../component.js"
 
 export namespace Fragment {
     export type Definition<Def extends string = string> = Def
@@ -74,7 +74,7 @@ export namespace Fragment {
         : UnknownTypeError<Def>
 }
 
-export const fragment = component({
+export const fragment = defineComponent({
     name: "fragment",
     def: {} as Fragment.Definition,
     parent: str,

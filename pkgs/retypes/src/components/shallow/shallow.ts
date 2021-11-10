@@ -1,7 +1,11 @@
 import { ParseTypeRecurseOptions, DefinitionTypeError } from "./common.js"
 import { Str, Num } from "."
-import { root, Root } from "../common.js"
-import { component, ComponentInput } from "../component.js"
+import { rootDefinition, Root } from "../common.js"
+import {
+    defineComponent,
+    ComponentDefinitionInput,
+    component
+} from "../component.js"
 import { Evaluate } from "@re-do/utils"
 
 export namespace Shallow {
@@ -28,14 +32,15 @@ export namespace Shallow {
         : DefinitionTypeError
 }
 
-export const shallow = component({
+export const shallow = defineComponent({
     name: "shallow",
     def: {} as Shallow.Definition,
-    parent: root,
+    parent: rootDefinition,
     matches: ({ definition }) =>
         typeof definition === "number" || typeof definition === "string",
-    children: ["num", "str"],
     implements: {
         allows: ({ definition }) => ({})
     }
 })
+
+export const shallow2 = component(shallow, [])

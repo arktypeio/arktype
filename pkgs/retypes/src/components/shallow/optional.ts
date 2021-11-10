@@ -1,4 +1,4 @@
-import { component, ComponentInput } from "../component.js"
+import { defineComponent, ComponentDefinitionInput } from "../component.js"
 import { Fragment, Str } from "./index.js"
 
 export namespace Optional {
@@ -7,7 +7,7 @@ export namespace Optional {
     > = `${Def}?`
 }
 
-export const optional = component<Str.Definition, Optional.Definition>({
+export const optional = defineComponent<Str.Definition, Optional.Definition>({
     matches: ({ definition }) => definition.endsWith("?"),
     children: []
     // allowsAssignment: (args) => {

@@ -1,4 +1,4 @@
-import { component, ComponentInput } from "../component.js"
+import { defineComponent, ComponentDefinitionInput } from "../component.js"
 import { builtIn, Fragment } from "."
 
 export namespace Extractable {
@@ -7,7 +7,7 @@ export namespace Extractable {
     > = Def
 }
 
-export const extractable = component({
+export const extractable = defineComponent({
     name: "extractable",
     def: {} as Extractable.Definition,
     parent: builtIn,

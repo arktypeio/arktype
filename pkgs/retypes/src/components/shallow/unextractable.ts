@@ -1,4 +1,4 @@
-import { component } from "../component.js"
+import { defineComponent } from "../component.js"
 import { BuiltIn } from "."
 import { typeDefProxy } from "../../common.js"
 
@@ -8,7 +8,7 @@ export namespace Unextractable {
     > = Def
 }
 
-export const unextractable = component<
+export const unextractable = defineComponent<
     BuiltIn.Definition,
     Unextractable.Definition
 >({
