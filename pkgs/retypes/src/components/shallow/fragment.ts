@@ -11,11 +11,11 @@ import {
     NumericStringLiteral,
     Or,
     Resolution,
-    strDef,
     Str,
     StringLiteral
 } from "."
-import { createNode, NodeInput, createNode } from "../parser.js"
+import { NodeInput, createNode, createParser } from "../parser.js"
+import { typeDefProxy } from "../../common.js"
 
 export namespace Fragment {
     export type Definition<Def extends string = string> = Def
@@ -72,12 +72,23 @@ export namespace Fragment {
         : Def extends keyof TypeSet
         ? Resolution.Parse<Def, TypeSet, Options>
         : UnknownTypeError<Def>
+
+    export const type = typeDefProxy as Definition
+
+    export const node = createNode({
+        type,
+        parent: Str.node,
+        matches: ({ definition }) => typeof definition === "string"
+    })
+
+    export const parser = createParser(
+        node,
+        Or.parser,
+        ArrowFunction.parser,
+        List.parser,
+        StringLiteral.parser,
+        NumericStringLiteral.parser,
+        BuiltIn.parser,
+        Resolution.parser
+    )
 }
-
-export const fragmentDef = createNode({
-    type: {} as Fragment.Definition,
-    parent: strDef,
-    matches: ({ definition }) => typeof definition === "string"
-})
-
-export const fragment = createNode(fragmentDef)

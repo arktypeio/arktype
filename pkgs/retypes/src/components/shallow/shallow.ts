@@ -1,7 +1,8 @@
 import { ParseTypeRecurseOptions, DefinitionTypeError } from "./common.js"
-import { Str, Num, str } from "."
+import { Str, Num } from "."
 import { Root } from "../common.js"
-import { createNode, createParser } from "../parser.js"
+import { createNode, createParser, Parser } from "../parser.js"
+import { typeDefProxy } from "../../common.js"
 
 export namespace Shallow {
     export type Definition<Def extends string | number = string | number> = Def
@@ -26,12 +27,14 @@ export namespace Shallow {
         ? Str.Parse<Def, TypeSet, Options>
         : DefinitionTypeError
 
+    export const type = typeDefProxy as Definition
+
     export const node = createNode({
-        type: {} as Shallow.Definition,
+        type,
         parent: Root.node,
         matches: ({ definition }) =>
             typeof definition === "number" || typeof definition === "string"
     })
 
-    export const shallow = createParser(node, [str])
+    export const parser = createParser(node, Num.parser, Str.parser)
 }

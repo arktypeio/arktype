@@ -1,14 +1,8 @@
 import { RemoveSpaces } from "@re-do/utils"
 import { ParseTypeRecurseOptions, UnknownTypeError } from "./common.js"
-import {
-    fragmentDef,
-    Fragment,
-    optional,
-    Optional,
-    shallowNode,
-    Shallow
-} from "."
+import { Fragment, Optional, Shallow } from "."
 import { createNode, createParser } from "../parser.js"
+import { typeDefProxy } from "../../common.js"
 
 export namespace Str {
     export type Definition<Def extends string = string> = Def
@@ -39,12 +33,14 @@ export namespace Str {
             : ParsableDefinition extends Optional.Definition<infer OptionalDef>
             ? Fragment.Parse<OptionalDef, TypeSet, Options> | undefined
             : Fragment.Parse<ParsableDefinition, TypeSet, Options>
+
+    export const type = typeDefProxy as Definition
+
+    export const node = createNode({
+        type,
+        parent: Shallow.node,
+        matches: ({ definition }) => typeof definition === "string"
+    })
+
+    export const parser = createParser(node, Optional.parser, Fragment.parser)
 }
-
-export const strNode = createNode({
-    type: {} as Str.Definition,
-    parent: shallowNode,
-    matches: ({ definition }) => typeof definition === "string"
-})
-
-export const str = createParser(strNode)

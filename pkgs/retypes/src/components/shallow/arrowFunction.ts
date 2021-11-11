@@ -5,8 +5,9 @@ import {
     ParseSplittableResult,
     ValidateSplittable
 } from "./common.js"
-import { fragmentDef, Fragment } from "."
-import { createNode, NodeInput, createNode } from "../parser.js"
+import { Fragment } from "."
+import { createNode, createParser } from "../parser.js"
+import { typeDefProxy } from "../../common.js"
 
 export namespace ArrowFunction {
     export type Definition<
@@ -52,40 +53,42 @@ export namespace ArrowFunction {
         ) => Fragment.Parse<Return, TypeSet, Options>
     >
 
-    type ValidateParameterTuple<
-        Def extends string,
-        Root extends string,
-        DeclaredTypeName extends string,
-        ExtractTypesReferenced extends boolean
-    > = Def extends ""
-        ? ExtractTypesReferenced extends true
-            ? never
-            : ""
-        : ValidateSplittable<
-              ",",
-              Def,
-              Root,
-              DeclaredTypeName,
-              ExtractTypesReferenced
-          >
+    export const type = typeDefProxy as Definition
 
-    type ParseParameterTuple<
-        Def extends string,
-        TypeSet,
-        Options extends ParseTypeRecurseOptions,
-        Result extends ParseSplittableResult = ParseSplittable<
-            ",",
-            Def,
-            TypeSet,
-            Options
-        >
-    > = Def extends "" ? [] : Result["Components"]
+    export const node = createNode({
+        type,
+        parent: Fragment.node,
+        matches: ({ definition }) => /\(.*\)\=\>.*/.test(definition)
+    })
+
+    export const parser = createParser(node)
 }
 
-export const arrowFunctionDef = createNode({
-    type: {} as ArrowFunction.Definition,
-    parent: fragmentDef,
-    matches: ({ definition }) => /\(.*\)\=\>.*/.test(definition)
-})
+type ValidateParameterTuple<
+    Def extends string,
+    Root extends string,
+    DeclaredTypeName extends string,
+    ExtractTypesReferenced extends boolean
+> = Def extends ""
+    ? ExtractTypesReferenced extends true
+        ? never
+        : ""
+    : ValidateSplittable<
+          ",",
+          Def,
+          Root,
+          DeclaredTypeName,
+          ExtractTypesReferenced
+      >
 
-export const arrowFunction = createNode(arrowFunctionDef)
+type ParseParameterTuple<
+    Def extends string,
+    TypeSet,
+    Options extends ParseTypeRecurseOptions,
+    Result extends ParseSplittableResult = ParseSplittable<
+        ",",
+        Def,
+        TypeSet,
+        Options
+    >
+> = Def extends "" ? [] : Result["Components"]

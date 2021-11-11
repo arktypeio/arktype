@@ -1,8 +1,9 @@
-import { OptionalKeys, SimpleFunction } from "@re-do/utils"
+import { isRecursible, OptionalKeys, SimpleFunction } from "@re-do/utils"
 import { ParseTypeRecurseOptions, Root, ValidateRecursible } from "./common.js"
 import { Recursible } from "."
 import { Optional } from "../index.js"
-import { NodeInput } from "../parser.js"
+import { createNode, createParser, NodeInput } from "../parser.js"
+import { typeDefProxy } from "../../common.js"
 
 export namespace Obj {
     export type Definition<
@@ -32,15 +33,18 @@ export namespace Obj {
             [PropName in RequiredKey]: Root.Parse<
                 Def[PropName],
                 TypeSet,
-                OpParserNodeInput
+                Options
             >
         }
-}
 
-export const obj: ComponentDefinitionInput<
-    Recursible.Definition,
-    Obj.Definition
-> = {
-    matches: () => true,
-    children: []
+    export const type = typeDefProxy as Definition
+
+    export const node = createNode({
+        type,
+        parent: Recursible.node,
+        matches: ({ definition }) =>
+            isRecursible(definition) && !Array.isArray(definition)
+    })
+
+    export const parser = createParser(node)
 }

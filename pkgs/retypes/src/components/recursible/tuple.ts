@@ -1,4 +1,4 @@
-import { NodeInput } from "../parser.js"
+import { createNode, createParser, NodeInput } from "../parser.js"
 import {
     tupleLengthError,
     unassignableError,
@@ -11,6 +11,7 @@ import {
     validateProperties
 } from "./common.js"
 import { Recursible } from "./recursible.js"
+import { typeDefProxy } from "../../common.js"
 
 export namespace Tuple {
     export type Definition<Def extends Root.Definition[] = Root.Definition[]> =
@@ -29,22 +30,29 @@ export namespace Tuple {
     > = {
         [Index in keyof Def]: Root.Parse<Def[Index], TypeSet, Options>
     }
-}
 
-export const tuple: NodeInput<Recursible.Definition, Tuple.Definition> = {
-    matches: ({ definition }) => Array.isArray(definition),
-    children: [],
-    allows: (args) => {
-        if (!Array.isArray(args.assignment)) {
-            // Defined is a tuple, extracted is an object with string keys (will never be assignable)
-            return validationError(args)
+    export const type = typeDefProxy as Definition
+
+    export const node = createNode({
+        type,
+        parent: Recursible.node,
+        matches: ({ definition }) => Array.isArray(definition),
+        implements: {
+            allows: (args) => {
+                if (!Array.isArray(args.assignment)) {
+                    // Defined is a tuple, extracted is an object with string keys (will never be assignable)
+                    return validationError(args)
+                }
+                if (args.definition.length !== args.assignment.length) {
+                    return validationError({
+                        ...args,
+                        message: tupleLengthError(args as any)
+                    })
+                }
+                return validateProperties(args)
+            }
         }
-        if (args.definition.length !== args.assignment.length) {
-            return validationError({
-                ...args,
-                message: tupleLengthError(args as any)
-            })
-        }
-        return validateProperties(args)
-    }
+    })
+
+    export const parser = createParser(node)
 }

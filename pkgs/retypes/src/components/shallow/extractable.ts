@@ -1,31 +1,30 @@
-import { createNode, NodeInput, createNode } from "../parser.js"
-import { builtInDef, Fragment } from "."
-
-export namespace Extractable {
-    export type Definition<
-        Def extends ExtractableTypeName = ExtractableTypeName
-    > = Def
-}
-
-export const extractableDef = createNode({
-    type: {} as Extractable.Definition,
-    parent: builtInDef,
-    matches: ({ definition }) => definition in extractableTypes
-})
-
-export const extractable = createNode(extractableDef)
+import { createNode, NodeInput, createParser } from "../parser.js"
+import { BuiltIn, Fragment } from "."
+import { typeDefProxy } from "../../common.js"
 
 // These are the non-literal types we can extract from a value at runtime
-export const extractableTypes = {
-    bigint: BigInt(0),
-    true: true as true,
-    false: false as false,
-    null: null,
-    symbol: Symbol(),
-    undefined: undefined,
-    function: (...args: any[]) => null as any
+export namespace Extractable {
+    export type Definition<Def extends keyof Map = keyof Map> = Def
+
+    export const type = typeDefProxy as Definition
+
+    export const node = createNode({
+        type,
+        parent: BuiltIn.node,
+        matches: ({ definition }) => definition in map
+    })
+
+    export const parser = createParser(node)
+
+    export const map = {
+        bigint: BigInt(0),
+        true: true as true,
+        false: false as false,
+        null: null,
+        symbol: Symbol(),
+        undefined: undefined,
+        function: (...args: any[]) => null as any
+    }
+
+    export type Map = typeof map
 }
-
-type ExtractableTypes = typeof extractableTypes
-
-type ExtractableTypeName = keyof ExtractableTypes

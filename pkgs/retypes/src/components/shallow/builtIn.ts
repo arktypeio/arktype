@@ -1,32 +1,30 @@
-import { createNode, NodeInput, createNode } from "../parser.js"
-import {
-    Fragment,
-    Extractable,
-    Unextractable,
-    extractableTypes,
-    unextractableTypes,
-    fragmentDef
-} from "."
+import { createNode, createParser } from "../parser.js"
+import { Fragment, Extractable, Unextractable } from "."
+import { typeDefProxy } from "../../common.js"
 
 export namespace BuiltIn {
-    export type Definition<Def extends BuiltInTypeName = BuiltInTypeName> = Def
+    export type Definition<Def extends keyof Map = keyof Map> = Def
 
-    export type Parse<Def extends Definition> = BuiltInTypes[Def]
+    export type Parse<Def extends Definition> = Map[Def]
+
+    export const type = typeDefProxy as Definition
+
+    export const node = createNode({
+        type,
+        parent: Fragment.node,
+        matches: (args) => args.definition in map
+    })
+
+    export const parser = createParser(
+        node,
+        Extractable.parser,
+        Unextractable.parser
+    )
+
+    export const map = {
+        ...Extractable.map,
+        ...Unextractable.map
+    }
+
+    export type Map = typeof map
 }
-
-export const builtInDef = createNode({
-    type: {} as BuiltIn.Definition,
-    parent: fragmentDef,
-    matches: (args) => args.definition in builtInTypes
-})
-
-export const builtIn = createNode(builtInDef)
-
-export const builtInTypes = {
-    ...extractableTypes,
-    ...unextractableTypes
-}
-
-type BuiltInTypes = typeof builtInTypes
-
-type BuiltInTypeName = keyof BuiltInTypes

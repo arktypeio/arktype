@@ -1,5 +1,5 @@
 import { ParseTypeRecurseOptions, DefinitionTypeError } from "./common.js"
-import { shallowNode, Shallow, shallow } from "./shallow"
+import { Shallow } from "./shallow"
 import { Recursible } from "./recursible"
 import { createParser, createNode } from "./parser.js"
 
@@ -42,5 +42,5 @@ export namespace Root {
         matches: ({ definition }) => true
     })
 
-    export const parser = createParser(node, [shallow])
+    export const parser = createParser(node, Shallow.parser)
 }

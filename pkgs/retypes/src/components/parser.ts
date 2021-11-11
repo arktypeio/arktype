@@ -3,16 +3,16 @@ import {
     ElementOf,
     Evaluate,
     Exact,
+    ExcludeByValue,
     KeyValuate,
     ListPossibleTypes,
     narrow,
+    RequiredKeys,
     StringifyPossibleTypes,
     transform,
     Unlisted
 } from "@re-do/utils"
 import { ExtractableDefinition, UnvalidatedTypeSet } from "./common.js"
-
-import { Root } from "./root.js"
 
 export type MatchesArgs<DefType = any> = {
     definition: DefType
@@ -62,7 +62,7 @@ export type ParentNode<
 export type NodeInput<
     DefType,
     Parent extends ParentNode,
-    Methods extends Partial<UnimplementedParserMethods<DefType, Parent>>
+    Methods extends UnimplementedParserMethods<DefType, Parent>
 > = BaseNodeInput<DefType, Parent> & {
     implements?: Methods
 }
@@ -80,7 +80,7 @@ export type DefinitionMatcher<Parent> = Parent extends ParentNode<
     : never
 
 export type UnimplementedParserMethods<DefType, Parent> = Omit<
-    ParserMethods<DefType>,
+    Partial<ParserMethods<DefType>>,
     Parent extends ParentNode<
         infer ParentDefType,
         infer Implements,
@@ -95,7 +95,7 @@ type AnyNode = ParserNode<any, ParentNode, any>
 export type ParserNode<
     DefType,
     Parent extends ParentNode,
-    Methods extends Partial<UnimplementedParserMethods<DefType, Parent>>
+    Methods extends UnimplementedParserMethods<DefType, Parent>
 > = Evaluate<
     BaseNodeInput<DefType, Parent> & {
         inherits: Parent extends ParentNode<
@@ -105,7 +105,7 @@ export type ParserNode<
         >
             ? Implements & Inherits
             : {}
-        implements: Methods extends unknown ? {} : Methods
+        implements: RequiredKeys<Methods> extends never ? {} : Methods
     }
 >
 
@@ -115,41 +115,10 @@ export type ParserMethods<DefType> = {
     getDefault: (args: BaseArgs<DefType>) => any
 }
 
-export type Parser<DefType> = ParserMethods<DefType> & {}
-
-type ParserMethodName = keyof ParserMethods<any>
-
-export type ValidateNode<
-    Definition extends AnyNode,
-    Children extends ParserMethods<Definition["type"]>[],
-    ImplementedMethodName =
-        | keyof Definition["implements"]
-        | keyof Definition["inherits"],
-    MissingMethodName extends ParserMethodName = Exclude<
-        ParserMethodName,
-        ImplementedMethodName
-    >
-> = Children extends never[]
-    ? MissingMethodName extends never
-        ? Definition
-        : `The following methods were never implemented for this branch: ${StringifyPossibleTypes<`'${MissingMethodName}'`>}.`
-    : Definition
-
-export type ValidateChildren<
-    ParentDefType extends AnyNode,
-    Children extends ParserMethods<any>[]
-> = {
-    [I in keyof Children]: Children[I] extends ParserMethods<infer ChildDefType>
-        ? ChildDefType extends ParentDefType["type"]
-            ? Children[I]
-            : `Children must have a definition that is assignable to that of their parent.`
-        : never
-}
-
 export const createNode = <
     DefType,
     Parent extends ParentNode,
-    Methods extends Partial<UnimplementedParserMethods<DefType, Parent>>
+    Methods extends UnimplementedParserMethods<DefType, Parent>
 >(
     input: NodeInput<DefType, Parent, Methods>
 ): ParserNode<DefType, Parent, Methods> =>
@@ -158,10 +127,44 @@ export const createNode = <
         inherits: { ...input.parent.inherits, ...input.parent.implements }
     } as any)
 
+export type Parser<DefType> = ParserMethods<DefType> & {
+    matches: DefinitionMatcher<DefType>
+}
+
+type ParserMethodName = keyof ParserMethods<any>
+
+export type ValidateNode<
+    Definition extends AnyNode,
+    Children extends Parser<any>[],
+    ImplementedMethodName =
+        | keyof Definition["implements"]
+        | keyof Definition["inherits"],
+    MissingMethodNames extends ParserMethodName[] = ListPossibleTypes<
+        Exclude<ParserMethodName, ImplementedMethodName>
+    >
+> = Children extends never[]
+    ? MissingMethodNames extends never[]
+        ? Definition
+        : `The following methods were never implemented for this branch: ${StringifyPossibleTypes<`'${Unlisted<MissingMethodNames>}'`>}.`
+    : Definition
+
+export type ValidateChildren<
+    ParentDefType extends AnyNode,
+    Children extends Parser<any>[]
+> = {
+    [I in keyof Children]: Children[I] extends Parser<infer ChildDefType>
+        ? ChildDefType extends ParentDefType["type"]
+            ? Children[I]
+            : `Children must have a definition that is assignable to that of their parent.`
+        : never
+}
+
 export const createParser = <
     Definition extends AnyNode,
-    Children extends ParserMethods<any>[] = []
+    Children extends Parser<any>[] = []
 >(
     node: ValidateNode<Definition, Children>,
-    children?: ValidateChildren<Definition, Children>
-): ParserMethods<Definition["type"]> => ({} as any)
+    ...children: ValidateChildren<Definition, Children>
+) => ({} as Parser<Definition["type"]>)
+//
+//Evaluate<ValidateNode<Definition, Children>>

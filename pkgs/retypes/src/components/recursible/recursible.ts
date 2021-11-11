@@ -3,12 +3,11 @@ import {
     isRecursible,
     Recursible as ExtractRecursible
 } from "@re-do/utils"
+import { typeDefProxy } from "../../common.js"
 import { Root } from "../common.js"
-import { NodeInput } from "../parser.js"
+import { createNode, createParser, NodeInput } from "../parser.js"
 import { ParseTypeRecurseOptions, DefinitionTypeError } from "./common.js"
 import { Obj, Tuple } from "./index.js"
-import { obj } from "./obj.js"
-import { tuple } from "./tuple.js"
 
 export namespace Recursible {
     export type Definition<
@@ -34,9 +33,14 @@ export namespace Recursible {
         : Def extends Obj.Definition
         ? Evaluate<Obj.Parse<Def, TypeSet, Options>>
         : DefinitionTypeError
-}
 
-export const recursible: NodeInput<Root.Definition, Recursible.Definition> = {
-    matches: ({ definition }) => isRecursible(definition),
-    children: [tuple, obj]
+    export const type = typeDefProxy as Definition
+
+    export const node = createNode({
+        type,
+        parent: Root.node,
+        matches: ({ definition }) => isRecursible(definition)
+    })
+
+    export const parser = createParser(node, Tuple.parser, Obj.parser)
 }
