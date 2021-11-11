@@ -38,7 +38,7 @@ export namespace Str {
 
     export const node = createNode({
         type,
-        parent: Shallow.node,
+        parent: () => Shallow.node,
         matches: ({ definition }) => typeof definition === "string"
     })
 

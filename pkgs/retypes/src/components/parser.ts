@@ -173,6 +173,13 @@ const parserMethodNames: ListPossibleTypes<ParserMethodName> = [
     "getDefault"
 ]
 
+// Re:Root, reroute its root to reroot
+export const reroot = {
+    type: {} as any,
+    implements: {},
+    inherits: {}
+}
+
 export const createParser = <
     Node extends ParserNode<DefType, Parent, Methods>,
     DefType,

@@ -36,5 +36,6 @@ export namespace Shallow {
             typeof definition === "number" || typeof definition === "string"
     })
 
-    export const parser = createParser(node, Num.parser, Str.parser)
+    export const parse = (definition: Definition) =>
+        createParser(node, Num.parser, Str.parser)
 }

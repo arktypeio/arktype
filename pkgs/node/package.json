@@ -20,12 +20,14 @@
     },
     "bin": {
         "runScript": "./runScript.js",
-        "redoTsc": "./redoTsc.js"
+        "redoTsc": "./redoTsc.js",
+        "redoTranspile": "./redoTranspile.js"
     },
     "scripts": {
         "build": "set TS_NODE_TRANSPILE_ONLY=1&& node -r ./filterWarnings.cjs --loader ts-node/esm ./src/redoTscCli.ts",
         "runScript": "./runScript.js",
         "redoTsc": "./redoTsc.js",
+        "redoTranspile": "./redoTranspile.js",
         "test": "echo \"This package has no tests (but let's be honest it should)\""
     },
     "dependencies": {

@@ -1,3 +1,4 @@
+import { transform } from "@re-do/utils"
 import { rmSync } from "fs"
 import { basename, join } from "path"
 import { stdout } from "process"
@@ -61,16 +62,43 @@ export const buildCjs = async () => {
     })
 }
 
-export const transpile = async () => {
+type Transpiler = () => Promise<void>
+
+const defaultTranspilers = {
+    esm: buildEsm,
+    cjs: buildCjs
+}
+
+export const transpile = async (
+    transpilers: Transpiler[] = Object.values(defaultTranspilers)
+) => {
     stdout.write(`⌛ Transpiling...`.padEnd(successMessage.length))
-    await Promise.all([buildEsm(), buildCjs()])
+    await Promise.all(
+        Object.values(transpilers).map((transpiler) => transpiler())
+    )
     stdout.write("✅\n")
 }
 
-export const redoTsc = async () => {
+export type RedoTscOptions = {
+    skip?: {
+        cjs?: boolean
+        esm?: boolean
+        types?: boolean
+    }
+}
+
+export const redoTsc = async (options?: RedoTscOptions) => {
     console.log(`🔨 Building ${packageName}...`)
     rmSync(outRoot, { recursive: true, force: true })
-    buildTypes()
-    await transpile()
+    if (!options?.skip?.types) {
+        buildTypes()
+    }
+    const transpilers = transform(
+        defaultTranspilers,
+        ([name, transpiler]) =>
+            options?.skip?.[name] ? null : [name, transpiler],
+        { asArray: "always" }
+    )
+    await transpile(transpilers)
     console.log(successMessage)
 }

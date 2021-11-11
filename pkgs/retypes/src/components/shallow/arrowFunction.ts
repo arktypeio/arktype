@@ -8,6 +8,7 @@ import {
 import { Fragment } from "."
 import { createNode, createParser } from "../parser.js"
 import { typeDefProxy } from "../../common.js"
+import { validationError } from "../errors.js"
 
 export namespace ArrowFunction {
     export type Definition<
@@ -55,10 +56,50 @@ export namespace ArrowFunction {
 
     export const type = typeDefProxy as Definition
 
+    const parseArrowFunction = (definition: Definition) => {
+        const parts = definition.split("=>")
+        const parameters = parts[0].slice(1, -1).split(",")
+        const returns = parts.slice(1).join("=>")
+        return {
+            parameters,
+            returns
+        }
+    }
+
     export const node = createNode({
         type,
-        parent: Fragment.node,
-        matches: ({ definition }) => /\(.*\)\=\>.*/.test(definition)
+        parent: () => Fragment.node,
+        matches: ({ definition }) => /\(.*\)\=\>.*/.test(definition),
+        implements: {
+            allows: (args) =>
+                args.assignment === "function" ? {} : validationError(args),
+            references: (args): any => {
+                const { parameters, returns } = parseArrowFunction(
+                    args.definition
+                )
+                return [
+                    ...parameters.flatMap((parameter) =>
+                        Fragment.parser.references({
+                            ...args,
+                            definition: parameter
+                        })
+                    ),
+                    ...Fragment.parser.references({
+                        ...args,
+                        definition: returns
+                    })
+                ]
+            },
+            getDefault:
+                (args) =>
+                (...defaultArgs: any[]): any => {
+                    const { returns } = parseArrowFunction(args.definition)
+                    return Fragment.parser.getDefault({
+                        ...args,
+                        definition: returns
+                    })
+                }
+        }
     })
 
     export const parser = createParser(node)

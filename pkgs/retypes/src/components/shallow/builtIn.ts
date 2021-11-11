@@ -11,7 +11,7 @@ export namespace BuiltIn {
 
     export const node = createNode({
         type,
-        parent: Fragment.node,
+        parent: () => Fragment.node,
         matches: (args) => args.definition in map
     })
 

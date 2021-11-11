@@ -20,6 +20,7 @@
     },
     "scripts": {
         "build": "redoTsc",
+        "transpile": "redoTranspile",
         "test": "jest"
     },
     "dependencies": {

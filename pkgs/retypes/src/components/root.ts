@@ -1,7 +1,7 @@
 import { ParseTypeRecurseOptions, DefinitionTypeError } from "./common.js"
 import { Shallow } from "./shallow"
 import { Recursible } from "./recursible"
-import { createParser, createNode } from "./parser.js"
+import { createParser, createNode, reroot } from "./parser.js"
 
 type RootDefinition = Shallow.Definition | Recursible.Definition
 
@@ -34,13 +34,10 @@ export namespace Root {
 
     export const node = createNode({
         type: {} as Root.Definition,
-        parent: {
-            type: {} as Root.Definition,
-            implements: {},
-            inherits: {}
-        },
+        parent: reroot,
         matches: ({ definition }) => true
     })
 
-    export const parser = createParser(node, Shallow.parser)
+    export const parse = (definition: string) =>
+        createParser(node, Shallow.parse(definition))
 }
