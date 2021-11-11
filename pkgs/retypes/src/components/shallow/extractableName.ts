@@ -3,7 +3,7 @@ import { BuiltIn, Fragment } from "."
 import { typeDefProxy } from "../../common.js"
 
 // These are the non-literal types we can extract from a value at runtime
-export namespace Extractable {
+export namespace ExtractableName {
     export type Definition<Def extends keyof Map = keyof Map> = Def
 
     export const type = typeDefProxy as Definition

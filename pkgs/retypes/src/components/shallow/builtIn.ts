@@ -1,5 +1,5 @@
 import { createNode, createParser } from "../parser.js"
-import { Fragment, Extractable, Unextractable } from "."
+import { Fragment, ExtractableName, UnextractableName } from "."
 import { typeDefProxy } from "../../common.js"
 
 export namespace BuiltIn {
@@ -17,13 +17,13 @@ export namespace BuiltIn {
 
     export const parser = createParser(
         node,
-        Extractable.parser,
-        Unextractable.parser
+        ExtractableName.parser,
+        UnextractableName.parser
     )
 
     export const map = {
-        ...Extractable.map,
-        ...Unextractable.map
+        ...ExtractableName.map,
+        ...UnextractableName.map
     }
 
     export type Map = typeof map

@@ -2,7 +2,7 @@ import { createNode, createParser } from "../parser.js"
 import { BuiltIn } from "."
 import { typeDefProxy } from "../../common.js"
 
-export namespace Unextractable {
+export namespace UnextractableName {
     export type Definition<Def extends keyof Map = keyof Map> = Def
 
     export const type = typeDefProxy as Definition
