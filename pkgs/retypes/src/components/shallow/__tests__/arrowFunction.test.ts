@@ -10,7 +10,7 @@ const testArgs = {
 describe("ArrowFunction", () => {
     test("allows", () => {
         expect(
-            ArrowFunction.parser.allows({
+            ArrowFunction.parse.allows({
                 definition: "(boolean)=>number",
                 assignment: "function",
                 ...testArgs

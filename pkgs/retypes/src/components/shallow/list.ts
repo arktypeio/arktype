@@ -1,7 +1,7 @@
 import { ParseTypeRecurseOptions, UnvalidatedTypeSet } from "../common.js"
 import { createNode, NodeInput, createParser } from "../parser.js"
 import { unassignableError, validationError } from "../errors.js"
-import { Fragment } from "./index.js"
+import { Fragment } from "./fragment.js"
 import { typeDefProxy } from "../../common.js"
 
 export namespace List {
@@ -11,7 +11,7 @@ export namespace List {
 
     export const node = createNode({
         type,
-        parent: Fragment.node,
+        parent: () => Fragment.node,
         matches: ({ definition }) => definition.endsWith("[]")
         // allowsAssignment: (args) => {
         //     const listItemDefinition = args.definition.slice(0, -2)

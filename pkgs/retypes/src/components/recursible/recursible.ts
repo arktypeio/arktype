@@ -38,7 +38,7 @@ export namespace Recursible {
 
     export const node = createNode({
         type,
-        parent: Root.node,
+        parent: () => Root.node,
         matches: ({ definition }) => isRecursible(definition)
     })
 

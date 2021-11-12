@@ -41,7 +41,7 @@ export namespace Obj {
 
     export const node = createNode({
         type,
-        parent: Recursible.node,
+        parent: () => Recursible.node,
         matches: ({ definition }) =>
             isRecursible(definition) && !Array.isArray(definition)
     })

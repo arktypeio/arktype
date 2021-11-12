@@ -1,7 +1,7 @@
 import { asNumber, NumericString } from "@re-do/utils"
 import { createNode, createParser, NodeInput } from "../parser.js"
 import { validationError, unassignableError } from "../errors.js"
-import { Fragment } from "./index.js"
+import { Fragment } from "./fragment.js"
 import { typeDefProxy } from "../../common.js"
 
 export namespace NumericStringLiteral {
@@ -11,7 +11,7 @@ export namespace NumericStringLiteral {
 
     export const node = createNode({
         type,
-        parent: Fragment.node,
+        parent: () => Fragment.node,
         matches: ({ definition }) => typeof definition === "number",
         implements: {
             allows: (args) =>
@@ -25,5 +25,5 @@ export namespace NumericStringLiteral {
         }
     })
 
-    export const parser = createParser(node)
+    export const parse = createParser(node)
 }

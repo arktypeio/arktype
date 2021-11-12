@@ -7,7 +7,7 @@ import {
     ParseSplittableResult,
     ValidateSplittable
 } from "./common.js"
-import { Fragment } from "./index.js"
+import { Fragment } from "./fragment.js"
 
 export namespace Or {
     export type Definition<
@@ -46,9 +46,9 @@ export namespace Or {
 
     export const node = createNode({
         type,
-        parent: Fragment.node,
+        parent: () => Fragment.node,
         matches: ({ definition }) => definition.includes("|")
     })
 
-    export const parser = createParser(node)
+    export const parse = createParser(node)
 }

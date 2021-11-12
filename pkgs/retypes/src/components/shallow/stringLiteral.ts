@@ -1,6 +1,6 @@
 import { createNode, createParser, NodeInput } from "../parser.js"
 import { validationError, unassignableError } from "../errors.js"
-import { Fragment } from "./index.js"
+import { Fragment } from "./fragment.js"
 import { typeDefProxy } from "../../common.js"
 
 export namespace StringLiteral {
@@ -13,7 +13,7 @@ export namespace StringLiteral {
 
     export const node = createNode({
         type,
-        parent: Fragment.node,
+        parent: () => Fragment.node,
         matches: ({ definition }) => !!definition.match("'.*'"),
         implements: {
             allows: (args) =>
@@ -26,5 +26,5 @@ export namespace StringLiteral {
         }
     })
 
-    export const parser = createParser(node)
+    export const parse = createParser(node)
 }

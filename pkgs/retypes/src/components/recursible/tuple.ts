@@ -35,7 +35,7 @@ export namespace Tuple {
 
     export const node = createNode({
         type,
-        parent: Recursible.node,
+        parent: () => Recursible.node,
         matches: ({ definition }) => Array.isArray(definition),
         implements: {
             allows: (args) => {

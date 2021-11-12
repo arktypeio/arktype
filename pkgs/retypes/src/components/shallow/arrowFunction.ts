@@ -5,7 +5,7 @@ import {
     ParseSplittableResult,
     ValidateSplittable
 } from "./common.js"
-import { Fragment } from "."
+import { Fragment } from "./fragment.js"
 import { createNode, createParser } from "../parser.js"
 import { typeDefProxy } from "../../common.js"
 import { validationError } from "../errors.js"
@@ -79,12 +79,12 @@ export namespace ArrowFunction {
                 )
                 return [
                     ...parameters.flatMap((parameter) =>
-                        Fragment.parser.references({
+                        Fragment.parse.references({
                             ...args,
                             definition: parameter
                         })
                     ),
-                    ...Fragment.parser.references({
+                    ...Fragment.parse.references({
                         ...args,
                         definition: returns
                     })
@@ -94,7 +94,7 @@ export namespace ArrowFunction {
                 (args) =>
                 (...defaultArgs: any[]): any => {
                     const { returns } = parseArrowFunction(args.definition)
-                    return Fragment.parser.getDefault({
+                    return Fragment.parse().getDefault({
                         ...args,
                         definition: returns
                     })
@@ -102,7 +102,7 @@ export namespace ArrowFunction {
         }
     })
 
-    export const parser = createParser(node)
+    export const parse = createParser(node)
 }
 
 type ValidateParameterTuple<

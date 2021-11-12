@@ -1,5 +1,7 @@
 import { createNode, createParser } from "../parser.js"
-import { Fragment, ExtractableName, UnextractableName } from "."
+import { Fragment } from "./fragment.js"
+import { ExtractableName } from "./extractableName.js"
+import { UnextractableName } from "./unextractableName.js"
 import { typeDefProxy } from "../../common.js"
 
 export namespace BuiltIn {
@@ -15,10 +17,10 @@ export namespace BuiltIn {
         matches: (args) => args.definition in map
     })
 
-    export const parser = createParser(
+    export const parse = createParser(
         node,
-        ExtractableName.parser,
-        UnextractableName.parser
+        ExtractableName.parse,
+        UnextractableName.parse
     )
 
     export const map = {

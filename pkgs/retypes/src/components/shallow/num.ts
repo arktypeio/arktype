@@ -10,7 +10,7 @@ export namespace Num {
 
     export const node = createNode({
         type,
-        parent: Shallow.node,
+        parent: () => Shallow.node,
         matches: ({ definition }) => typeof definition === "number",
         implements: {
             allows: (args) =>

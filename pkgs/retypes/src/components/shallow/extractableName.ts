@@ -1,5 +1,5 @@
 import { createNode, NodeInput, createParser } from "../parser.js"
-import { BuiltIn, Fragment } from "."
+import { BuiltIn } from "./builtIn.js"
 import { typeDefProxy } from "../../common.js"
 
 // These are the non-literal types we can extract from a value at runtime
@@ -10,11 +10,11 @@ export namespace ExtractableName {
 
     export const node = createNode({
         type,
-        parent: BuiltIn.node,
+        parent: () => BuiltIn.node,
         matches: ({ definition }) => definition in map
     })
 
-    export const parser = createParser(node)
+    export const parse = createParser(node)
 
     export const map = {
         bigint: BigInt(0),

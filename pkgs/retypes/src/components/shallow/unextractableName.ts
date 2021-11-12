@@ -1,5 +1,5 @@
 import { createNode, createParser } from "../parser.js"
-import { BuiltIn } from "."
+import { BuiltIn } from "./builtIn.js"
 import { typeDefProxy } from "../../common.js"
 
 export namespace UnextractableName {
@@ -9,11 +9,11 @@ export namespace UnextractableName {
 
     export const node = createNode({
         type,
-        parent: BuiltIn.node,
+        parent: () => BuiltIn.node,
         matches: ({ definition }) => definition in map
     })
 
-    export const parser = createParser(node)
+    export const parse = createParser(node)
 
     /**
      * These types can be used to specify a type definition but

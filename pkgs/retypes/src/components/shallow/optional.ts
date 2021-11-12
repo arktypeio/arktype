@@ -1,6 +1,7 @@
 import { typeDefProxy } from "../../common.js"
 import { createNode, createParser, NodeInput } from "../parser.js"
-import { Fragment, Str } from "./index.js"
+import { Fragment } from "./fragment.js"
+import { Str } from "./str.js"
 
 export namespace Optional {
     export type Definition<
@@ -11,26 +12,26 @@ export namespace Optional {
 
     export const node = createNode({
         type,
-        parent: Str.node,
+        parent: () => Str.node,
         matches: ({ definition }) => definition.endsWith("?"),
         implements: {
             allows: (args) => {
                 if (args.assignment === "undefined") {
                     return {}
                 }
-                return Fragment.parser.allows({
+                return Fragment.parse.allows({
                     ...args,
                     definition: args.definition.slice(0, -1)
                 })
             },
             getDefault: () => undefined,
             references: (args) =>
-                Fragment.parser.references({
+                Fragment.parse.references({
                     ...args,
                     definition: args.definition.slice(0, -1)
                 })
         }
     })
 
-    export const parser = createParser(node)
+    export const parse = createParser(node)
 }

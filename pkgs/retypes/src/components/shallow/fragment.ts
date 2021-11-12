@@ -4,16 +4,14 @@ import {
     UnknownTypeError,
     ParseTypeRecurseOptions
 } from "./common.js"
-import {
-    ArrowFunction,
-    BuiltIn,
-    List,
-    NumericStringLiteral,
-    Or,
-    Resolution,
-    Str,
-    StringLiteral
-} from "."
+import { ArrowFunction } from "./arrowFunction.js"
+import { BuiltIn } from "./builtIn.js"
+import { List } from "./list.js"
+import { NumericStringLiteral } from "./numericStringLiteral.js"
+import { Or } from "./or.js"
+import { Resolution } from "./resolution.js"
+import { StringLiteral } from "./stringLiteral.js"
+import { Str } from "./str.js"
 import { NodeInput, createNode, createParser } from "../parser.js"
 import { typeDefProxy } from "../../common.js"
 
@@ -77,18 +75,18 @@ export namespace Fragment {
 
     export const node = createNode({
         type,
-        parent: Str.node,
+        parent: () => Str.node,
         matches: ({ definition }) => typeof definition === "string"
     })
 
-    export const parser = createParser(
+    export const parse = createParser(
         node,
-        Or.parser,
-        ArrowFunction.parser,
+        Or.parse,
+        ArrowFunction.parse,
         List.parser,
-        StringLiteral.parser,
-        NumericStringLiteral.parser,
-        BuiltIn.parser,
-        Resolution.parser
+        StringLiteral.parse,
+        NumericStringLiteral.parse,
+        BuiltIn.parse,
+        Resolution.parse
     )
 }

@@ -1,6 +1,7 @@
 import { StringifyPossibleTypes, Split, Join, Unlisted } from "@re-do/utils"
 import { ParseTypeRecurseOptions } from "../common.js"
-import { Fragment, Shallow } from "."
+import { Fragment } from "./fragment.js"
+import { Shallow } from "./shallow.js"
 import { StringReplace } from "@re-do/utils"
 
 export * from "../common.js"

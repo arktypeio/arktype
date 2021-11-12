@@ -1,6 +1,8 @@
 import { RemoveSpaces } from "@re-do/utils"
 import { ParseTypeRecurseOptions, UnknownTypeError } from "./common.js"
-import { Fragment, Optional, Shallow } from "."
+import { Fragment } from "./fragment.js"
+import { Optional } from "./optional.js"
+import { Shallow } from "./shallow.js"
 import { createNode, createParser } from "../parser.js"
 import { typeDefProxy } from "../../common.js"
 
@@ -42,5 +44,5 @@ export namespace Str {
         matches: ({ definition }) => typeof definition === "string"
     })
 
-    export const parser = createParser(node, Optional.parser, Fragment.parser)
+    export const parse = createParser(node, Optional.parse, Fragment.parse)
 }
