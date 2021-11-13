@@ -13,15 +13,13 @@ export namespace Num {
         parent: () => Shallow.node,
         matches: ({ definition }) => typeof definition === "number",
         implements: {
-            allows: (args) =>
-                args.definition === args.assignment
-                    ? {}
-                    : validationError(args),
-            getDefault: ({ definition }) => definition,
+            allows: (from, args) =>
+                args.definition === from ? {} : validationError(args),
+            getDefault: (args) => args.definition,
             references: ({ definition, includeBuiltIn }) =>
                 includeBuiltIn ? [definition] : []
         }
     })
 
-    export const parser = createParser(node)
+    export const parse = createParser(node)
 }
