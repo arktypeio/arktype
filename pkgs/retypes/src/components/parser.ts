@@ -9,6 +9,7 @@ import {
     memoize,
     narrow,
     RequiredKeys,
+    SimpleFunction,
     stringify,
     StringifyPossibleTypes,
     transform,

@@ -38,7 +38,7 @@ export namespace Root {
         matches: ({ definition }) => true
     })
 
-    export const parser = createParser(node, Shallow.parse)
+    export const parse = createParser(node, Shallow.parse)
 
     // export const parse = createParser2(node, Shallow.parse)
 
