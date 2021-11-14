@@ -1,5 +1,5 @@
 import { asNumber, NumericString } from "@re-do/utils"
-import { createNode, createParser, NodeInput } from "../parser.js"
+import { createParser } from "../parser.js"
 import { validationError, unassignableError } from "../errors.js"
 import { Fragment } from "./fragment.js"
 import { typeDefProxy } from "../../common.js"
@@ -9,21 +9,18 @@ export namespace NumericStringLiteral {
 
     export const type = typeDefProxy as Definition
 
-    export const node = createNode({
+    export const parse = createParser({
         type,
-        parent: () => Fragment.node,
-        matches: ({ definition }) => typeof definition === "number",
-        implements: {
-            allows: (args) =>
-                asNumber(args.definition, { assert: true }) === args.assignment
+        parent: () => Fragment.parse,
+        matches: (definition) => typeof definition === "number",
+        parse: (definition, { path }) => ({
+            allows: (assignment) =>
+                asNumber(definition, { assert: true }) === assignment
                     ? {}
-                    : validationError(args),
-            getDefault: ({ definition }) =>
-                asNumber(definition, { assert: true }),
-            references: ({ definition, includeBuiltIn }) =>
+                    : validationError({ definition, assignment, path }),
+            getDefault: () => asNumber(definition, { assert: true }),
+            references: ({ includeBuiltIn }) =>
                 includeBuiltIn ? [definition] : []
-        }
+        })
     })
-
-    export const parse = createParser(node)
 }

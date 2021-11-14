@@ -1,37 +1,60 @@
 import { DiffSetsResult, List, stringify } from "@re-do/utils"
-import { ExtractableDefinition, stringifyDefinition } from "./common.js"
-import { AllowsArgs } from "./parser.js"
+import {
+    ExtractableDefinition,
+    stringifyDefinition,
+    UnvalidatedTypeSet
+} from "./common.js"
+import { AllowsOptions, ParseArgs, ParseContext } from "./parser.js"
 
 // Members of an or type to errors that occurred validating those types
 export type OrTypeErrors = Record<string, string>
 
-export const orValidationError = (
-    { definition, assignment }: AllowsArgs,
-    orTypeErrors: OrTypeErrors
-) =>
+export type OrErrorArgs = BaseAssignmentArgs & { orErrors: OrTypeErrors }
+
+export const orValidationError = ({
+    definition,
+    assignment,
+    orErrors
+}: OrErrorArgs) =>
     `${stringifyDefinition(
         assignment
-    )} is not assignable to any of ${definition}:\n${stringify(orTypeErrors)}`
+    )} is not assignable to any of ${definition}:\n${stringify(orErrors)}`
 
-export const shallowCycleError = ({ definition, seen, typeSet }: AllowsArgs) =>
+export type ShallowCycleErrorArgs = BaseAssignmentArgs & ParseContext<unknown>
+
+export const shallowCycleError = ({
+    definition,
+    typeSet,
+    seen
+}: ShallowCycleErrorArgs) =>
     `${stringifyDefinition(definition)} shallowly references itself ` +
     `in typeSet ${stringify(typeSet)} via the following set of resolutions: ${[
         ...seen,
         definition
     ].join("=>")}.`
 
-export type ValidationErrorArgs = AllowsArgs & {
-    message?: string
-}
+export type ValidationErrorArgs = { path: string[] } & (
+    | { message: string }
+    | BaseAssignmentArgs
+)
 
-export const validationError = ({
-    message,
-    ...allowsArgs
-}: ValidationErrorArgs) => ({
-    [allowsArgs.path.join("/")]: message ?? unassignableError(allowsArgs)
+export const validationError = (args: ValidationErrorArgs) => ({
+    [args.path.join("/")]:
+        "message" in args ? args.message : unassignableError(args)
 })
 
-export const unassignableError = ({ definition, assignment }: AllowsArgs) =>
+export type BaseAssignmentArgs<
+    DefType = unknown,
+    AssignmentType = ExtractableDefinition
+> = {
+    definition: DefType
+    assignment: AssignmentType
+}
+
+export const unassignableError = ({
+    definition,
+    assignment
+}: BaseAssignmentArgs) =>
     `${stringifyDefinition(
         assignment
     )} is not assignable to ${stringifyDefinition(definition)}.`
@@ -39,7 +62,7 @@ export const unassignableError = ({ definition, assignment }: AllowsArgs) =>
 export const tupleLengthError = ({
     definition,
     assignment
-}: AllowsArgs<List, List<ExtractableDefinition>>) =>
+}: BaseAssignmentArgs<List, List>) =>
     `Tuple of length ${assignment.length} is not assignable to tuple of length ${definition.length}.`
 
 export const mismatchedKeysError = (keyErrors: DiffSetsResult<string>) => {

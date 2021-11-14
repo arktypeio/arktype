@@ -69,7 +69,7 @@ export namespace ArrowFunction {
     export const parse = createParser({
         type,
         parent: () => Fragment.parse,
-        matches: ({ definition }) => /\(.*\)\=\>.*/.test(definition),
+        matches: (definition) => /\(.*\)\=\>.*/.test(definition),
         implements: {
             allows: (args) =>
                 args.assignment === "function" ? {} : validationError(args),
@@ -99,6 +99,8 @@ export namespace ArrowFunction {
             }
         }
     })
+
+    export const delegate = parse as any as Definition
 }
 
 type ValidateParameterTuple<

@@ -11,14 +11,16 @@ export namespace Num {
     export const parse = createParser({
         type,
         parent: () => Shallow.parse,
-        matches: ({ definition }) => typeof definition === "number",
-        implements: {
-            allows: (from, args) =>
-                args.definition === from ? {} : validationError(args),
-            getDefault: (args) => args.definition,
-            references: ({ definition, includeBuiltIn }) =>
+        matches: (definition) => typeof definition === "number",
+        parse: (definition, { path }) => ({
+            allows: (assignment, options) =>
+                definition === assignment
+                    ? {}
+                    : validationError({ definition, assignment, path }),
+            getDefault: () => definition,
+            references: ({ includeBuiltIn }) =>
                 includeBuiltIn ? [definition] : []
-        }
+        })
     })
 
     export const delegate = parse as unknown as Definition

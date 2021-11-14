@@ -14,17 +14,17 @@ export namespace StringLiteral {
     export const parse = createParser({
         type,
         parent: () => Fragment.parse,
-        matches: ({ definition }) => !!definition.match("'.*'"),
-        implements: {
-            allows: (args) =>
-                args.definition === args.assignment
+        matches: (definition) => !!definition.match("'.*'"),
+        parse: (definition, { path }) => ({
+            allows: (assignment, args) =>
+                definition === assignment
                     ? {}
-                    : validationError(args),
-            getDefault: ({ definition }) => definition.slice(1, -1),
-            references: ({ definition, includeBuiltIn }) =>
+                    : validationError({ definition, assignment, path }),
+            getDefault: () => definition.slice(1, -1),
+            references: ({ includeBuiltIn }) =>
                 includeBuiltIn ? [definition] : []
-        }
+        })
     })
 
-    export const parse = createParser(node)
+    export const delegate = parse as any as Definition
 }

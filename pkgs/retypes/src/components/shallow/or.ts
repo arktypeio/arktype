@@ -1,6 +1,6 @@
 import { Unlisted } from "@re-do/utils"
 import { typeDefProxy } from "../../common.js"
-import { createNode, createParser, NodeInput } from "../parser.js"
+import { createParser } from "../parser.js"
 import { ParseTypeRecurseOptions } from "./common.js"
 import {
     ParseSplittable,
@@ -44,11 +44,11 @@ export namespace Or {
 
     export const type = typeDefProxy as Definition
 
-    export const node = createNode({
+    export const parse = createParser({
         type,
-        parent: () => Fragment.node,
-        matches: ({ definition }) => definition.includes("|")
+        parent: () => Fragment.parse,
+        matches: (definition) => definition.includes("|")
     })
 
-    export const parse = createParser(node)
+    export const delegate = parse as any as Definition
 }

@@ -41,7 +41,7 @@ export namespace Str {
     export const parse = createParser({
         type,
         parent: () => Shallow.parse,
-        matches: ({ definition }) => typeof definition === "string",
+        matches: (definition) => typeof definition === "string",
         children: [Optional.delegate, Fragment.delegate]
     })
 

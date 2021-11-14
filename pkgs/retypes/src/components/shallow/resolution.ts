@@ -1,6 +1,6 @@
 import { Or } from "@re-do/utils"
 import { typeDefProxy } from "../../common.js"
-import { createNode, createParser, NodeInput } from "../parser.js"
+import { createParser } from "../parser.js"
 import { ParseTypeRecurseOptions, UnknownTypeError, Root } from "./common.js"
 import { Fragment } from "./fragment.js"
 
@@ -68,11 +68,11 @@ export namespace Resolution {
 
     export const type = typeDefProxy as Definition
 
-    export const node = createNode({
+    export const parse = createParser({
         type,
         parent: () => Fragment.node,
-        matches: ({ definition, typeSet }) => definition in typeSet
+        matches: (definition, typeSet) => definition in typeSet
     })
 
-    export const parse = createParser(node)
+    export const delegate = parse as any as Definition
 }

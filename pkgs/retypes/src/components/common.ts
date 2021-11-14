@@ -6,7 +6,8 @@ import {
     stringify,
     TreeOf
 } from "@re-do/utils"
-import { Num, StringLiteral } from "./index.js"
+import { Num } from "./shallow/num.js"
+import { StringLiteral } from "./shallow/stringLiteral.js"
 
 export * from "./root.js"
 import { Root } from "./root.js"

@@ -43,7 +43,6 @@ export namespace Root {
         type: {} as Root.Definition,
         parent: () => reroot,
         children: [Shallow.delegate],
-        matches: ({ definition }) => true
+        matches: () => true
     })
-    parse({ definition: "", ...({} as any) })
 }
