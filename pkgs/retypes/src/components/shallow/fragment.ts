@@ -76,7 +76,7 @@ export namespace Fragment {
     export const parse = createParser({
         type,
         parent: () => Str.parse,
-        matches: ({ definition }) => typeof definition === "string",
+        matches: (definition) => typeof definition === "string",
         children: [
             Or.delegate,
             ArrowFunction.delegate,

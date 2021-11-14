@@ -1,6 +1,6 @@
-import { Evaluate } from "@re-do/utils"
-import { Root } from "../common.js"
-import { AllowsArgs, ValidationErrors } from "../parser.js"
+import { DeepTreeOf, Evaluate } from "@re-do/utils"
+import { Root, ExtractableDefinition } from "../common.js"
+import { AllowsOptions, ParseContext, ValidationErrors } from "../parser.js"
 import { Recursible } from "./recursible.js"
 
 export * from "../common.js"
@@ -23,13 +23,12 @@ export type ValidateRecursible<
  * Recurse into the properties of two objects/tuples with
  * keysets that have already been validated as compatible.
  */
-export const validateProperties = ({
-    definition,
-    assignment,
-    typeSet,
-    path,
-    ignoreExtraneousKeys
-}: AllowsArgs<Recursible.Definition>) => {
+export const validateProperties = (
+    definition: Recursible.Definition,
+    context: ParseContext<Recursible.Definition>,
+    assignment: DeepTreeOf<ExtractableDefinition, true>,
+    opts: AllowsOptions
+) => {
     return Object.keys(definition)
         .filter((definedKey) => definedKey in (assignment as object))
         .reduce<ValidationErrors>(

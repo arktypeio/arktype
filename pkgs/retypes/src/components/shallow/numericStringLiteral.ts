@@ -23,4 +23,6 @@ export namespace NumericStringLiteral {
                 includeBuiltIn ? [definition] : []
         })
     })
+
+    export const delegate = parse as any as Definition
 }

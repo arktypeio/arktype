@@ -14,9 +14,11 @@ export namespace BuiltIn {
     export const parse = createParser({
         type,
         parent: () => Fragment.parse,
-        matches: (args) => args.definition in map,
+        matches: (definition) => definition in map,
         children: [ExtractableName.delegate, UnextractableName.delegate]
     })
+
+    export const delegate = parse as any as Definition
 
     export const map = {
         ...ExtractableName.map,

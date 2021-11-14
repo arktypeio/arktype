@@ -39,9 +39,4 @@ export namespace Shallow {
     })
 
     export const delegate = parse as any as Definition
-
-    // export const parse = createParser(node, Num.parse, Str.parse)
-
-    // export const parse = createParser2 (args: ParseArgs<Definition>) =>
-    //     testParse(args, node, Num.parser, Str.parser)
 }

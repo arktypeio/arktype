@@ -16,4 +16,6 @@ export namespace List {
         matches: (definition) => definition.endsWith("[]"),
         parse: (definition) => ({})
     })
+
+    export const delegate = parse as any as Definition
 }

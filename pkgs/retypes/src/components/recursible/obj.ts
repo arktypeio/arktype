@@ -1,8 +1,8 @@
-import { isRecursible, OptionalKeys, SimpleFunction } from "@re-do/utils"
+import { isRecursible, OptionalKeys } from "@re-do/utils"
 import { ParseTypeRecurseOptions, Root, ValidateRecursible } from "./common.js"
 import { Recursible } from "."
-import { Optional } from "../index.js"
-import { createNode, createParser, NodeInput } from "../parser.js"
+import { Optional } from "../shallow/optional.js"
+import { createParser } from "../parser.js"
 import { typeDefProxy } from "../../common.js"
 
 export namespace Obj {
@@ -39,12 +39,12 @@ export namespace Obj {
 
     export const type = typeDefProxy as Definition
 
-    export const node = createNode({
+    export const parse = createParser({
         type,
-        parent: () => Recursible.node,
-        matches: ({ definition }) =>
+        parent: () => Recursible.parse,
+        matches: (definition) =>
             isRecursible(definition) && !Array.isArray(definition)
     })
 
-    export const parser = createParser(node)
+    export const delegate = parse as any as Definition
 }

@@ -70,34 +70,29 @@ export namespace ArrowFunction {
         type,
         parent: () => Fragment.parse,
         matches: (definition) => /\(.*\)\=\>.*/.test(definition),
-        implements: {
-            allows: (args) =>
-                args.assignment === "function" ? {} : validationError(args),
-            references: (args): any => {
-                const { parameters, returns } = parseArrowFunction(
-                    args.definition
-                )
+        parse: (definition, context) => ({
+            allows: (assignment) =>
+                assignment === "function"
+                    ? {}
+                    : validationError({
+                          definition,
+                          assignment,
+                          path: context.path
+                      }),
+            references: (opts): any => {
+                const { parameters, returns } = parseArrowFunction(definition)
                 return [
                     ...parameters.flatMap((parameter) =>
-                        Fragment.parse({
-                            ...args,
-                            definition: parameter
-                        }).references(args)
+                        Fragment.parse(parameter, context).references(opts)
                     ),
-                    ...Fragment.parse({
-                        ...args,
-                        definition: returns
-                    }).references(args)
+                    ...Fragment.parse(returns, context).references(opts)
                 ]
             },
-            getDefault: (args) => {
-                const { returns } = parseArrowFunction(args.definition)
-                return Fragment.parse({
-                    ...args,
-                    definition: returns
-                }).getDefault(args)
+            getDefault: (opts) => {
+                const { returns } = parseArrowFunction(definition)
+                return () => Fragment.parse(returns, context).getDefault(opts)
             }
-        }
+        })
     })
 
     export const delegate = parse as any as Definition

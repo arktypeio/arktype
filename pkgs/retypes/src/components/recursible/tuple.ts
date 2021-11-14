@@ -1,4 +1,4 @@
-import { createNode, createParser, NodeInput } from "../parser.js"
+import { createParser } from "../parser.js"
 import {
     tupleLengthError,
     unassignableError,
@@ -33,26 +33,30 @@ export namespace Tuple {
 
     export const type = typeDefProxy as Definition
 
-    export const node = createNode({
+    export const parse = createParser({
         type,
-        parent: () => Recursible.node,
+        parent: () => Recursible.parse,
         matches: ({ definition }) => Array.isArray(definition),
-        implements: {
-            allows: (args) => {
-                if (!Array.isArray(args.assignment)) {
+        parse: (definition, context) => ({
+            allows: (assignment, opts) => {
+                if (!Array.isArray(assignment)) {
                     // Defined is a tuple, extracted is an object with string keys (will never be assignable)
-                    return validationError(args)
-                }
-                if (args.definition.length !== args.assignment.length) {
                     return validationError({
-                        ...args,
-                        message: tupleLengthError(args as any)
+                        definition,
+                        assignment,
+                        path: context.path
                     })
                 }
-                return validateProperties(args)
+                if (definition.length !== assignment.length) {
+                    return validationError({
+                        path: context.path,
+                        message: tupleLengthError({ definition, assignment })
+                    })
+                }
+                return validateProperties(definition, context, assignment, opts)
             }
-        }
+        })
     })
 
-    export const parser = createParser(node)
+    export const delegate = parse as any as Definition
 }

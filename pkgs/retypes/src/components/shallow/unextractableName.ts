@@ -7,11 +7,13 @@ export namespace UnextractableName {
 
     export const type = typeDefProxy as Definition
 
-    export const node = createParser({
+    export const parse = createParser({
         type,
         parent: () => BuiltIn.parse,
-        matches: ({ definition }) => definition in map
+        matches: (definition) => definition in map
     })
+
+    export const delegate = parse as any as Definition
 
     /**
      * These types can be used to specify a type definition but

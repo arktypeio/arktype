@@ -14,6 +14,8 @@ export namespace ExtractableName {
         matches: ({ definition }) => definition in map
     })
 
+    export const delegate = parse as any as Definition
+
     export const map = {
         bigint: BigInt(0),
         true: true as true,

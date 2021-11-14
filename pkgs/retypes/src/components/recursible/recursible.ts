@@ -5,7 +5,7 @@ import {
 } from "@re-do/utils"
 import { typeDefProxy } from "../../common.js"
 import { Root } from "../common.js"
-import { createNode, createParser, NodeInput } from "../parser.js"
+import { createParser } from "../parser.js"
 import { ParseTypeRecurseOptions, DefinitionTypeError } from "./common.js"
 import { Obj, Tuple } from "./index.js"
 
@@ -36,11 +36,12 @@ export namespace Recursible {
 
     export const type = typeDefProxy as Definition
 
-    export const node = createNode({
+    export const parse = createParser({
         type,
-        parent: () => Root.node,
-        matches: ({ definition }) => isRecursible(definition)
+        parent: () => Root.parse,
+        children: [Tuple.delegate, Obj.delegate],
+        matches: (definition) => isRecursible(definition)
     })
 
-    export const parser = createParser(node, Tuple.parser, Obj.parser)
+    export const delegate = parse as any as Definition
 }
