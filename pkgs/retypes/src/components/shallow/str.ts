@@ -3,7 +3,7 @@ import { ParseTypeRecurseOptions, UnknownTypeError } from "./common.js"
 import { Fragment } from "./fragment.js"
 import { Optional } from "./optional.js"
 import { Shallow } from "./shallow.js"
-import { createNode, createParser } from "../parser.js"
+import { createParser } from "../parser.js"
 import { typeDefProxy } from "../../common.js"
 
 export namespace Str {
@@ -38,11 +38,12 @@ export namespace Str {
 
     export const type = typeDefProxy as Definition
 
-    export const node = createNode({
+    export const parse = createParser({
         type,
-        parent: () => Shallow.node,
-        matches: ({ definition }) => typeof definition === "string"
+        parent: () => Shallow.parse,
+        matches: ({ definition }) => typeof definition === "string",
+        children: [Optional.delegate, Fragment.delegate]
     })
 
-    export const parse = createParser(node, Optional.parse, Fragment.parse)
+    export const delegate = parse as any as Definition
 }

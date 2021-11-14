@@ -1,4 +1,4 @@
-import { createParser, createNode } from "../parser.js"
+import { createParser } from "../parser.js"
 import { validationError, unassignableError } from "../errors.js"
 import { Shallow } from "./shallow.js"
 import { typeDefProxy } from "../../common.js"
@@ -8,9 +8,9 @@ export namespace Num {
 
     export const type = typeDefProxy as Definition
 
-    export const node = createNode({
+    export const parse = createParser({
         type,
-        parent: () => Shallow.node,
+        parent: () => Shallow.parse,
         matches: ({ definition }) => typeof definition === "number",
         implements: {
             allows: (from, args) =>
@@ -21,5 +21,5 @@ export namespace Num {
         }
     })
 
-    export const parse = createParser(node)
+    export const delegate = parse as unknown as Definition
 }

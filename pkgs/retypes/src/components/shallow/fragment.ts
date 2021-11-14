@@ -12,7 +12,7 @@ import { Or } from "./or.js"
 import { Resolution } from "./resolution.js"
 import { StringLiteral } from "./stringLiteral.js"
 import { Str } from "./str.js"
-import { NodeInput, createNode, createParser } from "../parser.js"
+import { createParser } from "../parser.js"
 import { typeDefProxy } from "../../common.js"
 
 export namespace Fragment {
@@ -73,20 +73,20 @@ export namespace Fragment {
 
     export const type = typeDefProxy as Definition
 
-    export const node = createNode({
+    export const parse = createParser({
         type,
-        parent: () => Str.node,
-        matches: ({ definition }) => typeof definition === "string"
+        parent: () => Str.parse,
+        matches: ({ definition }) => typeof definition === "string",
+        children: [
+            Or.delegate,
+            ArrowFunction.delegate,
+            List.delegate,
+            StringLiteral.delegate,
+            NumericStringLiteral.delegate,
+            BuiltIn.delegate,
+            Resolution.delegate
+        ]
     })
 
-    export const parse = createParser(
-        node,
-        Or.parse,
-        ArrowFunction.parse,
-        List.parser,
-        StringLiteral.parse,
-        NumericStringLiteral.parse,
-        BuiltIn.parse,
-        Resolution.parse
-    )
+    export const delegate = parse as any as Definition
 }

@@ -6,7 +6,7 @@ import {
     ValidateSplittable
 } from "./common.js"
 import { Fragment } from "./fragment.js"
-import { createNode, createParser } from "../parser.js"
+import { createParser } from "../parser.js"
 import { typeDefProxy } from "../../common.js"
 import { validationError } from "../errors.js"
 
@@ -66,9 +66,9 @@ export namespace ArrowFunction {
         }
     }
 
-    export const node = createNode({
+    export const parse = createParser({
         type,
-        parent: () => Fragment.node,
+        parent: () => Fragment.parse,
         matches: ({ definition }) => /\(.*\)\=\>.*/.test(definition),
         implements: {
             allows: (args) =>
@@ -79,30 +79,26 @@ export namespace ArrowFunction {
                 )
                 return [
                     ...parameters.flatMap((parameter) =>
-                        Fragment.parse.references({
+                        Fragment.parse({
                             ...args,
                             definition: parameter
-                        })
+                        }).references(args)
                     ),
-                    ...Fragment.parse.references({
+                    ...Fragment.parse({
                         ...args,
                         definition: returns
-                    })
+                    }).references(args)
                 ]
             },
-            getDefault:
-                (args) =>
-                (...defaultArgs: any[]): any => {
-                    const { returns } = parseArrowFunction(args.definition)
-                    return Fragment.parse().getDefault({
-                        ...args,
-                        definition: returns
-                    })
-                }
+            getDefault: (args) => {
+                const { returns } = parseArrowFunction(args.definition)
+                return Fragment.parse({
+                    ...args,
+                    definition: returns
+                }).getDefault(args)
+            }
         }
     })
-
-    export const parse = createParser(node)
 }
 
 type ValidateParameterTuple<

@@ -1,4 +1,4 @@
-import { createNode, createParser } from "../parser.js"
+import { createParser } from "../parser.js"
 import { Fragment } from "./fragment.js"
 import { ExtractableName } from "./extractableName.js"
 import { UnextractableName } from "./unextractableName.js"
@@ -11,17 +11,12 @@ export namespace BuiltIn {
 
     export const type = typeDefProxy as Definition
 
-    export const node = createNode({
+    export const parse = createParser({
         type,
-        parent: () => Fragment.node,
-        matches: (args) => args.definition in map
+        parent: () => Fragment.parse,
+        matches: (args) => args.definition in map,
+        children: [ExtractableName.delegate, UnextractableName.delegate]
     })
-
-    export const parse = createParser(
-        node,
-        ExtractableName.parse,
-        UnextractableName.parse
-    )
 
     export const map = {
         ...ExtractableName.map,

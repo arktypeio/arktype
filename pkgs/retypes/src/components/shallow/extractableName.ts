@@ -1,4 +1,4 @@
-import { createNode, NodeInput, createParser } from "../parser.js"
+import { createParser } from "../parser.js"
 import { BuiltIn } from "./builtIn.js"
 import { typeDefProxy } from "../../common.js"
 
@@ -8,13 +8,11 @@ export namespace ExtractableName {
 
     export const type = typeDefProxy as Definition
 
-    export const node = createNode({
+    export const parse = createParser({
         type,
-        parent: () => BuiltIn.node,
+        parent: () => BuiltIn.parse,
         matches: ({ definition }) => definition in map
     })
-
-    export const parse = createParser(node)
 
     export const map = {
         bigint: BigInt(0),
