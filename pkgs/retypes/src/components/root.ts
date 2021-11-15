@@ -14,6 +14,7 @@ import {
 } from "./parser.js"
 import { DeepEvaluate, Evaluate } from "@re-do/utils"
 import { Obj } from "./recursible/obj.js"
+import { typeDefProxy } from "../common.js"
 
 type RootDefinition = Shallow.Definition | Recursible.Definition
 
@@ -44,10 +45,12 @@ export namespace Root {
         ? Recursible.Parse<Def, TypeSet, Options>
         : DefinitionTypeError
 
+    export const type = typeDefProxy as Definition
+
     export const parse = createParser({
-        type: {} as Root.Definition,
+        type,
         parent: () => reroot,
-        children: () => [Shallow.delegate, Obj.delegate],
+        children: () => [Shallow.delegate, Recursible.delegate],
         fallback: (definition, { path }) => {
             throw new Error(definitionTypeError(definition, path))
         },

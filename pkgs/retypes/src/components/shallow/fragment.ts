@@ -1,7 +1,6 @@
 import {
     BuiltInTypeName,
     BuiltInTypes,
-    UnknownTypeError,
     ParseTypeRecurseOptions
 } from "./common.js"
 import { ArrowFunction } from "./arrowFunction.js"
@@ -14,6 +13,7 @@ import { StringLiteral } from "./stringLiteral.js"
 import { Str } from "./str.js"
 import { createParser } from "../parser.js"
 import { typeDefProxy } from "../../common.js"
+import { UnknownTypeError } from "../errors.js"
 
 export namespace Fragment {
     export type Definition<Def extends string = string> = Def

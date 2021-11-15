@@ -3,7 +3,7 @@ import {
     DefaultParseTypeOptions,
     ParseTypeOptions
 } from "./components/common.js"
-import { Root } from "./components"
+import { Root } from "./components/root.js"
 
 export type Parse<Def, Set, Options extends ParseTypeOptions = {}> = Root.Parse<
     Def,
