@@ -37,8 +37,8 @@ export namespace Tuple {
         type,
         parent: () => Recursible.parse,
         matches: ({ definition }) => Array.isArray(definition),
-        parse: (definition, context) => ({
-            allows: (assignment, opts) => {
+        implements: {
+            allows: (definition, context, assignment, opts) => {
                 if (!Array.isArray(assignment)) {
                     // Defined is a tuple, extracted is an object with string keys (will never be assignable)
                     return validationError({
@@ -55,7 +55,7 @@ export namespace Tuple {
                 }
                 return validateProperties(definition, context, assignment, opts)
             }
-        })
+        }
     })
 
     export const delegate = parse as any as Definition

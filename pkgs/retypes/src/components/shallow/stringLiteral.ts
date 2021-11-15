@@ -20,7 +20,7 @@ export namespace StringLiteral {
                 definition === assignment
                     ? {}
                     : validationError({ definition, assignment, path }),
-            getDefault: (definition) => definition.slice(1, -1),
+            generate: (definition) => definition.slice(1, -1),
             references: (definition, context, { includeBuiltIn }) =>
                 includeBuiltIn ? [definition] : []
         }

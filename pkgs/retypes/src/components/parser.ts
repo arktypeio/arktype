@@ -17,7 +17,6 @@ import {
     Unlisted
 } from "@re-do/utils"
 import { Function as ToolbeltFunction } from "ts-toolbelt"
-import { typeDefProxy } from "../common.js"
 import { unknownTypeError } from "../errors.js"
 import type {
     ExtractableDefinition,
@@ -47,40 +46,27 @@ export type AllowsOptions = {
     ignoreExtraneousKeys?: boolean
 }
 
-export type ParseInputArgs<DefType> = {
-    definition: DefType
-    context: ParseContext<DefType>
-}
-
-export type AllowsArgs<DefType> = ParseInputArgs<DefType> & {
-    assignment: ExtractableDefinition
-    ignoreExtraneousKeys?: boolean
-}
-
 export type ReferencesOptions = {
     includeBuiltIn?: boolean
 }
 
-export type ReferencesArgs<DefType> = ParseInputArgs<DefType> & {
-    includeBuiltIn?: boolean
-}
-
-export type GetDefaultOptions = {
+export type GenerateOptions = {
     // By default, we will throw if we encounter a cyclic required type
     // If this options is provided, we will return its value instead
     onRequiredCycle?: any
 }
-
-export type GetDefaultArgs<DefType> = ParseInputArgs<DefType> &
-    GetDefaultOptions
 
 // Paths at which errors occur mapped to their messages
 export type ValidationErrors = Record<string, string>
 
 export type ParentParser<
     DefType = unknown,
-    Inherits extends ParserMethodName[] = ParserMethodName[],
-    Implements extends ParserMethodName[] = ParserMethodName[]
+    Inherits extends Partial<ParserInputMethods<DefType>> = Partial<
+        ParserInputMethods<DefType>
+    >,
+    Implements extends Partial<ParserInputMethods<DefType>> = Partial<
+        ParserInputMethods<DefType>
+    >
 > = {
     meta: {
         type: DefType
@@ -93,10 +79,11 @@ export type ParserInput<DefType, Parent, Children extends DefType[]> = {
     type: DefType
     parent: () => Parent
     matches: DefinitionMatcher<Parent>
+    parts?: (...args: ParseArgs<DefType>) => ValidateResult<any>[]
     children?: () => Children
     // What to do if no children match (defaults to throwing unparsable error)
     fallback?: (...args: ParseArgs<DefType>) => any
-} & InheritableParserMethods<DefType, Parent, Children>
+} & ImplementsInput<DefType, Parent, Children>
 
 export type DefinitionMatcher<Parent> = Parent extends ParentParser<
     infer ParentDef
@@ -104,7 +91,7 @@ export type DefinitionMatcher<Parent> = Parent extends ParentParser<
     ? (...args: ParseArgs<ParentDef>) => boolean
     : never
 
-export type InheritableParserMethods<
+export type ImplementsInput<
     DefType,
     Parent,
     Children,
@@ -112,54 +99,54 @@ export type InheritableParserMethods<
 > = Children extends never[]
     ? { implements: Unimplemented }
     : { implements?: Partial<Unimplemented> }
-// Children extends never[]
-// ? {
-//       parse: (
-//           definition: DefType,
-//           context: ParseContext<DefType>
-//       ) => Unimplemented
-//   }
-// : {
-//       parse?: (
-//           definition: DefType,
-//           context: ParseContext<DefType>
-//       ) => Partial<Unimplemented>
-//   }
 
-export type UnimplementedParserMethods<DefType, Parent> = Omit<
-    ParserInputMethods<DefType>,
-    Unlisted<GetInheritedMethods<Parent>>
->
+export type PartArgs<DefType> = [
+    args: {
+        def: DefType
+        ctx: ParseContext<DefType>
+        parts: ValidateResult<any>[]
+    }
+]
 
 export type ParserInputMethods<DefType> = {
     allows: (
         ...args: [
-            ...args: ParseArgs<DefType>,
+            ...args: PartArgs<DefType>,
             assignment: ExtractableDefinition,
             options: AllowsOptions
         ]
     ) => ValidationErrors
     references: (
-        ...args: [...args: ParseArgs<DefType>, options: ReferencesOptions]
+        ...args: [...args: PartArgs<DefType>, options: ReferencesOptions]
     ) => Shallow.Definition[]
-    getDefault: (
-        ...args: [...args: ParseArgs<DefType>, options: GetDefaultOptions]
+    generate: (
+        ...args: [...args: PartArgs<DefType>, options: GenerateOptions]
     ) => any
 }
 
-export type ParseFunction<DefType> = (...args: ParseArgs<DefType>) => {
+export type UnimplementedParserMethods<DefType, Parent> = Omit<
+    ParserInputMethods<DefType>,
+    keyof GetInheritedMethods<Parent>
+>
+
+export type ValidateFunction<DefType> = (
+    ...args: ParseArgs<DefType>
+) => ValidateResult<DefType>
+
+export type ValidateResult<DefType> = {
     definition: DefType
+    context: ParseContext<DefType>
     matches: boolean
 } & {
-    [MethodName in keyof ParserInputMethods<DefType>]: InputToParseMethod<
+    [MethodName in keyof ParserInputMethods<DefType>]: TransformInputMethod<
         ParserInputMethods<DefType>[MethodName]
     >
 }
 
-export type InputToParseMethod<
+export type TransformInputMethod<
     Method extends ValueOf<ParserInputMethods<any>>
 > = Method extends (
-    ...args: [infer Definition, infer Context, ...infer Rest, infer Opts]
+    ...args: [infer ParseResult, ...infer Rest, infer Opts]
 ) => infer Return
     ? (...args: [...rest: Rest, opts?: Opts]) => Return
     : Method
@@ -169,31 +156,29 @@ export type GetInheritedMethods<Parent> = Parent extends ParentParser<
     infer Inherits,
     infer Implements
 >
-    ? [...Inherits, ...Implements]
-    : []
+    ? Inherits & Implements
+    : {}
 
 export type ParserMetadata<
     DefType,
     Parent,
     Methods,
-    Inherits extends ParserMethodName[] = GetInheritedMethods<Parent>,
-    Implements extends ParserMethodName[] = ListPossibleTypes<
-        RequiredKeys<Methods>
-    >,
-    Delegates extends ParserMethodName[] = ListPossibleTypes<
-        Exclude<ParserMethodName, Unlisted<Inherits> | Unlisted<Implements>>
-    >
+    Inherits extends Partial<
+        ParserInputMethods<DefType>
+    > = GetInheritedMethods<Parent>,
+    Implements extends Partial<
+        ParserInputMethods<DefType>
+    > = Methods extends undefined ? {} : Methods
 > = Evaluate<{
     type: DefType
     inherits: Inherits
     implements: Implements
-    delegates: Delegates
 }>
 
 export type Parser<DefType, Parent, Methods> = Evaluate<
     {
         meta: ParserMetadata<DefType, Parent, Methods>
-    } & ParseFunction<DefType>
+    } & ValidateFunction<DefType>
 >
 
 export type ParserMethodName = keyof ParserInputMethods<any>
@@ -201,16 +186,15 @@ export type ParserMethodName = keyof ParserInputMethods<any>
 const parserMethodNames: ListPossibleTypes<ParserMethodName> = [
     "allows",
     "references",
-    "getDefault"
+    "generate"
 ]
 
 // Re:Root, reroot its root by rerouting to reroot
 export const reroot = {
     meta: {
         type: {} as Root.Definition,
-        inherits: [] as [],
-        implements: [] as [],
-        delegates: parserMethodNames
+        inherits: {},
+        implements: {}
     }
 }
 
@@ -228,8 +212,18 @@ export const createParser = <
     >
 ): Parser<DefType, Parent, KeyValuate<Input, "implements">> => {
     const input = config as ParserInput<DefType, Parent, Children>
+    const parent = input.parent() as any as ParentParser<DefType>
     const validatedChildren: AnyParser[] = (input.children?.() as any) ?? []
-    const parse = (definition: DefType, context: ParseContext<DefType>) => {
+    const implemented: Partial<ParserInputMethods<DefType>> =
+        input.implements ?? {}
+    const inherited: Partial<ParserInputMethods<DefType>> = {
+        ...parent.meta.inherits,
+        ...parent.meta.implements
+    }
+    const parse = (
+        definition: DefType,
+        context: ParseContext<DefType>
+    ): ValidateResult<DefType> => {
         const args: ParseArgs<DefType> = [
             definition,
             { ...context, depth: context.depth + 1 }
@@ -250,10 +244,11 @@ export const createParser = <
         const methods: ParserInputMethods<DefType> = transform(
             parserMethodNames,
             ([i, methodName]) => {
-                const implemented: Partial<ParserInputMethods<DefType>> =
-                    input.implements ?? {}
-                if (implemented?.[methodName]) {
+                if (methodName in implemented) {
                     return [methodName, implemented[methodName]]
+                }
+                if (methodName in inherited) {
+                    return [methodName, inherited[methodName]]
                 }
                 return [methodName, matchingChild(...args)[methodName]]
             }
@@ -261,10 +256,15 @@ export const createParser = <
         return {
             matches: input.matches(...args),
             definition,
+            context,
             ...methods
-        }
+        } as any
     }
     return Object.assign(parse, {
-        meta: {}
+        meta: {
+            type: input.type,
+            inherits: inherited,
+            implements: input.implements
+        }
     }) as any
 }

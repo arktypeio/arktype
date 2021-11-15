@@ -56,7 +56,7 @@ export namespace ArrowFunction {
 
     export const type = typeDefProxy as Definition
 
-    const parseArrowFunction = (definition: Definition) => {
+    const parts = (definition: Definition) => {
         const parts = definition.split("=>")
         const parameters = parts[0].slice(1, -1).split(",")
         const returns = parts.slice(1).join("=>")
@@ -70,17 +70,17 @@ export namespace ArrowFunction {
         type,
         parent: () => Fragment.parse,
         matches: (definition) => /\(.*\)\=\>.*/.test(definition),
-        parse: (definition, context) => ({
-            allows: (assignment) =>
+        implements: {
+            allows: (definition, { path }, assignment) =>
                 assignment === "function"
                     ? {}
                     : validationError({
                           definition,
                           assignment,
-                          path: context.path
+                          path
                       }),
-            references: (opts): any => {
-                const { parameters, returns } = parseArrowFunction(definition)
+            references: (definition, context, opts): any => {
+                const { parameters, returns } = parts(definition)
                 return [
                     ...parameters.flatMap((parameter) =>
                         Fragment.parse(parameter, context).references(opts)
@@ -88,11 +88,11 @@ export namespace ArrowFunction {
                     ...Fragment.parse(returns, context).references(opts)
                 ]
             },
-            getDefault: (opts) => {
-                const { returns } = parseArrowFunction(definition)
-                return () => Fragment.parse(returns, context).getDefault(opts)
+            generate: (definition, context, opts) => {
+                const { returns } = parts(definition)
+                return () => Fragment.parse(returns, context).generate(opts)
             }
-        })
+        }
     })
 
     export const delegate = parse as any as Definition

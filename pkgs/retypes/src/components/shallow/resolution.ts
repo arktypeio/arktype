@@ -1,7 +1,8 @@
 import { Or } from "@re-do/utils"
 import { typeDefProxy } from "../../common.js"
+import { shallowCycleError, UnknownTypeError } from "../errors.js"
 import { createParser } from "../parser.js"
-import { ParseTypeRecurseOptions, UnknownTypeError, Root } from "./common.js"
+import { ParseTypeRecurseOptions, Root } from "./common.js"
 import { Fragment } from "./fragment.js"
 
 export namespace Resolution {
@@ -70,8 +71,31 @@ export namespace Resolution {
 
     export const parse = createParser({
         type,
-        parent: () => Fragment.node,
-        matches: (definition, typeSet) => definition in typeSet
+        parent: () => Fragment.parse,
+        matches: (definition, typeSet) => definition in typeSet,
+        implements: {
+            allows: (definition, context, assignment, opts) => {
+                /**
+                 * Keep track of definitions we've seen since last resolving to an object or built-in.
+                 * If we encounter the same definition twice, we're dealing with a shallow cyclic typeSet
+                 * like {user: "person", person: "user"}.
+                 **/
+                if (context.seen.includes(definition)) {
+                    throw new Error(
+                        shallowCycleError({
+                            definition,
+                            context,
+                            assignment
+                        })
+                    )
+                }
+                // If defined refers to a new type in typeSet, start resolving its definition
+                return Root.parse(context.typeSet[definition], {
+                    ...context,
+                    seen: [...context.seen, definition]
+                }).allows(assignment)
+            }
+        }
     })
 
     export const delegate = parse as any as Definition

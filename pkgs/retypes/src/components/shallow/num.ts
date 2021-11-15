@@ -17,7 +17,7 @@ export namespace Num {
                 definition === assignment
                     ? {}
                     : validationError({ definition, assignment, path }),
-            getDefault: (definition) => definition,
+            generate: (definition) => definition,
             references: (definition, context, { includeBuiltIn }) =>
                 includeBuiltIn ? [definition] : []
         }

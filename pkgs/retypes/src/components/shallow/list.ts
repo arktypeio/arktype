@@ -10,11 +10,34 @@ export namespace List {
 
     export const type = typeDefProxy as Definition
 
+    const parts = (definition: Definition) => ({
+        item: definition.slice(0, -2)
+    })
+
     export const parse = createParser({
         type,
         parent: () => Fragment.parse,
         matches: (definition) => definition.endsWith("[]"),
-        parse: (definition) => ({})
+        implements: {
+            allows: (definition, context, assignment, opts) => {
+                const { item } = parts(definition)
+                if (Array.isArray(assignment)) {
+                    // Convert the defined list to a tuple of the same length as extracted
+                    return Tuple.parse(
+                        [...Array(assignment.length)].map(() => item),
+                        context
+                    ).allows(assignment, opts)
+                }
+                return validationError({
+                    definition,
+                    path: context.path,
+                    assignment
+                })
+            },
+            generate: () => [],
+            references: (definition, context, opts) =>
+                Fragment.parse(parts(definition).item, context).references(opts)
+        }
     })
 
     export const delegate = parse as any as Definition

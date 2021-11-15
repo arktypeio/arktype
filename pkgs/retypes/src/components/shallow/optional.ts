@@ -14,8 +14,8 @@ export namespace Optional {
         type,
         parent: () => Str.parse,
         matches: (definition) => definition.endsWith("?"),
-        parse: (definition, context) => ({
-            allows: (assignment, opts) => {
+        implements: {
+            allows: (definition, context, assignment, opts) => {
                 if (assignment === "undefined") {
                     return {}
                 }
@@ -24,12 +24,12 @@ export namespace Optional {
                     opts
                 )
             },
-            getDefault: () => undefined,
-            references: (opts) =>
+            generate: () => undefined,
+            references: (definition, context, opts) =>
                 Fragment.parse(definition.slice(0, -1), context).references(
                     opts
                 )
-        })
+        }
     })
 
     export const delegate = parse as any as Definition

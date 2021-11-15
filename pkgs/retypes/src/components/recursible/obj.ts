@@ -43,7 +43,8 @@ export namespace Obj {
         type,
         parent: () => Recursible.parse,
         matches: (definition) =>
-            isRecursible(definition) && !Array.isArray(definition)
+            isRecursible(definition) && !Array.isArray(definition),
+        implements: {}
     })
 
     export const delegate = parse as any as Definition

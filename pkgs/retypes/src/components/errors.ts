@@ -31,16 +31,19 @@ export const orValidationError = ({
         assignment
     )} is not assignable to any of ${definition}:\n${stringify(orErrors)}`
 
-export type ShallowCycleErrorArgs = BaseAssignmentArgs & ParseContext<unknown>
+export type ShallowCycleErrorArgs = BaseAssignmentArgs & {
+    context: ParseContext<unknown>
+}
 
 export const shallowCycleError = ({
     definition,
-    typeSet,
-    seen
+    context
 }: ShallowCycleErrorArgs) =>
     `${stringifyDefinition(definition)} shallowly references itself ` +
-    `in typeSet ${stringify(typeSet)} via the following set of resolutions: ${[
-        ...seen,
+    `in typeSet ${stringify(
+        context.typeSet
+    )} via the following set of resolutions: ${[
+        ...context.seen,
         definition
     ].join("=>")}.`
 

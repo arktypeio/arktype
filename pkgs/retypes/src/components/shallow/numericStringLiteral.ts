@@ -18,7 +18,7 @@ export namespace NumericStringLiteral {
                 asNumber(definition, { assert: true }) === assignment
                     ? {}
                     : validationError({ definition, assignment, path }),
-            getDefault: (definition) => asNumber(definition, { assert: true }),
+            generate: (definition) => asNumber(definition, { assert: true }),
             references: (definition, context, { includeBuiltIn }) =>
                 includeBuiltIn ? [definition] : []
         }

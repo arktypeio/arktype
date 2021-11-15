@@ -50,17 +50,16 @@ export namespace Or {
 
     export const type = typeDefProxy as Definition
 
-    const parts = (definition: Definition, context: ParseContext<Definition>) =>
-        definition.split("|").map((part) => Fragment.parse(part, context))
-
     export const parse = createParser({
         type,
         parent: () => Fragment.parse,
         matches: (definition) => definition.includes("|"),
+        parts: (definition: Definition, context: ParseContext<Definition>) =>
+            definition.split("|").map((part) => Fragment.parse(part, context)),
         implements: {
-            allows: (definition, context, assignment, opts) => {
+            allows: ({ parts, ctx, def }, assignment) => {
                 const orErrors: OrTypeErrors = {}
-                for (const part of parts(definition, context)) {
+                for (const part of parts) {
                     const partErrors = stringifyErrors(part.allows(assignment))
                     if (!partErrors) {
                         // If one of the or types doesn't return any errors, the whole type is valid
@@ -69,18 +68,16 @@ export namespace Or {
                     orErrors[part.definition] = partErrors
                 }
                 return validationError({
-                    path: context.path,
+                    path: ctx.path,
                     message: orValidationError({
-                        definition,
+                        definition: def,
                         assignment,
                         orErrors
                     })
                 })
             },
-            getDefault: (definition, context, opts) => {
-                const possibleValues = parts(definition, context).map((part) =>
-                    part.getDefault(opts)
-                )
+            generate: ({ parts }, opts) => {
+                const possibleValues = parts.map((part) => part.generate(opts))
                 for (const comparableValue of comparableDefaultValueSet) {
                     if (possibleValues.includes(comparableValue)) {
                         return comparableValue
@@ -98,11 +95,10 @@ export namespace Or {
                 // value from returnOnCycle, so just return the first one
                 return possibleValues[0]
             },
-            references: (definition, context, opts) =>
-                parts(definition, context).flatMap((part) =>
-                    part.references(opts)
-                )
+            references: ({ parts }, opts) =>
+                parts.flatMap((part) => part.references(opts))
         }
     })
+
     export const delegate = parse as any as Definition
 }

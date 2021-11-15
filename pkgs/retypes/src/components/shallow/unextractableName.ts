@@ -10,7 +10,8 @@ export namespace UnextractableName {
     export const parse = createParser({
         type,
         parent: () => BuiltIn.parse,
-        matches: (definition) => definition in map
+        matches: (definition) => definition in map,
+        implements: {}
     })
 
     export const delegate = parse as any as Definition
