@@ -139,6 +139,14 @@ export type PreserveLabelOfFirstElement<T extends unknown[]> = T extends [
     ? PreserveLabelOfFirstElement<First>
     : T
 
+export type PreserveLabelOfLastElement<T extends unknown[]> = T extends [
+    unknown
+]
+    ? T
+    : T extends [first: infer First, ...last: infer Last]
+    ? PreserveLabelOfLastElement<Last>
+    : T
+
 export type FilterByIndex<
     T extends unknown[],
     Include extends number,

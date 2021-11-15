@@ -1,5 +1,6 @@
 import { RemoveSpaces } from "@re-do/utils"
-import { ParseTypeRecurseOptions, UnknownTypeError } from "./common.js"
+import { ParseTypeRecurseOptions } from "./common.js"
+import { UnknownTypeError } from "../errors.js"
 import { Fragment } from "./fragment.js"
 import { Optional } from "./optional.js"
 import { Shallow } from "./shallow.js"
@@ -42,7 +43,7 @@ export namespace Str {
         type,
         parent: () => Shallow.parse,
         matches: (definition) => typeof definition === "string",
-        children: [Optional.delegate, Fragment.delegate]
+        children: () => [Optional.delegate, Fragment.delegate]
     })
 
     export const delegate = parse as any as Definition

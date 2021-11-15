@@ -33,7 +33,7 @@ export namespace Shallow {
     export const parse = createParser({
         type,
         parent: () => Root.parse,
-        children: [Num.delegate, Str.delegate],
+        children: () => [Num.delegate, Str.delegate],
         matches: (definition) =>
             typeof definition === "number" || typeof definition === "string"
     })

@@ -1,7 +1,13 @@
 import { Unlisted } from "@re-do/utils"
 import { typeDefProxy } from "../../common.js"
+import { stringifyErrors } from "../../validate.js"
+import { OrTypeErrors, orValidationError, validationError } from "../errors.js"
 import { createParser } from "../parser.js"
-import { ParseTypeRecurseOptions } from "./common.js"
+import {
+    comparableDefaultValueSet,
+    nonComparableDefaultValues,
+    ParseTypeRecurseOptions
+} from "./common.js"
 import {
     ParseSplittable,
     ParseSplittableResult,
@@ -47,8 +53,58 @@ export namespace Or {
     export const parse = createParser({
         type,
         parent: () => Fragment.parse,
-        matches: (definition) => definition.includes("|")
+        matches: (definition) => definition.includes("|"),
+        parse: (definition, context) => {
+            const parts = definition
+                .split("|")
+                .map((part) => Fragment.parse(part, context))
+            return {
+                allows: (assignment, opts) => {
+                    const orErrors: OrTypeErrors = {}
+                    for (const part of parts) {
+                        const partErrors = stringifyErrors(
+                            part.allows(assignment)
+                        )
+                        if (!partErrors) {
+                            // If one of the or types doesn't return any errors, the whole type is valid
+                            return {}
+                        }
+                        orErrors[part.definition] = partErrors
+                    }
+                    return validationError({
+                        path: context.path,
+                        message: orValidationError({
+                            definition,
+                            assignment,
+                            orErrors
+                        })
+                    })
+                },
+                getDefault: (opts) => {
+                    const possibleValues = parts.map((part) =>
+                        part.getDefault(opts)
+                    )
+                    for (const comparableValue of comparableDefaultValueSet) {
+                        if (possibleValues.includes(comparableValue)) {
+                            return comparableValue
+                        }
+                    }
+                    for (const valueType in nonComparableDefaultValues) {
+                        const matchingValue = possibleValues.find(
+                            (value) => typeof value === valueType
+                        )
+                        if (matchingValue) {
+                            return matchingValue
+                        }
+                    }
+                    // The only type that should get to this point without returning is a custom
+                    // value from returnOnCycle, so just return the first one
+                    return possibleValues[0]
+                },
+                references: (opts) =>
+                    parts.flatMap((part) => part.references(opts))
+            }
+        }
     })
-
     export const delegate = parse as any as Definition
 }

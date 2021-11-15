@@ -77,7 +77,7 @@ export namespace Fragment {
         type,
         parent: () => Str.parse,
         matches: (definition) => typeof definition === "string",
-        children: [
+        children: () => [
             Or.delegate,
             ArrowFunction.delegate,
             List.delegate,

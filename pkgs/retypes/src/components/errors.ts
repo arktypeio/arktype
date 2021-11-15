@@ -1,10 +1,21 @@
-import { DiffSetsResult, List, stringify } from "@re-do/utils"
+import { DiffSetsResult, List, stringify, StringReplace } from "@re-do/utils"
 import {
     ExtractableDefinition,
     stringifyDefinition,
     UnvalidatedTypeSet
 } from "./common.js"
 import { AllowsOptions, ParseArgs, ParseContext } from "./parser.js"
+import { Shallow } from "./shallow/shallow.js"
+
+export const baseUnknownTypeError =
+    "Unable to determine the type of '${definition}'."
+
+export type UnknownTypeError<
+    Definition extends Shallow.Definition = Shallow.Definition
+> = StringReplace<typeof baseUnknownTypeError, "${definition}", `${Definition}`>
+
+export const unknownTypeError = <Definition>(definition: Definition) =>
+    baseUnknownTypeError.replace("${definition}", String(definition))
 
 // Members of an or type to errors that occurred validating those types
 export type OrTypeErrors = Record<string, string>

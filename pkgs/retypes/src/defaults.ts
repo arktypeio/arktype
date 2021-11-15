@@ -39,6 +39,7 @@ export const nonComparableDefaultValues = narrow({
     // of the value
     number: 0 as number,
     string: "" as string,
+    // These types cannot be directly checked for equality
     object: {},
     symbol: Symbol(),
     function: (...args: any[]) => undefined as any,

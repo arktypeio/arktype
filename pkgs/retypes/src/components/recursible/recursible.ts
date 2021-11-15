@@ -39,7 +39,7 @@ export namespace Recursible {
     export const parse = createParser({
         type,
         parent: () => Root.parse,
-        children: [Tuple.delegate, Obj.delegate],
+        children: () => [Tuple.delegate, Obj.delegate],
         matches: (definition) => isRecursible(definition)
     })
 

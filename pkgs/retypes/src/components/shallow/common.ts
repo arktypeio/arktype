@@ -1,20 +1,60 @@
-import { StringifyPossibleTypes, Split, Join, Unlisted } from "@re-do/utils"
+import {
+    StringifyPossibleTypes,
+    Split,
+    Join,
+    Unlisted,
+    narrow
+} from "@re-do/utils"
 import { ParseTypeRecurseOptions } from "../common.js"
 import { Fragment } from "./fragment.js"
-import { Shallow } from "./shallow.js"
-import { StringReplace } from "@re-do/utils"
+import { UnknownTypeError } from "../errors.js"
+import { BuiltIn } from "./builtIn.js"
 
 export * from "../common.js"
 
-export const baseUnknownTypeError =
-    "Unable to determine the type of '${definition}'."
+// These values can be directly compared for equality
+export const comparableDefaultValues = narrow({
+    undefined: undefined,
+    any: undefined,
+    unknown: undefined,
+    void: undefined,
+    null: null,
+    false: false,
+    true: true,
+    boolean: false,
+    number: 0,
+    string: "",
+    bigint: BigInt(0)
+})
 
-export type UnknownTypeError<
-    Definition extends Shallow.Definition = Shallow.Definition
-> = StringReplace<typeof baseUnknownTypeError, "${definition}", `${Definition}`>
+export const comparableDefaultValueSet = [
+    undefined,
+    null,
+    false,
+    true,
+    0,
+    "",
+    BigInt(0)
+]
 
-export const unknownTypeError = <Definition>(definition: Definition) =>
-    baseUnknownTypeError.replace("${definition}", String(definition))
+export const nonComparableDefaultValues = narrow({
+    // These types are comparable, but if they came
+    // from a literal, we should check the type instead
+    // of the value
+    number: 0 as number,
+    string: "" as string,
+    // These types cannot be directly checked for equality
+    object: {},
+    symbol: Symbol(),
+    function: (...args: any[]) => undefined as any,
+    never: undefined as never
+})
+
+// Default values for each built in type, sorted by precedence
+export const builtInDefaultValues: { [K in BuiltIn.Definition]: any } = {
+    ...comparableDefaultValues,
+    ...nonComparableDefaultValues
+}
 
 export type ParseSplittableResult<
     Components = any[],

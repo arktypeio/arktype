@@ -1,4 +1,8 @@
-import { ParseTypeRecurseOptions, DefinitionTypeError } from "./common.js"
+import {
+    ParseTypeRecurseOptions,
+    DefinitionTypeError,
+    definitionTypeError
+} from "./common.js"
 import { Shallow } from "./shallow/shallow.js"
 import { Recursible } from "./recursible/recursible.js"
 import {
@@ -9,6 +13,7 @@ import {
     GetInheritedMethods
 } from "./parser.js"
 import { DeepEvaluate, Evaluate } from "@re-do/utils"
+import { Obj } from "./recursible/obj.js"
 
 type RootDefinition = Shallow.Definition | Recursible.Definition
 
@@ -42,7 +47,10 @@ export namespace Root {
     export const parse = createParser({
         type: {} as Root.Definition,
         parent: () => reroot,
-        children: [Shallow.delegate],
+        children: () => [Shallow.delegate, Obj.delegate],
+        fallback: (definition, { path }) => {
+            throw new Error(definitionTypeError(definition, path))
+        },
         matches: () => true
     })
 }

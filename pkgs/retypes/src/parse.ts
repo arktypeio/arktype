@@ -13,47 +13,7 @@ import { getDefault, GetDefaultOptions } from "./defaults.js"
 import { TypeSet } from "./compile.js"
 import { assert, checkErrors, ValidateOptions } from "./validate.js"
 import { Parse, Validate } from "./definition.js"
-import { Recursible, Root, Shallow } from "./components"
-
-// const analyzeOrType = (args: AnalyzeTypeArgs<OrDefinition>) => {}
-
-type AggregatedTypeAnalysis = Pick<
-    TypeAnalysis,
-    "components" | "references" | "defaultValue"
->
-
-const getEmptyAggregatedAnalysis = (): AggregatedTypeAnalysis => ({
-    components: [],
-    references: [],
-    defaultValue: []
-})
-
-const analyzeObjectType = ({
-    definition,
-    path,
-    ...rest
-}: AnalyzeTypeArgs<Recursible.Definition>): TypeAnalysis => {
-    const aggregated = getEmptyAggregatedAnalysis()
-    const nested = transform(
-        definition,
-        ([k, itemDefinition]: [string | number, Recursible.Definition]) => {
-            const itemAnalysis = analyzeType({
-                definition: itemDefinition,
-                path: [...path, k],
-                ...rest
-            })
-            aggregated.components.push(...itemAnalysis.components)
-            aggregated.references.push(...itemAnalysis.references)
-            aggregated.defaultValue.push(itemAnalysis.defaultValue)
-            return [k, itemAnalysis]
-        }
-    )
-    return {
-        path,
-        nested,
-        ...aggregated
-    }
-}
+import { Root } from "./components"
 
 export type ParseTypeRecurseOptions = Required<ParseTypeOptions>
 
@@ -69,42 +29,6 @@ export type DefaultParseTypeOptions = {
     seen: {}
     deepOnCycle: false
     onResolve: never
-}
-
-export type AnalyzeTypeArgs<
-    Definition extends Root.Definition = Root.Definition
-> = {
-    definition: Definition
-    typeSet: UnvalidatedTypeSet
-    path: Segment[]
-    seen: string[]
-}
-
-export type TypeAnalysis = {
-    path: Segment[]
-    defaultValue: any
-    components: Shallow.Definition[]
-    references: string[]
-    nested?: DeepTreeOf<TypeAnalysis, true>
-}
-
-export const analyzeType = (args: AnalyzeTypeArgs): TypeAnalysis => {
-    const { definition, typeSet, path, seen } = args
-    if (typeof definition === "number") {
-        return {
-            path,
-            defaultValue: definition,
-            components: [definition],
-            references: []
-        }
-    }
-    if (typeof definition === "string") {
-        //return analyzeStringType()
-    }
-    if (typeof definition === "object") {
-        return analyzeObjectType(args as AnalyzeTypeArgs<Recursible.Definition>)
-    }
-    return {} as any
 }
 
 export const createParseFunction =
