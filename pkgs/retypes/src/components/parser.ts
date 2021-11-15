@@ -17,6 +17,7 @@ import {
     Unlisted
 } from "@re-do/utils"
 import { Function as ToolbeltFunction } from "ts-toolbelt"
+import { typeDefProxy } from "../common.js"
 import { unknownTypeError } from "../errors.js"
 import type {
     ExtractableDefinition,
@@ -46,7 +47,21 @@ export type AllowsOptions = {
     ignoreExtraneousKeys?: boolean
 }
 
+export type ParseInputArgs<DefType> = {
+    definition: DefType
+    context: ParseContext<DefType>
+}
+
+export type AllowsArgs<DefType> = ParseInputArgs<DefType> & {
+    assignment: ExtractableDefinition
+    ignoreExtraneousKeys?: boolean
+}
+
 export type ReferencesOptions = {
+    includeBuiltIn?: boolean
+}
+
+export type ReferencesArgs<DefType> = ParseInputArgs<DefType> & {
     includeBuiltIn?: boolean
 }
 
@@ -55,6 +70,9 @@ export type GetDefaultOptions = {
     // If this options is provided, we will return its value instead
     onRequiredCycle?: any
 }
+
+export type GetDefaultArgs<DefType> = ParseInputArgs<DefType> &
+    GetDefaultOptions
 
 // Paths at which errors occur mapped to their messages
 export type ValidationErrors = Record<string, string>
@@ -78,7 +96,7 @@ export type ParserInput<DefType, Parent, Children extends DefType[]> = {
     children?: () => Children
     // What to do if no children match (defaults to throwing unparsable error)
     fallback?: (...args: ParseArgs<DefType>) => any
-} & ParseInput<DefType, Parent, Children>
+} & InheritableParserMethods<DefType, Parent, Children>
 
 export type DefinitionMatcher<Parent> = Parent extends ParentParser<
     infer ParentDef
@@ -86,24 +104,27 @@ export type DefinitionMatcher<Parent> = Parent extends ParentParser<
     ? (...args: ParseArgs<ParentDef>) => boolean
     : never
 
-export type ParseInput<
+export type InheritableParserMethods<
     DefType,
     Parent,
     Children,
     Unimplemented = UnimplementedParserMethods<DefType, Parent>
 > = Children extends never[]
-    ? {
-          parse: (
-              definition: DefType,
-              context: ParseContext<DefType>
-          ) => Unimplemented
-      }
-    : {
-          parse?: (
-              definition: DefType,
-              context: ParseContext<DefType>
-          ) => Partial<Unimplemented>
-      }
+    ? { implements: Unimplemented }
+    : { implements?: Partial<Unimplemented> }
+// Children extends never[]
+// ? {
+//       parse: (
+//           definition: DefType,
+//           context: ParseContext<DefType>
+//       ) => Unimplemented
+//   }
+// : {
+//       parse?: (
+//           definition: DefType,
+//           context: ParseContext<DefType>
+//       ) => Partial<Unimplemented>
+//   }
 
 export type UnimplementedParserMethods<DefType, Parent> = Omit<
     ParserInputMethods<DefType>,
@@ -112,22 +133,34 @@ export type UnimplementedParserMethods<DefType, Parent> = Omit<
 
 export type ParserInputMethods<DefType> = {
     allows: (
-        assignment: ExtractableDefinition,
-        options: AllowsOptions
+        ...args: [
+            ...args: ParseArgs<DefType>,
+            assignment: ExtractableDefinition,
+            options: AllowsOptions
+        ]
     ) => ValidationErrors
-    references: (options: ReferencesOptions) => Shallow.Definition[]
-    getDefault: (options: GetDefaultOptions) => any
+    references: (
+        ...args: [...args: ParseArgs<DefType>, options: ReferencesOptions]
+    ) => Shallow.Definition[]
+    getDefault: (
+        ...args: [...args: ParseArgs<DefType>, options: GetDefaultOptions]
+    ) => any
 }
 
-export type ParserMethods<DefType> = {
-    [MethodName in keyof ParserInputMethods<DefType>]: MakeOptsOptional<
+export type ParseFunction<DefType> = (...args: ParseArgs<DefType>) => {
+    definition: DefType
+    matches: boolean
+} & {
+    [MethodName in keyof ParserInputMethods<DefType>]: InputToParseMethod<
         ParserInputMethods<DefType>[MethodName]
     >
 }
 
-export type MakeOptsOptional<
-    Method extends ValueOf<ParserInputMethods<unknown>>
-> = Method extends (...args: [...infer Rest, infer Opts]) => infer Return
+export type InputToParseMethod<
+    Method extends ValueOf<ParserInputMethods<any>>
+> = Method extends (
+    ...args: [infer Definition, infer Context, ...infer Rest, infer Opts]
+) => infer Return
     ? (...args: [...rest: Rest, opts?: Opts]) => Return
     : Method
 
@@ -157,17 +190,10 @@ export type ParserMetadata<
     delegates: Delegates
 }>
 
-export type ParseResult<DefType> = (
-    ...args: ParseArgs<DefType>
-) => ParserMethods<DefType> & {
-    definition: DefType
-    matches: boolean
-}
-
 export type Parser<DefType, Parent, Methods> = Evaluate<
     {
         meta: ParserMetadata<DefType, Parent, Methods>
-    } & ParseResult<DefType>
+    } & ParseFunction<DefType>
 >
 
 export type ParserMethodName = keyof ParserInputMethods<any>
@@ -200,7 +226,7 @@ export const createParser = <
         Input,
         ParserInput<DefType, Parent, Children>
     >
-): Parser<DefType, Parent, KeyValuate<Input, "parse">> => {
+): Parser<DefType, Parent, KeyValuate<Input, "implements">> => {
     const input = config as ParserInput<DefType, Parent, Children>
     const validatedChildren: AnyParser[] = (input.children?.() as any) ?? []
     const parse = (definition: DefType, context: ParseContext<DefType>) => {
@@ -225,7 +251,7 @@ export const createParser = <
             parserMethodNames,
             ([i, methodName]) => {
                 const implemented: Partial<ParserInputMethods<DefType>> =
-                    input.parse?.(...args) ?? {}
+                    input.implements ?? {}
                 if (implemented?.[methodName]) {
                     return [methodName, implemented[methodName]]
                 }
@@ -242,5 +268,3 @@ export const createParser = <
         meta: {}
     }) as any
 }
-
-export const createDelegate = <DefType>(parser: DefType) => parser

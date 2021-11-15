@@ -28,8 +28,3 @@ const extractReferences = <Definition, ActiveTypeSet>(
 ): ExtractedReferences<Definition, ActiveTypeSet> => {
     return {} as any
 }
-
-const f = extractReferences(
-    { a: { b: { c: "(a)=>c", d: ["b", "a", "string"] }, e: "c|a" } },
-    { a: 0, b: 0, c: 0 }
-)

@@ -5,15 +5,7 @@ import {
 } from "./common.js"
 import { Shallow } from "./shallow/shallow.js"
 import { Recursible } from "./recursible/recursible.js"
-import {
-    reroot,
-    ParseArgs,
-    createParser,
-    UnimplementedParserMethods,
-    GetInheritedMethods
-} from "./parser.js"
-import { DeepEvaluate, Evaluate } from "@re-do/utils"
-import { Obj } from "./recursible/obj.js"
+import { reroot, createParser } from "./parser.js"
 import { typeDefProxy } from "../common.js"
 
 type RootDefinition = Shallow.Definition | Recursible.Definition

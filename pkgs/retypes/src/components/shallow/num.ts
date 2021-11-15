@@ -12,15 +12,15 @@ export namespace Num {
         type,
         parent: () => Shallow.parse,
         matches: (definition) => typeof definition === "number",
-        parse: (definition, { path }) => ({
-            allows: (assignment, options) =>
+        implements: {
+            allows: (definition, { path }, assignment) =>
                 definition === assignment
                     ? {}
                     : validationError({ definition, assignment, path }),
-            getDefault: () => definition,
-            references: ({ includeBuiltIn }) =>
+            getDefault: (definition) => definition,
+            references: (definition, context, { includeBuiltIn }) =>
                 includeBuiltIn ? [definition] : []
-        })
+        }
     })
 
     export const delegate = parse as unknown as Definition

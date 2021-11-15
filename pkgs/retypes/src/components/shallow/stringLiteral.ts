@@ -15,15 +15,15 @@ export namespace StringLiteral {
         type,
         parent: () => Fragment.parse,
         matches: (definition) => !!definition.match("'.*'"),
-        parse: (definition, { path }) => ({
-            allows: (assignment, args) =>
+        implements: {
+            allows: (definition, { path }, assignment) =>
                 definition === assignment
                     ? {}
                     : validationError({ definition, assignment, path }),
-            getDefault: () => definition.slice(1, -1),
-            references: ({ includeBuiltIn }) =>
+            getDefault: (definition) => definition.slice(1, -1),
+            references: (definition, context, { includeBuiltIn }) =>
                 includeBuiltIn ? [definition] : []
-        })
+        }
     })
 
     export const delegate = parse as any as Definition

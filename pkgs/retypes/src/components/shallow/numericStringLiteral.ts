@@ -13,15 +13,15 @@ export namespace NumericStringLiteral {
         type,
         parent: () => Fragment.parse,
         matches: (definition) => typeof definition === "number",
-        parse: (definition, { path }) => ({
-            allows: (assignment) =>
+        implements: {
+            allows: (definition, { path }, assignment) =>
                 asNumber(definition, { assert: true }) === assignment
                     ? {}
                     : validationError({ definition, assignment, path }),
-            getDefault: () => asNumber(definition, { assert: true }),
-            references: ({ includeBuiltIn }) =>
+            getDefault: (definition) => asNumber(definition, { assert: true }),
+            references: (definition, context, { includeBuiltIn }) =>
                 includeBuiltIn ? [definition] : []
-        })
+        }
     })
 
     export const delegate = parse as any as Definition

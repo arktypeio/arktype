@@ -1,6 +1,7 @@
 import { createParser } from "../parser.js"
 import { BuiltIn } from "./builtIn.js"
 import { typeDefProxy } from "../../common.js"
+import { validationError } from "../errors.js"
 
 // These are the non-literal types we can extract from a value at runtime
 export namespace ExtractableName {
@@ -11,7 +12,13 @@ export namespace ExtractableName {
     export const parse = createParser({
         type,
         parent: () => BuiltIn.parse,
-        matches: ({ definition }) => definition in map
+        matches: (definition) => definition in map,
+        implements: {
+            allows: (definition, { path }, assignment) =>
+                definition === assignment
+                    ? {}
+                    : validationError({ definition, assignment, path })
+        }
     })
 
     export const delegate = parse as any as Definition
