@@ -7,45 +7,36 @@ import {
 import { AllowsOptions, ParseArgs, ParseContext } from "./parser.js"
 import { Shallow } from "./shallow/shallow.js"
 
-export const baseUnknownTypeError =
-    "Unable to determine the type of '${definition}'."
+export const baseUnknownTypeError = "Unable to determine the type of '${def}'."
 
 export type UnknownTypeError<
     Definition extends Shallow.Definition = Shallow.Definition
-> = StringReplace<typeof baseUnknownTypeError, "${definition}", `${Definition}`>
+> = StringReplace<typeof baseUnknownTypeError, "${def}", `${Definition}`>
 
-export const unknownTypeError = <Definition>(definition: Definition) =>
-    baseUnknownTypeError.replace("${definition}", String(definition))
+export const unknownTypeError = <Definition>(def: Definition) =>
+    baseUnknownTypeError.replace("${def}", String(def))
 
 // Members of an or type to errors that occurred validating those types
 export type OrTypeErrors = Record<string, string>
 
 export type OrErrorArgs = BaseAssignmentArgs & { orErrors: OrTypeErrors }
 
-export const orValidationError = ({
-    definition,
-    assignment,
-    orErrors
-}: OrErrorArgs) =>
+export const orValidationError = ({ def, valueType, orErrors }: OrErrorArgs) =>
     `${stringifyDefinition(
-        assignment
-    )} is not assignable to any of ${definition}:\n${stringify(orErrors)}`
+        valueType
+    )} is not assignable to any of ${def}:\n${stringify(orErrors)}`
 
 export type ShallowCycleErrorArgs = BaseAssignmentArgs & {
     context: ParseContext<unknown>
 }
 
-export const shallowCycleError = ({
-    definition,
-    context
-}: ShallowCycleErrorArgs) =>
-    `${stringifyDefinition(definition)} shallowly references itself ` +
+export const shallowCycleError = ({ def, context }: ShallowCycleErrorArgs) =>
+    `${stringifyDefinition(def)} shallowly references itself ` +
     `in typeSet ${stringify(
         context.typeSet
-    )} via the following set of resolutions: ${[
-        ...context.seen,
-        definition
-    ].join("=>")}.`
+    )} via the following set of resolutions: ${[...context.seen, def].join(
+        "=>"
+    )}.`
 
 export type ValidationErrorArgs = { path: string[] } & (
     | { message: string }
@@ -61,23 +52,20 @@ export type BaseAssignmentArgs<
     DefType = unknown,
     AssignmentType = ExtractableDefinition
 > = {
-    definition: DefType
-    assignment: AssignmentType
+    def: DefType
+    valueType: AssignmentType
 }
 
-export const unassignableError = ({
-    definition,
-    assignment
-}: BaseAssignmentArgs) =>
+export const unassignableError = ({ def, valueType }: BaseAssignmentArgs) =>
     `${stringifyDefinition(
-        assignment
-    )} is not assignable to ${stringifyDefinition(definition)}.`
+        valueType
+    )} is not assignable to ${stringifyDefinition(def)}.`
 
 export const tupleLengthError = ({
-    definition,
-    assignment
+    def,
+    valueType
 }: BaseAssignmentArgs<List, List>) =>
-    `Tuple of length ${assignment.length} is not assignable to tuple of length ${definition.length}.`
+    `Tuple of length ${valueType.length} is not assignable to tuple of length ${def.length}.`
 
 export const mismatchedKeysError = (keyErrors: DiffSetsResult<string>) => {
     const missing = keyErrors?.removed?.length
