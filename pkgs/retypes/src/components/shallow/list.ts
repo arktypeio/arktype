@@ -11,10 +11,6 @@ export namespace List {
 
     export const type = typeDefProxy as Definition
 
-    const parts = (definition: Definition) => ({
-        item: definition.slice(0, -2)
-    })
-
     export const parse = createParser(
         {
             type,

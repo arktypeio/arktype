@@ -102,8 +102,7 @@ export namespace Resolution {
                 resolution.allows(valueType, opts),
             generate: ({ components: { resolution } }, opts) =>
                 resolution.generate(opts),
-            references: ({ components: { resolution } }, opts) =>
-                resolution.references(opts)
+            references: ({ def }, opts) => [def]
         }
     )
 

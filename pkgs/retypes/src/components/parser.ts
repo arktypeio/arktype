@@ -24,6 +24,7 @@ import type {
     Root,
     UnvalidatedTypeSet
 } from "./common.js"
+import { Recursible } from "./recursible/index.js"
 import { Shallow } from "./shallow/shallow.js"
 
 export type MatchesArgs<DefType> = {
@@ -103,7 +104,9 @@ export type HandlesMethods<DefType, Components> = {
             ...args: HandlesContext<DefType, Components>,
             options: ReferencesOptions
         ]
-    ) => TreeOf<string[], true>
+    ) => DefType extends Recursible.Definition
+        ? TreeOf<string[], true>
+        : string[]
     generate?: (
         ...args: [
             ...args: HandlesContext<DefType, Components>,

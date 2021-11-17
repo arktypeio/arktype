@@ -1,9 +1,16 @@
-import { isRecursible, OptionalKeys, transform } from "@re-do/utils"
+import {
+    diffSets,
+    DiffSetsResult,
+    isRecursible,
+    OptionalKeys,
+    transform
+} from "@re-do/utils"
 import { ParseTypeRecurseOptions, Root, ValidateRecursible } from "./common.js"
 import { Recursible } from "."
 import { Optional } from "../shallow/optional.js"
-import { createParser } from "../parser.js"
+import { createParser, ParseResult, ValidationErrors } from "../parser.js"
 import { typeDefProxy } from "../../common.js"
+import { mismatchedKeysError, validationError } from "../errors.js"
 
 export namespace Obj {
     export type Definition<
@@ -52,9 +59,55 @@ export namespace Obj {
                         path: [...ctx.path, prop],
                         seen: []
                     })
-                ])
+                ]) as Record<string, ParseResult<any>>
         },
-        {} as any
+        {
+            allows: ({ components, def, ctx }, valueType, opts) => {
+                // Neither type is a tuple, validate keys as a set
+                const keyDiff = diffSets(
+                    Object.keys(def),
+                    Object.keys(valueType)
+                )
+                const keyErrors = keyDiff
+                    ? Object.entries(keyDiff).reduce((diff, [k, v]) => {
+                          const discrepancies: string[] = v
+                          if (k === "added" && !opts.ignoreExtraneousKeys) {
+                              return { ...diff, added: discrepancies }
+                          }
+                          if (k === "removed") {
+                              // Omit keys defined optional from 'removed'
+                              const illegallyRemoved = discrepancies.filter(
+                                  (removedKey) =>
+                                      typeof def[removedKey] !== "string" ||
+                                      !def[removedKey].endsWith("?")
+                              )
+                              return illegallyRemoved.length
+                                  ? { ...diff, removed: illegallyRemoved }
+                                  : diff
+                          }
+                          return diff
+                      }, undefined as DiffSetsResult<string>)
+                    : undefined
+                if (keyErrors) {
+                    return validationError({
+                        message: mismatchedKeysError(keyErrors),
+                        path: ctx.path
+                    })
+                }
+                return Object.keys(def).reduce(
+                    (errors, propName) => ({
+                        ...errors,
+                        ...components[propName].allows(
+                            (valueType as any)[propName],
+                            opts
+                        )
+                    }),
+                    {} as ValidationErrors
+                )
+            },
+            generate: () => [],
+            references: () => []
+        }
     )
 
     export const delegate = parse as any as Definition
