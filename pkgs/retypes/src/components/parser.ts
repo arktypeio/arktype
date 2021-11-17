@@ -62,17 +62,16 @@ export type ValidationErrors = Record<string, string>
 
 export type ParentParser<
     DefType = unknown,
-    Inherits extends Partial<ParserInputMethods<DefType, any>> = Partial<
-        ParserInputMethods<DefType, any>
+    Inherits extends HandlesMethods<DefType, any> = HandlesMethods<
+        DefType,
+        any
     >,
-    Implements extends Partial<ParserInputMethods<DefType, any>> = Partial<
-        ParserInputMethods<DefType, any>
-    >
+    Handles extends HandlesMethods<DefType, any> = HandlesMethods<DefType, any>
 > = {
     meta: {
         type: DefType
         inherits: Inherits
-        implements: Implements
+        handles: Handles
     }
 }
 
@@ -97,37 +96,43 @@ export type DefinitionMatcher<Parent> = Parent extends ParentParser<
     ? (...args: ParseArgs<ParentDef>) => boolean
     : never
 
-export type HandlesArg<Children, Methods> = Children extends never[]
-    ? [handles: Methods]
-    : [handles?: Partial<Methods>]
+export type HandlesArg<Children, Handles> = Children extends never[]
+    ? [handles: Required<Handles>]
+    : [handles?: Handles]
 
-export type Parsed<DefType, Parts> = [
+export type HandlesContext<DefType, Fragments> = [
     args: {
         def: DefType
         ctx: ParseContext<DefType>
-        parts: Parts
+        fragments: Fragments
     }
 ]
 
-export type ParserInputMethods<DefType, Parts> = {
-    allows: (
+export type HandlesMethods<DefType, Fragments> = {
+    allows?: (
         ...args: [
-            ...args: Parsed<DefType, Parts>,
+            ...args: HandlesContext<DefType, Fragments>,
             value: ExtractableDefinition,
             options: AllowsOptions
         ]
     ) => ValidationErrors
-    references: (
-        ...args: [...args: Parsed<DefType, Parts>, options: ReferencesOptions]
+    references?: (
+        ...args: [
+            ...args: HandlesContext<DefType, Fragments>,
+            options: ReferencesOptions
+        ]
     ) => Shallow.Definition[]
-    generate: (
-        ...args: [...args: Parsed<DefType, Parts>, options: GenerateOptions]
+    generate?: (
+        ...args: [
+            ...args: HandlesContext<DefType, Fragments>,
+            options: GenerateOptions
+        ]
     ) => any
 }
 
-export type UnimplementedParserMethods<DefType, Parent, Parts> = Omit<
-    ParserInputMethods<DefType, Parts>,
-    keyof GetInheritedMethods<Parent>
+export type UnhandledMethods<DefType, Parent, Fragments> = Omit<
+    HandlesMethods<DefType, Fragments>,
+    keyof GetHandledMethods<Parent>
 >
 
 export type ParseFunction<DefType> = (
@@ -139,50 +144,47 @@ export type ParseResult<DefType> = {
     context: ParseContext<DefType>
     matches: boolean
 } & {
-    [MethodName in ParserMethodName]: TransformInputMethod<
-        ParserInputMethods<DefType, any>[MethodName]
+    [MethodName in ParserMethodName]-?: TransformInputMethod<
+        NonNullable<HandlesMethods<DefType, any>[MethodName]>
     >
 }
 
 export type TransformInputMethod<
-    Method extends ValueOf<ParserInputMethods<any, any>>
+    Method extends ValueOf<HandlesMethods<any, any>>
 > = Method extends (
     ...args: [infer ParseResult, ...infer Rest, infer Opts]
 ) => infer Return
     ? (...args: [...rest: Rest, opts?: Opts]) => Return
     : Method
 
-export type GetInheritedMethods<Parent> = Parent extends ParentParser<
+export type GetHandledMethods<Parent> = Parent extends ParentParser<
     unknown,
     infer Inherits,
-    infer Implements
+    infer Handles
 >
-    ? Inherits & Implements
+    ? Inherits & Handles
     : {}
 
 export type ParserMetadata<
     DefType,
     Parent,
-    Methods,
+    Handles extends HandlesMethods<DefType, any>,
     Inherits extends Partial<
-        ParserInputMethods<DefType, any>
-    > = GetInheritedMethods<Parent>,
-    Implements extends Partial<
-        ParserInputMethods<DefType, any>
-    > = Methods extends undefined ? {} : Methods
+        HandlesMethods<DefType, any>
+    > = GetHandledMethods<Parent>
 > = Evaluate<{
     type: DefType
     inherits: Inherits
-    implements: Implements
+    handles: unknown extends Handles ? {} : Handles
 }>
 
-export type Parser<DefType, Parent, Methods> = Evaluate<
+export type Parser<DefType, Parent, Handles> = Evaluate<
     {
-        meta: ParserMetadata<DefType, Parent, Methods>
+        meta: ParserMetadata<DefType, Parent, Handles>
     } & ParseFunction<DefType>
 >
 
-export type ParserMethodName = keyof ParserInputMethods<any, any>
+export type ParserMethodName = keyof HandlesMethods<any, any>
 
 const parserMethodNames: ListPossibleTypes<ParserMethodName> = [
     "allows",
@@ -195,7 +197,7 @@ export const reroot = {
     meta: {
         type: {} as Root.Definition,
         inherits: {},
-        implements: {}
+        handles: {}
     }
 }
 
@@ -218,71 +220,61 @@ export const createParser = <
             Children,
             ToolbeltFunction.Exact<
                 Handles,
-                Partial<UnimplementedParserMethods<DefType, Parent, Fragments>>
+                UnhandledMethods<DefType, Parent, Fragments>
             >
         >
     ]
-): Handles =>
-    // Parser<DefType, Parent, KeyValuate<Input, "implements">> & {
-    //     fragments: Fragments
-    // }
-    {
-        const input = config as ParserInput<
-            DefType,
-            Parent,
-            Children,
-            Fragments
-        >
-        const parent = input.parent() as any as ParentParser<DefType>
-        const validatedChildren: AnyParser[] = (input.children?.() as any) ?? []
-        const implemented: Partial<ParserInputMethods<DefType, Fragments>> =
-            input.implements ?? {}
-        const inherited: Partial<ParserInputMethods<DefType, Fragments>> = {
-            ...parent.meta.inherits,
-            ...parent.meta.implements
-        }
-        const parse = (
-            definition: DefType,
-            context: ParseContext<DefType>
-        ): ParseResult<DefType> => {
-            const args: ParseArgs<DefType> = [
-                definition,
-                { ...context, depth: context.depth + 1 }
-            ]
-            let matchingChild: AnyParser
-            if (validatedChildren.length) {
-                const match = validatedChildren.find(
-                    (child) => child(...args).matches
-                )
-                if (!match) {
-                    if (input.fallback) {
-                        return input.fallback(...args)
-                    }
-                    throw new Error(unknownTypeError(definition))
-                }
-                matchingChild = match
-            }
-            const methods = transform(parserMethodNames, ([i, methodName]) => {
-                if (methodName in implemented) {
-                    return [methodName, implemented[methodName]]
-                }
-                if (methodName in inherited) {
-                    return [methodName, inherited[methodName]]
-                }
-                return [methodName, matchingChild(...args)[methodName]]
-            })
-            return {
-                matches: input.matches(...args),
-                definition,
-                context,
-                ...methods
-            } as any
-        }
-        return Object.assign(parse, {
-            meta: {
-                type: input.type,
-                inherits: inherited,
-                implements: input.implements
-            }
-        }) as any
+): Parser<DefType, Parent, Handles> => {
+    const input = args[0] as ParserInput<DefType, Parent, Children, Fragments>
+    const handles: HandlesMethods<DefType, Fragments> = args[1] ?? {}
+    const parent = input.parent() as any as ParentParser<DefType>
+    const validatedChildren: AnyParser[] = (input.children?.() as any) ?? []
+    const inherits: HandlesMethods<DefType, Fragments> = {
+        ...parent.meta.inherits,
+        ...parent.meta.handles
     }
+    const parse = (
+        definition: DefType,
+        context: ParseContext<DefType>
+    ): ParseResult<DefType> => {
+        const args: ParseArgs<DefType> = [
+            definition,
+            { ...context, depth: context.depth + 1 }
+        ]
+        let matchingChild: AnyParser
+        if (validatedChildren.length) {
+            const match = validatedChildren.find(
+                (child) => child(...args).matches
+            )
+            if (!match) {
+                if (input.fallback) {
+                    return input.fallback(...args)
+                }
+                throw new Error(unknownTypeError(definition))
+            }
+            matchingChild = match
+        }
+        const methods = transform(parserMethodNames, ([i, methodName]) => {
+            if (methodName in handles) {
+                return [methodName, handles[methodName]]
+            }
+            if (methodName in inherits) {
+                return [methodName, inherits[methodName]]
+            }
+            return [methodName, matchingChild(...args)[methodName]]
+        })
+        return {
+            matches: input.matches(...args),
+            definition,
+            context,
+            ...methods
+        } as any
+    }
+    return Object.assign(parse, {
+        meta: {
+            type: input.type,
+            inherits,
+            handles
+        }
+    }) as any
+}

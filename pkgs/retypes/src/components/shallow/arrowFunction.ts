@@ -56,44 +56,47 @@ export namespace ArrowFunction {
 
     export const type = typeDefProxy as Definition
 
-    export const parse = createParser({
-        type,
-        parent: () => Fragment.parse as any,
-        matches: (def) => /\(.*\)\=\>.*/.test(def as any),
-        fragments: (def, ctx) => {
-            const parts = def.split("=>")
-            const parameterDefs = parts[0].slice(1, -1).split(",")
-            const returnDef = parts.slice(1).join("=>")
-            return {
-                parameters: parameterDefs.map((arg) =>
-                    Fragment.parse(arg, ctx)
-                ),
-                returned: Fragment.parse(returnDef, ctx)
+    export const parse = createParser(
+        {
+            type,
+            parent: () => Fragment.parse as any,
+            matches: (def) => /\(.*\)\=\>.*/.test(def as any),
+            fragments: (def, ctx) => {
+                const parts = def.split("=>")
+                const parameterDefs = parts[0].slice(1, -1).split(",")
+                const returnDef = parts.slice(1).join("=>")
+                return {
+                    parameters: parameterDefs.map((arg) =>
+                        Fragment.parse(arg, ctx)
+                    ),
+                    returned: Fragment.parse(returnDef, ctx)
+                }
+            }
+        },
+        {
+            allows: ({ def, ctx: { path } }, valueType) =>
+                valueType === "function"
+                    ? {}
+                    : validationError({
+                          def,
+                          valueType,
+                          path
+                      }),
+            references: (
+                { fragments: { parameters, returned }, ctx },
+                opts
+            ) => {
+                return [
+                    ...parameters.flatMap((_) => _.references(opts)),
+                    ...returned.references(opts)
+                ]
+            },
+            generate: ({}, opts) => {
+                // const { returns } = parts(definition)
+                // return () => Fragment.parse(returns, context).generate(opts)
             }
         }
-    })
-    // implements: {}
-    // implements: {
-    //     allows: ({ def, path }, valueType) =>
-    //         valueType === "function"
-    //             ? {}
-    //             : validationError({
-    //                   def,
-    //                   valueType,
-    //                   path
-    //               }),
-    //     references: ({ fragments, ctx }, opts) => {
-    //         return [
-    //             ...fragments.parameters.map((_) => _.references(opts)),
-    //             fragments.returned.references(opts)
-    //         ]
-    //     },
-    //     generate: () => {}
-    //     // generate: (definition, context, opts) => {
-    //     //     const { returns } = parts(definition)
-    //     //     return () => Fragment.parse(returns, context).generate(opts)
-    //     // }
-    // }
+    )
 
     export const delegate = parse as any as Definition
 }

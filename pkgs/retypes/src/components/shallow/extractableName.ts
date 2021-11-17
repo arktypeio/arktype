@@ -9,17 +9,19 @@ export namespace ExtractableName {
 
     export const type = typeDefProxy as Definition
 
-    export const parse = createParser({
-        type,
-        parent: () => BuiltIn.parse,
-        matches: (definition) => definition in map,
-        implements: {
-            allows: (definition, { path }, assignment) =>
-                definition === assignment
+    export const parse = createParser(
+        {
+            type,
+            parent: () => BuiltIn.parse,
+            matches: (definition) => definition in map
+        },
+        {
+            allows: ({ def, ctx: { path } }, valueType) =>
+                def === valueType
                     ? {}
-                    : validationError({ definition, assignment, path })
+                    : validationError({ def, valueType, path })
         }
-    })
+    )
 
     export const delegate = parse as any as Definition
 

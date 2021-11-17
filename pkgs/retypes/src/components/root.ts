@@ -39,19 +39,13 @@ export namespace Root {
 
     export const type = typeDefProxy as Definition
 
-    export const parse = createParser(
-        {
-            type,
-            parent: () => reroot,
-            children: () => [Shallow.delegate, Recursible.delegate],
-            fallback: (definition, { path }) => {
-                throw new Error(definitionTypeError(definition, path))
-            },
-            fragments: () => ["yeah"],
-            matches: () => true
+    export const parse = createParser({
+        type,
+        parent: () => reroot,
+        children: () => [Shallow.delegate, Recursible.delegate],
+        fallback: (definition, { path }) => {
+            throw new Error(definitionTypeError(definition, path))
         },
-        {
-            generate: (args) => args.parts
-        }
-    )
+        matches: () => true
+    })
 }
