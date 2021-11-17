@@ -1,9 +1,10 @@
 import { ParseTypeRecurseOptions, UnvalidatedTypeSet } from "../common.js"
-import { createParser } from "../parser.js"
+import { createParser, ValidationErrors } from "../parser.js"
 import { unassignableError, validationError } from "../errors.js"
 import { Fragment } from "./fragment.js"
 import { typeDefProxy } from "../../common.js"
 import { Tuple } from "../recursible/tuple.js"
+import { isEmpty } from "@re-do/utils"
 
 export namespace List {
     export type Definition<Item extends string = string> = `${Item}[]`
@@ -14,31 +15,33 @@ export namespace List {
         item: definition.slice(0, -2)
     })
 
-    export const parse = createParser({
-        type,
-        parent: () => Fragment.parse,
-        matches: (definition) => definition.endsWith("[]"),
-        implements: {
-            allows: (definition, context, assignment, opts) => {
-                const { item } = parts(definition)
-                if (Array.isArray(assignment)) {
-                    // Convert the defined list to a tuple of the same length as extracted
+    export const parse = createParser(
+        {
+            type,
+            parent: () => Fragment.parse,
+            matches: (def, ctx) => def.endsWith("[]"),
+            fragments: (def, ctx) => ({
+                item: Fragment.parse(def.slice(0, -2), ctx)
+            })
+        },
+        {
+            allows: ({ def, fragments: { item }, ctx }, valueType, opts) => {
+                if (Array.isArray(valueType)) {
                     return Tuple.parse(
-                        [...Array(assignment.length)].map(() => item),
-                        context
-                    ).allows(assignment, opts)
+                        [...Array(valueType.length)].map(() => item),
+                        ctx
+                    ).allows(valueType, opts)
                 }
                 return validationError({
-                    definition,
-                    path: context.path,
-                    assignment
+                    def,
+                    valueType,
+                    path: ctx.path
                 })
             },
             generate: () => [],
-            references: (definition, context, opts) =>
-                Fragment.parse(parts(definition).item, context).references(opts)
+            references: ({ fragments: { item } }, opts) => item.references(opts)
         }
-    })
+    )
 
     export const delegate = parse as any as Definition
 }

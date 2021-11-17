@@ -8,20 +8,22 @@ export namespace Num {
 
     export const type = typeDefProxy as Definition
 
-    export const parse = createParser({
-        type,
-        parent: () => Shallow.parse,
-        matches: (definition) => typeof definition === "number",
-        implements: {
-            allows: (definition, { path }, assignment) =>
-                definition === assignment
+    export const parse = createParser(
+        {
+            type,
+            parent: () => Shallow.parse,
+            matches: (definition) => typeof definition === "number"
+        },
+        {
+            allows: ({ def, ctx: { path } }, valueType, opts) =>
+                def === valueType
                     ? {}
-                    : validationError({ definition, assignment, path }),
-            generate: (definition) => definition,
-            references: (definition, context, { includeBuiltIn }) =>
-                includeBuiltIn ? [definition] : []
+                    : validationError({ def, valueType, path }),
+            generate: ({ def }) => def,
+            references: ({ def }, { includeBuiltIn }) =>
+                includeBuiltIn ? [`${def}`] : []
         }
-    })
+    )
 
     export const delegate = parse as unknown as Definition
 }

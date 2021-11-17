@@ -50,34 +50,40 @@ export namespace Or {
 
     export const type = typeDefProxy as Definition
 
-    export const parse = createParser({
-        type,
-        parent: () => Fragment.parse,
-        matches: (definition) => definition.includes("|"),
-        parts: (definition: Definition, context: ParseContext<Definition>) =>
-            definition.split("|").map((part) => Fragment.parse(part, context)),
-        implements: {
-            allows: ({ parts, ctx, def }, assignment) => {
+    export const parse = createParser(
+        {
+            type,
+            parent: () => Fragment.parse,
+            matches: (definition) => definition.includes("|"),
+            fragments: (def: Definition, ctx: ParseContext<Definition>) =>
+                def.split("|").map((fragment) => Fragment.parse(fragment, ctx))
+        },
+        {
+            allows: ({ def, ctx, fragments }, valueType, opts) => {
                 const orErrors: OrTypeErrors = {}
-                for (const part of parts) {
-                    const partErrors = stringifyErrors(part.allows(assignment))
-                    if (!partErrors) {
+                for (const fragment of fragments) {
+                    const fragmentErrors = stringifyErrors(
+                        fragment.allows(valueType, opts)
+                    )
+                    if (!fragmentErrors) {
                         // If one of the or types doesn't return any errors, the whole type is valid
                         return {}
                     }
-                    orErrors[part.definition] = partErrors
+                    orErrors[fragment.definition] = fragmentErrors
                 }
                 return validationError({
                     path: ctx.path,
                     message: orValidationError({
-                        definition: def,
-                        assignment,
+                        def,
+                        valueType,
                         orErrors
                     })
                 })
             },
-            generate: ({ parts }, opts) => {
-                const possibleValues = parts.map((part) => part.generate(opts))
+            generate: ({ fragments }, opts) => {
+                const possibleValues = fragments.map((fragment) =>
+                    fragment.generate(opts)
+                )
                 for (const comparableValue of comparableDefaultValueSet) {
                     if (possibleValues.includes(comparableValue)) {
                         return comparableValue
@@ -95,10 +101,10 @@ export namespace Or {
                 // value from returnOnCycle, so just return the first one
                 return possibleValues[0]
             },
-            references: ({ parts }, opts) =>
-                parts.flatMap((part) => part.references(opts))
+            references: ({ fragments }, opts) =>
+                fragments.flatMap((fragment) => fragment.references(opts))
         }
-    })
+    )
 
     export const delegate = parse as any as Definition
 }

@@ -60,20 +60,20 @@ export type GenerateOptions = {
 // Paths at which errors occur mapped to their messages
 export type ValidationErrors = Record<string, string>
 
-export type ParentParser<
-    DefType = unknown,
-    Inherits extends HandlesMethods<DefType, any> = HandlesMethods<
-        DefType,
-        any
-    >,
-    Handles extends HandlesMethods<DefType, any> = HandlesMethods<DefType, any>
-> = {
-    meta: {
-        type: DefType
-        inherits: Inherits
-        handles: Handles
-    }
-}
+// export type ParentParser<
+//     DefType = unknown,
+//     Inherits extends HandlesMethods<DefType, any> = HandlesMethods<
+//         DefType,
+//         any
+//     >,
+//     Handles extends HandlesMethods<DefType, any> = HandlesMethods<DefType, any>
+// > = {
+//     meta: {
+//         type: DefType
+//         inherits: Inherits
+//         handles: Handles
+//     }
+// }
 
 export type ParserInput<
     DefType,
@@ -82,7 +82,7 @@ export type ParserInput<
     Fragments
 > = {
     type: DefType
-    parent: () => Parent
+    parent: () => { meta: Parent }
     matches: DefinitionMatcher<Parent>
     fragments?: (...args: ParseArgs<DefType>) => Fragments
     children?: () => Children
@@ -90,11 +90,9 @@ export type ParserInput<
     fallback?: (...args: ParseArgs<DefType>) => any
 }
 
-export type DefinitionMatcher<Parent> = Parent extends ParentParser<
-    infer ParentDef
->
-    ? (...args: ParseArgs<ParentDef>) => boolean
-    : never
+export type DefinitionMatcher<Parent> = (
+    ...args: ParseArgs<KeyValuate<Parent, "type">>
+) => boolean
 
 export type HandlesArg<Children, Handles> = Children extends never[]
     ? [handles: Required<Handles>]
@@ -104,15 +102,14 @@ export type HandlesContext<DefType, Fragments> = [
     args: {
         def: DefType
         ctx: ParseContext<DefType>
-        fragments: Fragments
-    }
+    } & (unknown extends Fragments ? {} : { fragments: Fragments })
 ]
 
 export type HandlesMethods<DefType, Fragments> = {
     allows?: (
         ...args: [
             ...args: HandlesContext<DefType, Fragments>,
-            value: ExtractableDefinition,
+            valueType: ExtractableDefinition,
             options: AllowsOptions
         ]
     ) => ValidationErrors
@@ -121,7 +118,7 @@ export type HandlesMethods<DefType, Fragments> = {
             ...args: HandlesContext<DefType, Fragments>,
             options: ReferencesOptions
         ]
-    ) => Shallow.Definition[]
+    ) => string[]
     generate?: (
         ...args: [
             ...args: HandlesContext<DefType, Fragments>,
@@ -151,37 +148,27 @@ export type ParseResult<DefType> = {
 
 export type TransformInputMethod<
     Method extends ValueOf<HandlesMethods<any, any>>
-> = Method extends (
-    ...args: [infer ParseResult, ...infer Rest, infer Opts]
-) => infer Return
-    ? (...args: [...rest: Rest, opts?: Opts]) => Return
+> = Method extends (...args: [infer ParseResult, ...infer Rest]) => infer Return
+    ? (...args: [...rest: Rest]) => Return
     : Method
 
-export type GetHandledMethods<Parent> = Parent extends ParentParser<
-    unknown,
-    infer Inherits,
-    infer Handles
->
-    ? Inherits & Handles
-    : {}
+export type GetHandledMethods<Parent> = KeyValuate<Parent, "inherits"> &
+    KeyValuate<Parent, "handles">
 
 export type ParserMetadata<
     DefType,
     Parent,
-    Handles extends HandlesMethods<DefType, any>,
-    Inherits extends Partial<
-        HandlesMethods<DefType, any>
-    > = GetHandledMethods<Parent>
+    Handles extends HandlesMethods<DefType, any>
 > = Evaluate<{
-    type: DefType
-    inherits: Inherits
-    handles: unknown extends Handles ? {} : Handles
+    meta: {
+        type: DefType
+        inherits: GetHandledMethods<Parent>
+        handles: unknown extends Handles ? {} : Handles
+    }
 }>
 
 export type Parser<DefType, Parent, Handles> = Evaluate<
-    {
-        meta: ParserMetadata<DefType, Parent, Handles>
-    } & ParseFunction<DefType>
+    ParserMetadata<DefType, Parent, Handles> & ParseFunction<DefType>
 >
 
 export type ParserMethodName = keyof HandlesMethods<any, any>
@@ -227,7 +214,7 @@ export const createParser = <
 ): Parser<DefType, Parent, Handles> => {
     const input = args[0] as ParserInput<DefType, Parent, Children, Fragments>
     const handles: HandlesMethods<DefType, Fragments> = args[1] ?? {}
-    const parent = input.parent() as any as ParentParser<DefType>
+    const parent = input.parent() as any as ParserMetadata<any, any, any>
     const validatedChildren: AnyParser[] = (input.children?.() as any) ?? []
     const inherits: HandlesMethods<DefType, Fragments> = {
         ...parent.meta.inherits,
@@ -264,7 +251,7 @@ export const createParser = <
             return [methodName, matchingChild(...args)[methodName]]
         })
         return {
-            matches: input.matches(...args),
+            matches: input.matches(...(args as [any, any])),
             definition,
             context,
             ...methods

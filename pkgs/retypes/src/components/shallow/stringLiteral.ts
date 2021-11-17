@@ -11,20 +11,22 @@ export namespace StringLiteral {
 
     export const type = typeDefProxy as Definition
 
-    export const parse = createParser({
-        type,
-        parent: () => Fragment.parse,
-        matches: (definition) => !!definition.match("'.*'"),
-        implements: {
-            allows: (definition, { path }, assignment) =>
-                definition === assignment
+    export const parse = createParser(
+        {
+            type,
+            parent: () => Fragment.parse,
+            matches: (def) => !!def.match("'.*'")
+        },
+        {
+            allows: ({ def, ctx: { path } }, valueType) =>
+                def === valueType
                     ? {}
-                    : validationError({ definition, assignment, path }),
-            generate: (definition) => definition.slice(1, -1),
-            references: (definition, context, { includeBuiltIn }) =>
-                includeBuiltIn ? [definition] : []
+                    : validationError({ def, valueType, path }),
+            generate: ({ def }) => def.slice(1, -1),
+            references: ({ def }, { includeBuiltIn }) =>
+                includeBuiltIn ? [def] : []
         }
-    })
+    )
 
     export const delegate = parse as any as Definition
 }

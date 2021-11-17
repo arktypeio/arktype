@@ -9,20 +9,22 @@ export namespace NumericStringLiteral {
 
     export const type = typeDefProxy as Definition
 
-    export const parse = createParser({
-        type,
-        parent: () => Fragment.parse,
-        matches: (definition) => typeof definition === "number",
-        implements: {
-            allows: (definition, { path }, assignment) =>
-                asNumber(definition, { assert: true }) === assignment
+    export const parse = createParser(
+        {
+            type,
+            parent: () => Fragment.parse,
+            matches: (definition) => typeof definition === "number"
+        },
+        {
+            allows: ({ def, ctx: { path } }, valueType) =>
+                asNumber(def, { assert: true }) === valueType
                     ? {}
-                    : validationError({ definition, assignment, path }),
-            generate: (definition) => asNumber(definition, { assert: true }),
-            references: (definition, context, { includeBuiltIn }) =>
-                includeBuiltIn ? [definition] : []
+                    : validationError({ def, valueType, path }),
+            generate: ({ def }) => asNumber(def, { assert: true }),
+            references: ({ def }, { includeBuiltIn }) =>
+                includeBuiltIn ? [def] : []
         }
-    })
+    )
 
     export const delegate = parse as any as Definition
 }

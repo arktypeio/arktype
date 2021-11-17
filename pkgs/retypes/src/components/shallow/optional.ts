@@ -10,27 +10,24 @@ export namespace Optional {
 
     export const type = typeDefProxy as Definition
 
-    export const parse = createParser({
-        type,
-        parent: () => Str.parse,
-        matches: (definition) => definition.endsWith("?"),
-        implements: {
-            allows: (definition, context, assignment, opts) => {
-                if (assignment === "undefined") {
+    export const parse = createParser(
+        {
+            type,
+            parent: () => Str.parse,
+            matches: (def) => def.endsWith("?"),
+            fragments: (def, ctx) => [Fragment.parse(def.slice(0, -1), ctx)]
+        },
+        {
+            allows: ({ def, fragments, ctx }, valueType, opts) => {
+                if (valueType === "undefined") {
                     return {}
                 }
-                return Fragment.parse(definition.slice(0, -1), context).allows(
-                    assignment,
-                    opts
-                )
+                return fragments[0].allows(valueType, opts)
             },
             generate: () => undefined,
-            references: (definition, context, opts) =>
-                Fragment.parse(definition.slice(0, -1), context).references(
-                    opts
-                )
+            references: ({ fragments }, opts) => fragments[0].references(opts)
         }
-    })
+    )
 
     export const delegate = parse as any as Definition
 }

@@ -5,7 +5,7 @@ import { validationError } from "../errors.js"
 
 // These are the non-literal types we can extract from a value at runtime
 export namespace ExtractableName {
-    export type Definition<Def extends keyof Map = keyof Map> = Def
+    export type Definition<Def extends keyof Defaults = keyof Defaults> = Def
 
     export const type = typeDefProxy as Definition
 
@@ -13,7 +13,7 @@ export namespace ExtractableName {
         {
             type,
             parent: () => BuiltIn.parse,
-            matches: (definition) => definition in map
+            matches: (definition) => definition in defaults
         },
         {
             allows: ({ def, ctx: { path } }, valueType) =>
@@ -25,15 +25,15 @@ export namespace ExtractableName {
 
     export const delegate = parse as any as Definition
 
-    export const map = {
+    export const defaults = {
         bigint: BigInt(0),
         true: true as true,
         false: false as false,
         null: null,
         symbol: Symbol(),
         undefined: undefined,
-        function: (...args: any[]) => null as any
+        function: (...args: any[]) => undefined as any
     }
 
-    export type Map = typeof map
+    export type Defaults = typeof defaults
 }

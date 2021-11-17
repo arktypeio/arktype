@@ -26,17 +26,16 @@ export const orValidationError = ({ def, valueType, orErrors }: OrErrorArgs) =>
         valueType
     )} is not assignable to any of ${def}:\n${stringify(orErrors)}`
 
-export type ShallowCycleErrorArgs = BaseAssignmentArgs & {
-    context: ParseContext<unknown>
+export type BaseParseArgs = {
+    def: unknown
+    ctx: ParseContext<unknown>
 }
 
-export const shallowCycleError = ({ def, context }: ShallowCycleErrorArgs) =>
+export const shallowCycleError = ({ def, ctx }: BaseParseArgs) =>
     `${stringifyDefinition(def)} shallowly references itself ` +
     `in typeSet ${stringify(
-        context.typeSet
-    )} via the following set of resolutions: ${[...context.seen, def].join(
-        "=>"
-    )}.`
+        ctx.typeSet
+    )} via the following set of resolutions: ${[...ctx.seen, def].join("=>")}.`
 
 export type ValidationErrorArgs = { path: string[] } & (
     | { message: string }
@@ -76,3 +75,8 @@ export const mismatchedKeysError = (keyErrors: DiffSetsResult<string>) => {
         : ""
     return `${missing}${missing && extraneous ? " " : ""}${extraneous}`
 }
+
+export const valueGenerationError = ({ def, ctx: { path } }: BaseParseArgs) =>
+    `Could not find a default value satisfying ${stringifyDefinition(def)}${
+        path.length ? ` at '${path.join("/")}'` : ""
+    }.`

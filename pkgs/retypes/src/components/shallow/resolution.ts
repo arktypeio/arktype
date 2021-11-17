@@ -69,34 +69,43 @@ export namespace Resolution {
 
     export const type = typeDefProxy as Definition
 
-    export const parse = createParser({
-        type,
-        parent: () => Fragment.parse,
-        matches: (definition, typeSet) => definition in typeSet,
-        implements: {
-            allows: (definition, context, assignment, opts) => {
+    export const parse = createParser(
+        {
+            type,
+            parent: () => Fragment.parse,
+            matches: (def, ctx) => def in ctx.typeSet,
+            fragments: (def, ctx) => {
                 /**
                  * Keep track of definitions we've seen since last resolving to an object or built-in.
                  * If we encounter the same definition twice, we're dealing with a shallow cyclic typeSet
                  * like {user: "person", person: "user"}.
                  **/
-                if (context.seen.includes(definition)) {
+                if (ctx.seen.includes(def)) {
                     throw new Error(
                         shallowCycleError({
-                            definition,
-                            context,
-                            assignment
+                            def,
+                            ctx
                         })
                     )
                 }
                 // If defined refers to a new type in typeSet, start resolving its definition
-                return Root.parse(context.typeSet[definition], {
-                    ...context,
-                    seen: [...context.seen, definition]
-                }).allows(assignment)
+                return {
+                    resolution: Root.parse(ctx.typeSet[def], {
+                        ...ctx,
+                        seen: [...ctx.seen, def]
+                    })
+                }
             }
+        },
+        {
+            allows: ({ fragments: { resolution } }, valueType, opts) =>
+                resolution.allows(valueType, opts),
+            generate: ({ fragments: { resolution } }, opts) =>
+                resolution.generate(opts),
+            references: ({ fragments: { resolution } }, opts) =>
+                resolution.references(opts)
         }
-    })
+    )
 
     export const delegate = parse as any as Definition
 }

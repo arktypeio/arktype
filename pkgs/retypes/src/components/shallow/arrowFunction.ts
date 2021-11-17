@@ -91,10 +91,10 @@ export namespace ArrowFunction {
                     ...returned.references(opts)
                 ]
             },
-            generate: ({}, opts) => {
-                // const { returns } = parts(definition)
-                // return () => Fragment.parse(returns, context).generate(opts)
-            }
+            generate:
+                ({ fragments: { returned } }, opts) =>
+                (...args: any[]) =>
+                    returned.generate(opts)
         }
     )
 
