@@ -15,17 +15,17 @@ export namespace Optional {
             type,
             parent: () => Str.parse,
             matches: (def) => def.endsWith("?"),
-            fragments: (def, ctx) => [Fragment.parse(def.slice(0, -1), ctx)]
+            components: (def, ctx) => [Fragment.parse(def.slice(0, -1), ctx)]
         },
         {
-            allows: ({ def, fragments, ctx }, valueType, opts) => {
+            allows: ({ def, components, ctx }, valueType, opts) => {
                 if (valueType === "undefined") {
                     return {}
                 }
-                return fragments[0].allows(valueType, opts)
+                return components[0].allows(valueType, opts)
             },
             generate: () => undefined,
-            references: ({ fragments }, opts) => fragments[0].references(opts)
+            references: ({ components }, opts) => components[0].references(opts)
         }
     )
 

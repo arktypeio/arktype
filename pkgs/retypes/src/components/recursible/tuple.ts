@@ -12,6 +12,8 @@ import {
 } from "./common.js"
 import { Recursible } from "./recursible.js"
 import { typeDefProxy } from "../../common.js"
+import path from "path"
+import { ValidationErrors } from "../../validate.js"
 
 export namespace Tuple {
     export type Definition<Def extends Root.Definition[] = Root.Definition[]> =
@@ -33,30 +35,54 @@ export namespace Tuple {
 
     export const type = typeDefProxy as Definition
 
-    export const parse = createParser({
-        type,
-        parent: () => Recursible.parse,
-        matches: ({ definition }) => Array.isArray(definition),
-        implements: {
-            allows: (definition, context, assignment, opts) => {
-                if (!Array.isArray(assignment)) {
+    export const parse = createParser(
+        {
+            type,
+            parent: () => Recursible.parse,
+            matches: (def) => Array.isArray(def),
+            components: (def, ctx) =>
+                def.map((itemDef, index) =>
+                    Root.parse(itemDef, {
+                        ...ctx,
+                        path: [...ctx.path, `${index}`],
+                        seen: []
+                    })
+                )
+        },
+        {
+            allows: (...args) => {
+                const [{ def, ctx, components }, valueType, opts] = args
+                if (!Array.isArray(valueType)) {
                     // Defined is a tuple, extracted is an object with string keys (will never be assignable)
                     return validationError({
-                        definition,
-                        assignment,
-                        path: context.path
+                        def,
+                        valueType,
+                        path: ctx.path
                     })
                 }
-                if (definition.length !== assignment.length) {
+                if (def.length !== valueType.length) {
                     return validationError({
-                        path: context.path,
-                        message: tupleLengthError({ definition, assignment })
+                        path: ctx.path,
+                        message: tupleLengthError({
+                            def,
+                            valueType
+                        })
                     })
                 }
-                return validateProperties(definition, context, assignment, opts)
-            }
+                return components.reduce(
+                    (errors, component, index) => ({
+                        ...errors,
+                        ...component.allows(valueType[index], opts)
+                    }),
+                    {} as ValidationErrors
+                )
+            },
+            generate: ({ components }, opts) =>
+                components.map((item) => item.generate(opts)),
+            references: ({ components }, opts) =>
+                components.map((item) => item.references(opts))
         }
-    })
+    )
 
     export const delegate = parse as any as Definition
 }

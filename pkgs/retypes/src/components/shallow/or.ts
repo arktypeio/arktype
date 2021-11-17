@@ -55,13 +55,13 @@ export namespace Or {
             type,
             parent: () => Fragment.parse,
             matches: (definition) => definition.includes("|"),
-            fragments: (def: Definition, ctx: ParseContext<Definition>) =>
+            components: (def: Definition, ctx: ParseContext<Definition>) =>
                 def.split("|").map((fragment) => Fragment.parse(fragment, ctx))
         },
         {
-            allows: ({ def, ctx, fragments }, valueType, opts) => {
+            allows: ({ def, ctx, components }, valueType, opts) => {
                 const orErrors: OrTypeErrors = {}
-                for (const fragment of fragments) {
+                for (const fragment of components) {
                     const fragmentErrors = stringifyErrors(
                         fragment.allows(valueType, opts)
                     )
@@ -80,8 +80,8 @@ export namespace Or {
                     })
                 })
             },
-            generate: ({ fragments }, opts) => {
-                const possibleValues = fragments.map((fragment) =>
+            generate: ({ components }, opts) => {
+                const possibleValues = components.map((fragment) =>
                     fragment.generate(opts)
                 )
                 for (const comparableValue of comparableDefaultValueSet) {
@@ -101,8 +101,8 @@ export namespace Or {
                 // value from returnOnCycle, so just return the first one
                 return possibleValues[0]
             },
-            references: ({ fragments }, opts) =>
-                fragments.flatMap((fragment) => fragment.references(opts))
+            references: ({ components }, opts) =>
+                components.flatMap((fragment) => fragment.references(opts))
         }
     )
 

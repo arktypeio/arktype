@@ -1,4 +1,4 @@
-import { ValueOf } from "@re-do/utils"
+import { TreeOf, ValueOf } from "@re-do/utils"
 import {
     DiffUnions,
     ElementOf,
@@ -60,31 +60,16 @@ export type GenerateOptions = {
 // Paths at which errors occur mapped to their messages
 export type ValidationErrors = Record<string, string>
 
-// export type ParentParser<
-//     DefType = unknown,
-//     Inherits extends HandlesMethods<DefType, any> = HandlesMethods<
-//         DefType,
-//         any
-//     >,
-//     Handles extends HandlesMethods<DefType, any> = HandlesMethods<DefType, any>
-// > = {
-//     meta: {
-//         type: DefType
-//         inherits: Inherits
-//         handles: Handles
-//     }
-// }
-
 export type ParserInput<
     DefType,
     Parent,
     Children extends DefType[],
-    Fragments
+    Components
 > = {
     type: DefType
     parent: () => { meta: Parent }
     matches: DefinitionMatcher<Parent>
-    fragments?: (...args: ParseArgs<DefType>) => Fragments
+    components?: (...args: ParseArgs<DefType>) => Components
     children?: () => Children
     // What to do if no children match (defaults to throwing unparsable error)
     fallback?: (...args: ParseArgs<DefType>) => any
@@ -98,37 +83,37 @@ export type HandlesArg<Children, Handles> = Children extends never[]
     ? [handles: Required<Handles>]
     : [handles?: Handles]
 
-export type HandlesContext<DefType, Fragments> = [
+export type HandlesContext<DefType, Components> = [
     args: {
         def: DefType
         ctx: ParseContext<DefType>
-    } & (unknown extends Fragments ? {} : { fragments: Fragments })
+    } & (unknown extends Components ? {} : { components: Components })
 ]
 
-export type HandlesMethods<DefType, Fragments> = {
+export type HandlesMethods<DefType, Components> = {
     allows?: (
         ...args: [
-            ...args: HandlesContext<DefType, Fragments>,
+            ...args: HandlesContext<DefType, Components>,
             valueType: ExtractableDefinition,
             options: AllowsOptions
         ]
     ) => ValidationErrors
     references?: (
         ...args: [
-            ...args: HandlesContext<DefType, Fragments>,
+            ...args: HandlesContext<DefType, Components>,
             options: ReferencesOptions
         ]
-    ) => string[]
+    ) => TreeOf<string[], true>
     generate?: (
         ...args: [
-            ...args: HandlesContext<DefType, Fragments>,
+            ...args: HandlesContext<DefType, Components>,
             options: GenerateOptions
         ]
     ) => any
 }
 
-export type UnhandledMethods<DefType, Parent, Fragments> = Omit<
-    HandlesMethods<DefType, Fragments>,
+export type UnhandledMethods<DefType, Parent, Components> = Omit<
+    HandlesMethods<DefType, Components>,
     keyof GetHandledMethods<Parent>
 >
 
@@ -195,28 +180,28 @@ export const createParser = <
     Handles,
     DefType,
     Parent,
-    Fragments,
+    Components,
     Children extends DefType[] = []
 >(
     ...args: [
         ToolbeltFunction.Exact<
             Input,
-            ParserInput<DefType, Parent, Children, Fragments>
+            ParserInput<DefType, Parent, Children, Components>
         >,
         ...HandlesArg<
             Children,
             ToolbeltFunction.Exact<
                 Handles,
-                UnhandledMethods<DefType, Parent, Fragments>
+                UnhandledMethods<DefType, Parent, Components>
             >
         >
     ]
 ): Parser<DefType, Parent, Handles> => {
-    const input = args[0] as ParserInput<DefType, Parent, Children, Fragments>
-    const handles: HandlesMethods<DefType, Fragments> = args[1] ?? {}
+    const input = args[0] as ParserInput<DefType, Parent, Children, Components>
+    const handles: HandlesMethods<DefType, Components> = args[1] ?? {}
     const parent = input.parent() as any as ParserMetadata<any, any, any>
     const validatedChildren: AnyParser[] = (input.children?.() as any) ?? []
-    const inherits: HandlesMethods<DefType, Fragments> = {
+    const inherits: HandlesMethods<DefType, Components> = {
         ...parent.meta.inherits,
         ...parent.meta.handles
     }

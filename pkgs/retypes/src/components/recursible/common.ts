@@ -1,6 +1,12 @@
 import { DeepTreeOf, Evaluate } from "@re-do/utils"
 import { Root, ExtractableDefinition } from "../common.js"
-import { AllowsOptions, ParseContext, ValidationErrors } from "../parser.js"
+import {
+    AllowsOptions,
+    HandlesMethods,
+    ParseContext,
+    ParseResult,
+    ValidationErrors
+} from "../parser.js"
 import { Recursible } from "./recursible.js"
 
 export * from "../common.js"
@@ -19,30 +25,28 @@ export type ValidateRecursible<
     }
 >
 
+// export type ValidatePropertiesArgs = {
+//     def: Recursible.Definition
+//     ctx: ParseContext<Recursible.Definition>
+//     valueType
+// }
+
 /**
  * Recurse into the properties of two objects/tuples with
  * keysets that have already been validated as compatible.
  */
-export const validateProperties = (
-    definition: Recursible.Definition,
-    context: ParseContext<Recursible.Definition>,
-    assignment: DeepTreeOf<ExtractableDefinition, true>,
-    opts: AllowsOptions
-) => {
-    return Object.keys(definition)
-        .filter((definedKey) => definedKey in (assignment as object))
-        .reduce<ValidationErrors>(
+export const validateProperties: NonNullable<
+    HandlesMethods<
+        Recursible.Definition,
+        Record<string | number, ParseResult<Recursible.Definition>>
+    >["allows"]
+> = ({ components }, valueType, opts) =>
+    Object.keys(components)
+        .filter((definedKey) => definedKey in (valueType as object))
+        .reduce(
             (errors, mutualKey) => ({
-                ...errors
-                // ...validate({
-                //     extracted: (assignment as any)[mutualKey],
-                //     definition: (definition as any)[mutualKey],
-                //     path: [...path, mutualKey],
-                //     typeSet,
-                //     seen: [],
-                //     ignoreExtraneousKeys
-                // })
+                ...errors,
+                ...components[mutualKey].allows(valueType, opts)
             }),
-            {}
+            {} as ValidationErrors
         )
-}

@@ -61,7 +61,7 @@ export namespace ArrowFunction {
             type,
             parent: () => Fragment.parse as any,
             matches: (def) => /\(.*\)\=\>.*/.test(def as any),
-            fragments: (def, ctx) => {
+            components: (def, ctx) => {
                 const parts = def.split("=>")
                 const parameterDefs = parts[0].slice(1, -1).split(",")
                 const returnDef = parts.slice(1).join("=>")
@@ -83,7 +83,7 @@ export namespace ArrowFunction {
                           path
                       }),
             references: (
-                { fragments: { parameters, returned }, ctx },
+                { components: { parameters, returned }, ctx },
                 opts
             ) => {
                 return [
@@ -92,7 +92,7 @@ export namespace ArrowFunction {
                 ]
             },
             generate:
-                ({ fragments: { returned } }, opts) =>
+                ({ components: { returned } }, opts) =>
                 (...args: any[]) =>
                     returned.generate(opts)
         }

@@ -20,12 +20,12 @@ export namespace List {
             type,
             parent: () => Fragment.parse,
             matches: (def, ctx) => def.endsWith("[]"),
-            fragments: (def, ctx) => ({
+            components: (def, ctx) => ({
                 item: Fragment.parse(def.slice(0, -2), ctx)
             })
         },
         {
-            allows: ({ def, fragments: { item }, ctx }, valueType, opts) => {
+            allows: ({ def, components: { item }, ctx }, valueType, opts) => {
                 if (Array.isArray(valueType)) {
                     return Tuple.parse(
                         [...Array(valueType.length)].map(() => item),
@@ -39,7 +39,8 @@ export namespace List {
                 })
             },
             generate: () => [],
-            references: ({ fragments: { item } }, opts) => item.references(opts)
+            references: ({ components: { item } }, opts) =>
+                item.references(opts)
         }
     )
 

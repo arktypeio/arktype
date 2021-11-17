@@ -74,7 +74,7 @@ export namespace Resolution {
             type,
             parent: () => Fragment.parse,
             matches: (def, ctx) => def in ctx.typeSet,
-            fragments: (def, ctx) => {
+            components: (def, ctx) => {
                 /**
                  * Keep track of definitions we've seen since last resolving to an object or built-in.
                  * If we encounter the same definition twice, we're dealing with a shallow cyclic typeSet
@@ -98,11 +98,11 @@ export namespace Resolution {
             }
         },
         {
-            allows: ({ fragments: { resolution } }, valueType, opts) =>
+            allows: ({ components: { resolution } }, valueType, opts) =>
                 resolution.allows(valueType, opts),
-            generate: ({ fragments: { resolution } }, opts) =>
+            generate: ({ components: { resolution } }, opts) =>
                 resolution.generate(opts),
-            references: ({ fragments: { resolution } }, opts) =>
+            references: ({ components: { resolution } }, opts) =>
                 resolution.references(opts)
         }
     )
