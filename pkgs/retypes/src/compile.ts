@@ -1,16 +1,17 @@
-import { List, mergeAll, Narrow, transform, WithDefaults } from "@re-do/utils"
-import { formatTypes, UnvalidatedTypeSet } from "./common.js"
+import { mergeAll, Narrow, transform } from "@re-do/utils"
+import { UnvalidatedTypeSet } from "./common.js"
+import { format } from "./format.js"
 import { createParseFunction, ParseFunction, ParsedTypeSet } from "./parse.js"
 import {
     ElementOf,
     StringifyPossibleTypes,
     MergeAll,
     DiffUnions,
-    UnionDiffResult,
-    Cast
+    UnionDiffResult
 } from "@re-do/utils"
 import { Validate } from "./definition.js"
-import { Obj, Recursible, Root, Str } from "./components"
+import { Recursible } from "./components/recursible/recursible.js"
+import { Obj } from "./components/recursible/obj.js"
 
 export type TypeDefinitions<
     Definitions,
@@ -72,14 +73,16 @@ export const createCompileFunction =
                 : TypeSetDefinitions<Definitions, ElementOf<DeclaredTypeNames>>
         >
     ) => {
-        const typeSetFromDefinitions = formatTypes(
+        const typeSetFromDefinitions = format(
             mergeAll(definitions as any)
-        ) as MergedTypeSet
-        const parse = createParseFunction(typeSetFromDefinitions)
+        ) as any
+        const parse = createParseFunction(
+            typeSetFromDefinitions
+        ) as any as ParseFunction<MergedTypeSet>
         return {
             parse,
             types: transform(
-                typeSetFromDefinitions as any,
+                typeSetFromDefinitions,
                 ([typeName, definition]) => [
                     typeName,
                     // @ts-ignore

@@ -1,8 +1,9 @@
 import { Unlisted } from "@re-do/utils"
 import { typeDefProxy } from "../../common.js"
-import { stringifyErrors } from "../../validate.js"
+import { stringifyErrors } from "../errors.js"
 import { OrTypeErrors, orValidationError, validationError } from "../errors.js"
 import { createParser, ParseContext } from "../parser.js"
+import { Recursible } from "../recursible/index.js"
 import {
     comparableDefaultValueSet,
     nonComparableDefaultValues,
@@ -101,10 +102,22 @@ export namespace Or {
                 // value from returnOnCycle, so just return the first one
                 return possibleValues[0]
             },
-            references: ({ components }, opts) =>
-                components.flatMap((fragment) => fragment.references(opts))
+            references: ({ components }, opts) => {
+                // components[0].references
+                return components.flatMap((component) =>
+                    component.references(opts)
+                )
+            }
         }
     )
 
     export const delegate = parse as any as Definition
 }
+
+type OrParse = typeof Or.parse
+
+type F = string extends Recursible.Definition ? true : false
+
+type Z = { a: "hello" } extends Recursible.Definition<{ a: "hello" }>
+    ? true
+    : false

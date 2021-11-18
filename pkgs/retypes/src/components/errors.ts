@@ -1,11 +1,32 @@
-import { DiffSetsResult, List, stringify, StringReplace } from "@re-do/utils"
 import {
-    ExtractableDefinition,
-    stringifyDefinition,
-    UnvalidatedTypeSet
-} from "./common.js"
-import { AllowsOptions, ParseArgs, ParseContext } from "./parser.js"
+    DiffSetsResult,
+    List,
+    stringify,
+    StringReplace,
+    uncapitalize,
+    isDigits,
+    filterChars,
+    isAlphaNumeric
+} from "@re-do/utils"
+import { ExtractableDefinition } from "./common.js"
+import { ParseContext } from "./parser.js"
 import { Shallow } from "./shallow/shallow.js"
+
+export const stringifyDefinition = (definition: unknown) =>
+    stringify(definition, { quotes: "none" })
+
+export const definitionTypeError = (definition: unknown, path: string[]) =>
+    `Definition value ${stringifyDefinition(definition)} ${
+        path.length ? `at path ${path.join("/")} ` : ""
+    }is invalid. ${baseDefinitionTypeError}`
+
+export const baseDefinitionTypeError =
+    "Definitions must be strings, numbers, or objects."
+
+export type DefinitionTypeError = typeof baseDefinitionTypeError
+
+export const getBaseTypeName = (definition: string) =>
+    filterChars(definition, isAlphaNumeric)
 
 export const baseUnknownTypeError = "Unable to determine the type of '${def}'."
 
@@ -36,6 +57,9 @@ export const shallowCycleError = ({ def, ctx }: BaseParseArgs) =>
     `in typeSet ${stringify(
         ctx.typeSet
     )} via the following set of resolutions: ${[...ctx.seen, def].join("=>")}.`
+
+// Paths at which errors occur mapped to their messages
+export type ValidationErrors = Record<string, string>
 
 export type ValidationErrorArgs = { path: string[] } & (
     | { message: string }
@@ -80,3 +104,19 @@ export const valueGenerationError = ({ def, ctx: { path } }: BaseParseArgs) =>
     `Could not find a default value satisfying ${stringifyDefinition(def)}${
         path.length ? ` at '${path.join("/")}'` : ""
     }.`
+
+export const stringifyErrors = (errors: ValidationErrors) => {
+    const errorPaths = Object.keys(errors)
+    if (errorPaths.length === 0) {
+        return ""
+    }
+    if (errorPaths.length === 1) {
+        const errorPath = errorPaths[0]
+        return `${
+            errorPath
+                ? `At ${isDigits(errorPath) ? "index" : "path"} ${errorPath}, `
+                : ""
+        }${errorPath ? uncapitalize(errors[errorPath]) : errors[errorPath]}`
+    }
+    return stringify(errors)
+}

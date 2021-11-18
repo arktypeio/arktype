@@ -1,12 +1,14 @@
 import {
     Evaluate,
     isRecursible,
+    Merge,
     Recursible as ExtractRecursible
 } from "@re-do/utils"
 import { typeDefProxy } from "../../common.js"
 import { Root } from "../common.js"
 import { createParser } from "../parser.js"
-import { ParseTypeRecurseOptions, DefinitionTypeError } from "./common.js"
+import { ParseTypeRecurseOptions } from "./common.js"
+import { DefinitionTypeError } from "../errors.js"
 import { Obj, Tuple } from "./index.js"
 
 export namespace Recursible {
@@ -27,11 +29,15 @@ export namespace Recursible {
     export type Parse<
         Def extends Definition,
         TypeSet,
-        Options extends ParseTypeRecurseOptions
+        Options extends ParseTypeRecurseOptions,
+        RecurseOptions extends ParseTypeRecurseOptions = Merge<
+            Options,
+            { shallowSeen: {} }
+        >
     > = Def extends Tuple.Definition
-        ? Evaluate<Tuple.Parse<Def, TypeSet, Options>>
+        ? Evaluate<Tuple.Parse<Def, TypeSet, RecurseOptions>>
         : Def extends Obj.Definition
-        ? Evaluate<Obj.Parse<Def, TypeSet, Options>>
+        ? Evaluate<Obj.Parse<Def, TypeSet, RecurseOptions>>
         : DefinitionTypeError
 
     export const type = typeDefProxy as Definition

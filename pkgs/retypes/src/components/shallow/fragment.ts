@@ -1,8 +1,4 @@
-import {
-    BuiltInTypeName,
-    BuiltInTypes,
-    ParseTypeRecurseOptions
-} from "./common.js"
+import { ParseTypeRecurseOptions } from "./common.js"
 import { ArrowFunction } from "./arrowFunction.js"
 import { BuiltIn } from "./builtIn.js"
 import { List } from "./list.js"

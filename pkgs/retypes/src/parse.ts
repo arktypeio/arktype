@@ -1,19 +1,15 @@
-import {
-    Evaluate,
-    MergeAll,
-    WithDefaults,
-    Narrow,
-    Exact,
-    Segment,
-    transform,
-    DeepTreeOf
-} from "@re-do/utils"
-import { UnvalidatedTypeSet, formatTypes, typeDefProxy } from "./common.js"
-import { getDefault, GetDefaultOptions } from "./defaults.js"
+import { Evaluate, MergeAll, Narrow, Exact, TreeOf } from "@re-do/utils"
+import { UnvalidatedTypeSet } from "./common.js"
 import { TypeSet } from "./compile.js"
-import { assert, checkErrors, ValidateOptions } from "./validate.js"
 import { Parse, Validate } from "./definition.js"
 import { Root } from "./components"
+import {
+    AllowsOptions,
+    ParseContext,
+    ReferencesOptions,
+    GenerateOptions
+} from "./components/parser.js"
+import { ValidationErrors } from "./components/errors.js"
 
 export type ParseTypeRecurseOptions = Required<ParseTypeOptions>
 
@@ -33,7 +29,7 @@ export type DefaultParseTypeOptions = {
 
 export const createParseFunction =
     <PredefinedTypeSet extends UnvalidatedTypeSet>(
-        predefinedTypeSet: PredefinedTypeSet
+        predefinedTypeSet: Narrow<PredefinedTypeSet>
     ) =>
     <
         Def,
@@ -47,33 +43,21 @@ export const createParseFunction =
             }
         >
     ) => {
-        const formattedDefinition = formatTypes(definition)
         const activeTypeSet = options?.typeSet ?? predefinedTypeSet
-        return {
-            definition: formattedDefinition,
-            type: typeDefProxy as Parse<Def, ActiveTypeSet, ParseOptions>,
-            typeSet: activeTypeSet as ActiveTypeSet,
-            checkErrors: (value: unknown, options: ValidateOptions = {}) =>
-                checkErrors(
-                    value,
-                    formattedDefinition as any,
-                    activeTypeSet as any,
-                    options
-                ),
-            assert: (value: unknown, options: ValidateOptions = {}) =>
-                assert(
-                    value,
-                    formattedDefinition as any,
-                    activeTypeSet as any,
-                    options
-                ),
-            getDefault: (options: GetDefaultOptions = {}) =>
-                getDefault(
-                    formattedDefinition as any,
-                    activeTypeSet as any,
-                    options
-                ) as Parse<Def, ActiveTypeSet, ParseOptions>
+        const context: ParseContext<any> = {
+            typeSet: activeTypeSet,
+            path: [],
+            seen: [],
+            depth: 0
         }
+        return Root.parse(definition, context) as any as Evaluate<
+            ParsedType<
+                Def,
+                ActiveTypeSet,
+                ParseOptions,
+                Parse<Def, ActiveTypeSet, ParseOptions>
+            >
+        >
     }
 
 // Exported parse function is equivalent to parse from an empty compile call,
@@ -110,25 +94,29 @@ export type ParseFunction<
         : Validate<Narrow<Definition>, keyof ActiveTypeSet & string>,
     options?: Narrow<
         Options & {
-            typeSet?: Exact<ActiveTypeSet, TypeSet<ActiveTypeSet>>
+            typeSet?: Exact<Narrow<ActiveTypeSet>, TypeSet<ActiveTypeSet>>
         }
     >
-) => UnvalidatedTypeSet extends ActiveTypeSet
-    ? ParsedType
-    : ParsedType<Definition, ActiveTypeSet, Options>
+) => Evaluate<
+    UnvalidatedTypeSet extends ActiveTypeSet
+        ? ParsedType
+        : ParsedType<Definition, ActiveTypeSet, Options>
+>
 
 export type ParsedType<
     Definition = Root.Definition,
     TypeSet = UnvalidatedTypeSet,
     Options = {},
-    ParseResult = Root.Definition extends Definition
+    TypeOfParsed = Root.Definition extends Definition
         ? any
         : Parse<Definition, TypeSet, Options>
 > = {
     definition: Definition
-    type: ParseResult
+    type: TypeOfParsed
     typeSet: Evaluate<TypeSet>
-    checkErrors: (value: unknown, options?: ValidateOptions) => string
-    assert: (value: unknown, options?: ValidateOptions) => void
-    getDefault: (options?: GetDefaultOptions) => ParseResult
+    check: (value: unknown, options?: AllowsOptions) => string
+    assert: (value: unknown, options?: AllowsOptions) => void
+    allows: (value: unknown, options?: AllowsOptions) => ValidationErrors
+    generate: (options?: GenerateOptions) => TypeOfParsed
+    references: (options?: ReferencesOptions) => TreeOf<string[], true>
 }

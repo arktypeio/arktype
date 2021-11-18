@@ -1,5 +1,5 @@
-import { errorsAtPaths, parse, typeOf } from ".."
-import { SimpleFunction } from "@re-do/utils"
+import { parse, typeOf } from ".."
+import { Func } from "@re-do/utils"
 
 describe("typeOf", () => {
     test("string", () => {
@@ -50,105 +50,105 @@ describe("typeOf", () => {
 
 describe("validate", () => {
     test("string", () => {
-        const { checkErrors } = parse("string")
-        expect(checkErrors("")).toBeFalsy()
-        expect(checkErrors(5)).toMatchInlineSnapshot(
+        const { check } = parse("string")
+        expect(check("")).toBeFalsy()
+        expect(check(5)).toMatchInlineSnapshot(
             `"5 is not assignable to string."`
         )
     })
     test("string literal", () => {
-        const { checkErrors } = parse("'dursurdo'")
-        expect(checkErrors("dursurdo")).toBeFalsy()
-        expect(checkErrors("durrrrrr")).toMatchInlineSnapshot(
+        const { check } = parse("'dursurdo'")
+        expect(check("dursurdo")).toBeFalsy()
+        expect(check("durrrrrr")).toMatchInlineSnapshot(
             `"'durrrrrr' is not assignable to 'dursurdo'."`
         )
     })
     test("number", () => {
-        const { checkErrors } = parse("number")
-        expect(checkErrors(4.669)).toBeFalsy()
-        expect(checkErrors({ keyWithNumberValue: 5 })).toMatchInlineSnapshot(
+        const { check } = parse("number")
+        expect(check(4.669)).toBeFalsy()
+        expect(check({ keyWithNumberValue: 5 })).toMatchInlineSnapshot(
             `"{keyWithNumberValue: 5} is not assignable to number."`
         )
     })
-    const valid8 = (checkErrors: SimpleFunction) => {
-        expect(checkErrors(8)).toBeFalsy()
-        expect(checkErrors(8.0)).toBeFalsy()
-        expect(checkErrors(8.000001)).toMatchInlineSnapshot(
+    const valid8 = (check: Function) => {
+        expect(check(8)).toBeFalsy()
+        expect(check(8.0)).toBeFalsy()
+        expect(check(8.000001)).toMatchInlineSnapshot(
             `"8.000001 is not assignable to 8."`
         )
-        expect(checkErrors("8")).toMatchInlineSnapshot(
+        expect(check("8")).toMatchInlineSnapshot(
             `"'8' is not assignable to 8."`
         )
     }
-    const validateGolden = (checkErrors: SimpleFunction) => {
-        expect(checkErrors(1.618)).toBeFalsy()
-        expect(checkErrors(2)).toMatchInlineSnapshot(
+    const validateGolden = (check: Func) => {
+        expect(check(1.618)).toBeFalsy()
+        expect(check(2)).toMatchInlineSnapshot(
             `"2 is not assignable to 1.618."`
         )
-        expect(checkErrors("1.618")).toMatchInlineSnapshot(
+        expect(check("1.618")).toMatchInlineSnapshot(
             `"'1.618' is not assignable to 1.618."`
         )
     }
     test("number literal in string", () => {
-        valid8(parse("8").checkErrors)
-        validateGolden(parse("1.618").checkErrors)
+        valid8(parse("8").check)
+        validateGolden(parse("1.618").check)
     })
     test("number literal", () => {
-        valid8(parse(8).checkErrors)
-        validateGolden(parse(1.618).checkErrors)
+        valid8(parse(8).check)
+        validateGolden(parse(1.618).check)
     })
     test("bigint", () => {
-        const { checkErrors } = parse("bigint")
-        expect(checkErrors(BigInt(0))).toBeFalsy()
-        expect(checkErrors(0)).toMatchInlineSnapshot(
+        const { check } = parse("bigint")
+        expect(check(BigInt(0))).toBeFalsy()
+        expect(check(0)).toMatchInlineSnapshot(
             `"0 is not assignable to bigint."`
         )
     })
     test("boolean", () => {
-        const { checkErrors } = parse("boolean")
-        expect(checkErrors(true)).toBeFalsy()
-        expect(checkErrors(false)).toBeFalsy()
-        expect(checkErrors(1)).toMatchInlineSnapshot(
+        const { check } = parse("boolean")
+        expect(check(true)).toBeFalsy()
+        expect(check(false)).toBeFalsy()
+        expect(check(1)).toMatchInlineSnapshot(
             `"1 is not assignable to boolean."`
         )
     })
     test("symbol", () => {
-        const { checkErrors } = parse("symbol")
-        expect(checkErrors(Symbol())).toBeFalsy()
-        expect(checkErrors("symbol")).toMatchInlineSnapshot(
+        const { check } = parse("symbol")
+        expect(check(Symbol())).toBeFalsy()
+        expect(check("symbol")).toMatchInlineSnapshot(
             `"'symbol' is not assignable to symbol."`
         )
     })
     test("undefined", () => {
-        const { checkErrors } = parse("undefined")
-        expect(checkErrors(undefined)).toBeFalsy()
-        expect(checkErrors("defined")).toMatchInlineSnapshot(
+        const { check } = parse("undefined")
+        expect(check(undefined)).toBeFalsy()
+        expect(check("defined")).toMatchInlineSnapshot(
             `"'defined' is not assignable to undefined."`
         )
-        expect(checkErrors(null)).toMatchInlineSnapshot(
+        expect(check(null)).toMatchInlineSnapshot(
             `"null is not assignable to undefined."`
         )
     })
     test("empty object", () => {
-        expect(parse({}).checkErrors({})).toBeFalsy()
+        expect(parse({}).check({})).toBeFalsy()
     })
     const simpleObject = parse({
         a: { b: "string", c: "number", d: { deep: "null" } }
     })
     test("simple object", () => {
         expect(
-            simpleObject.checkErrors({
+            simpleObject.check({
                 a: { b: "nested", c: 5, d: { deep: null } }
             })
         ).toBeFalsy()
         const badValue = { a: { b: "nested", c: 5, d: { deep: {} } } }
-        expect(simpleObject.checkErrors(badValue)).toMatchInlineSnapshot(
+        expect(simpleObject.check(badValue)).toMatchInlineSnapshot(
             `"At path a/d/deep, {} is not assignable to null."`
         )
     })
     test("can ignore extraneous keys", () => {
         expect(
-            simpleObject.checkErrors(
+            simpleObject.check(
                 {
                     a: {
                         b: "nested",
@@ -161,7 +161,7 @@ describe("validate", () => {
         ).toBeFalsy()
         // But still errors on missing required keys
         expect(
-            simpleObject.checkErrors({}, { ignoreExtraneousKeys: true })
+            simpleObject.check({}, { ignoreExtraneousKeys: true })
         ).toMatchInlineSnapshot(`"Required keys 'a' were missing."`)
     })
     test("multiple errors", () => {
@@ -175,7 +175,7 @@ describe("validate", () => {
                 }
             }
         }
-        expect(errorsAtPaths(reallyBadValue, simpleObject.definition))
+        expect(parse(simpleObject.definition).allows(reallyBadValue))
             .toMatchInlineSnapshot(`
             Object {
               "a/b": "null is not assignable to string.",
@@ -183,38 +183,38 @@ describe("validate", () => {
               "a/d": "Keys 'shallow' were unexpected.",
             }
         `)
-        expect(simpleObject.checkErrors(reallyBadValue)).toMatchInlineSnapshot(
+        expect(simpleObject.check(reallyBadValue)).toMatchInlineSnapshot(
             `"{a/b: 'null is not assignable to string.', a/c: 'symbol is not assignable to number.', a/d: 'Keys 'shallow' were unexpected.'}"`
         )
     })
     test("function", () => {
-        const { checkErrors } = parse("function")
+        const { check } = parse("function")
         expect(
-            checkErrors(function saySomething() {
+            check(function saySomething() {
                 console.log("I'm giving up on you")
             })
         ).toBeFalsy()
-        expect(checkErrors({})).toMatchInlineSnapshot(
+        expect(check({})).toMatchInlineSnapshot(
             `"{} is not assignable to function."`
         )
     })
     test("defined function widened for validation", () => {
-        const { checkErrors } = parse("(number,object)=>string")
-        expect(checkErrors(() => {})).toBeFalsy()
-        expect(checkErrors("I promise I'm a function")).toMatchInlineSnapshot(
+        const { check } = parse("(number,object)=>string")
+        expect(check(() => {})).toBeFalsy()
+        expect(check("I promise I'm a function")).toMatchInlineSnapshot(
             `"'I promise I'm a function' is not assignable to (number,object)=>string."`
         )
     })
     test("array", () => {
-        const { checkErrors } = parse(["number", "string"])
-        expect(checkErrors([7, "up"])).toBeFalsy()
-        expect(checkErrors([7, 7])).toMatchInlineSnapshot(
+        const { check } = parse(["number", "string"])
+        expect(check([7, "up"])).toBeFalsy()
+        expect(check([7, 7])).toMatchInlineSnapshot(
             `"At index 1, 7 is not assignable to string."`
         )
-        expect(checkErrors([7, "up", 7])).toMatchInlineSnapshot(
+        expect(check([7, "up", 7])).toMatchInlineSnapshot(
             `"Tuple of length 3 is not assignable to tuple of length 2."`
         )
-        expect(errorsAtPaths(["up", 7], ["number", "string"]))
+        expect(parse(["number", "string"]).allows(["up", 7]))
             .toMatchInlineSnapshot(`
             Object {
               "0": "'up' is not assignable to number.",
@@ -223,28 +223,26 @@ describe("validate", () => {
         `)
     })
     test("or type", () => {
-        const { checkErrors } = parse("string|number")
-        expect(checkErrors("heyo")).toBeFalsy()
-        expect(checkErrors(0)).toBeFalsy()
-        expect(checkErrors(["listen what I say-o"])).toMatchInlineSnapshot(`
+        const { check } = parse("string|number")
+        expect(check("heyo")).toBeFalsy()
+        expect(check(0)).toBeFalsy()
+        expect(check(["listen what I say-o"])).toMatchInlineSnapshot(`
             "['listen what I say-o'] is not assignable to any of string|number:
             {string: '['listen what I say-o'] is not assignable to string.', number: '['listen what I say-o'] is not assignable to number.'}"
         `)
     })
     test("complex", () => {
-        const { checkErrors } = parse([
+        const { check } = parse([
             "true",
             { a: ["string", ["(string) => void"]] }
         ])
-        expect(checkErrors([true, { a: ["ok", [() => {}]] }])).toBeFalsy()
+        expect(check([true, { a: ["ok", [() => {}]] }])).toBeFalsy()
         expect(
-            checkErrors([true, { a: ["ok", [() => {}], "extraElement"] }])
+            check([true, { a: ["ok", [() => {}], "extraElement"] }])
         ).toMatchInlineSnapshot(
             `"At path 1/a, tuple of length 3 is not assignable to tuple of length 2."`
         )
-        expect(
-            checkErrors([false, { a: [0, [0, 1, 2]] }])
-        ).toMatchInlineSnapshot(
+        expect(check([false, { a: [0, [0, 1, 2]] }])).toMatchInlineSnapshot(
             `"{0: 'false is not assignable to true.', 1/a/0: '0 is not assignable to string.', 1/a/1: 'Tuple of length 3 is not assignable to tuple of length 1.'}"`
         )
     })
@@ -260,7 +258,7 @@ describe("validate", () => {
             }
         )
         expect(
-            groceries.checkErrors({
+            groceries.check({
                 fruits: [
                     { length: 10 },
                     { circumference: 4.832321, type: "Granny Smith" },
@@ -269,7 +267,7 @@ describe("validate", () => {
             })
         ).toBeFalsy()
         expect(
-            groceries.checkErrors({
+            groceries.check({
                 fruits: [
                     {
                         length: 5000,
@@ -294,7 +292,7 @@ describe("validate", () => {
         const shallowCyclic = parse("a", {
             typeSet: { a: "b", b: "c", c: "a|b|c" }
         })
-        expect(() => shallowCyclic.checkErrors(["what's a b?"])).toThrowError(
+        expect(() => shallowCyclic.check(["what's a b?"])).toThrowError(
             "shallowly"
         )
     })
@@ -310,7 +308,7 @@ describe("validate", () => {
             }
         )
         expect(
-            bicycle.checkErrors({
+            bicycle.check({
                 a: {
                     isA: true,
                     a: { isA: true },
@@ -324,7 +322,7 @@ describe("validate", () => {
             })
         ).toBeFalsy()
         expect(
-            bicycle.checkErrors({
+            bicycle.check({
                 a: {
                     isA: true,
                     a: {

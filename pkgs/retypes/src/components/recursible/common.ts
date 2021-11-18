@@ -1,13 +1,8 @@
-import { DeepTreeOf, Evaluate } from "@re-do/utils"
-import { Root, ExtractableDefinition } from "../common.js"
-import {
-    AllowsOptions,
-    HandlesMethods,
-    ParseContext,
-    ParseResult,
-    ValidationErrors
-} from "../parser.js"
+import { Evaluate } from "@re-do/utils"
+import { Root } from "../common.js"
+import { HandlesMethods, ParsedType } from "../parser.js"
 import { Recursible } from "./recursible.js"
+import { ValidationErrors } from "../errors.js"
 
 export * from "../common.js"
 
@@ -38,7 +33,7 @@ export type ValidateRecursible<
 export const validateProperties: NonNullable<
     HandlesMethods<
         Recursible.Definition,
-        Record<string | number, ParseResult<Recursible.Definition>>
+        Record<string | number, ParsedType<Recursible.Definition>>
     >["allows"]
 > = ({ components }, valueType, opts) =>
     Object.keys(components)

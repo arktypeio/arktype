@@ -1,31 +1,27 @@
-import { TreeOf, ValueOf } from "@re-do/utils"
 import {
-    DiffUnions,
-    ElementOf,
     Evaluate,
-    // Exact,
-    ExcludeByValue,
     Func,
     KeyValuate,
     ListPossibleTypes,
-    memoize,
-    narrow,
-    RequiredKeys,
     stringify,
-    StringifyPossibleTypes,
     transform,
-    Unlisted
+    TreeOf,
+    ValueOf
 } from "@re-do/utils"
 import { Function as ToolbeltFunction } from "ts-toolbelt"
-import { unknownTypeError } from "../errors.js"
-import { ValidationResult } from "../validate.js"
+import { typeDefProxy } from "../common.js"
+import { typeOf } from "../typeOf.js"
 import type {
     ExtractableDefinition,
     Root,
     UnvalidatedTypeSet
 } from "./common.js"
+import {
+    stringifyErrors,
+    ValidationErrors,
+    unknownTypeError
+} from "./errors.js"
 import { Recursible } from "./recursible/index.js"
-import { Shallow } from "./shallow/shallow.js"
 
 export type MatchesArgs<DefType> = {
     definition: DefType
@@ -57,9 +53,6 @@ export type GenerateOptions = {
     // If this options is provided, we will return its value instead
     onRequiredCycle?: any
 }
-
-// Paths at which errors occur mapped to their messages
-export type ValidationErrors = Record<string, string>
 
 export type ParserInput<
     DefType,
@@ -104,7 +97,7 @@ export type HandlesMethods<DefType, Components> = {
             ...args: HandlesContext<DefType, Components>,
             options: ReferencesOptions
         ]
-    ) => DefType extends Recursible.Definition
+    ) => DefType extends Recursible.Definition<DefType>
         ? TreeOf<string[], true>
         : string[]
     generate?: (
@@ -122,16 +115,23 @@ export type UnhandledMethods<DefType, Parent, Components> = Omit<
 
 export type ParseFunction<DefType> = (
     ...args: ParseArgs<DefType>
-) => ParseResult<DefType>
+) => ParsedType<DefType>
 
-export type ParseResult<DefType> = {
+export type ParsedType<DefType> = {
     definition: DefType
     context: ParseContext<DefType>
-    matches: boolean
-} & {
-    [MethodName in ParserMethodName]-?: TransformInputMethod<
+} & CoreMethods<DefType> &
+    InferredMethods
+
+export type CoreMethods<DefType> = {
+    [MethodName in CoreMethodName]-?: TransformInputMethod<
         NonNullable<HandlesMethods<DefType, any>[MethodName]>
     >
+}
+
+export type InferredMethods = {
+    assert: (value: unknown, options: AllowsOptions) => void
+    check: (value: unknown, options: AllowsOptions) => string
 }
 
 export type TransformInputMethod<
@@ -140,7 +140,12 @@ export type TransformInputMethod<
     ? (...args: [...rest: Rest]) => Return
     : Method
 
-export type GetHandledMethods<Parent> = KeyValuate<Parent, "inherits"> &
+export type GetHandledMethods<Parent> = (KeyValuate<
+    Parent,
+    "inherits"
+> extends () => infer Return
+    ? Return
+    : {}) &
     KeyValuate<Parent, "handles">
 
 export type ParserMetadata<
@@ -150,8 +155,9 @@ export type ParserMetadata<
 > = Evaluate<{
     meta: {
         type: DefType
-        inherits: GetHandledMethods<Parent>
+        inherits: () => GetHandledMethods<Parent>
         handles: unknown extends Handles ? {} : Handles
+        matches: DefinitionMatcher<DefType>
     }
 }>
 
@@ -159,9 +165,9 @@ export type Parser<DefType, Parent, Handles> = Evaluate<
     ParserMetadata<DefType, Parent, Handles> & ParseFunction<DefType>
 >
 
-export type ParserMethodName = keyof HandlesMethods<any, any>
+export type CoreMethodName = keyof HandlesMethods<any, any>
 
-const parserMethodNames: ListPossibleTypes<ParserMethodName> = [
+const coreMethodNames: ListPossibleTypes<CoreMethodName> = [
     "allows",
     "references",
     "generate"
@@ -171,7 +177,7 @@ const parserMethodNames: ListPossibleTypes<ParserMethodName> = [
 export const reroot = {
     meta: {
         type: {} as Root.Definition,
-        inherits: {},
+        inherits: () => {},
         handles: {}
     }
 }
@@ -202,54 +208,88 @@ export const createParser = <
 ): Parser<DefType, Parent, Handles> => {
     const input = args[0] as ParserInput<DefType, Parent, Children, Components>
     const handles: HandlesMethods<DefType, Components> = args[1] ?? {}
-    const parent = input.parent() as any as ParserMetadata<any, any, any>
-    const validatedChildren: AnyParser[] = (input.children?.() as any) ?? []
-    const inherits: HandlesMethods<DefType, Components> = {
-        ...parent.meta.inherits,
-        ...parent.meta.handles
+    // Need to wait until parse is called to access parent to avoid it being undefined
+    // due to circular import
+    const getInherited = () => {
+        const parent = input.parent() as any as ParserMetadata<any, any, any>
+        return {
+            ...parent.meta.inherits,
+            ...parent.meta.handles
+        } as HandlesMethods<DefType, Components>
     }
+    const getChildren = (): AnyParser[] => (input.children?.() as any) ?? []
     const parse = (
-        definition: DefType,
-        context: ParseContext<DefType>
-    ): ParseResult<DefType> => {
-        const args: ParseArgs<DefType> = [
-            definition,
-            { ...context, depth: context.depth + 1 }
-        ]
+        def: DefType,
+        ctx: ParseContext<DefType>
+    ): ParsedType<DefType> => {
+        console.log({ def, ctx })
+        const args: ParseArgs<DefType> = [def, { ...ctx, depth: ctx.depth + 1 }]
+        const inherits = getInherited()
+        const children = getChildren()
         let matchingChild: AnyParser
-        if (validatedChildren.length) {
-            const match = validatedChildren.find(
-                (child) => child(...args).matches
-            )
+        if (children.length) {
+            const match = children.find((child) => child.meta.matches(...args))
             if (!match) {
                 if (input.fallback) {
                     return input.fallback(...args)
                 }
-                throw new Error(unknownTypeError(definition))
+                throw new Error(unknownTypeError(def))
             }
             matchingChild = match
         }
-        const methods = transform(parserMethodNames, ([i, methodName]) => {
-            if (methodName in handles) {
-                return [methodName, handles[methodName]]
+        const handlesContext: any = {
+            def,
+            ctx,
+            components: input.components?.(def, ctx) ?? {}
+        }
+        const transformParserMethod =
+            (inputMethod: Func) =>
+            (...args: any[]) =>
+                inputMethod(handlesContext, ...args)
+        const delegateCoreMethod = (methodName: CoreMethodName) => {
+            if (!children.length) {
+                throw new Error(
+                    `${methodName} was never implemented on the current component's branch.`
+                )
             }
-            if (methodName in inherits) {
-                return [methodName, inherits[methodName]]
+            return matchingChild(...args)[methodName]
+        }
+        const coreMethods: CoreMethods<DefType> = transform(
+            coreMethodNames,
+            ([i, methodName]) => [
+                methodName,
+                handles[methodName]
+                    ? transformParserMethod(handles[methodName]!)
+                    : inherits[methodName]
+                    ? transformParserMethod(inherits[methodName]!)
+                    : delegateCoreMethod(methodName)
+            ]
+        )
+        const check: InferredMethods["check"] = (value, options) =>
+            stringifyErrors(coreMethods.allows(typeOf(value), options))
+        const inferredMethods: InferredMethods = {
+            check,
+            assert: (value, options) => {
+                const errorMessage = check(value, options)
+                if (errorMessage) {
+                    throw new Error(errorMessage)
+                }
             }
-            return [methodName, matchingChild(...args)[methodName]]
-        })
+        }
         return {
-            matches: input.matches(...(args as [any, any])),
-            definition,
-            context,
-            ...methods
+            definition: def,
+            context: ctx,
+            type: typeDefProxy,
+            ...coreMethods,
+            ...inferredMethods
         } as any
     }
     return Object.assign(parse, {
         meta: {
             type: input.type,
-            inherits,
-            handles
+            inherits: getInherited,
+            handles,
+            matches: input.matches
         }
     }) as any
 }

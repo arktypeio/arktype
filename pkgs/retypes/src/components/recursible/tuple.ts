@@ -1,19 +1,12 @@
 import { createParser } from "../parser.js"
 import {
     tupleLengthError,
-    unassignableError,
-    validationError
+    validationError,
+    ValidationErrors
 } from "../errors.js"
-import {
-    ValidateRecursible,
-    Root,
-    ParseTypeRecurseOptions,
-    validateProperties
-} from "./common.js"
+import { ValidateRecursible, Root, ParseTypeRecurseOptions } from "./common.js"
 import { Recursible } from "./recursible.js"
 import { typeDefProxy } from "../../common.js"
-import path from "path"
-import { ValidationErrors } from "../../validate.js"
 
 export namespace Tuple {
     export type Definition<Def extends Root.Definition[] = Root.Definition[]> =

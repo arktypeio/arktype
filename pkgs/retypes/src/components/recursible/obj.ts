@@ -8,9 +8,13 @@ import {
 import { ParseTypeRecurseOptions, Root, ValidateRecursible } from "./common.js"
 import { Recursible } from "."
 import { Optional } from "../shallow/optional.js"
-import { createParser, ParseResult, ValidationErrors } from "../parser.js"
+import { createParser, ParsedType } from "../parser.js"
 import { typeDefProxy } from "../../common.js"
-import { mismatchedKeysError, validationError } from "../errors.js"
+import {
+    mismatchedKeysError,
+    validationError,
+    ValidationErrors
+} from "../errors.js"
 
 export namespace Obj {
     export type Definition<
@@ -59,7 +63,7 @@ export namespace Obj {
                         path: [...ctx.path, prop],
                         seen: []
                     })
-                ]) as Record<string, ParseResult<any>>
+                ]) as Record<string, ParsedType<any>>
         },
         {
             allows: ({ components, def, ctx }, valueType, opts) => {

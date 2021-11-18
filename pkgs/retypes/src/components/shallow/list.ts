@@ -1,10 +1,8 @@
-import { ParseTypeRecurseOptions, UnvalidatedTypeSet } from "../common.js"
-import { createParser, ValidationErrors } from "../parser.js"
-import { unassignableError, validationError } from "../errors.js"
+import { createParser } from "../parser.js"
+import { validationError } from "../errors.js"
 import { Fragment } from "./fragment.js"
 import { typeDefProxy } from "../../common.js"
 import { Tuple } from "../recursible/tuple.js"
-import { isEmpty } from "@re-do/utils"
 
 export namespace List {
     export type Definition<Item extends string = string> = `${Item}[]`

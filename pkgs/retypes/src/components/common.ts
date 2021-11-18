@@ -1,11 +1,4 @@
-import {
-    DiffSetsResult,
-    filterChars,
-    isAlphaNumeric,
-    List,
-    stringify,
-    TreeOf
-} from "@re-do/utils"
+import { TreeOf } from "@re-do/utils"
 import { Num } from "./shallow/num.js"
 import { StringLiteral } from "./shallow/stringLiteral.js"
 
@@ -67,6 +60,7 @@ export type ParseTypeRecurseOptions = Required<ParseTypeOptions>
 export type ParseTypeOptions = {
     onCycle?: Root.Definition
     seen?: any
+    shallowSeen?: any
     deepOnCycle?: boolean
     onResolve?: Root.Definition
 }
@@ -74,24 +68,9 @@ export type ParseTypeOptions = {
 export type DefaultParseTypeOptions = {
     onCycle: never
     seen: {}
+    shallowSeen: {}
     deepOnCycle: false
     onResolve: never
 }
 
 export type UnvalidatedTypeSet = { [K in string]: Root.Definition }
-
-export const stringifyDefinition = (definition: unknown) =>
-    stringify(definition, { quotes: "none" })
-
-export const definitionTypeError = (definition: unknown, path: string[]) =>
-    `Definition value ${stringifyDefinition(definition)} ${
-        path.length ? `at path ${path.join("/")} ` : ""
-    }is invalid. ${baseDefinitionTypeError}`
-
-export const baseDefinitionTypeError =
-    "Definitions must be strings, numbers, or objects."
-
-export type DefinitionTypeError = typeof baseDefinitionTypeError
-
-export const getBaseTypeName = (definition: string) =>
-    filterChars(definition, isAlphaNumeric)

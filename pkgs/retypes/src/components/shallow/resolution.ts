@@ -21,7 +21,10 @@ export namespace Resolution {
         TypeName extends keyof TypeSet,
         TypeSet,
         Options extends ParseTypeRecurseOptions
-    > = TypeName extends keyof Options["seen"]
+    > = TypeName extends keyof Options["shallowSeen"]
+        ? // We've hit a shallow cycle like {a: "b", b: "a"}
+          any
+        : TypeName extends keyof Options["seen"]
         ? Options["onCycle"] extends never
             ? ParseResolvedNonCyclicDefinition<TypeName, TypeSet, Options>
             : ParseResolvedCyclicDefinition<TypeName, TypeSet, Options>
@@ -39,6 +42,7 @@ export namespace Resolution {
                 ? Options["onCycle"]
                 : never
             seen: {}
+            shallowSeen: Options["shallowSeen"]
             onResolve: Options["onResolve"]
             deepOnCycle: Options["deepOnCycle"]
         }
@@ -57,6 +61,7 @@ export namespace Resolution {
               TypeSet,
               Options & {
                   seen: { [K in TypeName]: true }
+                  shallowSeen: { [K in TypeName]: true }
               }
           >
         : Root.Parse<
@@ -64,6 +69,7 @@ export namespace Resolution {
               Omit<TypeSet, "resolved"> & { resolved: TypeSet[TypeName] },
               Options & {
                   seen: { [K in TypeName]: true }
+                  shallowSeen: { [K in TypeName]: true }
               }
           >
 

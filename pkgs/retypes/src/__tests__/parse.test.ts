@@ -1,6 +1,6 @@
 import { compile, parse, Validate } from ".."
 import { expectType, expectError } from "tsd"
-import { DefinitionTypeError } from "../errors.js"
+import { DefinitionTypeError } from "../components/errors.js"
 import { typeDefProxy } from "../common.js"
 import { DeepEvaluate, Evaluate } from "@re-do/utils"
 
@@ -229,8 +229,9 @@ describe("parse", () => {
         expect(parseResult.definition).toBe("a")
         expect(parseResult.typeSet).toStrictEqual({ a: "true" })
         expect(parseResult.assert(true)).toBe(undefined)
-        expect(parseResult.checkErrors(true)).toBe("")
-        expect(parseResult.getDefault()).toBe(true)
+        expect(parseResult.check(true)).toBe("")
+        expect(parseResult.check(true)).toBe("")
+        expect(parseResult.generate()).toBe(true)
         expect(parseResult.type).toBe(typeDefProxy)
     })
 })

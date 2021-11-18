@@ -1,12 +1,9 @@
-import {
-    ParseTypeRecurseOptions,
-    DefinitionTypeError,
-    definitionTypeError
-} from "./common.js"
+import { ParseTypeRecurseOptions } from "./common.js"
 import { Shallow } from "./shallow/shallow.js"
 import { Recursible } from "./recursible/recursible.js"
 import { reroot, createParser } from "./parser.js"
 import { typeDefProxy } from "../common.js"
+import { DefinitionTypeError, definitionTypeError } from "./errors.js"
 
 type RootDefinition = Shallow.Definition | Recursible.Definition
 

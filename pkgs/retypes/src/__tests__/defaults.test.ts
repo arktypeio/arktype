@@ -1,23 +1,28 @@
-import { getDefault } from "../defaults.js"
 import { parse } from ".."
+
+const generate = (def: any, typeSet: any = {}, opts: any = {}) =>
+    // @ts-ignore
+    parse(def, typeSet).generate(opts)
+
+// TODO: avoid parsing any
 
 describe("default values", () => {
     test("built-in", () => {
-        expect(getDefault("string")).toBe("")
-        expect(getDefault("boolean")).toBe(false)
-        expect(getDefault("any")).toBe(undefined)
-        expect(typeof getDefault("function")).toBe("function")
-        expect(() => getDefault("never")).toThrow()
+        expect(generate("string")).toBe("")
+        expect(generate("boolean")).toBe(false)
+        expect(generate("any")).toBe(undefined)
+        expect(typeof generate("function")).toBe("function")
+        expect(() => generate("never")).toThrow()
     })
     test("number literal", () => {
-        expect(getDefault("5")).toBe(5)
-        expect(getDefault("7.91")).toBe(7.91)
-        expect(getDefault(5)).toBe(5)
-        expect(getDefault(7.91)).toBe(7.91)
+        expect(generate("5")).toBe(5)
+        expect(generate("7.91")).toBe(7.91)
+        expect(generate(5)).toBe(5)
+        expect(generate(7.91)).toBe(7.91)
     })
     test("or", () => {
-        expect(getDefault("undefined|string")).toBe(undefined)
-        expect(getDefault("number|false|()=>undefined")).toBe(false)
+        expect(generate("undefined|string")).toBe(undefined)
+        expect(generate("number|false|()=>undefined")).toBe(false)
     })
     test("or literals", () => {
         const typeSet = {
@@ -25,18 +30,18 @@ describe("default values", () => {
             duck: "'duck'",
             func: "(five, duck)=>duck"
         }
-        expect(getDefault("func|five|duck", typeSet)).toBe(5)
-        expect(getDefault("duck|func", typeSet)).toBe("duck")
+        expect(generate("func|five|duck", typeSet)).toBe(5)
+        expect(generate("duck|func", typeSet)).toBe("duck")
     })
     test("arrow function", () => {
-        expect(typeof getDefault("(boolean,any)=>void")).toBe("function")
+        expect(typeof generate("(boolean,any)=>void")).toBe("function")
     })
     test("list", () => {
-        expect(getDefault("function[]")).toStrictEqual([])
+        expect(generate("function[]")).toStrictEqual([])
     })
     test("deep", () => {
         expect(
-            getDefault({
+            generate({
                 a: { b: "string", c: "number", d: { deep: "null" } },
                 b: ["object", "undefined|null", "null|number"]
             })
@@ -47,17 +52,17 @@ describe("default values", () => {
     })
     test("optional", () => {
         expect(
-            getDefault({ optional: "boolean?", required: "boolean" })
+            generate({ optional: "boolean?", required: "boolean" })
         ).toStrictEqual({ required: false })
     })
     test("complex", () => {
         expect(
-            getDefault(["true", { a: ["string?", ["true|null|object[]"]] }])
+            generate(["true", { a: ["string?", ["true|null|object[]"]] }])
         ).toStrictEqual([true, { a: [undefined, [null]] }])
     })
     test("simple typeset", () => {
         expect(
-            getDefault(
+            generate(
                 {
                     fruits: "fruit[]",
                     bestBanana: "banana",
@@ -81,14 +86,14 @@ describe("default values", () => {
     test("cyclic typeSet", () => {
         // If it's optional, the cycle should be ignored and just return undefined
         expect(
-            getDefault("a", {
+            generate("a", {
                 a: "b",
                 b: { a: "a?" },
                 c: "a|b"
             })
         ).toStrictEqual({})
         expect(() =>
-            getDefault("a", {
+            generate("a", {
                 a: { b: "b" },
                 b: { c: "c" },
                 c: "a|b"
@@ -98,7 +103,7 @@ describe("default values", () => {
             a=>b=>c=>a.If you'd like to avoid throwing in when this occurs, pass a value to return when this occurs to the 'onRequiredCycle' option."
         `)
         expect(
-            getDefault(
+            generate(
                 "a",
                 {
                     a: { b: "b" },
@@ -111,7 +116,7 @@ describe("default values", () => {
             b: { c: { whoops: ["cycle"] } }
         })
         expect(
-            getDefault(
+            generate(
                 "a|b",
                 {
                     a: "b",
@@ -121,7 +126,7 @@ describe("default values", () => {
             )
         ).toBe("cycle")
         expect(
-            getDefault(
+            generate(
                 "a|b|safe",
                 {
                     a: "b",
@@ -133,16 +138,16 @@ describe("default values", () => {
         ).toBe(false)
     })
     test("unparseable", () => {
-        expect(() => getDefault("")).toThrowErrorMatchingInlineSnapshot(
+        expect(() => generate("")).toThrowErrorMatchingInlineSnapshot(
             `"Could not find a default value satisfying ."`
         )
         expect(() =>
-            getDefault({ a: { b: { c: "true|false|blorf" } } })
+            generate({ a: { b: { c: "true|false|blorf" } } })
         ).toThrowErrorMatchingInlineSnapshot(
             `"Could not find a default value satisfying blorf at 'a/b/c'."`
         )
         expect(() =>
-            getDefault({ hmm: { seems: { bad: true } } })
+            generate({ hmm: { seems: { bad: true } } })
         ).toThrowErrorMatchingInlineSnapshot(
             `"Definition value true at path hmm/seems/bad is invalid. Definitions must be strings, numbers, or objects."`
         )
@@ -156,7 +161,7 @@ describe("default values", () => {
                 optionalGroups: "group[]?"
             },
             { typeSet: { group: { name: "string", description: "string?" } } }
-        ).getDefault()
+        ).generate()
         expect(defaultValue).toStrictEqual({
             requiredGroup: { name: "" },
             requiredGroups: []
