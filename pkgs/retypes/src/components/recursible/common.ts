@@ -4,8 +4,6 @@ import { HandlesMethods, ParsedType } from "../parser.js"
 import { Recursible } from "./recursible.js"
 import { ValidationErrors } from "../errors.js"
 
-export * from "../common.js"
-
 export type ValidateRecursible<
     Def,
     DeclaredTypeName extends string,
@@ -19,12 +17,6 @@ export type ValidateRecursible<
         >
     }
 >
-
-// export type ValidatePropertiesArgs = {
-//     def: Recursible.Definition
-//     ctx: ParseContext<Recursible.Definition>
-//     valueType
-// }
 
 /**
  * Recurse into the properties of two objects/tuples with

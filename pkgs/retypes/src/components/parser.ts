@@ -167,11 +167,7 @@ export type Parser<DefType, Parent, Handles> = Evaluate<
 
 export type CoreMethodName = keyof HandlesMethods<any, any>
 
-const coreMethodNames: ListPossibleTypes<CoreMethodName> = [
-    "allows",
-    "references",
-    "generate"
-]
+const coreMethodNames = ["allows", "references", "generate"] as CoreMethodName[]
 
 // Re:Root, reroot its root by rerouting to reroot
 export const reroot = {

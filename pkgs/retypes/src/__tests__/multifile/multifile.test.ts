@@ -22,7 +22,7 @@ export type ExpectedGroup = {
 // printType(types.user.type)
 
 describe("multifile", () => {
-    test("compiles", async () => {
+    test("compiles", () => {
         // const diag = await tsd({
         //     cwd: ".",
         //     testFiles: ["src/__tests__/**/*.test.ts"]

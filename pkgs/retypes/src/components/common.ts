@@ -60,7 +60,6 @@ export type ParseTypeRecurseOptions = Required<ParseTypeOptions>
 export type ParseTypeOptions = {
     onCycle?: Root.Definition
     seen?: any
-    shallowSeen?: any
     deepOnCycle?: boolean
     onResolve?: Root.Definition
 }
@@ -68,7 +67,6 @@ export type ParseTypeOptions = {
 export type DefaultParseTypeOptions = {
     onCycle: never
     seen: {}
-    shallowSeen: {}
     deepOnCycle: false
     onResolve: never
 }

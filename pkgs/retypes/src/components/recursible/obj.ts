@@ -5,11 +5,12 @@ import {
     OptionalKeys,
     transform
 } from "@re-do/utils"
-import { ParseTypeRecurseOptions, Root, ValidateRecursible } from "./common.js"
+import { ValidateRecursible } from "./common.js"
 import { Recursible } from "."
 import { Optional } from "../shallow/optional.js"
 import { createParser, ParsedType } from "../parser.js"
 import { typeDefProxy } from "../../common.js"
+import { ParseTypeRecurseOptions, Root } from "../common.js"
 import {
     mismatchedKeysError,
     validationError,
