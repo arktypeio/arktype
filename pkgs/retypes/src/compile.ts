@@ -1,6 +1,5 @@
 import { mergeAll, Narrow, transform } from "@re-do/utils"
 import { UnvalidatedTypeSet } from "./common.js"
-import { format } from "./format.js"
 import { createParseFunction, ParseFunction, ParsedTypeSet } from "./parse.js"
 import {
     ElementOf,
@@ -78,9 +77,8 @@ export const createCompileFunction =
                 : TypeSetDefinitions<Definitions, ElementOf<DeclaredTypeNames>>
         >
     ) => {
-        const typeSetFromDefinitions = format(
-            mergeAll(definitions as any)
-        ) as any
+        const typeSetFromDefinitions = mergeAll(definitions as any) as any
+
         const parse = createParseFunction(
             typeSetFromDefinitions
         ) as any as ParseFunction<MergedTypeSet>

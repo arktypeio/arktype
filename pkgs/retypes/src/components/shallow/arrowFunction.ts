@@ -118,11 +118,5 @@ type ValidateParameterTuple<
 type ParseParameterTuple<
     Def extends string,
     TypeSet,
-    Options extends ParseTypeRecurseOptions,
-    Result extends ParseSplittableResult = ParseSplittable<
-        ",",
-        Def,
-        TypeSet,
-        Options
-    >
-> = Def extends "" ? [] : Result["Components"]
+    Options extends ParseTypeRecurseOptions
+> = Def extends "" ? [] : ParseSplittable<",", Def, TypeSet, Options>

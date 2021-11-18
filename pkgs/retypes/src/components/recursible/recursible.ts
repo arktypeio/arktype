@@ -37,7 +37,7 @@ export namespace Recursible {
         ? Evaluate<Tuple.Parse<Def, TypeSet, Options>>
         : Def extends Obj.Definition
         ? Evaluate<Obj.Parse<Def, TypeSet, Options>>
-        : DefinitionTypeError
+        : unknown
 
     export const type = typeDefProxy as Definition
 

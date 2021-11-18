@@ -43,7 +43,7 @@ export namespace Obj {
             infer OptionalType
         >
             ? Root.Parse<OptionalType, TypeSet, Options>
-            : `Expected property ${PropName & string} to be optional.`
+            : unknown
     } &
         {
             [PropName in RequiredKey]: Root.Parse<

@@ -44,7 +44,7 @@ export const createParseFunction =
             }
         >
     ) => {
-        const activeTypeSet = format(options?.typeSet) ?? predefinedTypeSet
+        const activeTypeSet = format(options?.typeSet ?? predefinedTypeSet)
         const context: ParseContext<any> = {
             typeSet: activeTypeSet,
             path: [],

@@ -26,16 +26,8 @@ export namespace Or {
     export type Parse<
         Def extends Definition,
         TypeSet,
-        Options extends ParseTypeRecurseOptions,
-        Result extends ParseSplittableResult = ParseSplittable<
-            "|",
-            Def,
-            TypeSet,
-            Options
-        >
-    > = Result["Errors"] extends ""
-        ? Unlisted<Result["Components"]>
-        : Result["Errors"]
+        Options extends ParseTypeRecurseOptions
+    > = Unlisted<ParseSplittable<"|", Def, TypeSet, Options>>
 
     export type Validate<
         Def extends Definition,

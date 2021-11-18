@@ -99,7 +99,7 @@ describe("parse", () => {
         expect(() => {
             // @ts-expect-error
             const result = parse({ bad: true })
-            expectError<{ bad: DefinitionTypeError }>(result.type)
+            expectError<{ bad: unknown }>(result.type)
         }).toThrowErrorMatchingInlineSnapshot(
             `"Definition value true at path bad is invalid. Definitions must be strings, numbers, or objects."`
         )
@@ -132,12 +132,20 @@ describe("parse", () => {
         expectType<{ nested: number | true }>(objectResult.type)
     })
     test("extract types referenced from string", () => {
-        type Def = Validate<
+        type Extracted = Validate<
+            "(user[],group[])=>boolean|number|null",
+            UncompiledTypeSet<"user" | "group">,
+            { extractTypesReferenced: true; includeBuiltIn: true }
+        >
+        expectType<"number" | "boolean" | "user" | "group" | "null">(
+            {} as Extracted
+        )
+        type WithoutBuiltIns = Validate<
             "(user[],group[])=>boolean|number|null",
             UncompiledTypeSet<"user" | "group">,
             { extractTypesReferenced: true }
         >
-        expectType<"number" | "boolean" | "user" | "group" | "null">({} as Def)
+        expectType<"user" | "group">({} as WithoutBuiltIns)
     })
     test("extract base names of object", () => {
         type Def = Validate<

@@ -5,10 +5,9 @@ import {
 import { Str } from "./str.js"
 import { Num } from "./num.js"
 import { Root } from "../common.js"
-import { createParser, ParseArgs, Parser } from "../parser.js"
+import { createParser } from "../parser.js"
 import { DefinitionTypeError } from "../errors.js"
 import { typeDefProxy } from "../../common.js"
-import { DefaultValidateTypeOptions } from "../../definition.js"
 
 export namespace Shallow {
     export type Definition<Def extends string | number = string | number> = Def
@@ -31,7 +30,7 @@ export namespace Shallow {
         ? Value
         : Def extends Str.Definition
         ? Str.Parse<Def, TypeSet, Options>
-        : DefinitionTypeError
+        : unknown
 
     export const type = typeDefProxy as Definition
 

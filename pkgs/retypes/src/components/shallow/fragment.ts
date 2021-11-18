@@ -36,7 +36,9 @@ export namespace Fragment {
               | StringLiteral.Definition
               | NumericStringLiteral.Definition
         ? Options["extractTypesReferenced"] extends true
-            ? Def
+            ? Options["includeBuiltIn"] extends true
+                ? Def
+                : never
             : Root
         : UnknownTypeError<Def>
 
@@ -66,7 +68,7 @@ export namespace Fragment {
           Value
         : Def extends BuiltIn.Definition
         ? BuiltIn.Parse<Def>
-        : UnknownTypeError<Def>
+        : unknown
 
     export const type = typeDefProxy as Definition
 

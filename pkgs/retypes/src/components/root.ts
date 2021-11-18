@@ -35,7 +35,7 @@ export namespace Root {
         ? Shallow.Parse<Def, TypeSet, Options>
         : Def extends Recursible.Definition
         ? Recursible.Parse<Def, TypeSet, Options>
-        : DefinitionTypeError
+        : unknown
 
     export const type = typeDefProxy as Definition
 

@@ -72,25 +72,14 @@ export type ParseSplittable<
     Def extends string,
     TypeSet,
     Options extends ParseTypeRecurseOptions,
-    Components extends string[] = Split<Def, Delimiter>,
-    ParsedComponents = {
-        [I in keyof Components]: Fragment.Parse<
-            Components[I] & string,
-            TypeSet,
-            Options
-        >
-    },
-    ComponentErrors = {
-        [I in keyof ParsedComponents]: ParsedComponents[I] extends ValidationErrorMessage
-            ? ParsedComponents[I]
-            : never
-    }
-> = ParseSplittableResult<
-    ParsedComponents,
-    StringifyPossibleTypes<
-        Extract<ComponentErrors[keyof ComponentErrors], ValidationErrorMessage>
+    Components extends string[] = Split<Def, Delimiter>
+> = {
+    [I in keyof Components]: Fragment.Parse<
+        Components[I] & string,
+        TypeSet,
+        Options
     >
->
+}
 
 export type ValidateSplittable<
     Delimiter extends string,
