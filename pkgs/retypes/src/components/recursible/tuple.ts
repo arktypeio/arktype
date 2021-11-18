@@ -4,7 +4,8 @@ import {
     validationError,
     ValidationErrors
 } from "../errors.js"
-import { ValidateRecursible, Root, ParseTypeRecurseOptions } from "./common.js"
+import { ValidateRecursible } from "./common.js"
+import { Root, ParseTypeRecurseOptions } from "../common.js"
 import { Recursible } from "./recursible.js"
 import { typeDefProxy } from "../../common.js"
 

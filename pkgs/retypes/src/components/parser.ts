@@ -8,6 +8,7 @@ import {
     TreeOf,
     ValueOf
 } from "@re-do/utils"
+import { writeFileSync } from "fs"
 import { Function as ToolbeltFunction } from "ts-toolbelt"
 import { typeDefProxy } from "../common.js"
 import { typeOf } from "../typeOf.js"
@@ -218,7 +219,9 @@ export const createParser = <
         def: DefType,
         ctx: ParseContext<DefType>
     ): ParsedType<DefType> => {
-        console.log({ def, ctx })
+        // writeFileSync("parseTest.txt", new Error().stack + "\n", {
+        //     flag: "a+"
+        // })
         const args: ParseArgs<DefType> = [def, { ...ctx, depth: ctx.depth + 1 }]
         const inherits = getInherited()
         const children = getChildren()
