@@ -5,9 +5,12 @@ import {
     Unlisted,
     narrow
 } from "@re-do/utils"
-import { ParseTypeRecurseOptions } from "../common.js"
+import {
+    ParseTypeRecurseOptions,
+    ValidateTypeRecurseOptions
+} from "../common.js"
 import { Fragment } from "./fragment.js"
-import { UnknownTypeError } from "../errors.js"
+import { ValidationErrorMessage } from "../errors.js"
 import { BuiltIn } from "./builtIn.js"
 
 export * from "../common.js"
@@ -78,14 +81,14 @@ export type ParseSplittable<
         >
     },
     ComponentErrors = {
-        [I in keyof ParsedComponents]: ParsedComponents[I] extends UnknownTypeError
+        [I in keyof ParsedComponents]: ParsedComponents[I] extends ValidationErrorMessage
             ? ParsedComponents[I]
             : never
     }
 > = ParseSplittableResult<
     ParsedComponents,
     StringifyPossibleTypes<
-        Extract<ComponentErrors[keyof ComponentErrors], UnknownTypeError>
+        Extract<ComponentErrors[keyof ComponentErrors], ValidationErrorMessage>
     >
 >
 
@@ -93,25 +96,25 @@ export type ValidateSplittable<
     Delimiter extends string,
     Def extends string,
     Root extends string,
-    DeclaredTypeName extends string,
-    ExtractTypesReferenced extends boolean,
+    TypeSet,
+    Options extends ValidateTypeRecurseOptions,
     Components extends string[] = Split<Def, Delimiter>,
     ValidateDefinitions extends string[] = {
         [Index in keyof Components]: Fragment.Validate<
             Components[Index] & string,
             Components[Index] & string,
-            DeclaredTypeName,
-            ExtractTypesReferenced
+            TypeSet,
+            Options
         >
     },
     ValidatedDefinition extends string = Join<ValidateDefinitions, Delimiter>
-> = ExtractTypesReferenced extends true
+> = Options["extractTypesReferenced"] extends true
     ? Unlisted<ValidateDefinitions>
     : Def extends ValidatedDefinition
     ? Root
     : StringifyPossibleTypes<
           Extract<
               ValidateDefinitions[keyof ValidateDefinitions],
-              UnknownTypeError
+              ValidationErrorMessage
           >
       >

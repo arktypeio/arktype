@@ -35,7 +35,8 @@ export const getJestConfig = (): Config.InitialOptions => ({
     reporters: [getCustomReporterPath()],
     globals: {
         "ts-jest": {
-            useESM: true
+            useESM: true,
+            isolatedModules: true
         }
     }
 })

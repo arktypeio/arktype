@@ -1,5 +1,8 @@
 import { Evaluate } from "@re-do/utils"
-import { ParseTypeRecurseOptions } from "./common.js"
+import {
+    ParseTypeRecurseOptions,
+    ValidateTypeRecurseOptions
+} from "./common.js"
 import {
     ParseSplittable,
     ParseSplittableResult,
@@ -20,22 +23,22 @@ export namespace ArrowFunction {
         Parameters extends string,
         Return extends string,
         Root extends string,
-        DeclaredTypeName extends string,
-        ExtractTypesReferenced extends boolean,
+        TypeSet,
+        Options extends ValidateTypeRecurseOptions,
         ValidateParameters extends string = ValidateParameterTuple<
             Parameters,
             Parameters,
-            DeclaredTypeName,
-            ExtractTypesReferenced
+            TypeSet,
+            Options
         > &
             string,
         ValidateReturn extends string = Fragment.Validate<
             Return,
             Return,
-            DeclaredTypeName,
-            ExtractTypesReferenced
+            TypeSet,
+            Options
         >
-    > = ExtractTypesReferenced extends true
+    > = Options["extractTypesReferenced"] extends true
         ? ValidateParameters | ValidateReturn
         : Parameters extends ValidateParameters
         ? Return extends ValidateReturn
@@ -104,19 +107,13 @@ export namespace ArrowFunction {
 type ValidateParameterTuple<
     Def extends string,
     Root extends string,
-    DeclaredTypeName extends string,
-    ExtractTypesReferenced extends boolean
+    TypeSet,
+    Options extends ValidateTypeRecurseOptions
 > = Def extends ""
-    ? ExtractTypesReferenced extends true
+    ? Options["extractTypesReferenced"] extends true
         ? never
         : ""
-    : ValidateSplittable<
-          ",",
-          Def,
-          Root,
-          DeclaredTypeName,
-          ExtractTypesReferenced
-      >
+    : ValidateSplittable<",", Def, Root, TypeSet, Options>
 
 type ParseParameterTuple<
     Def extends string,

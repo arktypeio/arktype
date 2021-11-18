@@ -2,12 +2,11 @@ import moize from "moize"
 import {
     Number as NumberToolbelt,
     Union as ToolbeltUnion,
-    List as ToolbeltList,
-    T
+    List as ToolbeltList
 } from "ts-toolbelt"
 import { WithDefaults } from "./merge.js"
 
-export const memoize = moize as <F extends Func>(f: F) => F
+export const memoize = moize
 
 export type StringReplace<
     Original extends string,

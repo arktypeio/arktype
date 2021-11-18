@@ -7,7 +7,8 @@ import { Recursible } from "../recursible/index.js"
 import {
     comparableDefaultValueSet,
     nonComparableDefaultValues,
-    ParseTypeRecurseOptions
+    ParseTypeRecurseOptions,
+    ValidateTypeRecurseOptions
 } from "./common.js"
 import {
     ParseSplittable,
@@ -39,15 +40,9 @@ export namespace Or {
     export type Validate<
         Def extends Definition,
         Root extends string,
-        DeclaredTypeName extends string,
-        ExtractTypesReferenced extends boolean
-    > = ValidateSplittable<
-        "|",
-        Def,
-        Root,
-        DeclaredTypeName,
-        ExtractTypesReferenced
-    >
+        TypeSet,
+        Options extends ValidateTypeRecurseOptions
+    > = ValidateSplittable<"|", Def, Root, TypeSet, Options>
 
     export const type = typeDefProxy as Definition
 

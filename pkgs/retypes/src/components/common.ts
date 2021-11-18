@@ -4,6 +4,7 @@ import { StringLiteral } from "./shallow/stringLiteral.js"
 
 export * from "./root.js"
 import { Root } from "./root.js"
+import { ParseTypeOptions, ValidateTypeOptions } from "../definition.js"
 
 // These are the non-literal types we can extract from a value at runtime
 export const namedExtractableTypes = {
@@ -57,18 +58,6 @@ export type BuiltInTypeName = keyof BuiltInTypes
 
 export type ParseTypeRecurseOptions = Required<ParseTypeOptions>
 
-export type ParseTypeOptions = {
-    onCycle?: Root.Definition
-    seen?: any
-    deepOnCycle?: boolean
-    onResolve?: Root.Definition
-}
-
-export type DefaultParseTypeOptions = {
-    onCycle: never
-    seen: {}
-    deepOnCycle: false
-    onResolve: never
-}
+export type ValidateTypeRecurseOptions = Required<ValidateTypeOptions>
 
 export type UnvalidatedTypeSet = { [K in string]: Root.Definition }

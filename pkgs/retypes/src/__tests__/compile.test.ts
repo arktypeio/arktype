@@ -8,7 +8,7 @@ describe("compile", () => {
         expectType<string>(a)
         // @ts-expect-error
         const badA = compile({ a: "strig" }).types.a.type
-        expectError<"Unable to determine the type of 'strig'.">(badA)
+        // expectError<"Unable to determine the type of 'strig'.">(badA)
     })
     test("independent", () => {
         const c = compile({ a: "string" }, { b: { c: "boolean" } }).types.b.type
@@ -17,14 +17,14 @@ describe("compile", () => {
         // @ts-expect-error
         const badC = compile({ a: "string" }, { b: { c: "uhoh" } }).types.b.type
             .c
-        expectError<"Unable to determine the type of 'uhoh'.">(badC)
+        // expectError<"Unable to determine the type of 'uhoh'.">(badC)
     })
     test("interdependent", () => {
         const c = compile({ a: "string" }, { b: { c: "a" } }).types.b.type.c
         expectType<string>(c)
         // @ts-expect-error
         const badC = compile({ a: "uhoh" }, { b: { c: "a" } }).types.b.type.c
-        expectError<"Unable to determine the type of 'uhoh'.">(badC)
+        // expectError<"Unable to determine the type of 'uhoh'.">(badC)
     })
     test("recursive", () => {
         const { types } = compile({ a: { dejaVu: "a?" } })
@@ -55,19 +55,19 @@ describe("compile", () => {
         expectType<{ b: { a: any } } | { a: { b: any } } | null>(result)
         // @ts-expect-error
         const badResult = parse({ nested: { a: "a", b: "b", c: "c" } }).type
-        expectError<{
-            nested: {
-                a: {
-                    b: {
-                        a: any
-                    }
-                }
-                b: {
-                    a: any
-                }
-                c: "Unable to determine the type of 'c'."
-            }
-        }>(badResult)
+        // expectError<{
+        //     nested: {
+        //         a: {
+        //             b: {
+        //                 a: any
+        //             }
+        //         }
+        //         b: {
+        //             a: any
+        //         }
+        //         c: "Unable to determine the type of 'c'."
+        //     }
+        // }>(badResult)
     })
     test("compile result", () => {
         const compileResult = compile({ a: { b: "b?" } }, { b: { a: "a?" } })

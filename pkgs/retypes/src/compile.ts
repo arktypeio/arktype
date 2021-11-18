@@ -13,19 +13,24 @@ import { Validate } from "./definition.js"
 import { Recursible } from "./components/recursible/recursible.js"
 import { Obj } from "./components/recursible/obj.js"
 
-export type TypeDefinitions<
-    Definitions,
-    DeclaredTypeName extends string = keyof MergeAll<Definitions> & string
-> = {
-    [Index in keyof Definitions]: Validate<Definitions[Index], DeclaredTypeName>
+// Just use unknown for now since we don't have all the definitions yet
+// but we still want to allow references to other declared types
+export type UncompiledTypeSet<DeclaredTypeName extends string> = {
+    [TypeName in DeclaredTypeName]: "unknown"
 }
 
-export type TypeSet<
-    Set,
-    ExternalTypeName extends string = never,
-    TypeNames extends string = (keyof Set | ExternalTypeName) & string
+export type TypeDefinitions<
+    Definitions,
+    DeclaredTypeName extends string = TypeNameFrom<Definitions>
 > = {
-    [TypeName in keyof Set]: Validate<Set[TypeName], TypeNames>
+    [Index in keyof Definitions]: Validate<
+        Definitions[Index],
+        UncompiledTypeSet<DeclaredTypeName>
+    >
+}
+
+export type TypeSet<Set> = {
+    [TypeName in keyof Set]: Validate<Set[TypeName], Set>
 }
 
 export type TypeSetFromDefinitions<Definitions> = MergeAll<
@@ -56,7 +61,7 @@ export type TypeSetDefinitions<
         [Index in keyof Definitions]: Definitions[Index] extends Obj.Definition<
             Definitions[Index]
         >
-            ? Validate<Definitions[Index], TypeNameFrom<Definitions>>
+            ? Validate<Definitions[Index], UncompiledTypeSet<DeclaredTypeName>>
             : `Definitions must be objects with string keys representing defined type names.`
     }
 

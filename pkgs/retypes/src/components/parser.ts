@@ -3,6 +3,7 @@ import {
     Func,
     KeyValuate,
     ListPossibleTypes,
+    memoize,
     stringify,
     transform,
     TreeOf,
@@ -33,7 +34,6 @@ export type ParseContext<DefType> = {
     typeSet: UnvalidatedTypeSet
     path: string[]
     seen: string[]
-    depth: number
 }
 
 export type ParseArgs<DefType> = [
@@ -219,7 +219,7 @@ export const createParser = <
         def: DefType,
         ctx: ParseContext<DefType>
     ): ParsedType<DefType> => {
-        const args: ParseArgs<DefType> = [def, { ...ctx, depth: ctx.depth + 1 }]
+        const args: ParseArgs<DefType> = [def, ctx]
         const inherits = getInherited()
         const children = getChildren()
         let matchingChild: AnyParser
@@ -283,6 +283,15 @@ export const createParser = <
             ...inferredMethods
         } as any
     }
+    const memoizedParse = memoize(parse, {
+        isDeepEqual: true,
+        transformArgs: (args) => {
+            const [def, ctx] = args as ParseArgs<any>
+            // Only include the context that affects parse result
+            // (path is only used for logging errors)
+            return [def, { typeSet: ctx.typeSet, seen: ctx.seen }]
+        }
+    })
     return Object.assign(parse, {
         meta: {
             type: input.type,

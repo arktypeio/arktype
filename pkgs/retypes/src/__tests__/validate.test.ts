@@ -1,5 +1,6 @@
 import { parse, typeOf } from ".."
 import { Func } from "@re-do/utils"
+import { TypeSet } from "../compile.js"
 
 describe("typeOf", () => {
     test("string", () => {
@@ -285,16 +286,18 @@ describe("validate", () => {
         `)
     })
     test("errors on shallow cycle", () => {
-        // const shallowRecursive = parse("a", { typeSet: { a: "a" } })
-        // expect(() => shallowRecursive.assert("what's an a?")).toThrowError(
-        //     "shallowly"
-        // )
-        // const shallowCyclic = parse("a", {
-        //     typeSet: { a: "b", b: "c", c: "a|b|c" }
-        // })
-        // expect(() => shallowCyclic.check(["what's a b?"])).toThrowError(
-        //     "shallowly"
-        // )
+        // @ts-expect-error
+        const shallowRecursive = parse("a", { typeSet: { a: "a" } })
+        expect(() => shallowRecursive.assert("what's an a?")).toThrowError(
+            "shallowly"
+        )
+        // @ts-expect-error
+        const shallowCyclic = parse("a", {
+            typeSet: { a: "b", b: "c", c: "a|b|c" }
+        })
+        expect(() => shallowCyclic.check(["what's a b?"])).toThrowError(
+            "shallowly"
+        )
     })
     test("cyclic typeset", () => {
         const bicycle = parse(

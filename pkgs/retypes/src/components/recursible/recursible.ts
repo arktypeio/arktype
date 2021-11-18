@@ -5,7 +5,11 @@ import {
     Recursible as ExtractRecursible
 } from "@re-do/utils"
 import { typeDefProxy } from "../../common.js"
-import { Root, ParseTypeRecurseOptions } from "../common.js"
+import {
+    Root,
+    ParseTypeRecurseOptions,
+    ValidateTypeRecurseOptions
+} from "../common.js"
 import { createParser } from "../parser.js"
 import { DefinitionTypeError } from "../errors.js"
 import { Obj, Tuple } from "./index.js"
@@ -17,12 +21,12 @@ export namespace Recursible {
 
     export type Validate<
         Def,
-        DeclaredTypeName extends string,
-        ExtractTypesReferenced extends boolean
+        TypeSet,
+        Options extends ValidateTypeRecurseOptions
     > = Def extends Tuple.Definition
-        ? Tuple.Validate<Def, DeclaredTypeName, ExtractTypesReferenced>
+        ? Tuple.Validate<Def, TypeSet, Options>
         : Def extends Obj.Definition
-        ? Obj.Validate<Def, DeclaredTypeName, ExtractTypesReferenced>
+        ? Obj.Validate<Def, TypeSet, Options>
         : DefinitionTypeError
 
     export type Parse<

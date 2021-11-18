@@ -1,20 +1,16 @@
 import { Evaluate } from "@re-do/utils"
-import { Root } from "../common.js"
+import { Root, ValidateTypeRecurseOptions } from "../common.js"
 import { HandlesMethods, ParsedType } from "../parser.js"
 import { Recursible } from "./recursible.js"
 import { ValidationErrors } from "../errors.js"
 
 export type ValidateRecursible<
     Def,
-    DeclaredTypeName extends string,
-    ExtractTypesReferenced extends boolean
+    TypeSet,
+    Options extends ValidateTypeRecurseOptions
 > = Evaluate<
     {
-        [PropName in keyof Def]: Root.Validate<
-            Def[PropName],
-            DeclaredTypeName,
-            ExtractTypesReferenced
-        >
+        [PropName in keyof Def]: Root.Validate<Def[PropName], TypeSet, Options>
     }
 >
 

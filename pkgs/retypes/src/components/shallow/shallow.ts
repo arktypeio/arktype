@@ -1,22 +1,26 @@
-import { ParseTypeRecurseOptions } from "./common.js"
+import {
+    ParseTypeRecurseOptions,
+    ValidateTypeRecurseOptions
+} from "./common.js"
 import { Str } from "./str.js"
 import { Num } from "./num.js"
 import { Root } from "../common.js"
 import { createParser, ParseArgs, Parser } from "../parser.js"
 import { DefinitionTypeError } from "../errors.js"
 import { typeDefProxy } from "../../common.js"
+import { DefaultValidateTypeOptions } from "../../definition.js"
 
 export namespace Shallow {
     export type Definition<Def extends string | number = string | number> = Def
 
     export type Validate<
         Def extends Definition,
-        DeclaredTypeName extends string,
-        ExtractTypesReferenced extends boolean
+        TypeSet,
+        Options extends ValidateTypeRecurseOptions
     > = Def extends Num.Definition
         ? Def
         : Def extends Str.Definition
-        ? Str.Validate<Def, DeclaredTypeName, ExtractTypesReferenced>
+        ? Str.Validate<Def, TypeSet, Options>
         : DefinitionTypeError
 
     export type Parse<

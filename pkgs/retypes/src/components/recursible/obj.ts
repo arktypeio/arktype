@@ -10,7 +10,11 @@ import { Recursible } from "."
 import { Optional } from "../shallow/optional.js"
 import { createParser, ParsedType } from "../parser.js"
 import { typeDefProxy } from "../../common.js"
-import { ParseTypeRecurseOptions, Root } from "../common.js"
+import {
+    ParseTypeRecurseOptions,
+    Root,
+    ValidateTypeRecurseOptions
+} from "../common.js"
 import {
     mismatchedKeysError,
     validationError,
@@ -24,9 +28,9 @@ export namespace Obj {
 
     export type Validate<
         Def,
-        DeclaredTypeName extends string,
-        ExtractTypesReferenced extends boolean
-    > = ValidateRecursible<Def, DeclaredTypeName, ExtractTypesReferenced>
+        TypeSet,
+        Options extends ValidateTypeRecurseOptions
+    > = ValidateRecursible<Def, TypeSet, Options>
 
     export type Parse<
         Def,

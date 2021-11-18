@@ -1,4 +1,7 @@
-import { ParseTypeRecurseOptions } from "./common.js"
+import {
+    ParseTypeRecurseOptions,
+    ValidateTypeRecurseOptions
+} from "./common.js"
 import { ArrowFunction } from "./arrowFunction.js"
 import { BuiltIn } from "./builtIn.js"
 import { List } from "./list.js"
@@ -9,7 +12,8 @@ import { StringLiteral } from "./stringLiteral.js"
 import { Str } from "./str.js"
 import { createParser } from "../parser.js"
 import { typeDefProxy } from "../../common.js"
-import { UnknownTypeError } from "../errors.js"
+import { UnknownTypeError, ValidationErrorMessage } from "../errors.js"
+import { DefaultValidateTypeOptions } from "../../definition.js"
 
 export namespace Fragment {
     export type Definition<Def extends string = string> = Def
@@ -17,31 +21,21 @@ export namespace Fragment {
     export type Validate<
         Def extends string,
         Root extends string,
-        DeclaredTypeName extends string,
-        ExtractTypesReferenced extends boolean
-    > = Def extends Or.Definition<infer First, infer Second>
-        ? Or.Validate<
-              `${First}|${Second}`,
-              Root,
-              DeclaredTypeName,
-              ExtractTypesReferenced
-          >
+        TypeSet,
+        Options extends ValidateTypeRecurseOptions
+    > = Def extends Resolution.Definition<TypeSet>
+        ? Resolution.Validate<Def, Root, TypeSet, Options>
+        : Def extends Or.Definition<infer First, infer Second>
+        ? Or.Validate<`${First}|${Second}`, Root, TypeSet, Options>
         : Def extends ArrowFunction.Definition<infer Parameters, infer Return>
-        ? ArrowFunction.Validate<
-              Parameters,
-              Return,
-              Root,
-              DeclaredTypeName,
-              ExtractTypesReferenced
-          >
+        ? ArrowFunction.Validate<Parameters, Return, Root, TypeSet, Options>
         : Def extends List.Definition<infer ListItem>
-        ? Validate<ListItem, Root, DeclaredTypeName, ExtractTypesReferenced>
+        ? Validate<ListItem, Root, TypeSet, Options>
         : Def extends
-              | Resolution.Definition<DeclaredTypeName>
               | BuiltIn.Definition
               | StringLiteral.Definition
               | NumericStringLiteral.Definition
-        ? ExtractTypesReferenced extends true
+        ? Options["extractTypesReferenced"] extends true
             ? Def
             : Root
         : UnknownTypeError<Def>
@@ -50,7 +44,16 @@ export namespace Fragment {
         Def extends string,
         TypeSet,
         Options extends ParseTypeRecurseOptions
-    > = Def extends Or.Definition
+    > = Validate<
+        Def,
+        Def,
+        TypeSet,
+        DefaultValidateTypeOptions
+    > extends ValidationErrorMessage
+        ? unknown
+        : Def extends Resolution.Definition<TypeSet>
+        ? Resolution.Parse<Def, TypeSet, Options>
+        : Def extends Or.Definition
         ? Or.Parse<Def, TypeSet, Options>
         : Def extends ArrowFunction.Definition<infer Parameters, infer Return>
         ? ArrowFunction.Parse<Parameters, Return, TypeSet, Options>
@@ -63,8 +66,6 @@ export namespace Fragment {
           Value
         : Def extends BuiltIn.Definition
         ? BuiltIn.Parse<Def>
-        : Def extends keyof TypeSet
-        ? Resolution.Parse<Def, TypeSet, Options>
         : UnknownTypeError<Def>
 
     export const type = typeDefProxy as Definition

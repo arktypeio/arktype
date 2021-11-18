@@ -1,4 +1,7 @@
-import { ParseTypeRecurseOptions } from "./common.js"
+import {
+    ParseTypeRecurseOptions,
+    ValidateTypeRecurseOptions
+} from "./common.js"
 import { Shallow } from "./shallow/shallow.js"
 import { Recursible } from "./recursible/recursible.js"
 import { reroot, createParser } from "./parser.js"
@@ -12,12 +15,12 @@ export namespace Root {
 
     export type Validate<
         Def,
-        DeclaredTypeName extends string,
-        ExtractTypesReferenced extends boolean
+        TypeSet,
+        Options extends ValidateTypeRecurseOptions
     > = Def extends Shallow.Definition
-        ? Shallow.Validate<Def, DeclaredTypeName, ExtractTypesReferenced>
+        ? Shallow.Validate<Def, TypeSet, Options>
         : Def extends Recursible.Definition
-        ? Recursible.Validate<Def, DeclaredTypeName, ExtractTypesReferenced>
+        ? Recursible.Validate<Def, TypeSet, Options>
         : DefinitionTypeError
 
     export type TypeDefinitionOptions = {

@@ -10,6 +10,7 @@ import {
     GenerateOptions
 } from "./components/parser.js"
 import { ValidationErrors } from "./components/errors.js"
+import { format } from "./format.js"
 
 export type ParseTypeRecurseOptions = Required<ParseTypeOptions>
 
@@ -36,21 +37,20 @@ export const createParseFunction =
         ParseOptions extends ParseTypeOptions,
         ActiveTypeSet = PredefinedTypeSet
     >(
-        definition: Validate<Narrow<Def>, keyof ActiveTypeSet & string>,
+        definition: Validate<Narrow<Def>, ActiveTypeSet>,
         options?: Narrow<
             ParseOptions & {
                 typeSet?: Exact<ActiveTypeSet, TypeSet<ActiveTypeSet>>
             }
         >
     ) => {
-        const activeTypeSet = options?.typeSet ?? predefinedTypeSet
+        const activeTypeSet = format(options?.typeSet) ?? predefinedTypeSet
         const context: ParseContext<any> = {
             typeSet: activeTypeSet,
             path: [],
-            seen: [],
-            depth: 0
+            seen: []
         }
-        return Root.parse(definition, context) as any as Evaluate<
+        return Root.parse(format(definition), context) as any as Evaluate<
             ParsedType<
                 Def,
                 ActiveTypeSet,
@@ -73,43 +73,30 @@ export type ParseTypeSetDefinitions<
     Options extends ParseTypeOptions = {}
 > = ParseTypeSet<MergeAll<Definitions>, Options>
 
-export type ParsedTypeSet<TypeSet = UnvalidatedTypeSet> =
-    UnvalidatedTypeSet extends TypeSet
-        ? Record<string, ParsedType>
-        : {
-              [TypeName in keyof TypeSet]: Evaluate<
-                  ParsedType<TypeName, TypeSet, {}>
-              >
-          }
+export type ParsedTypeSet<TypeSet> = {
+    [TypeName in keyof TypeSet]: Evaluate<ParsedType<TypeName, TypeSet, {}>>
+}
 
-export type ParseFunction<
-    PredefinedTypeSet extends UnvalidatedTypeSet = UnvalidatedTypeSet
-> = <
+export type ParseFunction<PredefinedTypeSet extends UnvalidatedTypeSet> = <
     Definition,
     Options extends ParseTypeOptions,
     ActiveTypeSet = PredefinedTypeSet
 >(
     definition: UnvalidatedTypeSet extends ActiveTypeSet
         ? Root.Definition
-        : Validate<Narrow<Definition>, keyof ActiveTypeSet & string>,
+        : Validate<Narrow<Definition>, ActiveTypeSet>,
     options?: Narrow<
         Options & {
             typeSet?: Exact<Narrow<ActiveTypeSet>, TypeSet<ActiveTypeSet>>
         }
     >
-) => Evaluate<
-    UnvalidatedTypeSet extends ActiveTypeSet
-        ? ParsedType
-        : ParsedType<Definition, ActiveTypeSet, Options>
->
+) => Evaluate<ParsedType<Definition, ActiveTypeSet, Options>>
 
 export type ParsedType<
-    Definition = Root.Definition,
-    TypeSet = UnvalidatedTypeSet,
-    Options = {},
-    TypeOfParsed = Root.Definition extends Definition
-        ? any
-        : Parse<Definition, TypeSet, Options>
+    Definition,
+    TypeSet,
+    Options,
+    TypeOfParsed = Parse<Definition, TypeSet, Options>
 > = {
     definition: Definition
     type: TypeOfParsed

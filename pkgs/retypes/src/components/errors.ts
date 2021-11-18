@@ -6,7 +6,9 @@ import {
     uncapitalize,
     isDigits,
     filterChars,
-    isAlphaNumeric
+    isAlphaNumeric,
+    Join,
+    StringifyPossibleTypes
 } from "@re-do/utils"
 import { ExtractableDefinition } from "./common.js"
 import { ParseContext } from "./parser.js"
@@ -18,45 +20,74 @@ export const stringifyDefinition = (definition: unknown) =>
 export const definitionTypeError = (definition: unknown, path: string[]) =>
     `Definition value ${stringifyDefinition(definition)} ${
         path.length ? `at path ${path.join("/")} ` : ""
-    }is invalid. ${baseDefinitionTypeError}`
+    }is invalid. ${definitionTypeErrorTemplate}`
 
-export const baseDefinitionTypeError =
+export const definitionTypeErrorTemplate =
     "Definitions must be strings, numbers, or objects."
 
-export type DefinitionTypeError = typeof baseDefinitionTypeError
+export type DefinitionTypeError = typeof definitionTypeErrorTemplate
 
 export const getBaseTypeName = (definition: string) =>
     filterChars(definition, isAlphaNumeric)
 
-export const baseUnknownTypeError = "Unable to determine the type of '${def}'."
+export const baseUnknownTypeError = "Unable to determine the type of '@def'."
 
 export type UnknownTypeError<
     Definition extends Shallow.Definition = Shallow.Definition
-> = StringReplace<typeof baseUnknownTypeError, "${def}", `${Definition}`>
+> = StringReplace<typeof baseUnknownTypeError, "@def", `${Definition}`>
 
 export const unknownTypeError = <Definition>(def: Definition) =>
-    baseUnknownTypeError.replace("${def}", String(def))
+    baseUnknownTypeError.replace("@def", String(def))
 
 // Members of an or type to errors that occurred validating those types
 export type OrTypeErrors = Record<string, string>
 
 export type OrErrorArgs = BaseAssignmentArgs & { orErrors: OrTypeErrors }
 
+export const orValidationErrorTemplate =
+    "@valueType is not assignable to any of @def:\n@errors"
+
 export const orValidationError = ({ def, valueType, orErrors }: OrErrorArgs) =>
-    `${stringifyDefinition(
-        valueType
-    )} is not assignable to any of ${def}:\n${stringify(orErrors)}`
+    orValidationErrorTemplate
+        .replace("@valueType", stringifyDefinition(valueType))
+        .replace("@def", stringify(def))
+        .replace("@errors", stringify(orErrors))
 
 export type BaseParseArgs = {
     def: unknown
     ctx: ParseContext<unknown>
 }
 
+export const shallowCycleErrorTemplate =
+    "@def shallowly references itself in typeSet @typeSet via the following set of resolutions: @resolutions."
+
+export type ShallowCycleError<
+    Def extends string = string,
+    TypeSet = any,
+    Seen = any
+> = StringReplace<
+    StringReplace<
+        StringReplace<typeof shallowCycleErrorTemplate, "@def", Def>,
+        "@typeSet",
+        ""
+    >,
+    "@resolutions",
+    StringifyPossibleTypes<keyof Seen & string>
+>
+
+export type ValidationErrorMessage =
+    | UnknownTypeError
+    | ShallowCycleError
+    | DefinitionTypeError
+
+export type InferrableValidationErrorMessage<E> =
+    E extends ValidationErrorMessage ? E : never
+
 export const shallowCycleError = ({ def, ctx }: BaseParseArgs) =>
-    `${stringifyDefinition(def)} shallowly references itself ` +
-    `in typeSet ${stringify(
-        ctx.typeSet
-    )} via the following set of resolutions: ${[...ctx.seen, def].join("=>")}.`
+    shallowCycleErrorTemplate
+        .replace("@def", stringifyDefinition(def))
+        .replace("@typeSet", stringify(ctx.typeSet))
+        .replace("@resolutions", [...ctx.seen, def].join("=>"))
 
 // Paths at which errors occur mapped to their messages
 export type ValidationErrors = Record<string, string>

@@ -1,28 +1,80 @@
-import { Or, stringify } from "@re-do/utils"
-import { writeFileSync } from "fs"
+import {
+    Cast,
+    ElementOf,
+    Merge,
+    Or,
+    stringify,
+    StringifyPossibleTypes
+} from "@re-do/utils"
 import { typeDefProxy } from "../../common.js"
-import { shallowCycleError, UnknownTypeError } from "../errors.js"
+import {
+    ValidationErrorMessage,
+    ShallowCycleError,
+    shallowCycleError,
+    UnknownTypeError,
+    InferrableValidationErrorMessage
+} from "../errors.js"
 import { createParser, ParsedType, Parser } from "../parser.js"
-import { ParseTypeRecurseOptions, Root } from "./common.js"
+import {
+    ParseTypeRecurseOptions,
+    Root,
+    UnvalidatedTypeSet,
+    ValidateTypeRecurseOptions
+} from "./common.js"
 import { Fragment } from "./fragment.js"
+import { Str } from "./str.js"
+
+type CheckForShallowCycle<
+    TypeName extends string & keyof TypeSet,
+    TypeSet,
+    Options extends { shallowSeen: any }
+> = TypeName extends keyof Options["shallowSeen"]
+    ? ShallowCycleError<TypeName, TypeSet, Options["shallowSeen"]>
+    : (
+          TypeSet[TypeName] extends string
+              ? Str.Validate<
+                    TypeSet[TypeName] & string,
+                    TypeSet,
+                    Options & {
+                        extractTypesReferenced: false
+                        includeBuiltIn: false
+                        shallowSeen: { [Name in TypeName]: true }
+                    }
+                >
+              : ""
+      ) extends InferrableValidationErrorMessage<infer E>
+    ? E & string
+    : ""
 
 export namespace Resolution {
     export type Definition<
-        DeclaredTypeName extends string = string,
-        Def extends DeclaredTypeName = DeclaredTypeName
+        TypeSet,
+        Def extends keyof TypeSet & string = keyof TypeSet & string
     > = Def
 
     export type Validate<
-        Def extends string,
-        DeclaredTypeName extends string,
-        ExtractTypesReferenced extends boolean
-    > = Def extends DeclaredTypeName ? Def : UnknownTypeError<Def>
+        TypeName extends keyof TypeSet & string,
+        Root,
+        TypeSet,
+        Options extends ValidateTypeRecurseOptions,
+        ShallowCycleCheckResult extends string = CheckForShallowCycle<
+            TypeName,
+            TypeSet,
+            Options
+        >
+    > = ShallowCycleCheckResult extends ShallowCycleError
+        ? ShallowCycleCheckResult
+        : Options["extractTypesReferenced"] extends true
+        ? TypeName
+        : Root
 
     export type Parse<
-        TypeName extends keyof TypeSet,
+        TypeName extends keyof TypeSet & string,
         TypeSet,
         Options extends ParseTypeRecurseOptions
-    > = TypeName extends keyof Options["seen"]
+    > = TypeSet[TypeName] extends ValidationErrorMessage
+        ? unknown
+        : TypeName extends keyof Options["seen"]
         ? Options["onCycle"] extends never
             ? ParseResolvedNonCyclicDefinition<TypeName, TypeSet, Options>
             : ParseResolvedCyclicDefinition<TypeName, TypeSet, Options>
@@ -68,9 +120,7 @@ export namespace Resolution {
               }
           >
 
-    export const type = typeDefProxy as Definition
-
-    const resolutionCache: Record<string, ParsedType<any>> = {}
+    export const type = typeDefProxy as string
 
     export const parse = createParser(
         {
@@ -91,30 +141,12 @@ export namespace Resolution {
                         })
                     )
                 }
-                if (!resolutionCache[def]) {
-                    resolutionCache[def] = Root.parse(ctx.typeSet[def], {
+                return {
+                    resolution: Root.parse(ctx.typeSet[def], {
                         ...ctx,
                         seen: [...ctx.seen, def]
                     })
-                    writeFileSync(
-                        "parseTest.txt",
-                        `Added ${def}:\n${stringify(resolutionCache[def])}\n`,
-                        {
-                            flag: "a+"
-                        }
-                    )
                 }
-                writeFileSync(
-                    "parseTest.txt",
-                    `Resolving ${def} from cache as:\n${stringify(
-                        resolutionCache[def]
-                    )}`,
-                    {
-                        flag: "a+"
-                    }
-                )
-                // If defined refers to a new type in typeSet, start resolving its definition
-                return { resolution: resolutionCache[def] }
             }
         },
         {
@@ -126,5 +158,5 @@ export namespace Resolution {
         }
     )
 
-    export const delegate = parse as any as Definition
+    export const delegate = parse as any as string
 }
