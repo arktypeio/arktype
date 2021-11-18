@@ -1,7 +1,8 @@
-import { Or } from "@re-do/utils"
+import { Or, stringify } from "@re-do/utils"
+import { writeFileSync } from "fs"
 import { typeDefProxy } from "../../common.js"
 import { shallowCycleError, UnknownTypeError } from "../errors.js"
-import { createParser } from "../parser.js"
+import { createParser, ParsedType, Parser } from "../parser.js"
 import { ParseTypeRecurseOptions, Root } from "./common.js"
 import { Fragment } from "./fragment.js"
 
@@ -69,6 +70,8 @@ export namespace Resolution {
 
     export const type = typeDefProxy as Definition
 
+    const resolutionCache: Record<string, ParsedType<any>> = {}
+
     export const parse = createParser(
         {
             type,
@@ -88,13 +91,30 @@ export namespace Resolution {
                         })
                     )
                 }
-                // If defined refers to a new type in typeSet, start resolving its definition
-                return {
-                    resolution: Root.parse(ctx.typeSet[def], {
+                if (!resolutionCache[def]) {
+                    resolutionCache[def] = Root.parse(ctx.typeSet[def], {
                         ...ctx,
                         seen: [...ctx.seen, def]
                     })
+                    writeFileSync(
+                        "parseTest.txt",
+                        `Added ${def}:\n${stringify(resolutionCache[def])}\n`,
+                        {
+                            flag: "a+"
+                        }
+                    )
                 }
+                writeFileSync(
+                    "parseTest.txt",
+                    `Resolving ${def} from cache as:\n${stringify(
+                        resolutionCache[def]
+                    )}`,
+                    {
+                        flag: "a+"
+                    }
+                )
+                // If defined refers to a new type in typeSet, start resolving its definition
+                return { resolution: resolutionCache[def] }
             }
         },
         {

@@ -1,0 +1,220 @@
+Added a:
+{definition: {a: 'a?', b: 'b?', isA: 'true'}, context: {typeSet: {a: {a: 'a?', b: 'b?', isA: 'true'}, b: {a: 'a?', b: 'b?', isA: 'false'}, either: 'a|b'}, path: ['a'], seen: ['a'], depth: 6}, type: {}, allows: (...args) => inputMethod({
+            def,
+            ctx,
+            components: input.components?.(def, ctx) ?? {}
+        }, ...args), references: (...args) => inputMethod({
+            def,
+            ctx,
+            components: input.components?.(def, ctx) ?? {}
+        }, ...args), generate: (...args) => inputMethod({
+            def,
+            ctx,
+            components: input.components?.(def, ctx) ?? {}
+        }, ...args), check: (value, options) => (0, errors_js_1.stringifyErrors)(coreMethods.allows((0, typeOf_js_1.typeOf)(value), options)), assert: (value, options) => {
+                const errorMessage = check(value, options);
+                if (errorMessage) {
+                    throw new Error(errorMessage);
+                }
+            }}
+Resolving a from cache as:
+{definition: {a: 'a?', b: 'b?', isA: 'true'}, context: {typeSet: {a: {a: 'a?', b: 'b?', isA: 'true'}, b: {a: 'a?', b: 'b?', isA: 'false'}, either: 'a|b'}, path: ['a'], seen: ['a'], depth: 6}, type: {}, allows: (...args) => inputMethod({
+            def,
+            ctx,
+            components: input.components?.(def, ctx) ?? {}
+        }, ...args), references: (...args) => inputMethod({
+            def,
+            ctx,
+            components: input.components?.(def, ctx) ?? {}
+        }, ...args), generate: (...args) => inputMethod({
+            def,
+            ctx,
+            components: input.components?.(def, ctx) ?? {}
+        }, ...args), check: (value, options) => (0, errors_js_1.stringifyErrors)(coreMethods.allows((0, typeOf_js_1.typeOf)(value), options)), assert: (value, options) => {
+                const errorMessage = check(value, options);
+                if (errorMessage) {
+                    throw new Error(errorMessage);
+                }
+            }}Resolving a from cache as:
+{definition: {a: 'a?', b: 'b?', isA: 'true'}, context: {typeSet: {a: {a: 'a?', b: 'b?', isA: 'true'}, b: {a: 'a?', b: 'b?', isA: 'false'}, either: 'a|b'}, path: ['a'], seen: ['a'], depth: 6}, type: {}, allows: (...args) => inputMethod({
+            def,
+            ctx,
+            components: input.components?.(def, ctx) ?? {}
+        }, ...args), references: (...args) => inputMethod({
+            def,
+            ctx,
+            components: input.components?.(def, ctx) ?? {}
+        }, ...args), generate: (...args) => inputMethod({
+            def,
+            ctx,
+            components: input.components?.(def, ctx) ?? {}
+        }, ...args), check: (value, options) => (0, errors_js_1.stringifyErrors)(coreMethods.allows((0, typeOf_js_1.typeOf)(value), options)), assert: (value, options) => {
+                const errorMessage = check(value, options);
+                if (errorMessage) {
+                    throw new Error(errorMessage);
+                }
+            }}Resolving a from cache as:
+{definition: {a: 'a?', b: 'b?', isA: 'true'}, context: {typeSet: {a: {a: 'a?', b: 'b?', isA: 'true'}, b: {a: 'a?', b: 'b?', isA: 'false'}, either: 'a|b'}, path: ['a'], seen: ['a'], depth: 6}, type: {}, allows: (...args) => inputMethod({
+            def,
+            ctx,
+            components: input.components?.(def, ctx) ?? {}
+        }, ...args), references: (...args) => inputMethod({
+            def,
+            ctx,
+            components: input.components?.(def, ctx) ?? {}
+        }, ...args), generate: (...args) => inputMethod({
+            def,
+            ctx,
+            components: input.components?.(def, ctx) ?? {}
+        }, ...args), check: (value, options) => (0, errors_js_1.stringifyErrors)(coreMethods.allows((0, typeOf_js_1.typeOf)(value), options)), assert: (value, options) => {
+                const errorMessage = check(value, options);
+                if (errorMessage) {
+                    throw new Error(errorMessage);
+                }
+            }}Added a:
+{definition: {a: 'a?', b: 'b?', isA: 'true'}, context: {typeSet: {a: {a: 'a?', b: 'b?', isA: 'true'}, b: {a: 'a?', b: 'b?', isA: 'false'}, either: 'a|b'}, path: ['a'], seen: ['a'], depth: 6}, type: {}, allows: (...args) => inputMethod({
+            def,
+            ctx,
+            components: input.components?.(def, ctx) ?? {}
+        }, ...args), references: (...args) => inputMethod({
+            def,
+            ctx,
+            components: input.components?.(def, ctx) ?? {}
+        }, ...args), generate: (...args) => inputMethod({
+            def,
+            ctx,
+            components: input.components?.(def, ctx) ?? {}
+        }, ...args), check: (value, options) => (0, errors_js_1.stringifyErrors)(coreMethods.allows((0, typeOf_js_1.typeOf)(value), options)), assert: (value, options) => {
+                const errorMessage = check(value, options);
+                if (errorMessage) {
+                    throw new Error(errorMessage);
+                }
+            }}
+Resolving a from cache as:
+{definition: {a: 'a?', b: 'b?', isA: 'true'}, context: {typeSet: {a: {a: 'a?', b: 'b?', isA: 'true'}, b: {a: 'a?', b: 'b?', isA: 'false'}, either: 'a|b'}, path: ['a'], seen: ['a'], depth: 6}, type: {}, allows: (...args) => inputMethod({
+            def,
+            ctx,
+            components: input.components?.(def, ctx) ?? {}
+        }, ...args), references: (...args) => inputMethod({
+            def,
+            ctx,
+            components: input.components?.(def, ctx) ?? {}
+        }, ...args), generate: (...args) => inputMethod({
+            def,
+            ctx,
+            components: input.components?.(def, ctx) ?? {}
+        }, ...args), check: (value, options) => (0, errors_js_1.stringifyErrors)(coreMethods.allows((0, typeOf_js_1.typeOf)(value), options)), assert: (value, options) => {
+                const errorMessage = check(value, options);
+                if (errorMessage) {
+                    throw new Error(errorMessage);
+                }
+            }}Resolving a from cache as:
+{definition: {a: 'a?', b: 'b?', isA: 'true'}, context: {typeSet: {a: {a: 'a?', b: 'b?', isA: 'true'}, b: {a: 'a?', b: 'b?', isA: 'false'}, either: 'a|b'}, path: ['a'], seen: ['a'], depth: 6}, type: {}, allows: (...args) => inputMethod({
+            def,
+            ctx,
+            components: input.components?.(def, ctx) ?? {}
+        }, ...args), references: (...args) => inputMethod({
+            def,
+            ctx,
+            components: input.components?.(def, ctx) ?? {}
+        }, ...args), generate: (...args) => inputMethod({
+            def,
+            ctx,
+            components: input.components?.(def, ctx) ?? {}
+        }, ...args), check: (value, options) => (0, errors_js_1.stringifyErrors)(coreMethods.allows((0, typeOf_js_1.typeOf)(value), options)), assert: (value, options) => {
+                const errorMessage = check(value, options);
+                if (errorMessage) {
+                    throw new Error(errorMessage);
+                }
+            }}Resolving a from cache as:
+{definition: {a: 'a?', b: 'b?', isA: 'true'}, context: {typeSet: {a: {a: 'a?', b: 'b?', isA: 'true'}, b: {a: 'a?', b: 'b?', isA: 'false'}, either: 'a|b'}, path: ['a'], seen: ['a'], depth: 6}, type: {}, allows: (...args) => inputMethod({
+            def,
+            ctx,
+            components: input.components?.(def, ctx) ?? {}
+        }, ...args), references: (...args) => inputMethod({
+            def,
+            ctx,
+            components: input.components?.(def, ctx) ?? {}
+        }, ...args), generate: (...args) => inputMethod({
+            def,
+            ctx,
+            components: input.components?.(def, ctx) ?? {}
+        }, ...args), check: (value, options) => (0, errors_js_1.stringifyErrors)(coreMethods.allows((0, typeOf_js_1.typeOf)(value), options)), assert: (value, options) => {
+                const errorMessage = check(value, options);
+                if (errorMessage) {
+                    throw new Error(errorMessage);
+                }
+            }}Added a:
+{definition: {a: 'a?', b: 'b?', isA: 'true'}, context: {typeSet: {a: {a: 'a?', b: 'b?', isA: 'true'}, b: {a: 'a?', b: 'b?', isA: 'false'}, either: 'a|b'}, path: ['a'], seen: ['a'], depth: 6}, type: {}, allows: (...args) => inputMethod({
+            def,
+            ctx,
+            components: input.components?.(def, ctx) ?? {}
+        }, ...args), references: (...args) => inputMethod({
+            def,
+            ctx,
+            components: input.components?.(def, ctx) ?? {}
+        }, ...args), generate: (...args) => inputMethod({
+            def,
+            ctx,
+            components: input.components?.(def, ctx) ?? {}
+        }, ...args), check: (value, options) => (0, errors_js_1.stringifyErrors)(coreMethods.allows((0, typeOf_js_1.typeOf)(value), options)), assert: (value, options) => {
+                const errorMessage = check(value, options);
+                if (errorMessage) {
+                    throw new Error(errorMessage);
+                }
+            }}
+Resolving a from cache as:
+{definition: {a: 'a?', b: 'b?', isA: 'true'}, context: {typeSet: {a: {a: 'a?', b: 'b?', isA: 'true'}, b: {a: 'a?', b: 'b?', isA: 'false'}, either: 'a|b'}, path: ['a'], seen: ['a'], depth: 6}, type: {}, allows: (...args) => inputMethod({
+            def,
+            ctx,
+            components: input.components?.(def, ctx) ?? {}
+        }, ...args), references: (...args) => inputMethod({
+            def,
+            ctx,
+            components: input.components?.(def, ctx) ?? {}
+        }, ...args), generate: (...args) => inputMethod({
+            def,
+            ctx,
+            components: input.components?.(def, ctx) ?? {}
+        }, ...args), check: (value, options) => (0, errors_js_1.stringifyErrors)(coreMethods.allows((0, typeOf_js_1.typeOf)(value), options)), assert: (value, options) => {
+                const errorMessage = check(value, options);
+                if (errorMessage) {
+                    throw new Error(errorMessage);
+                }
+            }}Resolving a from cache as:
+{definition: {a: 'a?', b: 'b?', isA: 'true'}, context: {typeSet: {a: {a: 'a?', b: 'b?', isA: 'true'}, b: {a: 'a?', b: 'b?', isA: 'false'}, either: 'a|b'}, path: ['a'], seen: ['a'], depth: 6}, type: {}, allows: (...args) => inputMethod({
+            def,
+            ctx,
+            components: input.components?.(def, ctx) ?? {}
+        }, ...args), references: (...args) => inputMethod({
+            def,
+            ctx,
+            components: input.components?.(def, ctx) ?? {}
+        }, ...args), generate: (...args) => inputMethod({
+            def,
+            ctx,
+            components: input.components?.(def, ctx) ?? {}
+        }, ...args), check: (value, options) => (0, errors_js_1.stringifyErrors)(coreMethods.allows((0, typeOf_js_1.typeOf)(value), options)), assert: (value, options) => {
+                const errorMessage = check(value, options);
+                if (errorMessage) {
+                    throw new Error(errorMessage);
+                }
+            }}Resolving a from cache as:
+{definition: {a: 'a?', b: 'b?', isA: 'true'}, context: {typeSet: {a: {a: 'a?', b: 'b?', isA: 'true'}, b: {a: 'a?', b: 'b?', isA: 'false'}, either: 'a|b'}, path: ['a'], seen: ['a'], depth: 6}, type: {}, allows: (...args) => inputMethod({
+            def,
+            ctx,
+            components: input.components?.(def, ctx) ?? {}
+        }, ...args), references: (...args) => inputMethod({
+            def,
+            ctx,
+            components: input.components?.(def, ctx) ?? {}
+        }, ...args), generate: (...args) => inputMethod({
+            def,
+            ctx,
+            components: input.components?.(def, ctx) ?? {}
+        }, ...args), check: (value, options) => (0, errors_js_1.stringifyErrors)(coreMethods.allows((0, typeOf_js_1.typeOf)(value), options)), assert: (value, options) => {
+                const errorMessage = check(value, options);
+                if (errorMessage) {
+                    throw new Error(errorMessage);
+                }
+            }}

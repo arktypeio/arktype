@@ -1,4 +1,4 @@
-import { asNumber, NumericString } from "@re-do/utils"
+import { asNumber, isNumeric, NumericString } from "@re-do/utils"
 import { createParser } from "../parser.js"
 import { validationError, unassignableError } from "../errors.js"
 import { Fragment } from "./fragment.js"
@@ -13,7 +13,7 @@ export namespace NumericStringLiteral {
         {
             type,
             parent: () => Fragment.parse,
-            matches: (definition) => typeof definition === "number"
+            matches: (definition) => isNumeric(definition)
         },
         {
             allows: ({ def, ctx: { path } }, valueType) =>

@@ -210,7 +210,7 @@ export const createParser = <
     const getInherited = () => {
         const parent = input.parent() as any as ParserMetadata<any, any, any>
         return {
-            ...parent.meta.inherits,
+            ...parent.meta.inherits(),
             ...parent.meta.handles
         } as HandlesMethods<DefType, Components>
     }
@@ -219,9 +219,6 @@ export const createParser = <
         def: DefType,
         ctx: ParseContext<DefType>
     ): ParsedType<DefType> => {
-        // writeFileSync("parseTest.txt", new Error().stack + "\n", {
-        //     flag: "a+"
-        // })
         const args: ParseArgs<DefType> = [def, { ...ctx, depth: ctx.depth + 1 }]
         const inherits = getInherited()
         const children = getChildren()
@@ -236,15 +233,18 @@ export const createParser = <
             }
             matchingChild = match
         }
-        const handlesContext: any = {
-            def,
-            ctx,
-            components: input.components?.(def, ctx) ?? {}
-        }
+
         const transformParserMethod =
             (inputMethod: Func) =>
             (...args: any[]) =>
-                inputMethod(handlesContext, ...args)
+                inputMethod(
+                    {
+                        def,
+                        ctx,
+                        components: input.components?.(def, ctx) ?? {}
+                    },
+                    ...args
+                )
         const delegateCoreMethod = (methodName: CoreMethodName) => {
             if (!children.length) {
                 throw new Error(
