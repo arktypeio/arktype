@@ -4,13 +4,11 @@ import { Root } from "./components/root.js"
 export type ValidateTypeOptions = {
     extractTypesReferenced?: boolean
     includeBuiltIn?: boolean
-    shallowSeen?: Record<string, boolean>
 }
 
 export type DefaultValidateTypeOptions = {
     extractTypesReferenced: false
     includeBuiltIn: false
-    shallowSeen: {}
 }
 
 export type Validate<

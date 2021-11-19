@@ -29,13 +29,12 @@ export type DefaultParseTypeOptions = {
 }
 
 export const createParseFunction =
-    <PredefinedTypeSet extends UnvalidatedTypeSet>(
-        predefinedTypeSet: Narrow<PredefinedTypeSet>
-    ) =>
+    <PredefinedTypeSet>(predefinedTypeSet: Narrow<PredefinedTypeSet>) =>
     <
         Def,
         ParseOptions extends ParseTypeOptions,
-        ActiveTypeSet = PredefinedTypeSet
+        ActiveTypeSet = PredefinedTypeSet,
+        ValidatedTypeSet = TypeSet<ActiveTypeSet>
     >(
         definition: Validate<Narrow<Def>, ActiveTypeSet>,
         options?: Narrow<
@@ -44,9 +43,9 @@ export const createParseFunction =
             }
         >
     ) => {
-        const activeTypeSet = format(options?.typeSet ?? predefinedTypeSet)
+        const typeSet: any = format(options?.typeSet ?? predefinedTypeSet)
         const context: ParseContext<any> = {
-            typeSet: activeTypeSet,
+            typeSet,
             path: [],
             seen: []
         }
@@ -55,7 +54,7 @@ export const createParseFunction =
                 Def,
                 ActiveTypeSet,
                 ParseOptions,
-                Parse<Def, ActiveTypeSet, ParseOptions>
+                Parse<Def, ValidatedTypeSet, ParseOptions>
             >
         >
     }
@@ -77,26 +76,24 @@ export type ParsedTypeSet<TypeSet> = {
     [TypeName in keyof TypeSet]: Evaluate<ParsedType<TypeName, TypeSet, {}>>
 }
 
-export type ParseFunction<PredefinedTypeSet extends UnvalidatedTypeSet> = <
-    Definition,
+export type ParseFunction<PredefinedTypeSet> = <
+    Def,
     Options extends ParseTypeOptions,
     ActiveTypeSet = PredefinedTypeSet
 >(
-    definition: UnvalidatedTypeSet extends ActiveTypeSet
-        ? Root.Definition
-        : Validate<Narrow<Definition>, ActiveTypeSet>,
+    definition: Validate<Narrow<Def>, ActiveTypeSet>,
     options?: Narrow<
         Options & {
-            typeSet?: Exact<Narrow<ActiveTypeSet>, TypeSet<ActiveTypeSet>>
+            typeSet?: Exact<ActiveTypeSet, TypeSet<ActiveTypeSet>>
         }
     >
-) => Evaluate<ParsedType<Definition, ActiveTypeSet, Options>>
+) => Evaluate<ParsedType<Def, ActiveTypeSet, Options>>
 
 export type ParsedType<
     Definition,
     TypeSet,
     Options,
-    TypeOfParsed = Parse<Definition, TypeSet, Options>
+    TypeOfParsed = Evaluate<Parse<Definition, TypeSet, Options>>
 > = {
     definition: Definition
     type: TypeOfParsed

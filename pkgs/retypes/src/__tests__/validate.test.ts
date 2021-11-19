@@ -289,14 +289,14 @@ describe("validate", () => {
         // @ts-expect-error
         const shallowRecursive = parse("a", { typeSet: { a: "a" } })
         expect(() => shallowRecursive.assert("what's an a?")).toThrowError(
-            "shallowly"
+            "shallow"
         )
-        // @ts-expect-error
         const shallowCyclic = parse("a", {
+            // @ts-expect-error
             typeSet: { a: "b", b: "c", c: "a|b|c" }
         })
         expect(() => shallowCyclic.check(["what's a b?"])).toThrowError(
-            "shallowly"
+            "shallow"
         )
     })
     test("cyclic typeset", () => {

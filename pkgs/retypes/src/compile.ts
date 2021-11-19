@@ -1,4 +1,12 @@
-import { mergeAll, Narrow, transform } from "@re-do/utils"
+import {
+    Iteration,
+    KeyValuate,
+    ListPossibleTypes,
+    mergeAll,
+    Narrow,
+    Split,
+    transform
+} from "@re-do/utils"
 import { UnvalidatedTypeSet } from "./common.js"
 import { createParseFunction, ParseFunction, ParsedTypeSet } from "./parse.js"
 import {
@@ -11,6 +19,8 @@ import {
 import { Validate } from "./definition.js"
 import { Recursible } from "./components/recursible/recursible.js"
 import { Obj } from "./components/recursible/obj.js"
+import { ControlCharacters } from "./components/common.js"
+import { ShallowCycleError } from "./components/errors.js"
 
 // Just use unknown for now since we don't have all the definitions yet
 // but we still want to allow references to other declared types
@@ -28,8 +38,63 @@ export type TypeDefinitions<
     >
 }
 
+type ExtractReferences<
+    Def extends string,
+    Filter extends string = string
+> = RawReferences<Def> & Filter
+
+type RawReferences<
+    Fragments extends string,
+    RemainingControlCharacters extends string[] = ControlCharacters
+> = RemainingControlCharacters extends Iteration<
+    string,
+    infer Character,
+    infer Remaining
+>
+    ? RawReferences<ElementOf<Split<Fragments, Character>>, Remaining>
+    : Exclude<ElementOf<Split<Fragments, RemainingControlCharacters[0]>>, "">
+
+type ExtractReferenceList<
+    Def extends string,
+    Filter extends string = string
+> = ListPossibleTypes<RawReferences<Def> & Filter>
+
+type CheckReferencesForShallowCycle<
+    References extends string[],
+    TypeSet,
+    Seen
+> = References extends Iteration<string, infer Current, infer Remaining>
+    ? CheckForShallowCycleRecurse<
+          KeyValuate<TypeSet, Current>,
+          TypeSet,
+          Seen | Current
+      > extends never
+        ? CheckReferencesForShallowCycle<Remaining, TypeSet, Seen>
+        : CheckForShallowCycleRecurse<
+              KeyValuate<TypeSet, Current>,
+              TypeSet,
+              Seen | Current
+          >
+    : never
+
+type CheckForShallowCycleRecurse<Def, TypeSet, Seen> = Def extends Seen
+    ? Seen
+    : Def extends string
+    ? CheckReferencesForShallowCycle<ExtractReferenceList<Def>, TypeSet, Seen>
+    : never
+
+type CheckForShallowCycle<Def, TypeSet> = CheckForShallowCycleRecurse<
+    Def,
+    TypeSet,
+    never
+>
+
+type ValidateDefinition<Def, Set> = CheckForShallowCycle<Def, Set> extends never
+    ? Validate<Def, Set>
+    : ShallowCycleError<Def & string, CheckForShallowCycle<Def, Set>>
+
 export type TypeSet<Set> = {
-    [TypeName in keyof Set]: Validate<Set[TypeName], Set>
+    [TypeName in keyof Set]: ValidateDefinition<Set[TypeName], Set>
 }
 
 export type TypeSetFromDefinitions<Definitions> = MergeAll<
@@ -64,12 +129,14 @@ export type TypeSetDefinitions<
             : `Definitions must be objects with string keys representing defined type names.`
     }
 
+type Z = Validate<
+    { a: "b" },
+    UncompiledTypeSet<TypeNameFrom<[{ a: "b" }, { b: "a" }]>>
+>
+
 export const createCompileFunction =
     <DeclaredTypeNames extends string[]>(names: Narrow<DeclaredTypeNames>) =>
-    <
-        Definitions,
-        MergedTypeSet extends UnvalidatedTypeSet = TypeSetFromDefinitions<Definitions>
-    >(
+    <Definitions, MergedTypeSet = TypeSetFromDefinitions<Definitions>>(
         // @ts-ignore
         ...definitions: Narrow<
             [] extends DeclaredTypeNames
@@ -102,7 +169,7 @@ export const createCompileFunction =
 // and will not validate missing or extraneous definitions
 export const compile = createCompileFunction([])
 
-export type CompileFunction<DeclaredTypeNames extends string[] = []> = <
+export type CompileFunction<DeclaredTypeNames extends string[]> = <
     Definitions extends any[]
 >(
     definitions: [] extends DeclaredTypeNames
@@ -111,10 +178,8 @@ export type CompileFunction<DeclaredTypeNames extends string[] = []> = <
 ) => CompiledTypeSet<Definitions>
 
 export type CompiledTypeSet<
-    Definitions extends Recursible.Definition[] = Recursible.Definition[],
-    MergedTypeSet extends UnvalidatedTypeSet = Recursible.Definition[] extends Definitions
-        ? UnvalidatedTypeSet
-        : TypeSetFromDefinitions<Definitions>
+    Definitions extends Recursible.Definition[],
+    MergedTypeSet extends UnvalidatedTypeSet = TypeSetFromDefinitions<Definitions>
 > = {
     parse: ParseFunction<MergedTypeSet>
     types: ParsedTypeSet<MergedTypeSet>

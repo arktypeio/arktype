@@ -11,7 +11,7 @@ describe("parse", () => {
         expectType<string>(result)
         expect(() => {
             // @ts-expect-error
-            const badResult = parse("strig").type
+            parse("strig")
             // expectError<"Unable to determine the type of 'strig'.">(badResult)
         }).toThrowErrorMatchingInlineSnapshot(
             `"Unable to determine the type of 'strig'."`

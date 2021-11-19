@@ -1,10 +1,24 @@
-import { TreeOf } from "@re-do/utils"
+import { ElementOf, TreeOf } from "@re-do/utils"
 import { Num } from "./shallow/num.js"
 import { StringLiteral } from "./shallow/stringLiteral.js"
 
 export * from "./root.js"
 import { Root } from "./root.js"
 import { ParseTypeOptions, ValidateTypeOptions } from "../definition.js"
+
+export type ControlCharacters = [
+    "|",
+    "?",
+    "(",
+    ")",
+    ",",
+    "[",
+    "]",
+    "=",
+    ">",
+    " "
+]
+export type ControlCharacter = ElementOf<ControlCharacters>
 
 // These are the non-literal types we can extract from a value at runtime
 export const namedExtractableTypes = {

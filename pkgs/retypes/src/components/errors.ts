@@ -59,20 +59,19 @@ export type BaseParseArgs = {
 }
 
 export const shallowCycleErrorTemplate =
-    "@def shallowly references itself in typeSet @typeSet via the following set of resolutions: @resolutions."
+    "@def references a shallow cycle: @resolutions."
 
 export type ShallowCycleError<
     Def extends string = string,
-    TypeSet = any,
-    Seen = any
+    Seen extends string = string
 > = StringReplace<
     StringReplace<
         StringReplace<typeof shallowCycleErrorTemplate, "@def", Def>,
-        "@typeSet",
+        "@typeSet ",
         ""
     >,
     "@resolutions",
-    StringifyPossibleTypes<keyof Seen & string>
+    StringifyPossibleTypes<Seen>
 >
 
 export type ValidationErrorMessage =
