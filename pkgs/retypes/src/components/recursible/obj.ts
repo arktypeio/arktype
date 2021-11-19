@@ -1,11 +1,11 @@
 import {
     diffSets,
     DiffSetsResult,
+    Evaluate,
     isRecursible,
     OptionalKeys,
     transform
 } from "@re-do/utils"
-import { ValidateRecursible } from "./common.js"
 import { Recursible } from "."
 import { Optional } from "../shallow/optional.js"
 import { createParser, ParsedType } from "../parser.js"
@@ -30,7 +30,15 @@ export namespace Obj {
         Def,
         TypeSet,
         Options extends ValidateTypeRecurseOptions
-    > = ValidateRecursible<Def, TypeSet, Options>
+    > = Evaluate<
+        {
+            [PropName in keyof Def]: Root.Validate<
+                Def[PropName],
+                TypeSet,
+                Options
+            >
+        }
+    >
 
     export type Parse<
         Def,
@@ -103,7 +111,7 @@ export namespace Obj {
                         path: ctx.path
                     })
                 }
-                return Object.keys(def).reduce(
+                return Object.keys(components).reduce(
                     (errors, propName) => ({
                         ...errors,
                         ...components[propName].allows(
@@ -114,8 +122,17 @@ export namespace Obj {
                     {} as ValidationErrors
                 )
             },
-            generate: () => [],
-            references: () => []
+            generate: ({ components }, opts) =>
+                transform(components, ([propName, component]) => [
+                    propName,
+                    component.generate(opts)
+                ]),
+
+            references: ({ components, def }, opts) =>
+                transform(components, ([propName, component]) => [
+                    propName,
+                    component.references(opts)
+                ])
         }
     )
 

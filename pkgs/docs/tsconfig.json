@@ -1,9 +1,7 @@
 {
-    "extends": "@re-do/node/tsconfig.base",
+    // This file is not used in compilation. It is here just for a nice editor experience.
+    "extends": "@tsconfig/docusaurus/tsconfig.json",
     "compilerOptions": {
-        "baseUrl": "src",
-        "outDir": "build",
-        "module": "commonjs"
-    },
-    "include": ["src", "test"]
+        "baseUrl": "."
+    }
 }

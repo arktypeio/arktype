@@ -131,14 +131,16 @@ export type CoreMethods<DefType> = {
 }
 
 export type InferredMethods = {
-    assert: (value: unknown, options: AllowsOptions) => void
-    check: (value: unknown, options: AllowsOptions) => string
+    assert: (value: unknown, options?: AllowsOptions) => void
+    check: (value: unknown, options?: AllowsOptions) => string
 }
 
 export type TransformInputMethod<
     Method extends ValueOf<HandlesMethods<any, any>>
-> = Method extends (...args: [infer ParseResult, ...infer Rest]) => infer Return
-    ? (...args: [...rest: Rest]) => Return
+> = Method extends (
+    ...args: [infer ParseResult, ...infer Rest, infer Opts]
+) => infer Return
+    ? (...args: [...rest: Rest, opts?: Opts]) => Return
     : Method
 
 export type GetHandledMethods<Parent> = (KeyValuate<
@@ -234,17 +236,24 @@ export const createParser = <
             matchingChild = match
         }
 
-        const transformParserMethod =
-            (inputMethod: Func) =>
-            (...args: any[]) =>
-                inputMethod(
-                    {
-                        def,
-                        ctx,
-                        components: input.components?.(def, ctx) ?? {}
-                    },
-                    ...args
-                )
+        const transformCoreMethod =
+            (name: CoreMethodName, inputMethod: Func) =>
+            (...providedArgs: Parameters<ValueOf<CoreMethods<DefType>>>) => {
+                const methodContext = {
+                    def,
+                    ctx,
+                    components: input.components?.(def, ctx) ?? {}
+                }
+                if (name === "allows") {
+                    return inputMethod(
+                        methodContext,
+                        providedArgs[0],
+                        providedArgs[1] ?? {}
+                    )
+                }
+                return inputMethod(methodContext, providedArgs[0] ?? {})
+            }
+
         const delegateCoreMethod = (methodName: CoreMethodName) => {
             if (!children.length) {
                 throw new Error(
@@ -258,9 +267,9 @@ export const createParser = <
             ([i, methodName]) => [
                 methodName,
                 handles[methodName]
-                    ? transformParserMethod(handles[methodName]!)
+                    ? transformCoreMethod(methodName, handles[methodName]!)
                     : inherits[methodName]
-                    ? transformParserMethod(inherits[methodName]!)
+                    ? transformCoreMethod(methodName, inherits[methodName]!)
                     : delegateCoreMethod(methodName)
             ]
         )

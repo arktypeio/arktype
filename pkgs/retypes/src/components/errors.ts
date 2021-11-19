@@ -14,8 +14,8 @@ import { ExtractableDefinition } from "./common.js"
 import { ParseContext } from "./parser.js"
 import { Shallow } from "./shallow/shallow.js"
 
-export const stringifyDefinition = (definition: unknown) =>
-    stringify(definition, { quotes: "none" })
+export const stringifyDefinition = (def: unknown) =>
+    stringify(def, { quotes: "none" })
 
 export const definitionTypeError = (definition: unknown, path: string[]) =>
     `Definition value ${stringifyDefinition(definition)} ${
@@ -37,7 +37,7 @@ export type UnknownTypeError<
 > = StringReplace<typeof baseUnknownTypeError, "@def", `${Definition}`>
 
 export const unknownTypeError = <Definition>(def: Definition) =>
-    baseUnknownTypeError.replace("@def", String(def))
+    baseUnknownTypeError.replace("@def", stringify(def))
 
 // Members of an or type to errors that occurred validating those types
 export type OrTypeErrors = Record<string, string>
@@ -50,8 +50,8 @@ export const orValidationErrorTemplate =
 export const orValidationError = ({ def, valueType, orErrors }: OrErrorArgs) =>
     orValidationErrorTemplate
         .replace("@valueType", stringifyDefinition(valueType))
-        .replace("@def", stringify(def))
-        .replace("@errors", stringify(orErrors))
+        .replace("@def", stringifyDefinition(def))
+        .replace("@errors", stringifyErrors(orErrors))
 
 export type BaseParseArgs = {
     def: unknown
@@ -86,7 +86,7 @@ export type InferrableValidationErrorMessage<E> =
 export const shallowCycleError = ({ def, ctx }: BaseParseArgs) =>
     shallowCycleErrorTemplate
         .replace("@def", stringifyDefinition(def))
-        .replace("@typeSet", stringify(ctx.typeSet))
+        .replace("@typeSet", stringifyDefinition(ctx.typeSet))
         .replace("@resolutions", [...ctx.seen, def].join("=>"))
 
 // Paths at which errors occur mapped to their messages

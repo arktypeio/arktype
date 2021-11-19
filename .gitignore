@@ -73,6 +73,7 @@ package-deps.json
 # Redo
 .env.production
 **/test/redo.json
+jest-stare
 **/app/redo.json
 release
 generated
