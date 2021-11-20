@@ -18,9 +18,16 @@ export const stringifyDefinition = (def: unknown) =>
     stringify(def, { quotes: "none" })
 
 export const definitionTypeError = (definition: unknown, path: string[]) =>
-    `Definition value ${stringifyDefinition(definition)} ${
-        path.length ? `at path ${path.join("/")} ` : ""
-    }is invalid. ${definitionTypeErrorTemplate}`
+    `Definition value ${stringifyDefinition(definition)}${stringifyPathContext(
+        path,
+        true
+    )}is invalid. ${definitionTypeErrorTemplate}`
+
+export const stringifyPathContext = (
+    path: string[],
+    trailingSpace: boolean = false
+) =>
+    path.length ? ` at path ${path.join("/")}${trailingSpace ? " " : ""}` : ""
 
 export const definitionTypeErrorTemplate =
     "Definitions must be strings, numbers, or objects."
@@ -30,14 +37,21 @@ export type DefinitionTypeError = typeof definitionTypeErrorTemplate
 export const getBaseTypeName = (definition: string) =>
     filterChars(definition, isAlphaNumeric)
 
-export const baseUnknownTypeError = "Unable to determine the type of '@def'."
+export const baseUnknownTypeError =
+    "Unable to determine the type of '@def'@context."
 
 export type UnknownTypeError<
     Definition extends Shallow.Definition = Shallow.Definition
-> = StringReplace<typeof baseUnknownTypeError, "@def", `${Definition}`>
+> = StringReplace<
+    StringReplace<typeof baseUnknownTypeError, "@def", `${Definition}`>,
+    "@context",
+    ""
+>
 
-export const unknownTypeError = <Definition>(def: Definition) =>
-    baseUnknownTypeError.replace("@def", stringify(def))
+export const unknownTypeError = <Definition>(def: Definition, path: string[]) =>
+    baseUnknownTypeError
+        .replace("@def", stringifyDefinition(def))
+        .replace("@context", stringifyPathContext(path))
 
 // Members of an or type to errors that occurred validating those types
 export type OrTypeErrors = Record<string, string>
@@ -65,11 +79,7 @@ export type ShallowCycleError<
     Def extends string = string,
     Seen extends string = string
 > = StringReplace<
-    StringReplace<
-        StringReplace<typeof shallowCycleErrorTemplate, "@def", Def>,
-        "@typeSet ",
-        ""
-    >,
+    StringReplace<typeof shallowCycleErrorTemplate, "@def", Def>,
     "@resolutions",
     StringifyPossibleTypes<Seen>
 >
@@ -131,9 +141,10 @@ export const mismatchedKeysError = (keyErrors: DiffSetsResult<string>) => {
 }
 
 export const valueGenerationError = ({ def, ctx: { path } }: BaseParseArgs) =>
-    `Could not find a default value satisfying ${stringifyDefinition(def)}${
-        path.length ? ` at '${path.join("/")}'` : ""
-    }.`
+    `Could not find a default value satisfying ${stringifyDefinition(
+        def
+    )}${stringifyPathContext(path)}
+    .`
 
 export const stringifyErrors = (errors: ValidationErrors) => {
     const errorPaths = Object.keys(errors)

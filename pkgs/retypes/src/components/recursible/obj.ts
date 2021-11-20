@@ -122,17 +122,22 @@ export namespace Obj {
                     {} as ValidationErrors
                 )
             },
-            generate: ({ components }, opts) =>
-                transform(components, ([propName, component]) => [
-                    propName,
-                    component.generate(opts)
-                ]),
-
-            references: ({ components, def }, opts) =>
+            references: ({ components }, opts) =>
                 transform(components, ([propName, component]) => [
                     propName,
                     component.references(opts)
-                ])
+                ]),
+            generate: ({ components, def, ctx }, opts) =>
+                transform(components, ([propName, component]) => {
+                    if (
+                        typeof def[propName] === "string" &&
+                        Optional.parse.meta.matches(def[propName], ctx)
+                    ) {
+                        // Exclude prop from object's generated value entirely if it's optional
+                        return null
+                    }
+                    return [propName, component.generate(opts)]
+                })
         }
     )
 

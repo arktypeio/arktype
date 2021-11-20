@@ -2,7 +2,7 @@ import { parse } from ".."
 
 const generate = (def: any, typeSet: any = {}, opts: any = {}) =>
     // @ts-ignore
-    parse(def, typeSet).generate(opts)
+    parse(def, { typeSet }).generate(opts)
 
 // TODO: avoid parsing any
 
@@ -22,7 +22,7 @@ describe("default values", () => {
     })
     test("or", () => {
         expect(generate("undefined|string")).toBe(undefined)
-        expect(generate("number|false|()=>undefined")).toBe(false)
+        expect(generate("number|false|function")).toBe(false)
     })
     test("or literals", () => {
         const typeSet = {
@@ -139,12 +139,12 @@ describe("default values", () => {
     })
     test("unparseable", () => {
         expect(() => generate("")).toThrowErrorMatchingInlineSnapshot(
-            `"Could not find a default value satisfying ."`
+            `"Unable to determine the type of ''."`
         )
         expect(() =>
             generate({ a: { b: { c: "true|false|blorf" } } })
         ).toThrowErrorMatchingInlineSnapshot(
-            `"Could not find a default value satisfying blorf at 'a/b/c'."`
+            `"Unable to determine the type of 'blorf' at path a/b/c."`
         )
         expect(() =>
             generate({ hmm: { seems: { bad: true } } })

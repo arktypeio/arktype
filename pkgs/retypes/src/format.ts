@@ -6,7 +6,7 @@ export const format = <T>(definition: T): T => {
         if (typeof definition === "number") {
             return definition
         } else if (typeof definition === "string") {
-            return definition.replace(" ", "") as any
+            return definition.replace(/\s/g, "") as any
         } else if (typeof definition === "object") {
             return transform(definition as any, ([k, v]) => [
                 k,

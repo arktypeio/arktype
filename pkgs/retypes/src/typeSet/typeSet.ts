@@ -14,12 +14,6 @@ import {
     Unlisted
 } from "@re-do/utils"
 
-// Just use unknown for now since we don't have all the definitions yet
-// but we still want to allow references to other declared types
-type UncompiledTypeSet<DeclaredTypeName extends string> = {
-    [TypeName in DeclaredTypeName]: "unknown"
-}
-
 export namespace TypeSet {
     export type Definition<Def extends Obj.Definition = Obj.Definition> =
         Obj.Definition<Def>
@@ -94,13 +88,9 @@ export namespace TypeSet {
 export type MissingTypesError<DeclaredTypeName, DefinedTypeName> = DiffUnions<
     DeclaredTypeName,
     DefinedTypeName
+    // Extraneous definition errors are handled by ValidateMemberList
 > extends UnionDiffResult<infer Extraneous, infer Missing>
     ? Missing extends []
-        ? Extraneous extends []
-            ? {}
-            : {}
-        : // `Defined types '${StringifyPossibleTypes<
-          //                   ElementOf<Extraneous>
-          //               >}' were never declared.`
-          `Declared types ${StringifyPossibleTypes<`'${ElementOf<Missing>}'`>} were never defined.`
+        ? {}
+        : `Declared types ${StringifyPossibleTypes<`'${ElementOf<Missing>}'`>} were never defined.`
     : never

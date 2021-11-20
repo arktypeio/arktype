@@ -20,8 +20,8 @@
     },
     "scripts": {
         "build": "redoTsc",
-        "transpile": "redoTranspile",
-        "test": "jest"
+        "test": "jest --runInBand",
+        "results": "xdg-open jest-stare/index.html"
     },
     "dependencies": {
         "@re-do/utils": "workspace:*"

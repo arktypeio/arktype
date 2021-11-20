@@ -175,14 +175,11 @@ describe("validate", () => {
                 }
             }
         }
-        expect(parse(simpleObject.definition).allows(reallyBadValue))
-            .toMatchInlineSnapshot(`
-            Object {
-              "a/b": "null is not assignable to string.",
-              "a/c": "symbol is not assignable to number.",
-              "a/d": "Keys 'shallow' were unexpected.",
-            }
-        `)
+        expect(
+            parse(simpleObject.definition).check(reallyBadValue)
+        ).toMatchInlineSnapshot(
+            `"{a/b: 'null is not assignable to string.', a/c: 'symbol is not assignable to number.', a/d: 'Keys 'shallow' were unexpected.'}"`
+        )
         expect(simpleObject.check(reallyBadValue)).toMatchInlineSnapshot(
             `"{a/b: 'null is not assignable to string.', a/c: 'symbol is not assignable to number.', a/d: 'Keys 'shallow' were unexpected.'}"`
         )
@@ -214,13 +211,11 @@ describe("validate", () => {
         expect(check([7, "up", 7])).toMatchInlineSnapshot(
             `"Tuple of length 3 is not assignable to tuple of length 2."`
         )
-        expect(parse(["number", "string"]).allows(["up", 7]))
-            .toMatchInlineSnapshot(`
-            Object {
-              "0": "'up' is not assignable to number.",
-              "1": "7 is not assignable to string.",
-            }
-        `)
+        expect(
+            parse(["number", "string"]).check(["up", 7])
+        ).toMatchInlineSnapshot(
+            `"{0: ''up' is not assignable to number.', 1: '7 is not assignable to string.'}"`
+        )
     })
     test("or type", () => {
         const { check } = parse("string|number")

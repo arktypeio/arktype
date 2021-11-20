@@ -2,15 +2,12 @@ import {
     Evaluate,
     Func,
     KeyValuate,
-    ListPossibleTypes,
     memoize,
-    stringify,
     transform,
     TreeOf,
-    ValueOf
+    ValueOf,
+    Exact
 } from "@re-do/utils"
-import { writeFileSync } from "fs"
-import { Function as ToolbeltFunction } from "ts-toolbelt"
 import { typeDefProxy } from "../common.js"
 import { typeOf } from "../typeOf.js"
 import type {
@@ -192,21 +189,15 @@ export const createParser = <
     Children extends DefType[] = []
 >(
     ...args: [
-        ToolbeltFunction.Exact<
-            Input,
-            ParserInput<DefType, Parent, Children, Components>
-        >,
+        Exact<Input, ParserInput<DefType, Parent, Children, Components>>,
         ...HandlesArg<
             Children,
-            ToolbeltFunction.Exact<
-                Handles,
-                UnhandledMethods<DefType, Parent, Components>
-            >
+            Exact<Handles, UnhandledMethods<DefType, Parent, Components>>
         >
     ]
 ): Parser<DefType, Parent, Handles> => {
     const input = args[0] as ParserInput<DefType, Parent, Children, Components>
-    const handles: HandlesMethods<DefType, Components> = args[1] ?? {}
+    const handles = (args[1] as HandlesMethods<DefType, Components>) ?? {}
     // Need to wait until parse is called to access parent to avoid it being undefined
     // due to circular import
     const getInherited = () => {
@@ -231,7 +222,7 @@ export const createParser = <
                 if (input.fallback) {
                     return input.fallback(...args)
                 }
-                throw new Error(unknownTypeError(def))
+                throw new Error(unknownTypeError(def, ctx.path))
             }
             matchingChild = match
         }
