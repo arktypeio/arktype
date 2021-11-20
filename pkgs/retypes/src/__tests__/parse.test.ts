@@ -3,7 +3,6 @@ import { expectType, expectError } from "tsd"
 import { DefinitionTypeError } from "../components/errors.js"
 import { typeDefProxy } from "../common.js"
 import { DeepEvaluate, Evaluate } from "@re-do/utils"
-import { UncompiledTypeSet } from "../compile.js"
 
 describe("parse", () => {
     test("built-in", () => {
@@ -131,48 +130,45 @@ describe("parse", () => {
         const objectResult = parse({ nested: "number|    true" })
         expectType<{ nested: number | true }>(objectResult.type)
     })
-    test("extract types referenced from string", () => {
-        type Extracted = Validate<
-            "(user[],group[])=>boolean|number|null",
-            UncompiledTypeSet<"user" | "group">,
-            { extractTypesReferenced: true; includeBuiltIn: true }
-        >
-        expectType<"number" | "boolean" | "user" | "group" | "null">(
-            {} as Extracted
-        )
-        type WithoutBuiltIns = Validate<
-            "(user[],group[])=>boolean|number|null",
-            UncompiledTypeSet<"user" | "group">,
-            { extractTypesReferenced: true }
-        >
-        expectType<"user" | "group">({} as WithoutBuiltIns)
-    })
-    test("extract base names of object", () => {
-        type Def = Validate<
-            {
-                a: { b: { c: "user[]?" } }
-                listed: [
-                    "group|null",
-                    "user|null",
-                    "(string, number)=>function"
-                ]
-            },
-            UncompiledTypeSet<"user" | "group">,
-            { extractTypesReferenced: true }
-        >
-        expectType<{
-            a: {
-                b: {
-                    c: "user"
-                }
-            }
-            listed: [
-                "group" | "null",
-                "user" | "null",
-                "string" | "number" | "function"
-            ]
-        }>({} as Def)
-    })
+    // test("extract types referenced from string", () => {
+    //     type Extracted = Validate<
+    //         "(user[],group[])=>boolean|number|null",
+    //         UncompiledTypeSet<"user" | "group">
+    //     >
+    //     expectType<"number" | "boolean" | "user" | "group" | "null">(
+    //         {} as Extracted
+    //     )
+    //     type WithoutBuiltIns = Validate<
+    //         "(user[],group[])=>boolean|number|null",
+    //         UncompiledTypeSet<"user" | "group">
+    //     >
+    //     expectType<"user" | "group">({} as WithoutBuiltIns)
+    // })
+    // test("extract base names of object", () => {
+    //     type Def = Validate<
+    //         {
+    //             a: { b: { c: "user[]?" } }
+    //             listed: [
+    //                 "group|null",
+    //                 "user|null",
+    //                 "(string, number)=>function"
+    //             ]
+    //         },
+    //         UncompiledTypeSet<"user" | "group">
+    //     >
+    //     expectType<{
+    //         a: {
+    //             b: {
+    //                 c: "user"
+    //             }
+    //         }
+    //         listed: [
+    //             "group" | "null",
+    //             "user" | "null",
+    //             "string" | "number" | "function"
+    //         ]
+    //     }>({} as Def)
+    // })
     const cyclicTypeSet = compile(
         { a: { b: "b", isA: "true", isB: "false" } },
         { b: { a: "a", isA: "false", isB: "true" } }

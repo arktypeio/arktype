@@ -97,9 +97,7 @@ export type ValidateSplittable<
         >
     },
     ValidatedDefinition extends string = Join<ValidateDefinitions, Delimiter>
-> = Options["extractTypesReferenced"] extends true
-    ? Unlisted<ValidateDefinitions>
-    : Def extends ValidatedDefinition
+> = Def extends ValidatedDefinition
     ? Root
     : StringifyPossibleTypes<
           Extract<

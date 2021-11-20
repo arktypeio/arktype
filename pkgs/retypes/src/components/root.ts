@@ -22,6 +22,8 @@ export namespace Root {
         : Def extends Recursible.Definition
         ? Recursible.Validate<Def, TypeSet, Options>
         : DefinitionTypeError
+    //  [     { Def: Def; TypeSet: TypeSet; Options: Options }
+    //   ]
 
     export type TypeDefinitionOptions = {
         extractTypesReferenced?: boolean

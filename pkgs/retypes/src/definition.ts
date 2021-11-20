@@ -1,15 +1,10 @@
 import { WithDefaults } from "@re-do/utils"
 import { Root } from "./components/root.js"
+import { TypeSet } from "./typeSet/typeSet.js"
 
-export type ValidateTypeOptions = {
-    extractTypesReferenced?: boolean
-    includeBuiltIn?: boolean
-}
+export type ValidateTypeOptions = {}
 
-export type DefaultValidateTypeOptions = {
-    extractTypesReferenced: false
-    includeBuiltIn: false
-}
+export type DefaultValidateTypeOptions = {}
 
 export type Validate<
     Def,
@@ -38,6 +33,6 @@ export type DefaultParseTypeOptions = {
 
 export type Parse<Def, Set, Options extends ParseTypeOptions = {}> = Root.Parse<
     Def,
-    Set,
+    TypeSet.Validate<Set>,
     WithDefaults<ParseTypeOptions, Options, DefaultParseTypeOptions>
 >

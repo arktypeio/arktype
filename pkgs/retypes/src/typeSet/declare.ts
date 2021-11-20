@@ -1,10 +1,6 @@
 import { ElementOf, Narrow, transform } from "@re-do/utils"
-import {
-    CompileFunction,
-    createCompileFunction,
-    UncompiledTypeSet
-} from "./compile.js"
-import { Validate } from "./definition.js"
+import { CompileFunction, createCompileFunction } from "./compile.js"
+import { TypeSet } from "./typeSet.js"
 
 export const createDefineFunctionMap = <DeclaredTypeNames extends string[]>(
     typeNames: DeclaredTypeNames
@@ -25,7 +21,7 @@ export type DefineFunction<
     DefinedTypeName extends DeclaredTypeName,
     DeclaredTypeName extends string
 > = <Def>(
-    definition: Validate<Narrow<Def>, UncompiledTypeSet<DeclaredTypeName>>
+    definition: TypeSet.ValidateReferences<Narrow<Def>, DeclaredTypeName>
 ) => {
     [K in DefinedTypeName]: Def
 }

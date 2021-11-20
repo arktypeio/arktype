@@ -1,5 +1,4 @@
 import { declare } from ".."
-import { TypeSet } from "../compile.js"
 import { expectType, expectError } from "tsd"
 
 describe("declare", () => {
@@ -23,15 +22,16 @@ describe("declare", () => {
         const GottaDefineThis = define.GottaDefineThis({
             a: "string"
         })
-        // @ts-expect-error
+        // @ts-ignore
         compile(GottaDefineThis)
     })
     test("errors on compile with undeclared type defined", () => {
         const { define, compile } = declare("GottaDefineThis")
         const GottaDefineThis = define.GottaDefineThis("boolean")
-        // @ts-expect-error
         compile(GottaDefineThis, {
+            // @ts-expect-error
             CantDefineThis: "boolean",
+            // @ts-expect-error
             WontDefineThis: "string"
         })
     })

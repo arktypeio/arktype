@@ -35,11 +35,7 @@ export namespace Fragment {
               | BuiltIn.Definition
               | StringLiteral.Definition
               | NumericStringLiteral.Definition
-        ? Options["extractTypesReferenced"] extends true
-            ? Options["includeBuiltIn"] extends true
-                ? Def
-                : never
-            : Root
+        ? Root
         : UnknownTypeError<Def>
 
     export type Parse<

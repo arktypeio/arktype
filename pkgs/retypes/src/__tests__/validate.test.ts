@@ -1,6 +1,5 @@
 import { parse, typeOf } from ".."
 import { Func } from "@re-do/utils"
-import { TypeSet } from "../compile.js"
 
 describe("typeOf", () => {
     test("string", () => {

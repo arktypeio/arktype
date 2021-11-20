@@ -38,9 +38,7 @@ export namespace ArrowFunction {
             TypeSet,
             Options
         >
-    > = Options["extractTypesReferenced"] extends true
-        ? ValidateParameters | ValidateReturn
-        : Parameters extends ValidateParameters
+    > = Parameters extends ValidateParameters
         ? Return extends ValidateReturn
             ? Root
             : ValidateReturn
@@ -109,11 +107,7 @@ type ValidateParameterTuple<
     Root extends string,
     TypeSet,
     Options extends ValidateTypeRecurseOptions
-> = Def extends ""
-    ? Options["extractTypesReferenced"] extends true
-        ? never
-        : ""
-    : ValidateSplittable<",", Def, Root, TypeSet, Options>
+> = Def extends "" ? "" : ValidateSplittable<",", Def, Root, TypeSet, Options>
 
 type ParseParameterTuple<
     Def extends string,
