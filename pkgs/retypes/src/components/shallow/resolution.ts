@@ -1,6 +1,10 @@
 import { Or } from "@re-do/utils"
 import { typeDefProxy } from "../../common.js"
-import { ValidationErrorMessage, shallowCycleError } from "../errors.js"
+import {
+    ValidationErrorMessage,
+    shallowCycleError,
+    generateRequiredCycleError
+} from "../errors.js"
 import { createParser } from "../parser.js"
 import {
     ParseTypeRecurseOptions,
@@ -89,7 +93,7 @@ export namespace Resolution {
                  * If we encounter the same definition twice, we're dealing with a shallow cyclic typeSet
                  * like {user: "person", person: "user"}.
                  **/
-                if (ctx.seen.includes(def)) {
+                if (ctx.shallowSeen.includes(def)) {
                     throw new Error(
                         shallowCycleError({
                             def,
@@ -98,18 +102,26 @@ export namespace Resolution {
                     )
                 }
                 return {
-                    resolution: Root.parse(ctx.typeSet[def], {
-                        ...ctx,
-                        seen: [...ctx.seen, def]
-                    })
+                    resolve: () =>
+                        Root.parse(ctx.typeSet[def], {
+                            ...ctx,
+                            seen: [...ctx.seen, def],
+                            shallowSeen: [...ctx.shallowSeen, def]
+                        })
                 }
             }
         },
         {
-            allows: ({ components: { resolution } }, valueType, opts) =>
-                resolution.allows(valueType, opts),
-            generate: ({ components: { resolution } }, opts) => {
-                resolution.generate(opts)
+            allows: ({ components: { resolve } }, valueType, opts) =>
+                resolve().allows(valueType, opts),
+            generate: ({ components: { resolve }, ctx, def }, opts) => {
+                if (ctx.seen.includes(def)) {
+                    if (opts.onRequiredCycle) {
+                        return opts.onRequiredCycle
+                    }
+                    throw new Error(generateRequiredCycleError({ def, ctx }))
+                }
+                return resolve().generate(opts)
             },
             references: ({ def }, opts) => [def]
         }

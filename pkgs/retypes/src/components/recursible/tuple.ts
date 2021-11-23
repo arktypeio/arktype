@@ -47,7 +47,7 @@ export namespace Tuple {
                     Root.parse(itemDef, {
                         ...ctx,
                         path: [...ctx.path, `${index}`],
-                        seen: []
+                        shallowSeen: []
                     })
                 )
         },

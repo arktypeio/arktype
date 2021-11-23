@@ -36,7 +36,8 @@ export const createParseFunction =
         const context: ParseContext<any> = {
             typeSet,
             path: [],
-            seen: []
+            seen: [],
+            shallowSeen: []
         }
         return Root.parse(format(definition), context) as any
     }

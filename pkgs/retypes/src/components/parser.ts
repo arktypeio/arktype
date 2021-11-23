@@ -6,7 +6,8 @@ import {
     transform,
     TreeOf,
     ValueOf,
-    Exact
+    Exact,
+    stringify
 } from "@re-do/utils"
 import { typeDefProxy } from "../common.js"
 import { typeOf } from "../typeOf.js"
@@ -31,6 +32,7 @@ export type ParseContext<DefType> = {
     typeSet: UnvalidatedTypeSet
     path: string[]
     seen: string[]
+    shallowSeen: string[]
 }
 
 export type ParseArgs<DefType> = [
@@ -208,6 +210,18 @@ export const createParser = <
         } as HandlesMethods<DefType, Components>
     }
     const getChildren = (): AnyParser[] => (input.children?.() as any) ?? []
+    const cachedComponents: Record<string, any> = {}
+    const getComponents = ([def, ctx]: ParseArgs<DefType>) => {
+        const memoKey = stringify({
+            def,
+            typeSet: ctx.typeSet,
+            shallowSeen: ctx.shallowSeen
+        })
+        if (!cachedComponents[memoKey]) {
+            cachedComponents[memoKey] = input.components?.(def, ctx) ?? {}
+        }
+        return cachedComponents[memoKey]
+    }
     const parse = (
         def: DefType,
         ctx: ParseContext<DefType>
@@ -215,6 +229,7 @@ export const createParser = <
         const args: ParseArgs<DefType> = [def, ctx]
         const inherits = getInherited()
         const children = getChildren()
+        const components = getComponents(args)
         let matchingChild: AnyParser
         if (children.length) {
             const match = children.find((child) => child.meta.matches(...args))
@@ -226,14 +241,13 @@ export const createParser = <
             }
             matchingChild = match
         }
-
         const transformCoreMethod =
             (name: CoreMethodName, inputMethod: Func) =>
             (...providedArgs: Parameters<ValueOf<CoreMethods<DefType>>>) => {
                 const methodContext = {
                     def,
                     ctx,
-                    components: input.components?.(def, ctx) ?? {}
+                    components
                 }
                 if (name === "allows") {
                     return inputMethod(
@@ -283,15 +297,6 @@ export const createParser = <
             ...inferredMethods
         } as any
     }
-    const memoizedParse = memoize(parse, {
-        isDeepEqual: true,
-        transformArgs: (args) => {
-            const [def, ctx] = args as ParseArgs<any>
-            // Only include the context that affects parse result
-            // (path is only used for logging errors)
-            return [def, { typeSet: ctx.typeSet, seen: ctx.seen }]
-        }
-    })
     return Object.assign(parse, {
         meta: {
             type: input.type,

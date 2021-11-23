@@ -21,7 +21,9 @@ describe("compile", () => {
         expect(() =>
             // @ts-expect-error
             compile({ a: "string" }, { b: { c: "uhoh" } })
-        ).toThrowErrorMatchingInlineSnapshot()
+        ).toThrowErrorMatchingInlineSnapshot(
+            `"Unable to determine the type of 'uhoh' at path c."`
+        )
         // expectError<"Unable to determine the type of 'uhoh'.">(badC)
     })
     test("interdependent", () => {
@@ -67,7 +69,9 @@ describe("compile", () => {
         expect(() =>
             // @ts-expect-error
             parse({ nested: { a: "a", b: "b", c: "c" } })
-        ).toThrowErrorMatchingInlineSnapshot()
+        ).toThrowErrorMatchingInlineSnapshot(
+            `"Unable to determine the type of 'c' at path nested/c."`
+        )
         // expectError<{
         //     nested: {
         //         a: {

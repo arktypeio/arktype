@@ -74,7 +74,7 @@ export namespace Obj {
                     Root.parse(propDef, {
                         ...ctx,
                         path: [...ctx.path, prop],
-                        seen: []
+                        shallowSeen: []
                     })
                 ]) as Record<string, ParsedType<any>>
         },

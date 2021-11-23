@@ -28,7 +28,7 @@ describe("default values", () => {
         const typeSet = {
             five: 5,
             duck: "'duck'",
-            func: "(five, duck)=>duck"
+            func: "(five,duck)=>duck"
         }
         expect(generate("func|five|duck", typeSet)).toBe(5)
         expect(generate("duck|func", typeSet)).toBe("duck")
@@ -119,8 +119,8 @@ describe("default values", () => {
             generate(
                 "a|b",
                 {
-                    a: "b",
-                    b: "a"
+                    a: { b: "b" },
+                    b: { a: "a" }
                 },
                 { onRequiredCycle: "cycle" }
             )
@@ -129,8 +129,8 @@ describe("default values", () => {
             generate(
                 "a|b|safe",
                 {
-                    a: "b",
-                    b: "a",
+                    a: { b: "b" },
+                    b: { a: "a" },
                     safe: "false"
                 },
                 { onRequiredCycle: {} }

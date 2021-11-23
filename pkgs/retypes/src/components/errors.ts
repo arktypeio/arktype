@@ -119,6 +119,17 @@ export type BaseAssignmentArgs<
     valueType: AssignmentType
 }
 
+export const generateRequiredCycleError = ({
+    def,
+    ctx: { seen }
+}: BaseParseArgs) =>
+    `Unable to generate a default value for type including a required cycle:\n${[
+        ...seen,
+        def
+    ].join("=>")}.` +
+    `If you'd like to avoid throwing in when this occurs, pass a value to return ` +
+    `when this occurs to the 'onRequiredCycle' option.`
+
 export const unassignableError = ({ def, valueType }: BaseAssignmentArgs) =>
     `${stringifyDefinition(
         valueType
