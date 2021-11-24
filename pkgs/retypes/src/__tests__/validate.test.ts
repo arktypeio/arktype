@@ -265,23 +265,23 @@ describe("validate", () => {
                 ]
             })
         ).toBeFalsy()
-        // expect(
-        //     groceries.check({
-        //         fruits: [
-        //             {
-        //                 length: 5000,
-        //                 description: "I'm a big banana!",
-        //                 peel: "slippery"
-        //             },
+        expect(
+            groceries.check({
+                fruits: [
+                    {
+                        length: 5000,
+                        description: "I'm a big banana!",
+                        peel: "slippery"
+                    },
 
-        //             { type: "Fuji" }
-        //         ]
-        //     })
-        // ).toMatchInlineSnapshot(`
-        //     "{fruits/0: '{length: 5000, description: 'I'm a big banana!', peel: 'slippery'} is not assignable to any of banana|apple:
-        //     {banana: 'At path fruits/0, keys 'peel' were unexpected.', apple: 'At path fruits/0, required keys 'circumference, type' were missing. Keys 'length, description, peel' were unexpected.'}', fruits/1: '{type: 'Fuji'} is not assignable to any of banana|apple:
-        //     {banana: 'At path fruits/1, required keys 'length' were missing. Keys 'type' were unexpected.', apple: 'At path fruits/1, required keys 'circumference' were missing.'}'}"
-        // `)
+                    { type: "Fuji" }
+                ]
+            })
+        ).toMatchInlineSnapshot(`
+            "{fruits/0: '{length: 5000, description: 'I'm a big banana!', peel: 'slippery'} is not assignable to any of banana|apple:
+            {banana: 'At path fruits/0, keys 'peel' were unexpected.', apple: 'At path fruits/0, required keys 'circumference, type' were missing. Keys 'length, description, peel' were unexpected.'}', fruits/1: '{type: 'Fuji'} is not assignable to any of banana|apple:
+            {banana: 'At path fruits/1, required keys 'length' were missing. Keys 'type' were unexpected.', apple: 'At path fruits/1, required keys 'circumference' were missing.'}'}"
+        `)
     })
     test("errors on shallow cycle", () => {
         // @ts-expect-error

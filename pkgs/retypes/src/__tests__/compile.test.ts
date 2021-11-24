@@ -1,14 +1,16 @@
 import { compile, parse } from ".."
-import { expectType, expectError } from "tsd"
+import { expectType, expectError, printType } from "tsd"
 import { typeDefProxy } from "../common.js"
 
 describe("compile", () => {
-    test("single", () => {
+    test("singlet", () => {
         const a = compile({ a: "string" }).types.a.type
         expectType<string>(a)
-        expect(() =>
-            // @ts-expect-error
-            compile({ a: "strig" })
+        expect(
+            () =>
+                // expectError<`"Unable to determine the type of 'strig'."`>(
+                compile({ a: "strig" })
+            //)
         ).toThrowErrorMatchingInlineSnapshot(
             `"Unable to determine the type of 'strig'."`
         )
@@ -93,47 +95,51 @@ describe("compile", () => {
         // }>(badResult)
     })
     test("compile result", () => {
-        //         const compileResult = compile({ a: { b: "b?" } }, { b: { a: "a?" } })
-        //         const { type, ...parseResult } = compileResult.parse("a") as any
-        //         expect(type).toBe(typeDefProxy)
-        //         expect(parseResult).toMatchInlineSnapshot(`
-        // Object {
-        //   "assert": [Function],
-        //   "checkErrors": [Function],
-        //   "definition": "a",
-        //   "getDefault": [Function],
-        //   "typeSet": Object {
-        //     "a": Object {
-        //       "b": "b?",
-        //     },
-        //     "b": Object {
-        //       "a": "a?",
-        //     },
-        //   },
-        // }
-        // `)
-        //         const { type: preparsedType, ...preparsedResult } = compileResult.types
-        //             .a as any
-        //         expect(preparsedType).toBe(typeDefProxy)
-        //         expect(preparsedResult).toMatchInlineSnapshot(`
-        // Object {
-        //   "assert": [Function],
-        //   "checkErrors": [Function],
-        //   "definition": Object {
-        //     "b": "b?",
-        //   },
-        //   "getDefault": [Function],
-        //   "typeSet": Object {
-        //     "a": Object {
-        //       "b": "b?",
-        //     },
-        //     "b": Object {
-        //       "a": "a?",
-        //     },
-        //   },
-        // }
-        // `)
-        //         // Make sure b is included in types without rechecking all of the above
-        //         expect(typeof compileResult.types.b).toBe("object")
+        const compileResult = compile({ a: { b: "b?" } }, { b: { a: "a?" } })
+        const { type, ...parseResult } = compileResult.parse("a") as any
+        expect(type).toBe(typeDefProxy)
+        expect(parseResult).toMatchInlineSnapshot(`
+            {
+              "allows": [Function],
+              "assert": [Function],
+              "check": [Function],
+              "definition": "a",
+              "generate": [Function],
+              "references": [Function],
+              "typeSet": {
+                "a": {
+                  "b": "b?",
+                },
+                "b": {
+                  "a": "a?",
+                },
+              },
+            }
+        `)
+        const { type: preparsedType, ...preparsedResult } = compileResult.types
+            .a as any
+        expect(preparsedType).toBe(typeDefProxy)
+        expect(preparsedResult).toMatchInlineSnapshot(`
+            {
+              "allows": [Function],
+              "assert": [Function],
+              "check": [Function],
+              "definition": {
+                "b": "b?",
+              },
+              "generate": [Function],
+              "references": [Function],
+              "typeSet": {
+                "a": {
+                  "b": "b?",
+                },
+                "b": {
+                  "a": "a?",
+                },
+              },
+            }
+        `)
+        // Make sure b is included in types without rechecking all of the above
+        expect(typeof compileResult.types.b).toBe("object")
     })
 })

@@ -134,14 +134,15 @@ export const filePath = (path: string) => {
     return file
 }
 
-const getCallerFile = (methodName: string) =>
-    filePath(
-        getCurrentLine({
-            method: methodName,
-            frames: 0,
-            immediate: false
-        }).file
-    )
+export const getCaller = (methodName: string) =>
+    getCurrentLine({
+        method: methodName,
+        frames: 0,
+        immediate: false
+    })
+
+export const getCallerFile = (methodName: string) =>
+    filePath(getCaller(methodName).file)
 
 export const fileName = () => getCallerFile("fileName")
 

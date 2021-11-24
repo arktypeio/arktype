@@ -251,15 +251,15 @@ describe("parse", () => {
         result.type.noReferences.wasResolved
     })
     test("parse result", () => {
-        // const parseResult = parse("a", {
-        //     typeSet: { a: "true" }
-        // })
-        // expect(parseResult.definition).toBe("a")
-        // expect(parseResult.typeSet).toStrictEqual({ a: "true" })
-        // expect(parseResult.assert(true)).toBe(undefined)
-        // expect(parseResult.check(true)).toBe("")
-        // expect(parseResult.check(true)).toBe("")
-        // expect(parseResult.generate()).toBe(true)
-        // expect(parseResult.type).toBe(typeDefProxy)
+        const parseResult = parse("a", {
+            typeSet: { a: "true" }
+        })
+        expect(parseResult.definition).toBe("a")
+        expect(parseResult.typeSet).toStrictEqual({ a: "true" })
+        expect(parseResult.assert(true)).toBe(undefined)
+        expect(parseResult.check(true)).toBe("")
+        expect(parseResult.check(true)).toBe("")
+        expect(parseResult.generate()).toBe(true)
+        expect(parseResult.type).toBe(typeDefProxy)
     })
 })

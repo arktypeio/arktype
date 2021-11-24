@@ -467,6 +467,7 @@ importers:
       jest: 27.0.6
       jest-stare: 2.3.0
       ts-jest: 27.0.3
+      ts-node: 10.4.0
       ts-toolbelt: 9.5.10
       tsd: 0.17.0
       typescript: 4.5.2
@@ -476,9 +477,10 @@ importers:
       '@re-do/node': link:../node
       '@types/jest': 26.0.24
       '@types/node': 15.0.2
-      jest: 27.0.6
+      jest: 27.0.6_ts-node@10.4.0
       jest-stare: 2.3.0
       ts-jest: 27.0.3_jest@27.0.6+typescript@4.5.2
+      ts-node: 10.4.0_f84c7af1dada40fb8c41c8231604a0d2
       ts-toolbelt: 9.5.10
       tsd: 0.17.0
       typescript: 4.5.2

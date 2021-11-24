@@ -28,6 +28,7 @@ export const getJestConfig = (): Config.InitialOptions => ({
         "json"
     ],
     testRegex: "/__tests__/.*\\.test\\.(j|t)sx?$",
+    coveragePathIgnorePatterns: ["/node_modules/", "/__tests__/.*"],
     roots: ["<rootDir>/src"],
     moduleNameMapper: {
         "^(\\.{1,2}/.*)\\.js$": "$1"
@@ -38,5 +39,8 @@ export const getJestConfig = (): Config.InitialOptions => ({
             useESM: true,
             isolatedModules: true
         }
+    },
+    snapshotFormat: {
+        printBasicPrototype: false
     }
 })

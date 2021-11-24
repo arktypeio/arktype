@@ -5,6 +5,7 @@ export const { define, compile } = declare("user", "group")
 
 import { user } from "./user"
 import { group } from "./group"
+import { stringify } from "@re-do/utils"
 
 export const { types, parse } = compile(user, group)
 
@@ -23,10 +24,6 @@ export type ExpectedGroup = {
 
 describe("multifile", () => {
     test("compiles", () => {
-        // const diag = await tsd({
-        //     cwd: ".",
-        //     testFiles: ["src/__tests__/**/*.test.ts"]
-        // })
         expectType<ExpectedUser>(types.user.type)
         expectType<ExpectedGroup>(types.group.type)
         expectType<ExpectedUser | undefined>(types.user.type.bestFriend)

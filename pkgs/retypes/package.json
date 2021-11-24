@@ -20,7 +20,8 @@
     },
     "scripts": {
         "build": "redoTsc",
-        "test": "jest --runInBand",
+        "test": "jest",
+        "tsd": "runScript --esm tsd.ts",
         "results": "python3 -m http.server --directory jest-stare"
     },
     "dependencies": {
@@ -35,6 +36,7 @@
         "ts-toolbelt": "9.5.10",
         "typescript": "4.5.2",
         "tsd": "0.17.0",
-        "jest-stare": "2.3.0"
+        "jest-stare": "2.3.0",
+        "ts-node": "10.4.0"
     }
 }
