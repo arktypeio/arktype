@@ -87,11 +87,11 @@ describe("default values", () => {
         // If it's optional, the cycle should be ignored and just return undefined
         expect(
             generate("a", {
-                a: "b",
-                b: { a: "a?" },
+                a: { b: "b" },
+                b: { c: "c?" },
                 c: "a|b"
             })
-        ).toStrictEqual({})
+        ).toStrictEqual({ b: {} })
         expect(() =>
             generate("a", {
                 a: { b: "b" },
@@ -100,7 +100,8 @@ describe("default values", () => {
             })
         ).toThrowErrorMatchingInlineSnapshot(`
             "Unable to generate a default value for type including a required cycle:
-            a=>b=>c=>a.If you'd like to avoid throwing in when this occurs, pass a value to return when this occurs to the 'onRequiredCycle' option."
+            a=>b=>c=>a
+            If you'd like to avoid throwing in when this occurs, pass a value to return when this occurs to the 'onRequiredCycle' option."
         `)
         expect(
             generate(
@@ -124,17 +125,13 @@ describe("default values", () => {
                 },
                 { onRequiredCycle: "cycle" }
             )
-        ).toBe("cycle")
+        ).toStrictEqual({ b: { a: "cycle" } })
         expect(
-            generate(
-                "a|b|safe",
-                {
-                    a: { b: "b" },
-                    b: { a: "a" },
-                    safe: "false"
-                },
-                { onRequiredCycle: {} }
-            )
+            generate("a|b|safe", {
+                a: { b: "b" },
+                b: { a: "a" },
+                safe: "false"
+            })
         ).toBe(false)
     })
     test("unparseable", () => {

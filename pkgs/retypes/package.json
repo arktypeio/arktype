@@ -21,7 +21,7 @@
     "scripts": {
         "build": "redoTsc",
         "test": "jest --runInBand",
-        "results": "xdg-open jest-stare/index.html"
+        "results": "python3 -m http.server --directory jest-stare"
     },
     "dependencies": {
         "@re-do/utils": "workspace:*"

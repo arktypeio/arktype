@@ -17,6 +17,7 @@ import {
 } from "../common.js"
 import {
     mismatchedKeysError,
+    unassignableError,
     validationError,
     ValidationErrors
 } from "../errors.js"
@@ -76,10 +77,13 @@ export namespace Obj {
                         path: [...ctx.path, prop],
                         shallowSeen: []
                     })
-                ]) as Record<string, ParsedType<any>>
+                ]) as Record<string, ParsedType<any, any>>
         },
         {
             allows: ({ components, def, ctx }, valueType, opts) => {
+                if (!isRecursible(valueType) || Array.isArray(valueType)) {
+                    return validationError({ def, path: ctx.path, valueType })
+                }
                 // Neither type is a tuple, validate keys as a set
                 const keyDiff = diffSets(
                     Object.keys(def),
@@ -111,16 +115,18 @@ export namespace Obj {
                         path: ctx.path
                     })
                 }
-                return Object.keys(components).reduce(
-                    (errors, propName) => ({
-                        ...errors,
-                        ...components[propName].allows(
-                            (valueType as any)[propName],
-                            opts
-                        )
-                    }),
-                    {} as ValidationErrors
-                )
+                return Object.keys(components)
+                    .filter((propName) => propName in valueType)
+                    .reduce(
+                        (errors, propName) => ({
+                            ...errors,
+                            ...components[propName].allows(
+                                (valueType as any)[propName],
+                                opts
+                            )
+                        }),
+                        {} as ValidationErrors
+                    )
             },
             references: ({ components }, opts) =>
                 transform(components, ([propName, component]) => [

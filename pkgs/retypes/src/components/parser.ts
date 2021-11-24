@@ -7,7 +7,8 @@ import {
     TreeOf,
     ValueOf,
     Exact,
-    stringify
+    stringify,
+    partial
 } from "@re-do/utils"
 import { typeDefProxy } from "../common.js"
 import { typeOf } from "../typeOf.js"
@@ -113,25 +114,19 @@ export type UnhandledMethods<DefType, Parent, Components> = Omit<
     keyof GetHandledMethods<Parent>
 >
 
-export type ParseFunction<DefType> = (
+export type ParseFunction<DefType, Components> = (
     ...args: ParseArgs<DefType>
-) => ParsedType<DefType>
+) => ParsedType<DefType, Components>
 
-export type ParsedType<DefType> = {
-    definition: DefType
-    context: ParseContext<DefType>
-} & CoreMethods<DefType> &
-    InferredMethods
+export type ParsedType<DefType, Components> = {
+    def: DefType
+    ctx: ParseContext<DefType>
+} & CoreMethods<DefType>
 
 export type CoreMethods<DefType> = {
     [MethodName in CoreMethodName]-?: TransformInputMethod<
         NonNullable<HandlesMethods<DefType, any>[MethodName]>
     >
-}
-
-export type InferredMethods = {
-    assert: (value: unknown, options?: AllowsOptions) => void
-    check: (value: unknown, options?: AllowsOptions) => string
 }
 
 export type TransformInputMethod<
@@ -163,8 +158,9 @@ export type ParserMetadata<
     }
 }>
 
-export type Parser<DefType, Parent, Handles> = Evaluate<
-    ParserMetadata<DefType, Parent, Handles> & ParseFunction<DefType>
+export type Parser<DefType, Parent, Handles, Components> = Evaluate<
+    ParserMetadata<DefType, Parent, Handles> &
+        ParseFunction<DefType, Components>
 >
 
 export type CoreMethodName = keyof HandlesMethods<any, any>
@@ -180,7 +176,7 @@ export const reroot = {
     }
 }
 
-type AnyParser = Parser<any, any, any>
+type AnyParser = Parser<any, any, any, any>
 
 export const createParser = <
     Input,
@@ -197,7 +193,7 @@ export const createParser = <
             Exact<Handles, UnhandledMethods<DefType, Parent, Components>>
         >
     ]
-): Parser<DefType, Parent, Handles> => {
+): Parser<DefType, Parent, Handles, Components> => {
     const input = args[0] as ParserInput<DefType, Parent, Children, Components>
     const handles = (args[1] as HandlesMethods<DefType, Components>) ?? {}
     // Need to wait until parse is called to access parent to avoid it being undefined
@@ -211,91 +207,107 @@ export const createParser = <
     }
     const getChildren = (): AnyParser[] => (input.children?.() as any) ?? []
     const cachedComponents: Record<string, any> = {}
-    const getComponents = ([def, ctx]: ParseArgs<DefType>) => {
+    const getComponents = (def: DefType, ctx: ParseContext<DefType>) => {
         const memoKey = stringify({
             def,
             typeSet: ctx.typeSet,
-            shallowSeen: ctx.shallowSeen
+            shallowSeen: ctx.shallowSeen,
+            seen: ctx.seen,
+            path: ctx.path
         })
         if (!cachedComponents[memoKey]) {
-            cachedComponents[memoKey] = input.components?.(def, ctx) ?? {}
+            cachedComponents[memoKey] =
+                input.components?.(def, ctx) ?? undefined
         }
         return cachedComponents[memoKey]
     }
-    const parse = (
-        def: DefType,
-        ctx: ParseContext<DefType>
-    ): ParsedType<DefType> => {
-        const args: ParseArgs<DefType> = [def, ctx]
-        const inherits = getInherited()
-        const children = getChildren()
-        const components = getComponents(args)
-        let matchingChild: AnyParser
-        if (children.length) {
-            const match = children.find((child) => child.meta.matches(...args))
-            if (!match) {
-                if (input.fallback) {
-                    return input.fallback(...args)
-                }
-                throw new Error(unknownTypeError(def, ctx.path))
+    const transformCoreMethod =
+        (
+            name: CoreMethodName,
+            inputMethod: Func,
+            def: DefType,
+            ctx: ParseContext<DefType>,
+            components: Components
+        ) =>
+        (...providedArgs: Parameters<ValueOf<CoreMethods<DefType>>>) => {
+            if (name === "allows") {
+                return inputMethod(
+                    {
+                        def,
+                        ctx,
+                        components
+                    },
+                    providedArgs[0],
+                    providedArgs[1] ?? {}
+                )
             }
-            matchingChild = match
-        }
-        const transformCoreMethod =
-            (name: CoreMethodName, inputMethod: Func) =>
-            (...providedArgs: Parameters<ValueOf<CoreMethods<DefType>>>) => {
-                const methodContext = {
+            return inputMethod(
+                {
                     def,
                     ctx,
                     components
-                }
-                if (name === "allows") {
-                    return inputMethod(
-                        methodContext,
-                        providedArgs[0],
-                        providedArgs[1] ?? {}
-                    )
-                }
-                return inputMethod(methodContext, providedArgs[0] ?? {})
-            }
+                },
+                providedArgs[0] ?? {}
+            )
+        }
 
-        const delegateCoreMethod = (methodName: CoreMethodName) => {
-            if (!children.length) {
-                throw new Error(
-                    `${methodName} was never implemented on the current component's branch.`
-                )
-            }
-            return matchingChild(...args)[methodName]
+    const delegateCoreMethod = (
+        methodName: CoreMethodName,
+        def: DefType,
+        ctx: ParseContext<DefType>
+    ) => {
+        const children = getChildren()
+        if (!children.length) {
+            throw new Error(
+                `${methodName} was never implemented on the current component's branch.`
+            )
         }
-        const coreMethods: CoreMethods<DefType> = transform(
-            coreMethodNames,
-            ([i, methodName]) => [
-                methodName,
-                handles[methodName]
-                    ? transformCoreMethod(methodName, handles[methodName]!)
-                    : inherits[methodName]
-                    ? transformCoreMethod(methodName, inherits[methodName]!)
-                    : delegateCoreMethod(methodName)
-            ]
-        )
-        const check: InferredMethods["check"] = (value, options) =>
-            stringifyErrors(coreMethods.allows(typeOf(value), options))
-        const inferredMethods: InferredMethods = {
-            check,
-            assert: (value, options) => {
-                const errorMessage = check(value, options)
-                if (errorMessage) {
-                    throw new Error(errorMessage)
-                }
+        const match = children.find((child) => child.meta.matches(def, ctx))
+        if (!match) {
+            if (input.fallback) {
+                return input.fallback(def, ctx)
             }
+            throw new Error(unknownTypeError(def, ctx.path))
         }
+        return match(def, ctx)[methodName]
+    }
+    const getCoreMethods = (
+        def: DefType,
+        ctx: ParseContext<DefType>,
+        components: any
+    ) => {
+        return transform(coreMethodNames, ([i, methodName]) => [
+            methodName,
+            handles[methodName]
+                ? transformCoreMethod(
+                      methodName,
+                      handles[methodName]!,
+                      def,
+                      ctx,
+                      components
+                  )
+                : getInherited()[methodName]
+                ? transformCoreMethod(
+                      methodName,
+                      getInherited()[methodName]!,
+                      def,
+                      ctx,
+                      components
+                  )
+                : delegateCoreMethod(methodName, def, ctx)
+        ]) as CoreMethods<DefType>
+    }
+
+    const parse = (
+        def: DefType,
+        ctx: ParseContext<DefType>
+    ): ParsedType<DefType, Components> => {
+        const components = getComponents(def, ctx)
         return {
-            definition: def,
-            context: ctx,
-            type: typeDefProxy,
-            ...coreMethods,
-            ...inferredMethods
-        } as any
+            def,
+            ctx,
+            ...getCoreMethods(def, ctx, components)
+        }
     }
     return Object.assign(parse, {
         meta: {

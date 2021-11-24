@@ -7,9 +7,11 @@ import {
     ReferencesOptions,
     GenerateOptions
 } from "./components/parser.js"
-import { ValidationErrors } from "./components/errors.js"
+import { stringifyErrors, ValidationErrors } from "./components/errors.js"
 import { format } from "./format.js"
 import { TypeSet } from "./typeSet/typeSet.js"
+import { typeOf } from "./typeOf.js"
+import { typeDefProxy } from "./common.js"
 
 export type ParseTypeRecurseOptions = Required<ParseTypeOptions>
 
@@ -27,19 +29,50 @@ export type DefaultParseTypeOptions = {
     onResolve: never
 }
 
+export type InferredMethods = {
+    assert: (value: unknown, options?: AllowsOptions) => void
+    check: (value: unknown, options?: AllowsOptions) => string
+}
+
 export const createParseFunction =
     <PredefinedTypeSet>(
         predefinedTypeSet: Narrow<PredefinedTypeSet>
     ): ParseFunction<PredefinedTypeSet> =>
     (definition, options) => {
-        const typeSet: any = format(options?.typeSet ?? predefinedTypeSet)
+        const formattedTypeSet: any = format(
+            options?.typeSet ?? predefinedTypeSet
+        )
         const context: ParseContext<any> = {
-            typeSet,
+            typeSet: formattedTypeSet,
             path: [],
             seen: [],
             shallowSeen: []
         }
-        return Root.parse(format(definition), context) as any
+        const formattedDefinition = format(definition)
+        const { allows, references, generate } = Root.parse(
+            formattedDefinition,
+            context
+        ) as any
+        const check: InferredMethods["check"] = (value, options) =>
+            stringifyErrors(allows(typeOf(value), options))
+        const inferredMethods: InferredMethods = {
+            check,
+            assert: (value, options) => {
+                const errorMessage = check(value, options)
+                if (errorMessage) {
+                    throw new Error(errorMessage)
+                }
+            }
+        }
+        return {
+            type: typeDefProxy,
+            typeSet: formattedTypeSet,
+            definition: formattedDefinition,
+            allows,
+            references,
+            generate,
+            ...inferredMethods
+        } as any
     }
 
 // Exported parse function is equivalent to parse from an empty compile call,

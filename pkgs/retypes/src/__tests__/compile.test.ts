@@ -57,10 +57,16 @@ describe("compile", () => {
         const b = compile({ a: "string" }, { b: [{ c: "a" }] }).types.b.type
         expectType<{ c: string }[]>(b)
         // Can't pass in object list directly to compile
-        expect(() =>
-            // @ts-expect-error
-            compile([{ b: { c: "string" } }])
-        ).toThrowErrorMatchingInlineSnapshot()
+        // @ts-expect-error
+        expect(() => compile([{ b: { c: "string" } }]))
+            .toThrowErrorMatchingInlineSnapshot(`
+            "Compile args must be a list of names mapped to their corresponding definitions
+                        passed as rest args, e.g.:
+                        compile(
+                            { user: { name: \\"string\\" } },
+                            { group: \\"user[]\\" }
+                        )"
+        `)
     })
     test("can parse from compiled types", () => {
         const { parse } = compile({ a: { b: "b" } }, { b: { a: "a" } })

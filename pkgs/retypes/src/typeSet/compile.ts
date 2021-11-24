@@ -1,4 +1,10 @@
-import { Evaluate, mergeAll, Narrow, transform } from "@re-do/utils"
+import {
+    Evaluate,
+    isRecursible,
+    mergeAll,
+    Narrow,
+    transform
+} from "@re-do/utils"
 import { createParseFunction, parse, ParseFunction } from "../parse.js"
 import { TypeSet } from "./typeSet.js"
 
@@ -13,6 +19,17 @@ export const createCompileFunction =
         // @ts-ignore
         ...definitions: Narrow<Definitions>
     ) => {
+        if (
+            !Array.isArray(definitions) ||
+            definitions.some((def) => !isRecursible(def) || Array.isArray(def))
+        ) {
+            throw new Error(`Compile args must be a list of names mapped to their corresponding definitions
+            passed as rest args, e.g.:
+            compile(
+                { user: { name: "string" } },
+                { group: "user[]" }
+            )`)
+        }
         const typeSetFromDefinitions = mergeAll(definitions as any) as any
         const parse = createParseFunction(typeSetFromDefinitions) as any
         return {

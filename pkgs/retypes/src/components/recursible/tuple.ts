@@ -11,7 +11,7 @@ import {
 } from "../common.js"
 import { Recursible } from "./recursible.js"
 import { typeDefProxy } from "../../common.js"
-import { Evaluate } from "@re-do/utils"
+import { Evaluate, stringify } from "@re-do/utils"
 
 export namespace Tuple {
     export type Definition<Def extends Root.Definition[] = Root.Definition[]> =
@@ -52,8 +52,7 @@ export namespace Tuple {
                 )
         },
         {
-            allows: (...args) => {
-                const [{ def, ctx, components }, valueType, opts] = args
+            allows: ({ def, ctx, components }, valueType, opts) => {
                 if (!Array.isArray(valueType)) {
                     // Defined is a tuple, extracted is an object with string keys (will never be assignable)
                     return validationError({

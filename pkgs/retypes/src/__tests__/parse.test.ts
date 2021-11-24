@@ -55,9 +55,15 @@ describe("parse", () => {
         const emptyFunction = parse("()=>void").type
         expectType<() => void>(emptyFunction)
         // @ts-expect-error
-        parse("()=>")
-        // @ts-expect-error
-        const badParameterResult = parse("(foop, string, nufmber) => boolean[]")
+        expect(() => parse("()=>")).toThrowErrorMatchingInlineSnapshot(
+            `"Unable to determine the type of ''."`
+        )
+        expect(() =>
+            // @ts-expect-error
+            parse("(foop, string, nufmber) => boolean[]")
+        ).toThrowErrorMatchingInlineSnapshot(
+            `"Unable to determine the type of 'foop'."`
+        )
         // expectError<
         //     (
         //         args_0: "Unable to determine the type of 'foop'.",
@@ -66,7 +72,9 @@ describe("parse", () => {
         //     ) => boolean[]
         // >(badParameterResult.type)
         // @ts-expect-error
-        const badReturnResult = parse("()=>fork")
+        expect(() => parse("()=>fork")).toThrowErrorMatchingInlineSnapshot(
+            `"Unable to determine the type of 'fork'."`
+        )
         // expectError<() => "Unable to determine the type of 'fork'.">(
         //     badReturnResult.type
         // )
@@ -88,8 +96,12 @@ describe("parse", () => {
             c: { nested: null[] }
             d: 6
         }>(result.type)
-        // @ts-expect-error
-        const badResult = parse({ a: { b: "whoops" } })
+        expect(() =>
+            // @ts-expect-error
+            parse({ a: { b: "whoops" } })
+        ).toThrowErrorMatchingInlineSnapshot(
+            `"Unable to determine the type of 'whoops' at path a/b."`
+        )
         // expectError<{
         //     a: {
         //         b: "Unable to determine the type of 'whoops'."

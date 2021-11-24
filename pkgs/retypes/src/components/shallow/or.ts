@@ -1,6 +1,10 @@
-import { Unlisted } from "@re-do/utils"
+import { transform, Unlisted } from "@re-do/utils"
 import { typeDefProxy } from "../../common.js"
-import { stringifyErrors } from "../errors.js"
+import {
+    isRequiredCycleError,
+    requiredCycleErrorTemplate,
+    stringifyErrors
+} from "../errors.js"
 import { OrTypeErrors, orValidationError, validationError } from "../errors.js"
 import { createParser, ParseContext } from "../parser.js"
 import { Recursible } from "../recursible/index.js"
@@ -57,7 +61,7 @@ export namespace Or {
                         // If one of the or types doesn't return any errors, the whole type is valid
                         return {}
                     }
-                    orErrors[fragment.definition] = fragmentErrors
+                    orErrors[fragment.def] = fragmentErrors
                 }
                 return validationError({
                     path: ctx.path,
@@ -69,14 +73,31 @@ export namespace Or {
                 })
             },
             generate: ({ components }, opts) => {
-                const possibleValues = components.map((fragment) =>
-                    fragment.generate(opts)
+                let requiredCycleError = ""
+                const possibleValues = transform(
+                    components,
+                    ([i, fragment]) => {
+                        try {
+                            return [i, fragment.generate(opts)]
+                        } catch (e: any) {
+                            if (isRequiredCycleError(e.message)) {
+                                if (!requiredCycleError) {
+                                    requiredCycleError = e.message
+                                }
+                                // Omit it from "possibleValues"
+                                return null
+                            }
+                            throw e
+                        }
+                    },
+                    { asArray: "always" }
                 )
                 for (const comparableValue of comparableDefaultValueSet) {
                     if (possibleValues.includes(comparableValue)) {
                         return comparableValue
                     }
                 }
+
                 for (const valueType in nonComparableDefaultValues) {
                     const matchingValue = possibleValues.find(
                         (value) => typeof value === valueType
@@ -85,8 +106,11 @@ export namespace Or {
                         return matchingValue
                     }
                 }
+                if (requiredCycleError) {
+                    throw new Error(requiredCycleError)
+                }
                 // The only type that should get to this point without returning is a custom
-                // value from returnOnCycle, so just return the first one
+                // value from onRequiredCycle, so just return the first one
                 return possibleValues[0]
             },
             references: ({ components }, opts) => {

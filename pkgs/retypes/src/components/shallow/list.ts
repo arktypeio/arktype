@@ -22,7 +22,7 @@ export namespace List {
             allows: ({ def, components: { item }, ctx }, valueType, opts) => {
                 if (Array.isArray(valueType)) {
                     return Tuple.parse(
-                        [...Array(valueType.length)].map(() => item),
+                        [...Array(valueType.length)].map(() => item.def),
                         ctx
                     ).allows(valueType, opts)
                 }

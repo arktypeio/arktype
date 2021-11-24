@@ -64,7 +64,10 @@ export namespace ArrowFunction {
             matches: (def) => /\(.*\)\=\>.*/.test(def as any),
             components: (def, ctx) => {
                 const parts = def.split("=>")
-                const parameterDefs = parts[0].slice(1, -1).split(",")
+                const parameterDefs = parts[0]
+                    .slice(1, -1)
+                    .split(",")
+                    .filter((arg) => !!arg)
                 const returnDef = parts.slice(1).join("=>")
                 return {
                     parameters: parameterDefs.map((arg) =>

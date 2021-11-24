@@ -22,7 +22,7 @@ describe("declare", () => {
         const GottaDefineThis = define.GottaDefineThis({
             a: "string"
         })
-        // @ts-ignore
+        // @ts-expect-error
         compile(GottaDefineThis)
     })
     test("errors on compile with undeclared type defined", () => {
