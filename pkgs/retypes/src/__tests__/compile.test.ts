@@ -1,11 +1,14 @@
 import { compile, parse } from ".."
 import { expectType, expectError, printType } from "tsd"
 import { typeDefProxy } from "../common.js"
+import { validateTypes } from "./common.js"
+import { stringify } from "@re-do/utils"
 
 describe("compile", () => {
     test("singlet", () => {
         const a = compile({ a: "string" }).types.a.type
         expectType<string>(a)
+        console.log(stringify(validateTypes(), { indent: 4 }))
         expect(
             () =>
                 // expectError<`"Unable to determine the type of 'strig'."`>(
