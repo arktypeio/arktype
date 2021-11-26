@@ -1,15 +1,10 @@
 import {
-    dirName,
     fromPackageRoot,
     getCaller,
     mapFilesToContents,
-    readFile,
     walkPaths
 } from "@re-do/node"
 import { memoize, stringify, transform } from "@re-do/utils"
-import { readFileSync } from "fs"
-import path from "path"
-import { stdout } from "process"
 import ts from "typescript"
 
 type TypeError = {

@@ -1,8 +1,7 @@
 import { compile, parse } from ".."
 import { expectType, expectError, printType } from "tsd"
 import { typeDefProxy } from "../common.js"
-import { validateTypes, types } from "./common.js"
-import { stringify } from "@re-do/utils"
+import { types } from "./common.js"
 
 describe("compile", () => {
     test("mmm", () => {
