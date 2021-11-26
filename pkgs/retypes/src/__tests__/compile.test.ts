@@ -1,24 +1,30 @@
 import { compile, parse } from ".."
 import { expectType, expectError, printType } from "tsd"
 import { typeDefProxy } from "../common.js"
-import { types } from "./common.js"
+import { context } from "./common.js"
 
 describe("compile", () => {
     test("mmm", () => {
         const a = compile({ a: "string" }).types.a.type
         expectType<string>(a)
-        expect(
-            types(
-                expect(() =>
-                    compile({ a: "strig" })
-                ).toThrowErrorMatchingInlineSnapshot(
-                    `"Unable to determine the type of 'strig'."`
-                )
-            ).errors()
-        ).toMatchInlineSnapshot(
+        const { value, types } = context(() => compile({ a: "strig" })).all
+        expect(value).toThrowErrorMatchingInlineSnapshot(
+            `"Unable to determine the type of 'strig'."`
+        )
+        expect(types.errors()).toMatchInlineSnapshot(
             `"Type '\\"strig\\"' is not assignable to type '\\"Unable to determine the type of 'strig'.\\"'."`
         )
-        // expectError<"Unable to determine the type of 'strig'.">(badA)
+        // expect(
+        //     context(
+        //         expect(() =>
+        //             compile({ a: "strig" })
+        //         ).toThrowErrorMatchingInlineSnapshot(
+        //             `"Unable to determine the type of 'strig'."`
+        //         )
+        //     ).types.errors()
+        // ).toMatchInlineSnapshot(
+        //     `"Type '\\"strig\\"' is not assignable to type '\\"Unable to determine the type of 'strig'.\\"'."`
+        // )
     })
     test("independent", () => {
         const c = compile({ a: "string" }, { b: { c: "boolean" } }).types.b.type

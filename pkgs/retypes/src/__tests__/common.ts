@@ -25,6 +25,12 @@ export type LinePosition = {
     column: number
 }
 
+export type SourcePosition = LinePosition & {
+    file: string
+}
+
+export type SourceRange = { file: string; from: LinePosition; to: LinePosition }
+
 // Parameter and return positions are 1-based
 export const getLinePositions = (
     contents: string,
@@ -116,21 +122,96 @@ export const validateTypes = memoize(() => {
     return errors
 })
 
-export type TypeErrorsOptions = {
+export const assert = (value: unknown) => {
+    const from = calledFrom()
+    const ctx = context(value, { from })
+    return ctx
+}
+
+export const calledFrom = (name?: string): SourcePosition => {
+    const { file, line, char } = getCaller(
+        name ?? getCaller("calledFrom").method
+    )
+    return {
+        file,
+        line,
+        column: char
+    }
+}
+
+export type Caller = ReturnType<typeof getCaller>
+
+export type ContextOptions = {
+    from?: SourcePosition
+    to?: SourcePosition
+}
+
+export type AllContext = {
+    types: TypeContext
+    value: ValueContext
+    all: Omit<AllContext, "all">
+}
+
+export const context = (
+    value: unknown,
+    options: ContextOptions = {}
+): AllContext => {
+    const from = options.from ?? calledFrom()
+    return new Proxy(
+        {},
+        {
+            get: (_, prop) => {
+                const types = typeContext({
+                    file: from.file,
+                    from,
+                    to: options.to ?? calledFrom()
+                })
+                if (prop === "types") {
+                    return types
+                } else if (prop === "value") {
+                    return value
+                } else if (prop === "all") {
+                    return {
+                        value,
+                        types
+                    }
+                }
+            }
+        }
+    ) as any
+}
+
+export const valueContext = (value: unknown) => {
+    return {
+        value
+    }
+}
+
+export type ValueContext = unknown //ReturnType<typeof valueContext>
+
+export const typeContext = (range: SourceRange) => {
+    return {
+        errors: typeErrorsContext(range)
+    }
+}
+
+export type TypeContext = ReturnType<typeof typeContext>
+
+export type TypeErrorsContextOptions = {
     asList?: boolean
     includePositions?: boolean
 }
 
-export const types = (...args: any[]) => {
-    const caller = getCaller("types")
-    const errorsInFile = validateTypes()[caller.file]
-    const errorsAfterCall = errorsInFile.filter(
-        (error) =>
-            error.from.line > caller.line ||
-            (error.from.line === caller.line &&
-                error.from.column >= caller.char)
-    )
-    const errors = (options?: TypeErrorsOptions) => {
+export const typeErrorsContext =
+    ({ file, from }: SourceRange) =>
+    (options?: TypeErrorsContextOptions) => {
+        const errorsInFile = validateTypes()[file]
+        const errorsAfterCall = errorsInFile.filter(
+            (error) =>
+                error.from.line > from.line ||
+                (error.from.line === from.line &&
+                    error.from.column >= from.column)
+        )
         const errorsCaller = getCaller("errors")
         const errorsInContext = errorsAfterCall.filter(
             (error) =>
@@ -143,19 +224,3 @@ export const types = (...args: any[]) => {
             : errorsInContext.map((_) => _.message)
         return options?.asList ? result : result.join(", ")
     }
-    return { errors }
-    // const errorsInFile = validateTypes()[caller.file]
-    // for (const error of errorsInFile) {
-    //     if (error.from.line >= caller.line) {
-    //         if (!nextError || error.from.line < nextError.from.line) {
-    //             nextError = error
-    //         }
-    //     }
-    // }
-    // if (!nextError) {
-    //     throw new Error(
-    //         `No next type found from ${caller.file} at line ${caller.line}.`
-    //     )
-    // }
-    // return nextError
-}
