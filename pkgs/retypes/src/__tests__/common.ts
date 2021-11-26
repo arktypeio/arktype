@@ -8,50 +8,65 @@ import {
 } from "@re-do/node"
 import { memoize, stringify, transform } from "@re-do/utils"
 import { readFileSync } from "fs"
+import path from "path"
 import { stdout } from "process"
 import ts from "typescript"
 
+type TypeError = {
+    from: LinePosition
+    to: LinePosition
+    message: string
+}
+
 // Maps fileNames to a list objects representing errors
-type TypeErrors = Record<
-    string,
-    {
-        range: [[number, number], [number, number]]
-        message: string
-    }[]
->
+type ErrorsByFile = Record<string, TypeError[]>
 
 export type GetDelimitedPositionOptions = {
     delimiter?: string
 }
 
-export const getDelimitedPositions = (
+export type LinePosition = {
+    line: number
+    column: number
+}
+
+// Parameter and return positions are 1-based
+export const getLinePositions = (
     contents: string,
     positions: number[],
     options?: GetDelimitedPositionOptions
 ) => {
     const lines = contents.split(options?.delimiter ?? "\n")
-    let currentPosition = 0
-    let groupNumber = 0
+    let currentPosition = 1
+    let lineNumber = 1
     let remaining = [...positions]
-    let result: Record<number, [number, number]> = {}
+    let result: LinePosition[] = Array(positions.length)
     while (remaining.length) {
-        if (groupNumber > lines.length - 1) {
+        if (lineNumber > lines.length) {
             throw new Error(
-                `Some of positions ${stringify(
-                    positions
-                )} do not exist in contents.`
+                `Positions ${stringify(remaining)} do not exist in contents.`
             )
         }
-        const nextPosition = currentPosition + lines[groupNumber].length
-        const matchingPositions = positions.filter(
-            (pos) => currentPosition <= pos && pos < nextPosition
+        // Add one to account for removed newline
+        const nextPosition = currentPosition + lines[lineNumber - 1].length + 1
+        const positionIndicesInLine = positions.reduce(
+            (result, pos, i) =>
+                currentPosition <= pos && pos < nextPosition
+                    ? [...result, i]
+                    : result,
+            [] as number[]
         )
-        remaining = remaining.filter((pos) => !matchingPositions.includes(pos))
-        matchingPositions.forEach((pos) => {
-            result[pos] = [groupNumber, pos - currentPosition]
+        remaining = remaining.filter(
+            (pos, i) => !positionIndicesInLine.includes(i)
+        )
+        positionIndicesInLine.forEach((i) => {
+            result[i] = {
+                line: lineNumber,
+                column: positions[i] - currentPosition + 1
+            }
         })
         currentPosition = nextPosition
-        groupNumber++
+        lineNumber++
     }
     return result
 }
@@ -69,7 +84,6 @@ export const validateTypes = memoize(() => {
     const rootNames = walkPaths(fromPackageRoot("src", "__tests__"), {
         excludeDirs: true
     })
-    console.log(stringify(rootNames))
     const sources = mapFilesToContents(rootNames)
     const program = ts.createProgram({
         rootNames,
@@ -80,20 +94,20 @@ export const validateTypes = memoize(() => {
         .getSemanticDiagnostics()
         .concat(program.getSyntacticDiagnostics())
     const errors = diagnostics.reduce(
-        (errors, { file, start = 0, length = 0, messageText }) => {
+        (errors, { file, start = 0, length = 1, messageText }) => {
             if (!file?.fileName || !rootNames.includes(file.fileName)) {
                 return errors
             }
-            console.log(file.fileName)
-            const { [start]: startPos, [start + length - 1]: endPos } =
-                getDelimitedPositions(sources[file.fileName], [
-                    start,
-                    start + length - 1
-                ])
+            // Convert to 1-based positions for getLinePositions
+            const [from, to] = getLinePositions(sources[file.fileName], [
+                start + 1,
+                start + length
+            ])
             return {
                 ...errors,
                 [file.fileName]: (errors[file.fileName] ?? []).concat({
-                    range: [startPos, endPos],
+                    from,
+                    to,
                     message:
                         typeof messageText === "string"
                             ? messageText
@@ -101,35 +115,52 @@ export const validateTypes = memoize(() => {
                 })
             }
         },
-        {} as TypeErrors
+        {} as ErrorsByFile
     )
     console.log("✅\n")
     return errors
 })
 
-export const getErrors = (...args: any[]) => {
-    const caller = getCaller("getErrors")
+export type TypeErrorsOptions = {
+    asList?: boolean
+    includePositions?: boolean
 }
 
-// export const getNextType = () => {
-//     const caller = getCaller("getNextType")
-//     const diagnostics: Diagnostic[] = tsdData
-//     let nextDiagnostic: Diagnostic | undefined = undefined
-//     for (const d of diagnostics) {
-//         const line = d.line ?? -1
-//         if (caller.file.endsWith(d.fileName) && line >= caller.line) {
-//             if (
-//                 !(nextDiagnostic && nextDiagnostic.line) ||
-//                 line < nextDiagnostic.line
-//             ) {
-//                 nextDiagnostic = d
-//             }
-//         }
-//     }
-//     if (!nextDiagnostic) {
-//         throw new Error(
-//             `No next type found from ${caller.file} at line ${caller.line}.`
-//         )
-//     }
-//     return nextDiagnostic
-// }
+export const types = (...args: any[]) => {
+    const caller = getCaller("types")
+    const errorsInFile = validateTypes()[caller.file]
+    const errorsAfterCall = errorsInFile.filter(
+        (error) =>
+            error.from.line > caller.line ||
+            (error.from.line === caller.line &&
+                error.from.column >= caller.char)
+    )
+    const errors = (options?: TypeErrorsOptions) => {
+        const errorsCaller = getCaller("errors")
+        const errorsInContext = errorsAfterCall.filter(
+            (error) =>
+                error.to.line < errorsCaller.line ||
+                (error.to.line === errorsCaller.line &&
+                    error.to.column <= errorsCaller.char)
+        )
+        const result = options?.includePositions
+            ? errorsInContext
+            : errorsInContext.map((_) => _.message)
+        return options?.asList ? result : result.join(", ")
+    }
+    return { errors }
+    // const errorsInFile = validateTypes()[caller.file]
+    // for (const error of errorsInFile) {
+    //     if (error.from.line >= caller.line) {
+    //         if (!nextError || error.from.line < nextError.from.line) {
+    //             nextError = error
+    //         }
+    //     }
+    // }
+    // if (!nextError) {
+    //     throw new Error(
+    //         `No next type found from ${caller.file} at line ${caller.line}.`
+    //     )
+    // }
+    // return nextError
+}

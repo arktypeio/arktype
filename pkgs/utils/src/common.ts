@@ -6,7 +6,8 @@ import {
 } from "ts-toolbelt"
 import { WithDefaults } from "./merge.js"
 
-export const memoize = moize
+export const memoize = <F extends Func>(f: F, opts?: moize.Options) =>
+    moize(f) as F
 
 export type StringReplace<
     Original extends string,
@@ -95,8 +96,7 @@ export type DeepRequired<T> = {
 export type WithOptionalKeys<T extends object, Keys extends keyof T> = Omit<
     T,
     Keys
-> &
-    { [K in Keys]?: T[K] }
+> & { [K in Keys]?: T[K] }
 
 export type WithOptionalValues<
     T extends object,
@@ -118,10 +118,9 @@ export type WithOptionalValues<
 export type WithRequiredKeys<T extends object, Keys extends keyof T> = Omit<
     T,
     Keys
-> &
-    {
-        [K in Keys]-?: T[K]
-    }
+> & {
+    [K in Keys]-?: T[K]
+}
 
 export type WithRequiredKeysIfPresent<T, K> = WithRequiredKeys<
     T & object,
@@ -148,15 +147,13 @@ export type DeepPartial<T> = {
 export type Writeable<T> = { -readonly [P in keyof T]: T[P] }
 export type DeepWriteable<T> = { -readonly [P in keyof T]: DeepWriteable<T[P]> }
 
-export type WithReadonlyKeys<Obj, Keys extends keyof Obj> = Omit<Obj, Keys> &
-    {
-        readonly [K in Keys]: Obj[K]
-    }
+export type WithReadonlyKeys<Obj, Keys extends keyof Obj> = Omit<Obj, Keys> & {
+    readonly [K in Keys]: Obj[K]
+}
 
-export type WithWriteableKeys<Obj, Keys extends keyof Obj> = Omit<Obj, Keys> &
-    {
-        -readonly [K in Keys]: Obj[K]
-    }
+export type WithWriteableKeys<Obj, Keys extends keyof Obj> = Omit<Obj, Keys> & {
+    -readonly [K in Keys]: Obj[K]
+}
 
 export type PropertyOf<T> = T[keyof T]
 export type ElementOf<T extends List> = T[number]
@@ -287,13 +284,11 @@ export type FilterObjectByValue<
     T,
     ValueType,
     Options extends Required<FilterRecurseOptions>
-> = ExcludeNever<
-    {
-        [K in keyof T]: NeverEmptyObject<
-            FilterPropertyByValue<T[K], ValueType, Options>
-        >
-    }
->
+> = ExcludeNever<{
+    [K in keyof T]: NeverEmptyObject<
+        FilterPropertyByValue<T[K], ValueType, Options>
+    >
+}>
 
 export type FilterPropertyByValue<
     T,

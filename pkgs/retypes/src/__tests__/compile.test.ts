@@ -1,21 +1,23 @@
 import { compile, parse } from ".."
 import { expectType, expectError, printType } from "tsd"
 import { typeDefProxy } from "../common.js"
-import { validateTypes } from "./common.js"
+import { validateTypes, types } from "./common.js"
 import { stringify } from "@re-do/utils"
 
 describe("compile", () => {
-    test("singlet", () => {
+    test("mmm", () => {
         const a = compile({ a: "string" }).types.a.type
         expectType<string>(a)
-        console.log(stringify(validateTypes(), { indent: 4 }))
         expect(
-            () =>
-                // expectError<`"Unable to determine the type of 'strig'."`>(
-                compile({ a: "strig" })
-            //)
-        ).toThrowErrorMatchingInlineSnapshot(
-            `"Unable to determine the type of 'strig'."`
+            types(
+                expect(() =>
+                    compile({ a: "strig" })
+                ).toThrowErrorMatchingInlineSnapshot(
+                    `"Unable to determine the type of 'strig'."`
+                )
+            ).errors()
+        ).toMatchInlineSnapshot(
+            `"Type '\\"strig\\"' is not assignable to type '\\"Unable to determine the type of 'strig'.\\"'."`
         )
         // expectError<"Unable to determine the type of 'strig'.">(badA)
     })
