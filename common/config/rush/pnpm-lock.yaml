@@ -16,6 +16,7 @@ importers:
       '@re-do/model': workspace:*
       '@re-do/node': workspace:*
       '@re-do/run': workspace:*
+      '@re-do/scripts': workspace:*
       '@re-do/utils': workspace:*
       '@types/adm-zip': 0.4.34
       '@types/jest': 26.0.24
@@ -33,7 +34,6 @@ importers:
       graphql-tag: 2.12.4
       isomorphic-ws: 4.0.1
       jest: 27.0.6
-      jsrx: workspace:*
       node-fetch: 2.6.1
       persist-statelessly: workspace:*
       playwright-core: 1.12.3
@@ -72,6 +72,7 @@ importers:
       react-refresh: 0.10.0
       react-statelessly: link:../react-statelessly
     devDependencies:
+      '@re-do/scripts': link:../scripts
       '@types/adm-zip': 0.4.34
       '@types/jest': 26.0.24
       '@types/node': 15.0.2
@@ -82,7 +83,6 @@ importers:
       electron: 13.1.7
       electron-builder: 22.11.11
       jest: 27.0.6_ts-node@10.4.0
-      jsrx: link:../jsrx
       tree-kill: 1.2.2
       ts-jest: 27.0.3_jest@27.0.6+typescript@4.5.2
       ts-node: 10.4.0_f84c7af1dada40fb8c41c8231604a0d2
@@ -254,27 +254,6 @@ importers:
       ts-jest: 27.0.3_jest@27.0.6
       ts-mocha: 8.0.0_mocha@9.1.1
 
-  ../../pkgs/jsrx:
-    specifiers:
-      '@re-do/node': workspace:*
-      '@re-do/utils': workspace:*
-      '@types/jest': 26.0.24
-      '@types/node': 15.0.2
-      dotenv: 9.0.0
-      jest: 27.0.6
-      ts-jest: 27.0.3
-      typescript: 4.5.2
-    dependencies:
-      '@re-do/node': link:../node
-      '@re-do/utils': link:../utils
-      dotenv: 9.0.0
-    devDependencies:
-      '@types/jest': 26.0.24
-      '@types/node': 15.0.2
-      jest: 27.0.6
-      ts-jest: 27.0.3_jest@27.0.6+typescript@4.5.2
-      typescript: 4.5.2
-
   ../../pkgs/model:
     specifiers:
       '@apollo/client': 3.4.5
@@ -423,66 +402,6 @@ importers:
       ts-jest: 27.0.3_jest@27.0.6+typescript@4.5.2
       typescript: 4.5.2
 
-  ../../pkgs/restates:
-    specifiers:
-      '@re-do/node': workspace:*
-      '@re-do/utils': workspace:*
-      '@reduxjs/toolkit': 1.5.0
-      '@types/jest': 26.0.24
-      '@types/node': 15.0.2
-      deepmerge: 4.2.2
-      isomorphic-fetch: 3.0.0
-      jest: 27.0.6
-      moize: 5.4.7
-      redux: 4.0.5
-      redux-devtools-extension: 2.13.8
-      retypes: workspace:*
-      ts-jest: 27.0.3
-      ts-toolbelt: 9.5.10
-      typescript: 4.5.2
-    dependencies:
-      '@re-do/utils': link:../utils
-      '@reduxjs/toolkit': 1.5.0
-      deepmerge: 4.2.2
-      isomorphic-fetch: 3.0.0
-      moize: 5.4.7
-      redux: 4.0.5
-      redux-devtools-extension: 2.13.8_redux@4.0.5
-      retypes: link:../retypes
-    devDependencies:
-      '@re-do/node': link:../node
-      '@types/jest': 26.0.24
-      '@types/node': 15.0.2
-      jest: 27.0.6
-      ts-jest: 27.0.3_jest@27.0.6+typescript@4.5.2
-      ts-toolbelt: 9.5.10
-      typescript: 4.5.2
-
-  ../../pkgs/retypes:
-    specifiers:
-      '@re-do/node': workspace:*
-      '@re-do/utils': workspace:*
-      '@types/jest': 26.0.24
-      '@types/node': 15.0.2
-      jest: 27.0.6
-      jest-stare: 2.3.0
-      ts-jest: 27.0.3
-      ts-toolbelt: 9.5.10
-      tsd: 0.17.0
-      typescript: 4.5.2
-    dependencies:
-      '@re-do/utils': link:../utils
-    devDependencies:
-      '@re-do/node': link:../node
-      '@types/jest': 26.0.24
-      '@types/node': 15.0.2
-      jest: 27.0.6
-      jest-stare: 2.3.0
-      ts-jest: 27.0.3_jest@27.0.6+typescript@4.5.2
-      ts-toolbelt: 9.5.10
-      tsd: 0.17.0
-      typescript: 4.5.2
-
   ../../pkgs/run:
     specifiers:
       '@re-do/model': workspace:*
@@ -502,6 +421,62 @@ importers:
       '@types/jest': 26.0.24
       jest: 27.0.6
       ts-jest: 27.0.3_jest@27.0.6+typescript@4.5.2
+      typescript: 4.5.2
+
+  ../../pkgs/scripts:
+    specifiers:
+      '@re-do/node': workspace:*
+      '@re-do/utils': workspace:*
+      '@types/jest': 26.0.24
+      '@types/node': 15.0.2
+      dotenv: 9.0.0
+      jest: 27.0.6
+      ts-jest: 27.0.3
+      typescript: 4.5.2
+    dependencies:
+      '@re-do/node': link:../node
+      '@re-do/utils': link:../utils
+      dotenv: 9.0.0
+    devDependencies:
+      '@types/jest': 26.0.24
+      '@types/node': 15.0.2
+      jest: 27.0.6
+      ts-jest: 27.0.3_jest@27.0.6+typescript@4.5.2
+      typescript: 4.5.2
+
+  ../../pkgs/state:
+    specifiers:
+      '@re-do/node': workspace:*
+      '@re-do/type': workspace:*
+      '@re-do/utils': workspace:*
+      '@reduxjs/toolkit': 1.5.0
+      '@types/jest': 26.0.24
+      '@types/node': 15.0.2
+      deepmerge: 4.2.2
+      isomorphic-fetch: 3.0.0
+      jest: 27.0.6
+      moize: 5.4.7
+      redux: 4.0.5
+      redux-devtools-extension: 2.13.8
+      ts-jest: 27.0.3
+      ts-toolbelt: 9.5.10
+      typescript: 4.5.2
+    dependencies:
+      '@re-do/type': link:../type
+      '@re-do/utils': link:../utils
+      '@reduxjs/toolkit': 1.5.0
+      deepmerge: 4.2.2
+      isomorphic-fetch: 3.0.0
+      moize: 5.4.7
+      redux: 4.0.5
+      redux-devtools-extension: 2.13.8_redux@4.0.5
+    devDependencies:
+      '@re-do/node': link:../node
+      '@types/jest': 26.0.24
+      '@types/node': 15.0.2
+      jest: 27.0.6
+      ts-jest: 27.0.3_jest@27.0.6+typescript@4.5.2
+      ts-toolbelt: 9.5.10
       typescript: 4.5.2
 
   ../../pkgs/statelessly:
@@ -586,6 +561,31 @@ importers:
       ts-node: 10.4.0_f84c7af1dada40fb8c41c8231604a0d2
       typescript: 4.5.2
 
+  ../../pkgs/type:
+    specifiers:
+      '@re-do/node': workspace:*
+      '@re-do/utils': workspace:*
+      '@types/jest': 26.0.24
+      '@types/node': 15.0.2
+      jest: 27.0.6
+      jest-stare: 2.3.0
+      ts-jest: 27.0.3
+      ts-toolbelt: 9.5.10
+      tsd: 0.17.0
+      typescript: 4.5.2
+    dependencies:
+      '@re-do/utils': link:../utils
+    devDependencies:
+      '@re-do/node': link:../node
+      '@types/jest': 26.0.24
+      '@types/node': 15.0.2
+      jest: 27.0.6
+      jest-stare: 2.3.0
+      ts-jest: 27.0.3_jest@27.0.6+typescript@4.5.2
+      ts-toolbelt: 9.5.10
+      tsd: 0.17.0
+      typescript: 4.5.2
+
   ../../pkgs/utils:
     specifiers:
       '@re-do/node': workspace:*
@@ -626,6 +626,7 @@ importers:
       '@re-do/components': workspace:*
       '@re-do/model': workspace:*
       '@re-do/node': workspace:*
+      '@re-do/scripts': workspace:*
       '@re-do/test': workspace:*
       '@types/jest': 26.0.24
       '@types/node': 15.0.2
@@ -637,7 +638,6 @@ importers:
       '@types/validator': 13.1.3
       framer-motion: 4.1.11
       jest: 27.0.6
-      jsrx: workspace:*
       react: 17.0.2
       react-dom: 17.0.2
       react-ga: 3.3.0
@@ -666,6 +666,7 @@ importers:
       validator: 13.5.2
     devDependencies:
       '@re-do/node': link:../node
+      '@re-do/scripts': link:../scripts
       '@re-do/test': link:../test
       '@types/jest': 26.0.24
       '@types/node': 15.0.2
@@ -676,7 +677,6 @@ importers:
       '@types/uuid': 8.3.0
       '@types/validator': 13.1.3
       jest: 27.0.6_ts-node@10.4.0
-      jsrx: link:../jsrx
       ts-jest: 27.0.3_jest@27.0.6+typescript@4.5.2
       ts-node: 10.4.0_f84c7af1dada40fb8c41c8231604a0d2
       typescript: 4.5.2

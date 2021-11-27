@@ -10,12 +10,12 @@
     "private": true,
     "type": "module",
     "scripts": {
-        "start": "jsrx start",
-        "test": "jsrx test",
-        "devTest": "jsrx devTest",
-        "redo": "jsrx redo",
-        "build": "jsrx build",
-        "jsrxGen": "jsrx jsrxGen"
+        "start": "run start",
+        "test": "run test",
+        "devTest": "run devTest",
+        "redo": "run redo",
+        "build": "run build",
+        "updateScripts": "run updateScripts"
     },
     "dependencies": {
         "@apollo/client": "3.4.5",
@@ -45,7 +45,7 @@
         "typescript": "4.5.2",
         "@types/react-router-dom": "5.1.7",
         "@types/validator": "13.1.3",
-        "jsrx": "workspace:*",
+        "@re-do/scripts": "workspace:*",
         "vite": "2.4.4",
         "jest": "27.0.6",
         "@types/jest": "26.0.24",

@@ -9,14 +9,14 @@
         "directory": "pkgs/app"
     },
     "scripts": {
-        "start": "jsrx start",
-        "test": "jsrx test",
-        "release": "jsrx release",
-        "testRelease": "jsrx testRelease",
-        "runProd": "jsrx runProd",
-        "version": "jsrx version",
-        "build": "jsrx build",
-        "jsrxGen": "jsrx jsrxGen"
+        "start": "run start",
+        "test": "run test",
+        "release": "run release",
+        "testRelease": "run testRelease",
+        "runProd": "run runProd",
+        "version": "run version",
+        "build": "run build",
+        "updateScripts": "run updateScripts"
     },
     "dependencies": {
         "@apollo/client": "3.4.5",
@@ -55,7 +55,7 @@
         "typescript": "4.5.2",
         "ts-node": "10.4.0",
         "vite": "2.4.4",
-        "jsrx": "workspace:*",
+        "@re-do/scripts": "workspace:*",
         "tree-kill": "1.2.2",
         "jest": "27.0.6",
         "@types/jest": "26.0.24",

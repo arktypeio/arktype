@@ -59,17 +59,17 @@
             "shouldPublish": true
         },
         {
-            "packageName": "jsrx",
-            "projectFolder": "pkgs/jsrx",
+            "packageName": "@re-do/scripts",
+            "projectFolder": "pkgs/scripts",
             "shouldPublish": true
         },
         {
-            "packageName": "restates",
-            "projectFolder": "pkgs/restates"
+            "packageName": "@re-do/state",
+            "projectFolder": "pkgs/state"
         },
         {
-            "packageName": "retypes",
-            "projectFolder": "pkgs/retypes",
+            "packageName": "@re-do/type",
+            "projectFolder": "pkgs/type",
             "shouldPublish": true
         },
         {
