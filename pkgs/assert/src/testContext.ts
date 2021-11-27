@@ -4,14 +4,7 @@ import {
     mapFilesToContents,
     walkPaths
 } from "@re-do/node"
-import {
-    isEmpty,
-    memoize,
-    mergeAll,
-    sleep,
-    stringify,
-    transform
-} from "@re-do/utils"
+import { memoize, stringify } from "@re-do/utils"
 import { stdout } from "process"
 import ts from "typescript"
 

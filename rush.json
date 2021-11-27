@@ -78,6 +78,11 @@
             "shouldPublish": true
         },
         {
+            "packageName": "@re-do/assert",
+            "projectFolder": "pkgs/assert",
+            "shouldPublish": true
+        },
+        {
             "packageName": "@re-do/website",
             "projectFolder": "pkgs/website"
         },

@@ -1,6 +1,5 @@
 import { parse, typeOf } from ".."
 import { Func } from "@re-do/utils"
-import { Root } from "../components/common.js"
 
 describe("typeOf", () => {
     test("string", () => {

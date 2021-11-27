@@ -90,6 +90,25 @@ importers:
       unzip-crx-3: 0.2.0
       vite: 2.4.4
 
+  ../../pkgs/assert:
+    specifiers:
+      '@re-do/node': workspace:*
+      '@re-do/utils': workspace:*
+      '@types/jest': 26.0.24
+      '@types/node': 15.0.2
+      jest: 27.0.6
+      ts-jest: 27.0.3
+      typescript: 4.5.2
+    dependencies:
+      '@re-do/node': link:../node
+      '@re-do/utils': link:../utils
+    devDependencies:
+      '@types/jest': 26.0.24
+      '@types/node': 15.0.2
+      jest: 27.0.6
+      ts-jest: 27.0.3_jest@27.0.6+typescript@4.5.2
+      typescript: 4.5.2
+
   ../../pkgs/components:
     specifiers:
       '@emotion/react': 11.4.0
