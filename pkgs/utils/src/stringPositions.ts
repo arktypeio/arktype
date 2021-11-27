@@ -1,5 +1,3 @@
-import { getCaller } from "@re-do/node"
-
 export type GetDelimitedPositionOptions = {
     delimiter?: string
 }
@@ -8,12 +6,6 @@ export type LinePosition = {
     line: number
     column: number
 }
-
-export type SourcePosition = LinePosition & {
-    file: string
-}
-
-export type SourceRange = { file: string; from: LinePosition; to: LinePosition }
 
 // Translate 0-based absolute positions in contents to 1-based line/column pairs
 export const getLinePositions = (
@@ -87,16 +79,3 @@ const translatePositions = <From extends number[] | LinePosition[]>(
     }
     return result as any
 }
-
-export const calledFrom = (name?: string): SourcePosition => {
-    const { file, line, char } = getCaller(
-        name ?? getCaller("calledFrom").method
-    )
-    return {
-        file,
-        line,
-        column: char
-    }
-}
-
-export type Caller = ReturnType<typeof getCaller>
