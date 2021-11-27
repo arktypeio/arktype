@@ -1,10 +1,10 @@
-import {
-    ParseTypeRecurseOptions,
-    ValidateTypeRecurseOptions
-} from "./common.js"
 import { Str } from "./str.js"
 import { Num } from "./num.js"
-import { Root } from "../common.js"
+import {
+    Root,
+    ParseTypeRecurseOptions,
+    ValidateTypeRecurseOptions
+} from "../common.js"
 import { createParser } from "../parser.js"
 import { DefinitionTypeError } from "../errors.js"
 import { typeDefProxy } from "../../common.js"

@@ -1,7 +1,7 @@
 import { createParser } from "../parser.js"
 import { BuiltIn } from "./builtIn.js"
 import { typeDefProxy } from "../../common.js"
-import { ExtractableDefinition } from "./common.js"
+import { ExtractableDefinition } from "../common.js"
 import { validationError } from "../errors.js"
 
 export namespace UnextractableName {

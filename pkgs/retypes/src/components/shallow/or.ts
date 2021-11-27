@@ -9,12 +9,12 @@ import { OrTypeErrors, orValidationError, validationError } from "../errors.js"
 import { createParser, ParseContext } from "../parser.js"
 import { Recursible } from "../recursible/index.js"
 import {
-    comparableDefaultValueSet,
-    nonComparableDefaultValues,
     ParseTypeRecurseOptions,
     ValidateTypeRecurseOptions
-} from "./common.js"
+} from "../common.js"
 import {
+    comparableDefaultValueSet,
+    nonComparableDefaultValues,
     ParseSplittable,
     ParseSplittableResult,
     ValidateSplittable
@@ -124,11 +124,3 @@ export namespace Or {
 
     export const delegate = parse as any as Definition
 }
-
-type OrParse = typeof Or.parse
-
-type F = string extends Recursible.Definition ? true : false
-
-type Z = { a: "hello" } extends Recursible.Definition<{ a: "hello" }>
-    ? true
-    : false

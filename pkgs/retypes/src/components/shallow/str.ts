@@ -2,14 +2,12 @@ import { RemoveSpaces } from "@re-do/utils"
 import {
     ParseTypeRecurseOptions,
     ValidateTypeRecurseOptions
-} from "./common.js"
-import { ValidationErrorMessage, UnknownTypeError } from "../errors.js"
+} from "../common.js"
 import { Fragment } from "./fragment.js"
 import { Optional } from "./optional.js"
 import { Shallow } from "./shallow.js"
 import { createParser } from "../parser.js"
 import { typeDefProxy } from "../../common.js"
-import { DefaultValidateTypeOptions } from "../../definition.js"
 
 export namespace Str {
     export type Definition<Def extends string = string> = Def

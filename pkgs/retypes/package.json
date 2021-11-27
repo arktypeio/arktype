@@ -21,7 +21,7 @@
     "scripts": {
         "build": "redoTsc --ignoreTestTypes",
         "test": "jest",
-        "unit": "jest --coverage false --reporters default -t ",
+        "unit": "jest --coverage false --reporters default -t mmm",
         "results": "python3 -m http.server --directory jest-stare"
     },
     "dependencies": {
@@ -36,7 +36,6 @@
         "ts-toolbelt": "9.5.10",
         "typescript": "4.5.2",
         "tsd": "0.17.0",
-        "jest-stare": "2.3.0",
-        "ts-node": "10.4.0"
+        "jest-stare": "2.3.0"
     }
 }

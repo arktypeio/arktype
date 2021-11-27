@@ -10,7 +10,7 @@ import {
     ParseTypeRecurseOptions,
     Root,
     ValidateTypeRecurseOptions
-} from "./common.js"
+} from "../common.js"
 import { Fragment } from "./fragment.js"
 
 export namespace Resolution {

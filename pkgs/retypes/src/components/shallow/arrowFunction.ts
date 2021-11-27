@@ -2,7 +2,7 @@ import { Evaluate } from "@re-do/utils"
 import {
     ParseTypeRecurseOptions,
     ValidateTypeRecurseOptions
-} from "./common.js"
+} from "../common.js"
 import {
     ParseSplittable,
     ParseSplittableResult,

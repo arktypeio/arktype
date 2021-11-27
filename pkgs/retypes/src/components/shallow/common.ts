@@ -13,8 +13,6 @@ import { Fragment } from "./fragment.js"
 import { ValidationErrorMessage } from "../errors.js"
 import { BuiltIn } from "./builtIn.js"
 
-export * from "../common.js"
-
 // These values can be directly compared for equality
 export const comparableDefaultValues = narrow({
     undefined: undefined,
