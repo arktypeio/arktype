@@ -1,3 +1,5 @@
+import { stringify } from "./stringify.js"
+
 export type GetDelimitedPositionOptions = {
     delimiter?: string
 }
@@ -31,12 +33,14 @@ const translatePositions = <From extends number[] | LinePosition[]>(
     let currentPosition = 0
     let lineNumber = 1
     let result = Array(positions.length)
-    const getRemaining = () => (positions as any[]).filter((_, i) => !result[i])
-
+    const getRemaining = () =>
+        (positions as any[]).filter((_, i) => result[i] === undefined)
     while (getRemaining().length) {
         if (lineNumber > lines.length) {
             throw new Error(
-                `Positions ${getRemaining()} exceed the length of contents.`
+                `Positions ${stringify(
+                    getRemaining()
+                )} exceed the length of contents.`
             )
         }
         // Add one to account for removed newline
