@@ -2,16 +2,17 @@ import { compile, parse } from ".."
 import { expectType, expectError, printType } from "tsd"
 import { typeDefProxy } from "../common.js"
 import { context, typeOf } from "./testContext.js"
+import { check } from "@re-do/assert"
 
 describe("compile", () => {
     test("singlea", () => {
         const typeOfA = typeOf(compile({ a: "string" }).types.a.type)()
         expect(typeOfA).toBe("string")
-        const { types, value } = context(() => compile({ a: "strig" })).get
-        expect(value).toThrowErrorMatchingInlineSnapshot(
+        const { type, value } = check(() => compile({ a: "strig" })).all
+        expect(value.throws()).toMatchInlineSnapshot(
             `"Unable to determine the type of 'strig'."`
         )
-        expect(types.errors()[0]).toMatchInlineSnapshot(
+        expect(type.error()[0]).toMatchInlineSnapshot(
             `"Type '\\"strig\\"' is not assignable to type '\\"Unable to determine the type of 'strig'.\\"'."`
         )
     })

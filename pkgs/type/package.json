@@ -29,6 +29,7 @@
     },
     "devDependencies": {
         "@re-do/node": "workspace:*",
+        "@re-do/assert": "workspace:*",
         "jest": "27.0.6",
         "@types/jest": "26.0.24",
         "ts-jest": "27.0.3",

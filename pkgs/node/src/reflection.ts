@@ -1,8 +1,6 @@
-import getCurrentLine from "get-current-line"
 import { relative } from "path"
-import { Func, Key } from "./common.js"
-import { stringify } from "./stringify.js"
-import { LinePosition } from "./stringPositions.js"
+import getCurrentLine from "get-current-line"
+import { LinePosition, Func, Key } from "@re-do/utils"
 
 export type SourcePosition = LinePosition & {
     file: string

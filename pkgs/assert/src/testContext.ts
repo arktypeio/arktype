@@ -1,4 +1,10 @@
-import { fromPackageRoot, mapFilesToContents, walkPaths } from "@re-do/node"
+import {
+    findPackageRoot,
+    fromPackageRoot,
+    mapFilesToContents,
+    walkPaths,
+    withCallRange
+} from "@re-do/node"
 import {
     memoize,
     stringify,
@@ -7,8 +13,11 @@ import {
     getAbsolutePositions,
     caller,
     SourcePosition,
-    SourceRange
+    SourceRange,
+    partial,
+    Func
 } from "@re-do/utils"
+import { join } from "path"
 import { stdout } from "process"
 import ts from "typescript"
 
@@ -23,15 +32,16 @@ type ErrorsByFile = Record<string, TypeError[]>
 
 export const createTsProgram = memoize(() => {
     stdout.write("Analyzing types..")
+    const packageRoot = findPackageRoot(process.cwd())
     const options = ts.parseJsonSourceFileConfigFileContent(
         ts.readJsonConfigFile(
-            fromPackageRoot("tsconfig.json"),
+            join(packageRoot, "tsconfig.json"),
             ts.sys.readFile
         ),
         ts.sys,
         process.cwd()
     ).options
-    const rootNames = walkPaths(fromPackageRoot("src", "__tests__"), {
+    const rootNames = walkPaths(join(packageRoot, "src", "__tests__"), {
         excludeDirs: true
     })
     const sources = mapFilesToContents(rootNames)
@@ -90,35 +100,6 @@ export type AllContext<T> = {
     get: Omit<AllContext<T>, "get">
 }
 
-export const context = <T>(
-    value: T,
-    options: ContextOptions = {}
-): AllContext<T> => {
-    const from = options.from ?? caller()
-    return new Proxy(
-        {},
-        {
-            get: (_, prop) => {
-                const types = typeContext({
-                    file: from.file,
-                    from,
-                    to: options.to ?? caller()
-                })
-                if (prop === "types") {
-                    return types
-                } else if (prop === "value") {
-                    return value
-                } else if (prop === "get") {
-                    return {
-                        value,
-                        types
-                    }
-                }
-            }
-        }
-    ) as any
-}
-
 export type CheckTypesOptions = {
     allowMultiple?: boolean
     includeNested?: boolean
@@ -131,6 +112,30 @@ export const typeContext = (range: SourceRange) => {
         errors: typeErrorsContext(range)
     }
 }
+
+export const check = withCallRange((range: SourceRange, value: unknown) => {
+    const getType = partial(getTypesInRange, range)
+    const getValue = () => value
+    return {
+        type: Object.assign(getType, {
+            error: partial(typeErrorsContext, range)
+        }),
+        value: Object.assign(getValue, {
+            throws: () => {
+                if (typeof value !== "function") {
+                    throw new Error(
+                        `throws() can only be checked for functions.`
+                    )
+                }
+                try {
+                    value()
+                } catch (e) {
+                    return String(e)
+                }
+            }
+        })
+    }
+})
 
 export type TypeContext = ReturnType<typeof typeContext>
 
@@ -194,23 +199,23 @@ export const getTypesInRange = (
 
 export type TypeErrorsContextOptions = {}
 
-export const typeErrorsContext =
-    ({ file, from, to }: SourceRange) =>
-    (options: TypeErrorsContextOptions = {}) => {
-        const errorsInFile = getErrors()[file]
-        const errorsAfterCall = errorsInFile.filter(
-            (error) =>
-                error.from.line > from.line ||
-                (error.from.line === from.line &&
-                    error.from.column >= from.column)
-        )
-        const errorsInContext = errorsAfterCall.filter(
-            (error) =>
-                error.to.line < to.line ||
-                (error.to.line === to.line && error.to.column <= to.column)
-        )
-        return errorsInContext.map((_) => _.message)
-    }
+export const typeErrorsContext = (
+    { file, from, to }: SourceRange,
+    options: TypeErrorsContextOptions = {}
+) => {
+    const errorsInFile = getErrors()[file]
+    const errorsAfterCall = errorsInFile.filter(
+        (error) =>
+            error.from.line > from.line ||
+            (error.from.line === from.line && error.from.column >= from.column)
+    )
+    const errorsInContext = errorsAfterCall.filter(
+        (error) =>
+            error.to.line < to.line ||
+            (error.to.line === to.line && error.to.column <= to.column)
+    )
+    return errorsInContext.map((_) => _.message)
+}
 
 // assert(compile({ a: "string" }.types.a.type)).type()
 // assert(compile({ a: "string" }.types.a.type)).type.errors()

@@ -1,6 +1,6 @@
 // Changing this file at all will break tests as it is used to test source locations
-import { caller, withCallRange, SourceRange } from "../reflection.js"
-import { dirName } from "@re-do/node"
+import { caller, withCallRange, SourceRange } from ".."
+import { dirName } from ".."
 
 const relativeFile = dirName()
 
