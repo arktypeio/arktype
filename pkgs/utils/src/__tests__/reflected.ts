@@ -1,19 +1,46 @@
 // Changing this file at all will break tests as it is used to test source locations
-import { caller, withArgsRange, GetSourceRange } from "../reflection.js"
+import { caller, withCallRange, SourceRange } from "../reflection.js"
+import { dirName } from "@re-do/node"
+
+const relativeFile = dirName()
 
 export const callMe = (...args: any[]) => {
-    const inTheNight = () => caller()
+    const inTheNight = () => caller({ relativeFile: true })
     return inTheNight()
 }
 
-const buildMessageWithRange = withArgsRange(
-    (getRange: GetSourceRange, ...input: string[]) => {
-        const range = getRange()
-        return { range, message: input.join(" ") }
-    }
+const messageAndRange = (range: SourceRange, ...input: string[]) => ({
+    range,
+    message: input.join(" ")
+})
+
+const buildMessageWithRange = withCallRange(messageAndRange, { relativeFile })
+
+const buildMessageWithRangeCustomProp = withCallRange(messageAndRange, {
+    allProp: "get",
+    allPropAsFunction: true,
+    relativeFile
+})
+
+const buildMessageWithRangeAsFunc = withCallRange(messageAndRange, {
+    allAsFunction: true,
+    relativeFile
+})
+
+const messageAndRangePlusName =
+    (range: SourceRange, ...input: string[]) =>
+    (name: string) => ({
+        range,
+        message: input.join(" "),
+        name
+    })
+
+const buildMessageWithRangeReturnedFunc = withCallRange(
+    messageAndRangePlusName,
+    { allAsFunction: true, relativeFile }
 )
 
-export const getMessageWithRange = () =>
+export const getAllFromDefaultProp = () =>
     buildMessageWithRange(
         "testing",
         "source",
@@ -21,4 +48,22 @@ export const getMessageWithRange = () =>
         "really",
         "really",
         "sucks"
-    )()
+    ).all
+
+export const getAllFromCustomProp = () =>
+    buildMessageWithRangeCustomProp("i", "love", "you").get()
+
+export const getAllAsFunction = () =>
+    buildMessageWithRangeAsFunc("this", "is", "fine")()
+
+export const getSingleProp = () =>
+    buildMessageWithRange("i'm", "not", "going", "to", "access", "this").range
+
+export const getReturnedFunction = (name: string) =>
+    buildMessageWithRangeReturnedFunc("yeah", "ok", "good")(name)
+
+export const getUnaccessed = () => buildMessageWithRange("whoops")
+
+export const getUndefined = () =>
+    // @ts-ignore
+    buildMessageWithRange("this", "doesn't", "matter").neverDefined

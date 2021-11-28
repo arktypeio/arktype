@@ -1,10 +1,14 @@
+import { fromPackageRoot, mapFilesToContents, walkPaths } from "@re-do/node"
 import {
-    fromPackageRoot,
-    getCaller,
-    mapFilesToContents,
-    walkPaths
-} from "@re-do/node"
-import { memoize, stringify } from "@re-do/utils"
+    memoize,
+    stringify,
+    LinePosition,
+    getLinePositions,
+    getAbsolutePositions,
+    caller,
+    SourcePosition,
+    SourceRange
+} from "@re-do/utils"
 import { stdout } from "process"
 import ts from "typescript"
 
@@ -16,81 +20,6 @@ type TypeError = {
 
 // Maps fileNames to a list objects representing errors
 type ErrorsByFile = Record<string, TypeError[]>
-
-export type GetDelimitedPositionOptions = {
-    delimiter?: string
-}
-
-export type LinePosition = {
-    line: number
-    column: number
-}
-
-export type SourcePosition = LinePosition & {
-    file: string
-}
-
-export type SourceRange = { file: string; from: LinePosition; to: LinePosition }
-
-// Line/column positions 1-based, absolute positions 0-based
-export const translatePositions = <From extends number[] | LinePosition[]>(
-    contents: string,
-    positions: From,
-    options?: GetDelimitedPositionOptions
-): From extends number[] ? LinePosition[] : number[] => {
-    const toLines = typeof positions[0] === "number"
-    const lines = contents.split(options?.delimiter ?? "\n")
-    let currentPosition = 0
-    let lineNumber = 1
-    let result = Array(positions.length)
-    const getRemaining = () => (positions as any[]).filter((_, i) => !result[i])
-
-    while (getRemaining().length) {
-        if (lineNumber > lines.length) {
-            throw new Error(
-                `Positions ${getRemaining()} exceed the length of contents.`
-            )
-        }
-        // Add one to account for removed newline
-        const lineLength = lines[lineNumber - 1].length + 1
-        const nextPosition = currentPosition + lineLength
-        let positionIndicesInLine: number[]
-        if (toLines) {
-            positionIndicesInLine = (positions as number[]).reduce(
-                (result, pos, i) =>
-                    currentPosition <= pos && pos < nextPosition
-                        ? [...result, i]
-                        : result,
-                [] as number[]
-            )
-        } else {
-            positionIndicesInLine = (positions as LinePosition[]).reduce(
-                (result, { line }, i) =>
-                    line === lineNumber ? [...result, i] : result,
-                [] as number[]
-            )
-        }
-        positionIndicesInLine.forEach((i) => {
-            if (toLines) {
-                result[i] = {
-                    line: lineNumber,
-                    column: (positions as number[])[i] - currentPosition + 1
-                }
-            } else {
-                const column = (positions[i] as LinePosition).column
-                if (column > lineLength) {
-                    throw new Error(
-                        `Column ${column} does not exist in line ${lineNumber}.`
-                    )
-                }
-                result[i] = currentPosition + column - 1
-            }
-        })
-        currentPosition = nextPosition
-        lineNumber++
-    }
-    return result as any
-}
 
 export const createTsProgram = memoize(() => {
     stdout.write("Analyzing types..")
@@ -128,7 +57,7 @@ export const getErrors = memoize(() => {
             if (!file?.fileName || !sources[file.fileName]) {
                 return errors
             }
-            const [from, to] = translatePositions(sources[file.fileName], [
+            const [from, to] = getLinePositions(sources[file.fileName], [
                 start,
                 start + length - 1
             ])
@@ -150,25 +79,6 @@ export const getErrors = memoize(() => {
     return errors
 })
 
-export const assert = (value: unknown) => {
-    const from = calledFrom()
-    const ctx = context(value, { from })
-    return ctx
-}
-
-export const calledFrom = (name?: string): SourcePosition => {
-    const { file, line, char } = getCaller(
-        name ?? getCaller("calledFrom").method
-    )
-    return {
-        file,
-        line,
-        column: char
-    }
-}
-
-export type Caller = ReturnType<typeof getCaller>
-
 export type ContextOptions = {
     from?: SourcePosition
     to?: SourcePosition
@@ -184,7 +94,7 @@ export const context = <T>(
     value: T,
     options: ContextOptions = {}
 ): AllContext<T> => {
-    const from = options.from ?? calledFrom()
+    const from = options.from ?? caller()
     return new Proxy(
         {},
         {
@@ -192,7 +102,7 @@ export const context = <T>(
                 const types = typeContext({
                     file: from.file,
                     from,
-                    to: options.to ?? calledFrom()
+                    to: options.to ?? caller()
                 })
                 if (prop === "types") {
                     return types
@@ -225,9 +135,9 @@ export const typeContext = (range: SourceRange) => {
 export type TypeContext = ReturnType<typeof typeContext>
 
 export const typeOf = (value: unknown, options: ContextOptions = {}) => {
-    const from = options.from ?? calledFrom()
+    const from = options.from ?? caller()
     return (typesOptions: CheckTypesOptions = {}) => {
-        const to = options.to ?? calledFrom()
+        const to = options.to ?? caller()
         return getTypesInRange({ file: from.file, from, to }, typesOptions)
     }
 }
@@ -238,7 +148,7 @@ export const getTypesInRange = (
 ) => {
     const { program, sources } = createTsProgram()
     const checker = program.getTypeChecker()
-    const [fromPos, toPos] = translatePositions(sources[file], [from, to])
+    const [fromPos, toPos] = getAbsolutePositions(sources[file], [from, to])
     const findTypes = (node: ts.Node): string[] => {
         // For compatibility with 1-based positions
         const start = node.getStart()

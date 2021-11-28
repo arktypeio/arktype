@@ -4,7 +4,7 @@ import { typeDefProxy } from "../common.js"
 import { context, typeOf } from "./testContext.js"
 
 describe("compile", () => {
-    test("single", () => {
+    test("singlea", () => {
         const typeOfA = typeOf(compile({ a: "string" }).types.a.type)()
         expect(typeOfA).toBe("string")
         const { types, value } = context(() => compile({ a: "strig" })).get

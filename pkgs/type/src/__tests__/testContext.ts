@@ -1,16 +1,13 @@
-import {
-    fromPackageRoot,
-    getCaller,
-    mapFilesToContents,
-    walkPaths
-} from "@re-do/node"
+import { fromPackageRoot, mapFilesToContents, walkPaths } from "@re-do/node"
 import {
     isEmpty,
     memoize,
     mergeAll,
     sleep,
     stringify,
-    transform
+    transform,
+    caller,
+    callerOf
 } from "@re-do/utils"
 import { stdout } from "process"
 import ts from "typescript"
@@ -157,25 +154,6 @@ export const getErrors = memoize(() => {
     return errors
 })
 
-export const assert = (value: unknown) => {
-    const from = calledFrom()
-    const ctx = context(value, { from })
-    return ctx
-}
-
-export const calledFrom = (name?: string): SourcePosition => {
-    const { file, line, char } = getCaller(
-        name ?? getCaller("calledFrom").method
-    )
-    return {
-        file,
-        line,
-        column: char
-    }
-}
-
-export type Caller = ReturnType<typeof getCaller>
-
 export type ContextOptions = {
     from?: SourcePosition
     to?: SourcePosition
@@ -191,7 +169,7 @@ export const context = <T>(
     value: T,
     options: ContextOptions = {}
 ): AllContext<T> => {
-    const from = options.from ?? calledFrom()
+    const from = options.from ?? caller()
     return new Proxy(
         {},
         {
@@ -199,8 +177,18 @@ export const context = <T>(
                 const types = typeContext({
                     file: from.file,
                     from,
-                    to: options.to ?? calledFrom()
+                    to: options.to ?? caller()
                 })
+                console.log(
+                    stringify({
+                        value,
+                        args: {
+                            file: from.file,
+                            from,
+                            to: options.to ?? caller()
+                        }
+                    })
+                )
                 if (prop === "types") {
                     return types
                 } else if (prop === "value") {
@@ -232,9 +220,9 @@ export const typeContext = (range: SourceRange) => {
 export type TypeContext = ReturnType<typeof typeContext>
 
 export const typeOf = (value: unknown, options: ContextOptions = {}) => {
-    const from = options.from ?? calledFrom()
+    const from = options.from ?? caller()
     return (typesOptions: CheckTypesOptions = {}) => {
-        const to = options.to ?? calledFrom()
+        const to = options.to ?? caller()
         return getTypesInRange({ file: from.file, from, to }, typesOptions)
     }
 }

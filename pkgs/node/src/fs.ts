@@ -14,23 +14,14 @@ import {
     writeFile as writeFileAsync
 } from "fs/promises"
 import { fileURLToPath, URL } from "url"
-import getCurrentLine from "get-current-line"
 import { homedir } from "os"
 import { join, dirname, parse } from "path"
 import { once } from "events"
 import { finished } from "stream"
 import { promisify } from "util"
-import type { FilterFunction } from "@re-do/utils"
+import { callsAgo, FilterFunction } from "@re-do/utils"
 
 export const streamFinished = promisify(finished)
-
-export const isEsm = () => {
-    try {
-        return !__dirname
-    } catch {
-        return true
-    }
-}
 
 export const HOME = homedir()
 
@@ -134,27 +125,21 @@ export const filePath = (path: string) => {
     return file
 }
 
-export const getCaller = (methodName: string) =>
-    getCurrentLine({
-        method: methodName,
-        frames: 0,
-        immediate: false
-    })
+const fileOfCaller = () => filePath(callsAgo(2).file)
 
-export const getCallerFile = (methodName: string) =>
-    filePath(getCaller(methodName).file)
+const dirOfCaller = () => dirname(filePath(callsAgo(2).file))
 
-export const fileName = () => getCallerFile("fileName")
+export const fileName = () => fileOfCaller()
 
-export const dirName = () => dirname(getCallerFile("dirName"))
+export const dirName = () => dirOfCaller()
 
 export const fromHere = (...joinWith: string[]) =>
-    join(dirname(getCallerFile("fromHere")), ...joinWith)
+    join(dirOfCaller(), ...joinWith)
 
 export const fsRoot = parse(process.cwd()).root
 
 export const findPackageRoot = (fromDir?: string) => {
-    const startDir = fromDir ?? dirname(getCallerFile("findPackageRoot"))
+    const startDir = fromDir ?? dirOfCaller()
     let dirToCheck = startDir
     while (dirToCheck !== fsRoot) {
         try {
@@ -170,8 +155,5 @@ export const findPackageRoot = (fromDir?: string) => {
     throw new Error(`${startDir} is not part of a node package.`)
 }
 
-export const fromPackageRoot = (...joinWith: string[]) => {
-    const fromDir = dirname(getCallerFile("fromPackageRoot"))
-    const packageRoot = findPackageRoot(fromDir)
-    return join(packageRoot, ...joinWith)
-}
+export const fromPackageRoot = (...joinWith: string[]) =>
+    join(findPackageRoot(dirOfCaller()), ...joinWith)

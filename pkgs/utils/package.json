@@ -1,6 +1,6 @@
 {
     "name": "@re-do/utils",
-    "version": "1.1.0",
+    "version": "1.1.1",
     "author": "redo.qa",
     "description": "Common utilities consumed by Redo",
     "repository": {
@@ -20,7 +20,8 @@
     },
     "scripts": {
         "build": "redoTsc",
-        "test": "jest"
+        "test": "jest",
+        "unit": "jest -t "
     },
     "dependencies": {
         "deepmerge": "4.2.2",
