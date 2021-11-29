@@ -5,7 +5,7 @@ import { dirName } from ".."
 const relativeFile = dirName()
 
 export const callMe = (...args: any[]) => {
-    const inTheNight = () => caller({ relativeFile: true })
+    const inTheNight = () => caller({ relativeFile })
     return inTheNight()
 }
 

@@ -1,5 +1,5 @@
 import { T } from "ts-toolbelt"
-import { callerOf } from "../reflection.js"
+import { caller, callerOf } from "../reflection.js"
 import {
     callMe,
     getAllFromDefaultProp,
@@ -17,7 +17,7 @@ describe("callers", () => {
         expect(result).toMatchInlineSnapshot(`
             {
               "column": 12,
-              "file": "src/__tests__/reflected.ts",
+              "file": "reflected.ts",
               "line": 9,
               "method": "callMe",
             }
@@ -25,6 +25,13 @@ describe("callers", () => {
     })
     test("callerOf", () => {
         const inner = () => callerOf("middle")
+        const middle = () => inner()
+        const outer = () => middle()
+        expect(outer().method).toBe("outer")
+    })
+    test("caller skip", () => {
+        const inner = () =>
+            caller({ skip: ({ method }) => method === "middle" })
         const middle = () => inner()
         const outer = () => middle()
         expect(outer().method).toBe("outer")
@@ -37,7 +44,7 @@ describe("withArgsRange", () => {
             {
               "message": "testing source positions really really sucks",
               "range": {
-                "file": "src/__tests__/reflected.ts",
+                "file": "reflected.ts",
                 "from": {
                   "column": 5,
                   "line": 44,
@@ -55,7 +62,7 @@ describe("withArgsRange", () => {
             {
               "message": "i love you",
               "range": {
-                "file": "src/__tests__/reflected.ts",
+                "file": "reflected.ts",
                 "from": {
                   "column": 5,
                   "line": 54,
@@ -73,7 +80,7 @@ describe("withArgsRange", () => {
             {
               "message": "this is fine",
               "range": {
-                "file": "src/__tests__/reflected.ts",
+                "file": "reflected.ts",
                 "from": {
                   "column": 5,
                   "line": 57,
@@ -92,7 +99,7 @@ describe("withArgsRange", () => {
               "message": "yeah ok good",
               "name": "Bernard",
               "range": {
-                "file": "src/__tests__/reflected.ts",
+                "file": "reflected.ts",
                 "from": {
                   "column": 5,
                   "line": 63,
@@ -108,7 +115,7 @@ describe("withArgsRange", () => {
     test("single prop", () => {
         expect(getSingleProp()).toMatchInlineSnapshot(`
             {
-              "file": "src/__tests__/reflected.ts",
+              "file": "reflected.ts",
               "from": {
                 "column": 5,
                 "line": 60,

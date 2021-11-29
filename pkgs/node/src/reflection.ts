@@ -1,6 +1,14 @@
 import { relative } from "path"
 import getCurrentLine from "get-current-line"
-import { LinePosition, Func, Key } from "@re-do/utils"
+import {
+    LinePosition,
+    Func,
+    Key,
+    FilterFunction,
+    narrow,
+    deepEquals,
+    stringify
+} from "@re-do/utils"
 
 export type SourcePosition = LinePosition & {
     file: string
@@ -60,14 +68,17 @@ export const withCallRange = <
     const allProp = options?.allProp ?? "all"
     const allPropAsFunction = options?.allPropAsFunction ?? false
     const allAsFunction = options?.allAsFunction ?? false
+    const relativeFile = options?.relativeFile ?? false
     const startArgsRange = (...args: any[]) => {
         const {
             file: fromFile,
             method: fromMethod,
             ...from
-        } = caller({ relativeFile: true })
+        } = caller({ relativeFile })
         const endArgsRange = () => {
-            const { file, method, ...to } = callsAgo(2, { relativeFile: true })
+            const { file, method, ...to } = callsAgo(2, {
+                relativeFile
+            })
             const range: SourceRange = {
                 file,
                 from,
@@ -115,30 +126,55 @@ export const withCallRange = <
 export type CallerOfOptions = {
     relativeFile?: boolean | string
     upStackBy?: number
+    skip?: (position: SourcePosition) => boolean
 }
+
+const nonexistentCurrentLine = narrow({
+    line: -1,
+    char: -1,
+    method: "",
+    file: ""
+})
 
 export const callerOf = (
     methodName: string,
-    { upStackBy, relativeFile }: CallerOfOptions = {}
+    options: CallerOfOptions = {}
 ): SourcePosition => {
-    const { file, line, char, method } = getCurrentLine({
-        method: methodName,
-        frames: upStackBy ?? 0,
-        immediate: false
-    })
-    return {
-        file: relativeFile
-            ? relative(
-                  typeof relativeFile === "boolean"
-                      ? process.cwd()
-                      : relativeFile,
-                  file
-              )
-            : file,
-        line,
-        column: char,
-        method
+    let { upStackBy = 0, relativeFile, skip } = options
+    let match: SourcePosition | undefined
+    while (!match) {
+        const location = getCurrentLine({
+            method: methodName,
+            frames: upStackBy,
+            immediate: false
+        })
+        if (!location || deepEquals(location, nonexistentCurrentLine)) {
+            throw new Error(
+                `No caller of '${methodName}' matches given options ${stringify(
+                    options
+                )}.`
+            )
+        }
+        const candidate = {
+            file: relativeFile
+                ? relative(
+                      typeof relativeFile === "boolean"
+                          ? process.cwd()
+                          : relativeFile,
+                      location.file
+                  )
+                : location.file,
+            line: location.line,
+            column: location.char,
+            method: location.method
+        }
+        if (skip?.(candidate)) {
+            upStackBy++
+        } else {
+            match = candidate
+        }
     }
+    return match
 }
 
 export const callsAgo = (

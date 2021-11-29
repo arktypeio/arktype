@@ -19,7 +19,7 @@
         }
     },
     "scripts": {
-        "build": "redoTsc",
+        "build": "redoTsc --ignoreTests",
         "test": "jest"
     },
     "dependencies": {
