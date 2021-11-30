@@ -1,29 +1,28 @@
 import { compile, parse } from ".."
 import { expectType, expectError, printType } from "tsd"
 import { typeDefProxy } from "../common.js"
-import { context, typeOf } from "./testContext.js"
 import { check } from "@re-do/assert"
 
 describe("compile", () => {
-    test("singlea", () => {
-        const typeOfA = typeOf(compile({ a: "string" }).types.a.type)()
-        expect(typeOfA).toBe("string")
-        const { type, value } = check(() => compile({ a: "strig" })).all
-        expect(value.throws()).toMatchInlineSnapshot(
-            `"Unable to determine the type of 'strig'."`
+    test("single", () => {
+        const typeOfA = compile({ a: "string" }).types.a.type
+        expect(check(typeOfA).type()).toBe("string")
+        const { type, value } = check(() => compile({ a: "strig" })).both
+        expect(value.throws()).toStrictEqual(
+            "Error: Unable to determine the type of 'strig'."
         )
-        expect(type.error()[0]).toMatchInlineSnapshot(
-            `"Type '\\"strig\\"' is not assignable to type '\\"Unable to determine the type of 'strig'.\\"'."`
-        )
+        expect(type.errors()).toStrictEqual([
+            `Type '"strig"' is not assignable to type '"Unable to determine the type of 'strig'."'.`
+        ])
     })
     test("independent", () => {
-        const c = compile({ a: "string" }, { b: { c: "boolean" } }).types.b.type
-            .c
-        expectType<boolean>(c)
-        expect(() =>
-            // @ts-expect-error
+        const typeOfB = compile({ a: "string" }, { b: { c: "boolean" } }).types
+            .b.type
+        expect(check(typeOfB).type()).toMatchInlineSnapshot()
+        const { type, value } = check(() =>
             compile({ a: "string" }, { b: { c: "uhoh" } })
-        ).toThrowErrorMatchingInlineSnapshot(
+        ).both
+        toThrowErrorMatchingInlineSnapshot(
             `"Unable to determine the type of 'uhoh' at path c."`
         )
         // expectError<"Unable to determine the type of 'uhoh'.">(badC)

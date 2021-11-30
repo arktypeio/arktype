@@ -13,14 +13,12 @@ describe("check", () => {
     })
     test("with type errors", () => {
         const takeAString = (s: string) => s
-        expect(check(takeAString(n)).type.errors()).toMatchInlineSnapshot(`
-            [
-              "Argument of type 'number' is not assignable to parameter of type 'string'.",
-            ]
-        `)
+        expect(check(takeAString(n)).type.errors()).toStrictEqual([
+            "Argument of type 'number' is not assignable to parameter of type 'string'."
+        ])
     })
     test("all", () => {
-        const { type, value } = check(n).all
+        const { type, value } = check(n).both
         expect(value()).toBe(n)
         expect(type()).toBe("number")
         expect(check(n).type.errors()).toStrictEqual([])

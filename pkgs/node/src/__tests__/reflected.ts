@@ -67,3 +67,17 @@ export const getUnaccessed = () => buildMessageWithRange("whoops")
 export const getUndefined = () =>
     // @ts-ignore
     buildMessageWithRange("this", "doesn't", "matter").neverDefined
+
+const buildMessageWithRangeAsChainedFunc = withCallRange(messageAndRange, {
+    allAsChainedFunction: true,
+    relativeFile
+})
+
+export const getChainedAllFunction = () =>
+    buildMessageWithRangeAsChainedFunc(
+        "chain",
+        "me",
+        "up"
+    )(({ range, message }) => {
+        return { range, message }
+    })

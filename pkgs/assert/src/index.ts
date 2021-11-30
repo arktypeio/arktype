@@ -6,4 +6,3 @@ registerImporter(
 )
 
 export * from "./check.js"
-export * from "./types"

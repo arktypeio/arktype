@@ -21,12 +21,18 @@ export type WithArgsRange<
     F extends Func<[SourceRange, ...any[]], Func | Record<Key, any>>,
     AllProp extends string,
     AllPropAsFunction extends boolean,
-    AllAsFunction extends boolean
+    AllAsFunction extends boolean,
+    AllAsChainedFunction extends boolean,
+    ChainedFunctionResult
 > = F extends (range: SourceRange, ...rest: infer Rest) => infer Return
-    ? (...args: Rest) => AllAsFunction extends true
-          ? Return extends Func
-              ? Return
-              : () => Return
+    ? (...args: Rest) => Return extends Func
+          ? Return
+          : AllAsFunction extends true
+          ? () => Return
+          : AllAsChainedFunction extends true
+          ? (
+                withReturned: (returned: Return) => ChainedFunctionResult
+            ) => ChainedFunctionResult
           : Return & {
                 [K in AllProp]: AllPropAsFunction extends true
                     ? () => Return
@@ -37,11 +43,13 @@ export type WithArgsRange<
 export type WithArgsRangeOptions<
     AllProp extends string,
     AllPropAsFunction extends boolean,
-    AllAsFunction extends boolean
+    AllAsFunction extends boolean,
+    AllAsChainedFunction extends boolean
 > = {
     allProp?: AllProp
     allPropAsFunction?: AllPropAsFunction
     allAsFunction?: AllAsFunction
+    allAsChainedFunction?: AllAsChainedFunction
     relativeFile?: boolean | string
 }
 
@@ -60,14 +68,22 @@ export const withCallRange = <
     F extends Func,
     AllProp extends string = "all",
     AllPropAsFunction extends boolean = false,
-    AllAsFunction extends boolean = false
+    AllAsFunction extends boolean = false,
+    AllAsChainedFunction extends boolean = false,
+    ChainedFunctionResult = unknown
 >(
     f: F,
-    options?: WithArgsRangeOptions<AllProp, AllPropAsFunction, AllAsFunction>
+    options?: WithArgsRangeOptions<
+        AllProp,
+        AllPropAsFunction,
+        AllAsFunction,
+        AllAsChainedFunction
+    >
 ) => {
     const allProp = options?.allProp ?? "all"
     const allPropAsFunction = options?.allPropAsFunction ?? false
     const allAsFunction = options?.allAsFunction ?? false
+    const allAsChainedFunction = options?.allAsChainedFunction ?? false
     const relativeFile = options?.relativeFile ?? false
     const startArgsRange = (...args: any[]) => {
         const {
@@ -85,6 +101,10 @@ export const withCallRange = <
                 to
             }
             return f(range, ...args)
+        }
+        if (allAsChainedFunction) {
+            return (useResult: (result: any) => any) =>
+                useResult(endArgsRange())
         }
         if (allAsFunction) {
             return (...args: any[]) => {
@@ -119,7 +139,9 @@ export const withCallRange = <
         F,
         AllProp,
         AllPropAsFunction,
-        AllAsFunction
+        AllAsFunction,
+        AllAsChainedFunction,
+        ChainedFunctionResult
     >
 }
 

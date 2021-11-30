@@ -8,7 +8,8 @@ import {
     getReturnedFunction,
     getSingleProp,
     getUnaccessed,
-    getUndefined
+    getUndefined,
+    getChainedAllFunction
 } from "./reflected.js"
 
 describe("callers", () => {
@@ -142,5 +143,23 @@ describe("withArgsRange", () => {
     })
     test("undefined prop", () => {
         expect(getUndefined()).toBe(undefined)
+    })
+    test("chained all function", () => {
+        expect(getChainedAllFunction()).toMatchInlineSnapshot(`
+            {
+              "message": "chain me up",
+              "range": {
+                "file": "reflected.ts",
+                "from": {
+                  "column": 5,
+                  "line": 77,
+                },
+                "to": {
+                  "column": 6,
+                  "line": 81,
+                },
+              },
+            }
+        `)
     })
 })
