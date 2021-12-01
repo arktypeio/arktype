@@ -7,7 +7,7 @@ import {
     FilterFunction,
     narrow,
     deepEquals,
-    stringify,
+    toString,
     withDefaults,
     WithDefaults,
     Cast,
@@ -100,7 +100,7 @@ export const withCallRange = <
                 ) {
                     throw new Error(
                         `Unable to determine a source range for non-subsequent calls:\n` +
-                            `From: ${stringify(startCaller)}\nTo: ${stringify(
+                            `From: ${toString(startCaller)}\nTo: ${toString(
                                 endCaller
                             )}\n`
                     )
@@ -175,7 +175,7 @@ export const caller = (options: CallerOfOptions = {}): SourcePosition => {
         })
         if (!location || deepEquals(location, nonexistentCurrentLine)) {
             throw new Error(
-                `No caller of '${methodName}' matches given options ${stringify(
+                `No caller of '${methodName}' matches given options ${toString(
                     options
                 )}.`
             )

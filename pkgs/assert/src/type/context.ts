@@ -1,14 +1,8 @@
 import { SourceRange, withCallRange } from "@re-do/node"
-import { Func } from "@re-do/utils"
-import { getTypeErrors, typeErrorChecker, TypeErrorsOptions } from "./errors.js"
+import { typeErrorChecker, TypeErrorsOptions } from "./errors.js"
 import { CheckTypesOptions, typeChecker } from "./types.js"
 import { expect } from "@jest/globals"
-import {
-    Assertion,
-    assertionContext,
-    ChainableAssertion,
-    Matcher
-} from "../check.js"
+import { assertionContext, ChainableAssertion } from "../check.js"
 
 export type TypeContext = ReturnType<typeof typeContext>
 
@@ -24,7 +18,7 @@ export const typeErrorsContext = (range: SourceRange, value: unknown) =>
 
 export const typeErrorsOf = withCallRange(typeErrorsContext)
 
-export type AssertTypeContext<T> = ChainableAssertion<
+export type TypeAssertion<T> = ChainableAssertion<
     T,
     string,
     CheckTypesOptions
@@ -32,7 +26,15 @@ export type AssertTypeContext<T> = ChainableAssertion<
     errors: ChainableAssertion<T, string[], TypeErrorsOptions>
 }
 
-export const assertTypeContext = (range: SourceRange, value: unknown) => {
+export type AssertTypeContext = <T>(
+    range: SourceRange,
+    value: T
+) => TypeAssertion<T>
+
+export const assertTypeContext: AssertTypeContext = (
+    range: SourceRange,
+    value: unknown
+) => {
     const assertType = <Equals extends string | undefined = undefined>(
         equals?: Equals,
         options: CheckTypesOptions = {}
@@ -55,5 +57,5 @@ export const assertTypeContext = (range: SourceRange, value: unknown) => {
     }
     return Object.assign(assertType, {
         errors: assertTypeErrors
-    })
+    }) as any
 }

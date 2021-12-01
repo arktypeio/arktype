@@ -1,7 +1,7 @@
 import {
     DiffSetsResult,
     List,
-    stringify,
+    toString,
     StringReplace,
     uncapitalize,
     isDigits,
@@ -15,7 +15,7 @@ import { ParseContext } from "./parser.js"
 import { Shallow } from "./shallow/shallow.js"
 
 export const stringifyDefinition = (def: unknown) =>
-    stringify(def, { quotes: "none" })
+    toString(def, { quotes: "none" })
 
 export const definitionTypeError = (definition: unknown, path: string[]) =>
     `Definition value ${stringifyDefinition(definition)}${stringifyPathContext(
@@ -174,5 +174,5 @@ export const stringifyErrors = (errors: ValidationErrors) => {
                 : ""
         }${errorPath ? uncapitalize(errors[errorPath]) : errors[errorPath]}`
     }
-    return stringify(errors)
+    return toString(errors)
 }

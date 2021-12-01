@@ -1,14 +1,14 @@
-import { withCallRange } from "@re-do/node"
-import { SourceRange, Func, stringify } from "@re-do/utils"
+import { SourceRange, withCallRange } from "@re-do/node"
+import { Func } from "@re-do/utils"
 import {
     assertTypeContext,
-    AssertTypeContext,
+    TypeAssertion,
     TypeContext,
     typeContext
 } from "./type"
 import {
     assertValueContext,
-    AssertValueContext,
+    ValueAssertion,
     ValueContext,
     valueContext
 } from "./value"
@@ -44,17 +44,25 @@ export type ChainableAssertion<T, EqualsType, Options> = <
 ) => Equals extends undefined ? Matcher : AssertionResult<T>
 
 export type AssertionResult<T> = {
-    type: AssertTypeContext<T>
-    value: AssertValueContext<T>
+    type: TypeAssertion<T>
+    value: ValueAssertion<T>
 }
 
 export type Assertion = <T>(value: T) => AssertionResult<T>
 
-export const assertionContext = (range: SourceRange, value: unknown) => {
+export type AssertionContext = <T>(
+    range: SourceRange,
+    value: T
+) => AssertionResult<T>
+
+export const assertionContext: AssertionContext = (
+    range: SourceRange,
+    value: unknown
+) => {
     return {
         type: assertTypeContext(range, value),
         value: assertValueContext(range, value)
-    }
+    } as any
 }
 
 export const assert = withCallRange(assertionContext) as any as Assertion

@@ -1,31 +1,31 @@
-import { stringify } from ".."
+import { toString } from ".."
 import { o } from "./common.js"
 
-describe("stringify", () => {
+describe("toString", () => {
     test("default", () => {
-        expect(stringify(o)).toMatchInlineSnapshot(
+        expect(toString(o)).toMatchInlineSnapshot(
             `"{a: {a: '', b: [0], c: {a: true, b: false, c: null}}, b: {a: {a: 1}}, c: null, d: 'initial', e: [{a: ['old']}, {a: ['old']}]}"`
         )
     })
     test("quotes", () => {
-        expect(stringify({ a: "quoteless" }, { quotes: "none" })).toBe(
+        expect(toString({ a: "quoteless" }, { quotes: "none" })).toBe(
             `{a: quoteless}`
         )
-        expect(stringify({ a: "single" }, { quotes: "single" })).toBe(
+        expect(toString({ a: "single" }, { quotes: "single" })).toBe(
             `{a: 'single'}`
         )
-        expect(stringify({ a: "double" }, { quotes: "double" })).toBe(
+        expect(toString({ a: "double" }, { quotes: "double" })).toBe(
             `{a: "double"}`
         )
-        expect(stringify({ a: "backtick" }, { quotes: "backtick" })).toBe(
+        expect(toString({ a: "backtick" }, { quotes: "backtick" })).toBe(
             "{a: `backtick`}"
         )
-        expect(stringify({ a: "quoteKeys" }, { quoteKeys: true })).toBe(
+        expect(toString({ a: "quoteKeys" }, { quoteKeys: true })).toBe(
             "{'a': 'quoteKeys'}"
         )
     })
     test("indent", () => {
-        expect(stringify(o, { indent: 2 })).toMatchInlineSnapshot(`
+        expect(toString(o, { indent: 2 })).toMatchInlineSnapshot(`
             "{
               a: {
                 a: '',
@@ -60,7 +60,7 @@ describe("stringify", () => {
             }"
         `)
     })
-    expect(stringify(o, { indent: 4 })).toMatchInlineSnapshot(`
+    expect(toString(o, { indent: 4 })).toMatchInlineSnapshot(`
         "{
             a: {
                 a: '',

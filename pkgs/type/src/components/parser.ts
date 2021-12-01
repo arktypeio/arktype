@@ -2,26 +2,18 @@ import {
     Evaluate,
     Func,
     KeyValuate,
-    memoize,
     transform,
     TreeOf,
     ValueOf,
     Exact,
-    stringify,
-    partial
+    toString
 } from "@re-do/utils"
-import { typeDefProxy } from "../common.js"
-import { typeOf } from "../typeOf.js"
 import type {
     ExtractableDefinition,
     Root,
     UnvalidatedTypeSet
 } from "./common.js"
-import {
-    stringifyErrors,
-    ValidationErrors,
-    unknownTypeError
-} from "./errors.js"
+import { ValidationErrors, unknownTypeError } from "./errors.js"
 import { Recursible } from "./recursible/index.js"
 
 export type MatchesArgs<DefType> = {
@@ -208,7 +200,7 @@ export const createParser = <
     const getChildren = (): AnyParser[] => (input.children?.() as any) ?? []
     const cachedComponents: Record<string, any> = {}
     const getComponents = (def: DefType, ctx: ParseContext<DefType>) => {
-        const memoKey = stringify({
+        const memoKey = toString({
             def,
             typeSet: ctx.typeSet,
             shallowSeen: ctx.shallowSeen,

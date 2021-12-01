@@ -1,11 +1,6 @@
-import { SourceRange, withCallRange } from "@re-do/node"
-import { Func, stringify, isRecursible } from "@re-do/utils"
-import {
-    Assertion,
-    assertionContext,
-    ChainableAssertion,
-    Matcher
-} from "../check.js"
+import { SourceRange } from "@re-do/node"
+import { Func, isRecursible } from "@re-do/utils"
+import { assertionContext, ChainableAssertion } from "../check.js"
 
 export type ValueContext<T> = (() => T) &
     (T extends Func<[]>
@@ -36,14 +31,22 @@ export const valueContext = (range: SourceRange, value: any) => {
     return Object.assign(getValue, functionProps)
 }
 
-export type AssertValueContext<T> = ChainableAssertion<T, any, {}> &
+export type ValueAssertion<T> = ChainableAssertion<T, any, {}> &
     (T extends Func<[]>
         ? {
               throws: ChainableAssertion<T, string, {}>
           }
         : {})
 
-export const assertValueContext = (range: SourceRange, value: unknown) => {
+export type AssertValueContext = <T>(
+    range: SourceRange,
+    value: T
+) => ValueAssertion<T>
+
+export const assertValueContext: AssertValueContext = (
+    range: SourceRange,
+    value: unknown
+) => {
     const assertValue = (equals?: any) => {
         const matcher = expect(value)
         if (equals) {
@@ -63,5 +66,5 @@ export const assertValueContext = (range: SourceRange, value: unknown) => {
             throws: assertThrows
         })
     }
-    return assertValue
+    return assertValue as any
 }

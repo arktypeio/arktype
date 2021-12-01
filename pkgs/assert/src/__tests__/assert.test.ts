@@ -48,19 +48,19 @@ describe("assert", () => {
         assert(throwError).type("() => never").value.throws("Test error.")
     })
     test("bad chainable", () => {
-        expect(
-            assert(n)
-                .value(5)
-                .type("number")
-                .type.errors(["Expecting an error here will throw"])
-        )
-        // expect(() =>
-        //     assert(n)
-        //         .type("string")
-        //         .value()
-        //         .toMatchInlineSnapshot("We should never get here")
-        // ).toThrowErrorMatchingInlineSnapshot(
-        //     `"Unable to identify the type in /home/ssalb/redo/pkgs/assert/src/__tests__/assert.test.ts from 60:19 to 53:13. No valid types found."`
-        // )
+        // Default prettier formatting breaks source map here, don't really want to dig into that
+        // (seems like first assert prop has to be accessed immediately?)
+        expect(() =>
+            // prettier-ignore
+            assert(n).value(5)
+            .type("number")
+            .type.errors(["Expecting an error here will throw"])
+        ).toThrow("toStrictEqual")
+        expect(() =>
+            // prettier-ignore
+            assert(n).type("string")
+                .value()
+                .toMatchInlineSnapshot("We should never get here")
+        ).toThrow("toBe")
     })
 })

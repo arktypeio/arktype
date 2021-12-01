@@ -1,6 +1,6 @@
 import { isRecursible } from "./common.js"
 
-export type StringifyOptions = {
+export type ToStringOptions = {
     indent?: number
     quotes?: keyof typeof quoteTypes
     quoteKeys?: boolean
@@ -13,7 +13,11 @@ export const quoteTypes = {
     none: ""
 }
 
-export const stringify = (value: any, options: StringifyOptions = {}) => {
+export const print = (value: any, options: ToStringOptions = {}) => {
+    console.log(toString(value, options))
+}
+
+export const toString = (value: any, options: ToStringOptions = {}) => {
     const quote = quoteTypes[options.quotes ?? "single"]
     const keyQuote = options.quoteKeys ? quote : ""
     const valueSeperator = options.indent ? ",\n" : ", "

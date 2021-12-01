@@ -7,7 +7,6 @@ import {
 } from "../errors.js"
 import { OrTypeErrors, orValidationError, validationError } from "../errors.js"
 import { createParser, ParseContext } from "../parser.js"
-import { Recursible } from "../recursible/index.js"
 import {
     ParseTypeRecurseOptions,
     ValidateTypeRecurseOptions

@@ -5,7 +5,6 @@ export const { define, compile } = declare("user", "group")
 
 import { user } from "./user"
 import { group } from "./group"
-import { stringify } from "@re-do/utils"
 
 export const { types, parse } = compile(user, group)
 

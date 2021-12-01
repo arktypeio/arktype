@@ -1,8 +1,7 @@
 import { SourceRange } from "@re-do/node"
-import { getAbsolutePositions } from "@re-do/utils"
-import { memoize, stringify } from "@re-do/utils"
+import { getAbsolutePositions, toString } from "@re-do/utils"
+import { getTsContext } from "./ts.js"
 import ts from "typescript"
-import { getTsContext, TsContext } from "./ts.js"
 
 export type CheckTypesOptions = {
     allowMultiple?: boolean
@@ -54,7 +53,7 @@ export const typeChecker =
         }
         if (!options.allowMultiple && types.length > 1) {
             throw new Error(
-                `${baseTypeErrorMessage()}. Found multiple top-level types:\n${stringify(
+                `${baseTypeErrorMessage()}. Found multiple top-level types:\n${toString(
                     types
                 )}`
             )

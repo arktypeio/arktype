@@ -1,5 +1,5 @@
-import { stringify, transform } from "@re-do/utils"
-import { existsSync, rmSync } from "fs"
+import { transform } from "@re-do/utils"
+import { rmSync } from "fs"
 import { join } from "path"
 import { stdout } from "process"
 import { findPackageRoot, walkPaths, writeFile } from "./fs.js"

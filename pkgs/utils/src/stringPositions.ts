@@ -1,4 +1,4 @@
-import { stringify } from "./stringify.js"
+import { toString } from "./toString.js"
 
 export type GetDelimitedPositionOptions = {
     delimiter?: string
@@ -38,7 +38,7 @@ const translatePositions = <From extends number[] | LinePosition[]>(
     while (getRemaining().length) {
         if (lineNumber > lines.length) {
             throw new Error(
-                `Positions ${stringify(
+                `Positions ${toString(
                     getRemaining()
                 )} exceed the length of contents.`
             )

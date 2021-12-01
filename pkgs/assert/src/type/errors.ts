@@ -1,10 +1,5 @@
-import {
-    memoize,
-    LinePosition,
-    getLinePositions,
-    SourceRange,
-    stringify
-} from "@re-do/utils"
+import { SourceRange } from "@re-do/node"
+import { memoize, LinePosition, getLinePositions } from "@re-do/utils"
 import { getTsContext } from "./ts.js"
 
 type TypeError = {

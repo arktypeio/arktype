@@ -1,8 +1,6 @@
 import { compile, parse, Validate } from ".."
 import { expectType, expectError } from "tsd"
-import { DefinitionTypeError } from "../components/errors.js"
 import { typeDefProxy } from "../common.js"
-import { DeepEvaluate, Evaluate, stringify } from "@re-do/utils"
 
 describe("parse", () => {
     test("built-in", () => {

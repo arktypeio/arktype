@@ -1,30 +1,27 @@
 import { compile, parse } from ".."
 import { expectType, expectError, printType } from "tsd"
 import { typeDefProxy } from "../common.js"
-import { check } from "@re-do/assert"
+import { assert } from "@re-do/assert"
 
 describe("compile", () => {
     test("single", () => {
-        const typeOfA = compile({ a: "string" }).types.a.type
-        expect(check(typeOfA).type()).toBe("string")
-        const { type, value } = check(() => compile({ a: "strig" })).both
-        expect(value.throws()).toStrictEqual(
-            "Error: Unable to determine the type of 'strig'."
-        )
-        expect(type.errors()).toStrictEqual([
-            `Type '"strig"' is not assignable to type '"Unable to determine the type of 'strig'."'.`
-        ])
+        assert(compile({ a: "string" }).types.a.type).type("string")
+        assert(() => compile({ a: "strig" }))
+            .type.errors([
+                `Type '"strig"' is not assignable to type '"Unable to determine the type of 'strig'."'.`
+            ])
+            .value.throws("Unable to determine the type of 'strig'.")
     })
     test("independent", () => {
-        const typeOfB = compile({ a: "string" }, { b: { c: "boolean" } }).types
-            .b.type
-        expect(check(typeOfB).type()).toMatchInlineSnapshot()
-        const { type, value } = check(() =>
-            compile({ a: "string" }, { b: { c: "uhoh" } })
-        ).both
-        toThrowErrorMatchingInlineSnapshot(
-            `"Unable to determine the type of 'uhoh' at path c."`
-        )
+        // const typeOfB = compile({ a: "string" }, { b: { c: "boolean" } }).types
+        //     .b.type
+        // expect(check(typeOfB).type()).toMatchInlineSnapshot()
+        // const { type, value } = check(() =>
+        //     compile({ a: "string" }, { b: { c: "uhoh" } })
+        // ).both
+        // toThrowErrorMatchingInlineSnapshot(
+        //     `"Unable to determine the type of 'uhoh' at path c."`
+        // )
         // expectError<"Unable to determine the type of 'uhoh'.">(badC)
     })
     test("interdependent", () => {

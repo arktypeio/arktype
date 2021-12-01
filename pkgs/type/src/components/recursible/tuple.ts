@@ -11,7 +11,7 @@ import {
 } from "../common.js"
 import { Recursible } from "./recursible.js"
 import { typeDefProxy } from "../../common.js"
-import { Evaluate, stringify } from "@re-do/utils"
+import { Evaluate } from "@re-do/utils"
 
 export namespace Tuple {
     export type Definition<Def extends Root.Definition[] = Root.Definition[]> =

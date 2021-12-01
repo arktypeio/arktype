@@ -9,7 +9,7 @@ import {
     ensureDir
 } from "./fs.js"
 import ts, { ParseConfigFileHost } from "typescript"
-import { mergeAll, stringify } from "@re-do/utils"
+import { mergeAll, toString } from "@re-do/utils"
 
 export type TsConfig = Record<keyof ts.CompilerOptions, any>
 
@@ -60,7 +60,7 @@ export const transpileTs = async ({
         fileExists: () => false,
         readFile: () => "",
         onUnRecoverableConfigFileDiagnostic: (e) => {
-            throw new Error(stringify(e))
+            throw new Error(toString(e))
         }
     }
 
