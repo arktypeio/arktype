@@ -2,10 +2,10 @@
 import { caller, withCallRange, SourceRange } from ".."
 import { dirName } from ".."
 
-const relativeFile = dirName()
+const relative = dirName()
 
 export const callMe = (...args: any[]) => {
-    const inTheNight = () => caller({ relativeFile })
+    const inTheNight = () => caller({ relative })
     return inTheNight()
 }
 
@@ -14,20 +14,7 @@ const messageAndRange = (range: SourceRange, ...input: string[]) => ({
     message: input.join(" ")
 })
 
-const buildMessageWithRange = withCallRange(messageAndRange, { relativeFile })
-
-const buildMessageWithRangeCustomProp = withCallRange(messageAndRange, {
-    allProp: "get",
-    allPropAsFunction: true,
-    relativeFile
-})
-
-const buildMessageWithRangeAsFunc = withCallRange(messageAndRange, {
-    allAsFunction: true,
-    relativeFile
-})
-
-const messageAndRangePlusName =
+const messageAndRangeThenName =
     (range: SourceRange, ...input: string[]) =>
     (name: string) => ({
         range,
@@ -35,49 +22,53 @@ const messageAndRangePlusName =
         name
     })
 
-const buildMessageWithRangeReturnedFunc = withCallRange(
-    messageAndRangePlusName,
-    { allAsFunction: true, relativeFile }
-)
-
-export const getAllFromDefaultProp = () =>
-    buildMessageWithRange(
+export const getAllUsingThunk = () =>
+    withCallRange(messageAndRange)(
         "testing",
         "source",
         "positions",
         "really",
         "really",
         "sucks"
-    ).all
+    )()
 
-export const getAllFromCustomProp = () =>
-    buildMessageWithRangeCustomProp("i", "love", "you").get()
+export const getAllUsingProp = () =>
+    withCallRange(messageAndRange, {
+        allProp: {
+            name: "all"
+        },
+        relative
+    })("eat", "more", "borscht").all
 
-export const getAllAsFunction = () =>
-    buildMessageWithRangeAsFunc("this", "is", "fine")()
+export const getAllUsingPropThunk = () =>
+    withCallRange(messageAndRange, {
+        allProp: {
+            name: "get",
+            asThunk: true
+        },
+        relative
+    })("i", "love", "you").get()
 
 export const getSingleProp = () =>
-    buildMessageWithRange("i'm", "not", "going", "to", "access", "this").range
+    withCallRange(messageAndRange)(
+        "i'm",
+        "not",
+        "going",
+        "to",
+        "access",
+        "this"
+    ).range
 
-export const getReturnedFunction = (name: string) =>
-    buildMessageWithRangeReturnedFunc("yeah", "ok", "good")(name)
+export const getForwardedReturn = (name: string) =>
+    withCallRange(messageAndRangeThenName)("yeah", "ok", "good")(name)
 
-export const getUnaccessed = () => buildMessageWithRange("whoops")
+export const getAllUsingCallback = () =>
+    withCallRange(messageAndRange, { allCallback: true })("chain", "me", "up")(
+        ({ range, message }) => {
+            return { range, message }
+        }
+    )
 
 export const getUndefined = () =>
     // @ts-ignore
-    buildMessageWithRange("this", "doesn't", "matter").neverDefined
-
-const buildMessageWithRangeAsChainedFunc = withCallRange(messageAndRange, {
-    allAsChainedFunction: true,
-    relativeFile
-})
-
-export const getChainedAllFunction = () =>
-    buildMessageWithRangeAsChainedFunc(
-        "chain",
-        "me",
-        "up"
-    )(({ range, message }) => {
-        return { range, message }
-    })
+    withCallRange(messageAndRange)("this", "doesn't", "matter").neverDefined

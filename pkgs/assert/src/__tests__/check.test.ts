@@ -1,7 +1,7 @@
-import { check } from ".."
+import { check, from } from ".."
+const n: number = 5
 
 describe("check", () => {
-    const n: number = 5
     test("value", () => {
         expect(check(n).value()).toBe(n)
     })
@@ -18,9 +18,19 @@ describe("check", () => {
         ])
     })
     test("all", () => {
-        const { type, value } = check(n).both
+        const { type, value } = check(n)()
         expect(value()).toBe(n)
         expect(type()).toBe("number")
         expect(check(n).type.errors()).toStrictEqual([])
+    })
+})
+
+describe("from", () => {
+    test("from check", () => {
+        expect.assertions(2)
+        from(n)(({ value, type }) => {
+            expect(value()).toBe(5)
+            expect(type()).toBe("number")
+        })
     })
 })

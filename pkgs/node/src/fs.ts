@@ -19,7 +19,8 @@ import { join, dirname, parse } from "path"
 import { once } from "events"
 import { finished } from "stream"
 import { promisify } from "util"
-import { callsAgo, FilterFunction } from "@re-do/utils"
+import { caller, callsAgo } from "./reflection.js"
+import { FilterFunction } from "@re-do/utils"
 
 export const streamFinished = promisify(finished)
 
@@ -125,9 +126,11 @@ export const filePath = (path: string) => {
     return file
 }
 
-const fileOfCaller = () => filePath(callsAgo(2).file)
+const fileOfCaller = () =>
+    filePath(caller({ methodName: "fileOfCaller", upStackBy: 1 }).file)
 
-const dirOfCaller = () => dirname(filePath(callsAgo(2).file))
+const dirOfCaller = () =>
+    dirname(filePath(caller({ methodName: "dirOfCaller", upStackBy: 1 }).file))
 
 export const fileName = () => fileOfCaller()
 

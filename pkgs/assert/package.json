@@ -24,7 +24,8 @@
     },
     "dependencies": {
         "@re-do/utils": "workspace:*",
-        "@re-do/node": "workspace:*"
+        "@re-do/node": "workspace:*",
+        "@jest/globals": "27.4.2"
     },
     "devDependencies": {
         "jest": "27.0.6",
