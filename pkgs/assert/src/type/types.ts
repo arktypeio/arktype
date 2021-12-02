@@ -1,17 +1,17 @@
-import { SourceRange } from "@re-do/node"
+import { SourcePosition, SourceRange } from "@re-do/node"
 import { getAbsolutePositions, toString } from "@re-do/utils"
 import { getTsContext } from "./ts.js"
 import ts from "typescript"
 
-export type CheckTypesOptions = {
+export type CheckTypesInRangeOptions = {
     allowMultiple?: boolean
     includeNested?: boolean
     includeAny?: boolean
 }
 
-export const typeChecker =
+export const typesInRange =
     ({ file, from, to }: SourceRange) =>
-    (options: CheckTypesOptions = {}) => {
+    (options: CheckTypesInRangeOptions = {}) => {
         const { ts, sources } = getTsContext()
         const checker = ts.getTypeChecker()
         const [fromPos, toPos] = getAbsolutePositions(sources[file], [from, to])
@@ -59,4 +59,52 @@ export const typeChecker =
             )
         }
         return types[0]
+    }
+
+export type NextTypeOptions = {
+    includeAny?: boolean
+}
+
+export const nextType =
+    ({ file, line, column }: SourcePosition) =>
+    ({ includeAny }: NextTypeOptions = {}) => {
+        const { ts, sources } = getTsContext()
+        const checker = ts.getTypeChecker()
+        const [afterPosition] = getAbsolutePositions(sources[file], [
+            { line, column }
+        ])
+        const noTypesFoundError = `Found no valid types in ${file} after line ${line} column ${column}.`
+        const firstTypeAfter = (node: ts.Node): string => {
+            // For compatibility with 1-based positions
+            const start = node.getStart()
+            const end = node.getEnd() - 1
+            const getFirstChildAfter = () =>
+                node
+                    .getChildren()
+                    .find((child) => child.getStart() > afterPosition)
+
+            const getType = () => {
+                try {
+                    return checker.typeToString(checker.getTypeAtLocation(node))
+                } catch (e) {
+                    return "any"
+                }
+            }
+            if (end > afterPosition) {
+                if (start > afterPosition) {
+                    const nodeType = getType()
+                    if (nodeType !== "any" || includeAny) {
+                        return nodeType
+                    }
+                    throw new Error(noTypesFoundError)
+                }
+                const nextChild = getFirstChildAfter()
+                if (!nextChild) {
+                    throw new Error(noTypesFoundError)
+                }
+                return firstTypeAfter(nextChild)
+            }
+            throw new Error(noTypesFoundError)
+        }
+        return firstTypeAfter(ts.getSourceFile(file)!)
     }

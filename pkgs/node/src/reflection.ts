@@ -4,20 +4,48 @@ import {
     LinePosition,
     Func,
     Key,
-    FilterFunction,
     narrow,
     deepEquals,
     toString,
     withDefaults,
-    WithDefaults,
-    Cast,
-    DeepRequired
+    WithDefaults
 } from "@re-do/utils"
 import { fileName } from "./fs.js"
 
 export type SourcePosition = LinePosition & {
     file: string
     method: string
+}
+
+export type WithPositionOptions = {
+    relative?: boolean | string
+}
+
+export type WithCallPosition<
+    F extends Func<[position: SourcePosition, ...args: any[]]>
+> = F extends (position: SourcePosition, ...args: infer Args) => infer Return
+    ? (...args: Args) => Return
+    : never
+
+export const withCallPosition = <
+    F extends Func<[position: SourcePosition, ...args: any[]]>,
+    Options extends WithPositionOptions
+>(
+    f: F,
+    options?: Options
+) => {
+    const { relative } = options ?? {}
+    const skip = ({ file }: SourcePosition) =>
+        file === getFilePath(fileName(), relative)
+    const forwardCaller = ((...args: any[]) =>
+        f(
+            caller({
+                relative,
+                skip
+            }),
+            ...args
+        )) as WithCallPosition<F>
+    return forwardCaller
 }
 
 export type SourceRange = { file: string; from: LinePosition; to: LinePosition }

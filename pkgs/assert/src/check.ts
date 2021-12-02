@@ -1,18 +1,19 @@
-import { SourceRange, withCallRange } from "@re-do/node"
-import { Func, WithDefaults, withDefaults } from "@re-do/utils"
 import {
-    typeAssertions,
-    TypeAssertions,
-    TypeContext,
-    typeContext,
-    ValueFromTypeAssertion
-} from "./type"
+    SourcePosition,
+    SourceRange,
+    withCallPosition,
+    withCallRange
+} from "@re-do/node"
 import {
-    ChainableValueAssertion,
-    RecursibleValueAssertion,
-    valueAssertion,
-    ValueAssertion
-} from "./value"
+    WithDefaults,
+    withDefaults,
+    Func,
+    MergeAll,
+    NonRecursible,
+    NonObject
+} from "@re-do/utils"
+import { typeAssertions, TypeAssertions } from "./type"
+import { valueAssertions, ValueAssertion } from "./value"
 
 export type AssertionResult<
     T,
@@ -25,14 +26,14 @@ export type AssertionResult<
 > = ValueAssertion<T, Config> &
     (Config["allowTypeAssertions"] extends true
         ? TypeAssertions & {
-              typedValue: ValueFromTypeAssertion<unknown>
+              hasTypedValue: (expected: unknown) => undefined
           }
         : {})
 
 export type Assertion = <T>(value: T) => AssertionResult<T>
 
 export type AssertionContext = <T, ProvidedOptions extends AssertionOptions>(
-    range: SourceRange,
+    position: SourcePosition,
     value: T,
     opts?: ProvidedOptions
 ) => AssertionResult<T, ProvidedOptions>
@@ -43,35 +44,35 @@ export type AssertionOptions = {
 
 export type AssertionConfig = Required<AssertionOptions>
 
+type AssertionResultOfType<T> = AssertionResult<
+    T,
+    { allowTypeAssertions: true }
+>
+
+type AssertionResultKey =
+    | keyof AssertionResultOfType<() => {}>
+    | keyof AssertionResultOfType<"">
+    | keyof AssertionResultOfType<{}>
+
+type PartialAssertionResult = { [K in AssertionResultKey]?: any }
+
 export const assertionContext: AssertionContext = (
-    range: SourceRange,
+    position: SourcePosition,
     value: unknown,
     opts?: AssertionOptions
 ) => {
     const config = withDefaults<AssertionOptions>({
         allowTypeAssertions: true
     })(opts)
-    return {
-        type: typeAssertions(range),
-        value: valueAssertion(range, value, config)
-    } as any
+    let assertionContext: PartialAssertionResult = valueAssertions(
+        position,
+        value,
+        config
+    )
+    if (config.allowTypeAssertions) {
+        return Object.assign(typeAssertions(position), assertionContext)
+    }
+    return assertionContext as any
 }
 
-export const assert = withCallRange(assertionContext, {
-    allProp: {
-        name: "has"
-    }
-}) as any as Assertion
-
-const dofsh = 500
-
-assert(dofsh).is(500)
-assert(dofsh).typedValue // (500 as number)
-
-assert({}).equals(500).typed as number
-assert(() => () => ({})).returns.returns({})
-assert(dofsh).typed as number
-assert(dofsh).type.errors([])
-assert(dofsh).type.toString("number")
-assert(dofsh).type.toString.snap()
-assert(dofsh).type.toString("")
+export const assert = withCallPosition(assertionContext) as any as Assertion

@@ -1,5 +1,11 @@
 // Changing this file at all will break tests as it is used to test source locations
-import { caller, withCallRange, SourceRange } from ".."
+import {
+    caller,
+    withCallRange,
+    SourceRange,
+    withCallPosition,
+    SourcePosition
+} from ".."
 import { dirName } from ".."
 
 const relative = dirName()
@@ -82,3 +88,12 @@ export const getPropFromChainedCall = () =>
 export const getUndefined = () =>
     // @ts-ignore
     withCallRange(messageAndRange)("this", "doesn't", "matter").neverDefined
+
+export const getCallPosition = (message: string) =>
+    withCallPosition(
+        (position: SourcePosition) => ({
+            ...position,
+            message
+        }),
+        { relative }
+    )()

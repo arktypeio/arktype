@@ -8,7 +8,8 @@ import {
     getSingleProp,
     getForwardedReturn,
     getUndefined,
-    getPropFromChainedCall
+    getPropFromChainedCall,
+    getCallPosition
 } from "./reflected.js"
 
 describe("callers", () => {
@@ -18,7 +19,7 @@ describe("callers", () => {
             {
               "column": 12,
               "file": "reflected.ts",
-              "line": 9,
+              "line": 15,
               "method": "callMe",
             }
         `)
@@ -47,11 +48,11 @@ describe("withArgsRange", () => {
                 "file": "/home/ssalb/redo/pkgs/node/src/__tests__/reflected.ts",
                 "from": {
                   "column": 35,
-                  "line": 26,
+                  "line": 32,
                 },
                 "to": {
                   "column": 6,
-                  "line": 33,
+                  "line": 39,
                 },
               },
             }
@@ -65,11 +66,11 @@ describe("withArgsRange", () => {
                 "file": "/home/ssalb/redo/pkgs/node/src/__tests__/reflected.ts",
                 "from": {
                   "column": 58,
-                  "line": 66,
+                  "line": 72,
                 },
                 "to": {
                   "column": 6,
-                  "line": 71,
+                  "line": 77,
                 },
               },
             }
@@ -83,11 +84,11 @@ describe("withArgsRange", () => {
                 "file": "reflected.ts",
                 "from": {
                   "column": 7,
-                  "line": 41,
+                  "line": 47,
                 },
                 "to": {
                   "column": 33,
-                  "line": 41,
+                  "line": 47,
                 },
               },
             }
@@ -101,11 +102,11 @@ describe("withArgsRange", () => {
                 "file": "reflected.ts",
                 "from": {
                   "column": 7,
-                  "line": 50,
+                  "line": 56,
                 },
                 "to": {
                   "column": 27,
-                  "line": 50,
+                  "line": 56,
                 },
               },
             }
@@ -120,11 +121,11 @@ describe("withArgsRange", () => {
                 "file": "/home/ssalb/redo/pkgs/node/src/__tests__/reflected.ts",
                 "from": {
                   "column": 43,
-                  "line": 63,
+                  "line": 69,
                 },
                 "to": {
                   "column": 65,
-                  "line": 63,
+                  "line": 69,
                 },
               },
             }
@@ -136,11 +137,11 @@ describe("withArgsRange", () => {
               "file": "/home/ssalb/redo/pkgs/node/src/__tests__/reflected.ts",
               "from": {
                 "column": 35,
-                "line": 53,
+                "line": 59,
               },
               "to": {
                 "column": 6,
-                "line": 60,
+                "line": 66,
               },
             }
         `)
@@ -154,12 +155,26 @@ describe("withArgsRange", () => {
               "file": "/home/ssalb/redo/pkgs/node/src/__tests__/reflected.ts",
               "from": {
                 "column": 35,
-                "line": 80,
+                "line": 86,
               },
               "to": {
                 "column": 56,
-                "line": 80,
+                "line": 86,
               },
+            }
+        `)
+    })
+})
+
+describe("call position", () => {
+    test("simple", () => {
+        expect(getCallPosition("please")).toMatchInlineSnapshot(`
+            {
+              "column": 6,
+              "file": "reflected.ts",
+              "line": 99,
+              "message": "please",
+              "method": "getCallPosition",
             }
         `)
     })
