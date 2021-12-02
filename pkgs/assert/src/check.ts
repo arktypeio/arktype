@@ -1,79 +1,59 @@
 import { SourceRange, withCallRange } from "@re-do/node"
-import { Func } from "@re-do/utils"
+import { Func, WithDefaults, withDefaults } from "@re-do/utils"
 import {
-    assertTypeContext,
-    TypeAssertion,
+    typeAssertions,
+    TypeAssertions,
     TypeContext,
-    typeContext
+    typeContext,
+    ValueFromTypeAssertion
 } from "./type"
 import {
-    assertValueContext,
-    ValueAssertion,
-    ValueContext,
-    valueContext
+    ChainableValueAssertion,
+    RecursibleValueAssertion,
+    valueAssertion,
+    ValueAssertion
 } from "./value"
 
-export type CheckResult<T> = { type: TypeContext; value: ValueContext<T> }
+export type AssertionResult<
+    T,
+    Opts extends AssertionOptions = {},
+    Config extends AssertionConfig = WithDefaults<
+        AssertionOptions,
+        Opts,
+        { allowTypeAssertions: true }
+    >
+> = ValueAssertion<T, Config> &
+    (Config["allowTypeAssertions"] extends true
+        ? TypeAssertions & {
+              typedValue: ValueFromTypeAssertion<unknown>
+          }
+        : {})
 
-export type Checker = <T>(value: T) => CheckResult<T> & (() => CheckResult<T>)
+export type Assertion = <T>(value: T) => AssertionResult<T>
 
-export const checkContext = (range: SourceRange, value: unknown) => {
-    return {
-        type: typeContext(range, value),
-        value: valueContext(range, value)
-    }
-}
-
-export const check = withCallRange(checkContext) as any as Checker
-
-export type UsingResult<T> = {
-    check: CheckResult<T>
-    assert: AssertionResult<T>
-}
-
-export type UsingContext = <T>(
-    value: T
-) => UsingResult<T> & (() => UsingResult<T>)
-
-export const usingContext = (range: SourceRange, value: unknown) => {
-    return {
-        check: checkContext(range, value),
-        assert: assertionContext(range, value)
-    }
-}
-
-export const using = withCallRange(usingContext) as any as UsingContext
-
-export type Matcher = ReturnType<typeof expect>
-
-export type ChainableAssertion<T, EqualsType, Options> = <
-    Equals extends EqualsType | undefined = undefined
->(
-    equals?: Equals,
-    options?: Options
-) => Equals extends undefined ? Matcher : AssertionResult<T>
-
-export type AssertionResult<T> = {
-    type: TypeAssertion<T>
-    value: ValueAssertion<T>
-}
-
-export type Assertion = <T>(
-    value: T
-) => AssertionResult<T> & { has: AssertionResult<T> }
-
-export type AssertionContext = <T>(
+export type AssertionContext = <T, ProvidedOptions extends AssertionOptions>(
     range: SourceRange,
-    value: T
-) => AssertionResult<T>
+    value: T,
+    opts?: ProvidedOptions
+) => AssertionResult<T, ProvidedOptions>
+
+export type AssertionOptions = {
+    allowTypeAssertions?: boolean
+}
+
+export type AssertionConfig = Required<AssertionOptions>
 
 export const assertionContext: AssertionContext = (
     range: SourceRange,
-    value: unknown
+    value: unknown,
+    opts?: AssertionOptions
 ) => {
+    const config = withDefaults<AssertionOptions>({
+        allowTypeAssertions: true
+    })(opts)
     return {
-        type: assertTypeContext(range, value),
-        value: assertValueContext(range, value)
+        type: typeAssertions(range),
+        value: valueAssertion(range, value, config)
     } as any
 }
 
@@ -82,3 +62,16 @@ export const assert = withCallRange(assertionContext, {
         name: "has"
     }
 }) as any as Assertion
+
+const dofsh = 500
+
+assert(dofsh).is(500)
+assert(dofsh).typedValue // (500 as number)
+
+assert({}).equals(500).typed as number
+assert(() => () => ({})).returns.returns({})
+assert(dofsh).typed as number
+assert(dofsh).type.errors([])
+assert(dofsh).type.toString("number")
+assert(dofsh).type.toString.snap()
+assert(dofsh).type.toString("")
