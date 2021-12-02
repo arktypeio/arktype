@@ -63,11 +63,21 @@ export const getForwardedReturn = (name: string) =>
     withCallRange(messageAndRangeThenName)("yeah", "ok", "good")(name)
 
 export const getAllUsingCallback = () =>
-    withCallRange(messageAndRange, { allCallback: true })("chain", "me", "up")(
-        ({ range, message }) => {
-            return { range, message }
-        }
-    )
+    withCallRange(messageAndRange, { allCallback: true })(
+        "call",
+        "me",
+        "back",
+        "please"
+    )(({ range, message }) => {
+        return { range, message }
+    })
+
+export const getPropFromChainedCall = () =>
+    // TODO: Fix the fact that using the current ts-jest config,
+    // the stack trace breaks if the prop is accessed on the next line, e.g.:
+    // withCallRange(messageAndRange)("chain", "me", "up")
+    //     .range
+    withCallRange(messageAndRange)("chain", "me", "up").range
 
 export const getUndefined = () =>
     // @ts-ignore

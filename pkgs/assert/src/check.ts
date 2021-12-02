@@ -17,22 +17,32 @@ export type CheckResult<T> = { type: TypeContext; value: ValueContext<T> }
 
 export type Checker = <T>(value: T) => CheckResult<T> & (() => CheckResult<T>)
 
-export const context = (range: SourceRange, value: unknown) => {
+export const checkContext = (range: SourceRange, value: unknown) => {
     return {
         type: typeContext(range, value),
         value: valueContext(range, value)
     }
 }
 
-export const check = withCallRange(context) as any as Checker
+export const check = withCallRange(checkContext) as any as Checker
 
-export type FromChecker = <T, Callback extends Func<[result: CheckResult<T>]>>(
+export type UsingResult<T> = {
+    check: CheckResult<T>
+    assert: AssertionResult<T>
+}
+
+export type UsingContext = <T>(
     value: T
-) => CheckResult<T> & Func<[callback: Callback], ReturnType<Callback>>
+) => UsingResult<T> & (() => UsingResult<T>)
 
-export const from = withCallRange(context, {
-    allCallback: true
-}) as any as FromChecker
+export const usingContext = (range: SourceRange, value: unknown) => {
+    return {
+        check: checkContext(range, value),
+        assert: assertionContext(range, value)
+    }
+}
+
+export const using = withCallRange(usingContext) as any as UsingContext
 
 export type Matcher = ReturnType<typeof expect>
 
@@ -48,7 +58,9 @@ export type AssertionResult<T> = {
     value: ValueAssertion<T>
 }
 
-export type Assertion = <T>(value: T) => AssertionResult<T>
+export type Assertion = <T>(
+    value: T
+) => AssertionResult<T> & { has: AssertionResult<T> }
 
 export type AssertionContext = <T>(
     range: SourceRange,
@@ -65,4 +77,8 @@ export const assertionContext: AssertionContext = (
     } as any
 }
 
-export const assert = withCallRange(assertionContext) as any as Assertion
+export const assert = withCallRange(assertionContext, {
+    allProp: {
+        name: "has"
+    }
+}) as any as Assertion

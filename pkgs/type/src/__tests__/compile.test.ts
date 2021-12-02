@@ -5,7 +5,8 @@ import { assert } from "@re-do/assert"
 
 describe("compile", () => {
     test("single", () => {
-        assert(compile({ a: "string" }).types.a.type).type("string")
+        const typeSet = compile({ a: "string" })
+        assert(typeSet.types.a.type).type("string")
         assert(() => compile({ a: "strig" }))
             .type.errors([
                 `Type '"strig"' is not assignable to type '"Unable to determine the type of 'strig'."'.`
@@ -13,16 +14,20 @@ describe("compile", () => {
             .value.throws("Unable to determine the type of 'strig'.")
     })
     test("independent", () => {
-        // const typeOfB = compile({ a: "string" }, { b: { c: "boolean" } }).types
-        //     .b.type
-        // expect(check(typeOfB).type()).toMatchInlineSnapshot()
+        const typeSet = compile({ a: "string" }, { b: { c: "boolean" } })
+        assert(typeSet.types.b.type)
+            .type()
+            .toMatchInlineSnapshot(`"{c:boolean;}"`)
+        assert(() => compile({ a: "string" }, { b: { c: "uhoh" } }))
+            .type.errors(["Unable to determine the type of 'uhoh'."])
+            .value.throws("Unable to determine the type of 'uhoh' at path c.")
         // const { type, value } = check(() =>
-        //     compile({ a: "string" }, { b: { c: "uhoh" } })
+        //
         // ).both
         // toThrowErrorMatchingInlineSnapshot(
-        //     `"Unable to determine the type of 'uhoh' at path c."`
+        //     ``
         // )
-        // expectError<"Unable to determine the type of 'uhoh'.">(badC)
+        // expectError<>(badC)
     })
     test("interdependent", () => {
         const c = compile({ a: "string" }, { b: { c: "a" } }).types.b.type.c

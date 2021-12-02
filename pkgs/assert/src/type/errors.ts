@@ -33,8 +33,8 @@ export const typeErrorChecker =
 
 export const getTypeErrors = memoize(() => {
     const { ts, sources } = getTsContext()
-    console.log(`Compiling type errors for the following files:
-${Object.keys(sources).join("\n")}`)
+    //     console.log(`Compiling type errors for the following files:
+    // ${Object.keys(sources).join("\n")}`)
     const diagnostics = ts
         .getSemanticDiagnostics()
         .concat(ts.getSyntacticDiagnostics())
@@ -61,6 +61,6 @@ ${Object.keys(sources).join("\n")}`)
         },
         {} as ErrorsByFile
     )
-    console.log("✅")
+    // console.log("✅")
     return errors
 })

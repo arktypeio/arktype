@@ -118,7 +118,15 @@ export const withCallRange = <
             onCall = (useResult: (result: any) => any) =>
                 useResult(endArgsRange())
         } else {
-            onCall = () => endArgsRange()
+            onCall = (...argsForReturnedFunc: any[]) => {
+                const returned = endArgsRange()
+                if (typeof returned === "function") {
+                    // If f returned another function, call it with the provided args
+                    return returned(...argsForReturnedFunc)
+                }
+                // Otherwise, args passed to onCall will be ignored
+                return returned
+            }
         }
         return new Proxy(onCall, {
             get: (_, prop) => {

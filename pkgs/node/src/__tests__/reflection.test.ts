@@ -1,4 +1,4 @@
-import { caller } from "../reflection.js"
+import { caller, withCallRange } from "../reflection.js"
 import {
     callMe,
     getAllUsingThunk,
@@ -7,7 +7,8 @@ import {
     getAllUsingPropThunk,
     getSingleProp,
     getForwardedReturn,
-    getUndefined
+    getUndefined,
+    getPropFromChainedCall
 } from "./reflected.js"
 
 describe("callers", () => {
@@ -59,7 +60,7 @@ describe("withArgsRange", () => {
     test("all using callback", () => {
         expect(getAllUsingCallback()).toMatchInlineSnapshot(`
             {
-              "message": "chain me up",
+              "message": "call me back please",
               "range": {
                 "file": "/home/ssalb/redo/pkgs/node/src/__tests__/reflected.ts",
                 "from": {
@@ -67,8 +68,8 @@ describe("withArgsRange", () => {
                   "line": 66,
                 },
                 "to": {
-                  "column": 79,
-                  "line": 66,
+                  "column": 6,
+                  "line": 71,
                 },
               },
             }
@@ -111,9 +112,23 @@ describe("withArgsRange", () => {
         `)
     })
     test("forwarded return", () => {
-        expect(getForwardedReturn("Bernard")).toMatchInlineSnapshot(
-            `[Function]`
-        )
+        expect(getForwardedReturn("Bernard")).toMatchInlineSnapshot(`
+            {
+              "message": "yeah ok good",
+              "name": "Bernard",
+              "range": {
+                "file": "/home/ssalb/redo/pkgs/node/src/__tests__/reflected.ts",
+                "from": {
+                  "column": 43,
+                  "line": 63,
+                },
+                "to": {
+                  "column": 65,
+                  "line": 63,
+                },
+              },
+            }
+        `)
     })
     test("single prop", () => {
         expect(getSingleProp()).toMatchInlineSnapshot(`
@@ -132,5 +147,20 @@ describe("withArgsRange", () => {
     })
     test("undefined prop", () => {
         expect(getUndefined()).toBe(undefined)
+    })
+    test("as chain", () => {
+        expect(getPropFromChainedCall()).toMatchInlineSnapshot(`
+            {
+              "file": "/home/ssalb/redo/pkgs/node/src/__tests__/reflected.ts",
+              "from": {
+                "column": 35,
+                "line": 80,
+              },
+              "to": {
+                "column": 56,
+                "line": 80,
+              },
+            }
+        `)
     })
 })

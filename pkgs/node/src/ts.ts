@@ -11,7 +11,9 @@ import {
 import ts, { ParseConfigFileHost } from "typescript"
 import { mergeAll, toString } from "@re-do/utils"
 
-export type TsConfig = Record<keyof ts.CompilerOptions, any>
+export type TsConfig = {
+    [K in keyof ts.CompilerOptions]: any
+}
 
 export type TranspileTsOptions = TsConfig & {
     packageRoot?: string

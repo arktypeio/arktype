@@ -1,4 +1,4 @@
-import { check, from } from ".."
+import { check } from ".."
 const n: number = 5
 
 describe("check", () => {
@@ -22,15 +22,5 @@ describe("check", () => {
         expect(value()).toBe(n)
         expect(type()).toBe("number")
         expect(check(n).type.errors()).toStrictEqual([])
-    })
-})
-
-describe("from", () => {
-    test("from check", () => {
-        expect.assertions(2)
-        from(n)(({ value, type }) => {
-            expect(value()).toBe(5)
-            expect(type()).toBe("number")
-        })
     })
 })

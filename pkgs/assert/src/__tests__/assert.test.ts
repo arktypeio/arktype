@@ -48,8 +48,8 @@ describe("assert", () => {
         assert(throwError).type("() => never").value.throws("Test error.")
     })
     test("bad chainable", () => {
-        // Default prettier formatting breaks source map here, don't really want to dig into that
-        // (seems like first assert prop has to be accessed immediately?)
+        // Default prettier formatting breaks source map.
+        // https://github.com/re-do/redo/issues/311
         expect(() =>
             // prettier-ignore
             assert(n).value(5)

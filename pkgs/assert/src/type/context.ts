@@ -39,11 +39,13 @@ export const assertTypeContext: AssertTypeContext = (
         equals?: Equals,
         options: CheckTypesOptions = {}
     ) => {
-        const matcher = expect(typeChecker(range)(options).replace(/\s/g, ""))
+        const typeSnapshot = typeChecker(range)(options)
         if (equals) {
-            matcher.toBe(equals.replace(/\s/g, ""))
+            expect(typeSnapshot.replace(/\s/g, "")).toBe(
+                equals.replace(/\s/g, "")
+            )
         }
-        return equals ? assertionContext(range, value) : matcher
+        return equals ? assertionContext(range, value) : expect(typeSnapshot)
     }
     const assertTypeErrors = <Equals extends string[] | undefined = undefined>(
         equals?: Equals,
