@@ -40,8 +40,8 @@ export const Router = () => {
 
 export const Pages: Record<Page, JSX.Element> = {
     HOME: <Home />,
-    SIGN_IN: <Landing page={"SIGN_IN"} />,
-    SIGN_UP: <Landing page={"SIGN_UP"} />
+    SIGN_IN: <Home />, //<Landing page={"SIGN_IN"} />,
+    SIGN_UP: <Home /> //<Landing page={"SIGN_UP"} />
 }
 
 const UnauthedPages = ["SIGN_IN", "SIGN_UP"]

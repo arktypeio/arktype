@@ -52,14 +52,14 @@ export const AccountSection = ({}) => {
     return (
         <>
             <Modal toggle={settingsToggle} content={<Settings />} />
-            <TogglableMenu
+            {/* <TogglableMenu
                 toggle={
                     <Button Icon={Icons.account} style={{ color: "white" }} />
                 }
                 options={{
                     Logout: () => store.update({ token: "" })
                 }}
-            />
+            /> */}
         </>
     )
 }
