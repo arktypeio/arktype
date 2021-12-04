@@ -25,10 +25,11 @@
     "dependencies": {
         "@re-do/utils": "workspace:*",
         "@re-do/node": "workspace:*",
-        "@jest/globals": "27.4.2"
+        "@jest/globals": "27.4.2",
+        "jest-snapshot": "27.4.2",
+        "jest": "27.4.3"
     },
     "devDependencies": {
-        "jest": "27.4.3",
         "@types/jest": "26.0.24",
         "ts-jest": "27.0.7",
         "@types/node": "15.0.2",

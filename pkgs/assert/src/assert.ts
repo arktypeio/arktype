@@ -1,17 +1,5 @@
-import {
-    SourcePosition,
-    SourceRange,
-    withCallPosition,
-    withCallRange
-} from "@re-do/node"
-import {
-    WithDefaults,
-    withDefaults,
-    Func,
-    MergeAll,
-    NonRecursible,
-    NonObject
-} from "@re-do/utils"
+import { SourcePosition, withCallPosition } from "@re-do/node"
+import { WithDefaults, withDefaults } from "@re-do/utils"
 import { typeAssertions, TypeAssertions } from "./type"
 import { valueAssertions, ValueAssertion } from "./value"
 
@@ -21,14 +9,10 @@ export type AssertionResult<
     Config extends AssertionConfig = WithDefaults<
         AssertionOptions,
         Opts,
-        { allowTypeAssertions: true }
+        { allowTypeAssertions: true; returnsCount: 0 }
     >
 > = ValueAssertion<T, Config> &
-    (Config["allowTypeAssertions"] extends true
-        ? TypeAssertions & {
-              hasTypedValue: (expected: unknown) => undefined
-          }
-        : {})
+    (Config["allowTypeAssertions"] extends true ? TypeAssertions : {})
 
 export type Assertion = <T>(value: T) => AssertionResult<T>
 
@@ -40,6 +24,7 @@ export type AssertionContext = <T, ProvidedOptions extends AssertionOptions>(
 
 export type AssertionOptions = {
     allowTypeAssertions?: boolean
+    returnsCount?: number
 }
 
 export type AssertionConfig = Required<AssertionOptions>
@@ -62,7 +47,8 @@ export const assertionContext: AssertionContext = (
     opts?: AssertionOptions
 ) => {
     const config = withDefaults<AssertionOptions>({
-        allowTypeAssertions: true
+        allowTypeAssertions: true,
+        returnsCount: 0
     })(opts)
     let assertionContext: PartialAssertionResult = valueAssertions(
         position,
@@ -70,7 +56,7 @@ export const assertionContext: AssertionContext = (
         config
     )
     if (config.allowTypeAssertions) {
-        return Object.assign(typeAssertions(position), assertionContext)
+        return Object.assign(typeAssertions(position, config), assertionContext)
     }
     return assertionContext as any
 }

@@ -62,11 +62,12 @@ export const typesInRange = (
 
 export type NextTypeOptions = {
     skipPositions?: number
+    returnsCount?: number
 }
 
-const typeToString = (checker: ts.TypeChecker, node: ts.Node) => {
+const typeToString = (checker: ts.TypeChecker, nodeType: ts.Type) => {
     try {
-        return checker.typeToString(checker.getTypeAtLocation(node))
+        return checker.typeToString(nodeType)
     } catch (e) {
         return "any"
     }
@@ -77,10 +78,10 @@ export const errorsOfNextType = (
     options: NextTypeOptions = {}
 ) => {
     const context = getTsContext()
-    const typeToCheck = nextTypedNode(context, position, options)
+    const { node } = nextTypedNode(context, position, options)
     const [typeStart, typeEnd] = getLinePositions(
         context.sources[position.file],
-        [typeToCheck.getStart(), typeToCheck.getEnd() - 1]
+        [node.getStart(), node.getEnd() - 1]
     )
     return typeErrorsInRange({
         file: position.file,
@@ -94,25 +95,42 @@ export const nextTypeToString = (
     options: NextTypeOptions = {}
 ) => {
     const context = getTsContext()
-    const node = nextTypedNode(context, position, options)
-    return typeToString(context.ts.getTypeChecker(), node)
+    const { type } = nextTypedNode(context, position, options)
+    return context.ts.getTypeChecker().typeToString(type)
 }
 
 const nextTypedNode = (
     context: TsContext,
     { file, line, column }: SourcePosition,
-    { skipPositions = 0 }: NextTypeOptions = {}
-): ts.Node => {
+    { skipPositions = 0, returnsCount = 0 }: NextTypeOptions = {}
+): { node: ts.Node; type: ts.Type } => {
     const { ts, sources } = context
     const checker = ts.getTypeChecker()
     const afterPosition =
         getAbsolutePositions(sources[file], [{ line, column }])[0] +
         skipPositions
-    const firstTypeAfter = (node: ts.Node): ts.Node | null => {
+    const firstTypeAfter = (
+        node: ts.Node
+    ): { node: ts.Node; type: ts.Type } | null => {
         if (node.getStart() > afterPosition) {
-            const nodeType = typeToString(checker, node)
-            if (nodeType !== "any") {
-                return node
+            let nodeType = checker.getTypeAtLocation(node)
+            if (typeToString(checker, nodeType) !== "any") {
+                while (returnsCount) {
+                    const signatures = checker
+                        .getTypeAtLocation(node)
+                        .getCallSignatures()
+                    if (!signatures.length) {
+                        throw new Error(
+                            `Cannot get return type of ${typeToString(
+                                checker,
+                                nodeType
+                            )}.`
+                        )
+                    }
+                    nodeType = signatures[0].getReturnType()
+                    returnsCount--
+                }
+                return { node, type: nodeType }
             }
         }
         for (const child of node.getChildren()) {
