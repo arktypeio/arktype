@@ -4,9 +4,9 @@ import {
     withCallRange,
     SourceRange,
     withCallPosition,
-    SourcePosition
+    SourcePosition,
+    dirName
 } from ".."
-import { dirName } from ".."
 
 const relative = dirName()
 
@@ -14,6 +14,9 @@ export const callMe = (...args: any[]) => {
     const inTheNight = () => caller({ relative })
     return inTheNight()
 }
+
+export const callMeAnonymous = (...args: any[]) =>
+    (() => caller({ relative }))()
 
 const messageAndRange = (range: SourceRange, ...input: string[]) => ({
     range,

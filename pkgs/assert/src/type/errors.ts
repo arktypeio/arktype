@@ -13,28 +13,26 @@ type ErrorsByFile = Record<string, TypeError[]>
 
 export type TypeErrorsOptions = {}
 
-export const typeErrorChecker =
-    ({ file, from, to }: SourceRange) =>
-    (options: TypeErrorsOptions = {}) => {
-        const errorsInFile = getTypeErrors()[file]
-        const errorsAfterCall = errorsInFile.filter(
-            (error) =>
-                error.from.line > from.line ||
-                (error.from.line === from.line &&
-                    error.from.column >= from.column)
-        )
-        const errorsInRange = errorsAfterCall.filter(
-            (error) =>
-                error.to.line < to.line ||
-                (error.to.line === to.line && error.to.column <= to.column)
-        )
-        return errorsInRange.map((_) => _.message)
-    }
+export const typeErrorsInRange = (
+    { file, from, to }: SourceRange,
+    options: TypeErrorsOptions = {}
+) => {
+    const errorsInFile = getTypeErrors()[file]
+    const errorsAfterCall = errorsInFile.filter(
+        (error) =>
+            error.from.line > from.line ||
+            (error.from.line === from.line && error.from.column >= from.column)
+    )
+    const errorsInRange = errorsAfterCall.filter(
+        (error) =>
+            error.to.line < to.line ||
+            (error.to.line === to.line && error.to.column <= to.column)
+    )
+    return errorsInRange.map((_) => _.message)
+}
 
 export const getTypeErrors = memoize(() => {
     const { ts, sources } = getTsContext()
-    //     console.log(`Compiling type errors for the following files:
-    // ${Object.keys(sources).join("\n")}`)
     const diagnostics = ts
         .getSemanticDiagnostics()
         .concat(ts.getSyntacticDiagnostics())
@@ -61,6 +59,5 @@ export const getTypeErrors = memoize(() => {
         },
         {} as ErrorsByFile
     )
-    // console.log("✅")
     return errors
 })

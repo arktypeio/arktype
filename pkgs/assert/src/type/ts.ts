@@ -20,14 +20,11 @@ export type TypeContextOptions = {
 export const getTsContext = memoize(
     (options: TypeContextOptions = {}): TsContext => {
         const { tsConfig, sourcePaths } = withDefaultTypeContextOptions(options)
-        //         console.log(`Compiling types for the following files:
-        // ${sourcePaths.join("\n")}`)
         const sources = mapFilesToContents(sourcePaths)
         const ts = typescript.createProgram({
             rootNames: Object.keys(sources),
             options: compileTsOptions(tsConfig)
         })
-        // console.log("✅")
         return {
             sources,
             ts

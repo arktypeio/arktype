@@ -5,4 +5,4 @@ registerImporter(
     caller({ skip: ({ file }) => file.includes("node_modules") }).file
 )
 
-export * from "./check.js"
+export * from "./assert.js"

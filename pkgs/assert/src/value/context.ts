@@ -1,6 +1,6 @@
 import { SourcePosition, withCallPosition } from "@re-do/node"
 import { Func, isRecursible, NonRecursible } from "@re-do/utils"
-import { AssertionConfig } from "../check.js"
+import { AssertionConfig } from "../assert.js"
 import { TypeAssertions, typeAssertions } from "../type/context.js"
 
 const getThrownMessage = (value: Function) => {
@@ -25,15 +25,37 @@ export type ChainableValueAssertion<
     : NextAssertions<Config>) &
     ValueAssertion<ChainedAs, Config>
 
-export type BaseValueAssertion<T, Config extends AssertionConfig> = {
+export const chainableAssertion = (
+    position: SourcePosition,
+    valueThunk: () => unknown,
+    config: AssertionConfig
+) =>
+    new Proxy(
+        (...args: [expected: unknown]) => {
+            if (!args.length) {
+                return valueAssertions(position, valueThunk(), config)
+            }
+            defaultAssert(valueThunk(), args[0])
+            return getNextAssertions(position, config)
+        },
+        {
+            get: (target, prop) => {
+                if (prop in target) {
+                    return (target as any)[prop]
+                }
+                const assertions: any = valueAssertions(
+                    position,
+                    valueThunk(),
+                    config
+                )
+                return assertions[prop]
+            }
+        }
+    )
+
+export type ComparableValueAssertion<T, Config extends AssertionConfig> = {
     is: (value: T) => NextAssertions<Config>
     snap: (value?: string) => NextAssertions<Config>
-}
-
-export type RecursibleValueAssertion<
-    T,
-    Config extends AssertionConfig
-> = BaseValueAssertion<T, Config> & {
     equals: (value: T) => NextAssertions<Config>
 }
 
@@ -77,46 +99,37 @@ export type ValueAssertion<T, Config extends AssertionConfig> = T extends Func<
     infer Return
 >
     ? FunctionalValueAssertion<Args, Return, Config>
-    : T extends NonRecursible
-    ? BaseValueAssertion<T, Config>
-    : RecursibleValueAssertion<T, Config>
+    : ComparableValueAssertion<T, Config>
 
 const defaultAssert = (value: unknown, expected: unknown) =>
     isRecursible(value)
         ? expect(value).toStrictEqual(expected)
         : expect(value).toBe(expected)
 
+export const getNextAssertions = (
+    position: SourcePosition,
+    config: AssertionConfig
+) => (config.allowTypeAssertions ? typeAssertions(position) : undefined)
+
 export const valueAssertions = <T, Config extends AssertionConfig>(
     position: SourcePosition,
     value: T,
     config: Config
 ): ValueAssertion<T, Config> => {
-    const nextAssertions = config.allowTypeAssertions
-        ? typeAssertions(position)
-        : undefined
+    const nextAssertions = getNextAssertions(position, config)
     if (typeof value === "function") {
         return {
             args: (...args: any[]) =>
                 valueAssertions(position, () => value(...args), config),
-            returns: (...args: any[]) => {
-                const result = value()
-                if (!args.length) {
-                    return valueAssertions(position, result, config)
-                }
-                defaultAssert(value, args[0])
-                return nextAssertions
-            },
-            throws: (...args: any[]) => {
-                const message = getThrownMessage(value)
-                if (!args.length) {
-                    return valueAssertions(position, message, config)
-                }
-                defaultAssert(value, args[0])
-                return nextAssertions
-            }
+            returns: chainableAssertion(position, () => value(), config),
+            throws: chainableAssertion(
+                position,
+                () => getThrownMessage(value),
+                config
+            )
         } as any
     }
-    const baseAssertions: BaseValueAssertion<T, any> = {
+    const baseAssertions: ComparableValueAssertion<T, any> = {
         is: (expected: unknown) => {
             expect(value).toBe(expected)
             return nextAssertions
@@ -130,17 +143,11 @@ export const valueAssertions = <T, Config extends AssertionConfig>(
                 }
                 return nextAssertions
             }
-        )
-    }
-    if (isRecursible(value)) {
-        const recursibleAssertions: RecursibleValueAssertion<T, any> = {
-            ...baseAssertions,
-            equals: (expected: unknown) => {
-                expect(value).toStrictEqual(expected)
-                return nextAssertions
-            }
+        ),
+        equals: (expected: unknown) => {
+            expect(value).toStrictEqual(expected)
+            return nextAssertions
         }
-        return recursibleAssertions as any
     }
     return baseAssertions as any
 }

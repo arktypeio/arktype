@@ -1,6 +1,4 @@
-import { caller, withCallRange } from "../reflection.js"
 import {
-    callMe,
     getAllUsingThunk,
     getAllUsingCallback,
     getAllUsingProp,
@@ -12,33 +10,6 @@ import {
     getCallPosition
 } from "./reflected.js"
 
-describe("callers", () => {
-    test("caller snapshot", () => {
-        const result = callMe("in the night")
-        expect(result).toMatchInlineSnapshot(`
-            {
-              "column": 12,
-              "file": "reflected.ts",
-              "line": 15,
-              "method": "callMe",
-            }
-        `)
-    })
-    test("caller of method", () => {
-        const inner = () => caller({ methodName: "middle" })
-        const middle = () => inner()
-        const outer = () => middle()
-        expect(outer().method).toBe("outer")
-    })
-    test("caller skip", () => {
-        const inner = () =>
-            caller({ skip: ({ method }) => method === "middle" })
-        const middle = () => inner()
-        const outer = () => middle()
-        expect(outer().method).toBe("outer")
-    })
-})
-
 describe("withArgsRange", () => {
     test("all using thunk", () => {
         expect(getAllUsingThunk()).toMatchInlineSnapshot(`
@@ -48,11 +19,11 @@ describe("withArgsRange", () => {
                 "file": "/home/ssalb/redo/pkgs/node/src/__tests__/reflected.ts",
                 "from": {
                   "column": 35,
-                  "line": 32,
+                  "line": 35,
                 },
                 "to": {
                   "column": 6,
-                  "line": 39,
+                  "line": 42,
                 },
               },
             }
@@ -66,11 +37,11 @@ describe("withArgsRange", () => {
                 "file": "/home/ssalb/redo/pkgs/node/src/__tests__/reflected.ts",
                 "from": {
                   "column": 58,
-                  "line": 72,
+                  "line": 75,
                 },
                 "to": {
                   "column": 6,
-                  "line": 77,
+                  "line": 80,
                 },
               },
             }
@@ -84,11 +55,11 @@ describe("withArgsRange", () => {
                 "file": "reflected.ts",
                 "from": {
                   "column": 7,
-                  "line": 47,
+                  "line": 50,
                 },
                 "to": {
                   "column": 33,
-                  "line": 47,
+                  "line": 50,
                 },
               },
             }
@@ -102,11 +73,11 @@ describe("withArgsRange", () => {
                 "file": "reflected.ts",
                 "from": {
                   "column": 7,
-                  "line": 56,
+                  "line": 59,
                 },
                 "to": {
                   "column": 27,
-                  "line": 56,
+                  "line": 59,
                 },
               },
             }
@@ -121,11 +92,11 @@ describe("withArgsRange", () => {
                 "file": "/home/ssalb/redo/pkgs/node/src/__tests__/reflected.ts",
                 "from": {
                   "column": 43,
-                  "line": 69,
+                  "line": 72,
                 },
                 "to": {
                   "column": 65,
-                  "line": 69,
+                  "line": 72,
                 },
               },
             }
@@ -137,11 +108,11 @@ describe("withArgsRange", () => {
               "file": "/home/ssalb/redo/pkgs/node/src/__tests__/reflected.ts",
               "from": {
                 "column": 35,
-                "line": 59,
+                "line": 62,
               },
               "to": {
                 "column": 6,
-                "line": 66,
+                "line": 69,
               },
             }
         `)
@@ -155,11 +126,11 @@ describe("withArgsRange", () => {
               "file": "/home/ssalb/redo/pkgs/node/src/__tests__/reflected.ts",
               "from": {
                 "column": 35,
-                "line": 86,
+                "line": 89,
               },
               "to": {
                 "column": 56,
-                "line": 86,
+                "line": 89,
               },
             }
         `)
@@ -172,7 +143,7 @@ describe("call position", () => {
             {
               "column": 6,
               "file": "reflected.ts",
-              "line": 99,
+              "line": 102,
               "message": "please",
               "method": "getCallPosition",
             }
