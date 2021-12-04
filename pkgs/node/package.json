@@ -29,7 +29,7 @@
         "test": "echo \"This package has no tests (but let's be honest it should)\""
     },
     "dependencies": {
-        "@re-do/utils": "latest",
+        "@re-do/utils": "1.1.1",
         "deepmerge": "4.2.2",
         "execa": "5.0.0",
         "moize": "5.4.7",
