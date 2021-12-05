@@ -19,8 +19,6 @@ export type ExpectedGroup = {
     members: ExpectedUser[]
 }
 
-// printType(types.user.type)
-
 describe("multifile", () => {
     test("compiles", () => {
         expectType<ExpectedUser>(types.user.type)

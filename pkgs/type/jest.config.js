@@ -11,5 +11,5 @@ export default {
             lines: 90
         }
     },
-    reporters: ["default", "jest-stare"]
+    reporters: ["default"]
 }

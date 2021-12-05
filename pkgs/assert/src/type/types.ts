@@ -1,4 +1,4 @@
-import { caller, SourcePosition, SourceRange } from "@re-do/node"
+import { caller, SourcePosition, SourceRange, writeJson } from "@re-do/node"
 import { getAbsolutePositions, getLinePositions, toString } from "@re-do/utils"
 import { getTsContext, TsContext } from "./ts.js"
 import ts from "typescript"
@@ -61,16 +61,10 @@ export const typesInRange = (
 }
 
 export type NextTypeOptions = {
-    skipPositions?: number
+    positionOffset?: number
     returnsCount?: number
-}
-
-const typeToString = (checker: ts.TypeChecker, nodeType: ts.Type) => {
-    try {
-        return checker.typeToString(nodeType)
-    } catch (e) {
-        return "any"
-    }
+    findParentMatching?: string | RegExp
+    nodeMatcher?: string | RegExp
 }
 
 export const errorsOfNextType = (
@@ -102,27 +96,37 @@ export const nextTypeToString = (
 const nextTypedNode = (
     context: TsContext,
     { file, line, column }: SourcePosition,
-    { skipPositions = 0, returnsCount = 0 }: NextTypeOptions = {}
+    {
+        positionOffset = 0,
+        findParentMatching: parentMatcher = "",
+        returnsCount = 0,
+        nodeMatcher = ""
+    }: NextTypeOptions = {}
 ): { node: ts.Node; type: ts.Type } => {
     const { ts, sources } = context
     const checker = ts.getTypeChecker()
     const afterPosition =
         getAbsolutePositions(sources[file], [{ line, column }])[0] +
-        skipPositions
+        positionOffset
     const firstTypeAfter = (
         node: ts.Node
     ): { node: ts.Node; type: ts.Type } | null => {
         if (node.getStart() > afterPosition) {
+            while (!node.getText().match(parentMatcher)) {
+                node = node.parent
+            }
             let nodeType = checker.getTypeAtLocation(node)
-            if ((nodeType as any).intrinsicName !== "error") {
+            if (
+                (nodeType as any).intrinsicName !== "error" &&
+                node.getText().match(nodeMatcher)
+            ) {
                 while (returnsCount) {
                     const signatures = checker
                         .getTypeAtLocation(node)
                         .getCallSignatures()
                     if (!signatures.length) {
                         throw new Error(
-                            `Cannot get return type of ${typeToString(
-                                checker,
+                            `Cannot get return type of ${checker.typeToString(
                                 nodeType
                             )}.`
                         )

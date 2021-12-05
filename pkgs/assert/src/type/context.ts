@@ -1,4 +1,5 @@
 import { SourcePosition, withCallPosition } from "@re-do/node"
+import { toString } from "@re-do/utils"
 import { nextTypeToString, errorsOfNextType } from "./types.js"
 import { expect } from "@jest/globals"
 import {
@@ -49,21 +50,21 @@ export const typeAssertions: AssertTypeContext = (
             }
         },
         {
-            get: withCallPosition((propPosition, target, prop) => {
+            get: (target, prop) => {
                 if (prop === "typed") {
                     expect(
                         nextTypeToString(position, {
                             returnsCount: config.returnsCount
                         })
                     ).toBe(
-                        // Skip the type of "typed" to get the cast value
-                        nextTypeToString(propPosition, {
-                            skipPositions: 5
+                        // Offset back to the original assert and cast expression
+                        nextTypeToString(position, {
+                            findParentMatching: /[\s\S]*\.typed[\s\S]*as/
                         })
                     )
                 }
-                return target[prop]
-            })
+                return (target as any)[prop]
+            }
         }
     ) as any
 }

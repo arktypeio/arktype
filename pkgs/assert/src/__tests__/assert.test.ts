@@ -148,4 +148,17 @@ describe("assert", () => {
             )
         ).toThrow(/Received[\s\S]*""/g)
     })
+    test("sourcemap issues", () => {
+        // Running this test with ts-node results in the wrong sourcemap,
+        // where .typed's call position is wrong and potentially nonexistent
+        // prettier-ignore
+        assert(n)
+            .is(5)
+            .typed as number
+        // // prettier-ignore
+        // assert((a: number, b: number) => a +b )
+        //     .args(1, 2)
+        //     .returns
+        //     .typedValue(3 as number)
+    })
 })

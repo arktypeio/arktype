@@ -5,29 +5,20 @@ import { assert } from "@re-do/assert"
 
 describe("compile", () => {
     test("single", () => {
-        const typeSet = compile({ a: "string" })
-        assert(typeSet.types.a.type).type("string")
-        assert(() => compile({ a: "strig" }))
-            .type.errors([
-                `Type '"strig"' is not assignable to type '"Unable to determine the type of 'strig'."'.`
-            ])
-            .value.throws("Unable to determine the type of 'strig'.")
+        assert(compile({ a: "string" }).types.a.type).typed as string
+        assert(() => compile({ a: "strig" })).throwsAndHasTypeError(
+            "Unable to determine the type of 'strig'."
+        )
     })
     test("independent", () => {
-        const typeSet = compile({ a: "string" }, { b: { c: "boolean" } })
-        assert(typeSet.types.b.type)
-            .type()
-            .toMatchInlineSnapshot(`"{c:boolean;}"`)
-        assert(() => compile({ a: "string" }, { b: { c: "uhoh" } }))
-            .type.errors(["Unable to determine the type of 'uhoh'."])
-            .value.throws("Unable to determine the type of 'uhoh' at path c.")
-        // const { type, value } = check(() =>
-        //
-        // ).both
-        // toThrowErrorMatchingInlineSnapshot(
-        //     ``
-        // )
-        // expectError<>(badC)
+        // prettier-ignore
+        assert(
+            compile({ a: "string" }, { b: { c: "boolean" } }).types.b.type
+        )
+            .typed as { c: boolean }
+        assert(() =>
+            compile({ a: "string" }, { b: { c: "uhoh" } })
+        ).throwsAndHasTypeError("Unable to determine the type of 'uhoh'")
     })
     test("interdependent", () => {
         const c = compile({ a: "string" }, { b: { c: "a" } }).types.b.type.c
