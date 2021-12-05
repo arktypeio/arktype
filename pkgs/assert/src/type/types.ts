@@ -114,7 +114,7 @@ const nextTypedNode = (
     ): { node: ts.Node; type: ts.Type } | null => {
         if (node.getStart() > afterPosition) {
             let nodeType = checker.getTypeAtLocation(node)
-            if (typeToString(checker, nodeType) !== "any") {
+            if ((nodeType as any).intrinsicName !== "error") {
                 while (returnsCount) {
                     const signatures = checker
                         .getTypeAtLocation(node)

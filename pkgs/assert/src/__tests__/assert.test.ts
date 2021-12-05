@@ -100,32 +100,40 @@ describe("assert", () => {
         assert(o).equals({ re: "do" }).type.toString.snap(`"{ re: string; }"`)
         assert(o).snap.toFile()
     })
-    test("hasTypedValue", () => {
-        const getDo = () => "do"
-        assert(o).hasTypedValue({ re: getDo() })
-        expect(() => assert(o).hasTypedValue({ re: "do" as any })).toThrow(
-            "any"
+    test("any type", () => {
+        assert(n as any).typedValue(5 as any)
+        assert(o as any).typed as any
+        expect(() => assert(n).typedValue(5 as any)).toThrow(
+            /any[\s\S]*number/g
         )
-        expect(() => assert(o).hasTypedValue({ re: "don't" })).toThrow("don't")
+        expect(() => assert({} as unknown).typed as any).toThrow(
+            /any[\s\S]*unknown/g
+        )
+    })
+    test("typedValue", () => {
+        const getDo = () => "do"
+        assert(o).typedValue({ re: getDo() })
+        expect(() => assert(o).typedValue({ re: "do" as any })).toThrow("any")
+        expect(() => assert(o).typedValue({ re: "don't" })).toThrow("don't")
     })
     test("return has typed value", () => {
-        assert(() => "ooo").returns.hasTypedValue("ooo")
+        assert(() => "ooo").returns.typedValue("ooo")
         // Wrong value
         expect(() =>
             assert((input: string) => input)
                 .args("yes")
-                .returns.hasTypedValue("whoop")
+                .returns.typedValue("whoop")
         ).toThrow("whoop")
         // Wrong type
         expect(() =>
             assert((input: string) => input)
                 .args("yes")
-                .returns.hasTypedValue("yes" as unknown)
+                .returns.typedValue("yes" as unknown)
         ).toThrow("unknown")
     })
     test("throwsAndHasTypeError", () => {
         assert(() => shouldThrow(true)).throwsAndHasTypeError(
-            /.*true.*not assignable.*false.*/g
+            /true[\s\S]*not assignable[\s\S]*false/
         )
         // No thrown error
         expect(() =>
@@ -138,6 +146,6 @@ describe("assert", () => {
             assert(() => shouldThrow(true as any)).throwsAndHasTypeError(
                 "not assignable"
             )
-        ).toThrow(/.*Received.*""/g)
+        ).toThrow(/Received[\s\S]*""/g)
     })
 })

@@ -1,5 +1,5 @@
 import { SourcePosition, withCallPosition } from "@re-do/node"
-import { Func, isRecursible, NonRecursible } from "@re-do/utils"
+import { Func, isRecursible, NonRecursible, IsAnyOrUnknown } from "@re-do/utils"
 import { AssertionConfig } from "../assert.js"
 import { TypeAssertions, typeAssertions } from "../type/context.js"
 import { errorsOfNextType, nextTypeToString } from "../type/types.js"
@@ -78,7 +78,7 @@ export type ComparableValueAssertion<T, Config extends AssertionConfig> = {
     snap: ((value?: string) => undefined) & { toFile: () => undefined }
     equals: (value: T) => NextAssertions<Config>
 } & (Config["allowTypeAssertions"] extends true
-    ? { hasTypedValue: (expected: unknown) => undefined }
+    ? { typedValue: (expected: unknown) => undefined }
     : {})
 
 export type CallableFunctionAssertion<
@@ -115,10 +115,13 @@ export type FunctionAssertionWithArgsIfNeeded<
 export type NextAssertions<Config extends AssertionConfig> =
     Config["allowTypeAssertions"] extends true ? TypeAssertions : {}
 
-export type ValueAssertion<T, Config extends AssertionConfig> = T extends Func<
-    infer Args,
-    infer Return
->
+export type ValueAssertion<
+    T,
+    Config extends AssertionConfig
+> = IsAnyOrUnknown<T> extends true
+    ? FunctionalValueAssertion<T[], T, Config> &
+          ComparableValueAssertion<T, Config>
+    : T extends Func<infer Args, infer Return>
     ? FunctionalValueAssertion<Args, Return, Config>
     : ComparableValueAssertion<T, Config>
 
@@ -185,16 +188,14 @@ export const valueAssertions = <T, Config extends AssertionConfig>(
     if (config["allowTypeAssertions"]) {
         return {
             ...baseAssertions,
-            hasTypedValue: withCallPosition(
-                (expectedPosition, expectedValue) => {
-                    defaultAssert(value, expectedValue)
-                    expect(
-                        nextTypeToString(position, {
-                            returnsCount: config.returnsCount
-                        })
-                    ).toBe(nextTypeToString(expectedPosition))
-                }
-            )
+            typedValue: withCallPosition((expectedPosition, expectedValue) => {
+                defaultAssert(value, expectedValue)
+                expect(
+                    nextTypeToString(position, {
+                        returnsCount: config.returnsCount
+                    })
+                ).toBe(nextTypeToString(expectedPosition))
+            })
         }
     }
     return baseAssertions
