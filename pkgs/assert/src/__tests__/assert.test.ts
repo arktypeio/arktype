@@ -58,6 +58,9 @@ describe("assert", () => {
         ).toThrow("fail")
     })
     test("valid type errors", () => {
+        assert(o.re.length.nonexistent).type.errors(
+            "Property 'nonexistent' does not exist on type 'number'."
+        )
         assert(o).type.errors("")
         assert(() => shouldThrow(5, "")).type.errors.is(
             "Expected 1 arguments, but got 2."

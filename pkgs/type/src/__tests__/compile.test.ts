@@ -11,41 +11,44 @@ describe("compile", () => {
         )
     })
     test("independent", () => {
-        // prettier-ignore
-        assert(
-            compile({ a: "string" }, { b: { c: "boolean" } }).types.b.type
-        )
+        assert(compile({ a: "string" }, { b: { c: "boolean" } }).types.b.type)
             .typed as { c: boolean }
         assert(() =>
             compile({ a: "string" }, { b: { c: "uhoh" } })
         ).throwsAndHasTypeError("Unable to determine the type of 'uhoh'")
     })
     test("interdependent", () => {
-        const c = compile({ a: "string" }, { b: { c: "a" } }).types.b.type.c
-        expectType<string>(c)
-        expect(() =>
-            // @ts-expect-error
-            compile({ a: "uhoh" }, { b: { c: "a" } })
-        ).toThrowErrorMatchingInlineSnapshot(
-            `"Unable to determine the type of 'uhoh'."`
-        )
-        // expectError<"Unable to determine the type of 'uhoh'.">(badC)
+        assert(compile({ a: "string" }, { b: { c: "a" } }).types.b.type.c)
+            .typed as string
+        assert(() =>
+            compile({ a: "yikes" }, { b: { c: "a" } })
+        ).throwsAndHasTypeError("Unable to determine the type of 'yikes'")
     })
     test("recursive", () => {
-        const { types } = compile({ a: { dejaVu: "a?" } })
-        expectType<{ dejaVu?: any } | undefined>(
-            types.a.type.dejaVu?.dejaVu?.dejaVu
-        )
+        // Recursive type displays any but calculates just-in-time for each property access
+        assert(
+            compile({ a: { dejaVu: "a?" } }).types.a.type.dejaVu?.dejaVu?.dejaVu
+        ).type.toString.snap(`"{ dejaVu: any | undefined; } | undefined"`)
     })
     test("cyclic", () => {
         const { types } = compile({ a: { b: "b" } }, { b: { a: "a" } })
         // Type hint displays as any on hitting cycle
-        expectType<{ b: any }>(types.a.type)
+        assert(types.a.type).typed as {
+            b: {
+                a: {
+                    b: {
+                        a: any
+                    }
+                }
+            }
+        }
         // But still yields correct types when properties are accessed
-        expectType<{ b: any }>(types.b.type.a.b.a)
-        // And errors on nonexisting props
-        // @ts-expect-error
-        types.a.type.b.a.b.c
+        assert(types.b.type.a.b.a.b.a.b.a).typed as {
+            b: {
+                a: any
+            }
+        }
+        assert(types.a.type.b.a.b.c).type.errors("Property 'c' does not exist")
     })
     test("object list", () => {
         const b = compile({ a: "string" }, { b: [{ c: "a" }] }).types.b.type

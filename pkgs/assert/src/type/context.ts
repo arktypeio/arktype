@@ -44,7 +44,7 @@ export const typeAssertions: AssertTypeContext = (
                 ),
                 errors: chainableAssertion(
                     position,
-                    () => errorsOfNextType(position),
+                    () => errorsOfNextType(position, { allowErrors: true }),
                     { ...config, allowTypeAssertions: false }
                 )
             }

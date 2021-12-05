@@ -1,7 +1,7 @@
 import { caller, SourcePosition, SourceRange, writeJson } from "@re-do/node"
 import { getAbsolutePositions, getLinePositions, toString } from "@re-do/utils"
 import { getTsContext, TsContext } from "./ts.js"
-import ts from "typescript"
+import ts, { SyntaxKind } from "typescript"
 import { getTypeErrors, typeErrorsInRange } from "./errors.js"
 
 export type CheckTypesInRangeOptions = {
@@ -65,6 +65,7 @@ export type NextTypeOptions = {
     returnsCount?: number
     findParentMatching?: string | RegExp
     nodeMatcher?: string | RegExp
+    allowErrors?: boolean
 }
 
 export const errorsOfNextType = (
@@ -98,9 +99,10 @@ const nextTypedNode = (
     { file, line, column }: SourcePosition,
     {
         positionOffset = 0,
-        findParentMatching: parentMatcher = "",
+        findParentMatching = "",
         returnsCount = 0,
-        nodeMatcher = ""
+        nodeMatcher = "",
+        allowErrors = false
     }: NextTypeOptions = {}
 ): { node: ts.Node; type: ts.Type } => {
     const { ts, sources } = context
@@ -112,12 +114,14 @@ const nextTypedNode = (
         node: ts.Node
     ): { node: ts.Node; type: ts.Type } | null => {
         if (node.getStart() > afterPosition) {
-            while (!node.getText().match(parentMatcher)) {
+            while (!node.getText().match(findParentMatching)) {
                 node = node.parent
             }
             let nodeType = checker.getTypeAtLocation(node)
             if (
-                (nodeType as any).intrinsicName !== "error" &&
+                // TODO: Distinguish between types with errors in them and
+                // node types that will never be typed like function body or a paren
+                ((nodeType as any).intrinsicName !== "error" || allowErrors) &&
                 node.getText().match(nodeMatcher)
             ) {
                 while (returnsCount) {
