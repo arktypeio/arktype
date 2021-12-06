@@ -44,7 +44,7 @@ export const typeAssertions: AssertTypeContext = (
                 ),
                 errors: chainableAssertion(
                     position,
-                    () => errorsOfNextType(position, { allowErrors: true }),
+                    () => errorsOfNextType(position),
                     { ...config, allowTypeAssertions: false }
                 )
             }
@@ -59,7 +59,8 @@ export const typeAssertions: AssertTypeContext = (
                     ).toBe(
                         // Offset back to the original assert and cast expression
                         nextTypeToString(position, {
-                            findParentMatching: /[\s\S]*\.typed[\s\S]*as/
+                            findParentMatching: (node) =>
+                                /[\s\S]*\.typed[\s\S]*as/.test(node.getText())
                         })
                     )
                 }

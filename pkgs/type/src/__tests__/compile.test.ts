@@ -48,7 +48,9 @@ describe("compile", () => {
                 a: any
             }
         }
-        assert(types.a.type.b.a.b.c).type.errors("Property 'c' does not exist")
+        assert(types.a.type.b.a.b.c).type.errors(
+            "Property 'c' does not exist on type '{ a: { b: any; }; }'."
+        )
     })
     test("object list", () => {
         const b = compile({ a: "string" }, { b: [{ c: "a" }] }).types.b.type
