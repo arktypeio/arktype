@@ -71,13 +71,13 @@ export namespace TypeSet {
     export type Parse<
         TypeSet,
         Options extends ParseTypeRecurseOptions = DefaultParseTypeOptions
-    > = Evaluate<{
+    > = {
         [TypeName in keyof TypeSet]: ParsedType<
             TypeSet[TypeName],
             Validate<TypeSet>,
             Options
         >
-    }>
+    }
 }
 
 export type MissingTypesError<DeclaredTypeName, DefinedTypeName> = DiffUnions<
