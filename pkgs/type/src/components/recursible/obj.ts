@@ -39,7 +39,9 @@ export namespace Obj {
         Def,
         TypeSet,
         Options extends ParseTypeRecurseOptions,
-        OptionalKey extends keyof Def = OptionalKeys<Def>,
+        OptionalKey extends keyof Def = {
+            [K in keyof Def]: Def[K] extends Optional.Definition ? K : never
+        }[keyof Def],
         RequiredKey extends keyof Def = Exclude<keyof Def, OptionalKey>
     > = {
         [PropName in OptionalKey]?: Def[PropName] extends Optional.Definition<

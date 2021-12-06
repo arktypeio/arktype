@@ -100,7 +100,7 @@ export type ParsedType<
 > = Evaluate<{
     definition: Definition
     type: TypeOfParsed
-    typeSet: TypeSet
+    typeSet: Evaluate<TypeSet>
     check: (value: unknown, options?: AllowsOptions) => string
     assert: (value: unknown, options?: AllowsOptions) => void
     allows: (value: unknown, options?: AllowsOptions) => ValidationErrors

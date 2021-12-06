@@ -1,7 +1,7 @@
-import { compile, parse } from ".."
-import { expectType, expectError, printType } from "tsd"
-import { typeDefProxy } from "../common.js"
 import { assert } from "@re-do/assert"
+import { narrow } from "@re-do/utils"
+import { compile } from ".."
+import { typeDefProxy } from "../common.js"
 
 describe("compile", () => {
     test("single", () => {
@@ -28,7 +28,7 @@ describe("compile", () => {
         // Recursive type displays any but calculates just-in-time for each property access
         assert(
             compile({ a: { dejaVu: "a?" } }).types.a.type.dejaVu?.dejaVu?.dejaVu
-        ).type.toString.snap(`"{ dejaVu: any | undefined; } | undefined"`)
+        ).type.toString.snap(`"{ dejaVu?: any | undefined; } | undefined"`)
     })
     test("cyclic", () => {
         const { types } = compile({ a: { b: "b" } }, { b: { a: "a" } })
@@ -53,12 +53,10 @@ describe("compile", () => {
         )
     })
     test("object list", () => {
-        const b = compile({ a: "string" }, { b: [{ c: "a" }] }).types.b.type
-        expectType<{ c: string }[]>(b)
+        assert(compile({ a: "string" }, { b: [{ c: "a" }] }).types.b.type)
+            .typed as { c: string }[]
         // Can't pass in object list directly to compile
-        // @ts-expect-error
-        expect(() => compile([{ b: { c: "string" } }]))
-            .toThrowErrorMatchingInlineSnapshot(`
+        assert(() => compile([{ b: { c: "string" } }])).throws.snap(`
             "Compile args must be a list of names mapped to their corresponding definitions
                         passed as rest args, e.g.:
                         compile(
@@ -69,74 +67,39 @@ describe("compile", () => {
     })
     test("can parse from compiled types", () => {
         const { parse } = compile({ a: { b: "b" } }, { b: { a: "a" } })
-        const result = parse("a|b|null").type
-        expectType<{ b: { a: any } } | { a: { b: any } } | null>(result)
-        expect(() =>
-            // @ts-expect-error
-            parse({ nested: { a: "a", b: "b", c: "c" } })
-        ).toThrowErrorMatchingInlineSnapshot(
-            `"Unable to determine the type of 'c' at path nested/c."`
+        assert(parse("a|b|null").type).type.toString.snap(
+            `"{ b: { a: { b: { a: any; }; }; }; } | { a: { b: { a: { b: any; }; }; }; } | null"`
         )
-        // expectError<{
-        //     nested: {
-        //         a: {
-        //             b: {
-        //                 a: any
-        //             }
-        //         }
-        //         b: {
-        //             a: any
-        //         }
-        //         c: "Unable to determine the type of 'c'."
-        //     }
-        // }>(badResult)
+        assert(() =>
+            parse({ nested: { a: "a", b: "b", c: "c" } })
+        ).throwsAndHasTypeError("Unable to determine the type of 'c'")
     })
     test("compile result", () => {
-        const compileResult = compile({ a: { b: "b?" } }, { b: { a: "a?" } })
-        const { type, ...parseResult } = compileResult.parse("a") as any
-        expect(type).toBe(typeDefProxy)
-        expect(parseResult).toMatchInlineSnapshot(`
-            {
-              "allows": [Function],
-              "assert": [Function],
-              "check": [Function],
-              "definition": "a",
-              "generate": [Function],
-              "references": [Function],
-              "typeSet": {
-                "a": {
-                  "b": "b?",
-                },
-                "b": {
-                  "a": "a?",
-                },
-              },
-            }
-        `)
-        const { type: preparsedType, ...preparsedResult } = compileResult.types
-            .a as any
-        expect(preparsedType).toBe(typeDefProxy)
-        expect(preparsedResult).toMatchInlineSnapshot(`
-            {
-              "allows": [Function],
-              "assert": [Function],
-              "check": [Function],
-              "definition": {
-                "b": "b?",
-              },
-              "generate": [Function],
-              "references": [Function],
-              "typeSet": {
-                "a": {
-                  "b": "b?",
-                },
-                "b": {
-                  "a": "a?",
-                },
-              },
-            }
-        `)
-        // Make sure b is included in types without rechecking all of the above
-        expect(typeof compileResult.types.b).toBe("object")
+        const typeSet = compile({ a: { b: "b?" } }, { b: { a: "a?" } })
+        const parsedA = typeSet.parse("a")
+        assert(parsedA.type)
+            .is(typeDefProxy)
+            .type.toString()
+            .snap(
+                `"{ b?: { a?: { b?: any | undefined; } | undefined; } | undefined; }"`
+            )
+        assert(typeSet.types.a.references()).equals({ b: ["b"] } as any)
+        assert(parsedA.allows({})).equals({})
+        const aWithExtraneousKey = { c: "extraneous" }
+        const extraneousKeyMessage = "Keys 'c' were unexpected."
+        assert(() => parsedA.assert(aWithExtraneousKey)).throws(
+            extraneousKeyMessage
+        )
+        assert(() => parsedA.check({ c: {} })).returns(extraneousKeyMessage)
+        assert(parsedA.generate()).equals({})
+        assert(parsedA.references()).equals(["a"] as any)
+        assert(parsedA.definition).typedValue("a")
+        const expectedTypeSet = narrow({ a: { b: "b?" }, b: { a: "a?" } })
+        assert(parsedA.typeSet).typedValue(expectedTypeSet)
+        assert(typeSet.parse("b").type)
+            .is(typeDefProxy)
+            .type.toString.snap(
+                `"{ a?: { b?: { a?: any | undefined; } | undefined; } | undefined; }"`
+            )
     })
 })
