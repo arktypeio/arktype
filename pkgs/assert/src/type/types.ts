@@ -1,5 +1,5 @@
 import { SourcePosition } from "@re-do/node"
-import { getAbsolutePositions } from "@re-do/utils"
+import { getAbsolutePositions, toString } from "@re-do/utils"
 import { getTsContext, TsContext } from "./ts.js"
 import ts from "typescript"
 
@@ -41,7 +41,10 @@ const nextTypedNode = (
 ): { node: ts.Node; type: ts.Type; errors: string[] } => {
     const { ts, sources } = context
     const checker = ts.getTypeChecker()
-    const errors = ts.getSemanticDiagnostics()
+    const errors: ts.Diagnostic[] = ts
+        // @ts-ignore
+        .getDiagnosticsProducingTypeChecker()
+        .getDiagnostics()
     const errorsInFile = errors.filter((error) => error.file?.fileName === file)
     const afterPosition =
         getAbsolutePositions(sources[file], [{ line, column }])[0] +

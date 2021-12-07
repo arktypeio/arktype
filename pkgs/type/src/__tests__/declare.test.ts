@@ -1,18 +1,21 @@
 import { declare } from ".."
 import { expectType, expectError } from "tsd"
+import { assert } from "@re-do/assert"
 
 describe("declare", () => {
     test("single", () => {
         const { define, compile } = declare("GottaDefineThis")
         const GottaDefineThis = define.GottaDefineThis("boolean")
-        // @ts-expect-error
-        expect(() => define.SomethingUndeclared("string")).toThrowError()
-        // @ts-expect-error
-        define.GottaDefineThis("whoops")
+        assert(() =>
+            define.SomethingUndeclared("string")
+        ).throwsAndHasTypeError("SomethingUndeclared")
+        assert(() => define.GottaDefineThis("whoops")).throwsAndHasTypeError(
+            "Unable to determine the type of 'whoops'"
+        )
         const { types, parse } = compile(GottaDefineThis)
-        expectType<boolean>(types.GottaDefineThis.type)
-        const result = parse({ a: "GottaDefineThis" })
-        expectType<{ a: boolean }>(result.type)
+        assert(parse({ a: "GottaDefineThis" })).typed as {
+            a: boolean
+        }
     })
     test("errors on compile with declared type undefined", () => {
         const { define, compile } = declare(
