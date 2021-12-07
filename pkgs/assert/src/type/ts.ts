@@ -1,8 +1,7 @@
-import { findPackageRoot, mapFilesToContents } from "@re-do/node"
-import { dirname, join } from "path"
+import { findPackageRoot, mapFilesToContents, walkPaths } from "@re-do/node"
+import { dirname, join, relative } from "path"
 import typescript from "typescript"
-import { memoize } from "@re-do/utils"
-import { listImporters } from "../imports.js"
+import { memoize, toString } from "@re-do/utils"
 
 // Absolute file paths TS will parse to raw contents
 export type ContentsByFile = Record<string, string>
@@ -19,11 +18,20 @@ export type TypeContextOptions = {
 
 export const getTsContext = memoize(
     (options: TypeContextOptions = {}): TsContext => {
-        const { tsConfig, sourcePaths } = withDefaultTypeContextOptions(options)
+        const { tsOptions, sourcePaths } = getConfig(options)
+        const packageRoot = findPackageRoot(process.cwd())
+        console.log(
+            `Analyzing types for ${toString(
+                sourcePaths.map((fullPath) => relative(packageRoot, fullPath))
+            )}.
+If you see this message more than once,
+you may want to reconfigure your test environment to
+ensure context can be shared across tests.`
+        )
         const sources = mapFilesToContents(sourcePaths)
         const ts = typescript.createProgram({
-            rootNames: Object.keys(sources),
-            options: compileTsOptions(tsConfig)
+            rootNames: sourcePaths,
+            options: tsOptions
         })
         return {
             sources,
@@ -32,17 +40,18 @@ export const getTsContext = memoize(
     }
 )
 
-const withDefaultTypeContextOptions = (options: TypeContextOptions) => {
+const getConfig = (options: TypeContextOptions) => {
     const packageRoot = findPackageRoot(process.cwd())
     const tsConfig = options.tsConfig ?? join(packageRoot, "tsconfig.json")
-    const sourcePaths = options.sourcePaths ?? listImporters()
-    return { tsConfig, sourcePaths }
+    const parsedConfig = compileTsConfig(tsConfig)
+    const sourcePaths = options.sourcePaths ?? parsedConfig.fileNames
+    return { tsOptions: parsedConfig.options, sourcePaths }
 }
 
-const compileTsOptions = (configPath: string) => {
+const compileTsConfig = (configPath: string) => {
     return typescript.parseJsonSourceFileConfigFileContent(
         typescript.readJsonConfigFile(configPath, typescript.sys.readFile),
         typescript.sys,
         dirname(configPath)
-    ).options
+    )
 }

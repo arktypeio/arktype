@@ -6,6 +6,7 @@ import { typeDefProxy } from "../common.js"
 describe("compile", () => {
     test("single", () => {
         assert(compile({ a: "string" }).types.a.type).typed as string
+        // @ts-expect-error
         assert(() => compile({ a: "strig" })).throwsAndHasTypeError(
             "Unable to determine the type of 'strig'."
         )
@@ -14,6 +15,7 @@ describe("compile", () => {
         assert(compile({ a: "string" }, { b: { c: "boolean" } }).types.b.type)
             .typed as { c: boolean }
         assert(() =>
+            // @ts-expect-error
             compile({ a: "string" }, { b: { c: "uhoh" } })
         ).throwsAndHasTypeError("Unable to determine the type of 'uhoh'")
     })
@@ -21,6 +23,7 @@ describe("compile", () => {
         assert(compile({ a: "string" }, { b: { c: "a" } }).types.b.type.c)
             .typed as string
         assert(() =>
+            // @ts-expect-error
             compile({ a: "yikes" }, { b: { c: "a" } })
         ).throwsAndHasTypeError("Unable to determine the type of 'yikes'")
     })
@@ -48,6 +51,7 @@ describe("compile", () => {
                 a: any
             }
         }
+        // @ts-expect-error
         assert(types.a.type.b.a.b.c).type.errors(
             "Property 'c' does not exist on type '{ a: { b: any; }; }'."
         )
@@ -56,6 +60,7 @@ describe("compile", () => {
         assert(compile({ a: "string" }, { b: [{ c: "a" }] }).types.b.type)
             .typed as { c: string }[]
         // Can't pass in object list directly to compile
+        // @ts-expect-error
         assert(() => compile([{ b: { c: "string" } }])).throws.snap(`
             "Compile args must be a list of names mapped to their corresponding definitions
                         passed as rest args, e.g.:
@@ -71,6 +76,7 @@ describe("compile", () => {
             `"{ b: { a: { b: { a: any; }; }; }; } | { a: { b: { a: { b: any; }; }; }; } | null"`
         )
         assert(() =>
+            // @ts-expect-error
             parse({ nested: { a: "a", b: "b", c: "c" } })
         ).throwsAndHasTypeError("Unable to determine the type of 'c'")
     })

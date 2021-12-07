@@ -1,5 +1,4 @@
 import { declare } from ".."
-import { expectType, expectError } from "tsd"
 import { assert } from "@re-do/assert"
 
 describe("declare", () => {

@@ -159,10 +159,10 @@ describe("assert", () => {
         assert(n)
             .is(5)
             .typed as number
-        // // prettier-ignore
-        // assert((a: number, b: number) => a +b )
-        //     .args(1, 2)
-        //     .returns
-        //     .typedValue(3 as number)
+        // prettier-ignore
+        assert((a: number, b: number) => a +b )
+            .args(1, 2)
+            .returns
+            .typedValue(3 as number)
     })
 })
