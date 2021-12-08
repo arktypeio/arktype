@@ -1,39 +1,9 @@
-import {
-    ElementOf,
-    Evaluate,
-    Iteration,
-    KeyValuate,
-    ListPossibleTypes,
-    Split
-} from "@re-do/utils"
-import {
-    ControlCharacters,
-    Root,
-    ValidateTypeRecurseOptions
-} from "../components/common.js"
+import { Iteration, KeyValuate } from "@re-do/utils"
+import { ValidateTypeRecurseOptions } from "../components/common.js"
 import { ShallowCycleError } from "../components/errors.js"
+import { Root } from "../components/root.js"
 import { ParseTypeRecurseOptions } from "../parse.js"
-
-type RawReferences<
-    Fragments extends string,
-    RemainingControlCharacters extends string[] = ControlCharacters
-> = RemainingControlCharacters extends Iteration<
-    string,
-    infer Character,
-    infer Remaining
->
-    ? RawReferences<ElementOf<Split<Fragments, Character>>, Remaining>
-    : Exclude<ElementOf<Split<Fragments, RemainingControlCharacters[0]>>, "">
-
-export type ReferencesOfStringDef<
-    Def extends string,
-    Filter extends string = string
-> = Evaluate<RawReferences<Def> & Filter>
-
-export type ListReferencesOfStringDef<
-    Def extends string,
-    Filter extends string = string
-> = Evaluate<ListPossibleTypes<ReferencesOfStringDef<Def, Filter>>>
+import { References } from "../references.js"
 
 type CheckReferencesForShallowCycle<
     References extends string[],
@@ -57,7 +27,7 @@ type CheckForShallowCycleRecurse<Def, TypeSet, Seen> = Def extends Seen
     ? Seen
     : Def extends string
     ? CheckReferencesForShallowCycle<
-          ListReferencesOfStringDef<Def>,
+          References<Def, { asList: true }>,
           TypeSet,
           Seen
       >

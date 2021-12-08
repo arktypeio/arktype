@@ -1,12 +1,11 @@
 import {
     Evaluate,
     isRecursible,
-    Merge,
     Recursible as ExtractRecursible
 } from "@re-do/utils"
 import { typeDefProxy } from "../../common.js"
+import { Root } from "../root.js"
 import {
-    Root,
     ParseTypeRecurseOptions,
     ValidateTypeRecurseOptions
 } from "../common.js"

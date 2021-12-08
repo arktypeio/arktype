@@ -1,7 +1,7 @@
+import { Root } from "../root.js"
 import { Str } from "./str.js"
 import { Num } from "./num.js"
 import {
-    Root,
     ParseTypeRecurseOptions,
     ValidateTypeRecurseOptions
 } from "../common.js"

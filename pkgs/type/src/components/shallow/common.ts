@@ -1,10 +1,4 @@
-import {
-    StringifyPossibleTypes,
-    Split,
-    Join,
-    Unlisted,
-    narrow
-} from "@re-do/utils"
+import { StringifyPossibleTypes, Split, Join, narrow } from "@re-do/utils"
 import {
     ParseTypeRecurseOptions,
     ValidateTypeRecurseOptions

@@ -8,11 +8,8 @@ import {
     Exact,
     toString
 } from "@re-do/utils"
-import type {
-    ExtractableDefinition,
-    Root,
-    UnvalidatedTypeSet
-} from "./common.js"
+import type { ExtractableDefinition, UnvalidatedTypeSet } from "./common.js"
+import type { Root } from "./root.js"
 import { ValidationErrors, unknownTypeError } from "./errors.js"
 import { Recursible } from "./recursible/index.js"
 

@@ -1,5 +1,5 @@
 import { createParser } from "../parser.js"
-import { validationError, unassignableError } from "../errors.js"
+import { validationError } from "../errors.js"
 import { Fragment } from "./fragment.js"
 import { typeDefProxy } from "../../common.js"
 

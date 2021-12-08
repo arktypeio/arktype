@@ -1,9 +1,5 @@
 import { IsAny, NonRecursible, WithDefaults } from "@re-do/utils"
 import { Root } from "./components/root.js"
-import {
-    ListReferencesOfStringDef,
-    ReferencesOfStringDef
-} from "./typeSet/member.js"
 import { TypeSet } from "./typeSet/typeSet.js"
 
 export type ValidateTypeOptions = {}
@@ -46,20 +42,3 @@ export type Parse<
           TypeSet.Validate<Set>,
           WithDefaults<ParseTypeOptions, Options, DefaultParseTypeOptions>
       >
-
-export type ReferencesOptions = {
-    asList?: boolean
-}
-
-export type References<
-    Def,
-    Options extends ReferencesOptions = {}
-> = Def extends string
-    ? Options["asList"] extends true
-        ? ListReferencesOfStringDef<Def>
-        : ReferencesOfStringDef<Def>
-    : Def extends NonRecursible
-    ? Options["asList"] extends true
-        ? []
-        : never
-    : { [K in keyof Def]: References<Def[K], Options> }

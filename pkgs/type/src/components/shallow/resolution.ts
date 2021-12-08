@@ -8,10 +8,10 @@ import {
 import { createParser } from "../parser.js"
 import {
     ParseTypeRecurseOptions,
-    Root,
     ValidateTypeRecurseOptions
 } from "../common.js"
 import { Fragment } from "./fragment.js"
+import { Root } from "../root.js"
 
 export namespace Resolution {
     export type Definition<

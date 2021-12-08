@@ -3,21 +3,19 @@ import {
     DiffSetsResult,
     Evaluate,
     isRecursible,
-    OptionalKeys,
     transform
 } from "@re-do/utils"
 import { Recursible } from "."
 import { Optional } from "../shallow/optional.js"
 import { createParser, ParsedType } from "../parser.js"
 import { typeDefProxy } from "../../common.js"
+import { Root } from "../root.js"
 import {
     ParseTypeRecurseOptions,
-    Root,
     ValidateTypeRecurseOptions
 } from "../common.js"
 import {
     mismatchedKeysError,
-    unassignableError,
     validationError,
     ValidationErrors
 } from "../errors.js"
