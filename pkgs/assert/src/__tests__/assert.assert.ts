@@ -44,6 +44,15 @@ describe("assert", () => {
                 .is("number")
         ).toThrow(/number[\s\S]*string/g)
     })
+    test("throws", () => {
+        assert(throwError).throws(/error/g)
+        expect(() =>
+            // Snap should never be populated
+            assert(() => shouldThrow(false)).throws.snap()
+        ).toThrowErrorMatchingInlineSnapshot(
+            `"() => shouldThrow(false) didn't throw."`
+        )
+    })
     test("args", () => {
         assert((input: string) => `${input}!`)
             .args("omg")
@@ -60,7 +69,7 @@ describe("assert", () => {
     test("valid type errors", () => {
         // @ts-expect-error
         assert(o.re.length.nonexistent).type.errors(
-            "Property 'nonexistent' does not exist on type 'number'."
+            /Property 'nonexistent' does not exist on type 'number'/
         )
         assert(o).type.errors("")
         assert(() => shouldThrow(5, "")).type.errors.is(
@@ -68,7 +77,7 @@ describe("assert", () => {
         )
     })
     test("bad type errors", () => {
-        expect(() => assert(o).type.errors("This error doesn't exist")).toThrow(
+        expect(() => assert(o).type.errors(/This error doesn't exist/)).toThrow(
             "doesn't exist"
         )
         expect(() =>

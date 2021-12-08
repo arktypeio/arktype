@@ -1,10 +1,7 @@
 import { parse } from ".."
 
 const generate = (def: any, typeSet: any = {}, opts: any = {}) =>
-    // @ts-ignore
     parse(def, { typeSet }).generate(opts)
-
-// TODO: avoid parsing any
 
 describe("default values", () => {
     test("built-in", () => {

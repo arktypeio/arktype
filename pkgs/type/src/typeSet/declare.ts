@@ -1,4 +1,6 @@
 import { ElementOf, Narrow, transform } from "@re-do/utils"
+import { Root } from "../components/common.js"
+import { parse } from "../parse.js"
 import { CompileFunction, createCompileFunction } from "./compile.js"
 import { TypeSet } from "./typeSet.js"
 
@@ -7,34 +9,48 @@ export const createDefineFunctionMap = <DeclaredTypeNames extends string[]>(
 ) =>
     transform(typeNames, ([index, typeName]) => [
         typeName as string,
-        createDefineFunction(typeName as any)
-    ]) as DefineFunctionMap<ElementOf<DeclaredTypeNames>>
+        createDefineFunction(typeNames, typeName as any)
+    ]) as DefineFunctionMap<DeclaredTypeNames>
 
-export type DefineFunctionMap<DeclaredTypeName extends string> = {
-    [DefinedTypeName in DeclaredTypeName]: DefineFunction<
+export type DefineFunctionMap<DeclaredTypeNames extends string[]> = {
+    [DefinedTypeName in ElementOf<DeclaredTypeNames>]: DefineFunction<
         DefinedTypeName,
-        DeclaredTypeName
+        DeclaredTypeNames
     >
 }
 
 export type DefineFunction<
-    DefinedTypeName extends DeclaredTypeName,
-    DeclaredTypeName extends string
+    DefinedTypeName extends ElementOf<DeclaredTypeNames>,
+    DeclaredTypeNames extends string[]
 > = <Def>(
-    definition: TypeSet.ValidateReferences<Narrow<Def>, DeclaredTypeName>
+    definition: TypeSet.ValidateReferences<
+        Narrow<Def>,
+        ElementOf<DeclaredTypeNames>
+    >
 ) => {
     [K in DefinedTypeName]: Def
 }
 
 export const createDefineFunction =
-    <DefinedTypeName extends DeclaredTypeName, DeclaredTypeName extends string>(
+    <
+        DefinedTypeName extends ElementOf<DeclaredTypeNames>,
+        DeclaredTypeNames extends string[]
+    >(
+        declaredTypeNames: DeclaredTypeNames,
         definedTypeName: DefinedTypeName
-    ): DefineFunction<DefinedTypeName, DeclaredTypeName> =>
-    (definition: any) =>
-        ({ [definedTypeName]: definition } as any)
+    ): DefineFunction<DefinedTypeName, DeclaredTypeNames> =>
+    (definition: any) => {
+        const result = parse(definition, {
+            typeSet: transform(declaredTypeNames, ([i, typeName]) => [
+                typeName,
+                "unknown"
+            ]) as any
+        })
+        return { [definedTypeName]: definition } as any
+    }
 
 export type Declaration<DeclaredTypeNames extends string[] = string[]> = {
-    define: DefineFunctionMap<ElementOf<DeclaredTypeNames>>
+    define: DefineFunctionMap<DeclaredTypeNames>
     compile: CompileFunction<DeclaredTypeNames>
 }
 

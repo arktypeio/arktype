@@ -8,16 +8,20 @@ import {
 } from "../value/context.js"
 import { AssertionConfig } from "../assert.js"
 
-export type ValueFromTypeAssertion<Expected> = ChainableValueAssertion<
+export type ValueFromTypeAssertion<
+    Expected,
+    Chained = Expected
+> = ChainableValueAssertion<
     [expected: Expected],
     { allowTypeAssertions: false; returnsCount: 0 },
+    Chained,
     false
 >
 
 export type TypeAssertions = {
     type: {
         toString: ValueFromTypeAssertion<string>
-        errors: ValueFromTypeAssertion<string>
+        errors: ValueFromTypeAssertion<string | RegExp, string>
     }
     typed: unknown
 }
@@ -45,7 +49,8 @@ export const typeAssertions: AssertTypeContext = (
                 errors: chainableAssertion(
                     position,
                     () => errorsOfNextType(position),
-                    { ...config, allowTypeAssertions: false }
+                    { ...config, allowTypeAssertions: false },
+                    { allowRegex: true }
                 )
             }
         },

@@ -10,6 +10,7 @@ import {
     KeyValuate,
     MergeAll,
     StringifyPossibleTypes,
+    StringReplace,
     UnionDiffResult,
     Unlisted
 } from "@re-do/utils"
@@ -80,6 +81,9 @@ export namespace TypeSet {
     }
 }
 
+export const extraneousTypesErrorMessage = `Defined types @types were never declared.`
+export const missingTypesErrorMessage = `Declared types @types were never defined.`
+
 export type MissingTypesError<DeclaredTypeName, DefinedTypeName> = DiffUnions<
     DeclaredTypeName,
     DefinedTypeName
@@ -87,5 +91,9 @@ export type MissingTypesError<DeclaredTypeName, DefinedTypeName> = DiffUnions<
 > extends UnionDiffResult<infer Extraneous, infer Missing>
     ? Missing extends []
         ? {}
-        : `Declared types ${StringifyPossibleTypes<`'${ElementOf<Missing>}'`>} were never defined.`
+        : StringReplace<
+              typeof missingTypesErrorMessage,
+              "@types",
+              StringifyPossibleTypes<`'${ElementOf<Missing>}'`>
+          >
     : never

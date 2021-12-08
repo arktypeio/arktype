@@ -1,5 +1,6 @@
 import {
     ElementOf,
+    Evaluate,
     Iteration,
     KeyValuate,
     ListPossibleTypes,
@@ -13,11 +14,6 @@ import {
 import { ShallowCycleError } from "../components/errors.js"
 import { ParseTypeRecurseOptions } from "../parse.js"
 
-type ExtractReferences<
-    Def extends string,
-    Filter extends string = string
-> = RawReferences<Def> & Filter
-
 type RawReferences<
     Fragments extends string,
     RemainingControlCharacters extends string[] = ControlCharacters
@@ -29,10 +25,15 @@ type RawReferences<
     ? RawReferences<ElementOf<Split<Fragments, Character>>, Remaining>
     : Exclude<ElementOf<Split<Fragments, RemainingControlCharacters[0]>>, "">
 
-type ExtractReferenceList<
+export type ReferencesOfStringDef<
     Def extends string,
     Filter extends string = string
-> = ListPossibleTypes<RawReferences<Def> & Filter>
+> = Evaluate<RawReferences<Def> & Filter>
+
+export type ListReferencesOfStringDef<
+    Def extends string,
+    Filter extends string = string
+> = Evaluate<ListPossibleTypes<ReferencesOfStringDef<Def, Filter>>>
 
 type CheckReferencesForShallowCycle<
     References extends string[],
@@ -55,7 +56,11 @@ type CheckReferencesForShallowCycle<
 type CheckForShallowCycleRecurse<Def, TypeSet, Seen> = Def extends Seen
     ? Seen
     : Def extends string
-    ? CheckReferencesForShallowCycle<ExtractReferenceList<Def>, TypeSet, Seen>
+    ? CheckReferencesForShallowCycle<
+          ListReferencesOfStringDef<Def>,
+          TypeSet,
+          Seen
+      >
     : never
 
 type CheckForShallowCycle<Def, TypeSet> = CheckForShallowCycleRecurse<

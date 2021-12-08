@@ -19,19 +19,25 @@ const getThrownMessage = (value: Function) => {
 export type ChainableValueAssertion<
     ArgsType extends [value: any, ...rest: any[]],
     Config extends AssertionConfig,
+    Chained = ArgsType[0],
     IsReturn extends boolean = false,
-    ImmediateAssertions = ValueAssertion<ArgsType[0], Config> &
+    ImmediateAssertions = ValueAssertion<Chained, Config> &
         (IsReturn extends true ? NextAssertions<Config> : {})
 > = (<Args extends ArgsType | [] = []>(
     ...args: Args
 ) => Args extends [] ? ImmediateAssertions : NextAssertions<Config>) &
     ImmediateAssertions
 
+export type ChainableAssertionOptions = {
+    isReturn?: boolean
+    allowRegex?: boolean
+}
+
 export const chainableAssertion = (
     position: SourcePosition,
     valueThunk: () => unknown,
     config: AssertionConfig,
-    isReturn: boolean = false
+    { isReturn = false, allowRegex = false }: ChainableAssertionOptions = {}
 ) =>
     new Proxy(
         (...args: [expected: unknown]) => {
@@ -49,7 +55,7 @@ export const chainableAssertion = (
                 }
                 return baseAssertions
             }
-            defaultAssert(valueThunk(), args[0])
+            defaultAssert(valueThunk(), args[0], allowRegex)
             return getNextAssertions(position, config)
         },
         {
@@ -85,8 +91,8 @@ export type CallableFunctionAssertion<
     Return,
     Config extends AssertionConfig
 > = {
-    returns: ChainableValueAssertion<[value: Return], Config, true>
-    throws: ChainableValueAssertion<[message: string], Config>
+    returns: ChainableValueAssertion<[value: Return], Config, Return, true>
+    throws: ChainableValueAssertion<[message: string | RegExp], Config, string>
 } & (Config["allowTypeAssertions"] extends true
     ? {
           throwsAndHasTypeError: (message: string | RegExp) => undefined
@@ -125,9 +131,16 @@ export type ValueAssertion<
     ? FunctionalValueAssertion<Args, Return, Config>
     : ComparableValueAssertion<T, Config>
 
-const defaultAssert = (value: unknown, expected: unknown) =>
+const defaultAssert = (
+    value: unknown,
+    expected: unknown,
+    allowRegex: boolean = false
+) =>
     isRecursible(value)
         ? expect(value).toStrictEqual(expected)
+        : allowRegex &&
+          (typeof expected === "string" || expected instanceof RegExp)
+        ? expect(value).toMatch(expected)
         : expect(value).toBe(expected)
 
 export const getNextAssertions = (
@@ -152,12 +165,13 @@ export const valueAssertions = <T, Config extends AssertionConfig>(
                     ...config,
                     returnsCount: config.returnsCount + 1
                 },
-                true
+                { isReturn: true }
             ),
             throws: chainableAssertion(
                 position,
                 () => getThrownMessage(value),
-                config
+                config,
+                { allowRegex: true }
             )
         } as any
         if (config["allowTypeAssertions"]) {

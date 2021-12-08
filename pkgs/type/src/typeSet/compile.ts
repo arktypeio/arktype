@@ -1,4 +1,5 @@
 import {
+    diffSets,
     Evaluate,
     isRecursible,
     mergeAll,
@@ -6,10 +7,16 @@ import {
     transform
 } from "@re-do/utils"
 import { createParseFunction, parse, ParseFunction } from "../parse.js"
-import { TypeSet } from "./typeSet.js"
+import {
+    extraneousTypesErrorMessage,
+    missingTypesErrorMessage,
+    TypeSet
+} from "./typeSet.js"
 
 export const createCompileFunction =
-    <DeclaredTypeNames extends string[]>(names: Narrow<DeclaredTypeNames>) =>
+    <DeclaredTypeNames extends string[]>(
+        declaredTypeNames: Narrow<DeclaredTypeNames>
+    ) =>
     <
         Definitions extends TypeSet.ValidateMemberList<
             Definitions,
@@ -31,6 +38,32 @@ export const createCompileFunction =
             )`)
         }
         const typeSetFromDefinitions = mergeAll(definitions as any) as any
+        const declarationErrors = diffSets(
+            declaredTypeNames,
+            Object.keys(typeSetFromDefinitions)
+        )
+        if (declaredTypeNames.length && declarationErrors) {
+            const errorParts = [] as string[]
+            if (declarationErrors.added) {
+                errorParts.push(
+                    extraneousTypesErrorMessage.replace(
+                        "@types",
+                        declarationErrors.added.map((_) => `'${_}'`).join(", ")
+                    )
+                )
+            }
+            if (declarationErrors.removed) {
+                errorParts.push(
+                    missingTypesErrorMessage.replace(
+                        "@types",
+                        declarationErrors.removed
+                            .map((_) => `'${_}'`)
+                            .join(", ")
+                    )
+                )
+            }
+            throw new Error(errorParts.join(" "))
+        }
         const parse = createParseFunction(typeSetFromDefinitions) as any
         return {
             parse,
@@ -53,7 +86,10 @@ export const createCompileFunction =
 export const compile = createCompileFunction([])
 
 export type CompileFunction<DeclaredTypeNames extends string[]> = <
-    Definitions extends TypeSet.ValidateMemberList<Definitions>
+    Definitions extends TypeSet.ValidateMemberList<
+        Definitions,
+        DeclaredTypeNames
+    >
 >(
     // @ts-ignore
     ...definitions: Narrow<Definitions>
