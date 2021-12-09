@@ -1,6 +1,6 @@
 import { DeepUpdate, DeepPartial } from "@re-do/utils"
 import { create } from "./create.js"
-import { ParsedTypeSet } from "@re-do/type"
+import { CompiledTypeSet } from "@re-do/type"
 import { Db, DbContents } from "../db.js"
 
 export type Interactions<Stored, Input> = {
@@ -39,7 +39,7 @@ export type InteractionContext<
 > = {
     db: Db<Stored, IdKey>
     idKey: IdKey
-    model: ParsedTypeSet
+    model: CompiledTypeSet<any>
 }
 
 export type FindArgs<T> = DeepPartial<T> | ((t: T) => boolean)

@@ -345,8 +345,8 @@ export const createState = <
         idKey
     )
     const storedPaths = findStoredPaths(config, "")
-    const model = parse(modelTypeDef, { typeSet: modelTypeSet }) as any
-    const initialState = model.getDefault() as StateType
+    const model = parse(modelTypeDef, { typeSet: modelTypeSet })
+    const initialState = model.generate() as StateType
     // copy the object by value
     const persisted = createMemoryDb(
         transform(storedPaths, ([i, v]) => [v, []])

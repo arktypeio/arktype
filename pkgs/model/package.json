@@ -19,26 +19,11 @@
         }
     },
     "scripts": {
-        "build": "runScript --esm src/generateSchema.ts && graphql-codegen && redoTsc",
+        "build": "redoTsc",
         "test": "echo 'This package has no tests.'"
-    },
-    "dependencies": {
-        "@apollo/client": "3.4.5",
-        "gqlize": "0.0.3",
-        "graphql": "15.5.0",
-        "graphql-tag": "2.12.4"
     },
     "devDependencies": {
         "@re-do/node": "workspace:*",
-        "@types/node": "15.0.2",
-        "@graphql-codegen/cli": "2.0.1",
-        "@graphql-codegen/typescript": "2.0.0",
-        "@graphql-codegen/typescript-operations": "2.0.1",
-        "@graphql-codegen/typescript-react-apollo": "3.0.0",
-        "ts-node": "10.4.0",
-        "typescript": "4.5.2",
-        "jest": "27.4.3",
-        "@types/jest": "26.0.24",
-        "ts-jest": "27.0.7"
+        "typescript": "4.5.2"
     }
 }

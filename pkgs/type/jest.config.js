@@ -1,7 +1,6 @@
 import { getJestConfig } from "@re-do/node"
 
-export default {
-    ...getJestConfig(),
+export default getJestConfig({
     collectCoverage: true,
     coverageThreshold: {
         global: {
@@ -10,6 +9,5 @@ export default {
             functions: 80,
             lines: 90
         }
-    },
-    reporters: ["default"]
-}
+    }
+})
