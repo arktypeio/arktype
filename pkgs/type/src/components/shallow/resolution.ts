@@ -1,4 +1,4 @@
-import { Or as LogicalOr } from "@re-do/utils"
+import { IsAny, IsAnyOrUnknown, Or as LogicalOr } from "@re-do/utils"
 import {
     ParseConfig,
     typeDefProxy,
@@ -28,7 +28,9 @@ export namespace Resolution {
         TypeName extends keyof TypeSet & string,
         TypeSet,
         Options extends ParseConfig
-    > = TypeSet[TypeName] extends ValidationErrorMessage
+    > = IsAny<TypeSet> extends true
+        ? TypeSet
+        : TypeSet[TypeName] extends ValidationErrorMessage
         ? unknown
         : TypeName extends keyof Options["seen"]
         ? Options["onCycle"] extends never

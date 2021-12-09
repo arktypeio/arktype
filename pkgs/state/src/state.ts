@@ -21,18 +21,10 @@ import {
     IntersectProps,
     transform,
     isRecursible,
-    withDefaults
+    withDefaults,
+    ElementOf
 } from "@re-do/utils"
-import {
-    parse,
-    ParsedType,
-    ParsedTypeSet,
-    ParseType,
-    TypeDefinition,
-    TypeSet,
-    UnvalidatedDefinition,
-    UnvalidatedTypeSet
-} from "@re-do/type"
+import { parse, Parse, TypeSet } from "@re-do/type"
 import {
     configureStore,
     ConfigureStoreOptions,
@@ -161,7 +153,7 @@ type ModelConfigRecurse<
 > = Config extends string
     ? PathToType extends Segment[]
         ? TypeError<`A type has already been determined via ${Join<PathToType>}.`>
-        : TypeDefinition<Config, DeclaredTypeNames>
+        : TypeSet.ValidateReferences<Config, ElementOf<DeclaredTypeNames>>
     : ModelConfigOptions<
           T,
           Config,
@@ -225,7 +217,10 @@ type ModelTypeOptions<
     ModelTypeSet,
     DeclaredTypeNames extends string[],
     TypeDef = {
-        type: TypeDefinition<KeyValuate<Config, "type">, DeclaredTypeNames>
+        type: TypeSet.ValidateReferences<
+            KeyValuate<Config, "type">,
+            ElementOf<DeclaredTypeNames>
+        >
     },
     StoresDef = {
         stores: keyof ModelTypeSet
@@ -403,7 +398,7 @@ export const createState = <
     }
 }
 
-// createTestState().cache.currentCity.groups[0].members[0].bestFriend?.id
+//createTestState().cache.currentCity.groups[0].members[0].bestFriend?.id
 
 export type State<
     StateType,
@@ -415,15 +410,15 @@ export type State<
         ? StoredLocations[K] extends string
             ? Interactions<
                   Unlisted<StateType[K]>,
-                  ParseType<StoredLocations[K], InputTypeSet>
+                  Parse<StoredLocations[K], InputTypeSet>
               >
             : State<StateType[K], InputTypeSet, StoredLocations[K], IdKey>
         : StateType[K]
 }
 
 const compileModelTypeSet = (
-    storedTypeSet: UnvalidatedTypeSet,
-    externalTypeSet: UnvalidatedTypeSet,
+    storedTypeSet: TypeSet.Definition,
+    externalTypeSet: TypeSet.Definition,
     idKey: string
 ) => {
     const storedTypeSetWithIds = transform(
@@ -443,8 +438,8 @@ const compileModelTypeSet = (
 
 const extractTypeSet = (
     config: any,
-    externalTypeSet: UnvalidatedTypeSet
-): UnvalidatedTypeSet =>
+    externalTypeSet: TypeSet.Definition
+): TypeSet.Definition =>
     Object.entries(config).reduce((typeSet, [k, v]) => {
         if (!isRecursible(v)) {
             return typeSet
@@ -473,7 +468,7 @@ const extractTypeSet = (
             return { ...typeSet, ...extractTypeSet(v.fields, externalTypeSet) }
         }
         return typeSet
-    }, {} as UnvalidatedTypeSet)
+    }, {} as TypeSet.Definition)
 
 const findStoredPaths = (config: any, path: string): string[] =>
     Object.entries(config).reduce((storedPaths, [k, v]) => {

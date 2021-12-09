@@ -1,9 +1,0 @@
-{
-    "extends": "@re-do/node/tsconfig.base",
-    "compilerOptions": {
-        "baseUrl": "src",
-        "outDir": "build",
-        "module": "commonjs"
-    },
-    "include": ["src", "test"]
-}

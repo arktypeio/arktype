@@ -1,4 +1,10 @@
-import { Iteration, KeyValuate } from "@re-do/utils"
+import {
+    IsAny,
+    IsAnyOrUnknown,
+    IsUnknown,
+    Iteration,
+    KeyValuate
+} from "@re-do/utils"
 import { ParseConfig, ShallowCycleError } from "./internal.js"
 import { Root } from "../root.js"
 import { References } from "../../references.js"
@@ -21,7 +27,9 @@ type CheckReferencesForShallowCycle<
           >
     : never
 
-type CheckForShallowCycleRecurse<Def, TypeSet, Seen> = Def extends Seen
+type CheckForShallowCycleRecurse<Def, TypeSet, Seen> = IsAny<Def> extends true
+    ? never
+    : Def extends Seen
     ? Seen
     : Def extends string
     ? CheckReferencesForShallowCycle<
@@ -40,10 +48,9 @@ type CheckForShallowCycle<Def, TypeSet> = CheckForShallowCycleRecurse<
 export namespace TypeSetMember {
     export type Definition<Def extends Root.Definition = Root.Definition> = Def
 
-    export type Validate<Def, TypeSet> = CheckForShallowCycle<
-        Def,
-        TypeSet
-    > extends never
+    export type Validate<Def, TypeSet> = IsAny<Def> extends true
+        ? "any"
+        : CheckForShallowCycle<Def, TypeSet> extends never
         ? Root.Validate<Def, TypeSet>
         : ShallowCycleError<Def & string, CheckForShallowCycle<Def, TypeSet>>
 

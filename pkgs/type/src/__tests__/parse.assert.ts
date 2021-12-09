@@ -180,6 +180,15 @@ describe("parse", () => {
             "Property 'wasResolved' does not exist on type '{ favoriteSoup: \"borscht\"; }'."
         )
     })
+    test("doesn't try to parse or validate any", () => {
+        // Parse any as type
+        assert(parse({} as any).type).typed as any
+        // Parse any as typeSet (in this case type could be inferred as string but impossible currently to do so)
+        assert(parse("string", { typeSet: {} as any }).type).typed as any
+        // Parse any as typeSet member
+        assert(parse(["number", "a"], { typeSet: { a: {} as any } }).type)
+            .typed as [number, any]
+    })
     test("parse result", () => {
         const parseResult = parse("a", {
             typeSet: { a: "true" }

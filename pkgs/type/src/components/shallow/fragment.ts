@@ -21,9 +21,7 @@ export namespace Fragment {
         Def extends string,
         Root extends string,
         TypeSet
-    > = Def extends Resolution.Definition<TypeSet>
-        ? Resolution.Validate<Def, Root, TypeSet>
-        : Def extends Or.Definition<infer First, infer Second>
+    > = Def extends Or.Definition<infer First, infer Second>
         ? Or.Validate<`${First}|${Second}`, Root, TypeSet>
         : Def extends ArrowFunction.Definition<infer Parameters, infer Return>
         ? ArrowFunction.Validate<Parameters, Return, Root, TypeSet>
@@ -34,6 +32,8 @@ export namespace Fragment {
               | StringLiteral.Definition
               | NumericStringLiteral.Definition
         ? Root
+        : Def extends Resolution.Definition<TypeSet>
+        ? Resolution.Validate<Def, Root, TypeSet>
         : UnknownTypeError<Def>
 
     export type Parse<

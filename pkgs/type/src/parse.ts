@@ -15,9 +15,11 @@ import {
 } from "./components/parser.js"
 import { stringifyErrors, ValidationErrors } from "./components/errors.js"
 import { format } from "./format.js"
-import { TypeSet } from "./components/typeSet/typeSet.js"
+import { TypeSet } from "./components"
 import { typeOf } from "./typeOf.js"
 import { typeDefProxy } from "./internal.js"
+
+export type Definition = Root.Definition
 
 export type Validate<Def, TypeSet> = IsAny<Def> extends true
     ? Def
@@ -36,10 +38,10 @@ export type Parse<
       >
 
 export type ParseTypeOptions = {
-    onCycle?: Root.Definition
+    onCycle?: Definition
     seen?: Record<string, boolean>
     deepOnCycle?: boolean
-    onResolve?: Root.Definition
+    onResolve?: Definition
 }
 
 export type DefaultParseTypeOptions = {

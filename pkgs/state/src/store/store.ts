@@ -9,12 +9,12 @@ import {
     WithDefaults
 } from "@re-do/utils"
 import {
-    ParseType,
-    TypeDefinition,
+    Parse,
+    Validate,
+    Definition,
     TypeSet,
-    UnvalidatedDefinition,
-    UnvalidatedTypeSet,
-    ListDefinition
+    List,
+    References
 } from "@re-do/type"
 import { Interactions } from "./interactions"
 
@@ -34,7 +34,7 @@ export type ParseStoredType<
     Definition,
     StoredTypeSet,
     IdKey extends string
-> = ParseType<
+> = Parse<
     Definition,
     StoredTypeSet,
     {
@@ -49,11 +49,7 @@ export type CompileInputTypeSet<
     StoredTypeName,
     CustomInputs = {},
     InputDefinitions = Merge<FullTypeSet, CustomInputs>,
-    DefinitionReferences = TypeDefinition<
-        InputDefinitions,
-        ListPossibleTypes<keyof InputDefinitions>,
-        { extractTypesReferenced: true }
-    >
+    DefinitionReferences = References<InputDefinitions>
 > = CompileInputTypeSetRecurse<
     StoredTypeName,
     FullTypeSet,
@@ -67,7 +63,7 @@ export type CompileInputTypeSetRecurse<
 > = {
     [K in keyof TypeDefinitions]: TypeDefinitions[K] extends NonRecursible
         ? KeyValuate<DefinitionReferences, K> extends StoredTypeName
-            ? `${TypeDefinitions[K] extends ListDefinition
+            ? `${TypeDefinitions[K] extends List.Definition
                   ? "number[]"
                   : "number"}|${TypeDefinitions[K] & string}`
             : TypeDefinitions[K]
@@ -79,11 +75,11 @@ export type CompileInputTypeSetRecurse<
 }
 
 export type CustomInputDefinitions<Types> = {
-    [K in keyof Types]?: UnvalidatedDefinition
+    [K in keyof Types]?: Definition
 }
 
 export type Store<
-    Types extends UnvalidatedTypeSet,
+    Types extends TypeSet.Definition,
     ProvidedConfig extends StoreConfigOptions<Types> = {},
     Config extends StoreConfig<Types> = WithDefaults<
         StoreConfigOptions<Types>,
@@ -105,14 +101,14 @@ export type Store<
 > = {
     [TypeName in keyof Types]: Interactions<
         ParseStoredType<TypeName, StoredTypeSet, Config["idKey"]>,
-        ParseType<TypeName, InputTypeSet>
+        Parse<TypeName, InputTypeSet>
     >
 }
 
 export type StoreConfigOptions<T> = {
     idKey?: string
     inputs?: CustomInputDefinitions<T>
-    referencedTypes?: UnvalidatedTypeSet
+    referencedTypes?: TypeSet.Definition
 }
 
 const defaultStoreConfig = narrow({
@@ -126,10 +122,10 @@ export type DefaultStoreConfig = typeof defaultStoreConfig
 export type StoreConfig<T> = Required<StoreConfigOptions<T>>
 
 export const createStore = <
-    Types extends UnvalidatedTypeSet,
+    Types extends TypeSet.Definition,
     ProvidedConfig extends StoreConfigOptions<Types> = {}
 >(
-    types: TypeSet<Types>,
+    types: TypeSet.Validate<Types>,
     { inputs }: Narrow<StoreConfigOptions<Types>>
 ) => {
     const store = transform(types, ([typeName, definition]) => {

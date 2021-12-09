@@ -91,10 +91,6 @@
             "projectFolder": "pkgs/docs"
         },
         {
-            "packageName": "@re-do/docs2",
-            "projectFolder": "pkgs/docs2"
-        },
-        {
             "packageName": "@re-do/app",
             "projectFolder": "pkgs/app"
         }
