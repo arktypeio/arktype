@@ -1,9 +1,7 @@
 import { Iteration, KeyValuate } from "@re-do/utils"
-import { ValidateTypeRecurseOptions } from "../components/common.js"
-import { ShallowCycleError } from "../components/errors.js"
-import { Root } from "../components/root.js"
-import { ParseTypeRecurseOptions } from "../parse.js"
-import { References } from "../references.js"
+import { ParseConfig, ShallowCycleError } from "./internal.js"
+import { Root } from "../root.js"
+import { References } from "../../references.js"
 
 type CheckReferencesForShallowCycle<
     References extends string[],
@@ -42,17 +40,16 @@ type CheckForShallowCycle<Def, TypeSet> = CheckForShallowCycleRecurse<
 export namespace TypeSetMember {
     export type Definition<Def extends Root.Definition = Root.Definition> = Def
 
-    export type Validate<
+    export type Validate<Def, TypeSet> = CheckForShallowCycle<
         Def,
-        TypeSet,
-        Options extends ValidateTypeRecurseOptions
-    > = CheckForShallowCycle<Def, TypeSet> extends never
-        ? Root.Validate<Def, TypeSet, Options>
+        TypeSet
+    > extends never
+        ? Root.Validate<Def, TypeSet>
         : ShallowCycleError<Def & string, CheckForShallowCycle<Def, TypeSet>>
 
-    export type Parse<
+    export type Parse<Def, TypeSet, Options extends ParseConfig> = Root.Parse<
         Def,
         TypeSet,
-        Options extends ParseTypeRecurseOptions
-    > = Root.Parse<Def, TypeSet, Options>
+        Options
+    >
 }

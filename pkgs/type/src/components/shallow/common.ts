@@ -1,11 +1,9 @@
 import { StringifyPossibleTypes, Split, Join, narrow } from "@re-do/utils"
-import {
-    ParseTypeRecurseOptions,
-    ValidateTypeRecurseOptions
-} from "../common.js"
+import { ParseConfig, ValidationErrorMessage } from "../internal.js"
 import { Fragment } from "./fragment.js"
-import { ValidationErrorMessage } from "../errors.js"
 import { BuiltIn } from "./builtIn.js"
+
+export * from "../internal.js"
 
 // These values can be directly compared for equality
 export const comparableDefaultValues = narrow({
@@ -63,7 +61,7 @@ export type ParseSplittable<
     Delimiter extends string,
     Def extends string,
     TypeSet,
-    Options extends ParseTypeRecurseOptions,
+    Options extends ParseConfig,
     Components extends string[] = Split<Def, Delimiter>
 > = {
     [I in keyof Components]: Fragment.Parse<
@@ -78,14 +76,12 @@ export type ValidateSplittable<
     Def extends string,
     Root extends string,
     TypeSet,
-    Options extends ValidateTypeRecurseOptions,
     Components extends string[] = Split<Def, Delimiter>,
     ValidateDefinitions extends string[] = {
         [Index in keyof Components]: Fragment.Validate<
             Components[Index] & string,
             Components[Index] & string,
-            TypeSet,
-            Options
+            TypeSet
         >
     },
     ValidatedDefinition extends string = Join<ValidateDefinitions, Delimiter>

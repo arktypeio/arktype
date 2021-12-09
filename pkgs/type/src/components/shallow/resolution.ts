@@ -1,17 +1,14 @@
-import { Or } from "@re-do/utils"
-import { typeDefProxy } from "../../common.js"
+import { Or as LogicalOr } from "@re-do/utils"
 import {
+    ParseConfig,
+    typeDefProxy,
     ValidationErrorMessage,
     shallowCycleError,
-    generateRequiredCycleError
-} from "../errors.js"
-import { createParser } from "../parser.js"
-import {
-    ParseTypeRecurseOptions,
-    ValidateTypeRecurseOptions
-} from "../common.js"
-import { Fragment } from "./fragment.js"
+    generateRequiredCycleError,
+    createParser
+} from "./common.js"
 import { Root } from "../root.js"
+import { Fragment } from "./fragment.js"
 
 export namespace Resolution {
     export type Definition<
@@ -22,8 +19,7 @@ export namespace Resolution {
     export type Validate<
         TypeName extends keyof TypeSet & string,
         Root,
-        TypeSet,
-        Options extends ValidateTypeRecurseOptions
+        TypeSet
     > = TypeSet[TypeName] extends ValidationErrorMessage
         ? TypeSet[TypeName]
         : Root
@@ -31,7 +27,7 @@ export namespace Resolution {
     export type Parse<
         TypeName extends keyof TypeSet & string,
         TypeSet,
-        Options extends ParseTypeRecurseOptions
+        Options extends ParseConfig
     > = TypeSet[TypeName] extends ValidationErrorMessage
         ? unknown
         : TypeName extends keyof Options["seen"]
@@ -43,7 +39,7 @@ export namespace Resolution {
     export type ParseResolvedCyclicDefinition<
         TypeName extends keyof TypeSet,
         TypeSet,
-        Options extends ParseTypeRecurseOptions
+        Options extends ParseConfig
     > = Root.Parse<
         Options["onCycle"],
         Omit<TypeSet, "cyclic"> & { cyclic: TypeSet[TypeName] },
@@ -60,8 +56,8 @@ export namespace Resolution {
     export type ParseResolvedNonCyclicDefinition<
         TypeName extends keyof TypeSet,
         TypeSet,
-        Options extends ParseTypeRecurseOptions
-    > = Or<
+        Options extends ParseConfig
+    > = LogicalOr<
         Options["onResolve"] extends never ? true : false,
         TypeName extends "resolved" ? true : false
     > extends true

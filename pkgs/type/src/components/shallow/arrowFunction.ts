@@ -1,17 +1,13 @@
 import { Evaluate } from "@re-do/utils"
 import {
-    ParseTypeRecurseOptions,
-    ValidateTypeRecurseOptions
-} from "../common.js"
-import {
+    typeDefProxy,
+    validationError,
+    createParser,
     ParseSplittable,
-    ParseSplittableResult,
-    ValidateSplittable
+    ValidateSplittable,
+    ParseConfig
 } from "./common.js"
 import { Fragment } from "./fragment.js"
-import { createParser } from "../parser.js"
-import { typeDefProxy } from "../../common.js"
-import { validationError } from "../errors.js"
 
 export namespace ArrowFunction {
     export type Definition<
@@ -24,19 +20,16 @@ export namespace ArrowFunction {
         Return extends string,
         Root extends string,
         TypeSet,
-        Options extends ValidateTypeRecurseOptions,
         ValidateParameters extends string = ValidateParameterTuple<
             Parameters,
             Parameters,
-            TypeSet,
-            Options
+            TypeSet
         > &
             string,
         ValidateReturn extends string = Fragment.Validate<
             Return,
             Return,
-            TypeSet,
-            Options
+            TypeSet
         >
     > = Parameters extends ValidateParameters
         ? Return extends ValidateReturn
@@ -48,7 +41,7 @@ export namespace ArrowFunction {
         Parameters extends string,
         Return extends string,
         TypeSet,
-        Options extends ParseTypeRecurseOptions
+        Options extends ParseConfig
     > = Evaluate<
         (
             ...args: ParseParameterTuple<Parameters, TypeSet, Options>
@@ -108,12 +101,11 @@ export namespace ArrowFunction {
 type ValidateParameterTuple<
     Def extends string,
     Root extends string,
-    TypeSet,
-    Options extends ValidateTypeRecurseOptions
-> = Def extends "" ? "" : ValidateSplittable<",", Def, Root, TypeSet, Options>
+    TypeSet
+> = Def extends "" ? "" : ValidateSplittable<",", Def, Root, TypeSet>
 
 type ParseParameterTuple<
     Def extends string,
     TypeSet,
-    Options extends ParseTypeRecurseOptions
+    Options extends ParseConfig
 > = Def extends "" ? [] : ParseSplittable<",", Def, TypeSet, Options>

@@ -5,38 +5,32 @@ import {
     isRecursible,
     transform
 } from "@re-do/utils"
-import { Recursible } from "."
-import { Optional } from "../shallow/optional.js"
-import { createParser, ParsedType } from "../parser.js"
-import { typeDefProxy } from "../../common.js"
-import { Root } from "../root.js"
 import {
-    ParseTypeRecurseOptions,
-    ValidateTypeRecurseOptions
-} from "../common.js"
-import {
+    ParseConfig,
     mismatchedKeysError,
     validationError,
-    ValidationErrors
-} from "../errors.js"
+    ValidationErrors,
+    typeDefProxy,
+    createParser,
+    ParseResult
+} from "./internal.js"
+import { Root } from "../root.js"
+import { Recursible } from "./recursible.js"
+import { Optional } from "../shallow"
 
 export namespace Obj {
     export type Definition<
         Def extends Recursible.Definition = Recursible.Definition
     > = Recursible.Definition<Def> extends any[] ? never : Def
 
-    export type Validate<
-        Def,
-        TypeSet,
-        Options extends ValidateTypeRecurseOptions
-    > = Evaluate<{
-        [PropName in keyof Def]: Root.Validate<Def[PropName], TypeSet, Options>
+    export type Validate<Def, TypeSet> = Evaluate<{
+        [PropName in keyof Def]: Root.Validate<Def[PropName], TypeSet>
     }>
 
     export type Parse<
         Def,
         TypeSet,
-        Options extends ParseTypeRecurseOptions,
+        Options extends ParseConfig,
         OptionalKey extends keyof Def = {
             [K in keyof Def]: Def[K] extends Optional.Definition ? K : never
         }[keyof Def],
@@ -66,7 +60,7 @@ export namespace Obj {
                         path: [...ctx.path, prop],
                         shallowSeen: []
                     })
-                ]) as Record<string, ParsedType<any, any>>
+                ]) as Record<string, ParseResult<any>>
         },
         {
             allows: ({ components, def, ctx }, valueType, opts) => {

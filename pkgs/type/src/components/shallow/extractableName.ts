@@ -1,7 +1,5 @@
-import { createParser } from "../parser.js"
+import { typeDefProxy, validationError, createParser } from "./common.js"
 import { BuiltIn } from "./builtIn.js"
-import { typeDefProxy } from "../../common.js"
-import { validationError } from "../errors.js"
 
 // These are the non-literal types we can extract from a value at runtime
 export namespace ExtractableName {

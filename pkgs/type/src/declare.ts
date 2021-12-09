@@ -1,13 +1,12 @@
 import { ElementOf, Narrow, transform } from "@re-do/utils"
-import { Root } from "../components/common.js"
-import { parse } from "../parse.js"
+import { parse } from "./parse.js"
 import { CompileFunction, createCompileFunction } from "./compile.js"
-import { TypeSet } from "./typeSet.js"
+import { TypeSet } from "./components"
 
 export const createDefineFunctionMap = <DeclaredTypeNames extends string[]>(
     typeNames: DeclaredTypeNames
 ) =>
-    transform(typeNames, ([index, typeName]) => [
+    transform(typeNames, ([i, typeName]) => [
         typeName as string,
         createDefineFunction(typeNames, typeName as any)
     ]) as DefineFunctionMap<DeclaredTypeNames>
@@ -40,7 +39,7 @@ export const createDefineFunction =
         definedTypeName: DefinedTypeName
     ): DefineFunction<DefinedTypeName, DeclaredTypeNames> =>
     (definition: any) => {
-        const result = parse(definition, {
+        parse(definition, {
             typeSet: transform(declaredTypeNames, ([i, typeName]) => [
                 typeName,
                 "unknown"

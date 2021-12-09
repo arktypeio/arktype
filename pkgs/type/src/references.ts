@@ -5,8 +5,7 @@ import {
     Split,
     WithDefaults
 } from "@re-do/utils"
-import { Root } from "./components/root.js"
-import { Shallow } from "./components/shallow/shallow.js"
+import { Root, Shallow } from "./components"
 
 type ControlCharacters = ["|", "?", "(", ")", ",", "[", "]", "=", ">", " "]
 
@@ -39,7 +38,7 @@ export type ReferencesOptions = {
 
 export type References<
     Def extends Root.Definition,
-    Options extends ReferencesOptions
+    Options extends ReferencesOptions = {}
 > = Def extends Shallow.Definition
     ? ShallowReferences<Def, Options>
     : {

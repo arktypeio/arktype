@@ -2,7 +2,7 @@ import { transform } from "@re-do/utils"
 import {
     ExtractableDefinition,
     ExtractableTypeName
-} from "./components/common.js"
+} from "./components/internal.js"
 
 export const typeOf = (value: any): ExtractableDefinition => {
     if (typeof value === "boolean") {

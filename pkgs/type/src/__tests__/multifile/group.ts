@@ -1,4 +1,4 @@
-import { define } from "./multifile.test"
+import { define } from "../multifile.assert"
 
 export const group = define.group({
     name: "string",

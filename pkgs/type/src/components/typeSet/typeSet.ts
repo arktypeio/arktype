@@ -1,19 +1,19 @@
-import { Root, ValidateTypeRecurseOptions } from "../components/common.js"
-import { Obj } from "../components/recursible/obj.js"
-import { ParsedType, ParseTypeRecurseOptions } from "../parse.js"
-import { TypeSetMember } from "./member.js"
-import { DefaultParseTypeOptions } from "../definition.js"
 import {
     DiffUnions,
     ElementOf,
     Evaluate,
+    IsAny,
     KeyValuate,
     MergeAll,
     StringifyPossibleTypes,
     StringReplace,
-    UnionDiffResult,
-    Unlisted
+    UnionDiffResult
 } from "@re-do/utils"
+import { ParsedType } from "../../parse.js"
+import { ParseConfig } from "./internal.js"
+import { TypeSetMember } from "./member.js"
+import { Root } from "../root.js"
+import { Obj } from "../recursible"
 
 export namespace TypeSet {
     export type Definition<Def extends Obj.Definition = Obj.Definition> =
@@ -48,31 +48,24 @@ export namespace TypeSet {
     // but we still want to allow references to other declared types
     export type ValidateReferences<
         Def,
-        DeclaredTypeName extends string,
-        Options extends ValidateTypeRecurseOptions = {}
+        DeclaredTypeName extends string
     > = Root.Validate<
         Def,
         {
             [TypeName in DeclaredTypeName]: "unknown"
-        },
-        Options
+        }
     >
 
-    export type Validate<
-        TypeSet,
-        Options extends ValidateTypeRecurseOptions = {}
-    > = Evaluate<{
-        [TypeName in keyof TypeSet]: TypeSetMember.Validate<
-            TypeSet[TypeName],
-            TypeSet,
-            Options
-        >
-    }>
+    export type Validate<TypeSet> = IsAny<TypeSet> extends true
+        ? any
+        : Evaluate<{
+              [TypeName in keyof TypeSet]: TypeSetMember.Validate<
+                  TypeSet[TypeName],
+                  TypeSet
+              >
+          }>
 
-    export type Parse<
-        TypeSet,
-        Options extends ParseTypeRecurseOptions = DefaultParseTypeOptions
-    > = {
+    export type Parse<TypeSet, Options extends ParseConfig> = {
         [TypeName in keyof TypeSet]: ParsedType<
             TypeSet[TypeName],
             Validate<TypeSet>,

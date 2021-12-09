@@ -1,8 +1,10 @@
 import { TreeOf } from "@re-do/utils"
 import { Num } from "./shallow/num.js"
 import { StringLiteral } from "./shallow/stringLiteral.js"
-import { Root } from "./root.js"
-import { ParseTypeOptions, ValidateTypeOptions } from "../definition.js"
+
+export * from "../internal.js"
+export * from "./errors.js"
+export * from "./parser.js"
 
 // These are the non-literal types we can extract from a value at runtime
 export const namedExtractableTypes = {
@@ -53,9 +55,3 @@ export const builtInTypes = { ...namedExtractableTypes, ...unextractableTypes }
 export type BuiltInTypes = typeof builtInTypes
 
 export type BuiltInTypeName = keyof BuiltInTypes
-
-export type ParseTypeRecurseOptions = Required<ParseTypeOptions>
-
-export type ValidateTypeRecurseOptions = Required<ValidateTypeOptions>
-
-export type UnvalidatedTypeSet = { [K in string]: Root.Definition }

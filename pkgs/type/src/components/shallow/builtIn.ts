@@ -1,9 +1,7 @@
-import { createParser } from "../parser.js"
+import { typeDefProxy, valueGenerationError, createParser } from "./common.js"
 import { Fragment } from "./fragment.js"
 import { ExtractableName } from "./extractableName.js"
 import { UnextractableName } from "./unextractableName.js"
-import { typeDefProxy } from "../../common.js"
-import { valueGenerationError } from "../errors.js"
 
 export namespace BuiltIn {
     export type Definition<Def extends keyof Defaults = keyof Defaults> = Def

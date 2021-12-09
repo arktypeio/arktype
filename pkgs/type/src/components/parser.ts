@@ -8,27 +8,25 @@ import {
     Exact,
     toString
 } from "@re-do/utils"
-import type { ExtractableDefinition, UnvalidatedTypeSet } from "./common.js"
-import type { Root } from "./root.js"
+import { ExtractableDefinition } from "./internal.js"
+import { Root } from "./root.js"
+import { TypeSet } from "./typeSet"
 import { ValidationErrors, unknownTypeError } from "./errors.js"
 import { Recursible } from "./recursible/index.js"
 
 export type MatchesArgs<DefType> = {
     definition: DefType
-    typeSet: UnvalidatedTypeSet
+    typeSet: TypeSet.Definition
 }
 
-export type ParseContext<DefType> = {
-    typeSet: UnvalidatedTypeSet
+export type ParseContext = {
+    typeSet: TypeSet.Definition
     path: string[]
     seen: string[]
     shallowSeen: string[]
 }
 
-export type ParseArgs<DefType> = [
-    definition: DefType,
-    context: ParseContext<DefType>
-]
+export type ParseArgs<DefType> = [definition: DefType, context: ParseContext]
 
 export type AllowsOptions = {
     ignoreExtraneousKeys?: boolean
@@ -70,7 +68,7 @@ export type HandlesArg<Children, Handles> = Children extends never[]
 export type HandlesContext<DefType, Components> = [
     args: {
         def: DefType
-        ctx: ParseContext<DefType>
+        ctx: ParseContext
     } & (unknown extends Components ? {} : { components: Components })
 ]
 
@@ -105,11 +103,11 @@ export type UnhandledMethods<DefType, Parent, Components> = Omit<
 
 export type ParseFunction<DefType, Components> = (
     ...args: ParseArgs<DefType>
-) => ParsedType<DefType, Components>
+) => ParseResult<DefType>
 
-export type ParsedType<DefType, Components> = {
+export type ParseResult<DefType> = {
     def: DefType
-    ctx: ParseContext<DefType>
+    ctx: ParseContext
 } & CoreMethods<DefType>
 
 export type CoreMethods<DefType> = {
@@ -196,7 +194,7 @@ export const createParser = <
     }
     const getChildren = (): AnyParser[] => (input.children?.() as any) ?? []
     const cachedComponents: Record<string, any> = {}
-    const getComponents = (def: DefType, ctx: ParseContext<DefType>) => {
+    const getComponents = (def: DefType, ctx: ParseContext) => {
         const memoKey = toString({
             def,
             typeSet: ctx.typeSet,
@@ -215,7 +213,7 @@ export const createParser = <
             name: CoreMethodName,
             inputMethod: Func,
             def: DefType,
-            ctx: ParseContext<DefType>,
+            ctx: ParseContext,
             components: Components
         ) =>
         (...providedArgs: Parameters<ValueOf<CoreMethods<DefType>>>) => {
@@ -243,7 +241,7 @@ export const createParser = <
     const delegateCoreMethod = (
         methodName: CoreMethodName,
         def: DefType,
-        ctx: ParseContext<DefType>
+        ctx: ParseContext
     ) => {
         const children = getChildren()
         if (!children.length) {
@@ -262,7 +260,7 @@ export const createParser = <
     }
     const getCoreMethods = (
         def: DefType,
-        ctx: ParseContext<DefType>,
+        ctx: ParseContext,
         components: any
     ) => {
         return transform(coreMethodNames, ([i, methodName]) => [
@@ -287,10 +285,7 @@ export const createParser = <
         ]) as CoreMethods<DefType>
     }
 
-    const parse = (
-        def: DefType,
-        ctx: ParseContext<DefType>
-    ): ParsedType<DefType, Components> => {
+    const parse = (def: DefType, ctx: ParseContext): ParseResult<DefType> => {
         const components = getComponents(def, ctx)
         return {
             def,

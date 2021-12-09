@@ -1,5 +1,5 @@
-import { References, Validate } from "../definition.js"
 import { assert } from "@re-do/assert"
+import { References } from ".."
 
 describe("references", () => {
     test("extract types referenced from string", () => {

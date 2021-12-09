@@ -1,7 +1,5 @@
-import { createParser } from "../parser.js"
-import { validationError, unassignableError } from "../errors.js"
+import { typeDefProxy, createParser, validationError } from "./common.js"
 import { Shallow } from "./shallow.js"
-import { typeDefProxy } from "../../common.js"
 
 export namespace Num {
     export type Definition<Value extends number = number> = Value

@@ -1,7 +1,10 @@
 import {
-    ParseTypeRecurseOptions,
-    ValidateTypeRecurseOptions
-} from "../common.js"
+    ParseConfig,
+    createParser,
+    typeDefProxy,
+    UnknownTypeError,
+    ValidationErrorMessage
+} from "./common.js"
 import { ArrowFunction } from "./arrowFunction.js"
 import { BuiltIn } from "./builtIn.js"
 import { List } from "./list.js"
@@ -10,10 +13,6 @@ import { Or } from "./or.js"
 import { Resolution } from "./resolution.js"
 import { StringLiteral } from "./stringLiteral.js"
 import { Str } from "./str.js"
-import { createParser } from "../parser.js"
-import { typeDefProxy } from "../../common.js"
-import { UnknownTypeError, ValidationErrorMessage } from "../errors.js"
-import { DefaultValidateTypeOptions } from "../../definition.js"
 
 export namespace Fragment {
     export type Definition<Def extends string = string> = Def
@@ -21,16 +20,15 @@ export namespace Fragment {
     export type Validate<
         Def extends string,
         Root extends string,
-        TypeSet,
-        Options extends ValidateTypeRecurseOptions
+        TypeSet
     > = Def extends Resolution.Definition<TypeSet>
-        ? Resolution.Validate<Def, Root, TypeSet, Options>
+        ? Resolution.Validate<Def, Root, TypeSet>
         : Def extends Or.Definition<infer First, infer Second>
-        ? Or.Validate<`${First}|${Second}`, Root, TypeSet, Options>
+        ? Or.Validate<`${First}|${Second}`, Root, TypeSet>
         : Def extends ArrowFunction.Definition<infer Parameters, infer Return>
-        ? ArrowFunction.Validate<Parameters, Return, Root, TypeSet, Options>
+        ? ArrowFunction.Validate<Parameters, Return, Root, TypeSet>
         : Def extends List.Definition<infer ListItem>
-        ? Validate<ListItem, Root, TypeSet, Options>
+        ? Validate<ListItem, Root, TypeSet>
         : Def extends
               | BuiltIn.Definition
               | StringLiteral.Definition
@@ -41,13 +39,8 @@ export namespace Fragment {
     export type Parse<
         Def extends string,
         TypeSet,
-        Options extends ParseTypeRecurseOptions
-    > = Validate<
-        Def,
-        Def,
-        TypeSet,
-        DefaultValidateTypeOptions
-    > extends ValidationErrorMessage
+        Options extends ParseConfig
+    > = Validate<Def, Def, TypeSet> extends ValidationErrorMessage
         ? unknown
         : Def extends Resolution.Definition<TypeSet>
         ? Resolution.Parse<Def, TypeSet, Options>

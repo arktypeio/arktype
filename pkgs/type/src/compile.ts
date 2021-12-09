@@ -6,12 +6,16 @@ import {
     Narrow,
     transform
 } from "@re-do/utils"
-import { createParseFunction, parse, ParseFunction } from "../parse.js"
+import {
+    createParseFunction,
+    ParseFunction,
+    DefaultParseTypeOptions
+} from "./parse.js"
 import {
     extraneousTypesErrorMessage,
     missingTypesErrorMessage,
     TypeSet
-} from "./typeSet.js"
+} from "./components"
 
 export const createCompileFunction =
     <DeclaredTypeNames extends string[]>(
@@ -100,5 +104,5 @@ export type CompiledTypeSet<
     MergedTypeSet = TypeSet.MergeMemberList<Definitions>
 > = Evaluate<{
     parse: ParseFunction<MergedTypeSet>
-    types: TypeSet.Parse<MergedTypeSet>
+    types: TypeSet.Parse<MergedTypeSet, DefaultParseTypeOptions>
 }>

@@ -1,5 +1,5 @@
-import { declare } from ".."
 import { assert } from "@re-do/assert"
+import { declare } from ".."
 
 describe("declare", () => {
     test("single", () => {

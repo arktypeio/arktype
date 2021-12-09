@@ -7,10 +7,9 @@ import {
     isDigits,
     filterChars,
     isAlphaNumeric,
-    Join,
     StringifyPossibleTypes
 } from "@re-do/utils"
-import { ExtractableDefinition } from "./common.js"
+import { ExtractableDefinition } from "./internal.js"
 import { ParseContext } from "./parser.js"
 import { Shallow } from "./shallow/shallow.js"
 
@@ -69,7 +68,7 @@ export const orValidationError = ({ def, valueType, orErrors }: OrErrorArgs) =>
 
 export type BaseParseArgs = {
     def: unknown
-    ctx: ParseContext<unknown>
+    ctx: ParseContext
 }
 
 export const shallowCycleErrorTemplate =
@@ -84,6 +83,12 @@ export type ShallowCycleError<
     StringifyPossibleTypes<Seen>
 >
 
+export const shallowCycleError = ({ def, ctx }: BaseParseArgs) =>
+    shallowCycleErrorTemplate
+        .replace("@def", stringifyDefinition(def))
+        .replace("@typeSet", stringifyDefinition(ctx.typeSet))
+        .replace("@resolutions", [...ctx.seen, def].join("=>"))
+
 export type ValidationErrorMessage =
     | UnknownTypeError
     | ShallowCycleError
@@ -91,12 +96,6 @@ export type ValidationErrorMessage =
 
 export type InferrableValidationErrorMessage<E> =
     E extends ValidationErrorMessage ? E : never
-
-export const shallowCycleError = ({ def, ctx }: BaseParseArgs) =>
-    shallowCycleErrorTemplate
-        .replace("@def", stringifyDefinition(def))
-        .replace("@typeSet", stringifyDefinition(ctx.typeSet))
-        .replace("@resolutions", [...ctx.seen, def].join("=>"))
 
 // Paths at which errors occur mapped to their messages
 export type ValidationErrors = Record<string, string>

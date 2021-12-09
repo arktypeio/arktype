@@ -1,4 +1,4 @@
-import { define } from "./multifile.test"
+import { define } from "../multifile.assert"
 
 export const user = define.user({
     name: "string",

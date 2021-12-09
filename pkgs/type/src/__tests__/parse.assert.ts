@@ -1,6 +1,6 @@
-import { compile, parse } from ".."
-import { typeDefProxy } from "../common.js"
 import { assert } from "@re-do/assert"
+import { compile, parse } from ".."
+import { typeDefProxy } from "../internal.js"
 
 describe("parse", () => {
     test("built-in", () => {

@@ -1,7 +1,5 @@
-import { createParser } from "../parser.js"
-import { validationError } from "../errors.js"
+import { typeDefProxy, validationError, createParser } from "./common.js"
 import { Fragment } from "./fragment.js"
-import { typeDefProxy } from "../../common.js"
 
 export namespace StringLiteral {
     export type Definition<Definition extends string = string> =

@@ -1,5 +1,11 @@
-import { Evaluate, MergeAll, Narrow, Exact, TreeOf } from "@re-do/utils"
-import { Parse, Validate } from "./definition.js"
+import {
+    Evaluate,
+    Narrow,
+    Exact,
+    TreeOf,
+    IsAny,
+    WithDefaults
+} from "@re-do/utils"
 import { Root } from "./components"
 import {
     AllowsOptions,
@@ -9,15 +15,29 @@ import {
 } from "./components/parser.js"
 import { stringifyErrors, ValidationErrors } from "./components/errors.js"
 import { format } from "./format.js"
-import { TypeSet } from "./typeSet/typeSet.js"
+import { TypeSet } from "./components/typeSet/typeSet.js"
 import { typeOf } from "./typeOf.js"
-import { typeDefProxy } from "./common.js"
+import { typeDefProxy } from "./internal.js"
 
-export type ParseTypeRecurseOptions = Required<ParseTypeOptions>
+export type Validate<Def, TypeSet> = IsAny<Def> extends true
+    ? Def
+    : Root.Validate<Def, TypeSet>
+
+export type Parse<
+    Def,
+    Set,
+    Options extends ParseTypeOptions = {}
+> = IsAny<Def> extends true
+    ? Def
+    : Root.Parse<
+          Def,
+          TypeSet.Validate<Set>,
+          WithDefaults<ParseTypeOptions, Options, DefaultParseTypeOptions>
+      >
 
 export type ParseTypeOptions = {
     onCycle?: Root.Definition
-    seen?: any
+    seen?: Record<string, boolean>
     deepOnCycle?: boolean
     onResolve?: Root.Definition
 }
@@ -42,7 +62,7 @@ export const createParseFunction =
         const formattedTypeSet: any = format(
             options?.typeSet ?? predefinedTypeSet
         )
-        const context: ParseContext<any> = {
+        const context: ParseContext = {
             typeSet: formattedTypeSet,
             path: [],
             seen: [],

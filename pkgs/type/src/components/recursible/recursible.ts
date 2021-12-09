@@ -3,35 +3,31 @@ import {
     isRecursible,
     Recursible as ExtractRecursible
 } from "@re-do/utils"
-import { typeDefProxy } from "../../common.js"
-import { Root } from "../root.js"
 import {
-    ParseTypeRecurseOptions,
-    ValidateTypeRecurseOptions
-} from "../common.js"
-import { createParser } from "../parser.js"
-import { DefinitionTypeError } from "../errors.js"
-import { Obj, Tuple } from "./index.js"
+    typeDefProxy,
+    ParseConfig,
+    createParser,
+    DefinitionTypeError
+} from "./internal.js"
+import { Root } from "../root.js"
+import { Obj } from "./obj.js"
+import { Tuple } from "./tuple.js"
 
 export namespace Recursible {
     export type Definition<
         Def extends { [K in string]: any } = { [K in string]: any }
     > = Def extends ExtractRecursible<Def> ? Def : never
 
-    export type Validate<
-        Def,
-        TypeSet,
-        Options extends ValidateTypeRecurseOptions
-    > = Def extends Tuple.Definition
-        ? Tuple.Validate<Def, TypeSet, Options>
+    export type Validate<Def, TypeSet> = Def extends Tuple.Definition
+        ? Tuple.Validate<Def, TypeSet>
         : Def extends Obj.Definition
-        ? Obj.Validate<Def, TypeSet, Options>
+        ? Obj.Validate<Def, TypeSet>
         : DefinitionTypeError
 
     export type Parse<
         Def extends Definition,
         TypeSet,
-        Options extends ParseTypeRecurseOptions
+        Options extends ParseConfig
     > = Def extends Tuple.Definition
         ? Evaluate<Tuple.Parse<Def, TypeSet, Options>>
         : Def extends Obj.Definition

@@ -1,5 +1,5 @@
-import { parse, typeOf } from ".."
 import { Func } from "@re-do/utils"
+import { parse, typeOf } from ".."
 
 describe("typeOf", () => {
     test("string", () => {
@@ -252,7 +252,7 @@ describe("validate", () => {
                 },
                 path: [],
                 shallowSeen: [],
-                seen: []
+                seen: {}
             }
         )
         expect(

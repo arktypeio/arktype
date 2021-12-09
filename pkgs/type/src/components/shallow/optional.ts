@@ -1,5 +1,4 @@
-import { typeDefProxy } from "../../common.js"
-import { createParser } from "../parser.js"
+import { typeDefProxy, createParser } from "./common.js"
 import { Fragment } from "./fragment.js"
 import { Str } from "./str.js"
 

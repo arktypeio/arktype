@@ -1,8 +1,10 @@
-import { createParser } from "../parser.js"
+import {
+    validationError,
+    ExtractableDefinition,
+    typeDefProxy,
+    createParser
+} from "./common.js"
 import { BuiltIn } from "./builtIn.js"
-import { typeDefProxy } from "../../common.js"
-import { ExtractableDefinition } from "../common.js"
-import { validationError } from "../errors.js"
 
 export namespace UnextractableName {
     export type Definition<Def extends keyof Defaults = keyof Defaults> = Def

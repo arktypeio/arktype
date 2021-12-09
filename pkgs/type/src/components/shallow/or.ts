@@ -1,22 +1,18 @@
 import { transform, Unlisted } from "@re-do/utils"
-import { typeDefProxy } from "../../common.js"
-import {
-    isRequiredCycleError,
-    requiredCycleErrorTemplate,
-    stringifyErrors
-} from "../errors.js"
-import { OrTypeErrors, orValidationError, validationError } from "../errors.js"
-import { createParser, ParseContext } from "../parser.js"
-import {
-    ParseTypeRecurseOptions,
-    ValidateTypeRecurseOptions
-} from "../common.js"
 import {
     comparableDefaultValueSet,
     nonComparableDefaultValues,
     ParseSplittable,
-    ParseSplittableResult,
-    ValidateSplittable
+    ValidateSplittable,
+    typeDefProxy,
+    isRequiredCycleError,
+    stringifyErrors,
+    OrTypeErrors,
+    orValidationError,
+    validationError,
+    createParser,
+    ParseContext,
+    ParseConfig
 } from "./common.js"
 import { Fragment } from "./fragment.js"
 
@@ -29,15 +25,14 @@ export namespace Or {
     export type Parse<
         Def extends Definition,
         TypeSet,
-        Options extends ParseTypeRecurseOptions
+        Options extends ParseConfig
     > = Unlisted<ParseSplittable<"|", Def, TypeSet, Options>>
 
     export type Validate<
         Def extends Definition,
         Root extends string,
-        TypeSet,
-        Options extends ValidateTypeRecurseOptions
-    > = ValidateSplittable<"|", Def, Root, TypeSet, Options>
+        TypeSet
+    > = ValidateSplittable<"|", Def, Root, TypeSet>
 
     export const type = typeDefProxy as Definition
 
@@ -46,7 +41,7 @@ export namespace Or {
             type,
             parent: () => Fragment.parse,
             matches: (definition) => definition.includes("|"),
-            components: (def: Definition, ctx: ParseContext<Definition>) =>
+            components: (def: Definition, ctx: ParseContext) =>
                 def.split("|").map((fragment) => Fragment.parse(fragment, ctx))
         },
         {

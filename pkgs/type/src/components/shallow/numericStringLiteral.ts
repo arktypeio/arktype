@@ -1,8 +1,6 @@
 import { asNumber, isNumeric, NumericString } from "@re-do/utils"
-import { createParser } from "../parser.js"
-import { validationError, unassignableError } from "../errors.js"
+import { typeDefProxy, validationError, createParser } from "./common.js"
 import { Fragment } from "./fragment.js"
-import { typeDefProxy } from "../../common.js"
 
 export namespace NumericStringLiteral {
     export type Definition<Value extends number = number> = NumericString<Value>

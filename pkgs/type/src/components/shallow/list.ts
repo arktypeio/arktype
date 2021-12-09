@@ -1,8 +1,6 @@
-import { createParser } from "../parser.js"
-import { validationError } from "../errors.js"
+import { typeDefProxy, validationError, createParser } from "./common.js"
 import { Fragment } from "./fragment.js"
-import { typeDefProxy } from "../../common.js"
-import { Tuple } from "../recursible/tuple.js"
+import { Tuple } from "../recursible"
 
 export namespace List {
     export type Definition<Item extends string = string> = `${Item}[]`

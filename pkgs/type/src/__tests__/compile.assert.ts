@@ -1,7 +1,7 @@
 import { assert } from "@re-do/assert"
 import { narrow } from "@re-do/utils"
 import { compile } from ".."
-import { typeDefProxy } from "../common.js"
+import { typeDefProxy } from "../internal.js"
 
 describe("compile", () => {
     test("single", () => {
