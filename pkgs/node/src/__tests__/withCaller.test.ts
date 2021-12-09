@@ -16,9 +16,9 @@ describe("withArgsRange", () => {
             {
               "message": "testing source positions really really sucks",
               "range": {
-                "file": "/home/ssalb/redo/pkgs/node/src/__tests__/reflected.ts",
+                "file": "reflected.ts",
                 "from": {
-                  "column": 35,
+                  "column": 49,
                   "line": 35,
                 },
                 "to": {
@@ -34,14 +34,14 @@ describe("withArgsRange", () => {
             {
               "message": "call me back please",
               "range": {
-                "file": "/home/ssalb/redo/pkgs/node/src/__tests__/reflected.ts",
+                "file": "reflected.ts",
                 "from": {
-                  "column": 58,
-                  "line": 75,
+                  "column": 68,
+                  "line": 77,
                 },
                 "to": {
                   "column": 6,
-                  "line": 80,
+                  "line": 82,
                 },
               },
             }
@@ -89,13 +89,13 @@ describe("withArgsRange", () => {
               "message": "yeah ok good",
               "name": "Bernard",
               "range": {
-                "file": "/home/ssalb/redo/pkgs/node/src/__tests__/reflected.ts",
+                "file": "reflected.ts",
                 "from": {
-                  "column": 43,
+                  "column": 57,
                   "line": 72,
                 },
                 "to": {
-                  "column": 65,
+                  "column": 79,
                   "line": 72,
                 },
               },
@@ -105,9 +105,9 @@ describe("withArgsRange", () => {
     test("single prop", () => {
         expect(getSingleProp()).toMatchInlineSnapshot(`
             {
-              "file": "/home/ssalb/redo/pkgs/node/src/__tests__/reflected.ts",
+              "file": "reflected.ts",
               "from": {
-                "column": 35,
+                "column": 49,
                 "line": 62,
               },
               "to": {
@@ -123,14 +123,14 @@ describe("withArgsRange", () => {
     test("as chain", () => {
         expect(getPropFromChainedCall()).toMatchInlineSnapshot(`
             {
-              "file": "/home/ssalb/redo/pkgs/node/src/__tests__/reflected.ts",
+              "file": "reflected.ts",
               "from": {
-                "column": 35,
-                "line": 89,
+                "column": 49,
+                "line": 91,
               },
               "to": {
-                "column": 56,
-                "line": 89,
+                "column": 70,
+                "line": 91,
               },
             }
         `)
@@ -143,7 +143,7 @@ describe("call position", () => {
             {
               "column": 6,
               "file": "reflected.ts",
-              "line": 102,
+              "line": 104,
               "message": "please",
               "method": "getCallPosition",
             }

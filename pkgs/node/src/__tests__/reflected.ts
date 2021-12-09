@@ -32,7 +32,7 @@ const messageAndRangeThenName =
     })
 
 export const getAllUsingThunk = () =>
-    withCallRange(messageAndRange)(
+    withCallRange(messageAndRange, { relative })(
         "testing",
         "source",
         "positions",
@@ -59,7 +59,7 @@ export const getAllUsingPropThunk = () =>
     })("i", "love", "you").get()
 
 export const getSingleProp = () =>
-    withCallRange(messageAndRange)(
+    withCallRange(messageAndRange, { relative })(
         "i'm",
         "not",
         "going",
@@ -69,10 +69,12 @@ export const getSingleProp = () =>
     ).range
 
 export const getForwardedReturn = (name: string) =>
-    withCallRange(messageAndRangeThenName)("yeah", "ok", "good")(name)
+    withCallRange(messageAndRangeThenName, { relative })("yeah", "ok", "good")(
+        name
+    )
 
 export const getAllUsingCallback = () =>
-    withCallRange(messageAndRange, { allCallback: true })(
+    withCallRange(messageAndRange, { allCallback: true, relative })(
         "call",
         "me",
         "back",
@@ -86,11 +88,11 @@ export const getPropFromChainedCall = () =>
     // the stack trace breaks if the prop is accessed on the next line, e.g.:
     // withCallRange(messageAndRange)("chain", "me", "up")
     //     .range
-    withCallRange(messageAndRange)("chain", "me", "up").range
+    withCallRange(messageAndRange, { relative })("chain", "me", "up").range
 
 export const getUndefined = () =>
     // @ts-ignore
-    withCallRange(messageAndRange)("this", "doesn't", "matter").neverDefined
+    withCallRange(messageAndRange, { relative })("irrelevant").neverDefined
 
 export const getCallPosition = (message: string) =>
     withCallPosition(
