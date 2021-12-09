@@ -1,0 +1,10 @@
+{
+    "changes": [
+        {
+            "packageName": "@re-do/utils",
+            "comment": "Updates to prepare for types 1.0 release.",
+            "type": "minor"
+        }
+    ],
+    "packageName": "@re-do/utils"
+}
