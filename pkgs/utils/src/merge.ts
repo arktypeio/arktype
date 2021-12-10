@@ -16,7 +16,7 @@ import {
 } from "./common.js"
 import { ExcludedByKey } from "./excludeKeys.js"
 import { transform } from "./transform.js"
-import { Narrow } from "./Narrow.js"
+import { Narrow } from "./narrow.js"
 export type DefaultMergeOptions = {
     deep: false
     unmerged: [undefined]
@@ -49,15 +49,14 @@ export type Merge<
     ? Merged
     : Merged extends any[] | NonRecursible
     ? Base
-    : TypeToPreserve &
-          {
-              [K in keyof TypeToMerge]: And<
-                  Options["deep"],
-                  K extends keyof Base ? true : false
-              > extends true
-                  ? Merge<Base[K & keyof Base], TypeToMerge[K], Options>
-                  : TypeToMerge[K]
-          }
+    : TypeToPreserve & {
+          [K in keyof TypeToMerge]: And<
+              Options["deep"],
+              K extends keyof Base ? true : false
+          > extends true
+              ? Merge<Base[K & keyof Base], TypeToMerge[K], Options>
+              : TypeToMerge[K]
+      }
 
 export type FromEntries<
     Entries extends Entry[],

@@ -1,2 +1,2 @@
-import { redoTsc } from "./redoTsc.js"
-redoTsc()
+import { runRedoTsc } from "./redoTsc.js"
+runRedoTsc()

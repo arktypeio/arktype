@@ -2,12 +2,12 @@ import moize from "moize"
 import {
     Number as NumberToolbelt,
     Union as ToolbeltUnion,
-    List as ToolbeltList,
-    T
+    List as ToolbeltList
 } from "ts-toolbelt"
 import { WithDefaults } from "./merge.js"
 
-export const memoize = moize as <F extends SimpleFunction>(f: F) => F
+export const memoize = <F extends Func>(f: F, opts?: moize.Options) =>
+    moize(f) as F
 
 export type StringReplace<
     Original extends string,
@@ -96,8 +96,7 @@ export type DeepRequired<T> = {
 export type WithOptionalKeys<T extends object, Keys extends keyof T> = Omit<
     T,
     Keys
-> &
-    { [K in Keys]?: T[K] }
+> & { [K in Keys]?: T[K] }
 
 export type WithOptionalValues<
     T extends object,
@@ -119,10 +118,9 @@ export type WithOptionalValues<
 export type WithRequiredKeys<T extends object, Keys extends keyof T> = Omit<
     T,
     Keys
-> &
-    {
-        [K in Keys]-?: T[K]
-    }
+> & {
+    [K in Keys]-?: T[K]
+}
 
 export type WithRequiredKeysIfPresent<T, K> = WithRequiredKeys<
     T & object,
@@ -149,15 +147,13 @@ export type DeepPartial<T> = {
 export type Writeable<T> = { -readonly [P in keyof T]: T[P] }
 export type DeepWriteable<T> = { -readonly [P in keyof T]: DeepWriteable<T[P]> }
 
-export type WithReadonlyKeys<Obj, Keys extends keyof Obj> = Omit<Obj, Keys> &
-    {
-        readonly [K in Keys]: Obj[K]
-    }
+export type WithReadonlyKeys<Obj, Keys extends keyof Obj> = Omit<Obj, Keys> & {
+    readonly [K in Keys]: Obj[K]
+}
 
-export type WithWriteableKeys<Obj, Keys extends keyof Obj> = Omit<Obj, Keys> &
-    {
-        -readonly [K in Keys]: Obj[K]
-    }
+export type WithWriteableKeys<Obj, Keys extends keyof Obj> = Omit<Obj, Keys> & {
+    -readonly [K in Keys]: Obj[K]
+}
 
 export type PropertyOf<T> = T[keyof T]
 export type ElementOf<T extends List> = T[number]
@@ -171,11 +167,14 @@ export type EntryOf<T> = { [K in keyof T]: [K, T[K]] }[T extends any[]
     ? keyof T & number
     : keyof T]
 
-export type SimpleFunction = (...args: any[]) => any
+export type Func<Parameters extends any[] = any[], ReturnType = any> = (
+    ...args: Parameters
+) => ReturnType
+
 export type Primitive = string | number | boolean | symbol | bigint
 export type NonObject = Primitive | null | undefined | void
 
-export type NonRecursible = NonObject | SimpleFunction
+export type NonRecursible = NonObject | Func
 export type Unpromisified<T> = T extends Promise<infer U> ? U : never
 
 export const isRecursible = <O>(
@@ -285,13 +284,11 @@ export type FilterObjectByValue<
     T,
     ValueType,
     Options extends Required<FilterRecurseOptions>
-> = ExcludeNever<
-    {
-        [K in keyof T]: NeverEmptyObject<
-            FilterPropertyByValue<T[K], ValueType, Options>
-        >
-    }
->
+> = ExcludeNever<{
+    [K in keyof T]: NeverEmptyObject<
+        FilterPropertyByValue<T[K], ValueType, Options>
+    >
+}>
 
 export type FilterPropertyByValue<
     T,
@@ -424,9 +421,32 @@ export type ExcludeCyclic<
         : ExcludeCyclic<O[K] & object, Seen | Unlisted<O[K]> | Unlisted<O[K]>[]>
 }
 
-export type MinusOne<N extends number> = NumberToolbelt.Sub<N, 1>
+export type Minus<X extends number, Y extends number> = NumberToolbelt.Sub<
+    X,
+    Y
+> &
+    number
 
-export type PlusOne<N extends number> = NumberToolbelt.Add<N, 1>
+export type MinusOne<N extends number> = Minus<N, 1> & number
+
+export type Plus<X extends number, Y extends number> = NumberToolbelt.Add<
+    X,
+    Y
+> &
+    number
+
+export type PlusOne<N extends number> = Plus<N, 1> & number
+
+export type Max<X extends number, Y extends number> = NumberToolbelt.GreaterEq<
+    X,
+    Y
+> extends 1
+    ? X
+    : Y
+
+export type Min<X extends number, Y extends number> = Max<X, Y> extends X
+    ? Y
+    : X
 
 export type And<A extends boolean, B extends boolean> = {
     true: {
@@ -541,23 +561,28 @@ export type Stringifiable =
     | null
     | undefined
 
-export type ExtractFunction<T> = Extract<T, SimpleFunction>
+export type ExtractFunction<T> = Extract<T, Func>
 
 export type Iteration<T, Current extends T, Remaining extends T[]> = [
     Current,
     ...Remaining
 ]
 
+export type ReverseIteration<T, Remaining extends T[], Current extends T> = [
+    ...Remaining,
+    Current
+]
+
 export type CastWithExclusion<T, CastTo, Excluded> = T extends Excluded
     ? T
     : CastTo
 
-export type TreeOf<T, KeyType extends Key = string> =
+export type TreeOf<T, AllowLists extends boolean = false> =
     | T
-    | {
-          [K in KeyType]: TreeOf<T, KeyType>
-      }
+    | DeepTreeOf<T, AllowLists>
 
-export type DeepTreeOf<T, KeyType extends Key = string> = {
-    [K in KeyType]: TreeOf<T, KeyType>
-}
+export type DeepTreeOf<T, AllowLists extends boolean = false> =
+    | {
+          [K in string]: TreeOf<T, AllowLists>
+      }
+    | (AllowLists extends true ? TreeOf<T, AllowLists>[] : never)

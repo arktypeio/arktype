@@ -1,8 +1,0 @@
-schema: schema.gql
-documents: queries.gql
-generates:
-    src/gql.tsx:
-        plugins:
-            - typescript
-            - typescript-operations
-            - typescript-react-apollo

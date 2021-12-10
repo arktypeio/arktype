@@ -11,6 +11,6 @@ if (fileArgIndex === -1) {
 }
 
 runScript(process.argv[fileArgIndex], {
-    esm: process.argv.includes("--esm"),
+    esm: !process.argv.includes("--cjs"),
     processArgs: process.argv.slice(fileArgIndex + 1)
 })

@@ -3,13 +3,12 @@
         "module": "esnext",
         "target": "esnext",
         "moduleResolution": "node",
-        "inlineSourceMap": true,
         "skipLibCheck": true,
         "strict": true,
         "isolatedModules": true,
         "esModuleInterop": true,
         "resolveJsonModule": true,
         "jsx": "react",
-        "lib": ["ESNext", "dom", "dom.iterable"]
+        "lib": ["ESNext"]
     }
 }

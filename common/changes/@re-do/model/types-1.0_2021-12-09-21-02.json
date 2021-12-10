@@ -1,0 +1,10 @@
+{
+    "changes": [
+        {
+            "packageName": "@re-do/model",
+            "comment": "Remove server components.",
+            "type": "minor"
+        }
+    ],
+    "packageName": "@re-do/model"
+}
