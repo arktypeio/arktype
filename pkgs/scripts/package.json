@@ -1,0 +1,41 @@
+{
+    "name": "@re-do/scripts",
+    "version": "0.1.3",
+    "author": "redo.qa",
+    "description": "Seamlessly write your npm scripts in JS 💊📜",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/re-do/redo.git",
+        "directory": "pkgs/scripts"
+    },
+    "type": "module",
+    "main": "out/cjs/index.cjs",
+    "types": "out/types/index.d.ts",
+    "exports": {
+        ".": {
+            "types": "./out/types/index.d.ts",
+            "import": "./out/esm/index.js",
+            "require": "./out/cjs/index.cjs"
+        }
+    },
+    "scripts": {
+        "build": "redoTsc",
+        "test": "jest",
+        "run": "./cli.js"
+    },
+    "bin": {
+        "run": "./cli.js"
+    },
+    "dependencies": {
+        "@re-do/utils": "workspace:*",
+        "@re-do/node": "workspace:*",
+        "dotenv": "9.0.0"
+    },
+    "devDependencies": {
+        "@types/node": "15.0.2",
+        "jest": "27.4.3",
+        "@types/jest": "26.0.24",
+        "typescript": "4.5.2",
+        "ts-jest": "27.0.7"
+    }
+}

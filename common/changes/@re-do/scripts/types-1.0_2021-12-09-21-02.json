@@ -1,0 +1,10 @@
+{
+    "changes": [
+        {
+            "packageName": "@re-do/scripts",
+            "comment": "Migrate from jsrx.",
+            "type": "minor"
+        }
+    ],
+    "packageName": "@re-do/scripts"
+}

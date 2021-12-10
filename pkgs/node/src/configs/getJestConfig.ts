@@ -1,6 +1,7 @@
 import type { Config } from "@jest/types"
+import deepmerge from "deepmerge"
 import { existsSync } from "fs"
-import { fromHere } from "../index.js"
+import { fromHere } from "../fs.js"
 
 process.env.TS_JEST_DISABLE_VER_CHECKER = "1"
 
@@ -10,32 +11,46 @@ const getCustomReporterPath = () => {
     return existsSync(esmReporterPath) ? esmReporterPath : cjsReporterPath
 }
 
-export const getJestConfig = (): Config.InitialOptions => ({
-    preset: "ts-jest/presets/default-esm",
-    clearMocks: true,
-    moduleFileExtensions: [
-        "ts",
-        "tsx",
-        "cts",
-        "ctsx",
-        "mts",
-        "mtsx",
-        "js",
-        "jsx",
-        "cjs",
-        "cjsx",
-        "mjs",
-        "json"
-    ],
-    testRegex: "/__tests__/.*\\.test\\.(j|t)sx?$",
-    roots: ["<rootDir>/src"],
-    moduleNameMapper: {
-        "^(\\.{1,2}/.*)\\.js$": "$1"
-    },
-    reporters: [getCustomReporterPath()],
-    globals: {
-        "ts-jest": {
-            useESM: true
-        }
-    }
-})
+export const getJestConfig = (
+    options: Config.InitialOptions = {}
+): Config.InitialOptions =>
+    deepmerge(
+        {
+            transform: { "^.+\\.tsx?$": "ts-jest" },
+            testRegex: "/__tests__/.*\\.test\\.(j|t)sx?$",
+            coveragePathIgnorePatterns: ["/node_modules/", "/__tests__/.*"],
+            roots: ["<rootDir>/src"],
+            moduleFileExtensions: [
+                "ts",
+                "tsx",
+                "mts",
+                "mtsx",
+                "cts",
+                "ctsx",
+                "js",
+                "jsx",
+                "mjs",
+                "mjsx",
+                "cjs",
+                "cjsx",
+                "json"
+            ],
+            extensionsToTreatAsEsm: [".ts", ".tsx", ".mts", ".mtsx"],
+            moduleNameMapper: {
+                "^(\\.{1,2}/.*)\\.js$": "$1"
+            },
+            globals: {
+                "ts-jest": {
+                    useESM: true,
+                    isolatedModules: true
+                }
+            },
+            snapshotFormat: {
+                printBasicPrototype: false
+            },
+            reporters: [getCustomReporterPath()],
+            clearMocks: true,
+            verbose: true
+        },
+        options
+    )

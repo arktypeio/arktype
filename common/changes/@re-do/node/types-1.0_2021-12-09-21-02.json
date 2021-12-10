@@ -1,0 +1,10 @@
+{
+    "changes": [
+        {
+            "packageName": "@re-do/node",
+            "comment": "Add reflections utils.",
+            "type": "minor"
+        }
+    ],
+    "packageName": "@re-do/node"
+}

@@ -3,14 +3,18 @@ import { expectType } from "tsd"
 
 describe("Narrow", () => {
     test("literals", () => {
+        const single = narrow("ok")
+        expectType<"ok">(single)
         const result = narrow({
             nested: { string: "narrowed", number: 1337 }
         })
         expectType<{ nested: { string: "narrowed"; number: 1337 } }>(result)
     })
     test("arrays", () => {
-        const result = narrow(["narrowed", 1337])
-        expectType<["narrowed", 1337]>(result)
+        const result = narrow([{ first: "narrowed" }, { second: 1337 }])
+        expectType<[{ first: "narrowed" }, { second: 1337 }]>(result)
+        const nestedArray = narrow({ nested: ["yeah", { good: "okay" }] })
+        expectType<{ nested: ["yeah", { good: "okay" }] }>(nestedArray)
     })
     test("function", () => {
         // Function return values can't be narrowed

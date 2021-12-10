@@ -1,0 +1,10 @@
+{
+    "changes": [
+        {
+            "packageName": "@re-do/assert",
+            "comment": "Initial commit.",
+            "type": "minor"
+        }
+    ],
+    "packageName": "@re-do/assert"
+}

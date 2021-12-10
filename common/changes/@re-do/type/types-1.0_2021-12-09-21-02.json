@@ -1,0 +1,10 @@
+{
+    "changes": [
+        {
+            "packageName": "@re-do/type",
+            "comment": "Refactor, prepare for 1.0 release.",
+            "type": "minor"
+        }
+    ],
+    "packageName": "@re-do/type"
+}

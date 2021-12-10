@@ -1,5 +1,5 @@
 import { writeFileSync } from "fs"
-import { dirname, join } from "path"
+import { basename, dirname, join } from "path"
 import {
     findPackageRoot,
     walkPaths,
@@ -9,9 +9,11 @@ import {
     ensureDir
 } from "./fs.js"
 import ts, { ParseConfigFileHost } from "typescript"
-import { mergeAll, stringify } from "@re-do/utils"
+import { mergeAll, toString } from "@re-do/utils"
 
-export type TsConfig = Record<keyof ts.CompilerOptions, any>
+export type TsConfig = {
+    [K in keyof ts.CompilerOptions]: any
+}
 
 export type TranspileTsOptions = TsConfig & {
     packageRoot?: string
@@ -24,6 +26,23 @@ export const findPackageName = (rootPath?: string) => {
     ).name
 }
 
+export type GetTsSourcesOptions = {
+    includeTests?: boolean
+}
+
+export const isTest = (path: string) =>
+    basename(path).includes(".stories.") || path.includes("__tests__")
+
+export const getTsSources = (
+    srcDir: string,
+    { includeTests }: GetTsSourcesOptions = {}
+) =>
+    walkPaths(srcDir, {
+        exclude: (path) => (includeTests ? false : isTest(path)),
+        include: (path) => !!path.match(/\.tsx?$/),
+        excludeDirs: true
+    })
+
 export const transpileTs = async ({
     packageRoot,
     toDir,
@@ -34,11 +53,7 @@ export const transpileTs = async ({
     const outDir = toDir ?? join(pkgRoot, "out")
     const tsConfig = join(pkgRoot, "tsconfig.json")
     const baseTsConfig = join(findPackageRoot(), "tsconfig.base.json")
-    const sources = walkPaths(srcDir, {
-        exclude: (path) => !!path.match(/__tests__|\.stories\.tsx$/),
-        include: (path) => !!path.match(/\.tsx?$/),
-        excludeDirs: true
-    })
+    const sources = getTsSources(srcDir)
     const sourceContents = mapFilesToContents(sources)
     const fakeParseConfigHost: ParseConfigFileHost = {
         getCurrentDirectory: () => pkgRoot,
@@ -47,7 +62,7 @@ export const transpileTs = async ({
         fileExists: () => false,
         readFile: () => "",
         onUnRecoverableConfigFileDiagnostic: (e) => {
-            throw new Error(stringify(e))
+            throw new Error(toString(e))
         }
     }
 

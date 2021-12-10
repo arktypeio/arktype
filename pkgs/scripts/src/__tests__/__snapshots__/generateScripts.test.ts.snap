@@ -1,0 +1,31 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`generates js 1`] = `
+"const { scripts, $, shell } = require(\\"@re-do/scripts\\")
+
+scripts({
+    dev: {
+        sayHello: $(\`echo hello\`),
+        sayGoodBye: $(\`echo goodBye\`),
+        \\"handle:non-alpha\\": $(\`echo handled\`)
+    },
+    prod: {},
+    shared: {}
+})
+"
+`;
+
+exports[`generates ts 1`] = `
+"import { scripts, $, shell } from \\"@re-do/scripts\\"
+
+scripts({
+    dev: {
+        sayHello: $(\`echo hello\`),
+        sayGoodBye: $(\`echo goodBye\`),
+        \\"handle:non-alpha\\": $(\`echo handled\`)
+    },
+    prod: {},
+    shared: {}
+})
+"
+`;

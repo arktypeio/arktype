@@ -14,7 +14,7 @@ import {
     Split
 } from "./common.js"
 import { WithDefaults, withDefaults } from "./merge.js"
-import { narrow } from "./Narrow.js"
+import { narrow } from "./narrow.js"
 import { NumericString } from "./transformString.js"
 
 export type PathOptions = {

@@ -1,0 +1,45 @@
+{
+    "name": "@re-do/state",
+    "version": "0.0.3",
+    "private": true,
+    "author": "redo.qa",
+    "description": "💪-typed state management with simple shapes🔷",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/re-do/redo.git",
+        "directory": "pkgs/state"
+    },
+    "type": "module",
+    "main": "out/cjs/index.cjs",
+    "types": "out/types/index.d.ts",
+    "exports": {
+        ".": {
+            "types": "./out/types/index.d.ts",
+            "import": "./out/esm/index.js",
+            "require": "./out/cjs/index.cjs"
+        }
+    },
+    "scripts": {
+        "build": "tsc",
+        "test": "jest"
+    },
+    "dependencies": {
+        "@re-do/utils": "workspace:*",
+        "@re-do/type": "workspace:*",
+        "deepmerge": "4.2.2",
+        "isomorphic-fetch": "3.0.0",
+        "moize": "5.4.7",
+        "redux": "4.0.5",
+        "redux-devtools-extension": "2.13.8",
+        "@reduxjs/toolkit": "1.5.0"
+    },
+    "devDependencies": {
+        "@re-do/node": "workspace:*",
+        "jest": "27.4.3",
+        "@types/jest": "26.0.24",
+        "ts-jest": "27.0.7",
+        "@types/node": "15.0.2",
+        "ts-toolbelt": "9.5.10",
+        "typescript": "4.5.2"
+    }
+}

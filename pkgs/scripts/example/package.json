@@ -1,0 +1,13 @@
+{
+    "name": "example",
+    "version": "0.0.1",
+    "scripts": {
+        "sayHello": "echo Hello",
+        "sayGoodBye": "echo GoodBye",
+        "handle:non-alpha": "echo Handled"
+    },
+    "devDependencies": {
+        "@re-do/scripts": "file:..",
+        "ts-node": "10.1.0"
+    }
+}
