@@ -1,6 +1,6 @@
 {
     "name": "@re-do/scripts",
-    "version": "0.1.3",
+    "version": "0.2.0",
     "author": "redo.qa",
     "description": "Seamlessly write your npm scripts in JS 💊📜",
     "repository": {

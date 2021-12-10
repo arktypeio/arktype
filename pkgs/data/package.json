@@ -1,6 +1,6 @@
 {
     "name": "@re-do/data",
-    "version": "0.1.4",
+    "version": "0.1.5",
     "author": "redo.qa",
     "description": "Manages redo.json data",
     "repository": {

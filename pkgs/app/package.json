@@ -1,6 +1,6 @@
 {
     "name": "@re-do/app",
-    "version": "0.2.9",
+    "version": "0.2.10",
     "private": true,
     "main": "out/main/index.js",
     "repository": {

@@ -1,6 +1,6 @@
 {
     "name": "@re-do/assert",
-    "version": "0.0.1",
+    "version": "0.1.0",
     "author": "redo.dev",
     "description": "Value and type assertions for unit tests",
     "repository": {
