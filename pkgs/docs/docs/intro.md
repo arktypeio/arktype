@@ -1,18 +1,35 @@
 ---
 sidebar_position: 1
-slug: /
 ---
 
-# Why Redo?
+# Tutorial Intro
 
-## Quick description
+Let's discover **Docusaurus in less than 5 minutes**.
 
-Redo will launch a browser you can use to interact with your website. Whenever you do something on your page, Redo learns how to perform that action automatically.
+## Getting Started
 
-Redo will use your test and others you've saved to build a transparent, well-structured model of your app, just like an engineer would. You can run your tests anytime, anywhere, and get clear, deterministic results.
+Get started by **creating a new site**.
 
-## Why Redo matters
+Or **try Docusaurus immediately** with **[docusaurus.new](https://docusaurus.new)**.
 
-We believe that automated end-to-end testing helps developers be more efficient and feel confident deploying iterations regularly, regardless of whether you are building a personal website or collaborating on a website with a team. 
+## Generate a new site
 
-We built Redo to make it seamless to develop, implement, and scale automated end-to-end tests.
+Generate a new Docusaurus site using the **classic template**:
+
+```shell
+npm init docusaurus@latest my-website classic
+```
+
+## Start your site
+
+Run the development server:
+
+```shell
+cd my-website
+
+npx docusaurus start
+```
+
+Your site starts at `http://localhost:3000`.
+
+Open `docs/intro.md` and edit some lines: the site **reloads automatically** and displays your changes.

@@ -1,8 +1,7 @@
 import { join } from "path"
 import { builtinModules } from "module"
 import merge from "deepmerge"
-import { UserConfig, Terser, LibraryFormats } from "vite"
-import reactRefreshPlugin from "@vitejs/plugin-react-refresh"
+import type { UserConfig, Terser, LibraryFormats } from "vite"
 
 const isDev = () => process.env.NODE_ENV === "development"
 
@@ -91,8 +90,8 @@ export const getWebConfig = ({
             target: "chrome89",
             outDir,
             watch: watch ? {} : null
-        },
-        plugins: [reactRefreshPlugin()]
+        }
+        // plugins: [reactRefreshPlugin()]
     })
     return merge<UserConfig>(baseWebConfig, options)
 }

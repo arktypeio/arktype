@@ -1,9 +1,14 @@
 {
     "extends": "@re-do/node/tsconfig.base",
     "compilerOptions": {
-        "baseUrl": "src",
-        "outDir": "build",
-        "module": "commonjs"
+        "module": "CommonJS",
+        "target": "ES2017",
+        "baseUrl": ".",
+        "types": [
+            "@types/node",
+            "@docusaurus/module-type-aliases",
+            "@docusaurus/preset-classic"
+        ]
     },
-    "include": ["src", "test"]
+    "include": ["src"]
 }
