@@ -87,6 +87,6 @@ jobs:
               run: |
                   git config --global user.email "ci@redo.qa"
                   git config --global user.name "Github Actions"
-                  node common/scripts/install-run-rush.js publish --publish --include-all --target-branch master
+                  node common/scripts/install-run-rush.js publish --publish --include-all --target-branch master --set-access-level public
                   git commit -a -m "Bump versions."
                   git push
