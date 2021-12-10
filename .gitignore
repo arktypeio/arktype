@@ -59,10 +59,6 @@ jspm_packages/
 # Common toolchain intermediate files
 temp
 
-# Build output
-dist
-out
-
 # Rush files
 common/temp/**
 package-deps.json
@@ -70,10 +66,13 @@ package-deps.json
 # OS files
 .DS_Store
 
+# Docusaurus
+.docusaurus
+.cache-loader
+
 # Redo
 .env.production
-**/test/redo.json
-**/app/redo.json
 release
 generated
-.build
+dist
+out

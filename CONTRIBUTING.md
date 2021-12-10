@@ -13,7 +13,7 @@ Working on your first Pull Request? You can learn how from this free video serie
 
 [How to Contribute to an Open Source Project on GitHub](https://egghead.io/courses/how-to-contribute-to-an-open-source-project-on-github)
 
-To help you get your feet wet and get you familiar with our contribution process, we have a list of [easy issues](https://github.com/redo-qa/redo/issues?q=is:open+is:issue+label:"easy") that contain changes that have a relatively limited scope. This is a great place to get started.
+To help you get your feet wet and get you familiar with our contribution process, we have a list of [easy issues](https://github.com/re-do/redo/issues?q=is:open+is:issue+label:"easy") that contain changes that have a relatively limited scope. This is a great place to get started.
 
 If you decide to fix an issue, please be sure to check the comment thread in case somebody is already working on a fix. If nobody is working on it at the moment, please leave a comment stating that you have started to work on it so other people don’t accidentally duplicate your effort.
 
@@ -30,7 +30,7 @@ When in doubt, keep your Pull Requests small. To give a Pull Request the best ch
 2. Clone the fork to your local machine and add upstream remote:
 
 ```sh
-git clone git@github.com:<yourname>/redo.git && cd redo && git remote add upstream git@github.com:redo-qa/redo.git
+git clone git@github.com:<yourname>/redo.git && cd redo && git remote add upstream git@github.com:re-do/redo.git
 ```
 
 3. Synchronize your local `master` branch with the upstream one:
@@ -84,7 +84,7 @@ Once that's done, commit your changes and push to your fork:
 git push -u
 ```
 
-7. Go to [the repository](https://github.com/redo-qa/redo) and make a Pull Request.
+7. Go to [the repository](https://github.com/re-do/redo) and make a Pull Request.
 
 The core team is monitoring for Pull Requests. We will review your Pull Request and either merge it, request changes to it, or close it with an explanation.
 
@@ -92,29 +92,17 @@ The core team is monitoring for Pull Requests. We will review your Pull Request 
 
 We use a [rush](https://rushjs.io) monorepo to manage our packages. You might want to make changes to one or more of them depending on the goals of your contribution. Take a look at any of them individually to learn more:
 
--   [@re-do/app](/pkgs/app): Desktop UI for creating and managing automated tests 🤖
--   [statelessly](pkgs/statelessly): 💪-typed state management with simple shapes🔷
--   [react-statelessly](pkgs/react-statelessly): React hooks for [statelessly](pkgs/statelessly)
--   [@re-do/website](pkgs/website): Source for [our website](https://redo.qa)
--   [@re-do/components](pkgs/components): Shared [React](https://reactjs.org/) component library
--   [@re-do/test](pkgs/test): UI test runner
--   [@re-do/utils](pkgs/utils): Generic utilities
--   [@re-do/model](pkgs/model): Types that model Redo's data
--   [@re-do/configs](pkgs/recommended): Shared configs (TS, jest, etc.)
-
-These packages have left the monorepo nest, but you can visit them in their new homes:
-
--   [jsrx](https://github.com/re-do/jsrx): Seamlessly write your npm scripts in JS 💊📜
--   [gqlize](pkgs/gqlize): Zero-config graphql query generation 🎁
+-   [@re-do/utils](pkgs/utils): Browser-friendly utiltiies and types
+-   [@re-do/node](pkgs/node): Utilities, configs, scripts, and devtools for Node
 
 ## Project
 
-Our current and planned work can always be found [here](https://github.com/redo-qa/redo/projects/1). If you want to contribute but aren't sure where to get started, see if any of the issues in our backlog sound interesting! Not all are well-documented, so it usually makes sense to comment on the issue with any questions you may have before you start coding.
+Our current and planned work can always be found [here](https://github.com/re-do/redo/projects/1). If you want to contribute but aren't sure where to get started, see if any of the issues in our backlog sound interesting! Not all are well-documented, so it usually makes sense to comment on the issue with any questions you may have before you start coding.
 
 ## License
 
-By contributing your code to the redo-qa/redo GitHub repository, you agree to license your contribution under the MIT license.
+By contributing your code to the re-do/redo GitHub repository, you agree to license your contribution under the MIT license.
 
 ### Attribution note
 
-At Redo, we're huge fans of (https://material-ui.com/). In addition to depending on them for many of our React components, we borrowed parts of this contributing guide from their repo.
+At Redo, we're huge fans of (https://mui.com/). In addition to depending on them for many of our React components, we borrowed parts of this contributing guide from their repo.

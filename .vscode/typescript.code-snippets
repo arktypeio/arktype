@@ -11,6 +11,6 @@
             "    return ${0:<>}</>",
             "}"
         ],
-        "description": "Create a Redo component"
+        "description": "Create an empty TS/React component"
     }
 }

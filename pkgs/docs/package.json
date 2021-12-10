@@ -4,53 +4,34 @@
     "private": true,
     "scripts": {
         "docusaurus": "docusaurus",
-        "test": "echo No tests required!",
-        "test-with-jest": "jest",
-        "test-with-mocha": "ts-mocha src/**/__tests__/*.spec.ts",
         "start": "docusaurus start",
-        "build": "docusaurus build",
+        "build": "docusaurus build --out-dir out",
         "swizzle": "docusaurus swizzle",
         "deploy": "docusaurus deploy",
         "clear": "docusaurus clear",
         "serve": "docusaurus serve",
         "write-translations": "docusaurus write-translations",
-        "write-heading-ids": "docusaurus write-heading-ids"
+        "write-heading-ids": "docusaurus write-heading-ids",
+        "typecheck": "tsc"
     },
     "dependencies": {
-        "@docusaurus/core": "2.0.0-beta.6",
-        "@docusaurus/preset-classic": "2.0.0-beta.6",
-        "@docusaurus/mdx-loader": "2.0.0-beta.6",
-        "@mdx-js/react": "1.6.22",
-        "@svgr/webpack": "5.5.0",
+        "@docusaurus/core": "2.0.0-beta.13",
+        "@docusaurus/preset-classic": "2.0.0-beta.13",
+        "@mdx-js/react": "1.6.21",
         "clsx": "1.1.1",
-        "file-loader": "6.2.0",
         "prism-react-renderer": "1.2.1",
-        "react": "17.0.2",
-        "react-dom": "17.0.2",
-        "react-router": "5.2.0",
-        "react-router-dom": "5.2.0",
-        "url-loader": "4.1.1"
+        "react": "17.0.1",
+        "react-dom": "17.0.1"
     },
     "devDependencies": {
-        "jest": "27.4.3",
-        "@types/jest": "26.0.24",
-        "ts-jest": "27.0.7",
-        "mocha": "9.1.1",
-        "@types/mocha": "9.0.0",
-        "ts-mocha": "8.0.0",
+        "@docusaurus/module-type-aliases": "2.0.0-beta.13",
+        "@docusaurus/types": "2.0.0-beta.13",
         "@re-do/node": "workspace:*",
-        "@re-do/test": "workspace:*"
-    },
-    "browserslist": {
-        "production": [
-            ">0.5%",
-            "not dead",
-            "not op_mini all"
-        ],
-        "development": [
-            "last 1 chrome version",
-            "last 1 firefox version",
-            "last 1 safari version"
-        ]
+        "@tsconfig/docusaurus": "1.0.4",
+        "typescript": "4.5.2",
+        "@types/node": "16.11.12",
+        "@types/react": "17.0.37",
+        "@types/react-dom": "17.0.11",
+        "esbuild-loader": "2.16.0"
     }
 }

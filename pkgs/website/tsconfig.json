@@ -1,9 +1,0 @@
-{
-    "extends": "@re-do/node/tsconfig.base",
-    "compilerOptions": {
-        "baseUrl": "src",
-        "outDir": "out",
-        "types": ["vite/client", "jest"]
-    },
-    "include": ["src"]
-}

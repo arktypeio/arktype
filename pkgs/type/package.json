@@ -21,8 +21,7 @@
     "scripts": {
         "build": "redoTsc --ignoreTestTypes",
         "test": "jest",
-        "unit": "jest --coverage false -t ",
-        "results": "python3 -m http.server --directory jest-stare"
+        "unit": "jest --coverage false -t "
     },
     "dependencies": {
         "@re-do/utils": "workspace:*"
@@ -33,9 +32,7 @@
         "jest": "27.4.3",
         "@types/jest": "26.0.24",
         "ts-jest": "27.0.7",
-        "@types/node": "15.0.2",
-        "ts-toolbelt": "9.5.10",
-        "typescript": "4.5.2",
-        "tsd": "0.17.0"
+        "@types/node": "16.11.12",
+        "typescript": "4.5.2"
     }
 }

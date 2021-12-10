@@ -1,6 +1,0 @@
-export * from "./click.js"
-export * from "./go.js"
-export * from "./step.js"
-export * from "./screenshot.js"
-export * from "./set.js"
-export * from "./assertText.js"

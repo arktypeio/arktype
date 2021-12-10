@@ -13,7 +13,7 @@ jobs:
     build:
         strategy:
             matrix:
-                node-version: [16.6.1]
+                node-version: [16.13.0]
                 os: [ubuntu-latest, windows-latest, macOS-latest, macos-11]
             fail-fast: false
         runs-on: ${{ matrix.os }}
@@ -69,7 +69,7 @@ jobs:
                   tag: ${{ github.head_ref }}
                   commit: ${{ github.head_ref }}
             - name: Create package artifacts
-              if: ${{ github.event_name == 'workflow_dispatch' && matrix.os == 'ubuntu-latest' && matrix.node-version == '16.6.1' }}
+              if: ${{ github.event_name == 'workflow_dispatch' && matrix.os == 'ubuntu-latest' && matrix.node-version == '16.13.0' }}
               run: node common/scripts/install-run-rush.js publish --publish --pack --include-all --release-folder release
             - name: Create/update github release
               if: ${{ github.event_name == 'workflow_dispatch' }}
@@ -81,7 +81,7 @@ jobs:
                   tag: ${{ format('v{0}', env.APP_RELEASE_VERSION) }}
                   commit: ${{ github.ref }}
             - name: Publish packages to NPM and push version updates to master
-              if: ${{ github.event_name == 'workflow_dispatch' && matrix.os == 'ubuntu-latest' && matrix.node-version == '16.6.1' }}
+              if: ${{ github.event_name == 'workflow_dispatch' && matrix.os == 'ubuntu-latest' && matrix.node-version == '16.13.0' }}
               env:
                   NODE_AUTH_TOKEN: ${{ secrets.NPM_AUTH_TOKEN }}
               run: |
