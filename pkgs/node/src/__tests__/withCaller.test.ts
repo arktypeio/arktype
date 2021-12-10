@@ -18,7 +18,7 @@ describe("withArgsRange", () => {
               "range": {
                 "file": "reflected.ts",
                 "from": {
-                  "column": 49,
+                  "column": 51,
                   "line": 35,
                 },
                 "to": {
@@ -36,12 +36,12 @@ describe("withArgsRange", () => {
               "range": {
                 "file": "reflected.ts",
                 "from": {
-                  "column": 68,
-                  "line": 77,
+                  "column": 70,
+                  "line": 79,
                 },
                 "to": {
                   "column": 6,
-                  "line": 82,
+                  "line": 84,
                 },
               },
             }
@@ -91,12 +91,12 @@ describe("withArgsRange", () => {
               "range": {
                 "file": "reflected.ts",
                 "from": {
-                  "column": 57,
+                  "column": 59,
                   "line": 72,
                 },
                 "to": {
-                  "column": 79,
-                  "line": 72,
+                  "column": 6,
+                  "line": 76,
                 },
               },
             }
@@ -107,7 +107,7 @@ describe("withArgsRange", () => {
             {
               "file": "reflected.ts",
               "from": {
-                "column": 49,
+                "column": 51,
                 "line": 62,
               },
               "to": {
@@ -125,12 +125,12 @@ describe("withArgsRange", () => {
             {
               "file": "reflected.ts",
               "from": {
-                "column": 49,
-                "line": 91,
+                "column": 51,
+                "line": 93,
               },
               "to": {
-                "column": 70,
-                "line": 91,
+                "column": 72,
+                "line": 93,
               },
             }
         `)
@@ -143,7 +143,7 @@ describe("call position", () => {
             {
               "column": 6,
               "file": "reflected.ts",
-              "line": 104,
+              "line": 106,
               "message": "please",
               "method": "getCallPosition",
             }

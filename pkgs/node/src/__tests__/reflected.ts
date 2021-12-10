@@ -8,15 +8,15 @@ import {
     dirName
 } from ".."
 
-const relative = dirName()
+const formatPath = { relative: dirName() }
 
 export const callMe = (...args: any[]) => {
-    const inTheNight = () => caller({ relative })
+    const inTheNight = () => caller({ formatPath })
     return inTheNight()
 }
 
 export const callMeAnonymous = (...args: any[]) =>
-    (() => caller({ relative }))()
+    (() => caller({ formatPath }))()
 
 const messageAndRange = (range: SourceRange, ...input: string[]) => ({
     range,
@@ -32,7 +32,7 @@ const messageAndRangeThenName =
     })
 
 export const getAllUsingThunk = () =>
-    withCallRange(messageAndRange, { relative })(
+    withCallRange(messageAndRange, { formatPath })(
         "testing",
         "source",
         "positions",
@@ -46,7 +46,7 @@ export const getAllUsingProp = () =>
         allProp: {
             name: "all"
         },
-        relative
+        formatPath
     })("eat", "more", "borscht").all
 
 export const getAllUsingPropThunk = () =>
@@ -55,11 +55,11 @@ export const getAllUsingPropThunk = () =>
             name: "get",
             asThunk: true
         },
-        relative
+        formatPath
     })("i", "love", "you").get()
 
 export const getSingleProp = () =>
-    withCallRange(messageAndRange, { relative })(
+    withCallRange(messageAndRange, { formatPath })(
         "i'm",
         "not",
         "going",
@@ -69,12 +69,14 @@ export const getSingleProp = () =>
     ).range
 
 export const getForwardedReturn = (name: string) =>
-    withCallRange(messageAndRangeThenName, { relative })("yeah", "ok", "good")(
-        name
-    )
+    withCallRange(messageAndRangeThenName, { formatPath })(
+        "yeah",
+        "ok",
+        "good"
+    )(name)
 
 export const getAllUsingCallback = () =>
-    withCallRange(messageAndRange, { allCallback: true, relative })(
+    withCallRange(messageAndRange, { allCallback: true, formatPath })(
         "call",
         "me",
         "back",
@@ -88,11 +90,11 @@ export const getPropFromChainedCall = () =>
     // the stack trace breaks if the prop is accessed on the next line, e.g.:
     // withCallRange(messageAndRange)("chain", "me", "up")
     //     .range
-    withCallRange(messageAndRange, { relative })("chain", "me", "up").range
+    withCallRange(messageAndRange, { formatPath })("chain", "me", "up").range
 
 export const getUndefined = () =>
     // @ts-ignore
-    withCallRange(messageAndRange, { relative })("irrelevant").neverDefined
+    withCallRange(messageAndRange, { formatPath })("irrelevant").neverDefined
 
 export const getCallPosition = (message: string) =>
     withCallPosition(
@@ -100,5 +102,5 @@ export const getCallPosition = (message: string) =>
             ...position,
             message
         }),
-        { relative }
+        { formatPath }
     )()

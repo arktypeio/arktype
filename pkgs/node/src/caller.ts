@@ -8,7 +8,7 @@ export type SourcePosition = LinePosition & {
 }
 
 export type CallerOfOptions = {
-    relative?: boolean | string
+    formatPath?: FormatFilePathOptions
     upStackBy?: number
     skip?: (position: SourcePosition) => boolean
     methodName?: string
@@ -21,21 +21,30 @@ const nonexistentCurrentLine = narrow({
     file: ""
 })
 
-export const getRelativeFilePath = (
+export type FormatFilePathOptions = {
+    relative?: string | boolean
+    seperator?: string
+}
+
+export const formatFilePath = (
     original: string,
-    relativeFileOption: string | boolean | undefined
-) =>
-    relativeFileOption
-        ? path.relative(
-              typeof relativeFileOption === "string"
-                  ? relativeFileOption
-                  : process.cwd(),
-              original
-          )
-        : original
+    { relative, seperator }: FormatFilePathOptions
+) => {
+    let formatted = original
+    if (relative) {
+        formatted = path.relative(
+            typeof relative === "string" ? relative : process.cwd(),
+            original
+        )
+    }
+    if (seperator) {
+        formatted = formatted.replace(RegExp(`\\${path.sep}`, "g"), seperator)
+    }
+    return formatted
+}
 
 export const caller = (options: CallerOfOptions = {}): SourcePosition => {
-    let { upStackBy = 0, relative, skip, methodName } = options
+    let { upStackBy = 0, formatPath, skip, methodName } = options
     if (!methodName) {
         upStackBy = 3
     }
@@ -53,7 +62,7 @@ export const caller = (options: CallerOfOptions = {}): SourcePosition => {
             )
         }
         const candidate = {
-            file: getRelativeFilePath(location.file, relative),
+            file: formatFilePath(location.file, formatPath ?? {}),
             line: location.line,
             column: location.char,
             method: location.method

@@ -61,4 +61,7 @@ export const assertionContext: AssertionContext = (
     return assertionContext as any
 }
 
-export const assert = withCallPosition(assertionContext) as any as Assertion
+export const assert = withCallPosition(assertionContext, {
+    // TS uses "/" as their path seperator, even on Windows
+    formatPath: { seperator: "/" }
+}) as any as Assertion

@@ -1,5 +1,5 @@
 import { SourcePosition } from "@re-do/node"
-import { getAbsolutePositions, toString } from "@re-do/utils"
+import { getAbsolutePositions, print, toString } from "@re-do/utils"
 import { getTsContext, TsContext } from "./ts.js"
 import ts from "typescript"
 
@@ -40,6 +40,13 @@ const nextTypedNode = (
     }: NextTypeOptions = {}
 ): { node: ts.Node; type: ts.Type; errors: string[] } => {
     const { ts, sources } = context
+    if (!(file in sources)) {
+        throw new Error(
+            `File '${file}' was unexpected. Files in context are:\n\n${Object.keys(
+                sources
+            ).join("\n")}`
+        )
+    }
     const checker = ts.getTypeChecker()
     const errors: ts.Diagnostic[] = ts
         // @ts-ignore

@@ -202,14 +202,17 @@ export const valueAssertions = <T, Config extends AssertionConfig>(
     if (config["allowTypeAssertions"]) {
         return {
             ...baseAssertions,
-            typedValue: withCallPosition((expectedPosition, expectedValue) => {
-                defaultAssert(value, expectedValue)
-                expect(
-                    nextTypeToString(position, {
-                        returnsCount: config.returnsCount
-                    })
-                ).toBe(nextTypeToString(expectedPosition))
-            })
+            typedValue: withCallPosition(
+                (expectedPosition, expectedValue) => {
+                    defaultAssert(value, expectedValue)
+                    expect(
+                        nextTypeToString(position, {
+                            returnsCount: config.returnsCount
+                        })
+                    ).toBe(nextTypeToString(expectedPosition))
+                },
+                { formatPath: { seperator: "/" } }
+            )
         }
     }
     return baseAssertions

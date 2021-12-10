@@ -7,10 +7,18 @@ import {
     WithDefaults
 } from "@re-do/utils"
 import { fileName } from "./fs.js"
-import { caller, getRelativeFilePath, SourcePosition } from "./caller.js"
+import {
+    caller,
+    formatFilePath,
+    FormatFilePathOptions,
+    SourcePosition
+} from "./caller.js"
 
 export type WithPositionOptions = {
-    relative?: boolean | string
+    formatPath?: {
+        relative?: boolean | string
+        seperator?: string
+    }
 }
 
 export type WithCallPosition<
@@ -26,13 +34,15 @@ export const withCallPosition = <
     f: F,
     options?: Options
 ) => {
-    const { relative } = options ?? {}
+    const { formatPath } = withDefaults<WithPositionOptions>({
+        formatPath: {}
+    })(options)
     const skip = ({ file }: SourcePosition) =>
-        file === getRelativeFilePath(fileName(), relative)
+        file === formatFilePath(fileName(), formatPath)
     const forwardCaller = ((...args: any[]) =>
         f(
             caller({
-                relative,
+                formatPath,
                 skip
             }),
             ...args
@@ -73,7 +83,7 @@ export type AllPropOptions = {
 export type WithRangeOptions = {
     allProp?: AllPropOptions
     allCallback?: boolean
-    relative?: boolean | string
+    formatPath?: FormatFilePathOptions
 }
 
 export const withCallRange = <
@@ -85,23 +95,25 @@ export const withCallRange = <
         {
             allProp: { name: "" }
             allCallback: false
-            relative: false
+            formatPath: {}
         }
     >
 >(
     f: F,
     options?: Options
 ) => {
-    const { allCallback, relative, allProp } = withDefaults<WithRangeOptions>({
-        allProp: { name: "", asThunk: false },
-        allCallback: false,
-        relative: false
-    })(options) as CompiledOptions
+    const { allCallback, formatPath, allProp } = withDefaults<WithRangeOptions>(
+        {
+            allProp: { name: "", asThunk: false },
+            allCallback: false,
+            formatPath: {}
+        }
+    )(options) as CompiledOptions
     const skip = ({ file }: SourcePosition) =>
-        file === getRelativeFilePath(fileName(), relative)
+        file === formatFilePath(fileName(), formatPath)
     const startArgsRange = (...args: any[]) => {
         const startCaller = caller({
-            relative,
+            formatPath,
             skip
         })
         const { file: fromFile, method: fromMethod, ...from } = startCaller
@@ -109,7 +121,7 @@ export const withCallRange = <
         const endArgsRange = () => {
             if (!range) {
                 const endCaller = caller({
-                    relative,
+                    formatPath,
                     skip
                 })
                 const { file, method, ...to } = endCaller
