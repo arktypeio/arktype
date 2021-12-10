@@ -1,6 +1,6 @@
 {
     "name": "@re-do/node",
-    "version": "1.0.1",
+    "version": "1.1.0",
     "author": "redo.qa",
     "description": "NodeJS utilities, build tools, and configs",
     "repository": {
