@@ -1,4 +1,4 @@
-import { transform } from "@re-do/utils"
+import { transform } from "@re-/utils"
 import { definitionTypeError } from "./components/errors.js"
 
 export const format = <T>(definition: T): T => {

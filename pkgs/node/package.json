@@ -1,11 +1,11 @@
 {
-    "name": "@re-do/node",
+    "name": "@re-/node",
     "version": "1.1.0",
     "author": "redo.dev",
     "description": "NodeJS utilities, build tools, and configs",
     "repository": {
         "type": "git",
-        "url": "https://github.com/re-do/redo.git",
+        "url": "https://github.com/re-do/dev.git",
         "directory": "pkgs/node"
     },
     "type": "module",
@@ -31,7 +31,7 @@
         "test": "jest"
     },
     "dependencies": {
-        "@re-do/utils": "workspace:*",
+        "@re-/utils": "workspace:*",
         "deepmerge": "4.2.2",
         "execa": "5.0.0",
         "moize": "5.4.7",

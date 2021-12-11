@@ -1,5 +1,5 @@
-import { SourcePosition } from "@re-do/node"
-import { getAbsolutePositions, print, toString } from "@re-do/utils"
+import { SourcePosition } from "@re-/node"
+import { getAbsolutePositions, print, toString } from "@re-/utils"
 import { getTsContext, TsContext } from "./ts.js"
 import ts from "typescript"
 

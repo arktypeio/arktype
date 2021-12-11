@@ -7,8 +7,8 @@
 
 We use a [rush](https://rushjs.io) monorepo to manage the Redo app. Take a look at any of the individual packages to learn more:
 
--   [@re-do/utils](pkgs/utils): Browser-friendly utiltiies and types
--   [@re-do/node](pkgs/node): Utilities, configs, scripts, and devtools for Node
+-   [@re-/utils](pkgs/utils): Browser-friendly utiltiies and types
+-   [@re-/node](pkgs/node): Utilities, configs, scripts, and devtools for Node
 
 ## Contributing
 
@@ -19,7 +19,7 @@ If you're interested in contributing to one of our packages for the first time:
 
 ## Project
 
-Our current and planned work can always be found [here](https://github.com/re-do/redo/projects/1).
+Our current and planned work can always be found [here](https://github.com/re-do/dev/projects/1).
 
 ## License
 

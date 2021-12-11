@@ -4,7 +4,7 @@ import {
     Evaluate,
     isRecursible,
     transform
-} from "@re-do/utils"
+} from "@re-/utils"
 import {
     ParseConfig,
     mismatchedKeysError,

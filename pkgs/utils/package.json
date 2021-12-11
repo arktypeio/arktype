@@ -1,11 +1,11 @@
 {
-    "name": "@re-do/utils",
+    "name": "@re-/utils",
     "version": "1.2.0",
-    "author": "redo.qa",
+    "author": "redo.dev",
     "description": "Common utilities consumed by Redo",
     "repository": {
         "type": "git",
-        "url": "https://github.com/re-do/redo.git",
+        "url": "https://github.com/re-do/dev.git",
         "directory": "pkgs/utils"
     },
     "type": "module",
@@ -27,8 +27,8 @@
         "ts-toolbelt": "9.5.10"
     },
     "devDependencies": {
-        "@re-do/node": "1.1.0",
-        "@re-do/assert": "0.1.0",
+        "@re-/node": "1.1.0",
+        "@re-/assert": "0.1.0",
         "@types/node": "16.11.12",
         "jest": "27.4.3",
         "@types/jest": "26.0.24",

@@ -1,4 +1,4 @@
-import { Evaluate } from "@re-do/utils"
+import { Evaluate } from "@re-/utils"
 import {
     typeDefProxy,
     ParseConfig,

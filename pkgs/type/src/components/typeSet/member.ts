@@ -4,7 +4,7 @@ import {
     IsUnknown,
     Iteration,
     KeyValuate
-} from "@re-do/utils"
+} from "@re-/utils"
 import { ParseConfig, ShallowCycleError } from "./internal.js"
 import { Root } from "../root.js"
 import { References } from "../../references.js"

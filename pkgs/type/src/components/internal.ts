@@ -1,4 +1,4 @@
-import { TreeOf } from "@re-do/utils"
+import { TreeOf } from "@re-/utils"
 import { Num } from "./shallow/num.js"
 import { StringLiteral } from "./shallow/stringLiteral.js"
 

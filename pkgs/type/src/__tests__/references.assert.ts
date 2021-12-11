@@ -1,4 +1,4 @@
-import { assert } from "@re-do/assert"
+import { assert } from "@re-/assert"
 import { References } from ".."
 
 describe("references", () => {

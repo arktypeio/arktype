@@ -5,7 +5,7 @@ import {
     TreeOf,
     IsAny,
     WithDefaults
-} from "@re-do/utils"
+} from "@re-/utils"
 import { Root } from "./components"
 import {
     AllowsOptions,

@@ -1,4 +1,4 @@
-import { assert } from "@re-do/assert"
+import { assert } from "@re-/assert"
 import { compile, parse } from ".."
 import { typeDefProxy } from "../internal.js"
 

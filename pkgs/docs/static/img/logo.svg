@@ -1,46 +1,82 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <svg
-   viewBox="0 0 1823 575"
-   xmlns="http://www.w3.org/2000/svg">
+   viewBox="0 0 1823 576"
+   version="1.1"
+   id="svg13"
+   sodipodi:docname="logo.svg"
+   inkscape:version="1.1 (c68e22c387, 2021-05-23)"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <defs
+     id="defs17" />
+  <sodipodi:namedview
+     id="namedview15"
+     pagecolor="#ffffff"
+     bordercolor="#999999"
+     borderopacity="1"
+     inkscape:pageshadow="0"
+     inkscape:pageopacity="0"
+     inkscape:pagecheckerboard="0"
+     showgrid="false"
+     inkscape:zoom="0.58036204"
+     inkscape:cx="910.63847"
+     inkscape:cy="-15.507561"
+     inkscape:window-width="1920"
+     inkscape:window-height="1080"
+     inkscape:window-x="0"
+     inkscape:window-y="1081"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="background" />
   <g
      fill="none"
      stroke-linecap="round"
-     stroke-width="75"
+     stroke-width="72"
      id="background">
     <path
        stroke="#162b79"
-       d="M 54.257,524.998 V 265.056 c 13.687,-103.11 78.946,-181.08 164.666,-202.41 85.72,-21.33 174.357,18.342 223.285,99.939"
-       id="rMain"
- />
+       d="m 54.257,516.85654 c 0,-86.64733 0,-173.29467 0,-259.942 10.069774,-85.59629 64.81296,-169.67559 148.84087,-197.754563 74.86518,-26.980164 162.45204,0.314712 213.42936,60.178423 9.63183,10.86584 18.21535,22.65321 25.68077,35.10514"
+       id="rMain" />
     <path
        stroke="#ffc40c"
        stroke-linejoin="round"
-       d="m 353.388,162.585 h 88.82 v -88.82"
+       d="m 353.388,154.44354 h 88.82 v -88.82"
        id="rArrow" />
     <path
        stroke="#162b79"
        stroke-linejoin="round"
-       d="M 840.922,483.139 A 213.13,238.494 0 0 1 588.24,476.175 213.13,238.494 0 0 1 519.193,204.095 213.13,238.494 0 0 1 730.89,49.564 213.13,238.494 0 0 1 925.594,229.92"
+       d="m 840.922,482.48772 a 213.13,238.494 0 0 1 -252.682,-6.964 213.13,238.494 0 0 1 -69.047,-272.08 A 213.13,238.494 0 0 1 730.89,48.912721 213.13,238.494 0 0 1 925.594,229.26872"
        id="eMain" />
     <path
-       stroke="#c80815"
-       d="m 605.77,228.02 h 226.6"
+       stroke="#ffc40c"
+       d="M 600,225 H 835"
        id="eLine" />
     <path
-       d="m 1559.3054,48.729 a 192.044,192.044 0 0 0 -56.073,8.531 c -82.15,25.301 -145.182,104.354 -155.179,203.17 -12.176,120.347 58.178,231.802 163.61,259.19 105.433,27.388 212.472,-37.987 248.92,-152.03 36.448,-114.042 -9.264,-240.548 -106.305,-294.19"
+       d="m 1559.3054,48.527826 a 192.044,192.044 0 0 0 -56.073,8.531 c -82.15,25.301 -145.182,104.354004 -155.179,203.170004 -12.176,120.347 58.178,231.802 163.61,259.19 105.433,27.388 212.472,-37.987 248.92,-152.03 36.448,-114.042 -9.264,-240.548 -106.305,-294.190004"
        id="oMain"
        stroke="#162b79" />
     <path
-       d="m 1037.8184,525.61 c 115.519,-6.028 205.674,-114.026 203.188,-243.403 -2.485,-129.377 -96.704,-232.94 -212.348,-233.407"
+       d="m 1041.7916,524.49129 c 115.5456,-6.0176 205.7212,-113.82937 203.2346,-242.98327 -2.4856,-129.15389 -96.7261,-232.538299 -212.3966,-233.004494"
        id="dMain"
-       stroke="#162b79" />
+       stroke="#162b79"
+      />
     <path
        stroke="#ffc40c"
-       d="M 1030.4154,139.595 V 435.66"
-       id="dLine" />
-    <path
-       stroke="#c80815"
        stroke-linejoin="round"
        d="m 1743.0994,73.4 h -88.82 v 88.82"
        id="oArrow" />
+    <circle
+       id="colonTop"
+       cx="1031.0463"
+       cy="225"
+       r="36"
+       fill="#c80815" />
+    <circle
+       id="colonBottom"
+       cx="1032.7694"
+       cy="392.11044"
+       r="36"
+       fill="#c80815" />
   </g>
 </svg>

@@ -1,4 +1,4 @@
-import { asNumber, isNumeric, NumericString } from "@re-do/utils"
+import { asNumber, isNumeric, NumericString } from "@re-/utils"
 import { typeDefProxy, validationError, createParser } from "./common.js"
 import { Fragment } from "./fragment.js"
 

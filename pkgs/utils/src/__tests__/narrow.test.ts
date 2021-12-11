@@ -1,5 +1,5 @@
 import { narrow } from ".."
-import { assert } from "@re-do/assert"
+import { assert } from "@re-/assert"
 
 describe("Narrow", () => {
     test("literals", () => {

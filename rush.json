@@ -1,7 +1,7 @@
 {
     "$schema": "https://developer.microsoft.com/json-schemas/rush/v5/rush.schema.json",
-    "rushVersion": "5.56.0",
-    "pnpmVersion": "6.23.2",
+    "rushVersion": "5.57.1",
+    "pnpmVersion": "6.23.6",
     "pnpmOptions": {
         "useWorkspaces": true
     },
@@ -9,32 +9,32 @@
     "suppressNodeLtsWarning": true,
     "ensureConsistentVersions": true,
     "repository": {
-        "url": "https://github.com/re-do/redo"
+        "url": "https://github.com/re-do/dev"
     },
     "projects": [
         {
-            "packageName": "@re-do/node",
+            "packageName": "@re-/node",
             "projectFolder": "pkgs/node",
             "shouldPublish": true
         },
         {
-            "packageName": "@re-do/utils",
+            "packageName": "@re-/utils",
             "projectFolder": "pkgs/utils",
-            "cyclicDependencyProjects": ["@re-do/node", "@re-do/assert"],
+            "cyclicDependencyProjects": ["@re-/node", "@re-/assert"],
             "shouldPublish": true
         },
         {
-            "packageName": "@re-do/assert",
+            "packageName": "@re-/assert",
             "projectFolder": "pkgs/assert",
             "shouldPublish": true
         },
         {
-            "packageName": "@re-do/type",
+            "packageName": "@re-/type",
             "projectFolder": "pkgs/type",
             "shouldPublish": true
         },
         {
-            "packageName": "@re-do/docs",
+            "packageName": "@re-/docs",
             "projectFolder": "pkgs/docs",
             "shouldPublish": false
         }

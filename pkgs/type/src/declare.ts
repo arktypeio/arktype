@@ -1,4 +1,4 @@
-import { ElementOf, Narrow, transform } from "@re-do/utils"
+import { ElementOf, Narrow, transform } from "@re-/utils"
 import { parse } from "./parse.js"
 import { CompileFunction, createCompileFunction } from "./compile.js"
 import { TypeSet } from "./components"

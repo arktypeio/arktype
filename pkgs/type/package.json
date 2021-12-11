@@ -1,11 +1,11 @@
 {
-    "name": "@re-do/type",
+    "name": "@re-/type",
     "version": "1.1.0",
     "author": "redo.qa",
     "description": "",
     "repository": {
         "type": "git",
-        "url": "https://github.com/re-do/redo.git",
+        "url": "https://github.com/re-do/dev.git",
         "directory": "pkgs/type"
     },
     "type": "module",
@@ -24,11 +24,11 @@
         "unit": "jest --coverage false -t "
     },
     "dependencies": {
-        "@re-do/utils": "workspace:*"
+        "@re-/utils": "workspace:*"
     },
     "devDependencies": {
-        "@re-do/node": "workspace:*",
-        "@re-do/assert": "workspace:*",
+        "@re-/node": "workspace:*",
+        "@re-/assert": "workspace:*",
         "jest": "27.4.3",
         "@types/jest": "26.0.24",
         "ts-jest": "27.0.7",

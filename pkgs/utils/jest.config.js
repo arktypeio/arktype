@@ -1,3 +1,3 @@
-import { getJestConfig } from "@re-do/node"
+import { getJestConfig } from "@re-/node"
 
 export default getJestConfig()
