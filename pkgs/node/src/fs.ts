@@ -20,7 +20,7 @@ import { once } from "events"
 import { finished } from "stream"
 import { promisify } from "util"
 import { caller, callsAgo } from "./caller.js"
-import { FilterFunction } from "@re-do/utils"
+import { FilterFunction } from "@re-/utils"
 
 export const streamFinished = promisify(finished)
 

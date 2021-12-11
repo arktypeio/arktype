@@ -1,4 +1,4 @@
-import { RemoveSpaces } from "@re-do/utils"
+import { RemoveSpaces } from "@re-/utils"
 import { typeDefProxy, createParser, ParseConfig } from "./common.js"
 import { Fragment } from "./fragment.js"
 import { Optional } from "./optional.js"

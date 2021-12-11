@@ -1,4 +1,4 @@
-import { caller } from "@re-do/node"
+import { caller } from "@re-/node"
 import { registerImporter } from "./imports.js"
 
 registerImporter(

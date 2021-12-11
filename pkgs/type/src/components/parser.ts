@@ -7,7 +7,7 @@ import {
     ValueOf,
     Exact,
     toString
-} from "@re-do/utils"
+} from "@re-/utils"
 import { ExtractableDefinition } from "./internal.js"
 import { Root } from "./root.js"
 import { TypeSet } from "./typeSet"

@@ -8,7 +8,7 @@ import {
     filterChars,
     isAlphaNumeric,
     StringifyPossibleTypes
-} from "@re-do/utils"
+} from "@re-/utils"
 import { ExtractableDefinition } from "./internal.js"
 import { ParseContext } from "./parser.js"
 import { Shallow } from "./shallow/shallow.js"

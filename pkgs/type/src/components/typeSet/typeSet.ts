@@ -8,7 +8,7 @@ import {
     StringifyPossibleTypes,
     StringReplace,
     UnionDiffResult
-} from "@re-do/utils"
+} from "@re-/utils"
 import { ParsedType } from "../../parse.js"
 import { ParseConfig } from "./internal.js"
 import { TypeSetMember } from "./member.js"

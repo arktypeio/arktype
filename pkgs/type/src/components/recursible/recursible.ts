@@ -2,7 +2,7 @@ import {
     Evaluate,
     isRecursible,
     Recursible as ExtractRecursible
-} from "@re-do/utils"
+} from "@re-/utils"
 import {
     typeDefProxy,
     ParseConfig,
