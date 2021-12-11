@@ -54,8 +54,7 @@ export type ExactObject<
                 : B[K]
             : ExactObject<Recursible<C[K]>, B[K]>
         : InvalidPropertyError<B, K>
-} &
-    { [K in MissingKeys]: K extends keyof B ? B[K] : never }
+} & { [K in MissingKeys]: K extends keyof B ? B[K] : never }
 
 export type InvalidPropertyError<O, Property> = `Invalid property '${Property &
     Stringifiable}'. Valid properties are: ${StringifyPossibleTypes<
