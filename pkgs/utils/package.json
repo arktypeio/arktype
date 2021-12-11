@@ -27,8 +27,8 @@
         "ts-toolbelt": "9.5.10"
     },
     "devDependencies": {
-        "@re-do/node": "1.1.0",
-        "@re-do/assert": "0.1.0",
+        "@re-/node": "1.1.1",
+        "@re-/assert": "0.1.1",
         "@types/node": "16.11.12",
         "jest": "27.4.3",
         "@types/jest": "26.0.24",
