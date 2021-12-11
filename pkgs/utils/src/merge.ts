@@ -44,19 +44,21 @@ export type Merge<
             ? GetRequiredKeys<Base & object>
             : never
     >,
-    TypeToPreserve = ExcludedByKey<Base, keyof TypeToMerge>
+    TypeToPreserve = Evaluate<ExcludedByKey<Base, keyof TypeToMerge>>
 > = Base extends any[] | NonRecursible
     ? Merged
     : Merged extends any[] | NonRecursible
     ? Base
-    : TypeToPreserve & {
-          [K in keyof TypeToMerge]: And<
-              Options["deep"],
-              K extends keyof Base ? true : false
-          > extends true
-              ? Merge<Base[K & keyof Base], TypeToMerge[K], Options>
-              : TypeToMerge[K]
-      }
+    : Evaluate<
+          TypeToPreserve & {
+              [K in keyof TypeToMerge]: And<
+                  Options["deep"],
+                  K extends keyof Base ? true : false
+              > extends true
+                  ? Merge<Base[K & keyof Base], TypeToMerge[K], Options>
+                  : TypeToMerge[K]
+          }
+      >
 
 export type FromEntries<
     Entries extends Entry[],

@@ -77,8 +77,7 @@ describe("transform", () => {
             i,
             !v
         ])
-        assert(inferredAsArrayResult).typed as boolean[]
-        expect(inferredAsArrayResult).toStrictEqual([false, true])
+        assert(inferredAsArrayResult).equals([false, true]).typed as boolean[]
     })
     test("explicitly infer array", () => {
         const specifiedInferArrayResult = transform(
@@ -86,8 +85,8 @@ describe("transform", () => {
             ([i, v]) => [i, !v],
             { asArray: "infer" }
         )
-        assert(specifiedInferArrayResult).typed as boolean[]
-        expect(specifiedInferArrayResult).toStrictEqual([false, true])
+        assert(specifiedInferArrayResult).equals([false, true])
+            .typed as boolean[]
     })
     test("force record", () => {
         const specifiedAsArrayResult = transform(
@@ -97,8 +96,9 @@ describe("transform", () => {
                 asArray: "never"
             }
         )
-        assert(specifiedAsArrayResult).typed as Record<number, boolean>
-        expect(specifiedAsArrayResult).toStrictEqual({ 0: false, 1: true })
+        assert(specifiedAsArrayResult).equals({ 0: false, 1: true }).typed as {
+            [x: number]: boolean
+        }
     })
     test("force array", () => {
         const result = transform({ a: 3.14, b: 159 }, ([k, v]) => [k, `${v}`], {
