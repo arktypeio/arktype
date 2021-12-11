@@ -12,6 +12,5 @@
         "test/**/__snapshots__": true,
         "pnpm-lock.*": true,
         "*.lock": true
-    },
-    "svg.preview.background": "transparent"
+    }
 }

@@ -1,6 +1,6 @@
 {
     "$schema": "https://developer.microsoft.com/json-schemas/rush/v5/rush.schema.json",
-    "rushVersion": "5.57.1",
+    "rushVersion": "5.56.0",
     "pnpmVersion": "6.23.6",
     "pnpmOptions": {
         "useWorkspaces": true
@@ -9,7 +9,8 @@
     "suppressNodeLtsWarning": true,
     "ensureConsistentVersions": true,
     "repository": {
-        "url": "https://github.com/re-do/dev"
+        "url": "https://github.com/re-do/dev",
+        "defaultBranch": "main"
     },
     "projects": [
         {

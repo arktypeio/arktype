@@ -1,5 +1,5 @@
 import { DeepEvaluate, Exact, ExactObject } from ".."
-import { assert } from "@re-/assert"
+import { assert } from "@re-do/assert"
 
 describe("exact", () => {
     test("exact", () => {
