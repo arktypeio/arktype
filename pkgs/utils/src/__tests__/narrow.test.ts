@@ -23,8 +23,8 @@ describe("Narrow", () => {
         // Function return values can't be narrowed
         assert(narrow((args: -1) => 1)).typed as (args: -1) => number
         assert(narrow((...args: [["hi", 5], { a: "nother" }]) => {})).typed as (
-            a: ["hi", 5],
-            b: {
+            args_0: ["hi", 5],
+            args_1: {
                 a: "nother"
             }
         ) => void

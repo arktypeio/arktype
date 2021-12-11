@@ -2,13 +2,14 @@ import { assert } from "@re-do/assert"
 import { Evaluate, merge, mergeAll, narrow } from ".."
 
 test("mergeAll shallow", () => {
+    const expected = narrow({ a: "fromA", b: "fromB", c: "fromC" })
     assert(
         mergeAll([
             { a: "fromA", b: "fromA" },
             { b: "fromB", c: "fromB" },
             { c: "fromC" }
         ])
-    ).typedValue({ a: "fromA", b: "fromB", c: "fromC" })
+    ).typedValue(expected)
 })
 
 test("merge shallow", () => {
@@ -39,7 +40,7 @@ test("merge exclude values", () => {
     // undefined excluded by default
     assert(merge({ a: "defined" }, { a: undefined })).typedValue(expected)
     assert(
-        merge({ a: "string" }, { a: true }, { unmerged: [true] })
+        merge({ a: "defined" }, { a: true }, { unmerged: [true] })
     ).typedValue(expected)
 })
 
