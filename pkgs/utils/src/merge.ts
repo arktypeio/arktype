@@ -44,7 +44,7 @@ export type Merge<
             ? GetRequiredKeys<Base & object>
             : never
     >,
-    TypeToPreserve = Evaluate<ExcludedByKey<Base, keyof TypeToMerge>>
+    TypeToPreserve = ExcludedByKey<Base, keyof TypeToMerge>
 > = Base extends any[] | NonRecursible
     ? Merged
     : Merged extends any[] | NonRecursible
