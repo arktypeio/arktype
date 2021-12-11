@@ -139,12 +139,12 @@ describe("withArgsRange", () => {
 
 describe("call position", () => {
     test("simple", () => {
-        expect(getCallPosition("please")).toMatchInlineSnapshot(`
+        expect(getCallPosition("please!")).toMatchInlineSnapshot(`
             {
               "column": 6,
               "file": "reflected.ts",
               "line": 106,
-              "message": "please",
+              "message": "please!",
               "method": "getCallPosition",
             }
         `)

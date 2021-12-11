@@ -1,0 +1,10 @@
+{
+    "changes": [
+        {
+            "packageName": "@re-/node",
+            "comment": "Initial commit.",
+            "type": "patch"
+        }
+    ],
+    "packageName": "@re-/node"
+}
