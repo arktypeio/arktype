@@ -2,7 +2,7 @@ name: Redo CI
 
 on:
     pull_request:
-        branches: [master]
+        branches: [main]
     workflow_dispatch:
 
 defaults:
@@ -14,12 +14,11 @@ jobs:
         strategy:
             matrix:
                 node-version: [16.13.0]
-                os: [ubuntu-latest, windows-latest, macOS-latest, macos-11]
+                os: [ubuntu-latest, windows-latest, macOS-latest]
             fail-fast: false
         runs-on: ${{ matrix.os }}
         env:
             NODE_OPTIONS: "--unhandled-rejections=strict"
-            DISPLAY: ":99"
         steps:
             - uses: actions/checkout@v2
               with:
@@ -36,52 +35,14 @@ jobs:
               run: node common/scripts/install-run-rush.js publish --apply
             - run: node common/scripts/install-run-rush.js install
             - run: node common/scripts/install-run-rush.js build
-            - name: Bump unpublished versions
-              if: ${{ github.event_name == 'workflow_dispatch' }}
-              working-directory: pkgs/test
-              run: npm run syncVersions
-            - run: npx playwright install-deps
-            - name: Setup display server for linux
-              if: ${{ matrix.os == 'ubuntu-latest' }}
-              run: |
-                  sudo apt-get install xvfb
-                  Xvfb :99 -screen 0 1024x768x24 > /dev/null 2>&1 &
             - run: node common/scripts/install-run-rush.js test
               env:
                   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-            - name: Set app release version
-              if: ${{ github.event_name == 'workflow_dispatch' }}
-              working-directory: pkgs/app
-              run: echo APP_RELEASE_VERSION=$(echo$(npm run version) | awk '{print $NF}') >> $GITHUB_ENV
-            - name: Create and test electron release for ${{ matrix.os }}
-              working-directory: pkgs/app
-              run: |
-                  npm run release
-                  npm run testRelease
-            - name: Create github app release for pull request
-              if: ${{ github.event_name == 'pull_request' }}
-              uses: ncipollo/release-action@v1
-              with:
-                  allowUpdates: true
-                  draft: true
-                  artifacts: "pkgs/app/release/*.zip"
-                  token: ${{ secrets.GITHUB_TOKEN }}
-                  tag: ${{ github.head_ref }}
-                  commit: ${{ github.head_ref }}
             - name: Create package artifacts
-              if: ${{ github.event_name == 'workflow_dispatch' && matrix.os == 'ubuntu-latest' && matrix.node-version == '16.13.0' }}
+              if: ${{ github.event_name == 'workflow_dispatch' && matrix.os == 'ubuntu-latest'}}
               run: node common/scripts/install-run-rush.js publish --publish --pack --include-all --release-folder release
-            - name: Create/update github release
-              if: ${{ github.event_name == 'workflow_dispatch' }}
-              uses: ncipollo/release-action@v1
-              with:
-                  allowUpdates: true
-                  artifacts: "pkgs/app/release/*.zip,release/*"
-                  token: ${{ secrets.GITHUB_TOKEN }}
-                  tag: ${{ format('v{0}', env.APP_RELEASE_VERSION) }}
-                  commit: ${{ github.ref }}
             - name: Publish packages to NPM and push version updates to master
-              if: ${{ github.event_name == 'workflow_dispatch' && matrix.os == 'ubuntu-latest' && matrix.node-version == '16.13.0' }}
+              if: ${{ github.event_name == 'workflow_dispatch' && matrix.os == 'ubuntu-latest' }}
               env:
                   NODE_AUTH_TOKEN: ${{ secrets.NPM_AUTH_TOKEN }}
               run: |
