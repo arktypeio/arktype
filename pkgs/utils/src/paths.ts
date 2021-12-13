@@ -6,11 +6,8 @@ import {
     Segment,
     List,
     Recursible,
-    ElementOf,
     PlusOne,
     MinusOne,
-    KeyValuate,
-    Evaluate,
     Split
 } from "./common.js"
 import { WithDefaults, withDefaults } from "./merge.js"
