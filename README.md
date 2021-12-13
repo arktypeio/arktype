@@ -19,7 +19,7 @@ If you're interested in contributing to one of our packages for the first time:
 
 ## Project
 
-Our current and planned work can always be found [here](https://github.com/re-do/dev/projects/1).
+Our current and planned work can always be found [here](https://github.com/re-do/re-po/projects/1).
 
 ## License
 

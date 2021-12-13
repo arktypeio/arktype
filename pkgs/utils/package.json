@@ -5,7 +5,7 @@
     "description": "Common utilities consumed by Redo",
     "repository": {
         "type": "git",
-        "url": "https://github.com/re-do/dev.git",
+        "url": "https://github.com/re-do/re-po.git",
         "directory": "pkgs/utils"
     },
     "type": "module",

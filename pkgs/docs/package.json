@@ -1,6 +1,7 @@
 {
     "name": "@re-/docs",
     "version": "0.0.0",
+    "author": "redo.dev",
     "private": true,
     "scripts": {
         "docusaurus": "docusaurus",

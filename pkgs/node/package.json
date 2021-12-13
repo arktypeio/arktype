@@ -5,7 +5,7 @@
     "description": "NodeJS utilities, build tools, and configs",
     "repository": {
         "type": "git",
-        "url": "https://github.com/re-do/dev.git",
+        "url": "https://github.com/re-do/re-po.git",
         "directory": "pkgs/node"
     },
     "type": "module",

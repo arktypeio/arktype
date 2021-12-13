@@ -1,11 +1,11 @@
 {
     "name": "@re-/type",
     "version": "1.1.1",
-    "author": "redo.qa",
+    "author": "redo.dev",
     "description": "",
     "repository": {
         "type": "git",
-        "url": "https://github.com/re-do/dev.git",
+        "url": "https://github.com/re-do/re-po.git",
         "directory": "pkgs/type"
     },
     "type": "module",
