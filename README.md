@@ -7,8 +7,11 @@
 
 We use a [rush](https://rushjs.io) monorepo to manage the Redo app. Take a look at any of the individual packages to learn more:
 
+-   [@re-/type](pkgs/type): Beautiful types from IDE to runtime
+-   [@re-/assert](pkgs/assert): Seamless testing for types and code
 -   [@re-/utils](pkgs/utils): Browser-friendly utiltiies and types
 -   [@re-/node](pkgs/node): Utilities, configs, scripts, and devtools for Node
+-   [@re-/docs](pkgs/docs): Documentation for this repo
 
 ## Contributing
 
