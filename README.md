@@ -1,4 +1,11 @@
 ![logo.svg](/pkgs/docs/static/img/logo.svg)
+
+<h1 align="center">redo</h1>
+
+Redo is a set of devtools that make it easier to build and test JS/TS. Their shared goal is to abstract some of the ecosystem's ugliest problems behind beautiful code that is fun to write and intuitive to read so that you can focus on creating something new instead of understanding something old.
+
+In other words, you can finally get back to doing what you love.
+
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-v2.0%20adopted-ff69b4.svg)](code-of-conduct.md)
 ![Code style](https://img.shields.io/badge/code_style-prettier-ff69b4.svg)
