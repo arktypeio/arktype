@@ -1,4 +1,5 @@
 import { isRecursible, fromEntries, Unlisted, NonRecursible } from "./common.js"
+import { toString } from "./toString.js"
 
 export type ShapeFilter<O, S> = O extends NonRecursible
     ? O
@@ -25,7 +26,9 @@ export type ShapeFilter<O, S> = O extends NonRecursible
 export const shapeFilter = <O, S>(o: O, shape: S): ShapeFilter<O, S> => {
     if (!isRecursible(o) || !isRecursible(shape)) {
         throw Error(
-            `Can't shapeFilter non-objects. Parameters '${o}' and '${JSON.stringify(
+            `Can't shapeFilter non-objects. Parameters '${toString(
+                o
+            )}' and '${toString(
                 shape
             )}' were of types ${typeof o} and ${typeof shape}.`
         )

@@ -10,7 +10,7 @@ import {
     isEmpty
 } from "./common.js"
 import { transform } from "./transform.js"
-import { merge, mergeAll } from "./merge.js"
+import { merge } from "./merge.js"
 
 export type UnionDiffResult<Added extends any[], Removed extends any[]> = {
     added: Added
