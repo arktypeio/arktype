@@ -1,6 +1,6 @@
 ![logo.svg](/pkgs/docs/static/img/logo.svg)
 
-<h1 align="center">re:do</h1>
+<h1 align="center">re-do</h1>
 
 Redo is a set of devtools that make it easier to build and test JS/TS. Their shared goal is to abstract some of the ecosystem's ugliest problems behind beautiful code that is fun to write and intuitive to read so that you can focus on creating something new instead of understanding something old.
 
@@ -11,11 +11,16 @@ In other words, you can finally get back to doing what you love.
 [![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-v2.0%20adopted-ff69b4.svg)](code-of-conduct.md)
 
 
-## re-po
+## re-po 
 
 All of our packages are completely modular and can be used either independently or alongside other tools from Redo. We use a [rush](https://rushjs.io) monorepo to simplify versioning and ensure everything works together exactly how you'd expect. Take a look at any of the individual packages to learn more:
 
--   [@re-/type](pkgs/type): Beautiful types from IDE to runtime 🪢
+-   [@re-/type](pkgs/type): Beautiful types from IDE to runtime 🧬
+-   @re-/state (coming soon): Actually simple state management with automatic validation 🧮
+-   @re-/do (coming soon): Web testing rewritten to write itself 🤖
+
+You might also find parts of these packages useful, but they are mostly for internal use and/or are missing documentation:
+
 -   [@re-/assert](pkgs/assert): Seamless testing for types and code ✅
 -   [@re-/utils](pkgs/utils): Browser-friendly utiltiies and types 🧰
 -   [@re-/node](pkgs/node): Utilities, configs, scripts, and devtools for Node 🔨

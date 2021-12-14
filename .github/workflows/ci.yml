@@ -41,13 +41,13 @@ jobs:
             - name: Create package artifacts
               if: ${{ github.event_name == 'workflow_dispatch' && matrix.os == 'ubuntu-latest'}}
               run: node common/scripts/install-run-rush.js publish --publish --pack --include-all --release-folder release
-            - name: Publish packages to NPM and push version updates to master
+            - name: Publish packages to NPM and push version updates to main
               if: ${{ github.event_name == 'workflow_dispatch' && matrix.os == 'ubuntu-latest' }}
               env:
                   NODE_AUTH_TOKEN: ${{ secrets.NPM_AUTH_TOKEN }}
               run: |
                   git config --global user.email "ci@redo.qa"
                   git config --global user.name "Github Actions"
-                  node common/scripts/install-run-rush.js publish --publish --include-all --target-branch master --set-access-level public
+                  node common/scripts/install-run-rush.js publish --publish --include-all --target-branch main --set-access-level public
                   git commit -a -m "Bump versions."
                   git push
