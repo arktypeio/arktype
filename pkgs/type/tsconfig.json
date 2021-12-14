@@ -2,8 +2,7 @@
     "extends": "@re-/node/tsconfig.base",
     "compilerOptions": {
         "baseUrl": "src",
-        "outDir": "out",
-        "noErrorTruncation": true
+        "outDir": "out"
     },
     "include": ["src"]
 }
