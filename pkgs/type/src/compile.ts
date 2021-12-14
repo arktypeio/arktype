@@ -14,8 +14,10 @@ import {
 import {
     extraneousTypesErrorMessage,
     missingTypesErrorMessage,
+    Obj,
     TypeSet
 } from "./components"
+import { typeDefProxy } from "./internal.js"
 
 export const createCompileFunction =
     <DeclaredTypeNames extends string[]>(
@@ -78,6 +80,7 @@ export const createCompileFunction =
                     typeSet: typeSetFromDefinitions
                 })
             ]) as any),
+            types: typeDefProxy,
             parse
         } as CompiledTypeSet<Definitions>
     }
@@ -100,7 +103,8 @@ export type CompiledTypeSet<
     Definitions,
     MergedTypeSet = TypeSet.MergeMemberList<Definitions>
 > = Evaluate<
-    TypeSet.Parse<MergedTypeSet, DefaultParseTypeOptions> & {
+    TypeSet.ParseMembers<MergedTypeSet, DefaultParseTypeOptions> & {
+        types: Obj.Parse<MergedTypeSet, MergedTypeSet, DefaultParseTypeOptions>
         parse: ParseFunction<MergedTypeSet>
     }
 >

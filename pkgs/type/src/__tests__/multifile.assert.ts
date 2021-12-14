@@ -3,21 +3,21 @@ import { declare } from ".."
 
 export const { define, compile } = declare("user", "group")
 
-import { user } from "./multifile/user"
-import { group } from "./multifile/group"
+import { user as userDef } from "./multifile/user"
+import { group as groupDef } from "./multifile/group"
 
-export const { types, parse } = compile(user, group)
+export const { user, group, parse, types } = compile(userDef, groupDef)
 
 describe("multifile", () => {
     test("compiles", () => {
-        assert(types.user.type.name).typed as string
-        assert(types.user.type).type.toString.snap(
+        assert(types.user.name).typed as string
+        assert(types.user).type.toString.snap(
             `"{ bestFriend?: { bestFriend?: any | undefined; name: string; groups: { name: string; members: { bestFriend?: any | undefined; name: string; groups: any[]; }[]; }[]; } | undefined; name: string; groups: { name: string; members: { bestFriend?: any | undefined; name: string; groups: { name: string; members: any[]; }[]; }[]; }[]; }"`
         )
-        assert(types.group.type).type.toString.snap(
+        assert(group.type).type.toString.snap(
             `"{ name: string; members: { bestFriend?: any | undefined; name: string; groups: { name: string; members: { bestFriend?: any | undefined; name: string; groups: any[]; }[]; }[]; }[]; }"`
         )
-        assert(types.user.type.bestFriend).type.toString.snap(
+        assert(user.type.bestFriend).type.toString.snap(
             `"{ bestFriend?: any | undefined; name: string; groups: { name: string; members: { bestFriend?: any | undefined; name: string; groups: any[]; }[]; }[]; } | undefined"`
         )
         assert(
