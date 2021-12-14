@@ -1,13 +1,17 @@
-<div style="display:flex;flex-direction:column">
-<img src="../docs/static/img/logo.svg" align="right" height="64px" />
-<code align="center" style="font-size:4em">@re-/type</code>
-</div>
 
-<h1 align="center">Beautiful types from IDE to runtime 🧬</h1>
+<div align="center">
+  <img src="../docs/static/img/logo.svg" height="64px" />
+  <h1>@re-/type</h1>
+</div>
+<div align="center">
+Beautiful types from IDE to runtime 🧬
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 ![Code style](https://img.shields.io/badge/code_style-prettier-ff69b4.svg)
 [![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-v2.0%20adopted-ff69b4.svg)](code-of-conduct.md)
+</div>
+
+
 
 ## Getting started
 Figure it out yourself.
