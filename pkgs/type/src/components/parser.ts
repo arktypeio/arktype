@@ -10,7 +10,7 @@ import {
 } from "@re-/utils"
 import { ExtractableDefinition } from "./internal.js"
 import { Root } from "./root.js"
-import { TypeSet } from "./typeSet"
+import { TypeSet } from "./typeset"
 import { ValidationErrors, unknownTypeError } from "./errors.js"
 import { Recursible } from "./recursible/index.js"
 
