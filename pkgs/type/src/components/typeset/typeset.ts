@@ -72,6 +72,14 @@ export namespace TypeSet {
             Options
         >
     }
+
+    export type ParseMembers<TypeSet, Options extends ParseConfig> = {
+        [TypeName in keyof TypeSet]: ParsedType<
+            TypeSet[TypeName],
+            Validate<TypeSet>,
+            Options
+        >
+    }
 }
 
 export const extraneousTypesErrorMessage = `Defined types @types were never declared.`

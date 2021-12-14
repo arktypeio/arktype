@@ -49,9 +49,11 @@ const getConfig = (options: TypeContextOptions) => {
 }
 
 const compileTsConfig = (configPath: string) => {
-    return typescript.parseJsonSourceFileConfigFileContent(
+    const config = typescript.parseJsonSourceFileConfigFileContent(
         typescript.readJsonConfigFile(configPath, typescript.sys.readFile),
         typescript.sys,
         dirname(configPath)
     )
+    config.options.noErrorTruncation = true
+    return config
 }
