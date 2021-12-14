@@ -70,18 +70,15 @@ export const createCompileFunction =
         }
         const parse = createParseFunction(typeSetFromDefinitions) as any
         return {
-            parse,
-            types: transform(
-                typeSetFromDefinitions,
-                ([typeName, definition]) => [
-                    typeName,
+            ...(transform(typeSetFromDefinitions, ([typeName, definition]) => [
+                typeName,
+                // @ts-ignore
+                parse(definition, {
                     // @ts-ignore
-                    parse(definition, {
-                        // @ts-ignore
-                        typeSet: typeSetFromDefinitions
-                    })
-                ]
-            )
+                    typeSet: typeSetFromDefinitions
+                })
+            ]) as any),
+            parse
         } as CompiledTypeSet<Definitions>
     }
 
@@ -102,7 +99,8 @@ export type CompileFunction<DeclaredTypeNames extends string[]> = <
 export type CompiledTypeSet<
     Definitions,
     MergedTypeSet = TypeSet.MergeMemberList<Definitions>
-> = Evaluate<{
-    parse: ParseFunction<MergedTypeSet>
-    types: TypeSet.Parse<MergedTypeSet, DefaultParseTypeOptions>
-}>
+> = Evaluate<
+    TypeSet.Parse<MergedTypeSet, DefaultParseTypeOptions> & {
+        parse: ParseFunction<MergedTypeSet>
+    }
+>
