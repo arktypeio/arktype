@@ -1,6 +1,5 @@
 export * from "./builtin.js"
 export * from "./extractableName.js"
-export * from "./num.js"
 export * from "./numericStringLiteral.js"
 export * from "./stringLiteral.js"
 export * from "./unextractableName.js"
