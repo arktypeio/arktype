@@ -1,6 +1,9 @@
-import { ParseTypeOptions } from "./parse.js"
 import { TreeOf } from "@re-/utils"
-import { Num, StringLiteral } from "./definition"
+import { Num, StringLiteral } from "./builtin"
+
+export * from "../internal.js"
+export * from "../errors.js"
+export * from "./parser.js"
 
 // These are the non-literal types we can extract from a value at runtime
 export const namedExtractableTypes = {
@@ -51,11 +54,3 @@ export const builtInTypes = { ...namedExtractableTypes, ...unextractableTypes }
 export type BuiltInTypes = typeof builtInTypes
 
 export type BuiltInTypeName = keyof BuiltInTypes
-
-export * from "./errors.js"
-
-// Allow a user to extract types from arbitrary chains of props
-export const typeDefProxy: any = new Proxy({}, { get: () => getTypeDefProxy() })
-export const getTypeDefProxy = () => typeDefProxy
-
-export type ParseConfig = Required<ParseTypeOptions>

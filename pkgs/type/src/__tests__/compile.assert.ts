@@ -82,15 +82,15 @@ describe("compile", () => {
         ).throwsAndHasTypeError("Unable to determine the type of 'c'")
     })
     test("compile result", () => {
-        const typeSet = compile({ a: { b: "b?" } }, { b: { a: "a?" } })
-        const a = typeSet.parse("a")
+        const typespace = compile({ a: { b: "b?" } }, { b: { a: "a?" } })
+        const a = typespace.parse("a")
         assert(a.type)
             .is(typeDefProxy)
             .type.toString()
             .snap(
                 `"{ b?: { a?: { b?: any | undefined; } | undefined; } | undefined; }"`
             )
-        assert(typeSet.a.references()).equals({ b: ["b"] } as any)
+        assert(typespace.a.references()).equals({ b: ["b"] } as any)
         assert(a.allows({})).equals({})
         const aWithExtraneousKey = { c: "extraneous" }
         const extraneousKeyMessage = "Keys 'c' were unexpected."
@@ -99,13 +99,13 @@ describe("compile", () => {
         assert(a.generate()).equals({})
         assert(a.references()).equals(["a"] as any)
         assert(a.definition).typedValue("a")
-        const expectedTypeSet = narrow({ a: { b: "b?" }, b: { a: "a?" } })
-        assert(a.typeSet).typedValue(expectedTypeSet)
-        assert(typeSet.parse("b").type)
+        const expectedTypespace = narrow({ a: { b: "b?" }, b: { a: "a?" } })
+        assert(a.typespace).typedValue(expectedTypespace)
+        assert(typespace.parse("b").type)
             .is(typeDefProxy)
             .type.toString.snap(
                 `"{ a?: { b?: { a?: any | undefined; } | undefined; } | undefined; }"`
             )
-        assert(typeSet.b.references()).equals({ a: ["a"] } as any)
+        assert(typespace.b.references()).equals({ a: ["a"] } as any)
     })
 })

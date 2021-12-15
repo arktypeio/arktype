@@ -5,7 +5,7 @@ import {
     Split,
     WithDefaults
 } from "@re-/utils"
-import { Root, Shallow } from "./components"
+import { Root, Shallow } from "./definition"
 
 type ControlCharacters = ["|", "?", "(", ")", ",", "[", "]", "=", ">", " "]
 
@@ -44,3 +44,15 @@ export type References<
     : {
           [K in keyof Def]: References<Def[K], Options>
       }
+
+// Just use unknown for now since we don't have all the definitions yet
+// but we still want to allow references to other declared types
+export type ValidateReferences<
+    Def,
+    DeclaredTypeName extends string
+> = Root.Validate<
+    Def,
+    {
+        [TypeName in DeclaredTypeName]: "unknown"
+    }
+>

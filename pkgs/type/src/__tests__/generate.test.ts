@@ -1,7 +1,7 @@
 import { parse } from ".."
 
-const generate = (def: any, typeSet: any = {}, opts: any = {}) =>
-    parse(def, { typeSet }).generate(opts)
+const generate = (def: any, typespace: any = {}, opts: any = {}) =>
+    parse(def, { typespace }).generate(opts)
 
 describe("default values", () => {
     test("built-in", () => {
@@ -22,13 +22,13 @@ describe("default values", () => {
         expect(generate("number|false|function")).toBe(false)
     })
     test("or literals", () => {
-        const typeSet = {
+        const typespace = {
             five: 5,
             duck: "'duck'",
             func: "(five,duck)=>duck"
         }
-        expect(generate("func|five|duck", typeSet)).toBe(5)
-        expect(generate("duck|func", typeSet)).toBe("duck")
+        expect(generate("func|five|duck", typespace)).toBe(5)
+        expect(generate("duck|func", typespace)).toBe("duck")
     })
     test("arrow function", () => {
         expect(typeof generate("(boolean,any)=>void")).toBe("function")
@@ -57,7 +57,7 @@ describe("default values", () => {
             generate(["true", { a: ["string?", ["true|null|object[]"]] }])
         ).toStrictEqual([true, { a: [undefined, [null]] }])
     })
-    test("simple typeset", () => {
+    test("simple typespace", () => {
         expect(
             generate(
                 {
@@ -80,7 +80,7 @@ describe("default values", () => {
             bestFruit: { length: 0 }
         })
     })
-    test("cyclic typeSet", () => {
+    test("cyclic typespace", () => {
         // If it's optional, the cycle should be ignored and just return undefined
         expect(
             generate("a", {
@@ -154,7 +154,7 @@ describe("default values", () => {
                 optionalGroup: "group?",
                 optionalGroups: "group[]?"
             },
-            { typeSet: { group: { name: "string", description: "string?" } } }
+            { typespace: { group: { name: "string", description: "string?" } } }
         ).generate()
         expect(defaultValue).toStrictEqual({
             requiredGroup: { name: "" },

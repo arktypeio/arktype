@@ -1,8 +1,5 @@
 import { transform } from "@re-/utils"
-import {
-    ExtractableDefinition,
-    ExtractableTypeName
-} from "./components/internal.js"
+import { ExtractableDefinition, ExtractableTypeName } from "./internal.js"
 
 export const typeOf = (value: any): ExtractableDefinition => {
     if (typeof value === "boolean") {
