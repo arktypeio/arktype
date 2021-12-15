@@ -1,34 +1,32 @@
 import {
     diffSets,
+    DiffUnions,
+    ElementOf,
     Evaluate,
     isRecursible,
+    KeyValuate,
+    MergeAll,
     mergeAll,
     Narrow,
-    transform
+    StringifyPossibleTypes,
+    StringReplace,
+    transform,
+    UnionDiffResult
 } from "@re-/utils"
 import {
     createParseFunction,
     ParseFunction,
     DefaultParseTypeOptions
 } from "./parse.js"
-import {
-    extraneousTypesErrorMessage,
-    missingTypesErrorMessage,
-    Obj,
-    TypeSet
-} from "./components"
+import { TypeSpace } from "./typespace"
+import { Map } from "./definition"
 import { typeDefProxy } from "./internal.js"
 
 export const createCompileFunction =
     <DeclaredTypeNames extends string[]>(
         declaredTypeNames: Narrow<DeclaredTypeNames>
     ) =>
-    <
-        Definitions extends TypeSet.ValidateMemberList<
-            Definitions,
-            DeclaredTypeNames
-        >
-    >(
+    <Definitions extends ValidateCompilation<Definitions, DeclaredTypeNames>>(
         // @ts-ignore
         ...definitions: Narrow<Definitions>
     ) => {
@@ -43,10 +41,10 @@ export const createCompileFunction =
                 { group: "user[]" }
             )`)
         }
-        const typeSetFromDefinitions = mergeAll(definitions as any) as any
+        const typespaceFromDefinitions = mergeAll(definitions as any) as any
         const declarationErrors = diffSets(
             declaredTypeNames,
-            Object.keys(typeSetFromDefinitions)
+            Object.keys(typespaceFromDefinitions)
         )
         if (declaredTypeNames.length && declarationErrors) {
             const errorParts = [] as string[]
@@ -70,41 +68,84 @@ export const createCompileFunction =
             }
             throw new Error(errorParts.join(" "))
         }
-        const parse = createParseFunction(typeSetFromDefinitions) as any
+        const parse = createParseFunction(typespaceFromDefinitions) as any
         return {
-            ...(transform(typeSetFromDefinitions, ([typeName, definition]) => [
-                typeName,
-                // @ts-ignore
-                parse(definition, {
+            ...(transform(
+                typespaceFromDefinitions,
+                ([typeName, definition]) => [
+                    typeName,
                     // @ts-ignore
-                    typeSet: typeSetFromDefinitions
-                })
-            ]) as any),
+                    parse(definition, {
+                        // @ts-ignore
+                        typespace: typespaceFromDefinitions
+                    })
+                ]
+            ) as any),
             types: typeDefProxy,
             parse
-        } as CompiledTypeSet<Definitions>
+        } as CompiledTypespace<Definitions>
     }
 
 // Exported compile function is equivalent to compile from an empty declare call
 // and will not validate missing or extraneous definitions
 export const compile = createCompileFunction([])
 
-export type CompileFunction<DeclaredTypeNames extends string[]> = <
-    Definitions extends TypeSet.ValidateMemberList<
-        Definitions,
-        DeclaredTypeNames
+export type TypeNameFromList<Definitions> = keyof MergeAll<Definitions> & string
+
+export type ValidateCompilation<
+    Definitions,
+    DeclaredTypeNames extends string[] = [],
+    Merged = TypeSpace.Validate<MergeAll<Definitions>>,
+    DefinedTypeName extends string = keyof Merged & string,
+    DeclaredTypeName extends string = DeclaredTypeNames extends never[]
+        ? DefinedTypeName
+        : ElementOf<DeclaredTypeNames>,
+    ErrorMessage extends string = MissingTypesError<
+        DeclaredTypeName,
+        DefinedTypeName
     >
+> = {
+    [I in keyof Definitions]: ErrorMessage & {
+        [TypeName in keyof Definitions[I]]: TypeName extends DeclaredTypeName
+            ? KeyValuate<Merged, TypeName>
+            : `${TypeName & string} was never declared.`
+    }
+}
+
+export const extraneousTypesErrorMessage = `Defined types @types were never declared.`
+export const missingTypesErrorMessage = `Declared types @types were never defined.`
+
+export type MissingTypesError<DeclaredTypeName, DefinedTypeName> = DiffUnions<
+    DeclaredTypeName,
+    DefinedTypeName
+    // Extraneous definition errors are handled by ValidateMemberList
+> extends UnionDiffResult<infer Extraneous, infer Missing>
+    ? Missing extends []
+        ? {}
+        : StringReplace<
+              typeof missingTypesErrorMessage,
+              "@types",
+              StringifyPossibleTypes<`'${ElementOf<Missing>}'`>
+          >
+    : never
+
+export type CompileFunction<DeclaredTypeNames extends string[]> = <
+    Definitions extends ValidateCompilation<Definitions, DeclaredTypeNames>
 >(
     // @ts-ignore
     ...definitions: Narrow<Definitions>
-) => CompiledTypeSet<Definitions>
+) => CompiledTypespace<Definitions>
 
-export type CompiledTypeSet<
+export type CompiledTypespace<
     Definitions,
-    MergedTypeSet = TypeSet.MergeMemberList<Definitions>
+    MergedTypespace = MergeAll<Definitions>
 > = Evaluate<
-    TypeSet.ParseMembers<MergedTypeSet, DefaultParseTypeOptions> & {
-        types: Obj.Parse<MergedTypeSet, MergedTypeSet, DefaultParseTypeOptions>
-        parse: ParseFunction<MergedTypeSet>
+    TypeSpace.ParseEach<MergedTypespace, DefaultParseTypeOptions> & {
+        types: Map.Parse<
+            MergedTypespace,
+            MergedTypespace,
+            DefaultParseTypeOptions
+        >
+        parse: ParseFunction<MergedTypespace>
     }
 >

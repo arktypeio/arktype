@@ -72,14 +72,14 @@ user.assert(fetchUser())
 
 TODO: Complex types
 
-## Creating your first typeset
+## Creating your first typespace
 
-Your types can reference each other or themselves using a **typeset**. [Try it out](https://TODO:updatelink).
+Your types can reference each other or themselves using a **typespace**. [Try it out](https://TODO:updatelink).
 
 ```ts
 import { compile } from "@re-/type"
 
-const typeset = compile({
+const typespace = compile({
     user: {
         name: "string",
         friends: "user[]",
@@ -93,11 +93,11 @@ const typeset = compile({
 })
 
 // Definitions can be used the same way as those from "parse"
-type User = typeof typeset.user.type
+type User = typeof typespace.user.type
 
 // Will throw: "At path friends/groups/0, 'Type Enjoyers' is not assignable
 // to {name: string, description: string, members: user[]}"
-typeset.user.assert({
+typespace.user.assert({
     name: "Devin Aldai",
     friends: [
         {
@@ -110,12 +110,12 @@ typeset.user.assert({
 })
 
 // Types can also be accessed directly via the "types" prop
-type Group = typeof typeset.types.group
+type Group = typeof typespace.types.group
 
-// Typesets also include a parse function that allows references
+// A typespace also includes a parse function that allows references
 // to the types you've defined alongside the built-in
 // types available in an imported "parse"
-const community = typeset.parse({
+const community = typespace.parse({
     users: "user[]",
     groups: "group[]",
     population: "number"
@@ -124,7 +124,7 @@ const community = typeset.parse({
 
 ## Declarations
 
-If you prefer to split up your typeset's definitions across one or more files, you'll want to use **declarations**. [Try it out](https://TODO:updatelink).
+If you prefer to split up your typespace's definitions across one or more files, you'll want to use **declarations**. [Try it out](https://TODO:updatelink).
 
 `index.ts`
 
@@ -141,10 +141,10 @@ import { userDef } from "./user"
 import { groupDef } from "./group"
 
 // Type error: "Declared types 'group' were never defined."
-const typeSet = compile(userDef)
+const typespace = compile(userDef)
 
-// Creates a typeset identical to that of "Creating your first typeset"
-const typeset = compile(userDef, groupDef)
+// Creates a typespace identical to that of "Creating your first typespace"
+const typespace = compile(userDef, groupDef)
 ```
 
 `user.ts`
@@ -182,15 +182,15 @@ export const groupDef = define.group({
 
 `@re-/type` supports all of TypeScript's built-in types and lot of its most common type definition syntax. The following sections summarize the keywords and operators available by default in your definitions.
 
-If the TS syntax you want to use is not listed here, feel free to create an issue summarizing your use case. Our model is easy to extend, so you might just get it 🤓
+If the TS syntax you want to use is not listed here, feel free to create an issue summarizing your use case. Our model is easy to extend, so you might just see it an upcoming release 🎁
 
-### **Branch types**
+### Object definitions
 
-Branch types are objects whose values are leaf types and/or nested branch types.
+Object definitions are objects whose values are leaf definitions and/or nested object definitions.
 
-### Object
+#### Map
 
-Object definitions are represented using the familiar JS notation for string keys and values.
+Map definitions are represented using the familiar JS notation for string keys with corresponding values.
 
 ```ts
 const foo = parse({
@@ -212,7 +212,7 @@ type FooToo = {
 
 #### Tuple
 
-Tuple definitions are useful for lists of a fixed length and are represented the same way.
+Tuple definitions are useful for fixed-length lists and are represented as expected.
 
 ```ts
 const bar = parse([
@@ -230,9 +230,11 @@ type BarAgain = [
 ]
 ```
 
-### **Composable Leaf Definitions **
+### String definitions
 
-Leaf types are strings that include one or more type names (i.e. built-in types like "string" or types from a typeset like "user") modified by one or more operators. Spaces are ignored when parsing leaf types, so feel free to format them to your liking.
+Leaf definitions are strings that include one or more type references (i.e. built-ins like "string" or defined types like "user") **and** one or more operators that modify those types. Spaces are ignored when parsing leaf definitions, so feel free to use whatever format you find most readable.
+
+#### Expressions
 
 | Type           | Syntax            | Examples                                         | Notes                                                                                                                                                         |
 | -------------- | ----------------- | ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -240,7 +242,6 @@ Leaf types are strings that include one or more type names (i.e. built-in types 
 | List           | `T[]`             | `string[]` <br/>`number[][]`                     |                                                                                                                                                               |
 | Optional       | `T?`              | `function?` <br/>`boolean[]?`                    | Adds `undefined` as a possible value. When used in an Object type, also makes the corresponding key optional. Can only occur once at the end of a definition. |
 | Or             | `T1\|T2\|T3\|...` | `false\|string` <br/>`string\|number\|boolean[]` | Acts just like TypeScript's union operator (`\|`)                                                                                                             |
-|                |
 
 ## Contributing
 

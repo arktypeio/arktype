@@ -2,13 +2,6 @@ import { assert } from "@re-/assert"
 import { compile, parse } from ".."
 import { typeDefProxy } from "../internal.js"
 
-const bar = parse({
-    key: "string?",
-    anotherKey: ["unknown", { re: "'type'|'state'|'test'" }]
-})
-
-type z = typeof bar.type
-
 describe("parse", () => {
     test("built-in", () => {
         assert(parse("string").type).typed as string
@@ -94,14 +87,14 @@ describe("parse", () => {
             "Definitions must be strings, numbers, or objects."
         )
     })
-    test("with typeset", () => {
+    test("with typespace", () => {
         assert(
             parse("borf", {
-                typeSet: { borf: "boolean" }
+                typespace: { borf: "boolean" }
             }).type
         ).typed as boolean
         assert(
-            parse({ snorf: "borf[]" }, { typeSet: { borf: "boolean" } }).type
+            parse({ snorf: "borf[]" }, { typespace: { borf: "boolean" } }).type
         ).typed as { snorf: boolean[] }
     })
     test("list definition", () => {
@@ -127,13 +120,13 @@ describe("parse", () => {
             nested: number | true
         }
     })
-    const getCyclicTypeSet = () =>
+    const getCyclicTypespace = () =>
         compile(
             { a: { b: "b", isA: "true", isB: "false" } },
             { b: { a: "a", isA: "false", isB: "true" } }
         )
     test("with onCycle option", () => {
-        const { type } = getCyclicTypeSet().parse(
+        const { type } = getCyclicTypespace().parse(
             { a: "a", b: "b" },
             {
                 onCycle: {
@@ -152,7 +145,7 @@ describe("parse", () => {
         assert(type.b.a.b.cyclic?.a.b.a.b.a.b.a.b.isB).typed as true | undefined
     })
     test("with deepOnCycleOption", () => {
-        const { type } = getCyclicTypeSet().parse(
+        const { type } = getCyclicTypespace().parse(
             { a: "a", b: "b" },
             {
                 deepOnCycle: true,
@@ -166,7 +159,7 @@ describe("parse", () => {
         )
     })
     test("with onResolve option", () => {
-        const { type } = getCyclicTypeSet().parse(
+        const { type } = getCyclicTypespace().parse(
             {
                 referencesA: "a",
                 noReferences: {
@@ -190,18 +183,18 @@ describe("parse", () => {
     test("doesn't try to parse or validate any", () => {
         // Parse any as type
         assert(parse({} as any).type).typed as any
-        // Parse any as typeSet (in this case type could be inferred as string but impossible currently to do so)
-        assert(parse("string", { typeSet: {} as any }).type).typed as any
-        // Parse any as typeSet member
-        assert(parse(["number", "a"], { typeSet: { a: {} as any } }).type)
+        // Parse any as typespace (in this case type could be inferred as string but impossible currently to do so)
+        assert(parse("string", { typespace: {} as any }).type).typed as any
+        // Parse any as typespace member
+        assert(parse(["number", "a"], { typespace: { a: {} as any } }).type)
             .typed as [number, any]
     })
     test("parse result", () => {
         const parseResult = parse("a", {
-            typeSet: { a: "true" }
+            typespace: { a: "true" }
         })
         expect(parseResult.definition).toBe("a")
-        expect(parseResult.typeSet).toStrictEqual({ a: "true" })
+        expect(parseResult.typespace).toStrictEqual({ a: "true" })
         expect(parseResult.assert(true)).toBe(undefined)
         expect(parseResult.check(true)).toBe("")
         expect(parseResult.check(true)).toBe("")

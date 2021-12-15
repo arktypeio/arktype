@@ -241,11 +241,11 @@ describe("validate", () => {
             `"{0: 'false is not assignable to true.', 1/a/0: '0 is not assignable to string.', 1/a/1: 'Tuple of length 3 is not assignable to tuple of length 1.'}"`
         )
     })
-    test("simple typeset", () => {
+    test("simple typespace", () => {
         const groceries = parse(
             { fruits: "fruit[]" },
             {
-                typeSet: {
+                typespace: {
                     banana: { length: "number", description: "string?" },
                     apple: { circumference: "number", type: "string" },
                     fruit: "banana|apple"
@@ -284,23 +284,23 @@ describe("validate", () => {
     })
     test("errors on shallow cycle", () => {
         // @ts-expect-error
-        const shallowRecursive = parse("a", { typeSet: { a: "a" } })
+        const shallowRecursive = parse("a", { typespace: { a: "a" } })
         expect(() => shallowRecursive.assert("what's an a?")).toThrowError(
             "shallow"
         )
         const shallowCyclic = parse("a", {
             // @ts-expect-error
-            typeSet: { a: "b", b: "c", c: "a|b|c" }
+            typespace: { a: "b", b: "c", c: "a|b|c" }
         })
         expect(() => shallowCyclic.check(["what's a b?"])).toThrowError(
             "shallow"
         )
     })
-    test("cyclic typeset", () => {
+    test("cyclic typespace", () => {
         const bicycle = parse(
             { a: "a", b: "b", c: "either[]" },
             {
-                typeSet: {
+                typespace: {
                     a: { a: "a?", b: "b?", isA: "true" },
                     b: { a: "a?", b: "b?", isA: "false" },
                     either: "a|b"

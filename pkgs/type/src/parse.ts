@@ -6,34 +6,34 @@ import {
     IsAny,
     WithDefaults
 } from "@re-/utils"
-import { Root } from "./components"
+import { Root } from "./definition"
 import {
     AllowsOptions,
     ParseContext,
     ReferencesOptions,
     GenerateOptions
-} from "./components/parser.js"
-import { stringifyErrors, ValidationErrors } from "./components/errors.js"
+} from "./definition/parser.js"
+import { stringifyErrors, ValidationErrors } from "./errors.js"
 import { format } from "./format.js"
-import { TypeSet } from "./components"
+import { TypeSpace } from "./typespace"
 import { typeOf } from "./typeOf.js"
 import { typeDefProxy } from "./internal.js"
 
 export type Definition = Root.Definition
 
-export type Validate<Def, TypeSet> = IsAny<Def> extends true
+export type Validate<Def, Typespace> = IsAny<Def> extends true
     ? Def
-    : Root.Validate<Def, TypeSet>
+    : Root.Validate<Def, Typespace>
 
 export type Parse<
     Def,
-    Set,
+    Space,
     Options extends ParseTypeOptions = {}
 > = IsAny<Def> extends true
     ? Def
     : Root.Parse<
           Def,
-          TypeSet.Validate<Set>,
+          TypeSpace.Validate<Space>,
           WithDefaults<ParseTypeOptions, Options, DefaultParseTypeOptions>
       >
 
@@ -57,15 +57,15 @@ export type InferredMethods = {
 }
 
 export const createParseFunction =
-    <PredefinedTypeSet>(
-        predefinedTypeSet: Narrow<PredefinedTypeSet>
-    ): ParseFunction<PredefinedTypeSet> =>
+    <PredefinedTypespace>(
+        predefinedTypespace: Narrow<PredefinedTypespace>
+    ): ParseFunction<PredefinedTypespace> =>
     (definition, options) => {
-        const formattedTypeSet: any = format(
-            options?.typeSet ?? predefinedTypeSet
+        const formattedTypespace: any = format(
+            options?.typespace ?? predefinedTypespace
         )
         const context: ParseContext = {
-            typeSet: formattedTypeSet,
+            typespace: formattedTypespace,
             path: [],
             seen: [],
             shallowSeen: []
@@ -88,7 +88,7 @@ export const createParseFunction =
         }
         return {
             type: typeDefProxy,
-            typeSet: formattedTypeSet,
+            typespace: formattedTypespace,
             definition: formattedDefinition,
             allows,
             references,
@@ -98,31 +98,34 @@ export const createParseFunction =
     }
 
 // Exported parse function is equivalent to parse from an empty compile call,
-// but optionally accepts a typeset as its second parameter
+// but optionally accepts a typespace as its second parameter
 export const parse = createParseFunction({})
 
-export type ParseFunction<PredefinedTypeSet> = <
+export type ParseFunction<PredefinedTypespace> = <
     Def,
     Options extends ParseTypeOptions,
-    ActiveTypeSet = PredefinedTypeSet
+    ActiveTypespace = PredefinedTypespace
 >(
-    definition: Validate<Narrow<Def>, ActiveTypeSet>,
+    definition: Validate<Narrow<Def>, ActiveTypespace>,
     options?: Narrow<
         Options & {
-            typeSet?: Exact<ActiveTypeSet, TypeSet.Validate<ActiveTypeSet>>
+            typespace?: Exact<
+                ActiveTypespace,
+                TypeSpace.Validate<ActiveTypespace>
+            >
         }
     >
-) => Evaluate<ParsedType<Def, ActiveTypeSet, Options>>
+) => Evaluate<ParsedType<Def, ActiveTypespace, Options>>
 
 export type ParsedType<
     Definition,
-    TypeSet,
+    Typespace,
     Options,
-    TypeOfParsed = Evaluate<Parse<Definition, TypeSet, Options>>
+    TypeOfParsed = Evaluate<Parse<Definition, Typespace, Options>>
 > = Evaluate<{
     definition: Definition
     type: TypeOfParsed
-    typeSet: Evaluate<TypeSet>
+    typespace: Evaluate<Typespace>
     check: (value: unknown, options?: AllowsOptions) => string
     assert: (value: unknown, options?: AllowsOptions) => void
     allows: (value: unknown, options?: AllowsOptions) => ValidationErrors

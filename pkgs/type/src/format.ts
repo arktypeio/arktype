@@ -1,5 +1,5 @@
 import { transform } from "@re-/utils"
-import { definitionTypeError } from "./components/errors.js"
+import { definitionTypeError } from "./errors.js"
 
 export const format = <T>(definition: T): T => {
     const recurse = (definition: unknown, path: string[]): any => {

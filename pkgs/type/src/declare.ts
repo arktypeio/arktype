@@ -1,7 +1,7 @@
 import { ElementOf, Narrow, transform } from "@re-/utils"
 import { parse } from "./parse.js"
 import { CompileFunction, createCompileFunction } from "./compile.js"
-import { TypeSet } from "./components"
+import { ValidateReferences } from "./references.js"
 
 export const createDefineFunctionMap = <DeclaredTypeNames extends string[]>(
     typeNames: DeclaredTypeNames
@@ -22,10 +22,7 @@ export type DefineFunction<
     DefinedTypeName extends ElementOf<DeclaredTypeNames>,
     DeclaredTypeNames extends string[]
 > = <Def>(
-    definition: TypeSet.ValidateReferences<
-        Narrow<Def>,
-        ElementOf<DeclaredTypeNames>
-    >
+    definition: ValidateReferences<Narrow<Def>, ElementOf<DeclaredTypeNames>>
 ) => {
     [K in DefinedTypeName]: Def
 }
@@ -40,7 +37,7 @@ export const createDefineFunction =
     ): DefineFunction<DefinedTypeName, DeclaredTypeNames> =>
     (definition: any) => {
         parse(definition, {
-            typeSet: transform(declaredTypeNames, ([i, typeName]) => [
+            typespace: transform(declaredTypeNames, ([i, typeName]) => [
                 typeName,
                 "unknown"
             ]) as any
