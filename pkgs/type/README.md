@@ -70,6 +70,8 @@ const fetchUser = () => {
 user.assert(fetchUser())
 ```
 
+TODO: Complex types
+
 ## Creating your first typeset
 
 Your types can reference each other or themselves using a **typeset**. [Try it out](https://TODO:updatelink).
@@ -96,10 +98,10 @@ type User = typeof typeset.user.type
 // Will throw: "At path friends/groups/0, 'Type Enjoyers' is not assignable
 // to {name: string, description: string, members: user[]}"
 typeset.user.assert({
-    name: "Deven Aldai",
+    name: "Devin Aldai",
     friends: [
         {
-            name: "Deven Alnyt",
+            name: "Devin Olnyt",
             friends: [], // :(
             groups: ["Type Enjoyers"]
         }
@@ -182,9 +184,63 @@ export const groupDef = define.group({
 
 If the TS syntax you want to use is not listed here, feel free to create an issue summarizing your use case. Our model is easy to extend, so you might just get it 🤓
 
-### Branch types
+### **Branch types**
 
-### Leaf types
+Branch types are objects whose values are leaf types and/or nested branch types.
+
+### Object
+
+Object definitions are represented using the familiar JS notation for string keys and values.
+
+```ts
+const foo = parse({
+    key: "string?",
+    anotherKey: ["unknown", { re: "'type'|'state'|'test'" }]
+})
+
+// Equivalent TS
+type FooToo = {
+    key?: string
+    anotherKey: [
+        unknown,
+        {
+            re: "type" | "state" | "test"
+        }
+    ]
+}
+```
+
+#### Tuple
+
+Tuple definitions are useful for lists of a fixed length and are represented the same way.
+
+```ts
+const bar = parse([
+    "true|null",
+    { coords: ["number", "number"], piOus: [3, 1, 4] }
+])
+
+// Equivalent TS
+type BarAgain = [
+    true | null,
+    {
+        coords: [number, number]
+        piOus: [3, 1, 4]
+    }
+]
+```
+
+### **Composable Leaf Definitions **
+
+Leaf types are strings that include one or more type names (i.e. built-in types like "string" or types from a typeset like "user") modified by one or more operators. Spaces are ignored when parsing leaf types, so feel free to format them to your liking.
+
+| Type           | Syntax            | Examples                                         | Notes                                                                                                                                                         |
+| -------------- | ----------------- | ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Arrow Function | `(T1,T2,...)=>T3` | `(string,boolean)=>void` <br/>`()=>object`       | At runtime, falls back to validating that a value is of type `function`.                                                                                      |
+| List           | `T[]`             | `string[]` <br/>`number[][]`                     |                                                                                                                                                               |
+| Optional       | `T?`              | `function?` <br/>`boolean[]?`                    | Adds `undefined` as a possible value. When used in an Object type, also makes the corresponding key optional. Can only occur once at the end of a definition. |
+| Or             | `T1\|T2\|T3\|...` | `false\|string` <br/>`string\|number\|boolean[]` | Acts just like TypeScript's union operator (`\|`)                                                                                                             |
+|                |
 
 ## Contributing
 

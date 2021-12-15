@@ -2,6 +2,13 @@ import { assert } from "@re-/assert"
 import { compile, parse } from ".."
 import { typeDefProxy } from "../internal.js"
 
+const bar = parse({
+    key: "string?",
+    anotherKey: ["unknown", { re: "'type'|'state'|'test'" }]
+})
+
+type z = typeof bar.type
+
 describe("parse", () => {
     test("built-in", () => {
         assert(parse("string").type).typed as string
