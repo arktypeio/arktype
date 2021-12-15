@@ -1,9 +1,11 @@
-import { asNumber, isNumeric, NumericString } from "@re-/utils"
-import { typeDefProxy, validationError, createParser } from "./internal.js"
-import { Fragment } from "../expression"
+import { typeDefProxy, validationError, createParser } from "../internal.js"
+import { Fragment } from "../fragment.js"
 
-export namespace NumericStringLiteral {
-    export type Definition<Value extends number = number> = NumericString<Value>
+export namespace StringLiteral {
+    export type Definition<Definition extends string = string> =
+        Definition extends `${string} ${string}`
+            ? `Spaces are not supported in string literal definitions.`
+            : `'${Definition}'`
 
     export const type = typeDefProxy as Definition
 
@@ -11,14 +13,14 @@ export namespace NumericStringLiteral {
         {
             type,
             parent: () => Fragment.parse,
-            matches: (definition) => isNumeric(definition)
+            matches: (def) => !!def.match("'.*'")
         },
         {
             allows: ({ def, ctx: { path } }, valueType) =>
-                asNumber(def, { assert: true }) === valueType
+                def === valueType
                     ? {}
                     : validationError({ def, valueType, path }),
-            generate: ({ def }) => asNumber(def, { assert: true }),
+            generate: ({ def }) => def.slice(1, -1),
             references: ({ def }, { includeBuiltIn }) =>
                 includeBuiltIn ? [def] : []
         }

@@ -1,9 +1,5 @@
-import {
-    typeDefProxy,
-    valueGenerationError,
-    createParser
-} from "../expression/internal.js"
-import { Fragment } from "../expression/fragment.js"
+import { typeDefProxy, valueGenerationError, createParser } from "./internal.js"
+import { Fragment } from "../fragment.js"
 import { ExtractableName } from "./extractableName.js"
 import { UnextractableName } from "./unextractableName.js"
 

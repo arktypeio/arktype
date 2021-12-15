@@ -1,6 +1,21 @@
 import { ParseTypeOptions } from "./parse.js"
-import { TreeOf } from "@re-/utils"
+import { ElementOf, TreeOf } from "@re-/utils"
 import { Num, StringLiteral } from "./definition"
+
+export type ControlCharacters = [
+    "|",
+    "?",
+    "(",
+    ")",
+    ",",
+    "[",
+    "]",
+    "=",
+    ">",
+    " "
+]
+
+export type ControlCharacter = ElementOf<ControlCharacters>
 
 // These are the non-literal types we can extract from a value at runtime
 export const namedExtractableTypes = {

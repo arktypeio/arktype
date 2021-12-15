@@ -72,7 +72,7 @@ user.assert(fetchUser())
 
 TODO: Complex types
 
-## Creating your first typespace
+## Typespaces
 
 Your types can reference each other or themselves using a **typespace**. [Try it out](https://TODO:updatelink).
 

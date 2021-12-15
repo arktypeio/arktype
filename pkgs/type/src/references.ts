@@ -6,8 +6,7 @@ import {
     WithDefaults
 } from "@re-/utils"
 import { Root, Shallow } from "./definition"
-
-type ControlCharacters = ["|", "?", "(", ")", ",", "[", "]", "=", ">", " "]
+import { ControlCharacters } from "./internal.js"
 
 type RawReferences<
     Fragments extends string,
