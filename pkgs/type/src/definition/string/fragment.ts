@@ -6,10 +6,10 @@ import {
     ValidationErrorMessage
 } from "./internal.js"
 import { Keyword, NumberLiteral, StringLiteral } from "./literal"
-import { ArrowFunction } from "./arrowFunction.js"
-import { List } from "./list.js"
-import { Or } from "./or.js"
-import { Alias } from "../alias/alias.js"
+import { ArrowFunction } from "./expression/arrowFunction.js"
+import { List } from "./expression/list.js"
+import { Or } from "./expression/or.js"
+import { Alias } from "./alias/alias.js"
 import { Str } from "./str.js"
 
 export namespace Fragment {
@@ -59,20 +59,24 @@ export namespace Fragment {
 
     export const type = typeDefProxy as Definition
 
-    export const parse = createParser({
-        type,
-        parent: () => Str.parse,
-        matches: (definition) => typeof definition === "string",
-        children: () => [
-            Or.delegate,
-            ArrowFunction.delegate,
-            List.delegate,
-            StringLiteral.delegate,
-            NumberLiteral.delegate,
-            Keyword.delegate,
-            Alias.delegate
-        ]
-    })
+    export const parse = createParser(
+        {
+            type,
+            parent: () => Str.parse,
+            children: () => [
+                Or.delegate,
+                ArrowFunction.delegate,
+                List.delegate,
+                StringLiteral.delegate,
+                NumberLiteral.delegate,
+                Keyword.delegate,
+                Alias.delegate
+            ]
+        },
+        {
+            matches: (definition) => typeof definition === "string"
+        }
+    )
 
     export const delegate = parse as any as Definition
 }

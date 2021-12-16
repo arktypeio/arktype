@@ -1,6 +1,6 @@
-import { typeDefProxy, validationError, createParser } from "./internal.js"
-import { Fragment } from "./fragment.js"
-import { Tuple } from "../object"
+import { typeDefProxy, validationError, createParser } from "../internal.js"
+import { Fragment } from "../fragment.js"
+import { Tuple } from "../../object"
 
 export namespace List {
     export type Definition<Item extends string = string> = `${Item}[]`
@@ -11,12 +11,12 @@ export namespace List {
         {
             type,
             parent: () => Fragment.parse,
-            matches: (def, ctx) => def.endsWith("[]"),
             components: (def, ctx) => ({
                 item: Fragment.parse(def.slice(0, -2), ctx)
             })
         },
         {
+            matches: (def, ctx) => def.endsWith("[]"),
             allows: ({ def, components: { item }, ctx }, valueType, opts) => {
                 if (Array.isArray(valueType)) {
                     return Tuple.parse(

@@ -10,7 +10,7 @@ import {
     StringifyPossibleTypes
 } from "@re-/utils"
 import { ParseContext } from "./definition/parser.js"
-import { Shallow } from "./definition/expression/shallow.js"
+import { Shallow } from "./definition/string/shallow.js.js"
 import { ExtractableDefinition } from "./definition/internal.js"
 
 export const stringifyDefinition = (def: unknown) =>

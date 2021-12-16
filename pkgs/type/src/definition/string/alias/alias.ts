@@ -6,9 +6,9 @@ import {
     shallowCycleError,
     generateRequiredCycleError,
     createParser
-} from "../expression/internal.js"
-import { Root } from "../root.js"
-import { Fragment } from "../expression/fragment.js"
+} from "../internal.js"
+import { Root } from "../../root.js"
+import { Fragment } from "../fragment.js"
 
 export namespace Alias {
     export type Definition<
@@ -84,7 +84,6 @@ export namespace Alias {
         {
             type,
             parent: () => Fragment.parse,
-            matches: (def, ctx) => def in ctx.typespace,
             components: (def, ctx) => {
                 /**
                  * Keep track of definitions we've seen since last resolving to an object or built-in.
@@ -110,6 +109,7 @@ export namespace Alias {
             }
         },
         {
+            matches: (def, ctx) => def in ctx.typespace,
             allows: ({ components: { resolve } }, valueType, opts) =>
                 resolve().allows(valueType, opts),
             generate: ({ components: { resolve }, ctx, def }, opts) => {

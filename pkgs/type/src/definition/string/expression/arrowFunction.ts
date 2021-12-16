@@ -6,8 +6,8 @@ import {
     ParseSplittable,
     ValidateSplittable,
     ParseConfig
-} from "./internal.js"
-import { Fragment } from "./fragment.js"
+} from "../internal.js"
+import { Fragment } from "../fragment.js"
 
 export namespace ArrowFunction {
     export type Definition<
@@ -54,7 +54,6 @@ export namespace ArrowFunction {
         {
             type,
             parent: () => Fragment.parse as any,
-            matches: (def) => /\(.*\)\=\>.*/.test(def as any),
             components: (def, ctx) => {
                 const parts = def.split("=>")
                 const parameterDefs = parts[0]
@@ -71,6 +70,7 @@ export namespace ArrowFunction {
             }
         },
         {
+            matches: (def) => /\(.*\)\=\>.*/.test(def as any),
             allows: ({ def, ctx: { path } }, valueType) =>
                 valueType === "function"
                     ? {}

@@ -1,8 +1,8 @@
 import { RemoveSpaces } from "@re-/utils"
 import { typeDefProxy, createParser, ParseConfig } from "./internal.js"
 import { Fragment } from "./fragment.js"
-import { Optional } from "./optional.js"
-import { Shallow } from "./expression.js"
+import { Optional } from "./expression/optional.js"
+import { Root } from "../root.js"
 
 export namespace Str {
     export type Definition<Def extends string = string> = Def
@@ -30,12 +30,16 @@ export namespace Str {
 
     export const type = typeDefProxy as Definition
 
-    export const parse = createParser({
-        type,
-        parent: () => Shallow.parse,
-        matches: (definition) => typeof definition === "string",
-        children: () => [Optional.delegate, Fragment.delegate]
-    })
+    export const parse = createParser(
+        {
+            type,
+            parent: () => Root.parse,
+            children: () => [Optional.delegate, Fragment.delegate]
+        },
+        {
+            matches: (definition) => typeof definition === "string"
+        }
+    )
 
     export const delegate = parse as any as Definition
 }

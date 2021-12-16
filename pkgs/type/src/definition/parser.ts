@@ -60,29 +60,28 @@ export type DefinitionMatcher<Parent> = (
     ...args: ParseArgs<KeyValuate<Parent, "type">>
 ) => boolean
 
-export type HandlesArg<Children, Parent, Handles> = Children extends never[]
-    ? [handles: Required<Handles>]
-    : [handles?: Handles]
+export type MethodsArg<Children, Methods> = Children extends never[]
+    ? [methods: Required<Methods>]
+    : [methods?: Methods]
 
-export type HandlesContext<DefType, Components> = [
+export type InheritableMethodContext<DefType, Components> = [
     args: {
         def: DefType
         ctx: ParseContext
     } & (unknown extends Components ? {} : { components: Components })
 ]
 
-export type HandlesMethods<DefType, Parent, Components> = {
-    matches?: DefinitionMatcher<Parent>
+export type InheritableMethods<DefType, Components> = {
     allows?: (
         ...args: [
-            ...args: HandlesContext<DefType, Components>,
+            ...args: InheritableMethodContext<DefType, Components>,
             valueType: ExtractableDefinition,
             options: AllowsOptions
         ]
     ) => ValidationErrors
     references?: (
         ...args: [
-            ...args: HandlesContext<DefType, Components>,
+            ...args: InheritableMethodContext<DefType, Components>,
             options: ReferencesOptions
         ]
     ) => DefType extends Obj.Definition<DefType>
@@ -90,34 +89,34 @@ export type HandlesMethods<DefType, Parent, Components> = {
         : string[]
     generate?: (
         ...args: [
-            ...args: HandlesContext<DefType, Components>,
+            ...args: InheritableMethodContext<DefType, Components>,
             options: GenerateOptions
         ]
     ) => any
 }
 
-export type UnhandledMethods<DefType, Parent, Components> = Omit<
-    HandlesMethods<DefType, Parent, Components>,
+export type MethodsInput<DefType, Parent, Components> = Omit<
+    InheritableMethods<DefType, Components>,
     keyof GetHandledMethods<Parent>
->
+> & { matches?: DefinitionMatcher<Parent> }
 
-export type ParseFunction<DefType, Components> = (
+export type ParseFunction<DefType> = (
     ...args: ParseArgs<DefType>
 ) => ParseResult<DefType>
 
 export type ParseResult<DefType> = {
     def: DefType
     ctx: ParseContext
-} & CoreMethods<DefType>
+} & TransformedInheritableMethods<DefType>
 
-export type CoreMethods<DefType> = {
-    [MethodName in CoreMethodName]-?: TransformInputMethod<
-        NonNullable<HandlesMethods<DefType, any, any>[MethodName]>
+export type TransformedInheritableMethods<DefType> = {
+    [MethodName in InheritableMethodName]-?: TransformInputMethod<
+        NonNullable<InheritableMethods<DefType, any>[MethodName]>
     >
 }
 
 export type TransformInputMethod<
-    Method extends ValueOf<HandlesMethods<any, any, any>>
+    Method extends ValueOf<InheritableMethods<any, any>>
 > = Method extends (
     ...args: [infer ParseResult, ...infer Rest, infer Opts]
 ) => infer Return
@@ -132,42 +131,43 @@ export type GetHandledMethods<Parent> = (KeyValuate<
     : {}) &
     KeyValuate<Parent, "handles">
 
-export type ParserMetadata<
-    DefType,
-    Parent,
-    Handles extends HandlesMethods<DefType, Parent, any>
-> = Evaluate<{
+export type ParserMetadata<DefType, Parent, Handles> = Evaluate<{
     meta: {
         type: DefType
         inherits: () => GetHandledMethods<Parent>
         handles: unknown extends Handles ? {} : Handles
-        matches: DefinitionMatcher<DefType>
+        matches: DefinitionMatcher<Parent>
     }
 }>
 
-export type Parser<DefType, Parent, Handles, Components> = Evaluate<
-    ParserMetadata<DefType, Parent, Handles> &
-        ParseFunction<DefType, Components>
+export type Parser<DefType, Parent, Methods> = Evaluate<
+    ParserMetadata<DefType, Parent, Methods> & ParseFunction<DefType>
 >
 
-export type CoreMethodName = keyof HandlesMethods<any, any, any>
+export type InheritableMethodName = keyof InheritableMethods<any, any>
 
-const coreMethodNames = ["allows", "references", "generate"] as CoreMethodName[]
+const inheritableMethodNames = [
+    "allows",
+    "references",
+    "generate"
+] as InheritableMethodName[]
 
 // Re:Root, reroot its root by rerouting to reroot
 export const reroot = {
     meta: {
         type: {} as Root.Definition,
         inherits: () => {},
-        handles: {}
+        handles: {},
+        matches: () => true
     }
 }
 
-type AnyParser = Parser<any, any, any, any>
+type AnyMethodsInput = Record<InheritableMethodName | "matches", any>
+type AnyParser = Parser<any, any, any>
 
 export const createParser = <
     Input,
-    Handles,
+    Methods,
     DefType,
     Parent,
     Components,
@@ -175,16 +175,14 @@ export const createParser = <
 >(
     ...args: [
         Exact<Input, ParserInput<DefType, Parent, Children, Components>>,
-        ...HandlesArg<
+        ...MethodsArg<
             Children,
-            Parent,
-            Exact<Handles, UnhandledMethods<DefType, Parent, Components>>
+            Exact<Methods, MethodsInput<DefType, Parent, Components>>
         >
     ]
-): Parser<DefType, Parent, Handles, Components> => {
+): Parser<DefType, Parent, Methods> => {
     const input = args[0] as ParserInput<DefType, Parent, Children, Components>
-    const handles =
-        (args[1] as HandlesMethods<DefType, Parent, Components>) ?? {}
+    const methods = ((args[1] as any) ?? {}) as AnyMethodsInput
     // Need to wait until parse is called to access parent to avoid it being undefined
     // due to circular import
     const getInherited = () => {
@@ -192,7 +190,7 @@ export const createParser = <
         return {
             ...parent.meta.inherits(),
             ...parent.meta.handles
-        } as HandlesMethods<DefType, Parent, Components>
+        } as InheritableMethods<DefType, Components>
     }
     const getChildren = (): AnyParser[] => (input.children?.() as any) ?? []
     const cachedComponents: Record<string, any> = {}
@@ -210,15 +208,19 @@ export const createParser = <
         }
         return cachedComponents[memoKey]
     }
-    const transformCoreMethod =
+    const transformInheritableMethod =
         (
-            name: CoreMethodName,
+            name: InheritableMethodName,
             inputMethod: Func,
             def: DefType,
             ctx: ParseContext,
             components: Components
         ) =>
-        (...providedArgs: Parameters<ValueOf<CoreMethods<DefType>>>) => {
+        (
+            ...providedArgs: Parameters<
+                ValueOf<TransformedInheritableMethods<DefType>>
+            >
+        ) => {
             if (name === "allows") {
                 return inputMethod(
                     {
@@ -240,8 +242,8 @@ export const createParser = <
             )
         }
 
-    const delegateCoreMethod = (
-        methodName: CoreMethodName,
+    const delegateMethod = (
+        methodName: InheritableMethodName | "matches",
         def: DefType,
         ctx: ParseContext
     ) => {
@@ -250,6 +252,10 @@ export const createParser = <
             throw new Error(
                 `${methodName} was never implemented on the current component's branch.`
             )
+        }
+        if (methodName === "matches") {
+            return () =>
+                !!children.find((child) => child.meta.matches(def, ctx))
         }
         const match = children.find((child) => child.meta.matches(def, ctx))
         if (!match) {
@@ -260,46 +266,62 @@ export const createParser = <
         }
         return match(def, ctx)[methodName]
     }
-    const getCoreMethods = (
+    const getInheritableMethods = (
         def: DefType,
         ctx: ParseContext,
         components: any
     ) => {
-        return transform(coreMethodNames, ([i, methodName]) => [
-            methodName,
-            handles[methodName]
-                ? transformCoreMethod(
-                      methodName,
-                      handles[methodName]!,
-                      def,
-                      ctx,
-                      components
-                  )
-                : getInherited()[methodName]
-                ? transformCoreMethod(
-                      methodName,
-                      getInherited()[methodName]!,
-                      def,
-                      ctx,
-                      components
-                  )
-                : delegateCoreMethod(methodName, def, ctx)
-        ]) as CoreMethods<DefType>
+        return transform(inheritableMethodNames, ([i, methodName]) => {
+            if (methods[methodName]) {
+                return [
+                    methodName,
+                    transformInheritableMethod(
+                        methodName,
+                        methods[methodName]!,
+                        def,
+                        ctx,
+                        components
+                    )
+                ]
+            } else if (getInherited()[methodName]) {
+                return [
+                    methodName,
+                    transformInheritableMethod(
+                        methodName,
+                        getInherited()[methodName]!,
+                        def,
+                        ctx,
+                        components
+                    )
+                ]
+            } else {
+                return [methodName, delegateMethod(methodName, def, ctx)]
+            }
+        }) as TransformedInheritableMethods<DefType>
     }
-
     const parse = (def: DefType, ctx: ParseContext): ParseResult<DefType> => {
         const components = getComponents(def, ctx)
         return {
             def,
             ctx,
-            ...getCoreMethods(def, ctx, components)
+            ...getInheritableMethods(def, ctx, components)
         }
     }
     return Object.assign(parse, {
         meta: {
             type: input.type,
             inherits: getInherited,
-            handles
+            handles: transform(methods, ([name, def]) =>
+                inheritableMethodNames.includes(name as any)
+                    ? [name, def]
+                    : null
+            ),
+            matches: ([def, ctx]: Parameters<DefinitionMatcher<Parent>>) => {
+                if (methods.matches) {
+                    return methods.matches(def, ctx)
+                }
+                return delegateMethod("matches", def as any, ctx)
+            }
         }
     }) as any
 }

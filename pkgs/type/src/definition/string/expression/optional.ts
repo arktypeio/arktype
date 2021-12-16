@@ -1,6 +1,6 @@
-import { typeDefProxy, createParser } from "./internal.js"
-import { Fragment } from "./fragment.js"
-import { Str } from "./str.js"
+import { typeDefProxy, createParser } from "../internal.js"
+import { Fragment } from "../fragment.js"
+import { Str } from "../str.js"
 
 export namespace Optional {
     export type Definition<
@@ -13,10 +13,10 @@ export namespace Optional {
         {
             type,
             parent: () => Str.parse,
-            matches: (def) => def.endsWith("?"),
             components: (def, ctx) => [Fragment.parse(def.slice(0, -1), ctx)]
         },
         {
+            matches: (def) => def.endsWith("?"),
             allows: ({ def, components, ctx }, valueType, opts) => {
                 if (valueType === "undefined") {
                     return {}
