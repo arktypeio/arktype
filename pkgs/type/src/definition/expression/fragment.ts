@@ -5,7 +5,7 @@ import {
     UnknownTypeError,
     ValidationErrorMessage
 } from "./internal.js"
-import { BuiltIn, NumericStringLiteral, StringLiteral } from "../builtin"
+import { Keyword, NumberLiteral, StringLiteral } from "./literal"
 import { ArrowFunction } from "./arrowFunction.js"
 import { List } from "./list.js"
 import { Or } from "./or.js"
@@ -26,9 +26,9 @@ export namespace Fragment {
         : Def extends List.Definition<infer ListItem>
         ? Validate<ListItem, Root, Typespace>
         : Def extends
-              | BuiltIn.Definition
+              | Keyword.Definition
               | StringLiteral.Definition
-              | NumericStringLiteral.Definition
+              | NumberLiteral.Definition
         ? Root
         : Def extends Alias.Definition<Typespace>
         ? Alias.Validate<Def, Root, Typespace>
@@ -50,11 +50,11 @@ export namespace Fragment {
         ? Parse<ListItem, Typespace, Options>[]
         : Def extends StringLiteral.Definition<infer Literal>
         ? Literal
-        : Def extends NumericStringLiteral.Definition<infer Value>
+        : Def extends NumberLiteral.Definition<infer Value>
         ? // For now this is always inferred as 'number', even if the string is a literal like '5'
           Value
-        : Def extends BuiltIn.Definition
-        ? BuiltIn.Parse<Def>
+        : Def extends Keyword.Definition
+        ? Keyword.Parse<Def>
         : unknown
 
     export const type = typeDefProxy as Definition
@@ -68,8 +68,8 @@ export namespace Fragment {
             ArrowFunction.delegate,
             List.delegate,
             StringLiteral.delegate,
-            NumericStringLiteral.delegate,
-            BuiltIn.delegate,
+            NumberLiteral.delegate,
+            Keyword.delegate,
             Alias.delegate
         ]
     })
