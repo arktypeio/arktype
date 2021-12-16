@@ -50,7 +50,6 @@ export type ParserInput<
 > = {
     type: DefType
     parent: () => { meta: Parent }
-    matches: DefinitionMatcher<Parent>
     components?: (...args: ParseArgs<DefType>) => Components
     children?: () => Children
     // What to do if no children match (defaults to throwing unparsable error)
@@ -61,7 +60,7 @@ export type DefinitionMatcher<Parent> = (
     ...args: ParseArgs<KeyValuate<Parent, "type">>
 ) => boolean
 
-export type HandlesArg<Children, Handles> = Children extends never[]
+export type HandlesArg<Children, Parent, Handles> = Children extends never[]
     ? [handles: Required<Handles>]
     : [handles?: Handles]
 
@@ -72,7 +71,8 @@ export type HandlesContext<DefType, Components> = [
     } & (unknown extends Components ? {} : { components: Components })
 ]
 
-export type HandlesMethods<DefType, Components> = {
+export type HandlesMethods<DefType, Parent, Components> = {
+    matches?: DefinitionMatcher<Parent>
     allows?: (
         ...args: [
             ...args: HandlesContext<DefType, Components>,
@@ -97,7 +97,7 @@ export type HandlesMethods<DefType, Components> = {
 }
 
 export type UnhandledMethods<DefType, Parent, Components> = Omit<
-    HandlesMethods<DefType, Components>,
+    HandlesMethods<DefType, Parent, Components>,
     keyof GetHandledMethods<Parent>
 >
 
@@ -112,12 +112,12 @@ export type ParseResult<DefType> = {
 
 export type CoreMethods<DefType> = {
     [MethodName in CoreMethodName]-?: TransformInputMethod<
-        NonNullable<HandlesMethods<DefType, any>[MethodName]>
+        NonNullable<HandlesMethods<DefType, any, any>[MethodName]>
     >
 }
 
 export type TransformInputMethod<
-    Method extends ValueOf<HandlesMethods<any, any>>
+    Method extends ValueOf<HandlesMethods<any, any, any>>
 > = Method extends (
     ...args: [infer ParseResult, ...infer Rest, infer Opts]
 ) => infer Return
@@ -135,7 +135,7 @@ export type GetHandledMethods<Parent> = (KeyValuate<
 export type ParserMetadata<
     DefType,
     Parent,
-    Handles extends HandlesMethods<DefType, any>
+    Handles extends HandlesMethods<DefType, Parent, any>
 > = Evaluate<{
     meta: {
         type: DefType
@@ -150,7 +150,7 @@ export type Parser<DefType, Parent, Handles, Components> = Evaluate<
         ParseFunction<DefType, Components>
 >
 
-export type CoreMethodName = keyof HandlesMethods<any, any>
+export type CoreMethodName = keyof HandlesMethods<any, any, any>
 
 const coreMethodNames = ["allows", "references", "generate"] as CoreMethodName[]
 
@@ -177,12 +177,14 @@ export const createParser = <
         Exact<Input, ParserInput<DefType, Parent, Children, Components>>,
         ...HandlesArg<
             Children,
+            Parent,
             Exact<Handles, UnhandledMethods<DefType, Parent, Components>>
         >
     ]
 ): Parser<DefType, Parent, Handles, Components> => {
     const input = args[0] as ParserInput<DefType, Parent, Children, Components>
-    const handles = (args[1] as HandlesMethods<DefType, Components>) ?? {}
+    const handles =
+        (args[1] as HandlesMethods<DefType, Parent, Components>) ?? {}
     // Need to wait until parse is called to access parent to avoid it being undefined
     // due to circular import
     const getInherited = () => {
@@ -190,7 +192,7 @@ export const createParser = <
         return {
             ...parent.meta.inherits(),
             ...parent.meta.handles
-        } as HandlesMethods<DefType, Components>
+        } as HandlesMethods<DefType, Parent, Components>
     }
     const getChildren = (): AnyParser[] => (input.children?.() as any) ?? []
     const cachedComponents: Record<string, any> = {}
@@ -297,8 +299,7 @@ export const createParser = <
         meta: {
             type: input.type,
             inherits: getInherited,
-            handles,
-            matches: input.matches
+            handles
         }
     }) as any
 }

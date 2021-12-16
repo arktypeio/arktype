@@ -1,7 +1,7 @@
 import { typeDefProxy, createParser, validationError } from "./internal.js"
 import { Root } from "../root.js"
 
-export namespace Literal {
+export namespace Primitive {
     type NonStringLiteral = number | bigint | boolean | undefined | null
 
     export type Definition<Value extends NonStringLiteral = NonStringLiteral> =
