@@ -1,7 +1,7 @@
 import { StringifyPossibleTypes, Split, Join, narrow } from "@re-/utils"
 import { ParseConfig, ValidationErrorMessage } from "../internal.js"
 import { Fragment } from "./fragment.js"
-import { BuiltIn } from "../builtin/builtin.js"
+import { Keyword } from "./literal/keyword.js"
 
 export * from "../internal.js"
 
@@ -44,7 +44,7 @@ export const nonComparableDefaultValues = narrow({
 })
 
 // Default values for each built in type, sorted by precedence
-export const builtInDefaultValues: { [K in BuiltIn.Definition]: any } = {
+export const builtInDefaultValues: { [K in Keyword.Definition]: any } = {
     ...comparableDefaultValues,
     ...nonComparableDefaultValues
 }

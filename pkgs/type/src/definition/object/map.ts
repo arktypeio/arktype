@@ -16,7 +16,7 @@ import {
 } from "./internal.js"
 import { Root } from "../root.js"
 import { Obj } from "./obj.js"
-import { Optional } from "../expression"
+import { Optional } from "../string"
 
 export namespace Map {
     export type Definition<Def extends Obj.Definition = Obj.Definition> =
@@ -50,7 +50,6 @@ export namespace Map {
         {
             type,
             parent: () => Obj.parse,
-            matches: (def) => isRecursible(def) && !Array.isArray(def),
             components: (def, ctx) =>
                 transform(def, ([prop, propDef]) => [
                     prop,
@@ -62,6 +61,7 @@ export namespace Map {
                 ]) as Record<string, ParseResult<any>>
         },
         {
+            matches: (def) => isRecursible(def) && !Array.isArray(def),
             allows: ({ components, def, ctx }, valueType, opts) => {
                 if (!isRecursible(valueType) || Array.isArray(valueType)) {
                     return validationError({ def, path: ctx.path, valueType })

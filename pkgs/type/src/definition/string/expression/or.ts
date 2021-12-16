@@ -13,8 +13,8 @@ import {
     createParser,
     ParseContext,
     ParseConfig
-} from "./internal.js"
-import { Fragment } from "./fragment.js"
+} from "../internal.js"
+import { Fragment } from "../fragment.js"
 
 export namespace Or {
     export type Definition<
@@ -40,11 +40,11 @@ export namespace Or {
         {
             type,
             parent: () => Fragment.parse,
-            matches: (definition) => definition.includes("|"),
             components: (def: Definition, ctx: ParseContext) =>
                 def.split("|").map((fragment) => Fragment.parse(fragment, ctx))
         },
         {
+            matches: (definition) => definition.includes("|"),
             allows: ({ def, ctx, components }, valueType, opts) => {
                 const orErrors: OrTypeErrors = {}
                 for (const fragment of components) {
@@ -108,7 +108,6 @@ export namespace Or {
                 return possibleValues[0]
             },
             references: ({ components }, opts) => {
-                // components[0].references
                 return components.flatMap((component) =>
                     component.references(opts)
                 )

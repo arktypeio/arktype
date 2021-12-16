@@ -3,7 +3,7 @@ import {
     typeDefProxy,
     valueGenerationError,
     createParser,
-    HandlesContext,
+    InheritableMethodContext,
     validationError
 } from "./internal.js"
 import { Fragment } from "../fragment.js"
@@ -20,10 +20,10 @@ export namespace Keyword {
     export const parse = createParser(
         {
             type,
-            parent: () => Fragment.parse,
-            matches: (definition) => definition in handlers
+            parent: () => Fragment.parse
         },
         {
+            matches: (definition) => definition in handlers,
             generate: (ctx) => handlers[ctx.def].generate(ctx),
             allows: (ctx, valueType) => {
                 return handlers[ctx.def].allows(valueType)
@@ -45,10 +45,12 @@ export namespace Keyword {
         T extends Record<
             string,
             {
-                generate: (ctx: HandlesContext<string, unknown>[0]) => any
+                generate: (
+                    ctx: InheritableMethodContext<string, unknown>[0]
+                ) => any
                 allows: (
                     valueType: unknown,
-                    ctx: HandlesContext<string, unknown>[0]
+                    ctx: InheritableMethodContext<string, unknown>[0]
                 ) => boolean
             }
         >

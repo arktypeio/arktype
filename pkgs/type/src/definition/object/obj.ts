@@ -36,12 +36,16 @@ export namespace Obj {
 
     export const type = typeDefProxy as Definition
 
-    export const parse = createParser({
-        type,
-        parent: () => Root.parse,
-        children: () => [Tuple.delegate, Map.delegate],
-        matches: (definition) => isRecursible(definition)
-    })
+    export const parse = createParser(
+        {
+            type,
+            parent: () => Root.parse,
+            children: () => [Tuple.delegate, Map.delegate]
+        },
+        {
+            matches: (definition) => isRecursible(definition)
+        }
+    )
 
     export const delegate = parse as any as Definition
 }

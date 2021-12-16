@@ -1,4 +1,4 @@
 export * from "./root.js"
-export * from "./expression"
+export * from "./string"
 export * from "./object"
-export * from "./builtin"
+export * from "./primitive"
