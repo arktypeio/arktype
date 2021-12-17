@@ -18,7 +18,7 @@ import {
     ParseFunction,
     DefaultParseTypeOptions
 } from "./parse.js"
-import { TypeSpace } from "./typespace"
+import { Typespace } from "./typespace"
 import { Map } from "./definition"
 import { typeDefProxy } from "./internal.js"
 
@@ -95,7 +95,7 @@ export type TypeNameFromList<Definitions> = keyof MergeAll<Definitions> & string
 export type ValidateCompilation<
     Definitions,
     DeclaredTypeNames extends string[] = [],
-    Merged = TypeSpace.Validate<MergeAll<Definitions>>,
+    Merged = Typespace.Validate<MergeAll<Definitions>>,
     DefinedTypeName extends string = keyof Merged & string,
     DeclaredTypeName extends string = DeclaredTypeNames extends never[]
         ? DefinedTypeName
@@ -140,7 +140,7 @@ export type CompiledTypespace<
     Definitions,
     MergedTypespace = MergeAll<Definitions>
 > = Evaluate<
-    TypeSpace.ParseEach<MergedTypespace, DefaultParseTypeOptions> & {
+    Typespace.ParseEach<MergedTypespace, DefaultParseTypeOptions> & {
         types: Map.Parse<
             MergedTypespace,
             MergedTypespace,

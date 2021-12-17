@@ -6,7 +6,7 @@ import {
     InheritableMethodContext,
     validationError
 } from "./internal.js"
-import { Fragment } from "../fragment.js"
+import { Literal } from "./literal.js"
 
 export namespace Keyword {
     export type Definition<
@@ -20,7 +20,7 @@ export namespace Keyword {
     export const parse = createParser(
         {
             type,
-            parent: () => Fragment.parse
+            parent: () => Literal.parse
         },
         {
             matches: (definition) => definition in handlers,
@@ -60,22 +60,6 @@ export namespace Keyword {
 
     // These are the named types we can extract from a valueType at runtime
     const extractable = defineKeywords({
-        true: {
-            generate: () => true,
-            allows: (valueType) => valueType === "true"
-        },
-        false: {
-            generate: () => false,
-            allows: (valueType) => valueType === "false"
-        },
-        undefined: {
-            generate: () => undefined,
-            allows: (valueType) => valueType === "undefined"
-        },
-        null: {
-            generate: () => null,
-            allows: (valueType) => valueType === "null"
-        },
         symbol: {
             generate: () => Symbol(),
             allows: (valueType) => valueType === "symbol"
@@ -88,6 +72,8 @@ export namespace Keyword {
             allows: (valueType) => valueType === "function"
         }
     })
+
+    export type Extractable = keyof typeof extractable
 
     /**
      * These types can be used to specify a type definition but
@@ -137,8 +123,27 @@ export namespace Keyword {
         bigint: {
             generate: () => BigInt(0),
             allows: (valueType) => typeof valueType === "bigint"
+        },
+        // Extracted as primitives
+        true: {
+            generate: () => true as true,
+            allows: (valueType) => valueType === true
+        },
+        false: {
+            generate: () => false as false,
+            allows: (valueType) => valueType === false
+        },
+        undefined: {
+            generate: () => undefined,
+            allows: (valueType) => valueType === undefined
+        },
+        null: {
+            generate: () => null,
+            allows: (valueType) => valueType === null
         }
     })
+
+    export type Unextractable = keyof typeof unextractable
 
     const handlers = { ...extractable, ...unextractable }
 

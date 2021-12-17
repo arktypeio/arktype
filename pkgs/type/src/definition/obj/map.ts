@@ -3,6 +3,7 @@ import {
     DiffSetsResult,
     Evaluate,
     isRecursible,
+    RemoveSpaces,
     transform
 } from "@re-/utils"
 import {
@@ -16,11 +17,10 @@ import {
 } from "./internal.js"
 import { Root } from "../root.js"
 import { Obj } from "./obj.js"
-import { Optional } from "../string"
+import { Optional } from "../str"
 
 export namespace Map {
-    export type Definition<Def extends Obj.Definition = Obj.Definition> =
-        Obj.Definition<Def> extends any[] ? never : Def
+    export type Definition = Record<string, any>
 
     export type Validate<Def, Typespace> = Evaluate<{
         [PropName in keyof Def]: Root.Validate<Def[PropName], Typespace>
@@ -31,14 +31,20 @@ export namespace Map {
         Typespace,
         Options extends ParseConfig,
         OptionalKey extends keyof Def = {
-            [K in keyof Def]: Def[K] extends Optional.Definition ? K : never
+            [K in keyof Def]: Def[K] extends string
+                ? RemoveSpaces<Def[K]> extends Optional.Definition
+                    ? K
+                    : never
+                : never
         }[keyof Def],
         RequiredKey extends keyof Def = Exclude<keyof Def, OptionalKey>
     > = {
-        [PropName in OptionalKey]?: Def[PropName] extends Optional.Definition<
-            infer OptionalType
-        >
-            ? Root.Parse<OptionalType, Typespace, Options>
+        [PropName in OptionalKey]?: Def[PropName] extends string
+            ? RemoveSpaces<Def[PropName]> extends Optional.Definition<
+                  infer OptionalType
+              >
+                ? Root.Parse<OptionalType, Typespace, Options>
+                : unknown
             : unknown
     } & {
         [PropName in RequiredKey]: Root.Parse<Def[PropName], Typespace, Options>
@@ -119,7 +125,7 @@ export namespace Map {
                 transform(components, ([propName, component]) => {
                     if (
                         typeof def[propName] === "string" &&
-                        Optional.parse.meta.matches(def[propName], ctx)
+                        Optional.parse.matches(def[propName], ctx)
                     ) {
                         // Exclude prop from object's generated value entirely if it's optional
                         return null

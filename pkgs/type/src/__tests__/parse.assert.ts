@@ -1,9 +1,9 @@
 import { assert } from "@re-/assert"
 import { compile, parse } from ".."
-import { typeDefProxy } from "../internal.js"
+import { typeDefProxy, definitionTypeErrorTemplate } from "../internal.js"
 
 describe("parse", () => {
-    test("built-in", () => {
+    test("keyword", () => {
         assert(parse("string").type).typed as string
         // @ts-expect-error
         assert(() => parse("strig")).throwsAndHasTypeError(
@@ -30,10 +30,16 @@ describe("parse", () => {
     })
     // Using actual numbers solves the above type widening to "number",
     // but isn't available directly in the context of string types like lists or functions
-    test("number literals", () => {
+    test("primitives", () => {
         assert(parse(0).type).typed as 0
         // Repeating, of course
         assert(parse(32.33).type).typed as 32.33
+        assert(parse(0n).type).typed as 0n
+        assert(parse(99999999999999999999n).type).typed as 99999999999999999999n
+        assert(parse(true).type).typed as true
+        assert(parse(false).type).typed as false
+        assert(parse(undefined).type).typed as undefined
+        assert(parse(null).type).typed as null
     })
     test("string function", () => {
         assert(parse("(string, number) => boolean[]").type).typed as (
@@ -73,8 +79,8 @@ describe("parse", () => {
         ).typed as {
             b?: number | true | undefined
             a: string
-            c: { nested: null[] }
             d: 6
+            c: { nested: null[] }
         }
         // @ts-expect-error
         assert(() => parse({ a: { b: "whoops" } }))
@@ -83,24 +89,31 @@ describe("parse", () => {
     })
     test("bad type def type", () => {
         // @ts-expect-error
-        assert(() => parse({ bad: true })).throwsAndHasTypeError(
-            "Definitions must be strings, numbers, or objects."
+        assert(() => parse({ bad: Symbol() })).throwsAndHasTypeError(
+            definitionTypeErrorTemplate
+        )
+        // @ts-expect-error
+        assert(() => parse({ bad: () => {} })).throwsAndHasTypeError(
+            definitionTypeErrorTemplate
         )
     })
     test("with typespace", () => {
         assert(
             parse("borf", {
-                typespace: { borf: "boolean" }
+                typespace: { borf: true }
             }).type
-        ).typed as boolean
+        ).typed as true
         assert(
-            parse({ snorf: "borf[]" }, { typespace: { borf: "boolean" } }).type
-        ).typed as { snorf: boolean[] }
+            parse(
+                { snorf: "borf[]" },
+                { typespace: { borf: { f: false, u: undefined } } }
+            ).type
+        ).typed as { snorf: { f: false; u: undefined }[] }
     })
     test("list definition", () => {
-        assert(parse([{ a: "boolean" }, { b: "string?" }]).type).typed as [
+        assert(parse([{ a: null }, { b: "string?" }]).type).typed as [
             {
-                a: boolean
+                a: null
             },
             {
                 b?: string | undefined
@@ -108,9 +121,9 @@ describe("parse", () => {
         ]
         assert(
             parse({
-                nestedList: ["string", { yes: "null|true" }]
+                nestedList: [0n, { yes: "null|true" }]
             }).type
-        ).typed as { nestedList: [string, { yes: true | null }] }
+        ).typed as { nestedList: [0n, { yes: true | null }] }
     })
     test("whitespace is ignored when parsing strings", () => {
         assert(parse("    boolean      |    null       ").type).typed as

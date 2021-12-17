@@ -10,8 +10,7 @@ import {
     StringifyPossibleTypes
 } from "@re-/utils"
 import { ParseContext } from "./definition/parser.js"
-import { Shallow } from "./definition/string/shallow.js.js"
-import { ExtractableDefinition } from "./definition/internal.js"
+import { ExtractableDefinition } from "./internal.js"
 
 export const stringifyDefinition = (def: unknown) =>
     toString(def, { quotes: "none" })
@@ -29,7 +28,7 @@ export const stringifyPathContext = (
     path.length ? ` at path ${path.join("/")}${trailingSpace ? " " : ""}` : ""
 
 export const definitionTypeErrorTemplate =
-    "Definitions must be strings, numbers, or objects."
+    "Values of type 'function' or 'symbol' are not valid definitions."
 
 export type DefinitionTypeError = typeof definitionTypeErrorTemplate
 
@@ -39,13 +38,12 @@ export const getBaseTypeName = (definition: string) =>
 export const baseUnknownTypeError =
     "Unable to determine the type of '@def'@context."
 
-export type UnknownTypeError<
-    Definition extends Shallow.Definition = Shallow.Definition
-> = StringReplace<
-    StringReplace<typeof baseUnknownTypeError, "@def", `${Definition}`>,
-    "@context",
-    ""
->
+export type UnknownTypeError<Definition extends string = string> =
+    StringReplace<
+        StringReplace<typeof baseUnknownTypeError, "@def", `${Definition}`>,
+        "@context",
+        ""
+    >
 
 export const unknownTypeError = <Definition>(def: Definition, path: string[]) =>
     baseUnknownTypeError

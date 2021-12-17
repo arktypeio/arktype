@@ -1,21 +1,19 @@
 import { transform } from "@re-/utils"
-import { ExtractableDefinition, ExtractableTypeName } from "./internal.js"
+import { Keyword, Primitive } from "./definition/index.js"
+import { ExtractableDefinition } from "./internal.js"
 
 export const typeOf = (value: any): ExtractableDefinition => {
-    if (typeof value === "boolean") {
-        return value ? "true" : "false"
+    if (Primitive.parse.matches(value, {} as any)) {
+        return value
+    }
+    if (typeof value === "function" || typeof value === "symbol") {
+        return typeof value as Keyword.Extractable
     }
     if (typeof value === "string") {
         return `'${value}'`
     }
-    if (typeof value === "number") {
-        return value
-    }
     if (typeof value === "object") {
-        if (value === null) {
-            return "null"
-        }
         return transform(value, ([k, v]) => [k, typeOf(v)])
     }
-    return typeof value as ExtractableTypeName
+    throw new Error(`Unexpected value type '${typeof value}'.`)
 }

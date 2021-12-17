@@ -1,5 +1,6 @@
 import {
     Evaluate,
+    Func,
     isRecursible,
     Recursible as ExtractRecursible
 } from "@re-/utils"
@@ -7,18 +8,21 @@ import {
     typeDefProxy,
     ParseConfig,
     createParser,
-    DefinitionTypeError
+    DefinitionTypeError,
+    ValidationErrorMessage
 } from "./internal.js"
 import { Root } from "../root.js"
 import { Map } from "./map.js"
 import { Tuple } from "./tuple.js"
 
 export namespace Obj {
-    export type Definition<
-        Def extends { [K in string]: any } = { [K in string]: any }
-    > = Def extends ExtractRecursible<Def> ? Def : never
+    export type Definition = Map.Definition | Tuple.Definition
 
-    export type Validate<Def, Typespace> = Def extends Tuple.Definition
+    // Since functions satisfy Map.Definition, we have to check
+    // that the def is not a function before trying to validate it
+    export type Validate<Def, Typespace> = Def extends Func
+        ? DefinitionTypeError
+        : Def extends Tuple.Definition
         ? Tuple.Validate<Def, Typespace>
         : Def extends Map.Definition
         ? Map.Validate<Def, Typespace>
@@ -28,7 +32,9 @@ export namespace Obj {
         Def extends Definition,
         Typespace,
         Options extends ParseConfig
-    > = Def extends Tuple.Definition
+    > = Obj.Validate<Def, Typespace> extends ValidationErrorMessage
+        ? unknown
+        : Def extends Tuple.Definition
         ? Evaluate<Tuple.Parse<Def, Typespace, Options>>
         : Def extends Map.Definition
         ? Evaluate<Map.Parse<Def, Typespace, Options>>

@@ -1,5 +1,5 @@
 import { typeDefProxy, validationError, createParser } from "../internal.js"
-import { Fragment } from "../fragment.js"
+import { Literal } from "./literal.js"
 
 export namespace StringLiteral {
     export type Definition<Definition extends string = string> =
@@ -12,10 +12,10 @@ export namespace StringLiteral {
     export const parse = createParser(
         {
             type,
-            parent: () => Fragment.parse,
-            matches: (def) => !!def.match("'.*'")
+            parent: () => Literal.parse
         },
         {
+            matches: (def) => !!def.match("'.*'"),
             allows: ({ def, ctx: { path } }, valueType) =>
                 def === valueType
                     ? {}

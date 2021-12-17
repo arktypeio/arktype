@@ -1,7 +1,5 @@
 import { transform, Unlisted } from "@re-/utils"
 import {
-    comparableDefaultValueSet,
-    nonComparableDefaultValues,
     ParseSplittable,
     ValidateSplittable,
     typeDefProxy,
@@ -13,8 +11,28 @@ import {
     createParser,
     ParseContext,
     ParseConfig
-} from "../internal.js"
-import { Fragment } from "../fragment.js"
+} from "./internal.js"
+import { Str } from "../str.js"
+import { Expression } from "./expression.js"
+
+const typeFamily = typeof ({} as any)
+
+type TypeFamily = typeof typeFamily
+
+type PreferredDefaults = { value?: any; typeOf?: TypeFamily }[]
+
+export const preferredDefaults: PreferredDefaults = [
+    { value: undefined },
+    { value: null },
+    { value: false },
+    { value: true },
+    { typeOf: "number" },
+    { typeOf: "string" },
+    { typeOf: "bigint" },
+    { typeOf: "object" },
+    { typeOf: "symbol" },
+    { typeOf: "function" }
+]
 
 export namespace Or {
     export type Definition<
@@ -39,9 +57,9 @@ export namespace Or {
     export const parse = createParser(
         {
             type,
-            parent: () => Fragment.parse,
+            parent: () => Expression.parse,
             components: (def: Definition, ctx: ParseContext) =>
-                def.split("|").map((fragment) => Fragment.parse(fragment, ctx))
+                def.split("|").map((fragment) => Str.parse(fragment, ctx))
         },
         {
             matches: (definition) => definition.includes("|"),
@@ -86,18 +104,14 @@ export namespace Or {
                     },
                     { asArray: "always" }
                 )
-                for (const comparableValue of comparableDefaultValueSet) {
-                    if (possibleValues.includes(comparableValue)) {
-                        return comparableValue
-                    }
-                }
-
-                for (const valueType in nonComparableDefaultValues) {
-                    const matchingValue = possibleValues.find(
-                        (value) => typeof value === valueType
+                for (const defaultValue of preferredDefaults) {
+                    const match = possibleValues.find(
+                        (value) =>
+                            defaultValue.value === value ||
+                            defaultValue.typeOf === typeof value
                     )
-                    if (matchingValue) {
-                        return matchingValue
+                    if (match) {
+                        return match
                     }
                 }
                 if (requiredCycleError) {

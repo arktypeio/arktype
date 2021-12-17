@@ -11,8 +11,7 @@ import { Root } from "../root.js"
 import { Obj } from "./obj.js"
 
 export namespace Tuple {
-    export type Definition<Def extends Root.Definition[] = Root.Definition[]> =
-        Def
+    export type Definition = any[]
 
     export type Validate<Def, Typespace> = Evaluate<{
         [Index in keyof Def]: Root.Validate<Def[Index], Typespace>
@@ -32,7 +31,6 @@ export namespace Tuple {
         {
             type,
             parent: () => Obj.parse,
-            matches: (def) => Array.isArray(def),
             components: (def, ctx) =>
                 def.map((itemDef, index) =>
                     Root.parse(itemDef, {
@@ -43,6 +41,7 @@ export namespace Tuple {
                 )
         },
         {
+            matches: (def) => Array.isArray(def),
             allows: ({ def, ctx, components }, valueType, opts) => {
                 if (!Array.isArray(valueType)) {
                     // Defined is a tuple, extracted is an object with string keys (will never be assignable)

@@ -1,53 +1,8 @@
 import { StringifyPossibleTypes, Split, Join, narrow } from "@re-/utils"
 import { ParseConfig, ValidationErrorMessage } from "../internal.js"
-import { Fragment } from "./fragment.js"
-import { Keyword } from "./literal/keyword.js"
+import { Str } from "./str.js"
 
 export * from "../internal.js"
-
-// These values can be directly compared for equality
-export const comparableDefaultValues = narrow({
-    undefined: undefined,
-    any: undefined,
-    unknown: undefined,
-    void: undefined,
-    null: null,
-    false: false,
-    true: true,
-    boolean: false,
-    number: 0,
-    string: "",
-    bigint: BigInt(0)
-})
-
-export const comparableDefaultValueSet = [
-    undefined,
-    null,
-    false,
-    true,
-    0,
-    "",
-    BigInt(0)
-]
-
-export const nonComparableDefaultValues = narrow({
-    // These types are comparable, but if they came
-    // from a literal, we should check the type instead
-    // of the value
-    number: 0 as number,
-    string: "" as string,
-    // These types cannot be directly checked for equality
-    object: {},
-    symbol: Symbol(),
-    function: (...args: any[]) => undefined as any,
-    never: undefined as never
-})
-
-// Default values for each built in type, sorted by precedence
-export const builtInDefaultValues: { [K in Keyword.Definition]: any } = {
-    ...comparableDefaultValues,
-    ...nonComparableDefaultValues
-}
 
 export type ParseSplittableResult<
     Components = any[],
@@ -64,7 +19,7 @@ export type ParseSplittable<
     Options extends ParseConfig,
     Components extends string[] = Split<Def, Delimiter>
 > = {
-    [I in keyof Components]: Fragment.Parse<
+    [I in keyof Components]: Str.Parse<
         Components[I] & string,
         Typespace,
         Options
@@ -78,7 +33,7 @@ export type ValidateSplittable<
     Typespace,
     Components extends string[] = Split<Def, Delimiter>,
     ValidateDefinitions extends string[] = {
-        [Index in keyof Components]: Fragment.Validate<
+        [Index in keyof Components]: Str.Validate<
             Components[Index] & string,
             Components[Index] & string,
             Typespace
