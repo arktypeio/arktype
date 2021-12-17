@@ -314,7 +314,8 @@ export const createParser = <
         handles: transform(methods, ([name, def]) =>
             inheritableMethodNames.includes(name as any) ? [name, def] : null
         ),
-        matches: ([def, ctx]: Parameters<DefinitionMatcher<Parent>>) => {
+        matches: (...args: Parameters<DefinitionMatcher<Parent>>) => {
+            const [def, ctx] = args
             if (methods.matches) {
                 return methods.matches(def, ctx)
             }
@@ -322,7 +323,7 @@ export const createParser = <
                 "matches",
                 def as any,
                 ctx ?? defaultParseContext
-            )
+            )()
         }
     }) as any
 }
