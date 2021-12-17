@@ -1,10 +1,12 @@
+import { assert } from "@re-/assert"
 import { parse } from ".."
+import { definitionTypeErrorTemplate } from "../errors.js"
 
 const generate = (def: any, typespace: any = {}, opts: any = {}) =>
     parse(def, { typespace }).generate(opts)
 
-describe("default values", () => {
-    test("built-in", () => {
+describe("generate", () => {
+    test("keywords", () => {
         expect(generate("string")).toBe("")
         expect(generate("boolean")).toBe(false)
         expect(generate("any")).toBe(undefined)
@@ -14,8 +16,15 @@ describe("default values", () => {
     test("number literal", () => {
         expect(generate("5")).toBe(5)
         expect(generate("7.91")).toBe(7.91)
+    })
+    test("primitives", () => {
         expect(generate(5)).toBe(5)
         expect(generate(7.91)).toBe(7.91)
+        expect(generate(0n)).toBe(0n)
+        expect(generate(undefined)).toBe(undefined)
+        expect(generate(null)).toBe(null)
+        expect(generate(true)).toBe(true)
+        expect(generate(false)).toBe(false)
     })
     test("or", () => {
         expect(generate("undefined|string")).toBe(undefined)
@@ -140,10 +149,8 @@ describe("default values", () => {
         ).toThrowErrorMatchingInlineSnapshot(
             `"Unable to determine the type of 'blorf' at path a/b/c."`
         )
-        expect(() =>
-            generate({ hmm: { seems: { bad: true } } })
-        ).toThrowErrorMatchingInlineSnapshot(
-            `"Definition value true at path hmm/seems/bad is invalid. Definitions must be strings, numbers, or objects."`
+        assert(() => generate({ hmm: { seems: { bad: () => {} } } })).throws(
+            definitionTypeErrorTemplate
         )
     })
     test("from parsed", () => {

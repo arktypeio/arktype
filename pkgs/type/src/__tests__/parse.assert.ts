@@ -1,5 +1,6 @@
 import { assert } from "@re-/assert"
 import { compile, parse } from ".."
+import { unknownTypeError } from "../errors.js"
 import { typeDefProxy, definitionTypeErrorTemplate } from "../internal.js"
 
 describe("parse", () => {
@@ -79,8 +80,8 @@ describe("parse", () => {
         ).typed as {
             b?: number | true | undefined
             a: string
-            d: 6
             c: { nested: null[] }
+            d: 6
         }
         // @ts-expect-error
         assert(() => parse({ a: { b: "whoops" } }))
@@ -196,8 +197,19 @@ describe("parse", () => {
     test("doesn't try to parse or validate any", () => {
         // Parse any as type
         assert(parse({} as any).type).typed as any
-        // Parse any as typespace (in this case type could be inferred as string but impossible currently to do so)
-        assert(parse("string", { typespace: {} as any }).type).typed as any
+        // Parse any as typespace
+        const parseWithAnyTypespace = () =>
+            parse(
+                { literal: "string", alias: "myType" },
+                { typespace: {} as any }
+            ).type
+        assert(parseWithAnyTypespace).typed as () => {
+            literal: string
+            alias: any
+        }
+        assert(parseWithAnyTypespace)
+            .throws()
+            .snap(`"Unable to determine the type of 'myType' at path alias."`)
         // Parse any as typespace member
         assert(parse(["number", "a"], { typespace: { a: {} as any } }).type)
             .typed as [number, any]

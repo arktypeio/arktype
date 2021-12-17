@@ -56,11 +56,20 @@ export namespace Str {
 
     export const type = typeDefProxy as Definition
 
-    export const parse = createParser({
-        type,
-        parent: () => Root.parse,
-        children: () => [Literal.delegate, Alias.delegate, Expression.delegate]
-    })
+    export const parse = createParser(
+        {
+            type,
+            parent: () => Root.parse,
+            children: () => [
+                Literal.delegate,
+                Alias.delegate,
+                Expression.delegate
+            ]
+        },
+        {
+            matches: (def) => typeof def === "string"
+        }
+    )
 
     export const delegate = parse as any as Definition
 }

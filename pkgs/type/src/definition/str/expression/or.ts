@@ -1,4 +1,4 @@
-import { transform, Unlisted } from "@re-/utils"
+import { print, transform, Unlisted } from "@re-/utils"
 import {
     ParseSplittable,
     ValidateSplittable,
@@ -19,7 +19,7 @@ const typeFamily = typeof ({} as any)
 
 type TypeFamily = typeof typeFamily
 
-type PreferredDefaults = { value?: any; typeOf?: TypeFamily }[]
+type PreferredDefaults = ({ value: any } | { typeOf: TypeFamily })[]
 
 export const preferredDefaults: PreferredDefaults = [
     { value: undefined },
@@ -104,14 +104,14 @@ export namespace Or {
                     },
                     { asArray: "always" }
                 )
-                for (const defaultValue of preferredDefaults) {
-                    const match = possibleValues.find(
-                        (value) =>
-                            defaultValue.value === value ||
-                            defaultValue.typeOf === typeof value
+                for (const constraint of preferredDefaults) {
+                    const matches = possibleValues.filter((value) =>
+                        "value" in constraint
+                            ? constraint.value === value
+                            : constraint.typeOf === typeof value
                     )
-                    if (match) {
-                        return match
+                    if (matches.length) {
+                        return matches[0]
                     }
                 }
                 if (requiredCycleError) {

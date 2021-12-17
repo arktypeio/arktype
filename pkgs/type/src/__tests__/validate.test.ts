@@ -11,22 +11,22 @@ describe("typeOf", () => {
         expect(typeOf(3.14159)).toBe(3.14159)
     })
     test("boolean", () => {
-        expect(typeOf(true)).toBe("true")
-        expect(typeOf(false)).toBe("false")
+        expect(typeOf(true)).toBe(true)
+        expect(typeOf(false)).toBe(false)
     })
-    test("bigint", () => expect(typeOf(BigInt(0))).toBe("bigint"))
+    test("bigint", () => expect(typeOf(BigInt(0))).toBe(0n))
     test("symbol", () => expect(typeOf(Symbol())).toBe("symbol"))
     test("undefined", () => {
         const x: any = {}
-        expect(typeOf(undefined)).toBe("undefined")
-        expect(typeOf(x.nonexistent)).toBe("undefined")
+        expect(typeOf(undefined)).toBe(undefined)
+        expect(typeOf(x.nonexistent)).toBe(undefined)
     })
-    test("null", () => expect(typeOf(null)).toBe("null"))
+    test("null", () => expect(typeOf(null)).toBe(null))
     test("object", () => {
         expect(
             typeOf({ a: { b: "nested", c: 5, d: { deep: null } } })
         ).toStrictEqual({
-            a: { b: "'nested'", c: 5, d: { deep: "null" } }
+            a: { b: "'nested'", c: 5, d: { deep: null } }
         })
     })
     test("function", () => {
@@ -42,7 +42,7 @@ describe("typeOf", () => {
     })
     test("complex", () => {
         expect(typeOf([true, { a: ["ok", [() => {}]] }])).toStrictEqual([
-            "true",
+            true,
             { a: ["'ok'", ["function"]] }
         ])
     })
