@@ -6,8 +6,9 @@ import {
     ParseSplittable,
     ValidateSplittable,
     ParseConfig
-} from "../internal.js"
-import { Fragment } from "../fragment.js"
+} from "./internal.js"
+import { Str } from "../str.js"
+import { Expression } from "./expression.js"
 
 export namespace ArrowFunction {
     export type Definition<
@@ -20,22 +21,18 @@ export namespace ArrowFunction {
         Return extends string,
         Root extends string,
         Typespace,
-        ValidateParameters extends string = ValidateParameterTuple<
+        ValidatedParameters extends string = ValidateParameterTuple<
             Parameters,
             Parameters,
             Typespace
         > &
             string,
-        ValidateReturn extends string = Fragment.Validate<
-            Return,
-            Return,
-            Typespace
-        >
-    > = Parameters extends ValidateParameters
-        ? Return extends ValidateReturn
+        ValidatedReturn extends string = Str.Validate<Return, Return, Typespace>
+    > = Parameters extends ValidatedParameters
+        ? Return extends ValidatedReturn
             ? Root
-            : ValidateReturn
-        : ValidateParameters
+            : ValidatedReturn
+        : ValidatedParameters
 
     export type Parse<
         Parameters extends string,
@@ -45,7 +42,7 @@ export namespace ArrowFunction {
     > = Evaluate<
         (
             ...args: ParseParameterTuple<Parameters, Typespace, Options>
-        ) => Fragment.Parse<Return, Typespace, Options>
+        ) => Str.Parse<Return, Typespace, Options>
     >
 
     export const type = typeDefProxy as Definition
@@ -53,7 +50,7 @@ export namespace ArrowFunction {
     export const parse = createParser(
         {
             type,
-            parent: () => Fragment.parse as any,
+            parent: () => Expression.parse,
             components: (def, ctx) => {
                 const parts = def.split("=>")
                 const parameterDefs = parts[0]
@@ -62,10 +59,8 @@ export namespace ArrowFunction {
                     .filter((arg) => !!arg)
                 const returnDef = parts.slice(1).join("=>")
                 return {
-                    parameters: parameterDefs.map((arg) =>
-                        Fragment.parse(arg, ctx)
-                    ),
-                    returned: Fragment.parse(returnDef, ctx)
+                    parameters: parameterDefs.map((arg) => Str.parse(arg, ctx)),
+                    returned: Str.parse(returnDef, ctx)
                 }
             }
         },

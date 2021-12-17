@@ -1,5 +1,5 @@
+export * from "./expression.js"
 export * from "./arrowFunction.js"
-export * from "../fragment.js"
 export * from "./list.js"
 export * from "./optional.js"
 export * from "./or.js"

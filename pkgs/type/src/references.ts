@@ -5,8 +5,8 @@ import {
     Split,
     WithDefaults
 } from "@re-/utils"
-import { Root, Shallow } from "./definition"
-import { ControlCharacters } from "./internal.js"
+import { Root } from "./definition"
+import { ControlCharacters, ShallowDefinition } from "./internal.js"
 
 type RawReferences<
     Fragments extends string,
@@ -20,7 +20,7 @@ type RawReferences<
     : Exclude<ElementOf<Split<Fragments, RemainingControlCharacters[0]>>, "">
 
 type ShallowReferences<
-    Def extends Shallow.Definition,
+    Def extends ShallowDefinition,
     Options extends ReferencesOptions,
     CompiledOptions extends Required<ReferencesOptions> = WithDefaults<
         ReferencesOptions,
@@ -38,7 +38,7 @@ export type ReferencesOptions = {
 export type References<
     Def extends Root.Definition,
     Options extends ReferencesOptions = {}
-> = Def extends Shallow.Definition
+> = Def extends ShallowDefinition
     ? ShallowReferences<Def, Options>
     : {
           [K in keyof Def]: References<Def[K], Options>

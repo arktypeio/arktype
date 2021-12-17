@@ -1,6 +1,7 @@
-import { typeDefProxy, validationError, createParser } from "../internal.js"
-import { Fragment } from "../fragment.js"
-import { Tuple } from "../../object"
+import { typeDefProxy, validationError, createParser } from "./internal.js"
+import { Str } from "../str.js"
+import { Expression } from "./expression.js"
+import { Tuple } from "../../obj"
 
 export namespace List {
     export type Definition<Item extends string = string> = `${Item}[]`
@@ -10,9 +11,9 @@ export namespace List {
     export const parse = createParser(
         {
             type,
-            parent: () => Fragment.parse,
+            parent: () => Expression.parse,
             components: (def, ctx) => ({
-                item: Fragment.parse(def.slice(0, -2), ctx)
+                item: Str.parse(def.slice(0, -2), ctx)
             })
         },
         {

@@ -40,7 +40,7 @@ type CheckForShallowCycle<Def, Typespace> = CheckForShallowCycleRecurse<
 >
 
 export namespace Resolution {
-    export type Definition<Def extends Root.Definition = Root.Definition> = Def
+    export type Definition = Root.Definition
 
     export type Validate<Def, Typespace> = IsAny<Def> extends true
         ? "any"

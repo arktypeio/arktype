@@ -6,18 +6,15 @@ import {
     shallowCycleError,
     generateRequiredCycleError,
     createParser
-} from "../internal.js"
+} from "./internal.js"
 import { Root } from "../../root.js"
-import { Fragment } from "../fragment.js"
+import { Str } from "../str.js"
 
 export namespace Alias {
-    export type Definition<
-        Typespace,
-        Def extends keyof Typespace & string = keyof Typespace & string
-    > = Def
+    export type Definition<Typespace> = keyof Typespace & string
 
     export type Validate<
-        TypeName extends keyof Typespace & string,
+        TypeName extends Definition<Typespace>,
         Root,
         Typespace
     > = Typespace[TypeName] extends ValidationErrorMessage
@@ -25,7 +22,7 @@ export namespace Alias {
         : Root
 
     export type Parse<
-        TypeName extends keyof Typespace & string,
+        TypeName extends Definition<Typespace>,
         Typespace,
         Options extends ParseConfig
     > = IsAny<Typespace> extends true
@@ -39,7 +36,7 @@ export namespace Alias {
         : ParseResolvedNonCyclicDefinition<TypeName, Typespace, Options>
 
     export type ParseResolvedCyclicDefinition<
-        TypeName extends keyof Typespace,
+        TypeName extends Definition<Typespace>,
         Typespace,
         Options extends ParseConfig
     > = Root.Parse<
@@ -56,7 +53,7 @@ export namespace Alias {
     >
 
     export type ParseResolvedNonCyclicDefinition<
-        TypeName extends keyof Typespace,
+        TypeName extends Definition<Typespace>,
         Typespace,
         Options extends ParseConfig
     > = LogicalOr<
@@ -83,7 +80,7 @@ export namespace Alias {
     export const parse = createParser(
         {
             type,
-            parent: () => Fragment.parse,
+            parent: () => Str.parse,
             components: (def, ctx) => {
                 /**
                  * Keep track of definitions we've seen since last resolving to an object or built-in.

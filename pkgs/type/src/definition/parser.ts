@@ -10,20 +10,27 @@ import {
 } from "@re-/utils"
 import { ExtractableDefinition } from "./internal.js"
 import { Root } from "./root.js"
-import { TypeSpace } from "../typespace"
+import { Typespace } from "../typespace"
 import { ValidationErrors, unknownTypeError } from "../errors.js"
-import { Obj } from "./object/index.js"
+import { Obj } from "./obj"
 
 export type MatchesArgs<DefType> = {
     definition: DefType
-    typespace: TypeSpace.Definition
+    typespace: Typespace.Definition
 }
 
 export type ParseContext = {
-    typespace: TypeSpace.Definition
+    typespace: Typespace.Definition
     path: string[]
     seen: string[]
     shallowSeen: string[]
+}
+
+export const defaultParseContext: ParseContext = {
+    typespace: {},
+    path: [],
+    seen: [],
+    shallowSeen: []
 }
 
 export type ParseArgs<DefType> = [definition: DefType, context: ParseContext]
@@ -49,7 +56,7 @@ export type ParserInput<
     Components
 > = {
     type: DefType
-    parent: () => { meta: Parent }
+    parent: () => Parent
     components?: (...args: ParseArgs<DefType>) => Components
     children?: () => Children
     // What to do if no children match (defaults to throwing unparsable error)
@@ -57,7 +64,8 @@ export type ParserInput<
 }
 
 export type DefinitionMatcher<Parent> = (
-    ...args: ParseArgs<KeyValuate<Parent, "type">>
+    definition: KeyValuate<Parent, "type">,
+    context: ParseContext
 ) => boolean
 
 export type MethodsArg<Children, Methods> = Children extends never[]
@@ -84,9 +92,7 @@ export type InheritableMethods<DefType, Components> = {
             ...args: InheritableMethodContext<DefType, Components>,
             options: ReferencesOptions
         ]
-    ) => DefType extends Obj.Definition<DefType>
-        ? TreeOf<string[], true>
-        : string[]
+    ) => DefType extends Obj.Definition ? TreeOf<string[], true> : string[]
     generate?: (
         ...args: [
             ...args: InheritableMethodContext<DefType, Components>,
@@ -132,12 +138,10 @@ export type GetHandledMethods<Parent> = (KeyValuate<
     KeyValuate<Parent, "handles">
 
 export type ParserMetadata<DefType, Parent, Handles> = Evaluate<{
-    meta: {
-        type: DefType
-        inherits: () => GetHandledMethods<Parent>
-        handles: unknown extends Handles ? {} : Handles
-        matches: DefinitionMatcher<Parent>
-    }
+    type: DefType
+    inherits: () => GetHandledMethods<Parent>
+    handles: unknown extends Handles ? {} : Handles
+    matches: (def: DefType, ctx?: ParseContext) => boolean
 }>
 
 export type Parser<DefType, Parent, Methods> = Evaluate<
@@ -154,12 +158,10 @@ const inheritableMethodNames = [
 
 // Re:Root, reroot its root by rerouting to reroot
 export const reroot = {
-    meta: {
-        type: {} as Root.Definition,
-        inherits: () => {},
-        handles: {},
-        matches: () => true
-    }
+    type: {} as Root.Definition,
+    inherits: () => {},
+    handles: {},
+    matches: () => true
 }
 
 type AnyMethodsInput = Record<InheritableMethodName | "matches", any>
@@ -188,8 +190,8 @@ export const createParser = <
     const getInherited = () => {
         const parent = input.parent() as any as ParserMetadata<any, any, any>
         return {
-            ...parent.meta.inherits(),
-            ...parent.meta.handles
+            ...parent.inherits(),
+            ...parent.handles
         } as InheritableMethods<DefType, Components>
     }
     const getChildren = (): AnyParser[] => (input.children?.() as any) ?? []
@@ -254,10 +256,9 @@ export const createParser = <
             )
         }
         if (methodName === "matches") {
-            return () =>
-                !!children.find((child) => child.meta.matches(def, ctx))
+            return () => !!children.find((child) => child.matches(def, ctx))
         }
-        const match = children.find((child) => child.meta.matches(def, ctx))
+        const match = children.find((child) => child.matches(def, ctx))
         if (!match) {
             if (input.fallback) {
                 return input.fallback(def, ctx)
@@ -308,20 +309,20 @@ export const createParser = <
         }
     }
     return Object.assign(parse, {
-        meta: {
-            type: input.type,
-            inherits: getInherited,
-            handles: transform(methods, ([name, def]) =>
-                inheritableMethodNames.includes(name as any)
-                    ? [name, def]
-                    : null
-            ),
-            matches: ([def, ctx]: Parameters<DefinitionMatcher<Parent>>) => {
-                if (methods.matches) {
-                    return methods.matches(def, ctx)
-                }
-                return delegateMethod("matches", def as any, ctx)
+        type: input.type,
+        inherits: getInherited,
+        handles: transform(methods, ([name, def]) =>
+            inheritableMethodNames.includes(name as any) ? [name, def] : null
+        ),
+        matches: ([def, ctx]: Parameters<DefinitionMatcher<Parent>>) => {
+            if (methods.matches) {
+                return methods.matches(def, ctx)
             }
+            return delegateMethod(
+                "matches",
+                def as any,
+                ctx ?? defaultParseContext
+            )
         }
     }) as any
 }

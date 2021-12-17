@@ -1,2 +1,2 @@
-export * from "./context.js"
+export * from "./typespace.js"
 export * from "./resolution.js"

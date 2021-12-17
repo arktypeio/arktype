@@ -11,11 +11,12 @@ import {
     AllowsOptions,
     ParseContext,
     ReferencesOptions,
-    GenerateOptions
+    GenerateOptions,
+    defaultParseContext
 } from "./definition/parser.js"
 import { stringifyErrors, ValidationErrors } from "./errors.js"
 import { format } from "./format.js"
-import { TypeSpace } from "./typespace"
+import { Typespace } from "./typespace"
 import { typeOf } from "./typeOf.js"
 import { typeDefProxy } from "./internal.js"
 
@@ -33,7 +34,7 @@ export type Parse<
     ? Def
     : Root.Parse<
           Def,
-          TypeSpace.Validate<Space>,
+          Typespace.Validate<Space>,
           WithDefaults<ParseTypeOptions, Options, DefaultParseTypeOptions>
       >
 
@@ -65,10 +66,8 @@ export const createParseFunction =
             options?.typespace ?? predefinedTypespace
         )
         const context: ParseContext = {
-            typespace: formattedTypespace,
-            path: [],
-            seen: [],
-            shallowSeen: []
+            ...defaultParseContext,
+            typespace: formattedTypespace
         }
         const formattedDefinition = format(definition)
         const { allows, references, generate } = Root.parse(
@@ -111,7 +110,7 @@ export type ParseFunction<PredefinedTypespace> = <
         Options & {
             typespace?: Exact<
                 ActiveTypespace,
-                TypeSpace.Validate<ActiveTypespace>
+                Typespace.Validate<ActiveTypespace>
             >
         }
     >
