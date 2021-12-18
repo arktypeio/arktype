@@ -23,7 +23,7 @@
         "test": "jest"
     },
     "dependencies": {
-        "@re-/utils": "workspace:*",
+        "@re-/tools": "workspace:*",
         "@re-/node": "workspace:*",
         "@jest/globals": "27.4.2",
         "jest-snapshot": "27.4.2",

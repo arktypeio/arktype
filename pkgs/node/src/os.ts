@@ -1,4 +1,4 @@
-import type { PropertyOf } from "@re-/utils"
+import type { PropertyOf } from "@re-/tools"
 import { join } from "path"
 import killTreeCallback from "tree-kill"
 import { promisify } from "util"
