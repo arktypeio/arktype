@@ -19,8 +19,8 @@
             "shouldPublish": true
         },
         {
-            "packageName": "@re-/utils",
-            "projectFolder": "pkgs/utils",
+            "packageName": "@re-/tools",
+            "projectFolder": "pkgs/tools",
             "cyclicDependencyProjects": ["@re-/node", "@re-/assert"],
             "shouldPublish": true
         },
@@ -30,8 +30,8 @@
             "shouldPublish": true
         },
         {
-            "packageName": "@re-/type",
-            "projectFolder": "pkgs/type",
+            "packageName": "@re-/model",
+            "projectFolder": "pkgs/model",
             "shouldPublish": true
         },
         {

@@ -1,5 +1,5 @@
 import { SourcePosition, withCallPosition } from "@re-/node"
-import { Func, isRecursible, NonRecursible, IsAnyOrUnknown } from "@re-/utils"
+import { Func, isRecursible, NonRecursible, IsAnyOrUnknown } from "@re-/tools"
 import { AssertionConfig } from "../assert.js"
 import { TypeAssertions, typeAssertions } from "../type/context.js"
 import { errorsOfNextType, nextTypeToString } from "../type/types.js"

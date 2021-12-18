@@ -1,0 +1,38 @@
+{
+    "name": "@re-/model",
+    "version": "1.1.1",
+    "author": "redo.dev",
+    "description": "",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/re-do/re-po.git",
+        "directory": "pkgs/model"
+    },
+    "type": "module",
+    "main": "out/cjs/index.cjs",
+    "types": "out/types/index.d.ts",
+    "exports": {
+        ".": {
+            "types": "./out/types/index.d.ts",
+            "import": "./out/esm/index.js",
+            "require": "./out/cjs/index.cjs"
+        }
+    },
+    "scripts": {
+        "build": "redoTsc --ignoreTestTypes",
+        "test": "jest",
+        "unit": "jest --coverage false -t "
+    },
+    "dependencies": {
+        "@re-/tools": "workspace:*"
+    },
+    "devDependencies": {
+        "@re-/node": "workspace:*",
+        "@re-/assert": "workspace:*",
+        "jest": "27.4.3",
+        "@types/jest": "26.0.24",
+        "ts-jest": "27.0.7",
+        "@types/node": "16.11.12",
+        "typescript": "4.5.2"
+    }
+}

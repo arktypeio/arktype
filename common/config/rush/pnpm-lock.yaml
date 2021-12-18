@@ -9,7 +9,7 @@ importers:
     specifiers:
       '@jest/globals': 27.4.2
       '@re-/node': workspace:*
-      '@re-/utils': workspace:*
+      '@re-/tools': workspace:*
       '@types/jest': 26.0.24
       '@types/node': 16.11.12
       jest: 27.4.3
@@ -19,7 +19,7 @@ importers:
     dependencies:
       '@jest/globals': 27.4.2
       '@re-/node': link:../node
-      '@re-/utils': link:../utils
+      '@re-/tools': link:../tools
       jest: 27.4.3
       jest-snapshot: 27.4.2
     devDependencies:
@@ -67,11 +67,32 @@ importers:
       esbuild-loader: 2.16.0
       typescript: 4.5.2
 
+  ../../pkgs/model:
+    specifiers:
+      '@re-/assert': workspace:*
+      '@re-/node': workspace:*
+      '@re-/tools': workspace:*
+      '@types/jest': 26.0.24
+      '@types/node': 16.11.12
+      jest: 27.4.3
+      ts-jest: 27.0.7
+      typescript: 4.5.2
+    dependencies:
+      '@re-/tools': link:../tools
+    devDependencies:
+      '@re-/assert': link:../assert
+      '@re-/node': link:../node
+      '@types/jest': 26.0.24
+      '@types/node': 16.11.12
+      jest: 27.4.3
+      ts-jest: 27.0.7_6e4280281d1664788d0bcb0e2269829d
+      typescript: 4.5.2
+
   ../../pkgs/node:
     specifiers:
       '@jest/reporters': 27.4.2
       '@jest/types': 27.4.2
-      '@re-/utils': workspace:*
+      '@re-/tools': workspace:*
       '@types/jest': 26.0.24
       '@types/node': 16.11.12
       '@types/prompts': 2.0.11
@@ -88,7 +109,7 @@ importers:
       vite: 2.4.4
     dependencies:
       '@jest/reporters': 27.4.2
-      '@re-/utils': link:../utils
+      '@re-/tools': link:../tools
       deepmerge: 4.2.2
       execa: 5.0.0
       get-current-line: 6.6.0
@@ -106,49 +127,48 @@ importers:
       typescript: 4.5.2
       vite: 2.4.4
 
-  ../../pkgs/type:
+  ../../pkgs/tools:
     specifiers:
-      '@re-/assert': workspace:*
-      '@re-/node': workspace:*
-      '@re-/utils': workspace:*
-      '@types/jest': 26.0.24
-      '@types/node': 16.11.12
-      jest: 27.4.3
-      ts-jest: 27.0.7
-      typescript: 4.5.2
-    dependencies:
-      '@re-/utils': link:../utils
-    devDependencies:
-      '@re-/assert': link:../assert
-      '@re-/node': link:../node
-      '@types/jest': 26.0.24
-      '@types/node': 16.11.12
-      jest: 27.4.3
-      ts-jest: 27.0.7_6e4280281d1664788d0bcb0e2269829d
-      typescript: 4.5.2
-
-  ../../pkgs/utils:
-    specifiers:
+      '@jest/reporters': 27.4.2
+      '@jest/types': 27.4.2
       '@re-/assert': 0.1.1
       '@re-/node': 1.1.1
       '@types/jest': 26.0.24
       '@types/node': 16.11.12
+      '@types/prompts': 2.0.11
+      deepmerge: 4.2.2
+      execa: 5.0.0
+      get-current-line: 6.6.0
       jest: 27.4.3
       moize: 5.4.7
+      prompts: 2.4.1
+      tree-kill: 1.2.2
       ts-jest: 27.0.7
+      ts-node: 10.4.0
       ts-toolbelt: 9.5.10
       typescript: 4.5.2
+      vite: 2.4.4
     dependencies:
+      '@jest/reporters': 27.4.2
+      deepmerge: 4.2.2
+      execa: 5.0.0
+      get-current-line: 6.6.0
       moize: 5.4.7
+      prompts: 2.4.1
+      tree-kill: 1.2.2
+      ts-node: 10.4.0_d1ba71cee4528a43e185cc3d6fa907dc
       ts-toolbelt: 9.5.10
     devDependencies:
-      '@re-/assert': 0.1.1_d1ba71cee4528a43e185cc3d6fa907dc
+      '@jest/types': 27.4.2
+      '@re-/assert': 0.1.1_4b64838b827045cdadbe371685f738fd
       '@re-/node': 1.1.1_d1ba71cee4528a43e185cc3d6fa907dc
       '@types/jest': 26.0.24
       '@types/node': 16.11.12
-      jest: 27.4.3
+      '@types/prompts': 2.0.11
+      jest: 27.4.3_ts-node@10.4.0
       ts-jest: 27.0.7_6e4280281d1664788d0bcb0e2269829d
       typescript: 4.5.2
+      vite: 2.4.4
 
 packages:
 
@@ -2678,13 +2698,13 @@ packages:
     resolution: {integrity: sha512-a5Sab1C4/icpTZVzZc5Ghpz88yQtGOyNqYXcZgOssB2uuAr+wF/MvN6bgtW32q7HHrvBki+BsZ0OuNv6EV3K9g==}
     dev: false
 
-  /@re-/assert/0.1.1_d1ba71cee4528a43e185cc3d6fa907dc:
+  /@re-/assert/0.1.1_4b64838b827045cdadbe371685f738fd:
     resolution: {integrity: sha512-mCSpP01LjJ09BhQ/99meeyBsnHRDyUDxL0jzL0hJGYmyeeZ/fiPkEaXjgufd9ZeG7CX+b0QxZYdVJRKdpaMOYQ==}
     dependencies:
       '@jest/globals': 27.4.2
       '@re-/node': 1.1.1_d1ba71cee4528a43e185cc3d6fa907dc
       '@re-/utils': 1.2.1
-      jest: 27.4.3
+      jest: 27.4.3_ts-node@10.4.0
       jest-snapshot: 27.4.2
     transitivePeerDependencies:
       - '@swc/core'
@@ -9522,7 +9542,7 @@ packages:
       '@types/jest': 26.0.24
       bs-logger: 0.2.6
       fast-json-stable-stringify: 2.1.0
-      jest: 27.4.3
+      jest: 27.4.3_ts-node@10.4.0
       jest-util: 27.4.2
       json5: 2.2.0
       lodash.memoize: 4.1.2

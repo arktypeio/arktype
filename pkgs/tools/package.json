@@ -1,0 +1,59 @@
+{
+    "name": "@re-/tools",
+    "version": "1.2.1",
+    "author": "redo.dev",
+    "description": "Utilities, scripts, and configs for the Redo monorepo",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/re-do/re-po.git",
+        "directory": "pkgs/tools"
+    },
+    "type": "module",
+    "main": "out/cjs/index.cjs",
+    "types": "out/types/index.d.ts",
+    "exports": {
+        ".": {
+            "types": "./out/types/index.d.ts",
+            "import": "./out/esm/index.js",
+            "require": "./out/cjs/index.cjs"
+        },
+        "./node": {
+            "types": "./out/types/node/index.d.ts",
+            "import": "./out/esm/node/index.js",
+            "require": "./out/cjs/node/index.cjs"
+        }
+    },
+    "scripts": {
+        "build": "set TS_NODE_TRANSPILE_ONLY=1&& node -r ./filterWarnings.cjs --loader ts-node/esm ./src/node/redoTscCli.ts",
+        "runScript": "./runScript.js",
+        "redoTsc": "./redoTsc.js",
+        "redoTranspile": "./redoTranspile.js",
+        "test": "jest"
+    },
+    "dependencies": {
+        "moize": "5.4.7",
+        "ts-toolbelt": "9.5.10",
+        "deepmerge": "4.2.2",
+        "execa": "5.0.0",
+        "prompts": "2.4.1",
+        "ts-node": "10.4.0",
+        "tree-kill": "1.2.2",
+        "@jest/reporters": "27.4.2",
+        "get-current-line": "6.6.0"
+    },
+    "peerDependencies": {
+        "typescript": "^4.0.0"
+    },
+    "devDependencies": {
+        "@re-/node": "1.1.1",
+        "@re-/assert": "0.1.1",
+        "@types/node": "16.11.12",
+        "jest": "27.4.3",
+        "@types/jest": "26.0.24",
+        "ts-jest": "27.0.7",
+        "typescript": "4.5.2",
+        "@types/prompts": "2.0.11",
+        "@jest/types": "27.4.2",
+        "vite": "2.4.4"
+    }
+}
