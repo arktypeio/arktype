@@ -13,5 +13,6 @@
         "pnpm-lock.*": true,
         "*.lock": true,
         "**/coverage/*": true
-    }
+    },
+    "typescript.tsdk": "node_modules/typescript/lib"
 }
