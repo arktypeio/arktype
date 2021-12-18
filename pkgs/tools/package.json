@@ -39,19 +39,15 @@
         "ts-node": "10.4.0",
         "tree-kill": "1.2.2",
         "@jest/reporters": "27.4.2",
-        "get-current-line": "6.6.0"
-    },
-    "peerDependencies": {
-        "typescript": "^4.0.0"
+        "get-current-line": "6.6.0",
+        "typescript": "4.5.4"
     },
     "devDependencies": {
-        "@re-/node": "1.1.1",
         "@re-/assert": "0.1.1",
         "@types/node": "16.11.12",
         "jest": "27.4.3",
         "@types/jest": "26.0.24",
         "ts-jest": "27.0.7",
-        "typescript": "4.5.2",
         "@types/prompts": "2.0.11",
         "@jest/types": "27.4.2",
         "vite": "2.4.4"

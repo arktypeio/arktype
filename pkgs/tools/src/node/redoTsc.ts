@@ -7,7 +7,6 @@ import { shell } from "./shell.js"
 import { transpileTs, findPackageName, isTest } from "./ts.js"
 
 const packageRoot = findPackageRoot(process.cwd())
-const buildTsConfig = join(packageRoot, "tsconfig.build.json")
 const packageName = findPackageName(packageRoot)
 const outRoot = join(packageRoot, "out")
 const typesOut = join(outRoot, "types")
