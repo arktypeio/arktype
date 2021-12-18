@@ -1,4 +1,4 @@
-import { transform, TypeCategory } from "@re-/utils"
+import { transform, TypeCategory, isRecursible } from "@re-/utils"
 import { ExtractableDefinition } from "./internal.js"
 
 export const typeOf = (value: any): ExtractableDefinition => {
@@ -17,4 +17,18 @@ export const typeOf = (value: any): ExtractableDefinition => {
             boolean: () => (value ? "true" : "false")
         }
     return typeMap[typeof value]()
+}
+
+export const format = <T>(definition: T): T => {
+    const recurse = (definition: unknown): any => {
+        if (typeof definition === "string") {
+            return definition.replace(/\s/g, "") as any
+        } else if (isRecursible(definition)) {
+            return transform(definition as any, ([k, v]) => [k, recurse(v)])
+        } else {
+            // Non-string primitives can't be formatted or recursed into
+            return definition
+        }
+    }
+    return recurse(definition)
 }

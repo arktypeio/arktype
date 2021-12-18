@@ -2,9 +2,8 @@ import { Evaluate, Narrow, Exact, IsAny, WithDefaults } from "@re-/utils"
 import { Primitive, Root, Str } from "./definition"
 import { ParseContext, defaultParseContext } from "./definition/parser.js"
 import { stringifyErrors, ValidationErrors } from "./errors.js"
-import { format } from "./format.js"
+import { format, typeOf } from "./utils.js"
 import { Typespace } from "./typespace"
-import { typeOf } from "./typeOf.js"
 import { ReferencesTypeConfig, typeDefProxy } from "./internal.js"
 
 export type Definition = Root.Definition
