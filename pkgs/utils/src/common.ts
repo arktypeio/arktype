@@ -155,6 +155,10 @@ export type WithWriteableKeys<Obj, Keys extends keyof Obj> = Omit<Obj, Keys> & {
     -readonly [K in Keys]: Obj[K]
 }
 
+const typeCategory = typeof ({} as any)
+
+export type TypeCategory = typeof typeCategory
+
 export type PropertyOf<T> = T[keyof T]
 export type ElementOf<T extends List> = T[number]
 export type ValueOf<T> = T extends NonRecursible
@@ -577,12 +581,10 @@ export type CastWithExclusion<T, CastTo, Excluded> = T extends Excluded
     ? T
     : CastTo
 
-export type TreeOf<T, AllowLists extends boolean = false> =
-    | T
-    | DeepTreeOf<T, AllowLists>
+export type TreeOf<T> = T | DeepTreeOf<T>
 
-export type DeepTreeOf<T, AllowLists extends boolean = false> =
+export type DeepTreeOf<T> =
     | {
-          [K in string]: TreeOf<T, AllowLists>
+          [K in string]: TreeOf<T>
       }
-    | (AllowLists extends true ? TreeOf<T, AllowLists>[] : never)
+    | TreeOf<T>[]

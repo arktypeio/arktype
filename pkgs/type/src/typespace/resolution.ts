@@ -1,7 +1,6 @@
 import { IsAny, Iteration, KeyValuate } from "@re-/utils"
 import { ParseConfig, ShallowCycleError } from "./internal.js"
-import { Root } from "../definition/root.js"
-import { References } from "../references.js"
+import { Root, Str } from "../definition"
 
 type CheckReferencesForShallowCycle<
     References extends string[],
@@ -27,7 +26,14 @@ type CheckForShallowCycleRecurse<Def, Typespace, Seen> = IsAny<Def> extends true
     ? Seen
     : Def extends string
     ? CheckReferencesForShallowCycle<
-          References<Def, { asList: true }>,
+          Str.References<
+              Def,
+              {
+                  asList: true
+                  asUnorderedList: false
+                  filter: keyof Typespace & string
+              }
+          >,
           Typespace,
           Seen
       >

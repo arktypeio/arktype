@@ -31,9 +31,7 @@ export namespace List {
                     path: ctx.path
                 })
             },
-            generate: () => [],
-            references: ({ components: { item } }, opts) =>
-                item.references(opts)
+            generate: () => []
         }
     )
 

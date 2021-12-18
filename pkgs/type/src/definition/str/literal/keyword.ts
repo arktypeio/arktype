@@ -1,4 +1,4 @@
-import { Evaluate, Narrow } from "@re-/utils"
+import { ElementOf, Evaluate, ListPossibleTypes, Narrow } from "@re-/utils"
 import {
     typeDefProxy,
     valueGenerationError,
@@ -33,9 +33,7 @@ export namespace Keyword {
                           valueType,
                           path: ctx.ctx.path
                       })
-            },
-            references: ({ def }, { includeBuiltIn }) =>
-                includeBuiltIn ? [def] : []
+            }
         }
     )
 
@@ -59,7 +57,9 @@ export namespace Keyword {
     ) => types as Evaluate<T>
 
     // These are the named types we can extract from a valueType at runtime
-    const extractable = defineKeywords({
+    const extractableHandlers = defineKeywords({
+        // Values of these types cannot be meaningfully compared,
+        // so they are extracted at the 'typeof' level
         symbol: {
             generate: () => Symbol(),
             allows: (valueType) => valueType === "symbol"
@@ -70,10 +70,32 @@ export namespace Keyword {
                 (...args: any[]) =>
                     undefined as any,
             allows: (valueType) => valueType === "function"
+        },
+        // These can be represented via their respective primitives,
+        // but are extracted as literals for clarity
+        true: {
+            generate: () => true as true,
+            allows: (valueType) => valueType === "true"
+        },
+        false: {
+            generate: () => false as false,
+            allows: (valueType) => valueType === "false"
+        },
+        undefined: {
+            generate: () => undefined,
+            allows: (valueType) => valueType === "undefined"
+        },
+        null: {
+            generate: () => null,
+            allows: (valueType) => valueType === "null"
         }
     })
 
-    export type Extractable = keyof typeof extractable
+    export const extractableNames = Object.keys(
+        extractableHandlers
+    ) as ListPossibleTypes<keyof typeof extractableHandlers>
+
+    export type Extractable = ElementOf<typeof extractableNames>
 
     /**
      * These types can be used to specify a type definition but
@@ -82,7 +104,7 @@ export namespace Keyword {
      * because a more specific type will always be extracted (e.g.
      * "boolean", which will always evaluate as "true" or "false")
      */
-    const unextractable = defineKeywords({
+    const unextractableHandlers = defineKeywords({
         // Abstract types
         any: {
             generate: () => undefined as any,
@@ -109,13 +131,15 @@ export namespace Keyword {
         },
         boolean: {
             generate: () => false as boolean,
-            allows: (valueType) => typeof valueType === "boolean"
+            allows: (valueType) => valueType === "true" || valueType === "false"
         },
         string: {
             generate: () => "" as string,
             allows: (valueType) =>
                 typeof valueType === "string" && !!valueType.match("'.*'")
         },
+        // These types are extracted as primitives to avoid type widening
+        // that occurs when inferring a number from a template string
         number: {
             generate: () => 0 as number,
             allows: (valueType) => typeof valueType === "number"
@@ -123,29 +147,21 @@ export namespace Keyword {
         bigint: {
             generate: () => BigInt(0),
             allows: (valueType) => typeof valueType === "bigint"
-        },
-        // Extracted as primitives
-        true: {
-            generate: () => true as true,
-            allows: (valueType) => valueType === true
-        },
-        false: {
-            generate: () => false as false,
-            allows: (valueType) => valueType === false
-        },
-        undefined: {
-            generate: () => undefined,
-            allows: (valueType) => valueType === undefined
-        },
-        null: {
-            generate: () => null,
-            allows: (valueType) => valueType === null
         }
     })
 
-    export type Unextractable = keyof typeof unextractable
+    export const unextractableNames = Object.keys(
+        extractableHandlers
+    ) as ListPossibleTypes<keyof typeof unextractableHandlers>
 
-    const handlers = { ...extractable, ...unextractable }
+    export type Unextractable = ElementOf<typeof unextractableNames>
+
+    const handlers = { ...extractableHandlers, ...unextractableHandlers }
+
+    export const names = [
+        ...extractableNames,
+        ...unextractableNames
+    ] as any as ListPossibleTypes<Extractable | Unextractable>
 
     type KeywordsToTypes = {
         [K in keyof typeof handlers]: ReturnType<typeof handlers[K]["generate"]>

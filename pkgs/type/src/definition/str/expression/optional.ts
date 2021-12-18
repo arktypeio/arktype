@@ -21,8 +21,7 @@ export namespace Optional {
                 }
                 return components[0].allows(valueType, opts)
             },
-            generate: () => undefined,
-            references: ({ components }, opts) => components[0].references(opts)
+            generate: () => undefined
         }
     )
 

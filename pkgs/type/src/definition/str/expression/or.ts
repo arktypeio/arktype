@@ -1,4 +1,4 @@
-import { print, transform, Unlisted } from "@re-/utils"
+import { transform, TypeCategory, Unlisted } from "@re-/utils"
 import {
     ParseSplittable,
     ValidateSplittable,
@@ -15,11 +15,7 @@ import {
 import { Str } from "../str.js"
 import { Expression } from "./expression.js"
 
-const typeFamily = typeof ({} as any)
-
-type TypeFamily = typeof typeFamily
-
-type PreferredDefaults = ({ value: any } | { typeOf: TypeFamily })[]
+type PreferredDefaults = ({ value: any } | { typeOf: TypeCategory })[]
 
 export const preferredDefaults: PreferredDefaults = [
     { value: undefined },
@@ -120,11 +116,6 @@ export namespace Or {
                 // The only type that should get to this point without returning is a custom
                 // value from onRequiredCycle, so just return the first one
                 return possibleValues[0]
-            },
-            references: ({ components }, opts) => {
-                return components.flatMap((component) =>
-                    component.references(opts)
-                )
             }
         }
     )

@@ -1,15 +1,22 @@
+import { Root } from "../root.js"
+import {
+    ElementOf,
+    Iteration,
+    ListPossibleTypes,
+    RemoveSpaces,
+    Split
+} from "@re-/utils"
 import {
     ParseConfig,
     createParser,
     typeDefProxy,
     UnknownTypeError,
-    ValidationErrorMessage
+    ValidationErrorMessage,
+    ReferencesTypeConfig
 } from "./internal.js"
 import { Alias } from "./alias"
 import { Literal } from "./literal"
 import { Expression } from "./expression"
-import { Root } from "../root.js"
-import { RemoveSpaces } from "@re-/utils"
 
 export namespace Str {
     export type Definition = string
@@ -54,6 +61,35 @@ export namespace Str {
         ? Expression.Parse<Def, Typespace, Options>
         : unknown
 
+    type ControlCharacters = ["|", "?", "(", ")", ",", "[", "]", "=", ">", " "]
+
+    type RawReferences<
+        Fragments extends string,
+        RemainingControlCharacters extends string[] = ControlCharacters
+    > = RemainingControlCharacters extends Iteration<
+        string,
+        infer Character,
+        infer Remaining
+    >
+        ? RawReferences<ElementOf<Split<Fragments, Character>>, Remaining>
+        : Exclude<
+              ElementOf<Split<Fragments, RemainingControlCharacters[0]>>,
+              ""
+          >
+
+    export type References<
+        Def extends string,
+        Config extends ReferencesTypeConfig,
+        Result extends string = RawReferences<`${Def}`> & Config["filter"],
+        ListedResult extends string[] = ListPossibleTypes<Result>
+    > = Config["asList"] extends true
+        ? ListedResult
+        : Config["asUnorderedList"] extends true
+        ? ListedResult extends [string]
+            ? ListedResult
+            : Result[]
+        : Result
+
     export const type = typeDefProxy as Definition
 
     export const parse = createParser(
@@ -67,7 +103,11 @@ export namespace Str {
             ]
         },
         {
-            matches: (def) => typeof def === "string"
+            matches: (def) => typeof def === "string",
+            // Split by non-alphanumeric, excluding underscore, then remove
+            // empty strings leaving aliases and keywords behind
+            references: ({ def }) =>
+                def.split(/\W/g).filter((fragment) => fragment !== "")
         }
     )
 

@@ -1,7 +1,6 @@
 import { ElementOf, Narrow, transform } from "@re-/utils"
-import { parse } from "./parse.js"
+import { parse, ValidateReferences } from "./parse.js"
 import { CompileFunction, createCompileFunction } from "./compile.js"
-import { ValidateReferences } from "./references.js"
 
 export const createDefineFunctionMap = <DeclaredTypeNames extends string[]>(
     typeNames: DeclaredTypeNames

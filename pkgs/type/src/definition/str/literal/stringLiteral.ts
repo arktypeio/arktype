@@ -20,9 +20,7 @@ export namespace StringLiteral {
                 def === valueType
                     ? {}
                     : validationError({ def, valueType, path }),
-            generate: ({ def }) => def.slice(1, -1),
-            references: ({ def }, { includeBuiltIn }) =>
-                includeBuiltIn ? [def] : []
+            generate: ({ def }) => def.slice(1, -1)
         }
     )
 

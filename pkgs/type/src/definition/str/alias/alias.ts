@@ -117,8 +117,7 @@ export namespace Alias {
                     throw new Error(generateRequiredCycleError({ def, ctx }))
                 }
                 return resolve().generate(opts)
-            },
-            references: ({ def }, opts) => [def]
+            }
         }
     )
 
