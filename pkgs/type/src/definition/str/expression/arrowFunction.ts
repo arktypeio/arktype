@@ -74,15 +74,6 @@ export namespace ArrowFunction {
                           valueType,
                           path
                       }),
-            references: (
-                { components: { parameters, returned }, ctx },
-                opts
-            ) => {
-                return [
-                    ...parameters.flatMap((_) => _.references(opts)),
-                    ...returned.references(opts)
-                ]
-            },
             generate:
                 ({ components: { returned } }, opts) =>
                 (...args: any[]) =>

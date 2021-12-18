@@ -1,4 +1,4 @@
-import { StringifyPossibleTypes, Split, Join, narrow } from "@re-/utils"
+import { StringifyPossibleTypes, Split, Join } from "@re-/utils"
 import { ParseConfig, ValidationErrorMessage } from "../internal.js"
 import { Str } from "./str.js"
 

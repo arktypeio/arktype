@@ -6,13 +6,15 @@ import {
     TreeOf,
     ValueOf,
     Exact,
-    toString
+    toString,
+    DeepTreeOf
 } from "@re-/utils"
-import { ExtractableDefinition } from "./internal.js"
-import { Root } from "./root.js"
 import { Typespace } from "../typespace"
 import { ValidationErrors, unknownTypeError } from "../errors.js"
+import { ExtractableDefinition } from "./internal.js"
+import { Root } from "./root.js"
 import { Obj } from "./obj"
+import { AllowsOptions, GenerateOptions, ReferencesOptions } from "../parse.js"
 
 export type MatchesArgs<DefType> = {
     definition: DefType
@@ -34,20 +36,6 @@ export const defaultParseContext: ParseContext = {
 }
 
 export type ParseArgs<DefType> = [definition: DefType, context: ParseContext]
-
-export type AllowsOptions = {
-    ignoreExtraneousKeys?: boolean
-}
-
-export type ReferencesOptions = {
-    includeBuiltIn?: boolean
-}
-
-export type GenerateOptions = {
-    // By default, we will throw if we encounter a cyclic required type
-    // If this options is provided, we will return its value instead
-    onRequiredCycle?: any
-}
 
 export type ParserInput<
     DefType,
@@ -92,7 +80,7 @@ export type InheritableMethods<DefType, Components> = {
             ...args: InheritableMethodContext<DefType, Components>,
             options: ReferencesOptions
         ]
-    ) => DefType extends Obj.Definition ? TreeOf<string[], true> : string[]
+    ) => DefType extends Obj.Definition ? DeepTreeOf<string[]> : string[]
     generate?: (
         ...args: [
             ...args: InheritableMethodContext<DefType, Components>,

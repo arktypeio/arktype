@@ -1,24 +1,11 @@
-import {
-    Evaluate,
-    Narrow,
-    Exact,
-    TreeOf,
-    IsAny,
-    WithDefaults
-} from "@re-/utils"
-import { Root } from "./definition"
-import {
-    AllowsOptions,
-    ParseContext,
-    ReferencesOptions,
-    GenerateOptions,
-    defaultParseContext
-} from "./definition/parser.js"
+import { Evaluate, Narrow, Exact, IsAny, WithDefaults } from "@re-/utils"
+import { Primitive, Root, Str } from "./definition"
+import { ParseContext, defaultParseContext } from "./definition/parser.js"
 import { stringifyErrors, ValidationErrors } from "./errors.js"
 import { format } from "./format.js"
 import { Typespace } from "./typespace"
 import { typeOf } from "./typeOf.js"
-import { typeDefProxy } from "./internal.js"
+import { ReferencesTypeConfig, typeDefProxy } from "./internal.js"
 
 export type Definition = Root.Definition
 
@@ -37,6 +24,40 @@ export type Parse<
           Typespace.Validate<Space>,
           WithDefaults<ParseTypeOptions, Options, DefaultParseTypeOptions>
       >
+
+export type ReferencesTypeOptions = {
+    asUnorderedList?: boolean
+    asList?: boolean
+    filter?: string
+}
+
+export type References<
+    Def extends Root.Definition,
+    Options extends ReferencesTypeOptions = {},
+    Config extends ReferencesTypeConfig = WithDefaults<
+        ReferencesTypeOptions,
+        Options,
+        { asUnorderedList: false; asList: false; filter: string }
+    >
+> = Def extends Primitive.Definition
+    ? Primitive.References<Def, Config>
+    : Def extends string
+    ? Str.References<Def, Config>
+    : {
+          [K in keyof Def]: References<Def[K], Config>
+      }
+
+// Just use unknown for now since we don't have all the definitions yet
+// but we still want to allow references to other declared types
+export type ValidateReferences<
+    Def,
+    DeclaredTypeName extends string
+> = Root.Validate<
+    Def,
+    {
+        [TypeName in DeclaredTypeName]: "unknown"
+    }
+>
 
 export type ParseTypeOptions = {
     onCycle?: Definition
@@ -116,6 +137,18 @@ export type ParseFunction<PredefinedTypespace> = <
     >
 ) => Evaluate<ParsedType<Def, ActiveTypespace, Options>>
 
+export type AllowsOptions = {
+    ignoreExtraneousKeys?: boolean
+}
+
+export type ReferencesOptions = {}
+
+export type GenerateOptions = {
+    // By default, we will throw if we encounter a cyclic required type
+    // If this options is provided, we will return its value instead
+    onRequiredCycle?: any
+}
+
 export type ParsedType<
     Definition,
     Typespace,
@@ -129,5 +162,5 @@ export type ParsedType<
     assert: (value: unknown, options?: AllowsOptions) => void
     allows: (value: unknown, options?: AllowsOptions) => ValidationErrors
     generate: (options?: GenerateOptions) => TypeOfParsed
-    references: (options?: ReferencesOptions) => TreeOf<string[], true>
+    references: () => References<Definition, { asUnorderedList: true }>
 }>
