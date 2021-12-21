@@ -19,7 +19,7 @@
         }
     },
     "scripts": {
-        "build": "redoTsc --ignoreTestTypes",
+        "build": "reTsc",
         "test": "jest",
         "unit": "jest --coverage false -t "
     },
@@ -27,12 +27,11 @@
         "@re-/tools": "workspace:*"
     },
     "devDependencies": {
-        "@re-/node": "workspace:*",
         "@re-/assert": "workspace:*",
-        "jest": "27.4.3",
-        "@types/jest": "26.0.24",
-        "ts-jest": "27.0.7",
-        "@types/node": "16.11.12",
+        "jest": "27.4.5",
+        "@types/jest": "27.0.3",
+        "ts-jest": "27.1.2",
+        "@types/node": "17.0.1",
         "typescript": "4.5.4"
     }
 }

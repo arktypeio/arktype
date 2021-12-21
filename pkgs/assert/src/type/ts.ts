@@ -1,4 +1,4 @@
-import { findPackageRoot, mapFilesToContents } from "@re-/node"
+import { findPackageRoot, mapFilesToContents } from "@re-/tools/node"
 import { dirname, join, relative } from "path"
 import typescript from "typescript"
 import { memoize, print, toString } from "@re-/tools"

@@ -1,5 +1,5 @@
 {
-    "extends": "@re-/node/tsconfig.base",
+    "extends": "@re-/tools/tsconfig.base",
     "compilerOptions": {
         "baseUrl": "src",
         "outDir": "out"

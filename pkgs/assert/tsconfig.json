@@ -1,8 +1,13 @@
 {
-    "extends": "@re-/node/tsconfig.base",
+    "extends": "@re-/tools/tsconfig.base",
     "compilerOptions": {
         "baseUrl": "src",
-        "outDir": "out"
+        "outDir": "out",
+        "paths": {
+            "@re-/tools/node": [
+                "../node_modules/@re-/tools/out/types/node/index.d.ts"
+            ]
+        }
     },
     "include": ["src"]
 }
