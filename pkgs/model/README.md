@@ -1,6 +1,6 @@
 <div align="center">
   <img src="../docs/static/img/logo.svg" height="64px" />
-  <h1>@re-/type</h1>
+  <h1>@re-/model</h1>
 </div>
 <div align="center">
 Beautiful types from IDE to runtime 🧬
@@ -13,9 +13,9 @@ Beautiful types from IDE to runtime 🧬
 
 ## Installation
 
-Install the package using your favorite package manager:
+`npm install @re-/model`
 
-`npm install @re-/type`
+Feel free to substitute your favorite package manager (`yarn`, `pnpm`, etc.).
 
 If you're using TypeScript, you'll need:
 
@@ -24,13 +24,13 @@ If you're using TypeScript, you'll need:
 
 ## Creating your first type
 
-This snippet will give you an idea of `@re-/type` syntax, but the best way to get a feel for it is [in a live editor](https://TODO:updatelink). Try messing around with the `user` type and see how the type hints help guide you in the right direction.
+This snippet will give you an idea of `@re-/model` syntax, but the best way to get a feel for it is [in a live editor](https://TODO:updatelink). Try messing around with the `user` model and see how the type hints help guide you in the right direction.
 
 ```ts
-import { parse } from "@re-/model"
+import { model } from "@re-/model"
 
 // Most common TypeScript expressions just work...
-const user = parse({
+const user = model({
     name: {
         first: "string",
         middle: "string?",
@@ -74,7 +74,7 @@ TODO: Complex types
 
 ## Typespaces
 
-Your types can reference each other or themselves using a **typespace**. [Try it out](https://TODO:updatelink).
+Your models can reference each other or themselves using a **typespace**. [Try it out](https://TODO:updatelink).
 
 ```ts
 import { compile } from "@re-/model"
@@ -112,10 +112,9 @@ typespace.user.assert({
 // Types can also be accessed directly via the "types" prop
 type Group = typeof typespace.types.group
 
-// A typespace also includes a parse function that allows references
-// to the types you've defined alongside the built-in
-// types available in an imported "parse"
-const community = typespace.parse({
+// A typespace also includes a model function that allows references
+// to the models you've defined like "user" alongside built-ins like "number"
+const community = typespace.model({
     users: "user[]",
     groups: "group[]",
     population: "number"
@@ -180,7 +179,7 @@ export const groupDef = define.group({
 
 ## Syntax
 
-`@re-/type` supports all of TypeScript's built-in types and lot of its most common type definition syntax. The following sections summarize the keywords and operators available by default in your definitions.
+`@re-/model` supports all of TypeScript's built-in types and a lot of its most common type definition syntax. The following sections summarize the keywords and operators available by default in your definitions.
 
 If the TS syntax you want to use is not listed here, feel free to create an issue summarizing your use case. Our model is easy to extend, so you might just see it an upcoming release 🎁
 
@@ -193,9 +192,9 @@ Object definitions are objects whose values are leaf definitions and/or nested o
 Map definitions are represented using the familiar JS notation for string keys with corresponding values.
 
 ```ts
-const foo = parse({
+const foo = model({
     key: "string?",
-    anotherKey: ["unknown", { re: "'type'|'state'|'test'" }]
+    anotherKey: ["unknown", { re: "'model'|'state'|'test'" }]
 })
 
 // Equivalent TS
@@ -204,7 +203,7 @@ type FooToo = {
     anotherKey: [
         unknown,
         {
-            re: "type" | "state" | "test"
+            re: "model" | "state" | "test"
         }
     ]
 }
@@ -215,7 +214,7 @@ type FooToo = {
 Tuple definitions are useful for fixed-length lists and are represented as expected.
 
 ```ts
-const bar = parse([
+const bar = model([
     "true|null",
     { coords: ["number", "number"], piOus: [3, 1, 4] }
 ])
@@ -245,14 +244,14 @@ Leaf definitions are strings that include one or more type references (i.e. buil
 
 ## Contributing
 
-If you're interested in contributing to `@re-/type`...
+If you're interested in contributing to `@re-/model`...
 
 1. Thank you 😍 We'll do everything we can to make this as straightforward as possible, regardless of your experience.
 2. Check out our [guide](../../CONTRIBUTING.md) to get started!
 
 ## About Redo
 
-`@re-/type` is part of a set of devtools designed to help you navigate the JS/TS ecosystem and get back to doing what you love. Learn more [at the root of this repo](https://github.com/re-do/re-po).
+`@re-/model` is part of a set of devtools designed to help you navigate the JS/TS ecosystem and get back to doing what you love. Learn more [at the root of this repo](https://github.com/re-do/re-po).
 
 ## License
 

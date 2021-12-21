@@ -94,10 +94,9 @@ The core team is monitoring for Pull Requests. We will review your Pull Request 
 
 We use a [rush](https://rushjs.io) monorepo to manage our packages. You might want to make changes to one or more of them depending on the goals of your contribution. Take a look at any of them individually to learn more:
 
--   [@re-/type](pkgs/model): Beautiful types from IDE to runtime 🧬
+-   [@re-/model](pkgs/model): Beautiful types from IDE to runtime 🧬
 -   [@re-/assert](pkgs/assert): Seamless testing for types and code ✅
--   [@re-/utils](pkgs/tools): Browser-friendly utiltiies and types 🧰
--   [@re-/node](pkgs/node): Utilities, configs, scripts, and devtools for Node 🔨
+-   [@re-/tools](pkgs/tools): Utilities, scripts, and configs for this repo 🧰
 -   [@re-/docs](pkgs/docs): Documentation for this repo 📚
 
 ## Project
