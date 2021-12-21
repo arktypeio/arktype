@@ -1,4 +1,4 @@
-import { getJestConfig } from "@re-/node"
+import { getJestConfig } from "@re-/tools/node"
 
 export default getJestConfig({
     collectCoverage: true,

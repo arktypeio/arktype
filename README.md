@@ -25,8 +25,7 @@ All of our packages are completely modular and can be used either independently 
 You might also find parts of these packages useful, but they are mostly for internal use and/or are missing documentation:
 
 -   [@re-/assert](pkgs/assert): Seamless testing for types and code ✅
--   [@re-/utils](pkgs/tools): Browser-friendly utiltiies and types 🧰
--   [@re-/node](pkgs/node): Utilities, configs, scripts, and devtools for Node 🔨
+-   [@re-/utils](pkgs/tools): Utilities, scripts, and configs for the Redo monorepo🧰
 -   [@re-/docs](pkgs/docs): Documentation for this repo 📚
 
 ## Contributing

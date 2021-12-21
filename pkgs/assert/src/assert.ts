@@ -1,4 +1,4 @@
-import { SourcePosition, withCallPosition } from "@re-/node"
+import { SourcePosition, withCallPosition } from "@re-/tools/node"
 import { WithDefaults, withDefaults } from "@re-/tools"
 import { typeAssertions, TypeAssertions } from "./type"
 import { valueAssertions, ValueAssertion } from "./value"

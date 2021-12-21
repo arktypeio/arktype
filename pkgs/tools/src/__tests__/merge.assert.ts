@@ -1,5 +1,5 @@
 import { assert } from "@re-/assert"
-import { Evaluate, merge, mergeAll, narrow } from ".."
+import { merge, mergeAll, narrow } from ".."
 
 test("mergeAll shallow", () => {
     const expected = narrow({ a: "fromA", b: "fromB", c: "fromC" })

@@ -72,6 +72,7 @@ describe("assert", () => {
             /Property 'nonexistent' does not exist on type 'number'/
         )
         assert(o).type.errors("")
+        // @ts-expect-error
         assert(() => shouldThrow(5, "")).type.errors.is(
             "Expected 1 arguments, but got 2."
         )
@@ -81,11 +82,13 @@ describe("assert", () => {
             "doesn't exist"
         )
         expect(() =>
+            // @ts-expect-error
             assert(() => shouldThrow("this is a type error")).type.errors.is("")
         ).toThrow("not assignable")
     })
     test("chainable", () => {
         assert(o).equals({ re: "do" }).typed as { re: string }
+        // @ts-expect-error
         assert(() => throwError("this is a type error"))
             .throws("Test error.")
             .type.errors("Expected 0 arguments, but got 1.")
@@ -145,11 +148,13 @@ describe("assert", () => {
         ).toThrow("unknown")
     })
     test("throwsAndHasTypeError", () => {
+        // @ts-expect-error
         assert(() => shouldThrow(true)).throwsAndHasTypeError(
             /true[\s\S]*not assignable[\s\S]*false/
         )
         // No thrown error
         expect(() =>
+            // @ts-expect-error
             assert(() => shouldThrow(null)).throwsAndHasTypeError(
                 "not assignable"
             )

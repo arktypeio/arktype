@@ -2,7 +2,7 @@
     "name": "@re-/tools",
     "version": "1.2.1",
     "author": "redo.dev",
-    "description": "Utilities, scripts, and configs for the Redo monorepo",
+    "description": "Utilities, scripts, and configs for the Redo monorepo🧰",
     "repository": {
         "type": "git",
         "url": "https://github.com/re-do/re-po.git",
@@ -24,11 +24,16 @@
         }
     },
     "scripts": {
-        "build": "set TS_NODE_TRANSPILE_ONLY=1&& node -r ./filterWarnings.cjs --loader ts-node/esm ./src/node/redoTscCli.ts",
+        "build": "set TS_NODE_TRANSPILE_ONLY=1&& node -r ./filterWarnings.cjs --loader ts-node/esm ./src/node/reTscCli.ts",
         "runScript": "./runScript.js",
-        "redoTsc": "./redoTsc.js",
-        "redoTranspile": "./redoTranspile.js",
+        "reTsc": "./reTsc.js",
+        "reTranspile": "./reTranspile.js",
         "test": "jest"
+    },
+    "bin": {
+        "runScript": "./runScript.js",
+        "reTsc": "./reTsc.js",
+        "reTranspile": "./reTranspile.js"
     },
     "dependencies": {
         "moize": "5.4.7",
@@ -38,16 +43,16 @@
         "prompts": "2.4.1",
         "ts-node": "10.4.0",
         "tree-kill": "1.2.2",
-        "@jest/reporters": "27.4.2",
+        "@jest/reporters": "27.4.5",
         "get-current-line": "6.6.0",
         "typescript": "4.5.4"
     },
     "devDependencies": {
         "@re-/assert": "0.1.1",
-        "@types/node": "16.11.12",
-        "jest": "27.4.3",
-        "@types/jest": "26.0.24",
-        "ts-jest": "27.0.7",
+        "@types/node": "17.0.1",
+        "jest": "27.4.5",
+        "@types/jest": "27.0.3",
+        "ts-jest": "27.1.2",
         "@types/prompts": "2.0.11",
         "@jest/types": "27.4.2",
         "vite": "2.4.4"
