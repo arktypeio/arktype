@@ -15,16 +15,16 @@ Beautiful types from IDE to runtime 🧬
 
 `npm install @re-/model`
 
-Feel free to substitute your favorite package manager (`yarn`, `pnpm`, etc.).
+(feel free to substitute `yarn`, `pnpm`, et al.)
 
 If you're using TypeScript, you'll need:
 
 -   TODO: TsConfig requirements?
 -   TODO: At least version 4.4.x?
 
-## Creating your first type
+## Creating your first model
 
-This snippet will give you an idea of `@re-/model` syntax, but the best way to get a feel for it is [in a live editor](https://TODO:updatelink). Try messing around with the `user` model and see how the type hints help guide you in the right direction.
+This snippet will give you an idea of `@re-/model` syntax, but the best way to get a feel for it is in a live editor. Try messing around with the `user` model in [our sandbox](https://TODO:updatelink) or paste it in your own editor and see how the type hints help guide you in the right direction.
 
 ```ts
 import { model } from "@re-/model"
@@ -67,19 +67,19 @@ const fetchUser = () => {
 }
 
 // Will throw: "At path interests, undefined is not assignable to any of string[]|null."
-user.assert(fetchUser())
+user.validate(fetchUser())
 ```
 
-TODO: Complex types
+TODO: Complex type
 
 ## Typespaces
 
 Your models can reference each other or themselves using a **typespace**. [Try it out](https://TODO:updatelink).
 
 ```ts
-import { compile } from "@re-/model"
+import { typespace } from "@re-/model"
 
-const typespace = compile({
+const mySpace = typespace({
     user: {
         name: "string",
         friends: "user[]",
@@ -92,12 +92,12 @@ const typespace = compile({
     }
 })
 
-// Definitions can be used the same way as those from "parse"
-type User = typeof typespace.user.type
+// Typescript types can be extracted like this
+type User = typeof mySpace.user.type
 
 // Will throw: "At path friends/groups/0, 'Type Enjoyers' is not assignable
 // to {name: string, description: string, members: user[]}"
-typespace.user.assert({
+mySpace.user.validate({
     name: "Devin Aldai",
     friends: [
         {
@@ -109,12 +109,9 @@ typespace.user.assert({
     groups: []
 })
 
-// Types can also be accessed directly via the "types" prop
-type Group = typeof typespace.types.group
-
-// A typespace also includes a model function that allows references
-// to the models you've defined like "user" alongside built-ins like "number"
-const community = typespace.model({
+// Once you've created a typespace, you can use it to create new models
+// that reference existing models like "user"
+const community = mySpace.model({
     users: "user[]",
     groups: "group[]",
     population: "number"
@@ -123,27 +120,28 @@ const community = typespace.model({
 
 ## Declarations
 
-If you prefer to split up your typespace's definitions across one or more files, you'll want to use **declarations**. [Try it out](https://TODO:updatelink).
+If you prefer to split up your typespace definitions across one or more files, you'll want to use a **declaration**. [Try it out](https://TODO:updatelink).
 
 `index.ts`
 
 ```ts
-import { declare } from "@re-/model"
+import { declaration } from "@re-/model"
 
-// Declaring the names of the types you will define
-// allows validation of references in your definitions
-const declaration = declare("user", "group")
+// Declare the names in your typespace allows
+const declared = declaration("user", "group")
 
-export const { define } = declaration
+// A declaration's "define" prop can be used anywhere to create
+// a definition that allows references to other declared names
+export const { define } = declared
 
 import { userDef } from "./user"
 import { groupDef } from "./group"
 
 // Type error: "Declared types 'group' were never defined."
-const typespace = compile(userDef)
+const badSpace = declared.typespace(userDef)
 
 // Creates a typespace identical to that of "Creating your first typespace"
-const typespace = compile(userDef, groupDef)
+const mySpace = declared.typespace(userDef, groupDef)
 ```
 
 `user.ts`
