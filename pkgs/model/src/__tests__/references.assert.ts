@@ -1,6 +1,6 @@
 import { assert } from "@re-/assert"
 import { diffSets, narrow } from "@re-/tools"
-import { parse, References } from ".."
+import { model, References } from ".."
 
 let placeholder: any
 
@@ -51,13 +51,13 @@ describe("references from type", () => {
 
 describe("references from value", () => {
     test("shallow", () => {
-        assert(parse(5).references()).equals(["5"]).typed as ["5"]
-        assert(parse(null).references()).equals(["null"]).typed as ["null"]
-        assert(parse(0n).references()).equals(["0n"]).typed as ["0n"]
-        assert(parse("string").references()).equals(["string"]).typed as [
+        assert(model(5).references()).equals(["5"]).typed as ["5"]
+        assert(model(null).references()).equals(["null"]).typed as ["null"]
+        assert(model(0n).references()).equals(["0n"]).typed as ["0n"]
+        assert(model("string").references()).equals(["string"]).typed as [
             "string"
         ]
-        const expressionReferences = parse(
+        const expressionReferences = model(
             "(string,number[])=>null|true"
         ).references()
         assert(
@@ -74,7 +74,7 @@ describe("references from value", () => {
             | "true"
             | "null"
         )[]
-        const aliasReferences = parse("user|string", {
+        const aliasReferences = model("user|string", {
             typespace: { user: "any" }
         }).references()
         assert(diffSets(["string", "user"], aliasReferences) as any).is(
@@ -83,7 +83,7 @@ describe("references from value", () => {
         assert(aliasReferences).typed as ("string" | "user")[]
     })
     test("object", () => {
-        const objectReferences = parse(
+        const objectReferences = model(
             {
                 primitives: {
                     undefined: undefined,

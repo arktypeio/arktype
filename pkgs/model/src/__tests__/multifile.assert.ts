@@ -1,7 +1,7 @@
 import { assert } from "@re-/assert"
-import { declare } from ".."
+import { declaration } from ".."
 
-export const { define, compile } = declare("user", "group")
+export const { define, compile } = declaration("user", "group")
 
 import { user as userDef } from "./multifile/user"
 import { group as groupDef } from "./multifile/group"

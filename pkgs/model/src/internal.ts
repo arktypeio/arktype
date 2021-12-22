@@ -1,6 +1,6 @@
 import { TreeOf } from "@re-/tools"
-import { ParseTypeOptions, ReferencesTypeOptions } from "./parse.js"
-import { Primitive, StringLiteral, Keyword, Str } from "./definition"
+import { ParseTypeOptions, ReferencesTypeOptions } from "./model.js"
+import { Primitive, StringLiteral, Keyword, Str } from "./definitions"
 
 export * from "./errors.js"
 
