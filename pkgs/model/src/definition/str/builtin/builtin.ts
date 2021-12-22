@@ -1,9 +1,11 @@
 import { createParser, typeDefProxy } from "./internal.js"
-import { Keyword, NumberLiteral, StringLiteral } from "."
 import { Str } from "../str.js"
+import { Keyword } from "./keyword.js"
+import { StringLiteral } from "./stringLiteral.js"
+import { NumberLiteral } from "./numberLiteral.js"
 import { BigintLiteral } from "./bigintLiteral.js"
 
-export namespace Literal {
+export namespace Builtin {
     export type Definition =
         | Keyword.Definition
         | StringLiteral.Definition

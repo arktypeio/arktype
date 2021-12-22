@@ -15,7 +15,7 @@ import {
     ReferencesTypeConfig
 } from "./internal.js"
 import { Alias } from "./alias"
-import { Literal } from "./literal"
+import { Builtin } from "./builtin"
 import { Expression } from "./expression"
 
 export namespace Str {
@@ -33,7 +33,7 @@ export namespace Str {
         Def extends string,
         Root extends string,
         Typespace
-    > = Def extends Literal.Definition
+    > = Def extends Builtin.Definition
         ? Root
         : Def extends Alias.Definition<Typespace>
         ? Alias.Validate<Def, Root, Typespace>
@@ -53,8 +53,8 @@ export namespace Str {
         Options extends ParseConfig
     > = Str.Validate<Def, Def, Typespace> extends ValidationErrorMessage
         ? unknown
-        : Def extends Literal.Definition
-        ? Literal.Parse<Def>
+        : Def extends Builtin.Definition
+        ? Builtin.Parse<Def>
         : Def extends Alias.Definition<Typespace>
         ? Alias.Parse<Def, Typespace, Options>
         : Def extends Expression.Definition
@@ -97,7 +97,7 @@ export namespace Str {
             type,
             parent: () => Root.parse,
             children: () => [
-                Literal.delegate,
+                Builtin.delegate,
                 Alias.delegate,
                 Expression.delegate
             ]

@@ -1,6 +1,6 @@
 import { isNumeric } from "@re-/tools"
 import { typeDefProxy, validationError, createParser } from "./internal.js"
-import { Literal } from "./literal.js"
+import { Builtin } from "./builtin.js"
 
 export namespace BigintLiteral {
     export type Definition<Value extends bigint = bigint> = `${Value}n`
@@ -9,7 +9,7 @@ export namespace BigintLiteral {
     export const parse = createParser(
         {
             type,
-            parent: () => Literal.parse
+            parent: () => Builtin.parse
         },
         {
             matches: (definition) =>

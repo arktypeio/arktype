@@ -6,7 +6,7 @@ import {
     InheritableMethodContext,
     validationError
 } from "./internal.js"
-import { Literal } from "./literal.js"
+import { Builtin } from "./builtin.js"
 
 export namespace Keyword {
     export type Definition<
@@ -20,7 +20,7 @@ export namespace Keyword {
     export const parse = createParser(
         {
             type,
-            parent: () => Literal.parse
+            parent: () => Builtin.parse
         },
         {
             matches: (definition) => definition in handlers,

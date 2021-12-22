@@ -1,5 +1,5 @@
 import { typeDefProxy, validationError, createParser } from "../internal.js"
-import { Literal } from "./literal.js"
+import { Builtin } from "./builtin.js"
 
 export namespace StringLiteral {
     export type Definition<Definition extends string = string> =
@@ -12,7 +12,7 @@ export namespace StringLiteral {
     export const parse = createParser(
         {
             type,
-            parent: () => Literal.parse
+            parent: () => Builtin.parse
         },
         {
             matches: (def) => !!def.match("'.*'"),
