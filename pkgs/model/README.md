@@ -181,13 +181,13 @@ export const groupDef = define.group({
 
 If the TS syntax you want to use is not listed here, feel free to create an issue summarizing your use case. Our model is easy to extend, so you might just see it an upcoming release 🎁
 
-### Object definitions
+### Objects
 
-Object definitions are objects whose values are leaf definitions and/or nested object definitions.
+Object definitions are sets of keys or indices corresponding to string, primitive, or nested object definitions.
 
 #### Map
 
-Map definitions are represented using the familiar JS notation for string keys with corresponding values.
+Map definitions are represented using the familiar object literal syntax.
 
 ```ts
 const foo = model({
@@ -209,7 +209,7 @@ type FooToo = {
 
 #### Tuple
 
-Tuple definitions are useful for fixed-length lists and are represented as expected.
+Tuple definitions are useful for fixed-length lists and are represented as array literals.
 
 ```ts
 const bar = model([
@@ -227,18 +227,60 @@ type BarAgain = [
 ]
 ```
 
-### String definitions
+### Strings
 
-Leaf definitions are strings that include one or more type references (i.e. built-ins like "string" or defined types like "user") **and** one or more operators that modify those types. Spaces are ignored when parsing leaf definitions, so feel free to use whatever format you find most readable.
+String definitions are strings constructed from the following fragment types:
+
+-   Builtins, including keywords like `"number"` and literals like `"'redo'"`
+-   Aliases like `"user"` or `"group"` that have been defined in your typespace
+-   Expressions consisting of one or more string definitions modified by an operator, like `"user | number"` or `"group[]?"`
+
+Spaces are ignored when parsing leaf definitions, so feel free to use whatever format you find most readable.
+
+#### Keywords
+
+All TypeScript keywords that can be used to represent a type are valid definitions. Each of the following string definitions maps directly to its corresponding TS type:
+
+| Definition    | Notes                                               |
+| ------------- | --------------------------------------------------- |
+| `"any"`       |                                                     |
+| `"unknown"`   | Behaves like `any` when used in validation.         |
+| `"never"`     | Will always throw an error when used in validation. |
+| `"undefined"` |                                                     |
+| `"void"`      | Behaves like `undefined` when used in validation.   |
+| `"object"`    |                                                     |
+| `"null"`      |                                                     |
+| `"function"`  |                                                     |
+| `"string"`    |                                                     |
+| `"number"`    |                                                     |
+| `"bigint"`    |                                                     |
+| `"boolean"`   |                                                     |
+| `"true"`      |                                                     |
+| `"false"`     |                                                     |
+| `"symbol"`    |                                                     |
+
+#### Literals
 
 #### Expressions
 
-| Type           | Syntax            | Examples                                         | Notes                                                                                                                                                         |
-| -------------- | ----------------- | ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Arrow Function | `(T1,T2,...)=>T3` | `(string,boolean)=>void` <br/>`()=>object`       | At runtime, falls back to validating that a value is of type `function`.                                                                                      |
-| List           | `T[]`             | `string[]` <br/>`number[][]`                     |                                                                                                                                                               |
-| Optional       | `T?`              | `function?` <br/>`boolean[]?`                    | Adds `undefined` as a possible value. When used in an Object type, also makes the corresponding key optional. Can only occur once at the end of a definition. |
-| Or             | `T1\|T2\|T3\|...` | `false\|string` <br/>`string\|number\|boolean[]` | Acts just like TypeScript's union operator (`\|`)                                                                                                             |
+| Definition Type | Syntax            | Examples                                         | Notes                                                                                                                                                         |
+| --------------- | ----------------- | ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Arrow Function  | `(T1,T2,...)=>T3` | `(string,boolean)=>void` <br/>`()=>object`       | At runtime, falls back to validating that a value is of type `function`.                                                                                      |
+| List            | `T[]`             | `string[]` <br/>`number[][]`                     |                                                                                                                                                               |
+| Optional        | `T?`              | `function?` <br/>`boolean[]?`                    | Adds `undefined` as a possible value. When used in an Object type, also makes the corresponding key optional. Can only occur once at the end of a definition. |
+| Or              | `T1\|T2\|T3\|...` | `false\|string` <br/>`string\|number\|boolean[]` | Acts just like TypeScript's union operator (`\|`)                                                                                                             |
+
+### Primitives
+
+Any definition that is neither a string nor an object is considered a primitive and models a type that allows only its exact value. All primitive definitions correspond to an equivalent string definition, so whether you use them often comes down to stylistic preference, though there are some noted circumstances in which they allow TypeScript to infer narrower types than their string equivalents.
+
+| Definition Type | Examples             | Notes                                                                                                   |
+| --------------- | -------------------- | ------------------------------------------------------------------------------------------------------- |
+| undefined       | `undefined`          |                                                                                                         |
+| null            | `null`               |                                                                                                         |
+| boolean         | `true` <br/> `false` |                                                                                                         |
+| number          | `0` <br/> `32.33`    | TS infers the exact value of `number` primitives, while string literals are always widened to `number`. |
+| bigint          | `99n` <br/> `-100n`  | TS infers the exact value of `bigint` primitives, while string literals are always widened to `bigint`. |
 
 ## Contributing
 
