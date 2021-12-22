@@ -54,7 +54,7 @@ type RedundantUserDeclaration = {
     interests: string[] | null
 }
 
-// And can also validate your data at runtime...
+// But a model can also validate your data at runtime...
 const fetchUser = () => {
     return {
         name: {
@@ -177,7 +177,7 @@ export const groupDef = define.group({
 
 ## Syntax
 
-`@re-/model` supports all of TypeScript's built-in types and a lot of its most common type definition syntax. The following sections summarize the keywords and operators available by default in your definitions.
+`@re-/model` supports all of TypeScript's built-in types and a lot of its most common type definition syntax. The following sections outline the definition patterns you can use in your models.
 
 If the TS syntax you want to use is not listed here, feel free to create an issue summarizing your use case. Our model is easy to extend, so you might just see it an upcoming release 🎁
 
@@ -241,7 +241,7 @@ Spaces are ignored when parsing leaf definitions, so feel free to use whatever f
 
 All TypeScript keywords that can be used to represent a type are valid definitions. Each of the following string definitions maps directly to its corresponding TS type:
 
-| Definition    | Notes                                               |
+| Keyword       | Notes                                               |
 | ------------- | --------------------------------------------------- |
 | `"any"`       |                                                     |
 | `"unknown"`   | Behaves like `any` when used in validation.         |
@@ -261,14 +261,24 @@ All TypeScript keywords that can be used to represent a type are valid definitio
 
 #### Literals
 
+Literals are used to constraint a `string`, `number`, or `bigint` type to a specified value.
+
+| Literal | Syntax                            | Examples                             | Notes                                                   |
+| ------- | --------------------------------- | ------------------------------------ | ------------------------------------------------------- |
+| string  | `"'T'"` or `'"T"'`                | `"'redo'"` or `'"WithDoubleQuotes"'` | Spaces are not currently supported and will be ignored. |
+| number  | `"T"`, where T is a numeric value | `"5"` or `"-7.3"`                    |                                                         |
+| bigint  | `"Tn"`, where T is an integer     | `"0n"` or `"-999n"`                  |                                                         |
+
+While `boolean` values could also be considered literals, they are modeled as keywords since, unlike other literal types, they can can be defined as a finite set (i.e. `true` and `false`).
+
 #### Expressions
 
-| Definition Type | Syntax            | Examples                                         | Notes                                                                                                                                                         |
-| --------------- | ----------------- | ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Arrow Function  | `(T1,T2,...)=>T3` | `(string,boolean)=>void` <br/>`()=>object`       | At runtime, falls back to validating that a value is of type `function`.                                                                                      |
-| List            | `T[]`             | `string[]` <br/>`number[][]`                     |                                                                                                                                                               |
-| Optional        | `T?`              | `function?` <br/>`boolean[]?`                    | Adds `undefined` as a possible value. When used in an Object type, also makes the corresponding key optional. Can only occur once at the end of a definition. |
-| Or              | `T1\|T2\|T3\|...` | `false\|string` <br/>`string\|number\|boolean[]` | Acts just like TypeScript's union operator (`\|`)                                                                                                             |
+| Exrpession     | Syntax            | Examples                                         | Notes                                                                                                         |
+| -------------- | ----------------- | ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------- |
+| Arrow Function | `(T1,T2,...)=>T3` | `(string,boolean)=>void` <br/>`()=>object`       | At runtime, falls back to validating that a value is of type `function`.                                      |
+| List           | `T[]`             | `string[]` <br/>`number[][]`                     |                                                                                                               |
+| Optional       | `T?`              | `function?` <br/>`boolean[]?`                    | Adds `undefined` as a possible value. When used in an Object type, also makes the corresponding key optional. |
+| Or             | `T1\|T2\|T3\|...` | `false\|string` <br/>`string\|number\|boolean[]` | Acts just like TypeScript's union operator (`\|`)                                                             |
 
 ### Primitives
 
