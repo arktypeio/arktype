@@ -17,8 +17,8 @@ beforeAll(() => {
     )
 })
 
-import "./compile.assert.js"
-import "./declare.assert.js"
-import "./parse.assert.js"
+import "./typespace.assert.js"
+import "./declaration.assert.js"
+import "./definitions.assert.js"
 import "./references.assert.js"
 import "./multifile.assert.js"

@@ -9,7 +9,7 @@ import {
     isAlphaNumeric,
     StringifyPossibleTypes
 } from "@re-/tools"
-import { ParseContext } from "./definition/parser.js"
+import { ParseContext } from "./definitions/parser.js"
 import { ExtractableDefinition } from "./internal.js"
 
 export const stringifyDefinition = (def: unknown) =>

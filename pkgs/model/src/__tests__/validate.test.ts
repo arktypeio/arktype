@@ -1,5 +1,5 @@
 import { Func } from "@re-/tools"
-import { parse, typeOf } from ".."
+import { model, typeOf } from ".."
 
 describe("typeOf", () => {
     test("string", () => {
@@ -50,21 +50,21 @@ describe("typeOf", () => {
 
 describe("validate", () => {
     test("string", () => {
-        const { check } = parse("string")
+        const { check } = model("string")
         expect(check("")).toBeFalsy()
         expect(check(5)).toMatchInlineSnapshot(
             `"5 is not assignable to string."`
         )
     })
     test("string literal", () => {
-        const { check } = parse("'dursurdo'")
+        const { check } = model("'dursurdo'")
         expect(check("dursurdo")).toBeFalsy()
         expect(check("durrrrrr")).toMatchInlineSnapshot(
             `"'durrrrrr' is not assignable to 'dursurdo'."`
         )
     })
     test("number", () => {
-        const { check } = parse("number")
+        const { check } = model("number")
         expect(check(4.669)).toBeFalsy()
         expect(check({ keyWithNumberValue: 5 })).toMatchInlineSnapshot(
             `"{keyWithNumberValue: 5} is not assignable to number."`
@@ -90,22 +90,22 @@ describe("validate", () => {
         )
     }
     test("number literal in string", () => {
-        valid8(parse("8").check)
-        validateGolden(parse("1.618").check)
+        valid8(model("8").check)
+        validateGolden(model("1.618").check)
     })
     test("number literal", () => {
-        valid8(parse(8).check)
-        validateGolden(parse(1.618).check)
+        valid8(model(8).check)
+        validateGolden(model(1.618).check)
     })
     test("bigint", () => {
-        const { check } = parse("bigint")
+        const { check } = model("bigint")
         expect(check(BigInt(0))).toBeFalsy()
         expect(check(0)).toMatchInlineSnapshot(
             `"0 is not assignable to bigint."`
         )
     })
     test("boolean", () => {
-        const { check } = parse("boolean")
+        const { check } = model("boolean")
         expect(check(true)).toBeFalsy()
         expect(check(false)).toBeFalsy()
         expect(check(1)).toMatchInlineSnapshot(
@@ -113,14 +113,14 @@ describe("validate", () => {
         )
     })
     test("symbol", () => {
-        const { check } = parse("symbol")
+        const { check } = model("symbol")
         expect(check(Symbol())).toBeFalsy()
         expect(check("symbol")).toMatchInlineSnapshot(
             `"'symbol' is not assignable to symbol."`
         )
     })
     test("undefined", () => {
-        const { check } = parse("undefined")
+        const { check } = model("undefined")
         expect(check(undefined)).toBeFalsy()
         expect(check("defined")).toMatchInlineSnapshot(
             `"'defined' is not assignable to undefined."`
@@ -130,9 +130,9 @@ describe("validate", () => {
         )
     })
     test("empty object", () => {
-        expect(parse({}).check({})).toBeFalsy()
+        expect(model({}).check({})).toBeFalsy()
     })
-    const simpleObject = parse({
+    const simpleObject = model({
         a: { b: "string", c: "number", d: { deep: "null" } }
     })
     test("simple object", () => {
@@ -176,7 +176,7 @@ describe("validate", () => {
             }
         }
         expect(
-            parse(simpleObject.definition).check(reallyBadValue)
+            model(simpleObject.definition).check(reallyBadValue)
         ).toMatchInlineSnapshot(
             `"{a/b: 'null is not assignable to string.', a/c: 'symbol is not assignable to number.', a/d: 'Keys 'shallow' were unexpected.'}"`
         )
@@ -185,7 +185,7 @@ describe("validate", () => {
         )
     })
     test("function", () => {
-        const { check } = parse("function")
+        const { check } = model("function")
         expect(
             check(function saySomething() {
                 console.log("I'm giving up on you")
@@ -196,14 +196,14 @@ describe("validate", () => {
         )
     })
     test("defined function widened for validation", () => {
-        const { check } = parse("(number,object)=>string")
+        const { check } = model("(number,object)=>string")
         expect(check(() => {})).toBeFalsy()
         expect(check("I promise I'm a function")).toMatchInlineSnapshot(
             `"'I promise I'm a function' is not assignable to (number,object)=>string."`
         )
     })
     test("array", () => {
-        const { check } = parse(["number", "string"])
+        const { check } = model(["number", "string"])
         expect(check([7, "up"])).toBeFalsy()
         expect(check([7, 7])).toMatchInlineSnapshot(
             `"At index 1, 7 is not assignable to string."`
@@ -212,13 +212,13 @@ describe("validate", () => {
             `"Tuple of length 3 is not assignable to tuple of length 2."`
         )
         expect(
-            parse(["number", "string"]).check(["up", 7])
+            model(["number", "string"]).check(["up", 7])
         ).toMatchInlineSnapshot(
             `"{0: ''up' is not assignable to number.', 1: '7 is not assignable to string.'}"`
         )
     })
     test("or type", () => {
-        const { check } = parse("string|number")
+        const { check } = model("string|number")
         expect(check("heyo")).toBeFalsy()
         expect(check(0)).toBeFalsy()
         expect(check(["listen what I say-o"])).toMatchInlineSnapshot(`
@@ -227,7 +227,7 @@ describe("validate", () => {
         `)
     })
     test("complex", () => {
-        const { check } = parse([
+        const { check } = model([
             "true",
             { a: ["string", ["(string) => void"]] }
         ])
@@ -242,7 +242,7 @@ describe("validate", () => {
         )
     })
     test("simple typespace", () => {
-        const groceries = parse(
+        const groceries = model(
             { fruits: "fruit[]" },
             {
                 typespace: {
@@ -284,11 +284,11 @@ describe("validate", () => {
     })
     test("errors on shallow cycle", () => {
         // @ts-expect-error
-        const shallowRecursive = parse("a", { typespace: { a: "a" } })
+        const shallowRecursive = model("a", { typespace: { a: "a" } })
         expect(() => shallowRecursive.assert("what's an a?")).toThrowError(
             "shallow"
         )
-        const shallowCyclic = parse("a", {
+        const shallowCyclic = model("a", {
             // @ts-expect-error
             typespace: { a: "b", b: "c", c: "a|b|c" }
         })
@@ -297,7 +297,7 @@ describe("validate", () => {
         )
     })
     test("cyclic typespace", () => {
-        const bicycle = parse(
+        const bicycle = model(
             { a: "a", b: "b", c: "either[]" },
             {
                 typespace: {

@@ -17,10 +17,7 @@ Beautiful types from IDE to runtime 🧬
 
 (feel free to substitute `yarn`, `pnpm`, et al.)
 
-If you're using TypeScript, you'll need:
-
--   TODO: TsConfig requirements?
--   TODO: At least version 4.4.x?
+If you're using TypeScript, you'll need at least `4.4`.
 
 ## Creating your first model
 
@@ -69,8 +66,6 @@ const fetchUser = () => {
 // Will throw: "At path interests, undefined is not assignable to any of string[]|null."
 user.validate(fetchUser())
 ```
-
-TODO: Complex type
 
 ## Typespaces
 
@@ -177,7 +172,7 @@ export const groupDef = define.group({
 
 ## Syntax
 
-`@re-/model` supports all of TypeScript's built-in types and a lot of its most common type definition syntax. The following sections outline the definition patterns you can use in your models.
+`@re-/model` supports all of TypeScript's built-in types and a lot of its most common type definition syntax. The following sections outline the kinds of definitions you can use in your models.
 
 If the TS syntax you want to use is not listed here, feel free to create an issue summarizing your use case. Our model is easy to extend, so you might just see it an upcoming release 🎁
 
@@ -235,8 +230,6 @@ String definitions are strings constructed from the following fragment types:
 -   Aliases like `"user"` or `"group"` that have been defined in your typespace
 -   Expressions consisting of one or more string definitions modified by an operator, like `"user | number"` or `"group[]?"`
 
-Spaces are ignored when parsing leaf definitions, so feel free to use whatever format you find most readable.
-
 #### Keywords
 
 All TypeScript keywords that can be used to represent a type are valid definitions. Each of the following string definitions maps directly to its corresponding TS type:
@@ -261,36 +254,42 @@ All TypeScript keywords that can be used to represent a type are valid definitio
 
 #### Literals
 
-Literals are used to constraint a `string`, `number`, or `bigint` type to a specified value.
+Literals are used to specify a `string`, `number`, or `bigint` type constrained to an exact value.
 
-| Literal | Syntax                            | Examples                             | Notes                                                   |
-| ------- | --------------------------------- | ------------------------------------ | ------------------------------------------------------- |
-| string  | `"'T'"` or `'"T"'`                | `"'redo'"` or `'"WithDoubleQuotes"'` | Spaces are not currently supported and will be ignored. |
-| number  | `"T"`, where T is a numeric value | `"5"` or `"-7.3"`                    |                                                         |
-| bigint  | `"Tn"`, where T is an integer     | `"0n"` or `"-999n"`                  |                                                         |
+| Literal | Syntax                            | Examples                             | Notes                                                                                                                                           |
+| ------- | --------------------------------- | ------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| string  | `"'T'"` or `'"T"'`                | `"'redo'"` or `'"WithDoubleQuotes"'` | Spaces are not currently supported and will be ignored.                                                                                         |
+| number  | `"T"`, where T is a numeric value | `"5"` or `"-7.3"`                    | Though validation checks for the literal's exact value, TypeScript widens its type to `number`. To avoid this behavior, use a number primitive. |
+| bigint  | `"Tn"`, where T is an integer     | `"0n"` or `"-999n"`                  | Though validation checks for the literal's exact value, TypeScript widens its type to `bigint`. To avoid this behavior, use a bigint primitive. |
 
 While `boolean` values could also be considered literals, they are modeled as keywords since, unlike other literal types, they can can be defined as a finite set (i.e. `true` and `false`).
 
 #### Expressions
 
-| Exrpession     | Syntax            | Examples                                         | Notes                                                                                                         |
+Expressions are a set of syntactic patterns that can be applied to one or more nested string definitions to modify the type they represent. Unless otherwise noted, expressions can be applied to any valid string definition, including other expressions.
+
+The following table is ordered by relative precedence in the event that a definition matches multiple patterns. For example, the definition `"string|boolean[]"` would be interpreted as either a `string` or a list of `boolean` since "Or" applies before "List." Parenthetical grouping is not yet supported, but can be emulated by adding the desired grouping to a typespace and referencing its alias.
+
+| Exrpession     | Pattern           | Examples                                         | Notes                                                                                                         |
 | -------------- | ----------------- | ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------- |
-| Arrow Function | `(T1,T2,...)=>T3` | `(string,boolean)=>void` <br/>`()=>object`       | At runtime, falls back to validating that a value is of type `function`.                                      |
-| List           | `T[]`             | `string[]` <br/>`number[][]`                     |                                                                                                               |
 | Optional       | `T?`              | `function?` <br/>`boolean[]?`                    | Adds `undefined` as a possible value. When used in an Object type, also makes the corresponding key optional. |
+| Arrow Function | `(T1,T2,...)=>T3` | `(string,boolean[])=>void` <br/>`()=>object`     | At runtime, falls back to validating that a value is of type `function`.                                      |
 | Or             | `T1\|T2\|T3\|...` | `false\|string` <br/>`string\|number\|boolean[]` | Acts just like TypeScript's union operator (`\|`)                                                             |
+| List           | `T[]`             | `string[]` <br/>`number[][]`                     |                                                                                                               |
+
+Spaces are ignored when parsing expressions, so feel free to use whatever format you find most readable.
 
 ### Primitives
 
 Any definition that is neither a string nor an object is considered a primitive and models a type that allows only its exact value. All primitive definitions correspond to an equivalent string definition, so whether you use them often comes down to stylistic preference, though there are some noted circumstances in which they allow TypeScript to infer narrower types than their string equivalents.
 
-| Definition Type | Examples             | Notes                                                                                                   |
-| --------------- | -------------------- | ------------------------------------------------------------------------------------------------------- |
-| undefined       | `undefined`          |                                                                                                         |
-| null            | `null`               |                                                                                                         |
-| boolean         | `true` <br/> `false` |                                                                                                         |
-| number          | `0` <br/> `32.33`    | TS infers the exact value of `number` primitives, while string literals are always widened to `number`. |
-| bigint          | `99n` <br/> `-100n`  | TS infers the exact value of `bigint` primitives, while string literals are always widened to `bigint`. |
+| Definition Type | Examples             | Notes                                                                                                                                                |
+| --------------- | -------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| undefined       | `undefined`          | Requires compiler option `"strictNullChecks"` or `"strict"` set to `true` in your `tsconfig.json`.                                                   |
+| null            | `null`               | Requires compiler option `"strictNullChecks"` or `"strict"` set to `true` in your `tsconfig.json`.                                                   |
+| boolean         | `true` <br/> `false` |                                                                                                                                                      |
+| number          | `0` <br/> `32.33`    | TS infers the exact value of `number` primitives, while string literals are always widened to `number`.                                              |
+| bigint          | `99n` <br/> `-100n`  | TS infers the exact value of `bigint` primitives, while string literals are always widened to `bigint`. <br/> Requires a target of ES2020 or higher. |
 
 ## Contributing
 

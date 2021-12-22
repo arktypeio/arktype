@@ -1,9 +1,9 @@
 import { assert } from "@re-/assert"
-import { parse } from ".."
+import { model } from ".."
 import { definitionTypeErrorTemplate } from "../errors.js"
 
 const generate = (def: any, typespace: any = {}, opts: any = {}) =>
-    parse(def, { typespace }).generate(opts)
+    model(def, { typespace }).generate(opts)
 
 describe("generate", () => {
     test("keywords", () => {
@@ -20,7 +20,7 @@ describe("generate", () => {
     test("primitives", () => {
         expect(generate(5)).toBe(5)
         expect(generate(7.91)).toBe(7.91)
-        expect(generate(0n)).toBe(0n)
+        expect(generate(-99999999999999999999n)).toBe(-99999999999999999999n)
         expect(generate(undefined)).toBe(undefined)
         expect(generate(null)).toBe(null)
         expect(generate(true)).toBe(true)
@@ -154,7 +154,7 @@ describe("generate", () => {
         )
     })
     test("from parsed", () => {
-        const defaultValue = parse(
+        const defaultValue = model(
             {
                 requiredGroup: "group",
                 requiredGroups: "group[]",
