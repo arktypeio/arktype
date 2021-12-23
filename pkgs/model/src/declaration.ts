@@ -1,5 +1,5 @@
 import { ElementOf, Narrow, transform } from "@re-/tools"
-import { model, CheckReferences } from "./model.js"
+import { define, CheckReferences } from "./model.js"
 import { TypespaceFunction, createTypespaceFunction } from "./typespace.js"
 
 export const createDefineFunctionMap = <DeclaredTypeNames extends string[]>(
@@ -35,7 +35,7 @@ export const createDefineFunction =
         definedTypeName: DefinedTypeName
     ): DefineFunction<DefinedTypeName, DeclaredTypeNames> =>
     (definition: any) => {
-        model(definition, {
+        definition(definition, {
             typespace: transform(declaredTypeNames, ([i, typeName]) => [
                 typeName,
                 "unknown"

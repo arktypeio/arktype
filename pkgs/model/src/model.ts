@@ -69,10 +69,37 @@ export type DefaultParseTypeOptions = {
     onResolve: never
 }
 
-export type InferredMethods = {
-    assert: (value: unknown, options?: ValidateOptions) => void
-    check: (value: unknown, options?: ValidateOptions) => string
+export type ValidateOptions = {
+    ignoreExtraneousKeys?: boolean
+    returnAs?: false | "message" | "map"
 }
+
+export type HandledValidationResult<Options extends ValidateOptions> =
+    Options["returnAs"] extends "message"
+        ? string
+        : Options["returnAs"] extends "map"
+        ? ValidationErrors
+        : void
+
+const withHandledResult =
+    (validate: ReturnType<typeof Root.parse>["validate"]) =>
+    <Options extends ValidateOptions>(
+        value: unknown,
+        options?: Options
+    ): HandledValidationResult<Options> => {
+        const errors = validate(typeOf(value), options)
+        if (options?.returnAs === "map") {
+            return errors as any
+        }
+        const message = stringifyErrors(errors)
+        if (options?.returnAs === "message") {
+            return message as any
+        }
+        if (message) {
+            throw new Error(message)
+        }
+        return undefined as any
+    }
 
 export const createModelFunction =
     <PredefinedTypespace>(
@@ -91,31 +118,20 @@ export const createModelFunction =
             formattedDefinition,
             context
         ) as any
-        const check: InferredMethods["check"] = (value, options) =>
-            stringifyErrors(validate(typeOf(value), options))
-        const inferredMethods: InferredMethods = {
-            check,
-            assert: (value, options) => {
-                const errorMessage = check(value, options)
-                if (errorMessage) {
-                    throw new Error(errorMessage)
-                }
-            }
-        }
+
         return {
             type: typeDefProxy,
             typespace: formattedTypespace,
             definition: formattedDefinition,
-            validate,
+            validate: withHandledResult(validate),
             references,
-            generate,
-            ...inferredMethods
+            generate
         } as any
     }
 
 // Exported parse function is equivalent to parse from an empty compile call,
 // but optionally accepts a typespace as its second parameter
-export const model = createModelFunction({})
+export const define = createModelFunction({})
 
 export type ModelFunction<PredefinedTypespace> = <
     Def,
@@ -132,10 +148,6 @@ export type ModelFunction<PredefinedTypespace> = <
         }
     >
 ) => Evaluate<Model<Def, ActiveTypespace, Options>>
-
-export type ValidateOptions = {
-    ignoreExtraneousKeys?: boolean
-}
 
 export type ReferencesOptions = {}
 
@@ -154,9 +166,7 @@ export type Model<
     definition: Definition
     type: ModelType
     typespace: Evaluate<Typespace>
-    check: (value: unknown, options?: ValidateOptions) => string
-    assert: (value: unknown, options?: ValidateOptions) => void
-    validate: (value: unknown, options?: ValidateOptions) => ValidationErrors
+    validate: ReturnType<typeof withHandledResult>
     generate: (options?: GenerateOptions) => ModelType
     references: () => References<Definition, { asUnorderedList: true }>
 }>

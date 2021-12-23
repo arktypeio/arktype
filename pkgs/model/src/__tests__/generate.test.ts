@@ -1,9 +1,9 @@
 import { assert } from "@re-/assert"
-import { model } from ".."
+import { define } from ".."
 import { definitionTypeErrorTemplate } from "../errors.js"
 
 const generate = (def: any, typespace: any = {}, opts: any = {}) =>
-    model(def, { typespace }).generate(opts)
+    def(def, { typespace }).generate(opts)
 
 describe("generate", () => {
     test("keywords", () => {
@@ -154,7 +154,7 @@ describe("generate", () => {
         )
     })
     test("from parsed", () => {
-        const defaultValue = model(
+        const defaultValue = define(
             {
                 requiredGroup: "group",
                 requiredGroups: "group[]",

@@ -1,5 +1,5 @@
 import { Func } from "@re-/tools"
-import { model, typeOf } from ".."
+import { define, typeOf } from ".."
 
 describe("typeOf", () => {
     test("string", () => {
@@ -50,105 +50,105 @@ describe("typeOf", () => {
 
 describe("validate", () => {
     test("string", () => {
-        const { check } = model("string")
-        expect(check("")).toBeFalsy()
-        expect(check(5)).toMatchInlineSnapshot(
+        const { validate } = define("string")
+        expect(validate("")).toBeFalsy()
+        expect(validate(5)).toMatchInlineSnapshot(
             `"5 is not assignable to string."`
         )
     })
     test("string literal", () => {
-        const { check } = model("'dursurdo'")
-        expect(check("dursurdo")).toBeFalsy()
-        expect(check("durrrrrr")).toMatchInlineSnapshot(
+        const { validate } = define("'dursurdo'")
+        expect(validate("dursurdo")).toBeFalsy()
+        expect(validate("durrrrrr")).toMatchInlineSnapshot(
             `"'durrrrrr' is not assignable to 'dursurdo'."`
         )
     })
     test("number", () => {
-        const { check } = model("number")
-        expect(check(4.669)).toBeFalsy()
-        expect(check({ keyWithNumberValue: 5 })).toMatchInlineSnapshot(
+        const { validate } = define("number")
+        expect(validate(4.669)).toBeFalsy()
+        expect(validate({ keyWithNumberValue: 5 })).toMatchInlineSnapshot(
             `"{keyWithNumberValue: 5} is not assignable to number."`
         )
     })
-    const valid8 = (check: Function) => {
-        expect(check(8)).toBeFalsy()
-        expect(check(8.0)).toBeFalsy()
-        expect(check(8.000001)).toMatchInlineSnapshot(
+    const valid8 = (validate: Function) => {
+        expect(validate(8)).toBeFalsy()
+        expect(validate(8.0)).toBeFalsy()
+        expect(validate(8.000001)).toMatchInlineSnapshot(
             `"8.000001 is not assignable to 8."`
         )
-        expect(check("8")).toMatchInlineSnapshot(
+        expect(validate("8")).toMatchInlineSnapshot(
             `"'8' is not assignable to 8."`
         )
     }
-    const validateGolden = (check: Func) => {
-        expect(check(1.618)).toBeFalsy()
-        expect(check(2)).toMatchInlineSnapshot(
+    const validateGolden = (validate: Func) => {
+        expect(validate(1.618)).toBeFalsy()
+        expect(validate(2)).toMatchInlineSnapshot(
             `"2 is not assignable to 1.618."`
         )
-        expect(check("1.618")).toMatchInlineSnapshot(
+        expect(validate("1.618")).toMatchInlineSnapshot(
             `"'1.618' is not assignable to 1.618."`
         )
     }
     test("number literal in string", () => {
-        valid8(model("8").check)
-        validateGolden(model("1.618").check)
+        valid8(define("8").validate)
+        validateGolden(define("1.618").validate)
     })
     test("number literal", () => {
-        valid8(model(8).check)
-        validateGolden(model(1.618).check)
+        valid8(define(8).validate)
+        validateGolden(define(1.618).validate)
     })
     test("bigint", () => {
-        const { check } = model("bigint")
-        expect(check(BigInt(0))).toBeFalsy()
-        expect(check(0)).toMatchInlineSnapshot(
+        const { validate } = define("bigint")
+        expect(validate(BigInt(0))).toBeFalsy()
+        expect(validate(0)).toMatchInlineSnapshot(
             `"0 is not assignable to bigint."`
         )
     })
     test("boolean", () => {
-        const { check } = model("boolean")
-        expect(check(true)).toBeFalsy()
-        expect(check(false)).toBeFalsy()
-        expect(check(1)).toMatchInlineSnapshot(
+        const { validate } = define("boolean")
+        expect(validate(true)).toBeFalsy()
+        expect(validate(false)).toBeFalsy()
+        expect(validate(1)).toMatchInlineSnapshot(
             `"1 is not assignable to boolean."`
         )
     })
     test("symbol", () => {
-        const { check } = model("symbol")
-        expect(check(Symbol())).toBeFalsy()
-        expect(check("symbol")).toMatchInlineSnapshot(
+        const { validate } = define("symbol")
+        expect(validate(Symbol())).toBeFalsy()
+        expect(validate("symbol")).toMatchInlineSnapshot(
             `"'symbol' is not assignable to symbol."`
         )
     })
     test("undefined", () => {
-        const { check } = model("undefined")
-        expect(check(undefined)).toBeFalsy()
-        expect(check("defined")).toMatchInlineSnapshot(
+        const { validate } = define("undefined")
+        expect(validate(undefined)).toBeFalsy()
+        expect(validate("defined")).toMatchInlineSnapshot(
             `"'defined' is not assignable to undefined."`
         )
-        expect(check(null)).toMatchInlineSnapshot(
+        expect(validate(null)).toMatchInlineSnapshot(
             `"null is not assignable to undefined."`
         )
     })
     test("empty object", () => {
-        expect(model({}).check({})).toBeFalsy()
+        expect(define({}).validate({})).toBeFalsy()
     })
-    const simpleObject = model({
+    const simpleObject = define({
         a: { b: "string", c: "number", d: { deep: "null" } }
     })
     test("simple object", () => {
         expect(
-            simpleObject.check({
+            simpleObject.validate({
                 a: { b: "nested", c: 5, d: { deep: null } }
             })
         ).toBeFalsy()
         const badValue = { a: { b: "nested", c: 5, d: { deep: {} } } }
-        expect(simpleObject.check(badValue)).toMatchInlineSnapshot(
+        expect(simpleObject.validate(badValue)).toMatchInlineSnapshot(
             `"At path a/d/deep, {} is not assignable to null."`
         )
     })
     test("can ignore extraneous keys", () => {
         expect(
-            simpleObject.check(
+            simpleObject.validate(
                 {
                     a: {
                         b: "nested",
@@ -161,7 +161,7 @@ describe("validate", () => {
         ).toBeFalsy()
         // But still errors on missing required keys
         expect(
-            simpleObject.check({}, { ignoreExtraneousKeys: true })
+            simpleObject.validate({}, { ignoreExtraneousKeys: true })
         ).toMatchInlineSnapshot(`"Required keys 'a' were missing."`)
     })
     test("multiple errors", () => {
@@ -176,73 +176,73 @@ describe("validate", () => {
             }
         }
         expect(
-            model(simpleObject.definition).check(reallyBadValue)
+            define(simpleObject.definition).validate(reallyBadValue)
         ).toMatchInlineSnapshot(
             `"{a/b: 'null is not assignable to string.', a/c: 'symbol is not assignable to number.', a/d: 'Keys 'shallow' were unexpected.'}"`
         )
-        expect(simpleObject.check(reallyBadValue)).toMatchInlineSnapshot(
+        expect(simpleObject.validate(reallyBadValue)).toMatchInlineSnapshot(
             `"{a/b: 'null is not assignable to string.', a/c: 'symbol is not assignable to number.', a/d: 'Keys 'shallow' were unexpected.'}"`
         )
     })
     test("function", () => {
-        const { check } = model("function")
+        const { validate } = define("function")
         expect(
-            check(function saySomething() {
+            validate(function saySomething() {
                 console.log("I'm giving up on you")
             })
         ).toBeFalsy()
-        expect(check({})).toMatchInlineSnapshot(
+        expect(validate({})).toMatchInlineSnapshot(
             `"{} is not assignable to function."`
         )
     })
     test("defined function widened for validation", () => {
-        const { check } = model("(number,object)=>string")
-        expect(check(() => {})).toBeFalsy()
-        expect(check("I promise I'm a function")).toMatchInlineSnapshot(
+        const { validate } = define("(number,object)=>string")
+        expect(validate(() => {})).toBeFalsy()
+        expect(validate("I promise I'm a function")).toMatchInlineSnapshot(
             `"'I promise I'm a function' is not assignable to (number,object)=>string."`
         )
     })
     test("array", () => {
-        const { check } = model(["number", "string"])
-        expect(check([7, "up"])).toBeFalsy()
-        expect(check([7, 7])).toMatchInlineSnapshot(
+        const { validate } = define(["number", "string"])
+        expect(validate([7, "up"])).toBeFalsy()
+        expect(validate([7, 7])).toMatchInlineSnapshot(
             `"At index 1, 7 is not assignable to string."`
         )
-        expect(check([7, "up", 7])).toMatchInlineSnapshot(
+        expect(validate([7, "up", 7])).toMatchInlineSnapshot(
             `"Tuple of length 3 is not assignable to tuple of length 2."`
         )
         expect(
-            model(["number", "string"]).check(["up", 7])
+            define(["number", "string"]).validate(["up", 7])
         ).toMatchInlineSnapshot(
             `"{0: ''up' is not assignable to number.', 1: '7 is not assignable to string.'}"`
         )
     })
     test("or type", () => {
-        const { check } = model("string|number")
-        expect(check("heyo")).toBeFalsy()
-        expect(check(0)).toBeFalsy()
-        expect(check(["listen what I say-o"])).toMatchInlineSnapshot(`
+        const { validate } = define("string|number")
+        expect(validate("heyo")).toBeFalsy()
+        expect(validate(0)).toBeFalsy()
+        expect(validate(["listen what I say-o"])).toMatchInlineSnapshot(`
             "['listen what I say-o'] is not assignable to any of string|number:
             {string: '['listen what I say-o'] is not assignable to string.', number: '['listen what I say-o'] is not assignable to number.'}"
         `)
     })
     test("complex", () => {
-        const { check } = model([
+        const { validate } = define([
             "true",
             { a: ["string", ["(string) => void"]] }
         ])
-        expect(check([true, { a: ["ok", [() => {}]] }])).toBeFalsy()
+        expect(validate([true, { a: ["ok", [() => {}]] }])).toBeFalsy()
         expect(
-            check([true, { a: ["ok", [() => {}], "extraElement"] }])
+            validate([true, { a: ["ok", [() => {}], "extraElement"] }])
         ).toMatchInlineSnapshot(
             `"At path 1/a, tuple of length 3 is not assignable to tuple of length 2."`
         )
-        expect(check([false, { a: [0, [0, 1, 2]] }])).toMatchInlineSnapshot(
+        expect(validate([false, { a: [0, [0, 1, 2]] }])).toMatchInlineSnapshot(
             `"{0: 'false is not assignable to true.', 1/a/0: '0 is not assignable to string.', 1/a/1: 'Tuple of length 3 is not assignable to tuple of length 1.'}"`
         )
     })
     test("simple typespace", () => {
-        const groceries = model(
+        const groceries = define(
             { fruits: "fruit[]" },
             {
                 typespace: {
@@ -256,7 +256,7 @@ describe("validate", () => {
             }
         )
         expect(
-            groceries.check({
+            groceries.validate({
                 fruits: [
                     { length: 10 },
                     { circumference: 4.832321, type: "Granny Smith" },
@@ -265,7 +265,7 @@ describe("validate", () => {
             })
         ).toBeFalsy()
         expect(
-            groceries.check({
+            groceries.validate({
                 fruits: [
                     {
                         length: 5000,
@@ -284,20 +284,20 @@ describe("validate", () => {
     })
     test("errors on shallow cycle", () => {
         // @ts-expect-error
-        const shallowRecursive = model("a", { typespace: { a: "a" } })
-        expect(() => shallowRecursive.assert("what's an a?")).toThrowError(
+        const shallowRecursive = define("a", { typespace: { a: "a" } })
+        expect(() => shallowRecursive.validate("what's an a?")).toThrowError(
             "shallow"
         )
-        const shallowCyclic = model("a", {
+        const shallowCyclic = define("a", {
             // @ts-expect-error
             typespace: { a: "b", b: "c", c: "a|b|c" }
         })
-        expect(() => shallowCyclic.check(["what's a b?"])).toThrowError(
+        expect(() => shallowCyclic.validate(["what's a b?"])).toThrowError(
             "shallow"
         )
     })
     test("cyclic typespace", () => {
-        const bicycle = model(
+        const bicycle = define(
             { a: "a", b: "b", c: "either[]" },
             {
                 typespace: {
@@ -308,7 +308,7 @@ describe("validate", () => {
             }
         )
         expect(
-            bicycle.check({
+            bicycle.validate({
                 a: {
                     isA: true,
                     a: { isA: true },
@@ -322,7 +322,7 @@ describe("validate", () => {
             })
         ).toBeFalsy()
         expect(
-            bicycle.check({
+            bicycle.validate({
                 a: {
                     isA: true,
                     a: {

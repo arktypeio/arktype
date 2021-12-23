@@ -92,11 +92,11 @@ describe("compile", () => {
                 `"{ b?: { a?: { b?: any | undefined; } | undefined; } | undefined; }"`
             )
         assert(mySpace.a.references()).equals({ b: ["b"] } as any)
-        assert(a.validate({})).equals({})
         const aWithExtraneousKey = { c: "extraneous" }
         const extraneousKeyMessage = "Keys 'c' were unexpected."
-        assert(() => a.assert(aWithExtraneousKey)).throws(extraneousKeyMessage)
-        assert(() => a.check({ c: {} })).returns(extraneousKeyMessage)
+        assert(() => a.validate(aWithExtraneousKey)).throws(
+            extraneousKeyMessage
+        )
         assert(a.generate()).equals({})
         assert(a.references()).equals(["a"] as any)
         assert(a.definition).typedValue("a")
