@@ -3,7 +3,8 @@
   <h1>@re-/model</h1>
 </div>
 <div align="center">
-One type from editor to runtime 🧬
+
+Type-first validation from editor to runtime 🧭
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 ![Code style](https://img.shields.io/badge/code_style-prettier-ff69b4.svg)
@@ -11,9 +12,11 @@ One type from editor to runtime 🧬
 
 </div>
 
-## What is it?
+## What's a model?
 
-Think of a model as a combination of a type and a validator.
+A (`@re-/`)model is a way to define a set of values.
+
+combination of a type and a validator.
 
 TODO:
 
