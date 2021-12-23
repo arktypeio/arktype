@@ -3,8 +3,10 @@ import {
     ElementOf,
     Iteration,
     ListPossibleTypes,
+    narrow,
     RemoveSpaces,
-    Split
+    Split,
+    StringReplace
 } from "@re-/tools"
 import {
     ParseConfig,
@@ -15,13 +17,15 @@ import {
     ReferencesTypeConfig
 } from "./internal.js"
 import { Alias } from "./alias"
-import { Builtin } from "./builtin"
+import { Builtin, Keyword, Literal } from "./builtin"
 import { Expression } from "./expression"
 
 export namespace Str {
     export type Definition = string
 
-    export type Format<Def extends string> = RemoveSpaces<Def>
+    export type Format<Def extends string> = RemoveSpaces<
+        StringReplace<Def, `"`, `'`>
+    >
 
     export type FormatAndCheck<Def extends string, Typespace> = Str.Check<
         Format<Def>,
@@ -29,16 +33,31 @@ export namespace Str {
         Typespace
     >
 
+    /**
+     * Expressions have the highest precedence when determining how to parse
+     * a string definition. However, as of TS4.5, checking whether Def
+     * is an Expression before checking whether it is a Keyword or Alias
+     * inexplicably results in an infinite depth type error for Check
+     * on the first definition containing an Alias in any given file. Subsequent
+     * definitions, even if identical, have no errors.
+     *
+     * To work around this, Builtin is split into Keyword, which is checked first,
+     *  and Literal, which is checked after Expression. This is to ensure that
+     * a definition like "'yes'|'no'" are not interpreted as the StringLiteral
+     * matching "yes'|'no".
+     */
     export type Check<
         Def extends string,
         Root extends string,
         Typespace
-    > = Def extends Builtin.Definition
+    > = Def extends Keyword.Definition
         ? Root
         : Def extends Alias.Definition<Typespace>
         ? Alias.Check<Def, Root, Typespace>
         : Def extends Expression.Definition
         ? Expression.Check<Def, Root, Typespace>
+        : Def extends Literal.Definition
+        ? Root
         : UnknownTypeError<Def>
 
     export type FormatAndParse<
@@ -53,15 +72,34 @@ export namespace Str {
         Options extends ParseConfig
     > = Str.Check<Def, Def, Typespace> extends ValidationErrorMessage
         ? unknown
-        : Def extends Builtin.Definition
-        ? Builtin.Parse<Def>
+        : Def extends Keyword.Definition
+        ? Keyword.Parse<Def>
         : Def extends Alias.Definition<Typespace>
         ? Alias.Parse<Def, Typespace, Options>
         : Def extends Expression.Definition
         ? Expression.Parse<Def, Typespace, Options>
+        : Def extends Literal.Definition
+        ? Literal.Parse<Def>
         : unknown
 
-    type ControlCharacters = ["|", "?", "(", ")", ",", "[", "]", "=", ">", " "]
+    export const controlCharacters = narrow([
+        "|",
+        "?",
+        "(",
+        ")",
+        ",",
+        "[",
+        "]",
+        "=>"
+    ])
+
+    export const controlCharacterMatcher = RegExp(
+        // All control characters need to be escaped in a regex expression
+        controlCharacters.map((char) => `\\${char}`).join("|"),
+        "g"
+    )
+
+    export type ControlCharacters = typeof controlCharacters
 
     type RawReferences<
         Fragments extends string,
@@ -97,17 +135,19 @@ export namespace Str {
             type,
             parent: () => Root.parse,
             children: () => [
+                Expression.delegate,
                 Builtin.delegate,
-                Alias.delegate,
-                Expression.delegate
+                Alias.delegate
             ]
         },
         {
             matches: (def) => typeof def === "string",
-            // Split by non-alphanumeric, excluding underscore, then remove
-            // empty strings leaving aliases and keywords behind
+            // Split by control characters, then remove
+            // empty strings leaving aliases and builtins behind
             references: ({ def }) =>
-                def.split(/\W/g).filter((fragment) => fragment !== "")
+                def
+                    .split(controlCharacterMatcher)
+                    .filter((fragment) => fragment !== "")
         }
     )
 

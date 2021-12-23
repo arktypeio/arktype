@@ -9,13 +9,15 @@ import { ArrowFunction } from "./arrowFunction.js"
 import { List } from "./list.js"
 import { Or } from "./or.js"
 import { Optional } from "./optional.js"
+import { ElementOf } from "@re-/tools"
 
 export namespace Expression {
     export type Definition =
-        | Optional.Definition
-        | ArrowFunction.Definition
-        | Or.Definition
-        | List.Definition
+        | `${string}${ElementOf<Str.ControlCharacters>}${string}`
+    // | Optional.Definition
+    // | ArrowFunction.Definition
+    // | Or.Definition
+    // | List.Definition
 
     export type Check<
         Def extends string,
@@ -47,16 +49,22 @@ export namespace Expression {
 
     export const type = typeDefProxy as Definition
 
-    export const parse = createParser({
-        type,
-        parent: () => Str.parse,
-        children: () => [
-            Optional.delegate,
-            ArrowFunction.delegate,
-            Or.delegate,
-            List.delegate
-        ]
-    })
+    export const parse = createParser(
+        {
+            type,
+            parent: () => Str.parse,
+            children: () => [
+                Optional.delegate,
+                ArrowFunction.delegate,
+                Or.delegate,
+                List.delegate
+            ]
+        },
+        {
+            // Any string containing a control character will be interpreted as an expression
+            matches: (def) => !!def.match(Str.controlCharacterMatcher)
+        }
+    )
 
     export const delegate = parse as any as Definition
 }

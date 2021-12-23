@@ -17,7 +17,8 @@ import {
 import {
     createModelFunction,
     ModelFunction,
-    DefaultParseTypeOptions
+    DefaultParseTypeOptions,
+    Parse
 } from "./model.js"
 import { Map } from "./definitions"
 import { typeDefProxy } from "./internal.js"
@@ -38,7 +39,7 @@ export type CheckTypespaceResolutions<Typespace> = IsAny<Typespace> extends true
       }>
 
 export type ParseTypespaceRoot<Typespace, Options extends ParseConfig> = {
-    [TypeName in keyof Typespace]: Model<
+    [TypeName in keyof Typespace]: Parse<
         Typespace[TypeName],
         CheckTypespaceResolutions<Typespace>,
         Options
@@ -102,7 +103,7 @@ export const createTypespaceFunction =
             }
             throw new Error(errorParts.join(" "))
         }
-        const parse = createModelFunction(typespaceFromDefinitions) as any
+        const model = createModelFunction(typespaceFromDefinitions) as any
         return {
             ...(transform(
                 typespaceFromDefinitions,
@@ -116,7 +117,7 @@ export const createTypespaceFunction =
                 ]
             ) as any),
             types: typeDefProxy,
-            parse
+            model
         } as Typespace<Definitions>
     }
 
@@ -175,11 +176,9 @@ export type Typespace<
     MergedTypespace = MergeAll<Definitions>
 > = Evaluate<
     ParseTypespaceResolutions<MergedTypespace, DefaultParseTypeOptions> & {
-        types: Map.Parse<
-            MergedTypespace,
-            MergedTypespace,
-            DefaultParseTypeOptions
+        types: Evaluate<
+            Map.Parse<MergedTypespace, MergedTypespace, DefaultParseTypeOptions>
         >
-        parse: ModelFunction<MergedTypespace>
+        model: ModelFunction<MergedTypespace>
     }
 >

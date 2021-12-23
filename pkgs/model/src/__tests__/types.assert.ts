@@ -1,126 +1,152 @@
 import { assert } from "@re-/assert"
-import { typespace, define as def } from ".."
+import { typespace, define } from ".."
 import { typeDefProxy, definitionTypeErrorTemplate } from "../internal.js"
 
-export const user = def(
-    {
-        name: "string",
-        bestFriend: "user?",
-        groups: "group[]"
-    },
-    { typespace: {} as any }
-)
-
 describe("definitions", () => {
-    test("keyword", () => {
-        assert(def("string").type).typed as string
-        // @ts-expect-error
-        assert(() => def("strig")).throwsAndHasTypeError(
-            "Unable to determine the type of 'strig'."
-        )
-    })
-    test("string", () => {
-        assert(def("string|number[]?").type).typed as
-            | string
-            | number[]
-            | undefined
-        // @ts-expect-error
-        assert(() => def("string|[]number")).throwsAndHasTypeError(
-            "Unable to determine the type of '[]number'."
-        )
-    })
-    test("string literals", () => {
-        assert(def("'hello'").type).typed as "hello"
-        // As of TS 4.5, I don't think it's possible to parse a number literal from a string type
-        // Runtime functionality like "getDefault" and "validate" will still use the more specific
-        // value, but the TS type is inferred as "number"
-        assert(def("4").type).typed as number
-        assert(def("1.234").type).typed as number
-    })
-    // Using actual numbers solves the above type widening to "number",
-    // but isn't available directly in the context of string types like lists or functions
-    test("primitives", () => {
-        assert(def(0).type).typed as 0
-        // Repeating, of course
-        assert(def(32.33).type).typed as 32.33
-        assert(def(0n).type).typed as 0n
-        assert(def(99999999999999999999n).type).typed as 99999999999999999999n
-        assert(def(true).type).typed as true
-        assert(def(false).type).typed as false
-        assert(def(undefined).type).typed as undefined
-        assert(def(null).type).typed as null
-    })
-    test("string function", () => {
-        assert(def("(string, number) => boolean[]").type).typed as (
-            args_0: string,
-            args_1: number
-        ) => boolean[]
-        assert(def("()=>void").type).typed as () => void
-        // @ts-expect-error
-        assert(() => def("()=>").type).throwsAndHasTypeError(
-            "Unable to determine the type of ''."
-        )
-        assert(() =>
+    describe("string", () => {
+        test("keyword", () => {
+            assert(define("string").type).typed as string
             // @ts-expect-error
-            def("(foop, string, nufmber) => boolean[]")
-        )
-            .throws("Unable to determine the type of 'foop'.")
-            .type.errors(
-                /Unable to determine the type of 'foop'[\s\S]*Unable to determine the type of 'nufmber'/
+            assert(() => define("strig")).throwsAndHasTypeError(
+                "Unable to determine the type of 'strig'."
             )
-        // @ts-expect-error
-        assert(() => def("()=>fork")).throwsAndHasTypeError(
-            "Unable to determine the type of 'fork'."
-        )
+        })
+        describe("expression", () => {
+            test("optional", () => {
+                assert(define("null?").type).typed as null | undefined
+                // @ts-expect-error
+                assert(() => define("str?ing")).throwsAndHasTypeError(
+                    "Unable to determine the type of 'str?ing'."
+                )
+            })
+            test("arrow function", () => {
+                assert(define("(string, number) => boolean[]").type).typed as (
+                    args_0: string,
+                    args_1: number
+                ) => boolean[]
+                assert(define("()=>void").type).typed as () => void
+                // @ts-expect-error
+                assert(() => define("()=>").type).throwsAndHasTypeError(
+                    "Unable to determine the type of ''."
+                )
+                assert(() =>
+                    // @ts-expect-error
+                    define("(foop, string, nufmber) => boolean[]")
+                )
+                    .throws("Unable to determine the type of 'foop'.")
+                    .type.errors(
+                        /Unable to determine the type of 'foop'[\s\S]*Unable to determine the type of 'nufmber'/
+                    )
+                // @ts-expect-error
+                assert(() => define("()=>fork")).throwsAndHasTypeError(
+                    "Unable to determine the type of 'fork'."
+                )
+            })
+            test("union", () => {
+                assert(define("'yes'|'no'|'maybe'").type)
+            })
+            test("precedence", () => {
+                assert(define("(string|number[])=>void?").type).typed as
+                    | ((args_0: string | number[]) => void)
+                    | undefined
+            })
+        })
+        describe("literal", () => {
+            test("string", () => {
+                //Supports single and double quotes
+                assert(define("'hello'").type).typed as "hello"
+                assert(define('"goodbye"').type).typed as "goodbye"
+            })
+            test("number", () => {
+                // As of TS 4.5, I don't think it's possible to parse a number literal from a string type
+                // Runtime functionality like "getDefault" and "validate" will still use the more specific
+                // value, but the TS type is inferred as "number"
+                assert(define("4").type).typed as number
+                assert(define("1.234").type).typed as number
+            })
+            test("bigint", () => {
+                assert(define("999999999999999n").type).typed as bigint
+                assert(define("-1n").type).typed as bigint
+                // @ts-expect-error
+                assert(() => define("99999.99n")).throwsAndHasTypeError(
+                    "Unable to determine the type of '99999.99n'."
+                )
+            })
+        })
     })
-    test("empty object/tuple", () => {
-        assert(def({}).type).typed as {}
-        assert(def([]).type).typed as []
+    describe("primitive", () => {
+        test("number", () => {
+            assert(define(0).type).typed as 0
+            // Repeating, of course
+            assert(define(32.33).type).typed as 32.33
+        })
+        test("bigint", () => {
+            assert(define(0n).type).typed as 0n
+            assert(define(99999999999999999999n).type)
+                .typed as 99999999999999999999n
+        })
+        test("boolean", () => {
+            assert(define(true).type).typed as true
+            assert(define(false).type).typed as false
+        })
+        test("null", () => {
+            assert(define(null).type).typed as null
+        })
+        test("undefined", () => {
+            assert(define(undefined).type).typed as undefined
+        })
     })
-    test("object", () => {
-        assert(
-            def({
-                a: "string",
-                b: "true|number?",
-                c: { nested: "null[]" },
+    describe("object", () => {
+        test("empty", () => {
+            assert(define({}).type).typed as {}
+            assert(define([]).type).typed as []
+        })
+        test("map", () => {
+            assert(
+                define({
+                    a: "string",
+                    b: "true|number?",
+                    c: { nested: "null[]" },
+                    d: 6
+                }).type
+            ).typed as {
+                b?: number | true | undefined
+                a: string
+                c: { nested: null[] }
                 d: 6
-            }).type
-        ).typed as {
-            b?: number | true | undefined
-            a: string
-            c: { nested: null[] }
-            d: 6
-        }
-        // @ts-expect-error
-        assert(() => def({ a: { b: "whoops" } }))
-            .throws("Unable to determine the type of 'whoops' at path a/b.")
-            .type.errors("Unable to determine the type of 'whoops'")
+            }
+            // @ts-expect-error
+            assert(() => define({ a: { b: "whoops" } }))
+                .throws("Unable to determine the type of 'whoops' at path a/b.")
+                .type.errors("Unable to determine the type of 'whoops'")
+        })
     })
+
     test("bad type def type", () => {
         // @ts-expect-error
-        assert(() => def({ bad: Symbol() })).throwsAndHasTypeError(
+        assert(() => define({ bad: Symbol() })).throwsAndHasTypeError(
             definitionTypeErrorTemplate
         )
         // @ts-expect-error
-        assert(() => def({ bad: () => {} })).throwsAndHasTypeError(
+        assert(() => define({ bad: () => {} })).throwsAndHasTypeError(
             definitionTypeErrorTemplate
         )
     })
     test("with typespace", () => {
         assert(
-            def("borf", {
+            define("borf", {
                 typespace: { borf: true }
             }).type
         ).typed as true
         assert(
-            def(
+            define(
                 { snorf: "borf[]" },
                 { typespace: { borf: { f: false, u: undefined } } }
             ).type
         ).typed as { snorf: { f: false; u: undefined }[] }
     })
     test("list definition", () => {
-        assert(def([{ a: null }, { b: "string?" }]).type).typed as [
+        assert(define([{ a: null }, { b: "string?" }]).type).typed as [
             {
                 a: null
             },
@@ -129,16 +155,16 @@ describe("definitions", () => {
             }
         ]
         assert(
-            def({
+            define({
                 nestedList: [0n, { yes: "null|true" }]
             }).type
         ).typed as { nestedList: [0n, { yes: true | null }] }
     })
     test("whitespace is ignored when parsing strings", () => {
-        assert(def("    boolean      |    null       ").type).typed as
+        assert(define("    boolean      |    null       ").type).typed as
             | boolean
             | null
-        assert(def({ nested: "number|    true" }).type).typed as {
+        assert(define({ nested: "number|    true" }).type).typed as {
             nested: number | true
         }
     })
@@ -148,7 +174,7 @@ describe("definitions", () => {
             { b: { a: "a", isA: "false", isB: "true" } }
         )
     test("with onCycle option", () => {
-        const { type } = getCyclicTypespace().parse(
+        const { type } = getCyclicTypespace().model(
             { a: "a", b: "b" },
             {
                 onCycle: {
@@ -167,7 +193,7 @@ describe("definitions", () => {
         assert(type.b.a.b.cyclic?.a.b.a.b.a.b.a.b.isB).typed as true | undefined
     })
     test("with deepOnCycleOption", () => {
-        const { type } = getCyclicTypespace().parse(
+        const { type } = getCyclicTypespace().model(
             { a: "a", b: "b" },
             {
                 deepOnCycle: true,
@@ -181,7 +207,7 @@ describe("definitions", () => {
         )
     })
     test("with onResolve option", () => {
-        const { type } = getCyclicTypespace().parse(
+        const { type } = getCyclicTypespace().model(
             {
                 referencesA: "a",
                 noReferences: {
@@ -204,10 +230,10 @@ describe("definitions", () => {
     })
     test("doesn't try to parse or validate any", () => {
         // Parse any as type
-        assert(def({} as any).type).typed as any
+        assert(define({} as any).type).typed as any
         // Parse any as typespace
         const parseWithAnyTypespace = () =>
-            def(
+            define(
                 { literal: "string", alias: "myType" },
                 { typespace: {} as any }
             ).type
@@ -219,11 +245,11 @@ describe("definitions", () => {
             .throws()
             .snap(`"Unable to determine the type of 'myType' at path alias."`)
         // Parse any as typespace member
-        assert(def(["number", "a"], { typespace: { a: {} as any } }).type)
+        assert(define(["number", "a"], { typespace: { a: {} as any } }).type)
             .typed as [number, any]
     })
     test("model props", () => {
-        const a = def("a", {
+        const a = define("a", {
             typespace: { a: "true" }
         })
         expect(a.definition).toBe("a")

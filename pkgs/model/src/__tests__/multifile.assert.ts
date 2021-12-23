@@ -6,7 +6,7 @@ export const { define, compile } = declaration("user", "group")
 import { user as userDef } from "./multifile/user"
 import { group as groupDef } from "./multifile/group"
 
-export const { user, group, parse, types } = compile(userDef, groupDef)
+export const { user, group, model: parse, types } = compile(userDef, groupDef)
 
 describe("multifile", () => {
     test("compiles", () => {

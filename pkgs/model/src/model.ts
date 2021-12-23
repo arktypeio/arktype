@@ -118,7 +118,6 @@ export const createModelFunction =
             formattedDefinition,
             context
         ) as any
-
         return {
             type: typeDefProxy,
             typespace: formattedTypespace,

@@ -73,7 +73,7 @@ describe("compile", () => {
         `)
     })
     test("can parse from compiled types", () => {
-        const { parse } = typespace({ a: { b: "b" } }, { b: { a: "a" } })
+        const { model: parse } = typespace({ a: { b: "b" } }, { b: { a: "a" } })
         assert(parse("a|b|null").type).type.toString.snap(
             `"{ b: { a: { b: { a: any; }; }; }; } | { a: { b: { a: { b: any; }; }; }; } | null"`
         )
@@ -84,7 +84,7 @@ describe("compile", () => {
     })
     test("compile result", () => {
         const mySpace = typespace({ a: { b: "b?" } }, { b: { a: "a?" } })
-        const a = mySpace.parse("a")
+        const a = mySpace.model("a")
         assert(a.type)
             .is(typeDefProxy)
             .type.toString()
@@ -102,7 +102,7 @@ describe("compile", () => {
         assert(a.definition).typedValue("a")
         const expectedTypespace = narrow({ a: { b: "b?" }, b: { a: "a?" } })
         assert(a.typespace).typedValue(expectedTypespace)
-        assert(mySpace.parse("b").type)
+        assert(mySpace.model("b").type)
             .is(typeDefProxy)
             .type.toString.snap(
                 `"{ a?: { b?: { a?: any | undefined; } | undefined; } | undefined; }"`
