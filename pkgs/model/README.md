@@ -3,13 +3,19 @@
   <h1>@re-/model</h1>
 </div>
 <div align="center">
-Beautiful types from IDE to runtime 🧬
+One type from editor to runtime 🧬
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 ![Code style](https://img.shields.io/badge/code_style-prettier-ff69b4.svg)
 [![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-v2.0%20adopted-ff69b4.svg)](code-of-conduct.md)
 
 </div>
+
+## What is it?
+
+Think of a model as a combination of a type and a validator.
+
+TODO:
 
 ## Installation
 
@@ -67,14 +73,14 @@ const fetchUser = () => {
 user.validate(fetchUser())
 ```
 
-## Typespaces
+## Schemas
 
 Your models can reference each other or themselves using a **typespace**. [Try it out](https://TODO:updatelink).
 
 ```ts
-import { typespace } from "@re-/model"
+import { space } from "@re-/model"
 
-const mySpace = typespace({
+const mySpace = space({
     user: {
         name: "string",
         friends: "user[]",
@@ -240,7 +246,7 @@ All TypeScript keywords that can be used to represent a type are valid definitio
 | `"unknown"`   | Behaves like `any` when used in validation.         |
 | `"never"`     | Will always throw an error when used in validation. |
 | `"undefined"` |                                                     |
-| `"void"`      | Behaves like `undefined` when used in validation.   |
+| `"void"`      | Behaves like `undefined` when used in validation    |
 | `"object"`    |                                                     |
 | `"null"`      |                                                     |
 | `"function"`  |                                                     |

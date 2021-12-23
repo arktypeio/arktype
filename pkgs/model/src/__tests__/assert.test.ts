@@ -19,6 +19,6 @@ beforeAll(() => {
 
 import "./typespace.assert.js"
 import "./declaration.assert.js"
-import "./definitions.assert.js"
+import "./types.assert.js"
 import "./references.assert.js"
 import "./multifile.assert.js"
