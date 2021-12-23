@@ -13,8 +13,8 @@ describe("declare", () => {
         assert(() => define.GottaDefineThis("whoops")).throwsAndHasTypeError(
             "Unable to determine the type of 'whoops'"
         )
-        const { parse } = compile(GottaDefineThis)
-        assert(parse({ a: "GottaDefineThis" }).type).typed as {
+        const { model } = compile(GottaDefineThis)
+        assert(model({ a: "GottaDefineThis" }).type).typed as {
             a: boolean
         }
     })

@@ -3,7 +3,7 @@ import { define } from ".."
 import { definitionTypeErrorTemplate } from "../errors.js"
 
 const generate = (def: any, typespace: any = {}, opts: any = {}) =>
-    def(def, { typespace }).generate(opts)
+    define(def, { typespace }).generate(opts)
 
 describe("generate", () => {
     test("keywords", () => {
