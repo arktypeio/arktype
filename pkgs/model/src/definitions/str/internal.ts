@@ -1,8 +1,35 @@
-import { StringifyPossibleTypes, Split, Join } from "@re-/tools"
+import {
+    StringifyPossibleTypes,
+    Split,
+    Join,
+    ElementOf,
+    narrow
+} from "@re-/tools"
 import { ParseConfig, ValidationErrorMessage } from "../internal.js"
-import { Str } from "./str.js"
+import { expressionTokens } from "./expression/internal.js"
+import { Fragment } from "./fragment.js"
+import { modifierTokens } from "./modifier/internal.js"
 
 export * from "../internal.js"
+
+export const nonIdentifyingTokens = narrow([
+    ...expressionTokens,
+    ...modifierTokens
+])
+
+export const createTokenMatcher = (tokens: string[]) =>
+    RegExp(
+        // All non-identifying tokens need to be escaped in a regex expression
+        tokens.map((char) => `\\${char}`).join("|"),
+        "g"
+    )
+
+export const nonIdentifyingTokenMatcher =
+    createTokenMatcher(nonIdentifyingTokens)
+
+export type NonIdentifyingTokens = typeof nonIdentifyingTokens
+
+export type NonIdentifyingToken = ElementOf<NonIdentifyingTokens>
 
 export type CheckSplittable<
     Delimiter extends string,
@@ -11,7 +38,7 @@ export type CheckSplittable<
     Space,
     Components extends string[] = Split<Def, Delimiter>,
     ValidateDefinitions extends string[] = {
-        [Index in keyof Components]: Str.Check<
+        [Index in keyof Components]: Fragment.Check<
             Components[Index] & string,
             Components[Index] & string,
             Space
@@ -34,5 +61,9 @@ export type ParseSplittable<
     Options extends ParseConfig,
     Components extends string[] = Split<Def, Delimiter>
 > = {
-    [I in keyof Components]: Str.Parse<Components[I] & string, Space, Options>
+    [I in keyof Components]: Fragment.Parse<
+        Components[I] & string,
+        Space,
+        Options
+    >
 }

@@ -14,7 +14,7 @@ export namespace Root {
     export type Check<Def, Space> = Def extends Primitive.Definition
         ? Def
         : Def extends Str.Definition
-        ? Str.FormatAndCheck<Def, Space>
+        ? Str.Check<Def, Space>
         : Def extends Obj.Definition
         ? Obj.Check<Def, Space>
         : DefinitionTypeError
@@ -26,7 +26,7 @@ export namespace Root {
     > = Def extends Primitive.Definition
         ? Def
         : Def extends Str.Definition
-        ? Str.FormatAndParse<Def, Space, Options>
+        ? Str.Parse<Def, Space, Options>
         : Def extends Obj.Definition
         ? Obj.Parse<Def, Space, Options>
         : unknown

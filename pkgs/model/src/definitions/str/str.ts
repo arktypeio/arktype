@@ -1,24 +1,21 @@
-import { Root } from "../root.js"
 import {
     ElementOf,
     Iteration,
     ListPossibleTypes,
-    narrow,
     RemoveSpaces,
     Split,
     StringReplace
 } from "@re-/tools"
+import { Root } from "../root.js"
 import {
     ParseConfig,
     createParser,
     typeDefProxy,
-    UnknownTypeError,
-    ValidationErrorMessage,
-    ReferencesTypeConfig
+    ReferencesTypeConfig,
+    NonIdentifyingTokens,
+    nonIdentifyingTokenMatcher
 } from "./internal.js"
-import { Alias } from "./alias"
-import { Builtin, Keyword, Literal } from "./builtin"
-import { Expression } from "./expression"
+import { Fragment } from "./fragment.js"
 
 export namespace Str {
     export type Definition = string
@@ -27,84 +24,21 @@ export namespace Str {
         StringReplace<Def, `"`, `'`>
     >
 
-    export type FormatAndCheck<Def extends string, Space> = Str.Check<
+    export type Check<Def extends string, Space> = Fragment.Check<
         Format<Def>,
         Def,
         Space
     >
 
-    /**
-     * Expressions have the highest precedence when determining how to parse
-     * a string definition. However, as of TS4.5, checking whether Def
-     * is an Expression before checking whether it is a Keyword or Alias
-     * inexplicably results in an infinite depth type error for Check
-     * on the first definition containing an Alias in any given file. Subsequent
-     * definitions, even if identical, have no errors.
-     *
-     * To work around this, Builtin is split into Keyword, which is checked first,
-     *  and Literal, which is checked after Expression. This is to ensure that
-     * a definition like "'yes'|'no'" are not interpreted as the StringLiteral
-     * matching "yes'|'no".
-     */
-    export type Check<
-        Def extends string,
-        Root extends string,
-        Space
-    > = Def extends Keyword.Definition
-        ? Root
-        : Def extends Alias.Definition<Space>
-        ? Alias.Check<Def, Root, Space>
-        : Def extends Expression.Definition
-        ? Expression.Check<Def, Root, Space>
-        : Def extends Literal.Definition
-        ? Root
-        : UnknownTypeError<Def>
-
-    export type FormatAndParse<
-        Def extends string,
-        Space,
-        Options extends ParseConfig
-    > = Str.Parse<Format<Def>, Space, Options>
-
     export type Parse<
         Def extends string,
         Space,
         Options extends ParseConfig
-    > = Str.Check<Def, Def, Space> extends ValidationErrorMessage
-        ? unknown
-        : Def extends Keyword.Definition
-        ? Keyword.Parse<Def>
-        : Def extends Alias.Definition<Space>
-        ? Alias.Parse<Def, Space, Options>
-        : Def extends Expression.Definition
-        ? Expression.Parse<Def, Space, Options>
-        : Def extends Literal.Definition
-        ? Literal.Parse<Def>
-        : unknown
-
-    export const controlCharacters = narrow([
-        "|",
-        "?",
-        "(",
-        ")",
-        ",",
-        "[",
-        "]",
-        "=>",
-        " "
-    ])
-
-    export const controlCharacterMatcher = RegExp(
-        // All control characters need to be escaped in a regex expression
-        controlCharacters.map((char) => `\\${char}`).join("|"),
-        "g"
-    )
-
-    export type ControlCharacters = typeof controlCharacters
+    > = Fragment.Parse<Format<Def>, Space, Options>
 
     type RawReferences<
         Fragments extends string,
-        RemainingControlCharacters extends string[] = ControlCharacters
+        RemainingControlCharacters extends string[] = NonIdentifyingTokens
     > = RemainingControlCharacters extends Iteration<
         string,
         infer Character,
@@ -135,11 +69,7 @@ export namespace Str {
         {
             type,
             parent: () => Root.parse,
-            children: () => [
-                Expression.delegate,
-                Builtin.delegate,
-                Alias.delegate
-            ]
+            children: () => [Fragment.delegate]
         },
         {
             matches: (def) => typeof def === "string",
@@ -147,7 +77,7 @@ export namespace Str {
             // empty strings leaving aliases and builtins behind
             references: ({ def }) =>
                 def
-                    .split(controlCharacterMatcher)
+                    .split(nonIdentifyingTokenMatcher)
                     .filter((fragment) => fragment !== "")
         }
     )
