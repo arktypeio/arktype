@@ -1,7 +1,7 @@
 import { Modifier } from "./modifier.js"
 import { Fragment } from "../fragment.js"
 import { typeDefProxy, createParser } from "../internal.js"
-import { duplicateModifierError, invalidModifierError } from "./internal.js"
+import { duplicateModifierError } from "./internal.js"
 
 export namespace Constraints {
     export type Definition<
@@ -21,7 +21,7 @@ export namespace Constraints {
                     throw new Error(duplicateModifierError(":"))
                 }
                 return {
-                    typeDef: Modifier.parse(parts[0], ctx),
+                    typeDef: Fragment.parse(parts[0], ctx),
                     constraints: parts[1]
                 }
             }
@@ -32,9 +32,10 @@ export namespace Constraints {
                 if (valueType === undefined) {
                     return {}
                 }
-                return components[0].allows(valueType, opts)
+                return components.typeDef.allows(valueType, opts)
             },
-            generate: () => undefined
+            generate: ({ components }, opts) =>
+                components.typeDef.generate(opts)
         }
     )
 

@@ -1,10 +1,10 @@
 import { ElementOf, IncludesSubstring, Iteration, narrow } from "@re-/tools"
+import { Fragment } from "../fragment.js"
 import {
     createTokenMatcher,
     DuplicateModifierError,
     InvalidModifierError
 } from "./internal.js"
-import { Modifier } from "./modifier.js"
 
 export * from "../internal.js"
 
@@ -38,5 +38,5 @@ export type CheckModifier<
 > = Def extends `${infer Modified}${Token}${Token extends ":" ? string : ""}`
     ? IncludesSubstring<Modified, Token> extends true
         ? DuplicateModifierError<Token>
-        : Modifier.Check<Modified, Root, Space>
+        : Fragment.Check<Modified, Root, Space, true>
     : InvalidModifierError<Token>

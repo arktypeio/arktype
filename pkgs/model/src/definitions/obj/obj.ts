@@ -1,9 +1,4 @@
-import {
-    Evaluate,
-    Func,
-    isRecursible,
-    Recursible as ExtractRecursible
-} from "@re-/tools"
+import { Evaluate, Func, isRecursible } from "@re-/tools"
 import {
     typeDefProxy,
     ParseConfig,
