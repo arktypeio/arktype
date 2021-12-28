@@ -15,11 +15,11 @@ export namespace Optional {
         },
         {
             matches: (def) => def.endsWith("?"),
-            validate: ({ def, components, ctx }, valueType, opts) => {
+            allows: ({ def, components, ctx }, valueType, opts) => {
                 if (valueType === undefined) {
                     return {}
                 }
-                return components[0].validate(valueType, opts)
+                return components[0].allows(valueType, opts)
             },
             generate: () => undefined
         }

@@ -1,6 +1,6 @@
 import { EntryOf, Entry, isRecursible } from "./common.js"
 import { WithDefaults } from "./merge.js"
-import { isNumeric } from "./transformString.js"
+import { isNumeric } from "./stringUtils.js"
 
 export type DeepMapContext = {
     path: string[]

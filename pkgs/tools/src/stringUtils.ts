@@ -4,6 +4,11 @@ export const alphaOnlyRegex = /^[a-zA-Z]+$/
 
 export const digitsOnlyRegex = /^[0-9]+$/
 
+// https://stackoverflow.com/questions/2811031/decimal-or-numeric-values-in-regular-expression-validation
+export const numericRegex = /^-?(0|[1-9]\d*)(\.\d+)?$/
+
+export const integerRegex = /^-?(0|[1-9]\d*)$/
+
 export const alphaNumericRegex = /^[0-9a-zA-Z]+$/
 
 export const isAlpha = (s: string) => alphaOnlyRegex.test(s)
@@ -12,7 +17,9 @@ export const isDigits = (s: string) => digitsOnlyRegex.test(s)
 
 export type NumericString<N extends number = number> = `${N}`
 
-export const isNumeric = (s: any) => asNumber(s) !== null
+export const isNumeric = (s: any) => numericRegex.test(s)
+
+export const isInteger = (s: any) => integerRegex.test(s)
 
 export type AsNumberOptions = {
     asFloat?: boolean
@@ -32,17 +39,19 @@ export const asNumber = <Options extends AsNumberOptions>(
     s: any,
     options?: Options
 ): number | (Options["assert"] extends true ? never : null) => {
-    const parsable = String(s)
-    const asFloat = options?.asFloat ?? parsable.includes(".")
-    const parser = asFloat ? Number.parseFloat : Number.parseInt
-    const result = parser(parsable)
-    if (isNaN(result)) {
-        if (options?.assert) {
-            throw new Error(`'${s}' cannot be converted to a number.`)
+    if (isNumeric(s)) {
+        const parsable = String(s)
+        const asFloat = options?.asFloat ?? parsable.includes(".")
+        const parser = asFloat ? Number.parseFloat : Number.parseInt
+        const result = parser(parsable)
+        if (!isNaN(result)) {
+            return result
         }
-        return null as any
     }
-    return result
+    if (options?.assert) {
+        throw new Error(`'${s}' cannot be converted to a number.`)
+    }
+    return null as any
 }
 
 export const isAlphaNumeric = (s: string) => alphaNumericRegex.test(s)

@@ -30,7 +30,7 @@ export namespace Primitive {
             matches: (definition) =>
                 typesOf.includes(typeof definition as any) ||
                 definition === null,
-            validate: ({ def, ctx: { path } }, valueType, opts) =>
+            allows: ({ def, ctx: { path } }, valueType, opts) =>
                 def === valueType
                     ? {}
                     : validationError({ def, valueType, path }),

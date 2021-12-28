@@ -2,8 +2,8 @@ import { assert } from "@re-/assert"
 import { define } from ".."
 import { definitionTypeErrorTemplate } from "../errors.js"
 
-const generate = (def: any, typespace: any = {}, opts: any = {}) =>
-    define(def, { typespace }).generate(opts)
+const generate = (def: any, space: any = {}, opts: any = {}) =>
+    define(def, { space }).generate(opts)
 
 describe("generate", () => {
     test("keywords", () => {
@@ -31,13 +31,13 @@ describe("generate", () => {
         expect(generate("number|false|function")).toBe(false)
     })
     test("or literals", () => {
-        const typespace = {
+        const space = {
             five: 5,
             duck: "'duck'",
             func: "(five,duck)=>duck"
         }
-        expect(generate("func|five|duck", typespace)).toBe(5)
-        expect(generate("duck|func", typespace)).toBe("duck")
+        expect(generate("func|five|duck", space)).toBe(5)
+        expect(generate("duck|func", space)).toBe("duck")
     })
     test("arrow function", () => {
         expect(typeof generate("(boolean,any)=>void")).toBe("function")
@@ -66,7 +66,7 @@ describe("generate", () => {
             generate(["true", { a: ["string?", ["true|null|object[]"]] }])
         ).toStrictEqual([true, { a: [undefined, [null]] }])
     })
-    test("simple typespace", () => {
+    test("simple space", () => {
         expect(
             generate(
                 {
@@ -89,7 +89,7 @@ describe("generate", () => {
             bestFruit: { length: 0 }
         })
     })
-    test("cyclic typespace", () => {
+    test("cyclic space", () => {
         // If it's optional, the cycle should be ignored and just return undefined
         expect(
             generate("a", {
@@ -161,7 +161,7 @@ describe("generate", () => {
                 optionalGroup: "group?",
                 optionalGroups: "group[]?"
             },
-            { typespace: { group: { name: "string", description: "string?" } } }
+            { space: { group: { name: "string", description: "string?" } } }
         ).generate()
         expect(defaultValue).toStrictEqual({
             requiredGroup: { name: "" },

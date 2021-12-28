@@ -20,14 +20,14 @@ export namespace ArrowFunction {
         Parameters extends string,
         Return extends string,
         Root extends string,
-        Typespace,
+        Space,
         ValidatedParameters extends string = CheckParameterTuple<
             Parameters,
             Parameters,
-            Typespace
+            Space
         > &
             string,
-        ValidatedReturn extends string = Str.Check<Return, Return, Typespace>
+        ValidatedReturn extends string = Str.Check<Return, Return, Space>
     > = Parameters extends ValidatedParameters
         ? Return extends ValidatedReturn
             ? Root
@@ -37,12 +37,12 @@ export namespace ArrowFunction {
     export type Parse<
         Parameters extends string,
         Return extends string,
-        Typespace,
+        Space,
         Options extends ParseConfig
     > = Evaluate<
         (
-            ...args: ParseParameterTuple<Parameters, Typespace, Options>
-        ) => Str.Parse<Return, Typespace, Options>
+            ...args: ParseParameterTuple<Parameters, Space, Options>
+        ) => Str.Parse<Return, Space, Options>
     >
 
     export const type = typeDefProxy as Definition
@@ -66,7 +66,7 @@ export namespace ArrowFunction {
         },
         {
             matches: (def) => /\(.*\)\=\>.*/.test(def as any),
-            validate: ({ def, ctx: { path } }, valueType) =>
+            allows: ({ def, ctx: { path } }, valueType) =>
                 valueType === "function"
                     ? {}
                     : validationError({
@@ -87,11 +87,11 @@ export namespace ArrowFunction {
 type CheckParameterTuple<
     Def extends string,
     Root extends string,
-    Typespace
-> = Def extends "" ? "" : CheckSplittable<",", Def, Root, Typespace>
+    Space
+> = Def extends "" ? "" : CheckSplittable<",", Def, Root, Space>
 
 type ParseParameterTuple<
     Def extends string,
-    Typespace,
+    Space,
     Options extends ParseConfig
-> = Def extends "" ? [] : ParseSplittable<",", Def, Typespace, Options>
+> = Def extends "" ? [] : ParseSplittable<",", Def, Space, Options>

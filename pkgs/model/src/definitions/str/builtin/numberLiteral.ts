@@ -1,6 +1,6 @@
 import { asNumber, isNumeric, NumericString } from "@re-/tools"
 import { typeDefProxy, validationError, createParser } from "./internal.js"
-import { Builtin } from "./builtin.js"
+import { Literal } from "./literal.js"
 
 export namespace NumberLiteral {
     export type Definition<Value extends number = number> = NumericString<Value>
@@ -10,11 +10,11 @@ export namespace NumberLiteral {
     export const parse = createParser(
         {
             type,
-            parent: () => Builtin.parse
+            parent: () => Literal.parse
         },
         {
             matches: (definition) => isNumeric(definition),
-            validate: ({ def, ctx: { path } }, valueType) =>
+            allows: ({ def, ctx: { path } }, valueType) =>
                 asNumber(def, { assert: true }) === valueType
                     ? {}
                     : validationError({ def, valueType, path }),

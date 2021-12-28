@@ -1,23 +1,25 @@
 import { ElementOf, Narrow, transform } from "@re-/tools"
 import { define, CheckReferences } from "./model.js"
-import { TypespaceFunction, createTypespaceFunction } from "./typespace.js"
+import { CompileFunction, createCompileFunction } from "./compile.js"
 
-export const createDefineFunctionMap = <DeclaredTypeNames extends string[]>(
+export const createDeclaredDefineFunctionMap = <
+    DeclaredTypeNames extends string[]
+>(
     typeNames: DeclaredTypeNames
 ) =>
     transform(typeNames, ([i, typeName]) => [
         typeName as string,
-        createDefineFunction(typeNames, typeName as any)
-    ]) as DefineFunctionMap<DeclaredTypeNames>
+        createDeclaredDefineFunction(typeNames, typeName as any)
+    ]) as DeclaredDefineFunctionMap<DeclaredTypeNames>
 
-export type DefineFunctionMap<DeclaredTypeNames extends string[]> = {
-    [DefinedTypeName in ElementOf<DeclaredTypeNames>]: DefineFunction<
+export type DeclaredDefineFunctionMap<DeclaredTypeNames extends string[]> = {
+    [DefinedTypeName in ElementOf<DeclaredTypeNames>]: DeclaredDefineFunction<
         DefinedTypeName,
         DeclaredTypeNames
     >
 }
 
-export type DefineFunction<
+export type DeclaredDefineFunction<
     DefinedTypeName extends ElementOf<DeclaredTypeNames>,
     DeclaredTypeNames extends string[]
 > = <Def>(
@@ -26,17 +28,17 @@ export type DefineFunction<
     [K in DefinedTypeName]: Def
 }
 
-export const createDefineFunction =
+export const createDeclaredDefineFunction =
     <
         DefinedTypeName extends ElementOf<DeclaredTypeNames>,
         DeclaredTypeNames extends string[]
     >(
         declaredTypeNames: DeclaredTypeNames,
         definedTypeName: DefinedTypeName
-    ): DefineFunction<DefinedTypeName, DeclaredTypeNames> =>
+    ): DeclaredDefineFunction<DefinedTypeName, DeclaredTypeNames> =>
     (definition: any) => {
-        definition(definition, {
-            typespace: transform(declaredTypeNames, ([i, typeName]) => [
+        define(definition, {
+            space: transform(declaredTypeNames, ([i, typeName]) => [
                 typeName,
                 "unknown"
             ]) as any
@@ -45,13 +47,13 @@ export const createDefineFunction =
     }
 
 export type Declaration<DeclaredTypeNames extends string[] = string[]> = {
-    define: DefineFunctionMap<DeclaredTypeNames>
-    compile: TypespaceFunction<DeclaredTypeNames>
+    define: DeclaredDefineFunctionMap<DeclaredTypeNames>
+    compile: CompileFunction<DeclaredTypeNames>
 }
 
-export const declaration = <DeclaredTypeNames extends string[]>(
+export const declare = <DeclaredTypeNames extends string[]>(
     ...names: Narrow<DeclaredTypeNames>
 ) => ({
-    define: createDefineFunctionMap(names),
-    compile: createTypespaceFunction(names)
+    define: createDeclaredDefineFunctionMap(names),
+    compile: createCompileFunction(names)
 })

@@ -6,6 +6,7 @@
 
 Type-first validation from editor to runtime 🧭
 
+![Coverage: 95%](https://img.shields.io/badge/Coverage-91%25-brightgreen)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 ![Code style](https://img.shields.io/badge/code_style-prettier-ff69b4.svg)
 [![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-v2.0%20adopted-ff69b4.svg)](code-of-conduct.md)
@@ -14,11 +15,7 @@ Type-first validation from editor to runtime 🧭
 
 ## What's a model?
 
-A (`@re-/`)model is a way to define a set of values.
-
-combination of a type and a validator.
-
-TODO:
+A model is a way to create universal types for your JS/TS values. From one definition, you get all the benefits of [TypeScript](https://github.com/microsoft/TypeScript) at compile time and a validator like [Yup](https://github.com/jquense/yup) or [JOI](https://github.com/sideway/joi) at runtime.
 
 ## Installation
 
@@ -28,15 +25,15 @@ TODO:
 
 If you're using TypeScript, you'll need at least `4.4`.
 
-## Creating your first model
+## Definition
 
 This snippet will give you an idea of `@re-/model` syntax, but the best way to get a feel for it is in a live editor. Try messing around with the `user` model in [our sandbox](https://TODO:updatelink) or paste it in your own editor and see how the type hints help guide you in the right direction.
 
 ```ts
-import { model } from "@re-/model"
+import { define } from "@re-/model"
 
 // Most common TypeScript expressions just work...
-const user = model({
+const user = define({
     name: {
         first: "string",
         middle: "string?",
@@ -76,14 +73,14 @@ const fetchUser = () => {
 user.validate(fetchUser())
 ```
 
-## Schemas
+## Compilation
 
-Your models can reference each other or themselves using a **typespace**. [Try it out](https://TODO:updatelink).
+Your models can reference each other or themselves using a **compilation**. [Try it out](https://TODO:updatelink).
 
 ```ts
-import { space } from "@re-/model"
+import { compile } from "@re-/model"
 
-const mySpace = space({
+const mySpace = compile({
     user: {
         name: "string",
         friends: "user[]",
@@ -122,17 +119,17 @@ const community = mySpace.model({
 })
 ```
 
-## Declarations
+## Declaration
 
-If you prefer to split up your typespace definitions across one or more files, you'll want to use a **declaration**. [Try it out](https://TODO:updatelink).
+If you prefer to split your space definitions across one or more files, you'll want to use a **declaration**. [Try it out](https://TODO:updatelink).
 
 `index.ts`
 
 ```ts
-import { declaration } from "@re-/model"
+import { declare } from "@re-/model"
 
 // Declare the names in your typespace allows
-const declared = declaration("user", "group")
+const declared = declare("user", "group")
 
 // A declaration's "define" prop can be used anywhere to create
 // a definition that allows references to other declared names
@@ -142,10 +139,10 @@ import { userDef } from "./user"
 import { groupDef } from "./group"
 
 // Type error: "Declared types 'group' were never defined."
-const badSpace = declared.typespace(userDef)
+const badSpace = declared.compile(userDef)
 
 // Creates a typespace identical to that of "Creating your first typespace"
-const mySpace = declared.typespace(userDef, groupDef)
+const mySpace = declared.compile(userDef, groupDef)
 ```
 
 `user.ts`

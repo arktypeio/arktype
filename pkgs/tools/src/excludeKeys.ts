@@ -1,6 +1,6 @@
 import { Key, NonRecursible, Unlisted } from "./common.js"
 import { filter } from "./filter.js"
-import { NumericString, StringOrNumberFrom } from "./transformString.js"
+import { NumericString, StringOrNumberFrom } from "./stringUtils.js"
 
 export type ExcludedByKeys<O, K extends Key[]> = Pick<
     O,

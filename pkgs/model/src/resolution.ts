@@ -4,23 +4,23 @@ import { Root, Str } from "./definitions"
 
 type CheckReferencesForShallowCycle<
     References extends string[],
-    Typespace,
+    Space,
     Seen
 > = References extends Iteration<string, infer Current, infer Remaining>
     ? CheckForShallowCycleRecurse<
-          KeyValuate<Typespace, Current>,
-          Typespace,
+          KeyValuate<Space, Current>,
+          Space,
           Seen | Current
       > extends never
-        ? CheckReferencesForShallowCycle<Remaining, Typespace, Seen>
+        ? CheckReferencesForShallowCycle<Remaining, Space, Seen>
         : CheckForShallowCycleRecurse<
-              KeyValuate<Typespace, Current>,
-              Typespace,
+              KeyValuate<Space, Current>,
+              Space,
               Seen | Current
           >
     : never
 
-type CheckForShallowCycleRecurse<Def, Typespace, Seen> = IsAny<Def> extends true
+type CheckForShallowCycleRecurse<Def, Space, Seen> = IsAny<Def> extends true
     ? never
     : Def extends Seen
     ? Seen
@@ -31,32 +31,32 @@ type CheckForShallowCycleRecurse<Def, Typespace, Seen> = IsAny<Def> extends true
               {
                   asList: true
                   asUnorderedList: false
-                  filter: keyof Typespace & string
+                  filter: keyof Space & string
               }
           >,
-          Typespace,
+          Space,
           Seen
       >
     : never
 
-type CheckForShallowCycle<Def, Typespace> = CheckForShallowCycleRecurse<
+type CheckForShallowCycle<Def, Space> = CheckForShallowCycleRecurse<
     Def,
-    Typespace,
+    Space,
     never
 >
 
 export namespace Resolution {
     export type Definition = Root.Definition
 
-    export type Check<Def, Typespace> = IsAny<Def> extends true
+    export type Check<Def, Space> = IsAny<Def> extends true
         ? "any"
-        : CheckForShallowCycle<Def, Typespace> extends never
-        ? Root.Check<Def, Typespace>
-        : ShallowCycleError<Def & string, CheckForShallowCycle<Def, Typespace>>
+        : CheckForShallowCycle<Def, Space> extends never
+        ? Root.Check<Def, Space>
+        : ShallowCycleError<Def & string, CheckForShallowCycle<Def, Space>>
 
-    export type Parse<Def, Typespace, Options extends ParseConfig> = Root.Parse<
+    export type Parse<Def, Space, Options extends ParseConfig> = Root.Parse<
         Def,
-        Typespace,
+        Space,
         Options
     >
 }

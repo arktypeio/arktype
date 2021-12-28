@@ -9,7 +9,8 @@ import {
     isDigits,
     isNumeric,
     asNumber,
-    filterChars
+    filterChars,
+    isInteger
 } from ".."
 
 const original = "hello"
@@ -107,11 +108,16 @@ describe("alphanumeric regex", () => {
         expect(isNumeric("7.5")).toBe(true)
         expect(isNumeric(7.5)).toBe(true)
         expect(isNumeric("f")).toBe(false)
+        expect(isInteger("0")).toBe(true)
+        expect(isInteger(654)).toBe(true)
+        expect(isInteger("0.1")).toBe(false)
+        expect(isInteger(654.456)).toBe(false)
         expect(asNumber("7")).toBe(7)
         expect(asNumber("7.5")).toBe(7.5)
         expect(asNumber("7", { asFloat: true })).toBe(7)
         expect(asNumber("7.5", { asFloat: false })).toBe(7)
         expect(asNumber("-3.14159", { asFloat: true })).toBe(-3.14159)
+        expect(asNumber("4.567n")).toBe(null)
         expect(asNumber("I'm a number ;-)")).toBe(null)
         expect(() => asNumber("KEKW", { assert: true })).toThrow()
         expect(asNumber(12)).toBe(12)

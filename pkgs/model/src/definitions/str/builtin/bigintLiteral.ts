@@ -1,6 +1,6 @@
-import { isNumeric } from "@re-/tools"
+import { isInteger } from "@re-/tools"
 import { typeDefProxy, validationError, createParser } from "./internal.js"
-import { Builtin } from "./builtin.js"
+import { Literal } from "./literal.js"
 
 export namespace BigintLiteral {
     export type Definition<Value extends bigint = bigint> = `${Value}n`
@@ -9,12 +9,12 @@ export namespace BigintLiteral {
     export const parse = createParser(
         {
             type,
-            parent: () => Builtin.parse
+            parent: () => Literal.parse
         },
         {
             matches: (definition) =>
-                definition.endsWith("n") && isNumeric(definition.slice(0, -1)),
-            validate: ({ def, ctx: { path } }, valueType) =>
+                definition.endsWith("n") && isInteger(definition.slice(0, -1)),
+            allows: ({ def, ctx: { path } }, valueType) =>
                 // bigint literals lose the "n" suffix when used in template strings
                 typeof valueType === "bigint" && def === `${valueType}n`
                     ? {}

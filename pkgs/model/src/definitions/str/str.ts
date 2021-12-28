@@ -27,10 +27,10 @@ export namespace Str {
         StringReplace<Def, `"`, `'`>
     >
 
-    export type FormatAndCheck<Def extends string, Typespace> = Str.Check<
+    export type FormatAndCheck<Def extends string, Space> = Str.Check<
         Format<Def>,
         Def,
-        Typespace
+        Space
     >
 
     /**
@@ -49,35 +49,35 @@ export namespace Str {
     export type Check<
         Def extends string,
         Root extends string,
-        Typespace
+        Space
     > = Def extends Keyword.Definition
         ? Root
-        : Def extends Alias.Definition<Typespace>
-        ? Alias.Check<Def, Root, Typespace>
+        : Def extends Alias.Definition<Space>
+        ? Alias.Check<Def, Root, Space>
         : Def extends Expression.Definition
-        ? Expression.Check<Def, Root, Typespace>
+        ? Expression.Check<Def, Root, Space>
         : Def extends Literal.Definition
         ? Root
         : UnknownTypeError<Def>
 
     export type FormatAndParse<
         Def extends string,
-        Typespace,
+        Space,
         Options extends ParseConfig
-    > = Str.Parse<Format<Def>, Typespace, Options>
+    > = Str.Parse<Format<Def>, Space, Options>
 
     export type Parse<
         Def extends string,
-        Typespace,
+        Space,
         Options extends ParseConfig
-    > = Str.Check<Def, Def, Typespace> extends ValidationErrorMessage
+    > = Str.Check<Def, Def, Space> extends ValidationErrorMessage
         ? unknown
         : Def extends Keyword.Definition
         ? Keyword.Parse<Def>
-        : Def extends Alias.Definition<Typespace>
-        ? Alias.Parse<Def, Typespace, Options>
+        : Def extends Alias.Definition<Space>
+        ? Alias.Parse<Def, Space, Options>
         : Def extends Expression.Definition
-        ? Expression.Parse<Def, Typespace, Options>
+        ? Expression.Parse<Def, Space, Options>
         : Def extends Literal.Definition
         ? Literal.Parse<Def>
         : unknown
@@ -90,7 +90,8 @@ export namespace Str {
         ",",
         "[",
         "]",
-        "=>"
+        "=>",
+        " "
     ])
 
     export const controlCharacterMatcher = RegExp(

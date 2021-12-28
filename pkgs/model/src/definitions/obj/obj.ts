@@ -20,24 +20,24 @@ export namespace Obj {
 
     // Since functions satisfy Map.Definition, we have to check
     // that the def is not a function before trying to validate it
-    export type Check<Def, Typespace> = Def extends Func
+    export type Check<Def, Space> = Def extends Func
         ? DefinitionTypeError
         : Def extends Tuple.Definition
-        ? Tuple.Check<Def, Typespace>
+        ? Tuple.Check<Def, Space>
         : Def extends Map.Definition
-        ? Map.Check<Def, Typespace>
+        ? Map.Check<Def, Space>
         : DefinitionTypeError
 
     export type Parse<
         Def extends Definition,
-        Typespace,
+        Space,
         Options extends ParseConfig
-    > = Obj.Check<Def, Typespace> extends ValidationErrorMessage
+    > = Obj.Check<Def, Space> extends ValidationErrorMessage
         ? unknown
         : Def extends Tuple.Definition
-        ? Evaluate<Tuple.Parse<Def, Typespace, Options>>
+        ? Evaluate<Tuple.Parse<Def, Space, Options>>
         : Def extends Map.Definition
-        ? Evaluate<Map.Parse<Def, Typespace, Options>>
+        ? Evaluate<Map.Parse<Def, Space, Options>>
         : unknown
 
     export const type = typeDefProxy as Definition

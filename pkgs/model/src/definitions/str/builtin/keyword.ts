@@ -25,8 +25,8 @@ export namespace Keyword {
         {
             matches: (definition) => definition in handlers,
             generate: (ctx) => handlers[ctx.def].generate(ctx),
-            validate: (ctx, valueType) => {
-                return handlers[ctx.def].validate(valueType)
+            allows: (ctx, valueType) => {
+                return handlers[ctx.def].allows(valueType)
                     ? {}
                     : validationError({
                           def: ctx.def,
@@ -46,7 +46,7 @@ export namespace Keyword {
                 generate: (
                     ctx: InheritableMethodContext<string, unknown>[0]
                 ) => any
-                validate: (
+                allows: (
                     valueType: unknown,
                     ctx: InheritableMethodContext<string, unknown>[0]
                 ) => boolean
@@ -62,32 +62,32 @@ export namespace Keyword {
         // so they are extracted at the 'typeof' level
         symbol: {
             generate: () => Symbol(),
-            validate: (valueType) => valueType === "symbol"
+            allows: (valueType) => valueType === "symbol"
         },
         function: {
             generate:
                 () =>
                 (...args: any[]) =>
                     undefined as any,
-            validate: (valueType) => valueType === "function"
+            allows: (valueType) => valueType === "function"
         },
         // These can be represented via their respective primitives,
         // but are extracted as literals for clarity
         true: {
             generate: () => true as true,
-            validate: (valueType) => valueType === "true"
+            allows: (valueType) => valueType === "true"
         },
         false: {
             generate: () => false as false,
-            validate: (valueType) => valueType === "false"
+            allows: (valueType) => valueType === "false"
         },
         undefined: {
             generate: () => undefined,
-            validate: (valueType) => valueType === "undefined"
+            allows: (valueType) => valueType === "undefined"
         },
         null: {
             generate: () => null,
-            validate: (valueType) => valueType === "null"
+            allows: (valueType) => valueType === "null"
         }
     })
 
@@ -108,46 +108,45 @@ export namespace Keyword {
         // Abstract types
         any: {
             generate: () => undefined as any,
-            validate: () => true
+            allows: () => true
         },
         unknown: {
             generate: () => undefined as unknown,
-            validate: () => true
+            allows: () => true
         },
         void: {
             generate: () => undefined as void,
-            validate: (valueType) => typeof valueType === undefined
+            allows: (valueType) => typeof valueType === undefined
         },
         never: {
             generate: ({ def, ctx }) => {
                 throw new Error(valueGenerationError({ def, ctx }))
             },
-            validate: () => false
+            allows: () => false
         },
         // Narrowable types
         object: {
             generate: () => ({} as object),
-            validate: (valueType) => typeof valueType === "object"
+            allows: (valueType) => typeof valueType === "object"
         },
         boolean: {
             generate: () => false as boolean,
-            validate: (valueType) =>
-                valueType === "true" || valueType === "false"
+            allows: (valueType) => valueType === "true" || valueType === "false"
         },
         string: {
             generate: () => "" as string,
-            validate: (valueType) =>
+            allows: (valueType) =>
                 typeof valueType === "string" && !!valueType.match("'.*'")
         },
         // These types are extracted as primitives to avoid type widening
         // that occurs when inferring a number from a template string
         number: {
             generate: () => 0 as number,
-            validate: (valueType) => typeof valueType === "number"
+            allows: (valueType) => typeof valueType === "number"
         },
         bigint: {
             generate: () => BigInt(0),
-            validate: (valueType) => typeof valueType === "bigint"
+            allows: (valueType) => typeof valueType === "bigint"
         }
     })
 

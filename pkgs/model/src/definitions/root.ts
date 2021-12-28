@@ -11,24 +11,24 @@ export namespace Root {
         | Str.Definition
         | Obj.Definition
 
-    export type Check<Def, Typespace> = Def extends Primitive.Definition
+    export type Check<Def, Space> = Def extends Primitive.Definition
         ? Def
         : Def extends Str.Definition
-        ? Str.FormatAndCheck<Def, Typespace>
+        ? Str.FormatAndCheck<Def, Space>
         : Def extends Obj.Definition
-        ? Obj.Check<Def, Typespace>
+        ? Obj.Check<Def, Space>
         : DefinitionTypeError
 
     export type Parse<
         Def,
-        Typespace,
+        Space,
         Options extends ParseConfig
     > = Def extends Primitive.Definition
         ? Def
         : Def extends Str.Definition
-        ? Str.FormatAndParse<Def, Typespace, Options>
+        ? Str.FormatAndParse<Def, Space, Options>
         : Def extends Obj.Definition
-        ? Obj.Parse<Def, Typespace, Options>
+        ? Obj.Parse<Def, Space, Options>
         : unknown
 
     export const type = typeDefProxy as Definition
