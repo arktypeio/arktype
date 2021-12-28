@@ -10,7 +10,7 @@ import {
     StringifyPossibleTypes
 } from "@re-/tools"
 import { ParseContext } from "./definitions/parser.js"
-import { ModifierToken } from "./definitions/str/modification/internal.js"
+import { ModifierToken } from "./definitions/str/modifier/internal.js"
 import { ExtractableDefinition } from "./internal.js"
 
 export const stringifyDefinition = (def: unknown) =>
@@ -51,15 +51,32 @@ export const unknownTypeError = <Definition>(def: Definition, path: string[]) =>
         .replace("@def", stringifyDefinition(def))
         .replace("@context", stringifyPathContext(path))
 
-export const invalidModifierError =
-    "Modifier '@modifier' is invalid in its current position."
+export const duplicateModifierErrorTemplate =
+    "Modifier '@modifier' cannot appear more than once in a string definition."
 
-export type InvalidModifierError<
+export const duplicateModifierError = (modifier: ModifierToken) =>
+    duplicateModifierErrorTemplate.replace("@modifier", modifier)
+
+export type DuplicateModifierError<
     DuplicatedModifier extends ModifierToken = ModifierToken
 > = StringReplace<
-    typeof invalidModifierError,
+    typeof duplicateModifierErrorTemplate,
     "@modifier",
     `${DuplicatedModifier}`
+>
+
+export const invalidModifierErrorTemplate =
+    "Modifier '@modifier' is only valid at the end of a type definition before any constraints."
+
+export const invalidModifierError = (modifier: ModifierToken) =>
+    invalidModifierErrorTemplate.replace("@modifier", modifier)
+
+export type InvalidModifierError<
+    InvalidModifier extends ModifierToken = ModifierToken
+> = StringReplace<
+    typeof invalidModifierErrorTemplate,
+    "@modifier",
+    `${InvalidModifier}`
 >
 
 // Members of an or type to errors that occurred validating those types
@@ -103,6 +120,7 @@ export type ValidationErrorMessage =
     | UnknownTypeError
     | ShallowCycleError
     | DefinitionTypeError
+    | DuplicateModifierError
     | InvalidModifierError
 
 export type InferrableValidationErrorMessage<E> =

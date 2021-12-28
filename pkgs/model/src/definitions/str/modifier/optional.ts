@@ -1,18 +1,17 @@
-import { Modification } from "./modification.js"
-import { Str } from "../str.js"
+import { Modifier } from "./modifier.js"
+import { Fragment } from "../fragment.js"
 import { typeDefProxy, createParser } from "../internal.js"
 
 export namespace Optional {
-    export type Definition<Def extends string = string> =
-        Modification.Definition<Def, "?">
+    export type Definition<Def extends string = string> = `${Def}?`
 
     export const type = typeDefProxy as Definition
 
     export const parse = createParser(
         {
             type,
-            parent: () => Modification.parse,
-            components: (def, ctx) => [Str.parse(def.slice(0, -1), ctx)]
+            parent: () => Modifier.parse,
+            components: (def, ctx) => [Fragment.parse(def.slice(0, -1), ctx)]
         },
         {
             matches: (def) => def.endsWith("?"),

@@ -7,7 +7,7 @@ import {
     CheckSplittable,
     ParseConfig
 } from "./internal.js"
-import { Str } from "../str.js"
+import { Fragment } from "../fragment.js"
 import { Expression } from "./expression.js"
 
 export namespace ArrowFunction {
@@ -27,7 +27,7 @@ export namespace ArrowFunction {
             Space
         > &
             string,
-        ValidatedReturn extends string = Str.Check<Return, Return, Space>
+        ValidatedReturn extends string = Fragment.Check<Return, Return, Space>
     > = Parameters extends ValidatedParameters
         ? Return extends ValidatedReturn
             ? Root
@@ -42,7 +42,7 @@ export namespace ArrowFunction {
     > = Evaluate<
         (
             ...args: ParseParameterTuple<Parameters, Space, Options>
-        ) => Str.Parse<Return, Space, Options>
+        ) => Fragment.Parse<Return, Space, Options>
     >
 
     export const type = typeDefProxy as Definition
@@ -59,8 +59,10 @@ export namespace ArrowFunction {
                     .filter((arg) => !!arg)
                 const returnDef = parts.slice(1).join("=>")
                 return {
-                    parameters: parameterDefs.map((arg) => Str.parse(arg, ctx)),
-                    returned: Str.parse(returnDef, ctx)
+                    parameters: parameterDefs.map((arg) =>
+                        Fragment.parse(arg, ctx)
+                    ),
+                    returned: Fragment.parse(returnDef, ctx)
                 }
             }
         },

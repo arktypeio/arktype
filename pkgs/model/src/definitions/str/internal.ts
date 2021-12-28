@@ -8,7 +8,7 @@ import {
 import { ParseConfig, ValidationErrorMessage } from "../internal.js"
 import { expressionTokens } from "./expression/internal.js"
 import { Fragment } from "./fragment.js"
-import { modifierTokens } from "./modification/internal.js"
+import { modifierTokens } from "./modifier/internal.js"
 
 export * from "../internal.js"
 

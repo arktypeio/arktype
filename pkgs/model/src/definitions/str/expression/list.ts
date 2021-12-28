@@ -1,5 +1,5 @@
 import { typeDefProxy, validationError, createParser } from "./internal.js"
-import { Str } from "../str.js"
+import { Fragment } from "../fragment.js"
 import { Expression } from "./expression.js"
 import { Tuple } from "../../obj"
 
@@ -13,7 +13,7 @@ export namespace List {
             type,
             parent: () => Expression.parse,
             components: (def, ctx) => ({
-                item: Str.parse(def.slice(0, -2), ctx)
+                item: Fragment.parse(def.slice(0, -2), ctx)
             })
         },
         {

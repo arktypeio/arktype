@@ -2,8 +2,7 @@ import {
     ParseConfig,
     createParser,
     typeDefProxy,
-    UnknownTypeError,
-    ValidationErrorMessage
+    UnknownTypeError
 } from "./internal.js"
 import { Alias } from "./alias"
 import { Builtin, Keyword, Literal } from "./builtin"
@@ -44,9 +43,7 @@ export namespace Fragment {
         Def extends string,
         Space,
         Options extends ParseConfig
-    > = Fragment.Check<Def, Def, Space> extends ValidationErrorMessage
-        ? unknown
-        : Def extends Keyword.Definition
+    > = Def extends Keyword.Definition
         ? Keyword.Parse<Def>
         : Def extends Alias.Definition<Space>
         ? Alias.Parse<Def, Space, Options>

@@ -12,7 +12,7 @@ import {
     ParseContext,
     ParseConfig
 } from "./internal.js"
-import { Str } from "../str.js"
+import { Fragment } from "../fragment.js"
 import { Expression } from "./expression.js"
 
 type PreferredDefaults = ({ value: any } | { typeOf: TypeCategory })[]
@@ -55,7 +55,7 @@ export namespace Or {
             type,
             parent: () => Expression.parse,
             components: (def: Definition, ctx: ParseContext) =>
-                def.split("|").map((fragment) => Str.parse(fragment, ctx))
+                def.split("|").map((fragment) => Fragment.parse(fragment, ctx))
         },
         {
             matches: (definition) => definition.includes("|"),

@@ -1,6 +1,6 @@
 import { ParseConfig, typeDefProxy } from "./internal.js"
 import { Obj } from "./obj"
-import { Str } from "./str"
+import { Fragment } from "./str"
 import { Primitive } from "./primitive"
 import { reroot, createParser } from "./parser.js"
 import { DefinitionTypeError, definitionTypeError } from "../errors.js"
@@ -8,13 +8,13 @@ import { DefinitionTypeError, definitionTypeError } from "../errors.js"
 export namespace Root {
     export type Definition =
         | Primitive.Definition
-        | Str.Definition
+        | Fragment.Definition
         | Obj.Definition
 
     export type Check<Def, Space> = Def extends Primitive.Definition
         ? Def
-        : Def extends Str.Definition
-        ? Str.Check<Def, Space>
+        : Def extends Fragment.Definition
+        ? Fragment.Check<Def, Space>
         : Def extends Obj.Definition
         ? Obj.Check<Def, Space>
         : DefinitionTypeError
@@ -25,8 +25,8 @@ export namespace Root {
         Options extends ParseConfig
     > = Def extends Primitive.Definition
         ? Def
-        : Def extends Str.Definition
-        ? Str.Parse<Def, Space, Options>
+        : Def extends Fragment.Definition
+        ? Fragment.Parse<Def, Space, Options>
         : Def extends Obj.Definition
         ? Obj.Parse<Def, Space, Options>
         : unknown
@@ -37,7 +37,11 @@ export namespace Root {
         {
             type,
             parent: () => reroot,
-            children: () => [Primitive.delegate, Str.delegate, Obj.delegate],
+            children: () => [
+                Primitive.delegate,
+                Fragment.delegate,
+                Obj.delegate
+            ],
             fallback: (definition, { path }) => {
                 throw new Error(definitionTypeError(definition, path))
             }
