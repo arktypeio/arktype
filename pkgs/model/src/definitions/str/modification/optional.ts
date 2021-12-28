@@ -1,16 +1,17 @@
-import { Modifier } from "./modifier.js"
+import { Modification } from "./modification.js"
 import { Str } from "../str.js"
 import { typeDefProxy, createParser } from "../internal.js"
 
 export namespace Optional {
-    export type Definition<Def extends string = string> = `${Def}?`
+    export type Definition<Def extends string = string> =
+        Modification.Definition<Def, "?">
 
     export const type = typeDefProxy as Definition
 
     export const parse = createParser(
         {
             type,
-            parent: () => Modifier.parse,
+            parent: () => Modification.parse,
             components: (def, ctx) => [Str.parse(def.slice(0, -1), ctx)]
         },
         {

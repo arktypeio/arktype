@@ -588,3 +588,8 @@ export type DeepTreeOf<T> =
           [K in string]: TreeOf<T>
       }
     | TreeOf<T>[]
+
+export type IncludesSubstring<
+    S extends string,
+    Substring extends string
+> = S extends `${string}${Substring}${string}` ? true : false

@@ -10,6 +10,7 @@ import {
     StringifyPossibleTypes
 } from "@re-/tools"
 import { ParseContext } from "./definitions/parser.js"
+import { ModifierToken } from "./definitions/str/modification/internal.js"
 import { ExtractableDefinition } from "./internal.js"
 
 export const stringifyDefinition = (def: unknown) =>
@@ -49,6 +50,17 @@ export const unknownTypeError = <Definition>(def: Definition, path: string[]) =>
     baseUnknownTypeError
         .replace("@def", stringifyDefinition(def))
         .replace("@context", stringifyPathContext(path))
+
+export const invalidModifierError =
+    "Modifier '@modifier' is invalid in its current position."
+
+export type InvalidModifierError<
+    DuplicatedModifier extends ModifierToken = ModifierToken
+> = StringReplace<
+    typeof invalidModifierError,
+    "@modifier",
+    `${DuplicatedModifier}`
+>
 
 // Members of an or type to errors that occurred validating those types
 export type OrTypeErrors = Record<string, string>
@@ -91,6 +103,7 @@ export type ValidationErrorMessage =
     | UnknownTypeError
     | ShallowCycleError
     | DefinitionTypeError
+    | InvalidModifierError
 
 export type InferrableValidationErrorMessage<E> =
     E extends ValidationErrorMessage ? E : never
