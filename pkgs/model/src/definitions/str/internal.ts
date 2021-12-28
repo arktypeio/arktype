@@ -6,16 +6,9 @@ import {
     narrow
 } from "@re-/tools"
 import { ParseConfig, ValidationErrorMessage } from "../internal.js"
-import { expressionTokens } from "./expression/internal.js"
 import { Fragment } from "./fragment.js"
-import { modifierTokens } from "./modifier/internal.js"
 
 export * from "../internal.js"
-
-export const nonIdentifyingTokens = narrow([
-    ...expressionTokens,
-    ...modifierTokens
-])
 
 export const createTokenMatcher = (tokens: string[]) =>
     RegExp(
@@ -23,6 +16,14 @@ export const createTokenMatcher = (tokens: string[]) =>
         tokens.map((char) => `\\${char}`).join("|"),
         "g"
     )
+
+import { expressionTokens } from "./expression/internal.js"
+import { modifierTokens } from "./modifier/internal.js"
+
+export const nonIdentifyingTokens = narrow([
+    ...expressionTokens,
+    ...modifierTokens
+])
 
 export const nonIdentifyingTokenMatcher =
     createTokenMatcher(nonIdentifyingTokens)

@@ -28,22 +28,23 @@ export namespace Str {
     export type Check<Def extends string, Space> = Fragment.Check<
         Format<Def>,
         Def,
-        Space,
-        true
+        Space
     >
 
     export type Parse<
         Def extends string,
         Space,
-        Options extends ParseConfig,
-        ValidatedDef extends string = Str.Check<Def, Space>
-    > = ValidatedDef extends ValidationErrorMessage
+        Options extends ParseConfig
+    > = Str.Check<Def, Space> extends ValidationErrorMessage
         ? unknown
-        : Fragment.Parse<ValidatedDef, Space, Options>
+        : Fragment.Parse<Format<Def>, Space, Options>
 
     type RawReferences<
         Fragments extends string,
-        RemainingNonIdentifiers extends string[] = NonIdentifyingTokens
+        RemainingNonIdentifiers extends string[] = [
+            ...NonIdentifyingTokens,
+            " "
+        ]
     > = RemainingNonIdentifiers extends Iteration<
         string,
         infer Character,

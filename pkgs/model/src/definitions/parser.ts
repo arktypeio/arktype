@@ -8,7 +8,7 @@ import {
     toString,
     DeepTreeOf
 } from "@re-/tools"
-import { Space, SpaceResolutions } from "../compile"
+import { SpaceResolutions } from "../compile"
 import { ValidationErrors, unknownTypeError } from "../errors.js"
 import { ExtractableDefinition } from "./internal.js"
 import { Root } from "./root.js"

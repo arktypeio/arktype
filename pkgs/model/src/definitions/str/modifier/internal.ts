@@ -38,5 +38,5 @@ export type CheckModifier<
 > = Def extends `${infer Modified}${Token}${Token extends ":" ? string : ""}`
     ? IncludesSubstring<Modified, Token> extends true
         ? DuplicateModifierError<Token>
-        : Fragment.Check<Modified, Root, Space, true>
+        : Fragment.Check<Modified, Root, Space>
     : InvalidModifierError<Token>
