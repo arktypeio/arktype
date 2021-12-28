@@ -1,5 +1,5 @@
 import { createParser, typeDefProxy } from "./internal.js"
-import { Str } from "../str.js"
+import { Fragment } from "../fragment.js"
 import { Keyword } from "./keyword.js"
 import { Literal } from "./literal.js"
 
@@ -16,7 +16,7 @@ export namespace Builtin {
 
     export const parse = createParser({
         type,
-        parent: () => Str.parse,
+        parent: () => Fragment.parse,
         children: () => [Keyword.delegate, Literal.delegate]
     })
 

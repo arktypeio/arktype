@@ -8,7 +8,7 @@ import {
     createParser
 } from "./internal.js"
 import { Root } from "../../root.js"
-import { Str } from "../str.js"
+import { Fragment } from "../fragment.js"
 
 export namespace Alias {
     export type Definition<Space> = keyof Space & string
@@ -78,7 +78,7 @@ export namespace Alias {
     export const parse = createParser(
         {
             type,
-            parent: () => Str.parse,
+            parent: () => Fragment.parse,
             components: (def, ctx) => {
                 /**
                  * Keep track of definitions we've seen since last resolving to an object or built-in.

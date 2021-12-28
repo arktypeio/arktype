@@ -1,5 +1,10 @@
-import { ElementOf, Iteration, narrow } from "@re-/tools"
-import { createTokenMatcher } from "../internal.js"
+import { ElementOf, IncludesSubstring, Iteration, narrow } from "@re-/tools"
+import {
+    createTokenMatcher,
+    DuplicateModifierError,
+    InvalidModifierError
+} from "./internal.js"
+import { Modifier } from "./modifier.js"
 
 export * from "../internal.js"
 
@@ -24,3 +29,14 @@ export type ModifierString = Exclude<
     AvailableModifierStrings<ModifierTokens>,
     ""
 >
+
+export type CheckModifier<
+    Token extends ModifierToken,
+    Def extends string,
+    Root extends string,
+    Space
+> = Def extends `${infer Modified}${Token}${Token extends ":" ? string : ""}`
+    ? IncludesSubstring<Modified, Token> extends true
+        ? DuplicateModifierError<Token>
+        : Modifier.Check<Modified, Root, Space>
+    : InvalidModifierError<Token>

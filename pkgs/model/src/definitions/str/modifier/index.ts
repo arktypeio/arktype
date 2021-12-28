@@ -1,3 +1,3 @@
-export * from "./modification.js"
+export * from "./modifier.js"
 export * from "./optional.js"
 export * from "./constraint.js"

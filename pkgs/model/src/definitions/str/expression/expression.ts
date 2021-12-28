@@ -3,16 +3,18 @@ import {
     createParser,
     typeDefProxy,
     UnknownTypeError,
-    NonIdentifyingToken,
-    nonIdentifyingTokenMatcher
+    ExpressionToken,
+    expressionTokenMatcher
 } from "./internal.js"
 import { ArrowFunction } from "./arrowFunction.js"
 import { List } from "./list.js"
 import { Or } from "./or.js"
 import { Fragment } from "../fragment.js"
 
+type Z = "string|number" extends Expression.Definition ? true : false
+
 export namespace Expression {
-    export type Definition = `${string}${NonIdentifyingToken}${string}`
+    export type Definition = `${string}${ExpressionToken}${string}`
 
     export type Check<
         Def extends string,
@@ -47,8 +49,7 @@ export namespace Expression {
             children: () => [ArrowFunction.delegate, Or.delegate, List.delegate]
         },
         {
-            // Any string containing a control character will be interpreted as an expression
-            matches: (def) => !!def.match(nonIdentifyingTokenMatcher)
+            matches: (def) => !!def.match(expressionTokenMatcher)
         }
     )
 
