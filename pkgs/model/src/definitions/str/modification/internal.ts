@@ -11,13 +11,16 @@ export type ModifierTokens = typeof modifierTokens
 
 export type ModifierToken = ElementOf<ModifierTokens>
 
-type BuildModifierString<
+type AvailableModifierStrings<
     Tokens extends string[],
     Result extends string = ""
 > = Tokens extends Iteration<string, infer Token, infer Remaining>
     ? Remaining extends []
         ? `${Result}${Token | ""}`
-        : `${Result}${Token | ""}${BuildModifierString<Remaining>}`
+        : `${Result}${Token | ""}${AvailableModifierStrings<Remaining>}`
     : never
 
-export type ModifierString = Exclude<BuildModifierString<ModifierTokens>, "">
+export type ModifierString = Exclude<
+    AvailableModifierStrings<ModifierTokens>,
+    ""
+>
