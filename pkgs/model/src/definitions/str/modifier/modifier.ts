@@ -5,42 +5,44 @@ import {
     typeDefProxy,
     ModifierToken,
     modifierTokenMatcher,
-    CheckModifier
+    CheckModifier,
+    UnknownTypeError
 } from "./internal.js"
 import { Fragment } from "../fragment.js"
 import { Optional } from "./optional.js"
 import { Constraints } from "./constraint.js"
-import { Str } from "../str.js"
+
+type Z = Modifier.Check<"string|numfber?:*", "string|numfber?:*", {}>
 
 export namespace Modifier {
     export type Definition = `${string}${ModifierToken}${string}`
 
     export type Check<
-        Def extends string,
+        Def extends Definition,
         Root extends string,
         Space
     > = IncludesSubstring<Def, ":"> extends true
         ? CheckModifier<":", Def, Root, Space>
         : IncludesSubstring<Def, "?"> extends true
         ? CheckModifier<"?", Def, Root, Space>
-        : Fragment.Check<Def, Root, Space>
+        : UnknownTypeError<Def>
 
     export type Parse<
-        Def extends string,
+        Def extends Definition,
         Space,
         Options extends ParseConfig
     > = Def extends Constraints.Definition<infer TypeDef, infer Constraints>
-        ? Modifier.Parse<TypeDef, Space, Options>
+        ? Fragment.Parse<TypeDef, Space, Options>
         : Def extends Optional.Definition<infer Inner>
         ? Fragment.Parse<Inner, Space, Options> | undefined
-        : Fragment.Parse<Def, Space, Options>
+        : unknown
 
     export const type = typeDefProxy as Definition
 
     export const parse = createParser(
         {
             type,
-            parent: () => Str.parse,
+            parent: () => Fragment.parse,
             children: () => [Constraints.delegate, Optional.delegate]
         },
         {

@@ -6,7 +6,7 @@ import {
     WithDefaults,
     isEmpty
 } from "@re-/tools"
-import { Primitive, Root, Fragment } from "./definitions"
+import { Primitive, Root, Str } from "./definitions"
 import { ParseContext, defaultParseContext } from "./definitions/parser.js"
 import { stringifyErrors, ValidationErrors } from "./errors.js"
 import { format, typeOf } from "./utils.js"
@@ -48,7 +48,7 @@ export type References<
 > = Def extends Primitive.Definition
     ? Primitive.References<Def, Config>
     : Def extends string
-    ? Fragment.References<Def, Config>
+    ? Str.References<Def, Config>
     : {
           [K in keyof Def]: References<Def[K], Config>
       }

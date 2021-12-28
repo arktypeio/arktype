@@ -1,6 +1,6 @@
 import { IsAny, Iteration, KeyValuate } from "@re-/tools"
 import { ParseConfig, ShallowCycleError } from "./internal.js"
-import { Root, Fragment } from "./definitions"
+import { Root, Str } from "./definitions"
 
 type CheckReferencesForShallowCycle<
     References extends string[],
@@ -26,7 +26,7 @@ type CheckForShallowCycleRecurse<Def, Space, Seen> = IsAny<Def> extends true
     ? Seen
     : Def extends string
     ? CheckReferencesForShallowCycle<
-          Fragment.References<
+          Str.References<
               Def,
               {
                   asList: true

@@ -1,13 +1,16 @@
+import { And } from "@re-/tools"
 import {
     ParseConfig,
     createParser,
     typeDefProxy,
-    UnknownTypeError
+    UnknownTypeError,
+    InvalidModifierError
 } from "./internal.js"
 import { Alias } from "./alias"
 import { Builtin, Keyword, Literal } from "./builtin"
 import { Expression } from "./expression"
 import { Str } from "./str.js"
+import { Modifier } from "./modifier/index.js"
 
 export namespace Fragment {
     export type Definition = string
@@ -28,8 +31,16 @@ export namespace Fragment {
     export type Check<
         Def extends string,
         Root extends string,
-        Space
-    > = Def extends Keyword.Definition
+        Space,
+        Modifiable extends boolean = false
+    > = Def extends Modifier.Definition
+        ? Modifiable extends true
+            ? Modifier.Check<Def, Root, Space>
+            : UnknownTypeError<Def>
+        : // Modifiable extends true
+        //     ? Modifier.Check<Def, Root, Space>
+        //     : InvalidModifierError
+        Def extends Keyword.Definition
         ? Root
         : Def extends Alias.Definition<Space>
         ? Alias.Check<Def, Root, Space>
@@ -43,7 +54,9 @@ export namespace Fragment {
         Def extends string,
         Space,
         Options extends ParseConfig
-    > = Def extends Keyword.Definition
+    > = Def extends Modifier.Definition
+        ? Modifier.Parse<Def, Space, Options>
+        : Def extends Keyword.Definition
         ? Keyword.Parse<Def>
         : Def extends Alias.Definition<Space>
         ? Alias.Parse<Def, Space, Options>
@@ -60,6 +73,7 @@ export namespace Fragment {
             type,
             parent: () => Str.parse,
             children: () => [
+                Modifier.delegate,
                 Expression.delegate,
                 Builtin.delegate,
                 Alias.delegate

@@ -17,7 +17,6 @@ import {
     ValidationErrorMessage
 } from "./internal.js"
 import { Fragment } from "./fragment.js"
-import { Modifier } from "./modifier"
 
 export namespace Str {
     export type Definition = string
@@ -26,13 +25,12 @@ export namespace Str {
         StringReplace<Def, `"`, `'`>
     >
 
-    export type Check<
-        Def extends string,
+    export type Check<Def extends string, Space> = Fragment.Check<
+        Format<Def>,
+        Def,
         Space,
-        FormattedDef extends string = Format<Def>
-    > = Def extends Modifier.Definition
-        ? Modifier.Check<FormattedDef, FormattedDef, Space>
-        : Fragment.Check<FormattedDef, Def, Space>
+        true
+    >
 
     export type Parse<
         Def extends string,
@@ -41,8 +39,6 @@ export namespace Str {
         ValidatedDef extends string = Str.Check<Def, Space>
     > = ValidatedDef extends ValidationErrorMessage
         ? unknown
-        : ValidatedDef extends Modifier.Definition
-        ? Modifier.Parse<ValidatedDef, Space, Options>
         : Fragment.Parse<ValidatedDef, Space, Options>
 
     type RawReferences<
@@ -75,7 +71,7 @@ export namespace Str {
         {
             type,
             parent: () => Root.parse,
-            children: () => [Modifier.delegate, Fragment.delegate]
+            children: () => [Fragment.delegate]
         },
         {
             matches: (def) => typeof def === "string",
