@@ -1,7 +1,10 @@
 import { Modifier } from "./modifier.js"
 import { Fragment } from "../fragment.js"
-import { typeDefProxy, createParser } from "../internal.js"
-import { duplicateModifierError } from "./internal.js"
+import {
+    duplicateModifierError,
+    typeDefProxy,
+    createParser
+} from "./internal.js"
 
 export namespace Constraints {
     export type Definition<

@@ -1,6 +1,12 @@
 import { Modifier } from "./modifier.js"
 import { Fragment } from "../fragment.js"
-import { typeDefProxy, createParser } from "../internal.js"
+import {
+    typeDefProxy,
+    createParser,
+    duplicateModifierError,
+    unknownTypeError,
+    invalidModifierError
+} from "./internal.js"
 
 export namespace Optional {
     export type Definition<Def extends string = string> = `${Def}?`
@@ -11,10 +17,22 @@ export namespace Optional {
         {
             type,
             parent: () => Modifier.parse,
-            components: (def, ctx) => [Fragment.parse(def.slice(0, -1), ctx)]
+            components: (def, ctx) => {
+                const tokenCount = def.match(/\?/g)?.length
+                if (!tokenCount) {
+                    throw new Error(unknownTypeError(def, ctx.path))
+                }
+                if (tokenCount > 1) {
+                    throw new Error(duplicateModifierError("?"))
+                }
+                if (!def.endsWith("?")) {
+                    throw new Error(invalidModifierError("?"))
+                }
+                return [Fragment.parse(def.slice(0, -1), ctx)]
+            }
         },
         {
-            matches: (def) => def.endsWith("?"),
+            matches: (def) => def.includes("?"),
             allows: ({ def, components, ctx }, valueType, opts) => {
                 if (valueType === undefined) {
                     return {}

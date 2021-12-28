@@ -16,7 +16,7 @@ describe("types", () => {
                 assert(define("null?").type).typed as null | undefined
                 // @ts-expect-error
                 assert(() => define("str?ing")).throwsAndHasTypeError(
-                    "Unable to determine the type of 'str?ing'."
+                    "Modifier '?' is only valid at the end of a type definition before any constraints."
                 )
             })
             test("arrow function", () => {
@@ -64,7 +64,7 @@ describe("types", () => {
                 assert(define("4").type).typed as number
                 assert(define("1.234").type).typed as number
             })
-            test("bigintz", () => {
+            test("bigint", () => {
                 assert(define("999999999999999n").type).typed as bigint
                 assert(define("-1n").type).typed as bigint
                 // @ts-expect-error

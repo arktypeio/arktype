@@ -12,8 +12,6 @@ import { Fragment } from "../fragment.js"
 import { Optional } from "./optional.js"
 import { Constraints } from "./constraint.js"
 
-type Z = Modifier.Check<"string|numfber?:*", "string|numfber?:*", {}>
-
 export namespace Modifier {
     export type Definition = `${string}${ModifierToken}${string}`
 

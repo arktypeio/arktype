@@ -3,14 +3,13 @@ import {
     ParseConfig,
     createParser,
     typeDefProxy,
-    UnknownTypeError,
-    InvalidModifierError
+    UnknownTypeError
 } from "./internal.js"
 import { Alias } from "./alias"
 import { Builtin, Keyword, Literal } from "./builtin"
 import { Expression } from "./expression"
 import { Str } from "./str.js"
-import { Modifier } from "./modifier/index.js"
+import { Modifier } from "./modifier"
 
 export namespace Fragment {
     export type Definition = string
@@ -31,16 +30,10 @@ export namespace Fragment {
     export type Check<
         Def extends string,
         Root extends string,
-        Space,
-        Modifiable extends boolean = false
+        Space
     > = Def extends Modifier.Definition
-        ? Modifiable extends true
-            ? Modifier.Check<Def, Root, Space>
-            : UnknownTypeError<Def>
-        : // Modifiable extends true
-        //     ? Modifier.Check<Def, Root, Space>
-        //     : InvalidModifierError
-        Def extends Keyword.Definition
+        ? Modifier.Check<Def, Root, Space>
+        : Def extends Keyword.Definition
         ? Root
         : Def extends Alias.Definition<Space>
         ? Alias.Check<Def, Root, Space>
