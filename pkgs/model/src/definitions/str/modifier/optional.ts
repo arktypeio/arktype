@@ -1,4 +1,4 @@
-import { Expression } from "./expression.js"
+import { Modifier } from "./modifier.js"
 import { Str } from "../str.js"
 import { typeDefProxy, createParser } from "../internal.js"
 
@@ -10,7 +10,7 @@ export namespace Optional {
     export const parse = createParser(
         {
             type,
-            parent: () => Expression.parse,
+            parent: () => Modifier.parse,
             components: (def, ctx) => [Str.parse(def.slice(0, -1), ctx)]
         },
         {
