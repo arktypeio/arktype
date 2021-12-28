@@ -13,7 +13,7 @@ describe("multifile", () => {
             group,
             define: defineDependent,
             types
-        } = compile(getUserDef(), getGroupDef())
+        } = compile({ ...getUserDef(), ...getGroupDef() })
         assert(types.user.name).typed as string
         assert(types.user).type.toString.snap(
             `"{ bestFriend?: { bestFriend?: any | undefined; name: string; groups: { name: string; members: { bestFriend?: any | undefined; name: string; groups: any[]; }[]; }[]; } | undefined; name: string; groups: { name: string; members: { bestFriend?: any | undefined; name: string; groups: { name: string; members: any[]; }[]; }[]; }[]; }"`

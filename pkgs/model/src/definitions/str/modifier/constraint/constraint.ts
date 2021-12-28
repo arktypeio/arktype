@@ -1,12 +1,12 @@
-import { Modifier } from "./modifier.js"
-import { Fragment } from "../fragment.js"
+import { Modifier } from "../modifier.js"
+import { Fragment } from "../../fragment.js"
 import {
     duplicateModifierError,
     typeDefProxy,
     createParser
-} from "./internal.js"
+} from "../internal.js"
 
-export namespace Constraints {
+export namespace Constraint {
     export type Definition<
         Def extends string = string,
         Constraints extends string = string

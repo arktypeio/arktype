@@ -67,6 +67,9 @@ export type ParseTypeOptions = {
     seen?: Record<string, boolean>
     deepOnCycle?: boolean
     onResolve?: Definition
+    validation?: ValidateOptions
+    generation?: GenerateOptions
+    references?: ReferencesOptions
 }
 
 export type DefaultParseTypeOptions = {
@@ -74,6 +77,9 @@ export type DefaultParseTypeOptions = {
     seen: {}
     deepOnCycle: false
     onResolve: never
+    validation: {}
+    generation: {}
+    references: {}
 }
 
 type ValidationErrorFormats = {

@@ -10,7 +10,7 @@ import {
 } from "./internal.js"
 import { Fragment } from "../fragment.js"
 import { Optional } from "./optional.js"
-import { Constraints } from "./constraint.js"
+import { Constraint } from "./constraint/constraint.js"
 
 export namespace Modifier {
     export type Definition = `${string}${ModifierToken}${string}`
@@ -29,7 +29,7 @@ export namespace Modifier {
         Def extends Definition,
         Space,
         Options extends ParseConfig
-    > = Def extends Constraints.Definition<infer TypeDef, infer Constraints>
+    > = Def extends Constraint.Definition<infer TypeDef, infer Constraints>
         ? Fragment.Parse<TypeDef, Space, Options>
         : Def extends Optional.Definition<infer Inner>
         ? Fragment.Parse<Inner, Space, Options> | undefined
@@ -41,7 +41,7 @@ export namespace Modifier {
         {
             type,
             parent: () => Fragment.parse,
-            children: () => [Constraints.delegate, Optional.delegate]
+            children: () => [Constraint.delegate, Optional.delegate]
         },
         {
             matches: (def) => !!def.match(modifierTokenMatcher)
