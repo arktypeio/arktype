@@ -1,5 +1,5 @@
-import { typeDefProxy, validationError, createParser } from "../internal.js"
-import { Builtin } from "./builtin.js"
+import { typeDefProxy, validationError, createParser } from "./internal.js"
+import { Literal } from "./literal.js"
 
 export namespace StringLiteral {
     // Double quotes are also supported, but are automatically replaced by single quotes before validation
@@ -10,11 +10,11 @@ export namespace StringLiteral {
     export const parse = createParser(
         {
             type,
-            parent: () => Builtin.parse
+            parent: () => Literal.parse
         },
         {
             matches: (def) => !!def.match(`^('.*')|(".*")$`),
-            validate: ({ def, ctx: { path } }, valueType) =>
+            allows: ({ def, ctx: { path } }, valueType) =>
                 def === valueType
                     ? {}
                     : validationError({ def, valueType, path }),

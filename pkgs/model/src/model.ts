@@ -1,16 +1,23 @@
-import { Evaluate, Narrow, Exact, IsAny, WithDefaults } from "@re-/tools"
+import {
+    Evaluate,
+    Narrow,
+    Exact,
+    IsAny,
+    WithDefaults,
+    isEmpty
+} from "@re-/tools"
 import { Primitive, Root, Str } from "./definitions"
 import { ParseContext, defaultParseContext } from "./definitions/parser.js"
 import { stringifyErrors, ValidationErrors } from "./errors.js"
 import { format, typeOf } from "./utils.js"
-import { CheckTypespaceResolutions } from "./typespace"
+import { CheckSpaceResolutions } from "./compile"
 import { ReferencesTypeConfig, typeDefProxy } from "./internal.js"
 
 export type Definition = Root.Definition
 
-export type Check<Def, Typespace> = IsAny<Def> extends true
+export type Check<Def, Space> = IsAny<Def> extends true
     ? Def
-    : Root.Check<Def, Typespace>
+    : Root.Check<Def, Space>
 
 export type Parse<
     Def,
@@ -20,7 +27,7 @@ export type Parse<
     ? Def
     : Root.Parse<
           Def,
-          CheckTypespaceResolutions<Space>,
+          CheckSpaceResolutions<Space>,
           WithDefaults<ParseTypeOptions, Options, DefaultParseTypeOptions>
       >
 
@@ -69,84 +76,96 @@ export type DefaultParseTypeOptions = {
     onResolve: never
 }
 
-export type ValidateOptions = {
-    ignoreExtraneousKeys?: boolean
-    returnAs?: false | "message" | "map"
+type ValidationErrorFormats = {
+    message: string
+    map: ValidationErrors
 }
 
-export type HandledValidationResult<Options extends ValidateOptions> =
-    Options["returnAs"] extends "message"
-        ? string
-        : Options["returnAs"] extends "map"
-        ? ValidationErrors
-        : void
+type ValidationErrorFormat = keyof ValidationErrorFormats
 
-const withHandledResult =
-    (validate: ReturnType<typeof Root.parse>["validate"]) =>
-    <Options extends ValidateOptions>(
-        value: unknown,
-        options?: Options
-    ): HandledValidationResult<Options> => {
-        const errors = validate(typeOf(value), options)
-        if (options?.returnAs === "map") {
-            return errors as any
+export type ValidateOptions = {
+    ignoreExtraneousKeys?: boolean
+    errorFormat?: ValidationErrorFormat
+}
+
+export type AssertOptions = Omit<ValidateOptions, "errorFormat">
+
+export type ValidationResult<Options extends Required<ValidateOptions>> = {
+    errors?: ValidationErrorFormats[Options["errorFormat"]]
+}
+
+export type ValidateFunction = <Options extends ValidateOptions>(
+    value: unknown,
+    options?: Options
+) => ValidationResult<
+    WithDefaults<
+        ValidateOptions,
+        Options,
+        { ignoreExtraneousKeys: false; errorFormat: "message" }
+    >
+>
+
+const createValidateFunction =
+    (allows: ReturnType<typeof Root.parse>["allows"]): ValidateFunction =>
+    (value, options) => {
+        const errors = allows(typeOf(value), options)
+        if (isEmpty(errors)) {
+            return {} as any
         }
-        const message = stringifyErrors(errors)
-        if (options?.returnAs === "message") {
-            return message as any
+        if (options?.errorFormat === "map") {
+            return { errors }
         }
-        if (message) {
-            throw new Error(message)
-        }
-        return undefined as any
+        return { errors: stringifyErrors(errors) }
     }
 
-export const createModelFunction =
-    <PredefinedTypespace>(
-        predefinedTypespace: Narrow<PredefinedTypespace>
-    ): ModelFunction<PredefinedTypespace> =>
+export const createDefineFunction =
+    <PredefinedSpace>(
+        predefinedSpace: Narrow<PredefinedSpace>
+    ): DefineFunction<PredefinedSpace> =>
     (definition, options) => {
-        const formattedTypespace: any = format(
-            options?.typespace ?? predefinedTypespace
-        )
+        const formattedSpace: any = format(options?.space ?? predefinedSpace)
         const context: ParseContext = {
             ...defaultParseContext,
-            typespace: formattedTypespace
+            space: formattedSpace
         }
         const formattedDefinition = format(definition)
-        const { validate, references, generate } = Root.parse(
+        const { allows, references, generate } = Root.parse(
             formattedDefinition,
             context
-        ) as any
+        )
+        const validate = createValidateFunction(allows)
         return {
             type: typeDefProxy,
-            typespace: formattedTypespace,
+            space: formattedSpace,
             definition: formattedDefinition,
-            validate: withHandledResult(validate),
+            validate,
+            assert: (value: unknown, options?: AssertOptions) => {
+                const { errors } = validate(value, options)
+                if (errors) {
+                    throw new Error(errors)
+                }
+            },
             references,
             generate
         } as any
     }
 
 // Exported parse function is equivalent to parse from an empty compile call,
-// but optionally accepts a typespace as its second parameter
-export const define = createModelFunction({})
+// but optionally accepts a space as its second parameter
+export const define = createDefineFunction({})
 
-export type ModelFunction<PredefinedTypespace> = <
+export type DefineFunction<PredefinedSpace> = <
     Def,
     Options extends ParseTypeOptions,
-    ActiveTypespace = PredefinedTypespace
+    ActiveSpace = PredefinedSpace
 >(
-    definition: Check<Narrow<Def>, ActiveTypespace>,
+    definition: Check<Narrow<Def>, ActiveSpace>,
     options?: Narrow<
         Options & {
-            typespace?: Exact<
-                ActiveTypespace,
-                CheckTypespaceResolutions<ActiveTypespace>
-            >
+            space?: Exact<ActiveSpace, CheckSpaceResolutions<ActiveSpace>>
         }
     >
-) => Evaluate<Model<Def, ActiveTypespace, Options>>
+) => Evaluate<Model<Def, ActiveSpace, Options>>
 
 export type ReferencesOptions = {}
 
@@ -158,14 +177,15 @@ export type GenerateOptions = {
 
 export type Model<
     Definition,
-    Typespace,
+    Space,
     Options,
-    ModelType = Evaluate<Parse<Definition, Typespace, Options>>
+    ModelType = Evaluate<Parse<Definition, Space, Options>>
 > = Evaluate<{
     definition: Definition
     type: ModelType
-    typespace: Evaluate<Typespace>
-    validate: ReturnType<typeof withHandledResult>
+    space: Evaluate<Space>
+    validate: ValidateFunction
+    assert: (value: unknown, options?: AssertOptions) => void
     generate: (options?: GenerateOptions) => ModelType
     references: () => References<Definition, { asUnorderedList: true }>
 }>

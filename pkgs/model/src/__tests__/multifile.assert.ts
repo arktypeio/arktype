@@ -1,15 +1,19 @@
 import { assert } from "@re-/assert"
-import { declaration } from ".."
+import { declare } from ".."
 
-export const { define, compile } = declaration("user", "group")
+export const { define, compile } = declare("user", "group")
 
-import { user as userDef } from "./multifile/user"
-import { group as groupDef } from "./multifile/group"
-
-export const { user, group, model: parse, types } = compile(userDef, groupDef)
+import { getUserDef } from "./multifile/user"
+import { getGroupDef } from "./multifile/group"
 
 describe("multifile", () => {
     test("compiles", () => {
+        const {
+            user,
+            group,
+            define: defineDependent,
+            types
+        } = compile(getUserDef(), getGroupDef())
         assert(types.user.name).typed as string
         assert(types.user).type.toString.snap(
             `"{ bestFriend?: { bestFriend?: any | undefined; name: string; groups: { name: string; members: { bestFriend?: any | undefined; name: string; groups: any[]; }[]; }[]; } | undefined; name: string; groups: { name: string; members: { bestFriend?: any | undefined; name: string; groups: { name: string; members: any[]; }[]; }[]; }[]; }"`
@@ -21,7 +25,7 @@ describe("multifile", () => {
             `"{ bestFriend?: any | undefined; name: string; groups: { name: string; members: { bestFriend?: any | undefined; name: string; groups: any[]; }[]; }[]; } | undefined"`
         )
         assert(
-            parse({ foozler: "user", choozler: "group[]" }).type
+            defineDependent({ foozler: "user", choozler: "group[]" }).type
         ).type.toString.snap(
             `"{ foozler: { bestFriend?: { bestFriend?: any | undefined; name: string; groups: { name: string; members: { bestFriend?: any | undefined; name: string; groups: any[]; }[]; }[]; } | undefined; name: string; groups: { name: string; members: { bestFriend?: any | undefined; name: string; groups: { name: string; members: any[]; }[]; }[]; }[]; }; choozler: { name: string; members: { bestFriend?: any | undefined; name: string; groups: { name: string; members: any[]; }[]; }[]; }[]; }"`
         )

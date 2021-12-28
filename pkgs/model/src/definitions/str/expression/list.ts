@@ -18,12 +18,12 @@ export namespace List {
         },
         {
             matches: (def, ctx) => def.endsWith("[]"),
-            validate: ({ def, components: { item }, ctx }, valueType, opts) => {
+            allows: ({ def, components: { item }, ctx }, valueType, opts) => {
                 if (Array.isArray(valueType)) {
                     return Tuple.parse(
                         [...Array(valueType.length)].map(() => item.def),
                         ctx
-                    ).validate(valueType, opts)
+                    ).allows(valueType, opts)
                 }
                 return validationError({
                     def,

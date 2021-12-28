@@ -1,6 +1,4 @@
 import { createParser, typeDefProxy } from "./internal.js"
-import { Str } from "../str.js"
-import { Keyword } from "./keyword.js"
 import { StringLiteral } from "./stringLiteral.js"
 import { NumberLiteral } from "./numberLiteral.js"
 import { BigintLiteral } from "./bigintLiteral.js"

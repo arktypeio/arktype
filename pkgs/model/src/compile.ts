@@ -15,53 +15,45 @@ import {
     IsAny
 } from "@re-/tools"
 import {
-    createModelFunction,
-    ModelFunction,
+    createDefineFunction,
+    DefineFunction,
     DefaultParseTypeOptions,
-    Parse
+    Parse,
+    Model
 } from "./model.js"
-import { Map } from "./definitions"
-import { typeDefProxy } from "./internal.js"
-import { Model } from "./model.js"
-import { ParseConfig } from "./internal.js"
+import { Map, Root } from "./definitions"
+import { typeDefProxy, ParseConfig } from "./internal.js"
 import { Resolution } from "./resolution.js"
-import { Root } from "./definitions"
 
-export type TypespaceResolutions = Record<string, Root.Definition>
+export type SpaceResolutions = Record<string, Root.Definition>
 
-export type CheckTypespaceResolutions<Typespace> = IsAny<Typespace> extends true
+export type CheckSpaceResolutions<Space> = IsAny<Space> extends true
     ? any
     : Evaluate<{
-          [TypeName in keyof Typespace]: Resolution.Check<
-              Typespace[TypeName],
-              Typespace
-          >
+          [TypeName in keyof Space]: Resolution.Check<Space[TypeName], Space>
       }>
 
-export type ParseTypespaceRoot<Typespace, Options extends ParseConfig> = {
-    [TypeName in keyof Typespace]: Parse<
-        Typespace[TypeName],
-        CheckTypespaceResolutions<Typespace>,
+export type ParseSpaceRoot<Space, Options extends ParseConfig> = {
+    [TypeName in keyof Space]: Parse<
+        Space[TypeName],
+        CheckSpaceResolutions<Space>,
         Options
     >
 }
 
-export type ParseTypespaceResolutions<
-    Typespace,
-    Options extends ParseConfig
-> = {
-    [TypeName in keyof Typespace]: Model<
-        Typespace[TypeName],
-        CheckTypespaceResolutions<Typespace>,
+export type ParseSpaceResolutions<Space, Options extends ParseConfig> = {
+    [TypeName in keyof Space]: Model<
+        Space[TypeName],
+        CheckSpaceResolutions<Space>,
         Options
     >
 }
 
-export const createTypespaceFunction =
+export const createCompileFunction =
     <DeclaredTypeNames extends string[]>(
         declaredTypeNames: Narrow<DeclaredTypeNames>
     ) =>
-    <Definitions extends CheckTypespaceArgs<Definitions, DeclaredTypeNames>>(
+    <Definitions extends CheckSpaceArgs<Definitions, DeclaredTypeNames>>(
         // @ts-ignore
         ...definitions: Narrow<Definitions>
     ) => {
@@ -76,10 +68,10 @@ export const createTypespaceFunction =
                 { group: "user[]" }
             )`)
         }
-        const typespaceFromDefinitions = mergeAll(definitions as any) as any
+        const spaceFromDefinitions = mergeAll(definitions as any) as any
         const declarationErrors = diffSets(
             declaredTypeNames,
-            Object.keys(typespaceFromDefinitions)
+            Object.keys(spaceFromDefinitions)
         )
         if (declaredTypeNames.length && declarationErrors) {
             const errorParts = [] as string[]
@@ -103,34 +95,31 @@ export const createTypespaceFunction =
             }
             throw new Error(errorParts.join(" "))
         }
-        const model = createModelFunction(typespaceFromDefinitions) as any
+        const define = createDefineFunction(spaceFromDefinitions) as any
         return {
-            ...(transform(
-                typespaceFromDefinitions,
-                ([typeName, definition]) => [
-                    typeName,
+            ...(transform(spaceFromDefinitions, ([typeName, definition]) => [
+                typeName,
+                // @ts-ignore
+                define(definition, {
                     // @ts-ignore
-                    parse(definition, {
-                        // @ts-ignore
-                        typespace: typespaceFromDefinitions
-                    })
-                ]
-            ) as any),
+                    space: spaceFromDefinitions
+                })
+            ]) as any),
             types: typeDefProxy,
-            model
-        } as Typespace<Definitions>
+            define
+        } as Space<Definitions>
     }
 
 // Exported compile function is equivalent to compile from an empty declare call
 // and will not validate missing or extraneous definitions
-export const typespace = createTypespaceFunction([])
+export const compile = createCompileFunction([])
 
 export type TypeNameFromList<Definitions> = keyof MergeAll<Definitions> & string
 
-export type CheckTypespaceArgs<
+export type CheckSpaceArgs<
     Definitions,
     DeclaredTypeNames extends string[] = [],
-    Merged = CheckTypespaceResolutions<MergeAll<Definitions>>,
+    Merged = CheckSpaceResolutions<MergeAll<Definitions>>,
     DefinedTypeName extends string = keyof Merged & string,
     DeclaredTypeName extends string = DeclaredTypeNames extends never[]
         ? DefinedTypeName
@@ -153,7 +142,7 @@ export const missingTypesErrorMessage = `Declared types @types were never define
 export type MissingTypesError<DeclaredTypeName, DefinedTypeName> = DiffUnions<
     DeclaredTypeName,
     DefinedTypeName
-    // Extraneous definition errors are handled by CheckTypespaceArgs
+    // Extraneous definition errors are handled by CheckSpaceArgs
 > extends UnionDiffResult<infer Extraneous, infer Missing>
     ? Missing extends []
         ? {}
@@ -164,21 +153,18 @@ export type MissingTypesError<DeclaredTypeName, DefinedTypeName> = DiffUnions<
           >
     : never
 
-export type TypespaceFunction<DeclaredTypeNames extends string[]> = <
-    Definitions extends CheckTypespaceArgs<Definitions, DeclaredTypeNames>
+export type CompileFunction<DeclaredTypeNames extends string[]> = <
+    Definitions extends CheckSpaceArgs<Definitions, DeclaredTypeNames>
 >(
     // @ts-ignore
     ...definitions: Narrow<Definitions>
-) => Typespace<Definitions>
+) => Space<Definitions>
 
-export type Typespace<
-    Definitions,
-    MergedTypespace = MergeAll<Definitions>
-> = Evaluate<
-    ParseTypespaceResolutions<MergedTypespace, DefaultParseTypeOptions> & {
+export type Space<Definitions, MergedSpace = MergeAll<Definitions>> = Evaluate<
+    ParseSpaceResolutions<MergedSpace, DefaultParseTypeOptions> & {
         types: Evaluate<
-            Map.Parse<MergedTypespace, MergedTypespace, DefaultParseTypeOptions>
+            Map.Parse<MergedSpace, MergedSpace, DefaultParseTypeOptions>
         >
-        model: ModelFunction<MergedTypespace>
+        define: DefineFunction<MergedSpace>
     }
 >

@@ -84,7 +84,7 @@ export type ShallowCycleError<
 export const shallowCycleError = ({ def, ctx }: BaseParseArgs) =>
     shallowCycleErrorTemplate
         .replace("@def", stringifyDefinition(def))
-        .replace("@typespace", stringifyDefinition(ctx.typespace))
+        .replace("@space", stringifyDefinition(ctx.space))
         .replace("@resolutions", [...ctx.seen, def].join("=>"))
 
 export type ValidationErrorMessage =

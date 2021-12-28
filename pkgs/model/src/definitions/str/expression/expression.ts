@@ -13,38 +13,34 @@ import { ElementOf } from "@re-/tools"
 
 export namespace Expression {
     export type Definition =
-        | `${string}${ElementOf<Str.ControlCharacters>}${string}`
-    // | Optional.Definition
-    // | ArrowFunction.Definition
-    // | Or.Definition
-    // | List.Definition
+        `${string}${ElementOf<Str.ControlCharacters>}${string}`
 
     export type Check<
         Def extends string,
         Root extends string,
-        Typespace
+        Space
     > = Def extends Optional.Definition<infer Inner>
-        ? Str.Check<Inner, Root, Typespace>
+        ? Str.Check<Inner, Root, Space>
         : Def extends ArrowFunction.Definition<infer Parameters, infer Return>
-        ? ArrowFunction.Check<Parameters, Return, Root, Typespace>
+        ? ArrowFunction.Check<Parameters, Return, Root, Space>
         : Def extends Or.Definition
-        ? Or.Check<Def, Root, Typespace>
+        ? Or.Check<Def, Root, Space>
         : Def extends List.Definition<infer ListItem>
-        ? Str.Check<ListItem, Root, Typespace>
+        ? Str.Check<ListItem, Root, Space>
         : UnknownTypeError<Def>
 
     export type Parse<
         Def extends string,
-        Typespace,
+        Space,
         Options extends ParseConfig
     > = Def extends Optional.Definition<infer Inner>
-        ? Str.Parse<Inner, Typespace, Options> | undefined
+        ? Str.Parse<Inner, Space, Options> | undefined
         : Def extends ArrowFunction.Definition<infer Parameters, infer Return>
-        ? ArrowFunction.Parse<Parameters, Return, Typespace, Options>
+        ? ArrowFunction.Parse<Parameters, Return, Space, Options>
         : Def extends Or.Definition
-        ? Or.Parse<Def, Typespace, Options>
+        ? Or.Parse<Def, Space, Options>
         : Def extends List.Definition<infer ListItem>
-        ? Str.Parse<ListItem, Typespace, Options>[]
+        ? Str.Parse<ListItem, Space, Options>[]
         : unknown
 
     export const type = typeDefProxy as Definition

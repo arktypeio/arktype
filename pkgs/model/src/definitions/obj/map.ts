@@ -22,13 +22,13 @@ import { Optional } from "../str"
 export namespace Map {
     export type Definition = Record<string, any>
 
-    export type Check<Def, Typespace> = Evaluate<{
-        [PropName in keyof Def]: Root.Check<Def[PropName], Typespace>
+    export type Check<Def, Space> = Evaluate<{
+        [PropName in keyof Def]: Root.Check<Def[PropName], Space>
     }>
 
     export type Parse<
         Def,
-        Typespace,
+        Space,
         Options extends ParseConfig,
         OptionalKey extends keyof Def = {
             [K in keyof Def]: Def[K] extends string
@@ -43,11 +43,11 @@ export namespace Map {
             ? RemoveSpaces<Def[PropName]> extends Optional.Definition<
                   infer OptionalType
               >
-                ? Root.Parse<OptionalType, Typespace, Options>
+                ? Root.Parse<OptionalType, Space, Options>
                 : unknown
             : unknown
     } & {
-        [PropName in RequiredKey]: Root.Parse<Def[PropName], Typespace, Options>
+        [PropName in RequiredKey]: Root.Parse<Def[PropName], Space, Options>
     }
 
     export const type = typeDefProxy as Definition
@@ -68,7 +68,7 @@ export namespace Map {
         },
         {
             matches: (def) => isRecursible(def) && !Array.isArray(def),
-            validate: ({ components, def, ctx }, valueType, opts) => {
+            allows: ({ components, def, ctx }, valueType, opts) => {
                 if (!isRecursible(valueType) || Array.isArray(valueType)) {
                     return validationError({ def, path: ctx.path, valueType })
                 }
@@ -108,7 +108,7 @@ export namespace Map {
                     .reduce(
                         (errors, propName) => ({
                             ...errors,
-                            ...components[propName].validate(
+                            ...components[propName].allows(
                                 (valueType as any)[propName],
                                 opts
                             )

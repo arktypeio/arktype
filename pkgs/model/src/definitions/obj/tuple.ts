@@ -13,16 +13,16 @@ import { Obj } from "./obj.js"
 export namespace Tuple {
     export type Definition = any[]
 
-    export type Check<Def, Typespace> = Evaluate<{
-        [Index in keyof Def]: Root.Check<Def[Index], Typespace>
+    export type Check<Def, Space> = Evaluate<{
+        [Index in keyof Def]: Root.Check<Def[Index], Space>
     }>
 
     export type Parse<
         Def extends Definition,
-        Typespace,
+        Space,
         Options extends ParseConfig
     > = {
-        [Index in keyof Def]: Root.Parse<Def[Index], Typespace, Options>
+        [Index in keyof Def]: Root.Parse<Def[Index], Space, Options>
     }
 
     export const type = typeDefProxy as Definition
@@ -42,7 +42,7 @@ export namespace Tuple {
         },
         {
             matches: (def) => Array.isArray(def),
-            validate: ({ def, ctx, components }, valueType, opts) => {
+            allows: ({ def, ctx, components }, valueType, opts) => {
                 if (!Array.isArray(valueType)) {
                     // Defined is a tuple, extracted is an object with string keys (will never be assignable)
                     return validationError({
@@ -63,7 +63,7 @@ export namespace Tuple {
                 return components.reduce(
                     (errors, component, index) => ({
                         ...errors,
-                        ...component.validate(valueType[index], opts)
+                        ...component.allows(valueType[index], opts)
                     }),
                     {} as ValidationErrors
                 )

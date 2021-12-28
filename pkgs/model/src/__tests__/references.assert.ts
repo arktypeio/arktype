@@ -38,7 +38,7 @@ describe("references from type", () => {
             listed: [
                 "group" | "null",
                 "user" | "null",
-                "string" | "number" | "function"
+                "string" | "function" | "number"
             ]
             a: {
                 b: {
@@ -75,7 +75,7 @@ describe("references from value", () => {
             | "null"
         )[]
         const aliasReferences = define("user|string", {
-            typespace: { user: "any" }
+            space: { user: "any" }
         }).references()
         assert(diffSets(["string", "user"], aliasReferences) as any).is(
             undefined
@@ -99,7 +99,7 @@ describe("references from value", () => {
                 },
                 listed: [-1n, "null", "string|boolean"]
             },
-            { typespace: { custom: "any" } }
+            { space: { custom: "any" } }
         ).references()
         assert(objectReferences).equals({
             primitives: {

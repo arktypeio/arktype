@@ -1,40 +1,40 @@
 import { assert } from "@re-/assert"
 import { narrow } from "@re-/tools"
-import { typespace } from ".."
+import { compile } from ".."
 import { typeDefProxy } from "../internal.js"
 
 describe("compile", () => {
     test("single", () => {
-        assert(typespace({ a: "string" }).types.a).typed as string
+        assert(compile({ a: "string" }).types.a).typed as string
         // @ts-expect-error
-        assert(() => typespace({ a: "strig" })).throwsAndHasTypeError(
+        assert(() => compile({ a: "strig" })).throwsAndHasTypeError(
             "Unable to determine the type of 'strig'."
         )
     })
     test("independent", () => {
-        assert(typespace({ a: "string" }, { b: { c: "boolean" } }).types.b)
+        assert(compile({ a: "string" }, { b: { c: "boolean" } }).types.b)
             .typed as { c: boolean }
         assert(() =>
             // @ts-expect-error
-            typespace({ a: "string" }, { b: { c: "uhoh" } })
+            compile({ a: "string" }, { b: { c: "uhoh" } })
         ).throwsAndHasTypeError("Unable to determine the type of 'uhoh'")
     })
     test("interdependent", () => {
-        assert(typespace({ a: "string" }, { b: { c: "a" } }).types.b.c)
+        assert(compile({ a: "string" }, { b: { c: "a" } }).types.b.c)
             .typed as string
         assert(() =>
             // @ts-expect-error
-            typespace({ a: "yikes" }, { b: { c: "a" } })
+            compile({ a: "yikes" }, { b: { c: "a" } })
         ).throwsAndHasTypeError("Unable to determine the type of 'yikes'")
     })
     test("recursive", () => {
         // Recursive type displays any but calculates just-in-time for each property access
         assert(
-            typespace({ a: { dejaVu: "a?" } }).types.a.dejaVu?.dejaVu?.dejaVu
+            compile({ a: { dejaVu: "a?" } }).types.a.dejaVu?.dejaVu?.dejaVu
         ).type.toString.snap(`"{ dejaVu?: any | undefined; } | undefined"`)
     })
     test("cyclic", () => {
-        const { types } = typespace({ a: { b: "b" } }, { b: { a: "a" } })
+        const { types } = compile({ a: { b: "b" } }, { b: { a: "a" } })
         // Type hint displays as any on hitting cycle
         assert(types.a).typed as {
             b: {
@@ -57,13 +57,12 @@ describe("compile", () => {
         )
     })
     test("object list", () => {
-        assert(typespace({ a: "string" }, { b: [{ c: "a" }] }).types.b)
-            .typed as {
+        assert(compile({ a: "string" }, { b: [{ c: "a" }] }).types.b).typed as {
             c: string
         }[]
         // Can't pass in object list directly to compile
         // @ts-expect-error
-        assert(() => typespace([{ b: { c: "string" } }])).throws.snap(`
+        assert(() => compile([{ b: { c: "string" } }])).throws.snap(`
             "Compile args must be a list of names mapped to their corresponding definitions
                         passed as rest args, e.g.:
                         compile(
@@ -73,18 +72,18 @@ describe("compile", () => {
         `)
     })
     test("can parse from compiled types", () => {
-        const { model: parse } = typespace({ a: { b: "b" } }, { b: { a: "a" } })
-        assert(parse("a|b|null").type).type.toString.snap(
+        const { define } = compile({ a: { b: "b" } }, { b: { a: "a" } })
+        assert(define("a|b|null").type).type.toString.snap(
             `"{ b: { a: { b: { a: any; }; }; }; } | { a: { b: { a: { b: any; }; }; }; } | null"`
         )
         assert(() =>
             // @ts-expect-error
-            parse({ nested: { a: "a", b: "b", c: "c" } })
+            define({ nested: { a: "a", b: "b", c: "c" } })
         ).throwsAndHasTypeError("Unable to determine the type of 'c'")
     })
     test("compile result", () => {
-        const mySpace = typespace({ a: { b: "b?" } }, { b: { a: "a?" } })
-        const a = mySpace.model("a")
+        const mySpace = compile({ a: { b: "b?" } }, { b: { a: "a?" } })
+        const a = mySpace.define("a")
         assert(a.type)
             .is(typeDefProxy)
             .type.toString()
@@ -94,15 +93,16 @@ describe("compile", () => {
         assert(mySpace.a.references()).equals({ b: ["b"] } as any)
         const aWithExtraneousKey = { c: "extraneous" }
         const extraneousKeyMessage = "Keys 'c' were unexpected."
-        assert(() => a.validate(aWithExtraneousKey)).throws(
+        assert(a.validate(aWithExtraneousKey).errors as any).is(
             extraneousKeyMessage
         )
+        assert(() => a.assert(aWithExtraneousKey)).throws(extraneousKeyMessage)
         assert(a.generate()).equals({})
         assert(a.references()).equals(["a"] as any)
         assert(a.definition).typedValue("a")
-        const expectedTypespace = narrow({ a: { b: "b?" }, b: { a: "a?" } })
-        assert(a.typespace).typedValue(expectedTypespace)
-        assert(mySpace.model("b").type)
+        const expectedSpace = narrow({ a: { b: "b?" }, b: { a: "a?" } })
+        assert(a.space).typedValue(expectedSpace)
+        assert(mySpace.define("b").type)
             .is(typeDefProxy)
             .type.toString.snap(
                 `"{ a?: { b?: { a?: any | undefined; } | undefined; } | undefined; }"`

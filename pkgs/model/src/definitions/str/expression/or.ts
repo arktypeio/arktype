@@ -38,15 +38,15 @@ export namespace Or {
 
     export type Parse<
         Def extends Definition,
-        Typespace,
+        Space,
         Options extends ParseConfig
-    > = Unlisted<ParseSplittable<"|", Def, Typespace, Options>>
+    > = Unlisted<ParseSplittable<"|", Def, Space, Options>>
 
     export type Check<
         Def extends Definition,
         Root extends string,
-        Typespace
-    > = CheckSplittable<"|", Def, Root, Typespace>
+        Space
+    > = CheckSplittable<"|", Def, Root, Space>
 
     export const type = typeDefProxy as Definition
 
@@ -59,11 +59,11 @@ export namespace Or {
         },
         {
             matches: (definition) => definition.includes("|"),
-            validate: ({ def, ctx, components }, valueType, opts) => {
+            allows: ({ def, ctx, components }, valueType, opts) => {
                 const orErrors: OrTypeErrors = {}
                 for (const fragment of components) {
                     const fragmentErrors = stringifyErrors(
-                        fragment.validate(valueType, opts)
+                        fragment.allows(valueType, opts)
                     )
                     if (!fragmentErrors) {
                         // If one of the or types doesn't return any errors, the whole type is valid

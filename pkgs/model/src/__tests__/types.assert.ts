@@ -1,8 +1,8 @@
 import { assert } from "@re-/assert"
-import { typespace, define } from ".."
+import { compile, define } from ".."
 import { typeDefProxy, definitionTypeErrorTemplate } from "../internal.js"
 
-describe("definitions", () => {
+describe("types", () => {
     describe("string", () => {
         test("keyword", () => {
             assert(define("string").type).typed as string
@@ -64,7 +64,7 @@ describe("definitions", () => {
                 assert(define("4").type).typed as number
                 assert(define("1.234").type).typed as number
             })
-            test("bigint", () => {
+            test("bigintz", () => {
                 assert(define("999999999999999n").type).typed as bigint
                 assert(define("-1n").type).typed as bigint
                 // @ts-expect-error
@@ -132,16 +132,16 @@ describe("definitions", () => {
             definitionTypeErrorTemplate
         )
     })
-    test("with typespace", () => {
+    test("with space", () => {
         assert(
             define("borf", {
-                typespace: { borf: true }
+                space: { borf: true }
             }).type
         ).typed as true
         assert(
             define(
                 { snorf: "borf[]" },
-                { typespace: { borf: { f: false, u: undefined } } }
+                { space: { borf: { f: false, u: undefined } } }
             ).type
         ).typed as { snorf: { f: false; u: undefined }[] }
     })
@@ -168,13 +168,13 @@ describe("definitions", () => {
             nested: number | true
         }
     })
-    const getCyclicTypespace = () =>
-        typespace(
+    const getCyclicSpace = () =>
+        compile(
             { a: { b: "b", isA: "true", isB: "false" } },
             { b: { a: "a", isA: "false", isB: "true" } }
         )
     test("with onCycle option", () => {
-        const { type } = getCyclicTypespace().model(
+        const { type } = getCyclicSpace().define(
             { a: "a", b: "b" },
             {
                 onCycle: {
@@ -193,7 +193,7 @@ describe("definitions", () => {
         assert(type.b.a.b.cyclic?.a.b.a.b.a.b.a.b.isB).typed as true | undefined
     })
     test("with deepOnCycleOption", () => {
-        const { type } = getCyclicTypespace().model(
+        const { type } = getCyclicSpace().define(
             { a: "a", b: "b" },
             {
                 deepOnCycle: true,
@@ -207,7 +207,7 @@ describe("definitions", () => {
         )
     })
     test("with onResolve option", () => {
-        const { type } = getCyclicTypespace().model(
+        const { type } = getCyclicSpace().define(
             {
                 referencesA: "a",
                 noReferences: {
@@ -231,31 +231,29 @@ describe("definitions", () => {
     test("doesn't try to parse or validate any", () => {
         // Parse any as type
         assert(define({} as any).type).typed as any
-        // Parse any as typespace
-        const parseWithAnyTypespace = () =>
-            define(
-                { literal: "string", alias: "myType" },
-                { typespace: {} as any }
-            ).type
-        assert(parseWithAnyTypespace).typed as () => {
+        // Parse any as space
+        const parseWithAnySpace = () =>
+            define({ literal: "string", alias: "myType" }, { space: {} as any })
+                .type
+        assert(parseWithAnySpace).typed as () => {
             literal: string
             alias: any
         }
-        assert(parseWithAnyTypespace)
+        assert(parseWithAnySpace)
             .throws()
             .snap(`"Unable to determine the type of 'myType' at path alias."`)
-        // Parse any as typespace member
-        assert(define(["number", "a"], { typespace: { a: {} as any } }).type)
+        // Parse any as space member
+        assert(define(["number", "a"], { space: { a: {} as any } }).type)
             .typed as [number, any]
     })
     test("model props", () => {
         const a = define("a", {
-            typespace: { a: "true" }
+            space: { a: "true" }
         })
         expect(a.definition).toBe("a")
-        expect(a.typespace).toStrictEqual({ a: "true" })
-        expect(a.validate(true)).toBeFalsy()
-        expect(() => a.validate(false)).toThrow()
+        expect(a.space).toStrictEqual({ a: "true" })
+        expect(a.validate(true).errors).toBeFalsy()
+        expect(() => a.assert(false)).toThrow()
         expect(a.generate()).toBe(true)
         expect(a.type).toBe(typeDefProxy)
     })

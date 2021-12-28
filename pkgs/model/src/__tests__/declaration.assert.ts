@@ -1,9 +1,9 @@
 import { assert } from "@re-/assert"
-import { declaration } from ".."
+import { declare } from ".."
 
 describe("declare", () => {
     test("single", () => {
-        const { define, compile } = declaration("GottaDefineThis")
+        const { define: define, compile } = declare("GottaDefineThis")
         const GottaDefineThis = define.GottaDefineThis("boolean")
         assert(() =>
             // @ts-expect-error
@@ -13,13 +13,13 @@ describe("declare", () => {
         assert(() => define.GottaDefineThis("whoops")).throwsAndHasTypeError(
             "Unable to determine the type of 'whoops'"
         )
-        const { model } = compile(GottaDefineThis)
+        const { define: model } = compile(GottaDefineThis)
         assert(model({ a: "GottaDefineThis" }).type).typed as {
             a: boolean
         }
     })
     test("errors on compile with declared type undefined", () => {
-        const { define, compile } = declaration(
+        const { define: define, compile } = declare(
             "GottaDefineThis",
             "GottaDefineThisToo"
         )
@@ -32,7 +32,7 @@ describe("declare", () => {
         )
     })
     test("errors on compile with undeclared type defined", () => {
-        const { define, compile } = declaration("GottaDefineThis")
+        const { define: define, compile } = declare("GottaDefineThis")
         const GottaDefineThis = define.GottaDefineThis("boolean")
         assert(() =>
             compile(GottaDefineThis, {

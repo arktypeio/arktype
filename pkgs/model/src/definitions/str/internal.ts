@@ -8,13 +8,13 @@ export type CheckSplittable<
     Delimiter extends string,
     Def extends string,
     Root extends string,
-    Typespace,
+    Space,
     Components extends string[] = Split<Def, Delimiter>,
     ValidateDefinitions extends string[] = {
         [Index in keyof Components]: Str.Check<
             Components[Index] & string,
             Components[Index] & string,
-            Typespace
+            Space
         >
     },
     ValidatedDefinition extends string = Join<ValidateDefinitions, Delimiter>
@@ -30,13 +30,9 @@ export type CheckSplittable<
 export type ParseSplittable<
     Delimiter extends string,
     Def extends string,
-    Typespace,
+    Space,
     Options extends ParseConfig,
     Components extends string[] = Split<Def, Delimiter>
 > = {
-    [I in keyof Components]: Str.Parse<
-        Components[I] & string,
-        Typespace,
-        Options
-    >
+    [I in keyof Components]: Str.Parse<Components[I] & string, Space, Options>
 }

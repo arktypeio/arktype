@@ -3,37 +3,36 @@ import {
     Func,
     KeyValuate,
     transform,
-    TreeOf,
     ValueOf,
     Exact,
     toString,
     DeepTreeOf
 } from "@re-/tools"
-import { Typespace, TypespaceResolutions } from "../typespace"
+import { Space, SpaceResolutions } from "../compile"
 import { ValidationErrors, unknownTypeError } from "../errors.js"
 import { ExtractableDefinition } from "./internal.js"
 import { Root } from "./root.js"
 import { Obj } from "./obj"
-import {
-    ValidateOptions,
-    GenerateOptions,
-    ReferencesOptions
-} from "../model.js"
+import { GenerateOptions, ReferencesOptions } from "../model.js"
 
 export type MatchesArgs<DefType> = {
     definition: DefType
-    typespace: TypespaceResolutions
+    space: SpaceResolutions
+}
+
+export type AllowsOptions = {
+    ignoreExtraneousKeys?: boolean
 }
 
 export type ParseContext = {
-    typespace: TypespaceResolutions
+    space: SpaceResolutions
     path: string[]
     seen: string[]
     shallowSeen: string[]
 }
 
 export const defaultParseContext: ParseContext = {
-    typespace: {},
+    space: {},
     path: [],
     seen: [],
     shallowSeen: []
@@ -72,11 +71,11 @@ export type InheritableMethodContext<DefType, Components> = [
 ]
 
 export type InheritableMethods<DefType, Components> = {
-    validate?: (
+    allows?: (
         ...args: [
             ...args: InheritableMethodContext<DefType, Components>,
             valueType: ExtractableDefinition,
-            options: ValidateOptions
+            options: AllowsOptions
         ]
     ) => ValidationErrors
     references?: (
@@ -143,7 +142,7 @@ export type Parser<DefType, Parent, Methods> = Evaluate<
 export type InheritableMethodName = keyof InheritableMethods<any, any>
 
 const inheritableMethodNames = [
-    "validate",
+    "allows",
     "references",
     "generate"
 ] as InheritableMethodName[]
@@ -191,7 +190,7 @@ export const createParser = <
     const getComponents = (def: DefType, ctx: ParseContext) => {
         const memoKey = toString({
             def,
-            typespace: ctx.typespace,
+            space: ctx.space,
             shallowSeen: ctx.shallowSeen,
             seen: ctx.seen,
             path: ctx.path
@@ -215,7 +214,7 @@ export const createParser = <
                 ValueOf<TransformedInheritableMethods<DefType>>
             >
         ) => {
-            if (name === "validate") {
+            if (name === "allows") {
                 return inputMethod(
                     {
                         def,
@@ -247,10 +246,10 @@ export const createParser = <
                 `${methodName} was never implemented on the current component's branch.`
             )
         }
-        if (methodName === "matches") {
-            return () => !!children.find((child) => child.matches(def, ctx))
-        }
         const match = children.find((child) => child.matches(def, ctx))
+        if (methodName === "matches") {
+            return () => !!match
+        }
         if (!match) {
             if (input.fallback) {
                 return input.fallback(def, ctx)
