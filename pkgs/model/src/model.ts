@@ -67,6 +67,9 @@ export type ParseTypeOptions = {
     seen?: Record<string, boolean>
     deepOnCycle?: boolean
     onResolve?: Definition
+}
+
+export type DefineOptions = ParseTypeOptions & {
     validation?: ValidateOptions
     generation?: GenerateOptions
     references?: ReferencesOptions
@@ -77,9 +80,6 @@ export type DefaultParseTypeOptions = {
     seen: {}
     deepOnCycle: false
     onResolve: never
-    validation: {}
-    generation: {}
-    references: {}
 }
 
 type ValidationErrorFormats = {
@@ -162,7 +162,7 @@ export const define = createDefineFunction({})
 
 export type DefineFunction<PredefinedSpace> = <
     Def,
-    Options extends ParseTypeOptions,
+    Options extends DefineOptions,
     ActiveSpace = PredefinedSpace
 >(
     definition: Check<Narrow<Def>, ActiveSpace>,

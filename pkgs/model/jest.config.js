@@ -1,6 +1,7 @@
 import { getJestConfig } from "@re-/tools/node"
 
 export default getJestConfig({
+    reporters: undefined,
     collectCoverage: true,
     coverageThreshold: {
         global: {

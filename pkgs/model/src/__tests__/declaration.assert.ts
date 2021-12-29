@@ -19,7 +19,7 @@ describe("declare", () => {
         }
     })
     test("errors on compile with declared type undefined", () => {
-        const { define: define, compile } = declare(
+        const { define, compile } = declare(
             "GottaDefineThis",
             "GottaDefineThisToo"
         )
@@ -27,15 +27,16 @@ describe("declare", () => {
             a: "string"
         })
         // @ts-expect-error
-        assert(() => compile(GottaDefineThis)).throwsAndHasTypeError(
-            "Declared types 'GottaDefineThisToo' were never defined."
-        )
+        assert(() => compile(GottaDefineThis))
+            .throws("Declared types 'GottaDefineThisToo' were never defined.")
+            .type.errors("Property 'GottaDefineThisToo' is missing")
     })
     test("errors on compile with undeclared type defined", () => {
-        const { define: define, compile } = declare("GottaDefineThis")
+        const { define, compile } = declare("GottaDefineThis")
         const GottaDefineThis = define.GottaDefineThis("boolean")
         assert(() =>
-            compile(GottaDefineThis, {
+            compile({
+                ...GottaDefineThis,
                 // @ts-expect-error
                 CantDefineThis: "boolean",
                 // @ts-expect-error
@@ -46,7 +47,7 @@ describe("declare", () => {
                 "Defined types 'CantDefineThis', 'WontDefineThis' were never declared."
             )
             .type.errors(
-                /"CantDefineThis was never declared\."[\s\S]*"WontDefineThis was never declared\."/
+                /Invalid property 'CantDefineThis'\. Valid properties are\: GottaDefineThis"[\s\S]*'WontDefineThis'/
             )
     })
 })

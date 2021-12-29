@@ -1,17 +1,10 @@
 import {
     diffSets,
-    DiffUnions,
     ElementOf,
     Evaluate,
-    isRecursible,
     KeyValuate,
-    MergeAll,
-    mergeAll,
     Narrow,
-    StringifyPossibleTypes,
-    StringReplace,
     transform,
-    UnionDiffResult,
     IsAny,
     Exact
 } from "@re-/tools"
@@ -55,18 +48,6 @@ export const createCompileFunction =
         declaredTypeNames: Narrow<DeclaredTypeNames>
     ): CompileFunction<DeclaredTypeNames> =>
     (definitions) => {
-        // if (
-        //     !Array.isArray(definitions) ||
-        //     definitions.some((def) => !isRecursible(def) || Array.isArray(def))
-        // ) {
-        //     throw new Error(`Compile args must be a list of names mapped to their corresponding definitions
-        //     passed as rest args, e.g.:
-        //     compile(
-        //         { user: { name: "string" } },
-        //         { group: "user[]" }
-        //     )`)
-        // }
-        // const definitions = mergeAll(definitions as any) as any
         const declarationErrors = diffSets(
             declaredTypeNames,
             Object.keys(definitions)
@@ -112,8 +93,6 @@ export const createCompileFunction =
 // and will not validate missing or extraneous definitions
 export const compile = createCompileFunction([])
 
-// export type TypeNameFromList<Definitions> = keyof MergeAll<Definitions> & string
-
 export type CheckCompileDefinitions<
     Definitions,
     DeclaredTypeNames extends string[] = [],
@@ -122,46 +101,12 @@ export type CheckCompileDefinitions<
     DeclaredTypeName extends string = DeclaredTypeNames extends never[]
         ? DefinedTypeName
         : ElementOf<DeclaredTypeNames>
-> = {
+> = Evaluate<{
     [TypeName in DeclaredTypeName]: KeyValuate<Checked, TypeName>
-}
-
-// export type CheckCompileArgs<
-//     Definitions,
-//     DeclaredTypeNames extends string[] = [],
-//     Merged = CheckSpaceResolutions<MergeAll<Definitions>>,
-//     DefinedTypeName extends string = keyof Merged & string,
-//     DeclaredTypeName extends string = DeclaredTypeNames extends never[]
-//         ? DefinedTypeName
-//         : ElementOf<DeclaredTypeNames>,
-//     ErrorMessage extends string = MissingTypesError<
-//         DeclaredTypeName,
-//         DefinedTypeName
-//     >
-// > = {
-//     [I in keyof Definitions]: ErrorMessage & {
-//         [TypeName in keyof Definitions[I]]: TypeName extends DeclaredTypeName
-//             ? KeyValuate<Merged, TypeName>
-//             : `${TypeName & string} was never declared.`
-//     }
-// }
+}>
 
 export const extraneousTypesErrorMessage = `Defined types @types were never declared.`
 export const missingTypesErrorMessage = `Declared types @types were never defined.`
-
-// export type MissingTypesError<DeclaredTypeName, DefinedTypeName> = DiffUnions<
-//     DeclaredTypeName,
-//     DefinedTypeName
-//     // Extraneous definition errors are handled by CheckSpaceArgs
-// > extends UnionDiffResult<infer Extraneous, infer Missing>
-//     ? Missing extends []
-//         ? {}
-//         : StringReplace<
-//               typeof missingTypesErrorMessage,
-//               "@types",
-//               StringifyPossibleTypes<`'${ElementOf<Missing>}'`>
-//           >
-//     : never
 
 export type CompileFunction<DeclaredTypeNames extends string[]> = <Definitions>(
     definitions: Narrow<
@@ -171,8 +116,6 @@ export type CompileFunction<DeclaredTypeNames extends string[]> = <Definitions>(
         >
     >
 ) => Space<Definitions>
-
-const result = compile({ a: "string", b: { c: "number" } })
 
 export type Space<Definitions> = Evaluate<
     ParseSpaceResolutions<Definitions, DefaultParseTypeOptions> & {
