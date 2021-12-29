@@ -2,11 +2,13 @@ import { assert } from ".."
 
 const n: number = 5
 const o = { re: "do" }
+
 const shouldThrow = (a: false) => {
     if (a) {
         throw new Error("true is not assignable to false")
     }
 }
+
 const throwError = () => {
     throw new Error("Test error.")
 }
@@ -85,6 +87,14 @@ describe("assert", () => {
             // @ts-expect-error
             assert(() => shouldThrow("this is a type error")).type.errors.is("")
         ).toThrow("not assignable")
+    })
+    // Some TS errors as formatted as diagnostic "chains"
+    // We represent them by joining the parts of the message with newlines
+    test("TS diagnostic chain", () => {
+        // @ts-expect-error
+        assert(() => shouldThrow({} as {} | false)).type.errors.snap(
+            `"Argument of type 'false | {}' is not assignable to parameter of type 'false'.Type '{}' is not assignable to type 'false'."`
+        )
     })
     test("chainable", () => {
         assert(o).equals({ re: "do" }).typed as { re: string }

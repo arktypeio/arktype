@@ -169,10 +169,10 @@ describe("types", () => {
         }
     })
     const getCyclicSpace = () =>
-        compile(
-            { a: { b: "b", isA: "true", isB: "false" } },
-            { b: { a: "a", isA: "false", isB: "true" } }
-        )
+        compile({
+            a: { b: "b", isA: "true", isB: "false" },
+            b: { a: "a", isA: "false", isB: "true" }
+        })
     test("with onCycle option", () => {
         const { type } = getCyclicSpace().define(
             { a: "a", b: "b" },

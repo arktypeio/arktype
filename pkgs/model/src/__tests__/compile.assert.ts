@@ -12,19 +12,20 @@ describe("compile", () => {
         )
     })
     test("independent", () => {
-        assert(compile({ a: "string" }, { b: { c: "boolean" } }).types.b)
-            .typed as { c: boolean }
+        assert(compile({ a: "string", b: { c: "boolean" } }).types.b).typed as {
+            c: boolean
+        }
         assert(() =>
             // @ts-expect-error
-            compile({ a: "string" }, { b: { c: "uhoh" } })
+            compile({ a: "string", b: { c: "uhoh" } })
         ).throwsAndHasTypeError("Unable to determine the type of 'uhoh'")
     })
     test("interdependent", () => {
-        assert(compile({ a: "string" }, { b: { c: "a" } }).types.b.c)
+        assert(compile({ a: "string", b: { c: "a" } }).types.b.c)
             .typed as string
         assert(() =>
             // @ts-expect-error
-            compile({ a: "yikes" }, { b: { c: "a" } })
+            compile({ a: "yikes", b: { c: "a" } })
         ).throwsAndHasTypeError("Unable to determine the type of 'yikes'")
     })
     test("recursive", () => {
@@ -34,9 +35,9 @@ describe("compile", () => {
         ).type.toString.snap(`"{ dejaVu?: any | undefined; } | undefined"`)
     })
     test("cyclic", () => {
-        const { types } = compile({ a: { b: "b" } }, { b: { a: "a" } })
+        const space = compile({ a: { b: "b" }, b: { a: "a" } })
         // Type hint displays as any on hitting cycle
-        assert(types.a).typed as {
+        assert(space.types.a).typed as {
             b: {
                 a: {
                     b: {
@@ -46,43 +47,35 @@ describe("compile", () => {
             }
         }
         // But still yields correct types when properties are accessed
-        assert(types.b.a.b.a.b.a.b.a).typed as {
+        assert(space.types.b.a.b.a.b.a.b.a).typed as {
             b: {
                 a: any
             }
         }
         // @ts-expect-error
-        assert(types.a.b.a.b.c).type.errors(
+        assert(space.types.a.b.a.b.c).type.errors(
             "Property 'c' does not exist on type '{ a: { b: any; }; }'."
         )
     })
     test("object list", () => {
-        assert(compile({ a: "string" }, { b: [{ c: "a" }] }).types.b).typed as {
-            c: string
-        }[]
-        // Can't pass in object list directly to compile
-        // @ts-expect-error
-        assert(() => compile([{ b: { c: "string" } }])).throws.snap(`
-            "Compile args must be a list of names mapped to their corresponding definitions
-                        passed as rest args, e.g.:
-                        compile(
-                            { user: { name: \\"string\\" } },
-                            { group: \\"user[]\\" }
-                        )"
-        `)
+        assert(compile({ a: "string", b: [{ c: "a" }] }).types.b).typed as [
+            {
+                c: string
+            }
+        ]
     })
     test("can parse from compiled types", () => {
-        const { define } = compile({ a: { b: "b" } }, { b: { a: "a" } })
-        assert(define("a|b|null").type).type.toString.snap(
+        const space = compile({ a: { b: "b" }, b: { a: "a" } })
+        assert(space.define("a|b|null").type).type.toString.snap(
             `"{ b: { a: { b: { a: any; }; }; }; } | { a: { b: { a: { b: any; }; }; }; } | null"`
         )
         assert(() =>
             // @ts-expect-error
-            define({ nested: { a: "a", b: "b", c: "c" } })
+            space.define({ nested: { a: "a", b: "b", c: "c" } })
         ).throwsAndHasTypeError("Unable to determine the type of 'c'")
     })
     test("compile result", () => {
-        const mySpace = compile({ a: { b: "b?" } }, { b: { a: "a?" } })
+        const mySpace = compile({ a: { b: "b?" }, b: { a: "a?" } })
         const a = mySpace.define("a")
         assert(a.type)
             .is(typeDefProxy)
