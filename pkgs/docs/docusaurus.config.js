@@ -6,15 +6,15 @@ const darkCodeTheme = require("prism-react-renderer/themes/dracula")
 
 /** @type {import('@docusaurus/types').Config} */
 const config = {
-    title: "My Site",
-    tagline: "Dinosaurs are cool",
+    title: "Redo",
+    tagline: "Lovely tools that help you get back to doing what you love",
     url: "https://your-docusaurus-test-site.com",
     baseUrl: "/",
     onBrokenLinks: "throw",
     onBrokenMarkdownLinks: "warn",
     favicon: "img/favicon.ico",
-    organizationName: "facebook", // Usually your GitHub org/user name.
-    projectName: "docusaurus", // Usually your repo name.
+    organizationName: "re-do", // Usually your GitHub org/user name.
+    projectName: "re-po", // Usually your repo name.
     webpack: {
         jsLoader: (isServer) => ({
             loader: require.resolve("esbuild-loader"),
@@ -51,21 +51,21 @@ const config = {
         /** @type {import('@docusaurus/preset-classic').ThemeConfig} */
         ({
             navbar: {
-                title: "My Site",
                 logo: {
-                    alt: "My Site Logo",
-                    src: "img/logo.svg"
+                    alt: "Redo Logo",
+                    src: "img/reLogo.svg"
                 },
                 items: [
                     {
                         type: "doc",
                         docId: "intro",
                         position: "left",
-                        label: "Tutorial"
+                        label: "Model"
                     },
-                    { to: "/blog", label: "Blog", position: "left" },
+                    { to: "/blog", label: "State", position: "left" },
+                    { to: "/blog", label: "Test", position: "left" },
                     {
-                        href: "https://github.com/facebook/docusaurus",
+                        href: "https://github.com/re-do/re-po",
                         label: "GitHub",
                         position: "right"
                     }
@@ -109,12 +109,12 @@ const config = {
                             },
                             {
                                 label: "GitHub",
-                                href: "https://github.com/facebook/docusaurus"
+                                href: "https://github.com/re-do/re-po"
                             }
                         ]
                     }
                 ],
-                copyright: `Copyright © ${new Date().getFullYear()} My Project, Inc. Built with Docusaurus.`
+                copyright: `Copyright © ${new Date().getFullYear()} Redo, Inc. Built with Docusaurus.`
             },
             prism: {
                 theme: lightCodeTheme,
