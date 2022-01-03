@@ -19,29 +19,6 @@ describe("types", () => {
                     "Modifier '?' is only valid at the end of a type definition before any constraints."
                 )
             })
-            test("arrow function", () => {
-                assert(define("(string, number) => boolean[]").type).typed as (
-                    args_0: string,
-                    args_1: number
-                ) => boolean[]
-                assert(define("()=>void").type).typed as () => void
-                // @ts-expect-error
-                assert(() => define("()=>").type).throwsAndHasTypeError(
-                    "Unable to determine the type of ''."
-                )
-                assert(() =>
-                    // @ts-expect-error
-                    define("(foop, string, nufmber) => boolean[]")
-                )
-                    .throws("Unable to determine the type of 'foop'.")
-                    .type.errors(
-                        /Unable to determine the type of 'foop'[\s\S]*Unable to determine the type of 'nufmber'/
-                    )
-                // @ts-expect-error
-                assert(() => define("()=>fork")).throwsAndHasTypeError(
-                    "Unable to determine the type of 'fork'."
-                )
-            })
             test("union", () => {
                 assert(define("'yes'|'no'|'maybe'").type)
             })
