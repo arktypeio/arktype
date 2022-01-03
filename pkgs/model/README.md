@@ -6,7 +6,7 @@
 
 Type-first validation from editor to runtime 🧭
 
-![Coverage: 95%](https://img.shields.io/badge/Coverage-91%25-brightgreen)
+![Coverage: 95%](https://img.shields.io/badge/Coverage-95%25-brightgreen)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 ![Code style](https://img.shields.io/badge/code_style-prettier-ff69b4.svg)
 [![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-v2.0%20adopted-ff69b4.svg)](code-of-conduct.md)
