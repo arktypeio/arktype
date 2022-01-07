@@ -1,7 +1,7 @@
 import { assert } from "@re-/assert"
-import { define } from "model"
+import { define } from "./internal.js"
 
-describe("arrow function", () => {
+export const testArrowFunction = () => {
     describe("type", () => {
         test("zero args", () => {
             assert(define("()=>void").type).typed as () => void
@@ -48,4 +48,4 @@ describe("arrow function", () => {
             })
         })
     })
-})
+}
