@@ -30,4 +30,24 @@ export const testList = () => {
             })
         })
     })
+    describe("validation", () => {
+        const numberArray = define("number[]")
+        test("empty", () => {
+            assert(numberArray.validate([]).errors)
+        })
+        test("singleton", () => {
+            assert(numberArray.validate([0]).errors)
+        })
+        test("multiple", () => {
+            assert(numberArray.validate([8, 6, 7, 5, 3, 0, 9]).errors)
+        })
+        describe("errors", () => {
+            test("non-list", () => {
+                assert(numberArray.validate({}).errors).snap()
+            })
+            test("bad item", () => {
+                assert(numberArray.validate([1, 2, "3", 4, 5]).errors).snap()
+            })
+        })
+    })
 }
