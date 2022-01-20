@@ -83,15 +83,13 @@ describe("compile", () => {
             .snap(
                 `"{ b?: { a?: { b?: any | undefined; } | undefined; } | undefined; }"`
             )
-        assert(mySpace.a.references()).equals({ b: ["b"] } as any)
+        assert(mySpace.a.references()).equals({ b: ["b"] })
         const aWithExtraneousKey = { c: "extraneous" }
         const extraneousKeyMessage = "Keys 'c' were unexpected."
-        assert(a.validate(aWithExtraneousKey).errors as any).is(
-            extraneousKeyMessage
-        )
+        assert(a.validate(aWithExtraneousKey).errors).is(extraneousKeyMessage)
         assert(() => a.assert(aWithExtraneousKey)).throws(extraneousKeyMessage)
         assert(a.generate()).equals({})
-        assert(a.references()).equals(["a"] as any)
+        assert(a.references()).equals(["a"])
         assert(a.definition).typedValue("a")
         const expectedSpace = narrow({ a: { b: "b?" }, b: { a: "a?" } })
         assert(a.space).typedValue(expectedSpace)

@@ -1,5 +1,5 @@
 import { SourcePosition, withCallPosition } from "@re-/tools/node"
-import { WithDefaults, withDefaults } from "@re-/tools"
+import { ListPossibleTypes, WithDefaults, withDefaults } from "@re-/tools"
 import { typeAssertions, TypeAssertions } from "./type"
 import { valueAssertions, ValueAssertion } from "./value"
 
@@ -11,7 +11,7 @@ export type AssertionResult<
         Opts,
         { allowTypeAssertions: true; returnsCount: 0 }
     >
-> = ValueAssertion<T, Config> &
+> = ValueAssertion<ListPossibleTypes<T>, Config> &
     (Config["allowTypeAssertions"] extends true ? TypeAssertions : {})
 
 export type Assertion = <T>(value: T) => AssertionResult<T>
@@ -61,6 +61,7 @@ export const assertionContext: AssertionContext = (
     return assertionContext as any
 }
 
+// @ts-ignore
 export const assert = withCallPosition(assertionContext, {
     // TS uses "/" as their path seperator, even on Windows
     formatPath: { seperator: "/" }
