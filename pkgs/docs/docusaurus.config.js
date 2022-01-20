@@ -7,8 +7,8 @@ const darkCodeTheme = require("prism-react-renderer/themes/dracula")
 /** @type {import('@docusaurus/types').Config} */
 const config = {
     title: "Redo",
-    tagline: "Lovely tools that help you get back to doing what you love",
-    url: "https://your-docusaurus-test-site.com",
+    tagline: "Lovely tools to help you get back to doing what you love",
+    url: "https://redo.dev",
     baseUrl: "/",
     onBrokenLinks: "throw",
     onBrokenMarkdownLinks: "warn",
@@ -33,13 +33,7 @@ const config = {
                     sidebarPath: require.resolve("./sidebars.js"),
                     // Please change this to your repo.
                     editUrl:
-                        "https://github.com/facebook/docusaurus/edit/main/website/"
-                },
-                blog: {
-                    showReadingTime: true,
-                    // Please change this to your repo.
-                    editUrl:
-                        "https://github.com/facebook/docusaurus/edit/main/website/blog/"
+                        "https://github.com/re-do/re-po/edit/main/pkgs/docs"
                 },
                 theme: {
                     customCss: require.resolve("./src/css/custom.css")
@@ -52,18 +46,25 @@ const config = {
         ({
             navbar: {
                 logo: {
-                    alt: "Redo Logo",
+                    alt: "Re Logo",
                     src: "img/reLogo.svg"
                 },
                 items: [
                     {
                         type: "doc",
-                        docId: "intro",
-                        position: "left",
-                        label: "Model"
+                        label: "Model",
+                        docId: "model/intro"
                     },
-                    { to: "/blog", label: "State", position: "left" },
-                    { to: "/blog", label: "Test", position: "left" },
+                    {
+                        type: "doc",
+                        label: "State",
+                        docId: "state/intro"
+                    },
+                    {
+                        type: "doc",
+                        label: "Test",
+                        docId: "test/intro"
+                    },
                     {
                         href: "https://github.com/re-do/re-po",
                         label: "GitHub",
@@ -79,7 +80,7 @@ const config = {
                         items: [
                             {
                                 label: "Tutorial",
-                                to: "/docs/intro"
+                                to: "/docs/model/intro"
                             }
                         ]
                     },
@@ -103,10 +104,6 @@ const config = {
                     {
                         title: "More",
                         items: [
-                            {
-                                label: "Blog",
-                                to: "/blog"
-                            },
                             {
                                 label: "GitHub",
                                 href: "https://github.com/re-do/re-po"
