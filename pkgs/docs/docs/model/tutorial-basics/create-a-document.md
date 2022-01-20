@@ -6,9 +6,9 @@ sidebar_position: 2
 
 Documents are **groups of pages** connected through:
 
-- a **sidebar**
-- **previous/next navigation**
-- **versioning**
+-   a **sidebar**
+-   **previous/next navigation**
+-   **versioning**
 
 ## Create your first Doc
 
@@ -30,7 +30,7 @@ Add metadata to customize the sidebar label and position:
 
 ```md title="docs/hello.md" {1-4}
 ---
-sidebar_label: 'Hi!'
+sidebar_label: "Hi!"
 sidebar_position: 3
 ---
 
