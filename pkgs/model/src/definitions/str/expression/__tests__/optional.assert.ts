@@ -43,21 +43,11 @@ export const testList = () => {
         })
         describe("errors", () => {
             test("non-list", () => {
-                assert(numberArray.validate({}).errors).snap(
-                    `"{} is not assignable to number[]."`
-                )
+                assert(numberArray.validate({}).errors).snap()
             })
             test("bad item", () => {
-                assert(numberArray.validate([1, 2, "3", 4, 5]).errors).snap(
-                    `"At index 2, '3' is not assignable to number."`
-                )
+                assert(numberArray.validate([1, 2, "3", 4, 5]).errors).snap()
             })
-        })
-    })
-    describe("generation", () => {
-        test("empty by default", () => {
-            const numberArray = define("number[]")
-            assert(numberArray.generate()).equals([])
         })
     })
 }
