@@ -48,5 +48,22 @@ export const testArrowFunction = () => {
             })
         })
     })
-    describe("validation", () => {})
+    describe("validation", () => {
+        test("functional", () => {
+            assert(define("()=>any").validate(() => {}).errors).is(undefined)
+        })
+        describe("errors", () => {
+            test("non-functional", () => {
+                assert(define("()=>any").validate({}).errors).snap(
+                    `"{} is not assignable to ()=>any."`
+                )
+            })
+        })
+    })
+    describe("generation", () => {
+        test("no-op by default", () => {
+            const generated = define("()=>any").generate()
+            assert(generated()).is(undefined)
+        })
+    })
 }

@@ -98,6 +98,6 @@ describe("compile", () => {
             .type.toString.snap(
                 `"{ a?: { b?: { a?: any | undefined; } | undefined; } | undefined; }"`
             )
-        assert(mySpace.b.references()).equals({ a: ["a"] } as any)
+        assert(mySpace.b.references()).equals({ a: ["a"] })
     })
 })
