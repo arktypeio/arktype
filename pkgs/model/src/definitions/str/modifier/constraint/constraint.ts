@@ -6,6 +6,22 @@ import {
     createParser
 } from "../internal.js"
 
+// Any
+// Not (!)
+// Or (|)
+// And (,)
+// Keywords (e.g. positive, email)
+
+// Numbers:
+// Less than/greater, equals (>, <, =)
+// Integer
+// Positive
+// Negative
+
+// Strings:
+// Length
+// Regex
+
 export namespace Constraint {
     export type Definition<
         Def extends string = string,
@@ -32,10 +48,7 @@ export namespace Constraint {
         {
             matches: (def) => def.includes(":"),
             allows: ({ def, components, ctx }, valueType, opts) => {
-                if (valueType === undefined) {
-                    return {}
-                }
-                return components.typeDef.allows(valueType, opts)
+                return {}
             },
             generate: ({ components }, opts) =>
                 components.typeDef.generate(opts)
