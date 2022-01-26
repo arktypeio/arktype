@@ -47,7 +47,7 @@ export namespace Constraint {
                 }
             }
         },
-        // define("number:5<n<10,int")
+        // define("number:5<=n<10,int")
         // ["5<n<10", "int"]
         // 4.3
         //
@@ -56,8 +56,12 @@ export namespace Constraint {
             allows: ({ def, components, ctx }, valueType, opts) => {
                 const parts = components.constraint.split(",")
                 const numericKeywords: Record<string, (n: number) => string> = {
-                    int: (n) => (isInteger(n) ? "" : `${n} must be an integer.`)
+                    int: (n) =>
+                        isInteger(n) ? "" : `${n} must be an integer.`,
+                    "+": (n) => (n > 0 ? "" : `${n} must be positive.`),
+                    "-": (n) => (n < 0 ? "" : `${n} must be negative.`)
                 }
+                const stringKeywords: Record<string, (s: string) => string> = {}
                 const assertNumber = (value: ExtractableDefinition) => {
                     if (typeof value !== "number") {
                         throw new Error(
@@ -71,6 +75,41 @@ export namespace Constraint {
                         const value = assertNumber(valueType)
                         return message + numericKeywords[part](value)
                     }
+                    if (part in stringKeywords) {
+                    }
+                    const comparators: Record<
+                        string,
+                        (value: number, previousValue: number) => string
+                    > = {
+                        "<=": (value, previousValue) =>
+                            value < previousValue
+                                ? `${previousValue} must be less than or equal to ${value}.`
+                                : "",
+                        ">=": (value, previousValue) =>
+                            value > previousValue
+                                ? `${previousValue} must be greater than or equal to ${value}.`
+                                : "",
+                        "<": (value, previousValue) =>
+                            value <= previousValue
+                                ? `${previousValue} must be less than ${value}.`
+                                : "",
+                        ">": (value, previousValue) =>
+                            value >= previousValue
+                                ? `${previousValue} must be greater than ${value}.`
+                                : ""
+                    }
+                    if (part.includes("<=")) {
+                        const comparisonValues = part.split("<=")
+                        let previousValue = comparisonValues[0]
+                        for (const value of comparisonValues.slice(1)) {
+                            if (value < previousValue) {
+                                return message
+                            }
+                            previousValue = value
+                        }
+                        return message
+                    }
+
                     return message
                 }, "")
                 return {}
