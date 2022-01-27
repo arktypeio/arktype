@@ -10,5 +10,8 @@ export default getJestConfig({
             functions: 80,
             lines: 90
         }
+    },
+    moduleNameMapper: {
+        "^@re-/model$": "<rootDir>/src"
     }
 })
