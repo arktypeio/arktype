@@ -34,7 +34,7 @@ export namespace Optional {
         {
             matches: (def) => def.includes("?"),
             allows: ({ def, components, ctx }, valueType, opts) => {
-                if (valueType === undefined) {
+                if (valueType === "undefined") {
                     return {}
                 }
                 return components[0].allows(valueType, opts)

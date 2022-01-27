@@ -9,7 +9,8 @@ export type ShallowDefinition = Fragment.Definition | Primitive.Definition
 export type ShallowExtractableDefinition =
     | Keyword.Extractable
     | StringLiteral.Definition
-    | Primitive.Definition
+    | number
+    | bigint
 
 export type ExtractableDefinition = TreeOf<ShallowExtractableDefinition>
 
