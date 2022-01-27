@@ -280,7 +280,7 @@ The following table is ordered by relative precedence in the event that a defini
 | -------------- | ----------------- | ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------- |
 | Optional       | `T?`              | `function?` <br/>`boolean[]?`                    | Adds `undefined` as a possible value. When used in an Object type, also makes the corresponding key optional. |
 | Arrow Function | `(T1,T2,...)=>T3` | `(string,boolean[])=>void` <br/>`()=>object`     | At runtime, falls back to validating that a value is of type `function`.                                      |
-| Or             | `T1\|T2\|T3\|...` | `false\|string` <br/>`string\|number\|boolean[]` | Acts just like TypeScript's union operator (`\|`)                                                             |
+| Union          | `T1\|T2\|T3\|...` | `false\|string` <br/>`string\|number\|boolean[]` | Acts just like TypeScript's union operator (`\|`)                                                             |
 | List           | `T[]`             | `string[]` <br/>`number[][]`                     |                                                                                                               |
 
 Spaces are ignored when parsing expressions, so feel free to use whatever format you find most readable.

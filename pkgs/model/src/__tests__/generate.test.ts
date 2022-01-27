@@ -26,25 +26,6 @@ describe("generate", () => {
         expect(generate(true)).toBe(true)
         expect(generate(false)).toBe(false)
     })
-    test("or", () => {
-        expect(generate("undefined|string")).toBe(undefined)
-        expect(generate("number|false|function")).toBe(false)
-    })
-    test("or literals", () => {
-        const space = {
-            five: 5,
-            duck: "'duck'",
-            func: "(five,duck)=>duck"
-        }
-        expect(generate("func|five|duck", space)).toBe(5)
-        expect(generate("duck|func", space)).toBe("duck")
-    })
-    test("arrow function", () => {
-        expect(typeof generate("(boolean,any)=>void")).toBe("function")
-    })
-    test("list", () => {
-        expect(generate("function[]")).toStrictEqual([])
-    })
     test("deep", () => {
         expect(
             generate({
@@ -55,11 +36,6 @@ describe("generate", () => {
             a: { b: "", c: 0, d: { deep: null } },
             b: [{}, undefined, null]
         })
-    })
-    test("optional", () => {
-        expect(
-            generate({ optional: "boolean?", required: "boolean" })
-        ).toStrictEqual({ required: false })
     })
     test("complex", () => {
         expect(
@@ -132,13 +108,6 @@ describe("generate", () => {
                 { onRequiredCycle: "cycle" }
             )
         ).toStrictEqual({ b: { a: "cycle" } })
-        expect(
-            generate("a|b|safe", {
-                a: { b: "b" },
-                b: { a: "a" },
-                safe: "false"
-            })
-        ).toBe(false)
     })
     test("unparseable", () => {
         expect(() => generate("")).toThrowErrorMatchingInlineSnapshot(

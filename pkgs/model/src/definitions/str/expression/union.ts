@@ -30,7 +30,7 @@ export const preferredDefaults: PreferredDefaults = [
     { typeOf: "function" }
 ]
 
-export namespace Or {
+export namespace Union {
     export type Definition<
         Before extends string = string,
         After extends string = string
@@ -80,8 +80,9 @@ export namespace Or {
                     })
                 })
             },
-            generate: ({ components }, opts) => {
-                let requiredCycleError = ""
+            generate: ({ def, components }, opts) => {
+                const unknownErrorMessage = `Unable to generate a valid value for '${def}'.`
+                let errorMessage = unknownErrorMessage
                 const possibleValues = transform(
                     components,
                     ([i, fragment]) => {
@@ -89,12 +90,13 @@ export namespace Or {
                             return [i, fragment.generate(opts)]
                         } catch (e: any) {
                             if (isRequiredCycleError(e.message)) {
-                                if (!requiredCycleError) {
-                                    requiredCycleError = e.message
+                                if (errorMessage === unknownErrorMessage) {
+                                    errorMessage = e.message
                                 }
                                 // Omit it from "possibleValues"
                                 return null
                             }
+                            /* istanbul ignore next */
                             throw e
                         }
                     },
@@ -110,12 +112,9 @@ export namespace Or {
                         return matches[0]
                     }
                 }
-                if (requiredCycleError) {
-                    throw new Error(requiredCycleError)
-                }
-                // The only type that should get to this point without returning is a custom
-                // value from onRequiredCycle, so just return the first one
-                return possibleValues[0]
+                // If we've made it to this point without returning, throw the
+                // most descriptive error message we have
+                throw new Error(errorMessage)
             }
         }
     )

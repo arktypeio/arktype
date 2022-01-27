@@ -19,9 +19,6 @@ describe("types", () => {
                     "Modifier '?' is only valid at the end of a type definition before any constraints."
                 )
             })
-            test("union", () => {
-                assert(define("'yes'|'no'|'maybe'").type)
-            })
             test("precedence", () => {
                 assert(define("(string|number[])=>void?").type).typed as
                     | ((args_0: string | number[]) => void)
