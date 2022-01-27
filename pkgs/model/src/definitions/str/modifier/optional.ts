@@ -19,10 +19,7 @@ export namespace Optional {
             parent: () => Modifier.parse,
             components: (def, ctx) => {
                 const tokenCount = def.match(/\?/g)?.length
-                if (!tokenCount) {
-                    throw new Error(unknownTypeError(def, ctx.path))
-                }
-                if (tokenCount > 1) {
+                if (tokenCount !== 1) {
                     throw new Error(duplicateModifierError("?"))
                 }
                 if (!def.endsWith("?")) {
@@ -33,7 +30,7 @@ export namespace Optional {
         },
         {
             matches: (def) => def.includes("?"),
-            allows: ({ def, components, ctx }, valueType, opts) => {
+            allows: ({ components }, valueType, opts) => {
                 if (valueType === "undefined") {
                     return {}
                 }
