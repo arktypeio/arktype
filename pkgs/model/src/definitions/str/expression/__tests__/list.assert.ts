@@ -33,13 +33,15 @@ export const testList = () => {
     describe("validation", () => {
         const numberArray = define("number[]")
         test("empty", () => {
-            assert(numberArray.validate([]).errors)
+            assert(numberArray.validate([]).errors).is(undefined)
         })
         test("singleton", () => {
-            assert(numberArray.validate([0]).errors)
+            assert(numberArray.validate([0]).errors).is(undefined)
         })
         test("multiple", () => {
-            assert(numberArray.validate([8, 6, 7, 5, 3, 0, 9]).errors)
+            assert(numberArray.validate([8, 6, 7, 5, 3, 0, 9]).errors).is(
+                undefined
+            )
         })
         describe("errors", () => {
             test("non-list", () => {
