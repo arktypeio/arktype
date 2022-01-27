@@ -12,39 +12,10 @@ describe("types", () => {
             )
         })
         describe("expression", () => {
-            test("optional", () => {
-                assert(define("null?").type).typed as null | undefined
-                // @ts-expect-error
-                assert(() => define("str?ing")).throwsAndHasTypeError(
-                    "Modifier '?' is only valid at the end of a type definition before any constraints."
-                )
-            })
             test("precedence", () => {
                 assert(define("(string|number[])=>void?").type).typed as
                     | ((args_0: string | number[]) => void)
                     | undefined
-            })
-        })
-        describe("literal", () => {
-            test("string", () => {
-                //Supports single and double quotes
-                assert(define("'hello'").type).typed as "hello"
-                assert(define('"goodbye"').type).typed as "goodbye"
-            })
-            test("number", () => {
-                // As of TS 4.5, I don't think it's possible to parse a number literal from a string type
-                // Runtime functionality like "getDefault" and "validate" will still use the more specific
-                // value, but the TS type is inferred as "number"
-                assert(define("4").type).typed as number
-                assert(define("1.234").type).typed as number
-            })
-            test("bigint", () => {
-                assert(define("999999999999999n").type).typed as bigint
-                assert(define("-1n").type).typed as bigint
-                // @ts-expect-error
-                assert(() => define("99999.99n")).throwsAndHasTypeError(
-                    "Unable to determine the type of '99999.99n'."
-                )
             })
         })
     })

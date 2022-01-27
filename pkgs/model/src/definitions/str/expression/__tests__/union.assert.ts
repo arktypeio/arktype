@@ -1,5 +1,5 @@
 import { assert } from "@re-/assert"
-import { define } from "./internal.js"
+import { define } from "@re-/model"
 
 export const testUnion = () => {
     describe("type", () => {
