@@ -56,13 +56,6 @@ describe("validate", () => {
             `"5 is not assignable to string."`
         )
     })
-    test("string literal", () => {
-        const { validate } = define("'dursurdo'")
-        expect(validate("dursurdo").errors).toBeFalsy()
-        expect(validate("durrrrrr").errors).toMatchInlineSnapshot(
-            `"'durrrrrr' is not assignable to 'dursurdo'."`
-        )
-    })
     test("number", () => {
         const { validate } = define("number")
         expect(validate(4.669).errors).toBeFalsy()
