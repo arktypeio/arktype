@@ -3,7 +3,9 @@ import { Literal } from "./literal.js"
 
 export namespace StringLiteral {
     // Double quotes are also supported, but are automatically replaced by single quotes before validation
-    export type Definition<Text extends string = string> = `'${Text}'`
+    export type Definition<Text extends string = string> =
+        | `'${Text}'`
+        | `"${Text}"`
 
     export const type = typeDefProxy as Definition
 
