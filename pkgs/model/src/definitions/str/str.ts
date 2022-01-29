@@ -22,8 +22,6 @@ export namespace Str {
     export type Definition = string
 
     export type Format<Def extends string> = RemoveSpaces<Def>
-    //     StringReplace<Def, `"`, `'`>
-    // >
 
     export type Check<Def extends string, Space> = Fragment.Check<
         Format<Def>,
