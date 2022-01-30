@@ -29,4 +29,11 @@ describe("Narrow", () => {
             }
         ) => void
     })
+    test("any", () => {
+        assert(narrow({} as any)).typed as any
+    })
+    // See note in narrow.ts.
+    // test("unknown", () => {
+    //     assert(narrow({} as unknown)).typed as unknown
+    // })
 })
