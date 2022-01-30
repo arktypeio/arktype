@@ -75,6 +75,12 @@ export type DeepEvaluate<T, Depth extends number = -1> = T extends NonRecursible
           [K in keyof T]: DeepEvaluate<T[K], MinusOne<Depth>>
       }
 
+/**
+ * Note: Similarly to Narrow, trying to Evaluate 'unknown'
+ * directly (i.e. not nested in an object) leads to the type '{}',
+ * but I'm unsure how to fix this without breaking the types that rely on it.
+ * */
+
 export type Evaluate<T> = T extends NonRecursible
     ? T
     : {
