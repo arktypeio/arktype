@@ -134,7 +134,7 @@ export const createDefineFunction =
             ...defaultParseContext,
             space: formattedSpace
         }
-        const formattedDefinition = format(definition)
+        const formattedDefinition = format(definition) as any
         const { allows, references, generate } = Root.parse(
             formattedDefinition,
             context
@@ -171,7 +171,7 @@ export type DefineFunction<PredefinedSpace> = <
             space?: Exact<ActiveSpace, CheckSpaceResolutions<ActiveSpace>>
         }
     >
-) => Evaluate<Model<Def, ActiveSpace, Options>>
+) => Model<Def, Evaluate<ActiveSpace>, Options>
 
 export type ReferencesOptions = {}
 
@@ -185,11 +185,11 @@ export type Model<
     Definition,
     Space,
     Options,
-    ModelType = Evaluate<Parse<Definition, Space, Options>>
+    ModelType = Parse<Definition, Space, Options>
 > = Evaluate<{
     definition: Definition
     type: ModelType
-    space: Evaluate<Space>
+    space: Space
     validate: ValidateFunction
     assert: (value: unknown, options?: AssertOptions) => void
     generate: (options?: GenerateOptions) => ModelType

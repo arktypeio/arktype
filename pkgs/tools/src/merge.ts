@@ -101,20 +101,27 @@ export const merge = <
     } else if (isRecursible(base) && isRecursible(merged)) {
         const baseRecursible: any = base
         const mergedRecursible: any = merged
-        return transform({ ...base, ...merged } as any, ([k, v]) => {
-            if (k in mergedRecursible && k in baseRecursible) {
-                if (unmerged.includes(v)) {
-                    return [k, baseRecursible[k]]
+        return transform(
+            { ...baseRecursible, ...mergedRecursible } as any,
+            ([k, v]) => {
+                if (k in mergedRecursible && k in baseRecursible) {
+                    if (unmerged.includes(v)) {
+                        return [k, baseRecursible[k]]
+                    }
+                    if (deep) {
+                        return [
+                            k,
+                            merge(
+                                baseRecursible[k],
+                                mergedRecursible[k],
+                                options
+                            )
+                        ]
+                    }
                 }
-                if (deep) {
-                    return [
-                        k,
-                        merge(baseRecursible[k], mergedRecursible[k], options)
-                    ]
-                }
+                return [k, v]
             }
-            return [k, v]
-        })
+        )
     } else {
         return merged as any
     }
