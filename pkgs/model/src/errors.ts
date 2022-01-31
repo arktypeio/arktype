@@ -186,8 +186,7 @@ export const mismatchedKeysError = (keyErrors: DiffSetsResult<string>) => {
 export const valueGenerationError = ({ def, ctx: { path } }: BaseParseArgs) =>
     `Could not find a default value satisfying ${stringifyDefinition(
         def
-    )}${stringifyPathContext(path)}
-    .`
+    )}${stringifyPathContext(path)}.`
 
 export const stringifyErrors = (errors: ValidationErrors) => {
     const errorPaths = Object.keys(errors)
