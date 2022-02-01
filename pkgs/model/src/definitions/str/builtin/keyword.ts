@@ -116,7 +116,7 @@ export namespace Keyword {
         },
         void: {
             generate: () => undefined as void,
-            allows: (valueType) => typeof valueType === undefined
+            allows: (valueType) => valueType === "undefined"
         },
         never: {
             generate: ({ def, ctx }) => {
