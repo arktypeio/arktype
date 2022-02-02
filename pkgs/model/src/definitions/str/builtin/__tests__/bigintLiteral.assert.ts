@@ -35,7 +35,7 @@ export const testBigintLiteral = () => {
         describe("errors", () => {
             test("wrong value", () => {
                 assert(define("999n").validate(1000n).errors).snap(
-                    `"1000 is not assignable to 999n."`
+                    `"1000n is not assignable to 999n."`
                 )
             })
             test("non-bigint", () => {

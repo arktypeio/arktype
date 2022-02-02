@@ -38,6 +38,8 @@ export const toString = (value: any, options: ToStringOptions = {}) => {
             result +=
                 typeof value === "string"
                     ? `${quote}${value}${quote}`
+                    : typeof value === "bigint"
+                    ? `${value}n`
                     : String(value)
         } else if (seen.includes(value)) {
             result += "(cyclic value)"

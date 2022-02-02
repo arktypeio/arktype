@@ -264,6 +264,7 @@ export const createParser = <
         components: any
     ) => {
         return transform(inheritableMethodNames, ([i, methodName]) => {
+            const inherited = getInherited()
             if (methods[methodName]) {
                 return [
                     methodName,
@@ -275,12 +276,12 @@ export const createParser = <
                         components
                     )
                 ]
-            } else if (getInherited()[methodName]) {
+            } else if (inherited[methodName]) {
                 return [
                     methodName,
                     transformInheritableMethod(
                         methodName,
-                        getInherited()[methodName]!,
+                        inherited[methodName]!,
                         def,
                         ctx,
                         components
