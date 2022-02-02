@@ -49,9 +49,6 @@ describe("typeOf", () => {
 })
 
 describe("validate", () => {
-    test("empty object", () => {
-        expect(define({}).validate({}).errors).toBeFalsy()
-    })
     const simpleObject = define({
         a: { b: "string", c: "number", d: { deep: "null" } }
     })
