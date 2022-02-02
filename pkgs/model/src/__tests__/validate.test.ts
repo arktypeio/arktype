@@ -49,81 +49,6 @@ describe("typeOf", () => {
 })
 
 describe("validate", () => {
-    test("string", () => {
-        const { validate } = define("string")
-        expect(validate("").errors).toBeFalsy()
-        expect(validate(5).errors).toMatchInlineSnapshot(
-            `"5 is not assignable to string."`
-        )
-    })
-    test("number", () => {
-        const { validate } = define("number")
-        expect(validate(4.669).errors).toBeFalsy()
-        expect(
-            validate({ keyWithNumberValue: 5 }).errors
-        ).toMatchInlineSnapshot(
-            `"{keyWithNumberValue: 5} is not assignable to number."`
-        )
-    })
-    const valid8 = (validate: Function) => {
-        expect(validate(8).errors).toBeFalsy()
-        expect(validate(8.0).errors).toBeFalsy()
-        expect(validate(8.000001).errors).toMatchInlineSnapshot(
-            `"8.000001 is not assignable to 8."`
-        )
-        expect(validate("8").errors).toMatchInlineSnapshot(
-            `"'8' is not assignable to 8."`
-        )
-    }
-    const validateGolden = (validate: Func) => {
-        expect(validate(1.618).errors).toBeFalsy()
-        expect(validate(2).errors).toMatchInlineSnapshot(
-            `"2 is not assignable to 1.618."`
-        )
-        expect(validate("1.618").errors).toMatchInlineSnapshot(
-            `"'1.618' is not assignable to 1.618."`
-        )
-    }
-    test("number literal in string", () => {
-        valid8(define("8").validate)
-        validateGolden(define("1.618").validate)
-    })
-    test("number literal", () => {
-        valid8(define(8).validate)
-        validateGolden(define(1.618).validate)
-    })
-    test("bigint", () => {
-        const { validate } = define("bigint")
-        expect(validate(BigInt(0)).errors).toBeFalsy()
-        expect(validate(0).errors).toMatchInlineSnapshot(
-            `"0 is not assignable to bigint."`
-        )
-    })
-    test("boolean", () => {
-        const { validate } = define("boolean")
-        expect(validate(true).errors).toBeFalsy()
-        expect(validate(false).errors).toBeFalsy()
-        expect(validate(1).errors).toMatchInlineSnapshot(
-            `"1 is not assignable to boolean."`
-        )
-    })
-    test("symbol", () => {
-        const { validate } = define("symbol")
-        expect(validate(Symbol()).errors).toBeFalsy()
-        expect(validate("symbol").errors).toMatchInlineSnapshot(
-            `"'symbol' is not assignable to symbol."`
-        )
-    })
-    test("undefined", () => {
-        const { validate } = define("undefined")
-        expect(validate(undefined).errors).toBeFalsy()
-        expect(validate("defined").errors).toMatchInlineSnapshot(
-            `"'defined' is not assignable to undefined."`
-        )
-        expect(validate(null).errors).toMatchInlineSnapshot(
-            `"null is not assignable to undefined."`
-        )
-    })
     test("empty object", () => {
         expect(define({}).validate({}).errors).toBeFalsy()
     })
@@ -181,26 +106,6 @@ describe("validate", () => {
             `"{a/b: 'null is not assignable to string.', a/c: 'symbol is not assignable to number.', a/d: 'Keys 'shallow' were unexpected.'}"`
         )
     })
-    test("function", () => {
-        const { validate } = define("function")
-        expect(
-            validate(function saySomething() {
-                console.log("I'm giving up on you")
-            }).errors
-        ).toBeFalsy()
-        expect(validate({}).errors).toMatchInlineSnapshot(
-            `"{} is not assignable to function."`
-        )
-    })
-    test("defined function widened for validation", () => {
-        const { validate } = define("(number,object)=>string")
-        expect(validate(() => {}).errors).toBeFalsy()
-        expect(
-            validate("I promise I'm a function").errors
-        ).toMatchInlineSnapshot(
-            `"'I promise I'm a function' is not assignable to (number,object)=>string."`
-        )
-    })
     test("array", () => {
         const { validate } = define(["number", "string"])
         expect(validate([7, "up"]).errors).toBeFalsy()
@@ -215,15 +120,6 @@ describe("validate", () => {
         ).toMatchInlineSnapshot(
             `"{0: ''up' is not assignable to number.', 1: '7 is not assignable to string.'}"`
         )
-    })
-    test("or type", () => {
-        const { validate } = define("string|number")
-        expect(validate("heyo").errors).toBeFalsy()
-        expect(validate(0).errors).toBeFalsy()
-        expect(validate(["listen what I say-o"]).errors).toMatchInlineSnapshot(`
-            "['listen what I say-o'] is not assignable to any of string|number:
-            {string: '['listen what I say-o'] is not assignable to string.', number: '['listen what I say-o'] is not assignable to number.'}"
-        `)
     })
     test("complex", () => {
         const { validate } = define([

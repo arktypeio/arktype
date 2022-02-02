@@ -4,13 +4,6 @@ import { typeDefProxy, definitionTypeErrorTemplate } from "../internal.js"
 
 describe("types", () => {
     describe("string", () => {
-        test("keyword", () => {
-            assert(define("string").type).typed as string
-            // @ts-expect-error
-            assert(() => define("strig")).throwsAndHasTypeError(
-                "Unable to determine the type of 'strig'."
-            )
-        })
         describe("expression", () => {
             test("precedence", () => {
                 assert(define("(string|number[])=>void?").type).typed as
@@ -19,54 +12,6 @@ describe("types", () => {
             })
         })
     })
-    describe("primitive", () => {
-        test("number", () => {
-            assert(define(0).type).typed as 0
-            // Repeating, of course
-            assert(define(32.33).type).typed as 32.33
-        })
-        test("bigint", () => {
-            assert(define(0n).type).typed as 0n
-            assert(define(99999999999999999999n).type)
-                .typed as 99999999999999999999n
-        })
-        test("boolean", () => {
-            assert(define(true).type).typed as true
-            assert(define(false).type).typed as false
-        })
-        test("null", () => {
-            assert(define(null).type).typed as null
-        })
-        test("undefined", () => {
-            assert(define(undefined).type).typed as undefined
-        })
-    })
-    describe("object", () => {
-        test("empty", () => {
-            assert(define({}).type).typed as {}
-            assert(define([]).type).typed as []
-        })
-        test("map", () => {
-            assert(
-                define({
-                    a: "string",
-                    b: "true|number?",
-                    c: { nested: "null[]" },
-                    d: 6
-                }).type
-            ).typed as {
-                b?: number | true | undefined
-                a: string
-                c: { nested: null[] }
-                d: 6
-            }
-            // @ts-expect-error
-            assert(() => define({ a: { b: "whoops" } }))
-                .throws("Unable to determine the type of 'whoops' at path a/b.")
-                .type.errors("Unable to determine the type of 'whoops'")
-        })
-    })
-
     test("bad type def type", () => {
         // @ts-expect-error
         assert(() => define({ bad: Symbol() })).throwsAndHasTypeError(
@@ -89,21 +34,6 @@ describe("types", () => {
                 { space: { borf: { f: false, u: undefined } } }
             ).type
         ).typed as { snorf: { f: false; u: undefined }[] }
-    })
-    test("list definition", () => {
-        assert(define([{ a: null }, { b: "string?" }]).type).typed as [
-            {
-                a: null
-            },
-            {
-                b?: string | undefined
-            }
-        ]
-        assert(
-            define({
-                nestedList: [0n, { yes: "null|true" }]
-            }).type
-        ).typed as { nestedList: [0n, { yes: true | null }] }
     })
     test("whitespace is ignored when parsing strings", () => {
         assert(define("    boolean      |    null       ").type).typed as

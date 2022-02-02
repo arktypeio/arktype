@@ -6,26 +6,6 @@ const generate = (def: any, space: any = {}, opts: any = {}) =>
     define(def, { space }).generate(opts)
 
 describe("generate", () => {
-    test("keywords", () => {
-        expect(generate("string")).toBe("")
-        expect(generate("boolean")).toBe(false)
-        expect(generate("any")).toBe(undefined)
-        expect(typeof generate("function")).toBe("function")
-        expect(() => generate("never")).toThrow()
-    })
-    test("number literal", () => {
-        expect(generate("5")).toBe(5)
-        expect(generate("7.91")).toBe(7.91)
-    })
-    test("primitives", () => {
-        expect(generate(5)).toBe(5)
-        expect(generate(7.91)).toBe(7.91)
-        expect(generate(-99999999999999999999n)).toBe(-99999999999999999999n)
-        expect(generate(undefined)).toBe(undefined)
-        expect(generate(null)).toBe(null)
-        expect(generate(true)).toBe(true)
-        expect(generate(false)).toBe(false)
-    })
     test("deep", () => {
         expect(
             generate({
