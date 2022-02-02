@@ -30,10 +30,16 @@ export namespace Primitive {
             matches: (definition) =>
                 typesOf.includes(typeof definition as any) ||
                 definition === null,
-            allows: ({ def, ctx: { path } }, valueType, opts) =>
-                def === valueType
+            allows: ({ def, ctx: { path } }, valueType, opts) => {
+                if (typeof def === "number" || typeof def === "bigint") {
+                    return def === valueType
+                        ? {}
+                        : validationError({ def, valueType, path })
+                }
+                return `${def}` === valueType
                     ? {}
-                    : validationError({ def, valueType, path }),
+                    : validationError({ def, valueType, path })
+            },
             generate: ({ def }) => def,
             references: ({ def }) => [
                 `${def}${typeof def === "bigint" ? "n" : ""}`
