@@ -1,5 +1,6 @@
 import { assert } from "@re-/assert"
 import { define } from "@re-/model"
+import { lazily } from "@re-/tools"
 
 export const testList = () => {
     describe("type", () => {
@@ -31,7 +32,7 @@ export const testList = () => {
         })
     })
     describe("validation", () => {
-        const numberArray = define("number[]")
+        const numberArray = lazily(() => define("number[]"))
         test("empty", () => {
             assert(numberArray.validate([]).errors).is(undefined)
         })
@@ -58,8 +59,7 @@ export const testList = () => {
     })
     describe("generation", () => {
         test("empty by default", () => {
-            const numberArray = define("number[]")
-            assert(numberArray.generate()).equals([])
+            assert(define("number[]").generate()).equals([])
         })
     })
 }

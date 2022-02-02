@@ -1,5 +1,6 @@
 import { assert } from "@re-/assert"
 import { define } from "@re-/model"
+import { lazily } from "@re-/tools"
 
 export const testPrimitive = () => {
     describe("number", () => {
@@ -103,62 +104,62 @@ export const testPrimitive = () => {
     })
     describe("boolean", () => {
         describe("true", () => {
+            const t = lazily(() => define(true))
             test("type", () => {
-                assert(define(true).type).typed as true
+                assert(t.type).typed as true
             })
             test("generation", () => {
-                assert(define(true).generate()).is(true)
+                assert(t.generate()).is(true)
             })
             test("validation", () => {
-                const { validate } = define(true)
-                assert(validate(true).errors).is(undefined)
-                assert(validate(false).errors).snap(
+                assert(t.validate(true).errors).is(undefined)
+                assert(t.validate(false).errors).snap(
                     `"false is not assignable to true."`
                 )
             })
         })
         describe("false", () => {
+            const f = lazily(() => define(false))
             test("type", () => {
-                assert(define(false).type).typed as false
+                assert(f.type).typed as false
             })
             test("generation", () => {
-                assert(define(false).generate()).is(false)
+                assert(f.generate()).is(false)
             })
             test("validation", () => {
-                const { validate } = define(false)
-                assert(validate(false).errors).is(undefined)
-                assert(validate(true).errors).snap(
+                assert(f.validate(false).errors).is(undefined)
+                assert(f.validate(true).errors).snap(
                     `"true is not assignable to false."`
                 )
             })
         })
     })
     describe("undefined", () => {
+        const u = lazily(() => define(undefined))
         test("type", () => {
-            assert(define(undefined).type).typed as undefined
+            assert(u.type).typed as undefined
         })
         test("generation", () => {
-            assert(define(undefined).generate()).is(undefined)
+            assert(u.generate()).is(undefined)
         })
         test("validation", () => {
-            const { validate } = define(undefined)
-            assert(validate(undefined).errors).is(undefined)
-            assert(validate(null).errors).snap(
+            assert(u.validate(undefined).errors).is(undefined)
+            assert(u.validate(null).errors).snap(
                 `"null is not assignable to undefined."`
             )
         })
     })
     describe("null", () => {
+        const n = lazily(() => define(null))
         test("type", () => {
-            assert(define(null).type).typed as null
+            assert(n.type).typed as null
         })
         test("generation", () => {
-            assert(define(null).generate()).is(null)
+            assert(n.generate()).is(null)
         })
         test("validation", () => {
-            const { validate } = define(null)
-            assert(validate(null).errors).is(undefined)
-            assert(validate(undefined).errors).snap(
+            assert(n.validate(null).errors).is(undefined)
+            assert(n.validate(undefined).errors).snap(
                 `"undefined is not assignable to null."`
             )
         })
