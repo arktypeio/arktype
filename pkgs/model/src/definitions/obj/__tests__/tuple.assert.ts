@@ -31,6 +31,12 @@ export const testTuple = () => {
             })
         })
     })
-    describe("validation", () => {})
+    describe("validation", () => {
+        test("empty", () => {
+            const { validate } = define([])
+            assert(validate([]).errors).is(undefined)
+            assert(validate({}).errors).snap()
+        })
+    })
     describe("generation", () => {})
 }
