@@ -110,7 +110,7 @@ mySpace.user.validate({
     groups: []
 })
 
-// Once you've created a typespace, you can use it to create new models
+// Once you've created a space, you can use it to create new models
 // that reference existing models like "user"
 const community = mySpace.model({
     users: "user[]",
@@ -128,7 +128,7 @@ If you prefer to split your space definitions across one or more files, you'll w
 ```ts
 import { declare } from "@re-/model"
 
-// Declare the names in your typespace allows
+// Declare the names in your space allows
 const declared = declare("user", "group")
 
 // A declaration's "define" prop can be used anywhere to create
@@ -141,7 +141,7 @@ import { groupDef } from "./group"
 // Type error: "Declared types 'group' were never defined."
 const badSpace = declared.compile(userDef)
 
-// Creates a typespace identical to that of "Creating your first typespace"
+// Creates a space identical to that of "Creating your first space"
 const mySpace = declared.compile(userDef, groupDef)
 ```
 
@@ -233,7 +233,7 @@ type BarAgain = [
 String definitions are strings constructed from the following fragment types:
 
 -   Builtins, including keywords like `"number"` and literals like `"'redo'"`
--   Aliases like `"user"` or `"group"` that have been defined in your typespace
+-   Aliases like `"user"` or `"group"` that have been defined in your space
 -   Expressions consisting of one or more string definitions modified by an operator, like `"user | number"` or `"group[]?"`
 
 #### Keywords
@@ -274,7 +274,7 @@ While `boolean` values could also be considered literals, they are modeled as ke
 
 Expressions are a set of syntactic patterns that can be applied to one or more nested string definitions to modify the type they represent. Unless otherwise noted, expressions can be applied to any valid string definition, including other expressions.
 
-The following table is ordered by relative precedence in the event that a definition matches multiple patterns. For example, the definition `"string|boolean[]"` would be interpreted as either a `string` or a list of `boolean` since "Or" applies before "List." Parenthetical grouping is not yet supported, but can be emulated by adding the desired grouping to a typespace and referencing its alias.
+The following table is ordered by relative precedence in the event that a definition matches multiple patterns. For example, the definition `"string|boolean[]"` would be interpreted as either a `string` or a list of `boolean` since "Or" applies before "List." Parenthetical grouping is not yet supported, but can be emulated by adding the desired grouping to a space and referencing its alias.
 
 | Exrpession     | Pattern           | Examples                                         | Notes                                                                                                         |
 | -------------- | ----------------- | ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------- |
