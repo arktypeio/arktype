@@ -52,6 +52,18 @@ export const testMap = () => {
                         { ignoreExtraneousKeys: true }
                     ).errors
                 ).is(undefined)
+                // Still errors on missing keys
+                assert(
+                    shallow.validate(
+                        {
+                            a: "ok",
+                            c: 67,
+                            d: "extraneous"
+                        },
+
+                        { ignoreExtraneousKeys: true }
+                    ).errors
+                ).snap(`"Required keys 'b' were missing."`)
             })
             describe("errors", () => {
                 test("bad value", () => {
