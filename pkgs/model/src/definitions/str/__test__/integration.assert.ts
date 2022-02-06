@@ -1,7 +1,7 @@
 import { assert } from "@re-/assert"
 import { define } from "@re-/model"
 
-export const testStr = () => {
+export const testIntegration = () => {
     describe("type", () => {
         test("precedence", () => {
             assert(define("(string|number[])=>void?").type).typed as

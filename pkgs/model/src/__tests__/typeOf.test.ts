@@ -1,4 +1,4 @@
-import { define, typeOf } from ".."
+import { typeOf } from ".."
 
 describe("typeOf", () => {
     test("string", () => {

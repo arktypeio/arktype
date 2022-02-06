@@ -1,5 +1,5 @@
 export {}
 
-describe("builtin", () => {
+describe("alias", () => {
     describe("optional", () => {})
 })

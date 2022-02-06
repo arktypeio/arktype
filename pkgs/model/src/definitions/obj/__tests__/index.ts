@@ -4,8 +4,10 @@ import { lazily } from "@re-/tools"
 import { testMap } from "./map.assert.js"
 import { testTuple } from "./tuple.assert.js"
 
-describe("obj", () => {
-    describe("mixed", () => {
+export const testObj = () => {
+    describe("map", testMap)
+    describe("tuple", testTuple)
+    describe("integration", () => {
         const mixed = lazily(() =>
             define(["true", { a: ["string", ["number|boolean[]"]] }])
         )
@@ -47,6 +49,4 @@ describe("obj", () => {
             assert(mixed.generate()).equals([true, { a: ["", [0]] }])
         })
     })
-    describe("map", testMap)
-    describe("tuple", testTuple)
-})
+}

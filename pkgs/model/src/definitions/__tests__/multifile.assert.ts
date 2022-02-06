@@ -1,5 +1,5 @@
 import { assert } from "@re-/assert"
-import { declare } from ".."
+import { declare } from "@re-/model"
 
 export const { define, compile } = declare("user", "group")
 
