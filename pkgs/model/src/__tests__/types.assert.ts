@@ -4,13 +4,7 @@ import { typeDefProxy, definitionTypeErrorTemplate } from "../internal.js"
 
 describe("types", () => {
     describe("string", () => {
-        describe("expression", () => {
-            test("precedence", () => {
-                assert(define("(string|number[])=>void?").type).typed as
-                    | ((args_0: string | number[]) => void)
-                    | undefined
-            })
-        })
+        describe("expression", () => {})
     })
     test("bad type def type", () => {
         // @ts-expect-error
@@ -34,14 +28,6 @@ describe("types", () => {
                 { space: { borf: { f: false, u: undefined } } }
             ).type
         ).typed as { snorf: { f: false; u: undefined }[] }
-    })
-    test("whitespace is ignored when parsing strings", () => {
-        assert(define("    boolean      |    null       ").type).typed as
-            | boolean
-            | null
-        assert(define({ nested: "number|    true" }).type).typed as {
-            nested: number | true
-        }
     })
     const getCyclicSpace = () =>
         compile({

@@ -1,5 +1,7 @@
 import { testOptional } from "./optional.assert.js"
 
-describe("modifier", () => {
-    describe("optional", testOptional)
-})
+export const testModifier = () => {
+    describe("modifier", () => {
+        describe("optional", testOptional)
+    })
+}
