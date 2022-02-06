@@ -14,12 +14,6 @@ export const testUnion = () => {
                 | null
                 | undefined
         })
-        test("literals", () => {
-            assert(define("'yes'|'no'|'maybe'").type).typed as
-                | "yes"
-                | "no"
-                | "maybe"
-        })
         describe("errors", () => {
             test("bad reference", () => {
                 // @ts-expect-error
