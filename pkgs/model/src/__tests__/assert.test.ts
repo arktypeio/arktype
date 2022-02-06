@@ -19,9 +19,4 @@ beforeAll(() => {
 
 import "./compile.assert.js"
 import "./declaration.assert.js"
-import "./types.assert.js"
-import "./references.assert.js"
-import "./multifile.assert.js"
-import "../definitions/obj/__tests__"
-import "../definitions/primitive/__tests__"
-import "../definitions/str/__test__"
+import "../definitions/__tests__"
