@@ -3,9 +3,6 @@ import { compile, define } from ".."
 import { typeDefProxy, definitionTypeErrorTemplate } from "../internal.js"
 
 describe("types", () => {
-    describe("string", () => {
-        describe("expression", () => {})
-    })
     test("bad type def type", () => {
         // @ts-expect-error
         assert(() => define({ bad: Symbol() })).throwsAndHasTypeError(

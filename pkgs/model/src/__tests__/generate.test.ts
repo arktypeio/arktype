@@ -6,22 +6,6 @@ const generate = (def: any, space: any = {}, opts: any = {}) =>
     define(def, { space }).generate(opts)
 
 describe("generate", () => {
-    test("deep", () => {
-        expect(
-            generate({
-                a: { b: "string", c: "number", d: { deep: "null" } },
-                b: ["object", "undefined|null", "null|number"]
-            })
-        ).toStrictEqual({
-            a: { b: "", c: 0, d: { deep: null } },
-            b: [{}, undefined, null]
-        })
-    })
-    test("complex", () => {
-        expect(
-            generate(["true", { a: ["string?", ["true|null|object[]"]] }])
-        ).toStrictEqual([true, { a: [undefined, [null]] }])
-    })
     test("simple space", () => {
         expect(
             generate(
