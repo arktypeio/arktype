@@ -1,5 +1,6 @@
 import { assert } from "@re-/assert"
 import { define } from "@re-/model"
+import { typeDefProxy } from "../internal.js"
 
 export const testIntegration = () => {
     describe("type", () => {
@@ -28,5 +29,16 @@ export const testIntegration = () => {
                 | ((args_0: string[]) => boolean)
                 | undefined
         })
+    })
+    test("model props", () => {
+        const a = define("a", {
+            space: { a: "true" }
+        })
+        expect(a.definition).toBe("a")
+        expect(a.space).toStrictEqual({ a: "true" })
+        expect(a.validate(true).errors).toBeFalsy()
+        expect(() => a.assert(false)).toThrow()
+        expect(a.generate()).toBe(true)
+        expect(a.type).toBe(typeDefProxy)
     })
 }
