@@ -1,4 +1,4 @@
-import { IsAny, Or as LogicalOr } from "@re-/tools"
+import { IsAny, Or } from "@re-/tools"
 import {
     ParseConfig,
     typeDefProxy,
@@ -54,7 +54,7 @@ export namespace Alias {
         TypeName extends Definition<Space>,
         Space,
         Options extends ParseConfig
-    > = LogicalOr<
+    > = Or<
         Options["onResolve"] extends never ? true : false,
         TypeName extends "resolved" ? true : false
     > extends true

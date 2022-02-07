@@ -5,8 +5,8 @@ import {
     typeDefProxy,
     isRequiredCycleError,
     stringifyErrors,
-    OrTypeErrors,
-    orValidationError,
+    UnionTypeErrors,
+    unionValidationError,
     validationError,
     createParser,
     ParseContext,
@@ -60,23 +60,23 @@ export namespace Union {
         {
             matches: (definition) => definition.includes("|"),
             allows: ({ def, ctx, components }, valueType, opts) => {
-                const orErrors: OrTypeErrors = {}
+                const unionErrors: UnionTypeErrors = {}
                 for (const fragment of components) {
                     const fragmentErrors = stringifyErrors(
                         fragment.allows(valueType, opts)
                     )
                     if (!fragmentErrors) {
-                        // If one of the or types doesn't return any errors, the whole type is valid
+                        // If one of the union types doesn't return any errors, the whole type is valid
                         return {}
                     }
-                    orErrors[fragment.def] = fragmentErrors
+                    unionErrors[fragment.def] = fragmentErrors
                 }
                 return validationError({
                     path: ctx.path,
-                    message: orValidationError({
+                    message: unionValidationError({
                         def,
                         valueType,
-                        orErrors
+                        unionErrors
                     })
                 })
             },

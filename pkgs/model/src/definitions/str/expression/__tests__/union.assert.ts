@@ -29,6 +29,31 @@ export const testUnion = () => {
             })
         })
     })
+    describe("validation", () => {
+        test("two types", () => {
+            assert(define("true|false").validate(false).errors).is(undefined)
+        })
+        test("several types", () => {
+            assert(
+                define("0|false|undefined|null|'zero'|void").validate("zero")
+                    .errors
+            ).is(undefined)
+        })
+        describe("errors", () => {
+            test("two types", () => {
+                assert(define("'yes'|'no'").validate("maybe").errors).snap(`
+"'maybe' is not assignable to any of 'yes'|'no':
+{'yes': ''maybe' is not assignable to 'yes'.', 'no': ''maybe' is not assignable to 'no'.'}"
+`)
+            })
+            test("several types", () => {
+                assert(define("2|4|6|8").validate(5).errors).snap(`
+"5 is not assignable to any of 2|4|6|8:
+{2: '5 is not assignable to 2.', 4: '5 is not assignable to 4.', 6: '5 is not assignable to 6.', 8: '5 is not assignable to 8.'}"
+`)
+            })
+        })
+    })
     describe("generation", () => {
         test("prefers simple values", () => {
             assert(define("undefined|string").generate()).is(undefined)
