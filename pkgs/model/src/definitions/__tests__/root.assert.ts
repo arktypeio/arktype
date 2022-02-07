@@ -1,3 +1,5 @@
+import { assert } from "@re-/assert"
+import { define } from "@re-/model"
 import { definitionTypeErrorTemplate } from "../internal.js"
 import { testObj } from "../obj/__tests__"
 import { testPrimitive } from "../primitive/__tests__"

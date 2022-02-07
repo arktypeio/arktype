@@ -1,5 +1,1 @@
-export {}
-
-describe("alias", () => {
-    describe("optional", () => {})
-})
+export * from "./alias.assert.js"
