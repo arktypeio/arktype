@@ -79,19 +79,25 @@ export type InvalidModifierError<
     `${InvalidModifier}`
 >
 
-// Members of an or type to errors that occurred validating those types
-export type OrTypeErrors = Record<string, string>
+// Members of a union type to errors that occurred validating those types
+export type UnionTypeErrors = Record<string, string>
 
-export type OrErrorArgs = BaseAssignmentArgs & { orErrors: OrTypeErrors }
+export type UnionErrorArgs = BaseAssignmentArgs & {
+    unionErrors: UnionTypeErrors
+}
 
-export const orValidationErrorTemplate =
+export const unionValidationErrorTemplate =
     "@valueType is not assignable to any of @def:\n@errors"
 
-export const orValidationError = ({ def, valueType, orErrors }: OrErrorArgs) =>
-    orValidationErrorTemplate
+export const unionValidationError = ({
+    def,
+    valueType,
+    unionErrors
+}: UnionErrorArgs) =>
+    unionValidationErrorTemplate
         .replace("@valueType", stringifyDefinition(valueType))
         .replace("@def", stringifyDefinition(def))
-        .replace("@errors", stringifyErrors(orErrors))
+        .replace("@errors", stringifyErrors(unionErrors))
 
 export type BaseParseArgs = {
     def: unknown
