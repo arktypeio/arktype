@@ -1,6 +1,10 @@
 import { assert } from "@re-/assert"
 import { define } from "@re-/model"
 
+const v = define({})
+
+type f = typeof v
+
 export const testOptional = () => {
     describe("type", () => {
         test("adds undefined to standalone type", () => {

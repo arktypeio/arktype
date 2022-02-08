@@ -6,7 +6,7 @@ import {
     createParser,
     ExtractableDefinition
 } from "../internal.js"
-import { isInteger } from "@re-/tools"
+import { asNumber, isInteger, isNumeric } from "@re-/tools"
 
 // Any
 // Not (!)
@@ -47,6 +47,8 @@ export namespace Constraint {
                 }
             }
         },
+        // define("string:#email")
+        // define("")
         // define("number:5<=n<10,int")
         // ["5<n<10", "int"]
         // 4.3
@@ -79,37 +81,75 @@ export namespace Constraint {
                     }
                     const comparators: Record<
                         string,
-                        (value: number, previousValue: number) => string
+                        (left: number, right: number) => string
                     > = {
-                        "<=": (value, previousValue) =>
-                            value < previousValue
-                                ? `${previousValue} must be less than or equal to ${value}.`
+                        "<=": (left, right) =>
+                            left > right
+                                ? `${left} must be less than or equal to ${right}.`
                                 : "",
-                        ">=": (value, previousValue) =>
-                            value > previousValue
-                                ? `${previousValue} must be greater than or equal to ${value}.`
+                        ">=": (left, right) =>
+                            left < right
+                                ? `${left} must be greater than or equal to ${right}.`
                                 : "",
-                        "<": (value, previousValue) =>
-                            value <= previousValue
-                                ? `${previousValue} must be less than ${value}.`
+                        "<": (left, right) =>
+                            left >= right
+                                ? `${left} must be less than ${right}.`
                                 : "",
-                        ">": (value, previousValue) =>
-                            value >= previousValue
-                                ? `${previousValue} must be greater than ${value}.`
+                        ">": (left, right) =>
+                            left <= right
+                                ? `${left} must be greater than ${right}.`
                                 : ""
                     }
-                    if (part.includes("<=")) {
-                        const comparisonValues = part.split("<=")
-                        let previousValue = comparisonValues[0]
-                        for (const value of comparisonValues.slice(1)) {
-                            if (value < previousValue) {
-                                return message
-                            }
-                            previousValue = value
+                    const comparisonMatcher = /(<=|>=|<|>)/
+                    if (part.match(comparisonMatcher)) {
+                        const comparisonParts = part.split(comparisonMatcher)
+                        if (comparisonParts[0] in comparators) {
+                            /**
+                             *  A comparison starting with a comparator (e.g. "<3") is equivalent
+                             *  to the statement with 'n' prepended (e.g. "n<3").
+                             **/
+                            comparisonParts.unshift("n")
                         }
-                        return message
+                        let comparisonErrorMessage = ""
+                        // All parts with odd indices should now be comparators if the constraint is valid
+                        for (
+                            let index = 1;
+                            index < comparisonParts.length;
+                            index += 2
+                        ) {
+                            const comparator = comparisonParts[index]
+                            const toComparable = (comparedValue: string) => {
+                                if (comparedValue === "n") {
+                                    return valueType as number
+                                }
+                                const comparable = asNumber(comparedValue, {
+                                    asFloat: true
+                                })
+                                if (comparable === null) {
+                                    return `Unable to parse a numeric value from '${comparedValue}' in comparison '${part}'.`
+                                }
+                                return comparable
+                            }
+                            const left = toComparable(
+                                comparisonParts[index - 1]
+                            )
+                            const right = toComparable(
+                                comparisonParts[index + 1]
+                            )
+                            // If to comparable returns a string for the left or right side of the comparison, it is an invalid comparison
+                            // TODO: Catch this when a model is defined, not when it is used for validation
+                            if (typeof left === "string") {
+                                return left
+                            }
+                            if (typeof right === "string") {
+                                return right
+                            }
+                            comparisonErrorMessage += comparators[comparator](
+                                left,
+                                right
+                            )
+                        }
                     }
-
                     return message
                 }, "")
                 return {}
