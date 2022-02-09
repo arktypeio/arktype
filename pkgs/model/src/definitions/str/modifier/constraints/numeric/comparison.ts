@@ -1,12 +1,6 @@
 import { Constraint } from "../constraint.js"
-import {
-    duplicateModifierError,
-    typeDefProxy,
-    createParser,
-    ExtractableDefinition
-} from "../internal.js"
-import { asNumber, isInteger } from "@re-/tools"
-import { BigintLiteral, NumberLiteral } from "../../../index.js"
+import { typeDefProxy, createParser } from "../internal.js"
+import { asNumber } from "@re-/tools"
 
 // Any
 // Not (!)

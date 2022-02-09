@@ -10,7 +10,7 @@ import {
 } from "./internal.js"
 import { Fragment } from "../fragment.js"
 import { Optional } from "./optional.js"
-import { Constraint } from "./constraint/constraint.js"
+import { Constraint } from "./constraints/constraint.js"
 
 export namespace Modifier {
     export type Definition = `${string}${ModifierToken}${string}`
