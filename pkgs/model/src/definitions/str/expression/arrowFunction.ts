@@ -47,6 +47,8 @@ export namespace ArrowFunction {
 
     export const type = typeDefProxy as Definition
 
+    export const matcher = /\(.*\)\=\>.*/
+
     export const parse = createParser(
         {
             type,
@@ -67,7 +69,7 @@ export namespace ArrowFunction {
             }
         },
         {
-            matches: (def) => /\(.*\)\=\>.*/.test(def as any),
+            matches: (def) => matcher.test(def as any),
             allows: ({ def, ctx: { path } }, valueType) =>
                 valueType === "function"
                     ? {}
