@@ -73,9 +73,9 @@ const fetchUser = () => {
 user.validate(fetchUser())
 ```
 
-## Compilation
+## Space
 
-Your models can reference each other or themselves using a **compilation**. [Try it out](https://TODO:updatelink).
+Your models can reference each other or themselves using a **space**. [Try it out](https://TODO:updatelink).
 
 ```ts
 import { compile } from "@re-/model"
