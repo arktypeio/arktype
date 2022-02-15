@@ -1,7 +1,6 @@
 #-------------------------------------------------------------------------------------------------------------------
 # Keep this section in sync with .gitignore
 #-------------------------------------------------------------------------------------------------------------------
-
 # Logs
 *.log
 npm-debug.log*
@@ -39,6 +38,9 @@ build/Release
 node_modules/
 jspm_packages/
 
+# This is just a symlink to the TS rush installs so that VSCode can resolve it
+!/node_modules
+
 # Optional npm cache directory
 .npm
 
@@ -60,26 +62,23 @@ jspm_packages/
 # Common toolchain intermediate files
 temp
 
-# Build output
-dist
-out
-
 # Rush files
 common/temp/**
-common/scripts/**
 package-deps.json
 
 # OS files
 .DS_Store
 
+# Docusaurus
+.docusaurus
+.cache-loader
+
 # Redo
 .env.production
-**/test/redo.json
-**/app/redo.json
 release
 generated
-.build
-
+dist
+out
 
 #-------------------------------------------------------------------------------------------------------------------
 # Prettier-specific overrides
@@ -96,6 +95,3 @@ pnpm-lock.yaml
 yarn.lock
 package-lock.json
 shrinkwrap.json
-
-# Prettier reformats code blocks inside Markdown, which affects rendered output
-*.md

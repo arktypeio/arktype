@@ -1,7 +1,7 @@
-import { findPackageRoot, mapFilesToContents } from "@re-/node"
+import { findPackageRoot, mapFilesToContents } from "@re-/tools/node"
 import { dirname, join, relative } from "path"
 import typescript from "typescript"
-import { memoize, print, toString } from "@re-/utils"
+import { memoize, print, toString } from "@re-/tools"
 
 // Absolute file paths TS will parse to raw contents
 export type ContentsByFile = Record<string, string>
@@ -49,9 +49,11 @@ const getConfig = (options: TypeContextOptions) => {
 }
 
 const compileTsConfig = (configPath: string) => {
-    return typescript.parseJsonSourceFileConfigFileContent(
+    const config = typescript.parseJsonSourceFileConfigFileContent(
         typescript.readJsonConfigFile(configPath, typescript.sys.readFile),
         typescript.sys,
         dirname(configPath)
     )
+    config.options.noErrorTruncation = true
+    return config
 }

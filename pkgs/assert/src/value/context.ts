@@ -1,5 +1,12 @@
-import { SourcePosition, withCallPosition } from "@re-/node"
-import { Func, isRecursible, NonRecursible, IsAnyOrUnknown } from "@re-/utils"
+import { SourcePosition, withCallPosition } from "@re-/tools/node"
+import {
+    Func,
+    isRecursible,
+    IsAnyOrUnknown,
+    Evaluate,
+    ListPossibleTypes,
+    ElementOf
+} from "@re-/tools"
 import { AssertionConfig } from "../assert.js"
 import { TypeAssertions, typeAssertions } from "../type/context.js"
 import { errorsOfNextType, nextTypeToString } from "../type/types.js"
@@ -21,7 +28,7 @@ export type ChainableValueAssertion<
     Config extends AssertionConfig,
     Chained = ArgsType[0],
     IsReturn extends boolean = false,
-    ImmediateAssertions = ValueAssertion<Chained, Config> &
+    ImmediateAssertions = ValueAssertion<ListPossibleTypes<Chained>, Config> &
         (IsReturn extends true ? NextAssertions<Config> : {})
 > = (<Args extends ArgsType | [] = []>(
     ...args: Args
@@ -79,10 +86,13 @@ export const chainableAssertion = (
         }
     )
 
-export type ComparableValueAssertion<T, Config extends AssertionConfig> = {
-    is: (value: T) => NextAssertions<Config>
+export type ComparableValueAssertion<
+    PossibleValues extends any[],
+    Config extends AssertionConfig
+> = {
+    is: (value: ElementOf<PossibleValues>) => NextAssertions<Config>
     snap: ((value?: string) => undefined) & { toFile: () => undefined }
-    equals: (value: T) => NextAssertions<Config>
+    equals: (value: ElementOf<PossibleValues>) => NextAssertions<Config>
 } & (Config["allowTypeAssertions"] extends true
     ? { typedValue: (expected: unknown) => undefined }
     : {})
@@ -121,15 +131,22 @@ export type FunctionAssertionWithArgsIfNeeded<
 export type NextAssertions<Config extends AssertionConfig> =
     Config["allowTypeAssertions"] extends true ? TypeAssertions : {}
 
+/**
+ *  If we don't pass the possible values as a list, TS
+ *  takes a union of the whole assertion object instead
+ *  of a function that accepts one of a union type
+ **/
+
 export type ValueAssertion<
-    T,
-    Config extends AssertionConfig
+    PossibleValues extends any[],
+    Config extends AssertionConfig,
+    T = ElementOf<PossibleValues>
 > = IsAnyOrUnknown<T> extends true
     ? FunctionalValueAssertion<T[], T, Config> &
-          ComparableValueAssertion<T, Config>
+          ComparableValueAssertion<PossibleValues, Config>
     : T extends Func<infer Args, infer Return>
     ? FunctionalValueAssertion<Args, Return, Config>
-    : ComparableValueAssertion<T, Config>
+    : ComparableValueAssertion<PossibleValues, Config>
 
 const defaultAssert = (
     value: unknown,
@@ -152,7 +169,7 @@ export const valueAssertions = <T, Config extends AssertionConfig>(
     position: SourcePosition,
     value: T,
     config: Config
-): ValueAssertion<T, Config> => {
+): ValueAssertion<ListPossibleTypes<T>, Config> => {
     const nextAssertions = getNextAssertions(position, config)
     if (typeof value === "function") {
         const functionAssertions = {

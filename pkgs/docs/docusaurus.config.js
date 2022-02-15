@@ -6,15 +6,15 @@ const darkCodeTheme = require("prism-react-renderer/themes/dracula")
 
 /** @type {import('@docusaurus/types').Config} */
 const config = {
-    title: "My Site",
-    tagline: "Dinosaurs are cool",
-    url: "https://your-docusaurus-test-site.com",
+    title: "Redo",
+    tagline: "Lovely tools to help you get back to doing what you love",
+    url: "https://redo.dev",
     baseUrl: "/",
     onBrokenLinks: "throw",
     onBrokenMarkdownLinks: "warn",
     favicon: "img/favicon.ico",
-    organizationName: "facebook", // Usually your GitHub org/user name.
-    projectName: "docusaurus", // Usually your repo name.
+    organizationName: "re-do", // Usually your GitHub org/user name.
+    projectName: "re-po", // Usually your repo name.
     webpack: {
         jsLoader: (isServer) => ({
             loader: require.resolve("esbuild-loader"),
@@ -33,13 +33,7 @@ const config = {
                     sidebarPath: require.resolve("./sidebars.js"),
                     // Please change this to your repo.
                     editUrl:
-                        "https://github.com/facebook/docusaurus/edit/main/website/"
-                },
-                blog: {
-                    showReadingTime: true,
-                    // Please change this to your repo.
-                    editUrl:
-                        "https://github.com/facebook/docusaurus/edit/main/website/blog/"
+                        "https://github.com/re-do/re-po/edit/main/pkgs/docs"
                 },
                 theme: {
                     customCss: require.resolve("./src/css/custom.css")
@@ -51,21 +45,28 @@ const config = {
         /** @type {import('@docusaurus/preset-classic').ThemeConfig} */
         ({
             navbar: {
-                title: "My Site",
                 logo: {
-                    alt: "My Site Logo",
-                    src: "img/logo.svg"
+                    alt: "Re Logo",
+                    src: "img/reLogo.svg"
                 },
                 items: [
                     {
                         type: "doc",
-                        docId: "intro",
-                        position: "left",
-                        label: "Tutorial"
+                        label: "Model",
+                        docId: "model/intro"
                     },
-                    { to: "/blog", label: "Blog", position: "left" },
                     {
-                        href: "https://github.com/facebook/docusaurus",
+                        type: "doc",
+                        label: "State",
+                        docId: "state/intro"
+                    },
+                    {
+                        type: "doc",
+                        label: "Test",
+                        docId: "test/intro"
+                    },
+                    {
+                        href: "https://github.com/re-do/re-po",
                         label: "GitHub",
                         position: "right"
                     }
@@ -79,7 +80,7 @@ const config = {
                         items: [
                             {
                                 label: "Tutorial",
-                                to: "/docs/intro"
+                                to: "/docs/model/intro"
                             }
                         ]
                     },
@@ -104,17 +105,13 @@ const config = {
                         title: "More",
                         items: [
                             {
-                                label: "Blog",
-                                to: "/blog"
-                            },
-                            {
                                 label: "GitHub",
-                                href: "https://github.com/facebook/docusaurus"
+                                href: "https://github.com/re-do/re-po"
                             }
                         ]
                     }
                 ],
-                copyright: `Copyright © ${new Date().getFullYear()} My Project, Inc. Built with Docusaurus.`
+                copyright: `Copyright © ${new Date().getFullYear()} Redo, Inc. Built with Docusaurus.`
             },
             prism: {
                 theme: lightCodeTheme,

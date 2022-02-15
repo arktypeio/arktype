@@ -2,11 +2,13 @@ import { assert } from ".."
 
 const n: number = 5
 const o = { re: "do" }
+
 const shouldThrow = (a: false) => {
     if (a) {
         throw new Error("true is not assignable to false")
     }
 }
+
 const throwError = () => {
     throw new Error("Test error.")
 }
@@ -72,6 +74,7 @@ describe("assert", () => {
             /Property 'nonexistent' does not exist on type 'number'/
         )
         assert(o).type.errors("")
+        // @ts-expect-error
         assert(() => shouldThrow(5, "")).type.errors.is(
             "Expected 1 arguments, but got 2."
         )
@@ -81,11 +84,21 @@ describe("assert", () => {
             "doesn't exist"
         )
         expect(() =>
+            // @ts-expect-error
             assert(() => shouldThrow("this is a type error")).type.errors.is("")
         ).toThrow("not assignable")
     })
+    // Some TS errors as formatted as diagnostic "chains"
+    // We represent them by joining the parts of the message with newlines
+    test("TS diagnostic chain", () => {
+        // @ts-expect-error
+        assert(() => shouldThrow({} as {} | false)).type.errors.snap(
+            `"Argument of type 'false | {}' is not assignable to parameter of type 'false'.Type '{}' is not assignable to type 'false'."`
+        )
+    })
     test("chainable", () => {
         assert(o).equals({ re: "do" }).typed as { re: string }
+        // @ts-expect-error
         assert(() => throwError("this is a type error"))
             .throws("Test error.")
             .type.errors("Expected 0 arguments, but got 1.")
@@ -145,11 +158,13 @@ describe("assert", () => {
         ).toThrow("unknown")
     })
     test("throwsAndHasTypeError", () => {
+        // @ts-expect-error
         assert(() => shouldThrow(true)).throwsAndHasTypeError(
             /true[\s\S]*not assignable[\s\S]*false/
         )
         // No thrown error
         expect(() =>
+            // @ts-expect-error
             assert(() => shouldThrow(null)).throwsAndHasTypeError(
                 "not assignable"
             )
@@ -169,7 +184,7 @@ describe("assert", () => {
             .is(5)
             .typed as number
         // prettier-ignore
-        assert((a: number, b: number) => a +b )
+        assert((a: number, b: number) => a + b)
             .args(1, 2)
             .returns
             .typedValue(3 as number)

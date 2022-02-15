@@ -1,6 +1,8 @@
 # Contributing
 
-Thank you so much for making it this far ❤️ If you're intersted in contributing to one of the packages in the Redo repository, we want to make sure we do everything we can to make that process as straightforward and fruitful as possible 🍍🍐🥝 We've put together this guide to cover some of that, but please don't hesitate to comment on any of GitHub issues, create your own, or reach out to me directly at david@redo.qa 🍾
+Thank you so much for making it this far ❤️ If you're intersted in contributing to one of the packages in the Redo repository, we want to make sure we do everything we can to make that process as straightforward and fruitful as possible 🍍🍐🥝
+
+We've put together this guide to cover some of that, but please don't hesitate to comment on any of GitHub issues, create your own, or reach out to me directly at david@redo.qa 🍾
 
 ## Code of Conduct
 
@@ -13,7 +15,7 @@ Working on your first Pull Request? You can learn how from this free video serie
 
 [How to Contribute to an Open Source Project on GitHub](https://egghead.io/courses/how-to-contribute-to-an-open-source-project-on-github)
 
-To help you get your feet wet and get you familiar with our contribution process, we have a list of [easy issues](https://github.com/re-do/dev/issues?q=is:open+is:issue+label:"easy") that contain changes that have a relatively limited scope. This is a great place to get started.
+To help you get your feet wet and get you familiar with our contribution process, we have a list of [easy issues](https://github.com/re-do/re-po/issues?q=is:open+is:issue+label:"easy") that contain changes that have a relatively limited scope. This is a great place to get started.
 
 If you decide to fix an issue, please be sure to check the comment thread in case somebody is already working on a fix. If nobody is working on it at the moment, please leave a comment stating that you have started to work on it so other people don’t accidentally duplicate your effort.
 
@@ -30,14 +32,14 @@ When in doubt, keep your Pull Requests small. To give a Pull Request the best ch
 2. Clone the fork to your local machine and add upstream remote:
 
 ```sh
-git clone git@github.com:<yourname>/redo.git && cd redo && git remote add upstream git@github.com:re-do/dev.git
+git clone git@github.com:<yourname>/re-po.git && cd redo && git remote add upstream git@github.com:re-do/re-po.git
 ```
 
-3. Synchronize your local `master` branch with the upstream one:
+3. Synchronize your local `main` branch with the upstream one:
 
 ```sh
-git checkout master
-git pull upstream master
+git checkout main
+git pull upstream main
 ```
 
 4. Install dependencies and build:
@@ -84,7 +86,7 @@ Once that's done, commit your changes and push to your fork:
 git push -u
 ```
 
-7. Go to [the repository](https://github.com/re-do/dev) and make a Pull Request.
+7. Go to [the repository](https://github.com/re-do/re-po) and make a Pull Request.
 
 The core team is monitoring for Pull Requests. We will review your Pull Request and either merge it, request changes to it, or close it with an explanation.
 
@@ -92,16 +94,18 @@ The core team is monitoring for Pull Requests. We will review your Pull Request 
 
 We use a [rush](https://rushjs.io) monorepo to manage our packages. You might want to make changes to one or more of them depending on the goals of your contribution. Take a look at any of them individually to learn more:
 
--   [@re-do/utils](pkgs/utils): Browser-friendly utiltiies and types
--   [@re-do/node](pkgs/node): Utilities, configs, scripts, and devtools for Node
+-   [@re-/model](pkgs/model): Beautiful types from IDE to runtime 🧬
+-   [@re-/assert](pkgs/assert): Seamless testing for types and code ✅
+-   [@re-/tools](pkgs/tools): Utilities, scripts, and configs for this repo 🧰
+-   [@re-/docs](pkgs/docs): Documentation for this repo 📚
 
 ## Project
 
-Our current and planned work can always be found [here](https://github.com/re-do/dev/projects/1). If you want to contribute but aren't sure where to get started, see if any of the issues in our backlog sound interesting! Not all are well-documented, so it usually makes sense to comment on the issue with any questions you may have before you start coding.
+Our current and planned work can always be found [here](https://github.com/re-do/re-po/projects/1). If you want to contribute but aren't sure where to get started, see if any of the issues in our backlog sound interesting! Not all are well-documented, so it usually makes sense to comment on the issue with any questions you may have before you start coding.
 
 ## License
 
-By contributing your code to the re-do/dev GitHub repository, you agree to license your contribution under the MIT license.
+By contributing your code to the re-do/re-po GitHub repository, you agree to license your contribution under the MIT license.
 
 ### Attribution note
 
