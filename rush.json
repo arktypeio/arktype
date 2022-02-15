@@ -9,7 +9,7 @@
     "suppressNodeLtsWarning": true,
     "ensureConsistentVersions": true,
     "repository": {
-        "url": "https://github.com/re-do/dev",
+        "url": "https://github.com/re-do/re-po",
         "defaultBranch": "main"
     },
     "projects": [

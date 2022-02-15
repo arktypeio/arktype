@@ -1,0 +1,10 @@
+{
+    "changes": [
+        {
+            "packageName": "@re-/tools",
+            "comment": "Initial commit.",
+            "type": "minor"
+        }
+    ],
+    "packageName": "@re-/tools"
+}
