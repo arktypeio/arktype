@@ -1,0 +1,10 @@
+{
+    "changes": [
+        {
+            "packageName": "@re-/assert",
+            "comment": "Type fixes.",
+            "type": "minor"
+        }
+    ],
+    "packageName": "@re-/assert"
+}

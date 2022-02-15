@@ -46,7 +46,7 @@ jobs:
               env:
                   NODE_AUTH_TOKEN: ${{ secrets.NPM_AUTH_TOKEN }}
               run: |
-                  git config --global user.email "ci@redo.qa"
+                  git config --global user.email "ci@redo.dev"
                   git config --global user.name "Github Actions"
                   node common/scripts/install-run-rush.js publish --publish --include-all --target-branch main --set-access-level public
                   git commit -a -m "Bump versions."
