@@ -9,19 +9,14 @@
     "suppressNodeLtsWarning": true,
     "ensureConsistentVersions": true,
     "repository": {
-        "url": "https://github.com/re-do/dev",
+        "url": "https://github.com/re-do/re-po",
         "defaultBranch": "main"
     },
     "projects": [
         {
-            "packageName": "@re-/node",
-            "projectFolder": "pkgs/node",
-            "shouldPublish": true
-        },
-        {
-            "packageName": "@re-/utils",
-            "projectFolder": "pkgs/utils",
-            "cyclicDependencyProjects": ["@re-/node", "@re-/assert"],
+            "packageName": "@re-/tools",
+            "projectFolder": "pkgs/tools",
+            "cyclicDependencyProjects": ["@re-/assert"],
             "shouldPublish": true
         },
         {
@@ -30,8 +25,8 @@
             "shouldPublish": true
         },
         {
-            "packageName": "@re-/type",
-            "projectFolder": "pkgs/type",
+            "packageName": "@re-/model",
+            "projectFolder": "pkgs/model",
             "shouldPublish": true
         },
         {

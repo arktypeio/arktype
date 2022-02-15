@@ -1,5 +1,5 @@
-import { SourcePosition } from "@re-/node"
-import { getAbsolutePositions, print, toString } from "@re-/utils"
+import { SourcePosition } from "@re-/tools/node"
+import { getAbsolutePositions, print, toString } from "@re-/tools"
 import { getTsContext, TsContext } from "./ts.js"
 import ts from "typescript"
 
@@ -28,6 +28,16 @@ export const nextTypeToString = (
     const { type } = nextTypedNode(context, position, options)
     return context.ts.getTypeChecker().typeToString(type)
 }
+
+const concatenateChainedErrors = (e: ts.DiagnosticMessageChain[]): string =>
+    e
+        .map(
+            (msg) =>
+                `${msg.messageText}${
+                    msg.next ? concatenateChainedErrors(msg.next) : ""
+                }`
+        )
+        .join("\n")
 
 const nextTypedNode = (
     context: TsContext,
@@ -70,11 +80,14 @@ const nextTypedNode = (
                         (e.start ?? -1) >= node.getStart() &&
                         (e.start ?? -1) + (e.length ?? 0) <= node.getEnd()
                 )
-                .map((e) =>
-                    typeof e.messageText === "string"
-                        ? e.messageText
-                        : e.messageText.messageText
-                )
+                .map((e) => {
+                    if (typeof e.messageText === "string") {
+                        return e.messageText
+                    }
+                    return `${
+                        e.messageText.messageText
+                    }${concatenateChainedErrors(e.messageText.next ?? [])}`
+                })
             if (
                 // If intrinsic name is error but there are no corresponding
                 // diagnostics, node should not have a type (e.g. something like "(")

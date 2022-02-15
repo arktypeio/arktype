@@ -11,6 +11,8 @@
         "**/node_modules/*": true,
         "test/**/__snapshots__": true,
         "pnpm-lock.*": true,
-        "*.lock": true
-    }
+        "*.lock": true,
+        "**/coverage/*": true
+    },
+    "typescript.tsdk": "node_modules/typescript/lib"
 }
