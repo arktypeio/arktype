@@ -95,3 +95,6 @@ pnpm-lock.yaml
 yarn.lock
 package-lock.json
 shrinkwrap.json
+
+# Docs build
+/docs
