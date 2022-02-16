@@ -5,6 +5,7 @@ import {
     typeDefProxy,
     createParser
 } from "../internal.js"
+import { define } from "../../../../model.js"
 
 // Any
 // Not (!)
@@ -35,7 +36,17 @@ import {
 // String constraints (probably an aggregate matcher)
 // Numeric constraints (probably an aggregate matcher)
 
-export namespace Constraints {
+const def = define("number:>5,int")
+/**
+ * 1.
+ * type: "number"
+ * constraints: ">5,int"
+ * 2.
+ * ">5"
+ * "int"
+ */
+
+export namespace Constrained {
     export type Definition<
         Def extends string = string,
         Constraints extends string = string
