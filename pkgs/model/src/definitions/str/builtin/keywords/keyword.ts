@@ -7,6 +7,7 @@ import {
     validationError
 } from "../internal.js"
 import { Builtin } from "../builtin.js"
+import { defineKeywords } from "./internal.js"
 
 export namespace Keyword {
     export type Definition<
@@ -38,23 +39,6 @@ export namespace Keyword {
     )
 
     export const delegate = parse as any as Definition
-
-    const defineKeywords = <
-        T extends Record<
-            string,
-            {
-                generate: (
-                    ctx: InheritableMethodContext<string, unknown>[0]
-                ) => any
-                allows: (
-                    valueType: unknown,
-                    ctx: InheritableMethodContext<string, unknown>[0]
-                ) => boolean
-            }
-        >
-    >(
-        types: Narrow<T>
-    ) => types as Evaluate<T>
 
     // These are the named types we can extract from a valueType at runtime
     const extractableHandlers = defineKeywords({
