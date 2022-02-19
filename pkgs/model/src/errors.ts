@@ -80,24 +80,27 @@ export type InvalidModifierError<
 >
 
 // Members of a union type to errors that occurred validating those types
-export type UnionTypeErrors = Record<string, string>
+export type SplittableErrors = Record<string, string>
 
-export type UnionErrorArgs = BaseAssignmentArgs & {
-    unionErrors: UnionTypeErrors
+export type SplittableErrorArgs = BaseAssignmentArgs & {
+    delimiter: "|" | "&"
+    errors: SplittableErrors
 }
 
-export const unionValidationErrorTemplate =
-    "@valueType is not assignable to any of @def:\n@errors"
+export const splittableValidationErrorTemplate =
+    "@valueType is not assignable to @components of @def:\n@errors"
 
-export const unionValidationError = ({
+export const splittableValidationError = ({
     def,
     valueType,
-    unionErrors
-}: UnionErrorArgs) =>
-    unionValidationErrorTemplate
+    errors,
+    delimiter
+}: SplittableErrorArgs) =>
+    splittableValidationErrorTemplate
         .replace("@valueType", stringifyDefinition(valueType))
+        .replace("@components", delimiter === "|" ? "any" : "all")
         .replace("@def", stringifyDefinition(def))
-        .replace("@errors", stringifyErrors(unionErrors))
+        .replace("@errors", stringifyErrors(errors))
 
 export type BaseParseArgs = {
     def: unknown
