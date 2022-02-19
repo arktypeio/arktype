@@ -1,5 +1,4 @@
-import { Constraint } from "../constraint.js"
-import { typeDefProxy, createParser } from "../internal.js"
+import { typeDefProxy, createParser } from "./internal.js"
 import { asNumber } from "@re-/tools"
 
 // Any

@@ -1,5 +1,7 @@
 import { valueGenerationError } from "../internal.js"
 import { defineKeywords, listKeywords } from "./internal.js"
+import { numberHandlers } from "./number.js"
+import { stringHandlers } from "./string.js"
 
 /**
  * These types can be used to specify a type definition but
@@ -37,17 +39,10 @@ export const unextractableHandlers = defineKeywords({
         generate: () => false as boolean,
         allows: (valueType) => valueType === "true" || valueType === "false"
     },
-    string: {
-        generate: () => "" as string,
-        allows: (valueType) =>
-            typeof valueType === "string" && !!valueType.match("'.*'")
-    },
+    ...stringHandlers,
     // These types are extracted as primitives to avoid type widening
     // that occurs when inferring a number from a template string
-    number: {
-        generate: () => 0 as number,
-        allows: (valueType) => typeof valueType === "number"
-    },
+    ...numberHandlers,
     bigint: {
         generate: () => BigInt(0),
         allows: (valueType) => typeof valueType === "bigint"
