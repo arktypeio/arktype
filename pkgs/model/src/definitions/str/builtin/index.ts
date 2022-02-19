@@ -1,5 +1,5 @@
 export * from "./builtin.js"
-export * from "./keywords"
+export * from "./keyword"
 export * from "./literal.js"
 export * from "./numberLiteral.js"
 export * from "./stringLiteral.js"

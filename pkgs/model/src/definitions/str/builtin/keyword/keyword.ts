@@ -7,12 +7,16 @@ import {
     validationError
 } from "../internal.js"
 import { Builtin } from "../builtin.js"
-import { defineKeywords } from "./internal.js"
+import { defineKeywords, HandledTypes, listKeywords } from "./internal.js"
+import { extractableHandlers } from "./extractable.js"
+import { unextractableHandlers } from "./unextractable.js"
 
-export namespace NumberKeyword {
+export namespace Keyword {
     export type Definition<
-        Def extends ElementOf<typeof names> = ElementOf<typeof names>
+        Def extends keyof KeywordTypes = keyof KeywordTypes
     > = Def
+
+    export type Parse<Def extends Definition> = KeywordTypes[Def]
 
     export const type = typeDefProxy as Definition
 
@@ -38,9 +42,9 @@ export namespace NumberKeyword {
 
     export const delegate = parse as any as Definition
 
-    const handlers = defineKeywords({})
+    const handlers = { ...extractableHandlers, ...unextractableHandlers }
 
-    export const names = Object.keys(handlers) as ListPossibleTypes<
-        keyof typeof handlers
-    >
+    export const keywords = listKeywords(handlers)
+
+    export type KeywordTypes = HandledTypes<typeof handlers>
 }
