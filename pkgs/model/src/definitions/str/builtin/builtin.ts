@@ -1,6 +1,6 @@
 import { createParser, typeDefProxy } from "./internal.js"
 import { Fragment } from "../fragment.js"
-import { Keyword } from "./keyword.js"
+import { Keyword } from "./keywords/keyword.js"
 import { Literal } from "./literal.js"
 
 export namespace Builtin {

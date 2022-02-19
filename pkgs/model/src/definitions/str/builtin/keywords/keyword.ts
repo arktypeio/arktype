@@ -5,8 +5,8 @@ import {
     createParser,
     InheritableMethodContext,
     validationError
-} from "./internal.js"
-import { Builtin } from "./builtin.js"
+} from "../internal.js"
+import { Builtin } from "../builtin.js"
 
 export namespace Keyword {
     export type Definition<
