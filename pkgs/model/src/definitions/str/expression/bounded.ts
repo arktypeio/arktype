@@ -1,7 +1,7 @@
-import { NumberKeyword, StringKeyword, NumberLiteral } from "../../builtin"
+import { Split } from "@re-/tools"
+import { NumberKeyword, StringKeyword, NumberLiteral } from "../builtin"
 import { typeDefProxy, ParseConfig, ParseSplittable } from "../internal.js"
-import { DoubleBounded } from "./double.js"
-import { SingleBounded } from "./single.js"
+import { Str } from "../str.js"
 
 export type Comparable = NumberKeyword | StringKeyword
 
@@ -18,15 +18,16 @@ export namespace Bounded {
         Right extends string = string
     > = `${Left}${Comparator}${Right}`
 
+    type result = Check<"3<=number<5", "number<5", {}>
+
     export type Check<
         Def extends Definition,
         Root extends string,
-        Space
+        Space,
+        References = {} //Str.RawReferences<Def, ["<=", ">=", "<", ">"]> //Split<Def, Comparator>
     > = Def extends `${string}${Comparator}${string}${Comparator}${string}${Comparator}${string}`
         ? `Comparisons must reference at most three values (e.g. 0<number<=100).`
-        : Def extends DoubleBounded.Definition
-        ? DoubleBounded.Check<Def, Root, Space>
-        : SingleBounded.Check<Def, Root, Space>
+        : References
 
     export type Parse<
         Def extends Definition,

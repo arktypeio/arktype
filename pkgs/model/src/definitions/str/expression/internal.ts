@@ -3,7 +3,17 @@ import { createTokenMatcher } from "../internal.js"
 
 export * from "../internal.js"
 
-export const expressionTokens = narrow(["|", "(", ")", ",", "[", "]", "=>"])
+export const expressionTokens = narrow([
+    "|",
+    "(",
+    ")",
+    ",",
+    "[",
+    "]",
+    "=",
+    "<",
+    ">"
+])
 
 export const expressionTokenMatcher = createTokenMatcher(expressionTokens)
 

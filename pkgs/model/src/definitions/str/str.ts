@@ -2,6 +2,7 @@ import {
     ElementOf,
     Iteration,
     ListPossibleTypes,
+    narrow,
     RemoveSpaces,
     Split
 } from "@re-/tools"
@@ -11,11 +12,12 @@ import {
     createParser,
     typeDefProxy,
     ReferencesTypeConfig,
-    NonIdentifyingTokens,
-    nonIdentifyingTokenMatcher,
-    ValidationErrorMessage
+    ValidationErrorMessage,
+    createTokenMatcher
 } from "./internal.js"
 import { Fragment } from "./fragment.js"
+import { expressionTokens } from "./expression/internal.js"
+import { modifierTokens } from "./modifier/internal.js"
 
 export namespace Str {
     export type Definition = string
@@ -35,6 +37,15 @@ export namespace Str {
     > = Str.Check<Def, Space> extends ValidationErrorMessage
         ? unknown
         : Fragment.Parse<Format<Def>, Space, Options>
+
+    const nonIdentifyingTokens = narrow([
+        ...expressionTokens,
+        ...modifierTokens
+    ])
+
+    const nonIdentifyingTokenMatcher = createTokenMatcher(nonIdentifyingTokens)
+
+    export type NonIdentifyingTokens = typeof nonIdentifyingTokens
 
     type RawReferences<
         Fragments extends string,
