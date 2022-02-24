@@ -1,10 +1,5 @@
 import { NumberKeyword, StringKeyword, NumberLiteral } from "../../builtin"
-import {
-    typeDefProxy,
-    CheckSplittable,
-    ParseConfig,
-    ParseSplittable
-} from "../internal.js"
+import { typeDefProxy, ParseConfig, ParseSplittable } from "../internal.js"
 import { Bounded } from "./bounded.js"
 import { Limited } from "./limited.js"
 
@@ -28,7 +23,7 @@ export namespace Comparison {
         Root extends string,
         Space
     > = Def extends `${string}${Comparator}${string}${Comparator}${string}${Comparator}${string}`
-        ? `Comparisons cannot reference more than three values (e.g. 0<number<=100).`
+        ? `Comparisons must reference at most three values (e.g. 0<number<=100).`
         : Def extends Bounded.Definition
         ? Bounded.Check<Def, Root, Space>
         : Limited.Check<Def, Root, Space>
