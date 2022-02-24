@@ -1,5 +1,12 @@
 import { NumberKeyword, StringKeyword, NumberLiteral } from "../../builtin"
-import { CheckSplittable, ParseConfig, ParseSplittable } from "../internal.js"
+import {
+    CheckSplittable,
+    InvalidLimitError,
+    ParseConfig,
+    ParseSplittable,
+    UnboundableError,
+    UnknownTypeError
+} from "../internal.js"
 
 export type Comparable = NumberKeyword | StringKeyword
 
@@ -7,7 +14,7 @@ export type Bound = NumberLiteral.Definition
 
 export type Comparator = "<=" | ">=" | ">" | "<"
 
-export namespace Limited {
+export namespace SingleBounded {
     export type Definition<
         Inner extends string = string,
         Limit extends string = string
@@ -17,7 +24,13 @@ export namespace Limited {
         Def extends Definition,
         Root extends string,
         Space
-    > = CheckSplittable<Comparator, Def, Root, Space>
+    > = Def extends Definition<infer Inner, infer Limit>
+        ? Inner extends Comparable
+            ? Limit extends Bound
+                ? Root
+                : InvalidLimitError<Inner, Limit>
+            : UnboundableError<Inner>
+        : UnknownTypeError
 
     export type Parse<
         Def extends Definition,

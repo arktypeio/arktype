@@ -15,7 +15,7 @@ export type Comparator = "<=" | ">=" | ">" | "<"
 // number<5 number>7
 // 3<number<5
 
-export namespace Bounded {
+export namespace DoubleBounded {
     export type Definition<
         Lower extends string = string,
         Inner extends string = string,

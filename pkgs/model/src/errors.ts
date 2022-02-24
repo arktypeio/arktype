@@ -125,12 +125,43 @@ export const shallowCycleError = ({ def, ctx }: BaseParseArgs) =>
         .replace("@space", stringifyDefinition(ctx.space))
         .replace("@resolutions", [...ctx.seen, def].join("=>"))
 
+export const invalidLimitErrorTemplate =
+    "@limit cannot be used to bound @inner."
+
+export type InvalidLimitError<
+    Inner extends string = string,
+    Limit extends string = string
+> = StringReplace<
+    StringReplace<typeof invalidLimitErrorTemplate, "@inner", Inner>,
+    "@limit",
+    Limit
+>
+
+export const invalidLimitError = (inner: string, limit: string) =>
+    invalidLimitErrorTemplate
+        .replace("@inner", stringifyDefinition(inner))
+        .replace("@limit", stringifyDefinition(limit))
+
+export const unboundableErrorTemplate =
+    "Bounded definition @inner must be a number or string."
+
+export type UnboundableError<Inner extends string = string> = StringReplace<
+    typeof unboundableErrorTemplate,
+    "@inner",
+    Inner
+>
+
+export const unboundableError = (inner: string) =>
+    unboundableErrorTemplate.replace("@inner", stringifyDefinition(inner))
+
 export type ValidationErrorMessage =
     | UnknownTypeError
     | ShallowCycleError
     | DefinitionTypeError
     | DuplicateModifierError
     | InvalidModifierError
+    | InvalidLimitError
+    | UnboundableError
 
 export type InferrableValidationErrorMessage<E> =
     E extends ValidationErrorMessage ? E : never
