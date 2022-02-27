@@ -10,10 +10,10 @@ type FeatureItem = {
 
 const FeatureList: FeatureItem[] = [
     {
-        title: "O(damn) fast",
+        title: "Type-first validation",
         image: "/img/fast.svg",
         description: (
-            <>Automate your first test in minutes. Run it in seconds.</>
+            <>Even the most complex TypeScript types are inferred accurately.</>
         )
     },
     {
