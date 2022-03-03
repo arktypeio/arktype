@@ -10,23 +10,19 @@ type FeatureItem = {
 
 const FeatureList: FeatureItem[] = [
     {
-        title: "Type-first validation",
+        title: "Model",
         image: "/img/fast.svg",
-        description: (
-            <>Even the most complex TypeScript types are inferred accurately.</>
-        )
+        description: <>Type-first validation from editor to runtime</>
     },
     {
-        title: `JS/TS integrations "just work"`,
+        title: `State`,
         image: "/img/integrations.svg",
-        description: (
-            <>Integrates seamlessly with the tools you're already using.</>
-        )
+        description: <>Coming soon</>
     },
     {
-        title: "100% open source",
+        title: "Test",
         image: "/img/openSource.svg",
-        description: <>Stop in any time and star our GitHub repo 😉</>
+        description: <>Coming soon</>
     }
 ]
 
