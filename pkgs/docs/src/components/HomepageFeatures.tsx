@@ -11,17 +11,17 @@ type FeatureItem = {
 const FeatureList: FeatureItem[] = [
     {
         title: "Model",
-        image: "/img/fast.svg",
+        image: "/img/model.svg",
         description: <>Type-first validation from editor to runtime</>
     },
     {
         title: `State`,
-        image: "/img/integrations.svg",
+        image: "/img/state.svg",
         description: <>Coming soon</>
     },
     {
         title: "Test",
-        image: "/img/openSource.svg",
+        image: "/img/test.svg",
         description: <>Coming soon</>
     }
 ]
