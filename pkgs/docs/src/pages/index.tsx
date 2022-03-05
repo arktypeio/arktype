@@ -8,6 +8,9 @@ import { ToolSummaries } from "../components/ToolSummaries"
 import { theme } from "./Theme"
 import { ThemeProvider } from "@mui/material"
 
+// TODO: Add
+// https://docusaurus.io/docs/api/themes/configuration#use-color-mode
+
 function HomepageHeader() {
     const { siteConfig } = useDocusaurusContext()
     return (
