@@ -4,7 +4,8 @@ import {
     ListPossibleTypes,
     narrow,
     RemoveSpaces,
-    Split
+    Split,
+    Spliterate
 } from "@re-/tools"
 import { Root } from "../root.js"
 import {
@@ -47,32 +48,10 @@ export namespace Str {
 
     export type NonIdentifyingTokens = typeof nonIdentifyingTokens
 
-    type RawReferences<
-        Fragments extends string,
-        RemainingNonIdentifiers extends string[] = [
-            ...NonIdentifyingTokens,
-            " "
-        ]
-    > = RemainingNonIdentifiers extends Iteration<
-        string,
-        infer Character,
-        infer Remaining
-    >
-        ? RawReferences<ElementOf<Split<Fragments, Character>>, Remaining>
-        : Exclude<ElementOf<Split<Fragments, RemainingNonIdentifiers[0]>>, "">
-
     export type References<
         Def extends string,
-        Config extends ReferencesTypeConfig,
-        Result extends string = RawReferences<`${Def}`> & Config["filter"],
-        ListedResult extends string[] = ListPossibleTypes<Result>
-    > = Config["asList"] extends true
-        ? ListedResult
-        : Config["asUnorderedList"] extends true
-        ? ListedResult extends [string]
-            ? ListedResult
-            : Result[]
-        : Result
+        Config extends ReferencesTypeConfig
+    > = Spliterate<Def, NonIdentifyingTokens, Config>
 
     export const type = typeDefProxy as Definition
 

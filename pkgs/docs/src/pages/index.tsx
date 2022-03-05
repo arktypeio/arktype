@@ -4,8 +4,7 @@ import Layout from "@theme/Layout"
 import Link from "@docusaurus/Link"
 import useDocusaurusContext from "@docusaurus/useDocusaurusContext"
 import styles from "./index.module.css"
-import { ToolSummaries } from "../components/ToolSummaries"
-import { theme } from "./Theme"
+import { theme, ToolSummaries } from "../components"
 import { ThemeProvider } from "@mui/material"
 
 // TODO: Add

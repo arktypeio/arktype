@@ -32,6 +32,7 @@ type CheckForShallowCycleRecurse<Def, Space, Seen> = IsAny<Def> extends true
                   asList: true
                   asUnorderedList: false
                   filter: keyof Space & string
+                  nonIdentifiers: Str.NonIdentifyingTokens
               }
           >,
           Space,
