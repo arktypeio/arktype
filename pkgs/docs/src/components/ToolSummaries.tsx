@@ -1,10 +1,11 @@
 import React from "react"
 import clsx from "clsx"
+import * as Svgs from "./svg"
 import styles from "./HomepageFeatures.module.css"
 
 type ToolSummaryProps = {
     title: string
-    image: string
+    illustration: JSX.Element
     description: JSX.Element
     upcoming?: boolean
 }
@@ -12,18 +13,18 @@ type ToolSummaryProps = {
 const toolSummaries: ToolSummaryProps[] = [
     {
         title: "Model",
-        image: "/img/model.svg",
+        illustration: <Svgs.Model />,
         description: <>Type-first validation from editor to runtime</>
     },
     {
         title: `State`,
-        image: "/img/state.svg",
+        illustration: <Svgs.State />,
         description: <>Manageable states from simple shapes</>,
         upcoming: true
     },
     {
         title: "Test",
-        image: "/img/test.svg",
+        illustration: <Svgs.Test />,
         description: <>Web testing that writes itself</>,
         upcoming: true
     }
@@ -31,14 +32,12 @@ const toolSummaries: ToolSummaryProps[] = [
 
 const ToolSummary = ({
     title,
-    image,
+    illustration,
     description,
     upcoming
 }: ToolSummaryProps) => (
     <div className={clsx("col col--4")}>
-        <div className="text--center">
-            <img className={styles.featureSvg} alt={title} src={image} />
-        </div>
+        <div className="text--center">{illustration}</div>
         <div className="text--center padding-horiz--md">
             <h3>
                 {title}

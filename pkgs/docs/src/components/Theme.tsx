@@ -1,27 +1,31 @@
-import {
-    createTheme,
-    Theme as MuiTheme,
-    PaletteColor
-} from "@mui/material/styles"
+import { createTheme } from "@mui/material"
 
-export type Theme = MuiTheme & {
-    palette: {
-        accent: PaletteColor
+declare module "@mui/material" {
+    interface Palette {
+        accent: Palette["primary"]
+    }
+
+    interface PaletteOptions {
+        accent: PaletteOptions["primary"]
     }
 }
 
-export const theme = createTheme({
-    palette: {
-        primary: {
-            main: "#162b79",
-            dark: "#264bcf"
-        },
-        secondary: {
-            main: "#ffc40c"
-        },
-        // @ts-ignore
-        accent: {
-            main: "#c80815"
+export type ThemeConfigOptions = {
+    isDark: boolean
+}
+
+export const getTheme = ({ isDark }: ThemeConfigOptions) =>
+    createTheme({
+        palette: {
+            primary: {
+                main: isDark ? "#264bcf" : "#162b79"
+            },
+            secondary: {
+                main: "#ffc40c"
+            },
+            // @ts-ignore
+            accent: {
+                main: "#c80815"
+            }
         }
-    }
-}) as Theme
+    })

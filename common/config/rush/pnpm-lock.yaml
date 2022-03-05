@@ -32,6 +32,7 @@ importers:
       '@docusaurus/module-type-aliases': 2.0.0-beta.17
       '@docusaurus/plugin-content-docs': 2.0.0-beta.17
       '@docusaurus/preset-classic': 2.0.0-beta.17
+      '@docusaurus/theme-common': 2.0.0-beta.17
       '@docusaurus/types': 2.0.0-beta.17
       '@emotion/react': 11.8.1
       '@emotion/styled': 11.8.1
@@ -52,6 +53,7 @@ importers:
       '@docusaurus/core': 2.0.0-beta.17_f66d69473d49a16319d55f7360bf7240
       '@docusaurus/plugin-content-docs': 2.0.0-beta.17_f66d69473d49a16319d55f7360bf7240
       '@docusaurus/preset-classic': 2.0.0-beta.17_b12ac1077aa7721c5fb073b19ccb3299
+      '@docusaurus/theme-common': 2.0.0-beta.17_f66d69473d49a16319d55f7360bf7240
       '@emotion/react': 11.8.1_0704e80b769bffb4addc77d1d85287a8
       '@emotion/styled': 11.8.1_df4b21154b5b36e572817b734cd296f3
       '@mdx-js/react': 1.6.21_react@17.0.1
@@ -690,7 +692,7 @@ packages:
       '@babel/core': ^7.0.0-0
     dependencies:
       '@babel/core': 7.12.9
-      '@babel/helper-plugin-utils': 7.10.4
+      '@babel/helper-plugin-utils': 7.16.7
       '@babel/plugin-syntax-object-rest-spread': 7.8.3_@babel+core@7.12.9
       '@babel/plugin-transform-parameters': 7.16.7_@babel+core@7.12.9
     dev: false

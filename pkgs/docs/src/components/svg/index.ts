@@ -1,5 +1,3 @@
-export * from "./Logo"
 export * from "./Model"
-export * from "./ReLogo"
 export * from "./State"
 export * from "./Test"
