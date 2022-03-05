@@ -5,6 +5,8 @@ import Link from "@docusaurus/Link"
 import useDocusaurusContext from "@docusaurus/useDocusaurusContext"
 import styles from "./index.module.css"
 import { ToolSummaries } from "../components/ToolSummaries"
+import { theme } from "./Theme"
+import { ThemeProvider } from "@mui/material"
 
 function HomepageHeader() {
     const { siteConfig } = useDocusaurusContext()
@@ -29,14 +31,16 @@ function HomepageHeader() {
 export default function Home(): JSX.Element {
     const { siteConfig } = useDocusaurusContext()
     return (
-        <Layout
-            title={`Hello from ${siteConfig.title}`}
-            description="Description will go into a meta tag in <head />"
-        >
-            <HomepageHeader />
-            <main>
-                <ToolSummaries />
-            </main>
-        </Layout>
+        <ThemeProvider theme={theme}>
+            <Layout
+                title={`Hello from ${siteConfig.title}`}
+                description="Description will go into a meta tag in <head />"
+            >
+                <HomepageHeader />
+                <main>
+                    <ToolSummaries />
+                </main>
+            </Layout>
+        </ThemeProvider>
     )
 }
