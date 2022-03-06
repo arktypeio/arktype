@@ -1,10 +1,10 @@
 import React from "react"
 import clsx from "clsx"
 import * as Svgs from "./svg"
-import styles from "./HomepageFeatures.module.css"
+import { Button, Stack } from "@mui/material"
 
 type ToolSummaryProps = {
-    title: string
+    name: string
     illustration: JSX.Element
     description: JSX.Element
     upcoming?: boolean
@@ -12,18 +12,18 @@ type ToolSummaryProps = {
 
 const toolSummaries: ToolSummaryProps[] = [
     {
-        title: "Model",
+        name: "Model",
         illustration: <Svgs.Model />,
         description: <>Type-first validation from editor to runtime</>
     },
     {
-        title: `State`,
+        name: "State",
         illustration: <Svgs.State />,
         description: <>Manageable states from simple shapes</>,
         upcoming: true
     },
     {
-        title: "Test",
+        name: "Test",
         illustration: <Svgs.Test />,
         description: <>Web testing that writes itself</>,
         upcoming: true
@@ -31,7 +31,7 @@ const toolSummaries: ToolSummaryProps[] = [
 ]
 
 const ToolSummary = ({
-    title,
+    name,
     illustration,
     description,
     upcoming
@@ -40,16 +40,35 @@ const ToolSummary = ({
         <div className="text--center">{illustration}</div>
         <div className="text--center padding-horiz--md">
             <h3>
-                {title}
+                {name}
                 {upcoming ? <i> (coming soon)</i> : ""}
             </h3>
             <p>{description}</p>
+            <Stack spacing={2} direction="row" justifyContent="center">
+                <Button variant="outlined" href={`/docs/${name}/intro`}>
+                    Learn more
+                </Button>
+                {upcoming ? null : (
+                    // TODO: Add live demo
+                    <Button variant="contained" href={`/docs/${name}/intro`}>
+                        Try it in 30 seconds ⏱️
+                    </Button>
+                )}
+            </Stack>
         </div>
     </div>
 )
 
 export const ToolSummaries = () => (
-    <section className={styles.features}>
+    <section
+        style={{
+            display: "flex",
+            alignItems: "center",
+            padding: "2rem 0",
+            width: "100%",
+            fontSize: "larger"
+        }}
+    >
         <div className="container">
             <div className="row">
                 {toolSummaries.map((props, index) => (
