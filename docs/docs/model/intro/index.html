@@ -1,0 +1,1466 @@
+<!DOCTYPE html>
+<html class="docs-version-current" lang="en" dir="ltr">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width,initial-scale=1" />
+        <meta name="generator" content="Docusaurus v2.0.0-beta.17" />
+        <title data-rh="true">Model | Redo</title>
+        <meta
+            data-rh="true"
+            name="twitter:card"
+            content="summary_large_image"
+        />
+        <meta
+            data-rh="true"
+            property="og:url"
+            content="https://redo.dev/docs/model/intro"
+        />
+        <meta data-rh="true" name="docusaurus_locale" content="en" />
+        <meta data-rh="true" name="docusaurus_version" content="current" />
+        <meta
+            data-rh="true"
+            name="docusaurus_tag"
+            content="docs-default-current"
+        />
+        <meta data-rh="true" name="docsearch:language" content="en" />
+        <meta data-rh="true" name="docsearch:version" content="current" />
+        <meta
+            data-rh="true"
+            name="docsearch:docusaurus_tag"
+            content="docs-default-current"
+        />
+        <meta data-rh="true" property="og:title" content="Model | Redo" />
+        <meta data-rh="true" name="description" content="@re-/model" />
+        <meta data-rh="true" property="og:description" content="@re-/model" />
+        <link data-rh="true" rel="icon" href="/img/favicon.ico" />
+        <link
+            data-rh="true"
+            rel="canonical"
+            href="https://redo.dev/docs/model/intro"
+        />
+        <link
+            data-rh="true"
+            rel="alternate"
+            href="https://redo.dev/docs/model/intro"
+            hreflang="en"
+        />
+        <link
+            data-rh="true"
+            rel="alternate"
+            href="https://redo.dev/docs/model/intro"
+            hreflang="x-default"
+        />
+        <link rel="stylesheet" href="/assets/css/styles.e82df9a2.css" />
+        <link
+            rel="preload"
+            href="/assets/js/runtime~main.e02b1d73.js"
+            as="script"
+        />
+        <link rel="preload" href="/assets/js/main.2bfaf9a2.js" as="script" />
+    </head>
+    <body class="navigation-with-keyboard">
+        <script>
+            !(function () {
+                function t(t) {
+                    document.documentElement.setAttribute("data-theme", t)
+                }
+                var e = (function () {
+                    var t = null
+                    try {
+                        t = localStorage.getItem("theme")
+                    } catch (t) {}
+                    return t
+                })()
+                t(null !== e ? e : "light")
+            })()
+        </script>
+        <div id="__docusaurus">
+            <div role="region">
+                <a href="#" class="skipToContent_rwTY">Skip to main content</a>
+            </div>
+            <nav class="navbar navbar--fixed-top">
+                <div class="navbar__inner">
+                    <div class="navbar__items">
+                        <button
+                            aria-label="Navigation bar toggle"
+                            class="navbar__toggle clean-btn"
+                            type="button"
+                            tabindex="0"
+                        >
+                            <svg
+                                width="30"
+                                height="30"
+                                viewBox="0 0 30 30"
+                                aria-hidden="true"
+                            >
+                                <path
+                                    stroke="currentColor"
+                                    stroke-linecap="round"
+                                    stroke-miterlimit="10"
+                                    stroke-width="2"
+                                    d="M4 7h22M4 15h22M4 23h22"
+                                ></path>
+                            </svg></button
+                        ><a class="navbar__brand" href="/"
+                            ><div class="navbar__logo">
+                                <img
+                                    src="/img/prefix.svg"
+                                    alt="Logo"
+                                    class="themedImage_NoE1 themedImage--light_vr3m"
+                                /><img
+                                    src="/img/prefixDark.svg"
+                                    alt="Logo"
+                                    class="themedImage_NoE1 themedImage--dark_Iavs"
+                                /></div></a
+                        ><a
+                            aria-current="page"
+                            class="navbar__item navbar__link navbar__link--active"
+                            href="/docs/model/intro"
+                            >Model</a
+                        ><a
+                            class="navbar__item navbar__link"
+                            href="/docs/state/intro"
+                            >State</a
+                        ><a
+                            class="navbar__item navbar__link"
+                            href="/docs/test/intro"
+                            >Test</a
+                        >
+                    </div>
+                    <div class="navbar__items navbar__items--right">
+                        <a
+                            href="https://github.com/re-do/re-po"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            class="navbar__item navbar__link"
+                            ><span
+                                >GitHub<svg
+                                    width="13.5"
+                                    height="13.5"
+                                    aria-hidden="true"
+                                    viewBox="0 0 24 24"
+                                    class="iconExternalLink_VFFL"
+                                >
+                                    <path
+                                        fill="currentColor"
+                                        d="M21 13v10h-21v-19h12v2h-10v15h17v-8h2zm3-12h-10.988l4.035 4-6.977 7.07 2.828 2.828 6.977-7.07 4.125 4.172v-11z"
+                                    ></path></svg></span
+                        ></a>
+                        <div
+                            class="toggle_B_od toggle_CUey toggleDisabled_xW_C"
+                        >
+                            <div
+                                class="toggleButton_bZ3D"
+                                role="button"
+                                tabindex="-1"
+                            >
+                                <svg
+                                    viewBox="0 0 24 24"
+                                    width="24"
+                                    height="24"
+                                    class="lightToggleIcon_mDFR"
+                                >
+                                    <path
+                                        fill="currentColor"
+                                        d="M12,9c1.65,0,3,1.35,3,3s-1.35,3-3,3s-3-1.35-3-3S10.35,9,12,9 M12,7c-2.76,0-5,2.24-5,5s2.24,5,5,5s5-2.24,5-5 S14.76,7,12,7L12,7z M2,13l2,0c0.55,0,1-0.45,1-1s-0.45-1-1-1l-2,0c-0.55,0-1,0.45-1,1S1.45,13,2,13z M20,13l2,0c0.55,0,1-0.45,1-1 s-0.45-1-1-1l-2,0c-0.55,0-1,0.45-1,1S19.45,13,20,13z M11,2v2c0,0.55,0.45,1,1,1s1-0.45,1-1V2c0-0.55-0.45-1-1-1S11,1.45,11,2z M11,20v2c0,0.55,0.45,1,1,1s1-0.45,1-1v-2c0-0.55-0.45-1-1-1C11.45,19,11,19.45,11,20z M5.99,4.58c-0.39-0.39-1.03-0.39-1.41,0 c-0.39,0.39-0.39,1.03,0,1.41l1.06,1.06c0.39,0.39,1.03,0.39,1.41,0s0.39-1.03,0-1.41L5.99,4.58z M18.36,16.95 c-0.39-0.39-1.03-0.39-1.41,0c-0.39,0.39-0.39,1.03,0,1.41l1.06,1.06c0.39,0.39,1.03,0.39,1.41,0c0.39-0.39,0.39-1.03,0-1.41 L18.36,16.95z M19.42,5.99c0.39-0.39,0.39-1.03,0-1.41c-0.39-0.39-1.03-0.39-1.41,0l-1.06,1.06c-0.39,0.39-0.39,1.03,0,1.41 s1.03,0.39,1.41,0L19.42,5.99z M7.05,18.36c0.39-0.39,0.39-1.03,0-1.41c-0.39-0.39-1.03-0.39-1.41,0l-1.06,1.06 c-0.39,0.39-0.39,1.03,0,1.41s1.03,0.39,1.41,0L7.05,18.36z"
+                                    ></path></svg
+                                ><svg
+                                    viewBox="0 0 24 24"
+                                    width="24"
+                                    height="24"
+                                    class="darkToggleIcon_Kche"
+                                >
+                                    <path
+                                        fill="currentColor"
+                                        d="M9.37,5.51C9.19,6.15,9.1,6.82,9.1,7.5c0,4.08,3.32,7.4,7.4,7.4c0.68,0,1.35-0.09,1.99-0.27C17.45,17.19,14.93,19,12,19 c-3.86,0-7-3.14-7-7C5,9.07,6.81,6.55,9.37,5.51z M12,3c-4.97,0-9,4.03-9,9s4.03,9,9,9s9-4.03,9-9c0-0.46-0.04-0.92-0.1-1.36 c-0.98,1.37-2.58,2.26-4.4,2.26c-2.98,0-5.4-2.42-5.4-5.4c0-1.81,0.89-3.42,2.26-4.4C12.92,3.04,12.46,3,12,3L12,3z"
+                                    ></path>
+                                </svg>
+                            </div>
+                            <input
+                                type="checkbox"
+                                class="toggleScreenReader_AXH7"
+                                aria-label="Switch between dark and light mode (currently light mode)"
+                            />
+                        </div>
+                    </div>
+                </div>
+                <div role="presentation" class="navbar-sidebar__backdrop"></div>
+            </nav>
+            <div class="main-wrapper docs-wrapper docs-doc-page">
+                <div class="docPage_AnQh">
+                    <button
+                        aria-label="Scroll back to top"
+                        class="clean-btn theme-back-to-top-button backToTopButton_PRh6"
+                        type="button"
+                    ></button>
+                    <aside
+                        class="theme-doc-sidebar-container docSidebarContainer_MiX0"
+                    >
+                        <div class="sidebar_mfK1">
+                            <nav class="menu thin-scrollbar menu_YdSV">
+                                <ul class="theme-doc-sidebar-menu menu__list">
+                                    <li
+                                        class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-1 menu__list-item"
+                                    >
+                                        <a
+                                            class="menu__link menu__link--active"
+                                            aria-current="page"
+                                            href="/docs/model/intro"
+                                            >Model</a
+                                        >
+                                    </li>
+                                </ul>
+                            </nav>
+                        </div>
+                    </aside>
+                    <main class="docMainContainer_tNmW">
+                        <div
+                            class="container padding-top--md padding-bottom--lg"
+                        >
+                            <div class="row">
+                                <div class="col docItemCol__NQU">
+                                    <div class="docItemContainer_sSSs">
+                                        <article>
+                                            <nav
+                                                class="theme-doc-breadcrumbs breadcrumbsContainer_Xxi4"
+                                                aria-label="breadcrumbs"
+                                            >
+                                                <ul class="breadcrumbs">
+                                                    <li
+                                                        class="breadcrumbs__item"
+                                                    >
+                                                        <a
+                                                            class="breadcrumbs__link breadcrumbsItemLink_jT5s"
+                                                            href="/"
+                                                            >🏠</a
+                                                        >
+                                                    </li>
+                                                    <li
+                                                        class="breadcrumbs__item breadcrumbs__item--active"
+                                                    >
+                                                        <a
+                                                            class="breadcrumbs__link breadcrumbsItemLink_jT5s"
+                                                            href="/docs/model/intro"
+                                                            >Model</a
+                                                        >
+                                                    </li>
+                                                </ul>
+                                            </nav>
+                                            <div
+                                                class="tocCollapsible_Cn77 theme-doc-toc-mobile tocMobile_JrIR"
+                                            >
+                                                <button
+                                                    type="button"
+                                                    class="clean-btn tocCollapsibleButton_Eybw"
+                                                >
+                                                    On this page
+                                                </button>
+                                            </div>
+                                            <div
+                                                class="theme-doc-markdown markdown"
+                                            >
+                                                <h1 id="model">Model</h1>
+                                                <div align="center">
+                                                    <img
+                                                        src="/img/logo.svg"
+                                                        width="400"
+                                                        alt="Redo Logo"
+                                                    />
+                                                    <h1>@re-/model</h1>
+                                                </div>
+                                                <div align="center">
+                                                    <p>
+                                                        Type-first validation
+                                                        from editor to runtime
+                                                        🧭
+                                                    </p>
+                                                </div>
+                                                <h2 id="whats-a-model">
+                                                    What&#x27;s a model?
+                                                </h2>
+                                                <p>
+                                                    A model is a way to create
+                                                    universal types for your
+                                                    JS/TS values. From one
+                                                    definition, you get all the
+                                                    benefits of
+                                                    <a
+                                                        href="https://github.com/microsoft/TypeScript"
+                                                        >TypeScript</a
+                                                    >
+                                                    at compile time and a
+                                                    validator like
+                                                    <a
+                                                        href="https://github.com/jquense/yup"
+                                                        >Yup</a
+                                                    >
+                                                    or
+                                                    <a
+                                                        href="https://github.com/sideway/joi"
+                                                        >JOI</a
+                                                    >
+                                                    at runtime.
+                                                </p>
+                                                <h2 id="installation">
+                                                    Installation
+                                                </h2>
+                                                <p>
+                                                    <code
+                                                        >npm install
+                                                        @re-/model</code
+                                                    >
+                                                </p>
+                                                <p>
+                                                    (feel free to substitute
+                                                    <code>yarn</code>,
+                                                    <code>pnpm</code>, et al.)
+                                                </p>
+                                                <p>
+                                                    If you&#x27;re using
+                                                    TypeScript, you&#x27;ll need
+                                                    at least <code>4.4</code>.
+                                                </p>
+                                                <h2 id="definition">
+                                                    Definition
+                                                </h2>
+                                                <p>
+                                                    This snippet will give you
+                                                    an idea of
+                                                    <code>@re-/model</code>
+                                                    syntax, but the best way to
+                                                    get a feel for it is in a
+                                                    live editor. Try messing
+                                                    around with the
+                                                    <code>user</code> model in
+                                                    <a
+                                                        href="https://TODO:updatelink"
+                                                        >our sandbox</a
+                                                    >
+                                                    or paste it in your own
+                                                    editor and see how the type
+                                                    hints help guide you in the
+                                                    right direction.
+                                                </p>
+                                                <pre><code class="language-ts">import { define } from &quot;@re-/model&quot;
+
+// Most common TypeScript expressions just work...
+const user = define({
+    name: {
+        first: &quot;string&quot;,
+        middle: &quot;string?&quot;,
+        last: &quot;string&quot;
+    },
+    age: &quot;number&quot;,
+    interests: &quot;string[]|null&quot;
+})
+
+// If you&#x27;re using TypeScript, you can create your type...
+type User = typeof user.type
+
+// And it will be totally equivalent to...
+type RedundantUserDeclaration = {
+    name: {
+        first: string
+        middle?: string
+        last: string
+    }
+    age: number
+    interests: string[] | null
+}
+
+// But a model can also validate your data at runtime...
+const fetchUser = () =&gt; {
+    return {
+        name: {
+            first: &quot;Reed&quot;,
+            last: &quot;Doe&quot;
+        },
+        age: 28,
+        interests: undefined
+    }
+}
+
+// Will throw: &quot;At path interests, undefined is not assignable to any of string[]|null.&quot;
+user.validate(fetchUser())
+</code></pre>
+                                                <h2 id="space">Space</h2>
+                                                <p>
+                                                    Your models can reference
+                                                    each other or themselves
+                                                    using a
+                                                    <strong>space</strong>.
+                                                    <a
+                                                        href="https://TODO:updatelink"
+                                                        >Try it out</a
+                                                    >.
+                                                </p>
+                                                <pre><code class="language-ts">import { compile } from &quot;@re-/model&quot;
+
+const mySpace = compile({
+    user: {
+        name: &quot;string&quot;,
+        friends: &quot;user[]&quot;,
+        groups: &quot;group[]&quot;
+    },
+    group: {
+        name: &quot;string&quot;,
+        description: &quot;string&quot;,
+        members: &quot;user[]&quot;
+    }
+})
+
+// Typescript types can be extracted like this
+type User = typeof mySpace.user.type
+
+// Will throw: &quot;At path friends/groups/0, &#x27;Type Enjoyers&#x27; is not assignable
+// to {name: string, description: string, members: user[]}&quot;
+mySpace.user.validate({
+    name: &quot;Devin Aldai&quot;,
+    friends: [
+        {
+            name: &quot;Devin Olnyt&quot;,
+            friends: [], // :(
+            groups: [&quot;Type Enjoyers&quot;]
+        }
+    ],
+    groups: []
+})
+
+// Once you&#x27;ve created a space, you can use it to create new models
+// that reference existing models like &quot;user&quot;
+const community = mySpace.model({
+    users: &quot;user[]&quot;,
+    groups: &quot;group[]&quot;,
+    population: &quot;number&quot;
+})
+</code></pre>
+                                                <h2 id="declaration">
+                                                    Declaration
+                                                </h2>
+                                                <p>
+                                                    If you prefer to split your
+                                                    space definitions across one
+                                                    or more files, you&#x27;ll
+                                                    want to use a
+                                                    <strong>declaration</strong
+                                                    >.
+                                                    <a
+                                                        href="https://TODO:updatelink"
+                                                        >Try it out</a
+                                                    >.
+                                                </p>
+                                                <p><code>index.ts</code></p>
+                                                <pre><code class="language-ts">import { declare } from &quot;@re-/model&quot;
+
+// Declare the names in your space allows
+const declared = declare(&quot;user&quot;, &quot;group&quot;)
+
+// A declaration&#x27;s &quot;define&quot; prop can be used anywhere to create
+// a definition that allows references to other declared names
+export const { define } = declared
+
+import { userDef } from &quot;./user&quot;
+import { groupDef } from &quot;./group&quot;
+
+// Type error: &quot;Declared types &#x27;group&#x27; were never defined.&quot;
+const badSpace = declared.compile(userDef)
+
+// Creates a space identical to that of &quot;Creating your first space&quot;
+const mySpace = declared.compile(userDef, groupDef)
+</code></pre>
+                                                <p><code>user.ts</code></p>
+                                                <pre><code class="language-ts">import { define } from &quot;./index&quot;
+
+const badUserDef = define.user({
+    name: &quot;string&quot;,
+    friends: &quot;user[]&quot;,
+    // Type error: &quot;Unable to determine the type of &#x27;grop&#x27;&quot;
+    groups: &quot;grop[]&quot;
+})
+
+export const userDef = define.user({
+    name: &quot;string&quot;,
+    friends: &quot;user[]&quot;,
+    groups: &quot;group[]&quot;
+})
+</code></pre>
+                                                <p><code>group.ts</code></p>
+                                                <pre><code class="language-ts">import { define } from &quot;./index&quot;
+
+export const groupDef = define.group({
+    name: &quot;string&quot;,
+    description: &quot;string&quot;,
+    members: &quot;user[]&quot;
+})
+</code></pre>
+                                                <h2 id="syntax">Syntax</h2>
+                                                <p>
+                                                    <code>@re-/model</code>
+                                                    supports all of
+                                                    TypeScript&#x27;s built-in
+                                                    types and a lot of its most
+                                                    common type definition
+                                                    syntax. The following
+                                                    sections outline the kinds
+                                                    of definitions you can use
+                                                    in your models.
+                                                </p>
+                                                <p>
+                                                    If the TS syntax you want to
+                                                    use is not listed here, feel
+                                                    free to create an issue
+                                                    summarizing your use case.
+                                                    Our model is easy to extend,
+                                                    so you might just see it an
+                                                    upcoming release 🎁
+                                                </p>
+                                                <h3 id="objects">Objects</h3>
+                                                <p>
+                                                    Object definitions are sets
+                                                    of keys or indices
+                                                    corresponding to string,
+                                                    primitive, or nested object
+                                                    definitions.
+                                                </p>
+                                                <h4 id="map">Map</h4>
+                                                <p>
+                                                    Map definitions are
+                                                    represented using the
+                                                    familiar object literal
+                                                    syntax.
+                                                </p>
+                                                <pre><code class="language-ts">const foo = model({
+    key: &quot;string?&quot;,
+    anotherKey: [&quot;unknown&quot;, { re: &quot;&#x27;model&#x27;|&#x27;state&#x27;|&#x27;test&#x27;&quot; }]
+})
+
+// Equivalent TS
+type FooToo = {
+    key?: string
+    anotherKey: [
+        unknown,
+        {
+            re: &quot;model&quot; | &quot;state&quot; | &quot;test&quot;
+        }
+    ]
+}
+</code></pre>
+                                                <h4 id="tuple">Tuple</h4>
+                                                <p>
+                                                    Tuple definitions are useful
+                                                    for fixed-length lists and
+                                                    are represented as array
+                                                    literals.
+                                                </p>
+                                                <pre><code class="language-ts">const bar = model([
+    &quot;true|null&quot;,
+    { coords: [&quot;number&quot;, &quot;number&quot;], piOus: [3, 1, 4] }
+])
+
+// Equivalent TS
+type BarAgain = [
+    true | null,
+    {
+        coords: [number, number]
+        piOus: [3, 1, 4]
+    }
+]
+</code></pre>
+                                                <h3 id="strings">Strings</h3>
+                                                <p>
+                                                    String definitions are
+                                                    strings constructed from the
+                                                    following fragment types:
+                                                </p>
+                                                <ul>
+                                                    <li>
+                                                        Builtins, including
+                                                        keywords like
+                                                        <code
+                                                            >&quot;number&quot;</code
+                                                        >
+                                                        and literals like
+                                                        <code
+                                                            >&quot;&#x27;redo&#x27;&quot;</code
+                                                        >
+                                                    </li>
+                                                    <li>
+                                                        Aliases like
+                                                        <code
+                                                            >&quot;user&quot;</code
+                                                        >
+                                                        or
+                                                        <code
+                                                            >&quot;group&quot;</code
+                                                        >
+                                                        that have been defined
+                                                        in your space
+                                                    </li>
+                                                    <li>
+                                                        Expressions consisting
+                                                        of one or more string
+                                                        definitions modified by
+                                                        an operator, like
+                                                        <code
+                                                            >&quot;user |
+                                                            number&quot;</code
+                                                        >
+                                                        or
+                                                        <code
+                                                            >&quot;group[]?&quot;</code
+                                                        >
+                                                    </li>
+                                                </ul>
+                                                <h4 id="keywords">Keywords</h4>
+                                                <p>
+                                                    All TypeScript keywords that
+                                                    can be used to represent a
+                                                    type are valid definitions.
+                                                    Each of the following string
+                                                    definitions maps directly to
+                                                    its corresponding TS type:
+                                                </p>
+                                                <table>
+                                                    <thead>
+                                                        <tr>
+                                                            <th>Keyword</th>
+                                                            <th>Notes</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        <tr>
+                                                            <td>
+                                                                <code
+                                                                    >&quot;any&quot;</code
+                                                                >
+                                                            </td>
+                                                            <td></td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td>
+                                                                <code
+                                                                    >&quot;unknown&quot;</code
+                                                                >
+                                                            </td>
+                                                            <td>
+                                                                Behaves like
+                                                                <code>any</code>
+                                                                when used in
+                                                                validation.
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td>
+                                                                <code
+                                                                    >&quot;never&quot;</code
+                                                                >
+                                                            </td>
+                                                            <td>
+                                                                Will always
+                                                                throw an error
+                                                                when used in
+                                                                validation.
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td>
+                                                                <code
+                                                                    >&quot;undefined&quot;</code
+                                                                >
+                                                            </td>
+                                                            <td></td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td>
+                                                                <code
+                                                                    >&quot;void&quot;</code
+                                                                >
+                                                            </td>
+                                                            <td>
+                                                                Behaves like
+                                                                <code
+                                                                    >undefined</code
+                                                                >
+                                                                when used in
+                                                                validation
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td>
+                                                                <code
+                                                                    >&quot;object&quot;</code
+                                                                >
+                                                            </td>
+                                                            <td></td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td>
+                                                                <code
+                                                                    >&quot;null&quot;</code
+                                                                >
+                                                            </td>
+                                                            <td></td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td>
+                                                                <code
+                                                                    >&quot;function&quot;</code
+                                                                >
+                                                            </td>
+                                                            <td></td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td>
+                                                                <code
+                                                                    >&quot;string&quot;</code
+                                                                >
+                                                            </td>
+                                                            <td></td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td>
+                                                                <code
+                                                                    >&quot;number&quot;</code
+                                                                >
+                                                            </td>
+                                                            <td></td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td>
+                                                                <code
+                                                                    >&quot;bigint&quot;</code
+                                                                >
+                                                            </td>
+                                                            <td></td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td>
+                                                                <code
+                                                                    >&quot;boolean&quot;</code
+                                                                >
+                                                            </td>
+                                                            <td></td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td>
+                                                                <code
+                                                                    >&quot;true&quot;</code
+                                                                >
+                                                            </td>
+                                                            <td></td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td>
+                                                                <code
+                                                                    >&quot;false&quot;</code
+                                                                >
+                                                            </td>
+                                                            <td></td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td>
+                                                                <code
+                                                                    >&quot;symbol&quot;</code
+                                                                >
+                                                            </td>
+                                                            <td></td>
+                                                        </tr>
+                                                    </tbody>
+                                                </table>
+                                                <h4 id="literals">Literals</h4>
+                                                <p>
+                                                    Literals are used to specify
+                                                    a <code>string</code>,
+                                                    <code>number</code>, or
+                                                    <code>bigint</code> type
+                                                    constrained to an exact
+                                                    value.
+                                                </p>
+                                                <table>
+                                                    <thead>
+                                                        <tr>
+                                                            <th>Literal</th>
+                                                            <th>Syntax</th>
+                                                            <th>Examples</th>
+                                                            <th>Notes</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        <tr>
+                                                            <td>string</td>
+                                                            <td>
+                                                                <code
+                                                                    >&quot;&#x27;T&#x27;&quot;</code
+                                                                >
+                                                                or
+                                                                <code
+                                                                    >&#x27;&quot;T&quot;&#x27;</code
+                                                                >
+                                                            </td>
+                                                            <td>
+                                                                <code
+                                                                    >&quot;&#x27;redo&#x27;&quot;</code
+                                                                >
+                                                                or
+                                                                <code
+                                                                    >&#x27;&quot;WithDoubleQuotes&quot;&#x27;</code
+                                                                >
+                                                            </td>
+                                                            <td>
+                                                                Spaces are not
+                                                                currently
+                                                                supported and
+                                                                will be ignored.
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td>number</td>
+                                                            <td>
+                                                                <code
+                                                                    >&quot;T&quot;</code
+                                                                >, where T is a
+                                                                numeric value
+                                                            </td>
+                                                            <td>
+                                                                <code
+                                                                    >&quot;5&quot;</code
+                                                                >
+                                                                or
+                                                                <code
+                                                                    >&quot;-7.3&quot;</code
+                                                                >
+                                                            </td>
+                                                            <td>
+                                                                Though
+                                                                validation
+                                                                checks for the
+                                                                literal&#x27;s
+                                                                exact value,
+                                                                TypeScript
+                                                                widens its type
+                                                                to
+                                                                <code
+                                                                    >number</code
+                                                                >. To avoid this
+                                                                behavior, use a
+                                                                number
+                                                                primitive.
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td>bigint</td>
+                                                            <td>
+                                                                <code
+                                                                    >&quot;Tn&quot;</code
+                                                                >, where T is an
+                                                                integer
+                                                            </td>
+                                                            <td>
+                                                                <code
+                                                                    >&quot;0n&quot;</code
+                                                                >
+                                                                or
+                                                                <code
+                                                                    >&quot;-999n&quot;</code
+                                                                >
+                                                            </td>
+                                                            <td>
+                                                                Though
+                                                                validation
+                                                                checks for the
+                                                                literal&#x27;s
+                                                                exact value,
+                                                                TypeScript
+                                                                widens its type
+                                                                to
+                                                                <code
+                                                                    >bigint</code
+                                                                >. To avoid this
+                                                                behavior, use a
+                                                                bigint
+                                                                primitive.
+                                                            </td>
+                                                        </tr>
+                                                    </tbody>
+                                                </table>
+                                                <p>
+                                                    While
+                                                    <code>boolean</code> values
+                                                    could also be considered
+                                                    literals, they are modeled
+                                                    as keywords since, unlike
+                                                    other literal types, they
+                                                    can can be defined as a
+                                                    finite set (i.e.
+                                                    <code>true</code> and
+                                                    <code>false</code>).
+                                                </p>
+                                                <h4 id="expressions">
+                                                    Expressions
+                                                </h4>
+                                                <p>
+                                                    Expressions are a set of
+                                                    syntactic patterns that can
+                                                    be applied to one or more
+                                                    nested string definitions to
+                                                    modify the type they
+                                                    represent. Unless otherwise
+                                                    noted, expressions can be
+                                                    applied to any valid string
+                                                    definition, including other
+                                                    expressions.
+                                                </p>
+                                                <p>
+                                                    The following table is
+                                                    ordered by relative
+                                                    precedence in the event that
+                                                    a definition matches
+                                                    multiple patterns. For
+                                                    example, the definition
+                                                    <code
+                                                        >&quot;string|boolean[]&quot;</code
+                                                    >
+                                                    would be interpreted as
+                                                    either a
+                                                    <code>string</code> or a
+                                                    list of
+                                                    <code>boolean</code> since
+                                                    &quot;Or&quot; applies
+                                                    before &quot;List.&quot;
+                                                    Parenthetical grouping is
+                                                    not yet supported, but can
+                                                    be emulated by adding the
+                                                    desired grouping to a space
+                                                    and referencing its alias.
+                                                </p>
+                                                <table>
+                                                    <thead>
+                                                        <tr>
+                                                            <th>Exrpession</th>
+                                                            <th>Pattern</th>
+                                                            <th>Examples</th>
+                                                            <th>Notes</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        <tr>
+                                                            <td>Optional</td>
+                                                            <td>
+                                                                <code>T?</code>
+                                                            </td>
+                                                            <td>
+                                                                <code
+                                                                    >function?</code
+                                                                >
+                                                                <br /><code
+                                                                    >boolean[]?</code
+                                                                >
+                                                            </td>
+                                                            <td>
+                                                                Adds
+                                                                <code
+                                                                    >undefined</code
+                                                                >
+                                                                as a possible
+                                                                value. When used
+                                                                in an Object
+                                                                type, also makes
+                                                                the
+                                                                corresponding
+                                                                key optional.
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td>
+                                                                Arrow Function
+                                                            </td>
+                                                            <td>
+                                                                <code
+                                                                    >(T1,T2,...)=&gt;T3</code
+                                                                >
+                                                            </td>
+                                                            <td>
+                                                                <code
+                                                                    >(string,boolean[])=&gt;void</code
+                                                                >
+                                                                <br /><code
+                                                                    >()=&gt;object</code
+                                                                >
+                                                            </td>
+                                                            <td>
+                                                                At runtime,
+                                                                falls back to
+                                                                validating that
+                                                                a value is of
+                                                                type
+                                                                <code
+                                                                    >function</code
+                                                                >.
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td>Union</td>
+                                                            <td>
+                                                                <code
+                                                                    >T1\|T2\|T3\|...</code
+                                                                >
+                                                            </td>
+                                                            <td>
+                                                                <code
+                                                                    >false\|string</code
+                                                                >
+                                                                <br /><code
+                                                                    >string\|number\|boolean[]</code
+                                                                >
+                                                            </td>
+                                                            <td>
+                                                                Acts just like
+                                                                TypeScript&#x27;s
+                                                                union operator
+                                                                (<code>\|</code>)
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td>List</td>
+                                                            <td>
+                                                                <code>T[]</code>
+                                                            </td>
+                                                            <td>
+                                                                <code
+                                                                    >string[]</code
+                                                                >
+                                                                <br /><code
+                                                                    >number[][]</code
+                                                                >
+                                                            </td>
+                                                            <td></td>
+                                                        </tr>
+                                                    </tbody>
+                                                </table>
+                                                <p>
+                                                    Spaces are ignored when
+                                                    parsing expressions, so feel
+                                                    free to use whatever format
+                                                    you find most readable.
+                                                </p>
+                                                <h3 id="primitives">
+                                                    Primitives
+                                                </h3>
+                                                <p>
+                                                    Any definition that is
+                                                    neither a string nor an
+                                                    object is considered a
+                                                    primitive and models a type
+                                                    that allows only its exact
+                                                    value. All primitive
+                                                    definitions correspond to an
+                                                    equivalent string
+                                                    definition, so whether you
+                                                    use them often comes down to
+                                                    stylistic preference, though
+                                                    there are some noted
+                                                    circumstances in which they
+                                                    allow TypeScript to infer
+                                                    narrower types than their
+                                                    string equivalents.
+                                                </p>
+                                                <table>
+                                                    <thead>
+                                                        <tr>
+                                                            <th>
+                                                                Definition Type
+                                                            </th>
+                                                            <th>Examples</th>
+                                                            <th>Notes</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        <tr>
+                                                            <td>undefined</td>
+                                                            <td>
+                                                                <code
+                                                                    >undefined</code
+                                                                >
+                                                            </td>
+                                                            <td>
+                                                                Requires
+                                                                compiler option
+                                                                <code
+                                                                    >&quot;strictNullChecks&quot;</code
+                                                                >
+                                                                or
+                                                                <code
+                                                                    >&quot;strict&quot;</code
+                                                                >
+                                                                set to
+                                                                <code
+                                                                    >true</code
+                                                                >
+                                                                in your
+                                                                <code
+                                                                    >tsconfig.json</code
+                                                                >.
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td>null</td>
+                                                            <td>
+                                                                <code
+                                                                    >null</code
+                                                                >
+                                                            </td>
+                                                            <td>
+                                                                Requires
+                                                                compiler option
+                                                                <code
+                                                                    >&quot;strictNullChecks&quot;</code
+                                                                >
+                                                                or
+                                                                <code
+                                                                    >&quot;strict&quot;</code
+                                                                >
+                                                                set to
+                                                                <code
+                                                                    >true</code
+                                                                >
+                                                                in your
+                                                                <code
+                                                                    >tsconfig.json</code
+                                                                >.
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td>boolean</td>
+                                                            <td>
+                                                                <code
+                                                                    >true</code
+                                                                >
+                                                                <br />
+                                                                <code
+                                                                    >false</code
+                                                                >
+                                                            </td>
+                                                            <td></td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td>number</td>
+                                                            <td>
+                                                                <code>0</code>
+                                                                <br />
+                                                                <code
+                                                                    >32.33</code
+                                                                >
+                                                            </td>
+                                                            <td>
+                                                                TS infers the
+                                                                exact value of
+                                                                <code
+                                                                    >number</code
+                                                                >
+                                                                primitives,
+                                                                while string
+                                                                literals are
+                                                                always widened
+                                                                to
+                                                                <code
+                                                                    >number</code
+                                                                >.
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td>bigint</td>
+                                                            <td>
+                                                                <code>99n</code>
+                                                                <br />
+                                                                <code
+                                                                    >-100n</code
+                                                                >
+                                                            </td>
+                                                            <td>
+                                                                TS infers the
+                                                                exact value of
+                                                                <code
+                                                                    >bigint</code
+                                                                >
+                                                                primitives,
+                                                                while string
+                                                                literals are
+                                                                always widened
+                                                                to
+                                                                <code
+                                                                    >bigint</code
+                                                                >. <br />
+                                                                Requires a
+                                                                target of ES2020
+                                                                or higher.
+                                                            </td>
+                                                        </tr>
+                                                    </tbody>
+                                                </table>
+                                                <h2 id="contributing">
+                                                    Contributing
+                                                </h2>
+                                                <p>
+                                                    If you&#x27;re interested in
+                                                    contributing to
+                                                    <code>@re-/model</code>...
+                                                </p>
+                                                <ol>
+                                                    <li>
+                                                        Thank you 😍 We&#x27;ll
+                                                        do everything we can to
+                                                        make this as
+                                                        straightforward as
+                                                        possible, regardless of
+                                                        your experience.
+                                                    </li>
+                                                    <li>
+                                                        Check out our
+                                                        <a
+                                                            href="https://github.com/re-do/re-po/blob/main/CONTRIBUTING.md"
+                                                            >guide</a
+                                                        >
+                                                        to get started!
+                                                    </li>
+                                                </ol>
+                                                <h2 id="about-redo">
+                                                    About Redo
+                                                </h2>
+                                                <p>
+                                                    <code>@re-/model</code> is
+                                                    part of a set of devtools
+                                                    designed to help you
+                                                    navigate the JS/TS ecosystem
+                                                    and get back to doing what
+                                                    you love. Learn more
+                                                    <a
+                                                        href="https://github.com/re-do/re-po"
+                                                        >at the root of this
+                                                        repo</a
+                                                    >.
+                                                </p>
+                                                <h2 id="license">License</h2>
+                                                <p>
+                                                    This project is licensed
+                                                    under the terms of the
+                                                    <a
+                                                        href="https://github.com/re-do/re-po/blob/main/LICENSE"
+                                                        >MIT license</a
+                                                    >.
+                                                </p>
+                                            </div>
+                                            <footer
+                                                class="theme-doc-footer docusaurus-mt-lg"
+                                            >
+                                                <div
+                                                    class="theme-doc-footer-edit-meta-row row"
+                                                >
+                                                    <div class="col">
+                                                        <a
+                                                            href="https://github.com/re-do/re-po/edit/main/pkgs/docs/docs/model/intro.mdx"
+                                                            target="_blank"
+                                                            rel="noreferrer noopener"
+                                                            class="theme-edit-this-page"
+                                                            ><svg
+                                                                fill="currentColor"
+                                                                height="20"
+                                                                width="20"
+                                                                viewBox="0 0 40 40"
+                                                                class="iconEdit_OEwc"
+                                                                aria-hidden="true"
+                                                            >
+                                                                <g>
+                                                                    <path
+                                                                        d="m34.5 11.7l-3 3.1-6.3-6.3 3.1-3q0.5-0.5 1.2-0.5t1.1 0.5l3.9 3.9q0.5 0.4 0.5 1.1t-0.5 1.2z m-29.5 17.1l18.4-18.5 6.3 6.3-18.4 18.4h-6.3v-6.2z"
+                                                                    ></path>
+                                                                </g></svg
+                                                            >Edit this page</a
+                                                        >
+                                                    </div>
+                                                    <div
+                                                        class="col lastUpdated_hbbR"
+                                                    ></div>
+                                                </div>
+                                            </footer>
+                                        </article>
+                                        <nav
+                                            class="pagination-nav docusaurus-mt-lg"
+                                            aria-label="Docs pages navigation"
+                                        >
+                                            <div
+                                                class="pagination-nav__item"
+                                            ></div>
+                                            <div
+                                                class="pagination-nav__item pagination-nav__item--next"
+                                            ></div>
+                                        </nav>
+                                    </div>
+                                </div>
+                                <div class="col col--3">
+                                    <div
+                                        class="tableOfContents_pLT7 thin-scrollbar theme-doc-toc-desktop"
+                                    >
+                                        <ul
+                                            class="table-of-contents table-of-contents__left-border"
+                                        >
+                                            <li>
+                                                <a
+                                                    href="#whats-a-model"
+                                                    class="table-of-contents__link toc-highlight"
+                                                    >What&#39;s a model?</a
+                                                >
+                                            </li>
+                                            <li>
+                                                <a
+                                                    href="#installation"
+                                                    class="table-of-contents__link toc-highlight"
+                                                    >Installation</a
+                                                >
+                                            </li>
+                                            <li>
+                                                <a
+                                                    href="#definition"
+                                                    class="table-of-contents__link toc-highlight"
+                                                    >Definition</a
+                                                >
+                                            </li>
+                                            <li>
+                                                <a
+                                                    href="#space"
+                                                    class="table-of-contents__link toc-highlight"
+                                                    >Space</a
+                                                >
+                                            </li>
+                                            <li>
+                                                <a
+                                                    href="#declaration"
+                                                    class="table-of-contents__link toc-highlight"
+                                                    >Declaration</a
+                                                >
+                                            </li>
+                                            <li>
+                                                <a
+                                                    href="#syntax"
+                                                    class="table-of-contents__link toc-highlight"
+                                                    >Syntax</a
+                                                >
+                                                <ul>
+                                                    <li>
+                                                        <a
+                                                            href="#objects"
+                                                            class="table-of-contents__link toc-highlight"
+                                                            >Objects</a
+                                                        >
+                                                    </li>
+                                                    <li>
+                                                        <a
+                                                            href="#strings"
+                                                            class="table-of-contents__link toc-highlight"
+                                                            >Strings</a
+                                                        >
+                                                    </li>
+                                                    <li>
+                                                        <a
+                                                            href="#primitives"
+                                                            class="table-of-contents__link toc-highlight"
+                                                            >Primitives</a
+                                                        >
+                                                    </li>
+                                                </ul>
+                                            </li>
+                                            <li>
+                                                <a
+                                                    href="#contributing"
+                                                    class="table-of-contents__link toc-highlight"
+                                                    >Contributing</a
+                                                >
+                                            </li>
+                                            <li>
+                                                <a
+                                                    href="#about-redo"
+                                                    class="table-of-contents__link toc-highlight"
+                                                    >About Redo</a
+                                                >
+                                            </li>
+                                            <li>
+                                                <a
+                                                    href="#license"
+                                                    class="table-of-contents__link toc-highlight"
+                                                    >License</a
+                                                >
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </main>
+                </div>
+            </div>
+            <footer class="footer footer--dark">
+                <div class="container container-fluid">
+                    <div class="row footer__links">
+                        <div class="col footer__col">
+                            <div class="footer__title">Docs</div>
+                            <ul class="footer__items">
+                                <li class="footer__item">
+                                    <a
+                                        class="footer__link-item"
+                                        href="/docs/model/intro"
+                                        >Model</a
+                                    >
+                                </li>
+                                <li class="footer__item">
+                                    <a
+                                        class="footer__link-item"
+                                        href="/docs/state/intro"
+                                        >State</a
+                                    >
+                                </li>
+                                <li class="footer__item">
+                                    <a
+                                        class="footer__link-item"
+                                        href="/docs/test/intro"
+                                        >Test</a
+                                    >
+                                </li>
+                            </ul>
+                        </div>
+                        <div class="col footer__col">
+                            <div class="footer__title">More</div>
+                            <ul class="footer__items">
+                                <li class="footer__item">
+                                    <a
+                                        href="https://github.com/re-do/re-po"
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        class="footer__link-item"
+                                        ><span
+                                            >GitHub<svg
+                                                width="13.5"
+                                                height="13.5"
+                                                aria-hidden="true"
+                                                viewBox="0 0 24 24"
+                                                class="iconExternalLink_VFFL"
+                                            >
+                                                <path
+                                                    fill="currentColor"
+                                                    d="M21 13v10h-21v-19h12v2h-10v15h17v-8h2zm3-12h-10.988l4.035 4-6.977 7.07 2.828 2.828 6.977-7.07 4.125 4.172v-11z"
+                                                ></path></svg></span
+                                    ></a>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="footer__bottom text--center">
+                        <div class="footer__copyright">
+                            Copyright © 2022 Redo, Inc. Built with Docusaurus.
+                        </div>
+                    </div>
+                </div>
+            </footer>
+        </div>
+        <script src="/assets/js/runtime~main.e02b1d73.js"></script>
+        <script src="/assets/js/main.2bfaf9a2.js"></script>
+    </body>
+</html>
