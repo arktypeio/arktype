@@ -1,6 +1,6 @@
 import { assert } from "@re-/assert"
 import { narrow } from "@re-/tools"
-import { compile } from ".."
+import { compile } from "../index.js"
 import { typeDefProxy } from "../internal.js"
 
 describe("compile", () => {

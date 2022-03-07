@@ -1,7 +1,7 @@
 import { ParseConfig, typeDefProxy } from "./internal.js"
-import { Obj } from "./obj"
-import { Str } from "./str"
-import { Primitive } from "./primitive"
+import { Obj } from "./obj/index.js"
+import { Str } from "./str/index.js"
+import { Primitive } from "./primitive/index.js"
 import { reroot, createParser } from "./parser.js"
 import { DefinitionTypeError, definitionTypeError } from "../errors.js"
 

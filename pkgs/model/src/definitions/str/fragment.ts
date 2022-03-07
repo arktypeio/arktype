@@ -4,11 +4,11 @@ import {
     typeDefProxy,
     UnknownTypeError
 } from "./internal.js"
-import { Alias } from "./alias"
-import { Builtin, Keyword, Literal } from "./builtin"
-import { Expression } from "./expression"
+import { Alias } from "./alias/index.js"
+import { Builtin, Keyword, Literal } from "./builtin/index.js"
+import { Expression } from "./expression/index.js"
 import { Str } from "./str.js"
-import { Modifier } from "./modifier"
+import { Modifier } from "./modifier/index.js"
 
 export namespace Fragment {
     export type Definition = string

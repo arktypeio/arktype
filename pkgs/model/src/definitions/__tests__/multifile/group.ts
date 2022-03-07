@@ -1,4 +1,4 @@
-import { define } from "../multifile.assert"
+import { define } from "../multifile.assert.js"
 
 export const getGroupDef = () =>
     define.group({

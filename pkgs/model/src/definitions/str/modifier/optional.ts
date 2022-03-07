@@ -4,7 +4,6 @@ import {
     typeDefProxy,
     createParser,
     duplicateModifierError,
-    unknownTypeError,
     invalidModifierError
 } from "./internal.js"
 

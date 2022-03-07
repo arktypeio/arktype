@@ -1,7 +1,7 @@
 import { typeDefProxy, validationError, createParser } from "./internal.js"
 import { Fragment } from "../fragment.js"
 import { Expression } from "./expression.js"
-import { Tuple } from "../../obj"
+import { Tuple } from "../../obj/index.js"
 
 export namespace List {
     export type Definition<Item extends string = string> = `${Item}[]`

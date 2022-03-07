@@ -6,11 +6,11 @@ import {
     WithDefaults,
     isEmpty
 } from "@re-/tools"
-import { Primitive, Root, Str } from "./definitions"
+import { Primitive, Root, Str } from "./definitions/index.js"
 import { ParseContext, defaultParseContext } from "./definitions/parser.js"
 import { stringifyErrors, ValidationErrors } from "./errors.js"
 import { format, typeOf } from "./utils.js"
-import { CheckSpaceResolutions } from "./compile"
+import { CheckSpaceResolutions } from "./compile.js"
 import { ReferencesTypeConfig, typeDefProxy } from "./internal.js"
 
 export type Definition = Root.Definition

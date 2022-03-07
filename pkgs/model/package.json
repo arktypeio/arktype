@@ -1,8 +1,8 @@
 {
     "name": "@re-/model",
-    "version": "1.2.0",
+    "version": "0.0.2",
     "author": "redo.dev",
-    "description": "",
+    "description": "Type-first validation from editor to runtime 🧭",
     "repository": {
         "type": "git",
         "url": "https://github.com/re-do/re-po.git",

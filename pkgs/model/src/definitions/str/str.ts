@@ -1,12 +1,4 @@
-import {
-    ElementOf,
-    Iteration,
-    ListPossibleTypes,
-    narrow,
-    RemoveSpaces,
-    Split,
-    Spliterate
-} from "@re-/tools"
+import { narrow, RemoveSpaces, Spliterate } from "@re-/tools"
 import { Root } from "../root.js"
 import {
     ParseConfig,

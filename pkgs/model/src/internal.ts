@@ -5,7 +5,7 @@ import {
     StringLiteral,
     Fragment,
     ExtractableKeyword
-} from "./definitions"
+} from "./definitions/index.js"
 
 export * from "./errors.js"
 

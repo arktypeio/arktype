@@ -17,7 +17,7 @@ import {
 } from "./internal.js"
 import { Root } from "../root.js"
 import { Obj } from "./obj.js"
-import { Optional } from "../str"
+import { Optional } from "../str/index.js"
 
 export namespace Map {
     export type Definition = Record<string, any>

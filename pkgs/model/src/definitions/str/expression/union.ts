@@ -14,7 +14,6 @@ import {
 } from "./internal.js"
 import { Fragment } from "../fragment.js"
 import { Expression } from "./expression.js"
-import { define } from "../../../model.js"
 
 type PreferredDefaults = ({ value: any } | { typeOf: TypeCategory })[]
 

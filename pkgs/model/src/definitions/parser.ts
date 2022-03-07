@@ -8,11 +8,11 @@ import {
     toString,
     DeepTreeOf
 } from "@re-/tools"
-import { SpaceResolutions } from "../compile"
+import { SpaceResolutions } from "../compile.js"
 import { ValidationErrors, unknownTypeError } from "../errors.js"
 import { ExtractableDefinition } from "./internal.js"
 import { Root } from "./root.js"
-import { Obj } from "./obj"
+import { Obj } from "./obj/index.js"
 import { GenerateOptions, ReferencesOptions } from "../model.js"
 
 export type MatchesArgs<DefType> = {

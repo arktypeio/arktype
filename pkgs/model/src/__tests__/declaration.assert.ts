@@ -1,5 +1,5 @@
 import { assert } from "@re-/assert"
-import { declare } from ".."
+import { declare } from "../index.js"
 
 describe("declare", () => {
     test("single", () => {

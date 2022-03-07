@@ -15,7 +15,7 @@ import {
     Parse,
     Model
 } from "./model.js"
-import { Map, Root } from "./definitions"
+import { Map, Root } from "./definitions/index.js"
 import { typeDefProxy, ParseConfig } from "./internal.js"
 import { Resolution } from "./resolution.js"
 

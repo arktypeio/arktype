@@ -1,7 +1,9 @@
-import { Split } from "@re-/tools"
-import { NumberKeyword, StringKeyword, NumberLiteral } from "../builtin"
+import {
+    NumberKeyword,
+    StringKeyword,
+    NumberLiteral
+} from "../builtin/index.js"
 import { typeDefProxy, ParseConfig, ParseSplittable } from "../internal.js"
-import { Str } from "../str.js"
 
 export type Comparable = NumberKeyword | StringKeyword
 

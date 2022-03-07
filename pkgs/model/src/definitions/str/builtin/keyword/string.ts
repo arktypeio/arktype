@@ -1,5 +1,5 @@
-import { defineKeywords, listKeywords } from "./internal.js"
 import validator from "validator"
+import { defineKeywords, listKeywords } from "./internal.js"
 import { StringLiteral } from "../stringLiteral.js"
 import { Func } from "@re-/tools"
 
