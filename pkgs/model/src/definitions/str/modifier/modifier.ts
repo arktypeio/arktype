@@ -10,7 +10,6 @@ import {
 } from "./internal.js"
 import { Fragment } from "../fragment.js"
 import { Optional } from "./optional.js"
-import { Constraint } from "./constraints/constraint.js"
 
 export namespace Modifier {
     export type Definition = `${string}${ModifierToken}${string}`
@@ -19,9 +18,7 @@ export namespace Modifier {
         Def extends Definition,
         Root extends string,
         Space
-    > = IncludesSubstring<Def, ":"> extends true
-        ? CheckModifier<":", Def, Root, Space>
-        : IncludesSubstring<Def, "?"> extends true
+    > = IncludesSubstring<Def, "?"> extends true
         ? CheckModifier<"?", Def, Root, Space>
         : UnknownTypeError<Def>
 
@@ -29,9 +26,7 @@ export namespace Modifier {
         Def extends Definition,
         Space,
         Options extends ParseConfig
-    > = Def extends Constraint.Definition<infer TypeDef, infer Constraints>
-        ? Fragment.Parse<TypeDef, Space, Options>
-        : Def extends Optional.Definition<infer Inner>
+    > = Def extends Optional.Definition<infer Inner>
         ? Fragment.Parse<Inner, Space, Options> | undefined
         : unknown
 
@@ -41,7 +36,7 @@ export namespace Modifier {
         {
             type,
             parent: () => Fragment.parse,
-            children: () => [Constraint.delegate, Optional.delegate]
+            children: () => [Optional.delegate]
         },
         {
             matches: (def) => !!def.match(modifierTokenMatcher)

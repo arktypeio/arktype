@@ -8,7 +8,7 @@ import {
 
 export * from "../internal.js"
 
-export const modifierTokens = narrow(["?", ":"])
+export const modifierTokens = narrow(["?"])
 
 export const modifierTokenMatcher = createTokenMatcher(modifierTokens)
 
@@ -35,7 +35,7 @@ export type CheckModifier<
     Def extends string,
     Root extends string,
     Space
-> = Def extends `${infer Modified}${Token}${Token extends ":" ? string : ""}`
+> = Def extends `${infer Modified}${Token}`
     ? IncludesSubstring<Modified, Token> extends true
         ? DuplicateModifierError<Token>
         : Fragment.Check<Modified, Root, Space>

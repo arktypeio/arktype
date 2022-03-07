@@ -1,0 +1,10 @@
+{
+    "changes": [
+        {
+            "packageName": "@re-/model",
+            "comment": "Pre-release prep.",
+            "type": "patch"
+        }
+    ],
+    "packageName": "@re-/model"
+}

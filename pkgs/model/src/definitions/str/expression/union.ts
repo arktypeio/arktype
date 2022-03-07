@@ -5,8 +5,8 @@ import {
     typeDefProxy,
     isRequiredCycleError,
     stringifyErrors,
-    UnionTypeErrors,
-    unionValidationError,
+    SplittableErrors,
+    splittableValidationError,
     validationError,
     createParser,
     ParseContext,
@@ -14,6 +14,7 @@ import {
 } from "./internal.js"
 import { Fragment } from "../fragment.js"
 import { Expression } from "./expression.js"
+import { define } from "../../../model.js"
 
 type PreferredDefaults = ({ value: any } | { typeOf: TypeCategory })[]
 
@@ -60,7 +61,7 @@ export namespace Union {
         {
             matches: (definition) => definition.includes("|"),
             allows: ({ def, ctx, components }, valueType, opts) => {
-                const unionErrors: UnionTypeErrors = {}
+                const errors: SplittableErrors = {}
                 for (const fragment of components) {
                     const fragmentErrors = stringifyErrors(
                         fragment.allows(valueType, opts)
@@ -69,14 +70,15 @@ export namespace Union {
                         // If one of the union types doesn't return any errors, the whole type is valid
                         return {}
                     }
-                    unionErrors[fragment.def] = fragmentErrors
+                    errors[fragment.def] = fragmentErrors
                 }
                 return validationError({
                     path: ctx.path,
-                    message: unionValidationError({
+                    message: splittableValidationError({
                         def,
                         valueType,
-                        unionErrors
+                        errors,
+                        delimiter: "|"
                     })
                 })
             },

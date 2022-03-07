@@ -80,24 +80,27 @@ export type InvalidModifierError<
 >
 
 // Members of a union type to errors that occurred validating those types
-export type UnionTypeErrors = Record<string, string>
+export type SplittableErrors = Record<string, string>
 
-export type UnionErrorArgs = BaseAssignmentArgs & {
-    unionErrors: UnionTypeErrors
+export type SplittableErrorArgs = BaseAssignmentArgs & {
+    delimiter: "|" | "&"
+    errors: SplittableErrors
 }
 
-export const unionValidationErrorTemplate =
-    "@valueType is not assignable to any of @def:\n@errors"
+export const splittableValidationErrorTemplate =
+    "@valueType is not assignable to @components of @def:\n@errors"
 
-export const unionValidationError = ({
+export const splittableValidationError = ({
     def,
     valueType,
-    unionErrors
-}: UnionErrorArgs) =>
-    unionValidationErrorTemplate
+    errors,
+    delimiter
+}: SplittableErrorArgs) =>
+    splittableValidationErrorTemplate
         .replace("@valueType", stringifyDefinition(valueType))
+        .replace("@components", delimiter === "|" ? "any" : "all")
         .replace("@def", stringifyDefinition(def))
-        .replace("@errors", stringifyErrors(unionErrors))
+        .replace("@errors", stringifyErrors(errors))
 
 export type BaseParseArgs = {
     def: unknown
@@ -122,12 +125,43 @@ export const shallowCycleError = ({ def, ctx }: BaseParseArgs) =>
         .replace("@space", stringifyDefinition(ctx.space))
         .replace("@resolutions", [...ctx.seen, def].join("=>"))
 
+export const invalidLimitErrorTemplate =
+    "@limit cannot be used to bound @inner."
+
+export type InvalidLimitError<
+    Inner extends string = string,
+    Limit extends string = string
+> = StringReplace<
+    StringReplace<typeof invalidLimitErrorTemplate, "@inner", Inner>,
+    "@limit",
+    Limit
+>
+
+export const invalidLimitError = (inner: string, limit: string) =>
+    invalidLimitErrorTemplate
+        .replace("@inner", stringifyDefinition(inner))
+        .replace("@limit", stringifyDefinition(limit))
+
+export const unboundableErrorTemplate =
+    "Bounded definition @inner must be a number or string."
+
+export type UnboundableError<Inner extends string = string> = StringReplace<
+    typeof unboundableErrorTemplate,
+    "@inner",
+    Inner
+>
+
+export const unboundableError = (inner: string) =>
+    unboundableErrorTemplate.replace("@inner", stringifyDefinition(inner))
+
 export type ValidationErrorMessage =
     | UnknownTypeError
     | ShallowCycleError
     | DefinitionTypeError
     | DuplicateModifierError
     | InvalidModifierError
+    | InvalidLimitError
+    | UnboundableError
 
 export type InferrableValidationErrorMessage<E> =
     E extends ValidationErrorMessage ? E : never
