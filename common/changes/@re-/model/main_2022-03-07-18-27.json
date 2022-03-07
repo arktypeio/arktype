@@ -1,0 +1,10 @@
+{
+    "changes": [
+        {
+            "packageName": "@re-/model",
+            "comment": "Fix validator tests.",
+            "type": "patch"
+        }
+    ],
+    "packageName": "@re-/model"
+}

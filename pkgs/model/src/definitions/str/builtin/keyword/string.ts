@@ -7,13 +7,14 @@ const validateLiteral = (
     valueType: unknown,
     validate: Func<[string], boolean>
 ) =>
+    typeof valueType === "string" &&
     StringLiteral.matches(valueType) &&
     validate(StringLiteral.valueFrom(valueType))
 
 export const stringHandlers = defineKeywords({
     string: {
         generate: () => "",
-        allows: (valueType) => StringLiteral.matches(valueType)
+        allows: (valueType) => validateLiteral(valueType, () => true)
     },
     email: {
         generate: () => "david@redo.dev",
