@@ -38,7 +38,20 @@ export type Spliterate<
     Fragments extends string,
     Delimiters extends string[],
     Options extends SpliterateOptions = {},
-    Result extends string = SpliterateRaw<Fragments, Delimiters>,
+    Config extends Required<SpliterateOptions> = WithDefaults<
+        SpliterateOptions,
+        Options,
+        {
+            asList: false
+            asUnorderedList: false
+            filter: string
+        }
+    >,
+    Result extends string = SpliterateRaw<
+        Fragments,
+        Delimiters,
+        Config["filter"]
+    >,
     ListedResult extends string[] = ListPossibleTypes<Result>
 > = Options["asList"] extends true
     ? ListedResult
@@ -50,10 +63,11 @@ export type Spliterate<
 
 type SpliterateRaw<
     Fragments extends string,
-    Delimiters extends string[]
+    Delimiters extends string[],
+    Filter extends string
 > = Delimiters extends Iteration<string, infer Character, infer Remaining>
-    ? Spliterate<ElementOf<Split<Fragments, Character>>, Remaining>
-    : Exclude<ElementOf<Split<Fragments, Delimiters[0]>>, "">
+    ? SpliterateRaw<ElementOf<Split<Fragments, Character>>, Remaining, Filter>
+    : Exclude<ElementOf<Split<Fragments, Delimiters[0]>>, ""> & Filter
 
 export type Join<
     Segments extends Stringifiable[],

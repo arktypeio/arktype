@@ -1,13 +1,6 @@
-import { ElementOf, Evaluate, ListPossibleTypes, Narrow } from "@re-/tools"
-import {
-    typeDefProxy,
-    valueGenerationError,
-    createParser,
-    InheritableMethodContext,
-    validationError
-} from "../internal.js"
+import { typeDefProxy, createParser, validationError } from "../internal.js"
 import { Builtin } from "../builtin.js"
-import { defineKeywords, HandledTypes, listKeywords } from "./internal.js"
+import { HandledTypes, listKeywords } from "./internal.js"
 import { extractableHandlers } from "./extractable.js"
 import { unextractableHandlers } from "./unextractable.js"
 
@@ -26,7 +19,7 @@ export namespace Keyword {
             parent: () => Builtin.parse
         },
         {
-            matches: (definition) => definition in handlers,
+            matches: (def) => def in handlers,
             generate: (ctx) => handlers[ctx.def].generate(ctx),
             allows: (ctx, valueType) => {
                 return handlers[ctx.def].allows(valueType)

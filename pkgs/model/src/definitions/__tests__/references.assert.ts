@@ -31,19 +31,11 @@ describe("references", () => {
         })
         test("object", () => {
             const refs = {} as References<{
-                listed: [
-                    "group|null",
-                    "user|null",
-                    "(string, number)=>function"
-                ]
+                listed: ["group|null", "user|null"]
                 a: { b: { c: "user[]?" } }
             }>
             assert(refs).typed as {
-                listed: [
-                    "group" | "null",
-                    "user" | "null",
-                    "string" | "function" | "number"
-                ]
+                listed: ["group" | "null", "user" | "null"]
                 a: {
                     b: {
                         c: "user"

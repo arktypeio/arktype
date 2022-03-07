@@ -1,0 +1,10 @@
+{
+    "changes": [
+        {
+            "packageName": "@re-/tools",
+            "comment": "Fix Spliterate options.",
+            "type": "patch"
+        }
+    ],
+    "packageName": "@re-/tools"
+}
