@@ -2,19 +2,22 @@ import React from "react"
 import clsx from "clsx"
 import * as Svgs from "./svg"
 import { Button, Stack } from "@mui/material"
+import { modelDemo } from "./demos"
 
 type ToolSummaryProps = {
     name: string
     illustration: JSX.Element
     description: JSX.Element
     upcoming?: boolean
+    demo?: JSX.Element
 }
 
 const toolSummaries: ToolSummaryProps[] = [
     {
         name: "Model",
         illustration: <Svgs.Model />,
-        description: <>Type-first validation from editor to runtime</>
+        description: <>Type-first validation from editor to runtime</>,
+        demo: modelDemo
     },
     {
         name: "State",
@@ -34,7 +37,8 @@ const ToolSummary = ({
     name,
     illustration,
     description,
-    upcoming
+    upcoming,
+    demo
 }: ToolSummaryProps) => (
     <div className={clsx("col col--4")}>
         <div className="text--center">{illustration}</div>
@@ -55,6 +59,7 @@ const ToolSummary = ({
                     </Button>
                 )}
             </Stack>
+            {demo ? demo : null}
         </div>
     </div>
 )
