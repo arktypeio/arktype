@@ -25,6 +25,36 @@ export type Split<
     ? Split<Right, Delimiter, [...Result, Left]>
     : [...Result, S]
 
+export type SpliterateOptions = {
+    asList?: boolean
+    asUnorderedList?: boolean
+    filter?: string
+}
+
+/**
+ * Iteratively split a string literal type using a tuple of delimiters
+ */
+export type Spliterate<
+    Fragments extends string,
+    Delimiters extends string[],
+    Options extends SpliterateOptions = {},
+    Result extends string = SpliterateRaw<Fragments, Delimiters>,
+    ListedResult extends string[] = ListPossibleTypes<Result>
+> = Options["asList"] extends true
+    ? ListedResult
+    : Options["asUnorderedList"] extends true
+    ? ListedResult extends [string]
+        ? ListedResult
+        : Result[]
+    : Result
+
+type SpliterateRaw<
+    Fragments extends string,
+    Delimiters extends string[]
+> = Delimiters extends Iteration<string, infer Character, infer Remaining>
+    ? Spliterate<ElementOf<Split<Fragments, Character>>, Remaining>
+    : Exclude<ElementOf<Split<Fragments, Delimiters[0]>>, "">
+
 export type Join<
     Segments extends Stringifiable[],
     Delimiter extends string = DefaultDelimiter,

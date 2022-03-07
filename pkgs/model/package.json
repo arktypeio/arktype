@@ -25,7 +25,8 @@
         "unit": "jest --coverage false -t "
     },
     "dependencies": {
-        "@re-/tools": "workspace:*"
+        "@re-/tools": "workspace:*",
+        "validator": "13.7.0"
     },
     "devDependencies": {
         "@re-/assert": "workspace:*",
@@ -33,6 +34,7 @@
         "@types/jest": "27.0.3",
         "ts-jest": "27.1.2",
         "@types/node": "17.0.1",
-        "typescript": "4.5.5"
+        "typescript": "4.5.5",
+        "@types/validator": "13.7.1"
     }
 }

@@ -1,10 +1,4 @@
-import {
-    StringifyPossibleTypes,
-    Split,
-    Join,
-    ElementOf,
-    narrow
-} from "@re-/tools"
+import { StringifyPossibleTypes, Split, Join } from "@re-/tools"
 import { ParseConfig, ValidationErrorMessage } from "../internal.js"
 import { Fragment } from "./fragment.js"
 
@@ -16,21 +10,6 @@ export const createTokenMatcher = (tokens: string[]) =>
         tokens.map((char) => `\\${char}`).join("|"),
         "g"
     )
-
-import { expressionTokens } from "./expression/internal.js"
-import { modifierTokens } from "./modifier/internal.js"
-
-export const nonIdentifyingTokens = narrow([
-    ...expressionTokens,
-    ...modifierTokens
-])
-
-export const nonIdentifyingTokenMatcher =
-    createTokenMatcher(nonIdentifyingTokens)
-
-export type NonIdentifyingTokens = typeof nonIdentifyingTokens
-
-export type NonIdentifyingToken = ElementOf<NonIdentifyingTokens>
 
 export type CheckSplittable<
     Delimiter extends string,

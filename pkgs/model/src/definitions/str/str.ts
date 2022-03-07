@@ -2,8 +2,10 @@ import {
     ElementOf,
     Iteration,
     ListPossibleTypes,
+    narrow,
     RemoveSpaces,
-    Split
+    Split,
+    Spliterate
 } from "@re-/tools"
 import { Root } from "../root.js"
 import {
@@ -11,11 +13,12 @@ import {
     createParser,
     typeDefProxy,
     ReferencesTypeConfig,
-    NonIdentifyingTokens,
-    nonIdentifyingTokenMatcher,
-    ValidationErrorMessage
+    ValidationErrorMessage,
+    createTokenMatcher
 } from "./internal.js"
 import { Fragment } from "./fragment.js"
+import { expressionTokens } from "./expression/internal.js"
+import { modifierTokens } from "./modifier/internal.js"
 
 export namespace Str {
     export type Definition = string
@@ -36,32 +39,19 @@ export namespace Str {
         ? unknown
         : Fragment.Parse<Format<Def>, Space, Options>
 
-    type RawReferences<
-        Fragments extends string,
-        RemainingNonIdentifiers extends string[] = [
-            ...NonIdentifyingTokens,
-            " "
-        ]
-    > = RemainingNonIdentifiers extends Iteration<
-        string,
-        infer Character,
-        infer Remaining
-    >
-        ? RawReferences<ElementOf<Split<Fragments, Character>>, Remaining>
-        : Exclude<ElementOf<Split<Fragments, RemainingNonIdentifiers[0]>>, "">
+    const nonIdentifyingTokens = narrow([
+        ...expressionTokens,
+        ...modifierTokens
+    ])
+
+    const nonIdentifyingTokenMatcher = createTokenMatcher(nonIdentifyingTokens)
+
+    export type NonIdentifyingTokens = typeof nonIdentifyingTokens
 
     export type References<
         Def extends string,
-        Config extends ReferencesTypeConfig,
-        Result extends string = RawReferences<`${Def}`> & Config["filter"],
-        ListedResult extends string[] = ListPossibleTypes<Result>
-    > = Config["asList"] extends true
-        ? ListedResult
-        : Config["asUnorderedList"] extends true
-        ? ListedResult extends [string]
-            ? ListedResult
-            : Result[]
-        : Result
+        Config extends ReferencesTypeConfig
+    > = Spliterate<Def, NonIdentifyingTokens, Config>
 
     export const type = typeDefProxy as Definition
 

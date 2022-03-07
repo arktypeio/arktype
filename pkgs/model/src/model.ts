@@ -34,6 +34,7 @@ export type Parse<
 export type ReferencesTypeOptions = {
     asUnorderedList?: boolean
     asList?: boolean
+    nonIdentifiers?: string[]
     filter?: string
 }
 
@@ -43,7 +44,12 @@ export type References<
     Config extends ReferencesTypeConfig = WithDefaults<
         ReferencesTypeOptions,
         Options,
-        { asUnorderedList: false; asList: false; filter: string }
+        {
+            asUnorderedList: false
+            asList: false
+            nonIdentifiers: Str.NonIdentifyingTokens
+            filter: string
+        }
     >
 > = Def extends Primitive.Definition
     ? Primitive.References<Def, Config>

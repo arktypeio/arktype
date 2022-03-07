@@ -9,18 +9,24 @@ export namespace StringLiteral {
 
     export const type = typeDefProxy as Definition
 
+    export const matcher = /^('.*')|(".*")$/
+
+    export const matches = (def: any): def is Definition => matcher.test(def)
+
+    export const valueFrom = (def: Definition) => def.slice(1, -1)
+
     export const parse = createParser(
         {
             type,
             parent: () => Literal.parse
         },
         {
-            matches: (def) => !!def.match(`^('.*')|(".*")$`),
+            matches,
             allows: ({ def, ctx: { path } }, valueType) =>
                 def === valueType
                     ? {}
                     : validationError({ def, valueType, path }),
-            generate: ({ def }) => def.slice(1, -1)
+            generate: ({ def }) => valueFrom(def)
         }
     )
 

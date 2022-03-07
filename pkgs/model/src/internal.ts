@@ -1,14 +1,19 @@
 import { TreeOf } from "@re-/tools"
 import { ParseTypeOptions, ReferencesTypeOptions } from "./model.js"
-import { Primitive, StringLiteral, Keyword, Fragment } from "./definitions"
+import {
+    Primitive,
+    StringLiteral,
+    Fragment,
+    ExtractableKeyword
+} from "./definitions"
 
 export * from "./errors.js"
 
 export type ShallowDefinition = Fragment.Definition | Primitive.Definition
 
 export type ShallowExtractableDefinition =
-    | Keyword.Extractable
     | StringLiteral.Definition
+    | ExtractableKeyword
     | number
     | bigint
 
