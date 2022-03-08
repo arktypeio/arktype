@@ -46,17 +46,6 @@ const user = define({
 // If you're using TypeScript, you can create your type...
 type User = typeof user.type
 
-// And it will be totally equivalent to...
-type RedundantUserDeclaration = {
-    name: {
-        first: string
-        middle?: string
-        last: string
-    }
-    age: number
-    interests: string[] | null
-}
-
 // But a model can also validate your data at runtime...
 const fetchUser = () => {
     return {
@@ -69,7 +58,7 @@ const fetchUser = () => {
     }
 }
 
-// Will throw: "At path interests, undefined is not assignable to any of string[]|null."
+// Throws: "At path interests, undefined is not assignable to any of string[]|null."
 user.validate(fetchUser())
 ```
 
