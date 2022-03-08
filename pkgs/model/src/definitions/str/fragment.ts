@@ -5,7 +5,7 @@ import {
     UnknownTypeError
 } from "./internal.js"
 import { Alias } from "./alias/index.js"
-import { Builtin, Keyword, Literal } from "./builtin/index.js"
+import { Builtin, Keyword, Literal, Regex } from "./builtin/index.js"
 import { Expression } from "./expression/index.js"
 import { Str } from "./str.js"
 import { Modifier } from "./modifier/index.js"
@@ -34,6 +34,8 @@ export namespace Fragment {
         ? Modifier.Check<Def, Root, Space>
         : Def extends Keyword.Definition
         ? Root
+        : Def extends Regex.Definition
+        ? Root
         : Def extends Alias.Definition<Space>
         ? Alias.Check<Def, Root, Space>
         : Def extends Expression.Definition
@@ -50,6 +52,8 @@ export namespace Fragment {
         ? Modifier.Parse<Def, Space, Options>
         : Def extends Keyword.Definition
         ? Keyword.Parse<Def>
+        : Def extends Regex.Definition
+        ? string
         : Def extends Alias.Definition<Space>
         ? Alias.Parse<Def, Space, Options>
         : Def extends Expression.Definition
