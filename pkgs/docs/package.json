@@ -15,7 +15,7 @@
         "write-heading-ids": "docusaurus write-heading-ids",
         "typecheck": "tsc",
         "test": "echo No tests for docs!",
-        "build-pages": "npm run build && cp -r out ../../docs"
+        "build-pages": "npm run build && cp -r out/* ../../docs"
     },
     "dependencies": {
         "@docusaurus/core": "2.0.0-beta.17",

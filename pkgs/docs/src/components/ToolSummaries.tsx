@@ -9,7 +9,7 @@ type ToolSummaryProps = {
     illustration: JSX.Element
     description: JSX.Element
     upcoming?: boolean
-    demo?: JSX.Element
+    demo?: string
 }
 
 const toolSummaries: ToolSummaryProps[] = [
@@ -17,7 +17,7 @@ const toolSummaries: ToolSummaryProps[] = [
         name: "Model",
         illustration: <Svgs.Model />,
         description: <>Type-first validation from editor to runtime</>,
-        demo: modelDemo
+        demo: "https://codesandbox.io/s/re-model-playground-gtjll5"
     },
     {
         name: "State",
@@ -52,14 +52,12 @@ const ToolSummary = ({
                 <Button variant="outlined" href={`/docs/${name}/intro`}>
                     Learn more
                 </Button>
-                {upcoming ? null : (
-                    // TODO: Add live demo
-                    <Button variant="contained" href={`/docs/${name}/intro`}>
+                {demo ? (
+                    <Button variant="contained" href={demo} target="_blank">
                         Try it in 30 seconds ⏱️
                     </Button>
-                )}
+                ) : null}
             </Stack>
-            {demo ? demo : null}
         </div>
     </div>
 )
