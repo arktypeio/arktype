@@ -73,11 +73,12 @@ export const ToolSummaries = () => (
         }}
     >
         <div className="container">
-            <div className="row">
+            <div className="row" style={{ padding: 8 }}>
                 {toolSummaries.map((props, index) => (
                     <ToolSummary key={index} {...props} />
                 ))}
             </div>
+            {modelDemo}
         </div>
     </section>
 )
