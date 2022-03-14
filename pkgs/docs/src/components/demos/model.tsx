@@ -2,7 +2,7 @@ import React from "react"
 
 export const modelDemo = (
     <iframe
-        src="https://stackblitz.com/edit/vitejs-vite-nmpxus?embed=1&file=src/App.tsx"
+        src="https://stackblitz.com/edit/re-model?embed=1&file=index.ts"
         style={{
             width: "100%",
             height: "500px",
