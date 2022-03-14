@@ -2,7 +2,7 @@ import React from "react"
 
 export const modelDemo = (
     <iframe
-        src="https://stackblitz.com/edit/re-model?embed=1&file=index.ts"
+        src="https://stackblitz.com/edit/re-model?embed=1&file=example.ts"
         style={{
             width: "100%",
             height: "500px",
