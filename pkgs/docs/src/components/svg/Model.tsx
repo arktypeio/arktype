@@ -14,9 +14,9 @@ export const Model = () => {
                     y2="27.57"
                     gradientUnits="userSpaceOnUse"
                 >
-                    <stop offset="0" stop-color="gray" stop-opacity="0.25" />
-                    <stop offset="0.54" stop-color="gray" stop-opacity="0.12" />
-                    <stop offset="1" stop-color="gray" stop-opacity="0.1" />
+                    <stop offset="0" stopColor="gray" stopOpacity="0.25" />
+                    <stop offset="0.54" stopColor="gray" stopOpacity="0.12" />
+                    <stop offset="1" stopColor="gray" stopOpacity="0.1" />
                 </linearGradient>
                 <linearGradient
                     id="a3595478-8223-4729-894e-2a36a16c8458"
@@ -726,8 +726,8 @@ export const Model = () => {
                 transform="translate(-79.84 -125.42)"
                 fill="none"
                 stroke="#535461"
-                stroke-miterlimit="10"
-                stroke-width="2"
+                strokeMiterlimit="10"
+                strokeWidth="2"
             />
             <path
                 d="M185.87,498.91c0,3.73,6.75,14.54,6.75,14.54s6.75-10.81,6.75-14.54a6.75,6.75,0,0,0-13.5,0Z"
@@ -779,7 +779,7 @@ export const Model = () => {
                 transform="translate(-79.84 -125.42)"
                 fill="none"
                 stroke="#535461"
-                stroke-miterlimit="10"
+                strokeMiterlimit="10"
             />
             <path
                 d="M618.25,570.81s37.53-6,40.95,27.66,72.16,38.29,72.16,38.29l-1.29.86c-56.76,37.26-111,23.73-102.84-25.74C630.27,593.49,630,575,618.25,570.81Z"
@@ -797,7 +797,7 @@ export const Model = () => {
                 transform="translate(-79.84 -125.42)"
                 fill="none"
                 stroke="#535461"
-                stroke-miterlimit="10"
+                strokeMiterlimit="10"
             />
             <path
                 d="M903.77,648.23s-55.7-11.14-70.56-26-81.7-40.85-89.13-22.28S643.82,681.66,707,692.8s148.54,14.85,167.11,7.43S903.77,648.23,903.77,648.23Z"
