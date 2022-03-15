@@ -17,7 +17,7 @@ const toolSummaries: ToolSummaryProps[] = [
         name: "Model",
         illustration: <Svgs.Model />,
         description: <>Type-first validation from editor to runtime</>,
-        demo: "https://codesandbox.io/s/re-model-playground-gtjll5"
+        demo: "https://stackblitz.com/edit/re-model?embed=1&file=model.ts&hideDevTools=1&hideExplorer=1&hideNavigation=1&theme=dark"
     },
     {
         name: "State",
@@ -40,7 +40,18 @@ const ToolSummary = ({
     upcoming,
     demo
 }: ToolSummaryProps) => (
-    <div className={clsx("col col--4")}>
+    <div
+        className={clsx("col col--4")}
+        style={
+            demo
+                ? {
+                      backgroundColor: "#EEF1FC",
+                      marginBottom: -20,
+                      borderRadius: 8
+                  }
+                : {}
+        }
+    >
         <div className="text--center">{illustration}</div>
         <div className="text--center padding-horiz--md">
             <h3>
@@ -49,13 +60,28 @@ const ToolSummary = ({
             </h3>
             <p>{description}</p>
             <Stack spacing={2} direction="row" justifyContent="center">
-                <Button variant="outlined" href={`/docs/${name}/intro`}>
+                <Button
+                    variant="outlined"
+                    href={`/docs/${name}/intro`}
+                    style={{ whiteSpace: "nowrap" }}
+                >
                     Learn more
                 </Button>
                 {demo ? (
-                    <Button variant="contained" href={demo} target="_blank">
-                        Try it in 30 seconds ⏱️
-                    </Button>
+                    <>
+                        <p> or </p>
+                        <Button
+                            variant="contained"
+                            style={{ whiteSpace: "nowrap" }}
+                            onClick={() =>
+                                document
+                                    .getElementById("demo")
+                                    ?.scrollIntoView({ behavior: "smooth" })
+                            }
+                        >
+                            Try it out ⬇️
+                        </Button>
+                    </>
                 ) : null}
             </Stack>
         </div>

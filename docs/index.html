@@ -73,10 +73,10 @@
         <link rel="stylesheet" href="/assets/css/styles.e82df9a2.css" />
         <link
             rel="preload"
-            href="/assets/js/runtime~main.656b370f.js"
+            href="/assets/js/runtime~main.891dbd13.js"
             as="script"
         />
-        <link rel="preload" href="/assets/js/main.0bc11e1a.js" as="script" />
+        <link rel="preload" href="/assets/js/main.76554700.js" as="script" />
     </head>
     <body class="navigation-with-keyboard">
         <script>
@@ -227,8 +227,15 @@
                         "
                     >
                         <div class="container">
-                            <div class="row">
-                                <div class="col col--4">
+                            <div class="row" style="padding: 8px">
+                                <div
+                                    class="col col--4"
+                                    style="
+                                        background-color: #eef1fc;
+                                        margin-bottom: -20px;
+                                        border-radius: 8px;
+                                    "
+                                >
                                     <div class="text--center">
                                         <svg
                                             width="200"
@@ -1522,8 +1529,11 @@
                                                 class="MuiButton-root MuiButton-outlined MuiButton-outlinedPrimary MuiButton-sizeMedium MuiButton-outlinedSizeMedium MuiButtonBase-root css-1bpb6oa"
                                                 tabindex="0"
                                                 href="/docs/Model/intro"
+                                                style="white-space: nowrap"
                                                 >Learn more</a
-                                            ><style data-emotion="css 7hic0t">
+                                            >
+                                            <p>or</p>
+                                            <style data-emotion="css 7hic0t">
                                                 .css-7hic0t {
                                                     font-family: "Roboto",
                                                         "Helvetica", "Arial",
@@ -1836,13 +1846,14 @@
                                                         0.12
                                                     );
                                                 }</style
-                                            ><a
+                                            ><button
                                                 class="MuiButton-root MuiButton-contained MuiButton-containedPrimary MuiButton-sizeMedium MuiButton-containedSizeMedium MuiButtonBase-root css-11md2f7"
                                                 tabindex="0"
-                                                href="https://codesandbox.io/s/re-model-playground-gtjll5"
-                                                target="_blank"
-                                                >Try it in 30 seconds ⏱️</a
+                                                type="button"
+                                                style="white-space: nowrap"
                                             >
+                                                Try it out ⬇️
+                                            </button>
                                         </div>
                                     </div>
                                 </div>
@@ -2282,6 +2293,7 @@
                                                 class="MuiButton-root MuiButton-outlined MuiButton-outlinedPrimary MuiButton-sizeMedium MuiButton-outlinedSizeMedium MuiButtonBase-root css-1bpb6oa"
                                                 tabindex="0"
                                                 href="/docs/State/intro"
+                                                style="white-space: nowrap"
                                                 >Learn more</a
                                             >
                                         </div>
@@ -2883,11 +2895,37 @@
                                                 class="MuiButton-root MuiButton-outlined MuiButton-outlinedPrimary MuiButton-sizeMedium MuiButton-outlinedSizeMedium MuiButtonBase-root css-1bpb6oa"
                                                 tabindex="0"
                                                 href="/docs/Test/intro"
+                                                style="white-space: nowrap"
                                                 >Learn more</a
                                             >
                                         </div>
                                     </div>
                                 </div>
+                            </div>
+                            <div
+                                style="
+                                    background-color: #eef1fc;
+                                    width: 100%;
+                                    height: 600px;
+                                    border: 0;
+                                    margin-left: -8px;
+                                    margin-right: -8px;
+                                    padding: 16px;
+                                    overflow: hidden;
+                                    border-radius: 8px;
+                                "
+                            >
+                                <iframe
+                                    id="demo"
+                                    src="https://stackblitz.com/edit/re-model?embed=1&amp;file=model.ts&amp;hideDevTools=1&amp;hideExplorer=1&amp;hideNavigation=1&amp;theme=dark"
+                                    style="
+                                        height: 100%;
+                                        width: 100%;
+                                        border-radius: 8px;
+                                    "
+                                    title="@re-/model playground"
+                                    sandbox="allow-forms allow-modals allow-popups allow-presentation allow-same-origin allow-scripts"
+                                ></iframe>
                             </div>
                         </div>
                     </section>
@@ -2956,7 +2994,7 @@
                 </div>
             </footer>
         </div>
-        <script src="/assets/js/runtime~main.656b370f.js"></script>
-        <script src="/assets/js/main.0bc11e1a.js"></script>
+        <script src="/assets/js/runtime~main.891dbd13.js"></script>
+        <script src="/assets/js/main.76554700.js"></script>
     </body>
 </html>
