@@ -1,5 +1,5 @@
 import { Modifier } from "./modifier.js"
-import { Fragment } from "../fragment.js"
+import { Fragment } from "../fragment/fragment.js"
 import {
     typeDefProxy,
     createParser,
@@ -28,7 +28,7 @@ export namespace Optional {
             }
         },
         {
-            matches: (def) => def.includes("?"),
+            matches: (def) => def.endsWith("?"),
             allows: ({ components }, valueType, opts) => {
                 if (valueType === "undefined") {
                     return {}

@@ -66,7 +66,7 @@ export type DuplicateModifierError<
 >
 
 export const invalidModifierErrorTemplate =
-    "Modifier '@modifier' is only valid at the end of a type definition before any constraints."
+    "Modifier '@modifier' is only valid at the end of a type definition."
 
 export const invalidModifierError = (modifier: ModifierToken) =>
     invalidModifierErrorTemplate.replace("@modifier", modifier)

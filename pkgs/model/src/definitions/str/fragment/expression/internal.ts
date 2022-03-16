@@ -1,7 +1,7 @@
 import { ElementOf, narrow } from "@re-/tools"
-import { createTokenMatcher } from "../internal.js"
+import { createTokenMatcher } from "../../internal.js"
 
-export * from "../internal.js"
+export * from "../../internal.js"
 
 export const expressionTokens = narrow([
     "|",

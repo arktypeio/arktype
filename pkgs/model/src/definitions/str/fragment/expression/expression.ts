@@ -12,7 +12,10 @@ import { Union } from "./union.js"
 import { Fragment } from "../fragment.js"
 
 export namespace Expression {
-    export type Definition = `${string}${ExpressionToken}${string}`
+    export type Definition =
+        | ArrowFunction.Definition
+        | Union.Definition
+        | List.Definition
 
     export type Check<
         Def extends string,
@@ -40,20 +43,11 @@ export namespace Expression {
 
     export const type = typeDefProxy as Definition
 
-    export const parse = createParser(
-        {
-            type,
-            parent: () => Fragment.parse,
-            children: () => [
-                ArrowFunction.delegate,
-                Union.delegate,
-                List.delegate
-            ]
-        },
-        {
-            matches: (def) => !!def.match(expressionTokenMatcher)
-        }
-    )
+    export const parse = createParser({
+        type,
+        parent: () => Fragment.parse,
+        children: () => [ArrowFunction.delegate, Union.delegate, List.delegate]
+    })
 
     export const delegate = parse as any as Definition
 }

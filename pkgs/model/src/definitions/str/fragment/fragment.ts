@@ -3,12 +3,12 @@ import {
     createParser,
     typeDefProxy,
     UnknownTypeError
-} from "./internal.js"
+} from "../internal.js"
 import { Alias } from "./alias/index.js"
 import { Builtin, Keyword, Literal, Regex } from "./builtin/index.js"
 import { Expression } from "./expression/index.js"
-import { Str } from "./str.js"
-import { Modifier } from "./modifier/index.js"
+import { Str } from "../str.js"
+import { Modifier } from "../modifier/index.js"
 
 export namespace Fragment {
     export type Definition = string
@@ -34,13 +34,13 @@ export namespace Fragment {
         ? Modifier.Check<Def, Root, Space>
         : Def extends Keyword.Definition
         ? Root
-        : Def extends Regex.Definition
-        ? Root
         : Def extends Alias.Definition<Space>
         ? Alias.Check<Def, Root, Space>
         : Def extends Expression.Definition
         ? Expression.Check<Def, Root, Space>
         : Def extends Literal.Definition
+        ? Root
+        : Def extends Regex.Definition
         ? Root
         : UnknownTypeError<Def>
 
@@ -52,14 +52,14 @@ export namespace Fragment {
         ? Modifier.Parse<Def, Space, Options>
         : Def extends Keyword.Definition
         ? Keyword.Parse<Def>
-        : Def extends Regex.Definition
-        ? string
         : Def extends Alias.Definition<Space>
         ? Alias.Parse<Def, Space, Options>
         : Def extends Expression.Definition
         ? Expression.Parse<Def, Space, Options>
         : Def extends Literal.Definition
         ? Literal.Parse<Def>
+        : Def extends Regex.Definition
+        ? string
         : unknown
 
     export const type = typeDefProxy as Definition

@@ -8,8 +8,8 @@ import {
     ValidationErrorMessage,
     createTokenMatcher
 } from "./internal.js"
-import { Fragment } from "./fragment.js"
-import { expressionTokens } from "./expression/internal.js"
+import { Fragment } from "./fragment/fragment.js"
+import { expressionTokens } from "./fragment/expression/internal.js"
 import { modifierTokens } from "./modifier/internal.js"
 
 export namespace Str {
@@ -57,6 +57,7 @@ export namespace Str {
             matches: (def) => typeof def === "string",
             // Split by control characters, then remove
             // empty strings leaving aliases and builtins behind
+            // TODO: Allow it to handle literals/regex etc.
             references: ({ def }) =>
                 def
                     .split(nonIdentifyingTokenMatcher)

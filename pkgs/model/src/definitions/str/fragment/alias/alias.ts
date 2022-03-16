@@ -7,7 +7,7 @@ import {
     generateRequiredCycleError,
     createParser
 } from "./internal.js"
-import { Root } from "../../root.js"
+import { Root } from "../../../root.js"
 import { Fragment } from "../fragment.js"
 
 export namespace Alias {

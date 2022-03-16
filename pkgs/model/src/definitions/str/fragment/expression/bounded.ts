@@ -3,7 +3,7 @@ import {
     StringKeyword,
     NumberLiteral
 } from "../builtin/index.js"
-import { typeDefProxy, ParseConfig, ParseSplittable } from "../internal.js"
+import { typeDefProxy, ParseConfig, ParseSplittable } from "../../internal.js"
 
 export type Comparable = NumberKeyword | StringKeyword
 

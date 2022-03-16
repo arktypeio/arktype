@@ -1,8 +1,7 @@
+export * from "../internal.js"
 import { StringifyPossibleTypes, Split, Join } from "@re-/tools"
 import { ParseConfig, ValidationErrorMessage } from "../internal.js"
-import { Fragment } from "./fragment/fragment.js"
-
-export * from "../internal.js"
+import { Fragment } from "./fragment.js"
 
 export const createTokenMatcher = (tokens: string[]) =>
     RegExp(

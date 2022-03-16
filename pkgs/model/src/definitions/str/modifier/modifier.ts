@@ -6,42 +6,37 @@ import {
     ModifierToken,
     modifierTokenMatcher,
     CheckModifier,
-    UnknownTypeError
+    UnknownTypeError,
+    ModifierString
 } from "./internal.js"
-import { Fragment } from "../fragment.js"
+import { Fragment } from "../fragment/fragment.js"
 import { Optional } from "./optional.js"
 
 export namespace Modifier {
-    export type Definition = `${string}${ModifierToken}${string}`
+    export type Definition<Modifiers extends ModifierString = ModifierString> =
+        `${string}${Modifiers}`
 
-    export type Check<
-        Def extends Definition,
-        Root extends string,
-        Space
-    > = IncludesSubstring<Def, "?"> extends true
-        ? CheckModifier<"?", Def, Root, Space>
-        : UnknownTypeError<Def>
+    export type Check<Root extends Definition, Space> = Root extends Definition<
+        infer Modifiers
+    >
+        ? CheckModifiers<Modifiers, Root, Space>
+        : UnknownTypeError<Root>
 
     export type Parse<
-        Def extends Definition,
+        Root extends Definition,
         Space,
         Options extends ParseConfig
-    > = Def extends Optional.Definition<infer Inner>
+    > = Root extends Optional.Definition<infer Inner>
         ? Fragment.Parse<Inner, Space, Options> | undefined
         : unknown
 
     export const type = typeDefProxy as Definition
 
-    export const parse = createParser(
-        {
-            type,
-            parent: () => Fragment.parse,
-            children: () => [Optional.delegate]
-        },
-        {
-            matches: (def) => !!def.match(modifierTokenMatcher)
-        }
-    )
+    export const parse = createParser({
+        type,
+        parent: () => Fragment.parse,
+        children: () => [Optional.delegate]
+    })
 
     export const delegate = parse as any as Definition
 }

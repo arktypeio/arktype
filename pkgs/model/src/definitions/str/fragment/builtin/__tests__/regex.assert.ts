@@ -13,10 +13,14 @@ export const testRegex = () => {
         })
         describe("errors", () => {
             test("bad string", () => {
-                assert(define("/[0-9]*/").validate("durrrrrr").errors).snap()
+                assert(define("/[0-9]*/").validate("durrrrrr").errors).snap(
+                    `undefined`
+                )
             })
             test("non-string", () => {
-                assert(define("/[0-9]*/").validate(5).errors).snap()
+                assert(define("/[0-9]*/").validate(5).errors).snap(
+                    `"5 is not assignable to /[0-9]*/."`
+                )
             })
         })
     })
