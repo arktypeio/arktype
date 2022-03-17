@@ -10,10 +10,13 @@ import {
     validationError,
     createParser,
     ParseContext,
-    ParseConfig
+    ParseConfig,
+    ValidationErrorMessage,
+    UnknownTypeError
 } from "./internal.js"
 import { Fragment } from "../fragment.js"
 import { Expression } from "./expression.js"
+import { CheckHalves } from "../internal.js"
 
 type PreferredDefaults = ({ value: any } | { typeOf: TypeCategory })[]
 
@@ -30,23 +33,31 @@ export const preferredDefaults: PreferredDefaults = [
     { typeOf: "function" }
 ]
 
+type Z = Union.Check<"string|nufmber", "string|number", {}>
+
 export namespace Union {
     export type Definition<
         Before extends string = string,
         After extends string = string
     > = `${Before}|${After}`
 
-    export type Parse<
-        Def extends Definition,
-        Space,
-        Options extends ParseConfig
-    > = Unlisted<ParseSplittable<"|", Def, Space, Options>>
-
     export type Check<
         Def extends Definition,
         Root extends string,
         Space
-    > = CheckSplittable<"|", Def, Root, Space>
+    > = Def extends Definition<infer Before, infer After>
+        ? CheckHalves<Before, After, Root, Space>
+        : UnknownTypeError<Def>
+
+    export type Parse<
+        Def extends Definition,
+        Space,
+        Options extends ParseConfig
+    > = Def extends Definition<infer Before, infer After>
+        ?
+              | Fragment.Parse<Before, Space, Options>
+              | Fragment.Parse<After, Space, Options>
+        : unknown
 
     export const type = typeDefProxy as Definition
 

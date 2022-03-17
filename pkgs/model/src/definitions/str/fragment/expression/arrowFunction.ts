@@ -47,7 +47,7 @@ export namespace ArrowFunction {
 
     export const type = typeDefProxy as Definition
 
-    export const matcher = /\(.*\)\=\>.*/
+    export const matcher = /^\(.*\)\=\>.*$/
 
     export const parse = createParser(
         {

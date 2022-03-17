@@ -1,11 +1,7 @@
-import { IncludesSubstring } from "@re-/tools"
 import {
     ParseConfig,
     createParser,
     typeDefProxy,
-    ModifierToken,
-    modifierTokenMatcher,
-    CheckModifier,
     UnknownTypeError,
     ModifierString
 } from "./internal.js"
@@ -13,13 +9,16 @@ import { Fragment } from "../fragment/fragment.js"
 import { Optional } from "./optional.js"
 
 export namespace Modifier {
-    export type Definition<Modifiers extends ModifierString = ModifierString> =
-        `${string}${Modifiers}`
+    export type Definition<
+        Modified extends string = string,
+        Modifiers extends ModifierString = ModifierString
+    > = `${Modified}${Modifiers}`
 
     export type Check<Root extends Definition, Space> = Root extends Definition<
+        infer Modified,
         infer Modifiers
     >
-        ? CheckModifiers<Modifiers, Root, Space>
+        ? Fragment.Check<Modified, Root, Space>
         : UnknownTypeError<Root>
 
     export type Parse<

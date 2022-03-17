@@ -1,20 +1,8 @@
-import { ElementOf, IncludesSubstring, Iteration, narrow } from "@re-/tools"
-import { Fragment } from "../fragment/fragment.js"
-import {
-    createTokenMatcher,
-    DuplicateModifierError,
-    InvalidModifierError
-} from "./internal.js"
-
 export * from "../internal.js"
 
-export const modifierTokens = narrow(["?"])
+import { Iteration } from "@re-/tools"
 
-export const modifierTokenMatcher = createTokenMatcher(modifierTokens)
-
-export type ModifierTokens = typeof modifierTokens
-
-export type ModifierToken = ElementOf<ModifierTokens>
+type ModifierTokens = ["?"]
 
 type AvailableModifierStrings<
     Tokens extends string[],
@@ -29,13 +17,3 @@ export type ModifierString = Exclude<
     AvailableModifierStrings<ModifierTokens>,
     ""
 >
-
-export type CheckModifiers<
-    Root extends string,
-    Modifiers extends ModifierString,
-    Space
-> = Root extends `${infer Modified}${Token}`
-    ? IncludesSubstring<Modified, Token> extends true
-        ? DuplicateModifierError<Token>
-        : Fragment.Check<Modified, Root, Space>
-    : InvalidModifierError<Token>

@@ -8,7 +8,6 @@ import { Alias } from "./alias/index.js"
 import { Builtin, Keyword, Literal, Regex } from "./builtin/index.js"
 import { Expression } from "./expression/index.js"
 import { Str } from "../str.js"
-import { Modifier } from "../modifier/index.js"
 
 export namespace Fragment {
     export type Definition = string
@@ -30,9 +29,7 @@ export namespace Fragment {
         Def extends string,
         Root extends string,
         Space
-    > = Def extends Modifier.Definition
-        ? Modifier.Check<Def, Root, Space>
-        : Def extends Keyword.Definition
+    > = Def extends Keyword.Definition
         ? Root
         : Def extends Alias.Definition<Space>
         ? Alias.Check<Def, Root, Space>
@@ -48,9 +45,7 @@ export namespace Fragment {
         Def extends string,
         Space,
         Options extends ParseConfig
-    > = Def extends Modifier.Definition
-        ? Modifier.Parse<Def, Space, Options>
-        : Def extends Keyword.Definition
+    > = Def extends Keyword.Definition
         ? Keyword.Parse<Def>
         : Def extends Alias.Definition<Space>
         ? Alias.Parse<Def, Space, Options>
@@ -69,7 +64,6 @@ export namespace Fragment {
             type,
             parent: () => Str.parse,
             children: () => [
-                Modifier.delegate,
                 Expression.delegate,
                 Builtin.delegate,
                 Alias.delegate

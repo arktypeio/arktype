@@ -4,13 +4,6 @@ import { Fragment } from "./fragment/fragment.js"
 
 export * from "../internal.js"
 
-export const createTokenMatcher = (tokens: string[]) =>
-    RegExp(
-        // All non-identifying tokens need to be escaped in a regex expression
-        tokens.map((char) => `\\${char}`).join("|"),
-        "g"
-    )
-
 export type CheckSplittable<
     Delimiter extends string,
     Def extends string,

@@ -1,4 +1,12 @@
+import {
+    DefaultDelimiter,
+    ElementOf,
+    Iteration,
+    ListPossibleTypes,
+    Stringifiable
+} from "./common.js"
 import { FilterFunction } from "./filter.js"
+import { WithDefaults } from "./merge.js"
 
 export const alphaOnlyRegex = /^[a-zA-Z]+$/
 
@@ -102,3 +110,86 @@ export const lettersAfterFirstToLower = (word: string) =>
 
 export const capsCase = (words: string[]) =>
     words.map((word) => capitalize(lettersAfterFirstToLower(word))).join("")
+
+export type StringReplace<
+    Original extends string,
+    Find extends string,
+    ReplaceWith extends string
+> = Original extends `${infer Left}${Find}${infer Right}`
+    ? StringReplace<`${Left}${ReplaceWith}${Right}`, Find, ReplaceWith>
+    : Original
+
+export type Split<
+    S extends string,
+    Delimiter extends string,
+    Result extends string[] = []
+> = S extends `${infer Left}${Delimiter}${infer Right}`
+    ? Split<Right, Delimiter, [...Result, Left]>
+    : [...Result, S]
+
+export type SpliterateOptions = {
+    asList?: boolean
+    asUnorderedList?: boolean
+    filter?: string
+}
+
+/**
+ * Iteratively split a string literal type using a tuple of delimiters
+ */
+export type Spliterate<
+    Fragments extends string,
+    Delimiters extends string[],
+    Options extends SpliterateOptions = {},
+    Config extends Required<SpliterateOptions> = WithDefaults<
+        SpliterateOptions,
+        Options,
+        {
+            asList: false
+            asUnorderedList: false
+            filter: string
+        }
+    >,
+    Result extends string = SpliterateRaw<
+        Fragments,
+        Delimiters,
+        Config["filter"]
+    >,
+    ListedResult extends string[] = ListPossibleTypes<Result>
+> = Options["asList"] extends true
+    ? ListedResult
+    : Options["asUnorderedList"] extends true
+    ? ListedResult extends [string]
+        ? ListedResult
+        : Result[]
+    : Result
+
+type SpliterateRaw<
+    Fragments extends string,
+    Delimiters extends string[],
+    Filter extends string
+> = Delimiters extends Iteration<string, infer Character, infer Remaining>
+    ? SpliterateRaw<ElementOf<Split<Fragments, Character>>, Remaining, Filter>
+    : Exclude<ElementOf<Split<Fragments, Delimiters[0]>>, ""> & Filter
+
+export type Join<
+    Segments extends Stringifiable[],
+    Delimiter extends string = DefaultDelimiter,
+    Result extends string = ""
+> = Segments extends Iteration<Stringifiable, infer Segment, infer Remaining>
+    ? Join<
+          Remaining,
+          Delimiter,
+          `${Result}${Result extends "" ? "" : Delimiter}${Segment}`
+      >
+    : Result
+
+export type RemoveSpaces<FromString extends string> = StringReplace<
+    FromString,
+    " ",
+    ""
+>
+
+export type StringifyPossibleTypes<U extends Stringifiable> = Join<
+    ListPossibleTypes<U>,
+    ", "
+>

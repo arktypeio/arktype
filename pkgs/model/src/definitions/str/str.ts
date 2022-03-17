@@ -1,20 +1,19 @@
-import { narrow, RemoveSpaces, Spliterate } from "@re-/tools"
+import { RemoveSpaces } from "@re-/tools"
 import { Root } from "../root.js"
 import {
     ParseConfig,
     createParser,
     typeDefProxy,
     ReferencesTypeConfig,
-    ValidationErrorMessage,
-    createTokenMatcher
+    ValidationErrorMessage
 } from "./internal.js"
 import { Fragment } from "./fragment/fragment.js"
-import { expressionTokens } from "./fragment/expression/internal.js"
-import { modifierTokens } from "./modifier/internal.js"
+import { Modifier } from "./modifier/modifier.js"
 
 export namespace Str {
     export type Definition = string
 
+    // TODO: Move formatting
     export type Format<Def extends string> = RemoveSpaces<Def>
 
     export type Check<Def extends string, Space> = Fragment.Check<
@@ -31,19 +30,11 @@ export namespace Str {
         ? unknown
         : Fragment.Parse<Format<Def>, Space, Options>
 
-    const nonIdentifyingTokens = narrow([
-        ...expressionTokens,
-        ...modifierTokens
-    ])
-
-    const nonIdentifyingTokenMatcher = createTokenMatcher(nonIdentifyingTokens)
-
-    export type NonIdentifyingTokens = typeof nonIdentifyingTokens
-
     export type References<
         Def extends string,
+        Space,
         Config extends ReferencesTypeConfig
-    > = Spliterate<Def, NonIdentifyingTokens, Config>
+    > = []
 
     export const type = typeDefProxy as Definition
 
@@ -51,17 +42,12 @@ export namespace Str {
         {
             type,
             parent: () => Root.parse,
-            children: () => [Fragment.delegate]
+            children: () => [Modifier.delegate, Fragment.delegate]
         },
         {
             matches: (def) => typeof def === "string",
-            // Split by control characters, then remove
-            // empty strings leaving aliases and builtins behind
-            // TODO: Allow it to handle literals/regex etc.
-            references: ({ def }) =>
-                def
-                    .split(nonIdentifyingTokenMatcher)
-                    .filter((fragment) => fragment !== "")
+            // TODO: Fix
+            references: ({ def }) => [def]
         }
     )
 

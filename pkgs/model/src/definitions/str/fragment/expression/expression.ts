@@ -2,9 +2,7 @@ import {
     ParseConfig,
     createParser,
     typeDefProxy,
-    UnknownTypeError,
-    ExpressionToken,
-    expressionTokenMatcher
+    UnknownTypeError
 } from "./internal.js"
 import { ArrowFunction } from "./arrowFunction.js"
 import { List } from "./list.js"
