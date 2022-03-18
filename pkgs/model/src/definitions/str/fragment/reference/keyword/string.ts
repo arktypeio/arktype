@@ -1,6 +1,6 @@
 import validator from "validator"
 import { defineKeywords, listKeywords } from "./internal.js"
-import { StringLiteral } from "../stringLiteral.js"
+import { StringLiteral } from "../literal/stringLiteral.js"
 import { Func } from "@re-/tools"
 
 const validateLiteral = (

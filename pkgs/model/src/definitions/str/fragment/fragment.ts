@@ -4,8 +4,7 @@ import {
     typeDefProxy,
     UnknownTypeError
 } from "../internal.js"
-import { Alias } from "./alias/index.js"
-import { Builtin, Keyword, Literal, Regex } from "./builtin/index.js"
+import { Reference } from "./reference/index.js"
 import { Expression } from "./expression/index.js"
 import { Str } from "../str.js"
 
@@ -25,37 +24,46 @@ export namespace Fragment {
      * a definition like "'yes'|'no'" are not interpreted as the StringLiteral
      * matching "yes'|'no".
      */
-    export type Check<
-        Def extends string,
-        Root extends string,
-        Space
-    > = Def extends Keyword.Definition
-        ? Root
-        : Def extends Alias.Definition<Space>
-        ? Alias.Check<Def, Root, Space>
-        : Def extends Expression.Definition
-        ? Expression.Check<Def, Root, Space>
-        : Def extends Literal.Definition
-        ? Root
-        : Def extends Regex.Definition
-        ? Root
-        : UnknownTypeError<Def>
+    // export type Check<
+    //     Def extends string,
+    //     Root extends string,
+    //     Space
+    // > = Def extends Keyword.Definition
+    //     ? Root
+    //     : Def extends Alias.Definition<Space>
+    //     ? Alias.Check<Def, Root, Space>
+    //     : Def extends Expression.Definition
+    //     ? Expression.Check<Def, Root, Space>
+    //     : Def extends Literal.Definition
+    //     ? Root
+    //     : Def extends RegexLiteral.Definition
+    //     ? Root
+    //     : UnknownTypeError<Def>
+
+    // export type Parse<
+    //     Def extends string,
+    //     Space,
+    //     Options extends ParseConfig
+    // > = Def extends Keyword.Definition
+    //     ? Keyword.Parse<Def>
+    //     : Def extends Alias.Definition<Space>
+    //     ? Alias.Parse<Def, Space, Options>
+    //     : Def extends Expression.Definition
+    //     ? Expression.Parse<Def, Space, Options>
+    //     : Def extends Literal.Definition
+    //     ? Literal.Parse<Def>
+    //     : unknown
 
     export type Parse<
         Def extends string,
-        Space,
-        Options extends ParseConfig
-    > = Def extends Keyword.Definition
-        ? Keyword.Parse<Def>
-        : Def extends Alias.Definition<Space>
-        ? Alias.Parse<Def, Space, Options>
+        Space
+    > = Def extends Reference.Definition<Space>
+        ? Def
         : Def extends Expression.Definition
-        ? Expression.Parse<Def, Space, Options>
-        : Def extends Literal.Definition
-        ? Literal.Parse<Def>
-        : Def extends Regex.Definition
-        ? string
-        : unknown
+        ? Expression.Parse<Def, Space>
+        : UnknownTypeError<Def>
+
+    export type Node = Expression.Node | string
 
     export const type = typeDefProxy as Definition
 
@@ -63,11 +71,7 @@ export namespace Fragment {
         {
             type,
             parent: () => Str.parse,
-            children: () => [
-                Expression.delegate,
-                Builtin.delegate,
-                Alias.delegate
-            ]
+            children: () => [Reference.delegate, Expression.delegate]
         },
         {
             matches: (def) => typeof def === "string"

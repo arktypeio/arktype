@@ -1,4 +1,3 @@
-import { RemoveSpaces } from "@re-/tools"
 import { Root } from "../root.js"
 import {
     ParseConfig,
@@ -8,27 +7,27 @@ import {
     ValidationErrorMessage
 } from "./internal.js"
 import { Fragment } from "./fragment/fragment.js"
-import { Modifier } from "./modifier/modifier.js"
+import { Modification } from "./modification/modification.js"
 
 export namespace Str {
     export type Definition = string
 
-    // TODO: Move formatting
-    export type Format<Def extends string> = RemoveSpaces<Def>
-
-    export type Check<Def extends string, Space> = Fragment.Check<
-        Format<Def>,
-        Def,
-        Space
-    >
-
     export type Parse<
         Def extends string,
-        Space,
-        Options extends ParseConfig
-    > = Str.Check<Def, Space> extends ValidationErrorMessage
-        ? unknown
-        : Fragment.Parse<Format<Def>, Space, Options>
+        Space
+    > = Def extends Modification.Definition
+        ? Modification.Parse<Def, Space>
+        : Fragment.Parse<Def, Space>
+
+    // export type Parse<
+    //     Def extends string,
+    //     Space,
+    //     Options extends ParseConfig
+    // > = Str.Check<Def, Space> extends ValidationErrorMessage
+    //     ? unknown
+    //     : Def extends Modification.Definition
+    //     ? Modification.Parse<Def, Space, Options>
+    //     : Fragment.Parse<Def, Space, Options>
 
     export type References<
         Def extends string,
@@ -42,7 +41,7 @@ export namespace Str {
         {
             type,
             parent: () => Root.parse,
-            children: () => [Modifier.delegate, Fragment.delegate]
+            children: () => [Modification.delegate, Fragment.delegate]
         },
         {
             matches: (def) => typeof def === "string",

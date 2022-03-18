@@ -1,21 +1,31 @@
-import { Modifier } from "./modifier.js"
+import { Modification } from "./modification.js"
 import { Fragment } from "../fragment/fragment.js"
 import {
     typeDefProxy,
     createParser,
     duplicateModifierError,
-    invalidModifierError
+    invalidModifierError,
+    UnknownTypeError
 } from "./internal.js"
+import { Str } from "../str.js"
 
 export namespace Optional {
-    export type Definition<Def extends string = string> = `${Def}?`
+    export type Definition<Of extends string = string> = `${Of}?`
+
+    export type Parse<Def extends Definition, Space> = Def extends Definition<
+        infer Of
+    >
+        ? {
+              optional: Str.Parse<Of, Space>
+          }
+        : UnknownTypeError<Def>
 
     export const type = typeDefProxy as Definition
 
     export const parse = createParser(
         {
             type,
-            parent: () => Modifier.parse,
+            parent: () => Modification.parse,
             components: (def, ctx) => {
                 const tokenCount = def.match(/\?/g)?.length
                 if (tokenCount !== 1) {

@@ -1,10 +1,25 @@
-import { typeDefProxy, validationError, createParser } from "./internal.js"
+import {
+    typeDefProxy,
+    validationError,
+    createParser,
+    UnknownTypeError
+} from "./internal.js"
 import { Fragment } from "../fragment.js"
 import { Expression } from "./expression.js"
 import { Tuple } from "../../../obj/index.js"
 
 export namespace List {
-    export type Definition<Item extends string = string> = `${Item}[]`
+    export type Definition<Of extends string = string> = `${Of}[]`
+
+    export type Parse<Def extends Definition, Space> = Def extends Definition<
+        infer Of
+    >
+        ? { list: Fragment.Parse<Of, Space> }
+        : UnknownTypeError<Def>
+
+    export type Node = {
+        list: Fragment.Node
+    }
 
     export const type = typeDefProxy as Definition
 

@@ -1,5 +1,5 @@
 import { typeDefProxy, createParser, validationError } from "../internal.js"
-import { Builtin } from "../builtin.js"
+import { Reference } from "../reference.js"
 import { HandledTypes, listKeywords } from "./internal.js"
 import { extractableHandlers } from "./extractable.js"
 import { unextractableHandlers } from "./unextractable.js"
@@ -16,7 +16,7 @@ export namespace Keyword {
     export const parse = createParser(
         {
             type,
-            parent: () => Builtin.parse
+            parent: () => Reference.parse
         },
         {
             matches: (def) => def in handlers,

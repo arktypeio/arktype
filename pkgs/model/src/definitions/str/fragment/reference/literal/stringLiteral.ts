@@ -1,4 +1,4 @@
-import { typeDefProxy, validationError, createParser } from "./internal.js"
+import { typeDefProxy, validationError, createParser } from "../internal.js"
 import { Literal } from "./literal.js"
 
 export namespace StringLiteral {

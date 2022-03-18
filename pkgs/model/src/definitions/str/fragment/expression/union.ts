@@ -1,7 +1,5 @@
 import { transform, TypeCategory, Unlisted } from "@re-/tools"
 import {
-    ParseSplittable,
-    CheckSplittable,
     typeDefProxy,
     isRequiredCycleError,
     stringifyErrors,
@@ -11,12 +9,10 @@ import {
     createParser,
     ParseContext,
     ParseConfig,
-    ValidationErrorMessage,
     UnknownTypeError
 } from "./internal.js"
 import { Fragment } from "../fragment.js"
 import { Expression } from "./expression.js"
-import { CheckHalves } from "../internal.js"
 
 type PreferredDefaults = ({ value: any } | { typeOf: TypeCategory })[]
 
@@ -33,31 +29,42 @@ export const preferredDefaults: PreferredDefaults = [
     { typeOf: "function" }
 ]
 
-type Z = Union.Check<"string|nufmber", "string|number", {}>
-
 export namespace Union {
     export type Definition<
-        Before extends string = string,
-        After extends string = string
-    > = `${Before}|${After}`
+        Left extends string = string,
+        Right extends string = string
+    > = `${Left}|${Right}`
 
-    export type Check<
-        Def extends Definition,
-        Root extends string,
-        Space
-    > = Def extends Definition<infer Before, infer After>
-        ? CheckHalves<Before, After, Root, Space>
+    // export type Check<
+    //     Def extends Definition,
+    //     Root extends string,
+    //     Space
+    // > = Def extends Definition<infer Left, infer Right>
+    //     ? CheckHalves<Left, Right, Root, Space>
+    //     : UnknownTypeError<Def>
+
+    export type Parse<Def extends Definition, Space> = Def extends Definition<
+        infer Left,
+        infer Right
+    >
+        ? {
+              union: [Fragment.Parse<Left, Space>, Fragment.Parse<Right, Space>]
+          }
         : UnknownTypeError<Def>
 
-    export type Parse<
-        Def extends Definition,
-        Space,
-        Options extends ParseConfig
-    > = Def extends Definition<infer Before, infer After>
-        ?
-              | Fragment.Parse<Before, Space, Options>
-              | Fragment.Parse<After, Space, Options>
-        : unknown
+    export type Node = {
+        union: Fragment.Node[]
+    }
+
+    // export type Parse<
+    //     Def extends Definition,
+    //     Space,
+    //     Options extends ParseConfig
+    // > = Def extends Definition<infer Left, infer Right>
+    //     ?
+    //           | Fragment.Parse<Left, Space, Options>
+    //           | Fragment.Parse<Right, Space, Options>
+    //     : unknown
 
     export const type = typeDefProxy as Definition
 

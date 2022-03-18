@@ -1,8 +1,8 @@
-import { typeDefProxy, validationError, createParser } from "./internal.js"
-import { Builtin } from "./builtin.js"
+import { typeDefProxy, validationError, createParser } from "../internal.js"
+import { Reference } from "../reference.js"
 import { StringLiteral } from "./stringLiteral.js"
 
-export namespace Regex {
+export namespace RegexLiteral {
     export type Definition<Expression extends string = string> =
         `/${Expression}/`
 
@@ -17,7 +17,7 @@ export namespace Regex {
     export const parse = createParser(
         {
             type,
-            parent: () => Builtin.parse
+            parent: () => Reference.parse
         },
         {
             matches,

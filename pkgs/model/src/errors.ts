@@ -10,7 +10,7 @@ import {
     StringifyPossibleTypes
 } from "@re-/tools"
 import { ParseContext } from "./definitions/parser.js"
-import { ModifierToken } from "./definitions/str/modifier/internal.js"
+import { ModifierToken } from "./definitions/str/modification/internal.js"
 import { ExtractableDefinition } from "./internal.js"
 
 export const stringifyDefinition = (def: unknown) =>

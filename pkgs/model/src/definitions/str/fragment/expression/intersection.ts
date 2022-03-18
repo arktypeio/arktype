@@ -1,15 +1,12 @@
-import { isEmpty, Unlisted } from "@re-/tools"
+import { isEmpty } from "@re-/tools"
 import {
-    ParseSplittable,
-    CheckSplittable,
     typeDefProxy,
     stringifyErrors,
     SplittableErrors,
     splittableValidationError,
     validationError,
     createParser,
-    ParseContext,
-    ParseConfig
+    ParseContext
 } from "./internal.js"
 import { Fragment } from "../fragment.js"
 import { Expression } from "./expression.js"
@@ -20,17 +17,17 @@ export namespace Intersection {
         After extends string = string
     > = `${Before}&${After}`
 
-    export type Parse<
-        Def extends Definition,
-        Space,
-        Options extends ParseConfig
-    > = Unlisted<ParseSplittable<"&", Def, Space, Options>>
+    // export type Parse<
+    //     Def extends Definition,
+    //     Space,
+    //     Options extends ParseConfig
+    // > = Unlisted<ParseSplittable<"&", Def, Space, Options>>
 
-    export type Check<
-        Def extends Definition,
-        Root extends string,
-        Space
-    > = CheckSplittable<"&", Def, Root, Space>
+    // export type Check<
+    //     Def extends Definition,
+    //     Root extends string,
+    //     Space
+    // > = CheckSplittable<"&", Def, Root, Space>
 
     export const type = typeDefProxy as Definition
 

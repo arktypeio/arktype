@@ -1,13 +1,10 @@
-import {
-    NumberKeyword,
-    StringKeyword,
-    NumberLiteral
-} from "../builtin/index.js"
-import { typeDefProxy, ParseConfig, ParseSplittable } from "../../internal.js"
+import { NumericString } from "@re-/tools"
+import { NumberKeyword, StringKeyword } from "../reference/index.js"
+import { typeDefProxy, ParseConfig } from "../../internal.js"
 
 export type Comparable = NumberKeyword | StringKeyword
 
-export type Bound = NumberLiteral.Definition
+export type Bound = NumericString
 
 export type Comparator = "<=" | ">=" | ">" | "<"
 
@@ -20,22 +17,20 @@ export namespace Bounded {
         Right extends string = string
     > = `${Left}${Comparator}${Right}`
 
-    type result = Check<"3<=number<5", "number<5", {}>
+    // export type Check<
+    //     Def extends Definition,
+    //     Root extends string,
+    //     Space,
+    //     References = {} //Str.RawReferences<Def, ["<=", ">=", "<", ">"]> //Split<Def, Comparator>
+    // > = Def extends `${string}${Comparator}${string}${Comparator}${string}${Comparator}${string}`
+    //     ? `Comparisons must reference at most three values (e.g. 0<number<=100).`
+    //     : References
 
-    export type Check<
-        Def extends Definition,
-        Root extends string,
-        Space,
-        References = {} //Str.RawReferences<Def, ["<=", ">=", "<", ">"]> //Split<Def, Comparator>
-    > = Def extends `${string}${Comparator}${string}${Comparator}${string}${Comparator}${string}`
-        ? `Comparisons must reference at most three values (e.g. 0<number<=100).`
-        : References
-
-    export type Parse<
-        Def extends Definition,
-        Space,
-        Options extends ParseConfig
-    > = ParseSplittable<"|", Def, Space, Options>
+    // export type Parse<
+    //     Def extends Definition,
+    //     Space,
+    //     Options extends ParseConfig
+    // > = ParseSplittable<"|", Def, Space, Options>
 
     export const matcher = /(<=|>=|<|>)/
 
