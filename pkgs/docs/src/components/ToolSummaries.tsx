@@ -2,19 +2,22 @@ import React from "react"
 import clsx from "clsx"
 import * as Svgs from "./svg"
 import { Button, Stack } from "@mui/material"
+import { modelDemo } from "./demos"
 
 type ToolSummaryProps = {
     name: string
     illustration: JSX.Element
     description: JSX.Element
     upcoming?: boolean
+    demo?: string
 }
 
 const toolSummaries: ToolSummaryProps[] = [
     {
         name: "Model",
         illustration: <Svgs.Model />,
-        description: <>Type-first validation from editor to runtime</>
+        description: <>Type-first validation from editor to runtime</>,
+        demo: "https://stackblitz.com/edit/re-model?embed=1&file=model.ts&hideDevTools=1&hideExplorer=1&hideNavigation=1&theme=dark"
     },
     {
         name: "State",
@@ -34,9 +37,21 @@ const ToolSummary = ({
     name,
     illustration,
     description,
-    upcoming
+    upcoming,
+    demo
 }: ToolSummaryProps) => (
-    <div className={clsx("col col--4")}>
+    <div
+        className={clsx("col col--4")}
+        style={
+            demo
+                ? {
+                      backgroundColor: "#EEF1FC",
+                      marginBottom: -20,
+                      borderRadius: 8
+                  }
+                : {}
+        }
+    >
         <div className="text--center">{illustration}</div>
         <div className="text--center padding-horiz--md">
             <h3>
@@ -45,15 +60,29 @@ const ToolSummary = ({
             </h3>
             <p>{description}</p>
             <Stack spacing={2} direction="row" justifyContent="center">
-                <Button variant="outlined" href={`/docs/${name}/intro`}>
+                <Button
+                    variant="outlined"
+                    href={`/docs/${name}/intro`}
+                    style={{ whiteSpace: "nowrap" }}
+                >
                     Learn more
                 </Button>
-                {upcoming ? null : (
-                    // TODO: Add live demo
-                    <Button variant="contained" href={`/docs/${name}/intro`}>
-                        Try it in 30 seconds ⏱️
-                    </Button>
-                )}
+                {demo ? (
+                    <>
+                        <p> or </p>
+                        <Button
+                            variant="contained"
+                            style={{ whiteSpace: "nowrap" }}
+                            onClick={() =>
+                                document
+                                    .getElementById("demo")
+                                    ?.scrollIntoView({ behavior: "smooth" })
+                            }
+                        >
+                            Try it out ⬇️
+                        </Button>
+                    </>
+                ) : null}
             </Stack>
         </div>
     </div>
@@ -70,11 +99,12 @@ export const ToolSummaries = () => (
         }}
     >
         <div className="container">
-            <div className="row">
+            <div className="row" style={{ padding: 8 }}>
                 {toolSummaries.map((props, index) => (
                     <ToolSummary key={index} {...props} />
                 ))}
             </div>
+            {modelDemo}
         </div>
     </section>
 )
