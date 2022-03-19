@@ -1,4 +1,4 @@
-import { transform, TypeCategory, Unlisted } from "@re-/tools"
+import { ElementOf, transform, TypeCategory, Unlisted } from "@re-/tools"
 import {
     typeDefProxy,
     isRequiredCycleError,
@@ -55,6 +55,12 @@ export namespace Union {
     export type Node = {
         union: Fragment.Node[]
     }
+
+    export type TypeOf<
+        N extends Node,
+        Space,
+        Options extends ParseConfig
+    > = Fragment.TypeOf<ElementOf<N["union"]>, Space, Options>
 
     // export type Parse<
     //     Def extends Definition,

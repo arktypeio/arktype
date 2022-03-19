@@ -22,33 +22,50 @@ import { Optional } from "../str/index.js"
 export namespace Map {
     export type Definition = Record<string, any>
 
-    export type Check<Def, Space> = Evaluate<{
-        [PropName in keyof Def]: Root.Check<Def[PropName], Space>
-    }>
-
-    export type Parse<
-        Def,
-        Space,
-        Options extends ParseConfig,
-        OptionalKey extends keyof Def = {
-            [K in keyof Def]: Def[K] extends string
-                ? RemoveSpaces<Def[K]> extends Optional.Definition
-                    ? K
-                    : never
-                : never
-        }[keyof Def],
-        RequiredKey extends keyof Def = Exclude<keyof Def, OptionalKey>
-    > = {
-        [PropName in OptionalKey]?: Def[PropName] extends string
-            ? RemoveSpaces<Def[PropName]> extends Optional.Definition<
-                  infer OptionalType
-              >
-                ? Root.Parse<OptionalType, Space, Options>
-                : unknown
-            : unknown
-    } & {
-        [PropName in RequiredKey]: Root.Parse<Def[PropName], Space, Options>
+    export type Node = {
+        map: Record<string, Root.Node>
     }
+
+    export type Parse<Def, Space> = {
+        map: {
+            [PropName in keyof Def]: Root.Parse<Def[PropName], Space>
+        }
+    }
+
+    export type TypeOf<
+        N extends Node,
+        Space,
+        Options extends ParseConfig
+    > = Evaluate<{
+        [K in keyof N["map"]]: Root.TypeOf<N["map"][K], Space, Options>
+    }>
+    // export type Check<Def, Space> = Evaluate<{
+    //     [PropName in keyof Def]: Root.Check<Def[PropName], Space>
+    // }>
+
+    // export type Parse<
+    //     Def,
+    //     Space,
+    //     Options extends ParseConfig,
+    //     OptionalKey extends keyof Def = {
+    //         [K in keyof Def]: Def[K] extends string
+    //             ? RemoveSpaces<Def[K]> extends Optional.Definition
+    //                 ? K
+    //                 : never
+    //             : never
+    //     }[keyof Def],
+    //     RequiredKey extends keyof Def = Exclude<keyof Def, OptionalKey>
+    // > = {
+    //     [PropName in OptionalKey]?: Def[PropName] extends string
+    //         ? RemoveSpaces<Def[PropName]> extends Optional.Definition<
+    //               infer OptionalType
+    //           >
+    //             ? Root.Parse<OptionalType, Space, Options>
+    //             : unknown
+    //         : unknown
+    // } & {
+    //     [PropName in RequiredKey]: Root.Parse<Def[PropName], Space, Options>
+    // }
 
     export const type = typeDefProxy as Definition
 

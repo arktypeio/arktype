@@ -1,4 +1,3 @@
-import { Evaluate } from "@re-/tools"
 import {
     typeDefProxy,
     validationError,
@@ -30,7 +29,9 @@ export namespace ArrowFunction {
         return: Fragment.Node
     }
 
-    export type TypeOf<N extends Node> = (args: N["args"]) => N["return"]
+    export type TypeOf<N extends Node, Space, Options extends ParseConfig> = (
+        args: Fragment.TypeOf<N["args"], Space, Options>
+    ) => Fragment.TypeOf<N["return"], Space, Options>
 
     // export type Check<
     //     Parameters extends string,

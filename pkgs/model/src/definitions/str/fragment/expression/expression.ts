@@ -15,6 +15,31 @@ export namespace Expression {
         | Union.Definition
         | List.Definition
 
+    export type Parse<
+        Def extends string,
+        Space
+    > = Def extends ArrowFunction.Definition
+        ? ArrowFunction.Parse<Def, Space>
+        : Def extends Union.Definition
+        ? Union.Parse<Def, Space>
+        : Def extends List.Definition
+        ? List.Parse<Def, Space>
+        : UnknownTypeError<Def>
+
+    export type Node = ArrowFunction.Node | Union.Node | List.Node
+
+    export type TypeOf<
+        N extends Node,
+        Space,
+        Options extends ParseConfig
+    > = N extends ArrowFunction.Node
+        ? ArrowFunction.TypeOf<N, Space, Options>
+        : N extends Union.Node
+        ? Union.TypeOf<N, Space, Options>
+        : N extends List.Node
+        ? List.TypeOf<N, Space, Options>
+        : unknown
+
     // export type Check<
     //     Def extends string,
     //     Root extends string,
@@ -38,19 +63,6 @@ export namespace Expression {
     //     : Def extends List.Definition<infer ListItem>
     //     ? Fragment.Parse<ListItem, Space, Options>[]
     //     : unknown
-
-    export type Parse<
-        Def extends string,
-        Space
-    > = Def extends ArrowFunction.Definition
-        ? ArrowFunction.Parse<Def, Space>
-        : Def extends Union.Definition
-        ? Union.Parse<Def, Space>
-        : Def extends List.Definition
-        ? List.Parse<Def, Space>
-        : UnknownTypeError<Def>
-
-    export type Node = ArrowFunction.Node | Union.Node | List.Node
 
     export const type = typeDefProxy as Definition
 

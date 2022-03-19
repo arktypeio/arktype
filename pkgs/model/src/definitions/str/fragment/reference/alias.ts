@@ -19,7 +19,7 @@ export namespace Alias {
         Space
     > = Space[TypeName] extends ValidationErrorMessage ? Space[TypeName] : Root
 
-    export type Parse<
+    export type TypeOf<
         TypeName extends Definition<Space>,
         Space,
         Options extends ParseConfig
@@ -29,16 +29,19 @@ export namespace Alias {
         ? unknown
         : TypeName extends keyof Options["seen"]
         ? Options["onCycle"] extends never
-            ? ParseResolvedNonCyclicDefinition<TypeName, Space, Options>
-            : ParseResolvedCyclicDefinition<TypeName, Space, Options>
-        : ParseResolvedNonCyclicDefinition<TypeName, Space, Options>
+            ? TypeOfResolvedNonCyclicDefinition<TypeName, Space, Options>
+            : TypeOfResolvedCyclicDefinition<TypeName, Space, Options>
+        : TypeOfResolvedNonCyclicDefinition<TypeName, Space, Options>
 
-    export type ParseResolvedCyclicDefinition<
+    export type TypeOfResolvedCyclicDefinition<
         TypeName extends Definition<Space>,
         Space,
         Options extends ParseConfig
-    > = Root.Parse<
-        Options["onCycle"],
+    > = Root.TypeOf<
+        Root.Parse<
+            Options["onCycle"],
+            Omit<Space, "cyclic"> & { cyclic: Space[TypeName] }
+        >,
         Omit<Space, "cyclic"> & { cyclic: Space[TypeName] },
         {
             onCycle: Options["deepOnCycle"] extends true
@@ -50,7 +53,7 @@ export namespace Alias {
         }
     >
 
-    export type ParseResolvedNonCyclicDefinition<
+    export type TypeOfResolvedNonCyclicDefinition<
         TypeName extends Definition<Space>,
         Space,
         Options extends ParseConfig
@@ -58,15 +61,18 @@ export namespace Alias {
         Options["onResolve"] extends never ? true : false,
         TypeName extends "resolved" ? true : false
     > extends true
-        ? Root.Parse<
-              Space[TypeName],
+        ? Root.TypeOf<
+              Root.Parse<Space[TypeName], Space>,
               Space,
               Options & {
                   seen: { [K in TypeName]: true }
               }
           >
-        : Root.Parse<
-              Options["onResolve"],
+        : Root.TypeOf<
+              Root.Parse<
+                  Options["onResolve"],
+                  Omit<Space, "resolved"> & { resolved: Space[TypeName] }
+              >,
               Omit<Space, "resolved"> & { resolved: Space[TypeName] },
               Options & {
                   seen: { [K in TypeName]: true }

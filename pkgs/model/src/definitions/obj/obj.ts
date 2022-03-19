@@ -13,27 +13,47 @@ import { Tuple } from "./tuple.js"
 export namespace Obj {
     export type Definition = Map.Definition | Tuple.Definition
 
-    // Since functions satisfy Map.Definition, we have to check
-    // that the def is not a function before trying to validate it
-    export type Check<Def, Space> = Def extends Func
+    export type Parse<Def extends Definition, Space> = Def extends Func
         ? DefinitionTypeError
         : Def extends Tuple.Definition
-        ? Tuple.Check<Def, Space>
+        ? Tuple.Parse<Def, Space>
         : Def extends Map.Definition
-        ? Map.Check<Def, Space>
+        ? Map.Parse<Def, Space>
         : DefinitionTypeError
 
-    export type Parse<
-        Def extends Definition,
+    export type Node = Map.Node | Tuple.Node
+
+    export type TypeOf<
+        N extends Node,
         Space,
         Options extends ParseConfig
-    > = Obj.Check<Def, Space> extends ValidationErrorMessage
-        ? unknown
-        : Def extends Tuple.Definition
-        ? Evaluate<Tuple.Parse<Def, Space, Options>>
-        : Def extends Map.Definition
-        ? Evaluate<Map.Parse<Def, Space, Options>>
+    > = N extends Map.Node
+        ? Map.TypeOf<N, Space, Options>
+        : N extends Tuple.Node
+        ? Tuple.TypeOf<N, Space, Options>
         : unknown
+
+    // // Since functions satisfy Map.Definition, we have to check
+    // // that the def is not a function before trying to validate it
+    // export type Check<Def, Space> = Def extends Func
+    //     ? DefinitionTypeError
+    //     : Def extends Tuple.Definition
+    //     ? Tuple.Check<Def, Space>
+    //     : Def extends Map.Definition
+    //     ? Map.Check<Def, Space>
+    //     : DefinitionTypeError
+
+    // export type Parse<
+    //     Def extends Definition,
+    //     Space,
+    //     Options extends ParseConfig
+    // > = Obj.Check<Def, Space> extends ValidationErrorMessage
+    //     ? unknown
+    //     : Def extends Tuple.Definition
+    //     ? Evaluate<Tuple.Parse<Def, Space, Options>>
+    //     : Def extends Map.Definition
+    //     ? Evaluate<Map.Parse<Def, Space, Options>>
+    //     : unknown
 
     export const type = typeDefProxy as Definition
 

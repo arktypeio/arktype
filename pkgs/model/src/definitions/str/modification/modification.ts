@@ -18,6 +18,14 @@ export namespace Modification {
         ? Optional.Parse<Def, Space>
         : UnknownTypeError<Def>
 
+    export type Node = Optional.Node
+
+    export type TypeOf<
+        N extends Node,
+        Space,
+        Options extends ParseConfig
+    > = N extends Optional.Node ? Optional.TypeOf<N, Space, Options> : unknown
+
     // export type Check<Root extends Definition, Space> = Root extends Definition<
     //     infer Modified,
     //     infer Modifiers

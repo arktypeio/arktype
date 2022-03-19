@@ -9,7 +9,7 @@ export namespace Keyword {
         Def extends keyof KeywordTypes = keyof KeywordTypes
     > = Def
 
-    export type Parse<Def extends Definition> = KeywordTypes[Def]
+    export type TypeOf<Def extends Definition> = KeywordTypes[Def]
 
     export const type = typeDefProxy as Definition
 

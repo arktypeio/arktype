@@ -6,6 +6,8 @@ import { ReferencesTypeConfig } from "../internal.js"
 export namespace Primitive {
     export type Definition = number | bigint | boolean | undefined | null
 
+    export type Node = Definition
+
     export type References<
         Def extends Definition,
         Config extends ReferencesTypeConfig,

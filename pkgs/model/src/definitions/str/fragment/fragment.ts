@@ -11,6 +11,27 @@ import { Str } from "../str.js"
 export namespace Fragment {
     export type Definition = string
 
+    export type Parse<
+        Def extends string,
+        Space
+    > = Def extends Reference.Definition<Space>
+        ? Def
+        : Def extends Expression.Definition
+        ? Expression.Parse<Def, Space>
+        : UnknownTypeError<Def>
+
+    export type Node = Expression.Node | Reference.Node
+
+    export type TypeOf<
+        N extends Node,
+        Space,
+        Options extends ParseConfig
+    > = N extends Reference.Node
+        ? Reference.TypeOf<N, Space, Options>
+        : N extends Expression.Node
+        ? Expression.TypeOf<N, Space, Options>
+        : unknown
+
     /**
      * Expressions have the highest precedence when determining how to parse
      * a string definition. However, as of TS4.5, checking whether Def
@@ -53,17 +74,6 @@ export namespace Fragment {
     //     : Def extends Literal.Definition
     //     ? Literal.Parse<Def>
     //     : unknown
-
-    export type Parse<
-        Def extends string,
-        Space
-    > = Def extends Reference.Definition<Space>
-        ? Def
-        : Def extends Expression.Definition
-        ? Expression.Parse<Def, Space>
-        : UnknownTypeError<Def>
-
-    export type Node = Expression.Node | string
 
     export const type = typeDefProxy as Definition
 

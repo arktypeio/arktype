@@ -5,7 +5,8 @@ import {
     createParser,
     duplicateModifierError,
     invalidModifierError,
-    UnknownTypeError
+    UnknownTypeError,
+    ParseConfig
 } from "./internal.js"
 import { Str } from "../str.js"
 
@@ -19,6 +20,18 @@ export namespace Optional {
               optional: Str.Parse<Of, Space>
           }
         : UnknownTypeError<Def>
+
+    export type Node = {
+        optional: Str.Node
+    }
+
+    export type TypeOf<
+        N extends Node,
+        Space,
+        Options extends ParseConfig
+    > = N extends Node
+        ? Str.TypeOf<N["optional"], Space, Options> | undefined
+        : unknown
 
     export const type = typeDefProxy as Definition
 

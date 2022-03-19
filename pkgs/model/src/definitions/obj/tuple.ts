@@ -13,17 +13,39 @@ import { Obj } from "./obj.js"
 export namespace Tuple {
     export type Definition = any[]
 
-    export type Check<Def, Space> = Evaluate<{
-        [Index in keyof Def]: Root.Check<Def[Index], Space>
-    }>
+    export type Node = {
+        tuple: Root.Node[]
+    }
 
-    export type Parse<
-        Def extends Definition,
+    export type Parse<Def, Space> = {
+        tuple: {
+            [Index in keyof Def]: Root.Parse<Def[Index], Space>
+        }
+    }
+
+    export type TypeOf<
+        N extends Node,
         Space,
         Options extends ParseConfig
-    > = {
-        [Index in keyof Def]: Root.Parse<Def[Index], Space, Options>
-    }
+    > = Evaluate<{
+        [Index in keyof N["tuple"]]: Root.TypeOf<
+            N["tuple"][Index] & Root.Node,
+            Space,
+            Options
+        >
+    }>
+
+    // export type Check<Def, Space> = Evaluate<{
+    //     [Index in keyof Def]: Root.Check<Def[Index], Space>
+    // }>
+
+    // export type Parse<
+    //     Def extends Definition,
+    //     Space,
+    //     Options extends ParseConfig
+    // > = {
+    //     [Index in keyof Def]: Root.Parse<Def[Index], Space, Options>
+    // }
 
     export const type = typeDefProxy as Definition
 

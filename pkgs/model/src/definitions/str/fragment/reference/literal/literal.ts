@@ -12,7 +12,7 @@ export namespace Literal {
         | NumberLiteral.Definition
         | BigintLiteral.Definition
 
-    export type Parse<Def extends string> =
+    export type TypeOf<Def extends string> =
         Def extends StringLiteral.Definition<infer Text>
             ? Text
             : Def extends RegexLiteral.Definition
