@@ -8,7 +8,8 @@
             "@types/node",
             "@docusaurus/module-type-aliases",
             "@docusaurus/preset-classic"
-        ]
+        ],
+        "lib": ["DOM"]
     },
     "include": ["src"]
 }
