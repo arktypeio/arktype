@@ -12,7 +12,7 @@ import {
     createDefineFunction,
     DefineFunction,
     DefaultParseTypeOptions,
-    Parse,
+    TypeOf,
     Model
 } from "./model.js"
 import { Map, Root } from "./definitions/index.js"
@@ -28,7 +28,7 @@ export type CheckSpaceResolutions<Space> = IsAny<Space> extends true
       }>
 
 export type ParseSpaceRoot<Space, Options extends ParseConfig> = {
-    [TypeName in keyof Space]: Parse<
+    [TypeName in keyof Space]: TypeOf<
         Space[TypeName],
         CheckSpaceResolutions<Space>,
         Options

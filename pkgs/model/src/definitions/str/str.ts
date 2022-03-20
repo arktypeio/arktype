@@ -32,19 +32,14 @@ export namespace Str {
         ? Fragment.TypeOf<N, Space, Options>
         : unknown
 
-    export type Validate<
+    export type ReferencesOf<
         Def extends Definition,
         Space,
-        Errors extends string[] = ListPossibleTypes<
-            LeafOf<Parse<Def, Space>, ValidationErrorMessage>
-        >
-    > = Errors extends [] ? Def : Errors[0]
-
-    export type References<
-        Def extends string,
-        Space,
-        Config extends ReferencesTypeConfig
-    > = []
+        Config extends ReferencesTypeConfig,
+        Reference extends string = LeafOf<Parse<Def, Space>, Config["filter"]>
+    > = Config["asTuple"] extends true
+        ? ListPossibleTypes<Reference>
+        : Reference
 
     export const type = typeDefProxy as Definition
 

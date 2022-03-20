@@ -6,7 +6,7 @@ import {
     WithDefaults,
     isEmpty
 } from "@re-/tools"
-import { Primitive, Root, Str } from "./definitions/index.js"
+import { Root, Str } from "./definitions/index.js"
 import { ParseContext, defaultParseContext } from "./definitions/parser.js"
 import { stringifyErrors, ValidationErrors } from "./errors.js"
 import { format, typeOf } from "./utils.js"
@@ -15,53 +15,47 @@ import { ReferencesTypeConfig, typeDefProxy } from "./internal.js"
 
 export type Definition = Root.Definition
 
-export type Check<Def, Space> = IsAny<Def> extends true
+export type Validate<Def, Space> = IsAny<Def> extends true
     ? Def
-    : Root.Check<Def, Space>
+    : Root.Validate<Def, Space>
 
-export type Parse<
+export type TypeOf<
     Def,
     Space,
     Options extends ParseTypeOptions = {}
 > = IsAny<Def> extends true
     ? Def
-    : Root.Parse<
-          Def,
+    : Root.TypeOf<
+          Root.Parse<Def, Space>,
           CheckSpaceResolutions<Space>,
           WithDefaults<ParseTypeOptions, Options, DefaultParseTypeOptions>
       >
 
 export type ReferencesTypeOptions = {
-    asUnorderedList?: boolean
-    asList?: boolean
-    nonIdentifiers?: string[]
+    asTuple?: boolean
     filter?: string
 }
 
-export type References<
+export type ReferencesOf<
     Def extends Root.Definition,
+    Space = {},
     Options extends ReferencesTypeOptions = {},
     Config extends ReferencesTypeConfig = WithDefaults<
         ReferencesTypeOptions,
         Options,
         {
-            asUnorderedList: false
-            asList: false
-            nonIdentifiers: Str.NonIdentifyingTokens
+            asTuple: false
             filter: string
         }
     >
-> = Def extends Primitive.Definition
-    ? Primitive.References<Def, Config>
-    : Def extends string
-    ? Str.References<Def, Config>
-    : {
-          [K in keyof Def]: References<Def[K], Config>
-      }
+> = Root.ReferencesOf<Def, Space, Config>
 
 // Just use unknown for now since we don't have all the definitions yet
 // but we still want to allow references to other declared types
-export type CheckReferences<Def, DeclaredTypeName extends string> = Root.Check<
+export type CheckReferences<
+    Def,
+    DeclaredTypeName extends string
+> = Root.Validate<
     Def,
     {
         [TypeName in DeclaredTypeName]: "unknown"
@@ -166,12 +160,14 @@ export const createDefineFunction =
 // but optionally accepts a space as its second parameter
 export const define = createDefineFunction({})
 
+const user = define({ name: "string" })
+
 export type DefineFunction<PredefinedSpace> = <
     Def,
     Options extends DefineOptions,
     ActiveSpace = PredefinedSpace
 >(
-    definition: Check<Narrow<Def>, ActiveSpace>,
+    definition: Root.Validate<Narrow<Def>, ActiveSpace>,
     options?: Narrow<
         Options & {
             space?: Exact<ActiveSpace, CheckSpaceResolutions<ActiveSpace>>
@@ -191,7 +187,7 @@ export type Model<
     Definition,
     Space,
     Options,
-    ModelType = Parse<Definition, Space, Options>
+    ModelType = TypeOf<Definition, Space, Options>
 > = Evaluate<{
     definition: Definition
     type: ModelType
@@ -199,5 +195,5 @@ export type Model<
     validate: ValidateFunction
     assert: (value: unknown, options?: AssertOptions) => void
     generate: (options?: GenerateOptions) => ModelType
-    references: () => References<Definition, { asUnorderedList: true }>
+    references: () => ReferencesOf<Definition>[]
 }>

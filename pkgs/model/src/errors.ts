@@ -10,7 +10,6 @@ import {
     StringifyPossibleTypes
 } from "@re-/tools"
 import { ParseContext } from "./definitions/parser.js"
-import { ModifierToken } from "./definitions/str/modification/internal.js"
 import { ExtractableDefinition } from "./internal.js"
 
 export const stringifyDefinition = (def: unknown) =>
@@ -51,33 +50,33 @@ export const unknownTypeError = <Definition>(def: Definition, path: string[]) =>
         .replace("@def", stringifyDefinition(def))
         .replace("@context", stringifyPathContext(path))
 
-export const duplicateModifierErrorTemplate =
-    "Modifier '@modifier' cannot appear more than once in a string definition."
+// export const duplicateModifierErrorTemplate =
+//     "Modifier '@modifier' cannot appear more than once in a string definition."
 
-export const duplicateModifierError = (modifier: ModifierToken) =>
-    duplicateModifierErrorTemplate.replace("@modifier", modifier)
+// export const duplicateModifierError = (modifier: ModifierToken) =>
+//     duplicateModifierErrorTemplate.replace("@modifier", modifier)
 
-export type DuplicateModifierError<
-    DuplicatedModifier extends ModifierToken = ModifierToken
-> = StringReplace<
-    typeof duplicateModifierErrorTemplate,
-    "@modifier",
-    `${DuplicatedModifier}`
->
+// export type DuplicateModifierError<
+//     DuplicatedModifier extends ModifierToken = ModifierToken
+// > = StringReplace<
+//     typeof duplicateModifierErrorTemplate,
+//     "@modifier",
+//     `${DuplicatedModifier}`
+// >
 
-export const invalidModifierErrorTemplate =
-    "Modifier '@modifier' is only valid at the end of a type definition."
+// export const invalidModifierErrorTemplate =
+//     "Modifier '@modifier' is only valid at the end of a type definition."
 
-export const invalidModifierError = (modifier: ModifierToken) =>
-    invalidModifierErrorTemplate.replace("@modifier", modifier)
+// export const invalidModifierError = (modifier: ModifierToken) =>
+//     invalidModifierErrorTemplate.replace("@modifier", modifier)
 
-export type InvalidModifierError<
-    InvalidModifier extends ModifierToken = ModifierToken
-> = StringReplace<
-    typeof invalidModifierErrorTemplate,
-    "@modifier",
-    `${InvalidModifier}`
->
+// export type InvalidModifierError<
+//     InvalidModifier extends ModifierToken = ModifierToken
+// > = StringReplace<
+//     typeof invalidModifierErrorTemplate,
+//     "@modifier",
+//     `${InvalidModifier}`
+// >
 
 // Members of a union type to errors that occurred validating those types
 export type SplittableErrors = Record<string, string>
@@ -158,10 +157,10 @@ export type ValidationErrorMessage =
     | UnknownTypeError
     | ShallowCycleError
     | DefinitionTypeError
-    | DuplicateModifierError
-    | InvalidModifierError
     | InvalidLimitError
     | UnboundableError
+// | DuplicateModifierError
+// | InvalidModifierError
 
 export type InferrableValidationErrorMessage<E> =
     E extends ValidationErrorMessage ? E : never

@@ -26,14 +26,10 @@ type CheckForShallowCycleRecurse<Def, Space, Seen> = IsAny<Def> extends true
     ? Seen
     : Def extends string
     ? CheckReferencesForShallowCycle<
-          Str.References<
+          Str.ReferencesOf<
               Def,
-              {
-                  asList: true
-                  asUnorderedList: false
-                  filter: keyof Space & string
-                  nonIdentifiers: Str.NonIdentifyingTokens
-              }
+              Space,
+              { asTuple: true; asList: false; filter: keyof Space & string }
           >,
           Space,
           Seen
@@ -52,12 +48,12 @@ export namespace Resolution {
     export type Check<Def, Space> = IsAny<Def> extends true
         ? "any"
         : CheckForShallowCycle<Def, Space> extends never
-        ? Root.Check<Def, Space>
+        ? Root.Validate<Def, Space>
         : ShallowCycleError<Def & string, CheckForShallowCycle<Def, Space>>
 
-    export type Parse<Def, Space, Options extends ParseConfig> = Root.Parse<
-        Def,
+    export type Parse<
+        Def extends Definition,
         Space,
-        Options
-    >
+        Options extends ParseConfig
+    > = Root.TypeOf<Root.Parse<Def, Space>, Space, Options>
 }
