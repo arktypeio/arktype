@@ -165,7 +165,7 @@ export type DefineFunction<PredefinedSpace> = <
     Options extends DefineOptions,
     ActiveSpace = PredefinedSpace
 >(
-    definition: Root.Validate<Narrow<Def>, ActiveSpace>,
+    definition: Validate<Narrow<Def>, ActiveSpace>,
     options?: Narrow<
         Options & {
             space?: Exact<ActiveSpace, CheckSpaceResolutions<ActiveSpace>>
