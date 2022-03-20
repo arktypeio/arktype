@@ -9,7 +9,8 @@ import {
     createParser,
     ParseContext,
     ParseConfig,
-    UnknownTypeError
+    UnknownTypeError,
+    FragmentContext
 } from "./internal.js"
 import { Fragment } from "../fragment.js"
 import { Expression } from "./expression.js"
@@ -35,12 +36,16 @@ export namespace Union {
         Right extends string = string
     > = `${Left}|${Right}`
 
-    export type Parse<Def extends Definition, Space> = Def extends Definition<
-        infer Left,
-        infer Right
-    >
+    export type Parse<
+        Def extends Definition,
+        Space,
+        Context extends FragmentContext
+    > = Def extends Definition<infer Left, infer Right>
         ? {
-              union: [Fragment.Parse<Left, Space>, Fragment.Parse<Right, Space>]
+              union: [
+                  Fragment.Parse<Left, Space, Context>,
+                  Fragment.Parse<Right, Space, Context>
+              ]
           }
         : UnknownTypeError<Def>
 

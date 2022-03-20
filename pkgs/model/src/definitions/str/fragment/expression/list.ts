@@ -3,7 +3,8 @@ import {
     validationError,
     createParser,
     UnknownTypeError,
-    ParseConfig
+    ParseConfig,
+    FragmentContext
 } from "./internal.js"
 import { Fragment } from "../fragment.js"
 import { Expression } from "./expression.js"
@@ -12,10 +13,12 @@ import { Tuple } from "../../../obj/index.js"
 export namespace List {
     export type Definition<Of extends string = string> = `${Of}[]`
 
-    export type Parse<Def extends Definition, Space> = Def extends Definition<
-        infer Of
-    >
-        ? { list: Fragment.Parse<Of, Space> }
+    export type Parse<
+        Def extends Definition,
+        Space,
+        Context extends FragmentContext
+    > = Def extends Definition<infer Of>
+        ? { list: Fragment.Parse<Of, Space, Context> }
         : UnknownTypeError<Def>
 
     export type Node = {

@@ -50,33 +50,35 @@ export const unknownTypeError = <Definition>(def: Definition, path: string[]) =>
         .replace("@def", stringifyDefinition(def))
         .replace("@context", stringifyPathContext(path))
 
-// export const duplicateModifierErrorTemplate =
-//     "Modifier '@modifier' cannot appear more than once in a string definition."
+export const duplicateModifierErrorTemplate =
+    "Modifier '@modifier' cannot appear more than once in a string definition."
 
-// export const duplicateModifierError = (modifier: ModifierToken) =>
-//     duplicateModifierErrorTemplate.replace("@modifier", modifier)
+export type ModifierToken = "?"
 
-// export type DuplicateModifierError<
-//     DuplicatedModifier extends ModifierToken = ModifierToken
-// > = StringReplace<
-//     typeof duplicateModifierErrorTemplate,
-//     "@modifier",
-//     `${DuplicatedModifier}`
-// >
+export const duplicateModifierError = (modifier: ModifierToken) =>
+    duplicateModifierErrorTemplate.replace("@modifier", modifier)
 
-// export const invalidModifierErrorTemplate =
-//     "Modifier '@modifier' is only valid at the end of a type definition."
+export type DuplicateModifierError<
+    DuplicatedModifier extends ModifierToken = ModifierToken
+> = StringReplace<
+    typeof duplicateModifierErrorTemplate,
+    "@modifier",
+    `${DuplicatedModifier}`
+>
 
-// export const invalidModifierError = (modifier: ModifierToken) =>
-//     invalidModifierErrorTemplate.replace("@modifier", modifier)
+export const invalidModifierErrorTemplate =
+    "Modifier '@modifier' is only valid at the end of a type definition."
 
-// export type InvalidModifierError<
-//     InvalidModifier extends ModifierToken = ModifierToken
-// > = StringReplace<
-//     typeof invalidModifierErrorTemplate,
-//     "@modifier",
-//     `${InvalidModifier}`
-// >
+export const invalidModifierError = (modifier: ModifierToken) =>
+    invalidModifierErrorTemplate.replace("@modifier", modifier)
+
+export type InvalidModifierError<
+    InvalidModifier extends ModifierToken = ModifierToken
+> = StringReplace<
+    typeof invalidModifierErrorTemplate,
+    "@modifier",
+    `${InvalidModifier}`
+>
 
 // Members of a union type to errors that occurred validating those types
 export type SplittableErrors = Record<string, string>

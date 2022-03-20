@@ -3,10 +3,12 @@ import {
     validationError,
     createParser,
     ParseConfig,
-    UnknownTypeError
+    UnknownTypeError,
+    FragmentContext
 } from "./internal.js"
 import { Fragment } from "../fragment.js"
 import { Expression } from "./expression.js"
+import { Evaluate, List } from "@re-/tools"
 
 export namespace ArrowFunction {
     export type Definition<
@@ -14,24 +16,50 @@ export namespace ArrowFunction {
         Return extends string = string
     > = `(${Args})=>${Return}`
 
-    export type Parse<Def extends Definition, Space> = Def extends Definition<
-        infer Args,
-        infer Return
+    type Z = Parse<
+        "(string[],number,boolean,string|null)=>number",
+        {},
+        { delimiter: never }
     >
+
+    export type Parse<
+        Def extends Definition,
+        Space,
+        Context extends FragmentContext
+    > = Def extends Definition<infer Args, infer Return>
         ? {
-              args: Fragment.Parse<Args, Space>
-              return: Fragment.Parse<Return, Space>
+              args: Args extends ""
+                  ? []
+                  : ToList<Fragment.Parse<Args, Space, { delimiter: "," }>>
+              return: Fragment.Parse<Return, Space, Context>
           }
         : UnknownTypeError<Def>
 
+    type ToList<T> = T extends List ? T : [T]
+
     export type Node = {
-        args: Fragment.Node
+        args: Fragment.Node[]
         return: Fragment.Node
     }
 
-    export type TypeOf<N extends Node, Space, Options extends ParseConfig> = (
-        args: Fragment.TypeOf<N["args"], Space, Options>
-    ) => Fragment.TypeOf<N["return"], Space, Options>
+    export type TypeOf<
+        N extends Node,
+        Space,
+        Options extends ParseConfig
+    > = Evaluate<
+        (
+            // @ts-ignore
+            ...args: TypeOfArgs<N["args"], Space, Options>
+        ) => Fragment.TypeOf<N["return"], Space, Options>
+    >
+
+    type TypeOfArgs<
+        Args extends Fragment.Node[],
+        Space,
+        Options extends ParseConfig
+    > = {
+        [I in keyof Args]: Fragment.TypeOf<Args[I], Space, Options>
+    }
 
     // export type Check<
     //     Parameters extends string,

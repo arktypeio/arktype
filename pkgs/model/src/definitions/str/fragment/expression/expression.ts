@@ -2,12 +2,15 @@ import {
     ParseConfig,
     createParser,
     typeDefProxy,
-    UnknownTypeError
+    UnknownTypeError,
+    FragmentContext
 } from "./internal.js"
 import { ArrowFunction } from "./arrowFunction.js"
 import { List } from "./list.js"
 import { Union } from "./union.js"
 import { Fragment } from "../fragment.js"
+import { Evaluate } from "@re-/tools"
+import { Tuple } from "../../../obj/tuple.js"
 
 export namespace Expression {
     export type Definition =
@@ -17,13 +20,14 @@ export namespace Expression {
 
     export type Parse<
         Def extends string,
-        Space
+        Space,
+        Context extends FragmentContext
     > = Def extends ArrowFunction.Definition
-        ? ArrowFunction.Parse<Def, Space>
+        ? ArrowFunction.Parse<Def, Space, Context>
         : Def extends Union.Definition
-        ? Union.Parse<Def, Space>
+        ? Union.Parse<Def, Space, Context>
         : Def extends List.Definition
-        ? List.Parse<Def, Space>
+        ? List.Parse<Def, Space, Context>
         : UnknownTypeError<Def>
 
     export type Node = ArrowFunction.Node | Union.Node | List.Node
@@ -32,13 +36,15 @@ export namespace Expression {
         N extends Node,
         Space,
         Options extends ParseConfig
-    > = N extends ArrowFunction.Node
-        ? ArrowFunction.TypeOf<N, Space, Options>
-        : N extends Union.Node
-        ? Union.TypeOf<N, Space, Options>
-        : N extends List.Node
-        ? List.TypeOf<N, Space, Options>
-        : unknown
+    > = Evaluate<
+        N extends ArrowFunction.Node
+            ? ArrowFunction.TypeOf<N, Space, Options>
+            : N extends Union.Node
+            ? Union.TypeOf<N, Space, Options>
+            : N extends List.Node
+            ? List.TypeOf<N, Space, Options>
+            : unknown
+    >
 
     export const type = typeDefProxy as Definition
 

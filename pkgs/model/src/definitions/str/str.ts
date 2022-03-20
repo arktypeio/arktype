@@ -18,7 +18,7 @@ export namespace Str {
         Space
     > = Def extends Modification.Definition
         ? Modification.Parse<Def, Space>
-        : Fragment.Parse<Def, Space>
+        : Fragment.Parse<Def, Space, { delimiter: never; spread: false }>
 
     export type Node = Modification.Node | Fragment.Node
 
@@ -31,6 +31,16 @@ export namespace Str {
         : N extends Fragment.Node
         ? Fragment.TypeOf<N, Space, Options>
         : unknown
+
+    export type Validate<
+        Def extends Definition,
+        Space,
+        Errors extends string[] = ReferencesOf<
+            Def,
+            Space,
+            { asTuple: true; filter: ValidationErrorMessage }
+        >
+    > = Errors extends [] ? Def : { errors: Errors }
 
     export type ReferencesOf<
         Def extends Definition,

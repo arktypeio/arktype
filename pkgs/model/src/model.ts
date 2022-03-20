@@ -160,8 +160,6 @@ export const createDefineFunction =
 // but optionally accepts a space as its second parameter
 export const define = createDefineFunction({})
 
-const user = define({ name: "string" })
-
 export type DefineFunction<PredefinedSpace> = <
     Def,
     Options extends DefineOptions,

@@ -1,6 +1,8 @@
 export * from "../internal.js"
-import { ValidationErrorMessage } from "../internal.js"
-import { Fragment } from "./fragment.js"
+
+export type FragmentContext = {
+    delimiter: string
+}
 
 // export type CheckHalves<
 //     First extends string,

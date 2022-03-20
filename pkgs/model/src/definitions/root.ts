@@ -3,13 +3,8 @@ import { Obj } from "./obj/index.js"
 import { Str } from "./str/index.js"
 import { Primitive } from "./primitive/index.js"
 import { reroot, createParser } from "./parser.js"
-import {
-    DefinitionTypeError,
-    definitionTypeError,
-    ValidationErrorMessage
-} from "../errors.js"
+import { DefinitionTypeError, definitionTypeError } from "../errors.js"
 import { ReferencesTypeConfig } from "../internal.js"
-import { Evaluate } from "@re-/tools"
 
 export namespace Root {
     export type Definition =
@@ -39,14 +34,18 @@ export namespace Root {
         ? Obj.TypeOf<N, Space, Options>
         : unknown
 
-    export type Validate<Def extends Definition, Space> = ReferencesOf<
-        Def,
-        Space,
-        { asTuple: false; filter: string }
-    >
+    export type Validate<Def, Space> = Def extends Primitive.Definition
+        ? Def
+        : Def extends Str.Definition
+        ? Str.Validate<Def, Space>
+        : Def extends Obj.Definition
+        ? {
+              [K in keyof Def]: Validate<Def[K], Space>
+          }
+        : DefinitionTypeError
 
     export type ReferencesOf<
-        Def extends Definition,
+        Def,
         Space,
         Options extends ReferencesTypeConfig
     > = Def extends Primitive.Definition
