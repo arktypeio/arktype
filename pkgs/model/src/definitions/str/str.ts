@@ -8,7 +8,7 @@ import {
 } from "./internal.js"
 import { Fragment } from "./fragment/fragment.js"
 import { Modification } from "./modification/modification.js"
-import { ElementOf, ListPossibleTypes, ValueOf } from "@re-/tools"
+import { LeafOf, ListPossibleTypes } from "@re-/tools"
 
 export namespace Str {
     export type Definition = string
@@ -32,25 +32,13 @@ export namespace Str {
         ? Fragment.TypeOf<N, Space, Options>
         : unknown
 
-    // type LeafOf<Obj, LeafType = NonRecursible> = Obj extends LeafType
-    //     ? Obj
-    //     : Obj extends NonRecursible
-    //     ? never
-    //     : { [K in keyof Obj]: LeafOf<Obj[K], LeafType> }[keyof Obj]
-
     export type Validate<
         Def extends Definition,
         Space,
         Errors extends string[] = ListPossibleTypes<
-            ValidateNode<Parse<Def, Space>>
+            LeafOf<Parse<Def, Space>, ValidationErrorMessage>
         >
     > = Errors extends [] ? Def : Errors[0]
-
-    type ValidateNode<N> = N extends string
-        ? N extends ValidationErrorMessage
-            ? N
-            : never
-        : ValueOf<{ [K in keyof N]: ValidateNode<N[K]> }>
 
     export type References<
         Def extends string,

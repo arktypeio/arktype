@@ -120,7 +120,11 @@ export type CompileFunction<DeclaredTypeNames extends string[]> = <Definitions>(
 export type Space<Definitions> = Evaluate<
     ParseSpaceResolutions<Definitions, DefaultParseTypeOptions> & {
         types: Evaluate<
-            Map.Parse<Definitions, Definitions, DefaultParseTypeOptions>
+            Map.TypeOf<
+                Map.Parse<Definitions, Definitions>,
+                Definitions,
+                DefaultParseTypeOptions
+            >
         >
         define: DefineFunction<Definitions>
     }

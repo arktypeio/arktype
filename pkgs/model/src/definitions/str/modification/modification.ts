@@ -2,8 +2,7 @@ import {
     ParseConfig,
     createParser,
     typeDefProxy,
-    UnknownTypeError,
-    ModifierString
+    UnknownTypeError
 } from "./internal.js"
 import { Fragment } from "../fragment/fragment.js"
 import { Optional } from "./optional.js"
@@ -25,21 +24,6 @@ export namespace Modification {
         Space,
         Options extends ParseConfig
     > = N extends Optional.Node ? Optional.TypeOf<N, Space, Options> : unknown
-
-    // export type Check<Root extends Definition, Space> = Root extends Definition<
-    //     infer Modified,
-    //     infer Modifiers
-    // >
-    //     ? Fragment.Check<Modified, Root, Space>
-    //     : UnknownTypeError<Root>
-
-    // export type Parse<
-    //     Root extends Definition,
-    //     Space,
-    //     Options extends ParseConfig
-    // > = Root extends Optional.Definition<infer Inner>
-    //     ? Fragment.Parse<Inner, Space, Options> | undefined
-    //     : unknown
 
     export const type = typeDefProxy as Definition
 

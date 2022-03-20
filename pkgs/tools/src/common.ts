@@ -245,9 +245,9 @@ export type LeafOf<Obj, LeafType = NonRecursible> = Obj extends LeafType
     ? Obj
     : Obj extends NonRecursible
     ? never
-    : {
+    : ValueOf<{
           [K in keyof Obj]: LeafOf<Obj[K], LeafType>
-      }[keyof Obj]
+      }>
 
 export type NeverEmptyObject<T> = {} extends T ? never : T
 

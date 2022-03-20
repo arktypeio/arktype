@@ -4,8 +4,6 @@ import { Str } from "./str/index.js"
 import { Primitive } from "./primitive/index.js"
 import { reroot, createParser } from "./parser.js"
 import { DefinitionTypeError, definitionTypeError } from "../errors.js"
-import { DefaultParseTypeOptions } from "../model.js"
-import { Evaluate } from "@re-/tools"
 
 export namespace Root {
     export type Definition =
@@ -48,51 +46,6 @@ export namespace Root {
               [K in keyof Def]: Validate<Def[K], Space, Options>
           }
         : DefinitionTypeError
-
-    type Nodes = Evaluate<
-        Validate<
-            {
-                age: "numbfer?"
-                name: { first: "string|number"; last: "string" }
-                address: "string"
-                interests: ["string", "string"]
-            },
-            {},
-            DefaultParseTypeOptions
-        >
-    >
-
-    type Z = TypeOf<
-        Parse<
-            {
-                age: "number?"
-                name: { first: "string"; last: "string" }
-            },
-            {}
-        >,
-        {},
-        DefaultParseTypeOptions
-    >
-
-    // export type Check<Def, Space> = Def extends Primitive.Definition
-    //     ? Def
-    //     : Def extends Str.Definition
-    //     ? Str.Check<Def, Space>
-    //     : Def extends Obj.Definition
-    //     ? Obj.Check<Def, Space>
-    //     : DefinitionTypeError
-
-    // export type Parse<
-    //     Def,
-    //     Space,
-    //     Options extends ParseConfig
-    // > = Def extends Primitive.Definition
-    //     ? Def
-    //     : Def extends Str.Definition
-    //     ? Str.Parse<Def, Space, Options>
-    //     : Def extends Obj.Definition
-    //     ? Obj.Parse<Def, Space, Options>
-    //     : unknown
 
     export const type = typeDefProxy as Definition
 

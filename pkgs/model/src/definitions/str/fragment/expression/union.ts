@@ -35,14 +35,6 @@ export namespace Union {
         Right extends string = string
     > = `${Left}|${Right}`
 
-    // export type Check<
-    //     Def extends Definition,
-    //     Root extends string,
-    //     Space
-    // > = Def extends Definition<infer Left, infer Right>
-    //     ? CheckHalves<Left, Right, Root, Space>
-    //     : UnknownTypeError<Def>
-
     export type Parse<Def extends Definition, Space> = Def extends Definition<
         infer Left,
         infer Right
@@ -61,16 +53,6 @@ export namespace Union {
         Space,
         Options extends ParseConfig
     > = Fragment.TypeOf<ElementOf<N["union"]>, Space, Options>
-
-    // export type Parse<
-    //     Def extends Definition,
-    //     Space,
-    //     Options extends ParseConfig
-    // > = Def extends Definition<infer Left, infer Right>
-    //     ?
-    //           | Fragment.Parse<Left, Space, Options>
-    //           | Fragment.Parse<Right, Space, Options>
-    //     : unknown
 
     export const type = typeDefProxy as Definition
 
