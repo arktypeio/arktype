@@ -1,9 +1,10 @@
 import React from "react"
+import { activeColorLightMode } from "../Theme"
 
 export const modelDemo = (
     <div
         style={{
-            backgroundColor: "#EEF1FC",
+            backgroundColor: activeColorLightMode,
             width: "100%",
             height: "600px",
             border: 0,

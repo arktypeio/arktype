@@ -1,7 +1,7 @@
 import React from "react"
 import clsx from "clsx"
 import * as Svgs from "./svg"
-import { Button, Stack } from "@mui/material"
+import { Box, Button, Stack, Typography } from "@mui/material"
 import { modelDemo } from "./demos"
 
 type ToolSummaryProps = {
@@ -40,25 +40,44 @@ const ToolSummary = ({
     upcoming,
     demo
 }: ToolSummaryProps) => (
-    <div
+    <Box
         className={clsx("col col--4")}
         style={
             demo
                 ? {
-                      backgroundColor: "#EEF1FC",
                       marginBottom: -20,
                       borderRadius: 8
+                  }
+                : { minHeight: "100%", marginTop: "auto" }
+        }
+        sx={
+            demo
+                ? {
+                      bgcolor: "activeDemo.activeColor"
                   }
                 : {}
         }
     >
         <div className="text--center">{illustration}</div>
         <div className="text--center padding-horiz--md">
-            <h3>
+            <Typography
+                component="h3"
+                variant="h5"
+                color={demo && "activeDemo.activeText"}
+                fontWeight="700"
+            >
                 {name}
                 {upcoming ? <i> (coming soon)</i> : ""}
-            </h3>
-            <p>{description}</p>
+            </Typography>
+            <Typography
+                component="p"
+                variant="h6"
+                color={demo && "activeDemo.activeText"}
+                fontWeight="300"
+            >
+                {description}
+            </Typography>
+            <br />
             <Stack spacing={2} direction="row" justifyContent="center">
                 <Button
                     variant="outlined"
@@ -69,7 +88,14 @@ const ToolSummary = ({
                 </Button>
                 {demo ? (
                     <>
-                        <p> or </p>
+                        <Typography
+                            component="p"
+                            color={demo && "activeDemo.activeText"}
+                            variant="h6"
+                            fontWeight="300"
+                        >
+                            or
+                        </Typography>
                         <Button
                             variant="contained"
                             style={{ whiteSpace: "nowrap" }}
@@ -85,7 +111,7 @@ const ToolSummary = ({
                 ) : null}
             </Stack>
         </div>
-    </div>
+    </Box>
 )
 
 export const ToolSummaries = () => (

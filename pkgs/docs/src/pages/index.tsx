@@ -5,8 +5,9 @@ import useDocusaurusContext from "@docusaurus/useDocusaurusContext"
 import { useColorMode } from "@docusaurus/theme-common"
 import styles from "./index.module.css"
 import { getTheme, ToolSummaries } from "../components"
-import { ThemeProvider } from "@mui/material"
+import { ThemeProvider, Typography } from "@mui/material"
 
+const font = ""
 const Contents = () => {
     const { siteConfig } = useDocusaurusContext()
     const { isDarkTheme } = useColorMode()
@@ -14,8 +15,23 @@ const Contents = () => {
         <ThemeProvider theme={getTheme({ isDark: isDarkTheme })}>
             <header className={clsx("hero hero--primary", styles.heroBanner)}>
                 <div className="container">
-                    <h1 className="hero__title">{siteConfig.title}</h1>
-                    <p className="hero__subtitle">{siteConfig.tagline}</p>
+                    <Typography
+                        component="h1"
+                        variant="h2"
+                        className="hero__title"
+                        color="primary.light"
+                        fontWeight="500"
+                    >
+                        {siteConfig.title}
+                    </Typography>
+                    <Typography
+                        component="h2"
+                        variant="h5"
+                        className="hero__subtitle"
+                        color="primary.light"
+                    >
+                        {siteConfig.tagline}
+                    </Typography>
                 </div>
             </header>
             <main>
