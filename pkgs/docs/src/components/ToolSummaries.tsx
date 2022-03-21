@@ -28,7 +28,13 @@ const toolSummaries: ToolSummaryProps[] = [
     {
         name: "Test",
         illustration: <Svgs.Test />,
-        description: <>Web testing that writes itself</>,
+        description: (
+            <>
+                Web testing that writes itself
+                <br />
+                <br />
+            </>
+        ),
         upcoming: true
     }
 ]
@@ -48,7 +54,7 @@ const ToolSummary = ({
                       marginBottom: -20,
                       borderRadius: 8
                   }
-                : { minHeight: "100%", marginTop: "auto" }
+                : {}
         }
         sx={
             demo
