@@ -6,7 +6,7 @@ import {
     WithDefaults,
     isEmpty
 } from "@re-/tools"
-import { Root, Str } from "./definitions/index.js"
+import { Root } from "./definitions/index.js"
 import { ParseContext, defaultParseContext } from "./definitions/parser.js"
 import { stringifyErrors, ValidationErrors } from "./errors.js"
 import { format, typeOf } from "./utils.js"

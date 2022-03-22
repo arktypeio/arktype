@@ -210,6 +210,8 @@ export type AsListIf<T, Condition extends boolean> = Condition extends true
 export type IfList<T, IfList, IfNotList> = T extends List ? IfList : IfNotList
 export type IsList<T> = IfList<T, true, false>
 
+export type ToList<T> = T extends List ? T : [T]
+
 export type GetRequiredKeys<O extends object> = {
     [K in keyof O]-?: {} extends Pick<O, K> ? never : K
 }[keyof O]

@@ -36,15 +36,13 @@ export namespace Expression {
         N extends Node,
         Space,
         Options extends ParseConfig
-    > = Evaluate<
-        N extends ArrowFunction.Node
-            ? ArrowFunction.TypeOf<N, Space, Options>
-            : N extends Union.Node
-            ? Union.TypeOf<N, Space, Options>
-            : N extends List.Node
-            ? List.TypeOf<N, Space, Options>
-            : unknown
-    >
+    > = N extends ArrowFunction.Node
+        ? ArrowFunction.TypeOf<N, Space, Options>
+        : N extends Union.Node
+        ? Union.TypeOf<N, Space, Options>
+        : N extends List.Node
+        ? List.TypeOf<N, Space, Options>
+        : unknown
 
     export const type = typeDefProxy as Definition
 

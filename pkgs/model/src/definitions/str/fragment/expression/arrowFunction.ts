@@ -8,7 +8,7 @@ import {
 } from "./internal.js"
 import { Fragment } from "../fragment.js"
 import { Expression } from "./expression.js"
-import { Evaluate, List, WithPropValue } from "@re-/tools"
+import { Evaluate, WithPropValue, ToList } from "@re-/tools"
 
 export namespace ArrowFunction {
     export type Definition<
@@ -38,8 +38,6 @@ export namespace ArrowFunction {
               return: Fragment.Parse<Return, Space, Context>
           }
         : UnknownTypeError<Def>
-
-    type ToList<T> = T extends List ? T : [T]
 
     export type Node = {
         args: Fragment.Node[]

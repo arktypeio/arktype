@@ -21,14 +21,6 @@ export const testIntegration = () => {
                 | "no"
                 | "maybe"
         })
-        test("whitespace is ignored when parsing strings", () => {
-            assert(define("    boolean      |    null       ").type).typed as
-                | boolean
-                | null
-            assert(define("( string [] ) => boolean  ?").type).typed as
-                | ((args_0: string[]) => boolean)
-                | undefined
-        })
     })
     test("model props", () => {
         const a = define("a", {
