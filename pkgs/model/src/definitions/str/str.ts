@@ -4,7 +4,9 @@ import {
     createParser,
     typeDefProxy,
     ReferencesTypeConfig,
-    ValidationErrorMessage
+    ValidationErrorMessage,
+    ParseTypeContext,
+    DefaultParseTypeContext
 } from "./internal.js"
 import { Fragment } from "./fragment/fragment.js"
 import { Modification } from "./modification/modification.js"
@@ -15,10 +17,11 @@ export namespace Str {
 
     export type Parse<
         Def extends string,
-        Space
+        Space,
+        Context extends ParseTypeContext
     > = Def extends Modification.Definition
-        ? Modification.Parse<Def, Space>
-        : Fragment.Parse<Def, Space, { delimiter: never; spread: false }>
+        ? Modification.Parse<Def, Space, Context>
+        : Fragment.Parse<Def, Space, Context>
 
     export type Node = Modification.Node | Fragment.Node
 
@@ -38,7 +41,7 @@ export namespace Str {
         Errors extends string[] = ReferencesOf<
             Def,
             Space,
-            { asTuple: true; filter: ValidationErrorMessage }
+            { asTuple: true; asList: false; filter: ValidationErrorMessage }
         >
     > = Errors extends [] ? Def : { errors: Errors }
 
@@ -46,9 +49,14 @@ export namespace Str {
         Def extends Definition,
         Space,
         Config extends ReferencesTypeConfig,
-        Reference extends string = LeafOf<Parse<Def, Space>, Config["filter"]>
+        Reference extends string = LeafOf<
+            Parse<Def, Space, DefaultParseTypeContext>,
+            Config["filter"]
+        >
     > = Config["asTuple"] extends true
         ? ListPossibleTypes<Reference>
+        : Config["asList"] extends true
+        ? Reference[]
         : Reference
 
     export const type = typeDefProxy as Definition

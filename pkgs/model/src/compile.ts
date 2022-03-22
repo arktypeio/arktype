@@ -18,6 +18,7 @@ import {
 import { Map, Root } from "./definitions/index.js"
 import { typeDefProxy, ParseConfig } from "./internal.js"
 import { Resolution } from "./resolution.js"
+import { DefaultParseTypeContext } from "./definitions/internal.js"
 
 export type SpaceResolutions = Record<string, Root.Definition>
 
@@ -121,7 +122,7 @@ export type Space<Definitions> = Evaluate<
     ParseSpaceResolutions<Definitions, DefaultParseTypeOptions> & {
         types: Evaluate<
             Map.TypeOf<
-                Map.Parse<Definitions, Definitions>,
+                Map.Parse<Definitions, Definitions, DefaultParseTypeContext>,
                 Definitions,
                 DefaultParseTypeOptions
             >

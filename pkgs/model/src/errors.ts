@@ -30,6 +30,8 @@ export const stringifyPathContext = (
 export const definitionTypeErrorTemplate =
     "Values of type 'function' or 'symbol' are not valid definitions."
 
+export type BadDefinitionType = Function | symbol
+
 export type DefinitionTypeError = typeof definitionTypeErrorTemplate
 
 export const getBaseTypeName = (definition: string) =>
@@ -161,7 +163,7 @@ export type ValidationErrorMessage =
     | DefinitionTypeError
     | InvalidLimitError
     | UnboundableError
-// | DuplicateModifierError
+    | DuplicateModifierError
 // | InvalidModifierError
 
 export type InferrableValidationErrorMessage<E> =

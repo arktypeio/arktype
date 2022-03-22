@@ -4,7 +4,8 @@ import {
     ParseConfig,
     createParser,
     DefinitionTypeError,
-    ValidationErrorMessage
+    ValidationErrorMessage,
+    ParseTypeContext
 } from "./internal.js"
 import { Root } from "../root.js"
 import { Map } from "./map.js"
@@ -13,12 +14,16 @@ import { Tuple } from "./tuple.js"
 export namespace Obj {
     export type Definition = Map.Definition | Tuple.Definition
 
-    export type Parse<Def extends Definition, Space> = Def extends Func
+    export type Parse<
+        Def extends Definition,
+        Space,
+        Context extends ParseTypeContext
+    > = Def extends Func
         ? DefinitionTypeError
         : Def extends Tuple.Definition
-        ? Tuple.Parse<Def, Space>
+        ? Tuple.Parse<Def, Space, Context>
         : Def extends Map.Definition
-        ? Map.Parse<Def, Space>
+        ? Map.Parse<Def, Space, Context>
         : DefinitionTypeError
 
     export type Node = Map.Node | Tuple.Node

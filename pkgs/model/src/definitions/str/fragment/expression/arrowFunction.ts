@@ -4,11 +4,11 @@ import {
     createParser,
     ParseConfig,
     UnknownTypeError,
-    FragmentContext
+    ParseTypeContext
 } from "./internal.js"
 import { Fragment } from "../fragment.js"
 import { Expression } from "./expression.js"
-import { Evaluate, List } from "@re-/tools"
+import { Evaluate, List, WithPropValue } from "@re-/tools"
 
 export namespace ArrowFunction {
     export type Definition<
@@ -16,21 +16,25 @@ export namespace ArrowFunction {
         Return extends string = string
     > = `(${Args})=>${Return}`
 
-    type Z = Parse<
-        "(string[],number,boolean,string|null)=>number",
-        {},
-        { delimiter: never }
-    >
-
     export type Parse<
         Def extends Definition,
         Space,
-        Context extends FragmentContext
+        Context extends ParseTypeContext
     > = Def extends Definition<infer Args, infer Return>
         ? {
               args: Args extends ""
                   ? []
-                  : ToList<Fragment.Parse<Args, Space, { delimiter: "," }>>
+                  : ToList<
+                        Fragment.Parse<
+                            Args,
+                            Space,
+                            WithPropValue<
+                                Context,
+                                "delimiter",
+                                Context["delimiter"] | ","
+                            >
+                        >
+                    >
               return: Fragment.Parse<Return, Space, Context>
           }
         : UnknownTypeError<Def>

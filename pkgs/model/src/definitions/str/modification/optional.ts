@@ -1,3 +1,4 @@
+import { WithPropValue } from "@re-/tools"
 import { Modification } from "./modification.js"
 import { Fragment } from "../fragment/fragment.js"
 import {
@@ -9,16 +10,29 @@ import {
     ParseConfig
 } from "./internal.js"
 import { Str } from "../str.js"
+import { DuplicateModifierError, ParseTypeContext } from "../internal.js"
 
 export namespace Optional {
     export type Definition<Of extends string = string> = `${Of}?`
 
-    export type Parse<Def extends Definition, Space> = Def extends Definition<
-        infer Of
-    >
-        ? {
-              optional: Str.Parse<Of, Space>
-          }
+    export type Parse<
+        Def extends Definition,
+        Space,
+        Context extends ParseTypeContext
+    > = Def extends Definition<infer Of>
+        ? "?" extends Context["modifiers"]
+            ? DuplicateModifierError<"?">
+            : {
+                  optional: Str.Parse<
+                      Of,
+                      Space,
+                      WithPropValue<
+                          Context,
+                          "modifiers",
+                          "?" | Context["modifiers"]
+                      >
+                  >
+              }
         : UnknownTypeError<Def>
 
     export type Node = {

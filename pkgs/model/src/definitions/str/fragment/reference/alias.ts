@@ -5,7 +5,8 @@ import {
     ValidationErrorMessage,
     shallowCycleError,
     generateRequiredCycleError,
-    createParser
+    createParser,
+    DefaultParseTypeContext
 } from "./internal.js"
 import { Root } from "../../../root.js"
 import { Fragment } from "../fragment.js"
@@ -40,7 +41,8 @@ export namespace Alias {
     > = Root.TypeOf<
         Root.Parse<
             Options["onCycle"],
-            Omit<Space, "cyclic"> & { cyclic: Space[TypeName] }
+            Omit<Space, "cyclic"> & { cyclic: Space[TypeName] },
+            DefaultParseTypeContext
         >,
         Omit<Space, "cyclic"> & { cyclic: Space[TypeName] },
         {
@@ -62,7 +64,7 @@ export namespace Alias {
         TypeName extends "resolved" ? true : false
     > extends true
         ? Root.TypeOf<
-              Root.Parse<Space[TypeName], Space>,
+              Root.Parse<Space[TypeName], Space, DefaultParseTypeContext>,
               Space,
               Options & {
                   seen: { [K in TypeName]: true }
@@ -71,7 +73,8 @@ export namespace Alias {
         : Root.TypeOf<
               Root.Parse<
                   Options["onResolve"],
-                  Omit<Space, "resolved"> & { resolved: Space[TypeName] }
+                  Omit<Space, "resolved"> & { resolved: Space[TypeName] },
+                  DefaultParseTypeContext
               >,
               Omit<Space, "resolved"> & { resolved: Space[TypeName] },
               Options & {

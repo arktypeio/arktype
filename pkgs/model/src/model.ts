@@ -12,6 +12,7 @@ import { stringifyErrors, ValidationErrors } from "./errors.js"
 import { format, typeOf } from "./utils.js"
 import { CheckSpaceResolutions } from "./compile.js"
 import { ReferencesTypeConfig, typeDefProxy } from "./internal.js"
+import { DefaultParseTypeContext } from "./definitions/internal.js"
 
 export type Definition = Root.Definition
 
@@ -26,13 +27,14 @@ export type TypeOf<
 > = IsAny<Def> extends true
     ? Def
     : Root.TypeOf<
-          Root.Parse<Def, Space>,
+          Root.Parse<Def, Space, DefaultParseTypeContext>,
           CheckSpaceResolutions<Space>,
           WithDefaults<ParseTypeOptions, Options, DefaultParseTypeOptions>
       >
 
 export type ReferencesTypeOptions = {
     asTuple?: boolean
+    asList?: boolean
     filter?: string
 }
 
@@ -45,6 +47,7 @@ export type ReferencesOf<
         Options,
         {
             asTuple: false
+            asList: false
             filter: string
         }
     >
@@ -193,5 +196,5 @@ export type Model<
     validate: ValidateFunction
     assert: (value: unknown, options?: AssertOptions) => void
     generate: (options?: GenerateOptions) => ModelType
-    references: () => ReferencesOf<Definition>[]
+    references: () => ReferencesOf<Definition, Space, { asList: true }>
 }>

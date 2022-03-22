@@ -13,10 +13,10 @@ export namespace Primitive {
         Config extends ReferencesTypeConfig,
         Result extends string = `${Def}${Def extends bigint ? "n" : ""}` &
             Config["filter"]
-    > = Config["asList"] extends true
-        ? ListPossibleTypes<Result>
-        : Config["asUnorderedList"] extends true
+    > = Config["asTuple"] extends true
         ? [Result]
+        : Config["asList"] extends true
+        ? Result[]
         : Result
 
     export const type = typeDefProxy as Definition

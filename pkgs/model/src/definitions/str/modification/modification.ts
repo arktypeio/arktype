@@ -6,15 +6,17 @@ import {
 } from "./internal.js"
 import { Fragment } from "../fragment/fragment.js"
 import { Optional } from "./optional.js"
+import { ParseTypeContext } from "../internal.js"
 
 export namespace Modification {
     export type Definition = Optional.Definition
 
     export type Parse<
         Def extends Definition,
-        Space
+        Space,
+        Context extends ParseTypeContext
     > = Def extends Optional.Definition
-        ? Optional.Parse<Def, Space>
+        ? Optional.Parse<Def, Space, Context>
         : UnknownTypeError<Def>
 
     export type Node = Optional.Node

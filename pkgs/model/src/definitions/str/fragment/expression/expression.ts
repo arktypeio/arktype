@@ -3,7 +3,7 @@ import {
     createParser,
     typeDefProxy,
     UnknownTypeError,
-    FragmentContext
+    ParseTypeContext
 } from "./internal.js"
 import { ArrowFunction } from "./arrowFunction.js"
 import { List } from "./list.js"
@@ -21,7 +21,7 @@ export namespace Expression {
     export type Parse<
         Def extends string,
         Space,
-        Context extends FragmentContext
+        Context extends ParseTypeContext
     > = Def extends ArrowFunction.Definition
         ? ArrowFunction.Parse<Def, Space, Context>
         : Def extends Union.Definition

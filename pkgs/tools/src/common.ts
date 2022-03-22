@@ -65,6 +65,10 @@ export type DeepRequired<T> = {
         : DeepRequired<T[P]>
 }
 
+export type WithPropValue<Obj, Prop extends string | number, Value> = Evaluate<
+    Omit<Obj, Prop> & { [K in Prop]: Value }
+>
+
 export type WithOptionalKeys<T extends object, Keys extends keyof T> = Omit<
     T,
     Keys

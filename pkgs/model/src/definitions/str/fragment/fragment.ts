@@ -1,13 +1,13 @@
+import { Reference } from "./reference/index.js"
+import { Expression } from "./expression/index.js"
+import { Str } from "../str.js"
 import {
+    ParseTypeContext,
     ParseConfig,
     createParser,
     typeDefProxy,
     UnknownTypeError
-} from "../internal.js"
-import { Reference } from "./reference/index.js"
-import { Expression } from "./expression/index.js"
-import { Str } from "../str.js"
-import { FragmentContext } from "./internal.js"
+} from "./internal.js"
 
 export namespace Fragment {
     export type Definition = string
@@ -15,7 +15,7 @@ export namespace Fragment {
     export type Parse<
         Def extends string,
         Space,
-        Context extends FragmentContext
+        Context extends ParseTypeContext
     > = Def extends Reference.Definition<Space>
         ? Def
         : Def extends `${infer Left}${Context["delimiter"]}${infer Right}`

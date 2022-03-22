@@ -1,6 +1,7 @@
 import { IsAny, Iteration, KeyValuate } from "@re-/tools"
 import { ParseConfig, ShallowCycleError } from "./internal.js"
 import { Root, Str } from "./definitions/index.js"
+import { DefaultParseTypeContext } from "./definitions/internal.js"
 
 type CheckReferencesForShallowCycle<
     References extends string[],
@@ -55,5 +56,9 @@ export namespace Resolution {
         Def extends Definition,
         Space,
         Options extends ParseConfig
-    > = Root.TypeOf<Root.Parse<Def, Space>, Space, Options>
+    > = Root.TypeOf<
+        Root.Parse<Def, Space, DefaultParseTypeContext>,
+        Space,
+        Options
+    >
 }

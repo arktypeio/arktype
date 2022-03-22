@@ -4,7 +4,7 @@ import {
     createParser,
     UnknownTypeError,
     ParseConfig,
-    FragmentContext
+    ParseTypeContext
 } from "./internal.js"
 import { Fragment } from "../fragment.js"
 import { Expression } from "./expression.js"
@@ -16,7 +16,7 @@ export namespace List {
     export type Parse<
         Def extends Definition,
         Space,
-        Context extends FragmentContext
+        Context extends ParseTypeContext
     > = Def extends Definition<infer Of>
         ? { list: Fragment.Parse<Of, Space, Context> }
         : UnknownTypeError<Def>

@@ -10,7 +10,7 @@ import {
     ParseContext,
     ParseConfig,
     UnknownTypeError,
-    FragmentContext
+    ParseTypeContext
 } from "./internal.js"
 import { Fragment } from "../fragment.js"
 import { Expression } from "./expression.js"
@@ -39,7 +39,7 @@ export namespace Union {
     export type Parse<
         Def extends Definition,
         Space,
-        Context extends FragmentContext
+        Context extends ParseTypeContext
     > = Def extends Definition<infer Left, infer Right>
         ? {
               union: [

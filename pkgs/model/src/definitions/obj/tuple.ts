@@ -5,7 +5,8 @@ import {
     createParser,
     tupleLengthError,
     validationError,
-    ValidationErrors
+    ValidationErrors,
+    ParseTypeContext
 } from "./internal.js"
 import { Root } from "../root.js"
 import { Obj } from "./obj.js"
@@ -17,22 +18,23 @@ export namespace Tuple {
         tuple: Root.Node[]
     }
 
-    export type Parse<Def, Space> = {
+    export type Parse<
+        Def extends Definition,
+        Space,
+        Context extends ParseTypeContext
+    > = {
         tuple: {
-            [Index in keyof Def]: Root.Parse<Def[Index], Space>
+            [Index in keyof Def]: Root.Parse<Def[Index], Space, Context>
         }
     }
 
     export type TypeOf<
         N extends Node,
         Space,
-        Options extends ParseConfig
+        Options extends ParseConfig,
+        T extends Root.Node[] = N["tuple"]
     > = Evaluate<{
-        [Index in keyof N["tuple"]]: Root.TypeOf<
-            N["tuple"][Index] & Root.Node,
-            Space,
-            Options
-        >
+        [Index in keyof T]: Root.TypeOf<T[Index], Space, Options>
     }>
 
     // export type Check<Def, Space> = Evaluate<{
