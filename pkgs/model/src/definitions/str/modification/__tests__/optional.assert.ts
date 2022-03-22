@@ -46,7 +46,7 @@ export const testOptional = () => {
                     // @ts-expect-error
                     define("boolean?|string|number")
                 ).throwsAndHasTypeError(
-                    "Modifier '?' is only valid at the end of a type definition before any constraints."
+                    "Unable to determine the type of 'boolean?'."
                 )
             })
         })

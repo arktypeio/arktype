@@ -9,6 +9,7 @@ import {
 import { Fragment } from "../fragment.js"
 import { Expression } from "./expression.js"
 import { Tuple } from "../../../obj/index.js"
+import { Evaluate } from "@re-/tools"
 
 export namespace List {
     export type Definition<Of extends string = string> = `${Of}[]`
@@ -29,7 +30,7 @@ export namespace List {
         N extends Node,
         Space,
         Options extends ParseConfig
-    > = Fragment.TypeOf<N["list"], Space, Options>[]
+    > = Evaluate<Fragment.TypeOf<N["list"], Space, Options>[]>
 
     export const type = typeDefProxy as Definition
 
@@ -56,7 +57,8 @@ export namespace List {
                     path: ctx.path
                 })
             },
-            generate: () => []
+            generate: () => [],
+            references: ({ components }) => components.item.references()
         }
     )
 

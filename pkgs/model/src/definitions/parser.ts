@@ -6,7 +6,8 @@ import {
     ValueOf,
     Exact,
     toString,
-    DeepTreeOf
+    DeepTreeOf,
+    TreeOf
 } from "@re-/tools"
 import { SpaceResolutions } from "../compile.js"
 import { ValidationErrors, unknownTypeError } from "../errors.js"
@@ -83,7 +84,7 @@ export type InheritableMethods<DefType, Components> = {
             ...args: InheritableMethodContext<DefType, Components>,
             options: ReferencesOptions
         ]
-    ) => DefType extends Obj.Definition ? DeepTreeOf<string[]> : string[]
+    ) => DefType extends Obj.Definition ? TreeOf<string[]> : string[]
     generate?: (
         ...args: [
             ...args: InheritableMethodContext<DefType, Components>,

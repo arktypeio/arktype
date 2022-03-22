@@ -68,9 +68,7 @@ export namespace Str {
             children: () => [Modification.delegate, Fragment.delegate]
         },
         {
-            matches: (def) => typeof def === "string",
-            // TODO: Fix
-            references: ({ def }) => [def]
+            matches: (def) => typeof def === "string"
         }
     )
 

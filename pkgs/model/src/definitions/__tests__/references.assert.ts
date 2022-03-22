@@ -47,12 +47,12 @@ describe("references", () => {
 
     describe("value", () => {
         test("shallow", () => {
-            assert(define(5).references()).equals(["5"]).typed as ["5"]
-            assert(define(null).references()).equals(["null"]).typed as ["null"]
-            assert(define(0n).references()).equals(["0n"]).typed as ["0n"]
-            assert(define("string").references()).equals(["string"]).typed as [
-                "string"
-            ]
+            assert(define(5).references()).equals(["5"]).typed as "5"[]
+            assert(define(null).references()).equals(["null"]).typed as "null"[]
+            assert(define(0n).references()).equals(["0n"]).typed as "0n"[]
+            assert(define("string").references()).equals(["string"])
+                .typed as "string"[]
+
             const expressionReferences = define(
                 "(string,number[])=>null|true"
             ).references()
@@ -115,7 +115,7 @@ describe("references", () => {
             assert(objectReferences)
                 .type.toString()
                 .snap(
-                    `"{ primitives: { undefined: [\\"undefined\\"]; null: [\\"null\\"]; true: [\\"true\\"]; false: [\\"false\\"]; 5: [\\"5\\"]; bigint: [\\"7n\\"]; }; strings: { keyword: [\\"boolean\\"]; expression: (\\"string\\" | \\"number\\" | \\"null\\" | \\"custom\\")[]; }; listed: [[\\"-1n\\"], [\\"null\\"], (\\"string\\" | \\"boolean\\")[]]; }"`
+                    `"{ primitives: { undefined: \\"undefined\\"[]; null: \\"null\\"[]; true: \\"true\\"[]; false: \\"false\\"[]; 5: \\"5\\"[]; bigint: \\"7n\\"[]; }; strings: { keyword: \\"boolean\\"[]; expression: (\\"string\\" | \\"number\\" | \\"null\\" | \\"custom\\")[]; }; listed: [\\"-1n\\"[], \\"null\\"[], (\\"string\\" | \\"boolean\\")[]]; }"`
                 )
         })
     })

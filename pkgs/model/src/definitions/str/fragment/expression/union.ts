@@ -1,4 +1,10 @@
-import { ElementOf, transform, TypeCategory, Unlisted } from "@re-/tools"
+import {
+    ElementOf,
+    Evaluate,
+    transform,
+    TypeCategory,
+    Unlisted
+} from "@re-/tools"
 import {
     typeDefProxy,
     isRequiredCycleError,
@@ -127,7 +133,12 @@ export namespace Union {
                 // If we've made it to this point without returning, throw the
                 // most descriptive error message we have
                 throw new Error(errorMessage)
-            }
+            },
+            references: ({ components }) =>
+                components.reduce(
+                    (refs, member) => [...refs, ...member.references()],
+                    [] as string[]
+                )
         }
     )
 

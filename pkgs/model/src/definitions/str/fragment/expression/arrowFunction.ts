@@ -35,13 +35,13 @@ export namespace ArrowFunction {
                             >
                         >
                     >
-              return: Fragment.Parse<Return, Space, Context>
+              returns: Fragment.Parse<Return, Space, Context>
           }
         : UnknownTypeError<Def>
 
     export type Node = {
         args: Fragment.Node[]
-        return: Fragment.Node
+        returns: Fragment.Node
     }
 
     export type TypeOf<
@@ -52,7 +52,7 @@ export namespace ArrowFunction {
         (
             // @ts-ignore
             ...args: TypeOfArgs<N["args"], Space, Options>
-        ) => Fragment.TypeOf<N["return"], Space, Options>
+        ) => Fragment.TypeOf<N["returns"], Space, Options>
     >
 
     type TypeOfArgs<
@@ -62,35 +62,6 @@ export namespace ArrowFunction {
     > = {
         [I in keyof Args]: Fragment.TypeOf<Args[I], Space, Options>
     }
-
-    // export type Check<
-    //     Parameters extends string,
-    //     Return extends string,
-    //     Root extends string,
-    //     Space,
-    //     ValidatedParameters extends string = CheckParameterTuple<
-    //         Parameters,
-    //         Parameters,
-    //         Space
-    //     > &
-    //         string,
-    //     ValidatedReturn extends string = Fragment.Check<Return, Return, Space>
-    // > = Parameters extends ValidatedParameters
-    //     ? Return extends ValidatedReturn
-    //         ? Root
-    //         : ValidatedReturn
-    //     : ValidatedParameters
-
-    // export type Parse<
-    //     Parameters extends string,
-    //     Return extends string,
-    //     Space,
-    //     Options extends ParseConfig
-    // > = Evaluate<
-    //     (
-    //         ...args: ParseParameterTuple<Parameters, Space, Options>
-    //     ) => Fragment.Parse<Return, Space, Options>
-    // >
 
     export const type = typeDefProxy as Definition
 
@@ -108,10 +79,8 @@ export namespace ArrowFunction {
                     .filter((arg) => !!arg)
                 const returnDef = parts.slice(1).join("=>")
                 return {
-                    parameters: parameterDefs.map((arg) =>
-                        Fragment.parse(arg, ctx)
-                    ),
-                    returned: Fragment.parse(returnDef, ctx)
+                    args: parameterDefs.map((arg) => Fragment.parse(arg, ctx)),
+                    returns: Fragment.parse(returnDef, ctx)
                 }
             }
         },
@@ -126,9 +95,13 @@ export namespace ArrowFunction {
                           path
                       }),
             generate:
-                ({ components: { returned } }, opts) =>
+                ({ components: { returns } }, opts) =>
                 (...args: any[]) =>
-                    returned.generate(opts)
+                    returns.generate(opts),
+            references: ({ components: { returns, args } }) => [
+                ...args.flatMap((arg) => arg.references()),
+                ...returns.references()
+            ]
         }
     )
 

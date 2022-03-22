@@ -26,11 +26,14 @@ export namespace Reference {
 
     export const type = typeDefProxy as string
 
-    export const parse = createParser({
-        type,
-        parent: () => Fragment.parse,
-        children: () => [Keyword.delegate, Literal.delegate, Alias.delegate]
-    })
+    export const parse = createParser(
+        {
+            type,
+            parent: () => Fragment.parse,
+            children: () => [Keyword.delegate, Literal.delegate, Alias.delegate]
+        },
+        { references: ({ def }) => [def] }
+    )
 
     export const delegate = parse as any as string
 }

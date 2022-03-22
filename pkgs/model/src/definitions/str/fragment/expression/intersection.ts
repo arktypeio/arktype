@@ -17,18 +17,6 @@ export namespace Intersection {
         After extends string = string
     > = `${Before}&${After}`
 
-    // export type Parse<
-    //     Def extends Definition,
-    //     Space,
-    //     Options extends ParseConfig
-    // > = Unlisted<ParseSplittable<"&", Def, Space, Options>>
-
-    // export type Check<
-    //     Def extends Definition,
-    //     Root extends string,
-    //     Space
-    // > = CheckSplittable<"&", Def, Root, Space>
-
     export const type = typeDefProxy as Definition
 
     export const parse = createParser(
@@ -65,7 +53,8 @@ export namespace Intersection {
             },
             generate: ({ def, components }, opts) => {
                 throw new Error("Can't generate & types.")
-            }
+            },
+            references: () => []
         }
     )
 

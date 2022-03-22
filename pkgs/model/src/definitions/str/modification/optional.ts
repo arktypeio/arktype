@@ -61,7 +61,7 @@ export namespace Optional {
                 if (!def.endsWith("?")) {
                     throw new Error(invalidModifierError("?"))
                 }
-                return [Fragment.parse(def.slice(0, -1), ctx)]
+                return { optional: Fragment.parse(def.slice(0, -1), ctx) }
             }
         },
         {
@@ -70,9 +70,10 @@ export namespace Optional {
                 if (valueType === "undefined") {
                     return {}
                 }
-                return components[0].allows(valueType, opts)
+                return components.optional.allows(valueType, opts)
             },
-            generate: () => undefined
+            generate: () => undefined,
+            references: ({ components }) => components.optional.references()
         }
     )
 
