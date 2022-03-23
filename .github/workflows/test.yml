@@ -9,7 +9,7 @@ defaults:
         shell: bash
 
 jobs:
-    build:
+    test:
         strategy:
             matrix:
                 node-version: [16.14.0]
