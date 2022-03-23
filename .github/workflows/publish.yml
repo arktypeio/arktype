@@ -1,8 +1,6 @@
-name: Redo CI
+name: Publish
 
 on:
-    pull_request:
-        branches: [main]
     workflow_dispatch:
 
 defaults:
@@ -10,39 +8,42 @@ defaults:
         shell: bash
 
 jobs:
-    build:
-        strategy:
-            matrix:
-                node-version: [16.14.0]
-                os: [ubuntu-latest, windows-latest, macOS-latest]
-            fail-fast: false
-        runs-on: ${{ matrix.os }}
+    publish:
+        runs-on: ubuntu-latest
         env:
             NODE_OPTIONS: "--unhandled-rejections=strict"
         steps:
-            - uses: actions/checkout@v2
+            - name: Checkout re-po
+              uses: actions/checkout@v2
               with:
                   fetch-depth: 0
                   token: ${{ secrets.PUSH_TOKEN }}
-            - name: Use Node.js ${{ matrix.node-version }}
+
+            - name: Setup Node.js
               uses: actions/setup-node@v2
               with:
-                  node-version: ${{ matrix.node-version }}
+                  node-version: 16.14.0
                   registry-url: "https://registry.npmjs.org"
-            - run: node common/scripts/install-run-rush.js change -v
-            - name: Bump package versions
-              if: ${{ github.event_name == 'workflow_dispatch' }}
+
+            - name: Verify changelogs
+              run: node common/scripts/install-run-rush.js change -v
+
+            - name: Update package versions
               run: node common/scripts/install-run-rush.js publish --apply
-            - run: node common/scripts/install-run-rush.js install
-            - run: node common/scripts/install-run-rush.js build
-            - run: node common/scripts/install-run-rush.js test
-              env:
-                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+            - name: Install dependencies
+              run: node common/scripts/install-run-rush.js install
+
+            - name: Build packages
+              run: node common/scripts/install-run-rush.js build
+
+            - name: Test packages
+              run: node common/scripts/install-run-rush.js test
+
             - name: Create package artifacts
-              if: ${{ github.event_name == 'workflow_dispatch' && matrix.os == 'ubuntu-latest'}}
               run: node common/scripts/install-run-rush.js publish --publish --pack --include-all --release-folder release
+
             - name: Publish packages to NPM and push version updates to main
-              if: ${{ github.event_name == 'workflow_dispatch' && matrix.os == 'ubuntu-latest' }}
               env:
                   NODE_AUTH_TOKEN: ${{ secrets.NPM_AUTH_TOKEN }}
               run: |
