@@ -7,6 +7,7 @@ import {
 import { Fragment } from "../fragment/fragment.js"
 import { Optional } from "./optional.js"
 import { ParseTypeContext } from "../internal.js"
+import { Str } from "../str.js"
 
 export namespace Modification {
     export type Definition = Optional.Definition
@@ -31,7 +32,7 @@ export namespace Modification {
 
     export const parse = createParser({
         type,
-        parent: () => Fragment.parse,
+        parent: () => Str.parse,
         children: () => [Optional.delegate]
     })
 

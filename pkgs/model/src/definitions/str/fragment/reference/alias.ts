@@ -107,7 +107,8 @@ export namespace Alias {
                         Root.parse(ctx.space[def], {
                             ...ctx,
                             seen: [...ctx.seen, def],
-                            shallowSeen: [...ctx.shallowSeen, def]
+                            shallowSeen: [...ctx.shallowSeen, def],
+                            modifiers: []
                         })
                 }
             }

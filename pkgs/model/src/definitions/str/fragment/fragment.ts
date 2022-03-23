@@ -8,6 +8,13 @@ import {
     typeDefProxy,
     UnknownTypeError
 } from "./internal.js"
+import { Modification } from "../modification/modification.js"
+import {
+    invalidModifierError,
+    InvalidModifierError,
+    ModifierToken,
+    unknownTypeError
+} from "../internal.js"
 
 export namespace Fragment {
     export type Definition = string
@@ -16,14 +23,17 @@ export namespace Fragment {
         Def extends string,
         Space,
         Context extends ParseTypeContext
-    > = Def extends Reference.Definition<Space>
-        ? Def
+    > = Def extends Expression.Definition
+        ? Expression.Parse<Def, Space, Context>
         : Def extends `${infer Left}${Context["delimiter"]}${infer Right}`
         ? UnpackArgs<
               [Parse<Left, Space, Context>, Parse<Right, Space, Context>]
           >
-        : Def extends Expression.Definition
-        ? Expression.Parse<Def, Space, Context>
+        : Def extends Reference.Definition<Space>
+        ? Def
+        : // If we've made it to this point, Modifications should have already been handled
+        Def extends Modification.Definition
+        ? InvalidModifierError
         : UnknownTypeError<Def>
 
     type UnpackArgs<Args> = Args extends [infer First, infer Second]
@@ -50,7 +60,17 @@ export namespace Fragment {
         {
             type,
             parent: () => Str.parse,
-            children: () => [Reference.delegate, Expression.delegate]
+            children: () => [Reference.delegate, Expression.delegate],
+            fallback: (def, { path }) => {
+                if (Modification.parse.matches(def as any)) {
+                    throw new Error(
+                        invalidModifierError(
+                            def[def.length - 1] as ModifierToken
+                        )
+                    )
+                }
+                throw new Error(unknownTypeError(def, path))
+            }
         },
         {
             matches: (def) => typeof def === "string"

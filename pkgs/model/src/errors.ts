@@ -164,7 +164,7 @@ export type ValidationErrorMessage =
     | InvalidLimitError
     | UnboundableError
     | DuplicateModifierError
-// | InvalidModifierError
+    | InvalidModifierError
 
 export type InferrableValidationErrorMessage<E> =
     E extends ValidationErrorMessage ? E : never

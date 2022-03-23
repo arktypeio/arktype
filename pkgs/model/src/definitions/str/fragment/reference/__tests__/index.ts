@@ -5,7 +5,7 @@ import { testKeyword } from "./keyword.assert.js"
 import { testRegex } from "./regex.assert.js"
 import { testAlias } from "./alias.assert.js"
 
-export const testBuiltin = () => {
+export const testReference = () => {
     describe("literal", () => {
         describe("string", testStringLiteral)
         describe("number", testNumberLiteral)

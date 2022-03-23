@@ -30,13 +30,15 @@ export type ParseContext = {
     path: string[]
     seen: string[]
     shallowSeen: string[]
+    modifiers: string[]
 }
 
 export const defaultParseContext: ParseContext = {
     space: {},
     path: [],
     seen: [],
-    shallowSeen: []
+    shallowSeen: [],
+    modifiers: []
 }
 
 export type ParseArgs<DefType> = [definition: DefType, context: ParseContext]

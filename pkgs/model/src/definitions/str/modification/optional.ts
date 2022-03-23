@@ -54,14 +54,15 @@ export namespace Optional {
             type,
             parent: () => Modification.parse,
             components: (def, ctx) => {
-                const tokenCount = def.match(/\?/g)?.length
-                if (tokenCount !== 1) {
+                if (ctx.modifiers.includes("?")) {
                     throw new Error(duplicateModifierError("?"))
                 }
-                if (!def.endsWith("?")) {
-                    throw new Error(invalidModifierError("?"))
+                return {
+                    optional: Str.parse(def.slice(0, -1), {
+                        ...ctx,
+                        modifiers: [...ctx.modifiers, "?"]
+                    })
                 }
-                return { optional: Fragment.parse(def.slice(0, -1), ctx) }
             }
         },
         {

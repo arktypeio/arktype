@@ -1,5 +1,5 @@
 import { testOptional } from "./optional.assert.js"
 
-export const testModifier = () => {
+export const testModification = () => {
     describe("optional", testOptional)
 }

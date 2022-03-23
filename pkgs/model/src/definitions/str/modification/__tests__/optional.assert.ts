@@ -38,7 +38,7 @@ export const testOptional = () => {
                         b: "number?|string?"
                     })
                 ).throwsAndHasTypeError(
-                    "Modifier '?' cannot appear more than once in a string definition."
+                    "Modifier '?' is only valid at the end of a type definition."
                 )
             })
             test("within expression", () => {
@@ -46,7 +46,7 @@ export const testOptional = () => {
                     // @ts-expect-error
                     define("boolean?|string|number")
                 ).throwsAndHasTypeError(
-                    "Unable to determine the type of 'boolean?'."
+                    "Modifier '?' is only valid at the end of a type definition."
                 )
             })
         })

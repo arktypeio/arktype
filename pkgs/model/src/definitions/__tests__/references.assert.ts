@@ -14,28 +14,34 @@ describe("references", () => {
             assert(placeholder as ReferencesOf<false>).typed as "false"
         })
         test("string", () => {
-            const references =
-                {} as ReferencesOf<"(user[],group[])=>boolean|number|null">
+            const references = {} as ReferencesOf<
+                "(user[],group[])=>boolean|number|null",
+                { user: "any"; group: "any" }
+            >
             assert(references).typed as
                 | "number"
                 | "boolean"
-                | "null"
-                | "user"
                 | "group"
+                | "user"
+                | "null"
 
             const listedFilteredReferences = {} as ReferencesOf<
                 "(user[],group[])=>boolean|number|null",
-                { asList: true; filter: `${string}${"o"}${string}` }
+                { user: "any"; group: "any" },
+                { asTuple: true; filter: `${string}${"o"}${string}` }
             >
             assert(listedFilteredReferences).typed as ["boolean", "group"]
         })
         test("object", () => {
-            const refs = {} as ReferencesOf<{
-                listed: ["group|null", "user|null"]
-                a: { b: { c: "user[]?" } }
-            }>
+            const refs = {} as ReferencesOf<
+                {
+                    listed: ["group|null", "user|null"]
+                    a: { b: { c: "user[]?" } }
+                },
+                { user: "any"; group: "any" }
+            >
             assert(refs).typed as {
-                listed: ["group" | "null", "user" | "null"]
+                listed: ["group" | "null", "null" | "user"]
                 a: {
                     b: {
                         c: "user"
