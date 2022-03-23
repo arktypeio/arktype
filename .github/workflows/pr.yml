@@ -1,0 +1,43 @@
+name: Pull request
+
+on:
+    pull_request:
+        branches: [main]
+
+defaults:
+    run:
+        shell: bash
+
+jobs:
+    build:
+        strategy:
+            matrix:
+                node-version: [16.14.0]
+                os: [ubuntu-latest, windows-latest, macOS-latest]
+            fail-fast: false
+        runs-on: ${{ matrix.os }}
+        env:
+            NODE_OPTIONS: "--unhandled-rejections=strict"
+        steps:
+            - name: Checkout re-po
+              uses: actions/checkout@v2
+              with:
+                  fetch-depth: 0
+
+            - name: Setup Node.js ${{ matrix.node-version }}
+              uses: actions/setup-node@v2
+              with:
+                  node-version: ${{ matrix.node-version }}
+                  registry-url: "https://registry.npmjs.org"
+
+            - name: Verify changelogs
+              run: node common/scripts/install-run-rush.js change -v
+
+            - name: Install dependencies
+              run: node common/scripts/install-run-rush.js install
+
+            - name: Build packages
+              run: node common/scripts/install-run-rush.js build
+
+            - name: Test packages
+              run: node common/scripts/install-run-rush.js test
