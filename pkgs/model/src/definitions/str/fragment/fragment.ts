@@ -48,10 +48,10 @@ export namespace Fragment {
         N,
         Space,
         Options extends ParseConfig
-    > = N extends Reference.Node
-        ? Reference.TypeOf<N, Space, Options>
-        : N extends Expression.Node
+    > = N extends Expression.Node
         ? Expression.TypeOf<N, Space, Options>
+        : N extends Reference.Node
+        ? Reference.TypeOf<N, Space, Options>
         : unknown
 
     export const type = typeDefProxy as Definition

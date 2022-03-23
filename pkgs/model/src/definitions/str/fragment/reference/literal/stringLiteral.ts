@@ -2,14 +2,14 @@ import { typeDefProxy, validationError, createParser } from "../internal.js"
 import { Literal } from "./literal.js"
 
 export namespace StringLiteral {
-    // Double quotes are also supported, but are automatically replaced by single quotes before validation
-    export type Definition<Text extends string = string> =
-        | `'${Text}'`
-        | `"${Text}"`
+    export type Definition<
+        Text extends string = string,
+        Rest extends string = string
+    > = `'${Text}'` | `"${Text}"`
 
     export const type = typeDefProxy as Definition
 
-    export const matcher = /^('.*')|(".*")$/
+    export const matcher = /^('.*?')|(".*?")/
 
     export const matches = (def: any): def is Definition => matcher.test(def)
 

@@ -11,7 +11,7 @@ export type Comparator = "<=" | ">=" | ">" | "<"
 // number<5
 // 3<number<5
 
-export namespace Bounded {
+export namespace Constrained {
     export type Definition<
         Left extends string = string,
         Right extends string = string
