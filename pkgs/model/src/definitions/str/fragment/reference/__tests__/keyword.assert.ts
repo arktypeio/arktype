@@ -216,7 +216,7 @@ export const testKeyword = () => {
     describe("never", () => {
         const { type, generate, validate } = define("never")
         test("type", () => {
-            // @ts-expect-error
+            // @ts-ignore
             assert(type).typed as never
         })
         test("generation", () => {

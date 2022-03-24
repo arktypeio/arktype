@@ -37,18 +37,6 @@ export namespace Tuple {
         [Index in keyof T]: Root.TypeOf<T[Index], Space, Options>
     }>
 
-    // export type Check<Def, Space> = Evaluate<{
-    //     [Index in keyof Def]: Root.Check<Def[Index], Space>
-    // }>
-
-    // export type Parse<
-    //     Def extends Definition,
-    //     Space,
-    //     Options extends ParseConfig
-    // > = {
-    //     [Index in keyof Def]: Root.Parse<Def[Index], Space, Options>
-    // }
-
     export const type = typeDefProxy as Definition
 
     export const parse = createParser(

@@ -2,10 +2,9 @@ import { typeDefProxy, validationError, createParser } from "../internal.js"
 import { Literal } from "./literal.js"
 
 export namespace StringLiteral {
-    export type Definition<
-        Text extends string = string,
-        Rest extends string = string
-    > = `'${Text}'` | `"${Text}"`
+    export type Definition<Text extends string = string> =
+        | `'${Text}'`
+        | `"${Text}"`
 
     export const type = typeDefProxy as Definition
 

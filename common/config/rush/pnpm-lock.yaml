@@ -1643,7 +1643,7 @@ packages:
       '@docusaurus/utils': 2.0.0-beta.17
       '@docusaurus/utils-common': 2.0.0-beta.17
       '@docusaurus/utils-validation': 2.0.0-beta.17
-      '@slorber/static-site-generator-webpack-plugin': 4.0.2
+      '@slorber/static-site-generator-webpack-plugin': 4.0.3
       '@svgr/webpack': 6.2.1
       autoprefixer: 10.4.4_postcss@8.4.12
       babel-loader: 8.2.4_fa907c5a4f16ccc493e21649ccc59574
@@ -2061,7 +2061,7 @@ packages:
     peerDependencies:
       react: '*'
     dependencies:
-      '@types/react': 17.0.37
+      '@types/react': 17.0.5
       prop-types: 15.8.1
       react: 17.0.1
     dev: false
@@ -3006,12 +3006,12 @@ packages:
     dependencies:
       '@sinonjs/commons': 1.8.3
 
-  /@slorber/static-site-generator-webpack-plugin/4.0.2:
-    resolution: {integrity: sha512-qHmW0eeHqVp7Sa4uk8rRHmG4iJVoq7RS0cxs+eUl9kituDarlM2XWjDdoKEYucEaXXLkTES+PRSR2oPwxtSEtw==}
+  /@slorber/static-site-generator-webpack-plugin/4.0.3:
+    resolution: {integrity: sha512-bKSMNTSFp67QrMZQby0X1QpD8XJC1De5Qh7S/DsEeojWnAOSD+VwEYNC0guhlDBTZxUdvgx0CpMaVwnCHSoWmw==}
     dependencies:
       bluebird: 3.7.2
       cheerio: 0.22.0
-      eval: 0.1.7
+      eval: 0.1.6
       webpack-sources: 1.4.3
     dev: false
 
@@ -3341,8 +3341,8 @@ packages:
   /@types/node/17.0.1:
     resolution: {integrity: sha512-NXKvBVUzIbs6ylBwmOwHFkZS2EXCcjnqr8ZCRNaXBkHAf+3mn/rPcJxwrzuc6movh8fxQAsUUfYklJ/EG+hZqQ==}
 
-  /@types/node/17.0.22:
-    resolution: {integrity: sha512-8FwbVoG4fy+ykY86XCAclKZDORttqE5/s7dyWZKLXTdv3vRy5HozBEinG5IqhvPXXzIZEcTVbuHlQEI6iuwcmw==}
+  /@types/node/17.0.23:
+    resolution: {integrity: sha512-UxDxWn7dl97rKVeVS61vErvw086aCYhDLyvRQZ5Rk65rZKepaFdm53GeqXaKBuOhED4e9uWq34IC3TdSdJJ2Gw==}
     dev: false
 
   /@types/parse-json/4.0.0:
@@ -3417,6 +3417,14 @@ packages:
       '@types/prop-types': 15.7.4
       '@types/scheduler': 0.16.2
       csstype: 3.0.11
+
+  /@types/react/17.0.5:
+    resolution: {integrity: sha512-bj4biDB9ZJmGAYTWSKJly6bMr4BLUiBrx9ujiJEoP9XIDY9CTaPGxE5QWN/1WjpPLzYF7/jRNnV2nNxNe970sw==}
+    dependencies:
+      '@types/prop-types': 15.7.4
+      '@types/scheduler': 0.16.2
+      csstype: 3.0.11
+    dev: false
 
   /@types/retry/0.12.1:
     resolution: {integrity: sha512-xoDlM2S4ortawSWORYqsdU+2rxdh4LRW9ytc3zmT37RIKQh6IHyKwwtKhKis9ah8ol07DCkZxPt8BBvPjC6v4g==}
@@ -4099,7 +4107,7 @@ packages:
     hasBin: true
     dependencies:
       caniuse-lite: 1.0.30001319
-      electron-to-chromium: 1.4.90
+      electron-to-chromium: 1.4.91
       escalade: 3.1.1
       node-releases: 2.0.2
       picocolors: 1.0.0
@@ -4763,7 +4771,7 @@ packages:
       postcss: ^8.2.15
     dependencies:
       cssnano-preset-default: 5.2.5_postcss@8.4.12
-      lilconfig: 2.0.4
+      lilconfig: 2.0.5
       postcss: 8.4.12
       yaml: 1.10.2
     dev: false
@@ -5078,8 +5086,8 @@ packages:
     resolution: {integrity: sha1-WQxhFWsK4vTwJVcyoViyZrxWsh0=}
     dev: false
 
-  /electron-to-chromium/1.4.90:
-    resolution: {integrity: sha512-ZwKgSA0mQMyEhz+NR0F8dRzkrCLeHLzLkjx/CWf16+zV85hQ6meXPQbKanvhnpkYb7b2uJNj+enQJ/N877ND4Q==}
+  /electron-to-chromium/1.4.91:
+    resolution: {integrity: sha512-Z7Jkc4+ouEg8F6RrrgLOs0kkJjI0cnyFQmnGVpln8pPifuKBNbUr37GMgJsCTSwy6Z9TK7oTwW33Oe+3aERYew==}
 
   /emittery/0.8.1:
     resolution: {integrity: sha512-uDfvUjVrfGJJhymx/kz6prltenw1u7WrCg1oa94zYY8xxVpLLUu045LAT0dhDZdXG58/EpPL/5kA180fQ/qudg==}
@@ -5444,11 +5452,10 @@ packages:
     engines: {node: '>= 0.6'}
     dev: false
 
-  /eval/0.1.7:
-    resolution: {integrity: sha512-ju9MU0XxhlibL4H5Ln8jCPJONGOS7unrBY+x1ICub09Ohg0tWTcBVkqgbJpRmczNobY8RxqCdar7hkdg5msVCA==}
+  /eval/0.1.6:
+    resolution: {integrity: sha512-o0XUw+5OGkXw4pJZzQoXUk+H87DHuC+7ZE//oSrRGtatTmr12oTnLfg6QOq9DyTt0c/p4TwzgmkKrBzWTSizyQ==}
     engines: {node: '>= 0.8'}
     dependencies:
-      '@types/node': 17.0.1
       require-like: 0.1.2
     dev: false
 
@@ -7406,8 +7413,8 @@ packages:
       prelude-ls: 1.1.2
       type-check: 0.3.2
 
-  /lilconfig/2.0.4:
-    resolution: {integrity: sha512-bfTIN7lEsiooCocSISTWXkiWJkRqtL9wYtYy+8EK3Y41qh3mpwPU0ycTOgjdY9ErwXCc8QyrQp82bdL0Xkm9yA==}
+  /lilconfig/2.0.5:
+    resolution: {integrity: sha512-xaYmXZtTHPAw5m+xLN8ab9C+3a8YmV3asNSPOATITbtwrfbwaLJj8h66H1WMIpALCkqsIzK3h7oQ+PdX+LQ9Eg==}
     engines: {node: '>=10'}
     dev: false
 
@@ -9465,7 +9472,7 @@ packages:
     engines: {node: '>=12.0.0', npm: '>=5.6.0'}
     hasBin: true
     dependencies:
-      '@types/node': 17.0.22
+      '@types/node': 17.0.23
       '@types/sax': 1.2.4
       arg: 5.0.1
       sax: 1.2.4

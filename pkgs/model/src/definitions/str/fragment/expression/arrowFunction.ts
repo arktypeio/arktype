@@ -1,3 +1,4 @@
+import { Evaluate, WithPropValue, ToList } from "@re-/tools"
 import {
     typeDefProxy,
     validationError,
@@ -8,7 +9,6 @@ import {
 } from "./internal.js"
 import { Fragment } from "../fragment.js"
 import { Expression } from "./expression.js"
-import { Evaluate, WithPropValue, ToList } from "@re-/tools"
 
 export namespace ArrowFunction {
     export type Definition<
@@ -47,11 +47,12 @@ export namespace ArrowFunction {
     export type TypeOf<
         N extends Node,
         Space,
-        Options extends ParseConfig
+        Options extends ParseConfig,
+        Args extends Fragment.Node[] = N["args"]
     > = Evaluate<
+        // @ts-ignore
         (
-            // @ts-ignore
-            ...args: TypeOfArgs<N["args"], Space, Options>
+            ...args: TypeOfArgs<Args, Space, Options>
         ) => Fragment.TypeOf<N["returns"], Space, Options>
     >
 
