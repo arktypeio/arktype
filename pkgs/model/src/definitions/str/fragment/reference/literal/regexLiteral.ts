@@ -37,8 +37,11 @@ export namespace RegexLiteral {
                 )
                     ? {}
                     : validationError({ def, valueType, path }),
-            // TODO: Add ability to generate a regex
-            generate: ({ def }) => ""
+            generate: ({ def }) => {
+                throw new Error(
+                    `Unable to generate a value for ${def} (generation of regex is unsupported).`
+                )
+            }
         }
     )
 

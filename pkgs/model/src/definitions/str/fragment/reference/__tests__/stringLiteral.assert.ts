@@ -28,6 +28,22 @@ export const testStringLiteral = () => {
                     /Unable to determine the type of[\s\S]*mismatched'/
                 )
             })
+            test("extraneous single quotes", () => {
+                assert(() =>
+                    // @ts-expect-error
+                    define(`'this isn't allowed'`)
+                ).throwsAndHasTypeError(
+                    /Unable to determine the type of[\s\S]*allowed'/
+                )
+            })
+            test("nested double quote pair", () => {
+                assert(() =>
+                    // @ts-expect-error
+                    define(`"not "ok""`)
+                ).throwsAndHasTypeError(
+                    /Unable to determine the type of[\s\S]*ok/
+                )
+            })
         })
     })
     describe("validation", () => {
