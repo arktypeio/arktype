@@ -1643,7 +1643,7 @@ packages:
       '@docusaurus/utils': 2.0.0-beta.17
       '@docusaurus/utils-common': 2.0.0-beta.17
       '@docusaurus/utils-validation': 2.0.0-beta.17
-      '@slorber/static-site-generator-webpack-plugin': 4.0.3
+      '@slorber/static-site-generator-webpack-plugin': 4.0.4
       '@svgr/webpack': 6.2.1
       autoprefixer: 10.4.4_postcss@8.4.12
       babel-loader: 8.2.4_fa907c5a4f16ccc493e21649ccc59574
@@ -2061,7 +2061,7 @@ packages:
     peerDependencies:
       react: '*'
     dependencies:
-      '@types/react': 17.0.5
+      '@types/react': 17.0.37
       prop-types: 15.8.1
       react: 17.0.1
     dev: false
@@ -3006,12 +3006,12 @@ packages:
     dependencies:
       '@sinonjs/commons': 1.8.3
 
-  /@slorber/static-site-generator-webpack-plugin/4.0.3:
-    resolution: {integrity: sha512-bKSMNTSFp67QrMZQby0X1QpD8XJC1De5Qh7S/DsEeojWnAOSD+VwEYNC0guhlDBTZxUdvgx0CpMaVwnCHSoWmw==}
+  /@slorber/static-site-generator-webpack-plugin/4.0.4:
+    resolution: {integrity: sha512-FvMavoWEIePps6/JwGCOLYKCRhuwIHhMtmbKpBFgzNkxwpa/569LfTkrbRk1m1I3n+ezJK4on9E1A6cjuZmD9g==}
     dependencies:
       bluebird: 3.7.2
       cheerio: 0.22.0
-      eval: 0.1.6
+      eval: 0.1.8
       webpack-sources: 1.4.3
     dev: false
 
@@ -3418,14 +3418,6 @@ packages:
       '@types/scheduler': 0.16.2
       csstype: 3.0.11
 
-  /@types/react/17.0.5:
-    resolution: {integrity: sha512-bj4biDB9ZJmGAYTWSKJly6bMr4BLUiBrx9ujiJEoP9XIDY9CTaPGxE5QWN/1WjpPLzYF7/jRNnV2nNxNe970sw==}
-    dependencies:
-      '@types/prop-types': 15.7.4
-      '@types/scheduler': 0.16.2
-      csstype: 3.0.11
-    dev: false
-
   /@types/retry/0.12.1:
     resolution: {integrity: sha512-xoDlM2S4ortawSWORYqsdU+2rxdh4LRW9ytc3zmT37RIKQh6IHyKwwtKhKis9ah8ol07DCkZxPt8BBvPjC6v4g==}
     dev: false
@@ -3829,7 +3821,7 @@ packages:
       postcss: ^8.1.0
     dependencies:
       browserslist: 4.20.2
-      caniuse-lite: 1.0.30001319
+      caniuse-lite: 1.0.30001320
       fraction.js: 4.2.0
       normalize-range: 0.1.2
       picocolors: 1.0.0
@@ -4106,8 +4098,8 @@ packages:
     engines: {node: ^6 || ^7 || ^8 || ^9 || ^10 || ^11 || ^12 || >=13.7}
     hasBin: true
     dependencies:
-      caniuse-lite: 1.0.30001319
-      electron-to-chromium: 1.4.91
+      caniuse-lite: 1.0.30001320
+      electron-to-chromium: 1.4.92
       escalade: 3.1.1
       node-releases: 2.0.2
       picocolors: 1.0.0
@@ -4189,13 +4181,13 @@ packages:
     resolution: {integrity: sha512-bsTwuIg/BZZK/vreVTYYbSWoe2F+71P7K5QGEX+pT250DZbfU1MQ5prOKpPR+LL6uWKK3KMwMCAS74QB3Um1uw==}
     dependencies:
       browserslist: 4.20.2
-      caniuse-lite: 1.0.30001319
+      caniuse-lite: 1.0.30001320
       lodash.memoize: 4.1.2
       lodash.uniq: 4.5.0
     dev: false
 
-  /caniuse-lite/1.0.30001319:
-    resolution: {integrity: sha512-xjlIAFHucBRSMUo1kb5D4LYgcN1M45qdKP++lhqowDpwJwGkpIRTt5qQqnhxjj1vHcI7nrJxWhCC1ATrCEBTcw==}
+  /caniuse-lite/1.0.30001320:
+    resolution: {integrity: sha512-MWPzG54AGdo3nWx7zHZTefseM5Y1ccM7hlQKHRqJkPozUaw3hNbBTMmLn16GG2FUzjR13Cr3NPfhIieX5PzXDA==}
 
   /ccount/1.1.0:
     resolution: {integrity: sha512-vlNK021QdI7PNeiUh/lKkC/mNHHfV0m/Ad5JoI0TYtlBnJAslM/JIkm/tGC88bkLIwO6OQ5uV6ztS6kVAtCDlg==}
@@ -5086,8 +5078,8 @@ packages:
     resolution: {integrity: sha1-WQxhFWsK4vTwJVcyoViyZrxWsh0=}
     dev: false
 
-  /electron-to-chromium/1.4.91:
-    resolution: {integrity: sha512-Z7Jkc4+ouEg8F6RrrgLOs0kkJjI0cnyFQmnGVpln8pPifuKBNbUr37GMgJsCTSwy6Z9TK7oTwW33Oe+3aERYew==}
+  /electron-to-chromium/1.4.92:
+    resolution: {integrity: sha512-YAVbvQIcDE/IJ/vzDMjD484/hsRbFPW2qXJPaYTfOhtligmfYEYOep+5QojpaEU9kq6bMvNeC2aG7arYvTHYsA==}
 
   /emittery/0.8.1:
     resolution: {integrity: sha512-uDfvUjVrfGJJhymx/kz6prltenw1u7WrCg1oa94zYY8xxVpLLUu045LAT0dhDZdXG58/EpPL/5kA180fQ/qudg==}
@@ -5452,10 +5444,11 @@ packages:
     engines: {node: '>= 0.6'}
     dev: false
 
-  /eval/0.1.6:
-    resolution: {integrity: sha512-o0XUw+5OGkXw4pJZzQoXUk+H87DHuC+7ZE//oSrRGtatTmr12oTnLfg6QOq9DyTt0c/p4TwzgmkKrBzWTSizyQ==}
+  /eval/0.1.8:
+    resolution: {integrity: sha512-EzV94NYKoO09GLXGjXj9JIlXijVck4ONSr5wiCWDvhsvj5jxSrzTmRU/9C1DyB6uToszLs8aifA6NQ7lEQdvFw==}
     engines: {node: '>= 0.8'}
     dependencies:
+      '@types/node': 17.0.1
       require-like: 0.1.2
     dev: false
 

@@ -21,6 +21,9 @@ export const testIntegration = () => {
                 | "no"
                 | "maybe"
         })
+        test("literal of unions", () => {
+            assert(define('"yes|no|maybe"').type).typed as "yes|no|maybe"
+        })
     })
     test("model props", () => {
         const a = define("a", {

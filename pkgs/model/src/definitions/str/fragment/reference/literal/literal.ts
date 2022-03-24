@@ -4,6 +4,7 @@ import { NumberLiteral } from "./numberLiteral.js"
 import { BigintLiteral } from "./bigintLiteral.js"
 import { Reference } from "../reference.js"
 import { RegexLiteral } from "./regexLiteral.js"
+import { FirstEnclosed } from "./internal.js"
 
 export namespace Literal {
     export type Definition =
@@ -12,10 +13,21 @@ export namespace Literal {
         | NumberLiteral.Definition
         | BigintLiteral.Definition
 
+    export type Matches<Def extends string> =
+        StringLiteral.Matches<Def> extends true
+            ? true
+            : RegexLiteral.Matches<Def> extends true
+            ? true
+            : Def extends NumberLiteral.Definition | BigintLiteral.Definition
+            ? true
+            : false
+
     export type TypeOf<Def extends string> =
-        Def extends StringLiteral.Definition<infer Text>
-            ? Text
-            : Def extends RegexLiteral.Definition
+        Def extends StringLiteral.Definition<FirstEnclosed<Def, `'`>>
+            ? FirstEnclosed<Def, `'`>
+            : Def extends StringLiteral.Definition<FirstEnclosed<Def, `"`>>
+            ? FirstEnclosed<Def, `"`>
+            : Def extends RegexLiteral.Definition<FirstEnclosed<Def, `/`>>
             ? string
             : // For now this is always inferred as 'number', even though the string is a literal like '5'
             Def extends NumberLiteral.Definition<infer Value>
@@ -24,7 +36,7 @@ export namespace Literal {
             ? Value
             : unknown
 
-    export const type = typeDefProxy as Definition
+    export const type = typeDefProxy as string
 
     export const parse = createParser({
         type,

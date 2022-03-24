@@ -10,6 +10,15 @@ export namespace Reference {
         | Literal.Definition
         | Alias.Definition<Space>
 
+    export type Matches<
+        Def extends string,
+        Space
+    > = Literal.Matches<Def> extends true
+        ? true
+        : Def extends Keyword.Definition | Alias.Definition<Space>
+        ? true
+        : false
+
     export type Node = string
 
     export type TypeOf<

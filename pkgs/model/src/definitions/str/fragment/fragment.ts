@@ -23,14 +23,14 @@ export namespace Fragment {
         Def extends string,
         Space,
         Context extends ParseTypeContext
-    > = Def extends Expression.Definition
+    > = Reference.Matches<Def, Space> extends true
+        ? Def
+        : Def extends Expression.Definition
         ? Expression.Parse<Def, Space, Context>
         : Def extends `${infer Left}${Context["delimiter"]}${infer Right}`
         ? UnpackArgs<
               [Parse<Left, Space, Context>, Parse<Right, Space, Context>]
           >
-        : Def extends Reference.Definition<Space>
-        ? Def
         : // If we've made it to this point, Modifications should have already been handled
         Def extends Modification.Definition
         ? InvalidModifierError

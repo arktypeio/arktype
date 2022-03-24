@@ -1,14 +1,23 @@
 import { typeDefProxy, validationError, createParser } from "../internal.js"
 import { Reference } from "../reference.js"
+import { FirstEnclosed } from "./internal.js"
 import { StringLiteral } from "./stringLiteral.js"
 
 export namespace RegexLiteral {
     export type Definition<Expression extends string = string> =
         `/${Expression}/`
 
+    export type Matches<Def extends string> = Def extends `/${FirstEnclosed<
+        Def,
+        `/`
+    >}/`
+        ? true
+        : false
+
     export const type = typeDefProxy as Definition
 
-    export const matcher = /^\/.*\/$/
+    // Matches a definition enclosed by forward slashes that does not contain any other forward slashes
+    export const matcher = /^\/[^\/]*\/$/
 
     export const matches = (def: any): def is Definition => matcher.test(def)
 
