@@ -1,7 +1,10 @@
+import { TestResult } from "@jest/types"
 import {
+    DeepUnlisted,
     DefaultDelimiter,
     ElementOf,
     Iteration,
+    List,
     ListPossibleTypes,
     Stringifiable
 } from "./common.js"
@@ -122,54 +125,67 @@ export type StringReplace<
 export type Split<
     S extends string,
     Delimiter extends string,
+    IncludeDelimiter extends boolean = false,
     Result extends string[] = []
 > = S extends `${infer Left}${Delimiter}${infer Right}`
-    ? Split<Right, Delimiter, [...Result, Left]>
+    ? Split<
+          Right,
+          Delimiter,
+          IncludeDelimiter,
+          [
+              ...Result,
+              ...(IncludeDelimiter extends true ? [Left, Delimiter] : [Left])
+          ]
+      >
     : [...Result, S]
-
-export type SpliterateOptions = {
-    asList?: boolean
-    asUnorderedList?: boolean
-    filter?: string
-}
 
 /**
  * Iteratively split a string literal type using a tuple of delimiters
  */
 export type Spliterate<
-    Fragments extends string,
+    S extends string,
     Delimiters extends string[],
-    Options extends SpliterateOptions = {},
-    Config extends Required<SpliterateOptions> = WithDefaults<
-        SpliterateOptions,
-        Options,
-        {
-            asList: false
-            asUnorderedList: false
-            filter: string
-        }
-    >,
-    Result extends string = SpliterateRaw<
-        Fragments,
-        Delimiters,
-        Config["filter"]
-    >,
-    ListedResult extends string[] = ListPossibleTypes<Result>
-> = Options["asList"] extends true
-    ? ListedResult
-    : Options["asUnorderedList"] extends true
-    ? ListedResult extends [string]
-        ? ListedResult
-        : Result[]
-    : Result
+    IncludeDelimiters extends boolean = false
+> = UnpackNestedTuples<
+    SpliterateRecurse<[S], Delimiters, IncludeDelimiters, []>
+>
 
-type SpliterateRaw<
-    Fragments extends string,
+type SpliterateRecurse<
+    Fragments extends string[],
     Delimiters extends string[],
-    Filter extends string
-> = Delimiters extends Iteration<string, infer Character, infer Remaining>
-    ? SpliterateRaw<ElementOf<Split<Fragments, Character>>, Remaining, Filter>
-    : Exclude<ElementOf<Split<Fragments, Delimiters[0]>>, ""> & Filter
+    IncludeDelimiters extends boolean,
+    PreviousDelimiters extends string[]
+> = Delimiters extends Iteration<
+    string,
+    infer CurrentDelimiter,
+    infer RemainingDelimiters
+>
+    ? {
+          [I in keyof Fragments]: Fragments[I] extends string
+              ? Fragments[I] extends ElementOf<PreviousDelimiters>
+                  ? Fragments[I]
+                  : SpliterateRecurse<
+                        Split<
+                            Fragments[I],
+                            CurrentDelimiter,
+                            IncludeDelimiters
+                        >,
+                        RemainingDelimiters,
+                        IncludeDelimiters,
+                        [...PreviousDelimiters, CurrentDelimiter]
+                    >
+              : never
+      }
+    : Fragments
+
+type UnpackNestedTuples<
+    T extends List,
+    Result extends any[] = []
+> = T extends Iteration<unknown, infer Current, infer Remaining>
+    ? Current extends List
+        ? [...UnpackNestedTuples<Current>, ...UnpackNestedTuples<Remaining>]
+        : [Current, ...UnpackNestedTuples<Remaining>]
+    : Result
 
 export type Join<
     Segments extends Stringifiable[],
