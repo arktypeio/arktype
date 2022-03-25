@@ -1,8 +1,6 @@
 import { assert } from "@re-/assert"
 import { define } from "@re-/model"
 
-type z = unknown & boolean & true
-
 export const testIntersection = () => {
     describe("type", () => {
         test("two types", () => {
