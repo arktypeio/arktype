@@ -1,4 +1,9 @@
-import { typeDefProxy, validationError, createParser } from "../internal.js"
+import {
+    typeDefProxy,
+    validationError,
+    createParser,
+    ungeneratableError
+} from "../internal.js"
 import { Reference } from "../reference.js"
 import { FirstEnclosed } from "./internal.js"
 import { StringLiteral } from "./stringLiteral.js"
@@ -38,9 +43,7 @@ export namespace RegexLiteral {
                     ? {}
                     : validationError({ def, valueType, path }),
             generate: ({ def }) => {
-                throw new Error(
-                    `Unable to generate a value for '${def}' (generation of regex is unsupported).`
-                )
+                throw new Error(ungeneratableError(def, "regex"))
             }
         }
     )

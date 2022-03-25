@@ -177,9 +177,7 @@ export const testConstraint = () => {
     })
     describe("generation", () => {
         test("unsupported", () => {
-            assert(() => define("1<number<5").generate()).throws.snap(
-                `"Unable to generate a value for '1<number<5' (generation with constraints is unsupported)."`
-            )
+            assert(() => define("1<number<5").generate()).throws.snap()
         })
     })
 }

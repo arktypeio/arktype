@@ -10,12 +10,42 @@ import {
 } from "./internal.js"
 import { Fragment } from "../fragment.js"
 import { Expression } from "./expression.js"
+import {
+    ParseConfig,
+    ParseTypeContext,
+    ungeneratableError,
+    UnknownTypeError
+} from "../internal.js"
 
 export namespace Intersection {
     export type Definition<
         Before extends string = string,
         After extends string = string
     > = `${Before}&${After}`
+
+    export type Parse<
+        Def extends Definition,
+        Space,
+        Context extends ParseTypeContext
+    > = Def extends Definition<infer Left, infer Right>
+        ? {
+              intersection: [
+                  Fragment.Parse<Left, Space, Context>,
+                  Fragment.Parse<Right, Space, Context>
+              ]
+          }
+        : UnknownTypeError<Def>
+
+    export type Node = {
+        intersection: Fragment.Node[]
+    }
+
+    export type TypeOf<
+        N extends Node,
+        Space,
+        Options extends ParseConfig
+    > = Fragment.TypeOf<N["intersection"][0], Space, Options> &
+        Fragment.TypeOf<N["intersection"][1], Space, Options>
 
     export const type = typeDefProxy as Definition
 
@@ -52,9 +82,13 @@ export namespace Intersection {
                 })
             },
             generate: ({ def, components }, opts) => {
-                throw new Error("Can't generate & types.")
+                throw new Error(ungeneratableError(def, "intersection"))
             },
-            references: () => []
+            references: ({ components }) =>
+                components.reduce(
+                    (refs, member) => [...refs, ...member.references()],
+                    [] as string[]
+                )
         }
     )
 

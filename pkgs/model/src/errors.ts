@@ -211,6 +211,9 @@ export const generateRequiredCycleError = ({
 }: BaseParseArgs) =>
     requiredCycleErrorTemplate.replace("@cycle", [...seen, def].join("=>"))
 
+export const ungeneratableError = (def: string, defType: string) =>
+    `Unable to generate a value for '${def}' (${defType} generation is unsupported).`
+
 export const unassignableError = ({ def, valueType }: BaseAssignmentArgs) =>
     `${stringifyDefinition(
         valueType
