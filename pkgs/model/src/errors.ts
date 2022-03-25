@@ -128,25 +128,25 @@ export const shallowCycleError = ({ def, ctx }: BaseParseArgs) =>
         .replace("@space", stringifyDefinition(ctx.space))
         .replace("@resolutions", [...ctx.seen, def].join("=>"))
 
-export const invalidLimitErrorTemplate =
-    "@limit cannot be used to bound @inner."
+export const invalidBoundErrorTemplate =
+    "'@limit' must be a number literal to bound '@inner'."
 
-export type InvalidLimitError<
+export type InvalidBoundError<
     Inner extends string = string,
     Limit extends string = string
 > = StringReplace<
-    StringReplace<typeof invalidLimitErrorTemplate, "@inner", Inner>,
+    StringReplace<typeof invalidBoundErrorTemplate, "@inner", Inner>,
     "@limit",
     Limit
 >
 
-export const invalidLimitError = (inner: string, limit: string) =>
-    invalidLimitErrorTemplate
+export const invalidBoundError = (inner: string, limit: string) =>
+    invalidBoundErrorTemplate
         .replace("@inner", stringifyDefinition(inner))
         .replace("@limit", stringifyDefinition(limit))
 
 export const unboundableErrorTemplate =
-    "Bounded definition @inner must be a number or string."
+    "Bounded definition '@inner' must be a number or string keyword."
 
 export type UnboundableError<Inner extends string = string> = StringReplace<
     typeof unboundableErrorTemplate,
@@ -157,11 +157,17 @@ export type UnboundableError<Inner extends string = string> = StringReplace<
 export const unboundableError = (inner: string) =>
     unboundableErrorTemplate.replace("@inner", stringifyDefinition(inner))
 
+export const constraintErrorTemplate =
+    "Constraints must be either of the form N<L or L<N<L, where N is a constrainable type (e.g. number), L is a number literal (e.g. 5), and < is any comparison operator."
+
+export type ConstraintError = typeof constraintErrorTemplate
+
 export type ValidationErrorMessage =
     | UnknownTypeError
     | ShallowCycleError
     | DefinitionTypeError
-    | InvalidLimitError
+    | ConstraintError
+    | InvalidBoundError
     | UnboundableError
     | DuplicateModifierError
     | InvalidModifierError

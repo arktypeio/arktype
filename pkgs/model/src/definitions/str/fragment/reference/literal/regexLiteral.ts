@@ -39,7 +39,7 @@ export namespace RegexLiteral {
                     : validationError({ def, valueType, path }),
             generate: ({ def }) => {
                 throw new Error(
-                    `Unable to generate a value for ${def} (generation of regex is unsupported).`
+                    `Unable to generate a value for '${def}' (generation of regex is unsupported).`
                 )
             }
         }

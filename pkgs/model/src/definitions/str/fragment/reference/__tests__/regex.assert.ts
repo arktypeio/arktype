@@ -54,9 +54,9 @@ export const testRegex = () => {
         })
     })
     describe("generation", () => {
-        describe("unsupported", () => {
+        test("unsupported", () => {
             assert(() => define("/.*/").generate()).throws.snap(
-                `"Unable to generate a value for /.*/ (generation of regex is unsupported)."`
+                `"Unable to generate a value for '/.*/' (generation of regex is unsupported)."`
             )
         })
     })

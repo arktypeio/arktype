@@ -18,12 +18,6 @@ export const testArrowFunction = () => {
             ) => boolean
         })
         describe("errors", () => {
-            test("unparenthesized args", () => {
-                // @ts-expect-error
-                assert(() => define("=>string")).throwsAndHasTypeError(
-                    "Unable to determine the type of '=>string'."
-                )
-            })
             test("bad args", () => {
                 assert(() =>
                     // @ts-expect-error

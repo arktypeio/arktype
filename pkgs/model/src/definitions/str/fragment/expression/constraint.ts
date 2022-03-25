@@ -1,52 +1,118 @@
-import { NumericString, Spliterate } from "@re-/tools"
-import { NumberKeyword, StringKeyword } from "../reference/index.js"
+import {
+    asNumber,
+    ElementOf,
+    isEmpty,
+    isNumeric,
+    narrow,
+    NumericString,
+    Spliterate
+} from "@re-/tools"
+import { numberKeywords, stringKeywords } from "../reference/index.js"
 import {
     createParser,
     ParseTypeContext,
-    UnknownTypeError,
     typeDefProxy,
-    ParseConfig
+    ParseConfig,
+    ConstraintError
 } from "./internal.js"
 import { Expression } from "../index.js"
 import { Fragment } from "../fragment.js"
 import { NumberLiteral } from "../reference/literal/numberLiteral.js"
+import {
+    constraintErrorTemplate,
+    invalidBoundError,
+    InvalidBoundError,
+    ParseResult,
+    unboundableError,
+    UnboundableError,
+    validationError
+} from "../internal.js"
 
-export type Comparable = NumberKeyword | StringKeyword
+export const getComparables = () => [...numberKeywords, ...stringKeywords]
+
+export type Comparable = ElementOf<ReturnType<typeof getComparables>>
 
 export type Bound = NumericString
 
-export type Comparator = "<=" | ">=" | "<" | ">"
+export type ComparatorToken = "<=" | ">=" | "<" | ">"
 
-export type ComparatorInverses = {
-    "<=": ">="
-    ">=": "<="
-    "<": ">"
+export const comparatorInverses = narrow({
+    "<=": ">=",
+    ">=": "<=",
+    "<": ">",
     ">": "<"
-}
+})
 
-// number<5
-// 3<number<5
+export type ComparatorInverses = typeof comparatorInverses
+
+const buildComparatorErrorMessage = (
+    comparatorError: string,
+    value: string,
+    bound: number,
+    isString: boolean
+) => `${value} was ${comparatorError} ${bound}${isString ? " characters" : ""}.`
+
+const comparators: {
+    [K in ComparatorToken]: (
+        value: string,
+        comparable: number,
+        bound: number,
+        isString: boolean
+    ) => string
+} = {
+    "<=": (value, comparable, bound, isString) =>
+        comparable > bound
+            ? buildComparatorErrorMessage(
+                  "greater than",
+                  value,
+                  bound,
+                  isString
+              )
+            : "",
+    ">=": (value, comparable, bound, isString) =>
+        comparable < bound
+            ? buildComparatorErrorMessage("less than", value, bound, isString)
+            : "",
+    "<": (value, comparable, bound, isString) =>
+        comparable >= bound
+            ? buildComparatorErrorMessage(
+                  "greater than or equal to",
+                  value,
+                  bound,
+                  isString
+              )
+            : "",
+    ">": (value, comparable, bound, isString) =>
+        comparable <= bound
+            ? buildComparatorErrorMessage(
+                  "less than or equal to",
+                  value,
+                  bound,
+                  isString
+              )
+            : ""
+}
 
 export namespace Constraint {
     export type Definition<
         Left extends string = string,
-        Token extends Comparator = Comparator,
+        Comparator extends ComparatorToken = ComparatorToken,
         Right extends string = string
-    > = `${Left}${Token}${Right}`
+    > = `${Left}${Comparator}${Right}`
 
     type SingleBoundedParts<
         Left extends string = string,
-        Token extends Comparator = Comparator,
+        Comparator extends ComparatorToken = ComparatorToken,
         Right extends string = string
-    > = [Left, Token, Right]
+    > = [Left, Comparator, Right]
 
     type DoubleBoundedParts<
         Left extends string = string,
-        FirstToken extends Comparator = Comparator,
+        FirstComparator extends ComparatorToken = ComparatorToken,
         Middle extends string = string,
-        SecondToken extends Comparator = Comparator,
+        SecondComparator extends ComparatorToken = ComparatorToken,
         Right extends string = string
-    > = [Left, FirstToken, Middle, SecondToken, Right]
+    > = [Left, FirstComparator, Middle, SecondComparator, Right]
 
     export type Parse<
         Def extends Definition,
@@ -54,26 +120,42 @@ export namespace Constraint {
         Context extends ParseTypeContext,
         Parts extends string[] = Spliterate<Def, ["<=", ">=", "<", ">"], true> &
             string[]
-    > = Parts extends SingleBoundedParts<infer Left, infer Token, infer Right>
-        ? { bounded: Fragment.Parse<Left, Space, Context> } & {
-              [K in Token]: Right
-          }
-        : Parts extends DoubleBoundedParts<
+    > = Parts extends DoubleBoundedParts<
+        infer Left,
+        infer FirstComparator,
+        infer Middle,
+        infer SecondComparator,
+        infer Right
+    >
+        ? Middle extends Comparable
+            ? Left extends NumberLiteral.Definition
+                ? Right extends NumberLiteral.Definition
+                    ? {
+                          bounded: Fragment.Parse<Middle, Space, Context>
+                      } & {
+                          [K in ComparatorInverses[FirstComparator]]: Left
+                      } & {
+                          [K in SecondComparator]: Right
+                      }
+                    : InvalidBoundError<Middle, Right>
+                : InvalidBoundError<Middle, Left>
+            : UnboundableError<Middle>
+        : Parts extends SingleBoundedParts<
               infer Left,
-              infer FirstToken,
-              infer Middle,
-              infer SecondToken,
+              infer Comparator,
               infer Right
           >
-        ? {
-              bounded: Fragment.Parse<Middle, Space, Context>
-          } & { [K in ComparatorInverses[FirstToken]]: Left } & {
-              [K in SecondToken]: Right
-          }
-        : UnknownTypeError<Def>
+        ? Left extends Comparable
+            ? Right extends NumberLiteral.Definition
+                ? { bounded: Fragment.Parse<Left, Space, Context> } & {
+                      [K in Comparator]: Right
+                  }
+                : InvalidBoundError<Left, Right>
+            : UnboundableError<Left>
+        : ConstraintError
 
     type NodeBounds = {
-        [K in Comparator]?: NumberLiteral.Definition
+        [K in ComparatorToken]?: NumberLiteral.Definition
     }
 
     export type Node = {
@@ -94,70 +176,91 @@ export namespace Constraint {
         {
             type,
             parent: () => Expression.parse,
-            components: (def, ctx) => {
+            components: (
+                def,
+                ctx
+            ): { bounded: ParseResult<any> } & NodeBounds => {
+                const comparables = getComparables()
                 const parts = def.split(matcher)
                 if (parts.length === 5) {
+                    if (!(parts[1] in comparators && parts[3] in comparators)) {
+                        throw new Error(constraintErrorTemplate)
+                    }
+                    if (!comparables.includes(parts[2] as any)) {
+                        throw new Error(unboundableError(parts[2]))
+                    }
+                    if (!isNumeric(parts[0])) {
+                        throw new Error(invalidBoundError(parts[2], parts[0]))
+                    }
+                    if (!isNumeric(parts[4])) {
+                        throw new Error(invalidBoundError(parts[2], parts[4]))
+                    }
+                    const firstComparator =
+                        comparatorInverses[parts[1] as ComparatorToken]
+                    const secondComparator = parts[3] as ComparatorToken
+                    return {
+                        bounded: Fragment.parse(parts[2], ctx) as any,
+                        [firstComparator]: parts[0],
+                        [secondComparator]: parts[4]
+                    }
                 }
+                if (parts.length === 3) {
+                    if (!(parts[1] in comparators)) {
+                        throw new Error(constraintErrorTemplate)
+                    }
+                    if (!comparables.includes(parts[0] as any)) {
+                        throw new Error(unboundableError(parts[0]))
+                    }
+                    if (!isNumeric(parts[2])) {
+                        throw new Error(invalidBoundError(parts[0], parts[2]))
+                    }
+                    const comparator = parts[1] as ComparatorToken
+                    return {
+                        bounded: Fragment.parse(parts[0], ctx) as any,
+                        [comparator]: parts[2]
+                    }
+                }
+                throw new Error(constraintErrorTemplate)
             }
         },
         {
             matches: (def) => matcher.test(def),
             allows: ({ def, components, ctx }, valueType, opts) => {
-                const comparators: Record<
-                    string,
-                    (left: number, right: number) => string
-                > = {
-                    "<=": (left, right) =>
-                        left > right
-                            ? `${left} must be less than or equal to ${right}.`
-                            : "",
-                    ">=": (left, right) =>
-                        left < right
-                            ? `${left} must be greater than or equal to ${right}.`
-                            : "",
-                    "<": (left, right) =>
-                        left >= right
-                            ? `${left} must be less than ${right}.`
-                            : "",
-                    ">": (left, right) =>
-                        left <= right
-                            ? `${left} must be greater than ${right}.`
-                            : ""
+                const { bounded, ...bounds } = components
+                const typeErrors = bounded.allows(valueType)
+                if (!isEmpty(typeErrors)) {
+                    return typeErrors
                 }
-
-                for (let index = 1; index < components.length; index += 2) {
-                    const comparator = components[index]
-                    const toComparable = (comparedValue: string) => {
-                        if (comparedValue === "n") {
-                            return valueType as number
-                        }
-                        const comparable = asNumber(comparedValue, {
-                            asFloat: true
-                        })
-                        if (comparable === null) {
-                            return `Unable to parse a numeric value from '${comparedValue}' in comparison '${part}'.`
-                        }
-                        return comparable
-                    }
-                    const left = toComparable(components[index - 1])
-                    const right = toComparable(components[index + 1])
-                    // If to comparable returns a string for the left or right side of the comparison, it is an invalid comparison
-                    // TODO: Catch this when a model is defined, not when it is used for validation
-                    if (typeof left === "string") {
-                        return left
-                    }
-                    if (typeof right === "string") {
-                        return right
-                    }
-                    comparisonErrorMessage += comparators[comparator](
-                        left,
-                        right
+                const isString = stringKeywords.includes(bounded.def)
+                const comparable = isString
+                    ? // String literals include two extra characters for quotes
+                      (valueType as string).length - 2
+                    : (valueType as number)
+                const boundEntries = Object.entries(bounds as NodeBounds)
+                for (const [comparator, bound] of boundEntries) {
+                    const token = comparator as ComparatorToken
+                    const boundError = comparators[token](
+                        `${valueType}`,
+                        comparable,
+                        asNumber(bound, { assert: true }),
+                        isString
                     )
+                    if (boundError) {
+                        return validationError({
+                            def,
+                            path: ctx.path,
+                            message: boundError
+                        })
+                    }
                 }
-                return message
+                return {}
             },
-            generate: () => {},
-            references: () => []
+            references: ({ components }) => components.bounded.references(),
+            generate: ({ def }) => {
+                throw new Error(
+                    `Unable to generate a value for '${def}' (generation with constraints is unsupported).`
+                )
+            }
         }
     )
 
