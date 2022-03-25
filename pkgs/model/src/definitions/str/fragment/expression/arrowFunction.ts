@@ -9,6 +9,7 @@ import {
 } from "./internal.js"
 import { Fragment } from "../fragment.js"
 import { Expression } from "./expression.js"
+import { ungeneratableError } from "../internal.js"
 
 export namespace ArrowFunction {
     export type Definition<
@@ -95,10 +96,9 @@ export namespace ArrowFunction {
                           valueType,
                           path
                       }),
-            generate:
-                ({ components: { returns } }, opts) =>
-                (...args: any[]) =>
-                    returns.generate(opts),
+            generate: ({ def }) => {
+                throw new Error(ungeneratableError(def, "arrow function"))
+            },
             references: ({ components: { returns, args } }) => [
                 ...args.flatMap((arg) => arg.references()),
                 ...returns.references()

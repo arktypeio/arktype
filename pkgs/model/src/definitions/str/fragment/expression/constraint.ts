@@ -25,6 +25,7 @@ import {
     ParseResult,
     unboundableError,
     UnboundableError,
+    ungeneratableError,
     validationError
 } from "../internal.js"
 
@@ -257,9 +258,7 @@ export namespace Constraint {
             },
             references: ({ components }) => components.bounded.references(),
             generate: ({ def }) => {
-                throw new Error(
-                    `Unable to generate a value for '${def}' (generation with constraints is unsupported).`
-                )
+                throw new Error(ungeneratableError(def, "constraint"))
             }
         }
     )

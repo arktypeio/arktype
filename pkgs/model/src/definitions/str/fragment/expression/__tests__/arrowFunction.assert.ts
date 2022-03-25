@@ -55,9 +55,10 @@ export const testArrowFunction = () => {
         })
     })
     describe("generation", () => {
-        test("no-op by default", () => {
-            const generated = define("()=>any").generate()
-            assert(generated()).is(undefined)
+        test("unsupported", () => {
+            assert(() => define("()=>void").generate()).throws.snap(
+                `"Unable to generate a value for '()=>void' (arrow function generation is unsupported)."`
+            )
         })
     })
 }

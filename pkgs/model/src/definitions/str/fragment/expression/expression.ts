@@ -10,11 +10,13 @@ import { List } from "./list.js"
 import { Union } from "./union.js"
 import { Fragment } from "../fragment.js"
 import { Constraint } from "./constraint.js"
+import { Intersection } from "./intersection.js"
 
 export namespace Expression {
     export type Definition =
         | ArrowFunction.Definition
         | Union.Definition
+        | Intersection.Definition
         | Constraint.Definition
         | List.Definition
 
@@ -26,6 +28,8 @@ export namespace Expression {
         ? ArrowFunction.Parse<Def, Space, Context>
         : Def extends Union.Definition
         ? Union.Parse<Def, Space, Context>
+        : Def extends Intersection.Definition
+        ? Intersection.Parse<Def, Space, Context>
         : Def extends Constraint.Definition
         ? Constraint.Parse<Def, Space, Context>
         : Def extends List.Definition
@@ -35,6 +39,7 @@ export namespace Expression {
     export type Node =
         | ArrowFunction.Node
         | Union.Node
+        | Intersection.Node
         | Constraint.Node
         | List.Node
 
@@ -46,6 +51,8 @@ export namespace Expression {
         ? ArrowFunction.TypeOf<N, Space, Options>
         : N extends Union.Node
         ? Union.TypeOf<N, Space, Options>
+        : N extends Intersection.Node
+        ? Intersection.TypeOf<N, Space, Options>
         : N extends Constraint.Node
         ? Constraint.TypeOf<N, Space, Options>
         : N extends List.Node
@@ -60,6 +67,7 @@ export namespace Expression {
         children: () => [
             ArrowFunction.delegate,
             Union.delegate,
+            Intersection.delegate,
             Constraint.delegate,
             List.delegate
         ]

@@ -64,7 +64,7 @@ export const testUnion = () => {
             const space = {
                 five: 5,
                 duck: "'duck'",
-                func: "(five,duck)=>duck"
+                func: "function"
             } as const
             assert(define("func|five|duck", { space }).generate() as any).is(5)
             assert(define("duck|func", { space }).generate() as any).is("duck")
