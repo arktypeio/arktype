@@ -9,13 +9,13 @@ import { ArrowFunction } from "./arrowFunction.js"
 import { List } from "./list.js"
 import { Union } from "./union.js"
 import { Fragment } from "../fragment.js"
-import { Evaluate } from "@re-/tools"
-import { Tuple } from "../../../obj/tuple.js"
+import { Constraint } from "./constraint.js"
 
 export namespace Expression {
     export type Definition =
         | ArrowFunction.Definition
         | Union.Definition
+        | Constraint.Definition
         | List.Definition
 
     export type Parse<
@@ -26,11 +26,17 @@ export namespace Expression {
         ? ArrowFunction.Parse<Def, Space, Context>
         : Def extends Union.Definition
         ? Union.Parse<Def, Space, Context>
+        : Def extends Constraint.Definition
+        ? Constraint.Parse<Def, Space, Context>
         : Def extends List.Definition
         ? List.Parse<Def, Space, Context>
         : UnknownTypeError<Def>
 
-    export type Node = ArrowFunction.Node | Union.Node | List.Node
+    export type Node =
+        | ArrowFunction.Node
+        | Union.Node
+        | Constraint.Node
+        | List.Node
 
     export type TypeOf<
         N extends Node,
@@ -40,6 +46,8 @@ export namespace Expression {
         ? ArrowFunction.TypeOf<N, Space, Options>
         : N extends Union.Node
         ? Union.TypeOf<N, Space, Options>
+        : N extends Constraint.Node
+        ? Constraint.TypeOf<N, Space, Options>
         : N extends List.Node
         ? List.TypeOf<N, Space, Options>
         : unknown
@@ -49,7 +57,12 @@ export namespace Expression {
     export const parse = createParser({
         type,
         parent: () => Fragment.parse,
-        children: () => [ArrowFunction.delegate, Union.delegate, List.delegate]
+        children: () => [
+            ArrowFunction.delegate,
+            Union.delegate,
+            Constraint.delegate,
+            List.delegate
+        ]
     })
 
     export const delegate = parse as any as Definition

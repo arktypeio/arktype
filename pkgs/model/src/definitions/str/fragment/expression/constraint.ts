@@ -10,7 +10,6 @@ import {
 import { Expression } from "../index.js"
 import { Fragment } from "../fragment.js"
 import { NumberLiteral } from "../reference/literal/numberLiteral.js"
-import { DefaultParseTypeContext } from "../internal.js"
 
 export type Comparable = NumberKeyword | StringKeyword
 
@@ -56,7 +55,9 @@ export namespace Constraint {
         Parts extends string[] = Spliterate<Def, ["<=", ">=", "<", ">"], true> &
             string[]
     > = Parts extends SingleBoundedParts<infer Left, infer Token, infer Right>
-        ? Node<Fragment.Parse<Left, Space, Context>, { [K in Token]: Right }>
+        ? { bounded: Fragment.Parse<Left, Space, Context> } & {
+              [K in Token]: Right
+          }
         : Parts extends DoubleBoundedParts<
               infer Left,
               infer FirstToken,
@@ -64,22 +65,20 @@ export namespace Constraint {
               infer SecondToken,
               infer Right
           >
-        ? Node<
-              Fragment.Parse<Middle, Space, Context>,
-              { [K in ComparatorInverses[FirstToken]]: Left } & {
-                  [K in SecondToken]: Right
-              }
-          >
+        ? {
+              bounded: Fragment.Parse<Middle, Space, Context>
+          } & { [K in ComparatorInverses[FirstToken]]: Left } & {
+              [K in SecondToken]: Right
+          }
         : UnknownTypeError<Def>
 
     type NodeBounds = {
         [K in Comparator]?: NumberLiteral.Definition
     }
 
-    export type Node<
-        Bounded extends Fragment.Node = Fragment.Node,
-        Bounds extends NodeBounds = NodeBounds
-    > = { bounded: Bounded } & Bounds
+    export type Node = {
+        bounded: Fragment.Node
+    } & NodeBounds
 
     export type TypeOf<
         N extends Node,
