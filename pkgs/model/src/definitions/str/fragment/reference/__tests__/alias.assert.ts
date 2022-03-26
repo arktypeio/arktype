@@ -22,7 +22,7 @@ export const testAlias = () => {
                 b: { a: "a", isA: "false", isB: "true" }
             })
         test("with onCycle option", () => {
-            const { type } = getCyclicSpace().define(
+            const { type } = getCyclicSpace().create(
                 { a: "a", b: "b" },
                 {
                     onCycle: {
@@ -43,7 +43,7 @@ export const testAlias = () => {
                 | undefined
         })
         test("with deepOnCycleOption", () => {
-            const { type } = getCyclicSpace().define(
+            const { type } = getCyclicSpace().create(
                 { a: "a", b: "b" },
                 {
                     deepOnCycle: true,
@@ -57,7 +57,7 @@ export const testAlias = () => {
             )
         })
         test("with onResolve option", () => {
-            const { type } = getCyclicSpace().define(
+            const { type } = getCyclicSpace().create(
                 {
                     referencesA: "a",
                     noReferences: {

@@ -11,7 +11,7 @@ describe("multifile", () => {
         const {
             user,
             group,
-            define: defineDependent,
+            create: defineDependent,
             types
         } = compile({ ...getUserDef(), ...getGroupDef() })
         assert(types.user.name).typed as string

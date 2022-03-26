@@ -6,7 +6,9 @@ import {
     Narrow,
     transform,
     IsAny,
-    Exact
+    Exact,
+    ListPossibleTypes,
+    Merge
 } from "@re-/tools"
 import {
     createDefineFunction,
@@ -22,10 +24,16 @@ import { DefaultParseTypeContext } from "./definitions/internal.js"
 
 export type SpaceResolutions = Record<string, Root.Definition>
 
-export type CheckSpaceResolutions<Space> = IsAny<Space> extends true
+export type CheckSpaceResolutions<
+    Space,
+    SuperSpace = {}
+> = IsAny<Space> extends true
     ? any
     : Evaluate<{
-          [TypeName in keyof Space]: Resolution.Check<Space[TypeName], Space>
+          [TypeName in keyof Space]: Resolution.Check<
+              Space[TypeName],
+              Merge<SuperSpace, Space>
+          >
       }>
 
 export type ParseSpaceRoot<Space, Options extends ParseConfig> = {
@@ -86,7 +94,7 @@ export const createCompileFunction =
                 })
             ]) as any),
             types: typeDefProxy,
-            define
+            create: define
         }
     }
 
@@ -97,7 +105,8 @@ export const compile = createCompileFunction([])
 export type CheckCompileDefinitions<
     Definitions,
     DeclaredTypeNames extends string[] = [],
-    Checked = CheckSpaceResolutions<Definitions>,
+    SuperSpace = {},
+    Checked = CheckSpaceResolutions<Definitions, SuperSpace>,
     DefinedTypeName extends string = keyof Checked & string,
     DeclaredTypeName extends string = DeclaredTypeNames extends never[]
         ? DefinedTypeName
@@ -118,6 +127,26 @@ export type CompileFunction<DeclaredTypeNames extends string[]> = <Definitions>(
     >
 ) => Space<Definitions>
 
+// export type CheckExtendedDefinitions<
+//     OriginalDefinitions,
+//     ExtensionDefinitions,
+//     Definitions,
+//     DeclaredTypeNames extends string[] = [],
+//     Checked = CheckSpaceResolutions<Definitions>,
+//     DefinedTypeName extends string = keyof Checked & string,
+//     DeclaredTypeName extends string = DeclaredTypeNames extends never[]
+//         ? DefinedTypeName
+//         : ElementOf<DeclaredTypeNames>
+// > = Evaluate<{
+//     [TypeName in DeclaredTypeName]: KeyValuate<Checked, TypeName>
+// }>
+
+export type ExtendSpace<SuperSpace> = <Definitions>(
+    definitions: Narrow<
+        Exact<Definitions, CheckCompileDefinitions<Definitions, [], SuperSpace>>
+    >
+) => Space<Merge<SuperSpace, Definitions>>
+
 export type Space<Definitions> = Evaluate<
     ParseSpaceResolutions<Definitions, DefaultParseTypeOptions> & {
         types: Evaluate<
@@ -127,6 +156,8 @@ export type Space<Definitions> = Evaluate<
                 DefaultParseTypeOptions
             >
         >
-        define: DefineFunction<Definitions>
+        create: DefineFunction<Definitions>
+        extend: ExtendSpace<Definitions>
+        // TODO: Add declare extension
     }
 >

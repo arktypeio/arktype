@@ -30,10 +30,10 @@ If you're using TypeScript, you'll need at least `4.4`.
 This snippet will give you an idea of `@re-/model` syntax, but the best way to get a feel for it is in a live editor. Try messing around with the `user` model in [our sandbox](https://TODO:updatelink) or paste it in your own editor and see how the type hints help guide you in the right direction.
 
 ```ts
-import { define } from "@re-/model"
+import { create } from "@re-/model"
 
 // Most common TypeScript expressions just work...
-const user = define({
+const user = create({
     name: {
         first: "string",
         middle: "string?",
