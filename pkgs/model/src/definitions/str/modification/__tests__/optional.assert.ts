@@ -1,14 +1,14 @@
 import { assert } from "@re-/assert"
-import { define } from "@re-/model"
+import { create } from "@re-/model"
 
 export const testOptional = () => {
     describe("type", () => {
         test("adds undefined to standalone type", () => {
-            assert(define("string?").type).typed as string | undefined
+            assert(create("string?").type).typed as string | undefined
         })
         test("adds undefined to in-object type and makes it optional", () => {
             assert(
-                define({
+                create({
                     required: "boolean",
                     optional: "boolean?"
                 }).type
@@ -20,19 +20,19 @@ export const testOptional = () => {
         describe("errors", () => {
             test("bad inner type", () => {
                 // @ts-expect-error
-                assert(() => define("nonexistent?")).throwsAndHasTypeError(
+                assert(() => create("nonexistent?")).throwsAndHasTypeError(
                     "Unable to determine the type of 'nonexistent'."
                 )
             })
             test("multiple consecutive", () => {
                 // @ts-expect-error
-                assert(() => define("boolean??")).throwsAndHasTypeError(
+                assert(() => create("boolean??")).throwsAndHasTypeError(
                     "Modifier '?' cannot appear more than once in a string definition."
                 )
             })
             test("multiple non-consecutive", () => {
                 assert(() =>
-                    define({
+                    create({
                         a: "string",
                         // @ts-expect-error
                         b: "number?|string?"
@@ -44,7 +44,7 @@ export const testOptional = () => {
             test("within expression", () => {
                 assert(() =>
                     // @ts-expect-error
-                    define("boolean?|string|number")
+                    create("boolean?|string|number")
                 ).throwsAndHasTypeError(
                     "Modifier '?' is only valid at the end of a type definition."
                 )
@@ -53,14 +53,14 @@ export const testOptional = () => {
     })
     describe("validation", () => {
         test("preserves original type", () => {
-            assert(define("false?").validate(false).errors).is(undefined)
+            assert(create("false?").validate(false).errors).is(undefined)
         })
         test("allows undefined", () => {
-            assert(define("false?").validate(undefined).errors).is(undefined)
+            assert(create("false?").validate(undefined).errors).is(undefined)
         })
         test("allows omission of key", () => {
             assert(
-                define({
+                create({
                     required: "string",
                     optional: "string?"
                 }).validate({ required: "" }).errors
@@ -68,7 +68,7 @@ export const testOptional = () => {
         })
         describe("errors", () => {
             test("bad inner type", () => {
-                assert(define("true?").validate(false).errors).snap(
+                assert(create("true?").validate(false).errors).snap(
                     `"false is not assignable to true."`
                 )
             })
@@ -76,11 +76,11 @@ export const testOptional = () => {
     })
     describe("generation", () => {
         test("standalone is undefined by default", () => {
-            assert(define("null?").generate()).is(undefined)
+            assert(create("null?").generate()).is(undefined)
         })
         test("optional key is omitted by default", () => {
             assert(
-                define({ required: "string", optional: "string?" }).generate()
+                create({ required: "string", optional: "string?" }).generate()
             ).equals({ required: "" })
         })
     })

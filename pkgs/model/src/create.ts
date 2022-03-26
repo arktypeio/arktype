@@ -127,10 +127,10 @@ const createValidateFunction =
         return { errors: stringifyErrors(errors) }
     }
 
-export const createDefineFunction =
+export const createCreateFunction =
     <PredefinedSpace>(
         predefinedSpace: Narrow<PredefinedSpace>
-    ): DefineFunction<PredefinedSpace> =>
+    ): CreateFunction<PredefinedSpace> =>
     (definition, options) => {
         const formattedSpace: any = format(options?.space ?? predefinedSpace)
         const context: ParseContext = {
@@ -161,9 +161,9 @@ export const createDefineFunction =
 
 // Exported parse function is equivalent to parse from an empty compile call,
 // but optionally accepts a space as its second parameter
-export const define = createDefineFunction({})
+export const create = createCreateFunction({})
 
-export type DefineFunction<PredefinedSpace> = <
+export type CreateFunction<PredefinedSpace> = <
     Def,
     Options extends DefineOptions,
     ActiveSpace = PredefinedSpace

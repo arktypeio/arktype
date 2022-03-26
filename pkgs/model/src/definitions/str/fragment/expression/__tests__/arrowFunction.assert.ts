@@ -1,18 +1,18 @@
 import { assert } from "@re-/assert"
-import { define } from "@re-/model"
+import { create } from "@re-/model"
 
 export const testArrowFunction = () => {
     describe("type", () => {
         test("zero args", () => {
-            assert(define("()=>void").type).typed as () => void
+            assert(create("()=>void").type).typed as () => void
         })
         test("one arg", () => {
-            assert(define("(null)=>object").type).typed as (
+            assert(create("(null)=>object").type).typed as (
                 args_0: null
             ) => object
         })
         test("multiple args", () => {
-            assert(define("(string,number)=>boolean").type).typed as (
+            assert(create("(string,number)=>boolean").type).typed as (
                 args_0: string,
                 args_1: number
             ) => boolean
@@ -21,7 +21,7 @@ export const testArrowFunction = () => {
             test("bad args", () => {
                 assert(() =>
                     // @ts-expect-error
-                    define("(foop,string,nufmber)=>boolean")
+                    create("(foop,string,nufmber)=>boolean")
                 )
                     .throws("Unable to determine the type of 'foop'.")
                     .type.errors(
@@ -30,13 +30,13 @@ export const testArrowFunction = () => {
             })
             test("missing return", () => {
                 // @ts-expect-error
-                assert(() => define("()=>")).throwsAndHasTypeError(
+                assert(() => create("()=>")).throwsAndHasTypeError(
                     "Unable to determine the type of ''."
                 )
             })
             test("bad return", () => {
                 // @ts-expect-error
-                assert(() => define("()=>fork")).throwsAndHasTypeError(
+                assert(() => create("()=>fork")).throwsAndHasTypeError(
                     "Unable to determine the type of 'fork'."
                 )
             })
@@ -44,11 +44,11 @@ export const testArrowFunction = () => {
     })
     describe("validation", () => {
         test("functional", () => {
-            assert(define("()=>any").validate(() => {}).errors).is(undefined)
+            assert(create("()=>any").validate(() => {}).errors).is(undefined)
         })
         describe("errors", () => {
             test("non-functional", () => {
-                assert(define("()=>any").validate({}).errors).snap(
+                assert(create("()=>any").validate({}).errors).snap(
                     `"{} is not assignable to ()=>any."`
                 )
             })
@@ -56,7 +56,7 @@ export const testArrowFunction = () => {
     })
     describe("generation", () => {
         test("unsupported", () => {
-            assert(() => define("()=>void").generate()).throws.snap(
+            assert(() => create("()=>void").generate()).throws.snap(
                 `"Unable to generate a value for '()=>void' (arrow function generation is unsupported)."`
             )
         })

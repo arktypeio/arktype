@@ -1,10 +1,10 @@
 import { assert } from "@re-/assert"
-import { define } from "@re-/model"
+import { create } from "@re-/model"
 import { lazily } from "@re-/tools"
 
 export const testMap = () => {
     describe("empty", () => {
-        const empty = lazily(() => define({}))
+        const empty = lazily(() => create({}))
         test("type", () => {
             assert(empty.type).typed as {}
         })
@@ -20,7 +20,7 @@ export const testMap = () => {
     })
     describe("shallow", () => {
         const shallow = lazily(() =>
-            define({
+            create({
                 a: "string",
                 b: "number",
                 c: 67
@@ -106,7 +106,7 @@ export const testMap = () => {
     })
     describe("nested", () => {
         const nested = lazily(() =>
-            define({
+            create({
                 nested: {
                     russian: "'doll'"
                 }
@@ -123,7 +123,7 @@ export const testMap = () => {
             describe("errors", () => {
                 test("invalid prop def", () => {
                     // @ts-expect-error
-                    assert(() => define({ a: { b: "whoops" } }))
+                    assert(() => create({ a: { b: "whoops" } }))
                         .throws(
                             "Unable to determine the type of 'whoops' at path a/b."
                         )
@@ -148,7 +148,7 @@ export const testMap = () => {
                 })
                 test("multiple", () => {
                     assert(
-                        define({
+                        create({
                             a: { b: "string" },
                             c: { d: "number" },
                             e: { f: "object" }

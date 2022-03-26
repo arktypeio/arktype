@@ -1,10 +1,10 @@
 import { assert } from "@re-/assert"
-import { define } from "@re-/model"
+import { create } from "@re-/model"
 import { lazily } from "@re-/tools"
 
 export const testTuple = () => {
     describe("empty", () => {
-        const empty = lazily(() => define([]))
+        const empty = lazily(() => create([]))
         test("type", () => {
             assert(empty.type).typed as []
         })
@@ -19,7 +19,7 @@ export const testTuple = () => {
         })
     })
     describe("shallow", () => {
-        const shallow = lazily(() => define(["string", "number", 6]))
+        const shallow = lazily(() => create(["string", "number", 6]))
         describe("type", () => {
             test("standard", () => {
                 assert(shallow.type).typed as [string, number, 6]
@@ -28,7 +28,7 @@ export const testTuple = () => {
                 test("invalid item definition", () => {
                     assert(() =>
                         // @ts-expect-error
-                        define(["string", ["number", "boolean", "whoops"]])
+                        create(["string", ["number", "boolean", "whoops"]])
                     )
                         .throws(
                             "Unable to determine the type of 'whoops' at path 1/2."
@@ -67,7 +67,7 @@ export const testTuple = () => {
     })
     describe("nested", () => {
         const nested = lazily(() =>
-            define(["'Cuckoo'", ["'Swallow'", "'Oriole'", "'Condor'"], []])
+            create(["'Cuckoo'", ["'Swallow'", "'Oriole'", "'Condor'"], []])
         )
         test("type", () => {
             assert(nested.type).typed as [

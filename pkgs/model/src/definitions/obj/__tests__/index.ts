@@ -1,5 +1,5 @@
 import { assert } from "@re-/assert"
-import { define } from "@re-/model"
+import { create } from "@re-/model"
 import { lazily } from "@re-/tools"
 import { testMap } from "./map.assert.js"
 import { testTuple } from "./tuple.assert.js"
@@ -9,7 +9,7 @@ export const testObj = () => {
     describe("tuple", testTuple)
     describe("integration", () => {
         const mixed = lazily(() =>
-            define(["true", { a: ["string", ["number|boolean[]"]] }])
+            create(["true", { a: ["string", ["number|boolean[]"]] }])
         )
         test("type", () => {
             assert(mixed.type).typed as [

@@ -14,7 +14,7 @@ import { ValidationErrors, unknownTypeError } from "../errors.js"
 import { ExtractableDefinition } from "./internal.js"
 import { Root } from "./root.js"
 import { Obj } from "./obj/index.js"
-import { GenerateOptions, ReferencesOptions } from "../model.js"
+import { GenerateOptions, ReferencesOptions } from "../create.js"
 
 export type MatchesArgs<DefType> = {
     definition: DefType

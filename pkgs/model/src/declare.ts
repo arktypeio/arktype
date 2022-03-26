@@ -1,5 +1,5 @@
 import { ElementOf, Narrow, transform } from "@re-/tools"
-import { define, CheckReferences } from "./model.js"
+import { create, CheckReferences } from "./create.js"
 import { CompileFunction, createCompileFunction } from "./compile.js"
 
 export const createDeclaredDefineFunctionMap = <
@@ -37,7 +37,7 @@ export const createDeclaredDefineFunction =
         definedTypeName: DefinedTypeName
     ): DeclaredDefineFunction<DefinedTypeName, DeclaredTypeNames> =>
     (definition: any) => {
-        define(definition, {
+        create(definition, {
             space: transform(declaredTypeNames, ([i, typeName]) => [
                 typeName,
                 "unknown"

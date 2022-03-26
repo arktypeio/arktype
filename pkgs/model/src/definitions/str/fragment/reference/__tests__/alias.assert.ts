@@ -1,16 +1,16 @@
 import { assert } from "@re-/assert"
-import { define, compile } from "@re-/model"
+import { create, compile } from "@re-/model"
 
 export const testAlias = () => {
     describe("type", () => {
         test("with space", () => {
             assert(
-                define("borf", {
+                create("borf", {
                     space: { borf: true }
                 }).type
             ).typed as true
             assert(
-                define(
+                create(
                     { snorf: "borf[]" },
                     { space: { borf: { f: false, u: undefined } } }
                 ).type
@@ -22,7 +22,7 @@ export const testAlias = () => {
                 b: { a: "a", isA: "false", isB: "true" }
             })
         test("with onCycle option", () => {
-            const { type } = getCyclicSpace().define(
+            const { type } = getCyclicSpace().create(
                 { a: "a", b: "b" },
                 {
                     onCycle: {
@@ -43,7 +43,7 @@ export const testAlias = () => {
                 | undefined
         })
         test("with deepOnCycleOption", () => {
-            const { type } = getCyclicSpace().define(
+            const { type } = getCyclicSpace().create(
                 { a: "a", b: "b" },
                 {
                     deepOnCycle: true,
@@ -57,7 +57,7 @@ export const testAlias = () => {
             )
         })
         test("with onResolve option", () => {
-            const { type } = getCyclicSpace().define(
+            const { type } = getCyclicSpace().create(
                 {
                     referencesA: "a",
                     noReferences: {
@@ -82,7 +82,7 @@ export const testAlias = () => {
 
     describe("validation", () => {
         test("simple space", () => {
-            const groceries = define(
+            const groceries = create(
                 { fruits: "fruit[]" },
                 {
                     space: {
@@ -124,11 +124,11 @@ export const testAlias = () => {
         })
         test("errors on shallow cycle", () => {
             // @ts-expect-error
-            const shallowRecursive = define("a", { space: { a: "a" } })
+            const shallowRecursive = create("a", { space: { a: "a" } })
             expect(() => shallowRecursive.assert("what's an a?")).toThrowError(
                 "shallow"
             )
-            const shallowCyclic = define("a", {
+            const shallowCyclic = create("a", {
                 // @ts-expect-error
                 space: { a: "b", b: "c", c: "a|b|c" }
             })
@@ -137,7 +137,7 @@ export const testAlias = () => {
             )
         })
         test("cyclic space", () => {
-            const bicycle = define(
+            const bicycle = create(
                 { a: "a", b: "b", c: "either[]" },
                 {
                     space: {
@@ -216,10 +216,10 @@ export const testAlias = () => {
         })
         test("doesn't try to parse or validate any", () => {
             // Parse any as type
-            assert(define({} as any).type).typed as any
+            assert(create({} as any).type).typed as any
             // Parse any as space
             const parseWithAnySpace = () =>
-                define(
+                create(
                     { literal: "string", alias: "myType" },
                     { space: {} as any }
                 ).type
@@ -233,14 +233,14 @@ export const testAlias = () => {
                     `"Unable to determine the type of 'myType' at path alias."`
                 )
             // Parse any as space member
-            assert(define(["number", "a"], { space: { a: {} as any } }).type)
+            assert(create(["number", "a"], { space: { a: {} as any } }).type)
                 .typed as [number, any]
         })
     })
     describe("generation", () => {
         test("simple space", () => {
             expect(
-                define(
+                create(
                     {
                         fruits: "fruit[]",
                         bestBanana: "banana",
@@ -269,7 +269,7 @@ export const testAlias = () => {
         test("optional cycle", () => {
             // If it's optional, the cycle should be ignored and just return undefined
             expect(
-                define("a", {
+                create("a", {
                     space: {
                         a: { b: "b" },
                         b: { c: "c?" },
@@ -280,7 +280,7 @@ export const testAlias = () => {
         })
         test("required cycle", () => {
             expect(() =>
-                define("a", {
+                create("a", {
                     space: {
                         a: { b: "b" },
                         b: { c: "c" },
@@ -295,7 +295,7 @@ export const testAlias = () => {
         })
         test("onRequiredCycle", () => {
             expect(
-                define("a", {
+                create("a", {
                     space: {
                         a: { b: "b" },
                         b: { c: "c" },
@@ -308,7 +308,7 @@ export const testAlias = () => {
         })
         test("onRequiredCycle with union", () => {
             expect(
-                define("a|b", {
+                create("a|b", {
                     space: {
                         a: { b: "b" },
                         b: { a: "a" }
@@ -318,7 +318,7 @@ export const testAlias = () => {
         })
 
         test("from parsed", () => {
-            const defaultValue = define(
+            const defaultValue = create(
                 {
                     requiredGroup: "group",
                     requiredGroups: "group[]",

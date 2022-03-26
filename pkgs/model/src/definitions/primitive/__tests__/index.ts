@@ -1,23 +1,23 @@
 import { assert } from "@re-/assert"
 import { lazily } from "@re-/tools"
-import { define } from "@re-/model"
+import { create } from "@re-/model"
 
 export const testPrimitive = () => {
     describe("number", () => {
         describe("type", () => {
             test("whole", () => {
-                assert(define(4).type).typed as 4
+                assert(create(4).type).typed as 4
             })
             test("decimal", () => {
-                assert(define(1.234).type).typed as 1.234
+                assert(create(1.234).type).typed as 1.234
             })
             test("negative", () => {
-                assert(define(-5.7).type).typed as -5.7
+                assert(create(-5.7).type).typed as -5.7
             })
         })
         describe("validation", () => {
             test("whole", () => {
-                const { validate } = define(8)
+                const { validate } = create(8)
                 assert(validate(8).errors).is(undefined)
                 assert(validate(8.0).errors).is(undefined)
                 assert(validate(8.000001).errors).is(
@@ -26,7 +26,7 @@ export const testPrimitive = () => {
                 assert(validate("8").errors).is("'8' is not assignable to 8.")
             })
             test("decimal", () => {
-                const { validate } = define(1.618)
+                const { validate } = create(1.618)
                 assert(validate(1.618).errors).is(undefined)
                 assert(validate(2).errors).is("2 is not assignable to 1.618.")
                 assert(validate("1.618").errors).is(
@@ -34,7 +34,7 @@ export const testPrimitive = () => {
                 )
             })
             test("negative", () => {
-                const { validate } = define(-13.37)
+                const { validate } = create(-13.37)
                 assert(validate(-13.37).errors).is(undefined)
                 assert(validate(-14).errors).is(
                     "-14 is not assignable to -13.37."
@@ -46,48 +46,48 @@ export const testPrimitive = () => {
         })
         describe("generation", () => {
             test("whole", () => {
-                assert(define(31).generate()).is(31)
+                assert(create(31).generate()).is(31)
             })
             test("decimal", () => {
-                assert(define(31.31).generate()).is(31.31)
+                assert(create(31.31).generate()).is(31.31)
             })
             test("negative", () => {
-                assert(define(-31.31).generate()).is(-31.31)
+                assert(create(-31.31).generate()).is(-31.31)
             })
         })
     })
     describe("bigint", () => {
         describe("type", () => {
             test("positive", () => {
-                assert(define(999999999999999n).type).typed as 999999999999999n
+                assert(create(999999999999999n).type).typed as 999999999999999n
             })
             test("negative", () => {
-                assert(define(-1n).type).typed as -1n
+                assert(create(-1n).type).typed as -1n
             })
         })
         describe("validation", () => {
             test("positive", () => {
                 assert(
                     // Is prime :D
-                    define(12345678910987654321n).validate(
+                    create(12345678910987654321n).validate(
                         12345678910987654321n
                     ).errors
                 ).is(undefined)
             })
             test("negative", () => {
                 assert(
-                    define(-18446744073709551616n).validate(-BigInt(2 ** 64))
+                    create(-18446744073709551616n).validate(-BigInt(2 ** 64))
                         .errors
                 ).is(undefined)
             })
             describe("errors", () => {
                 test("wrong value", () => {
-                    assert(define(999n).validate(1000n).errors).snap(
+                    assert(create(999n).validate(1000n).errors).snap(
                         `"1000n is not assignable to 999n."`
                     )
                 })
                 test("non-bigint", () => {
-                    assert(define(0n).validate(0).errors).snap(
+                    assert(create(0n).validate(0).errors).snap(
                         `"0 is not assignable to 0n."`
                     )
                 })
@@ -95,16 +95,16 @@ export const testPrimitive = () => {
         })
         describe("generation", () => {
             test("positive", () => {
-                assert(define(1n).generate()).is(1n)
+                assert(create(1n).generate()).is(1n)
             })
             test("negative", () => {
-                assert(define(-1n).generate()).is(-1n)
+                assert(create(-1n).generate()).is(-1n)
             })
         })
     })
     describe("boolean", () => {
         describe("true", () => {
-            const t = lazily(() => define(true))
+            const t = lazily(() => create(true))
             test("type", () => {
                 assert(t.type).typed as true
             })
@@ -119,7 +119,7 @@ export const testPrimitive = () => {
             })
         })
         describe("false", () => {
-            const f = lazily(() => define(false))
+            const f = lazily(() => create(false))
             test("type", () => {
                 assert(f.type).typed as false
             })
@@ -135,7 +135,7 @@ export const testPrimitive = () => {
         })
     })
     describe("undefined", () => {
-        const u = lazily(() => define(undefined))
+        const u = lazily(() => create(undefined))
         test("type", () => {
             assert(u.type).typed as undefined
         })
@@ -150,7 +150,7 @@ export const testPrimitive = () => {
         })
     })
     describe("null", () => {
-        const n = lazily(() => define(null))
+        const n = lazily(() => create(null))
         test("type", () => {
             assert(n.type).typed as null
         })

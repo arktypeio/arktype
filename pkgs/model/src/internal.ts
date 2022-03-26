@@ -1,5 +1,5 @@
 import { TreeOf } from "@re-/tools"
-import { ParseTypeOptions, ReferencesTypeOptions } from "./model.js"
+import { ParseTypeOptions, ReferencesTypeOptions } from "./create.js"
 import { Primitive, ExtractableKeyword, Str } from "./definitions/index.js"
 import { StringLiteral } from "./definitions/str/fragment/reference/literal/stringLiteral.js"
 

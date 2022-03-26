@@ -1,13 +1,13 @@
 import { assert } from "@re-/assert"
-import { define } from "@re-/model"
+import { create } from "@re-/model"
 
 export const testUnion = () => {
     describe("type", () => {
         test("two types", () => {
-            assert(define("number|string").type).typed as string | number
+            assert(create("number|string").type).typed as string | number
         })
         test("several types", () => {
-            assert(define("false|null|undefined|0|''").type).typed as
+            assert(create("false|null|undefined|0|''").type).typed as
                 | number
                 | false
                 | ""
@@ -17,13 +17,13 @@ export const testUnion = () => {
         describe("errors", () => {
             test("bad reference", () => {
                 // @ts-expect-error
-                assert(() => define("number|sting")).throwsAndHasTypeError(
+                assert(() => create("number|sting")).throwsAndHasTypeError(
                     "Unable to determine the type of 'sting'."
                 )
             })
             test("double pipes", () => {
                 // @ts-expect-error
-                assert(() => define("boolean||null")).throwsAndHasTypeError(
+                assert(() => create("boolean||null")).throwsAndHasTypeError(
                     "Unable to determine the type of ''."
                 )
             })
@@ -31,23 +31,23 @@ export const testUnion = () => {
     })
     describe("validation", () => {
         test("two types", () => {
-            assert(define("true|false").validate(false).errors).is(undefined)
+            assert(create("true|false").validate(false).errors).is(undefined)
         })
         test("several types", () => {
             assert(
-                define("0|false|undefined|null|'zero'|void").validate("zero")
+                create("0|false|undefined|null|'zero'|void").validate("zero")
                     .errors
             ).is(undefined)
         })
         describe("errors", () => {
             test("two types", () => {
-                assert(define("'yes'|'no'").validate("maybe").errors).snap(`
+                assert(create("'yes'|'no'").validate("maybe").errors).snap(`
 "'maybe' is not assignable to any of 'yes'|'no':
 {'yes': ''maybe' is not assignable to 'yes'.', 'no': ''maybe' is not assignable to 'no'.'}"
 `)
             })
             test("several types", () => {
-                assert(define("2|4|6|8").validate(5).errors).snap(`
+                assert(create("2|4|6|8").validate(5).errors).snap(`
 "5 is not assignable to any of 2|4|6|8:
 {2: '5 is not assignable to 2.', 4: '5 is not assignable to 4.', 6: '5 is not assignable to 6.', 8: '5 is not assignable to 8.'}"
 `)
@@ -56,9 +56,9 @@ export const testUnion = () => {
     })
     describe("generation", () => {
         test("prefers simple values", () => {
-            assert(define("undefined|string").generate()).is(undefined)
-            assert(define("number|false|function").generate() as any).is(false)
-            assert(define("symbol|object").generate()).equals({})
+            assert(create("undefined|string").generate()).is(undefined)
+            assert(create("number|false|function").generate() as any).is(false)
+            assert(create("symbol|object").generate()).equals({})
         })
         test("prefers simple aliases", () => {
             const space = {
@@ -66,12 +66,12 @@ export const testUnion = () => {
                 duck: "'duck'",
                 func: "function"
             } as const
-            assert(define("func|five|duck", { space }).generate() as any).is(5)
-            assert(define("duck|func", { space }).generate() as any).is("duck")
+            assert(create("func|five|duck", { space }).generate() as any).is(5)
+            assert(create("duck|func", { space }).generate() as any).is("duck")
         })
         test("generates onCycle values if needed", () => {
             assert(
-                define("a|b", {
+                create("a|b", {
                     space: {
                         a: { b: "b" },
                         b: { a: "a" }
@@ -81,7 +81,7 @@ export const testUnion = () => {
         })
         test("avoids required cycles if possible", () => {
             assert(
-                define("a|b|safe", {
+                create("a|b|safe", {
                     space: {
                         a: { b: "b" },
                         b: { a: "a" },

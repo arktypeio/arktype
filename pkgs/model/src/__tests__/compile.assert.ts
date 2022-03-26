@@ -66,17 +66,17 @@ describe("compile", () => {
     })
     test("can parse from compiled types", () => {
         const space = compile({ a: { b: "b" }, b: { a: "a" } })
-        assert(space.define("a|b|null").type).type.toString.snap(
+        assert(space.create("a|b|null").type).type.toString.snap(
             `"{ b: { a: { b: { a: any; }; }; }; } | { a: { b: { a: { b: any; }; }; }; } | null"`
         )
         assert(() =>
             // @ts-expect-error
-            space.define({ nested: { a: "a", b: "b", c: "c" } })
+            space.create({ nested: { a: "a", b: "b", c: "c" } })
         ).throwsAndHasTypeError("Unable to determine the type of 'c'")
     })
     test("compile result", () => {
         const mySpace = compile({ a: { b: "b?" }, b: { a: "a?" } })
-        const a = mySpace.define("a")
+        const a = mySpace.create("a")
         assert(a.type)
             .is(typeDefProxy)
             .type.toString()
@@ -93,7 +93,7 @@ describe("compile", () => {
         assert(a.definition).typedValue("a")
         const expectedSpace = narrow({ a: { b: "b?" }, b: { a: "a?" } })
         assert(a.space).typedValue(expectedSpace)
-        assert(mySpace.define("b").type)
+        assert(mySpace.create("b").type)
             .is(typeDefProxy)
             .type.toString.snap(
                 `"{ a?: { b?: { a?: any | undefined; } | undefined; } | undefined; }"`

@@ -1,6 +1,6 @@
 import { assert } from "@re-/assert"
 import { diffSets } from "@re-/tools"
-import { define, ReferencesOf } from "@re-/model"
+import { create, ReferencesOf } from "@re-/model"
 
 describe("references", () => {
     describe("type", () => {
@@ -53,13 +53,13 @@ describe("references", () => {
 
     describe("value", () => {
         test("shallow", () => {
-            assert(define(5).references()).equals(["5"]).typed as "5"[]
-            assert(define(null).references()).equals(["null"]).typed as "null"[]
-            assert(define(0n).references()).equals(["0n"]).typed as "0n"[]
-            assert(define("string").references()).equals(["string"])
+            assert(create(5).references()).equals(["5"]).typed as "5"[]
+            assert(create(null).references()).equals(["null"]).typed as "null"[]
+            assert(create(0n).references()).equals(["0n"]).typed as "0n"[]
+            assert(create("string").references()).equals(["string"])
                 .typed as "string"[]
 
-            const expressionReferences = define(
+            const expressionReferences = create(
                 "(string,number[])=>null|true"
             ).references()
             assert(
@@ -76,7 +76,7 @@ describe("references", () => {
                 | "true"
                 | "null"
             )[]
-            const aliasReferences = define("user|string", {
+            const aliasReferences = create("user|string", {
                 space: { user: "any" }
             }).references()
             assert(diffSets(["string", "user"], aliasReferences) as any).is(
@@ -85,7 +85,7 @@ describe("references", () => {
             assert(aliasReferences).typed as ("string" | "user")[]
         })
         test("object", () => {
-            const objectReferences = define(
+            const objectReferences = create(
                 {
                     primitives: {
                         undefined: undefined,

@@ -1,9 +1,9 @@
 import { assert } from "@re-/assert"
-import { define } from "@re-/model"
+import { create } from "@re-/model"
 
 export const testKeyword = () => {
     describe("string", () => {
-        const { type, generate, validate } = define("string")
+        const { type, generate, validate } = create("string")
         test("type", () => {
             assert(type).typed as string
         })
@@ -18,7 +18,7 @@ export const testKeyword = () => {
         })
     })
     describe("number", () => {
-        const { type, generate, validate } = define("number")
+        const { type, generate, validate } = create("number")
         test("type", () => {
             assert(type).typed as number
         })
@@ -34,7 +34,7 @@ export const testKeyword = () => {
         })
     })
     describe("boolean", () => {
-        const { type, generate, validate } = define("boolean")
+        const { type, generate, validate } = create("boolean")
         test("type", () => {
             assert(type).typed as boolean
         })
@@ -48,7 +48,7 @@ export const testKeyword = () => {
         })
     })
     describe("true", () => {
-        const { type, generate, validate } = define("true")
+        const { type, generate, validate } = create("true")
         test("type", () => {
             assert(type).typed as true
         })
@@ -63,7 +63,7 @@ export const testKeyword = () => {
         })
     })
     describe("false", () => {
-        const { type, generate, validate } = define("false")
+        const { type, generate, validate } = create("false")
         test("type", () => {
             assert(type).typed as false
         })
@@ -78,7 +78,7 @@ export const testKeyword = () => {
         })
     })
     describe("bigint", () => {
-        const { type, generate, validate } = define("bigint")
+        const { type, generate, validate } = create("bigint")
         test("type", () => {
             assert(type).typed as bigint
         })
@@ -93,7 +93,7 @@ export const testKeyword = () => {
         })
     })
     describe("symbol", () => {
-        const { type, generate, validate } = define("symbol")
+        const { type, generate, validate } = create("symbol")
         test("type", () => {
             assert(type).typed as symbol
         })
@@ -108,7 +108,7 @@ export const testKeyword = () => {
         })
     })
     describe("function", () => {
-        const { type, generate, validate } = define("function")
+        const { type, generate, validate } = create("function")
         test("type", () => {
             assert(type).typed as (...args: any[]) => any
         })
@@ -125,7 +125,7 @@ export const testKeyword = () => {
         })
     })
     describe("object", () => {
-        const { type, generate, validate } = define("object")
+        const { type, generate, validate } = create("object")
         test("type", () => {
             assert(type).typed as object
         })
@@ -141,7 +141,7 @@ export const testKeyword = () => {
         })
     })
     describe("undefined", () => {
-        const { type, generate, validate } = define("undefined")
+        const { type, generate, validate } = create("undefined")
         test("type", () => {
             assert(type).typed as undefined
         })
@@ -156,7 +156,7 @@ export const testKeyword = () => {
         })
     })
     describe("null", () => {
-        const { type, generate, validate } = define("null")
+        const { type, generate, validate } = create("null")
         test("type", () => {
             assert(type).typed as null
         })
@@ -171,7 +171,7 @@ export const testKeyword = () => {
         })
     })
     describe("void", () => {
-        const { type, generate, validate } = define("void")
+        const { type, generate, validate } = create("void")
         test("type", () => {
             assert(type).typed as void
         })
@@ -186,7 +186,7 @@ export const testKeyword = () => {
         })
     })
     describe("any", () => {
-        const { type, generate, validate } = define("any")
+        const { type, generate, validate } = create("any")
         test("type", () => {
             assert(type).typed as any
         })
@@ -200,7 +200,7 @@ export const testKeyword = () => {
         })
     })
     describe("unknown", () => {
-        const { type, generate, validate } = define("unknown")
+        const { type, generate, validate } = create("unknown")
         test("type", () => {
             assert(type).typed as unknown
         })
@@ -214,7 +214,7 @@ export const testKeyword = () => {
         })
     })
     describe("never", () => {
-        const { type, generate, validate } = define("never")
+        const { type, generate, validate } = create("never")
         test("type", () => {
             // @ts-ignore
             assert(type).typed as never

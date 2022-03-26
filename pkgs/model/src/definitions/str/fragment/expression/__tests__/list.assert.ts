@@ -1,38 +1,38 @@
 import { assert } from "@re-/assert"
-import { define } from "@re-/model"
+import { create } from "@re-/model"
 import { lazily } from "@re-/tools"
 
 export const testList = () => {
     describe("type", () => {
         test("basic", () => {
-            assert(define("string[]").type).typed as string[]
+            assert(create("string[]").type).typed as string[]
         })
         test("two-dimensional", () => {
-            assert(define("number[][]").type).typed as number[][]
+            assert(create("number[][]").type).typed as number[][]
         })
         describe("errors", () => {
             test("bad item type", () => {
                 // @ts-expect-error
-                assert(() => define("nonexistent[]")).throwsAndHasTypeError(
+                assert(() => create("nonexistent[]")).throwsAndHasTypeError(
                     "Unable to determine the type of 'nonexistent'."
                 )
             })
             test("unclosed bracket", () => {
                 // @ts-expect-error
-                assert(() => define("boolean[")).throwsAndHasTypeError(
+                assert(() => create("boolean[")).throwsAndHasTypeError(
                     "Unable to determine the type of 'boolean['."
                 )
             })
             test("tuple", () => {
                 // @ts-expect-error
-                assert(() => define("[any]")).throwsAndHasTypeError(
+                assert(() => create("[any]")).throwsAndHasTypeError(
                     "Unable to determine the type of '[any]'."
                 )
             })
         })
     })
     describe("validation", () => {
-        const numberArray = lazily(() => define("number[]"))
+        const numberArray = lazily(() => create("number[]"))
         test("empty", () => {
             assert(numberArray.validate([]).errors).is(undefined)
         })
@@ -59,7 +59,7 @@ export const testList = () => {
     })
     describe("generation", () => {
         test("empty by default", () => {
-            assert(define("number[]").generate()).equals([])
+            assert(create("number[]").generate()).equals([])
         })
     })
 }

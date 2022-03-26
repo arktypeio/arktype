@@ -1,5 +1,5 @@
-export * from "./model.js"
+export * from "./create.js"
 export * from "./compile.js"
-export * from "./declaration.js"
+export * from "./declare.js"
 export * from "./utils.js"
 export * as Definitions from "./definitions/index.js"

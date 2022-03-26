@@ -6,15 +6,16 @@ import {
     Narrow,
     transform,
     IsAny,
-    Exact
+    Exact,
+    Merge
 } from "@re-/tools"
 import {
-    createDefineFunction,
-    DefineFunction,
+    createCreateFunction,
+    CreateFunction,
     DefaultParseTypeOptions,
     TypeOf,
     Model
-} from "./model.js"
+} from "./create.js"
 import { Map, Root } from "./definitions/index.js"
 import { typeDefProxy, ParseConfig } from "./internal.js"
 import { Resolution } from "./resolution.js"
@@ -22,10 +23,16 @@ import { DefaultParseTypeContext } from "./definitions/internal.js"
 
 export type SpaceResolutions = Record<string, Root.Definition>
 
-export type CheckSpaceResolutions<Space> = IsAny<Space> extends true
+export type CheckSpaceResolutions<
+    Space,
+    SuperSpace = {}
+> = IsAny<Space> extends true
     ? any
     : Evaluate<{
-          [TypeName in keyof Space]: Resolution.Check<Space[TypeName], Space>
+          [TypeName in keyof Space]: Resolution.Check<
+              Space[TypeName],
+              Merge<SuperSpace, Space>
+          >
       }>
 
 export type ParseSpaceRoot<Space, Options extends ParseConfig> = {
@@ -75,7 +82,7 @@ export const createCompileFunction =
             }
             throw new Error(errorParts.join(" "))
         }
-        const define = createDefineFunction(definitions) as any
+        const create = createCreateFunction(definitions) as any
         return {
             ...(transform(definitions, ([typeName, definition]) => [
                 typeName,
@@ -86,7 +93,7 @@ export const createCompileFunction =
                 })
             ]) as any),
             types: typeDefProxy,
-            define
+            create
         }
     }
 
@@ -97,7 +104,8 @@ export const compile = createCompileFunction([])
 export type CheckCompileDefinitions<
     Definitions,
     DeclaredTypeNames extends string[] = [],
-    Checked = CheckSpaceResolutions<Definitions>,
+    SuperSpace = {},
+    Checked = CheckSpaceResolutions<Definitions, SuperSpace>,
     DefinedTypeName extends string = keyof Checked & string,
     DeclaredTypeName extends string = DeclaredTypeNames extends never[]
         ? DefinedTypeName
@@ -118,6 +126,12 @@ export type CompileFunction<DeclaredTypeNames extends string[]> = <Definitions>(
     >
 ) => Space<Definitions>
 
+export type ExtendSpace<SuperSpace> = <Definitions>(
+    definitions: Narrow<
+        Exact<Definitions, CheckCompileDefinitions<Definitions, [], SuperSpace>>
+    >
+) => Space<Merge<SuperSpace, Definitions>>
+
 export type Space<Definitions> = Evaluate<
     ParseSpaceResolutions<Definitions, DefaultParseTypeOptions> & {
         types: Evaluate<
@@ -127,6 +141,8 @@ export type Space<Definitions> = Evaluate<
                 DefaultParseTypeOptions
             >
         >
-        define: DefineFunction<Definitions>
+        create: CreateFunction<Definitions>
+        extend: ExtendSpace<Definitions>
+        // TODO: Add declare extension
     }
 >
