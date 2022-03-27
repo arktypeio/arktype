@@ -7,7 +7,6 @@ import styles from "./index.module.css"
 import { getTheme, ToolSummaries } from "../components"
 import { ThemeProvider, Typography } from "@mui/material"
 
-const font = ""
 const Contents = () => {
     const { siteConfig } = useDocusaurusContext()
     const { isDarkTheme } = useColorMode()
