@@ -24,6 +24,7 @@ import {
 } from "./internal.js"
 import { Resolution } from "./resolution.js"
 import { DefaultParseTypeContext } from "./definitions/internal.js"
+import { Definitions } from "./index.js"
 
 export type SpaceResolutions = Record<string, Root.Definition>
 
@@ -59,7 +60,7 @@ export const createCompileFunction =
     <DeclaredTypeNames extends string[]>(
         declaredTypeNames: Narrow<DeclaredTypeNames>
     ): CompileFunction<DeclaredTypeNames> =>
-    (definitions) => {
+    (definitions: any, config: any) => {
         const declarationErrors = diffSets(
             declaredTypeNames,
             Object.keys(definitions)
@@ -86,7 +87,16 @@ export const createCompileFunction =
             }
             throw new Error(errorParts.join(" "))
         }
-        const create = createCreateFunction(definitions) as any
+        const create = createCreateFunction(definitions)
+        const extend = (extensionDefinitions: any, extensionConfig: any) =>
+            compile(
+                { ...definitions, ...extensionDefinitions },
+                {
+                    ...config,
+                    ...extensionConfig,
+                    models: { ...config?.models, ...extensionConfig?.models }
+                }
+            )
         return {
             models: transform(definitions, ([typeName, definition]) => [
                 typeName,
@@ -95,7 +105,9 @@ export const createCompileFunction =
                 })
             ]),
             types: typeDefProxy,
-            create
+            create,
+            config,
+            extend
         } as any
     }
 
@@ -119,15 +131,15 @@ export type CheckCompileDefinitions<
 export const extraneousTypesErrorMessage = `Defined types @types were never declared.`
 export const missingTypesErrorMessage = `Declared types @types were never defined.`
 
-export type SpaceOptions<Definitions> = ModelOptions & {
+export type SpaceOptions<ModelName extends string> = ModelOptions & {
     models?: {
-        [Name in keyof Definitions]?: ModelOptions
+        [Name in ModelName]?: ModelOptions
     }
 }
 
 export type CompileFunction<DeclaredTypeNames extends string[]> = <
     Definitions,
-    Options extends SpaceOptions<Definitions>
+    Options extends SpaceOptions<keyof Definitions & string>
 >(
     definitions: Narrow<
         Exact<
@@ -135,17 +147,19 @@ export type CompileFunction<DeclaredTypeNames extends string[]> = <
             CheckCompileDefinitions<Definitions, DeclaredTypeNames>
         >
     >,
-    options?: Options
+    config?: Narrow<Options>
 ) => Space<Definitions, Options>
 
-type ExtendSpaceContext<ExtendedContext, NewContext> = Merge<
-    ExtendedContext,
+type ExtendSpaceConfig<OriginalContext, NewContext> = Merge<
+    OriginalContext,
     NewContext
 >
 
-export type ExtendSpace<ExtendedDefinitions, ExtendedContext> = <
+export type ExtendSpaceFunction<ExtendedDefinitions, ExtendedContext> = <
     Definitions,
-    Options extends SpaceOptions<Definitions>
+    Config extends SpaceOptions<
+        (keyof ExtendedDefinitions | keyof Definitions) & string
+    >
 >(
     definitions: Narrow<
         Exact<
@@ -153,13 +167,13 @@ export type ExtendSpace<ExtendedDefinitions, ExtendedContext> = <
             CheckCompileDefinitions<Definitions, [], ExtendedDefinitions>
         >
     >,
-    options?: Options
+    config?: Narrow<Config>
 ) => Space<
     Merge<ExtendedDefinitions, Definitions>,
-    ExtendSpaceContext<ExtendedContext, Options>
+    ExtendSpaceConfig<ExtendedContext, Config>
 >
 
-export type Space<Definitions, Context> = Evaluate<{
+export type Space<Definitions, Config> = Evaluate<{
     models: ParseSpaceResolutions<Definitions, DefaultTypeOfContext>
     types: Evaluate<
         Map.TypeOf<
@@ -169,7 +183,7 @@ export type Space<Definitions, Context> = Evaluate<{
         >
     >
     create: CreateFunction<Definitions>
-    extend: ExtendSpace<Definitions, Context>
-    context: Context
+    extend: ExtendSpaceFunction<Definitions, Config>
+    config: Config
     // TODO: Add declare extension
 }>

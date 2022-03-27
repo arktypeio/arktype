@@ -74,6 +74,64 @@ describe("compile", () => {
             space.create({ nested: { a: "a", b: "b", c: "c" } })
         ).throwsAndHasTypeError("Unable to determine the type of 'c'")
     })
+    test("extension", () => {
+        const mySpace = compile(
+            { user: { name: "string" }, group: { members: "user[]" } },
+            {
+                parse: { onCycle: "number" },
+                validate: { ignoreExtraneousKeys: true },
+                models: {
+                    user: {
+                        validate: {
+                            ignoreExtraneousKeys: false
+                        }
+                    }
+                }
+            }
+        )
+        const extended = mySpace.extend(
+            { user: { age: "number" }, other: "user[]" },
+            {
+                parse: { onCycle: "boolean", deepOnCycle: true },
+                models: {
+                    group: {
+                        generate: {
+                            onRequiredCycle: true
+                        }
+                    },
+                    another: {
+                        validate: {
+                            ignoreExtraneousKeys: true
+                        }
+                    }
+                }
+            }
+        )
+        assert(extended.types).typed as {
+            user: {
+                age: number
+            }
+            group: {
+                members: {
+                    age: number
+                }[]
+            }
+            other: {
+                age: number
+            }[]
+        }
+        assert(extended.config).typedValue(
+            narrow({
+                validate: {
+                    ignoreExtraneousKeys: true
+                },
+                parse: {
+                    onCycle: "boolean",
+                    deepOnCycle: true
+                }
+            })
+        )
+    })
     test("compile result", () => {
         const mySpace = compile({ a: { b: "b?" }, b: { a: "a?" } })
         const a = mySpace.create("a")
