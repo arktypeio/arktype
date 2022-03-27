@@ -1,7 +1,7 @@
 import { Func, isRecursible } from "@re-/tools"
 import {
     typeDefProxy,
-    ParseConfig,
+    TypeOfContext,
     createParser,
     DefinitionTypeError,
     ParseTypeContext
@@ -28,7 +28,7 @@ export namespace Obj {
     export type TypeOf<
         N extends Node,
         Space,
-        Options extends ParseConfig
+        Options extends TypeOfContext
     > = N extends Map.Node
         ? Map.TypeOf<N, Space, Options>
         : N extends Tuple.Node

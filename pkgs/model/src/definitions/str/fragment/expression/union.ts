@@ -14,7 +14,7 @@ import {
     validationError,
     createParser,
     ParseContext,
-    ParseConfig,
+    TypeOfContext,
     UnknownTypeError,
     ParseTypeContext
 } from "./internal.js"
@@ -62,7 +62,7 @@ export namespace Union {
     export type TypeOf<
         N extends Node,
         Space,
-        Options extends ParseConfig
+        Options extends TypeOfContext
     > = Fragment.TypeOf<ElementOf<N["union"]>, Space, Options>
 
     export const type = typeDefProxy as Definition

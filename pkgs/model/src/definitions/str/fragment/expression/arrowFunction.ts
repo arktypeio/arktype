@@ -3,7 +3,7 @@ import {
     typeDefProxy,
     validationError,
     createParser,
-    ParseConfig,
+    TypeOfContext,
     UnknownTypeError,
     ParseTypeContext
 } from "./internal.js"
@@ -48,7 +48,7 @@ export namespace ArrowFunction {
     export type TypeOf<
         N extends Node,
         Space,
-        Options extends ParseConfig,
+        Options extends TypeOfContext,
         Args extends Fragment.Node[] = N["args"]
     > = Evaluate<
         // @ts-ignore
@@ -60,7 +60,7 @@ export namespace ArrowFunction {
     type TypeOfArgs<
         Args extends Fragment.Node[],
         Space,
-        Options extends ParseConfig
+        Options extends TypeOfContext
     > = {
         [I in keyof Args]: Fragment.TypeOf<Args[I], Space, Options>
     }

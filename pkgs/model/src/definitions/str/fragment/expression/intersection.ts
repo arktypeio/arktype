@@ -11,7 +11,7 @@ import {
 import { Fragment } from "../fragment.js"
 import { Expression } from "./expression.js"
 import {
-    ParseConfig,
+    TypeOfContext,
     ParseTypeContext,
     ungeneratableError,
     UnknownTypeError
@@ -43,7 +43,7 @@ export namespace Intersection {
     export type TypeOf<
         N extends Node,
         Space,
-        Options extends ParseConfig
+        Options extends TypeOfContext
     > = Fragment.TypeOf<N["intersection"][0], Space, Options> &
         Fragment.TypeOf<N["intersection"][1], Space, Options>
 

@@ -1,6 +1,6 @@
 import { Root } from "../root.js"
 import {
-    ParseConfig,
+    TypeOfContext,
     createParser,
     typeDefProxy,
     ReferencesTypeConfig,
@@ -28,7 +28,7 @@ export namespace Str {
     export type TypeOf<
         N extends Node,
         Space,
-        Options extends ParseConfig
+        Options extends TypeOfContext
     > = N extends Modification.Node
         ? Modification.TypeOf<N, Space, Options>
         : N extends Fragment.Node

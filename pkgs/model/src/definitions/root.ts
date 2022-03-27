@@ -1,4 +1,4 @@
-import { ParseConfig, ParseTypeContext, typeDefProxy } from "./internal.js"
+import { TypeOfContext, ParseTypeContext, typeDefProxy } from "./internal.js"
 import { Obj } from "./obj/index.js"
 import { Str } from "./str/index.js"
 import { Primitive } from "./primitive/index.js"
@@ -35,7 +35,7 @@ export namespace Root {
     export type TypeOf<
         N,
         Space,
-        Options extends ParseConfig
+        Options extends TypeOfContext
     > = N extends Primitive.Node
         ? N
         : N extends Str.Node

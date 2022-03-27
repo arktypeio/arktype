@@ -12,7 +12,7 @@ import {
     createParser,
     ParseTypeContext,
     typeDefProxy,
-    ParseConfig,
+    TypeOfContext,
     ConstraintError
 } from "./internal.js"
 import { Expression } from "../index.js"
@@ -166,7 +166,7 @@ export namespace Constraint {
     export type TypeOf<
         N extends Node,
         Space,
-        Options extends ParseConfig
+        Options extends TypeOfContext
     > = Fragment.TypeOf<N["bounded"], Space, Options>
 
     export const matcher = /(<=|>=|<|>)/

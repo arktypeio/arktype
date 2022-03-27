@@ -1,7 +1,7 @@
 import { Evaluate } from "@re-/tools"
 import {
     typeDefProxy,
-    ParseConfig,
+    TypeOfContext,
     createParser,
     tupleLengthError,
     validationError,
@@ -31,7 +31,7 @@ export namespace Tuple {
     export type TypeOf<
         N extends Node,
         Space,
-        Options extends ParseConfig,
+        Options extends TypeOfContext,
         T extends Root.Node[] = N["tuple"]
     > = Evaluate<{
         [Index in keyof T]: Root.TypeOf<T[Index], Space, Options>

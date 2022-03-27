@@ -25,8 +25,10 @@ export const testAlias = () => {
             const { type } = getCyclicSpace().create(
                 { a: "a", b: "b" },
                 {
-                    onCycle: {
-                        cyclic: "cyclic?"
+                    parse: {
+                        onCycle: {
+                            cyclic: "cyclic?"
+                        }
                     }
                 }
             )
@@ -46,9 +48,11 @@ export const testAlias = () => {
             const { type } = getCyclicSpace().create(
                 { a: "a", b: "b" },
                 {
-                    deepOnCycle: true,
-                    onCycle: {
-                        cyclic: "cyclic?"
+                    parse: {
+                        onCycle: {
+                            cyclic: "cyclic?"
+                        },
+                        deepOnCycle: true
                     }
                 }
             )
@@ -65,9 +69,11 @@ export const testAlias = () => {
                     }
                 },
                 {
-                    onResolve: {
-                        wasResolved: "true",
-                        resolvedType: "resolved"
+                    parse: {
+                        onResolve: {
+                            wasResolved: "true",
+                            resolvedType: "resolved"
+                        }
                     }
                 }
             )
@@ -89,10 +95,7 @@ export const testAlias = () => {
                         banana: { length: "number", description: "string?" },
                         apple: { circumference: "number", type: "string" },
                         fruit: "banana|apple"
-                    },
-                    path: [],
-                    shallowSeen: [],
-                    seen: {}
+                    }
                 }
             )
             expect(

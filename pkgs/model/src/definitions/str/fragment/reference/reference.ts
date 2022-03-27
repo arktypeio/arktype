@@ -1,4 +1,4 @@
-import { createParser, ParseConfig, typeDefProxy } from "./internal.js"
+import { createParser, TypeOfContext, typeDefProxy } from "./internal.js"
 import { Fragment } from "../fragment.js"
 import { Keyword } from "./keyword/keyword.js"
 import { Literal } from "./literal/literal.js"
@@ -24,7 +24,7 @@ export namespace Reference {
     export type TypeOf<
         N extends Node,
         Space,
-        Options extends ParseConfig
+        Options extends TypeOfContext
     > = N extends Keyword.Definition
         ? Keyword.TypeOf<N>
         : N extends Literal.Definition

@@ -15,6 +15,9 @@ export const testStringLiteral = () => {
         test("double-quoted literal", () => {
             assert(create(`'"double-quoted"'`).type).typed as '"double-quoted"'
         })
+        test("with spaces", () => {
+            assert(create("'this has spaces'").type).typed as "this has spaces"
+        })
         describe("errors", () => {
             test("unclosed quotes", () => {
                 // @ts-expect-error

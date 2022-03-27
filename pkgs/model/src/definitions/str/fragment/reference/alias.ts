@@ -1,6 +1,6 @@
 import { IsAny, Or } from "@re-/tools"
 import {
-    ParseConfig,
+    TypeOfContext,
     typeDefProxy,
     ValidationErrorMessage,
     shallowCycleError,
@@ -23,7 +23,7 @@ export namespace Alias {
     export type TypeOf<
         TypeName extends Definition<Space>,
         Space,
-        Options extends ParseConfig
+        Options extends TypeOfContext
     > = IsAny<Space> extends true
         ? Space
         : Space[TypeName] extends ValidationErrorMessage
@@ -37,7 +37,7 @@ export namespace Alias {
     export type TypeOfResolvedCyclicDefinition<
         TypeName extends Definition<Space>,
         Space,
-        Options extends ParseConfig
+        Options extends TypeOfContext
     > = Root.TypeOf<
         Root.Parse<
             Options["onCycle"],
@@ -58,7 +58,7 @@ export namespace Alias {
     export type TypeOfResolvedNonCyclicDefinition<
         TypeName extends Definition<Space>,
         Space,
-        Options extends ParseConfig
+        Options extends TypeOfContext
     > = Or<
         Options["onResolve"] extends never ? true : false,
         TypeName extends "resolved" ? true : false

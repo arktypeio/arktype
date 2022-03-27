@@ -12,12 +12,16 @@ import {
 import {
     createCreateFunction,
     CreateFunction,
-    DefaultParseTypeOptions,
     TypeOf,
-    Model
-} from "./create.js"
+    Model,
+    ModelOptions
+} from "./model.js"
 import { Map, Root } from "./definitions/index.js"
-import { typeDefProxy, ParseConfig } from "./internal.js"
+import {
+    DefaultTypeOfContext,
+    typeDefProxy,
+    TypeOfContext
+} from "./internal.js"
 import { Resolution } from "./resolution.js"
 import { DefaultParseTypeContext } from "./definitions/internal.js"
 
@@ -35,19 +39,19 @@ export type CheckSpaceResolutions<
           >
       }>
 
-export type ParseSpaceRoot<Space, Options extends ParseConfig> = {
+export type ParseSpaceRoot<Space, Context extends TypeOfContext> = {
     [TypeName in keyof Space]: TypeOf<
         Space[TypeName],
         CheckSpaceResolutions<Space>,
-        Options
+        Context
     >
 }
 
-export type ParseSpaceResolutions<Space, Options extends ParseConfig> = {
+export type ParseSpaceResolutions<Space, Context extends TypeOfContext> = {
     [TypeName in keyof Space]: Model<
         Space[TypeName],
         CheckSpaceResolutions<Space>,
-        Options
+        Context
     >
 }
 
@@ -84,17 +88,15 @@ export const createCompileFunction =
         }
         const create = createCreateFunction(definitions) as any
         return {
-            ...(transform(definitions, ([typeName, definition]) => [
+            models: transform(definitions, ([typeName, definition]) => [
                 typeName,
-                // @ts-ignore
-                define(definition, {
-                    // @ts-ignore
+                create(definition, {
                     space: definitions
                 })
-            ]) as any),
+            ]),
             types: typeDefProxy,
             create
-        }
+        } as any
     }
 
 // Exported compile function is equivalent to compile from an empty declare call
@@ -117,32 +119,57 @@ export type CheckCompileDefinitions<
 export const extraneousTypesErrorMessage = `Defined types @types were never declared.`
 export const missingTypesErrorMessage = `Declared types @types were never defined.`
 
-export type CompileFunction<DeclaredTypeNames extends string[]> = <Definitions>(
+export type SpaceOptions<Definitions> = ModelOptions & {
+    models?: {
+        [Name in keyof Definitions]?: ModelOptions
+    }
+}
+
+export type CompileFunction<DeclaredTypeNames extends string[]> = <
+    Definitions,
+    Options extends SpaceOptions<Definitions>
+>(
     definitions: Narrow<
         Exact<
             Definitions,
             CheckCompileDefinitions<Definitions, DeclaredTypeNames>
         >
-    >
-) => Space<Definitions>
+    >,
+    options?: Options
+) => Space<Definitions, Options>
 
-export type ExtendSpace<SuperSpace> = <Definitions>(
-    definitions: Narrow<
-        Exact<Definitions, CheckCompileDefinitions<Definitions, [], SuperSpace>>
-    >
-) => Space<Merge<SuperSpace, Definitions>>
-
-export type Space<Definitions> = Evaluate<
-    ParseSpaceResolutions<Definitions, DefaultParseTypeOptions> & {
-        types: Evaluate<
-            Map.TypeOf<
-                Map.Parse<Definitions, Definitions, DefaultParseTypeContext>,
-                Definitions,
-                DefaultParseTypeOptions
-            >
-        >
-        create: CreateFunction<Definitions>
-        extend: ExtendSpace<Definitions>
-        // TODO: Add declare extension
-    }
+type ExtendSpaceContext<ExtendedContext, NewContext> = Merge<
+    ExtendedContext,
+    NewContext
 >
+
+export type ExtendSpace<ExtendedDefinitions, ExtendedContext> = <
+    Definitions,
+    Options extends SpaceOptions<Definitions>
+>(
+    definitions: Narrow<
+        Exact<
+            Definitions,
+            CheckCompileDefinitions<Definitions, [], ExtendedDefinitions>
+        >
+    >,
+    options?: Options
+) => Space<
+    Merge<ExtendedDefinitions, Definitions>,
+    ExtendSpaceContext<ExtendedContext, Options>
+>
+
+export type Space<Definitions, Context> = Evaluate<{
+    models: ParseSpaceResolutions<Definitions, DefaultTypeOfContext>
+    types: Evaluate<
+        Map.TypeOf<
+            Map.Parse<Definitions, Definitions, DefaultParseTypeContext>,
+            Definitions,
+            DefaultTypeOfContext
+        >
+    >
+    create: CreateFunction<Definitions>
+    extend: ExtendSpace<Definitions, Context>
+    context: Context
+    // TODO: Add declare extension
+}>

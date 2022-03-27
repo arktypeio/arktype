@@ -1,5 +1,5 @@
 import {
-    ParseConfig,
+    TypeOfContext,
     createParser,
     typeDefProxy,
     UnknownTypeError
@@ -25,7 +25,7 @@ export namespace Modification {
     export type TypeOf<
         N extends Node,
         Space,
-        Options extends ParseConfig
+        Options extends TypeOfContext
     > = N extends Optional.Node ? Optional.TypeOf<N, Space, Options> : unknown
 
     export const type = typeDefProxy as Definition

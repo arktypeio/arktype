@@ -1,5 +1,5 @@
 import {
-    ParseConfig,
+    TypeOfContext,
     createParser,
     typeDefProxy,
     UnknownTypeError,
@@ -46,7 +46,7 @@ export namespace Expression {
     export type TypeOf<
         N extends Node,
         Space,
-        Options extends ParseConfig
+        Options extends TypeOfContext
     > = N extends ArrowFunction.Node
         ? ArrowFunction.TypeOf<N, Space, Options>
         : N extends Union.Node

@@ -3,7 +3,7 @@ import { Expression } from "./expression/index.js"
 import { Str } from "../str.js"
 import {
     ParseTypeContext,
-    ParseConfig,
+    TypeOfContext,
     createParser,
     typeDefProxy,
     UnknownTypeError
@@ -47,7 +47,7 @@ export namespace Fragment {
     export type TypeOf<
         N,
         Space,
-        Options extends ParseConfig
+        Options extends TypeOfContext
     > = N extends Expression.Node
         ? Expression.TypeOf<N, Space, Options>
         : N extends Reference.Node

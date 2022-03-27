@@ -1,5 +1,9 @@
 import { TreeOf } from "@re-/tools"
-import { ParseTypeOptions, ReferencesTypeOptions } from "./create.js"
+import {
+    ParseOptions,
+    ReferencesTypeOptions,
+    DefaultParseOptions
+} from "./model.js"
 import { Primitive, ExtractableKeyword, Str } from "./definitions/index.js"
 import { StringLiteral } from "./definitions/str/fragment/reference/literal/stringLiteral.js"
 
@@ -19,5 +23,10 @@ export type ExtractableDefinition = TreeOf<ShallowExtractableDefinition>
 export const typeDefProxy: any = new Proxy({}, { get: () => getTypeDefProxy() })
 export const getTypeDefProxy = () => typeDefProxy
 
-export type ParseConfig = Required<ParseTypeOptions>
 export type ReferencesTypeConfig = Required<ReferencesTypeOptions>
+
+export type TypeOfContext = Required<ParseOptions> & {
+    seen: Record<string, boolean>
+}
+
+export type DefaultTypeOfContext = DefaultParseOptions & { seen: {} }

@@ -1,6 +1,6 @@
 import { ElementOf, Narrow, transform } from "@re-/tools"
-import { create, CheckReferences } from "./create.js"
-import { CompileFunction, createCompileFunction } from "./compile.js"
+import { create, CheckReferences } from "./model.js"
+import { CompileFunction, createCompileFunction } from "./space.js"
 
 export const createDeclaredDefineFunctionMap = <
     DeclaredTypeNames extends string[]

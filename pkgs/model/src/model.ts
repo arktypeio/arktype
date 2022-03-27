@@ -9,8 +9,8 @@ import {
 import { Root } from "./definitions/index.js"
 import { ParseContext, defaultParseContext } from "./definitions/parser.js"
 import { stringifyErrors, ValidationErrors } from "./errors.js"
-import { format, typeOf } from "./utils.js"
-import { CheckSpaceResolutions } from "./compile.js"
+import { typeOf } from "./utils.js"
+import { CheckSpaceResolutions } from "./space.js"
 import { ReferencesTypeConfig, typeDefProxy } from "./internal.js"
 import { DefaultParseTypeContext } from "./definitions/internal.js"
 
@@ -23,13 +23,18 @@ export type Validate<Def, Space> = IsAny<Def> extends true
 export type TypeOf<
     Def,
     Space,
-    Options extends ParseTypeOptions = {}
+    Options extends ParseOptions = {},
+    OptionsWithDefaults extends Required<ParseOptions> = WithDefaults<
+        ParseOptions,
+        Options,
+        DefaultParseOptions
+    >
 > = IsAny<Def> extends true
     ? Def
     : Root.TypeOf<
           Root.Parse<Def, Space, DefaultParseTypeContext>,
           CheckSpaceResolutions<Space>,
-          WithDefaults<ParseTypeOptions, Options, DefaultParseTypeOptions>
+          OptionsWithDefaults & { seen: {} }
       >
 
 export type ReferencesTypeOptions = {
@@ -65,22 +70,21 @@ export type CheckReferences<
     }
 >
 
-export type ParseTypeOptions = {
+export type ParseOptions = {
     onCycle?: Definition
-    seen?: Record<string, boolean>
     deepOnCycle?: boolean
     onResolve?: Definition
 }
 
-export type DefineOptions = ParseTypeOptions & {
-    validation?: ValidateOptions
-    generation?: GenerateOptions
+export type ModelOptions = {
+    parse?: ParseOptions
+    validate?: ValidateOptions
+    generate?: GenerateOptions
     references?: ReferencesOptions
 }
 
-export type DefaultParseTypeOptions = {
+export type DefaultParseOptions = {
     onCycle: never
-    seen: {}
     deepOnCycle: false
     onResolve: never
 }
@@ -132,30 +136,25 @@ export const createCreateFunction =
         predefinedSpace: Narrow<PredefinedSpace>
     ): CreateFunction<PredefinedSpace> =>
     (definition, options) => {
-        const formattedSpace: any = format(options?.space ?? predefinedSpace)
         const context: ParseContext = {
             ...defaultParseContext,
-            space: formattedSpace
+            space: options?.space ?? (predefinedSpace as any)
         }
-        const formattedDefinition = format(definition) as any
-        const { allows, references, generate } = Root.parse(
-            formattedDefinition,
-            context
-        )
+        const { allows, references, generate } = Root.parse(definition, context)
         const validate = createValidateFunction(allows)
         return {
             type: typeDefProxy,
-            space: formattedSpace,
-            definition: formattedDefinition,
+            space: context.space,
+            definition,
             validate,
+            references,
+            generate,
             assert: (value: unknown, options?: AssertOptions) => {
                 const { errors } = validate(value, options)
                 if (errors) {
                     throw new Error(errors)
                 }
-            },
-            references,
-            generate
+            }
         } as any
     }
 
@@ -165,7 +164,7 @@ export const create = createCreateFunction({})
 
 export type CreateFunction<PredefinedSpace> = <
     Def,
-    Options extends DefineOptions,
+    Options extends ModelOptions,
     ActiveSpace = PredefinedSpace
 >(
     definition: Validate<Narrow<Def>, ActiveSpace>,
@@ -174,7 +173,11 @@ export type CreateFunction<PredefinedSpace> = <
             space?: Exact<ActiveSpace, CheckSpaceResolutions<ActiveSpace>>
         }
     >
-) => Model<Def, Evaluate<ActiveSpace>, Options>
+) => Model<
+    Def,
+    Evaluate<ActiveSpace>,
+    Options["parse"] extends ParseOptions ? Options["parse"] : {}
+>
 
 export type ReferencesOptions = {}
 
@@ -187,8 +190,12 @@ export type GenerateOptions = {
 export type Model<
     Definition,
     Space,
-    Options,
-    ModelType = TypeOf<Definition, Space, Options>
+    Options extends ParseOptions,
+    ModelType = TypeOf<
+        Definition,
+        Space,
+        WithDefaults<ParseOptions, Options, DefaultParseOptions>
+    >
 > = Evaluate<{
     definition: Definition
     type: ModelType

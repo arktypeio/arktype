@@ -3,7 +3,7 @@ import {
     validationError,
     createParser,
     UnknownTypeError,
-    ParseConfig,
+    TypeOfContext,
     ParseTypeContext
 } from "./internal.js"
 import { Fragment } from "../fragment.js"
@@ -29,7 +29,7 @@ export namespace List {
     export type TypeOf<
         N extends Node,
         Space,
-        Options extends ParseConfig
+        Options extends TypeOfContext
     > = Evaluate<Fragment.TypeOf<N["list"], Space, Options>[]>
 
     export const type = typeDefProxy as Definition

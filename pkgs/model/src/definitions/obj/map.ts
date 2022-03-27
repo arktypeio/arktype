@@ -7,7 +7,7 @@ import {
     transform
 } from "@re-/tools"
 import {
-    ParseConfig,
+    TypeOfContext,
     mismatchedKeysError,
     validationError,
     ValidationErrors,
@@ -36,7 +36,7 @@ export namespace Map {
     export type TypeOf<
         N extends Node,
         Space,
-        Options extends ParseConfig,
+        Options extends TypeOfContext,
         MappedNodes extends Definition = N["map"],
         OptionalKey extends keyof MappedNodes = {
             [K in keyof MappedNodes]: MappedNodes[K] extends Optional.Node

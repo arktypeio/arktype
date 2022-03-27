@@ -83,7 +83,7 @@ describe("compile", () => {
             .snap(
                 `"{ b?: { a?: { b?: any | undefined; } | undefined; } | undefined; }"`
             )
-        assert(mySpace.a.references()).equals({ b: ["b"] })
+        assert(mySpace.models.a.references()).equals({ b: ["b"] })
         const aWithExtraneousKey = { c: "extraneous" }
         const extraneousKeyMessage = "Keys 'c' were unexpected."
         assert(a.validate(aWithExtraneousKey).errors).is(extraneousKeyMessage)
@@ -98,6 +98,6 @@ describe("compile", () => {
             .type.toString.snap(
                 `"{ a?: { b?: { a?: any | undefined; } | undefined; } | undefined; }"`
             )
-        assert(mySpace.b.references()).equals({ a: ["a"] })
+        assert(mySpace.models.b.references()).equals({ a: ["a"] })
     })
 })

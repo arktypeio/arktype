@@ -9,9 +9,8 @@ import { getGroupDef } from "./multifile/group"
 describe("multifile", () => {
     test("compiles", () => {
         const {
-            user,
-            group,
-            create: defineDependent,
+            models: { user, group },
+            create,
             types
         } = compile({ ...getUserDef(), ...getGroupDef() })
         assert(types.user.name).typed as string
@@ -25,7 +24,7 @@ describe("multifile", () => {
             `"{ bestFriend?: any | undefined; name: string; groups: { name: string; members: { bestFriend?: any | undefined; name: string; groups: any[]; }[]; }[]; } | undefined"`
         )
         assert(
-            defineDependent({ foozler: "user", choozler: "group[]" }).type
+            create({ foozler: "user", choozler: "group[]" }).type
         ).type.toString.snap(
             `"{ foozler: { bestFriend?: { bestFriend?: any | undefined; name: string; groups: { name: string; members: { bestFriend?: any | undefined; name: string; groups: any[]; }[]; }[]; } | undefined; name: string; groups: { name: string; members: { bestFriend?: any | undefined; name: string; groups: { name: string; members: any[]; }[]; }[]; }[]; }; choozler: { name: string; members: { bestFriend?: any | undefined; name: string; groups: { name: string; members: any[]; }[]; }[]; }[]; }"`
         )

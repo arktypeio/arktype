@@ -7,7 +7,7 @@ import {
     duplicateModifierError,
     invalidModifierError,
     UnknownTypeError,
-    ParseConfig
+    TypeOfContext
 } from "./internal.js"
 import { Str } from "../str.js"
 import { DuplicateModifierError, ParseTypeContext } from "../internal.js"
@@ -42,7 +42,7 @@ export namespace Optional {
     export type TypeOf<
         N extends Node,
         Space,
-        Options extends ParseConfig
+        Options extends TypeOfContext
     > = N extends Node
         ? Str.TypeOf<N["optional"], Space, Options> | undefined
         : unknown
