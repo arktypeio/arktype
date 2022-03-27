@@ -18,7 +18,8 @@ export const getTheme = ({ isDark }: ThemeConfigOptions) =>
     createTheme({
         palette: {
             primary: {
-                main: isDark ? "#264bcf" : "#162b79"
+                main: isDark ? "#264bcf" : "#162b79",
+                light: isDark ? "#869CE9" : "#eef1fc"
             },
             secondary: {
                 main: "#ffc40c"
@@ -27,5 +28,8 @@ export const getTheme = ({ isDark }: ThemeConfigOptions) =>
             accent: {
                 main: "#c80815"
             }
+        },
+        typography: {
+            fontFamily: "'Ubuntu', sans-serif"
         }
     })
