@@ -120,17 +120,33 @@ describe("compile", () => {
                 age: number
             }[]
         }
-        assert(extended.config).typedValue(
-            narrow({
-                validate: {
-                    ignoreExtraneousKeys: true
+        const expectedResult = narrow({
+            validate: {
+                ignoreExtraneousKeys: true
+            },
+            parse: {
+                onCycle: "boolean",
+                deepOnCycle: true
+            },
+            models: {
+                user: {
+                    validate: {
+                        ignoreExtraneousKeys: false
+                    }
                 },
-                parse: {
-                    onCycle: "boolean",
-                    deepOnCycle: true
+                group: {
+                    generate: {
+                        onRequiredCycle: true
+                    }
+                },
+                another: {
+                    validate: {
+                        ignoreExtraneousKeys: true
+                    }
                 }
-            })
-        )
+            }
+        })
+        assert(extended.config).typedValue(expectedResult)
     })
     test("compile result", () => {
         const mySpace = compile({ a: { b: "b?" }, b: { a: "a?" } })
