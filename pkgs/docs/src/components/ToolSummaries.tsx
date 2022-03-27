@@ -28,13 +28,7 @@ const toolSummaries: ToolSummaryProps[] = [
     {
         name: "Test",
         illustration: <Svgs.Test />,
-        description: (
-            <>
-                Web testing that writes itself
-                <br />
-                <br />
-            </>
-        ),
+        description: <>Web testing that writes itself</>,
         upcoming: true
     }
 ]
@@ -52,24 +46,25 @@ const ToolSummary = ({
             demo
                 ? {
                       marginBottom: -20,
-                      borderRadius: 8
+                      borderRadius: 8,
+                      padding: 0
                   }
-                : {}
+                : { padding: 0 }
         }
         sx={
             demo
                 ? {
-                      bgcolor: "activeDemo.activeColor"
+                      bgcolor: "primary.light"
                   }
                 : {}
         }
     >
         <div className="text--center">{illustration}</div>
-        <div className="text--center padding-horiz--md">
+        <div className="text--center">
             <Typography
                 component="h3"
                 variant="h5"
-                color={demo && "activeDemo.activeText"}
+                color={demo && "common.black"}
                 fontWeight="700"
             >
                 {name}
@@ -77,9 +72,10 @@ const ToolSummary = ({
             </Typography>
             <Typography
                 component="p"
-                variant="h6"
-                color={demo && "activeDemo.activeText"}
+                variant="body1"
+                color={demo && "common.black"}
                 fontWeight="300"
+                style={{ whiteSpace: "nowrap" }}
             >
                 {description}
             </Typography>
@@ -96,7 +92,7 @@ const ToolSummary = ({
                     <>
                         <Typography
                             component="p"
-                            color={demo && "activeDemo.activeText"}
+                            color={demo && "common.black"}
                             variant="h6"
                             fontWeight="300"
                         >

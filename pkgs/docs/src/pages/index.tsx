@@ -19,7 +19,7 @@ const Contents = () => {
                         component="h1"
                         variant="h2"
                         className="hero__title"
-                        color="primary.light"
+                        color="common.white"
                         fontWeight="500"
                     >
                         {siteConfig.title}
@@ -28,7 +28,7 @@ const Contents = () => {
                         component="h2"
                         variant="h5"
                         className="hero__subtitle"
-                        color="primary.light"
+                        color="common.white"
                     >
                         {siteConfig.tagline}
                     </Typography>
