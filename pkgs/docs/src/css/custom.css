@@ -3,7 +3,7 @@
  * bundles Infima by default. Infima is a CSS framework designed to
  * work well for content-centric websites.
  */
-
+@import url("https://fonts.googleapis.com/css?family=Ubuntu:300,400,500,700&display=swap");
 /* You can override the default Infima variables here. */
 :root {
     --ifm-color-primary: #162b79;
