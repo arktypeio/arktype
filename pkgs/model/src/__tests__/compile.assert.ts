@@ -74,6 +74,32 @@ describe("compile", () => {
             space.create({ nested: { a: "a", b: "b", c: "c" } })
         ).throwsAndHasTypeError("Unable to determine the type of 'c'")
     })
+    test("compile result", () => {
+        const mySpace = compile({ a: { b: "b?" }, b: { a: "a?" } })
+        const a = mySpace.create("a")
+        assert(a.type)
+            .is(typeDefProxy)
+            .type.toString()
+            .snap(
+                `"{ b?: { a?: { b?: any | undefined; } | undefined; } | undefined; }"`
+            )
+        assert(mySpace.models.a.references()).equals({ b: ["b"] })
+        const aWithExtraneousKey = { c: "extraneous" }
+        const extraneousKeyMessage = "Keys 'c' were unexpected."
+        assert(a.validate(aWithExtraneousKey).errors).is(extraneousKeyMessage)
+        assert(() => a.assert(aWithExtraneousKey)).throws(extraneousKeyMessage)
+        assert(a.generate()).equals({})
+        assert(a.references()).equals(["a"])
+        assert(a.definition).typedValue("a")
+        const expectedSpace = narrow({ a: { b: "b?" }, b: { a: "a?" } })
+        assert(a.space).typedValue(expectedSpace)
+        assert(mySpace.create("b").type)
+            .is(typeDefProxy)
+            .type.toString.snap(
+                `"{ a?: { b?: { a?: any | undefined; } | undefined; } | undefined; }"`
+            )
+        assert(mySpace.models.b.references()).equals({ a: ["a"] })
+    })
     test("extension", () => {
         const mySpace = compile(
             { user: { name: "string" }, group: { members: "user[]" } },
@@ -120,13 +146,13 @@ describe("compile", () => {
                 age: number
             }[]
         }
-        const expectedResult = narrow({
-            validate: {
-                ignoreExtraneousKeys: true
-            },
+        const expectedConfig = narrow({
             parse: {
                 onCycle: "boolean",
                 deepOnCycle: true
+            },
+            validate: {
+                ignoreExtraneousKeys: true
             },
             models: {
                 user: {
@@ -146,32 +172,6 @@ describe("compile", () => {
                 }
             }
         })
-        assert(extended.config).typedValue(expectedResult)
-    })
-    test("compile result", () => {
-        const mySpace = compile({ a: { b: "b?" }, b: { a: "a?" } })
-        const a = mySpace.create("a")
-        assert(a.type)
-            .is(typeDefProxy)
-            .type.toString()
-            .snap(
-                `"{ b?: { a?: { b?: any | undefined; } | undefined; } | undefined; }"`
-            )
-        assert(mySpace.models.a.references()).equals({ b: ["b"] })
-        const aWithExtraneousKey = { c: "extraneous" }
-        const extraneousKeyMessage = "Keys 'c' were unexpected."
-        assert(a.validate(aWithExtraneousKey).errors).is(extraneousKeyMessage)
-        assert(() => a.assert(aWithExtraneousKey)).throws(extraneousKeyMessage)
-        assert(a.generate()).equals({})
-        assert(a.references()).equals(["a"])
-        assert(a.definition).typedValue("a")
-        const expectedSpace = narrow({ a: { b: "b?" }, b: { a: "a?" } })
-        assert(a.space).typedValue(expectedSpace)
-        assert(mySpace.create("b").type)
-            .is(typeDefProxy)
-            .type.toString.snap(
-                `"{ a?: { b?: { a?: any | undefined; } | undefined; } | undefined; }"`
-            )
-        assert(mySpace.models.b.references()).equals({ a: ["a"] })
+        assert(extended.config).typedValue(expectedConfig)
     })
 })

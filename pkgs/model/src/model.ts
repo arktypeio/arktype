@@ -76,17 +76,25 @@ export type ParseOptions = {
     onResolve?: Definition
 }
 
+export type DefaultParseOptions = {
+    onCycle: never
+    deepOnCycle: false
+    onResolve: never
+}
+
+export type ReferencesOptions = {}
+
+export type GenerateOptions = {
+    // By default, generate will throw if it encounters a cyclic required type
+    // If this options is provided, it will return its value instead
+    onRequiredCycle?: any
+}
+
 export type ModelOptions = {
     parse?: ParseOptions
     validate?: ValidateOptions
     generate?: GenerateOptions
     references?: ReferencesOptions
-}
-
-export type DefaultParseOptions = {
-    onCycle: never
-    deepOnCycle: false
-    onResolve: never
 }
 
 type ValidationErrorFormats = {
@@ -135,10 +143,10 @@ export const createCreateFunction =
     <PredefinedSpace>(
         predefinedSpace: Narrow<PredefinedSpace>
     ): CreateFunction<PredefinedSpace> =>
-    (definition, options) => {
+    (definition, config) => {
         const context: ParseContext = {
             ...defaultParseContext,
-            space: options?.space ?? (predefinedSpace as any)
+            space: config?.space ?? (predefinedSpace as any)
         }
         const { allows, references, generate } = Root.parse(definition, context)
         const validate = createValidateFunction(allows)
@@ -179,14 +187,6 @@ export type CreateFunction<PredefinedSpace> = <
     Options["parse"] extends ParseOptions ? Options["parse"] : {}
 >
 
-export type ReferencesOptions = {}
-
-export type GenerateOptions = {
-    // By default, we will throw if we encounter a cyclic required type
-    // If this options is provided, we will return its value instead
-    onRequiredCycle?: any
-}
-
 export type Model<
     Definition,
     Space,
@@ -200,6 +200,7 @@ export type Model<
     definition: Definition
     type: ModelType
     space: Space
+    config: ModelOptions
     validate: ValidateFunction
     assert: (value: unknown, options?: AssertOptions) => void
     generate: (options?: GenerateOptions) => ModelType

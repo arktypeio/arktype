@@ -24,7 +24,6 @@ import {
 } from "./internal.js"
 import { Resolution } from "./resolution.js"
 import { DefaultParseTypeContext } from "./definitions/internal.js"
-import { Definitions } from "./index.js"
 
 export type SpaceResolutions = Record<string, Root.Definition>
 
@@ -150,12 +149,17 @@ export type CompileFunction<DeclaredTypeNames extends string[]> = <
     config?: Narrow<Options>
 ) => Space<Definitions, Options>
 
-type ExtendSpaceConfig<OriginalContext, NewContext> = Merge<
-    OriginalContext,
-    NewContext
+type ExtendSpaceConfig<OriginalConfig, NewConfig> = Merge<
+    Merge<OriginalConfig, NewConfig>,
+    {
+        models: Merge<
+            KeyValuate<OriginalConfig, "models">,
+            KeyValuate<NewConfig, "models">
+        >
+    }
 >
 
-export type ExtendSpaceFunction<ExtendedDefinitions, ExtendedContext> = <
+type ExtendSpaceFunction<ExtendedDefinitions, ExtendedContext> = <
     Definitions,
     Config extends SpaceOptions<
         (keyof ExtendedDefinitions | keyof Definitions) & string
