@@ -127,9 +127,13 @@ export type ValidateFunction = <Options extends ValidateOptions>(
 >
 
 const createValidateFunction =
-    (allows: ReturnType<typeof Root.parse>["allows"]): ValidateFunction =>
+    (
+        allows: ReturnType<typeof Root.parse>["allows"],
+        config: ValidateOptions
+    ): ValidateFunction =>
     (value, options) => {
-        const errors = allows(typeOf(value), options)
+        const effectiveOptions = { ...config, ...options }
+        const errors = allows(typeOf(value), effectiveOptions)
         if (isEmpty(errors)) {
             return {} as any
         }
@@ -150,7 +154,7 @@ export const createCreateFunction =
             space: config?.space ?? (predefinedSpace as any)
         }
         const { allows, references, generate } = Root.parse(definition, context)
-        const validate = createValidateFunction(allows)
+        const validate = createValidateFunction(allows, config?.validate ?? {})
         return {
             type: typeDefProxy,
             space: context.space,
@@ -167,8 +171,7 @@ export const createCreateFunction =
         } as any
     }
 
-// Exported parse function is equivalent to parse from an empty compile call,
-// but optionally accepts a space as its second parameter
+// Exported create function is equivalent to create from an empty compile call
 export const create = createCreateFunction({})
 
 export type CreateFunction<PredefinedSpace> = <
@@ -205,5 +208,7 @@ export type Model<
     validate: ValidateFunction
     assert: (value: unknown, options?: AssertOptions) => void
     generate: (options?: GenerateOptions) => ModelType
-    references: () => ReferencesOf<Definition, Space, { asList: true }>
+    references: (
+        options?: ReferencesOptions
+    ) => ReferencesOf<Definition, Space, { asList: true }>
 }>
