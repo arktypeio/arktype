@@ -14,7 +14,7 @@ import {
     CreateFunction,
     TypeOf,
     Model,
-    ModelOptions
+    ModelConfig
 } from "./model.js"
 import { Map, Root } from "./definitions/index.js"
 import {
@@ -130,9 +130,9 @@ export type CheckCompileDefinitions<
 export const extraneousTypesErrorMessage = `Defined types @types were never declared.`
 export const missingTypesErrorMessage = `Declared types @types were never defined.`
 
-export type SpaceOptions<ModelName extends string> = ModelOptions & {
+export type SpaceOptions<ModelName extends string> = ModelConfig & {
     models?: {
-        [Name in ModelName]?: ModelOptions
+        [Name in ModelName]?: ModelConfig
     }
 }
 

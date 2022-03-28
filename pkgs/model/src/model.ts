@@ -90,7 +90,7 @@ export type GenerateOptions = {
     onRequiredCycle?: any
 }
 
-export type ModelOptions = {
+export type ModelConfig = {
     parse?: ParseOptions
     validate?: ValidateOptions
     generate?: GenerateOptions
@@ -146,6 +146,7 @@ export const createCreateFunction =
     (definition, config) => {
         const context: ParseContext = {
             ...defaultParseContext,
+            config: config ?? {},
             space: config?.space ?? (predefinedSpace as any)
         }
         const { allows, references, generate } = Root.parse(definition, context)
@@ -172,7 +173,7 @@ export const create = createCreateFunction({})
 
 export type CreateFunction<PredefinedSpace> = <
     Def,
-    Options extends ModelOptions,
+    Options extends ModelConfig,
     ActiveSpace = PredefinedSpace
 >(
     definition: Validate<Narrow<Def>, ActiveSpace>,
@@ -200,7 +201,7 @@ export type Model<
     definition: Definition
     type: ModelType
     space: Space
-    config: ModelOptions
+    config: ModelConfig
     validate: ValidateFunction
     assert: (value: unknown, options?: AssertOptions) => void
     generate: (options?: GenerateOptions) => ModelType

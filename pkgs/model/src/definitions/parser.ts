@@ -6,14 +6,15 @@ import {
     ValueOf,
     Exact,
     toString,
-    TreeOf
+    TreeOf,
+    merge
 } from "@re-/tools"
 import { SpaceResolutions } from "../space.js"
 import { ValidationErrors, unknownTypeError } from "../errors.js"
 import { ExtractableDefinition } from "./internal.js"
 import { Root } from "./root.js"
 import { Obj } from "./obj/index.js"
-import { GenerateOptions, ReferencesOptions } from "../model.js"
+import { GenerateOptions, ModelConfig, ReferencesOptions } from "../model.js"
 
 export type MatchesArgs<DefType> = {
     definition: DefType
@@ -30,10 +31,12 @@ export type ParseContext = {
     seen: string[]
     shallowSeen: string[]
     modifiers: string[]
+    config: ModelConfig
 }
 
 export const defaultParseContext: ParseContext = {
     space: {},
+    config: {},
     path: [],
     seen: [],
     shallowSeen: [],
@@ -105,7 +108,7 @@ export type ParseFunction<DefType> = (
 
 export type ParseResult<DefType> = {
     def: DefType
-    ctx: ParseContext
+    config: ModelConfig
 } & TransformedInheritableMethods<DefType>
 
 export type TransformedInheritableMethods<DefType> = {
@@ -224,7 +227,10 @@ export const createParser = <
                         components
                     },
                     providedArgs[0],
-                    providedArgs[1] ?? {}
+                    {
+                        ...(ctx.config.validate ?? {}),
+                        ...((providedArgs[0] as any) ?? {})
+                    }
                 )
             }
             return inputMethod(
@@ -233,7 +239,10 @@ export const createParser = <
                     ctx,
                     components
                 },
-                providedArgs[0] ?? {}
+                {
+                    ...(ctx.config[name] ?? {}),
+                    ...((providedArgs[0] as any) ?? {})
+                }
             )
         }
 
@@ -298,7 +307,7 @@ export const createParser = <
         const components = getComponents(def, ctx)
         return {
             def,
-            ctx,
+            config: ctx.config,
             ...getInheritableMethods(def, ctx, components)
         }
     }
