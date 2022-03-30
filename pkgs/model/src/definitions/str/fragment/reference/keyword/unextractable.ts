@@ -14,30 +14,30 @@ export const unextractableHandlers = defineKeywords({
     // Abstract types
     any: {
         generate: () => undefined as any,
-        allows: () => true
+        validate: () => true
     },
     unknown: {
         generate: () => undefined as unknown,
-        allows: () => true
+        validate: () => true
     },
     void: {
         generate: () => undefined as void,
-        allows: (valueType) => valueType === "undefined"
+        validate: (valueType) => valueType === "undefined"
     },
     never: {
         generate: ({ def, ctx }) => {
             throw new Error(valueGenerationError({ def, ctx }))
         },
-        allows: () => false
+        validate: () => false
     },
     // Narrowable types
     object: {
         generate: () => ({} as object),
-        allows: (valueType) => typeof valueType === "object"
+        validate: (valueType) => typeof valueType === "object"
     },
     boolean: {
         generate: () => false as boolean,
-        allows: (valueType) => valueType === "true" || valueType === "false"
+        validate: (valueType) => valueType === "true" || valueType === "false"
     },
     ...stringHandlers,
     // These types are extracted as primitives to avoid type widening
@@ -45,7 +45,7 @@ export const unextractableHandlers = defineKeywords({
     ...numberHandlers,
     bigint: {
         generate: () => BigInt(0),
-        allows: (valueType) => typeof valueType === "bigint"
+        validate: (valueType) => typeof valueType === "bigint"
     }
 })
 

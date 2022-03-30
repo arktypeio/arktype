@@ -37,7 +37,7 @@ export namespace StringLiteral {
         },
         {
             matches,
-            allows: ({ def, ctx: { path } }, value) => {
+            validate: ({ def, ctx: { path } }, value) => {
                 const valueType = typeOf(value)
                 return def === valueType
                     ? {}

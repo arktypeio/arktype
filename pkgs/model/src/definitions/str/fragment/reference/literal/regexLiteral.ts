@@ -36,7 +36,7 @@ export namespace RegexLiteral {
         },
         {
             matches,
-            allows: ({ def, ctx: { path } }, value) => {
+            validate: ({ def, ctx: { path } }, value) => {
                 const valueType = typeOf(value)
                 return StringLiteral.matches(valueType) &&
                     new RegExp(valueFrom(def)).test(

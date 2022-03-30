@@ -137,10 +137,10 @@ export type ValidateFunction = <Options extends ValidateOptions>(
         : "message"
 >
 
-const createValidateFunction =
-    (allows: ReturnType<typeof Root.parse>["allows"]): ValidateFunction =>
+const createRootValidate =
+    (validate: ReturnType<typeof Root.parse>["validate"]): ValidateFunction =>
     (value, options) => {
-        const errors = allows(value, options)
+        const errors = validate(value, options)
         if (isEmpty(errors)) {
             return {} as any
         }
@@ -163,8 +163,12 @@ export const createCreateFunction =
                 space: (config?.space ?? predefinedSpace) as any
             }
         }
-        const { allows, references, generate } = Root.parse(definition, context)
-        const validate = createValidateFunction(allows)
+        const {
+            validate: internalValidate,
+            references,
+            generate
+        } = Root.parse(definition, context)
+        const validate = createRootValidate(internalValidate)
         return {
             type: typeDefProxy,
             space: context.config.space,

@@ -89,7 +89,7 @@ export namespace ArrowFunction {
         },
         {
             matches: (def) => matcher.test(def as any),
-            allows: ({ def, ctx: { path } }, value) => {
+            validate: ({ def, ctx: { path } }, value) => {
                 const valueType = typeOf(value)
                 return valueType === "function"
                     ? {}

@@ -1,6 +1,11 @@
-import { typeDefProxy, createParser, validationError } from "../internal.js"
 import { Reference } from "../reference.js"
-import { HandledTypes, listKeywords } from "./internal.js"
+import {
+    HandledTypes,
+    listKeywords,
+    typeDefProxy,
+    createParser,
+    validationError
+} from "./internal.js"
 import { extractableHandlers } from "./extractable.js"
 import { unextractableHandlers } from "./unextractable.js"
 import { typeOf } from "../../../../../utils.js"
@@ -22,9 +27,9 @@ export namespace Keyword {
         {
             matches: (def) => def in handlers,
             generate: (ctx) => handlers[ctx.def].generate(ctx),
-            allows: (ctx, value) => {
+            validate: (ctx, value) => {
                 const valueType = typeOf(value)
-                return handlers[ctx.def].allows(valueType)
+                return handlers[ctx.def].validate(valueType)
                     ? {}
                     : validationError({
                           def: ctx.def,

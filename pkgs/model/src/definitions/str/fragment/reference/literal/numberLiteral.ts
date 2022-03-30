@@ -15,7 +15,7 @@ export namespace NumberLiteral {
         },
         {
             matches: (definition) => isNumeric(definition),
-            allows: ({ def, ctx: { path } }, value) => {
+            validate: ({ def, ctx: { path } }, value) => {
                 const valueType = typeOf(value)
                 return asNumber(def, { assert: true }) === valueType
                     ? {}

@@ -21,6 +21,7 @@ export const testKeyword = () => {
         const { type, generate, validate } = create("number")
         test("type", () => {
             assert(type).typed as number
+            assert(create("integer").type).typed as number
         })
         test("generation", () => {
             assert(generate()).is(0)

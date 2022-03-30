@@ -15,7 +15,7 @@ export namespace BigintLiteral {
         {
             matches: (definition) =>
                 definition.endsWith("n") && isInteger(definition.slice(0, -1)),
-            allows: ({ def, ctx: { path } }, value) => {
+            validate: ({ def, ctx: { path } }, value) => {
                 const valueType = typeOf(value)
                 // bigint literals lose the "n" suffix when used in template strings
                 return typeof valueType === "bigint" && def === `${valueType}n`

@@ -8,7 +8,7 @@ import {
     toString,
     TreeOf
 } from "@re-/tools"
-import { SpaceOptions, SpaceResolutions } from "../space.js"
+import { SpaceResolutions } from "../space.js"
 import { ValidationErrors, unknownTypeError } from "../errors.js"
 import { Root } from "./root.js"
 import { Obj } from "./obj/index.js"
@@ -19,7 +19,7 @@ export type MatchesArgs<DefType> = {
     resolutions: SpaceResolutions
 }
 
-export type AllowsOptions = {
+export type ValidateOptions = {
     ignoreExtraneousKeys?: boolean
 }
 
@@ -72,11 +72,11 @@ export type InheritableMethodContext<DefType, Components> = [
 ]
 
 export type InheritableMethods<DefType, Components> = {
-    allows?: (
+    validate?: (
         ...args: [
             ...args: InheritableMethodContext<DefType, Components>,
             value: unknown,
-            options: AllowsOptions
+            options: ValidateOptions
         ]
     ) => ValidationErrors
     references?: (
@@ -143,7 +143,7 @@ export type Parser<DefType, Parent, Methods> = Evaluate<
 export type InheritableMethodName = keyof InheritableMethods<any, any>
 
 const inheritableMethodNames = [
-    "allows",
+    "validate",
     "references",
     "generate"
 ] as InheritableMethodName[]
@@ -215,12 +215,17 @@ export const createParser = <
                 ValueOf<TransformedInheritableMethods<DefType>>
             >
         ) => {
-            const lastModelName = ctx.shallowSeen.length
-                ? ctx.shallowSeen[ctx.shallowSeen.length - 1]
+            const lastModelName = ctx.seen.length
+                ? ctx.seen[ctx.seen.length - 1]
                 : ""
             const activeModelConfig =
                 ctx.config?.space?.config?.models?.[lastModelName] ?? {}
-            if (name === "allows") {
+            const configValue = {
+                ...(ctx.config?.space?.config?.[name] ?? {}),
+                ...activeModelConfig[name],
+                ...(ctx.config?.[name] ?? {})
+            }
+            if (name === "validate") {
                 return inputMethod(
                     {
                         def,
@@ -229,9 +234,7 @@ export const createParser = <
                     },
                     providedArgs[0],
                     {
-                        ...(ctx.config?.space?.config?.validate ?? {}),
-                        ...activeModelConfig.validate,
-                        ...(ctx.config?.validate ?? {}),
+                        ...configValue,
                         ...((providedArgs[1] as any) ?? {})
                     }
                 )
@@ -243,9 +246,7 @@ export const createParser = <
                     components
                 },
                 {
-                    ...(ctx.config?.space?.config?.[name] ?? {}),
-                    ...activeModelConfig[name],
-                    ...(ctx.config?.[name] ?? {}),
+                    ...configValue,
                     ...((providedArgs[0] as any) ?? {})
                 }
             )

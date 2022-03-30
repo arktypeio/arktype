@@ -33,7 +33,7 @@ export namespace Primitive {
             matches: (definition) =>
                 typesOf.includes(typeof definition as any) ||
                 definition === null,
-            allows: ({ def, ctx: { path } }, value, opts) => {
+            validate: ({ def, ctx: { path } }, value, opts) => {
                 const valueType = typeOf(value)
                 if (typeof def === "number" || typeof def === "bigint") {
                     return def === valueType

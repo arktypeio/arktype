@@ -45,12 +45,12 @@ export namespace List {
         },
         {
             matches: (def, ctx) => def.endsWith("[]"),
-            allows: ({ def, components: { item }, ctx }, value, opts) => {
+            validate: ({ def, components: { item }, ctx }, value, opts) => {
                 if (Array.isArray(value)) {
                     return Tuple.parse(
                         [...Array(value.length)].map(() => item.def),
                         ctx
-                    ).allows(value, opts)
+                    ).validate(value, opts)
                 }
                 return validationError({
                     def,

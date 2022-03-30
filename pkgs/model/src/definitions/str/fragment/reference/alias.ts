@@ -123,8 +123,8 @@ export namespace Alias {
         {
             matches: (def, ctx) =>
                 def in (ctx.config?.space?.resolutions ?? {}),
-            allows: ({ ctx, def, components: { resolve } }, value, opts) => {
-                const errors = resolve().allows(value, opts)
+            validate: ({ ctx, def, components: { resolve } }, value, opts) => {
+                const errors = resolve().validate(value, opts)
                 const customValidator =
                     ctx.config.space?.config?.models?.[def]?.validate
                         ?.validator ??

@@ -14,28 +14,30 @@ const validateLiteral = (
 export const stringHandlers = defineKeywords({
     string: {
         generate: () => "",
-        allows: (valueType) => validateLiteral(valueType, () => true)
+        validate: (valueType) => validateLiteral(valueType, () => true)
     },
     email: {
         generate: () => "david@redo.dev",
-        allows: (valueType) => validateLiteral(valueType, validator.isEmail)
+        validate: (valueType) => validateLiteral(valueType, validator.isEmail)
     },
     alpha: {
         generate: () => "",
-        allows: (valueType) => validateLiteral(valueType, validator.isAlpha)
+        validate: (valueType) => validateLiteral(valueType, validator.isAlpha)
     },
     alphanumeric: {
         generate: () => "",
-        allows: (valueType) =>
+        validate: (valueType) =>
             validateLiteral(valueType, validator.isAlphanumeric)
     },
     lowercase: {
         generate: () => "",
-        allows: (valueType) => validateLiteral(valueType, validator.isLowercase)
+        validate: (valueType) =>
+            validateLiteral(valueType, validator.isLowercase)
     },
     uppercase: {
         generate: () => "",
-        allows: (valueType) => validateLiteral(valueType, validator.isLowercase)
+        validate: (valueType) =>
+            validateLiteral(valueType, validator.isLowercase)
     }
 })
 

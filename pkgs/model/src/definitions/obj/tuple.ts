@@ -55,7 +55,7 @@ export namespace Tuple {
         },
         {
             matches: (def) => Array.isArray(def),
-            allows: ({ def, ctx, components }, value, opts) => {
+            validate: ({ def, ctx, components }, value, opts) => {
                 const valueType = typeOf(value)
                 if (!Array.isArray(valueType)) {
                     // Defined is a tuple, extracted is an object with string keys (will never be assignable)
@@ -77,7 +77,7 @@ export namespace Tuple {
                 return components.reduce(
                     (errors, component, index) => ({
                         ...errors,
-                        ...component.allows((value as any)[index], opts)
+                        ...component.validate((value as any)[index], opts)
                     }),
                     {} as ValidationErrors
                 )

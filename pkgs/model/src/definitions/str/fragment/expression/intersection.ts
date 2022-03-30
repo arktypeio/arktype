@@ -59,12 +59,12 @@ export namespace Intersection {
         },
         {
             matches: (definition) => definition.includes("&"),
-            allows: ({ def, ctx, components }, value, opts) => {
+            validate: ({ def, ctx, components }, value, opts) => {
                 const valueType = typeOf(value)
                 const errors: SplittableErrors = {}
                 for (const component of components) {
                     const componentErrors = stringifyErrors(
-                        component.allows(value, opts)
+                        component.validate(value, opts)
                     )
                     if (componentErrors) {
                         errors[component.def] = componentErrors

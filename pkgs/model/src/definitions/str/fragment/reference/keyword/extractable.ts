@@ -6,32 +6,32 @@ export const extractableHandlers = defineKeywords({
     // so they are extracted at the 'typeof' level
     symbol: {
         generate: () => Symbol(),
-        allows: (valueType) => valueType === "symbol"
+        validate: (valueType) => valueType === "symbol"
     },
     function: {
         generate:
             () =>
             (...args: any[]) =>
                 undefined as any,
-        allows: (valueType) => valueType === "function"
+        validate: (valueType) => valueType === "function"
     },
     // These can be represented via their respective primitives,
     // but are extracted as literals for clarity
     true: {
         generate: () => true as true,
-        allows: (valueType) => valueType === "true"
+        validate: (valueType) => valueType === "true"
     },
     false: {
         generate: () => false as false,
-        allows: (valueType) => valueType === "false"
+        validate: (valueType) => valueType === "false"
     },
     undefined: {
         generate: () => undefined,
-        allows: (valueType) => valueType === "undefined"
+        validate: (valueType) => valueType === "undefined"
     },
     null: {
         generate: () => null,
-        allows: (valueType) => valueType === "null"
+        validate: (valueType) => valueType === "null"
     }
 })
 

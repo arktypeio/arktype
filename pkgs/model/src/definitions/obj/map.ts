@@ -85,7 +85,7 @@ export namespace Map {
         },
         {
             matches: (def) => isRecursible(def) && !Array.isArray(def),
-            allows: ({ components, def, ctx }, value, opts) => {
+            validate: ({ components, def, ctx }, value, opts) => {
                 const valueType = typeOf(value)
                 if (!isRecursible(valueType) || Array.isArray(valueType)) {
                     return validationError({ def, path: ctx.path, valueType })
@@ -126,7 +126,7 @@ export namespace Map {
                     .reduce(
                         (errors, propName) => ({
                             ...errors,
-                            ...components[propName].allows(
+                            ...components[propName].validate(
                                 (value as any)[propName],
                                 opts
                             )

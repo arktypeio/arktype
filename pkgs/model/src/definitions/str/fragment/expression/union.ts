@@ -77,12 +77,12 @@ export namespace Union {
         },
         {
             matches: (definition) => definition.includes("|"),
-            allows: ({ def, ctx, components }, value, opts) => {
+            validate: ({ def, ctx, components }, value, opts) => {
                 const valueType = typeOf(value)
                 const errors: SplittableErrors = {}
                 for (const fragment of components) {
                     const fragmentErrors = stringifyErrors(
-                        fragment.allows(value, opts)
+                        fragment.validate(value, opts)
                     )
                     if (!fragmentErrors) {
                         // If one of the union types doesn't return any errors, the whole type is valid

@@ -150,12 +150,12 @@ describe("compile", () => {
             }[]
         }
         const expectedConfig = narrow({
+            validate: {
+                ignoreExtraneousKeys: true
+            },
             parse: {
                 onCycle: "boolean",
                 deepOnCycle: true
-            },
-            validate: {
-                ignoreExtraneousKeys: true
             },
             models: {
                 user: {

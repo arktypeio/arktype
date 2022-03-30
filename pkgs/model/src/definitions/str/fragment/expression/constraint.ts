@@ -227,10 +227,10 @@ export namespace Constraint {
         },
         {
             matches: (def) => matcher.test(def),
-            allows: ({ def, components, ctx }, value, opts) => {
+            validate: ({ def, components, ctx }, value, opts) => {
                 const valueType = typeOf(value)
                 const { bounded, ...bounds } = components
-                const typeErrors = bounded.allows(value, opts)
+                const typeErrors = bounded.validate(value, opts)
                 if (!isEmpty(typeErrors)) {
                     return typeErrors
                 }

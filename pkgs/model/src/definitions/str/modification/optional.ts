@@ -68,11 +68,11 @@ export namespace Optional {
         },
         {
             matches: (def) => def.endsWith("?"),
-            allows: ({ components }, value, opts) => {
+            validate: ({ components }, value, opts) => {
                 if (value === undefined) {
                     return {}
                 }
-                return components.optional.allows(value, opts)
+                return components.optional.validate(value, opts)
             },
             generate: () => undefined,
             references: ({ components }) => components.optional.references()
