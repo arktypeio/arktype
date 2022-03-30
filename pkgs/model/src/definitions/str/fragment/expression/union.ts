@@ -62,7 +62,7 @@ export namespace Union {
     export type TypeOf<
         N extends Node,
         Space,
-        Options extends TypeOfContext
+        Options extends TypeOfContext<Space>
     > = Fragment.TypeOf<ElementOf<N["union"]>, Space, Options>
 
     export const type = typeDefProxy as Definition

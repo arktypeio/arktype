@@ -42,7 +42,7 @@ export namespace Optional {
     export type TypeOf<
         N extends Node,
         Space,
-        Options extends TypeOfContext
+        Options extends TypeOfContext<Space>
     > = N extends Node
         ? Str.TypeOf<N["optional"], Space, Options> | undefined
         : unknown

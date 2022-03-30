@@ -43,7 +43,7 @@ export namespace Intersection {
     export type TypeOf<
         N extends Node,
         Space,
-        Options extends TypeOfContext
+        Options extends TypeOfContext<Space>
     > = Fragment.TypeOf<N["intersection"][0], Space, Options> &
         Fragment.TypeOf<N["intersection"][1], Space, Options>
 

@@ -48,7 +48,7 @@ export namespace ArrowFunction {
     export type TypeOf<
         N extends Node,
         Space,
-        Options extends TypeOfContext,
+        Options extends TypeOfContext<Space>,
         Args extends Fragment.Node[] = N["args"]
     > = Evaluate<
         // @ts-ignore
@@ -60,7 +60,7 @@ export namespace ArrowFunction {
     type TypeOfArgs<
         Args extends Fragment.Node[],
         Space,
-        Options extends TypeOfContext
+        Options extends TypeOfContext<Space>
     > = {
         [I in keyof Args]: Fragment.TypeOf<Args[I], Space, Options>
     }

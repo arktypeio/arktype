@@ -39,7 +39,7 @@ export type CheckSpaceResolutions<
           >
       }>
 
-export type ParseSpaceRoot<Space, Context extends TypeOfContext> = {
+export type ParseSpaceRoot<Space, Context extends TypeOfContext<Space>> = {
     [TypeName in keyof Space]: TypeOf<
         Space[TypeName],
         CheckSpaceResolutions<Space>,
@@ -47,7 +47,10 @@ export type ParseSpaceRoot<Space, Context extends TypeOfContext> = {
     >
 }
 
-export type ParseSpaceResolutions<Space, Context extends TypeOfContext> = {
+export type ParseSpaceResolutions<
+    Space,
+    Context extends TypeOfContext<Space>
+> = {
     [TypeName in keyof Space]: Model<
         Space[TypeName],
         CheckSpaceResolutions<Space>,
@@ -87,13 +90,13 @@ export const createCompileFunction =
             throw new Error(errorParts.join(" "))
         }
         const create = createCreateFunction(definitions)
-        const extend = (extensionDefinitions: any, extensionConfig: any) =>
+        const extend = (newDefinitions: any, newConfig: any) =>
             compile(
-                { ...definitions, ...extensionDefinitions },
+                { ...definitions, ...newDefinitions },
                 {
                     ...config,
-                    ...extensionConfig,
-                    models: { ...config?.models, ...extensionConfig?.models }
+                    ...newConfig,
+                    models: { ...config?.models, ...newConfig?.models }
                 }
             )
         return {

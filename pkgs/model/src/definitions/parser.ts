@@ -9,7 +9,7 @@ import {
     TreeOf,
     merge
 } from "@re-/tools"
-import { SpaceResolutions } from "../space.js"
+import { SpaceOptions, SpaceResolutions } from "../space.js"
 import { ValidationErrors, unknownTypeError } from "../errors.js"
 import { ExtractableDefinition } from "./internal.js"
 import { Root } from "./root.js"
@@ -31,12 +31,12 @@ export type ParseContext = {
     seen: string[]
     shallowSeen: string[]
     modifiers: string[]
-    config: ModelConfig
+    spaceConfig: SpaceOptions<any>
 }
 
 export const defaultParseContext: ParseContext = {
     space: {},
-    config: {},
+    spaceConfig: {},
     path: [],
     seen: [],
     shallowSeen: [],
@@ -108,7 +108,7 @@ export type ParseFunction<DefType> = (
 
 export type ParseResult<DefType> = {
     def: DefType
-    config: ModelConfig
+    ctx: ParseContext
 } & TransformedInheritableMethods<DefType>
 
 export type TransformedInheritableMethods<DefType> = {
@@ -219,6 +219,11 @@ export const createParser = <
                 ValueOf<TransformedInheritableMethods<DefType>>
             >
         ) => {
+            const lastModelName = ctx.shallowSeen.length
+                ? ctx.shallowSeen[ctx.shallowSeen.length - 1]
+                : ""
+            const activeModelConfig =
+                ctx.spaceConfig.models?.[lastModelName] ?? {}
             if (name === "allows") {
                 return inputMethod(
                     {
@@ -228,8 +233,9 @@ export const createParser = <
                     },
                     providedArgs[0],
                     {
-                        ...(ctx.config.validate ?? {}),
-                        ...((providedArgs[0] as any) ?? {})
+                        ...(ctx.spaceConfig.validate ?? {}),
+                        ...activeModelConfig.validate,
+                        ...((providedArgs[1] as any) ?? {})
                     }
                 )
             }
@@ -240,7 +246,8 @@ export const createParser = <
                     components
                 },
                 {
-                    ...(ctx.config[name] ?? {}),
+                    ...(ctx.spaceConfig[name] ?? {}),
+                    ...activeModelConfig[name],
                     ...((providedArgs[0] as any) ?? {})
                 }
             )
@@ -307,7 +314,7 @@ export const createParser = <
         const components = getComponents(def, ctx)
         return {
             def,
-            config: ctx.config,
+            ctx,
             ...getInheritableMethods(def, ctx, components)
         }
     }

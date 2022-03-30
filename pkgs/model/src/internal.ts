@@ -4,8 +4,14 @@ import {
     ReferencesTypeOptions,
     DefaultParseOptions
 } from "./model.js"
-import { Primitive, ExtractableKeyword, Str } from "./definitions/index.js"
+import {
+    Primitive,
+    ExtractableKeyword,
+    Str,
+    Root
+} from "./definitions/index.js"
 import { StringLiteral } from "./definitions/str/fragment/reference/literal/stringLiteral.js"
+import { SpaceOptions } from "./space.js"
 
 export * from "./errors.js"
 
@@ -25,8 +31,12 @@ export const getTypeDefProxy = () => typeDefProxy
 
 export type ReferencesTypeConfig = Required<ReferencesTypeOptions>
 
-export type TypeOfContext = Required<ParseOptions> & {
+export type TypeOfContext<Space> = Required<ParseOptions> & {
+    spaceConfig: SpaceOptions<keyof Space & string>
     seen: Record<string, boolean>
 }
 
-export type DefaultTypeOfContext = DefaultParseOptions & { seen: {} }
+export type DefaultTypeOfContext = DefaultParseOptions & {
+    seen: {}
+    spaceConfig: {}
+}

@@ -46,7 +46,7 @@ export namespace Expression {
     export type TypeOf<
         N extends Node,
         Space,
-        Options extends TypeOfContext
+        Options extends TypeOfContext<Space>
     > = N extends ArrowFunction.Node
         ? ArrowFunction.TypeOf<N, Space, Options>
         : N extends Union.Node

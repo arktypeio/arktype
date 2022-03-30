@@ -10,6 +10,7 @@ import {
 } from "./internal.js"
 import { Root } from "../../../root.js"
 import { Reference } from "./index.js"
+import { SpaceOptions } from "../../../../space.js"
 
 export namespace Alias {
     export type Definition<Space> = keyof Space & string
@@ -23,7 +24,7 @@ export namespace Alias {
     export type TypeOf<
         TypeName extends Definition<Space>,
         Space,
-        Options extends TypeOfContext
+        Options extends TypeOfContext<Space>
     > = IsAny<Space> extends true
         ? Space
         : Space[TypeName] extends ValidationErrorMessage
@@ -37,7 +38,7 @@ export namespace Alias {
     export type TypeOfResolvedCyclicDefinition<
         TypeName extends Definition<Space>,
         Space,
-        Options extends TypeOfContext
+        Options extends TypeOfContext<Space>
     > = Root.TypeOf<
         Root.Parse<
             Options["onCycle"],
@@ -52,13 +53,15 @@ export namespace Alias {
             seen: {}
             onResolve: Options["onResolve"]
             deepOnCycle: Options["deepOnCycle"]
+            spaceConfig: Options["spaceConfig"] &
+                SpaceOptions<(keyof Space | "cyclic") & string>
         }
     >
 
     export type TypeOfResolvedNonCyclicDefinition<
         TypeName extends Definition<Space>,
         Space,
-        Options extends TypeOfContext
+        Options extends TypeOfContext<Space>
     > = Or<
         Options["onResolve"] extends never ? true : false,
         TypeName extends "resolved" ? true : false
@@ -77,6 +80,7 @@ export namespace Alias {
                   DefaultParseTypeContext
               >,
               Omit<Space, "resolved"> & { resolved: Space[TypeName] },
+              // @ts-ignore
               Options & {
                   seen: { [K in TypeName]: true }
               }

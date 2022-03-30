@@ -166,7 +166,7 @@ export namespace Constraint {
     export type TypeOf<
         N extends Node,
         Space,
-        Options extends TypeOfContext
+        Options extends TypeOfContext<Space>
     > = Fragment.TypeOf<N["bounded"], Space, Options>
 
     export const matcher = /(<=|>=|<|>)/

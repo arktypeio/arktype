@@ -47,7 +47,7 @@ export namespace Fragment {
     export type TypeOf<
         N,
         Space,
-        Options extends TypeOfContext
+        Options extends TypeOfContext<Space>
     > = N extends Expression.Node
         ? Expression.TypeOf<N, Space, Options>
         : N extends Reference.Node

@@ -35,7 +35,7 @@ export namespace Root {
     export type TypeOf<
         N,
         Space,
-        Options extends TypeOfContext
+        Options extends TypeOfContext<Space>
     > = N extends Primitive.Node
         ? N
         : N extends Str.Node

@@ -25,7 +25,7 @@ export namespace Modification {
     export type TypeOf<
         N extends Node,
         Space,
-        Options extends TypeOfContext
+        Options extends TypeOfContext<Space>
     > = N extends Optional.Node ? Optional.TypeOf<N, Space, Options> : unknown
 
     export const type = typeDefProxy as Definition

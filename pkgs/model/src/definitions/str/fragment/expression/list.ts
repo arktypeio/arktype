@@ -29,7 +29,7 @@ export namespace List {
     export type TypeOf<
         N extends Node,
         Space,
-        Options extends TypeOfContext
+        Options extends TypeOfContext<Space>
     > = Evaluate<Fragment.TypeOf<N["list"], Space, Options>[]>
 
     export const type = typeDefProxy as Definition

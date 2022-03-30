@@ -31,7 +31,7 @@ export namespace Tuple {
     export type TypeOf<
         N extends Node,
         Space,
-        Options extends TypeOfContext,
+        Options extends TypeOfContext<Space>,
         T extends Root.Node[] = N["tuple"]
     > = Evaluate<{
         [Index in keyof T]: Root.TypeOf<T[Index], Space, Options>

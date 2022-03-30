@@ -28,7 +28,7 @@ export namespace Str {
     export type TypeOf<
         N extends Node,
         Space,
-        Options extends TypeOfContext
+        Options extends TypeOfContext<Space>
     > = N extends Modification.Node
         ? Modification.TypeOf<N, Space, Options>
         : N extends Fragment.Node

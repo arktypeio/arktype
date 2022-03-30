@@ -28,7 +28,7 @@ export namespace Obj {
     export type TypeOf<
         N extends Node,
         Space,
-        Options extends TypeOfContext
+        Options extends TypeOfContext<Space>
     > = N extends Map.Node
         ? Map.TypeOf<N, Space, Options>
         : N extends Tuple.Node

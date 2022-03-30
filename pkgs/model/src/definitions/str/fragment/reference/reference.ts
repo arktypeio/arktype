@@ -24,7 +24,7 @@ export namespace Reference {
     export type TypeOf<
         N extends Node,
         Space,
-        Options extends TypeOfContext
+        Options extends TypeOfContext<Space>
     > = N extends Keyword.Definition
         ? Keyword.TypeOf<N>
         : N extends Literal.Definition

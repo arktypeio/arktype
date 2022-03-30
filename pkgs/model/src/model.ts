@@ -34,7 +34,13 @@ export type TypeOf<
     : Root.TypeOf<
           Root.Parse<Def, Space, DefaultParseTypeContext>,
           CheckSpaceResolutions<Space>,
-          OptionsWithDefaults & { seen: {} }
+          OptionsWithDefaults & {
+              seen: {}
+              spaceConfig: {
+                  space: DefaultParseOptions
+                  models: {}
+              }
+          }
       >
 
 export type ReferencesTypeOptions = {
@@ -150,7 +156,6 @@ export const createCreateFunction =
     (definition, config) => {
         const context: ParseContext = {
             ...defaultParseContext,
-            config: config ?? {},
             space: config?.space ?? (predefinedSpace as any)
         }
         const { allows, references, generate } = Root.parse(definition, context)
