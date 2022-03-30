@@ -231,6 +231,7 @@ export const createParser = <
                     {
                         ...(ctx.config?.space?.config?.validate ?? {}),
                         ...activeModelConfig.validate,
+                        ...(ctx.config?.validate ?? {}),
                         ...((providedArgs[1] as any) ?? {})
                     }
                 )
@@ -244,6 +245,7 @@ export const createParser = <
                 {
                     ...(ctx.config?.space?.config?.[name] ?? {}),
                     ...activeModelConfig[name],
+                    ...(ctx.config?.[name] ?? {}),
                     ...((providedArgs[0] as any) ?? {})
                 }
             )

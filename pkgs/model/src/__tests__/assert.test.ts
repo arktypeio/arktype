@@ -19,4 +19,5 @@ beforeAll(() => {
 
 import "./space.assert.js"
 import "./declaration.assert.js"
+import "./inheritableConfigs.assert.js"
 import "../definitions/__tests__/index.js"
