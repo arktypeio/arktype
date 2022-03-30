@@ -1,6 +1,6 @@
 import { assert } from "@re-/assert"
 import { narrow } from "@re-/tools"
-import { compile } from "../index.js"
+import { compile, create } from "../index.js"
 import { typeDefProxy } from "../internal.js"
 
 describe("compile", () => {
@@ -176,5 +176,30 @@ describe("compile", () => {
             }
         })
         assert(extended.config).typedValue(expectedConfig)
+    })
+    test("compiled space can be provided via model options", () => {
+        const space = compile({
+            user: { name: "string" },
+            group: { members: "user[]" }
+        })
+        const city = create({ people: "user[]", groups: "group[]" }, { space })
+        assert(city.type).typed as {
+            people: {
+                name: string
+            }[]
+            groups: {
+                members: {
+                    name: string
+                }[]
+            }[]
+        }
+        assert(
+            city.validate({
+                people: [{ name: "David" }],
+                groups: [{ members: [{ first: "David", last: "Blass" }] }]
+            }).errors
+        ).snap(
+            `"At path groups/0/members/0, required keys 'name' were missing. Keys 'first, last' were unexpected."`
+        )
     })
 })

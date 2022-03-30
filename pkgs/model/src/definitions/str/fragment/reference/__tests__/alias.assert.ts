@@ -136,19 +136,15 @@ export const testAlias = () => {
         })
         test("errors on shallow cycle", () => {
             // @ts-expect-error
-            const shallowRecursive = create("a", {
-                space: { resolutions: { a: "a" } }
-            })
-            expect(() => shallowRecursive.assert("what's an a?")).toThrowError(
-                "shallow"
-            )
-            const shallowCyclic = create("a", {
-                // @ts-expect-error
-                space: { resolutions: { a: "b", b: "c", c: "a|b|c" } }
-            })
-            expect(() => shallowCyclic.assert(["what's a b?"])).toThrowError(
-                "shallow"
-            )
+            const shallowRecursive = compile({ a: "a" })
+            expect(() =>
+                shallowRecursive.models.a.assert("what's an a?")
+            ).toThrowError("shallow")
+            // @ts-expect-error
+            const shallowCyclic = compile({ a: "b", b: "c", c: "a|b|c" })
+            expect(() =>
+                shallowCyclic.models.a.assert(["what's a b?"])
+            ).toThrowError("shallow")
         })
         test("cyclic space", () => {
             const bicycle = create(

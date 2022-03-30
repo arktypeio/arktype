@@ -16,7 +16,8 @@ import {
     Model,
     ModelConfig,
     ParseOptions,
-    DefaultParseOptions
+    DefaultParseOptions,
+    create
 } from "./model.js"
 import { Map, Root } from "./definitions/index.js"
 import {
@@ -24,7 +25,7 @@ import {
     typeDefProxy,
     TypeOfContext
 } from "./internal.js"
-import { Resolution } from "./resolution.js"
+import { ValidateResolution } from "./resolution.js"
 import { DefaultParseTypeContext } from "./definitions/internal.js"
 
 export type SpaceResolutions = Record<string, Root.Definition>
@@ -35,22 +36,22 @@ export type SpaceConfig<Resolutions extends SpaceResolutions> = ModelConfig & {
     }
 }
 
-export type CheckSpaceResolutions<
-    Space,
-    SuperSpace = {}
-> = IsAny<Space> extends true
+export type ValidateSpaceResolutions<
+    Resolutions,
+    SuperSpaceResolutions = {}
+> = IsAny<Resolutions> extends true
     ? any
     : Evaluate<{
-          [TypeName in keyof Space]: Resolution.Check<
-              Space[TypeName],
-              Merge<SuperSpace, Space>
+          [TypeName in keyof Resolutions]: ValidateResolution<
+              Resolutions[TypeName],
+              Merge<SuperSpaceResolutions, Resolutions>
           >
       }>
 
 export type ParseSpaceRoot<Space, Context extends TypeOfContext<Space>> = {
     [TypeName in keyof Space]: TypeOf<
         Space[TypeName],
-        CheckSpaceResolutions<Space>,
+        ValidateSpaceResolutions<Space>,
         Context
     >
 }
@@ -59,7 +60,7 @@ export type ParseSpaceResolutions<Resolutions, Config> = Evaluate<{
     [TypeName in keyof Resolutions]: Model<
         Resolutions[TypeName],
         {
-            resolutions: CheckSpaceResolutions<Resolutions>
+            resolutions: ValidateSpaceResolutions<Resolutions>
             config: Config
         },
         DefaultParseOptions
@@ -108,6 +109,8 @@ export const createCompileFunction =
                 }
             )
         return {
+            resolutions,
+            config,
             models: transform(resolutions, ([typeName, definition]) => [
                 typeName,
                 create(definition, {
@@ -116,7 +119,6 @@ export const createCompileFunction =
             ]),
             types: typeDefProxy,
             create,
-            config,
             extend
         } as any
     }
@@ -128,8 +130,8 @@ export const compile = createCompileFunction([])
 export type CheckCompileResolutions<
     Resolutions,
     DeclaredTypeNames extends string[] = [],
-    SuperSpace = {},
-    Checked = CheckSpaceResolutions<Resolutions, SuperSpace>,
+    SuperSpaceResolutions = {},
+    Checked = ValidateSpaceResolutions<Resolutions, SuperSpaceResolutions>,
     DefinedTypeName extends string = keyof Checked & string,
     DeclaredTypeName extends string = DeclaredTypeNames extends never[]
         ? DefinedTypeName
@@ -149,6 +151,18 @@ export type SpaceOptions<
         [Name in ModelName]?: ModelConfig
     }
 }
+
+export type ExtractTypeSpaceOptions<
+    Options extends SpaceOptions<SpaceResolutions>
+> = TypeSpaceOptions<string> &
+    (Options["parse"] extends ParseOptions ? Options["parse"] : {}) & {
+        models: {
+            [Name in keyof Options["models"]]: KeyValuate<
+                Options["models"][Name],
+                "parse"
+            >
+        }
+    }
 
 export type TypeSpaceOptions<ModelName extends string> = ParseOptions & {
     models?: {

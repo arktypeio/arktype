@@ -1,20 +1,13 @@
-import {
-    Evaluate,
-    Narrow,
-    Exact,
-    IsAny,
-    WithDefaults,
-    isEmpty
-} from "@re-/tools"
+import { Evaluate, Narrow, IsAny, WithDefaults, isEmpty } from "@re-/tools"
 import { Root } from "./definitions/index.js"
 import { ParseContext, defaultParseContext } from "./definitions/parser.js"
 import { stringifyErrors, ValidationErrors } from "./errors.js"
 import {
-    CheckSpaceResolutions,
-    compile,
-    Space,
+    ValidateSpaceResolutions,
     Spacefication,
-    TypeSpaceOptions
+    TypeSpaceOptions,
+    ExtractTypeSpaceOptions,
+    SpaceOptions
 } from "./space.js"
 import { ReferencesTypeConfig, typeDefProxy } from "./internal.js"
 import { DefaultParseTypeContext } from "./definitions/internal.js"
@@ -35,7 +28,7 @@ export type TypeOf<
         Options,
         DefaultParseOptions
     >,
-    Checked = CheckSpaceResolutions<Resolutions>
+    Checked = ValidateSpaceResolutions<Resolutions>
 > = IsAny<Def> extends true
     ? Def
     : Root.TypeOf<
@@ -166,6 +159,7 @@ export const createCreateFunction =
             ...defaultParseContext,
             config: {
                 ...config,
+                // @ts-ignore
                 space: (config?.space ?? predefinedSpace) as any
             }
         }
@@ -208,10 +202,16 @@ export type Model<
     Def,
     Space extends Spacefication,
     Options extends ParseOptions,
+    SpaceConfig extends SpaceOptions<
+        Space["resolutions"]
+    > = Space["config"] extends SpaceOptions<Space["resolutions"]>
+        ? Space["config"]
+        : {},
     ModelType = TypeOf<
         Def,
         Space["resolutions"],
-        WithDefaults<ParseOptions, Options, DefaultParseOptions>
+        WithDefaults<ParseOptions, Options, DefaultParseOptions>,
+        ExtractTypeSpaceOptions<SpaceConfig>
     >
 > = Evaluate<{
     definition: Def
@@ -228,16 +228,3 @@ export type Model<
 
 // Exported create function is equivalent to create from an empty compile call
 export const create = createCreateFunction({ resolutions: {}, config: {} })
-
-// const group = create({ members: "string[]" }).references()
-
-// const space = compile({ group: { members: "string[]" } }).create({
-//     name: "string",
-//     age: "number",
-//     groups: "group[]"
-// }).type
-
-// const user = create(
-//     { name: "string", age: "number", groups: "group[]" },
-//     { space: { resolutions: { group: { members: "string[]" } }, config: {} } }
-// )

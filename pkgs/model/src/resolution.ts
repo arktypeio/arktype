@@ -1,10 +1,6 @@
 import { IsAny, Iteration, KeyValuate } from "@re-/tools"
 import { ShallowCycleError } from "./internal.js"
 import { Root, Str } from "./definitions/index.js"
-import {
-    DefaultParseTypeContext,
-    TypeOfContext
-} from "./definitions/internal.js"
 
 type CheckReferencesForShallowCycle<
     References extends string[],
@@ -46,22 +42,8 @@ type CheckForShallowCycle<Def, Space> = CheckForShallowCycleRecurse<
     never
 >
 
-export namespace Resolution {
-    export type Definition = Root.Definition
-
-    export type Check<Def, Space> = IsAny<Def> extends true
-        ? "any"
-        : CheckForShallowCycle<Def, Space> extends never
-        ? Root.Validate<Def, Space>
-        : ShallowCycleError<Def & string, CheckForShallowCycle<Def, Space>>
-
-    export type TypeOf<
-        Def extends Definition,
-        Space,
-        Context extends TypeOfContext<Space>
-    > = Root.TypeOf<
-        Root.Parse<Def, Space, DefaultParseTypeContext>,
-        Space,
-        Context
-    >
-}
+export type ValidateResolution<Def, Resolutions> = IsAny<Def> extends true
+    ? "any"
+    : CheckForShallowCycle<Def, Resolutions> extends never
+    ? Root.Validate<Def, Resolutions>
+    : ShallowCycleError<Def & string, CheckForShallowCycle<Def, Resolutions>>
