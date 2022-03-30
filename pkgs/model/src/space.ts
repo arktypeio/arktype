@@ -14,7 +14,8 @@ import {
     CreateFunction,
     TypeOf,
     Model,
-    ModelConfig
+    ModelConfig,
+    ParseOptions
 } from "./model.js"
 import { Map, Root } from "./definitions/index.js"
 import {
@@ -139,6 +140,12 @@ export type SpaceOptions<ModelName extends string> = ModelConfig & {
     }
 }
 
+export type TypeSpaceOptions<ModelName extends string> = ParseOptions & {
+    models?: {
+        [Name in ModelName]?: ParseOptions
+    }
+}
+
 export type CompileFunction<DeclaredTypeNames extends string[]> = <
     Definitions,
     Options extends SpaceOptions<keyof Definitions & string>
@@ -192,5 +199,6 @@ export type Space<Definitions, Config> = Evaluate<{
     create: CreateFunction<Definitions>
     extend: ExtendSpaceFunction<Definitions, Config>
     config: Config
+    specification: Definitions
     // TODO: Add declare extension
 }>

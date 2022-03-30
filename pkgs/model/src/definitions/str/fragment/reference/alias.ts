@@ -11,6 +11,7 @@ import {
 import { Root } from "../../../root.js"
 import { Reference } from "./index.js"
 import { SpaceOptions } from "../../../../space.js"
+import { validationError } from "../internal.js"
 
 export namespace Alias {
     export type Definition<Space> = keyof Space & string
@@ -119,8 +120,23 @@ export namespace Alias {
         },
         {
             matches: (def, ctx) => def in ctx.space,
-            allows: ({ components: { resolve } }, value, opts) =>
-                resolve().allows(value, opts),
+            allows: ({ ctx, def, components: { resolve } }, value, opts) => {
+                const errors = resolve().allows(value, opts)
+                const customValidator =
+                    ctx.spaceConfig?.models?.[def]?.validate?.validator ??
+                    ctx.spaceConfig.validate?.validator ??
+                    undefined
+                if (customValidator) {
+                    const customResult = customValidator(value, errors, ctx)
+                    return typeof customResult === "string"
+                        ? validationError({
+                              path: ctx.path,
+                              message: customResult
+                          })
+                        : customResult
+                }
+                return errors
+            },
             generate: ({ components: { resolve }, ctx, def }, opts) => {
                 if (ctx.seen.includes(def)) {
                     if (opts.onRequiredCycle) {

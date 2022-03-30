@@ -12,11 +12,7 @@ import { SpaceOptions, SpaceResolutions } from "../space.js"
 import { ValidationErrors, unknownTypeError } from "../errors.js"
 import { Root } from "./root.js"
 import { Obj } from "./obj/index.js"
-import {
-    CustomValidator,
-    GenerateOptions,
-    ReferencesOptions
-} from "../model.js"
+import { GenerateOptions, ModelConfig, ReferencesOptions } from "../model.js"
 
 export type MatchesArgs<DefType> = {
     definition: DefType
@@ -25,7 +21,6 @@ export type MatchesArgs<DefType> = {
 
 export type AllowsOptions = {
     ignoreExtraneousKeys?: boolean
-    validator?: CustomValidator
 }
 
 export type ParseContext = {
@@ -34,12 +29,14 @@ export type ParseContext = {
     seen: string[]
     shallowSeen: string[]
     modifiers: string[]
+    config: ModelConfig
     spaceConfig: SpaceOptions<any>
 }
 
 export const defaultParseContext: ParseContext = {
     space: {},
     spaceConfig: {},
+    config: {},
     path: [],
     seen: [],
     shallowSeen: [],

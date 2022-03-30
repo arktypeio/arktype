@@ -11,7 +11,7 @@ import {
     Root
 } from "./definitions/index.js"
 import { StringLiteral } from "./definitions/str/fragment/reference/literal/stringLiteral.js"
-import { SpaceOptions } from "./space.js"
+import { SpaceOptions, TypeSpaceOptions } from "./space.js"
 
 export * from "./errors.js"
 
@@ -32,7 +32,7 @@ export const getTypeDefProxy = () => typeDefProxy
 export type ReferencesTypeConfig = Required<ReferencesTypeOptions>
 
 export type TypeOfContext<Space> = Required<ParseOptions> & {
-    spaceConfig: SpaceOptions<keyof Space & string>
+    spaceConfig: TypeSpaceOptions<keyof Space & string>
     seen: Record<string, boolean>
 }
 

@@ -9,8 +9,7 @@ import {
 import { Root } from "./definitions/index.js"
 import { ParseContext, defaultParseContext } from "./definitions/parser.js"
 import { stringifyErrors, ValidationErrors } from "./errors.js"
-import { typeOf } from "./utils.js"
-import { CheckSpaceResolutions } from "./space.js"
+import { CheckSpaceResolutions, TypeSpaceOptions } from "./space.js"
 import { ReferencesTypeConfig, typeDefProxy } from "./internal.js"
 import { DefaultParseTypeContext } from "./definitions/internal.js"
 
@@ -24,22 +23,22 @@ export type TypeOf<
     Def,
     Space,
     Options extends ParseOptions = {},
+    SpaceConfig extends TypeSpaceOptions<keyof Checked & string> = {},
     OptionsWithDefaults extends Required<ParseOptions> = WithDefaults<
         ParseOptions,
         Options,
         DefaultParseOptions
-    >
+    >,
+    Checked = CheckSpaceResolutions<Space>
 > = IsAny<Def> extends true
     ? Def
     : Root.TypeOf<
           Root.Parse<Def, Space, DefaultParseTypeContext>,
-          CheckSpaceResolutions<Space>,
+          Checked,
+          // @ts-ignore
           OptionsWithDefaults & {
               seen: {}
-              spaceConfig: {
-                  space: DefaultParseOptions
-                  models: {}
-              }
+              spaceConfig: SpaceConfig
           }
       >
 
@@ -98,7 +97,7 @@ export type GenerateOptions = {
 
 export type ModelConfig = {
     parse?: ParseOptions
-    validate?: ValidateOptions
+    validate?: ValidateConfig
     generate?: GenerateOptions
     references?: ReferencesOptions
 }
@@ -110,11 +109,13 @@ type ValidationErrorFormats = {
 
 type ValidationErrorFormat = keyof ValidationErrorFormats
 
-export type ValidateOptions = {
+export type ValidateConfig = {
     ignoreExtraneousKeys?: boolean
     errorFormat?: ValidationErrorFormat
     validator?: CustomValidator
 }
+
+export type ValidateOptions = Omit<ValidateConfig, "validator">
 
 export type CustomValidator = (
     value: unknown,
@@ -122,7 +123,7 @@ export type CustomValidator = (
     ctx: ParseContext
 ) => string | ValidationErrors
 
-export type AssertOptions = Omit<ValidateOptions, "errorFormat">
+export type AssertOptions = Omit<ValidateConfig, "errorFormat">
 
 export type ValidationResult<ErrorFormat extends ValidationErrorFormat> = {
     errors?: ValidationErrorFormats[ErrorFormat]
