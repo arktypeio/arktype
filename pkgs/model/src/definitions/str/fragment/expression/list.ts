@@ -10,6 +10,7 @@ import { Fragment } from "../fragment.js"
 import { Expression } from "./expression.js"
 import { Tuple } from "../../../obj/index.js"
 import { Evaluate } from "@re-/tools"
+import { typeOf } from "../../../../utils.js"
 
 export namespace List {
     export type Definition<Of extends string = string> = `${Of}[]`
@@ -44,16 +45,16 @@ export namespace List {
         },
         {
             matches: (def, ctx) => def.endsWith("[]"),
-            allows: ({ def, components: { item }, ctx }, valueType, opts) => {
-                if (Array.isArray(valueType)) {
+            allows: ({ def, components: { item }, ctx }, value, opts) => {
+                if (Array.isArray(value)) {
                     return Tuple.parse(
-                        [...Array(valueType.length)].map(() => item.def),
+                        [...Array(value.length)].map(() => item.def),
                         ctx
-                    ).allows(valueType, opts)
+                    ).allows(value, opts)
                 }
                 return validationError({
                     def,
-                    valueType,
+                    valueType: typeOf(value),
                     path: ctx.path
                 })
             },

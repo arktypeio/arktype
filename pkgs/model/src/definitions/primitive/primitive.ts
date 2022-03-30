@@ -2,6 +2,7 @@ import { ListPossibleTypes, narrow } from "@re-/tools"
 import { typeDefProxy, createParser, validationError } from "./internal.js"
 import { Root } from "../root.js"
 import { ReferencesTypeConfig } from "../internal.js"
+import { typeOf } from "../../utils.js"
 
 export namespace Primitive {
     export type Definition = number | bigint | boolean | undefined | null
@@ -32,7 +33,8 @@ export namespace Primitive {
             matches: (definition) =>
                 typesOf.includes(typeof definition as any) ||
                 definition === null,
-            allows: ({ def, ctx: { path } }, valueType, opts) => {
+            allows: ({ def, ctx: { path } }, value, opts) => {
+                const valueType = typeOf(value)
                 if (typeof def === "number" || typeof def === "bigint") {
                     return def === valueType
                         ? {}

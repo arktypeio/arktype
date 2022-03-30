@@ -1,3 +1,4 @@
+import { typeOf } from "../../../../../utils.js"
 import {
     typeDefProxy,
     validationError,
@@ -35,13 +36,15 @@ export namespace RegexLiteral {
         },
         {
             matches,
-            allows: ({ def, ctx: { path } }, valueType) =>
-                StringLiteral.matches(valueType) &&
-                new RegExp(valueFrom(def)).test(
-                    StringLiteral.valueFrom(valueType)
-                )
+            allows: ({ def, ctx: { path } }, value) => {
+                const valueType = typeOf(value)
+                return StringLiteral.matches(valueType) &&
+                    new RegExp(valueFrom(def)).test(
+                        StringLiteral.valueFrom(valueType)
+                    )
                     ? {}
-                    : validationError({ def, valueType, path }),
+                    : validationError({ def, valueType, path })
+            },
             generate: ({ def }) => {
                 throw new Error(ungeneratableError(def, "regex"))
             }

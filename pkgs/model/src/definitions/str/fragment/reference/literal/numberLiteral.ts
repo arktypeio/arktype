@@ -1,4 +1,5 @@
 import { asNumber, isNumeric, NumericString } from "@re-/tools"
+import { typeOf } from "../../../../../utils.js"
 import { typeDefProxy, validationError, createParser } from "../internal.js"
 import { Literal } from "./literal.js"
 
@@ -14,10 +15,12 @@ export namespace NumberLiteral {
         },
         {
             matches: (definition) => isNumeric(definition),
-            allows: ({ def, ctx: { path } }, valueType) =>
-                asNumber(def, { assert: true }) === valueType
+            allows: ({ def, ctx: { path } }, value) => {
+                const valueType = typeOf(value)
+                return asNumber(def, { assert: true }) === valueType
                     ? {}
-                    : validationError({ def, valueType, path }),
+                    : validationError({ def, valueType, path })
+            },
             generate: ({ def }) => asNumber(def, { assert: true })
         }
     )

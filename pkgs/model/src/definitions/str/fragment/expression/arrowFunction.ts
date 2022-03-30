@@ -10,6 +10,7 @@ import {
 import { Fragment } from "../fragment.js"
 import { Expression } from "./expression.js"
 import { ungeneratableError } from "../internal.js"
+import { typeOf } from "../../../../utils.js"
 
 export namespace ArrowFunction {
     export type Definition<
@@ -88,14 +89,16 @@ export namespace ArrowFunction {
         },
         {
             matches: (def) => matcher.test(def as any),
-            allows: ({ def, ctx: { path } }, valueType) =>
-                valueType === "function"
+            allows: ({ def, ctx: { path } }, value) => {
+                const valueType = typeOf(value)
+                return valueType === "function"
                     ? {}
                     : validationError({
                           def,
                           valueType,
                           path
-                      }),
+                      })
+            },
             generate: ({ def }) => {
                 throw new Error(ungeneratableError(def, "arrow function"))
             },

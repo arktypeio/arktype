@@ -58,7 +58,7 @@ export namespace Resolution {
     export type TypeOf<
         Def extends Definition,
         Space,
-        Context extends TypeOfContext
+        Context extends TypeOfContext<Space>
     > = Root.TypeOf<
         Root.Parse<Def, Space, DefaultParseTypeContext>,
         Space,

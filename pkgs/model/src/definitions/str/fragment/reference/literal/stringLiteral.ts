@@ -1,3 +1,4 @@
+import { typeOf } from "../../../../../utils.js"
 import { typeDefProxy, validationError, createParser } from "../internal.js"
 import { FirstEnclosed } from "./internal.js"
 import { Literal } from "./literal.js"
@@ -36,10 +37,12 @@ export namespace StringLiteral {
         },
         {
             matches,
-            allows: ({ def, ctx: { path } }, valueType) =>
-                def === valueType
+            allows: ({ def, ctx: { path } }, value) => {
+                const valueType = typeOf(value)
+                return def === valueType
                     ? {}
-                    : validationError({ def, valueType, path }),
+                    : validationError({ def, valueType, path })
+            },
             generate: ({ def }) => valueFrom(def)
         }
     )

@@ -6,15 +6,17 @@ import {
     ValueOf,
     Exact,
     toString,
-    TreeOf,
-    merge
+    TreeOf
 } from "@re-/tools"
 import { SpaceOptions, SpaceResolutions } from "../space.js"
 import { ValidationErrors, unknownTypeError } from "../errors.js"
-import { ExtractableDefinition } from "./internal.js"
 import { Root } from "./root.js"
 import { Obj } from "./obj/index.js"
-import { GenerateOptions, ModelConfig, ReferencesOptions } from "../model.js"
+import {
+    CustomValidator,
+    GenerateOptions,
+    ReferencesOptions
+} from "../model.js"
 
 export type MatchesArgs<DefType> = {
     definition: DefType
@@ -23,6 +25,7 @@ export type MatchesArgs<DefType> = {
 
 export type AllowsOptions = {
     ignoreExtraneousKeys?: boolean
+    validator?: CustomValidator
 }
 
 export type ParseContext = {
@@ -79,7 +82,7 @@ export type InheritableMethods<DefType, Components> = {
     allows?: (
         ...args: [
             ...args: InheritableMethodContext<DefType, Components>,
-            valueType: ExtractableDefinition,
+            value: unknown,
             options: AllowsOptions
         ]
     ) => ValidationErrors

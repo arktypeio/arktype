@@ -1,4 +1,5 @@
 import { isInteger } from "@re-/tools"
+import { typeOf } from "../../../../../utils.js"
 import { typeDefProxy, validationError, createParser } from "./internal.js"
 import { Literal } from "./literal.js"
 
@@ -14,11 +15,13 @@ export namespace BigintLiteral {
         {
             matches: (definition) =>
                 definition.endsWith("n") && isInteger(definition.slice(0, -1)),
-            allows: ({ def, ctx: { path } }, valueType) =>
+            allows: ({ def, ctx: { path } }, value) => {
+                const valueType = typeOf(value)
                 // bigint literals lose the "n" suffix when used in template strings
-                typeof valueType === "bigint" && def === `${valueType}n`
+                return typeof valueType === "bigint" && def === `${valueType}n`
                     ? {}
-                    : validationError({ def, valueType, path }),
+                    : validationError({ def, valueType, path })
+            },
             generate: ({ def }) => BigInt(def.slice(0, -1))
         }
     )

@@ -3,7 +3,6 @@ import {
     DiffSetsResult,
     Evaluate,
     isRecursible,
-    RemoveSpaces,
     transform
 } from "@re-/tools"
 import {
@@ -19,6 +18,7 @@ import {
 import { Root } from "../root.js"
 import { Obj } from "./obj.js"
 import { Optional } from "../str/index.js"
+import { typeOf } from "../../utils.js"
 
 export namespace Map {
     export type Definition = Record<string, any>
@@ -71,7 +71,8 @@ export namespace Map {
         },
         {
             matches: (def) => isRecursible(def) && !Array.isArray(def),
-            allows: ({ components, def, ctx }, valueType, opts) => {
+            allows: ({ components, def, ctx }, value, opts) => {
+                const valueType = typeOf(value)
                 if (!isRecursible(valueType) || Array.isArray(valueType)) {
                     return validationError({ def, path: ctx.path, valueType })
                 }
@@ -112,7 +113,7 @@ export namespace Map {
                         (errors, propName) => ({
                             ...errors,
                             ...components[propName].allows(
-                                (valueType as any)[propName],
+                                (value as any)[propName],
                                 opts
                             )
                         }),

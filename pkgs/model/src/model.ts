@@ -113,33 +113,34 @@ type ValidationErrorFormat = keyof ValidationErrorFormats
 export type ValidateOptions = {
     ignoreExtraneousKeys?: boolean
     errorFormat?: ValidationErrorFormat
+    validator?: CustomValidator
 }
+
+export type CustomValidator = (
+    value: unknown,
+    errors: ValidationErrors,
+    ctx: ParseContext
+) => string | ValidationErrors
 
 export type AssertOptions = Omit<ValidateOptions, "errorFormat">
 
-export type ValidationResult<Options extends Required<ValidateOptions>> = {
-    errors?: ValidationErrorFormats[Options["errorFormat"]]
+export type ValidationResult<ErrorFormat extends ValidationErrorFormat> = {
+    errors?: ValidationErrorFormats[ErrorFormat]
 }
 
 export type ValidateFunction = <Options extends ValidateOptions>(
     value: unknown,
     options?: Options
 ) => ValidationResult<
-    WithDefaults<
-        ValidateOptions,
-        Options,
-        { ignoreExtraneousKeys: false; errorFormat: "message" }
-    >
+    Options["errorFormat"] extends ValidationErrorFormat
+        ? Options["errorFormat"]
+        : "message"
 >
 
 const createValidateFunction =
-    (
-        allows: ReturnType<typeof Root.parse>["allows"],
-        config: ValidateOptions
-    ): ValidateFunction =>
+    (allows: ReturnType<typeof Root.parse>["allows"]): ValidateFunction =>
     (value, options) => {
-        const effectiveOptions = { ...config, ...options }
-        const errors = allows(typeOf(value), effectiveOptions)
+        const errors = allows(value, options)
         if (isEmpty(errors)) {
             return {} as any
         }
@@ -159,7 +160,7 @@ export const createCreateFunction =
             space: config?.space ?? (predefinedSpace as any)
         }
         const { allows, references, generate } = Root.parse(definition, context)
-        const validate = createValidateFunction(allows, config?.validate ?? {})
+        const validate = createValidateFunction(allows)
         return {
             type: typeDefProxy,
             space: context.space,
@@ -175,9 +176,6 @@ export const createCreateFunction =
             }
         } as any
     }
-
-// Exported create function is equivalent to create from an empty compile call
-export const create = createCreateFunction({})
 
 export type CreateFunction<PredefinedSpace> = <
     Def,
@@ -217,3 +215,6 @@ export type Model<
         options?: ReferencesOptions
     ) => ReferencesOf<Definition, Space, { asList: true }>
 }>
+
+// Exported create function is equivalent to create from an empty compile call
+export const create = createCreateFunction({})

@@ -16,6 +16,7 @@ import {
     ungeneratableError,
     UnknownTypeError
 } from "../internal.js"
+import { typeOf } from "../../../../utils.js"
 
 export namespace Intersection {
     export type Definition<
@@ -58,11 +59,12 @@ export namespace Intersection {
         },
         {
             matches: (definition) => definition.includes("&"),
-            allows: ({ def, ctx, components }, valueType, opts) => {
+            allows: ({ def, ctx, components }, value, opts) => {
+                const valueType = typeOf(value)
                 const errors: SplittableErrors = {}
                 for (const component of components) {
                     const componentErrors = stringifyErrors(
-                        component.allows(valueType, opts)
+                        component.allows(value, opts)
                     )
                     if (componentErrors) {
                         errors[component.def] = componentErrors

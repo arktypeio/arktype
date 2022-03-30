@@ -28,6 +28,7 @@ import {
     ungeneratableError,
     validationError
 } from "../internal.js"
+import { typeOf } from "../../../../utils.js"
 
 export const getComparables = () => [...numberKeywords, ...stringKeywords]
 
@@ -226,9 +227,10 @@ export namespace Constraint {
         },
         {
             matches: (def) => matcher.test(def),
-            allows: ({ def, components, ctx }, valueType, opts) => {
+            allows: ({ def, components, ctx }, value, opts) => {
+                const valueType = typeOf(value)
                 const { bounded, ...bounds } = components
-                const typeErrors = bounded.allows(valueType)
+                const typeErrors = bounded.allows(value, opts)
                 if (!isEmpty(typeErrors)) {
                     return typeErrors
                 }

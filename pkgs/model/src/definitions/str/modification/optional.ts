@@ -11,6 +11,7 @@ import {
 } from "./internal.js"
 import { Str } from "../str.js"
 import { DuplicateModifierError, ParseTypeContext } from "../internal.js"
+import { typeOf } from "../../../utils.js"
 
 export namespace Optional {
     export type Definition<Of extends string = string> = `${Of}?`
@@ -67,11 +68,11 @@ export namespace Optional {
         },
         {
             matches: (def) => def.endsWith("?"),
-            allows: ({ components }, valueType, opts) => {
-                if (valueType === "undefined") {
+            allows: ({ components }, value, opts) => {
+                if (value === undefined) {
                     return {}
                 }
-                return components.optional.allows(valueType, opts)
+                return components.optional.allows(value, opts)
             },
             generate: () => undefined,
             references: ({ components }) => components.optional.references()

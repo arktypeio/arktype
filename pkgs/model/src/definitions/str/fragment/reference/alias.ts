@@ -119,8 +119,8 @@ export namespace Alias {
         },
         {
             matches: (def, ctx) => def in ctx.space,
-            allows: ({ components: { resolve } }, valueType, opts) =>
-                resolve().allows(valueType, opts),
+            allows: ({ components: { resolve } }, value, opts) =>
+                resolve().allows(value, opts),
             generate: ({ components: { resolve }, ctx, def }, opts) => {
                 if (ctx.seen.includes(def)) {
                     if (opts.onRequiredCycle) {

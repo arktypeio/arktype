@@ -20,6 +20,7 @@ import {
 } from "./internal.js"
 import { Fragment } from "../fragment.js"
 import { Expression } from "./expression.js"
+import { typeOf } from "../../../../utils.js"
 
 type PreferredDefaults = ({ value: any } | { typeOf: TypeCategory })[]
 
@@ -76,11 +77,12 @@ export namespace Union {
         },
         {
             matches: (definition) => definition.includes("|"),
-            allows: ({ def, ctx, components }, valueType, opts) => {
+            allows: ({ def, ctx, components }, value, opts) => {
+                const valueType = typeOf(value)
                 const errors: SplittableErrors = {}
                 for (const fragment of components) {
                     const fragmentErrors = stringifyErrors(
-                        fragment.allows(valueType, opts)
+                        fragment.allows(value, opts)
                     )
                     if (!fragmentErrors) {
                         // If one of the union types doesn't return any errors, the whole type is valid

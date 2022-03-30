@@ -3,6 +3,7 @@ import { Reference } from "../reference.js"
 import { HandledTypes, listKeywords } from "./internal.js"
 import { extractableHandlers } from "./extractable.js"
 import { unextractableHandlers } from "./unextractable.js"
+import { typeOf } from "../../../../../utils.js"
 
 export namespace Keyword {
     export type Definition<
@@ -21,7 +22,8 @@ export namespace Keyword {
         {
             matches: (def) => def in handlers,
             generate: (ctx) => handlers[ctx.def].generate(ctx),
-            allows: (ctx, valueType) => {
+            allows: (ctx, value) => {
+                const valueType = typeOf(value)
                 return handlers[ctx.def].allows(valueType)
                     ? {}
                     : validationError({
