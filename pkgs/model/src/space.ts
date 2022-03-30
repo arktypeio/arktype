@@ -15,7 +15,8 @@ import {
     TypeOf,
     Model,
     ModelConfig,
-    ParseOptions
+    ParseOptions,
+    DefaultParseOptions
 } from "./model.js"
 import { Map, Root } from "./definitions/index.js"
 import {
@@ -48,14 +49,14 @@ export type ParseSpaceRoot<Space, Context extends TypeOfContext<Space>> = {
     >
 }
 
-export type ParseSpaceResolutions<
-    Space,
-    Context extends TypeOfContext<Space>
-> = {
-    [TypeName in keyof Space]: Model<
-        Space[TypeName],
-        CheckSpaceResolutions<Space>,
-        Context
+export type ParseSpaceResolutions<Resolutions, Config> = {
+    [TypeName in keyof Resolutions]: Model<
+        Resolutions[TypeName],
+        {
+            definitions: CheckSpaceResolutions<Resolutions>
+            config: Config
+        },
+        DefaultParseOptions
     >
 }
 
@@ -147,7 +148,7 @@ export type TypeSpaceOptions<ModelName extends string> = ParseOptions & {
 }
 
 export type CompileFunction<DeclaredTypeNames extends string[]> = <
-    Definitions,
+    Definitions extends SpaceResolutions,
     Options extends SpaceOptions<keyof Definitions & string>
 >(
     definitions: Narrow<
@@ -169,8 +170,11 @@ type ExtendSpaceConfig<OriginalConfig, NewConfig> = Merge<
     }
 >
 
-type ExtendSpaceFunction<ExtendedDefinitions, ExtendedContext> = <
-    Definitions,
+type ExtendSpaceFunction<
+    ExtendedDefinitions extends SpaceResolutions,
+    ExtendedContext
+> = <
+    Definitions extends SpaceResolutions,
     Config extends SpaceOptions<
         (keyof ExtendedDefinitions | keyof Definitions) & string
     >
@@ -187,8 +191,16 @@ type ExtendSpaceFunction<ExtendedDefinitions, ExtendedContext> = <
     ExtendSpaceConfig<ExtendedContext, Config>
 >
 
-export type Space<Definitions, Config> = Evaluate<{
-    models: ParseSpaceResolutions<Definitions, DefaultTypeOfContext>
+export type TypeSpace<
+    Definitions = SpaceResolutions,
+    Config = SpaceOptions<keyof Definitions & string>
+> = {
+    definitions: Definitions
+    config: Config
+}
+
+export type Space<Definitions extends SpaceResolutions, Config> = Evaluate<{
+    models: ParseSpaceResolutions<Definitions, Config>
     types: Evaluate<
         Map.TypeOf<
             Map.Parse<Definitions, Definitions, DefaultParseTypeContext>,
@@ -196,9 +208,9 @@ export type Space<Definitions, Config> = Evaluate<{
             DefaultTypeOfContext
         >
     >
-    create: CreateFunction<Definitions>
+    create: CreateFunction<{ definitions: Definitions; config: Config }>
     extend: ExtendSpaceFunction<Definitions, Config>
     config: Config
-    specification: Definitions
+    definitions: Definitions
     // TODO: Add declare extension
 }>

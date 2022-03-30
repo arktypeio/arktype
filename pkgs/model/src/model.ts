@@ -9,7 +9,13 @@ import {
 import { Root } from "./definitions/index.js"
 import { ParseContext, defaultParseContext } from "./definitions/parser.js"
 import { stringifyErrors, ValidationErrors } from "./errors.js"
-import { CheckSpaceResolutions, TypeSpaceOptions } from "./space.js"
+import {
+    CheckSpaceResolutions,
+    compile,
+    Space,
+    TypeSpace,
+    TypeSpaceOptions
+} from "./space.js"
 import { ReferencesTypeConfig, typeDefProxy } from "./internal.js"
 import { DefaultParseTypeContext } from "./definitions/internal.js"
 
@@ -152,7 +158,7 @@ const createValidateFunction =
     }
 
 export const createCreateFunction =
-    <PredefinedSpace>(
+    <PredefinedSpace extends TypeSpace>(
         predefinedSpace: Narrow<PredefinedSpace>
     ): CreateFunction<PredefinedSpace> =>
     (definition, config) => {
@@ -178,15 +184,15 @@ export const createCreateFunction =
         } as any
     }
 
-export type CreateFunction<PredefinedSpace> = <
+export type CreateFunction<PredefinedSpace extends TypeSpace> = <
     Def,
     Options extends ModelConfig,
-    ActiveSpace = PredefinedSpace
+    ActiveSpace extends TypeSpace = PredefinedSpace
 >(
     definition: Validate<Narrow<Def>, ActiveSpace>,
     options?: Narrow<
         Options & {
-            space?: Exact<ActiveSpace, CheckSpaceResolutions<ActiveSpace>>
+            space?: ActiveSpace
         }
     >
 ) => Model<
@@ -197,11 +203,11 @@ export type CreateFunction<PredefinedSpace> = <
 
 export type Model<
     Definition,
-    Space,
+    Space extends TypeSpace,
     Options extends ParseOptions,
     ModelType = TypeOf<
         Definition,
-        Space,
+        Space["definitions"],
         WithDefaults<ParseOptions, Options, DefaultParseOptions>
     >
 > = Evaluate<{
@@ -218,4 +224,15 @@ export type Model<
 }>
 
 // Exported create function is equivalent to create from an empty compile call
-export const create = createCreateFunction({})
+export const create = createCreateFunction({ definitions: {}, config: {} })
+
+// compile({ group: { members: "string[]" } }).create({
+//     name: "string",
+//     age: "number",
+//     groups: "group[]"
+// }).type
+
+// const user = create(
+//     { name: "string", age: "number", groups: "group[]" },
+//     { space: { definitions: { group: { members: "string[]" } }, config: {} } }
+// )
