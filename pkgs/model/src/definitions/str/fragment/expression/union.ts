@@ -45,13 +45,13 @@ export namespace Union {
 
     export type Parse<
         Def extends Definition,
-        Space,
+        Resolutions,
         Context extends ParseTypeContext
     > = Def extends Definition<infer Left, infer Right>
         ? {
               union: [
-                  Fragment.Parse<Left, Space, Context>,
-                  Fragment.Parse<Right, Space, Context>
+                  Fragment.Parse<Left, Resolutions, Context>,
+                  Fragment.Parse<Right, Resolutions, Context>
               ]
           }
         : UnknownTypeError<Def>
@@ -62,9 +62,9 @@ export namespace Union {
 
     export type TypeOf<
         N extends Node,
-        Space,
-        Options extends TypeOfContext<Space>
-    > = Fragment.TypeOf<ElementOf<N["union"]>, Space, Options>
+        Resolutions,
+        Options extends TypeOfContext<Resolutions>
+    > = Fragment.TypeOf<ElementOf<N["union"]>, Resolutions, Options>
 
     export const type = typeDefProxy as Definition
 

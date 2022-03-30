@@ -27,16 +27,20 @@ export namespace Map {
         map: Record<string, Root.Node>
     }
 
-    export type Parse<Def, Space, Context extends ParseTypeContext> = {
+    export type Parse<Def, Resolutions, Context extends ParseTypeContext> = {
         map: {
-            [PropName in keyof Def]: Root.Parse<Def[PropName], Space, Context>
+            [PropName in keyof Def]: Root.Parse<
+                Def[PropName],
+                Resolutions,
+                Context
+            >
         }
     }
 
     export type TypeOf<
         N extends Node,
-        Space,
-        Options extends TypeOfContext<Space>,
+        Resolutions,
+        Options extends TypeOfContext<Resolutions>,
         MappedNodes extends Definition = N["map"],
         OptionalKey extends keyof MappedNodes = {
             [K in keyof MappedNodes]: MappedNodes[K] extends Optional.Node
@@ -49,8 +53,18 @@ export namespace Map {
         >
     > = Evaluate<
         {
-            [K in OptionalKey]?: Root.TypeOf<MappedNodes[K], Space, Options>
-        } & { [K in RequiredKey]: Root.TypeOf<MappedNodes[K], Space, Options> }
+            [K in OptionalKey]?: Root.TypeOf<
+                MappedNodes[K],
+                Resolutions,
+                Options
+            >
+        } & {
+            [K in RequiredKey]: Root.TypeOf<
+                MappedNodes[K],
+                Resolutions,
+                Options
+            >
+        }
     >
 
     export const type = typeDefProxy as Definition

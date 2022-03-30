@@ -15,24 +15,24 @@ export namespace Obj {
 
     export type Parse<
         Def extends Definition,
-        Space,
+        Resolutions,
         Context extends ParseTypeContext
     > = Def extends Tuple.Definition
-        ? Tuple.Parse<Def, Space, Context>
+        ? Tuple.Parse<Def, Resolutions, Context>
         : Def extends Map.Definition
-        ? Map.Parse<Def, Space, Context>
+        ? Map.Parse<Def, Resolutions, Context>
         : DefinitionTypeError
 
     export type Node = Map.Node | Tuple.Node
 
     export type TypeOf<
         N extends Node,
-        Space,
-        Options extends TypeOfContext<Space>
+        Resolutions,
+        Options extends TypeOfContext<Resolutions>
     > = N extends Map.Node
-        ? Map.TypeOf<N, Space, Options>
+        ? Map.TypeOf<N, Resolutions, Options>
         : N extends Tuple.Node
-        ? Tuple.TypeOf<N, Space, Options>
+        ? Tuple.TypeOf<N, Resolutions, Options>
         : unknown
 
     export const type = typeDefProxy as Definition

@@ -22,18 +22,18 @@ export namespace Expression {
 
     export type Parse<
         Def extends string,
-        Space,
+        Resolutions,
         Context extends ParseTypeContext
     > = Def extends ArrowFunction.Definition
-        ? ArrowFunction.Parse<Def, Space, Context>
+        ? ArrowFunction.Parse<Def, Resolutions, Context>
         : Def extends Union.Definition
-        ? Union.Parse<Def, Space, Context>
+        ? Union.Parse<Def, Resolutions, Context>
         : Def extends Intersection.Definition
-        ? Intersection.Parse<Def, Space, Context>
+        ? Intersection.Parse<Def, Resolutions, Context>
         : Def extends Constraint.Definition
-        ? Constraint.Parse<Def, Space, Context>
+        ? Constraint.Parse<Def, Resolutions, Context>
         : Def extends List.Definition
-        ? List.Parse<Def, Space, Context>
+        ? List.Parse<Def, Resolutions, Context>
         : UnknownTypeError<Def>
 
     export type Node =
@@ -45,18 +45,18 @@ export namespace Expression {
 
     export type TypeOf<
         N extends Node,
-        Space,
-        Options extends TypeOfContext<Space>
+        Resolutions,
+        Options extends TypeOfContext<Resolutions>
     > = N extends ArrowFunction.Node
-        ? ArrowFunction.TypeOf<N, Space, Options>
+        ? ArrowFunction.TypeOf<N, Resolutions, Options>
         : N extends Union.Node
-        ? Union.TypeOf<N, Space, Options>
+        ? Union.TypeOf<N, Resolutions, Options>
         : N extends Intersection.Node
-        ? Intersection.TypeOf<N, Space, Options>
+        ? Intersection.TypeOf<N, Resolutions, Options>
         : N extends Constraint.Node
-        ? Constraint.TypeOf<N, Space, Options>
+        ? Constraint.TypeOf<N, Resolutions, Options>
         : N extends List.Node
-        ? List.TypeOf<N, Space, Options>
+        ? List.TypeOf<N, Resolutions, Options>
         : unknown
 
     export const type = typeDefProxy as Definition

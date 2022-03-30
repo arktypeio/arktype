@@ -62,9 +62,11 @@ export const testUnion = () => {
         })
         test("prefers simple aliases", () => {
             const space = {
-                five: 5,
-                duck: "'duck'",
-                func: "function"
+                resolutions: {
+                    five: 5,
+                    duck: "'duck'",
+                    func: "function"
+                }
             } as const
             assert(create("func|five|duck", { space }).generate() as any).is(5)
             assert(create("duck|func", { space }).generate() as any).is("duck")
@@ -73,8 +75,10 @@ export const testUnion = () => {
             assert(
                 create("a|b", {
                     space: {
-                        a: { b: "b" },
-                        b: { a: "a" }
+                        resolutions: {
+                            a: { b: "b" },
+                            b: { a: "a" }
+                        }
                     }
                 }).generate({ onRequiredCycle: "cycle" }) as any
             ).equals({ b: { a: "cycle" } })
@@ -83,9 +87,11 @@ export const testUnion = () => {
             assert(
                 create("a|b|safe", {
                     space: {
-                        a: { b: "b" },
-                        b: { a: "a" },
-                        safe: "false"
+                        resolutions: {
+                            a: { b: "b" },
+                            b: { a: "a" },
+                            safe: "false"
+                        }
                     }
                 }).generate()
             ).is(false)

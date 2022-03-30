@@ -21,21 +21,21 @@ export namespace Tuple {
 
     export type Parse<
         Def extends Definition,
-        Space,
+        Resolutions,
         Context extends ParseTypeContext
     > = {
         tuple: {
-            [Index in keyof Def]: Root.Parse<Def[Index], Space, Context>
+            [Index in keyof Def]: Root.Parse<Def[Index], Resolutions, Context>
         }
     }
 
     export type TypeOf<
         N extends Node,
-        Space,
-        Options extends TypeOfContext<Space>,
+        Resolutions,
+        Options extends TypeOfContext<Resolutions>,
         T extends Root.Node[] = N["tuple"]
     > = Evaluate<{
-        [Index in keyof T]: Root.TypeOf<T[Index], Space, Options>
+        [Index in keyof T]: Root.TypeOf<T[Index], Resolutions, Options>
     }>
 
     export const type = typeDefProxy as Definition

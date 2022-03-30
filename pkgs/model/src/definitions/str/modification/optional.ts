@@ -18,7 +18,7 @@ export namespace Optional {
 
     export type Parse<
         Def extends Definition,
-        Space,
+        Resolutions,
         Context extends ParseTypeContext
     > = Def extends Definition<infer Of>
         ? "?" extends Context["modifiers"]
@@ -26,7 +26,7 @@ export namespace Optional {
             : {
                   optional: Str.Parse<
                       Of,
-                      Space,
+                      Resolutions,
                       WithPropValue<
                           Context,
                           "modifiers",
@@ -42,10 +42,10 @@ export namespace Optional {
 
     export type TypeOf<
         N extends Node,
-        Space,
-        Options extends TypeOfContext<Space>
+        Resolutions,
+        Options extends TypeOfContext<Resolutions>
     > = N extends Node
-        ? Str.TypeOf<N["optional"], Space, Options> | undefined
+        ? Str.TypeOf<N["optional"], Resolutions, Options> | undefined
         : unknown
 
     export const type = typeDefProxy as Definition

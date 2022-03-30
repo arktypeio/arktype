@@ -13,7 +13,7 @@ import {
     CheckSpaceResolutions,
     compile,
     Space,
-    TypeSpace,
+    Spacefication,
     TypeSpaceOptions
 } from "./space.js"
 import { ReferencesTypeConfig, typeDefProxy } from "./internal.js"
@@ -21,13 +21,13 @@ import { DefaultParseTypeContext } from "./definitions/internal.js"
 
 export type Definition = Root.Definition
 
-export type Validate<Def, Space> = IsAny<Def> extends true
+export type Validate<Def, Resolutions> = IsAny<Def> extends true
     ? Def
-    : Root.Validate<Def, Space>
+    : Root.Validate<Def, Resolutions>
 
 export type TypeOf<
     Def,
-    Space,
+    Resolutions,
     Options extends ParseOptions = {},
     SpaceConfig extends TypeSpaceOptions<keyof Checked & string> = {},
     OptionsWithDefaults extends Required<ParseOptions> = WithDefaults<
@@ -35,16 +35,15 @@ export type TypeOf<
         Options,
         DefaultParseOptions
     >,
-    Checked = CheckSpaceResolutions<Space>
+    Checked = CheckSpaceResolutions<Resolutions>
 > = IsAny<Def> extends true
     ? Def
     : Root.TypeOf<
-          Root.Parse<Def, Space, DefaultParseTypeContext>,
+          Root.Parse<Def, Resolutions, DefaultParseTypeContext>,
           Checked,
-          // @ts-ignore
           OptionsWithDefaults & {
               seen: {}
-              spaceConfig: SpaceConfig
+              space: SpaceConfig
           }
       >
 
@@ -56,7 +55,7 @@ export type ReferencesTypeOptions = {
 
 export type ReferencesOf<
     Def extends Root.Definition,
-    Space = {},
+    Resolutions = {},
     Options extends ReferencesTypeOptions = {},
     Config extends ReferencesTypeConfig = WithDefaults<
         ReferencesTypeOptions,
@@ -67,7 +66,7 @@ export type ReferencesOf<
             filter: string
         }
     >
-> = Root.ReferencesOf<Def, Space, Config>
+> = Root.ReferencesOf<Def, Resolutions, Config>
 
 // Just use unknown for now since we don't have all the definitions yet
 // but we still want to allow references to other declared types
@@ -106,6 +105,7 @@ export type ModelConfig = {
     validate?: ValidateConfig
     generate?: GenerateOptions
     references?: ReferencesOptions
+    space?: Spacefication
 }
 
 type ValidationErrorFormats = {
@@ -158,19 +158,22 @@ const createValidateFunction =
     }
 
 export const createCreateFunction =
-    <PredefinedSpace extends TypeSpace>(
+    <PredefinedSpace extends Spacefication>(
         predefinedSpace: Narrow<PredefinedSpace>
     ): CreateFunction<PredefinedSpace> =>
     (definition, config) => {
         const context: ParseContext = {
             ...defaultParseContext,
-            space: config?.space ?? (predefinedSpace as any)
+            config: {
+                ...config,
+                space: (config?.space ?? predefinedSpace) as any
+            }
         }
         const { allows, references, generate } = Root.parse(definition, context)
         const validate = createValidateFunction(allows)
         return {
             type: typeDefProxy,
-            space: context.space,
+            space: context.config.space,
             definition,
             validate,
             references,
@@ -184,12 +187,12 @@ export const createCreateFunction =
         } as any
     }
 
-export type CreateFunction<PredefinedSpace extends TypeSpace> = <
+export type CreateFunction<PredefinedSpace extends Spacefication> = <
     Def,
-    Options extends ModelConfig,
-    ActiveSpace extends TypeSpace = PredefinedSpace
+    Options extends ModelConfig = {},
+    ActiveSpace extends Spacefication = PredefinedSpace
 >(
-    definition: Validate<Narrow<Def>, ActiveSpace>,
+    definition: Validate<Narrow<Def>, ActiveSpace["resolutions"]>,
     options?: Narrow<
         Options & {
             space?: ActiveSpace
@@ -202,16 +205,16 @@ export type CreateFunction<PredefinedSpace extends TypeSpace> = <
 >
 
 export type Model<
-    Definition,
-    Space extends TypeSpace,
+    Def,
+    Space extends Spacefication,
     Options extends ParseOptions,
     ModelType = TypeOf<
-        Definition,
-        Space["definitions"],
+        Def,
+        Space["resolutions"],
         WithDefaults<ParseOptions, Options, DefaultParseOptions>
     >
 > = Evaluate<{
-    definition: Definition
+    definition: Def
     type: ModelType
     space: Space
     config: ModelConfig
@@ -220,13 +223,15 @@ export type Model<
     generate: (options?: GenerateOptions) => ModelType
     references: (
         options?: ReferencesOptions
-    ) => ReferencesOf<Definition, Space, { asList: true }>
+    ) => ReferencesOf<Def, Space["resolutions"], { asList: true }>
 }>
 
 // Exported create function is equivalent to create from an empty compile call
-export const create = createCreateFunction({ definitions: {}, config: {} })
+export const create = createCreateFunction({ resolutions: {}, config: {} })
 
-// compile({ group: { members: "string[]" } }).create({
+// const group = create({ members: "string[]" }).references()
+
+// const space = compile({ group: { members: "string[]" } }).create({
 //     name: "string",
 //     age: "number",
 //     groups: "group[]"
@@ -234,5 +239,5 @@ export const create = createCreateFunction({ definitions: {}, config: {} })
 
 // const user = create(
 //     { name: "string", age: "number", groups: "group[]" },
-//     { space: { definitions: { group: { members: "string[]" } }, config: {} } }
+//     { space: { resolutions: { group: { members: "string[]" } }, config: {} } }
 // )

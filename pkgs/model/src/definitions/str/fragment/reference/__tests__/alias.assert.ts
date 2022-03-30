@@ -6,13 +6,17 @@ export const testAlias = () => {
         test("with space", () => {
             assert(
                 create("borf", {
-                    space: { borf: true }
+                    space: { resolutions: { borf: true } }
                 }).type
             ).typed as true
             assert(
                 create(
                     { snorf: "borf[]" },
-                    { space: { borf: { f: false, u: undefined } } }
+                    {
+                        space: {
+                            resolutions: { borf: { f: false, u: undefined } }
+                        }
+                    }
                 ).type
             ).typed as { snorf: { f: false; u: undefined }[] }
         })
@@ -92,9 +96,14 @@ export const testAlias = () => {
                 { fruits: "fruit[]" },
                 {
                     space: {
-                        banana: { length: "number", description: "string?" },
-                        apple: { circumference: "number", type: "string" },
-                        fruit: "banana|apple"
+                        resolutions: {
+                            banana: {
+                                length: "number",
+                                description: "string?"
+                            },
+                            apple: { circumference: "number", type: "string" },
+                            fruit: "banana|apple"
+                        }
                     }
                 }
             )
@@ -127,13 +136,15 @@ export const testAlias = () => {
         })
         test("errors on shallow cycle", () => {
             // @ts-expect-error
-            const shallowRecursive = create("a", { space: { a: "a" } })
+            const shallowRecursive = create("a", {
+                space: { resolutions: { a: "a" } }
+            })
             expect(() => shallowRecursive.assert("what's an a?")).toThrowError(
                 "shallow"
             )
             const shallowCyclic = create("a", {
                 // @ts-expect-error
-                space: { a: "b", b: "c", c: "a|b|c" }
+                space: { resolutions: { a: "b", b: "c", c: "a|b|c" } }
             })
             expect(() => shallowCyclic.assert(["what's a b?"])).toThrowError(
                 "shallow"
@@ -144,9 +155,11 @@ export const testAlias = () => {
                 { a: "a", b: "b", c: "either[]" },
                 {
                     space: {
-                        a: { a: "a?", b: "b?", isA: "true" },
-                        b: { a: "a?", b: "b?", isA: "false" },
-                        either: "a|b"
+                        resolutions: {
+                            a: { a: "a?", b: "b?", isA: "true" },
+                            b: { a: "a?", b: "b?", isA: "false" },
+                            either: "a|b"
+                        }
                     }
                 }
             )
@@ -236,8 +249,11 @@ export const testAlias = () => {
                     `"Unable to determine the type of 'myType' at path alias."`
                 )
             // Parse any as space member
-            assert(create(["number", "a"], { space: { a: {} as any } }).type)
-                .typed as [number, any]
+            assert(
+                create(["number", "a"], {
+                    space: { resolutions: { a: {} as any } }
+                }).type
+            ).typed as [number, any]
         })
     })
     describe("generation", () => {
@@ -253,12 +269,17 @@ export const testAlias = () => {
                     },
                     {
                         space: {
-                            banana: {
-                                length: "number",
-                                description: "string?"
-                            },
-                            apple: { circumference: "number", type: "string" },
-                            fruit: "banana|apple"
+                            resolutions: {
+                                banana: {
+                                    length: "number",
+                                    description: "string?"
+                                },
+                                apple: {
+                                    circumference: "number",
+                                    type: "string"
+                                },
+                                fruit: "banana|apple"
+                            }
                         }
                     }
                 ).generate()
@@ -274,9 +295,11 @@ export const testAlias = () => {
             expect(
                 create("a", {
                     space: {
-                        a: { b: "b" },
-                        b: { c: "c?" },
-                        c: "a|b"
+                        resolutions: {
+                            a: { b: "b" },
+                            b: { c: "c?" },
+                            c: "a|b"
+                        }
                     }
                 }).generate()
             ).toStrictEqual({ b: {} })
@@ -285,9 +308,11 @@ export const testAlias = () => {
             expect(() =>
                 create("a", {
                     space: {
-                        a: { b: "b" },
-                        b: { c: "c" },
-                        c: "a|b"
+                        resolutions: {
+                            a: { b: "b" },
+                            b: { c: "c" },
+                            c: "a|b"
+                        }
                     }
                 }).generate()
             ).toThrowErrorMatchingInlineSnapshot(`
@@ -300,9 +325,11 @@ export const testAlias = () => {
             expect(
                 create("a", {
                     space: {
-                        a: { b: "b" },
-                        b: { c: "c" },
-                        c: "a|b"
+                        resolutions: {
+                            a: { b: "b" },
+                            b: { c: "c" },
+                            c: "a|b"
+                        }
                     }
                 }).generate({ onRequiredCycle: { whoops: ["cycle"] } })
             ).toStrictEqual({
@@ -313,8 +340,10 @@ export const testAlias = () => {
             expect(
                 create("a|b", {
                     space: {
-                        a: { b: "b" },
-                        b: { a: "a" }
+                        resolutions: {
+                            a: { b: "b" },
+                            b: { a: "a" }
+                        }
                     }
                 }).generate({ onRequiredCycle: "cycle" })
             ).toStrictEqual({ b: { a: "cycle" } })
@@ -330,7 +359,9 @@ export const testAlias = () => {
                 },
                 {
                     space: {
-                        group: { name: "string", description: "string?" }
+                        resolutions: {
+                            group: { name: "string", description: "string?" }
+                        }
                     }
                 }
             ).generate()

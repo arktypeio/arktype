@@ -22,7 +22,7 @@
     "scripts": {
         "build": "reTsc",
         "test": "jest 2>&1",
-        "unit": "jest --coverage false -t "
+        "unit": "jest --coverage false -t multifile"
     },
     "dependencies": {
         "@re-/tools": "workspace:*",

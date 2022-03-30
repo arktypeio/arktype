@@ -16,7 +16,7 @@ import { GenerateOptions, ModelConfig, ReferencesOptions } from "../model.js"
 
 export type MatchesArgs<DefType> = {
     definition: DefType
-    space: SpaceResolutions
+    resolutions: SpaceResolutions
 }
 
 export type AllowsOptions = {
@@ -24,18 +24,14 @@ export type AllowsOptions = {
 }
 
 export type ParseContext = {
-    space: SpaceResolutions
     path: string[]
     seen: string[]
     shallowSeen: string[]
     modifiers: string[]
     config: ModelConfig
-    spaceConfig: SpaceOptions<any>
 }
 
 export const defaultParseContext: ParseContext = {
-    space: {},
-    spaceConfig: {},
     config: {},
     path: [],
     seen: [],
@@ -195,7 +191,7 @@ export const createParser = <
     const getComponents = (def: DefType, ctx: ParseContext) => {
         const memoKey = toString({
             def,
-            space: ctx.space,
+            space: ctx.config.space,
             shallowSeen: ctx.shallowSeen,
             seen: ctx.seen,
             path: ctx.path
@@ -223,7 +219,7 @@ export const createParser = <
                 ? ctx.shallowSeen[ctx.shallowSeen.length - 1]
                 : ""
             const activeModelConfig =
-                ctx.spaceConfig.models?.[lastModelName] ?? {}
+                ctx.config?.space?.config?.models?.[lastModelName] ?? {}
             if (name === "allows") {
                 return inputMethod(
                     {
@@ -233,7 +229,7 @@ export const createParser = <
                     },
                     providedArgs[0],
                     {
-                        ...(ctx.spaceConfig.validate ?? {}),
+                        ...(ctx.config?.space?.config?.validate ?? {}),
                         ...activeModelConfig.validate,
                         ...((providedArgs[1] as any) ?? {})
                     }
@@ -246,7 +242,7 @@ export const createParser = <
                     components
                 },
                 {
-                    ...(ctx.spaceConfig[name] ?? {}),
+                    ...(ctx.config?.space?.config?.[name] ?? {}),
                     ...activeModelConfig[name],
                     ...((providedArgs[0] as any) ?? {})
                 }

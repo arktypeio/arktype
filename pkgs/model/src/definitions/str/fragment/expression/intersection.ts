@@ -26,13 +26,13 @@ export namespace Intersection {
 
     export type Parse<
         Def extends Definition,
-        Space,
+        Resolutions,
         Context extends ParseTypeContext
     > = Def extends Definition<infer Left, infer Right>
         ? {
               intersection: [
-                  Fragment.Parse<Left, Space, Context>,
-                  Fragment.Parse<Right, Space, Context>
+                  Fragment.Parse<Left, Resolutions, Context>,
+                  Fragment.Parse<Right, Resolutions, Context>
               ]
           }
         : UnknownTypeError<Def>
@@ -43,10 +43,10 @@ export namespace Intersection {
 
     export type TypeOf<
         N extends Node,
-        Space,
-        Options extends TypeOfContext<Space>
-    > = Fragment.TypeOf<N["intersection"][0], Space, Options> &
-        Fragment.TypeOf<N["intersection"][1], Space, Options>
+        Resolutions,
+        Options extends TypeOfContext<Resolutions>
+    > = Fragment.TypeOf<N["intersection"][0], Resolutions, Options> &
+        Fragment.TypeOf<N["intersection"][1], Resolutions, Options>
 
     export const type = typeDefProxy as Definition
 

@@ -27,10 +27,10 @@ export const testIntegration = () => {
     })
     test("model props", () => {
         const a = create("a", {
-            space: { a: "true" }
+            space: { resolutions: { a: "true" } }
         })
         expect(a.definition).toBe("a")
-        expect(a.space).toStrictEqual({ a: "true" })
+        expect(a.space).toStrictEqual({ resolutions: { a: "true" } })
         expect(a.validate(true).errors).toBeFalsy()
         expect(() => a.assert(false)).toThrow()
         expect(a.generate()).toBe(true)

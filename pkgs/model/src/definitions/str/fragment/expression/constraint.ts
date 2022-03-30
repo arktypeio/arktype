@@ -118,7 +118,7 @@ export namespace Constraint {
 
     export type Parse<
         Def extends Definition,
-        Space,
+        Resolutions,
         Context extends ParseTypeContext,
         Parts extends string[] = Spliterate<Def, ["<=", ">=", "<", ">"], true> &
             string[]
@@ -133,7 +133,7 @@ export namespace Constraint {
             ? Left extends NumberLiteral.Definition
                 ? Right extends NumberLiteral.Definition
                     ? {
-                          bounded: Fragment.Parse<Middle, Space, Context>
+                          bounded: Fragment.Parse<Middle, Resolutions, Context>
                       } & {
                           [K in ComparatorInverses[FirstComparator]]: Left
                       } & {
@@ -149,7 +149,7 @@ export namespace Constraint {
           >
         ? Left extends Comparable
             ? Right extends NumberLiteral.Definition
-                ? { bounded: Fragment.Parse<Left, Space, Context> } & {
+                ? { bounded: Fragment.Parse<Left, Resolutions, Context> } & {
                       [K in Comparator]: Right
                   }
                 : InvalidBoundError<Left, Right>
@@ -166,9 +166,9 @@ export namespace Constraint {
 
     export type TypeOf<
         N extends Node,
-        Space,
-        Options extends TypeOfContext<Space>
-    > = Fragment.TypeOf<N["bounded"], Space, Options>
+        Resolutions,
+        Options extends TypeOfContext<Resolutions>
+    > = Fragment.TypeOf<N["bounded"], Resolutions, Options>
 
     export const matcher = /(<=|>=|<|>)/
 

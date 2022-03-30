@@ -10,43 +10,37 @@ import {
 } from "./internal.js"
 import { Root } from "../../../root.js"
 import { Reference } from "./index.js"
-import { SpaceOptions } from "../../../../space.js"
+import { TypeSpaceOptions } from "../../../../space.js"
 import { validationError } from "../internal.js"
 
 export namespace Alias {
-    export type Definition<Space> = keyof Space & string
-
-    export type Check<
-        TypeName extends Definition<Space>,
-        Root,
-        Space
-    > = Space[TypeName] extends ValidationErrorMessage ? Space[TypeName] : Root
+    export type Definition<Resolutions> = keyof Resolutions & string
 
     export type TypeOf<
-        TypeName extends Definition<Space>,
-        Space,
-        Options extends TypeOfContext<Space>
-    > = IsAny<Space> extends true
-        ? Space
-        : Space[TypeName] extends ValidationErrorMessage
+        TypeName extends Definition<Resolutions>,
+        Resolutions,
+        Options extends TypeOfContext<Resolutions>
+    > = IsAny<Resolutions> extends true
+        ? Resolutions
+        : Resolutions[TypeName] extends ValidationErrorMessage
         ? unknown
         : TypeName extends keyof Options["seen"]
         ? Options["onCycle"] extends never
-            ? TypeOfResolvedNonCyclicDefinition<TypeName, Space, Options>
-            : TypeOfResolvedCyclicDefinition<TypeName, Space, Options>
-        : TypeOfResolvedNonCyclicDefinition<TypeName, Space, Options>
+            ? TypeOfResolvedNonCyclicDefinition<TypeName, Resolutions, Options>
+            : TypeOfResolvedCyclicDefinition<TypeName, Resolutions, Options>
+        : TypeOfResolvedNonCyclicDefinition<TypeName, Resolutions, Options>
 
     export type TypeOfResolvedCyclicDefinition<
-        TypeName extends Definition<Space>,
-        Space,
-        Options extends TypeOfContext<Space>
+        TypeName extends Definition<Resolutions>,
+        Resolutions,
+        Options extends TypeOfContext<Resolutions>
     > = Root.TypeOf<
         Root.Parse<
             Options["onCycle"],
-            Omit<Space, "cyclic"> & { cyclic: Space[TypeName] },
+            Omit<Resolutions, "cyclic"> & { cyclic: Resolutions[TypeName] },
             DefaultParseTypeContext
         >,
-        Omit<Space, "cyclic"> & { cyclic: Space[TypeName] },
+        Omit<Resolutions, "cyclic"> & { cyclic: Resolutions[TypeName] },
         {
             onCycle: Options["deepOnCycle"] extends true
                 ? Options["onCycle"]
@@ -54,22 +48,26 @@ export namespace Alias {
             seen: {}
             onResolve: Options["onResolve"]
             deepOnCycle: Options["deepOnCycle"]
-            spaceConfig: Options["spaceConfig"] &
-                SpaceOptions<(keyof Space | "cyclic") & string>
+            space: Options["space"] &
+                TypeSpaceOptions<(keyof Resolutions | "cyclic") & string>
         }
     >
 
     export type TypeOfResolvedNonCyclicDefinition<
-        TypeName extends Definition<Space>,
-        Space,
-        Options extends TypeOfContext<Space>
+        TypeName extends Definition<Resolutions>,
+        Resolutions,
+        Options extends TypeOfContext<Resolutions>
     > = Or<
         Options["onResolve"] extends never ? true : false,
         TypeName extends "resolved" ? true : false
     > extends true
         ? Root.TypeOf<
-              Root.Parse<Space[TypeName], Space, DefaultParseTypeContext>,
-              Space,
+              Root.Parse<
+                  Resolutions[TypeName],
+                  Resolutions,
+                  DefaultParseTypeContext
+              >,
+              Resolutions,
               Options & {
                   seen: { [K in TypeName]: true }
               }
@@ -77,10 +75,14 @@ export namespace Alias {
         : Root.TypeOf<
               Root.Parse<
                   Options["onResolve"],
-                  Omit<Space, "resolved"> & { resolved: Space[TypeName] },
+                  Omit<Resolutions, "resolved"> & {
+                      resolved: Resolutions[TypeName]
+                  },
                   DefaultParseTypeContext
               >,
-              Omit<Space, "resolved"> & { resolved: Space[TypeName] },
+              Omit<Resolutions, "resolved"> & {
+                  resolved: Resolutions[TypeName]
+              },
               // @ts-ignore
               Options & {
                   seen: { [K in TypeName]: true }
@@ -109,7 +111,7 @@ export namespace Alias {
                 }
                 return {
                     resolve: () =>
-                        Root.parse(ctx.space[def], {
+                        Root.parse(ctx.config.space!.resolutions[def], {
                             ...ctx,
                             seen: [...ctx.seen, def],
                             shallowSeen: [...ctx.shallowSeen, def],
@@ -119,12 +121,14 @@ export namespace Alias {
             }
         },
         {
-            matches: (def, ctx) => def in ctx.space,
+            matches: (def, ctx) =>
+                def in (ctx.config?.space?.resolutions ?? {}),
             allows: ({ ctx, def, components: { resolve } }, value, opts) => {
                 const errors = resolve().allows(value, opts)
                 const customValidator =
-                    ctx.spaceConfig?.models?.[def]?.validate?.validator ??
-                    ctx.spaceConfig.validate?.validator ??
+                    ctx.config.space?.config?.models?.[def]?.validate
+                        ?.validator ??
+                    ctx.config.space?.config?.validate?.validator ??
                     undefined
                 if (customValidator) {
                     const customResult = customValidator(value, errors, ctx)

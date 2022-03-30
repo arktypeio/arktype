@@ -17,10 +17,10 @@ export namespace List {
 
     export type Parse<
         Def extends Definition,
-        Space,
+        Resolutions,
         Context extends ParseTypeContext
     > = Def extends Definition<infer Of>
-        ? { list: Fragment.Parse<Of, Space, Context> }
+        ? { list: Fragment.Parse<Of, Resolutions, Context> }
         : UnknownTypeError<Def>
 
     export type Node = {
@@ -29,9 +29,9 @@ export namespace List {
 
     export type TypeOf<
         N extends Node,
-        Space,
-        Options extends TypeOfContext<Space>
-    > = Evaluate<Fragment.TypeOf<N["list"], Space, Options>[]>
+        Resolutions,
+        Options extends TypeOfContext<Resolutions>
+    > = Evaluate<Fragment.TypeOf<N["list"], Resolutions, Options>[]>
 
     export const type = typeDefProxy as Definition
 

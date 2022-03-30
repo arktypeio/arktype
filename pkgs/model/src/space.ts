@@ -29,6 +29,12 @@ import { DefaultParseTypeContext } from "./definitions/internal.js"
 
 export type SpaceResolutions = Record<string, Root.Definition>
 
+export type SpaceConfig<Resolutions extends SpaceResolutions> = ModelConfig & {
+    models?: {
+        [Name in keyof Resolutions & string]?: ModelConfig
+    }
+}
+
 export type CheckSpaceResolutions<
     Space,
     SuperSpace = {}
@@ -49,25 +55,25 @@ export type ParseSpaceRoot<Space, Context extends TypeOfContext<Space>> = {
     >
 }
 
-export type ParseSpaceResolutions<Resolutions, Config> = {
+export type ParseSpaceResolutions<Resolutions, Config> = Evaluate<{
     [TypeName in keyof Resolutions]: Model<
         Resolutions[TypeName],
         {
-            definitions: CheckSpaceResolutions<Resolutions>
+            resolutions: CheckSpaceResolutions<Resolutions>
             config: Config
         },
         DefaultParseOptions
     >
-}
+}>
 
 export const createCompileFunction =
     <DeclaredTypeNames extends string[]>(
         declaredTypeNames: Narrow<DeclaredTypeNames>
     ): CompileFunction<DeclaredTypeNames> =>
-    (definitions: any, config: any) => {
+    (resolutions: any, config: any = {}) => {
         const declarationErrors = diffSets(
             declaredTypeNames,
-            Object.keys(definitions)
+            Object.keys(resolutions)
         )
         if (declaredTypeNames.length && declarationErrors) {
             const errorParts = [] as string[]
@@ -91,10 +97,10 @@ export const createCompileFunction =
             }
             throw new Error(errorParts.join(" "))
         }
-        const create = createCreateFunction(definitions)
+        const create = createCreateFunction({ resolutions, config })
         const extend = (newDefinitions: any, newConfig: any) =>
             compile(
-                { ...definitions, ...newDefinitions },
+                { ...resolutions, ...newDefinitions },
                 {
                     ...config,
                     ...newConfig,
@@ -102,10 +108,10 @@ export const createCompileFunction =
                 }
             )
         return {
-            models: transform(definitions, ([typeName, definition]) => [
+            models: transform(resolutions, ([typeName, definition]) => [
                 typeName,
                 create(definition, {
-                    space: definitions
+                    space: { resolutions, config }
                 })
             ]),
             types: typeDefProxy,
@@ -119,11 +125,11 @@ export const createCompileFunction =
 // and will not validate missing or extraneous definitions
 export const compile = createCompileFunction([])
 
-export type CheckCompileDefinitions<
-    Definitions,
+export type CheckCompileResolutions<
+    Resolutions,
     DeclaredTypeNames extends string[] = [],
     SuperSpace = {},
-    Checked = CheckSpaceResolutions<Definitions, SuperSpace>,
+    Checked = CheckSpaceResolutions<Resolutions, SuperSpace>,
     DefinedTypeName extends string = keyof Checked & string,
     DeclaredTypeName extends string = DeclaredTypeNames extends never[]
         ? DefinedTypeName
@@ -135,7 +141,10 @@ export type CheckCompileDefinitions<
 export const extraneousTypesErrorMessage = `Defined types @types were never declared.`
 export const missingTypesErrorMessage = `Declared types @types were never defined.`
 
-export type SpaceOptions<ModelName extends string> = ModelConfig & {
+export type SpaceOptions<
+    Resolutions extends SpaceResolutions,
+    ModelName extends string = keyof Resolutions & string
+> = ModelConfig & {
     models?: {
         [Name in ModelName]?: ModelConfig
     }
@@ -148,17 +157,17 @@ export type TypeSpaceOptions<ModelName extends string> = ParseOptions & {
 }
 
 export type CompileFunction<DeclaredTypeNames extends string[]> = <
-    Definitions extends SpaceResolutions,
-    Options extends SpaceOptions<keyof Definitions & string>
+    Resolutions extends SpaceResolutions,
+    Options extends SpaceOptions<Resolutions> = {}
 >(
-    definitions: Narrow<
+    resolutions: Narrow<
         Exact<
-            Definitions,
-            CheckCompileDefinitions<Definitions, DeclaredTypeNames>
+            Resolutions,
+            CheckCompileResolutions<Resolutions, DeclaredTypeNames>
         >
     >,
     config?: Narrow<Options>
-) => Space<Definitions, Options>
+) => Space<Resolutions, Options>
 
 type ExtendSpaceConfig<OriginalConfig, NewConfig> = Merge<
     Merge<OriginalConfig, NewConfig>,
@@ -171,46 +180,45 @@ type ExtendSpaceConfig<OriginalConfig, NewConfig> = Merge<
 >
 
 type ExtendSpaceFunction<
-    ExtendedDefinitions extends SpaceResolutions,
-    ExtendedContext
+    OriginalResolutions extends SpaceResolutions,
+    OriginalConfig
 > = <
-    Definitions extends SpaceResolutions,
-    Config extends SpaceOptions<
-        (keyof ExtendedDefinitions | keyof Definitions) & string
+    NewResolutions extends SpaceResolutions,
+    NewConfig extends SpaceOptions<MergedResolutions>,
+    MergedResolutions extends SpaceResolutions = Merge<
+        OriginalResolutions,
+        NewResolutions
     >
 >(
     definitions: Narrow<
         Exact<
-            Definitions,
-            CheckCompileDefinitions<Definitions, [], ExtendedDefinitions>
+            NewResolutions,
+            CheckCompileResolutions<NewResolutions, [], OriginalResolutions>
         >
     >,
-    config?: Narrow<Config>
-) => Space<
-    Merge<ExtendedDefinitions, Definitions>,
-    ExtendSpaceConfig<ExtendedContext, Config>
->
+    config?: Narrow<NewConfig>
+) => Space<MergedResolutions, ExtendSpaceConfig<OriginalConfig, NewConfig>>
 
-export type TypeSpace<
-    Definitions = SpaceResolutions,
-    Config = SpaceOptions<keyof Definitions & string>
+export type Spacefication<
+    Resolutions extends SpaceResolutions = SpaceResolutions,
+    Config = SpaceOptions<Resolutions>
 > = {
-    definitions: Definitions
-    config: Config
+    resolutions: Resolutions
+    config?: Config
 }
 
-export type Space<Definitions extends SpaceResolutions, Config> = Evaluate<{
-    models: ParseSpaceResolutions<Definitions, Config>
+export type Space<Resolutions extends SpaceResolutions, Config> = Evaluate<{
+    resolutions: Resolutions
+    config: Config
+    models: ParseSpaceResolutions<Resolutions, Config>
     types: Evaluate<
         Map.TypeOf<
-            Map.Parse<Definitions, Definitions, DefaultParseTypeContext>,
-            Definitions,
+            Map.Parse<Resolutions, Resolutions, DefaultParseTypeContext>,
+            Resolutions,
             DefaultTypeOfContext
         >
     >
-    create: CreateFunction<{ definitions: Definitions; config: Config }>
-    extend: ExtendSpaceFunction<Definitions, Config>
-    config: Config
-    definitions: Definitions
+    create: CreateFunction<{ resolutions: Resolutions; config: Config }>
+    extend: ExtendSpaceFunction<Resolutions, Config>
     // TODO: Add declare extension
 }>

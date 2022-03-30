@@ -5,17 +5,17 @@ import { Literal } from "./literal/literal.js"
 import { Alias } from "./alias.js"
 
 export namespace Reference {
-    export type Definition<Space> =
+    export type Definition<Resolutions> =
         | Keyword.Definition
         | Literal.Definition
-        | Alias.Definition<Space>
+        | Alias.Definition<Resolutions>
 
     export type Matches<
         Def extends string,
-        Space
+        Resolutions
     > = Literal.Matches<Def> extends true
         ? true
-        : Def extends Keyword.Definition | Alias.Definition<Space>
+        : Def extends Keyword.Definition | Alias.Definition<Resolutions>
         ? true
         : false
 
@@ -23,14 +23,14 @@ export namespace Reference {
 
     export type TypeOf<
         N extends Node,
-        Space,
-        Options extends TypeOfContext<Space>
+        Resolutions,
+        Options extends TypeOfContext<Resolutions>
     > = N extends Keyword.Definition
         ? Keyword.TypeOf<N>
         : N extends Literal.Definition
         ? Literal.TypeOf<N>
-        : N extends Alias.Definition<Space>
-        ? Alias.TypeOf<N, Space, Options>
+        : N extends Alias.Definition<Resolutions>
+        ? Alias.TypeOf<N, Resolutions, Options>
         : unknown
 
     export const type = typeDefProxy as string

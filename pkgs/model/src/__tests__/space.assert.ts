@@ -91,7 +91,10 @@ describe("compile", () => {
         assert(a.generate()).equals({})
         assert(a.references()).equals(["a"])
         assert(a.definition).typedValue("a")
-        const expectedSpace = narrow({ a: { b: "b?" }, b: { a: "a?" } })
+        const expectedSpace = narrow({
+            resolutions: { a: { b: "b?" }, b: { a: "a?" } },
+            config: {}
+        })
         assert(a.space).typedValue(expectedSpace)
         assert(mySpace.create("b").type)
             .is(typeDefProxy)

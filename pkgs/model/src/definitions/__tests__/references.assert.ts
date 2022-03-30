@@ -77,7 +77,7 @@ describe("references", () => {
                 | "null"
             )[]
             const aliasReferences = create("user|string", {
-                space: { user: "any" }
+                space: { resolutions: { user: "any" } }
             }).references()
             assert(diffSets(["string", "user"], aliasReferences) as any).is(
                 undefined
@@ -101,7 +101,7 @@ describe("references", () => {
                     },
                     listed: [-1n, "null", "string|boolean"]
                 },
-                { space: { custom: "any" } }
+                { space: { resolutions: { custom: "any" } } }
             ).references()
             assert(objectReferences).equals({
                 primitives: {

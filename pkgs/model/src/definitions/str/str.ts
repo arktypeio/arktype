@@ -17,40 +17,40 @@ export namespace Str {
 
     export type Parse<
         Def extends string,
-        Space,
+        Resolutions,
         Context extends ParseTypeContext
     > = Def extends Modification.Definition
-        ? Modification.Parse<Def, Space, Context>
-        : Fragment.Parse<Def, Space, Context>
+        ? Modification.Parse<Def, Resolutions, Context>
+        : Fragment.Parse<Def, Resolutions, Context>
 
     export type Node = Modification.Node | Fragment.Node
 
     export type TypeOf<
         N extends Node,
-        Space,
-        Options extends TypeOfContext<Space>
+        Resolutions,
+        Options extends TypeOfContext<Resolutions>
     > = N extends Modification.Node
-        ? Modification.TypeOf<N, Space, Options>
+        ? Modification.TypeOf<N, Resolutions, Options>
         : N extends Fragment.Node
-        ? Fragment.TypeOf<N, Space, Options>
+        ? Fragment.TypeOf<N, Resolutions, Options>
         : unknown
 
     export type Validate<
         Def extends Definition,
-        Space,
+        Resolutions,
         Errors extends string[] = ReferencesOf<
             Def,
-            Space,
+            Resolutions,
             { asTuple: true; asList: false; filter: ValidationErrorMessage }
         >
     > = Errors extends [] ? Def : { errors: Errors }
 
     export type ReferencesOf<
         Def extends Definition,
-        Space,
+        Resolutions,
         Config extends ReferencesTypeConfig,
         Reference extends string = LeafOf<
-            Parse<Def, Space, DefaultParseTypeContext>,
+            Parse<Def, Resolutions, DefaultParseTypeContext>,
             Config["filter"]
         >
     > = Config["asTuple"] extends true

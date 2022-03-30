@@ -125,7 +125,7 @@ export type ShallowCycleError<
 export const shallowCycleError = ({ def, ctx }: BaseParseArgs) =>
     shallowCycleErrorTemplate
         .replace("@def", stringifyDefinition(def))
-        .replace("@space", stringifyDefinition(ctx.space))
+        .replace("@space", stringifyDefinition(ctx.config.space?.resolutions))
         .replace("@resolutions", [...ctx.seen, def].join("=>"))
 
 export const invalidBoundErrorTemplate =

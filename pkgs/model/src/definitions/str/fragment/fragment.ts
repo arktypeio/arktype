@@ -21,15 +21,18 @@ export namespace Fragment {
 
     export type Parse<
         Def extends string,
-        Space,
+        Resolutions,
         Context extends ParseTypeContext
-    > = Reference.Matches<Def, Space> extends true
+    > = Reference.Matches<Def, Resolutions> extends true
         ? Def
         : Def extends Expression.Definition
-        ? Expression.Parse<Def, Space, Context>
+        ? Expression.Parse<Def, Resolutions, Context>
         : Def extends `${infer Left}${Context["delimiter"]}${infer Right}`
         ? UnpackArgs<
-              [Parse<Left, Space, Context>, Parse<Right, Space, Context>]
+              [
+                  Parse<Left, Resolutions, Context>,
+                  Parse<Right, Resolutions, Context>
+              ]
           >
         : // If we've made it to this point, Modifications should have already been handled
         Def extends Modification.Definition
@@ -46,12 +49,12 @@ export namespace Fragment {
 
     export type TypeOf<
         N,
-        Space,
-        Options extends TypeOfContext<Space>
+        Resolutions,
+        Options extends TypeOfContext<Resolutions>
     > = N extends Expression.Node
-        ? Expression.TypeOf<N, Space, Options>
+        ? Expression.TypeOf<N, Resolutions, Options>
         : N extends Reference.Node
-        ? Reference.TypeOf<N, Space, Options>
+        ? Reference.TypeOf<N, Resolutions, Options>
         : unknown
 
     export const type = typeDefProxy as Definition

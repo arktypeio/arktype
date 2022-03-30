@@ -37,11 +37,14 @@ export const createDeclaredDefineFunction =
         definedTypeName: DefinedTypeName
     ): DeclaredDefineFunction<DefinedTypeName, DeclaredTypeNames> =>
     (definition: any) => {
+        // Dummy create for validation
         create(definition, {
-            space: transform(declaredTypeNames, ([i, typeName]) => [
-                typeName,
-                "unknown"
-            ]) as any
+            space: {
+                resolutions: transform(declaredTypeNames, ([i, typeName]) => [
+                    typeName,
+                    "unknown"
+                ])
+            } as any
         })
         return { [definedTypeName]: definition } as any
     }

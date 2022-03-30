@@ -20,7 +20,7 @@ export namespace ArrowFunction {
 
     export type Parse<
         Def extends Definition,
-        Space,
+        Resolutions,
         Context extends ParseTypeContext
     > = Def extends Definition<infer Args, infer Return>
         ? {
@@ -29,7 +29,7 @@ export namespace ArrowFunction {
                   : ToList<
                         Fragment.Parse<
                             Args,
-                            Space,
+                            Resolutions,
                             WithPropValue<
                                 Context,
                                 "delimiter",
@@ -37,7 +37,7 @@ export namespace ArrowFunction {
                             >
                         >
                     >
-              returns: Fragment.Parse<Return, Space, Context>
+              returns: Fragment.Parse<Return, Resolutions, Context>
           }
         : UnknownTypeError<Def>
 
@@ -48,22 +48,22 @@ export namespace ArrowFunction {
 
     export type TypeOf<
         N extends Node,
-        Space,
-        Options extends TypeOfContext<Space>,
+        Resolutions,
+        Options extends TypeOfContext<Resolutions>,
         Args extends Fragment.Node[] = N["args"]
     > = Evaluate<
         // @ts-ignore
         (
-            ...args: TypeOfArgs<Args, Space, Options>
-        ) => Fragment.TypeOf<N["returns"], Space, Options>
+            ...args: TypeOfArgs<Args, Resolutions, Options>
+        ) => Fragment.TypeOf<N["returns"], Resolutions, Options>
     >
 
     type TypeOfArgs<
         Args extends Fragment.Node[],
-        Space,
-        Options extends TypeOfContext<Space>
+        Resolutions,
+        Options extends TypeOfContext<Resolutions>
     > = {
-        [I in keyof Args]: Fragment.TypeOf<Args[I], Space, Options>
+        [I in keyof Args]: Fragment.TypeOf<Args[I], Resolutions, Options>
     }
 
     export const type = typeDefProxy as Definition
@@ -120,6 +120,6 @@ export namespace ArrowFunction {
 
 // type ParseParameterTuple<
 //     Def extends string,
-//     Space,
+//     Resolutions,
 //     Options extends ParseConfig
-// > = Def extends "" ? [] : ParseSplittable<",", Def, Space, Options>
+// > = Def extends "" ? [] : ParseSplittable<",", Def, Resolutions, Options>
