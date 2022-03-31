@@ -191,7 +191,7 @@ export const createParser = <
     const getComponents = (def: DefType, ctx: ParseContext) => {
         const memoKey = toString({
             def,
-            space: ctx.config.space,
+            config: ctx.config,
             shallowSeen: ctx.shallowSeen,
             seen: ctx.seen,
             path: ctx.path
@@ -220,10 +220,29 @@ export const createParser = <
                 : ""
             const activeModelConfig =
                 ctx.config?.space?.config?.models?.[lastModelName] ?? {}
+            const providedConfig: any =
+                name === "validate" ? providedArgs[1] : providedArgs[0]
+            /**
+             * The first time we run validate, we check if options were included
+             * in providedArgs, since they would be from a direct call and would
+             * override all other config values. From then on, we can use the "useProvidedArgs"
+             * key to let us know the validate call was internal and whatever options were passed
+             * can safely be ignored in favor of the standard config precedence.
+             **/
+            const useProvidedArgs = providedConfig
+                ? "useProvidedArgs" in providedConfig
+                    ? providedConfig["useProvidedArgs"]
+                    : true
+                : false
             const configValue = {
                 ...(ctx.config?.space?.config?.[name] ?? {}),
                 ...activeModelConfig[name],
-                ...(ctx.config?.[name] ?? {})
+                ...(ctx.config?.[name] ?? {}),
+                useProvidedArgs
+            }
+            const compiledOpts = {
+                ...configValue,
+                ...(useProvidedArgs ? providedConfig : {})
             }
             if (name === "validate") {
                 return inputMethod(
@@ -233,10 +252,7 @@ export const createParser = <
                         components
                     },
                     providedArgs[0],
-                    {
-                        ...configValue,
-                        ...((providedArgs[1] as any) ?? {})
-                    }
+                    compiledOpts
                 )
             }
             return inputMethod(
@@ -245,10 +261,7 @@ export const createParser = <
                     ctx,
                     components
                 },
-                {
-                    ...configValue,
-                    ...((providedArgs[0] as any) ?? {})
-                }
+                compiledOpts
             )
         }
 

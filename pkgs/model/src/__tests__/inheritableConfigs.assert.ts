@@ -88,6 +88,6 @@ describe("inheritable configs", () => {
                 { doll: { contents: "doll" } },
                 { generate: { onRequiredCycle: "space" } }
             ).models.doll.generate().contents
-        ).equals("space" as any)
+        ).equals({ contents: "space" } as any)
     })
 })
