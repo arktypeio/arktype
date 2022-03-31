@@ -240,6 +240,11 @@ export const valueGenerationError = ({ def, ctx: { path } }: BaseParseArgs) =>
         def
     )}${stringifyPathContext(path)}.`
 
+export const duplicateSpaceError =
+    "Space has already been determined according to the source of this 'create' method."
+
+export type DuplicateSpaceError = typeof duplicateSpaceError
+
 export const stringifyErrors = (errors: ValidationErrors) => {
     const errorPaths = Object.keys(errors)
     if (errorPaths.length === 0) {

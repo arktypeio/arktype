@@ -1,4 +1,4 @@
-import { TreeOf } from "@re-/tools"
+import { KeyValuate, TreeOf } from "@re-/tools"
 import {
     ParseOptions,
     ReferencesTypeOptions,
@@ -6,9 +6,14 @@ import {
 } from "./model.js"
 import { Primitive, ExtractableKeyword, Str } from "./definitions/index.js"
 import { StringLiteral } from "./definitions/str/fragment/reference/literal/stringLiteral.js"
-import { TypeSpaceOptions } from "./space.js"
 
 export * from "./errors.js"
+
+export type MergeOptions<Base, Merged> = {
+    [K in keyof Base | keyof Merged]: K extends keyof Merged
+        ? Merged[K]
+        : KeyValuate<Base, K>
+}
 
 export type ShallowDefinition = Str.Definition | Primitive.Definition
 
@@ -27,11 +32,10 @@ export const getTypeDefProxy = () => typeDefProxy
 export type ReferencesTypeConfig = Required<ReferencesTypeOptions>
 
 export type TypeOfContext<Resolutions> = Required<ParseOptions> & {
-    space: TypeSpaceOptions<keyof Resolutions & string>
+    // space: TypeSpaceOptions<keyof Resolutions & string>
     seen: Record<string, boolean>
 }
 
 export type DefaultTypeOfContext = DefaultParseOptions & {
     seen: {}
-    space: {}
 }

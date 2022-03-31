@@ -10,7 +10,6 @@ import {
 } from "./internal.js"
 import { Root } from "../../../root.js"
 import { Reference } from "./index.js"
-import { TypeSpaceOptions } from "../../../../space.js"
 import { validationError } from "../internal.js"
 
 export namespace Alias {
@@ -48,8 +47,6 @@ export namespace Alias {
             seen: {}
             onResolve: Options["onResolve"]
             deepOnCycle: Options["deepOnCycle"]
-            space: Options["space"] &
-                TypeSpaceOptions<(keyof Resolutions | "cyclic") & string>
         }
     >
 

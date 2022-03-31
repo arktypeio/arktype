@@ -1,5 +1,6 @@
 import { assert } from "@re-/assert"
 import { narrow } from "@re-/tools"
+import { duplicateSpaceError } from "../errors.js"
 import { compile, create } from "../index.js"
 import { typeDefProxy } from "../internal.js"
 
@@ -201,5 +202,14 @@ describe("compile", () => {
         ).snap(
             `"At path groups/0/members/0, required keys 'name' were missing. Keys 'first, last' were unexpected."`
         )
+    })
+    test("space cannot be redefined from create", () => {
+        const space = compile({ a: "string" })
+        assert(() =>
+            space.create("a", {
+                // @ts-expect-error
+                space: { resolutions: {} }
+            })
+        ).throwsAndHasTypeError(duplicateSpaceError)
     })
 })

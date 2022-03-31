@@ -1,15 +1,27 @@
-import { Evaluate, Narrow, IsAny, WithDefaults, isEmpty } from "@re-/tools"
+import {
+    Evaluate,
+    Narrow,
+    IsAny,
+    WithDefaults,
+    isEmpty,
+    Merge,
+    KeyValuate,
+    ValueAtPath
+} from "@re-/tools"
 import { Root } from "./definitions/index.js"
 import { ParseContext, defaultParseContext } from "./definitions/parser.js"
-import { stringifyErrors, ValidationErrors } from "./errors.js"
+import {
+    duplicateSpaceError,
+    DuplicateSpaceError,
+    stringifyErrors,
+    ValidationErrors
+} from "./errors.js"
 import {
     ValidateSpaceResolutions,
     Spacefication,
-    TypeSpaceOptions,
-    ExtractTypeSpaceOptions,
     SpaceOptions
 } from "./space.js"
-import { ReferencesTypeConfig, typeDefProxy } from "./internal.js"
+import { MergeOptions, ReferencesTypeConfig, typeDefProxy } from "./internal.js"
 import { DefaultParseTypeContext } from "./definitions/internal.js"
 
 export type Definition = Root.Definition
@@ -22,7 +34,6 @@ export type TypeOf<
     Def,
     Resolutions,
     Options extends ParseOptions = {},
-    SpaceConfig extends TypeSpaceOptions<keyof Checked & string> = {},
     OptionsWithDefaults extends Required<ParseOptions> = WithDefaults<
         ParseOptions,
         Options,
@@ -36,7 +47,6 @@ export type TypeOf<
           Checked,
           OptionsWithDefaults & {
               seen: {}
-              space: SpaceConfig
           }
       >
 
@@ -151,16 +161,20 @@ const createRootValidate =
     }
 
 export const createCreateFunction =
-    <PredefinedSpace extends Spacefication>(
+    <PredefinedSpace extends Spacefication | null>(
         predefinedSpace: Narrow<PredefinedSpace>
     ): CreateFunction<PredefinedSpace> =>
     (definition, config) => {
+        if (predefinedSpace && config?.space) {
+            throw new Error(duplicateSpaceError)
+        }
+        const space: any = predefinedSpace ??
+            config?.space ?? { resolutions: {} }
         const context: ParseContext = {
             ...defaultParseContext,
             config: {
                 ...config,
-                // @ts-ignore
-                space: (config?.space ?? predefinedSpace) as any
+                space
             }
         }
         const {
@@ -171,7 +185,7 @@ export const createCreateFunction =
         const validate = createRootValidate(internalValidate)
         return {
             type: typeDefProxy,
-            space: context.config.space,
+            space,
             definition,
             validate,
             references,
@@ -185,15 +199,22 @@ export const createCreateFunction =
         } as any
     }
 
-export type CreateFunction<PredefinedSpace extends Spacefication> = <
+export type CreateFunction<PredefinedSpace extends Spacefication | null> = <
     Def,
     Options extends ModelConfig = {},
-    ActiveSpace extends Spacefication = PredefinedSpace
+    ProvidedSpace extends Spacefication = { resolutions: {} },
+    ActiveSpace extends Spacefication = PredefinedSpace extends null
+        ? ProvidedSpace
+        : PredefinedSpace
 >(
     definition: Validate<Narrow<Def>, ActiveSpace["resolutions"]>,
     options?: Narrow<
         Options & {
-            space?: ActiveSpace
+            space?: PredefinedSpace extends null
+                ? ProvidedSpace
+                : {
+                      errors: DuplicateSpaceError
+                  }
         }
     >
 ) => Model<
@@ -206,16 +227,20 @@ export type Model<
     Def,
     Space extends Spacefication,
     Options extends ParseOptions,
-    SpaceConfig extends SpaceOptions<
-        Space["resolutions"]
-    > = Space["config"] extends SpaceOptions<Space["resolutions"]>
-        ? Space["config"]
+    SpaceParseConfig extends ParseOptions = KeyValuate<
+        Space["config"],
+        "parse"
+    > extends ParseOptions
+        ? KeyValuate<Space["config"], "parse">
         : {},
     ModelType = TypeOf<
         Def,
         Space["resolutions"],
-        WithDefaults<ParseOptions, Options, DefaultParseOptions>,
-        ExtractTypeSpaceOptions<SpaceConfig>
+        WithDefaults<
+            ParseOptions,
+            MergeOptions<SpaceParseConfig, Options>,
+            DefaultParseOptions
+        >
     >
 > = Evaluate<{
     definition: Def
@@ -230,5 +255,4 @@ export type Model<
     ) => ReferencesOf<Def, Space["resolutions"], { asList: true }>
 }>
 
-// Exported create function is equivalent to create from an empty compile call
-export const create = createCreateFunction({ resolutions: {}, config: {} })
+export const create = createCreateFunction(null)

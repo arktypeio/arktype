@@ -7,34 +7,23 @@ import {
     transform,
     IsAny,
     Exact,
-    Merge
+    Merge,
+    WithDefaults
 } from "@re-/tools"
 import {
     createCreateFunction,
     CreateFunction,
-    TypeOf,
     Model,
     ModelConfig,
     ParseOptions,
-    DefaultParseOptions,
-    create
+    DefaultParseOptions
 } from "./model.js"
 import { Map, Root } from "./definitions/index.js"
-import {
-    DefaultTypeOfContext,
-    typeDefProxy,
-    TypeOfContext
-} from "./internal.js"
+import { DefaultTypeOfContext, typeDefProxy } from "./internal.js"
 import { ValidateResolution } from "./resolution.js"
 import { DefaultParseTypeContext } from "./definitions/internal.js"
 
 export type SpaceResolutions = Record<string, Root.Definition>
-
-export type SpaceConfig<Resolutions extends SpaceResolutions> = ModelConfig & {
-    models?: {
-        [Name in keyof Resolutions & string]?: ModelConfig
-    }
-}
 
 export type ValidateSpaceResolutions<
     Resolutions,
@@ -48,22 +37,21 @@ export type ValidateSpaceResolutions<
           >
       }>
 
-export type ParseSpaceRoot<Space, Context extends TypeOfContext<Space>> = {
-    [TypeName in keyof Space]: TypeOf<
-        Space[TypeName],
-        ValidateSpaceResolutions<Space>,
-        Context
-    >
-}
-
-export type ParseSpaceResolutions<Resolutions, Config> = Evaluate<{
+export type ParseSpaceResolutions<
+    Resolutions extends SpaceResolutions,
+    ParseConfig extends ParseOptions
+> = Evaluate<{
     [TypeName in keyof Resolutions]: Model<
         Resolutions[TypeName],
         {
             resolutions: ValidateSpaceResolutions<Resolutions>
-            config: Config
+            config: { parse: ParseConfig }
         },
-        DefaultParseOptions
+        WithDefaults<
+            ParseOptions,
+            ParseConfig,
+            DefaultParseOptions & { seen: { [K in TypeName]: true } }
+        >
     >
 }>
 
@@ -113,9 +101,7 @@ export const createCompileFunction =
             config,
             models: transform(resolutions, ([typeName, definition]) => [
                 typeName,
-                create(definition, {
-                    space: { resolutions, config }
-                })
+                create(definition)
             ]),
             types: typeDefProxy,
             create,
@@ -149,24 +135,6 @@ export type SpaceOptions<
 > = ModelConfig & {
     models?: {
         [Name in ModelName]?: ModelConfig
-    }
-}
-
-export type ExtractTypeSpaceOptions<
-    Options extends SpaceOptions<SpaceResolutions>
-> = TypeSpaceOptions<string> &
-    (Options["parse"] extends ParseOptions ? Options["parse"] : {}) & {
-        models: {
-            [Name in keyof Options["models"]]: KeyValuate<
-                Options["models"][Name],
-                "parse"
-            >
-        }
-    }
-
-export type TypeSpaceOptions<ModelName extends string> = ParseOptions & {
-    models?: {
-        [Name in ModelName]?: ParseOptions
     }
 }
 
@@ -221,10 +189,16 @@ export type Spacefication<
     config?: Config
 }
 
-export type Space<Resolutions extends SpaceResolutions, Config> = Evaluate<{
+export type Space<
+    Resolutions extends SpaceResolutions,
+    Config,
+    SpaceParseConfig = KeyValuate<Config, "parse"> extends undefined
+        ? {}
+        : KeyValuate<Config, "parse">
+> = Evaluate<{
     resolutions: Resolutions
     config: Config
-    models: ParseSpaceResolutions<Resolutions, Config>
+    models: ParseSpaceResolutions<Resolutions, SpaceParseConfig>
     types: Evaluate<
         Map.TypeOf<
             Map.Parse<Resolutions, Resolutions, DefaultParseTypeContext>,
