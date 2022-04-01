@@ -51,13 +51,13 @@ export const testStringLiteral = () => {
     })
     describe("validation", () => {
         test("matching literal", () => {
-            assert(create("'dursurdo'").validate("dursurdo").errors).is(
+            assert(create("'dursurdo'").validate("dursurdo").error).is(
                 undefined
             )
         })
         describe("errors", () => {
             test("mismatched literal", () => {
-                assert(create("'dursurdo'").validate("durrrrrr").errors).snap(
+                assert(create("'dursurdo'").validate("durrrrrr").error).snap(
                     `"'durrrrrr' is not assignable to 'dursurdo'."`
                 )
             })

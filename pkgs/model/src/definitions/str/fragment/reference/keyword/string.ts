@@ -41,6 +41,11 @@ export const stringHandlers = defineKeywords({
         generate: () => "",
         validate: (valueType) =>
             validateLiteral(valueType, (value) => value === value.toUpperCase())
+    },
+    character: {
+        generate: () => "a",
+        validate: (valueType) =>
+            validateLiteral(valueType, (value) => value.length === 1)
     }
 })
 

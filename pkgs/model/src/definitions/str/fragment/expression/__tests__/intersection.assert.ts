@@ -30,44 +30,41 @@ export const testIntersection = () => {
     })
     describe("validation", () => {
         test("two types", () => {
-            assert(create("boolean&true").validate(true).errors).is(undefined)
+            assert(create("boolean&true").validate(true).error).is(undefined)
         })
         test("several types", () => {
-            assert(create("unknown&boolean&false").validate(false).errors).is(
+            assert(create("unknown&boolean&false").validate(false).error).is(
                 undefined
             )
         })
         test("keyword specifiers", () => {
-            assert(create("integer&nonnegative").validate(7).errors).is(
+            assert(create("integer&nonnegative").validate(7).error).is(
                 undefined
             )
         })
         describe("errors", () => {
             test("empty intersection", () => {
                 // @ts-ignore
-                assert(create("number&string").validate("5").errors).snap(`
-"'5' is not assignable to all of number&string:
-At path number, '5' is not assignable to number."
-`)
+                assert(create("number&string").validate("5").error).snap(
+                    `"'5' is not assignable to all of number&string."`
+                )
             })
             test("two types", () => {
-                assert(create("boolean&true").validate("false").errors).snap(`
-"'false' is not assignable to all of boolean&true:
-{boolean: ''false' is not assignable to boolean.', true: ''false' is not assignable to true.'}"
-`)
+                assert(create("boolean&true").validate("false").error).snap(
+                    `"'false' is not assignable to all of boolean&true."`
+                )
             })
             test("several types", () => {
-                assert(create("unknown&true&boolean").validate(false).errors)
-                    .snap(`
-"false is not assignable to all of unknown&true&boolean:
-At path true, false is not assignable to true."
-`)
+                assert(
+                    create("unknown&true&boolean").validate(false).error
+                ).snap(
+                    `"false is not assignable to all of unknown&true&boolean."`
+                )
             })
             test("bad keyword specifiers", () => {
-                assert(create("integer&positive").validate(7.5).errors).snap(`
-"7.5 is not assignable to all of integer&positive:
-At path integer, 7.5 is not assignable to integer."
-`)
+                assert(create("integer&positive").validate(7.5).error).snap(
+                    `"7.5 is not assignable to all of integer&positive."`
+                )
             })
         })
     })

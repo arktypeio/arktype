@@ -44,11 +44,11 @@ export const testArrowFunction = () => {
     })
     describe("validation", () => {
         test("functional", () => {
-            assert(create("()=>any").validate(() => {}).errors).is(undefined)
+            assert(create("()=>any").validate(() => {}).error).is(undefined)
         })
         describe("errors", () => {
             test("non-functional", () => {
-                assert(create("()=>any").validate({}).errors).snap(
+                assert(create("()=>any").validate({}).error).snap(
                     `"{} is not assignable to ()=>any."`
                 )
             })

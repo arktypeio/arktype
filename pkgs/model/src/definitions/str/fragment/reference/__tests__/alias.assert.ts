@@ -114,25 +114,42 @@ export const testAlias = () => {
                         { circumference: 4.832321, type: "Granny Smith" },
                         { length: 15, description: "nice" }
                     ]
-                }).errors
+                }).error
             ).toBeFalsy()
             expect(
-                groceries.validate({
-                    fruits: [
-                        {
-                            length: 5000,
-                            description: "I'm a big banana!",
-                            peel: "slippery"
-                        },
+                groceries.validate(
+                    {
+                        fruits: [
+                            {
+                                length: 5000,
+                                description: "I'm a big banana!",
+                                peel: "slippery"
+                            },
 
-                        { type: "Fuji" }
-                    ]
-                }).errors
+                            { type: "Fuji" }
+                        ]
+                    },
+
+                    // Verbose should explain why each component of the union type doesn't apply
+                    { verbose: true }
+                ).error
             ).toMatchInlineSnapshot(`
-            "{fruits/0: '{length: 5000, description: 'I'm a big banana!', peel: 'slippery'} is not assignable to any of banana|apple:
-            {banana: 'At path fruits/0, keys 'peel' were unexpected.', apple: 'At path fruits/0, required keys 'circumference, type' were missing. Keys 'length, description, peel' were unexpected.'}', fruits/1: '{type: 'Fuji'} is not assignable to any of banana|apple:
-            {banana: 'At path fruits/1, required keys 'length' were missing. Keys 'type' were unexpected.', apple: 'At path fruits/1, required keys 'circumference' were missing.'}'}"
-        `)
+"Encountered errors at the following paths:
+{
+  fruits/0: '{length: 5000, description: 'I'm a big banana!', peel: 'slippery'} is not assignable to any of banana|apple.
+Encountered errors at the following paths:
+{
+  banana: 'At path fruits/0, keys 'peel' were unexpected.',
+  apple: 'At path fruits/0, required keys 'circumference, type' were missing. Keys 'length, description, peel' were unexpected.'
+}',
+  fruits/1: '{type: 'Fuji'} is not assignable to any of banana|apple.
+Encountered errors at the following paths:
+{
+  banana: 'At path fruits/1, required keys 'length' were missing. Keys 'type' were unexpected.',
+  apple: 'At path fruits/1, required keys 'circumference' were missing.'
+}'
+}"
+`)
         })
         test("errors on shallow cycle", () => {
             // @ts-expect-error
@@ -171,7 +188,7 @@ export const testAlias = () => {
                         { isA: false, a: { isA: true } },
                         { isA: true, b: { isA: false } }
                     ]
-                }).errors
+                }).error
             ).toBeFalsy()
             expect(
                 bicycle.validate({
@@ -220,11 +237,15 @@ export const testAlias = () => {
                         { isA: false },
                         { isA: "the duck goes quack" }
                     ]
-                }).errors
+                }).error
             ).toMatchInlineSnapshot(`
-            "{a/a/a/a/a/a/a/isA: 'false is not assignable to true.', b/b/b/b/b/b/b/isA: 'true is not assignable to false.', c/8: '{isA: 'the duck goes quack'} is not assignable to any of a|b:
-            {a: 'At path c/8/isA, 'the duck goes quack' is not assignable to true.', b: 'At path c/8/isA, 'the duck goes quack' is not assignable to false.'}'}"
-        `)
+"Encountered errors at the following paths:
+{
+  a/a/a/a/a/a/a/isA: 'false is not assignable to true.',
+  b/b/b/b/b/b/b/isA: 'true is not assignable to false.',
+  c/8: '{isA: 'the duck goes quack'} is not assignable to any of a|b.'
+}"
+`)
         })
         test("doesn't try to parse or validate any", () => {
             // Parse any as type

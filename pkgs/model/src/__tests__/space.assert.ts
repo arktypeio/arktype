@@ -87,7 +87,7 @@ describe("compile", () => {
         assert(mySpace.models.a.references()).equals({ b: ["b"] })
         const aWithExtraneousKey = { c: "extraneous" }
         const extraneousKeyMessage = "Keys 'c' were unexpected."
-        assert(a.validate(aWithExtraneousKey).errors).is(extraneousKeyMessage)
+        assert(a.validate(aWithExtraneousKey).error).is(extraneousKeyMessage)
         assert(() => a.assert(aWithExtraneousKey)).throws(extraneousKeyMessage)
         assert(a.generate()).equals({})
         assert(a.references()).equals(["a"])
@@ -198,7 +198,7 @@ describe("compile", () => {
             city.validate({
                 people: [{ name: "David" }],
                 groups: [{ members: [{ first: "David", last: "Blass" }] }]
-            }).errors
+            }).error
         ).snap(
             `"At path groups/0/members/0, required keys 'name' were missing. Keys 'first, last' were unexpected."`
         )

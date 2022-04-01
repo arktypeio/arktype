@@ -21,7 +21,7 @@ export const testObj = () => {
         })
         describe("validation", () => {
             test("standard", () => {
-                assert(mixed.validate([true, { a: ["ok", [0]] }]).errors).is(
+                assert(mixed.validate([true, { a: ["ok", [0]] }]).error).is(
                     undefined
                 )
             })
@@ -31,17 +31,21 @@ export const testObj = () => {
                         mixed.validate([
                             true,
                             { a: ["ok", [[true, false]], "extraElement"] }
-                        ]).errors
+                        ]).error
                     ).snap(
                         `"At path 1/a, tuple of length 3 is not assignable to tuple of length 2."`
                     )
                 })
                 test("multiple", () => {
-                    assert(
-                        mixed.validate([false, { a: [0, [0, 1, 2]] }]).errors
-                    ).snap(
-                        `"{0: 'false is not assignable to true.', 1/a/0: '0 is not assignable to string.', 1/a/1: 'Tuple of length 3 is not assignable to tuple of length 1.'}"`
-                    )
+                    assert(mixed.validate([false, { a: [0, [0, 1, 2]] }]).error)
+                        .snap(`
+"Encountered errors at the following paths:
+{
+  0: 'false is not assignable to true.',
+  1/a/0: '0 is not assignable to string.',
+  1/a/1: 'Tuple of length 3 is not assignable to tuple of length 1.'
+}"
+`)
                 })
             })
         })

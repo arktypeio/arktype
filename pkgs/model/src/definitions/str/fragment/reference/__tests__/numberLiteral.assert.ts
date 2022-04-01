@@ -33,26 +33,26 @@ export const testNumberLiteral = () => {
     describe("validation", () => {
         test("whole", () => {
             const { validate } = create("8")
-            assert(validate(8).errors).is(undefined)
-            assert(validate(8.0).errors).is(undefined)
-            assert(validate(8.000001).errors).is(
+            assert(validate(8).error).is(undefined)
+            assert(validate(8.0).error).is(undefined)
+            assert(validate(8.000001).error).is(
                 "8.000001 is not assignable to 8."
             )
-            assert(validate("8").errors).is("'8' is not assignable to 8.")
+            assert(validate("8").error).is("'8' is not assignable to 8.")
         })
         test("decimal", () => {
             const { validate } = create("1.618")
-            assert(validate(1.618).errors).is(undefined)
-            assert(validate(2).errors).is("2 is not assignable to 1.618.")
-            assert(validate("1.618").errors).is(
+            assert(validate(1.618).error).is(undefined)
+            assert(validate(2).error).is("2 is not assignable to 1.618.")
+            assert(validate("1.618").error).is(
                 "'1.618' is not assignable to 1.618."
             )
         })
         test("negative", () => {
             const { validate } = create("-13.37")
-            assert(validate(-13.37).errors).is(undefined)
-            assert(validate(-14).errors).is("-14 is not assignable to -13.37.")
-            assert(validate("-13.37").errors).is(
+            assert(validate(-13.37).error).is(undefined)
+            assert(validate(-14).error).is("-14 is not assignable to -13.37.")
+            assert(validate("-13.37").error).is(
                 "'-13.37' is not assignable to -13.37."
             )
         })

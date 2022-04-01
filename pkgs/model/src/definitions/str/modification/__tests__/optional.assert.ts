@@ -53,22 +53,22 @@ export const testOptional = () => {
     })
     describe("validation", () => {
         test("preserves original type", () => {
-            assert(create("false?").validate(false).errors).is(undefined)
+            assert(create("false?").validate(false).error).is(undefined)
         })
         test("allows undefined", () => {
-            assert(create("false?").validate(undefined).errors).is(undefined)
+            assert(create("false?").validate(undefined).error).is(undefined)
         })
         test("allows omission of key", () => {
             assert(
                 create({
                     required: "string",
                     optional: "string?"
-                }).validate({ required: "" }).errors
+                }).validate({ required: "" }).error
             ).is(undefined)
         })
         describe("errors", () => {
             test("bad inner type", () => {
-                assert(create("true?").validate(false).errors).snap(
+                assert(create("true?").validate(false).error).snap(
                     `"false is not assignable to true."`
                 )
             })

@@ -11,8 +11,8 @@ export const testKeyword = () => {
             assert(generate()).is("")
         })
         test("validation", () => {
-            assert(validate("KEKW").errors).is(undefined)
-            assert(validate(["whoops"]).errors).snap(
+            assert(validate("KEKW").error).is(undefined)
+            assert(validate(["whoops"]).error).snap(
                 `"['whoops'] is not assignable to string."`
             )
         })
@@ -26,9 +26,9 @@ export const testKeyword = () => {
             assert(generate()).is(0)
         })
         test("validation", () => {
-            assert(validate(-83).errors).is(undefined)
-            assert(validate(0.999).errors).is(undefined)
-            assert(validate("42").errors).snap(
+            assert(validate(-83).error).is(undefined)
+            assert(validate(0.999).error).is(undefined)
+            assert(validate("42").error).snap(
                 `"'42' is not assignable to number."`
             )
         })
@@ -42,9 +42,9 @@ export const testKeyword = () => {
             assert(generate()).is(false)
         })
         test("validation", () => {
-            assert(validate(true).errors).is(undefined)
-            assert(validate(false).errors).is(undefined)
-            assert(validate(0).errors).snap(`"0 is not assignable to boolean."`)
+            assert(validate(true).error).is(undefined)
+            assert(validate(false).error).is(undefined)
+            assert(validate(0).error).snap(`"0 is not assignable to boolean."`)
         })
     })
     describe("true", () => {
@@ -56,8 +56,8 @@ export const testKeyword = () => {
             assert(generate()).is(true)
         })
         test("validation", () => {
-            assert(validate(true).errors).is(undefined)
-            assert(validate(false).errors).snap(
+            assert(validate(true).error).is(undefined)
+            assert(validate(false).error).snap(
                 `"false is not assignable to true."`
             )
         })
@@ -71,8 +71,8 @@ export const testKeyword = () => {
             assert(generate()).is(false)
         })
         test("validation", () => {
-            assert(validate(false).errors).is(undefined)
-            assert(validate(true).errors).snap(
+            assert(validate(false).error).is(undefined)
+            assert(validate(true).error).snap(
                 `"true is not assignable to false."`
             )
         })
@@ -86,8 +86,8 @@ export const testKeyword = () => {
             assert(generate()).is(0n)
         })
         test("validation", () => {
-            assert(validate(999n).errors).is(undefined)
-            assert(validate(999).errors).snap(
+            assert(validate(999n).error).is(undefined)
+            assert(validate(999).error).snap(
                 `"999 is not assignable to bigint."`
             )
         })
@@ -101,8 +101,8 @@ export const testKeyword = () => {
             assert(typeof generate()).is("symbol")
         })
         test("validation", () => {
-            assert(validate(Symbol("")).errors).is(undefined)
-            assert(validate("@").errors).snap(
+            assert(validate(Symbol("")).error).is(undefined)
+            assert(validate("@").error).snap(
                 `"'@' is not assignable to symbol."`
             )
         })
@@ -118,8 +118,8 @@ export const testKeyword = () => {
             assert(generated("irrelevant")).is(undefined)
         })
         test("validation", () => {
-            assert(validate(() => {}).errors).is(undefined)
-            assert(validate({}).errors).snap(
+            assert(validate(() => {}).error).is(undefined)
+            assert(validate({}).error).snap(
                 `"{} is not assignable to function."`
             )
         })
@@ -133,9 +133,9 @@ export const testKeyword = () => {
             assert(generate()).equals({})
         })
         test("validation", () => {
-            assert(validate([]).errors).is(undefined)
-            assert(validate({}).errors).is(undefined)
-            assert(validate(null).errors).snap(
+            assert(validate([]).error).is(undefined)
+            assert(validate({}).error).is(undefined)
+            assert(validate(null).error).snap(
                 `"null is not assignable to object."`
             )
         })
@@ -149,8 +149,8 @@ export const testKeyword = () => {
             assert(generate()).is(undefined)
         })
         test("validation", () => {
-            assert(validate(undefined).errors).is(undefined)
-            assert(validate(null).errors).snap(
+            assert(validate(undefined).error).is(undefined)
+            assert(validate(null).error).snap(
                 `"null is not assignable to undefined."`
             )
         })
@@ -164,8 +164,8 @@ export const testKeyword = () => {
             assert(generate()).is(null)
         })
         test("validation", () => {
-            assert(validate(null).errors).is(undefined)
-            assert(validate(undefined).errors).snap(
+            assert(validate(null).error).is(undefined)
+            assert(validate(undefined).error).snap(
                 `"undefined is not assignable to null."`
             )
         })
@@ -179,8 +179,8 @@ export const testKeyword = () => {
             assert(generate()).is(undefined)
         })
         test("validation", () => {
-            assert(validate(undefined).errors).is(undefined)
-            assert(validate(null).errors).snap(
+            assert(validate(undefined).error).is(undefined)
+            assert(validate(null).error).snap(
                 `"null is not assignable to void."`
             )
         })
@@ -194,9 +194,9 @@ export const testKeyword = () => {
             assert(generate()).is(undefined)
         })
         test("validation", () => {
-            assert(validate(-34324n).errors).is(undefined)
-            assert(validate({ yes: "no" }).errors).is(undefined)
-            assert(validate([0, "1", 2, "3"]).errors).is(undefined)
+            assert(validate(-34324n).error).is(undefined)
+            assert(validate({ yes: "no" }).error).is(undefined)
+            assert(validate([0, "1", 2, "3"]).error).is(undefined)
         })
     })
     describe("unknown", () => {
@@ -208,9 +208,9 @@ export const testKeyword = () => {
             assert(generate()).is(undefined)
         })
         test("validation", () => {
-            assert(validate(34324n).errors).is(undefined)
-            assert(validate({ no: "yes" }).errors).is(undefined)
-            assert(validate(["0", 1, "2", 3]).errors).is(undefined)
+            assert(validate(34324n).error).is(undefined)
+            assert(validate({ no: "yes" }).error).is(undefined)
+            assert(validate(["0", 1, "2", 3]).error).is(undefined)
         })
     })
     describe("never", () => {
@@ -225,10 +225,10 @@ export const testKeyword = () => {
             )
         })
         test("validation", () => {
-            assert(validate("sometimes").errors).snap(
+            assert(validate("sometimes").error).snap(
                 `"'sometimes' is not assignable to never."`
             )
-            assert(validate(undefined).errors).snap(
+            assert(validate(undefined).error).snap(
                 `"undefined is not assignable to never."`
             )
         })
@@ -237,45 +237,53 @@ export const testKeyword = () => {
         test("email", () => {
             const email = create("email")
             assert(email.type).typed as string
-            assert(email.validate("david@redo.dev").errors).is(undefined)
-            assert(email.validate("david@redo@dev").errors).snap(
+            assert(email.validate("david@redo.dev").error).is(undefined)
+            assert(email.validate("david@redo@dev").error).snap(
                 `"'david@redo@dev' is not assignable to email."`
             )
         })
         test("alpha", () => {
             const alpha = create("alpha")
             assert(alpha.type).typed as string
-            assert(alpha.validate("aBc").errors).is(undefined)
-            assert(alpha.validate("a B c").errors).snap(
+            assert(alpha.validate("aBc").error).is(undefined)
+            assert(alpha.validate("a B c").error).snap(
                 `"'a B c' is not assignable to alpha."`
             )
         })
         test("alphanumeric", () => {
             const alphaNumeric = create("alphanumeric")
             assert(alphaNumeric.type).typed as string
-            assert(alphaNumeric.validate("aBc123").errors).is(undefined)
-            assert(alphaNumeric.validate("aBc+123").errors).snap(
+            assert(alphaNumeric.validate("aBc123").error).is(undefined)
+            assert(alphaNumeric.validate("aBc+123").error).snap(
                 `"'aBc+123' is not assignable to alphanumeric."`
             )
         })
         test("lowercase", () => {
             const lowercase = create("lowercase")
             assert(lowercase.type).typed as string
-            assert(lowercase.validate("as long as no uppercase").errors).is(
+            assert(lowercase.validate("as long as no uppercase").error).is(
                 undefined
             )
-            assert(lowercase.validate("whoOps").errors).snap(
+            assert(lowercase.validate("whoOps").error).snap(
                 `"'whoOps' is not assignable to lowercase."`
             )
         })
         test("uppercase", () => {
             const uppercase = create("uppercase")
             assert(uppercase.type).typed as string
-            assert(uppercase.validate("AS LONG AS NO LOWERCASE").errors).is(
+            assert(uppercase.validate("AS LONG AS NO LOWERCASE").error).is(
                 undefined
             )
-            assert(uppercase.validate("WHOoPS").errors).snap(
+            assert(uppercase.validate("WHOoPS").error).snap(
                 `"'WHOoPS' is not assignable to uppercase."`
+            )
+        })
+        test("character", () => {
+            const character = create("character")
+            assert(character.type).typed as string
+            assert(character.validate("!").error).is(undefined)
+            assert(character.validate(":(").error).snap(
+                `"':(' is not assignable to character."`
             )
         })
     })
@@ -283,24 +291,24 @@ export const testKeyword = () => {
         test("integer", () => {
             const integer = create("integer")
             assert(integer.type).typed as number
-            assert(integer.validate(5.0).errors).is(undefined)
-            assert(integer.validate(5.0001).errors).snap(
+            assert(integer.validate(5.0).error).is(undefined)
+            assert(integer.validate(5.0001).error).snap(
                 `"5.0001 is not assignable to integer."`
             )
         })
         test("positive", () => {
             const positive = create("positive")
             assert(positive.type).typed as number
-            assert(positive.validate(0.0001).errors).is(undefined)
-            assert(positive.validate(-0.0001).errors).snap(
+            assert(positive.validate(0.0001).error).is(undefined)
+            assert(positive.validate(-0.0001).error).snap(
                 `"-0.0001 is not assignable to positive."`
             )
         })
         test("nonNegative", () => {
             const nonNegative = create("nonnegative")
             assert(nonNegative.type).typed as number
-            assert(nonNegative.validate(0).errors).is(undefined)
-            assert(nonNegative.validate(-999).errors).snap(
+            assert(nonNegative.validate(0).error).is(undefined)
+            assert(nonNegative.validate(-999).error).snap(
                 `"-999 is not assignable to nonnegative."`
             )
         })

@@ -9,7 +9,7 @@ describe("inheritable configs", () => {
                 create({ name: "string" }).validate({
                     name: "David Blass",
                     age: 28
-                }).errors
+                }).error
             ).snap(`"Keys 'age' were unexpected."`)
         })
         test("ad hoc", () => {
@@ -18,7 +18,7 @@ describe("inheritable configs", () => {
                 user.validate(
                     { name: "David Blass", age: 28 },
                     { ignoreExtraneousKeys: true }
-                ).errors
+                ).error
             ).is(undefined)
         })
         test("create options", () => {
@@ -26,7 +26,7 @@ describe("inheritable configs", () => {
                 { name: "string" },
                 { validate: { ignoreExtraneousKeys: true } }
             )
-            assert(user.validate({ name: "David Blass", age: 28 }).errors).is(
+            assert(user.validate({ name: "David Blass", age: 28 }).error).is(
                 undefined
             )
         })
@@ -43,7 +43,7 @@ describe("inheritable configs", () => {
                 user.validate({
                     name: "David Blass",
                     age: 28
-                }).errors
+                }).error
             ).is(undefined)
         })
         test("space config", () => {
@@ -57,7 +57,7 @@ describe("inheritable configs", () => {
                 user.validate({
                     name: "David Blass",
                     age: 28
-                }).errors
+                }).error
             ).is(undefined)
         })
         test("precedence", () => {

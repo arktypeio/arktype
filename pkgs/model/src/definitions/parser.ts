@@ -12,15 +12,16 @@ import { SpaceResolutions } from "../space.js"
 import { ValidationErrors, unknownTypeError } from "../errors.js"
 import { Root } from "./root.js"
 import { Obj } from "./obj/index.js"
-import { GenerateConfig, ModelConfig, ReferencesConfig } from "../model.js"
+import {
+    GenerateConfig,
+    ModelConfig,
+    ReferencesConfig,
+    ValidateConfig
+} from "../model.js"
 
 export type MatchesArgs<DefType> = {
     definition: DefType
     resolutions: SpaceResolutions
-}
-
-export type ValidateOptions = {
-    ignoreExtraneousKeys?: boolean
 }
 
 export type ParseContext = {
@@ -74,7 +75,7 @@ export type InheritableMethods<DefType, Components> = {
         ...args: [
             methodContext: InheritableMethodContext<DefType, Components>,
             value: unknown,
-            options: ValidateOptions
+            options: ValidateConfig
         ]
     ) => ValidationErrors
     references?: (

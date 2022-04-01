@@ -113,17 +113,10 @@ export type ModelConfig = {
     space?: Spacefication
 }
 
-type ValidationErrorFormats = {
-    message: string
-    map: ValidationErrors
-}
-
-type ValidationErrorFormat = keyof ValidationErrorFormats
-
 export type ValidateConfig = {
     ignoreExtraneousKeys?: boolean
-    errorFormat?: ValidationErrorFormat
     validator?: CustomValidator
+    verbose?: boolean
 }
 
 export type CustomValidator = (
@@ -132,20 +125,15 @@ export type CustomValidator = (
     ctx: Omit<InheritableMethodContext<any, any>, "components">
 ) => string | ValidationErrors
 
-export type AssertOptions = Omit<ValidateConfig, "errorFormat">
-
-export type ValidationResult<ErrorFormat extends ValidationErrorFormat> = {
-    errors?: ValidationErrorFormats[ErrorFormat]
-}
+export type AssertOptions = ValidateConfig
 
 export type ValidateFunction = <Options extends ValidateConfig>(
     value: unknown,
     options?: Options
-) => ValidationResult<
-    Options["errorFormat"] extends ValidationErrorFormat
-        ? Options["errorFormat"]
-        : "message"
->
+) => {
+    error?: string
+    errorsByPath?: ValidationErrors
+}
 
 const createRootValidate =
     (
@@ -154,21 +142,20 @@ const createRootValidate =
         customValidator: CustomValidator | undefined
     ): ValidateFunction =>
     (value, options) => {
-        let errors = validate(value, options)
+        let errorsByPath = validate(value, options)
         if (customValidator) {
-            errors = errorsFromCustomValidator(customValidator, [
+            errorsByPath = errorsFromCustomValidator(customValidator, [
                 value,
-                errors,
+                errorsByPath,
                 { def: definition, ctx: defaultParseContext }
             ])
         }
-        if (isEmpty(errors)) {
-            return {} as any
-        }
-        if (options?.errorFormat === "map") {
-            return { errors }
-        }
-        return { errors: stringifyErrors(errors) }
+        return isEmpty(errorsByPath)
+            ? {}
+            : {
+                  error: stringifyErrors(errorsByPath),
+                  errorsByPath: errorsByPath
+              }
     }
 
 export const createCreateFunction =
@@ -207,9 +194,9 @@ export const createCreateFunction =
             references,
             generate,
             assert: (value: unknown, options?: AssertOptions) => {
-                const { errors } = validate(value, options)
-                if (errors) {
-                    throw new Error(errors)
+                const { error } = validate(value, options)
+                if (error) {
+                    throw new Error(error)
                 }
             }
         } as any

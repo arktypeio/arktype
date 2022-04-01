@@ -79,7 +79,8 @@ export namespace Intersection {
                         def,
                         valueType,
                         errors,
-                        delimiter: "&"
+                        delimiter: "&",
+                        verbose: !!opts.verbose
                     })
                 })
             },

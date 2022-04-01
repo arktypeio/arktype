@@ -1,8 +1,7 @@
 import { define } from "../multifile.assert.js"
 
-export const getUserDef = () =>
-    define.user({
-        name: "string",
-        bestFriend: "user?",
-        groups: "group[]"
-    })
+export const userDef = define.user({
+    name: "string",
+    bestFriend: "user?",
+    groups: "group[]"
+})

@@ -9,8 +9,8 @@ export const testTuple = () => {
             assert(empty.type).typed as []
         })
         test("validation", () => {
-            assert(empty.validate([]).errors).is(undefined)
-            assert(empty.validate({}).errors).snap(
+            assert(empty.validate([]).error).is(undefined)
+            assert(empty.validate({}).error).snap(
                 `"{} is not assignable to []."`
             )
         })
@@ -39,22 +39,22 @@ export const testTuple = () => {
         })
         describe("validation", () => {
             test("standard", () => {
-                assert(shallow.validate(["violin", 42, 6]).errors).is(undefined)
+                assert(shallow.validate(["violin", 42, 6]).error).is(undefined)
             })
             describe("errors", () => {
                 test("bad item value", () => {
-                    assert(shallow.validate(["violin", 42n, 6]).errors).snap(
+                    assert(shallow.validate(["violin", 42n, 6]).error).snap(
                         `"At index 1, 42n is not assignable to number."`
                     )
                 })
                 test("too short", () => {
-                    assert(shallow.validate(["violin", 42]).errors).snap(
+                    assert(shallow.validate(["violin", 42]).error).snap(
                         `"Tuple of length 2 is not assignable to tuple of length 3."`
                     )
                 })
                 test("too long", () => {
                     assert(
-                        shallow.validate(["violin", 42, 6, null]).errors
+                        shallow.validate(["violin", 42, 6, null]).error
                     ).snap(
                         `"Tuple of length 4 is not assignable to tuple of length 3."`
                     )
@@ -83,7 +83,7 @@ export const testTuple = () => {
                         "Cuckoo",
                         ["Swallow", "Oriole", "Condor"],
                         []
-                    ]).errors
+                    ]).error
                 ).is(undefined)
             })
             describe("errors", () => {
@@ -92,7 +92,7 @@ export const testTuple = () => {
                         nested.validate([
                             "Cuckoo",
                             ["Swallow", "Oriole", "Gondor"]
-                        ]).errors
+                        ]).error
                     ).snap(
                         `"Tuple of length 2 is not assignable to tuple of length 3."`
                     )
@@ -103,10 +103,15 @@ export const testTuple = () => {
                             "Clock",
                             ["Swallow", "Oriole", "Gondor"],
                             ["Too long"]
-                        ]).errors
-                    ).snap(
-                        `"{0: ''Clock' is not assignable to 'Cuckoo'.', 2: 'Tuple of length 1 is not assignable to tuple of length 0.', 1/2: ''Gondor' is not assignable to 'Condor'.'}"`
-                    )
+                        ]).error
+                    ).snap(`
+"Encountered errors at the following paths:
+{
+  0: ''Clock' is not assignable to 'Cuckoo'.',
+  2: 'Tuple of length 1 is not assignable to tuple of length 0.',
+  1/2: ''Gondor' is not assignable to 'Condor'.'
+}"
+`)
                 })
             })
         })

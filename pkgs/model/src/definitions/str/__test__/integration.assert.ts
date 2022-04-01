@@ -31,7 +31,7 @@ export const testIntegration = () => {
         })
         expect(a.definition).toBe("a")
         expect(a.space).toStrictEqual({ resolutions: { a: "true" } })
-        expect(a.validate(true).errors).toBeFalsy()
+        expect(a.validate(true).error).toBeFalsy()
         expect(() => a.assert(false)).toThrow()
         expect(a.generate()).toBe(true)
         expect(a.type).toBe(typeDefProxy)

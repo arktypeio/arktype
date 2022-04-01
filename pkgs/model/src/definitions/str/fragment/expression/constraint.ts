@@ -5,7 +5,8 @@ import {
     isNumeric,
     narrow,
     NumericString,
-    Spliterate
+    Spliterate,
+    toString
 } from "@re-/tools"
 import { numberKeywords, stringKeywords } from "../reference/index.js"
 import {
@@ -52,7 +53,11 @@ const buildComparatorErrorMessage = (
     value: string,
     bound: number,
     isString: boolean
-) => `${value} was ${comparatorError} ${bound}${isString ? " characters" : ""}.`
+) =>
+    `${toString(value, {
+        quotes: "none",
+        maxNestedStringLength: 50
+    })} was ${comparatorError} ${bound}${isString ? " characters" : ""}.`
 
 const comparators: {
     [K in ComparatorToken]: (

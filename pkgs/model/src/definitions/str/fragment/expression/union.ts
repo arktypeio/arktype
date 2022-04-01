@@ -96,7 +96,8 @@ export namespace Union {
                         def,
                         valueType,
                         errors,
-                        delimiter: "|"
+                        delimiter: "|",
+                        verbose: !!opts.verbose
                     })
                 })
             },

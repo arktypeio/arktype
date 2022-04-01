@@ -1,6 +1,4 @@
-import { TestResult } from "@jest/types"
 import {
-    DeepUnlisted,
     DefaultDelimiter,
     ElementOf,
     Iteration,
@@ -9,7 +7,6 @@ import {
     Stringifiable
 } from "./common.js"
 import { FilterFunction } from "./filter.js"
-import { WithDefaults } from "./merge.js"
 
 export const alphaOnlyRegex = /^[a-zA-Z]+$/
 

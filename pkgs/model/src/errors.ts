@@ -13,7 +13,7 @@ import { ParseContext } from "./definitions/parser.js"
 import { ExtractableDefinition } from "./internal.js"
 
 export const stringifyDefinition = (def: unknown) =>
-    toString(def, { quotes: "none" })
+    toString(def, { quotes: "none", maxNestedStringLength: 50 })
 
 export const definitionTypeError = (definition: unknown, path: string[]) =>
     `Definition value ${stringifyDefinition(definition)}${stringifyPathContext(
@@ -88,22 +88,24 @@ export type SplittableErrors = Record<string, string>
 export type SplittableErrorArgs = BaseAssignmentArgs & {
     delimiter: "|" | "&"
     errors: SplittableErrors
+    verbose: boolean
 }
 
 export const splittableValidationErrorTemplate =
-    "@valueType is not assignable to @components of @def:\n@errors"
+    "@valueType is not assignable to @components of @def.@errors"
 
 export const splittableValidationError = ({
     def,
     valueType,
     errors,
-    delimiter
+    delimiter,
+    verbose
 }: SplittableErrorArgs) =>
     splittableValidationErrorTemplate
         .replace("@valueType", stringifyDefinition(valueType))
         .replace("@components", delimiter === "|" ? "any" : "all")
         .replace("@def", stringifyDefinition(def))
-        .replace("@errors", stringifyErrors(errors))
+        .replace("@errors", verbose ? "\n" + stringifyErrors(errors) : "")
 
 export type BaseParseArgs = {
     def: unknown
@@ -258,5 +260,7 @@ export const stringifyErrors = (errors: ValidationErrors) => {
                 : ""
         }${errorPath ? uncapitalize(errors[errorPath]) : errors[errorPath]}`
     }
-    return toString(errors)
+    return `Encountered errors at the following paths:\n${toString(errors, {
+        indent: 2
+    })}`
 }

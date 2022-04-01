@@ -16,22 +16,22 @@ describe("custom validators", () => {
         const palindrome = create("string", {
             validate: { validator }
         })
-        assert(palindrome.validate("amanaplanacanalpanama").errors).is(
+        assert(palindrome.validate("step on no pets").errorsByPath).is(
             undefined
         )
-        assert(palindrome.validate("ssalbdivad").errors).is(
-            `ssalbdivad is not a palindrome!`
-        )
+        assert(palindrome.validate("step on your cat").errorsByPath).equals({
+            "": `step on your cat is not a palindrome!`
+        })
     })
     test("model root", () => {
         const space = compile(
             { palindrome: "string" },
             { models: { palindrome: { validate: { validator } } } }
         )
-        assert(space.models.palindrome.validate("redivider").errors).is(
+        assert(space.models.palindrome.validate("redivider").error).is(
             undefined
         )
-        assert(space.models.palindrome.validate("predivider").errors).is(
+        assert(space.models.palindrome.validate("predivider").error).is(
             `predivider is not a palindrome!`
         )
     })
@@ -46,10 +46,10 @@ describe("custom validators", () => {
                 }
             }
         )
-        assert(space.models.yourPal.validate({ name: "bob" }).errors).is(
+        assert(space.models.yourPal.validate({ name: "bob" }).error).is(
             undefined
         )
-        assert(space.models.yourPal.validate({ name: "rob" }).errors).snap(
+        assert(space.models.yourPal.validate({ name: "rob" }).error).snap(
             `"At path name, rob is not a palindrome!"`
         )
     })
@@ -75,8 +75,14 @@ describe("custom validators", () => {
         assert(
             space
                 .create({ something: "second" })
-                .validate({ something: { comesAfter: "no" } }).errors
-        ).snap(`"{from/first: 'test', from/second: 'hi'}"`)
+                .validate({ something: { comesAfter: "no" } }).error
+        ).snap(`
+"Encountered errors at the following paths:
+{
+  from/first: 'test',
+  from/second: 'hi'
+}"
+`)
     })
     test("can access standard validation errors and ctx", () => {
         const num = create("number", {
@@ -94,8 +100,8 @@ describe("custom validators", () => {
                 }
             }
         })
-        assert(num.validate(7.43).errors).is(undefined)
-        assert(num.validate("ssalbdivad").errors).snap(
+        assert(num.validate(7.43).error).is(undefined)
+        assert(num.validate("ssalbdivad").error).snap(
             `"'ssalbdivad' is not assignable to number.!!!"`
         )
     })
