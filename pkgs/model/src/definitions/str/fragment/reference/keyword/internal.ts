@@ -4,10 +4,10 @@ import { InheritableMethodContext } from "../internal.js"
 export * from "../internal.js"
 
 export type KeywordHandler = {
-    generate: (ctx: InheritableMethodContext<string, unknown>[0]) => any
+    generate: (ctx: InheritableMethodContext<string, unknown>) => any
     validate: (
         valueType: unknown,
-        ctx: InheritableMethodContext<string, unknown>[0]
+        ctx: InheritableMethodContext<string, unknown>
     ) => boolean
 }
 
