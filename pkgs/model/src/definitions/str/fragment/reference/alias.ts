@@ -10,7 +10,7 @@ import {
 } from "./internal.js"
 import { Root } from "../../../root.js"
 import { Reference } from "./index.js"
-import { validationError } from "../internal.js"
+import { errorsFromCustomValidator } from "../internal.js"
 
 export namespace Alias {
     export type Definition<Resolutions> = keyof Resolutions & string
@@ -128,13 +128,14 @@ export namespace Alias {
                     ctx.config.space?.config?.validate?.validator ??
                     undefined
                 if (customValidator) {
-                    const customResult = customValidator(value, errors, ctx)
-                    return typeof customResult === "string"
-                        ? validationError({
-                              path: ctx.path,
-                              message: customResult
-                          })
-                        : customResult
+                    return errorsFromCustomValidator(customValidator, [
+                        value,
+                        errors,
+                        {
+                            def,
+                            ctx
+                        }
+                    ])
                 }
                 return errors
             },

@@ -1,6 +1,6 @@
 import { assert } from "@re-/assert"
 import { create, compile } from "@re-/model"
-import { lazily, narrow } from "@re-/tools"
+import { narrow } from "@re-/tools"
 
 describe("inheritable configs", () => {
     describe("methods", () => {
@@ -139,7 +139,7 @@ describe("inheritable configs", () => {
                 ).typed as {
                     recursionIs: "create"
                 }
-                // Space has the last priority
+                // Space has the least priority
                 assert(space.create("recursionIs").type).typed as {
                     recursionIs: "space"
                 }

@@ -12,7 +12,7 @@ import { SpaceResolutions } from "../space.js"
 import { ValidationErrors, unknownTypeError } from "../errors.js"
 import { Root } from "./root.js"
 import { Obj } from "./obj/index.js"
-import { GenerateOptions, ModelConfig, ReferencesOptions } from "../model.js"
+import { GenerateConfig, ModelConfig, ReferencesConfig } from "../model.js"
 
 export type MatchesArgs<DefType> = {
     definition: DefType
@@ -64,31 +64,29 @@ export type MethodsArg<Children, Methods> = Children extends never[]
     ? [methods: Required<Methods>]
     : [methods?: Methods]
 
-export type InheritableMethodContext<DefType, Components> = [
-    args: {
-        def: DefType
-        ctx: ParseContext
-    } & (unknown extends Components ? {} : { components: Components })
-]
+export type InheritableMethodContext<DefType, Components> = {
+    def: DefType
+    ctx: ParseContext
+} & (unknown extends Components ? {} : { components: Components })
 
 export type InheritableMethods<DefType, Components> = {
     validate?: (
         ...args: [
-            ...args: InheritableMethodContext<DefType, Components>,
+            methodContext: InheritableMethodContext<DefType, Components>,
             value: unknown,
             options: ValidateOptions
         ]
     ) => ValidationErrors
     references?: (
         ...args: [
-            ...args: InheritableMethodContext<DefType, Components>,
-            options: ReferencesOptions
+            methodContext: InheritableMethodContext<DefType, Components>,
+            options: ReferencesConfig
         ]
     ) => DefType extends Obj.Definition ? TreeOf<string[]> : string[]
     generate?: (
         ...args: [
-            ...args: InheritableMethodContext<DefType, Components>,
-            options: GenerateOptions
+            methodContext: InheritableMethodContext<DefType, Components>,
+            options: GenerateConfig
         ]
     ) => any
 }

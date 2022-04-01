@@ -7,19 +7,22 @@ import {
     transform,
     IsAny,
     Exact,
-    Merge,
-    WithDefaults
+    WithDefaults,
+    ExactObject,
+    NonRecursible,
+    CastWithExclusion
 } from "@re-/tools"
 import {
     createCreateFunction,
     CreateFunction,
     Model,
     ModelConfig,
-    ParseOptions,
-    DefaultParseOptions
+    ParseConfig,
+    DefaultParseOptions,
+    CustomValidator
 } from "./model.js"
 import { Map, Root } from "./definitions/index.js"
-import { DefaultTypeOfContext, typeDefProxy } from "./internal.js"
+import { DefaultTypeOfContext, typeDefProxy, MergeObjects } from "./internal.js"
 import { ValidateResolution } from "./resolution.js"
 import { DefaultParseTypeContext } from "./definitions/internal.js"
 
@@ -33,23 +36,23 @@ export type ValidateSpaceResolutions<
     : Evaluate<{
           [TypeName in keyof Resolutions]: ValidateResolution<
               Resolutions[TypeName],
-              Merge<SuperSpaceResolutions, Resolutions>
+              MergeObjects<SuperSpaceResolutions, Resolutions>
           >
       }>
 
 export type ParseSpaceResolutions<
     Resolutions extends SpaceResolutions,
-    ParseConfig extends ParseOptions
+    Config extends ParseConfig
 > = Evaluate<{
     [TypeName in keyof Resolutions]: Model<
         Resolutions[TypeName],
         {
             resolutions: ValidateSpaceResolutions<Resolutions>
-            config: { parse: ParseConfig }
+            config: { parse: Config }
         },
         WithDefaults<
-            ParseOptions,
             ParseConfig,
+            Config,
             DefaultParseOptions & { seen: { [K in TypeName]: true } }
         >
     >
@@ -101,17 +104,13 @@ export const createCompileFunction =
             config,
             models: transform(resolutions, ([typeName, definition]) => [
                 typeName,
-                create(definition)
+                create(definition, { ...config, ...config?.models?.[typeName] })
             ]),
             types: typeDefProxy,
             create,
             extend
         } as any
     }
-
-// Exported compile function is equivalent to compile from an empty declare call
-// and will not validate missing or extraneous definitions
-export const compile = createCompileFunction([])
 
 export type CheckCompileResolutions<
     Resolutions,
@@ -134,27 +133,14 @@ export type SpaceOptions<
     ModelName extends string = keyof Resolutions & string
 > = ModelConfig & {
     models?: {
-        [Name in ModelName]?: ModelConfig
+        [Name in ModelName]?: Omit<ModelConfig, "parse">
     }
 }
 
-export type CompileFunction<DeclaredTypeNames extends string[]> = <
-    Resolutions extends SpaceResolutions,
-    Options extends SpaceOptions<Resolutions> = {}
->(
-    resolutions: Narrow<
-        Exact<
-            Resolutions,
-            CheckCompileResolutions<Resolutions, DeclaredTypeNames>
-        >
-    >,
-    config?: Narrow<Options>
-) => Space<Resolutions, Options>
-
-type ExtendSpaceConfig<OriginalConfig, NewConfig> = Merge<
-    Merge<OriginalConfig, NewConfig>,
+type ExtendSpaceConfig<OriginalConfig, NewConfig> = MergeObjects<
+    MergeObjects<OriginalConfig, NewConfig>,
     {
-        models: Merge<
+        models: MergeObjects<
             KeyValuate<OriginalConfig, "models">,
             KeyValuate<NewConfig, "models">
         >
@@ -167,7 +153,7 @@ type ExtendSpaceFunction<
 > = <
     NewResolutions extends SpaceResolutions,
     NewConfig extends SpaceOptions<MergedResolutions>,
-    MergedResolutions extends SpaceResolutions = Merge<
+    MergedResolutions extends SpaceResolutions = MergeObjects<
         OriginalResolutions,
         NewResolutions
     >
@@ -210,3 +196,25 @@ export type Space<
     extend: ExtendSpaceFunction<Resolutions, Config>
     // TODO: Add declare extension
 }>
+
+export type CompileFunction<DeclaredTypeNames extends string[]> = <
+    Resolutions extends SpaceResolutions,
+    Options extends SpaceOptions<Resolutions> = {}
+>(
+    resolutions: Narrow<
+        Exact<
+            Resolutions,
+            CheckCompileResolutions<Resolutions, DeclaredTypeNames>
+        >
+    >,
+    // TS has a problem inferring the narrowed type of a function hence the intersection hack
+    // If removing it doesn't break any types or tests, do it!
+    config?: Narrow<Options> & {
+        validate?: { validator?: CustomValidator }
+        models?: { [Name in keyof Resolutions]?: Omit<ModelConfig, "parse"> }
+    }
+) => Space<Resolutions, Options>
+
+// Exported compile function is equivalent to compile from an empty declare call
+// and will not validate missing or extraneous definitions
+export const compile = createCompileFunction([])

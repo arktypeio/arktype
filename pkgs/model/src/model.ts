@@ -4,24 +4,26 @@ import {
     IsAny,
     WithDefaults,
     isEmpty,
-    Merge,
-    KeyValuate,
-    ValueAtPath
+    KeyValuate
 } from "@re-/tools"
 import { Root } from "./definitions/index.js"
-import { ParseContext, defaultParseContext } from "./definitions/parser.js"
+import {
+    ParseContext,
+    defaultParseContext,
+    InheritableMethodContext
+} from "./definitions/parser.js"
 import {
     duplicateSpaceError,
-    DuplicateSpaceError,
     stringifyErrors,
     ValidationErrors
 } from "./errors.js"
+import { ValidateSpaceResolutions, Spacefication } from "./space.js"
 import {
-    ValidateSpaceResolutions,
-    Spacefication,
-    SpaceOptions
-} from "./space.js"
-import { MergeOptions, ReferencesTypeConfig, typeDefProxy } from "./internal.js"
+    errorsFromCustomValidator,
+    MergeObjects,
+    ReferencesTypeConfig,
+    typeDefProxy
+} from "./internal.js"
 import { DefaultParseTypeContext } from "./definitions/internal.js"
 
 export type Definition = Root.Definition
@@ -33,9 +35,9 @@ export type Validate<Def, Resolutions> = IsAny<Def> extends true
 export type TypeOf<
     Def,
     Resolutions,
-    Options extends ParseOptions = {},
-    OptionsWithDefaults extends Required<ParseOptions> = WithDefaults<
-        ParseOptions,
+    Options extends ParseConfig = {},
+    OptionsWithDefaults extends Required<ParseConfig> = WithDefaults<
+        ParseConfig,
         Options,
         DefaultParseOptions
     >,
@@ -83,7 +85,7 @@ export type CheckReferences<
     }
 >
 
-export type ParseOptions = {
+export type ParseConfig = {
     onCycle?: Definition
     deepOnCycle?: boolean
     onResolve?: Definition
@@ -95,19 +97,19 @@ export type DefaultParseOptions = {
     onResolve: never
 }
 
-export type ReferencesOptions = {}
+export type ReferencesConfig = {}
 
-export type GenerateOptions = {
+export type GenerateConfig = {
     // By default, generate will throw if it encounters a cyclic required type
     // If this options is provided, it will return its value instead
     onRequiredCycle?: any
 }
 
 export type ModelConfig = {
-    parse?: ParseOptions
+    parse?: ParseConfig
     validate?: ValidateConfig
-    generate?: GenerateOptions
-    references?: ReferencesOptions
+    generate?: GenerateConfig
+    references?: ReferencesConfig
     space?: Spacefication
 }
 
@@ -124,12 +126,10 @@ export type ValidateConfig = {
     validator?: CustomValidator
 }
 
-export type ValidateOptions = Omit<ValidateConfig, "validator">
-
 export type CustomValidator = (
     value: unknown,
     errors: ValidationErrors,
-    ctx: ParseContext
+    ctx: Omit<InheritableMethodContext<any, any>, "components">
 ) => string | ValidationErrors
 
 export type AssertOptions = Omit<ValidateConfig, "errorFormat">
@@ -138,7 +138,7 @@ export type ValidationResult<ErrorFormat extends ValidationErrorFormat> = {
     errors?: ValidationErrorFormats[ErrorFormat]
 }
 
-export type ValidateFunction = <Options extends ValidateOptions>(
+export type ValidateFunction = <Options extends ValidateConfig>(
     value: unknown,
     options?: Options
 ) => ValidationResult<
@@ -148,9 +148,20 @@ export type ValidateFunction = <Options extends ValidateOptions>(
 >
 
 const createRootValidate =
-    (validate: ReturnType<typeof Root.parse>["validate"]): ValidateFunction =>
+    (
+        validate: ReturnType<typeof Root.parse>["validate"],
+        definition: Root.Definition,
+        customValidator: CustomValidator | undefined
+    ): ValidateFunction =>
     (value, options) => {
-        const errors = validate(value, options)
+        let errors = validate(value, options)
+        if (customValidator) {
+            errors = errorsFromCustomValidator(customValidator, [
+                value,
+                errors,
+                { def: definition, ctx: defaultParseContext }
+            ])
+        }
         if (isEmpty(errors)) {
             return {} as any
         }
@@ -172,6 +183,7 @@ export const createCreateFunction =
             config?.space ?? { resolutions: {} }
         const context: ParseContext = {
             ...defaultParseContext,
+            // @ts-ignore
             config: {
                 ...config,
                 space
@@ -182,7 +194,11 @@ export const createCreateFunction =
             references,
             generate
         } = Root.parse(definition, context)
-        const validate = createRootValidate(internalValidate)
+        const validate = createRootValidate(
+            internalValidate,
+            definition,
+            config?.validate?.validator
+        )
         return {
             type: typeDefProxy,
             space,
@@ -202,43 +218,38 @@ export const createCreateFunction =
 export type CreateFunction<PredefinedSpace extends Spacefication | null> = <
     Def,
     Options extends ModelConfig = {},
-    ProvidedSpace extends Spacefication = { resolutions: {} },
     ActiveSpace extends Spacefication = PredefinedSpace extends null
-        ? ProvidedSpace
+        ? Options["space"] extends Spacefication
+            ? Options["space"]
+            : { resolutions: {} }
         : PredefinedSpace
 >(
     definition: Validate<Narrow<Def>, ActiveSpace["resolutions"]>,
-    options?: Narrow<
-        Options & {
-            space?: PredefinedSpace extends null
-                ? ProvidedSpace
-                : {
-                      errors: DuplicateSpaceError
-                  }
-        }
-    >
+    // TS has a problem inferring the narrowed type of a function hence the intersection hack
+    // If removing it doesn't break any types or tests, do it!
+    options?: Narrow<Options> & { validate?: { validator?: CustomValidator } }
 ) => Model<
     Def,
     Evaluate<ActiveSpace>,
-    Options["parse"] extends ParseOptions ? Options["parse"] : {}
+    Options["parse"] extends ParseConfig ? Options["parse"] : {}
 >
 
 export type Model<
     Def,
     Space extends Spacefication,
-    Options extends ParseOptions,
-    SpaceParseConfig extends ParseOptions = KeyValuate<
+    Options extends ParseConfig,
+    SpaceParseConfig extends ParseConfig = KeyValuate<
         Space["config"],
         "parse"
-    > extends ParseOptions
+    > extends ParseConfig
         ? KeyValuate<Space["config"], "parse">
         : {},
     ModelType = TypeOf<
         Def,
         Space["resolutions"],
         WithDefaults<
-            ParseOptions,
-            MergeOptions<SpaceParseConfig, Options>,
+            ParseConfig,
+            MergeObjects<SpaceParseConfig, Options>,
             DefaultParseOptions
         >
     >
@@ -249,9 +260,9 @@ export type Model<
     config: ModelConfig
     validate: ValidateFunction
     assert: (value: unknown, options?: AssertOptions) => void
-    generate: (options?: GenerateOptions) => ModelType
+    generate: (options?: GenerateConfig) => ModelType
     references: (
-        options?: ReferencesOptions
+        options?: ReferencesConfig
     ) => ReferencesOf<Def, Space["resolutions"], { asList: true }>
 }>
 

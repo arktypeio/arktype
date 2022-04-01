@@ -207,9 +207,8 @@ describe("compile", () => {
         const space = compile({ a: "string" })
         assert(() =>
             space.create("a", {
-                // @ts-expect-error
                 space: { resolutions: {} }
             })
-        ).throwsAndHasTypeError(duplicateSpaceError)
+        ).throws(duplicateSpaceError)
     })
 })
