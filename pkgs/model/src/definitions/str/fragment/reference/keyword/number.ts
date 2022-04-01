@@ -13,15 +13,7 @@ export const numberHandlers = defineKeywords({
         generate: () => 1,
         validate: (valueType) => typeof valueType === "number" && valueType > 0
     },
-    negative: {
-        generate: () => -1,
-        validate: (valueType) => typeof valueType === "number" && valueType < 0
-    },
-    nonPositive: {
-        generate: () => 0,
-        validate: (valueType) => typeof valueType === "number" && valueType <= 0
-    },
-    nonNegative: {
+    nonnegative: {
         generate: () => 0,
         validate: (valueType) => typeof valueType === "number" && valueType >= 0
     }

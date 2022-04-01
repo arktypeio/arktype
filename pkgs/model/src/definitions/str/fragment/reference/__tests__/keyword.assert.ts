@@ -21,7 +21,6 @@ export const testKeyword = () => {
         const { type, generate, validate } = create("number")
         test("type", () => {
             assert(type).typed as number
-            assert(create("integer").type).typed as number
         })
         test("generation", () => {
             assert(generate()).is(0)
@@ -231,6 +230,78 @@ export const testKeyword = () => {
             )
             assert(validate(undefined).errors).snap(
                 `"undefined is not assignable to never."`
+            )
+        })
+    })
+    describe("string subtypes", () => {
+        test("email", () => {
+            const email = create("email")
+            assert(email.type).typed as string
+            assert(email.validate("david@redo.dev").errors).is(undefined)
+            assert(email.validate("david@redo@dev").errors).snap(
+                `"'david@redo@dev' is not assignable to email."`
+            )
+        })
+        test("alpha", () => {
+            const alpha = create("alpha")
+            assert(alpha.type).typed as string
+            assert(alpha.validate("aBc").errors).is(undefined)
+            assert(alpha.validate("a B c").errors).snap(
+                `"'a B c' is not assignable to alpha."`
+            )
+        })
+        test("alphanumeric", () => {
+            const alphaNumeric = create("alphanumeric")
+            assert(alphaNumeric.type).typed as string
+            assert(alphaNumeric.validate("aBc123").errors).is(undefined)
+            assert(alphaNumeric.validate("aBc+123").errors).snap(
+                `"'aBc+123' is not assignable to alphanumeric."`
+            )
+        })
+        test("lowercase", () => {
+            const lowercase = create("lowercase")
+            assert(lowercase.type).typed as string
+            assert(lowercase.validate("as long as no uppercase").errors).is(
+                undefined
+            )
+            assert(lowercase.validate("whoOps").errors).snap(
+                `"'whoOps' is not assignable to lowercase."`
+            )
+        })
+        test("uppercase", () => {
+            const uppercase = create("uppercase")
+            assert(uppercase.type).typed as string
+            assert(uppercase.validate("AS LONG AS NO LOWERCASE").errors).is(
+                undefined
+            )
+            assert(uppercase.validate("WHOoPS").errors).snap(
+                `"'WHOoPS' is not assignable to uppercase."`
+            )
+        })
+    })
+    describe("number subtypes", () => {
+        test("integer", () => {
+            const integer = create("integer")
+            assert(integer.type).typed as number
+            assert(integer.validate(5.0).errors).is(undefined)
+            assert(integer.validate(5.0001).errors).snap(
+                `"5.0001 is not assignable to integer."`
+            )
+        })
+        test("positive", () => {
+            const positive = create("positive")
+            assert(positive.type).typed as number
+            assert(positive.validate(0.0001).errors).is(undefined)
+            assert(positive.validate(-0.0001).errors).snap(
+                `"-0.0001 is not assignable to positive."`
+            )
+        })
+        test("nonNegative", () => {
+            const nonNegative = create("nonnegative")
+            assert(nonNegative.type).typed as number
+            assert(nonNegative.validate(0).errors).is(undefined)
+            assert(nonNegative.validate(-999).errors).snap(
+                `"-999 is not assignable to nonnegative."`
             )
         })
     })

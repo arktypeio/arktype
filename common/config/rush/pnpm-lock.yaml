@@ -79,19 +79,15 @@ importers:
       '@re-/tools': workspace:*
       '@types/jest': 27.0.3
       '@types/node': 17.0.1
-      '@types/validator': 13.7.1
       jest: 27.4.5
       ts-jest: 27.1.2
       typescript: 4.6.3
-      validator: 13.7.0
     dependencies:
       '@re-/tools': link:../tools
-      validator: 13.7.0
     devDependencies:
       '@re-/assert': link:../assert
       '@types/jest': 27.0.3
       '@types/node': 17.0.1
-      '@types/validator': 13.7.1
       jest: 27.4.5
       ts-jest: 27.1.2_7d6e5f67acaa96443d44b2d7aa440b3e
       typescript: 4.6.3
@@ -3394,10 +3390,6 @@ packages:
   /@types/unist/2.0.6:
     resolution: {integrity: sha512-PBjIUxZHOuj0R15/xuwJYjFi+KZdNFrehocChv4g5hu6aFroHue8m0lBP0POdK2nKzbw0cgV1mws8+V/JAcEkQ==}
     dev: false
-
-  /@types/validator/13.7.1:
-    resolution: {integrity: sha512-I6OUIZ5cYRk5lp14xSOAiXjWrfVoMZVjDuevBYgQDYzZIjsf2CAISpEcXOkFAtpAHbmWIDLcZObejqny/9xq5Q==}
-    dev: true
 
   /@types/ws/8.5.3:
     resolution: {integrity: sha512-6YOoWjruKj1uLf3INHH7D3qTXwFfEsg1kf3c0uDdSBJwfa/llkwIjrAGV7j7mVgGNbzTQ3HiHKKDXl6bJPD97w==}
@@ -10121,11 +10113,6 @@ packages:
       '@types/istanbul-lib-coverage': 2.0.4
       convert-source-map: 1.8.0
       source-map: 0.7.3
-
-  /validator/13.7.0:
-    resolution: {integrity: sha512-nYXQLCBkpJ8X6ltALua9dRrZDHVYxjJ1wgskNt1lH9fzGjs3tgojGSCBjmEPwkWS1y29+DrizMTW19Pr9uB2nw==}
-    engines: {node: '>= 0.10'}
-    dev: false
 
   /value-equal/1.0.1:
     resolution: {integrity: sha512-NOJ6JZCAWr0zlxZt+xqCHNTEKOsrks2HQd4MqhP1qy4z1SkbEP467eNx6TgDKXMvUOb+OENfJCZwM+16n7fRfw==}

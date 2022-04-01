@@ -38,7 +38,7 @@ export const testIntersection = () => {
             )
         })
         test("keyword specifiers", () => {
-            assert(create("integer&nonNegative").validate(7).errors).is(
+            assert(create("integer&nonnegative").validate(7).errors).is(
                 undefined
             )
         })
