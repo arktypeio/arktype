@@ -1,5 +1,5 @@
 import { assert } from "@re-/assert"
-import { create, compile, declare } from "@re-/model"
+import { create, compile } from "@re-/model"
 
 describe("demo", () => {
     test("model", () => {
@@ -43,7 +43,7 @@ describe("demo", () => {
         const space = compile({
             user: {
                 name: "string",
-                friends: "user[]",
+                bestFriend: "user?",
                 groups: "group[]"
             },
             group: {
@@ -55,24 +55,21 @@ describe("demo", () => {
         // Typescript types can be extracted like this
         type User = typeof space.types.user
 
-        // Throws: "At path friends/0/groups/0, required keys 'members' were missing."
+        // Throws: "At path bestFriend/groups/0, required keys 'members' were missing."
         assert(() =>
             space.models.user.assert({
                 name: "Devin Aldai",
-                friends: [
-                    {
-                        name: "Devin Olnyt",
-                        friends: [], // :(
-                        groups: [{ title: "Type Enjoyers" }]
-                    }
-                ],
+                bestFriend: {
+                    name: "Devin Olnyt",
+                    groups: [{ title: "Type Enjoyers" }]
+                },
                 groups: []
             })
         ).throws(
-            "At path friends/0/groups/0, required keys 'members' were missing."
+            "At path bestFriend/groups/0, required keys 'members' were missing."
         )
         assert(space.types.user).type.toString.snap(
-            `"{ name: string; groups: { members: { name: string; groups: { members: any[]; title: string; }[]; friends: any[]; }[]; title: string; }[]; friends: { name: string; groups: { members: { name: string; groups: any[]; friends: any[]; }[]; title: string; }[]; friends: any[]; }[]; }"`
+            `"{ bestFriend?: { bestFriend?: any | undefined; name: string; groups: { members: { bestFriend?: any | undefined; name: string; groups: any[]; }[]; title: string; }[]; } | undefined; name: string; groups: { members: { bestFriend?: any | undefined; name: string; groups: { members: any[]; title: string; }[]; }[]; title: string; }[]; }"`
         )
     })
     // See multifile.assert.ts for declaration demo

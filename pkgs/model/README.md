@@ -70,7 +70,7 @@ Working with types that refer to one another or themselves? So can your models!
 const space = compile({
     user: {
         name: "string",
-        friends: "user[]",
+        bestFriend: "user?",
         groups: "group[]"
     },
     group: {
@@ -82,16 +82,13 @@ const space = compile({
 // Even recursive and cyclic types are precisely inferred
 type User = typeof space.types.user
 
-// Throws: "At path friends/0/groups/0, required keys 'members' were missing."
+// Throws: "At path bestFriend/groups/0, required keys 'members' were missing."
 space.models.user.assert({
     name: "Devin Aldai",
-    friends: [
-        {
-            name: "Devin Olnyt",
-            friends: [], // :(
-            groups: [{ title: "Type Enjoyers" }]
-        }
-    ],
+    bestFriend: {
+        name: "Devin Olnyt",
+        groups: [{ title: "Type Enjoyers" }]
+    },
     groups: []
 })
 ```
