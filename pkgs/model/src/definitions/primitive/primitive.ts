@@ -2,19 +2,22 @@ import { ListPossibleTypes, narrow } from "@re-/tools"
 import { typeDefProxy, createParser, validationError } from "./internal.js"
 import { Root } from "../root.js"
 import { ReferencesTypeConfig } from "../internal.js"
+import { typeOf } from "../../utils.js"
 
 export namespace Primitive {
     export type Definition = number | bigint | boolean | undefined | null
+
+    export type Node = Definition
 
     export type References<
         Def extends Definition,
         Config extends ReferencesTypeConfig,
         Result extends string = `${Def}${Def extends bigint ? "n" : ""}` &
             Config["filter"]
-    > = Config["asList"] extends true
-        ? ListPossibleTypes<Result>
-        : Config["asUnorderedList"] extends true
+    > = Config["asTuple"] extends true
         ? [Result]
+        : Config["asList"] extends true
+        ? Result[]
         : Result
 
     export const type = typeDefProxy as Definition
@@ -30,7 +33,8 @@ export namespace Primitive {
             matches: (definition) =>
                 typesOf.includes(typeof definition as any) ||
                 definition === null,
-            allows: ({ def, ctx: { path } }, valueType, opts) => {
+            validate: ({ def, ctx: { path } }, value, opts) => {
+                const valueType = typeOf(value)
                 if (typeof def === "number" || typeof def === "bigint") {
                     return def === valueType
                         ? {}

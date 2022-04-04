@@ -1,0 +1,10 @@
+{
+    "changes": [
+        {
+            "packageName": "@re-/node",
+            "comment": "Initial migration of node functionality from @re-/tools.",
+            "type": "major"
+        }
+    ],
+    "packageName": "@re-/node"
+}

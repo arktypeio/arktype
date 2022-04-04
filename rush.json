@@ -14,14 +14,20 @@
     },
     "projects": [
         {
+            "packageName": "@re-/node",
+            "projectFolder": "pkgs/node",
+            "cyclicDependencyProjects": ["@re-/tools"],
+            "shouldPublish": true
+        },
+        {
             "packageName": "@re-/tools",
             "projectFolder": "pkgs/tools",
-            "cyclicDependencyProjects": ["@re-/assert"],
             "shouldPublish": true
         },
         {
             "packageName": "@re-/assert",
             "projectFolder": "pkgs/assert",
+            "cyclicDependencyProjects": ["@re-/node", "@re-/tools"],
             "shouldPublish": true
         },
         {

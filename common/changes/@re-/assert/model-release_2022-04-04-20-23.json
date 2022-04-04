@@ -1,0 +1,10 @@
+{
+    "changes": [
+        {
+            "packageName": "@re-/assert",
+            "comment": "Use @re-/node for node utilities.",
+            "type": "patch"
+        }
+    ],
+    "packageName": "@re-/assert"
+}

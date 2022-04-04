@@ -1,16 +1,16 @@
 import { assert } from "@re-/assert"
-import { define } from "@re-/model"
+import { create } from "@re-/model"
 import { lazily } from "@re-/tools"
 
 export const testTuple = () => {
     describe("empty", () => {
-        const empty = lazily(() => define([]))
+        const empty = lazily(() => create([]))
         test("type", () => {
             assert(empty.type).typed as []
         })
         test("validation", () => {
-            assert(empty.validate([]).errors).is(undefined)
-            assert(empty.validate({}).errors).snap(
+            assert(empty.validate([]).error).is(undefined)
+            assert(empty.validate({}).error).snap(
                 `"{} is not assignable to []."`
             )
         })
@@ -19,7 +19,7 @@ export const testTuple = () => {
         })
     })
     describe("shallow", () => {
-        const shallow = lazily(() => define(["string", "number", 6]))
+        const shallow = lazily(() => create(["string", "number", 6]))
         describe("type", () => {
             test("standard", () => {
                 assert(shallow.type).typed as [string, number, 6]
@@ -28,7 +28,7 @@ export const testTuple = () => {
                 test("invalid item definition", () => {
                     assert(() =>
                         // @ts-expect-error
-                        define(["string", ["number", "boolean", "whoops"]])
+                        create(["string", ["number", "boolean", "whoops"]])
                     )
                         .throws(
                             "Unable to determine the type of 'whoops' at path 1/2."
@@ -39,22 +39,22 @@ export const testTuple = () => {
         })
         describe("validation", () => {
             test("standard", () => {
-                assert(shallow.validate(["violin", 42, 6]).errors).is(undefined)
+                assert(shallow.validate(["violin", 42, 6]).error).is(undefined)
             })
             describe("errors", () => {
                 test("bad item value", () => {
-                    assert(shallow.validate(["violin", 42n, 6]).errors).snap(
+                    assert(shallow.validate(["violin", 42n, 6]).error).snap(
                         `"At index 1, 42n is not assignable to number."`
                     )
                 })
                 test("too short", () => {
-                    assert(shallow.validate(["violin", 42]).errors).snap(
+                    assert(shallow.validate(["violin", 42]).error).snap(
                         `"Tuple of length 2 is not assignable to tuple of length 3."`
                     )
                 })
                 test("too long", () => {
                     assert(
-                        shallow.validate(["violin", 42, 6, null]).errors
+                        shallow.validate(["violin", 42, 6, null]).error
                     ).snap(
                         `"Tuple of length 4 is not assignable to tuple of length 3."`
                     )
@@ -67,7 +67,7 @@ export const testTuple = () => {
     })
     describe("nested", () => {
         const nested = lazily(() =>
-            define(["'Cuckoo'", ["'Swallow'", "'Oriole'", "'Condor'"], []])
+            create(["'Cuckoo'", ["'Swallow'", "'Oriole'", "'Condor'"], []])
         )
         test("type", () => {
             assert(nested.type).typed as [
@@ -83,7 +83,7 @@ export const testTuple = () => {
                         "Cuckoo",
                         ["Swallow", "Oriole", "Condor"],
                         []
-                    ]).errors
+                    ]).error
                 ).is(undefined)
             })
             describe("errors", () => {
@@ -92,7 +92,7 @@ export const testTuple = () => {
                         nested.validate([
                             "Cuckoo",
                             ["Swallow", "Oriole", "Gondor"]
-                        ]).errors
+                        ]).error
                     ).snap(
                         `"Tuple of length 2 is not assignable to tuple of length 3."`
                     )
@@ -103,10 +103,15 @@ export const testTuple = () => {
                             "Clock",
                             ["Swallow", "Oriole", "Gondor"],
                             ["Too long"]
-                        ]).errors
-                    ).snap(
-                        `"{0: ''Clock' is not assignable to 'Cuckoo'.', 2: 'Tuple of length 1 is not assignable to tuple of length 0.', 1/2: ''Gondor' is not assignable to 'Condor'.'}"`
-                    )
+                        ]).error
+                    ).snap(`
+"Encountered errors at the following paths:
+{
+  0: ''Clock' is not assignable to 'Cuckoo'.',
+  2: 'Tuple of length 1 is not assignable to tuple of length 0.',
+  1/2: ''Gondor' is not assignable to 'Condor'.'
+}"
+`)
                 })
             })
         })

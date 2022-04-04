@@ -3,52 +3,69 @@ import {
     DiffSetsResult,
     Evaluate,
     isRecursible,
-    RemoveSpaces,
     transform
 } from "@re-/tools"
 import {
-    ParseConfig,
+    TypeOfContext,
     mismatchedKeysError,
     validationError,
     ValidationErrors,
     typeDefProxy,
     createParser,
-    ParseResult
+    ParseResult,
+    ParseTypeContext
 } from "./internal.js"
 import { Root } from "../root.js"
 import { Obj } from "./obj.js"
-import { Optional } from "../str"
+import { Optional } from "../str/index.js"
+import { typeOf } from "../../utils.js"
 
 export namespace Map {
     export type Definition = Record<string, any>
 
-    export type Check<Def, Space> = Evaluate<{
-        [PropName in keyof Def]: Root.Check<Def[PropName], Space>
-    }>
-
-    export type Parse<
-        Def,
-        Space,
-        Options extends ParseConfig,
-        OptionalKey extends keyof Def = {
-            [K in keyof Def]: Def[K] extends string
-                ? RemoveSpaces<Def[K]> extends Optional.Definition
-                    ? K
-                    : never
-                : never
-        }[keyof Def],
-        RequiredKey extends keyof Def = Exclude<keyof Def, OptionalKey>
-    > = {
-        [PropName in OptionalKey]?: Def[PropName] extends string
-            ? RemoveSpaces<Def[PropName]> extends Optional.Definition<
-                  infer OptionalType
-              >
-                ? Root.Parse<OptionalType, Space, Options>
-                : unknown
-            : unknown
-    } & {
-        [PropName in RequiredKey]: Root.Parse<Def[PropName], Space, Options>
+    export type Node = {
+        map: Record<string, Root.Node>
     }
+
+    export type Parse<Def, Resolutions, Context extends ParseTypeContext> = {
+        map: {
+            [PropName in keyof Def]: Root.Parse<
+                Def[PropName],
+                Resolutions,
+                Context
+            >
+        }
+    }
+
+    export type TypeOf<
+        N extends Node,
+        Resolutions,
+        Options extends TypeOfContext<Resolutions>,
+        MappedNodes extends Definition = N["map"],
+        OptionalKey extends keyof MappedNodes = {
+            [K in keyof MappedNodes]: MappedNodes[K] extends Optional.Node
+                ? K
+                : never
+        }[keyof MappedNodes],
+        RequiredKey extends keyof MappedNodes = Exclude<
+            keyof MappedNodes,
+            OptionalKey
+        >
+    > = Evaluate<
+        {
+            [K in OptionalKey]?: Root.TypeOf<
+                MappedNodes[K],
+                Resolutions,
+                Options
+            >
+        } & {
+            [K in RequiredKey]: Root.TypeOf<
+                MappedNodes[K],
+                Resolutions,
+                Options
+            >
+        }
+    >
 
     export const type = typeDefProxy as Definition
 
@@ -68,7 +85,8 @@ export namespace Map {
         },
         {
             matches: (def) => isRecursible(def) && !Array.isArray(def),
-            allows: ({ components, def, ctx }, valueType, opts) => {
+            validate: ({ components, def, ctx }, value, opts) => {
+                const valueType = typeOf(value)
                 if (!isRecursible(valueType) || Array.isArray(valueType)) {
                     return validationError({ def, path: ctx.path, valueType })
                 }
@@ -108,8 +126,8 @@ export namespace Map {
                     .reduce(
                         (errors, propName) => ({
                             ...errors,
-                            ...components[propName].allows(
-                                (valueType as any)[propName],
+                            ...components[propName].validate(
+                                (value as any)[propName],
                                 opts
                             )
                         }),

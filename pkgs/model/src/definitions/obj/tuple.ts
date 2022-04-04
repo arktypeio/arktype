@@ -1,29 +1,42 @@
 import { Evaluate } from "@re-/tools"
 import {
     typeDefProxy,
-    ParseConfig,
+    TypeOfContext,
     createParser,
     tupleLengthError,
     validationError,
-    ValidationErrors
+    ValidationErrors,
+    ParseTypeContext
 } from "./internal.js"
 import { Root } from "../root.js"
 import { Obj } from "./obj.js"
+import { typeOf } from "../../utils.js"
 
 export namespace Tuple {
     export type Definition = any[]
 
-    export type Check<Def, Space> = Evaluate<{
-        [Index in keyof Def]: Root.Check<Def[Index], Space>
-    }>
+    export type Node = {
+        tuple: Root.Node[]
+    }
 
     export type Parse<
         Def extends Definition,
-        Space,
-        Options extends ParseConfig
+        Resolutions,
+        Context extends ParseTypeContext
     > = {
-        [Index in keyof Def]: Root.Parse<Def[Index], Space, Options>
+        tuple: {
+            [Index in keyof Def]: Root.Parse<Def[Index], Resolutions, Context>
+        }
     }
+
+    export type TypeOf<
+        N extends Node,
+        Resolutions,
+        Options extends TypeOfContext<Resolutions>,
+        T extends Root.Node[] = N["tuple"]
+    > = Evaluate<{
+        [Index in keyof T]: Root.TypeOf<T[Index], Resolutions, Options>
+    }>
 
     export const type = typeDefProxy as Definition
 
@@ -42,7 +55,8 @@ export namespace Tuple {
         },
         {
             matches: (def) => Array.isArray(def),
-            allows: ({ def, ctx, components }, valueType, opts) => {
+            validate: ({ def, ctx, components }, value, opts) => {
+                const valueType = typeOf(value)
                 if (!Array.isArray(valueType)) {
                     // Defined is a tuple, extracted is an object with string keys (will never be assignable)
                     return validationError({
@@ -63,7 +77,7 @@ export namespace Tuple {
                 return components.reduce(
                     (errors, component, index) => ({
                         ...errors,
-                        ...component.allows(valueType[index], opts)
+                        ...component.validate((value as any)[index], opts)
                     }),
                     {} as ValidationErrors
                 )

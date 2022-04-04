@@ -1,9 +1,9 @@
 import { assert } from "@re-/assert"
-import { define } from "@re-/model"
+import { create } from "@re-/model"
 import { definitionTypeErrorTemplate } from "../internal.js"
-import { testObj } from "../obj/__tests__"
-import { testPrimitive } from "../primitive/__tests__"
-import { testStr } from "../str/__test__"
+import { testObj } from "../obj/__tests__/index.js"
+import { testPrimitive } from "../primitive/__tests__/index.js"
+import { testStr } from "../str/__test__/index.js"
 
 describe("root", () => {
     describe("str", testStr)
@@ -11,11 +11,11 @@ describe("root", () => {
     describe("obj", testObj)
     test("bad type def type", () => {
         // @ts-expect-error
-        assert(() => define({ bad: Symbol() })).throwsAndHasTypeError(
+        assert(() => create({ bad: Symbol() })).throwsAndHasTypeError(
             definitionTypeErrorTemplate
         )
         // @ts-expect-error
-        assert(() => define({ bad: () => {} })).throwsAndHasTypeError(
+        assert(() => create({ bad: () => {} })).throwsAndHasTypeError(
             definitionTypeErrorTemplate
         )
     })

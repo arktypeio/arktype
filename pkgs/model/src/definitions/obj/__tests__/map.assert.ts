@@ -1,16 +1,16 @@
 import { assert } from "@re-/assert"
-import { define } from "@re-/model"
+import { create } from "@re-/model"
 import { lazily } from "@re-/tools"
 
 export const testMap = () => {
     describe("empty", () => {
-        const empty = lazily(() => define({}))
+        const empty = lazily(() => create({}))
         test("type", () => {
             assert(empty.type).typed as {}
         })
         test("validation", () => {
-            assert(empty.validate({}).errors).is(undefined)
-            assert(empty.validate([]).errors).snap(
+            assert(empty.validate({}).error).is(undefined)
+            assert(empty.validate([]).error).snap(
                 `"[] is not assignable to {}."`
             )
         })
@@ -20,7 +20,7 @@ export const testMap = () => {
     })
     describe("shallow", () => {
         const shallow = lazily(() =>
-            define({
+            create({
                 a: "string",
                 b: "number",
                 c: 67
@@ -35,9 +35,9 @@ export const testMap = () => {
         })
         describe("validation", () => {
             test("standard", () => {
-                assert(
-                    shallow.validate({ a: "ok", b: 4.321, c: 67 }).errors
-                ).is(undefined)
+                assert(shallow.validate({ a: "ok", b: 4.321, c: 67 }).error).is(
+                    undefined
+                )
             })
             test("ignore extraneous keys", () => {
                 assert(
@@ -50,7 +50,7 @@ export const testMap = () => {
                             e: "x-ray-knee-us"
                         },
                         { ignoreExtraneousKeys: true }
-                    ).errors
+                    ).error
                 ).is(undefined)
                 // Still errors on missing keys
                 assert(
@@ -62,17 +62,17 @@ export const testMap = () => {
                         },
 
                         { ignoreExtraneousKeys: true }
-                    ).errors
+                    ).error
                 ).snap(`"Required keys 'b' were missing."`)
             })
             describe("errors", () => {
                 test("bad value", () => {
                     assert(
-                        shallow.validate({ a: "ko", b: 123.4, c: 76 }).errors
+                        shallow.validate({ a: "ko", b: 123.4, c: 76 }).error
                     ).snap(`"At path c, 76 is not assignable to 67."`)
                 })
                 test("missing keys", () => {
-                    assert(shallow.validate({ a: "ok" }).errors).snap(
+                    assert(shallow.validate({ a: "ok" }).error).snap(
                         `"Required keys 'b, c' were missing."`
                     )
                 })
@@ -84,7 +84,7 @@ export const testMap = () => {
                             c: 67,
                             d: "extraneous",
                             e: "x-ray-knee-us"
-                        }).errors
+                        }).error
                     ).snap(`"Keys 'd, e' were unexpected."`)
                 })
                 test("missing and extraneous keys", () => {
@@ -93,7 +93,7 @@ export const testMap = () => {
                             a: "ok",
                             d: "extraneous",
                             e: "x-ray-knee-us"
-                        }).errors
+                        }).error
                     ).snap(
                         `"Required keys 'b, c' were missing. Keys 'd, e' were unexpected."`
                     )
@@ -106,7 +106,7 @@ export const testMap = () => {
     })
     describe("nested", () => {
         const nested = lazily(() =>
-            define({
+            create({
                 nested: {
                     russian: "'doll'"
                 }
@@ -123,7 +123,7 @@ export const testMap = () => {
             describe("errors", () => {
                 test("invalid prop def", () => {
                     // @ts-expect-error
-                    assert(() => define({ a: { b: "whoops" } }))
+                    assert(() => create({ a: { b: "whoops" } }))
                         .throws(
                             "Unable to determine the type of 'whoops' at path a/b."
                         )
@@ -134,21 +134,21 @@ export const testMap = () => {
         describe("validation", () => {
             test("standard", () => {
                 assert(
-                    nested.validate({ nested: { russian: "doll" } }).errors
+                    nested.validate({ nested: { russian: "doll" } }).error
                 ).is(undefined)
             })
             describe("errors", () => {
                 test("bad prop value", () => {
                     assert(
                         nested.validate({ nested: { russian: "tortoise" } })
-                            .errors
+                            .error
                     ).snap(
                         `"At path nested/russian, 'tortoise' is not assignable to 'doll'."`
                     )
                 })
                 test("multiple", () => {
                     assert(
-                        define({
+                        create({
                             a: { b: "string" },
                             c: { d: "number" },
                             e: { f: "object" }
@@ -156,10 +156,15 @@ export const testMap = () => {
                             a: {},
                             c: { d: 20, y: "why?" },
                             e: { f: 0n }
-                        }).errors
-                    ).snap(
-                        `"{a: 'Required keys 'b' were missing.', c: 'Keys 'y' were unexpected.', e/f: '0n is not assignable to object.'}"`
-                    )
+                        }).error
+                    ).snap(`
+"Encountered errors at the following paths:
+{
+  a: 'Required keys 'b' were missing.',
+  c: 'Keys 'y' were unexpected.',
+  e/f: '0n is not assignable to object.'
+}"
+`)
                 })
             })
         })
