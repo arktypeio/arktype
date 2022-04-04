@@ -104,6 +104,7 @@ importers:
       '@types/jest': 27.0.3
       '@types/node': 17.0.1
       '@types/prompts': 2.0.11
+      deepmerge: 4.2.2
       execa: 5.0.0
       get-current-line: 6.6.0
       jest: 27.4.5
@@ -115,6 +116,7 @@ importers:
       vite: 2.4.4
     dependencies:
       '@re-/tools': 1.4.0
+      deepmerge: 4.2.2
       execa: 5.0.0
       get-current-line: 6.6.0
       prompts: 2.4.1
@@ -136,13 +138,11 @@ importers:
       '@re-/assert': workspace:*
       '@re-/node': workspace:*
       '@types/jest': 27.0.3
-      deepmerge: 4.2.2
       jest: 27.4.5
       moize: 5.4.7
       ts-jest: 27.1.2
       ts-toolbelt: 9.5.10
     dependencies:
-      deepmerge: 4.2.2
       moize: 5.4.7
       ts-toolbelt: 9.5.10
     devDependencies:
