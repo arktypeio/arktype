@@ -1,6 +1,6 @@
 import { IsAny, Iteration, KeyValuate } from "@re-/tools"
-import { ParseConfig, ShallowCycleError } from "./internal.js"
-import { Root, Str } from "./definitions"
+import { ShallowCycleError } from "./internal.js"
+import { Root, Str } from "./definitions/index.js"
 
 type CheckReferencesForShallowCycle<
     References extends string[],
@@ -26,14 +26,10 @@ type CheckForShallowCycleRecurse<Def, Space, Seen> = IsAny<Def> extends true
     ? Seen
     : Def extends string
     ? CheckReferencesForShallowCycle<
-          Str.References<
+          Str.ReferencesOf<
               Def,
-              {
-                  asList: true
-                  asUnorderedList: false
-                  filter: keyof Space & string
-                  nonIdentifiers: Str.NonIdentifyingTokens
-              }
+              Space,
+              { asTuple: true; asList: false; filter: keyof Space & string }
           >,
           Space,
           Seen
@@ -46,18 +42,8 @@ type CheckForShallowCycle<Def, Space> = CheckForShallowCycleRecurse<
     never
 >
 
-export namespace Resolution {
-    export type Definition = Root.Definition
-
-    export type Check<Def, Space> = IsAny<Def> extends true
-        ? "any"
-        : CheckForShallowCycle<Def, Space> extends never
-        ? Root.Check<Def, Space>
-        : ShallowCycleError<Def & string, CheckForShallowCycle<Def, Space>>
-
-    export type Parse<Def, Space, Options extends ParseConfig> = Root.Parse<
-        Def,
-        Space,
-        Options
-    >
-}
+export type ValidateResolution<Def, Resolutions> = IsAny<Def> extends true
+    ? "any"
+    : CheckForShallowCycle<Def, Resolutions> extends never
+    ? Root.Validate<Def, Resolutions>
+    : ShallowCycleError<Def & string, CheckForShallowCycle<Def, Resolutions>>

@@ -6,9 +6,9 @@ import {
     NonRecursible,
     Recursible,
     RequiredKeys,
-    Stringifiable,
-    StringifyPossibleTypes
+    Stringifiable
 } from "./common.js"
+import { StringifyPossibleTypes } from "./stringUtils.js"
 
 export type ExactFunction<Compare, Base> = Compare extends Base
     ? ExtractFunction<Compare> extends (...args: infer Args) => infer Return

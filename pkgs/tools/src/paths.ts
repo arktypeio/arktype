@@ -7,12 +7,11 @@ import {
     List,
     Recursible,
     PlusOne,
-    MinusOne,
-    Split
+    MinusOne
 } from "./common.js"
 import { WithDefaults, withDefaults } from "./merge.js"
 import { narrow } from "./narrow.js"
-import { NumericString } from "./stringUtils.js"
+import { NumericString, Split } from "./stringUtils.js"
 
 export type PathOptions = {
     delimiter?: string

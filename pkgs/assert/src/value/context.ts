@@ -1,4 +1,4 @@
-import { SourcePosition, withCallPosition } from "@re-/tools/node"
+import { SourcePosition, withCallPosition } from "@re-/node"
 import {
     Func,
     isRecursible,

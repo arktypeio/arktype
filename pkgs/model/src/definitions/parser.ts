@@ -6,36 +6,38 @@ import {
     ValueOf,
     Exact,
     toString,
-    DeepTreeOf
+    TreeOf
 } from "@re-/tools"
-import { SpaceResolutions } from "../compile"
+import { SpaceResolutions } from "../space.js"
 import { ValidationErrors, unknownTypeError } from "../errors.js"
-import { ExtractableDefinition } from "./internal.js"
 import { Root } from "./root.js"
-import { Obj } from "./obj"
-import { GenerateOptions, ReferencesOptions } from "../model.js"
+import { Obj } from "./obj/index.js"
+import {
+    GenerateConfig,
+    ModelConfig,
+    ReferencesConfig,
+    ValidateConfig
+} from "../model.js"
 
 export type MatchesArgs<DefType> = {
     definition: DefType
-    space: SpaceResolutions
-}
-
-export type AllowsOptions = {
-    ignoreExtraneousKeys?: boolean
+    resolutions: SpaceResolutions
 }
 
 export type ParseContext = {
-    space: SpaceResolutions
     path: string[]
     seen: string[]
     shallowSeen: string[]
+    modifiers: string[]
+    config: ModelConfig
 }
 
 export const defaultParseContext: ParseContext = {
-    space: {},
+    config: {},
     path: [],
     seen: [],
-    shallowSeen: []
+    shallowSeen: [],
+    modifiers: []
 }
 
 export type ParseArgs<DefType> = [definition: DefType, context: ParseContext]
@@ -63,31 +65,29 @@ export type MethodsArg<Children, Methods> = Children extends never[]
     ? [methods: Required<Methods>]
     : [methods?: Methods]
 
-export type InheritableMethodContext<DefType, Components> = [
-    args: {
-        def: DefType
-        ctx: ParseContext
-    } & (unknown extends Components ? {} : { components: Components })
-]
+export type InheritableMethodContext<DefType, Components> = {
+    def: DefType
+    ctx: ParseContext
+} & (unknown extends Components ? {} : { components: Components })
 
 export type InheritableMethods<DefType, Components> = {
-    allows?: (
+    validate?: (
         ...args: [
-            ...args: InheritableMethodContext<DefType, Components>,
-            valueType: ExtractableDefinition,
-            options: AllowsOptions
+            methodContext: InheritableMethodContext<DefType, Components>,
+            value: unknown,
+            options: ValidateConfig
         ]
     ) => ValidationErrors
     references?: (
         ...args: [
-            ...args: InheritableMethodContext<DefType, Components>,
-            options: ReferencesOptions
+            methodContext: InheritableMethodContext<DefType, Components>,
+            options: ReferencesConfig
         ]
-    ) => DefType extends Obj.Definition ? DeepTreeOf<string[]> : string[]
+    ) => DefType extends Obj.Definition ? TreeOf<string[]> : string[]
     generate?: (
         ...args: [
-            ...args: InheritableMethodContext<DefType, Components>,
-            options: GenerateOptions
+            methodContext: InheritableMethodContext<DefType, Components>,
+            options: GenerateConfig
         ]
     ) => any
 }
@@ -142,7 +142,7 @@ export type Parser<DefType, Parent, Methods> = Evaluate<
 export type InheritableMethodName = keyof InheritableMethods<any, any>
 
 const inheritableMethodNames = [
-    "allows",
+    "validate",
     "references",
     "generate"
 ] as InheritableMethodName[]
@@ -190,7 +190,7 @@ export const createParser = <
     const getComponents = (def: DefType, ctx: ParseContext) => {
         const memoKey = toString({
             def,
-            space: ctx.space,
+            config: ctx.config,
             shallowSeen: ctx.shallowSeen,
             seen: ctx.seen,
             path: ctx.path
@@ -214,7 +214,36 @@ export const createParser = <
                 ValueOf<TransformedInheritableMethods<DefType>>
             >
         ) => {
-            if (name === "allows") {
+            const lastModelName = ctx.seen.length
+                ? ctx.seen[ctx.seen.length - 1]
+                : ""
+            const activeModelConfig =
+                ctx.config?.space?.config?.models?.[lastModelName] ?? {}
+            const providedConfig: any =
+                name === "validate" ? providedArgs[1] : providedArgs[0]
+            /**
+             * The first time we run validate, we check if options were included
+             * in providedArgs, since they would be from a direct call and would
+             * override all other config values. From then on, we can use the "useProvidedArgs"
+             * key to let us know the validate call was internal and whatever options were passed
+             * can safely be ignored in favor of the standard config precedence.
+             **/
+            const useProvidedArgs = providedConfig
+                ? "useProvidedArgs" in providedConfig
+                    ? providedConfig["useProvidedArgs"]
+                    : true
+                : false
+            const configValue = {
+                ...(ctx.config?.space?.config?.[name] ?? {}),
+                ...activeModelConfig[name],
+                ...(ctx.config?.[name] ?? {}),
+                useProvidedArgs
+            }
+            const compiledOpts = {
+                ...configValue,
+                ...(useProvidedArgs ? providedConfig : {})
+            }
+            if (name === "validate") {
                 return inputMethod(
                     {
                         def,
@@ -222,7 +251,7 @@ export const createParser = <
                         components
                     },
                     providedArgs[0],
-                    providedArgs[1] ?? {}
+                    compiledOpts
                 )
             }
             return inputMethod(
@@ -231,7 +260,7 @@ export const createParser = <
                     ctx,
                     components
                 },
-                providedArgs[0] ?? {}
+                compiledOpts
             )
         }
 

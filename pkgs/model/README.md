@@ -1,23 +1,24 @@
 <div align="center">
+<!-- https://raw.githubusercontent.com/re-do/re-po/main/pkgs/docs/static/img/logo.svg -->
   <img src="../docs/static/img/logo.svg" height="64px" />
   <h1>@re-/model</h1>
 </div>
 <div align="center">
 
-Type-first validation from editor to runtime 🧭
+Type-first validation from editor to runtime🪢
 
-![Coverage: 95%](https://img.shields.io/badge/Coverage-95%25-brightgreen)
+![Coverage: 98%](https://img.shields.io/badge/Coverage-98%25-brightgreen)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 ![Code style](https://img.shields.io/badge/code_style-prettier-ff69b4.svg)
 [![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-v2.0%20adopted-ff69b4.svg)](code-of-conduct.md)
 
 </div>
 
-## What's a model?
+## What's a model? 🤷
 
-A model is a way to create universal types for your JS/TS values. From one definition, you get all the benefits of [TypeScript](https://github.com/microsoft/TypeScript) at compile time and a validator like [Yup](https://github.com/jquense/yup) or [JOI](https://github.com/sideway/joi) at runtime.
+A model is a way to create universal types for your JS/TS values. From one definition, you get all the benefits of [TypeScript](https://github.com/microsoft/TypeScript) in your editor and build and a validator like [Yup](https://github.com/jquense/yup) or [JOI](https://github.com/sideway/joi) at runtime.
 
-## Installation
+## Installation 📦
 
 `npm install @re-/model`
 
@@ -25,124 +26,93 @@ A model is a way to create universal types for your JS/TS values. From one defin
 
 If you're using TypeScript, you'll need at least `4.4`.
 
-## Definition
+## Start quick ⏱️
 
-This snippet will give you an idea of `@re-/model` syntax, but the best way to get a feel for it is in a live editor. Try messing around with the `user` model in [our sandbox](https://TODO:updatelink) or paste it in your own editor and see how the type hints help guide you in the right direction.
+This snippet will give you an idea of `@re-/model` syntax, but the best way to get a feel for it is in a live editor. Try messing around with the `user` definition in [our demo](https://TODO:updatelink) or paste it in your own editor and see how the type hints help guide you in the right direction.
 
 ```ts
-import { define } from "@re-/model"
+import { create } from "@re-/model"
 
 // Most common TypeScript expressions just work...
-const user = define({
+const user = create({
     name: {
         first: "string",
         middle: "string?",
         last: "string"
     },
     age: "number",
-    interests: "string[]|null"
+    browser: "'chrome'|'firefox'|'other'|null"
 })
 
 // If you're using TypeScript, you can create your type...
 type User = typeof user.type
 
-// And it will be totally equivalent to...
-type RedundantUserDeclaration = {
-    name: {
-        first: string
-        middle?: string
-        last: string
-    }
-    age: number
-    interests: string[] | null
-}
-
 // But a model can also validate your data at runtime...
-const fetchUser = () => {
-    return {
-        name: {
-            first: "Reed",
-            last: "Doe"
-        },
-        age: 28,
-        interests: undefined
-    }
-}
+const { error } = user.validate({
+    name: {
+        first: "Reed",
+        last: "Doe"
+    },
+    age: 28,
+    browser: "Internet Explorer" // :(
+})
 
-// Will throw: "At path interests, undefined is not assignable to any of string[]|null."
-user.validate(fetchUser())
+// Output: "At path browser, 'Internet Explorer' is not assignable to any of 'chrome'|'firefox'|'other'|null."
+console.log(error ?? "All good!")
 ```
 
-## Space
+## Types that clique 🔗
 
-Your models can reference each other or themselves using a **space**. [Try it out](https://TODO:updatelink).
+Working with types that refer to one another or themselves? So can your models!
+
+[Just compile a **space**.](https://TODO:updatelink)
 
 ```ts
-import { compile } from "@re-/model"
-
-const mySpace = compile({
+const space = compile({
     user: {
         name: "string",
-        friends: "user[]",
+        bestFriend: "user?",
         groups: "group[]"
     },
     group: {
-        name: "string",
-        description: "string",
+        title: "string",
         members: "user[]"
     }
 })
 
-// Typescript types can be extracted like this
-type User = typeof mySpace.user.type
+// Even recursive and cyclic types are precisely inferred
+type User = typeof space.types.user
 
-// Will throw: "At path friends/groups/0, 'Type Enjoyers' is not assignable
-// to {name: string, description: string, members: user[]}"
-mySpace.user.validate({
+// Throws: "At path bestFriend/groups/0, required keys 'members' were missing."
+space.models.user.assert({
     name: "Devin Aldai",
-    friends: [
-        {
-            name: "Devin Olnyt",
-            friends: [], // :(
-            groups: ["Type Enjoyers"]
-        }
-    ],
+    bestFriend: {
+        name: "Devin Olnyt",
+        groups: [{ title: "Type Enjoyers" }]
+    },
     groups: []
-})
-
-// Once you've created a space, you can use it to create new models
-// that reference existing models like "user"
-const community = mySpace.model({
-    users: "user[]",
-    groups: "group[]",
-    population: "number"
 })
 ```
 
-## Declaration
+## Definitions that split ✂️
 
-If you prefer to split your space definitions across one or more files, you'll want to use a **declaration**. [Try it out](https://TODO:updatelink).
+Like keeping your files small and tidy? Perhaps you'd prefer to split your definitions up.
+
+[Try a **declaration**.](https://TODO:updatelink)
 
 `index.ts`
 
 ```ts
 import { declare } from "@re-/model"
 
-// Declare the names in your space allows
-const declared = declare("user", "group")
-
-// A declaration's "define" prop can be used anywhere to create
-// a definition that allows references to other declared names
-export const { define } = declared
+// Declare the models you will define
+const { define, compile } = declare("user", "group")
 
 import { userDef } from "./user"
 import { groupDef } from "./group"
 
-// Type error: "Declared types 'group' were never defined."
-const badSpace = declared.compile(userDef)
-
-// Creates a space identical to that of "Creating your first space"
-const mySpace = declared.compile(userDef, groupDef)
+// Creates your space (or tells you which definition you forgot to include)
+const space = compile({ ...userDef, ...groupDef })
 ```
 
 `user.ts`
@@ -150,17 +120,11 @@ const mySpace = declared.compile(userDef, groupDef)
 ```ts
 import { define } from "./index"
 
-const badUserDef = define.user({
-    name: "string",
-    friends: "user[]",
-    // Type error: "Unable to determine the type of 'grop'"
-    groups: "grop[]"
-})
-
 export const userDef = define.user({
     name: "string",
     friends: "user[]",
-    groups: "group[]"
+    // Type Hint: "Unable to determine the type of 'grop'"
+    groups: "grop[]"
 })
 ```
 
@@ -174,6 +138,45 @@ export const groupDef = define.group({
     description: "string",
     members: "user[]"
 })
+```
+
+## Validation that fits 🧩
+
+TypeScript can do a lot, but sometimes things you care about at runtime shouldn't affect your type.
+
+[**Constraints** have you covered.](https://TODO:updatelink)
+
+```ts
+const employee = create({
+    // Not a fan of regex? Don't worry, 'email' is a builtin type :)
+    email: `/[a-z]*@redo\.dev/`,
+    about: {
+        // Single or double bound numeric types
+        age: "18<=integer<125",
+        // Or string lengths
+        bio: "string<=160"
+    }
+})
+
+// Subtypes like 'email' and 'integer' become 'string' and 'number'
+type Employee = typeof employee.type
+
+// The error messages are so nice you might be tempted to break your code more often ;)
+const { error } = employee.validate({
+    email: "david@redo.biz",
+    about: {
+        age: 17,
+        bio: "I am very interesting.".repeat(10)
+    }
+})
+
+// Output: "Encountered errors at the following paths:
+// {
+//   email: ''david@redo.biz' is not assignable to /[a-z]*@redo.dev/.',
+//   about/age: '17 was less than 18.',
+//   about/bio: ''I am very interesting.I am very interesting.I am... was greater than 160 characters.'
+// }"
+console.log(error ?? "Flawless. Obviously.")
 ```
 
 ## Syntax
