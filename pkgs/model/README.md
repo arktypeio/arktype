@@ -1,5 +1,4 @@
 <div align="center">
-<!-- https://raw.githubusercontent.com/re-do/re-po/main/pkgs/docs/static/img/logo.svg -->
   <img src="../docs/static/img/logo.svg" height="64px" />
   <h1>@re-/model</h1>
 </div>
@@ -181,9 +180,9 @@ console.log(error ?? "Flawless. Obviously.")
 
 ## Syntax
 
-`@re-/model` supports all of TypeScript's built-in types and a lot of its most common type definition syntax. The following sections outline the kinds of definitions you can use in your models.
+`@re-/model` supports many of TypeScript's built-in types and operators, as well as some new ones dedicated exclusively to runtime validation. The following sections outline the kinds of definitions available to you when creating a model.
 
-If the TS syntax you want to use is not listed here, feel free to create an issue summarizing your use case. Our model is easy to extend, so you might just see it an upcoming release 🎁
+If you'd like to , we'd love for you to create an issue summarizing your use case. Our parser is easy to extend, so you might just see it an upcoming release 🎁
 
 ### Objects
 
