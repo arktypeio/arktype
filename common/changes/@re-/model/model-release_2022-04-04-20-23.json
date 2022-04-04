@@ -1,0 +1,10 @@
+{
+    "changes": [
+        {
+            "packageName": "@re-/model",
+            "comment": "Add constraints, inheritable configs, documentation, and prepare for release.",
+            "type": "minor"
+        }
+    ],
+    "packageName": "@re-/model"
+}
