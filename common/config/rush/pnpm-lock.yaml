@@ -142,6 +142,7 @@ importers:
       moize: 5.4.7
       ts-jest: 27.1.2
       ts-toolbelt: 9.5.10
+      typescript: 4.6.3
     dependencies:
       moize: 5.4.7
       ts-toolbelt: 9.5.10
@@ -150,7 +151,8 @@ importers:
       '@re-/node': link:../node
       '@types/jest': 27.0.3
       jest: 27.4.5
-      ts-jest: 27.1.2_@types+jest@27.0.3+jest@27.4.5
+      ts-jest: 27.1.2_7d6e5f67acaa96443d44b2d7aa440b3e
+      typescript: 4.6.3
 
 packages:
 
@@ -9801,39 +9803,6 @@ packages:
       make-error: 1.3.6
       semver: 7.3.5
       typescript: 4.6.3
-      yargs-parser: 20.2.9
-    dev: true
-
-  /ts-jest/27.1.2_@types+jest@27.0.3+jest@27.4.5:
-    resolution: {integrity: sha512-eSOiJOWq6Hhs6Khzk5wKC5sgWIXgXqOCiIl1+3lfnearu58Hj4QpE5tUhQcA3xtZrELbcvAGCsd6HB8OsaVaTA==}
-    engines: {node: ^10.13.0 || ^12.13.0 || ^14.15.0 || >=15.0.0}
-    hasBin: true
-    peerDependencies:
-      '@babel/core': '>=7.0.0-beta.0 <8'
-      '@types/jest': ^27.0.0
-      babel-jest: '>=27.0.0 <28'
-      esbuild: ~0.14.0
-      jest: ^27.0.0
-      typescript: '>=3.8 <5.0'
-    peerDependenciesMeta:
-      '@babel/core':
-        optional: true
-      '@types/jest':
-        optional: true
-      babel-jest:
-        optional: true
-      esbuild:
-        optional: true
-    dependencies:
-      '@types/jest': 27.0.3
-      bs-logger: 0.2.6
-      fast-json-stable-stringify: 2.1.0
-      jest: 27.4.5
-      jest-util: 27.5.1
-      json5: 2.2.1
-      lodash.memoize: 4.1.2
-      make-error: 1.3.6
-      semver: 7.3.5
       yargs-parser: 20.2.9
     dev: true
 

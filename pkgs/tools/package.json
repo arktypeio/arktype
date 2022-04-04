@@ -31,6 +31,7 @@
         "@re-/assert": "workspace:*",
         "jest": "27.4.5",
         "@types/jest": "27.0.3",
-        "ts-jest": "27.1.2"
+        "ts-jest": "27.1.2",
+        "typescript": "4.6.3"
     }
 }
