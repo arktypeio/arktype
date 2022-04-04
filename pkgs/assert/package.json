@@ -1,6 +1,6 @@
 {
     "name": "@re-/assert",
-    "version": "0.2.0",
+    "version": "0.2.1",
     "author": "redo.dev",
     "description": "Seamless testing for types and code✅",
     "repository": {
@@ -23,7 +23,8 @@
         "test": "jest 2>&1"
     },
     "dependencies": {
-        "@re-/tools": "workspace:*",
+        "@re-/tools": "1.4.0",
+        "@re-/node": "1.3.1",
         "@jest/globals": "27.4.4",
         "jest-snapshot": "27.4.5",
         "jest": "27.4.5"

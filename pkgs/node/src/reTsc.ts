@@ -1,4 +1,4 @@
-import { transform } from "../index.js"
+import { transform } from "@re-/tools"
 import { rmSync } from "fs"
 import { join } from "path"
 import { stdout } from "process"

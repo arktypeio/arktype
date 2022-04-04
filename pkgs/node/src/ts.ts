@@ -9,7 +9,7 @@ import {
     mapFilesToContents,
     ensureDir
 } from "./fs.js"
-import { mergeAll, toString } from "../index.js"
+import { mergeAll, toString } from "@re-/tools"
 
 export type TsConfig = {
     [K in keyof ts.CompilerOptions]: any

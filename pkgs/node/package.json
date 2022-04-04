@@ -1,0 +1,52 @@
+{
+    "name": "@re-/node",
+    "version": "1.3.1",
+    "author": "redo.dev",
+    "description": "Node-based utilities, scripts, and configs for Redo packages ⚙️",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/re-do/re-po.git",
+        "directory": "pkgs/node"
+    },
+    "type": "module",
+    "main": "out/cjs/index.cjs",
+    "types": "out/types/index.d.ts",
+    "exports": {
+        ".": {
+            "types": "./out/types/index.d.ts",
+            "import": "./out/esm/index.js",
+            "require": "./out/cjs/index.cjs"
+        }
+    },
+    "scripts": {
+        "build": "set TS_NODE_TRANSPILE_ONLY=1&& node -r ./filterWarnings.cjs --loader ts-node/esm ./src/reTscCli.ts",
+        "runScript": "./runScript.js",
+        "reTsc": "./reTsc.js",
+        "reTranspile": "./reTranspile.js",
+        "test": "jest 2>&1"
+    },
+    "bin": {
+        "runScript": "./runScript.js",
+        "reTsc": "./reTsc.js",
+        "reTranspile": "./reTranspile.js"
+    },
+    "dependencies": {
+        "execa": "5.0.0",
+        "prompts": "2.4.1",
+        "ts-node": "10.4.0",
+        "tree-kill": "1.2.2",
+        "get-current-line": "6.6.0",
+        "@re-/tools": "1.4.0",
+        "typescript": "4.6.3"
+    },
+    "devDependencies": {
+        "@re-/assert": "workspace:*",
+        "@types/node": "17.0.1",
+        "jest": "27.4.5",
+        "@types/jest": "27.0.3",
+        "ts-jest": "27.1.2",
+        "@types/prompts": "2.0.11",
+        "@jest/types": "27.4.2",
+        "vite": "2.4.4"
+    }
+}

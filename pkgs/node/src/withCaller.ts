@@ -5,7 +5,7 @@ import {
     toString,
     withDefaults,
     WithDefaults
-} from "../index.js"
+} from "@re-/tools"
 import { fileName } from "./fs.js"
 import {
     caller,

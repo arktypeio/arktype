@@ -1,12 +1,13 @@
 <div align="center">
-  <img src="https://raw.githubusercontent.com/re-do/re-po/main/pkgs/docs/static/img/logo.svg" height="64px" />
+<!-- https://raw.githubusercontent.com/re-do/re-po/main/pkgs/docs/static/img/logo.svg -->
+  <img src="../docs/static/img/logo.svg" height="64px" />
   <h1>@re-/model</h1>
 </div>
 <div align="center">
 
-Type-first validation from editor to runtime 🪢
+Type-first validation from editor to runtime🪢
 
-![Coverage: 98%](https://img.shields.io/badge/Coverage-95%25-brightgreen)
+![Coverage: 98%](https://img.shields.io/badge/Coverage-98%25-brightgreen)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 ![Code style](https://img.shields.io/badge/code_style-prettier-ff69b4.svg)
 [![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-v2.0%20adopted-ff69b4.svg)](code-of-conduct.md)

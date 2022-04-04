@@ -1,14 +1,9 @@
 {
-    "extends": "@re-/tools/tsconfig.base",
+    "extends": "@re-/node/tsconfig.base",
     "compilerOptions": {
         "baseUrl": "src",
         "outDir": "out",
-        "noErrorTruncation": true,
-        "paths": {
-            "@re-/tools/node": [
-                "../node_modules/@re-/tools/out/types/node/index.d.ts"
-            ]
-        }
+        "noErrorTruncation": true
     },
     "include": ["src"]
 }

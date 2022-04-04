@@ -2,7 +2,7 @@
     "name": "@re-/model",
     "version": "1.9.1",
     "author": "redo.dev",
-    "description": "Type-first validation from editor to runtime 🧭",
+    "description": "Type-first validation from editor to runtime🪢",
     "repository": {
         "type": "git",
         "url": "https://github.com/re-do/re-po.git",
@@ -30,6 +30,7 @@
     },
     "devDependencies": {
         "@re-/assert": "workspace:*",
+        "@re-/node": "workspace:*",
         "jest": "27.4.5",
         "@types/jest": "27.0.3",
         "ts-jest": "27.1.2",

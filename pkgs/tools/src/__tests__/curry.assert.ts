@@ -18,7 +18,7 @@ describe("curry", () => {
                 [s, b, n] as typeof expectedReturn
         )
         assert(curryable).type.toString.snap(
-            `"((s: string) => (b: boolean) => (n: number) => [\\"yes\\", true, 1]) & ((s: string) => (b: boolean, n: number) => [\\"yes\\", true, 1]) & ((s: string, b: boolean) => (n: number) => [\\"yes\\", true, 1]) & ((s: string, b: boolean, n: number) => [...])"`
+            `"((s: string) => (b: boolean) => (n: number) => [\\"yes\\", true, 1]) & ((s: string) => (b: boolean, n: number) => [\\"yes\\", true, 1]) & ((s: string, b: boolean) => (n: number) => [\\"yes\\", true, 1]) & ((s: string, b: boolean, n: number) => [\\"yes\\", true, 1])"`
         )
         // Dissabling this for now as union types are not being handled correctly
         // assert(curryable("yes", true, 1)).typedValue(expectedReturn)
@@ -31,8 +31,8 @@ describe("curry", () => {
         assert(() => {
             // @ts-expect-error
             const invalidComposition: NumericCompositions<12> = [1, 2, 7, 1, 2] // Adds to 13
-        }).type.errors.snap(
-            `"Type '[1, 2, 7, 1, 2]' is not assignable to type '[2, 2, 2, 2, 2, 2] | [2, 2, 2, 2, 2, 1, 1] | [2, 2, 2, 2, 1, 2, 1] | [2, 2, 2, 2, 1, 1, 2] | [2, 2, 2, 2, 1, 1, 1, 1] | [2, 2, 2, 2, 1, 3] | [2, 2, 2, 2, 3, 1] | [2, 2, 2, 2, 4] | ... 2039 more ... | [...]'."`
+        }).type.errors(
+            "Type '[1, 2, 7, 1, 2]' is not assignable to type '[2, 2, 2, 2, 2, 2] | [2, 2, 2, 2, 2, 1, 1]"
         )
     })
 })

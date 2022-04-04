@@ -7,7 +7,7 @@ import {
     ExecaChildProcess,
     ExecaSyncError
 } from "execa"
-import { isRecursible, Merge } from "../index.js"
+import { isRecursible, Merge } from "@re-/tools"
 import prompts, { PromptObject, PromptType } from "prompts"
 import { getOs } from "./os.js"
 import { fromPackageRoot } from "./fs.js"
