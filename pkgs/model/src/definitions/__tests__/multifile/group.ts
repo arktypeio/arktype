@@ -1,7 +1,6 @@
-import { define } from "../multifile.assert"
+import { define } from "../multifile.assert.js"
 
-export const getGroupDef = () =>
-    define.group({
-        name: "string",
-        members: "user[]"
-    })
+export const groupDef = define.group({
+    name: "string",
+    members: "user[]"
+})

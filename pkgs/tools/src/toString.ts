@@ -4,6 +4,7 @@ export type ToStringOptions = {
     indent?: number
     quotes?: keyof typeof quoteTypes
     quoteKeys?: boolean
+    maxNestedStringLength?: number
 }
 
 export const quoteTypes = {
@@ -35,12 +36,24 @@ export const toString = (value: any, options: ToStringOptions = {}) => {
             result += `${keyQuote}${key}${keyQuote}: `
         }
         if (!isRecursible(value)) {
-            result +=
-                typeof value === "string"
-                    ? `${quote}${value}${quote}`
-                    : typeof value === "bigint"
-                    ? `${value}n`
-                    : String(value)
+            if (typeof value === "string") {
+                let formattedStringValue: string = value
+                if (
+                    options.maxNestedStringLength &&
+                    formattedStringValue.length > options.maxNestedStringLength
+                ) {
+                    formattedStringValue =
+                        formattedStringValue.slice(
+                            0,
+                            options.maxNestedStringLength - 1
+                        ) + "..."
+                }
+                result += `${quote}${formattedStringValue}${quote}`
+            } else if (typeof value === "bigint") {
+                result += `${value}n`
+            } else {
+                result += String(value)
+            }
         } else if (seen.includes(value)) {
             result += "(cyclic value)"
         } else {

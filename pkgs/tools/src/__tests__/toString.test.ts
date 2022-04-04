@@ -1,5 +1,5 @@
 import { toString } from ".."
-import { o } from "./common.js"
+import { o } from "./common"
 
 describe("toString", () => {
     test("default", () => {
@@ -23,6 +23,17 @@ describe("toString", () => {
         expect(toString({ a: "quoteKeys" }, { quoteKeys: true })).toBe(
             "{'a': 'quoteKeys'}"
         )
+    })
+    test("truncate", () => {
+        expect(
+            toString(
+                { a: "include this but not that" },
+                { maxNestedStringLength: 17 }
+            )
+        ).toMatchInlineSnapshot(`"{a: 'include this but...'}"`)
+        expect(
+            toString({ a: "include this" }, { maxNestedStringLength: 17 })
+        ).toMatchInlineSnapshot(`"{a: 'include this'}"`)
     })
     test("indent", () => {
         expect(toString(o, { indent: 2 })).toMatchInlineSnapshot(`

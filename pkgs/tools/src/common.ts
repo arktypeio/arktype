@@ -9,84 +9,6 @@ import { WithDefaults } from "./merge.js"
 export const memoize = <F extends Func>(f: F, opts?: moize.Options) =>
     moize(f) as F
 
-export type StringReplace<
-    Original extends string,
-    Find extends string,
-    ReplaceWith extends string
-> = Original extends `${infer Left}${Find}${infer Right}`
-    ? StringReplace<`${Left}${ReplaceWith}${Right}`, Find, ReplaceWith>
-    : Original
-
-export type Split<
-    S extends string,
-    Delimiter extends string,
-    Result extends string[] = []
-> = S extends `${infer Left}${Delimiter}${infer Right}`
-    ? Split<Right, Delimiter, [...Result, Left]>
-    : [...Result, S]
-
-export type SpliterateOptions = {
-    asList?: boolean
-    asUnorderedList?: boolean
-    filter?: string
-}
-
-/**
- * Iteratively split a string literal type using a tuple of delimiters
- */
-export type Spliterate<
-    Fragments extends string,
-    Delimiters extends string[],
-    Options extends SpliterateOptions = {},
-    Config extends Required<SpliterateOptions> = WithDefaults<
-        SpliterateOptions,
-        Options,
-        {
-            asList: false
-            asUnorderedList: false
-            filter: string
-        }
-    >,
-    Result extends string = SpliterateRaw<
-        Fragments,
-        Delimiters,
-        Config["filter"]
-    >,
-    ListedResult extends string[] = ListPossibleTypes<Result>
-> = Options["asList"] extends true
-    ? ListedResult
-    : Options["asUnorderedList"] extends true
-    ? ListedResult extends [string]
-        ? ListedResult
-        : Result[]
-    : Result
-
-type SpliterateRaw<
-    Fragments extends string,
-    Delimiters extends string[],
-    Filter extends string
-> = Delimiters extends Iteration<string, infer Character, infer Remaining>
-    ? SpliterateRaw<ElementOf<Split<Fragments, Character>>, Remaining, Filter>
-    : Exclude<ElementOf<Split<Fragments, Delimiters[0]>>, ""> & Filter
-
-export type Join<
-    Segments extends Stringifiable[],
-    Delimiter extends string = DefaultDelimiter,
-    Result extends string = ""
-> = Segments extends Iteration<Stringifiable, infer Segment, infer Remaining>
-    ? Join<
-          Remaining,
-          Delimiter,
-          `${Result}${Result extends "" ? "" : Delimiter}${Segment}`
-      >
-    : Result
-
-export type RemoveSpaces<FromString extends string> = StringReplace<
-    FromString,
-    " ",
-    ""
->
-
 export type UntilOptions = {
     timeoutSeconds?: number
     intervalSeconds?: number
@@ -142,6 +64,10 @@ export type DeepRequired<T> = {
         ? Required<T[P]>
         : DeepRequired<T[P]>
 }
+
+export type WithPropValue<Obj, Prop extends string | number, Value> = Evaluate<
+    Omit<Obj, Prop> & { [K in Prop]: Value }
+>
 
 export type WithOptionalKeys<T extends object, Keys extends keyof T> = Omit<
     T,
@@ -284,6 +210,8 @@ export type AsListIf<T, Condition extends boolean> = Condition extends true
 export type IfList<T, IfList, IfNotList> = T extends List ? IfList : IfNotList
 export type IsList<T> = IfList<T, true, false>
 
+export type ToList<T> = T extends List ? T : [T]
+
 export type GetRequiredKeys<O extends object> = {
     [K in keyof O]-?: {} extends Pick<O, K> ? never : K
 }[keyof O]
@@ -323,9 +251,9 @@ export type LeafOf<Obj, LeafType = NonRecursible> = Obj extends LeafType
     ? Obj
     : Obj extends NonRecursible
     ? never
-    : {
+    : ValueOf<{
           [K in keyof Obj]: LeafOf<Obj[K], LeafType>
-      }[keyof Obj]
+      }>
 
 export type NeverEmptyObject<T> = {} extends T ? never : T
 
@@ -597,11 +525,6 @@ export type ListPossibleTypesRecurse<
 export type ListPossibleTypes<U> = ListPossibleTypesRecurse<U> extends infer X
     ? Cast<X, any[]>
     : never
-
-export type StringifyPossibleTypes<U extends Stringifiable> = Join<
-    ListPossibleTypes<U>,
-    ", "
->
 
 export type Segment = string | number
 

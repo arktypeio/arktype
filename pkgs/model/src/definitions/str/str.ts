@@ -1,57 +1,63 @@
-import {
-    ElementOf,
-    Iteration,
-    ListPossibleTypes,
-    narrow,
-    RemoveSpaces,
-    Split,
-    Spliterate
-} from "@re-/tools"
 import { Root } from "../root.js"
 import {
-    ParseConfig,
+    TypeOfContext,
     createParser,
     typeDefProxy,
     ReferencesTypeConfig,
     ValidationErrorMessage,
-    createTokenMatcher
+    ParseTypeContext,
+    DefaultParseTypeContext
 } from "./internal.js"
-import { Fragment } from "./fragment.js"
-import { expressionTokens } from "./expression/internal.js"
-import { modifierTokens } from "./modifier/internal.js"
+import { Fragment } from "./fragment/fragment.js"
+import { Modification } from "./modification/modification.js"
+import { LeafOf, ListPossibleTypes } from "@re-/tools"
 
 export namespace Str {
     export type Definition = string
 
-    export type Format<Def extends string> = RemoveSpaces<Def>
-
-    export type Check<Def extends string, Space> = Fragment.Check<
-        Format<Def>,
-        Def,
-        Space
-    >
-
     export type Parse<
         Def extends string,
-        Space,
-        Options extends ParseConfig
-    > = Str.Check<Def, Space> extends ValidationErrorMessage
-        ? unknown
-        : Fragment.Parse<Format<Def>, Space, Options>
+        Resolutions,
+        Context extends ParseTypeContext
+    > = Def extends Modification.Definition
+        ? Modification.Parse<Def, Resolutions, Context>
+        : Fragment.Parse<Def, Resolutions, Context>
 
-    const nonIdentifyingTokens = narrow([
-        ...expressionTokens,
-        ...modifierTokens
-    ])
+    export type Node = Modification.Node | Fragment.Node
 
-    const nonIdentifyingTokenMatcher = createTokenMatcher(nonIdentifyingTokens)
+    export type TypeOf<
+        N extends Node,
+        Resolutions,
+        Options extends TypeOfContext<Resolutions>
+    > = N extends Modification.Node
+        ? Modification.TypeOf<N, Resolutions, Options>
+        : N extends Fragment.Node
+        ? Fragment.TypeOf<N, Resolutions, Options>
+        : unknown
 
-    export type NonIdentifyingTokens = typeof nonIdentifyingTokens
+    export type Validate<
+        Def extends Definition,
+        Resolutions,
+        Errors extends string[] = ReferencesOf<
+            Def,
+            Resolutions,
+            { asTuple: true; asList: false; filter: ValidationErrorMessage }
+        >
+    > = Errors extends [] ? Def : { errors: Errors }
 
-    export type References<
-        Def extends string,
-        Config extends ReferencesTypeConfig
-    > = Spliterate<Def, NonIdentifyingTokens, Config>
+    export type ReferencesOf<
+        Def extends Definition,
+        Resolutions,
+        Config extends ReferencesTypeConfig,
+        Reference extends string = LeafOf<
+            Parse<Def, Resolutions, DefaultParseTypeContext>,
+            Config["filter"]
+        >
+    > = Config["asTuple"] extends true
+        ? ListPossibleTypes<Reference>
+        : Config["asList"] extends true
+        ? Reference[]
+        : Reference
 
     export const type = typeDefProxy as Definition
 
@@ -59,16 +65,10 @@ export namespace Str {
         {
             type,
             parent: () => Root.parse,
-            children: () => [Fragment.delegate]
+            children: () => [Modification.delegate, Fragment.delegate]
         },
         {
-            matches: (def) => typeof def === "string",
-            // Split by control characters, then remove
-            // empty strings leaving aliases and builtins behind
-            references: ({ def }) =>
-                def
-                    .split(nonIdentifyingTokenMatcher)
-                    .filter((fragment) => fragment !== "")
+            matches: (def) => typeof def === "string"
         }
     )
 

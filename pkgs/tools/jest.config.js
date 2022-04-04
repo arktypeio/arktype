@@ -1,3 +1,3 @@
-import { getJestConfig } from "./out/esm/node/index.js"
+import { getJestConfig } from "@re-/node"
 
 export default getJestConfig()

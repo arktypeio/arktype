@@ -1,6 +1,0 @@
-export * from "./builtin.js"
-export * from "./keyword"
-export * from "./literal.js"
-export * from "./numberLiteral.js"
-export * from "./stringLiteral.js"
-export * from "./bigintLiteral.js"

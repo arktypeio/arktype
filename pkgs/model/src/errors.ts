@@ -10,11 +10,10 @@ import {
     StringifyPossibleTypes
 } from "@re-/tools"
 import { ParseContext } from "./definitions/parser.js"
-import { ModifierToken } from "./definitions/str/modifier/internal.js"
 import { ExtractableDefinition } from "./internal.js"
 
 export const stringifyDefinition = (def: unknown) =>
-    toString(def, { quotes: "none" })
+    toString(def, { quotes: "none", maxNestedStringLength: 50 })
 
 export const definitionTypeError = (definition: unknown, path: string[]) =>
     `Definition value ${stringifyDefinition(definition)}${stringifyPathContext(
@@ -30,6 +29,8 @@ export const stringifyPathContext = (
 
 export const definitionTypeErrorTemplate =
     "Values of type 'function' or 'symbol' are not valid definitions."
+
+export type BadDefinitionType = Function | symbol
 
 export type DefinitionTypeError = typeof definitionTypeErrorTemplate
 
@@ -54,6 +55,8 @@ export const unknownTypeError = <Definition>(def: Definition, path: string[]) =>
 export const duplicateModifierErrorTemplate =
     "Modifier '@modifier' cannot appear more than once in a string definition."
 
+export type ModifierToken = "?"
+
 export const duplicateModifierError = (modifier: ModifierToken) =>
     duplicateModifierErrorTemplate.replace("@modifier", modifier)
 
@@ -66,7 +69,7 @@ export type DuplicateModifierError<
 >
 
 export const invalidModifierErrorTemplate =
-    "Modifier '@modifier' is only valid at the end of a type definition before any constraints."
+    "Modifier '@modifier' is only valid at the end of a type definition."
 
 export const invalidModifierError = (modifier: ModifierToken) =>
     invalidModifierErrorTemplate.replace("@modifier", modifier)
@@ -85,22 +88,24 @@ export type SplittableErrors = Record<string, string>
 export type SplittableErrorArgs = BaseAssignmentArgs & {
     delimiter: "|" | "&"
     errors: SplittableErrors
+    verbose: boolean
 }
 
 export const splittableValidationErrorTemplate =
-    "@valueType is not assignable to @components of @def:\n@errors"
+    "@valueType is not assignable to @components of @def.@errors"
 
 export const splittableValidationError = ({
     def,
     valueType,
     errors,
-    delimiter
+    delimiter,
+    verbose
 }: SplittableErrorArgs) =>
     splittableValidationErrorTemplate
         .replace("@valueType", stringifyDefinition(valueType))
         .replace("@components", delimiter === "|" ? "any" : "all")
         .replace("@def", stringifyDefinition(def))
-        .replace("@errors", stringifyErrors(errors))
+        .replace("@errors", verbose ? "\n" + stringifyErrors(errors) : "")
 
 export type BaseParseArgs = {
     def: unknown
@@ -122,28 +127,28 @@ export type ShallowCycleError<
 export const shallowCycleError = ({ def, ctx }: BaseParseArgs) =>
     shallowCycleErrorTemplate
         .replace("@def", stringifyDefinition(def))
-        .replace("@space", stringifyDefinition(ctx.space))
+        .replace("@space", stringifyDefinition(ctx.config.space?.resolutions))
         .replace("@resolutions", [...ctx.seen, def].join("=>"))
 
-export const invalidLimitErrorTemplate =
-    "@limit cannot be used to bound @inner."
+export const invalidBoundErrorTemplate =
+    "'@limit' must be a number literal to bound '@inner'."
 
-export type InvalidLimitError<
+export type InvalidBoundError<
     Inner extends string = string,
     Limit extends string = string
 > = StringReplace<
-    StringReplace<typeof invalidLimitErrorTemplate, "@inner", Inner>,
+    StringReplace<typeof invalidBoundErrorTemplate, "@inner", Inner>,
     "@limit",
     Limit
 >
 
-export const invalidLimitError = (inner: string, limit: string) =>
-    invalidLimitErrorTemplate
+export const invalidBoundError = (inner: string, limit: string) =>
+    invalidBoundErrorTemplate
         .replace("@inner", stringifyDefinition(inner))
         .replace("@limit", stringifyDefinition(limit))
 
 export const unboundableErrorTemplate =
-    "Bounded definition @inner must be a number or string."
+    "Bounded definition '@inner' must be a number or string keyword."
 
 export type UnboundableError<Inner extends string = string> = StringReplace<
     typeof unboundableErrorTemplate,
@@ -154,14 +159,20 @@ export type UnboundableError<Inner extends string = string> = StringReplace<
 export const unboundableError = (inner: string) =>
     unboundableErrorTemplate.replace("@inner", stringifyDefinition(inner))
 
+export const constraintErrorTemplate =
+    "Constraints must be either of the form N<L or L<N<L, where N is a constrainable type (e.g. number), L is a number literal (e.g. 5), and < is any comparison operator."
+
+export type ConstraintError = typeof constraintErrorTemplate
+
 export type ValidationErrorMessage =
     | UnknownTypeError
     | ShallowCycleError
     | DefinitionTypeError
+    | ConstraintError
+    | InvalidBoundError
+    | UnboundableError
     | DuplicateModifierError
     | InvalidModifierError
-    | InvalidLimitError
-    | UnboundableError
 
 export type InferrableValidationErrorMessage<E> =
     E extends ValidationErrorMessage ? E : never
@@ -202,6 +213,9 @@ export const generateRequiredCycleError = ({
 }: BaseParseArgs) =>
     requiredCycleErrorTemplate.replace("@cycle", [...seen, def].join("=>"))
 
+export const ungeneratableError = (def: string, defType: string) =>
+    `Unable to generate a value for '${def}' (${defType} generation is unsupported).`
+
 export const unassignableError = ({ def, valueType }: BaseAssignmentArgs) =>
     `${stringifyDefinition(
         valueType
@@ -228,6 +242,11 @@ export const valueGenerationError = ({ def, ctx: { path } }: BaseParseArgs) =>
         def
     )}${stringifyPathContext(path)}.`
 
+export const duplicateSpaceError =
+    "Space has already been determined according to the source of this 'create' method."
+
+export type DuplicateSpaceError = typeof duplicateSpaceError
+
 export const stringifyErrors = (errors: ValidationErrors) => {
     const errorPaths = Object.keys(errors)
     if (errorPaths.length === 0) {
@@ -241,5 +260,7 @@ export const stringifyErrors = (errors: ValidationErrors) => {
                 : ""
         }${errorPath ? uncapitalize(errors[errorPath]) : errors[errorPath]}`
     }
-    return toString(errors)
+    return `Encountered errors at the following paths:\n${toString(errors, {
+        indent: 2
+    })}`
 }

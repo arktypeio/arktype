@@ -1,9 +1,10 @@
+import { Box } from "@mui/material"
 import React from "react"
 
 export const modelDemo = (
-    <div
+    <Box
+        sx={{ bgcolor: "primary.light" }}
         style={{
-            backgroundColor: "#EEF1FC",
             width: "100%",
             height: "600px",
             border: 0,
@@ -21,5 +22,5 @@ export const modelDemo = (
             title="@re-/model playground"
             sandbox="allow-forms allow-modals allow-popups allow-presentation allow-same-origin allow-scripts"
         />
-    </div>
+    </Box>
 )
