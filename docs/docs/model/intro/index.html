@@ -1,9 +1,13 @@
 <!DOCTYPE html>
-<html class="docs-version-current" lang="en" dir="ltr">
+<html
+    lang="en"
+    dir="ltr"
+    class="docs-wrapper docs-doc-page docs-version-current plugin-docs plugin-id-default docs-doc-id-model/intro"
+>
     <head>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width,initial-scale=1" />
-        <meta name="generator" content="Docusaurus v2.0.0-beta.17" />
+        <meta name="generator" content="Docusaurus v2.0.0-beta.18" />
         <title data-rh="true">Model | Redo</title>
         <meta
             data-rh="true"
@@ -16,13 +20,13 @@
             content="https://redo.dev/docs/model/intro"
         />
         <meta data-rh="true" name="docusaurus_locale" content="en" />
+        <meta data-rh="true" name="docsearch:language" content="en" />
         <meta data-rh="true" name="docusaurus_version" content="current" />
         <meta
             data-rh="true"
             name="docusaurus_tag"
             content="docs-default-current"
         />
-        <meta data-rh="true" name="docsearch:language" content="en" />
         <meta data-rh="true" name="docsearch:version" content="current" />
         <meta
             data-rh="true"
@@ -30,8 +34,16 @@
             content="docs-default-current"
         />
         <meta data-rh="true" property="og:title" content="Model | Redo" />
-        <meta data-rh="true" name="description" content="@re-/model" />
-        <meta data-rh="true" property="og:description" content="@re-/model" />
+        <meta
+            data-rh="true"
+            name="description"
+            content="Type-first validation from editor to runtime🧬"
+        />
+        <meta
+            data-rh="true"
+            property="og:description"
+            content="Type-first validation from editor to runtime🧬"
+        />
         <link data-rh="true" rel="icon" href="/img/favicon.ico" />
         <link
             data-rh="true"
@@ -50,13 +62,13 @@
             href="https://redo.dev/docs/model/intro"
             hreflang="x-default"
         />
-        <link rel="stylesheet" href="/assets/css/styles.d76c33ae.css" />
+        <link rel="stylesheet" href="/assets/css/styles.05459d1f.css" />
         <link
             rel="preload"
-            href="/assets/js/runtime~main.df5ec91b.js"
+            href="/assets/js/runtime~main.fdf385da.js"
             as="script"
         />
-        <link rel="preload" href="/assets/js/main.58302cd6.js" as="script" />
+        <link rel="preload" href="/assets/js/main.929d7a49.js" as="script" />
     </head>
     <body class="navigation-with-keyboard">
         <script>
@@ -76,7 +88,7 @@
         </script>
         <div id="__docusaurus">
             <div role="region">
-                <a href="#" class="skipToContent_HwcX">Skip to main content</a>
+                <a href="#" class="skipToContent_Phtx">Skip to main content</a>
             </div>
             <nav class="navbar navbar--fixed-top">
                 <div class="navbar__inner">
@@ -106,11 +118,11 @@
                                 <img
                                     src="/img/prefix.svg"
                                     alt="Logo"
-                                    class="themedImage_Un6c themedImage--light_RsZd"
+                                    class="themedImage_ladG themedImage--light_XAUD"
                                 /><img
                                     src="/img/prefixDark.svg"
                                     alt="Logo"
-                                    class="themedImage_Un6c themedImage--dark_xXhI"
+                                    class="themedImage_ladG themedImage--dark_wZ53"
                                 /></div></a
                         ><a
                             aria-current="page"
@@ -133,32 +145,31 @@
                             target="_blank"
                             rel="noopener noreferrer"
                             class="navbar__item navbar__link"
-                            ><span
-                                >GitHub<svg
-                                    width="13.5"
-                                    height="13.5"
-                                    aria-hidden="true"
-                                    viewBox="0 0 24 24"
-                                    class="iconExternalLink_O7O_"
-                                >
-                                    <path
-                                        fill="currentColor"
-                                        d="M21 13v10h-21v-19h12v2h-10v15h17v-8h2zm3-12h-10.988l4.035 4-6.977 7.07 2.828 2.828 6.977-7.07 4.125 4.172v-11z"
-                                    ></path></svg></span
+                            >GitHub<svg
+                                width="13.5"
+                                height="13.5"
+                                aria-hidden="true"
+                                viewBox="0 0 24 24"
+                                class="iconExternalLink_h8au"
+                            >
+                                <path
+                                    fill="currentColor"
+                                    d="M21 13v10h-21v-19h12v2h-10v15h17v-8h2zm3-12h-10.988l4.035 4-6.977 7.07 2.828 2.828 6.977-7.07 4.125 4.172v-11z"
+                                ></path></svg
                         ></a>
-                        <div
-                            class="toggle_Yafy toggle_R1yE toggleDisabled_Zly1"
-                        >
-                            <div
-                                class="toggleButton_aMcG"
-                                role="button"
-                                tabindex="-1"
+                        <div class="toggle_FGEb colorModeToggle_WNN8">
+                            <button
+                                class="clean-btn toggleButton_Jwev toggleButtonDisabled_G2sA"
+                                type="button"
+                                disabled=""
+                                title="Switch between dark and light mode (currently light mode)"
+                                aria-label="Switch between dark and light mode (currently light mode)"
                             >
                                 <svg
                                     viewBox="0 0 24 24"
                                     width="24"
                                     height="24"
-                                    class="lightToggleIcon_EcLZ"
+                                    class="lightToggleIcon_sAFy"
                                 >
                                     <path
                                         fill="currentColor"
@@ -168,36 +179,31 @@
                                     viewBox="0 0 24 24"
                                     width="24"
                                     height="24"
-                                    class="darkToggleIcon_kaN4"
+                                    class="darkToggleIcon_s6jX"
                                 >
                                     <path
                                         fill="currentColor"
                                         d="M9.37,5.51C9.19,6.15,9.1,6.82,9.1,7.5c0,4.08,3.32,7.4,7.4,7.4c0.68,0,1.35-0.09,1.99-0.27C17.45,17.19,14.93,19,12,19 c-3.86,0-7-3.14-7-7C5,9.07,6.81,6.55,9.37,5.51z M12,3c-4.97,0-9,4.03-9,9s4.03,9,9,9s9-4.03,9-9c0-0.46-0.04-0.92-0.1-1.36 c-0.98,1.37-2.58,2.26-4.4,2.26c-2.98,0-5.4-2.42-5.4-5.4c0-1.81,0.89-3.42,2.26-4.4C12.92,3.04,12.46,3,12,3L12,3z"
                                     ></path>
                                 </svg>
-                            </div>
-                            <input
-                                type="checkbox"
-                                class="toggleScreenReader_QS08"
-                                aria-label="Switch between dark and light mode (currently light mode)"
-                            />
+                            </button>
                         </div>
                     </div>
                 </div>
                 <div role="presentation" class="navbar-sidebar__backdrop"></div>
             </nav>
-            <div class="main-wrapper docs-wrapper docs-doc-page">
-                <div class="docPage_CfUC">
+            <div class="main-wrapper">
+                <div class="docPage_ZZbG">
                     <button
                         aria-label="Scroll back to top"
-                        class="clean-btn theme-back-to-top-button backToTopButton_ofAF"
+                        class="clean-btn theme-back-to-top-button backToTopButton_obdd"
                         type="button"
                     ></button>
                     <aside
-                        class="theme-doc-sidebar-container docSidebarContainer_xgvi"
+                        class="theme-doc-sidebar-container docSidebarContainer_lehy"
                     >
-                        <div class="sidebar_sugG">
-                            <nav class="menu thin-scrollbar menu_jKxM">
+                        <div class="sidebar_aciq">
+                            <nav class="menu thin-scrollbar menu_zZoV">
                                 <ul class="theme-doc-sidebar-menu menu__list">
                                     <li
                                         class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-1 menu__list-item"
@@ -209,74 +215,119 @@
                                             >Model</a
                                         >
                                     </li>
+                                    <li
+                                        class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-1 menu__list-item"
+                                    >
+                                        <a
+                                            class="menu__link"
+                                            href="/docs/model/spaces"
+                                            >Spaces</a
+                                        >
+                                    </li>
+                                    <li
+                                        class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-1 menu__list-item"
+                                    >
+                                        <a
+                                            class="menu__link"
+                                            href="/docs/model/declarations"
+                                            >Declarations</a
+                                        >
+                                    </li>
+                                    <li
+                                        class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-1 menu__list-item"
+                                    >
+                                        <a
+                                            class="menu__link"
+                                            href="/docs/model/constraints"
+                                            >Constraints</a
+                                        >
+                                    </li>
+                                    <li
+                                        class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-1 menu__list-item"
+                                    >
+                                        <a
+                                            class="menu__link"
+                                            href="/docs/model/syntax"
+                                            >Syntax</a
+                                        >
+                                    </li>
+                                    <li
+                                        class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-1 menu__list-item"
+                                    >
+                                        <a
+                                            class="menu__link"
+                                            href="/docs/model/api"
+                                            >API</a
+                                        >
+                                    </li>
                                 </ul>
                             </nav>
                         </div>
                     </aside>
-                    <main class="docMainContainer_vDO8">
+                    <main class="docMainContainer_Bz0o">
                         <div
                             class="container padding-top--md padding-bottom--lg"
                         >
                             <div class="row">
-                                <div class="col docItemCol__hWC">
-                                    <div class="docItemContainer_YjuZ">
+                                <div class="col">
+                                    <div class="docItemContainer_ciCq">
                                         <article>
                                             <nav
-                                                class="theme-doc-breadcrumbs breadcrumbsContainer_x5BH"
+                                                class="theme-doc-breadcrumbs breadcrumbsContainer_QkF_"
                                                 aria-label="breadcrumbs"
                                             >
-                                                <ul class="breadcrumbs">
+                                                <ul
+                                                    class="breadcrumbs"
+                                                    itemscope=""
+                                                    itemtype="https://schema.org/BreadcrumbList"
+                                                >
                                                     <li
                                                         class="breadcrumbs__item"
                                                     >
                                                         <a
-                                                            class="breadcrumbs__link breadcrumbsItemLink_ZHTg"
+                                                            class="breadcrumbs__link"
                                                             href="/"
                                                             >🏠</a
                                                         >
                                                     </li>
                                                     <li
+                                                        itemscope=""
+                                                        itemprop="itemListElement"
+                                                        itemtype="https://schema.org/ListItem"
                                                         class="breadcrumbs__item breadcrumbs__item--active"
                                                     >
-                                                        <a
-                                                            class="breadcrumbs__link breadcrumbsItemLink_ZHTg"
-                                                            href="/docs/model/intro"
-                                                            >Model</a
-                                                        >
+                                                        <span
+                                                            class="breadcrumbs__link"
+                                                            itemprop="item name"
+                                                            >Model</span
+                                                        ><meta
+                                                            itemprop="position"
+                                                            content="1"
+                                                        />
                                                     </li>
                                                 </ul>
                                             </nav>
                                             <div
-                                                class="tocCollapsible_U0by theme-doc-toc-mobile tocMobile_NjuY"
-                                            >
-                                                <button
-                                                    type="button"
-                                                    class="clean-btn tocCollapsibleButton_Jcgl"
-                                                >
-                                                    On this page
-                                                </button>
-                                            </div>
-                                            <div
                                                 class="theme-doc-markdown markdown"
                                             >
-                                                <h1 id="model">Model</h1>
-                                                <div align="center">
-                                                    <img
-                                                        src="/img/logo.svg"
-                                                        width="400"
-                                                        alt="Redo Logo"
-                                                    />
-                                                    <h1>@re-/model</h1>
-                                                </div>
-                                                <div align="center">
-                                                    <p>
-                                                        Type-first validation
-                                                        from editor to runtime
-                                                        🧭
-                                                    </p>
-                                                </div>
-                                                <h2 id="whats-a-model">
-                                                    What&#x27;s a model?
+                                                <h1>Model</h1>
+                                                <h4>
+                                                    <i
+                                                        >Type-first validation
+                                                        from editor to
+                                                        runtime🧬</i
+                                                    >
+                                                </h4>
+                                                <h2
+                                                    class="anchor anchorWithStickyNavbar_vXKG"
+                                                    id="whats-a-model-"
+                                                >
+                                                    What&#x27;s a model? 🤷<a
+                                                        class="hash-link"
+                                                        href="#whats-a-model-"
+                                                        title="Direct link to heading"
+                                                        >​</a
+                                                    >
                                                 </h2>
                                                 <p>
                                                     A model is a way to create
@@ -286,23 +337,37 @@
                                                     benefits of
                                                     <a
                                                         href="https://github.com/microsoft/TypeScript"
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
                                                         >TypeScript</a
                                                     >
-                                                    at compile time and a
-                                                    validator like
+                                                    in your editor and build and
+                                                    a validator like
                                                     <a
                                                         href="https://github.com/jquense/yup"
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
                                                         >Yup</a
                                                     >
                                                     or
                                                     <a
                                                         href="https://github.com/sideway/joi"
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
                                                         >JOI</a
                                                     >
                                                     at runtime.
                                                 </p>
-                                                <h2 id="installation">
-                                                    Installation
+                                                <h2
+                                                    class="anchor anchorWithStickyNavbar_vXKG"
+                                                    id="installation-"
+                                                >
+                                                    Installation 📦<a
+                                                        class="hash-link"
+                                                        href="#installation-"
+                                                        title="Direct link to heading"
+                                                        >​</a
+                                                    >
                                                 </h2>
                                                 <p>
                                                     <code
@@ -320,934 +385,52 @@
                                                     TypeScript, you&#x27;ll need
                                                     at least <code>4.4</code>.
                                                 </p>
-                                                <h2 id="definition">
-                                                    Definition
+                                                <h2
+                                                    class="anchor anchorWithStickyNavbar_vXKG"
+                                                    id="start-quick-️"
+                                                >
+                                                    Start quick ⏱️<a
+                                                        class="hash-link"
+                                                        href="#start-quick-️"
+                                                        title="Direct link to heading"
+                                                        >​</a
+                                                    >
                                                 </h2>
                                                 <p>
                                                     This snippet will give you
                                                     an idea of
                                                     <code>@re-/model</code>
-                                                    syntax, but the best way to
-                                                    get a feel for it is in a
-                                                    live editor. Try messing
-                                                    around with the
-                                                    <code>user</code> model in
-                                                    <a
-                                                        href="https://TODO:updatelink"
-                                                        >our sandbox</a
-                                                    >
-                                                    or paste it in your own
-                                                    editor and see how the type
+                                                    syntax. Try messing around
+                                                    with the
+                                                    <code>user</code> definition
+                                                    below and see how the type
                                                     hints help guide you in the
                                                     right direction.
                                                 </p>
-                                                <pre><code class="language-ts">import { define } from &quot;@re-/model&quot;
-
-// Most common TypeScript expressions just work...
-const user = define({
-    name: {
-        first: &quot;string&quot;,
-        middle: &quot;string?&quot;,
-        last: &quot;string&quot;
-    },
-    age: &quot;number&quot;,
-    interests: &quot;string[]|null&quot;
-})
-
-// If you&#x27;re using TypeScript, you can create your type...
-type User = typeof user.type
-
-// And it will be totally equivalent to...
-type RedundantUserDeclaration = {
-    name: {
-        first: string
-        middle?: string
-        last: string
-    }
-    age: number
-    interests: string[] | null
-}
-
-// But a model can also validate your data at runtime...
-const fetchUser = () =&gt; {
-    return {
-        name: {
-            first: &quot;Reed&quot;,
-            last: &quot;Doe&quot;
-        },
-        age: 28,
-        interests: undefined
-    }
-}
-
-// Will throw: &quot;At path interests, undefined is not assignable to any of string[]|null.&quot;
-user.validate(fetchUser())
-</code></pre>
-                                                <h2 id="space">Space</h2>
-                                                <p>
-                                                    Your models can reference
-                                                    each other or themselves
-                                                    using a
-                                                    <strong>space</strong>.
-                                                    <a
-                                                        href="https://TODO:updatelink"
-                                                        >Try it out</a
-                                                    >.
-                                                </p>
-                                                <pre><code class="language-ts">import { compile } from &quot;@re-/model&quot;
-
-const mySpace = compile({
-    user: {
-        name: &quot;string&quot;,
-        friends: &quot;user[]&quot;,
-        groups: &quot;group[]&quot;
-    },
-    group: {
-        name: &quot;string&quot;,
-        description: &quot;string&quot;,
-        members: &quot;user[]&quot;
-    }
-})
-
-// Typescript types can be extracted like this
-type User = typeof mySpace.user.type
-
-// Will throw: &quot;At path friends/groups/0, &#x27;Type Enjoyers&#x27; is not assignable
-// to {name: string, description: string, members: user[]}&quot;
-mySpace.user.validate({
-    name: &quot;Devin Aldai&quot;,
-    friends: [
-        {
-            name: &quot;Devin Olnyt&quot;,
-            friends: [], // :(
-            groups: [&quot;Type Enjoyers&quot;]
-        }
-    ],
-    groups: []
-})
-
-// Once you&#x27;ve created a space, you can use it to create new models
-// that reference existing models like &quot;user&quot;
-const community = mySpace.model({
-    users: &quot;user[]&quot;,
-    groups: &quot;group[]&quot;,
-    population: &quot;number&quot;
-})
-</code></pre>
-                                                <h2 id="declaration">
-                                                    Declaration
-                                                </h2>
-                                                <p>
-                                                    If you prefer to split your
-                                                    space definitions across one
-                                                    or more files, you&#x27;ll
-                                                    want to use a
-                                                    <strong>declaration</strong
-                                                    >.
-                                                    <a
-                                                        href="https://TODO:updatelink"
-                                                        >Try it out</a
-                                                    >.
-                                                </p>
-                                                <p><code>index.ts</code></p>
-                                                <pre><code class="language-ts">import { declare } from &quot;@re-/model&quot;
-
-// Declare the names in your space allows
-const declared = declare(&quot;user&quot;, &quot;group&quot;)
-
-// A declaration&#x27;s &quot;define&quot; prop can be used anywhere to create
-// a definition that allows references to other declared names
-export const { define } = declared
-
-import { userDef } from &quot;./user&quot;
-import { groupDef } from &quot;./group&quot;
-
-// Type error: &quot;Declared types &#x27;group&#x27; were never defined.&quot;
-const badSpace = declared.compile(userDef)
-
-// Creates a space identical to that of &quot;Creating your first space&quot;
-const mySpace = declared.compile(userDef, groupDef)
-</code></pre>
-                                                <p><code>user.ts</code></p>
-                                                <pre><code class="language-ts">import { define } from &quot;./index&quot;
-
-const badUserDef = define.user({
-    name: &quot;string&quot;,
-    friends: &quot;user[]&quot;,
-    // Type error: &quot;Unable to determine the type of &#x27;grop&#x27;&quot;
-    groups: &quot;grop[]&quot;
-})
-
-export const userDef = define.user({
-    name: &quot;string&quot;,
-    friends: &quot;user[]&quot;,
-    groups: &quot;group[]&quot;
-})
-</code></pre>
-                                                <p><code>group.ts</code></p>
-                                                <pre><code class="language-ts">import { define } from &quot;./index&quot;
-
-export const groupDef = define.group({
-    name: &quot;string&quot;,
-    description: &quot;string&quot;,
-    members: &quot;user[]&quot;
-})
-</code></pre>
-                                                <h2 id="syntax">Syntax</h2>
-                                                <p>
-                                                    <code>@re-/model</code>
-                                                    supports all of
-                                                    TypeScript&#x27;s built-in
-                                                    types and a lot of its most
-                                                    common type definition
-                                                    syntax. The following
-                                                    sections outline the kinds
-                                                    of definitions you can use
-                                                    in your models.
-                                                </p>
-                                                <p>
-                                                    If the TS syntax you want to
-                                                    use is not listed here, feel
-                                                    free to create an issue
-                                                    summarizing your use case.
-                                                    Our model is easy to extend,
-                                                    so you might just see it an
-                                                    upcoming release 🎁
-                                                </p>
-                                                <h3 id="objects">Objects</h3>
-                                                <p>
-                                                    Object definitions are sets
-                                                    of keys or indices
-                                                    corresponding to string,
-                                                    primitive, or nested object
-                                                    definitions.
-                                                </p>
-                                                <h4 id="map">Map</h4>
-                                                <p>
-                                                    Map definitions are
-                                                    represented using the
-                                                    familiar object literal
-                                                    syntax.
-                                                </p>
-                                                <pre><code class="language-ts">const foo = model({
-    key: &quot;string?&quot;,
-    anotherKey: [&quot;unknown&quot;, { re: &quot;&#x27;model&#x27;|&#x27;state&#x27;|&#x27;test&#x27;&quot; }]
-})
-
-// Equivalent TS
-type FooToo = {
-    key?: string
-    anotherKey: [
-        unknown,
-        {
-            re: &quot;model&quot; | &quot;state&quot; | &quot;test&quot;
-        }
-    ]
-}
-</code></pre>
-                                                <h4 id="tuple">Tuple</h4>
-                                                <p>
-                                                    Tuple definitions are useful
-                                                    for fixed-length lists and
-                                                    are represented as array
-                                                    literals.
-                                                </p>
-                                                <pre><code class="language-ts">const bar = model([
-    &quot;true|null&quot;,
-    { coords: [&quot;number&quot;, &quot;number&quot;], piOus: [3, 1, 4] }
-])
-
-// Equivalent TS
-type BarAgain = [
-    true | null,
-    {
-        coords: [number, number]
-        piOus: [3, 1, 4]
-    }
-]
-</code></pre>
-                                                <h3 id="strings">Strings</h3>
-                                                <p>
-                                                    String definitions are
-                                                    strings constructed from the
-                                                    following fragment types:
-                                                </p>
-                                                <ul>
-                                                    <li>
-                                                        Builtins, including
-                                                        keywords like
-                                                        <code
-                                                            >&quot;number&quot;</code
-                                                        >
-                                                        and literals like
-                                                        <code
-                                                            >&quot;&#x27;redo&#x27;&quot;</code
-                                                        >
-                                                    </li>
-                                                    <li>
-                                                        Aliases like
-                                                        <code
-                                                            >&quot;user&quot;</code
-                                                        >
-                                                        or
-                                                        <code
-                                                            >&quot;group&quot;</code
-                                                        >
-                                                        that have been defined
-                                                        in your space
-                                                    </li>
-                                                    <li>
-                                                        Expressions consisting
-                                                        of one or more string
-                                                        definitions modified by
-                                                        an operator, like
-                                                        <code
-                                                            >&quot;user |
-                                                            number&quot;</code
-                                                        >
-                                                        or
-                                                        <code
-                                                            >&quot;group[]?&quot;</code
-                                                        >
-                                                    </li>
-                                                </ul>
-                                                <h4 id="keywords">Keywords</h4>
-                                                <p>
-                                                    All TypeScript keywords that
-                                                    can be used to represent a
-                                                    type are valid definitions.
-                                                    Each of the following string
-                                                    definitions maps directly to
-                                                    its corresponding TS type:
-                                                </p>
-                                                <table>
-                                                    <thead>
-                                                        <tr>
-                                                            <th>Keyword</th>
-                                                            <th>Notes</th>
-                                                        </tr>
-                                                    </thead>
-                                                    <tbody>
-                                                        <tr>
-                                                            <td>
-                                                                <code
-                                                                    >&quot;any&quot;</code
-                                                                >
-                                                            </td>
-                                                            <td></td>
-                                                        </tr>
-                                                        <tr>
-                                                            <td>
-                                                                <code
-                                                                    >&quot;unknown&quot;</code
-                                                                >
-                                                            </td>
-                                                            <td>
-                                                                Behaves like
-                                                                <code>any</code>
-                                                                when used in
-                                                                validation.
-                                                            </td>
-                                                        </tr>
-                                                        <tr>
-                                                            <td>
-                                                                <code
-                                                                    >&quot;never&quot;</code
-                                                                >
-                                                            </td>
-                                                            <td>
-                                                                Will always
-                                                                throw an error
-                                                                when used in
-                                                                validation.
-                                                            </td>
-                                                        </tr>
-                                                        <tr>
-                                                            <td>
-                                                                <code
-                                                                    >&quot;undefined&quot;</code
-                                                                >
-                                                            </td>
-                                                            <td></td>
-                                                        </tr>
-                                                        <tr>
-                                                            <td>
-                                                                <code
-                                                                    >&quot;void&quot;</code
-                                                                >
-                                                            </td>
-                                                            <td>
-                                                                Behaves like
-                                                                <code
-                                                                    >undefined</code
-                                                                >
-                                                                when used in
-                                                                validation
-                                                            </td>
-                                                        </tr>
-                                                        <tr>
-                                                            <td>
-                                                                <code
-                                                                    >&quot;object&quot;</code
-                                                                >
-                                                            </td>
-                                                            <td></td>
-                                                        </tr>
-                                                        <tr>
-                                                            <td>
-                                                                <code
-                                                                    >&quot;null&quot;</code
-                                                                >
-                                                            </td>
-                                                            <td></td>
-                                                        </tr>
-                                                        <tr>
-                                                            <td>
-                                                                <code
-                                                                    >&quot;function&quot;</code
-                                                                >
-                                                            </td>
-                                                            <td></td>
-                                                        </tr>
-                                                        <tr>
-                                                            <td>
-                                                                <code
-                                                                    >&quot;string&quot;</code
-                                                                >
-                                                            </td>
-                                                            <td></td>
-                                                        </tr>
-                                                        <tr>
-                                                            <td>
-                                                                <code
-                                                                    >&quot;number&quot;</code
-                                                                >
-                                                            </td>
-                                                            <td></td>
-                                                        </tr>
-                                                        <tr>
-                                                            <td>
-                                                                <code
-                                                                    >&quot;bigint&quot;</code
-                                                                >
-                                                            </td>
-                                                            <td></td>
-                                                        </tr>
-                                                        <tr>
-                                                            <td>
-                                                                <code
-                                                                    >&quot;boolean&quot;</code
-                                                                >
-                                                            </td>
-                                                            <td></td>
-                                                        </tr>
-                                                        <tr>
-                                                            <td>
-                                                                <code
-                                                                    >&quot;true&quot;</code
-                                                                >
-                                                            </td>
-                                                            <td></td>
-                                                        </tr>
-                                                        <tr>
-                                                            <td>
-                                                                <code
-                                                                    >&quot;false&quot;</code
-                                                                >
-                                                            </td>
-                                                            <td></td>
-                                                        </tr>
-                                                        <tr>
-                                                            <td>
-                                                                <code
-                                                                    >&quot;symbol&quot;</code
-                                                                >
-                                                            </td>
-                                                            <td></td>
-                                                        </tr>
-                                                    </tbody>
-                                                </table>
-                                                <h4 id="literals">Literals</h4>
-                                                <p>
-                                                    Literals are used to specify
-                                                    a <code>string</code>,
-                                                    <code>number</code>, or
-                                                    <code>bigint</code> type
-                                                    constrained to an exact
-                                                    value.
-                                                </p>
-                                                <table>
-                                                    <thead>
-                                                        <tr>
-                                                            <th>Literal</th>
-                                                            <th>Syntax</th>
-                                                            <th>Examples</th>
-                                                            <th>Notes</th>
-                                                        </tr>
-                                                    </thead>
-                                                    <tbody>
-                                                        <tr>
-                                                            <td>string</td>
-                                                            <td>
-                                                                <code
-                                                                    >&quot;&#x27;T&#x27;&quot;</code
-                                                                >
-                                                                or
-                                                                <code
-                                                                    >&#x27;&quot;T&quot;&#x27;</code
-                                                                >
-                                                            </td>
-                                                            <td>
-                                                                <code
-                                                                    >&quot;&#x27;redo&#x27;&quot;</code
-                                                                >
-                                                                or
-                                                                <code
-                                                                    >&#x27;&quot;WithDoubleQuotes&quot;&#x27;</code
-                                                                >
-                                                            </td>
-                                                            <td>
-                                                                Spaces are not
-                                                                currently
-                                                                supported and
-                                                                will be ignored.
-                                                            </td>
-                                                        </tr>
-                                                        <tr>
-                                                            <td>number</td>
-                                                            <td>
-                                                                <code
-                                                                    >&quot;T&quot;</code
-                                                                >, where T is a
-                                                                numeric value
-                                                            </td>
-                                                            <td>
-                                                                <code
-                                                                    >&quot;5&quot;</code
-                                                                >
-                                                                or
-                                                                <code
-                                                                    >&quot;-7.3&quot;</code
-                                                                >
-                                                            </td>
-                                                            <td>
-                                                                Though
-                                                                validation
-                                                                checks for the
-                                                                literal&#x27;s
-                                                                exact value,
-                                                                TypeScript
-                                                                widens its type
-                                                                to
-                                                                <code
-                                                                    >number</code
-                                                                >. To avoid this
-                                                                behavior, use a
-                                                                number
-                                                                primitive.
-                                                            </td>
-                                                        </tr>
-                                                        <tr>
-                                                            <td>bigint</td>
-                                                            <td>
-                                                                <code
-                                                                    >&quot;Tn&quot;</code
-                                                                >, where T is an
-                                                                integer
-                                                            </td>
-                                                            <td>
-                                                                <code
-                                                                    >&quot;0n&quot;</code
-                                                                >
-                                                                or
-                                                                <code
-                                                                    >&quot;-999n&quot;</code
-                                                                >
-                                                            </td>
-                                                            <td>
-                                                                Though
-                                                                validation
-                                                                checks for the
-                                                                literal&#x27;s
-                                                                exact value,
-                                                                TypeScript
-                                                                widens its type
-                                                                to
-                                                                <code
-                                                                    >bigint</code
-                                                                >. To avoid this
-                                                                behavior, use a
-                                                                bigint
-                                                                primitive.
-                                                            </td>
-                                                        </tr>
-                                                    </tbody>
-                                                </table>
-                                                <p>
-                                                    While
-                                                    <code>boolean</code> values
-                                                    could also be considered
-                                                    literals, they are modeled
-                                                    as keywords since, unlike
-                                                    other literal types, they
-                                                    can can be defined as a
-                                                    finite set (i.e.
-                                                    <code>true</code> and
-                                                    <code>false</code>).
-                                                </p>
-                                                <h4 id="expressions">
-                                                    Expressions
-                                                </h4>
-                                                <p>
-                                                    Expressions are a set of
-                                                    syntactic patterns that can
-                                                    be applied to one or more
-                                                    nested string definitions to
-                                                    modify the type they
-                                                    represent. Unless otherwise
-                                                    noted, expressions can be
-                                                    applied to any valid string
-                                                    definition, including other
-                                                    expressions.
-                                                </p>
-                                                <p>
-                                                    The following table is
-                                                    ordered by relative
-                                                    precedence in the event that
-                                                    a definition matches
-                                                    multiple patterns. For
-                                                    example, the definition
-                                                    <code
-                                                        >&quot;string|boolean[]&quot;</code
-                                                    >
-                                                    would be interpreted as
-                                                    either a
-                                                    <code>string</code> or a
-                                                    list of
-                                                    <code>boolean</code> since
-                                                    &quot;Or&quot; applies
-                                                    before &quot;List.&quot;
-                                                    Parenthetical grouping is
-                                                    not yet supported, but can
-                                                    be emulated by adding the
-                                                    desired grouping to a space
-                                                    and referencing its alias.
-                                                </p>
-                                                <table>
-                                                    <thead>
-                                                        <tr>
-                                                            <th>Exrpession</th>
-                                                            <th>Pattern</th>
-                                                            <th>Examples</th>
-                                                            <th>Notes</th>
-                                                        </tr>
-                                                    </thead>
-                                                    <tbody>
-                                                        <tr>
-                                                            <td>Optional</td>
-                                                            <td>
-                                                                <code>T?</code>
-                                                            </td>
-                                                            <td>
-                                                                <code
-                                                                    >function?</code
-                                                                >
-                                                                <br /><code
-                                                                    >boolean[]?</code
-                                                                >
-                                                            </td>
-                                                            <td>
-                                                                Adds
-                                                                <code
-                                                                    >undefined</code
-                                                                >
-                                                                as a possible
-                                                                value. When used
-                                                                in an Object
-                                                                type, also makes
-                                                                the
-                                                                corresponding
-                                                                key optional.
-                                                            </td>
-                                                        </tr>
-                                                        <tr>
-                                                            <td>
-                                                                Arrow Function
-                                                            </td>
-                                                            <td>
-                                                                <code
-                                                                    >(T1,T2,...)=&gt;T3</code
-                                                                >
-                                                            </td>
-                                                            <td>
-                                                                <code
-                                                                    >(string,boolean[])=&gt;void</code
-                                                                >
-                                                                <br /><code
-                                                                    >()=&gt;object</code
-                                                                >
-                                                            </td>
-                                                            <td>
-                                                                At runtime,
-                                                                falls back to
-                                                                validating that
-                                                                a value is of
-                                                                type
-                                                                <code
-                                                                    >function</code
-                                                                >.
-                                                            </td>
-                                                        </tr>
-                                                        <tr>
-                                                            <td>Union</td>
-                                                            <td>
-                                                                <code
-                                                                    >T1\|T2\|T3\|...</code
-                                                                >
-                                                            </td>
-                                                            <td>
-                                                                <code
-                                                                    >false\|string</code
-                                                                >
-                                                                <br /><code
-                                                                    >string\|number\|boolean[]</code
-                                                                >
-                                                            </td>
-                                                            <td>
-                                                                Acts just like
-                                                                TypeScript&#x27;s
-                                                                union operator
-                                                                (<code>\|</code>)
-                                                            </td>
-                                                        </tr>
-                                                        <tr>
-                                                            <td>List</td>
-                                                            <td>
-                                                                <code>T[]</code>
-                                                            </td>
-                                                            <td>
-                                                                <code
-                                                                    >string[]</code
-                                                                >
-                                                                <br /><code
-                                                                    >number[][]</code
-                                                                >
-                                                            </td>
-                                                            <td></td>
-                                                        </tr>
-                                                    </tbody>
-                                                </table>
-                                                <p>
-                                                    Spaces are ignored when
-                                                    parsing expressions, so feel
-                                                    free to use whatever format
-                                                    you find most readable.
-                                                </p>
-                                                <h3 id="primitives">
-                                                    Primitives
-                                                </h3>
-                                                <p>
-                                                    Any definition that is
-                                                    neither a string nor an
-                                                    object is considered a
-                                                    primitive and models a type
-                                                    that allows only its exact
-                                                    value. All primitive
-                                                    definitions correspond to an
-                                                    equivalent string
-                                                    definition, so whether you
-                                                    use them often comes down to
-                                                    stylistic preference, though
-                                                    there are some noted
-                                                    circumstances in which they
-                                                    allow TypeScript to infer
-                                                    narrower types than their
-                                                    string equivalents.
-                                                </p>
-                                                <table>
-                                                    <thead>
-                                                        <tr>
-                                                            <th>
-                                                                Definition Type
-                                                            </th>
-                                                            <th>Examples</th>
-                                                            <th>Notes</th>
-                                                        </tr>
-                                                    </thead>
-                                                    <tbody>
-                                                        <tr>
-                                                            <td>undefined</td>
-                                                            <td>
-                                                                <code
-                                                                    >undefined</code
-                                                                >
-                                                            </td>
-                                                            <td>
-                                                                Requires
-                                                                compiler option
-                                                                <code
-                                                                    >&quot;strictNullChecks&quot;</code
-                                                                >
-                                                                or
-                                                                <code
-                                                                    >&quot;strict&quot;</code
-                                                                >
-                                                                set to
-                                                                <code
-                                                                    >true</code
-                                                                >
-                                                                in your
-                                                                <code
-                                                                    >tsconfig.json</code
-                                                                >.
-                                                            </td>
-                                                        </tr>
-                                                        <tr>
-                                                            <td>null</td>
-                                                            <td>
-                                                                <code
-                                                                    >null</code
-                                                                >
-                                                            </td>
-                                                            <td>
-                                                                Requires
-                                                                compiler option
-                                                                <code
-                                                                    >&quot;strictNullChecks&quot;</code
-                                                                >
-                                                                or
-                                                                <code
-                                                                    >&quot;strict&quot;</code
-                                                                >
-                                                                set to
-                                                                <code
-                                                                    >true</code
-                                                                >
-                                                                in your
-                                                                <code
-                                                                    >tsconfig.json</code
-                                                                >.
-                                                            </td>
-                                                        </tr>
-                                                        <tr>
-                                                            <td>boolean</td>
-                                                            <td>
-                                                                <code
-                                                                    >true</code
-                                                                >
-                                                                <br />
-                                                                <code
-                                                                    >false</code
-                                                                >
-                                                            </td>
-                                                            <td></td>
-                                                        </tr>
-                                                        <tr>
-                                                            <td>number</td>
-                                                            <td>
-                                                                <code>0</code>
-                                                                <br />
-                                                                <code
-                                                                    >32.33</code
-                                                                >
-                                                            </td>
-                                                            <td>
-                                                                TS infers the
-                                                                exact value of
-                                                                <code
-                                                                    >number</code
-                                                                >
-                                                                primitives,
-                                                                while string
-                                                                literals are
-                                                                always widened
-                                                                to
-                                                                <code
-                                                                    >number</code
-                                                                >.
-                                                            </td>
-                                                        </tr>
-                                                        <tr>
-                                                            <td>bigint</td>
-                                                            <td>
-                                                                <code>99n</code>
-                                                                <br />
-                                                                <code
-                                                                    >-100n</code
-                                                                >
-                                                            </td>
-                                                            <td>
-                                                                TS infers the
-                                                                exact value of
-                                                                <code
-                                                                    >bigint</code
-                                                                >
-                                                                primitives,
-                                                                while string
-                                                                literals are
-                                                                always widened
-                                                                to
-                                                                <code
-                                                                    >bigint</code
-                                                                >. <br />
-                                                                Requires a
-                                                                target of ES2020
-                                                                or higher.
-                                                            </td>
-                                                        </tr>
-                                                    </tbody>
-                                                </table>
-                                                <h2 id="contributing">
-                                                    Contributing
-                                                </h2>
-                                                <p>
-                                                    If you&#x27;re interested in
-                                                    contributing to
-                                                    <code>@re-/model</code>...
-                                                </p>
-                                                <ol>
-                                                    <li>
-                                                        Thank you 😍 We&#x27;ll
-                                                        do everything we can to
-                                                        make this as
-                                                        straightforward as
-                                                        possible, regardless of
-                                                        your experience.
-                                                    </li>
-                                                    <li>
-                                                        Check out our
-                                                        <a
-                                                            href="https://github.com/re-do/re-po/blob/main/CONTRIBUTING.md"
-                                                            >guide</a
-                                                        >
-                                                        to get started!
-                                                    </li>
-                                                </ol>
-                                                <h2 id="about-redo">
-                                                    About Redo
-                                                </h2>
-                                                <p>
-                                                    <code>@re-/model</code> is
-                                                    part of a set of devtools
-                                                    designed to help you
-                                                    navigate the JS/TS ecosystem
-                                                    and get back to doing what
-                                                    you love. Learn more
-                                                    <a
-                                                        href="https://github.com/re-do/re-po"
-                                                        >at the root of this
-                                                        repo</a
-                                                    >.
-                                                </p>
-                                                <h2 id="license">License</h2>
-                                                <p>
-                                                    This project is licensed
-                                                    under the terms of the
-                                                    <a
-                                                        href="https://github.com/re-do/re-po/blob/main/LICENSE"
-                                                        >MIT license</a
-                                                    >.
-                                                </p>
+                                                <div
+                                                    style="
+                                                        width: 100%;
+                                                        height: 660px;
+                                                        border: 0;
+                                                        margin-left: -8px;
+                                                        margin-right: -8px;
+                                                        padding: 16px;
+                                                        overflow: hidden;
+                                                        border-radius: 8px;
+                                                    "
+                                                >
+                                                    <iframe
+                                                        id="demo"
+                                                        src="https://stackblitz.com/edit/re-model?embed=1&amp;file=model.ts&amp;hideDevTools=1&amp;hideExplorer=1&amp;hideNavigation=1&amp;theme=dark"
+                                                        style="
+                                                            height: 100%;
+                                                            width: 100%;
+                                                            border-radius: 8px;
+                                                        "
+                                                        title="@re-/model"
+                                                        sandbox="allow-forms allow-modals allow-popups allow-presentation allow-same-origin allow-scripts"
+                                                    ></iframe>
+                                                </div>
                                             </div>
                                             <footer
                                                 class="theme-doc-footer docusaurus-mt-lg"
@@ -1266,7 +449,7 @@ type BarAgain = [
                                                                 height="20"
                                                                 width="20"
                                                                 viewBox="0 0 40 40"
-                                                                class="iconEdit_VrrQ"
+                                                                class="iconEdit_IqOT"
                                                                 aria-hidden="true"
                                                             >
                                                                 <g>
@@ -1278,7 +461,7 @@ type BarAgain = [
                                                         >
                                                     </div>
                                                     <div
-                                                        class="col lastUpdated_whEe"
+                                                        class="col lastUpdated_caMn"
                                                     ></div>
                                                 </div>
                                             </footer>
@@ -1292,104 +475,23 @@ type BarAgain = [
                                             ></div>
                                             <div
                                                 class="pagination-nav__item pagination-nav__item--next"
-                                            ></div>
+                                            >
+                                                <a
+                                                    class="pagination-nav__link"
+                                                    href="/docs/model/spaces"
+                                                    ><div
+                                                        class="pagination-nav__sublabel"
+                                                    >
+                                                        Next
+                                                    </div>
+                                                    <div
+                                                        class="pagination-nav__label"
+                                                    >
+                                                        Spaces
+                                                    </div></a
+                                                >
+                                            </div>
                                         </nav>
-                                    </div>
-                                </div>
-                                <div class="col col--3">
-                                    <div
-                                        class="tableOfContents_ay9q thin-scrollbar theme-doc-toc-desktop"
-                                    >
-                                        <ul
-                                            class="table-of-contents table-of-contents__left-border"
-                                        >
-                                            <li>
-                                                <a
-                                                    href="#whats-a-model"
-                                                    class="table-of-contents__link toc-highlight"
-                                                    >What&#39;s a model?</a
-                                                >
-                                            </li>
-                                            <li>
-                                                <a
-                                                    href="#installation"
-                                                    class="table-of-contents__link toc-highlight"
-                                                    >Installation</a
-                                                >
-                                            </li>
-                                            <li>
-                                                <a
-                                                    href="#definition"
-                                                    class="table-of-contents__link toc-highlight"
-                                                    >Definition</a
-                                                >
-                                            </li>
-                                            <li>
-                                                <a
-                                                    href="#space"
-                                                    class="table-of-contents__link toc-highlight"
-                                                    >Space</a
-                                                >
-                                            </li>
-                                            <li>
-                                                <a
-                                                    href="#declaration"
-                                                    class="table-of-contents__link toc-highlight"
-                                                    >Declaration</a
-                                                >
-                                            </li>
-                                            <li>
-                                                <a
-                                                    href="#syntax"
-                                                    class="table-of-contents__link toc-highlight"
-                                                    >Syntax</a
-                                                >
-                                                <ul>
-                                                    <li>
-                                                        <a
-                                                            href="#objects"
-                                                            class="table-of-contents__link toc-highlight"
-                                                            >Objects</a
-                                                        >
-                                                    </li>
-                                                    <li>
-                                                        <a
-                                                            href="#strings"
-                                                            class="table-of-contents__link toc-highlight"
-                                                            >Strings</a
-                                                        >
-                                                    </li>
-                                                    <li>
-                                                        <a
-                                                            href="#primitives"
-                                                            class="table-of-contents__link toc-highlight"
-                                                            >Primitives</a
-                                                        >
-                                                    </li>
-                                                </ul>
-                                            </li>
-                                            <li>
-                                                <a
-                                                    href="#contributing"
-                                                    class="table-of-contents__link toc-highlight"
-                                                    >Contributing</a
-                                                >
-                                            </li>
-                                            <li>
-                                                <a
-                                                    href="#about-redo"
-                                                    class="table-of-contents__link toc-highlight"
-                                                    >About Redo</a
-                                                >
-                                            </li>
-                                            <li>
-                                                <a
-                                                    href="#license"
-                                                    class="table-of-contents__link toc-highlight"
-                                                    >License</a
-                                                >
-                                            </li>
-                                        </ul>
                                     </div>
                                 </div>
                             </div>
@@ -1427,7 +529,7 @@ type BarAgain = [
                             </ul>
                         </div>
                         <div class="col footer__col">
-                            <div class="footer__title">More</div>
+                            <div class="footer__title">Community</div>
                             <ul class="footer__items">
                                 <li class="footer__item">
                                     <a
@@ -1435,18 +537,36 @@ type BarAgain = [
                                         target="_blank"
                                         rel="noopener noreferrer"
                                         class="footer__link-item"
-                                        ><span
-                                            >GitHub<svg
-                                                width="13.5"
-                                                height="13.5"
-                                                aria-hidden="true"
-                                                viewBox="0 0 24 24"
-                                                class="iconExternalLink_O7O_"
-                                            >
-                                                <path
-                                                    fill="currentColor"
-                                                    d="M21 13v10h-21v-19h12v2h-10v15h17v-8h2zm3-12h-10.988l4.035 4-6.977 7.07 2.828 2.828 6.977-7.07 4.125 4.172v-11z"
-                                                ></path></svg></span
+                                        >GitHub<svg
+                                            width="13.5"
+                                            height="13.5"
+                                            aria-hidden="true"
+                                            viewBox="0 0 24 24"
+                                            class="iconExternalLink_h8au"
+                                        >
+                                            <path
+                                                fill="currentColor"
+                                                d="M21 13v10h-21v-19h12v2h-10v15h17v-8h2zm3-12h-10.988l4.035 4-6.977 7.07 2.828 2.828 6.977-7.07 4.125 4.172v-11z"
+                                            ></path></svg
+                                    ></a>
+                                </li>
+                                <li class="footer__item">
+                                    <a
+                                        href="https://discord.gg/WSNF3Kc4xh"
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        class="footer__link-item"
+                                        >Discord<svg
+                                            width="13.5"
+                                            height="13.5"
+                                            aria-hidden="true"
+                                            viewBox="0 0 24 24"
+                                            class="iconExternalLink_h8au"
+                                        >
+                                            <path
+                                                fill="currentColor"
+                                                d="M21 13v10h-21v-19h12v2h-10v15h17v-8h2zm3-12h-10.988l4.035 4-6.977 7.07 2.828 2.828 6.977-7.07 4.125 4.172v-11z"
+                                            ></path></svg
                                     ></a>
                                 </li>
                             </ul>
@@ -1460,7 +580,7 @@ type BarAgain = [
                 </div>
             </footer>
         </div>
-        <script src="/assets/js/runtime~main.df5ec91b.js"></script>
-        <script src="/assets/js/main.58302cd6.js"></script>
+        <script src="/assets/js/runtime~main.fdf385da.js"></script>
+        <script src="/assets/js/main.929d7a49.js"></script>
     </body>
 </html>
