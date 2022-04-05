@@ -264,43 +264,26 @@ All TypeScript keywords that can be used to represent a type are valid definitio
 
 ##### String subtypes
 
-| Keyword       | Notes                                               |
-| ------------- | --------------------------------------------------- |
-| `"any"`       |                                                     |
-| `"unknown"`   | Behaves like `any` when used in validation.         |
-| `"never"`     | Will always throw an error when used in validation. |
-| `"undefined"` |                                                     |
-| `"void"`      | Behaves like `undefined` when used in validation    |
-| `"object"`    |                                                     |
-| `"null"`      |                                                     |
-| `"function"`  |                                                     |
-| `"string"`    |                                                     |
-| `"number"`    |                                                     |
-| `"bigint"`    |                                                     |
-| `"boolean"`   |                                                     |
-| `"true"`      |                                                     |
-| `"false"`     |                                                     |
-| `"symbol"`    |                                                     |
+The type of these definitions will be inferred as `string`, but they will validate that the criterion corresponding to their keyword.
+
+| Keyword          | String is valid if it...                                            |
+| ---------------- | ------------------------------------------------------------------- |
+| `"email"`        | Matches the pattern from [emailregex.com](https://emailregex.com/). |
+| `"alpha"`        | Includes exclusively lowercase and/or uppercase letters.            |
+| `"alphanumeric"` | Includes exclusively digits, lowercase and/or uppercase letters.    |
+| `"lowercase"`    | Does not contain uppercase letters.                                 |
+| `"uppercase"`    | Does not contain lowercase letters.                                 |
+| `"character"`    | Is of length 1.                                                     |
 
 ##### Number subtypes
 
-| Keyword       | Notes                                               |
-| ------------- | --------------------------------------------------- |
-| `"any"`       |                                                     |
-| `"unknown"`   | Behaves like `any` when used in validation.         |
-| `"never"`     | Will always throw an error when used in validation. |
-| `"undefined"` |                                                     |
-| `"void"`      | Behaves like `undefined` when used in validation    |
-| `"object"`    |                                                     |
-| `"null"`      |                                                     |
-| `"function"`  |                                                     |
-| `"string"`    |                                                     |
-| `"number"`    |                                                     |
-| `"bigint"`    |                                                     |
-| `"boolean"`   |                                                     |
-| `"true"`      |                                                     |
-| `"false"`     |                                                     |
-| `"symbol"`    |                                                     |
+The type of these definitions will be inferred as `number`, but they will validate that the criterion corresponding to their keyword.
+
+| Keyword         | Number is valid if it...       |
+| --------------- | ------------------------------ |
+| `"integer"`     | Is an integer.                 |
+| `"positive"`    | Is greater than 0.             |
+| `"nonnegative"` | Is greater than or equal to 0. |
 
 #### Literals
 
@@ -321,12 +304,13 @@ Expressions are a set of syntactic patterns that can be applied to one or more n
 
 The following table is ordered by relative precedence in the event that a definition matches multiple patterns. For example, the definition `"string|boolean[]"` would be interpreted as either a `string` or a list of `boolean` since "Or" applies before "List." Arbitrary parenthetical grouping is not yet supported, but can be emulated by adding the desired grouping to a space and referencing its alias.
 
-| Expression     | Pattern           | Examples                                     | Notes                                                                                      |
-| -------------- | ----------------- | -------------------------------------------- | ------------------------------------------------------------------------------------------ |
-| Arrow Function | `(T1,T2,...)=>T3` | `(string,boolean[])=>void` <br/>`()=>object` | At runtime, falls back to validating that a value is of type `function`.                   |
-| Union          | `T1\|T2`          | `false\|string`                              | Acts just like TypeScript's union operator (`\|`). Think of it like a logical "or."        |
-| Intersection   | `T1&T2`           | `positive&integer`                           | Acts just like TypeScript's intersection operator (`&`). Think of it like a logical "and." |
-| List           | `T[]`             | `string[]` <br/>`number[][]`                 |                                                                                            |
+| Expression     | Pattern            | Examples                                     | Notes                                                                                                                                                                                                                                                                                                                                                                                      |
+| -------------- | ------------------ | -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Arrow Function | `(T1,T2,...)=>T3`  | `(string,boolean[])=>void` <br/>`()=>object` | At runtime, falls back to validating that a value is of type `function`.                                                                                                                                                                                                                                                                                                                   |
+| Union          | `T1\|T2`           | `false\|string`                              | Acts just like TypeScript's union operator (`\|`). Think of it like a logical "or."                                                                                                                                                                                                                                                                                                        |
+| Intersection   | `T1&T2`            | `positive&integer`                           | Acts just like TypeScript's intersection operator (`&`). Think of it like a logical "and."                                                                                                                                                                                                                                                                                                 |
+| Constraint     | `T<N` OR `N1<T<N2` | `number<=100` <br/> `5<alphanumeric<20`      | Constraints are number or string keyword singly or doubly bounded by number literals. All comparison operators (<, >, <=, >=) are available. Constraints do not affect the inferred type of the number or string keyword, but will bound the value of a number or the length of a string during validation. Note that for a single-bounded constraint, the keyword must precede its bound. |
+| List           | `T[]`              | `string[]` <br/>`number[][]`                 |                                                                                                                                                                                                                                                                                                                                                                                            |
 
 #### Modifiers
 
@@ -352,7 +336,7 @@ Any definition that is neither a string nor an object is considered a primitive 
 
 If you're interested in contributing to `@re-/model`...
 
-1. Thank you 😍 We'll do everything we can to make this as straightforward as possible, regardless of your experience.
+1. Thank you 😍 We'll do everything we can to make this as straightforward as possible, regardless of your level of experience.
 2. Check out our [guide](../../CONTRIBUTING.md) to get started!
 
 ## About Redo
