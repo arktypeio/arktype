@@ -15,7 +15,7 @@ Type-first validation from editor to runtime🧬
 
 ## What's a model? 🤷
 
-A model is a way to create universal types for your JS/TS values. From one definition, you get all the benefits of [TypeScript](https://github.com/microsoft/TypeScript) in your editor and build and a validator like [Yup](https://github.com/jquense/yup) or [JOI](https://github.com/sideway/joi) at runtime.
+A model is a way to create universal types for your JS/TS values. From one definition, you get all the benefits of <a href="https://github.com/microsoft/TypeScript" target="_blank">TypeScript</a> in your editor and build and a validator like <a href="https://github.com/jquense/yup" target="_blank">Yup</a> or <a href="https://github.com/sideway/joi" target="_blank">JOI</a> at runtime.
 
 ## Installation 📦
 
@@ -185,7 +185,7 @@ console.log(error ?? "Flawless. Obviously.")
 
 `@re-/model` supports many of TypeScript's built-in types and operators, as well as some new ones dedicated exclusively to runtime validation. The following sections outline the kinds of definitions available to you when creating a model.
 
-If there's a type or expression you wish were supported but isn't, we'd love for you to [create a feature request!](https://github.com/re-do/re-po/issues/new) Our parser is easy to extend, so you might just see it an upcoming release 🎁
+If there's a type or expression you wish were supported but isn't, we'd love for you to <a href="https://github.com/re-do/re-po/issues/new" target="_blank">create a feature request!</a> Our parser is easy to extend, so you might just see it an upcoming release 🎁
 
 ### Objects
 
@@ -269,14 +269,14 @@ All TypeScript keywords that can be used to represent a type are valid definitio
 
 The type of these definitions will be inferred as `string`, but they will validate that the criterion corresponding to their keyword.
 
-| Keyword          | String is valid if it...                                            |
-| ---------------- | ------------------------------------------------------------------- |
-| `"email"`        | Matches the pattern from [emailregex.com](https://emailregex.com/). |
-| `"alpha"`        | Includes exclusively lowercase and/or uppercase letters.            |
-| `"alphanumeric"` | Includes exclusively digits, lowercase and/or uppercase letters.    |
-| `"lowercase"`    | Does not contain uppercase letters.                                 |
-| `"uppercase"`    | Does not contain lowercase letters.                                 |
-| `"character"`    | Is of length 1.                                                     |
+| Keyword          | String is valid if it...                                                                       |
+| ---------------- | ---------------------------------------------------------------------------------------------- |
+| `"email"`        | Matches the pattern from <a href="https://emailregex.com/" target="_blank">emailregex.com</a>. |
+| `"alpha"`        | Includes exclusively lowercase and/or uppercase letters.                                       |
+| `"alphanumeric"` | Includes exclusively digits, lowercase and/or uppercase letters.                               |
+| `"lowercase"`    | Does not contain uppercase letters.                                                            |
+| `"uppercase"`    | Does not contain lowercase letters.                                                            |
+| `"character"`    | Is of length 1.                                                                                |
 
 ##### Number subtypes
 
@@ -292,12 +292,12 @@ The type of these definitions will be inferred as `number`, but they will valida
 
 Literals are used to specify a `string`, `number`, or `bigint` type constrained to an exact value.
 
-| Literal | Syntax                            | Examples                             | Notes                                                                                                                                                                                                                 |
-| ------- | --------------------------------- | ------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| string  | `"'T'"` or `'"T"'`                | `"'redo'"` or `'"WithDoubleQuotes"'` | As of now, literals containing the quote character that encloses them are not supported. Support for an escape character is tracked [here](https://github.com/re-do/re-po/issues/346).                                |
-| regex   | `/T/`                             | `"/[a-z]*@redo\.dev/"`               | Validation checks whether a string matching the expression. Type is always inferred as `string`. Lack of an escape character for regex containing `"/"` is tracked [here](https://github.com/re-do/re-po/issues/346). |
-| number  | `"T"`, where T is a numeric value | `"5"` or `"-7.3"`                    | Though validation checks for the literal's exact value, TypeScript widens its type to `number`. To avoid this behavior, use a number primitive.                                                                       |
-| bigint  | `"Tn"`, where T is an integer     | `"0n"` or `"-999n"`                  | Though validation checks for the literal's exact value, TypeScript widens its type to `bigint`. To avoid this behavior, use a bigint primitive.                                                                       |
+| Literal | Syntax                            | Examples                             | Notes                                                                                                                                                                                                                                            |
+| ------- | --------------------------------- | ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| string  | `"'T'"` or `'"T"'`                | `"'redo'"` or `'"WithDoubleQuotes"'` | As of now, literals containing the quote character that encloses them are not supported. Support for an escape character is tracked <a href="https://github.com/re-do/re-po/issues/346" target="_blank">here</a>.                                |
+| regex   | `/T/`                             | `"/[a-z]*@redo\.dev/"`               | Validation checks whether a string matching the expression. Type is always inferred as `string`. Lack of an escape character for regex containing `"/"` is tracked <a href="https://github.com/re-do/re-po/issues/346" target="_blank">here</a>. |
+| number  | `"T"`, where T is a numeric value | `"5"` or `"-7.3"`                    | Though validation checks for the literal's exact value, TypeScript widens its type to `number`. To avoid this behavior, use a number primitive.                                                                                                  |
+| bigint  | `"Tn"`, where T is an integer     | `"0n"` or `"-999n"`                  | Though validation checks for the literal's exact value, TypeScript widens its type to `bigint`. To avoid this behavior, use a bigint primitive.                                                                                                  |
 
 While `boolean` values could also be considered literals, they are modeled as keywords since, unlike other literal types, they can can be defined as a finite set (i.e. `true` and `false`).
 
@@ -337,7 +337,7 @@ Any definition that is neither a string nor an object is considered a primitive 
 
 ## API
 
-Detailed API docs are coming soon! For now, check out the examples from this README and use the type hints you get to learn how you can customize your models and spaces. If you have any questions, don't hesitate to reach out on the [dedicated Discord channel](https://discord.gg/WSNF3Kc4xh)!
+Detailed API docs are coming soon! For now, check out the examples from this README and use the type hints you get to learn how you can customize your models and spaces. If you have any questions, don't hesitate to reach out on <a href="https://discord.gg/WSNF3Kc4xh" target="_blank">our Discord channel</a>!
 
 ## Contributing
 
