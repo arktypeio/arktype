@@ -1,4 +1,4 @@
-import { ListPossibleTypes, narrow } from "@re-/tools"
+import { narrow } from "@re-/tools"
 import { typeDefProxy, createParser, validationError } from "./internal.js"
 import { Root } from "../root.js"
 import { ReferencesTypeConfig } from "../internal.js"

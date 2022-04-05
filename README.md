@@ -18,9 +18,9 @@ In other words, you can finally get back to doing what you love.
 
 All of our packages are completely modular and can be used either independently or alongside other tools from Redo. We use a [rush](https://rushjs.io) monorepo to simplify versioning and ensure everything works together exactly how you'd expect. Take a look at any of the individual packages to learn more:
 
--   [@re-/model](pkgs/model): Beautiful types from IDE to runtime 🧬
--   @re-/state (coming soon): Actually simple state management with automatic validation 🧮
--   @re-/do (coming soon): Web testing rewritten to write itself 🤖
+-   [@re-/model](pkgs/model): Type-first validation from editor to runtime 🧬
+-   @re-/state (coming soon): Self-validating states from simple shapes 🧮
+-   @re-/do (coming soon): Web testing that writes itself 🤖
 
 You might also find parts of these packages useful, but they are mostly for internal use and/or are missing documentation:
 
