@@ -1,0 +1,10 @@
+{
+    "changes": [
+        {
+            "packageName": "@re-/model",
+            "comment": "Finalize pre-release docs, fix a TS4.4 bug.",
+            "type": "minor"
+        }
+    ],
+    "packageName": "@re-/model"
+}
