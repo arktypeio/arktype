@@ -182,7 +182,7 @@ console.log(error ?? "Flawless. Obviously.")
 
 `@re-/model` supports many of TypeScript's built-in types and operators, as well as some new ones dedicated exclusively to runtime validation. The following sections outline the kinds of definitions available to you when creating a model.
 
-If you'd like to , we'd love for you to create an issue summarizing your use case. Our parser is easy to extend, so you might just see it an upcoming release 🎁
+If there's a type or expression you wish were supported but isn't, we'd love for you to [create a feature request!](https://github.com/re-do/re-po/issues/new) Our parser is easy to extend, so you might just see it an upcoming release 🎁
 
 ### Objects
 
@@ -193,7 +193,7 @@ Object definitions are sets of keys or indices corresponding to string, primitiv
 Map definitions are represented using the familiar object literal syntax.
 
 ```ts
-const foo = model({
+const foo = create({
     key: "string?",
     anotherKey: ["unknown", { re: "'model'|'state'|'test'" }]
 })
@@ -215,7 +215,7 @@ type FooToo = {
 Tuple definitions are useful for fixed-length lists and are represented as array literals.
 
 ```ts
-const bar = model([
+const bar = create([
     "true|null",
     { coords: ["number", "number"], piOus: [3, 1, 4] }
 ])
@@ -236,7 +236,9 @@ String definitions are strings constructed from the following fragment types:
 
 -   Builtins, including keywords like `"number"` and literals like `"'redo'"`
 -   Aliases like `"user"` or `"group"` that have been defined in your space
--   Expressions consisting of one or more string definitions modified by an operator, like `"user | number"` or `"group[]?"`
+-   Expressions consisting of one or more string definitions modified by an operator, like `"user|number"` or `"group[]"`
+
+The entire definition may also include at most one of each modifier, a special category for operators like '?' that are only allowed at the root of a string definition.
 
 #### Keywords
 
@@ -260,13 +262,18 @@ All TypeScript keywords that can be used to represent a type are valid definitio
 | `"false"`     |                                                     |
 | `"symbol"`    |                                                     |
 
+##### String subtypes
+
+##### Number subtypes
+
 #### Literals
 
 Literals are used to specify a `string`, `number`, or `bigint` type constrained to an exact value.
 
 | Literal | Syntax                            | Examples                             | Notes                                                                                                                                           |
 | ------- | --------------------------------- | ------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------- |
-| string  | `"'T'"` or `'"T"'`                | `"'redo'"` or `'"WithDoubleQuotes"'` | Spaces are not currently supported and will be ignored.                                                                                         |
+| string  | `"'T'"` or `'"T"'`                | `"'redo'"` or `'"WithDoubleQuotes"'` |                                                                                                                                                 |
+| regex   | `/T/`                             | `"/[a-z]*@redo\.dev/"`               |                                                                                                                                                 |
 | number  | `"T"`, where T is a numeric value | `"5"` or `"-7.3"`                    | Though validation checks for the literal's exact value, TypeScript widens its type to `number`. To avoid this behavior, use a number primitive. |
 | bigint  | `"Tn"`, where T is an integer     | `"0n"` or `"-999n"`                  | Though validation checks for the literal's exact value, TypeScript widens its type to `bigint`. To avoid this behavior, use a bigint primitive. |
 
