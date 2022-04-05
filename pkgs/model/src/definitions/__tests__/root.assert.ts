@@ -7,7 +7,7 @@ import { testStr } from "../str/__test__/index.js"
 
 describe("root", () => {
     describe("str", testStr)
-    describe("primitive", testPrimitive)
+    describe("literal", testPrimitive)
     describe("obj", testObj)
     test("bad type def type", () => {
         // @ts-expect-error

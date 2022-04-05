@@ -7,10 +7,7 @@ import {
     transform,
     IsAny,
     Exact,
-    WithDefaults,
-    ExactObject,
-    NonRecursible,
-    CastWithExclusion
+    WithDefaults
 } from "@re-/tools"
 import {
     createCreateFunction,
@@ -41,7 +38,7 @@ export type ValidateSpaceResolutions<
       }>
 
 export type ParseSpaceResolutions<
-    Resolutions extends SpaceResolutions,
+    Resolutions,
     Config extends ParseConfig
 > = Evaluate<{
     [TypeName in keyof Resolutions]: Model<
@@ -129,7 +126,7 @@ export const extraneousTypesErrorMessage = `Defined types @types were never decl
 export const missingTypesErrorMessage = `Declared types @types were never defined.`
 
 export type SpaceOptions<
-    Resolutions extends SpaceResolutions,
+    Resolutions,
     ModelName extends string = keyof Resolutions & string
 > = ModelConfig & {
     models?: {
@@ -147,11 +144,8 @@ type ExtendSpaceConfig<OriginalConfig, NewConfig> = MergeObjects<
     }
 >
 
-type ExtendSpaceFunction<
-    OriginalResolutions extends SpaceResolutions,
-    OriginalConfig
-> = <
-    NewResolutions extends SpaceResolutions,
+type ExtendSpaceFunction<OriginalResolutions, OriginalConfig> = <
+    NewResolutions,
     NewConfig extends SpaceOptions<MergedResolutions>,
     MergedResolutions extends SpaceResolutions = MergeObjects<
         OriginalResolutions,
@@ -168,7 +162,7 @@ type ExtendSpaceFunction<
 ) => Space<MergedResolutions, ExtendSpaceConfig<OriginalConfig, NewConfig>>
 
 export type Spacefication<
-    Resolutions extends SpaceResolutions = SpaceResolutions,
+    Resolutions = SpaceResolutions,
     Config = SpaceOptions<Resolutions>
 > = {
     resolutions: Resolutions
@@ -176,7 +170,7 @@ export type Spacefication<
 }
 
 export type Space<
-    Resolutions extends SpaceResolutions,
+    Resolutions,
     Config,
     SpaceParseConfig = KeyValuate<Config, "parse"> extends undefined
         ? {}
@@ -192,13 +186,17 @@ export type Space<
             DefaultTypeOfContext
         >
     >
-    create: CreateFunction<{ resolutions: Resolutions; config: Config }>
+    // @ts-ignore
+    create: CreateFunction<{
+        resolutions: Resolutions
+        config: Config
+    }>
     extend: ExtendSpaceFunction<Resolutions, Config>
     // TODO: Add declare extension
 }>
 
 export type CompileFunction<DeclaredTypeNames extends string[]> = <
-    Resolutions extends SpaceResolutions,
+    Resolutions,
     Options extends SpaceOptions<Resolutions> = {}
 >(
     resolutions: Narrow<
@@ -209,10 +207,14 @@ export type CompileFunction<DeclaredTypeNames extends string[]> = <
     >,
     // TS has a problem inferring the narrowed type of a function hence the intersection hack
     // If removing it doesn't break any types or tests, do it!
-    config?: Narrow<Options> & {
-        validate?: { validator?: CustomValidator }
-        models?: { [Name in keyof Resolutions]?: Omit<ModelConfig, "parse"> }
-    }
+    config?: Narrow<
+        Options & {
+            validate?: { validator?: CustomValidator }
+            models?: {
+                [Name in keyof Resolutions]?: Omit<ModelConfig, "parse">
+            }
+        }
+    >
 ) => Space<Resolutions, Options>
 
 // Exported compile function is equivalent to compile from an empty declare call
