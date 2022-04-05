@@ -186,7 +186,7 @@ If there's a type or expression you wish were supported but isn't, we'd love for
 
 ### Objects
 
-Object definitions are sets of keys or indices corresponding to string, primitive, or nested object definitions.
+Object definitions are sets of keys or indices corresponding to string, literal, or nested object definitions.
 
 #### Map
 
@@ -264,18 +264,54 @@ All TypeScript keywords that can be used to represent a type are valid definitio
 
 ##### String subtypes
 
+| Keyword       | Notes                                               |
+| ------------- | --------------------------------------------------- |
+| `"any"`       |                                                     |
+| `"unknown"`   | Behaves like `any` when used in validation.         |
+| `"never"`     | Will always throw an error when used in validation. |
+| `"undefined"` |                                                     |
+| `"void"`      | Behaves like `undefined` when used in validation    |
+| `"object"`    |                                                     |
+| `"null"`      |                                                     |
+| `"function"`  |                                                     |
+| `"string"`    |                                                     |
+| `"number"`    |                                                     |
+| `"bigint"`    |                                                     |
+| `"boolean"`   |                                                     |
+| `"true"`      |                                                     |
+| `"false"`     |                                                     |
+| `"symbol"`    |                                                     |
+
 ##### Number subtypes
+
+| Keyword       | Notes                                               |
+| ------------- | --------------------------------------------------- |
+| `"any"`       |                                                     |
+| `"unknown"`   | Behaves like `any` when used in validation.         |
+| `"never"`     | Will always throw an error when used in validation. |
+| `"undefined"` |                                                     |
+| `"void"`      | Behaves like `undefined` when used in validation    |
+| `"object"`    |                                                     |
+| `"null"`      |                                                     |
+| `"function"`  |                                                     |
+| `"string"`    |                                                     |
+| `"number"`    |                                                     |
+| `"bigint"`    |                                                     |
+| `"boolean"`   |                                                     |
+| `"true"`      |                                                     |
+| `"false"`     |                                                     |
+| `"symbol"`    |                                                     |
 
 #### Literals
 
 Literals are used to specify a `string`, `number`, or `bigint` type constrained to an exact value.
 
-| Literal | Syntax                            | Examples                             | Notes                                                                                                                                           |
-| ------- | --------------------------------- | ------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------- |
-| string  | `"'T'"` or `'"T"'`                | `"'redo'"` or `'"WithDoubleQuotes"'` |                                                                                                                                                 |
-| regex   | `/T/`                             | `"/[a-z]*@redo\.dev/"`               |                                                                                                                                                 |
-| number  | `"T"`, where T is a numeric value | `"5"` or `"-7.3"`                    | Though validation checks for the literal's exact value, TypeScript widens its type to `number`. To avoid this behavior, use a number primitive. |
-| bigint  | `"Tn"`, where T is an integer     | `"0n"` or `"-999n"`                  | Though validation checks for the literal's exact value, TypeScript widens its type to `bigint`. To avoid this behavior, use a bigint primitive. |
+| Literal | Syntax                            | Examples                             | Notes                                                                                                                                                                                                                 |
+| ------- | --------------------------------- | ------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| string  | `"'T'"` or `'"T"'`                | `"'redo'"` or `'"WithDoubleQuotes"'` | As of now, literals containing the quote character that encloses them are not supported. Support for an escape character is tracked [here](https://github.com/re-do/re-po/issues/346).                                |
+| regex   | `/T/`                             | `"/[a-z]*@redo\.dev/"`               | Validation checks whether a string matching the expression. Type is always inferred as `string`. Lack of an escape character for regex containing `"/"` is tracked [here](https://github.com/re-do/re-po/issues/346). |
+| number  | `"T"`, where T is a numeric value | `"5"` or `"-7.3"`                    | Though validation checks for the literal's exact value, TypeScript widens its type to `number`. To avoid this behavior, use a number primitive.                                                                       |
+| bigint  | `"Tn"`, where T is an integer     | `"0n"` or `"-999n"`                  | Though validation checks for the literal's exact value, TypeScript widens its type to `bigint`. To avoid this behavior, use a bigint primitive.                                                                       |
 
 While `boolean` values could also be considered literals, they are modeled as keywords since, unlike other literal types, they can can be defined as a finite set (i.e. `true` and `false`).
 
@@ -283,16 +319,22 @@ While `boolean` values could also be considered literals, they are modeled as ke
 
 Expressions are a set of syntactic patterns that can be applied to one or more nested string definitions to modify the type they represent. Unless otherwise noted, expressions can be applied to any valid string definition, including other expressions.
 
-The following table is ordered by relative precedence in the event that a definition matches multiple patterns. For example, the definition `"string|boolean[]"` would be interpreted as either a `string` or a list of `boolean` since "Or" applies before "List." Parenthetical grouping is not yet supported, but can be emulated by adding the desired grouping to a space and referencing its alias.
+The following table is ordered by relative precedence in the event that a definition matches multiple patterns. For example, the definition `"string|boolean[]"` would be interpreted as either a `string` or a list of `boolean` since "Or" applies before "List." Arbitrary parenthetical grouping is not yet supported, but can be emulated by adding the desired grouping to a space and referencing its alias.
 
-| Exrpession     | Pattern           | Examples                                         | Notes                                                                                                         |
-| -------------- | ----------------- | ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------- |
-| Optional       | `T?`              | `function?` <br/>`boolean[]?`                    | Adds `undefined` as a possible value. When used in an Object type, also makes the corresponding key optional. |
-| Arrow Function | `(T1,T2,...)=>T3` | `(string,boolean[])=>void` <br/>`()=>object`     | At runtime, falls back to validating that a value is of type `function`.                                      |
-| Union          | `T1\|T2\|T3\|...` | `false\|string` <br/>`string\|number\|boolean[]` | Acts just like TypeScript's union operator (`\|`)                                                             |
-| List           | `T[]`             | `string[]` <br/>`number[][]`                     |                                                                                                               |
+| Expression     | Pattern           | Examples                                     | Notes                                                                                      |
+| -------------- | ----------------- | -------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| Arrow Function | `(T1,T2,...)=>T3` | `(string,boolean[])=>void` <br/>`()=>object` | At runtime, falls back to validating that a value is of type `function`.                   |
+| Union          | `T1\|T2`          | `false\|string`                              | Acts just like TypeScript's union operator (`\|`). Think of it like a logical "or."        |
+| Intersection   | `T1&T2`           | `positive&integer`                           | Acts just like TypeScript's intersection operator (`&`). Think of it like a logical "and." |
+| List           | `T[]`             | `string[]` <br/>`number[][]`                 |                                                                                            |
 
-Spaces are ignored when parsing expressions, so feel free to use whatever format you find most readable.
+#### Modifiers
+
+Unlike expressions, modifiers are not composable and may only be applied to the root of a string definition. For instance, `"string|number?"` is a valid definition representing an optional string or number, whereas `"string?|number"` is invalid because the `"?"` modifier is only valid if applied after all other non-modifier expressions.
+
+| Exrpession | Pattern | Examples                      | Notes                                                                                                         |
+| ---------- | ------- | ----------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| Optional   | `T?`    | `function?` <br/>`boolean[]?` | Adds `undefined` as a possible value. When used in an Object type, also makes the corresponding key optional. |
 
 ### Primitives
 
