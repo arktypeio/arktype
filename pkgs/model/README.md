@@ -67,6 +67,8 @@ Working with types that refer to one another or themselves? So can your models!
 [Just compile a **space**.](https://TODO:updatelink)
 
 ```ts
+import { compile } from "@re-/model"
+
 const space = compile({
     user: {
         name: "string",
@@ -105,7 +107,7 @@ Like keeping your files small and tidy? Perhaps you'd prefer to split your defin
 import { declare } from "@re-/model"
 
 // Declare the models you will define
-const { define, compile } = declare("user", "group")
+export const { define, compile } = declare("user", "group")
 
 import { userDef } from "./user"
 import { groupDef } from "./group"
@@ -121,7 +123,7 @@ import { define } from "./index"
 
 export const userDef = define.user({
     name: "string",
-    friends: "user[]",
+    bestFriend: "user?",
     // Type Hint: "Unable to determine the type of 'grop'"
     groups: "grop[]"
 })
@@ -133,8 +135,7 @@ export const userDef = define.user({
 import { define } from "./index"
 
 export const groupDef = define.group({
-    name: "string",
-    description: "string",
+    title: "string",
     members: "user[]"
 })
 ```
@@ -146,6 +147,8 @@ TypeScript can do a lot, but sometimes things you care about at runtime shouldn'
 [**Constraints** have you covered.](https://TODO:updatelink)
 
 ```ts
+import { create } from "@re-/model"
+
 const employee = create({
     // Not a fan of regex? Don't worry, 'email' is a builtin type :)
     email: `/[a-z]*@redo\.dev/`,

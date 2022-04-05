@@ -1,9 +1,13 @@
 import "./demo.css"
-import { userModel, userData, userValidationResult } from "./model"
+import {
+    employeeModel,
+    employeeData,
+    employeeValidationResult
+} from "./constraints"
 
-const recolor = (input) => {
+const recolor = (input: string) => {
     const lines = input.split("\n")
-    let fixedInput = []
+    const fixedInput = []
     for (let line of lines) {
         if (line.includes(":")) {
             const lineArray = line.split(":")
@@ -16,10 +20,10 @@ const recolor = (input) => {
     }
     return fixedInput.join("\n")
 }
-const buildKey = (key) => {
+const buildKey = (key: string) => {
     return `<span class='key'>${key}</span>`
 }
-const buildVal = (val) => {
+const buildVal = (val: string) => {
     val = val.trim()
     if (val.at(-1) == ",") {
         return `<span class='val'>${val.replace(",", "")}</span>,`
@@ -29,13 +33,13 @@ const buildVal = (val) => {
     return `<span class='val'>${val}</span>`
 }
 
-const defElement = document.querySelector("#definition")
-defElement.textContent = JSON.stringify(userModel.definition, null, 2)
+const defElement = document.querySelector("#definition")!
+defElement.textContent = JSON.stringify(employeeModel.definition, null, 2)
 defElement.innerHTML = recolor(defElement.innerHTML)
 
-const dataElement = document.querySelector("#data")
-dataElement.textContent = JSON.stringify(userData, null, 2)
+const dataElement = document.querySelector("#data")!
+dataElement.textContent = JSON.stringify(employeeData, null, 2)
 dataElement.innerHTML = recolor(defElement.innerHTML)
 
-document.querySelector("#result").textContent =
-    userValidationResult.errors ?? "Looks good!"
+const resultElement = document.querySelector("#result")!
+resultElement.textContent = employeeValidationResult.error ?? "Looks good!"
