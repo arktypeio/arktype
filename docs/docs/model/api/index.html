@@ -2,13 +2,13 @@
 <html
     lang="en"
     dir="ltr"
-    class="docs-wrapper docs-doc-page docs-version-current plugin-docs plugin-id-default docs-doc-id-state/intro"
+    class="docs-wrapper docs-doc-page docs-version-current plugin-docs plugin-id-default docs-doc-id-model/api"
 >
     <head>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width,initial-scale=1" />
         <meta name="generator" content="Docusaurus v2.0.0-beta.18" />
-        <title data-rh="true">State | Redo</title>
+        <title data-rh="true">API | Redo</title>
         <meta
             data-rh="true"
             name="twitter:card"
@@ -17,7 +17,7 @@
         <meta
             data-rh="true"
             property="og:url"
-            content="https://redo.dev/docs/state/intro"
+            content="https://redo.dev/docs/model/api"
         />
         <meta data-rh="true" name="docusaurus_locale" content="en" />
         <meta data-rh="true" name="docsearch:language" content="en" />
@@ -33,29 +33,33 @@
             name="docsearch:docusaurus_tag"
             content="docs-default-current"
         />
-        <meta data-rh="true" property="og:title" content="State | Redo" />
-        <meta data-rh="true" name="description" content="Under Construction" />
+        <meta data-rh="true" property="og:title" content="API | Redo" />
+        <meta
+            data-rh="true"
+            name="description"
+            content="Detailed API docs are coming soon! For now, check out the examples from this README and use the type hints you get to learn how you can customize your models and spaces. If you have any questions, don&#x27;t hesitate to reach out on the dedicated Discord channel!"
+        />
         <meta
             data-rh="true"
             property="og:description"
-            content="Under Construction"
+            content="Detailed API docs are coming soon! For now, check out the examples from this README and use the type hints you get to learn how you can customize your models and spaces. If you have any questions, don&#x27;t hesitate to reach out on the dedicated Discord channel!"
         />
         <link data-rh="true" rel="icon" href="/img/favicon.ico" />
         <link
             data-rh="true"
             rel="canonical"
-            href="https://redo.dev/docs/state/intro"
+            href="https://redo.dev/docs/model/api"
         />
         <link
             data-rh="true"
             rel="alternate"
-            href="https://redo.dev/docs/state/intro"
+            href="https://redo.dev/docs/model/api"
             hreflang="en"
         />
         <link
             data-rh="true"
             rel="alternate"
-            href="https://redo.dev/docs/state/intro"
+            href="https://redo.dev/docs/model/api"
             hreflang="x-default"
         />
         <link rel="stylesheet" href="/assets/css/styles.05459d1f.css" />
@@ -121,12 +125,11 @@
                                     class="themedImage_ladG themedImage--dark_wZ53"
                                 /></div></a
                         ><a
-                            class="navbar__item navbar__link"
+                            class="navbar__item navbar__link navbar__link--active"
                             href="/docs/model/intro"
                             >Model</a
                         ><a
-                            aria-current="page"
-                            class="navbar__item navbar__link navbar__link--active"
+                            class="navbar__item navbar__link"
                             href="/docs/state/intro"
                             >State</a
                         ><a
@@ -205,10 +208,55 @@
                                         class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-1 menu__list-item"
                                     >
                                         <a
+                                            class="menu__link"
+                                            href="/docs/model/intro"
+                                            >Model</a
+                                        >
+                                    </li>
+                                    <li
+                                        class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-1 menu__list-item"
+                                    >
+                                        <a
+                                            class="menu__link"
+                                            href="/docs/model/spaces"
+                                            >Spaces</a
+                                        >
+                                    </li>
+                                    <li
+                                        class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-1 menu__list-item"
+                                    >
+                                        <a
+                                            class="menu__link"
+                                            href="/docs/model/declarations"
+                                            >Declarations</a
+                                        >
+                                    </li>
+                                    <li
+                                        class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-1 menu__list-item"
+                                    >
+                                        <a
+                                            class="menu__link"
+                                            href="/docs/model/constraints"
+                                            >Constraints</a
+                                        >
+                                    </li>
+                                    <li
+                                        class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-1 menu__list-item"
+                                    >
+                                        <a
+                                            class="menu__link"
+                                            href="/docs/model/syntax"
+                                            >Syntax</a
+                                        >
+                                    </li>
+                                    <li
+                                        class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-1 menu__list-item"
+                                    >
+                                        <a
                                             class="menu__link menu__link--active"
                                             aria-current="page"
-                                            href="/docs/state/intro"
-                                            >State</a
+                                            href="/docs/model/api"
+                                            >API</a
                                         >
                                     </li>
                                 </ul>
@@ -220,7 +268,7 @@
                             class="container padding-top--md padding-bottom--lg"
                         >
                             <div class="row">
-                                <div class="col docItemCol_Hw_J">
+                                <div class="col">
                                     <div class="docItemContainer_ciCq">
                                         <article>
                                             <nav
@@ -250,7 +298,7 @@
                                                         <span
                                                             class="breadcrumbs__link"
                                                             itemprop="item name"
-                                                            >State</span
+                                                            >API</span
                                                         ><meta
                                                             itemprop="position"
                                                             content="1"
@@ -259,86 +307,27 @@
                                                 </ul>
                                             </nav>
                                             <div
-                                                class="tocCollapsible_ryMx theme-doc-toc-mobile tocMobile_MFqo"
-                                            >
-                                                <button
-                                                    type="button"
-                                                    class="clean-btn tocCollapsibleButton_gmRQ"
-                                                >
-                                                    On this page
-                                                </button>
-                                            </div>
-                                            <div
                                                 class="theme-doc-markdown markdown"
                                             >
-                                                <h1>State</h1>
-                                                <h2
-                                                    class="anchor anchorWithStickyNavbar_vXKG"
-                                                    id="under-construction"
-                                                >
-                                                    Under Construction<a
-                                                        class="hash-link"
-                                                        href="#under-construction"
-                                                        title="Direct link to heading"
-                                                        >​</a
-                                                    >
-                                                </h2>
+                                                <h1>API</h1>
                                                 <p>
-                                                    We&#x27;re working hard on a
-                                                    new tool that uses
-                                                    <a href="/docs/model/intro"
-                                                        >models</a
-                                                    >
-                                                    to make states that can
-                                                    manage themselves.
-                                                </p>
-                                                <p>
-                                                    Think Redux but with less
-                                                    boilerplate, more
-                                                    flexibility, and implicit
-                                                    validation.
-                                                </p>
-                                                <p>
-                                                    If you want to learn more,
-                                                    the project is tracked
+                                                    Detailed API docs are coming
+                                                    soon! For now, check out the
+                                                    examples from this README
+                                                    and use the type hints you
+                                                    get to learn how you can
+                                                    customize your models and
+                                                    spaces. If you have any
+                                                    questions, don&#x27;t
+                                                    hesitate to reach out on the
                                                     <a
-                                                        href="https://github.com/re-do/re-po/projects/1"
+                                                        href="https://discord.gg/WSNF3Kc4xh"
                                                         target="_blank"
                                                         rel="noopener noreferrer"
-                                                        >here</a
-                                                    >.
+                                                        >dedicated Discord
+                                                        channel</a
+                                                    >!
                                                 </p>
-                                                <p>
-                                                    If you&#x27;re interested in
-                                                    contributing, check out our
-                                                    guide
-                                                    <a
-                                                        href="https://github.com/re-do/re-po/blob/main/CONTRIBUTING.md"
-                                                        target="_blank"
-                                                        rel="noopener noreferrer"
-                                                        >here</a
-                                                    >
-                                                    or, if you really want to
-                                                    make my day, reach out to
-                                                    <a
-                                                        href="mailto:david@redo.dev"
-                                                        target="_blank"
-                                                        rel="noopener noreferrer"
-                                                        >david@redo.dev</a
-                                                    >. I&#x27;d love to talk
-                                                    about your ideas or suggest
-                                                    issues that might be a good
-                                                    fit! 😻
-                                                </p>
-                                                <div>
-                                                    <img
-                                                        loading="lazy"
-                                                        style="height: 300px"
-                                                        src="/img/construction.svg"
-                                                        alt="Under Construction"
-                                                        class="img_PD_R"
-                                                    />
-                                                </div>
                                             </div>
                                             <footer
                                                 class="theme-doc-footer docusaurus-mt-lg"
@@ -348,7 +337,7 @@
                                                 >
                                                     <div class="col">
                                                         <a
-                                                            href="https://github.com/re-do/re-po/edit/main/pkgs/docs/docs/state/intro.mdx"
+                                                            href="https://github.com/re-do/re-po/edit/main/pkgs/docs/docs/model/api.mdx"
                                                             target="_blank"
                                                             rel="noreferrer noopener"
                                                             class="theme-edit-this-page"
@@ -378,30 +367,26 @@
                                             class="pagination-nav docusaurus-mt-lg"
                                             aria-label="Docs pages navigation"
                                         >
-                                            <div
-                                                class="pagination-nav__item"
-                                            ></div>
+                                            <div class="pagination-nav__item">
+                                                <a
+                                                    class="pagination-nav__link"
+                                                    href="/docs/model/syntax"
+                                                    ><div
+                                                        class="pagination-nav__sublabel"
+                                                    >
+                                                        Previous
+                                                    </div>
+                                                    <div
+                                                        class="pagination-nav__label"
+                                                    >
+                                                        Syntax
+                                                    </div></a
+                                                >
+                                            </div>
                                             <div
                                                 class="pagination-nav__item pagination-nav__item--next"
                                             ></div>
                                         </nav>
-                                    </div>
-                                </div>
-                                <div class="col col--3">
-                                    <div
-                                        class="tableOfContents_jexh thin-scrollbar theme-doc-toc-desktop"
-                                    >
-                                        <ul
-                                            class="table-of-contents table-of-contents__left-border"
-                                        >
-                                            <li>
-                                                <a
-                                                    href="#under-construction"
-                                                    class="table-of-contents__link toc-highlight"
-                                                    >Under Construction</a
-                                                >
-                                            </li>
-                                        </ul>
                                     </div>
                                 </div>
                             </div>
