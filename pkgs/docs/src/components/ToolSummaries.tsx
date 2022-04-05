@@ -22,7 +22,7 @@ const toolSummaries: ToolSummaryProps[] = [
     {
         name: "State",
         illustration: <Svgs.State />,
-        description: <>Manageable states from simple shapes</>,
+        description: <>Self-validating states from simple shapes</>,
         upcoming: true
     },
     {

@@ -1,9 +1,0 @@
-{
-    "name": "typescript",
-    "version": "0.0.0",
-    "private": true,
-    "dependencies": {
-        "@re-/model": "1.10.0",
-        "@re-/tools": "1.4.0"
-    }
-}
