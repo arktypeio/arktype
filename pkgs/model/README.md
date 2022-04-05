@@ -27,7 +27,7 @@ If you're using TypeScript, you'll need at least `4.4`.
 
 ## Start quick ⏱️
 
-This snippet will give you an idea of `@re-/model` syntax, but the best way to get a feel for it is in a live editor. Try messing around with the `user` definition in [our demo](https://redo.dev/docs/model/intro#start-quick-%EF%B8%8F) or paste it in your own editor and see how the type hints help guide you in the right direction.
+This snippet will give you an idea of `@re-/model` syntax, but the best way to get a feel for it is in a live editor. Try messing around with the `user` definition in <a href="https://redo.dev/docs/model/intro#start-quick-%EF%B8%8F" target="_blank">our demo</a> or paste it in your own editor and see how the type hints help guide you in the right direction.
 
 ```ts
 import { create } from "@re-/model"
@@ -64,7 +64,7 @@ console.log(error ?? "All good!")
 
 Working with types that refer to one another or themselves? So can your models!
 
-[Just compile a **space**.](https://redo.dev/docs/model/spaces)
+<a href="https://redo.dev/docs/model/spaces" target="_blank">Just compile a **space**.</a>
 
 ```ts
 import { compile } from "@re-/model"
@@ -99,7 +99,7 @@ space.models.user.assert({
 
 Like keeping your files small and tidy? Perhaps you'd prefer to split your definitions up.
 
-[Try a **declaration**.](https://redo.dev/docs/model/declarations)
+<a href="https://redo.dev/docs/model/declarations" target="_blank">Try a **declaration**.</a>
 
 `index.ts`
 
@@ -144,7 +144,7 @@ export const groupDef = define.group({
 
 TypeScript can do a lot, but sometimes things you care about at runtime shouldn't affect your type.
 
-[**Constraints** have you covered.](https://redo.dev/docs/model/constraints)
+<a href="https://redo.dev/docs/model/constraints" target="_blank">**Constraints** have you covered.</a>
 
 ```ts
 import { create } from "@re-/model"
@@ -156,7 +156,7 @@ const employee = create({
         // Single or double bound numeric types
         age: "18<=integer<125",
         // Or string lengths
-        bio: "string<=160"
+        bio: "string<=80"
     }
 })
 
@@ -168,7 +168,7 @@ const { error } = employee.validate({
     email: "david@redo.biz",
     about: {
         age: 17,
-        bio: "I am very interesting.".repeat(10)
+        bio: "I am very interesting.".repeat(5)
     }
 })
 
@@ -176,7 +176,7 @@ const { error } = employee.validate({
 // {
 //   email: ''david@redo.biz' is not assignable to /[a-z]*@redo.dev/.',
 //   about/age: '17 was less than 18.',
-//   about/bio: ''I am very interesting.I am very interesting.I am... was greater than 160 characters.'
+//   about/bio: ''I am very interesting.I am very interesting.I am... was greater than 80 characters.'
 // }"
 console.log(error ?? "Flawless. Obviously.")
 ```
