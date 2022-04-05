@@ -27,7 +27,7 @@ If you're using TypeScript, you'll need at least `4.4`.
 
 ## Start quick ⏱️
 
-This snippet will give you an idea of `@re-/model` syntax, but the best way to get a feel for it is in a live editor. Try messing around with the `user` definition in [our demo](https://TODO:updatelink) or paste it in your own editor and see how the type hints help guide you in the right direction.
+This snippet will give you an idea of `@re-/model` syntax, but the best way to get a feel for it is in a live editor. Try messing around with the `user` definition in [our demo](https://redo.dev/docs/model/intro#start-quick-%EF%B8%8F) or paste it in your own editor and see how the type hints help guide you in the right direction.
 
 ```ts
 import { create } from "@re-/model"
@@ -64,7 +64,7 @@ console.log(error ?? "All good!")
 
 Working with types that refer to one another or themselves? So can your models!
 
-[Just compile a **space**.](https://TODO:updatelink)
+[Just compile a **space**.](https://redo.dev/docs/model/spaces)
 
 ```ts
 import { compile } from "@re-/model"
@@ -99,7 +99,7 @@ space.models.user.assert({
 
 Like keeping your files small and tidy? Perhaps you'd prefer to split your definitions up.
 
-[Try a **declaration**.](https://TODO:updatelink)
+[Try a **declaration**.](https://redo.dev/docs/model/declarations)
 
 `index.ts`
 
@@ -144,7 +144,7 @@ export const groupDef = define.group({
 
 TypeScript can do a lot, but sometimes things you care about at runtime shouldn't affect your type.
 
-[**Constraints** have you covered.](https://TODO:updatelink)
+[**Constraints** have you covered.](https://redo.dev/docs/model/constraints)
 
 ```ts
 import { create } from "@re-/model"
