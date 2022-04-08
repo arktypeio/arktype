@@ -2,7 +2,7 @@
     "name": "@re-/state",
     "version": "0.0.1",
     "private": true,
-    "author": "redo.qa",
+    "author": "redo.dev",
     "description": "Self-validating states from simple shapes 🧮",
     "repository": {
         "type": "git",

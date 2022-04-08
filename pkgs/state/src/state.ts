@@ -294,7 +294,7 @@ export type ReduxOptions = Omit<
     "preloadedState" | "reducer"
 >
 
-export const createState = <
+export type CreateState = <
     Config extends StateConfig<Config, FullTypeSet, StateType>,
     ExternalTypeSet = {},
     IdKey extends string = "id",
@@ -318,7 +318,13 @@ export const createState = <
         reduxOptions?: ReduxOptions
         idKey?: IdKey
     }
-) => {
+) => State<StateType, InputTypeSet, StoredLocations, IdKey> & {
+    $: {
+        actions: Actions
+    }
+}
+
+export const createState: CreateState = (config, options) => {
     const {
         typeSet: externalTypeSet,
         actions,
@@ -339,7 +345,7 @@ export const createState = <
     )
     const storedPaths = findStoredPaths(config, "")
     const model = create(modelTypeDef, { space: { resolutions: modelTypeSet } })
-    const initialState = model.generate() as StateType
+    const initialState = model.generate()
     // copy the object by value
     const persisted = createMemoryDb(
         transform(storedPaths, ([i, v]) => [v, []])
@@ -379,19 +385,10 @@ export const createState = <
             }
         })
     const stateRoot = getStateProxy(initialState, "")
-    return stateRoot as State<
-        StateType,
-        InputTypeSet,
-        StoredLocations,
-        IdKey
-    > & {
-        $: {
-            actions: Actions
-        }
-    }
+    return stateRoot
 }
 
-//createTestState().cache.currentCity.groups[0].members[0].bestFriend?.id
+// createTestState().cache.currentCity.groups[0].members[0].bestFriend?.id
 
 export type State<
     StateType,
