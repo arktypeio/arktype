@@ -39,8 +39,7 @@ export type ShallowExtractableDefinition =
 export type ExtractableDefinition = TreeOf<ShallowExtractableDefinition>
 
 // Allow a user to extract types from arbitrary chains of props
-export const typeDefProxy: any = new Proxy({}, { get: () => getTypeDefProxy() })
-export const getTypeDefProxy = () => typeDefProxy
+export const typeDefProxy: any = new Proxy({}, { get: () => typeDefProxy })
 
 export type ReferencesTypeConfig = Required<ReferencesTypeOptions>
 
