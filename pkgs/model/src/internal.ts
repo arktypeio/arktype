@@ -1,15 +1,4 @@
-import {
-    CastWithExclusion,
-    Evaluate,
-    Func,
-    InvalidPropertyError,
-    IsAnyOrUnknown,
-    KeyValuate,
-    NonObject,
-    NonRecursible,
-    Recursible,
-    TreeOf
-} from "@re-/tools"
+import { Evaluate, KeyValuate, TreeOf } from "@re-/tools"
 import {
     ParseConfig,
     ReferencesTypeOptions,
