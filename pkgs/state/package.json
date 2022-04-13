@@ -21,7 +21,7 @@
     },
     "scripts": {
         "build": "reTsc",
-        "test": "jest"
+        "test": "jest 2>&1"
     },
     "dependencies": {
         "@re-/tools": "workspace:*",
