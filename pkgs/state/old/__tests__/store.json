@@ -1,0 +1,17 @@
+{
+    "users": [
+        {
+            "name": "Mister Shallow",
+            "friends": [2],
+            "groups": [],
+            "id": 1
+        },
+        {
+            "name": "Mister Deep",
+            "friends": [1],
+            "groups": [],
+            "id": 2
+        }
+    ],
+    "groups": []
+}

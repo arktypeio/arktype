@@ -36,6 +36,11 @@
             "shouldPublish": true
         },
         {
+            "packageName": "@re-/state",
+            "projectFolder": "pkgs/state",
+            "shouldPublish": true
+        },
+        {
             "packageName": "@re-/docs",
             "projectFolder": "pkgs/docs",
             "shouldPublish": false

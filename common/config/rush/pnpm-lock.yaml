@@ -133,6 +133,39 @@ importers:
       ts-jest: 27.1.2_7d6e5f67acaa96443d44b2d7aa440b3e
       vite: 2.4.4
 
+  ../../pkgs/state:
+    specifiers:
+      '@re-/model': workspace:*
+      '@re-/node': workspace:*
+      '@re-/tools': workspace:*
+      '@reduxjs/toolkit': 1.8.1
+      '@types/jest': 27.0.3
+      '@types/node': 17.0.1
+      deepmerge: 4.2.2
+      isomorphic-fetch: 3.0.0
+      jest: 27.4.5
+      moize: 5.4.7
+      redux: 4.1.2
+      redux-devtools-extension: 2.13.9
+      ts-jest: 27.1.2
+      typescript: 4.6.3
+    dependencies:
+      '@re-/model': link:../model
+      '@re-/tools': link:../tools
+      '@reduxjs/toolkit': 1.8.1
+      deepmerge: 4.2.2
+      isomorphic-fetch: 3.0.0
+      moize: 5.4.7
+      redux: 4.1.2
+      redux-devtools-extension: 2.13.9_redux@4.1.2
+    devDependencies:
+      '@re-/node': link:../node
+      '@types/jest': 27.0.3
+      '@types/node': 17.0.1
+      jest: 27.4.5
+      ts-jest: 27.1.2_7d6e5f67acaa96443d44b2d7aa440b3e
+      typescript: 4.6.3
+
   ../../pkgs/tools:
     specifiers:
       '@re-/assert': workspace:*
@@ -2926,6 +2959,23 @@ packages:
     dependencies:
       moize: 5.4.7
       ts-toolbelt: 9.5.10
+    dev: false
+
+  /@reduxjs/toolkit/1.8.1:
+    resolution: {integrity: sha512-Q6mzbTpO9nOYRnkwpDlFOAbQnd3g7zj7CtHAZWz5SzE5lcV97Tf8f3SzOO8BoPOMYBFgfZaqTUZqgGu+a0+Fng==}
+    peerDependencies:
+      react: ^16.9.0 || ^17.0.0 || ^18
+      react-redux: ^7.2.1 || ^8.0.0-beta
+    peerDependenciesMeta:
+      react:
+        optional: true
+      react-redux:
+        optional: true
+    dependencies:
+      immer: 9.0.12
+      redux: 4.1.2
+      redux-thunk: 2.4.1_redux@4.1.2
+      reselect: 4.1.5
     dev: false
 
   /@sideway/address/4.1.4:
@@ -6543,6 +6593,15 @@ packages:
     resolution: {integrity: sha1-TkMekrEalzFjaqH5yNHMvP2reN8=}
     engines: {node: '>=0.10.0'}
 
+  /isomorphic-fetch/3.0.0:
+    resolution: {integrity: sha512-qvUtwJ3j6qwsF3jLxkZ72qCgjMysPzDfeV240JHiGZsANBYd+EEuu35v7dfrJ9Up0Ak07D7GGSkGhCHTqg/5wA==}
+    dependencies:
+      node-fetch: 2.6.7
+      whatwg-fetch: 3.6.2
+    transitivePeerDependencies:
+      - encoding
+    dev: false
+
   /istanbul-lib-coverage/3.2.0:
     resolution: {integrity: sha512-eOeJ5BHCmHYvQK7xt9GkdHuzuCGS1Y6g9Gvnx3Ym33fz/HpLRYxiS0wHNr+m/MBC8B647Xt608vCDEvhl9c6Mw==}
     engines: {node: '>=8'}
@@ -8849,6 +8908,29 @@ packages:
       minimatch: 3.0.4
     dev: false
 
+  /redux-devtools-extension/2.13.9_redux@4.1.2:
+    resolution: {integrity: sha512-cNJ8Q/EtjhQaZ71c8I9+BPySIBVEKssbPpskBfsXqb8HJ002A3KRVHfeRzwRo6mGPqsm7XuHTqNSNeS1Khig0A==}
+    deprecated: Package moved to @redux-devtools/extension.
+    peerDependencies:
+      redux: ^3.1.0 || ^4.0.0
+    dependencies:
+      redux: 4.1.2
+    dev: false
+
+  /redux-thunk/2.4.1_redux@4.1.2:
+    resolution: {integrity: sha512-OOYGNY5Jy2TWvTL1KgAlVy6dcx3siPJ1wTq741EPyUKfn6W6nChdICjZwCd0p8AZBs5kWpZlbkXW2nE/zjUa+Q==}
+    peerDependencies:
+      redux: ^4
+    dependencies:
+      redux: 4.1.2
+    dev: false
+
+  /redux/4.1.2:
+    resolution: {integrity: sha512-SH8PglcebESbd/shgf6mii6EIoRM0zrQyjcuQ+ojmfxjTtE0z9Y8pa62iA/OJ58qjP6j27uyW4kUF4jl/jd6sw==}
+    dependencies:
+      '@babel/runtime': 7.17.8
+    dev: false
+
   /regenerate-unicode-properties/10.0.1:
     resolution: {integrity: sha512-vn5DU6yg6h8hP/2OkQo3K7uVILvY4iu0oI4t3HFa81UPkhGJwkRwM10JEc3upjdhHjs/k8GJY1sRBhk5sr69Bw==}
     engines: {node: '>=4'}
@@ -9019,6 +9101,10 @@ packages:
 
   /requires-port/1.0.0:
     resolution: {integrity: sha1-kl0mAdOaxIXgkc8NpcbmlNw9yv8=}
+    dev: false
+
+  /reselect/4.1.5:
+    resolution: {integrity: sha512-uVdlz8J7OO+ASpBYoz1Zypgx0KasCY20H+N8JD13oUMtPvSHQuscrHop4KbXrbsBcdB9Ds7lVK7eRkBIfO43vQ==}
     dev: false
 
   /resolve-cwd/3.0.0:
@@ -10373,6 +10459,10 @@ packages:
     resolution: {integrity: sha512-b5lim54JOPN9HtzvK9HFXvBma/rnfFeqsic0hSpjtDbVxR3dJKLc+KB4V6GgiGOvl7CY/KNh8rxSo9DKQrnUEw==}
     dependencies:
       iconv-lite: 0.4.24
+
+  /whatwg-fetch/3.6.2:
+    resolution: {integrity: sha512-bJlen0FcuU/0EMLrdbJ7zOnW6ITZLrZMIarMUVmdKtsGvZna8vxKYaexICWPfZ8qwf9fzNq+UEIZrnSaApt6RA==}
+    dev: false
 
   /whatwg-mimetype/2.3.0:
     resolution: {integrity: sha512-M4yMwr6mAnQz76TbJm914+gPpB/nCwvZbJU28cUD6dR004SAxDLOOSUaB1JDRqLtaOV/vi0IC5lEAGFgrjGv/g==}
