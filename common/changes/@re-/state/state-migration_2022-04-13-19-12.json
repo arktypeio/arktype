@@ -1,0 +1,10 @@
+{
+    "changes": [
+        {
+            "packageName": "@re-/state",
+            "comment": "Initial migration to re-po.",
+            "type": "minor"
+        }
+    ],
+    "packageName": "@re-/state"
+}
