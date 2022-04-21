@@ -1,4 +1,4 @@
-import { transform, TypeCategory, isRecursible } from "@re-/tools"
+import { transform, TypeCategory } from "@re-/tools"
 import { ExtractableDefinition } from "./internal.js"
 
 export const typeOf = (value: any): ExtractableDefinition => {

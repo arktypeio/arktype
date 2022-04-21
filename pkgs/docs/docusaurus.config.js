@@ -1,9 +1,6 @@
 // @ts-check
 // Note: type annotations allow type checking and IDEs autocompletion
 
-// const lightCodeTheme = require("prism-react-renderer/themes/github")
-// const darkCodeTheme = require("prism-react-renderer/themes/dracula")
-
 /** @type {import('@docusaurus/types').Config} */
 const config = {
     title: "Redo",
@@ -24,21 +21,37 @@ const config = {
             }
         })
     },
-    presets: [
+    themes: [
         [
-            "classic",
-            /** @type {import('@docusaurus/preset-classic').Options} */
-            ({
-                docs: {
-                    sidebarPath: require.resolve("./sidebars.js"),
-                    // Please change this to your repo.
-                    editUrl:
-                        "https://github.com/re-do/re-po/edit/main/pkgs/docs"
-                },
-                theme: {
-                    customCss: require.resolve("./src/css/custom.css")
-                }
-            })
+            "@docusaurus/theme-classic",
+            { customCss: require.resolve("./src/css/custom.css") }
+        ]
+    ],
+    plugins: [
+        ["@docusaurus/plugin-content-pages", {}],
+        [
+            "@docusaurus/plugin-content-docs",
+            {
+                id: "model",
+                path: "docs/model",
+                routeBasePath: "model"
+            }
+        ],
+        [
+            "@docusaurus/plugin-content-docs",
+            {
+                id: "state",
+                path: "docs/state",
+                routeBasePath: "state"
+            }
+        ],
+        [
+            "@docusaurus/plugin-content-docs",
+            {
+                id: "test",
+                path: "docs/test",
+                routeBasePath: "test"
+            }
         ]
     ],
     themeConfig:
@@ -54,17 +67,20 @@ const config = {
                     {
                         type: "doc",
                         label: "Model",
-                        docId: "model/intro"
+                        docId: "intro",
+                        docsPluginId: "model"
                     },
                     {
                         type: "doc",
                         label: "State",
-                        docId: "state/intro"
+                        docId: "intro",
+                        docsPluginId: "state"
                     },
                     {
                         type: "doc",
                         label: "Test",
-                        docId: "test/intro"
+                        docId: "intro",
+                        docsPluginId: "test"
                     },
                     {
                         href: "https://github.com/re-do/re-po",
@@ -103,16 +119,16 @@ const config = {
                             {
                                 label: "Discord",
                                 href: "https://discord.gg/WSNF3Kc4xh"
+                            },
+                            {
+                                label: "Twitch",
+                                href: "https://twitch.tv/RedoCode"
                             }
                         ]
                     }
                 ],
                 copyright: `Copyright © ${new Date().getFullYear()} Redo, Inc. Built with Docusaurus.`
             }
-            // prism: {
-            //     theme: lightCodeTheme,
-            //     darkTheme: darkCodeTheme
-            // }
         })
 }
 

@@ -15,6 +15,9 @@
         "write-heading-ids": "docusaurus write-heading-ids",
         "typecheck": "tsc",
         "test": "echo No tests for docs!",
+        "model-version": "docusaurus docs:version:model ",
+        "state-version": "docusaurus docs:version:state ",
+        "test-version": "docusaurus docs:version:test ",
         "build-pages": "npm run build && rm -rf ../../docs && mkdir ../../docs && cp -r out/* ../../docs"
     },
     "dependencies": {
