@@ -8,16 +8,28 @@
 :root {
     --ifm-font-family-base: Ubuntu, sans-serif;
 }
+
+/* Equivalent to <Paper elevation={24}> in MUI */
+.navbar {
+    box-shadow: rgba(0, 0, 0, 0.2) 0px 11px 15px -7px,
+        rgba(0, 0, 0, 0.14) 0px 24px 38px 3px,
+        rgba(0, 0, 0, 0.12) 0px 9px 46px 8px;
+}
+
+[data-theme="dark"] .navbar {
+    background-color: #242424;
+}
+
 .navbar__items {
     font-size: x-large;
 }
 
-.footer {
-    background-color: #1b1b1b;
+[data-theme="dark"] .main-wrapper {
+    background-color: #242424;
 }
 
-.footer--dark {
-    background-color: #141414;
+.footer {
+    background-color: #1b1b1b;
 }
 
 .navbar-github:hover {

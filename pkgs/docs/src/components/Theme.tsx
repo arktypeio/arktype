@@ -10,8 +10,7 @@ export const getTheme = ({ isDark }: ThemeConfigOptions) =>
     createTheme({
         palette: {
             primary: {
-                main: isDark ? "#264bcf" : "#162b79",
-                light: isDark ? "#869CE9" : "#eef1fc"
+                main: isDark ? "#264bcf" : "#162b79"
             },
             secondary: {
                 main: "#ffc40c"

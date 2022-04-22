@@ -17,7 +17,7 @@ const Contents = () => {
                     textAlign: "center",
                     position: "relative",
                     overflow: "hidden",
-                    background: isDark ? "#141414" : "#1b1b1b"
+                    background: "#1b1b1b"
                 }}
             >
                 <AnimatedLogo style={{ height: 120 }} />
@@ -30,7 +30,7 @@ const Contents = () => {
                     {siteConfig.tagline}
                 </Typography>
             </header>
-            <main>
+            <main style={{ background: isDark ? "#242424" : "white" }}>
                 <ToolSummaries />
             </main>
         </ThemeProvider>
@@ -41,8 +41,8 @@ export default () => {
     const { siteConfig } = useDocusaurusContext()
     return (
         <Layout
-            title={`Hello from ${siteConfig.title}`}
-            description="Description will go into a meta tag in <head />"
+            title={siteConfig.title}
+            description="Type-first web development without limits"
         >
             <Contents />
         </Layout>
