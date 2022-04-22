@@ -1,5 +1,3 @@
-export * from "./model.js"
-export * from "./space.js"
-export * from "./declaration.js"
-export * from "./utils.js"
-export * as Definitions from "./definitions/index.js"
+export { create } from "./model.js"
+export { compile } from "./space.js"
+export { declare } from "./declaration.js"

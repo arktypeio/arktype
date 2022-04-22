@@ -83,6 +83,12 @@ const config = {
                         docsPluginId: "test"
                     },
                     {
+                        type: "docsVersionDropdown",
+                        position: "right",
+                        docsPluginId: "model",
+                        className: "navbar-model-versions"
+                    },
+                    {
                         href: "https://github.com/re-do/re-po",
                         position: "right",
                         className: "navbar-github"

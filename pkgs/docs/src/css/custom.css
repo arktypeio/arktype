@@ -24,12 +24,8 @@
     font-size: x-large;
 }
 
-[data-theme="dark"] .main-wrapper {
-    background-color: #242424;
-}
-
-.footer {
-    background-color: #1b1b1b;
+.dropdown {
+    padding: 0px;
 }
 
 .navbar-github:hover {
@@ -48,7 +44,15 @@
     background: url("/img/githubDark.svg");
 }
 
+[data-theme="dark"] .main-wrapper {
+    background-color: #242424;
+}
+
 [class*="ToggleIcon"] {
     width: 36px;
     height: 36px;
+}
+
+.footer {
+    background-color: #1b1b1b;
 }

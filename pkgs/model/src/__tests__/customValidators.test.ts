@@ -1,9 +1,9 @@
 import { assert } from "@re-/assert"
-import { create, CustomValidator } from "@re-/model"
+import { create } from "@re-/model"
 import { compile } from "../space.js"
 
 describe("custom validators", () => {
-    const validator: CustomValidator = (value) => {
+    const validator = (value: unknown) => {
         if (
             typeof value === "string" &&
             value === [...value].reverse().join("")

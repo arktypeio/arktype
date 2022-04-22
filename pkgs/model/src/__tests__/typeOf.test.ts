@@ -1,4 +1,4 @@
-import { typeOf } from "../index.js"
+import { typeOf } from "../utils.js"
 
 describe("typeOf", () => {
     test("string", () => {
