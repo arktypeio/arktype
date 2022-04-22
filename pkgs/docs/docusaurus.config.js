@@ -4,7 +4,7 @@
 /** @type {import('@docusaurus/types').Config} */
 const config = {
     title: "Redo",
-    tagline: "Lovely tools to help you get back to doing what you love",
+    tagline: "Type-first web development without limits",
     url: "https://redo.dev",
     baseUrl: "/",
     onBrokenLinks: "throw",
@@ -84,8 +84,8 @@ const config = {
                     },
                     {
                         href: "https://github.com/re-do/re-po",
-                        label: "GitHub",
-                        position: "right"
+                        position: "right",
+                        className: "navbar-github"
                     }
                 ]
             },
@@ -97,15 +97,15 @@ const config = {
                         items: [
                             {
                                 label: "Model",
-                                to: "/docs/model/intro"
+                                to: "/model/intro"
                             },
                             {
                                 label: "State",
-                                to: "/docs/state/intro"
+                                to: "/state/intro"
                             },
                             {
                                 label: "Test",
-                                to: "/docs/test/intro"
+                                to: "/test/intro"
                             }
                         ]
                     },

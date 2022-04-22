@@ -1,35 +1,41 @@
-import React from "react"
+import React, { useState } from "react"
 import clsx from "clsx"
 import * as Svgs from "./svg"
 import { Box, Button, Stack, Typography } from "@mui/material"
-import { modelDemo } from "./demos"
+import Terminal from "@mui/icons-material/Terminal"
+import Expand from "@mui/icons-material/ExpandMore"
+import Collapse from "@mui/icons-material/ExpandLess"
+import { useColorMode } from "@docusaurus/theme-common"
+import { modelDemo } from "./demos/model"
 
-type ToolSummaryProps = {
+type ToolSummaryData = {
     name: string
     illustration: JSX.Element
     description: JSX.Element
-    upcoming?: boolean
-    demo?: string
+    demoElement?: JSX.Element
 }
 
-const toolSummaries: ToolSummaryProps[] = [
+type ToolSummaryProps = ToolSummaryData & {
+    activeDemo: JSX.Element | null
+    setActiveDemo: (demo: JSX.Element | null) => void
+}
+
+const toolSummaries: ToolSummaryData[] = [
     {
         name: "Model",
         illustration: <Svgs.Model />,
-        description: <>Type-first validation from editor to runtime</>,
-        demo: "https://stackblitz.com/edit/re-model?embed=1&file=model.ts&hideDevTools=1&hideExplorer=1&hideNavigation=1&theme=dark"
+        description: <>One definition from editor to runtime</>,
+        demoElement: modelDemo
     },
     {
-        name: "State",
+        name: "State (coming soon)",
         illustration: <Svgs.State />,
-        description: <>Self-validating states from simple shapes</>,
-        upcoming: true
+        description: <>Self-validating states from simple shapes</>
     },
     {
-        name: "Test",
+        name: "Test (coming soon)",
         illustration: <Svgs.Test />,
-        description: <>Web testing that writes itself</>,
-        upcoming: true
+        description: <>Web testing that writes itself</>
     }
 ]
 
@@ -37,102 +43,109 @@ const ToolSummary = ({
     name,
     illustration,
     description,
-    upcoming,
-    demo
-}: ToolSummaryProps) => (
-    <Box
-        className={clsx("col col--4")}
-        style={
-            demo
-                ? {
-                      marginBottom: -20,
-                      borderRadius: 8,
-                      padding: 0
-                  }
-                : { padding: 0 }
-        }
-        sx={
-            demo
-                ? {
-                      bgcolor: "primary.light"
-                  }
-                : {}
-        }
-    >
-        <div className="text--center">{illustration}</div>
-        <div className="text--center">
-            <Typography
-                component="h3"
-                variant="h5"
-                color={demo && "common.black"}
-                fontWeight="700"
-            >
-                {name}
-                {upcoming ? <i> (coming soon)</i> : ""}
-            </Typography>
-            <Typography
-                component="p"
-                variant="body1"
-                color={demo && "common.black"}
-                fontWeight="300"
-                style={{ whiteSpace: "nowrap" }}
-            >
-                {description}
-            </Typography>
-            <br />
-            <Stack spacing={2} direction="row" justifyContent="center">
-                <Button
-                    variant="outlined"
-                    href={`/docs/${name}/intro`}
+    demoElement,
+    setActiveDemo,
+    activeDemo
+}: ToolSummaryProps) => {
+    const { colorMode } = useColorMode()
+    const buttonColor = colorMode === "dark" ? "secondary" : "primary"
+    const isActiveDemo = activeDemo === demoElement
+    return (
+        <Box className={clsx("col col--4")}>
+            <div className="text--center">{illustration}</div>
+            <div className="text--center">
+                <Typography
+                    component="h3"
+                    variant="h5"
+                    fontWeight="700"
+                    color="primary"
+                >
+                    {name}
+                </Typography>
+                <Typography
+                    component="p"
+                    variant="body1"
+                    fontWeight="300"
                     style={{ whiteSpace: "nowrap" }}
                 >
-                    Learn more
-                </Button>
-                {demo ? (
-                    <>
-                        <Typography
-                            component="p"
-                            color={demo && "common.black"}
-                            variant="h6"
-                            fontWeight="300"
-                        >
-                            or
-                        </Typography>
-                        <Button
-                            variant="contained"
-                            style={{ whiteSpace: "nowrap" }}
-                            onClick={() =>
-                                document
-                                    .getElementById("demo")
-                                    ?.scrollIntoView({ behavior: "smooth" })
-                            }
-                        >
-                            Try it out ⬇️
-                        </Button>
-                    </>
-                ) : null}
-            </Stack>
-        </div>
-    </Box>
-)
-
-export const ToolSummaries = () => (
-    <section
-        style={{
-            display: "flex",
-            alignItems: "center",
-            padding: "2rem 0",
-            width: "100%",
-            fontSize: "larger"
-        }}
-    >
-        <div className="container">
-            <div className="row" style={{ padding: 8 }}>
-                {toolSummaries.map((props, index) => (
-                    <ToolSummary key={index} {...props} />
-                ))}
+                    {description}
+                </Typography>
+                <br />
+                <Stack spacing={2} direction="row" justifyContent="center">
+                    <Button
+                        variant="outlined"
+                        color={buttonColor}
+                        href={`/${name}/intro`}
+                        sx={{
+                            whiteSpace: "nowrap"
+                        }}
+                    >
+                        Learn more
+                    </Button>
+                    {demoElement && window.screen.width >= 1000 ? (
+                        <>
+                            <Typography
+                                component="p"
+                                variant="h6"
+                                fontWeight="300"
+                            >
+                                or
+                            </Typography>
+                            <Button
+                                color={buttonColor}
+                                variant="contained"
+                                sx={{ whiteSpace: "nowrap" }}
+                                onClick={() => {
+                                    setActiveDemo(
+                                        isActiveDemo ? null : demoElement
+                                    )
+                                }}
+                                endIcon={
+                                    <div style={{ display: "flex" }}>
+                                        <Terminal />
+                                        {isActiveDemo ? (
+                                            <Collapse />
+                                        ) : (
+                                            <Expand />
+                                        )}
+                                    </div>
+                                }
+                            >
+                                {isActiveDemo ? "All done?" : "Try it here!"}
+                            </Button>
+                        </>
+                    ) : null}
+                </Stack>
             </div>
-            {modelDemo}
-        </div>
-    </section>
-)
+        </Box>
+    )
+}
+
+export const ToolSummaries = () => {
+    const [activeDemo, setActiveDemo] = useState<null | JSX.Element>(null)
+    return (
+        <section
+            style={{
+                display: "flex",
+                alignItems: "center",
+                padding: "2rem 0",
+                width: "100%",
+                fontSize: "larger"
+            }}
+        >
+            <div className="container">
+                <div className="row" style={{ padding: 8 }}>
+                    {toolSummaries.map((props, index) => (
+                        <ToolSummary
+                            key={index}
+                            {...props}
+                            setActiveDemo={setActiveDemo}
+                            activeDemo={activeDemo}
+                        />
+                    ))}
+                </div>
+                {activeDemo}
+            </div>
+        </section>
+    )
+}

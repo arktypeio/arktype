@@ -3,7 +3,6 @@ import React from "react"
 
 export const modelDemo = (
     <Box
-        sx={{ bgcolor: "primary.light" }}
         style={{
             width: "100%",
             height: "660px",

@@ -4,33 +4,39 @@
  * work well for content-centric websites.
  */
 @import url("https://fonts.googleapis.com/css?family=Ubuntu:300,400,500,700&display=swap");
-/* You can override the default Infima variables here. */
-:root {
-    --ifm-color-primary: #162b79;
-    --ifm-color-primary-dark: rgb(33, 175, 144);
-    --ifm-color-primary-darker: rgb(31, 165, 136);
-    --ifm-color-primary-darkest: rgb(26, 136, 112);
-    --ifm-color-primary-light: rgb(70, 203, 174);
-    --ifm-color-primary-lighter: rgb(102, 212, 189);
-    --ifm-color-primary-lightest: rgb(146, 224, 208);
-    --ifm-code-font-size: 95%;
-}
 
+:root {
+    --ifm-font-family-base: Ubuntu, sans-serif;
+}
 .navbar__items {
     font-size: x-large;
 }
 
-.docusaurus-highlight-code-line {
-    background-color: rgba(0, 0, 0, 0.1);
-    display: block;
-    margin: 0 calc(-1 * var(--ifm-pre-padding));
-    padding: 0 var(--ifm-pre-padding);
+.footer {
+    background-color: #1b1b1b;
 }
 
-html[data-theme="dark"] .docusaurus-highlight-code-line {
-    background-color: rgba(0, 0, 0, 0.3);
+.footer--dark {
+    background-color: #141414;
 }
 
-html[data-theme="dark"] {
-    --ifm-color-primary: #264bcf;
+.navbar-github:hover {
+    opacity: 0.6;
+}
+
+.navbar-github::before {
+    content: "";
+    width: 36px;
+    height: 36px;
+    display: flex;
+    background: url("/img/github.svg");
+}
+
+[data-theme="dark"] .navbar-github::before {
+    background: url("/img/githubDark.svg");
+}
+
+[class*="ToggleIcon"] {
+    width: 36px;
+    height: 36px;
 }

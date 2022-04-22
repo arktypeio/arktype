@@ -1,37 +1,34 @@
 import React from "react"
-import clsx from "clsx"
 import Layout from "@theme/Layout"
 import useDocusaurusContext from "@docusaurus/useDocusaurusContext"
 import { useColorMode } from "@docusaurus/theme-common"
-import styles from "./index.module.css"
-import { getTheme, ToolSummaries } from "../components"
+import { AnimatedLogo, getTheme, ToolSummaries } from "../components"
 import { ThemeProvider, Typography } from "@mui/material"
 
 const Contents = () => {
     const { siteConfig } = useDocusaurusContext()
-    const { isDarkTheme } = useColorMode()
+    const { colorMode } = useColorMode()
+    const isDark = colorMode === "dark"
     return (
-        <ThemeProvider theme={getTheme({ isDark: isDarkTheme })}>
-            <header className={clsx("hero hero--primary", styles.heroBanner)}>
-                <div className="container">
-                    <Typography
-                        component="h1"
-                        variant="h2"
-                        className="hero__title"
-                        color="common.white"
-                        fontWeight="500"
-                    >
-                        {siteConfig.title}
-                    </Typography>
-                    <Typography
-                        component="h2"
-                        variant="h5"
-                        className="hero__subtitle"
-                        color="common.white"
-                    >
-                        {siteConfig.tagline}
-                    </Typography>
-                </div>
+        <ThemeProvider theme={getTheme({ isDark })}>
+            <header
+                style={{
+                    padding: "2rem 0",
+                    textAlign: "center",
+                    position: "relative",
+                    overflow: "hidden",
+                    background: isDark ? "#141414" : "#1b1b1b"
+                }}
+            >
+                <AnimatedLogo style={{ height: 120 }} />
+                <Typography
+                    component="h2"
+                    variant="h5"
+                    className="hero__subtitle"
+                    color="common.white"
+                >
+                    {siteConfig.tagline}
+                </Typography>
             </header>
             <main>
                 <ToolSummaries />
