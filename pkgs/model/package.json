@@ -24,7 +24,7 @@
         "test": "jest 2>&1",
         "unit": "jest --coverage false -t ",
         "snapshotTsPerf": "tsc --extendedDiagnostics --noEmit > tsDiagnostics.txt",
-        "buildDocs": "runScript generateDocs.ts"
+        "generateDocs": "runScript docgen/generateDocs.ts"
     },
     "dependencies": {
         "@re-/tools": "workspace:*"
@@ -42,6 +42,8 @@
         "@microsoft/api-extractor": "7.22.2",
         "@microsoft/api-extractor-model": "7.17.2",
         "@microsoft/api-documenter": "7.17.10",
+        "prettier": "2.6.2",
+        "@types/prettier": "2.6.0",
         "ts-node": "10.4.0"
     }
 }
