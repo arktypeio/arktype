@@ -202,25 +202,6 @@ export const createCreateFunction =
         } as any
     }
 
-export type CreateFunction<PredefinedSpace extends Spacefication | null> = <
-    Def,
-    Options extends ModelConfig = {},
-    ActiveSpace extends Spacefication = PredefinedSpace extends null
-        ? Options["space"] extends Spacefication
-            ? Options["space"]
-            : { resolutions: {} }
-        : PredefinedSpace
->(
-    definition: Validate<Narrow<Def>, ActiveSpace["resolutions"]>,
-    // TS has a problem inferring the narrowed type of a function hence the intersection hack
-    // If removing it doesn't break any types or tests, do it!
-    options?: Narrow<Options> & { validate?: { validator?: CustomValidator } }
-) => Model<
-    Def,
-    Evaluate<ActiveSpace>,
-    Options["parse"] extends ParseConfig ? Options["parse"] : {}
->
-
 export type Model<
     Def,
     Space extends Spacefication,
@@ -253,4 +234,29 @@ export type Model<
     ) => ReferencesOf<Def, Space["resolutions"], { asList: true }>
 }>
 
+export type CreateFunction<PredefinedSpace extends Spacefication | null> = <
+    Def,
+    Options extends ModelConfig = {},
+    ActiveSpace extends Spacefication = PredefinedSpace extends null
+        ? Options["space"] extends Spacefication
+            ? Options["space"]
+            : { resolutions: {} }
+        : PredefinedSpace
+>(
+    definition: Validate<Narrow<Def>, ActiveSpace["resolutions"]>,
+    // TS has a problem inferring the narrowed type of a function hence the intersection hack
+    // If removing it doesn't break any types or tests, do it!
+    options?: Narrow<Options> & { validate?: { validator?: CustomValidator } }
+) => Model<
+    Def,
+    Evaluate<ActiveSpace>,
+    Options["parse"] extends ParseConfig ? Options["parse"] : {}
+>
+
+/**
+ * Create a model.
+ * @param definition {@as string} Document this.
+ * @param options {@as object?} And that.
+ * @returns {@as any} The result.
+ */
 export const create = createCreateFunction(null)

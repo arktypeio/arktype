@@ -70,8 +70,7 @@ describe("toString", () => {
               ]
             }"
         `)
-    })
-    expect(toString(o, { indent: 4 })).toMatchInlineSnapshot(`
+        expect(toString(o, { indent: 4 })).toMatchInlineSnapshot(`
         "{
             a: {
                 a: '',
@@ -105,4 +104,13 @@ describe("toString", () => {
             ]
         }"
     `)
+    })
+    test("symbol keys", () => {
+        const symbolKey = Symbol("example")
+        expect(
+            toString({
+                [symbolKey]: true
+            })
+        ).toMatchInlineSnapshot(`"{Symbol(example): true}"`)
+    })
 })

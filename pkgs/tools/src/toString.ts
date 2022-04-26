@@ -62,10 +62,15 @@ export const toString = (value: any, options: ToStringOptions = {}) => {
                     .map((v) => recurse(v, [...seen, value], depth + 1, null))
                     .join(valueSeperator)}${afterRecurse}]`
             } else {
-                result += `{${beforeRecurse}${Object.entries(value)
+                result += `{${beforeRecurse}${Reflect.ownKeys(value)
                     .map(
-                        ([k, v]) =>
-                            `${recurse(v, [...seen, value], depth + 1, k)}`
+                        (k) =>
+                            `${recurse(
+                                value[k],
+                                [...seen, value],
+                                depth + 1,
+                                String(k)
+                            )}`
                     )
                     .join(valueSeperator)}${afterRecurse}}`
             }
