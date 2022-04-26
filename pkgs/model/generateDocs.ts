@@ -11,6 +11,7 @@ import { DocumenterConfig } from "@microsoft/api-documenter/lib/documenters/Docu
 import { MarkdownDocumenter } from "@microsoft/api-documenter/lib/documenters/MarkdownDocumenter.js"
 import { TSDocConfigFile } from "@microsoft/tsdoc-config"
 import { readJson, writeJson } from "@re-/node"
+import { transform } from "@re-/tools"
 
 // Invoke API Extractor
 const extractorResult: ExtractorResult =
@@ -23,6 +24,11 @@ const tsDocParser = new TSDocParser(tsDocConfiguration)
 const apiJson = readJson("temp/model.api.json")
 // Keep track of the names we modify so we can access the files later
 const variableFunctions: string[] = []
+
+const exportReferences = transform(
+    apiJson.members[0].members,
+    ([i, member]) => [member.name, member.canonicalReference]
+)
 
 for (const item of apiJson.members[0].members) {
     // If ApiItem is classified as variable but includes @param references,
@@ -70,12 +76,11 @@ for (const item of apiJson.members[0].members) {
             }
         })
         item.excerptTokens = typeNames.map((name) => {
-            if (false) {
-                // TODO: If we can find a reference to the type, use it
+            if (name in exportReferences) {
                 return {
                     kind: "Reference",
                     text: name,
-                    canonicalReference: `${apiJson.canonicalReference}${name}:type`
+                    canonicalReference: exportReferences[name]
                 }
             }
             return {

@@ -8,10 +8,10 @@ Create a model.
 
 ## Parameters
 
-| Parameter  | Type   | Description                 |
-| ---------- | ------ | --------------------------- |
-| definition | string | Document this.              |
-| options    | object | <i>(Optional)</i> And that. |
+| Parameter  | Type                                  | Description                 |
+| ---------- | ------------------------------------- | --------------------------- |
+| definition | string                                | Document this.              |
+| options    | [ModelConfig](./model.modelconfig.md) | <i>(Optional)</i> And that. |
 
 <b>Returns:</b>
 

@@ -17,7 +17,7 @@ import {
     stringifyErrors,
     ValidationErrors
 } from "./errors.js"
-import { ValidateSpaceResolutions, Spacefication } from "./space.js"
+import { ValidateSpaceResolutions, SpaceDefinition } from "./space.js"
 import {
     errorsFromCustomValidator,
     MergeObjects,
@@ -110,7 +110,7 @@ export type ModelConfig = {
     validate?: ValidateConfig
     generate?: GenerateConfig
     references?: ReferencesConfig
-    space?: Spacefication
+    space?: SpaceDefinition
 }
 
 export type ValidateConfig = {
@@ -159,7 +159,7 @@ const createRootValidate =
     }
 
 export const createCreateFunction =
-    <PredefinedSpace extends Spacefication | null>(
+    <PredefinedSpace extends SpaceDefinition | null>(
         predefinedSpace: Narrow<PredefinedSpace>
     ): CreateFunction<PredefinedSpace> =>
     (definition, config) => {
@@ -204,7 +204,7 @@ export const createCreateFunction =
 
 export type Model<
     Def,
-    Space extends Spacefication,
+    Space extends SpaceDefinition,
     Options extends ParseConfig,
     SpaceParseConfig extends ParseConfig = KeyValuate<
         Space["config"],
@@ -234,11 +234,11 @@ export type Model<
     ) => ReferencesOf<Def, Space["resolutions"], { asList: true }>
 }>
 
-export type CreateFunction<PredefinedSpace extends Spacefication | null> = <
+export type CreateFunction<PredefinedSpace extends SpaceDefinition | null> = <
     Def,
     Options extends ModelConfig = {},
-    ActiveSpace extends Spacefication = PredefinedSpace extends null
-        ? Options["space"] extends Spacefication
+    ActiveSpace extends SpaceDefinition = PredefinedSpace extends null
+        ? Options["space"] extends SpaceDefinition
             ? Options["space"]
             : { resolutions: {} }
         : PredefinedSpace
@@ -256,7 +256,7 @@ export type CreateFunction<PredefinedSpace extends Spacefication | null> = <
 /**
  * Create a model.
  * @param definition {@as string} Document this.
- * @param options {@as object?} And that.
+ * @param options {@as ModelConfig?} And that.
  * @returns {@as any} The result.
  */
 export const create = createCreateFunction(null)

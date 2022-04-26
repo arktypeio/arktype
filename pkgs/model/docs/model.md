@@ -19,6 +19,13 @@
 
 ## Type Aliases
 
-| Type Alias                                  | Description |
-| ------------------------------------------- | ----------- |
-| [CreateFunction](./model.createfunction.md) |             |
+| Type Alias                                      | Description |
+| ----------------------------------------------- | ----------- |
+| [CreateFunction](./model.createfunction.md)     |             |
+| [CustomValidator](./model.customvalidator.md)   |             |
+| [GenerateConfig](./model.generateconfig.md)     |             |
+| [ModelConfig](./model.modelconfig.md)           |             |
+| [ParseConfig](./model.parseconfig.md)           |             |
+| [ReferencesConfig](./model.referencesconfig.md) |             |
+| [SpaceDefinition](./model.spacedefinition.md)   |             |
+| [ValidateConfig](./model.validateconfig.md)     |             |

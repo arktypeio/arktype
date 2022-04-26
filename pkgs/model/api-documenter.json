@@ -1,13 +1,4 @@
 {
     "$schema": "https://developer.microsoft.com/json-schemas/api-extractor/v7/api-documenter.schema.json",
-    "newlineKind": "lf",
-    /**
-     * Describes plugin packages to be loaded, and which features to enable.
-     */
-    "plugins": [
-        // {
-        //  "packageName": "doc-plugin-example",
-        //  "enabledFeatureNames": [ "example-feature" ]
-        // }
-    ]
+    "newlineKind": "lf"
 }

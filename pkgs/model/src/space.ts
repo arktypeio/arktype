@@ -161,7 +161,7 @@ type ExtendSpaceFunction<OriginalResolutions, OriginalConfig> = <
     config?: Narrow<NewConfig>
 ) => Space<MergedResolutions, ExtendSpaceConfig<OriginalConfig, NewConfig>>
 
-export type Spacefication<
+export type SpaceDefinition<
     Resolutions = SpaceResolutions,
     Config = SpaceOptions<Resolutions>
 > = {

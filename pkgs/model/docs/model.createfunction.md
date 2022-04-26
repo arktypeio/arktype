@@ -8,12 +8,12 @@
 
 ```typescript
 export declare type CreateFunction<
-    PredefinedSpace extends Spacefication | null
+    PredefinedSpace extends SpaceDefinition | null
 > = <
     Def,
     Options extends ModelConfig = {},
-    ActiveSpace extends Spacefication = PredefinedSpace extends null
-        ? Options["space"] extends Spacefication
+    ActiveSpace extends SpaceDefinition = PredefinedSpace extends null
+        ? Options["space"] extends SpaceDefinition
             ? Options["space"]
             : {
                   resolutions: {}
@@ -32,3 +32,5 @@ export declare type CreateFunction<
     Options["parse"] extends ParseConfig ? Options["parse"] : {}
 >
 ```
+
+<b>References:</b> [SpaceDefinition](./model.spacedefinition.md)<!-- -->, [ModelConfig](./model.modelconfig.md)<!-- -->, [CustomValidator](./model.customvalidator.md)<!-- -->, [ParseConfig](./model.parseconfig.md)
