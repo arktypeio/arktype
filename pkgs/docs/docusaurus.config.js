@@ -32,9 +32,20 @@ const config = {
         [
             "@docusaurus/plugin-content-docs",
             {
+                id: "api",
+                path: "docs/api",
+                routeBasePath: "api",
+                sidebarPath: require.resolve("./sidebars.js")
+            }
+        ],
+        [
+            "@docusaurus/plugin-content-docs",
+            {
                 id: "model",
                 path: "docs/model",
-                routeBasePath: "model"
+                routeBasePath: "model",
+                sidebarPath: require.resolve("./sidebars.js")
+                // sidebarPath: require.resolve("./docs/model/sidebar.js")
             }
         ],
         [
@@ -103,15 +114,15 @@ const config = {
                         items: [
                             {
                                 label: "Model",
-                                to: "/model/intro"
+                                to: "/model"
                             },
                             {
                                 label: "State",
-                                to: "/state/intro"
+                                to: "/state"
                             },
                             {
                                 label: "Test",
-                                to: "/test/intro"
+                                to: "/test"
                             }
                         ]
                     },

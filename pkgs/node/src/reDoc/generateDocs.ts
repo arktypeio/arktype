@@ -1,4 +1,4 @@
-import { mkdirSync, readFileSync, rmSync, writeFileSync } from "fs"
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "fs"
 import {
     TSDocParser,
     TSDocConfiguration,
@@ -12,7 +12,7 @@ import { MarkdownDocumenter } from "@microsoft/api-documenter/lib/documenters/Ma
 import { TSDocConfigFile } from "@microsoft/tsdoc-config"
 import { transform } from "@re-/tools"
 import prettier from "prettier"
-import { join } from "path"
+import { join, resolve } from "path"
 import {
     readJson,
     writeJson,
@@ -24,44 +24,64 @@ import {
 import { findPackageName } from "../ts.js"
 
 export type GenerateDocsOptions = {
-    packageDir?: string
-    outputDir?: string
+    packageRoots?: string[]
+    outputRoot?: string
 }
 
 export const generateDocs = (options: GenerateDocsOptions = {}) => {
-    const ctx = loadContext(options)
-    const api = getApi(ctx)
-    transformApiData(api, ctx)
-    writeJson(ctx.apiExtractorOutputPath, api.root)
-    writeMarkdown(ctx)
-    transformMarkdown(ctx)
-    cleanup(ctx.tempDir)
+    const cwd = process.cwd()
+    const packageRoots = options.packageRoots ?? [findPackageRoot(cwd)]
+    const docsOutputDir = options.outputRoot ?? join(cwd, "docs")
+    const tempDir = mkdtempSync("reDoc")
+    console.group(
+        `reDoc: Generating docs for ${packageRoots.length} package(s)...✍️`
+    )
+    try {
+        // Keep track of the JSON files representing the API for each package root
+        const apiFiles: string[] = []
+        // Keep track of transformations across packages
+        const transformations: Transformation[] = []
+        packageRoots.forEach((root) => {
+            console.group(`Extracting your API from ${root}...`)
+            const ctx = loadContext(root, tempDir)
+            const api = getApi(ctx)
+            transformations.push(...transformApiData(api, ctx))
+            writeJson(ctx.apiExtractorOutputPath, api.root)
+            apiFiles.push(ctx.apiExtractorOutputPath)
+            console.groupEnd()
+        })
+
+        console.log(`Creating markdown docs for your APIs...`)
+        const docsCtx: DocsContext = {
+            apiFiles,
+            docsOutputDir,
+            transformations
+        }
+        writeMarkdown(docsCtx)
+        transformMarkdown(docsCtx)
+    } finally {
+        cleanup(tempDir)
+    }
+    console.log(`reDoc: Enjoy your new docs at ${docsOutputDir}! 📚`)
+    console.groupEnd()
 }
 
-type Api = {
-    root: any
-    members: any[]
-    references: Record<string, string>
-}
+type PackageContext = ReturnType<typeof loadContext>
 
-type ApiContext = ReturnType<typeof loadContext>
+type ApiData = ReturnType<typeof getApi>
 
-const loadContext = (options: GenerateDocsOptions) => {
-    const packageRoot = options.packageDir ?? findPackageRoot(process.cwd())
-    const docsOutputDir = options.outputDir ?? join(packageRoot, "docs")
+const loadContext = (packageRoot: string, tempDir: string) => {
     const packageSpecifier = findPackageName(packageRoot)
-    const packageName = packageSpecifier.includes("/")
-        ? packageSpecifier.split("/")[1]
-        : packageSpecifier
-
-    const tempDir = join(packageRoot, "tmp")
-    cleanup(tempDir)
-    mkdirSync(tempDir)
+    // In case the package is scoped to an org (e.g. "@re-/node"), extract the portion following "/"
+    const packageName = packageSpecifier.split("/").slice(-1)[0]
 
     const tsDocConfigPath = fromPackageRoot("tsdoc.json")
 
-    const apiExtractorConfigPath = join(tempDir, "api-extractor.json")
-    const apiExtractorOutputPath = join(tempDir, `${packageName}.api.json`)
+    const apiExtractorConfigPath = resolve(
+        tempDir,
+        `${packageName}-api-extractor.json`
+    )
+    const apiExtractorOutputPath = resolve(tempDir, `${packageName}.api.json`)
     writeJson(
         apiExtractorConfigPath,
         createApiExtractorConfig(packageRoot, apiExtractorOutputPath)
@@ -71,18 +91,14 @@ const loadContext = (options: GenerateDocsOptions) => {
     const tsDocLoadedConfiguration = TSDocConfigFile.loadFile(tsDocConfigPath)
     tsDocLoadedConfiguration.configureParser(tsDocConfiguration)
     const tsDocParser = new TSDocParser(tsDocConfiguration)
-
-    // Keep track of the names of items we modify so we can access the files later
-    const modifiedNames: string[] = []
     return {
         packageRoot,
+        packageSpecifier,
         packageName,
         tsDocConfigPath,
         tsDocLoadedConfiguration,
         apiExtractorConfigPath,
         apiExtractorOutputPath,
-        docsOutputDir,
-        modifiedNames,
         tsDocParser,
         tempDir
     }
@@ -96,8 +112,9 @@ const getApi = ({
     apiExtractorConfigPath,
     apiExtractorOutputPath,
     tsDocLoadedConfiguration,
-    packageRoot
-}: ApiContext): Api => {
+    packageRoot,
+    packageName
+}: PackageContext) => {
     const extractorConfig = ExtractorConfig.prepare({
         configObject: ExtractorConfig.loadFile(apiExtractorConfigPath),
         tsdocConfigFile: tsDocLoadedConfiguration,
@@ -110,39 +127,66 @@ const getApi = ({
     //         `API extractor failed with errors that are hopefully above this one.`
     //     )
     // }
-    const data = readJson(apiExtractorOutputPath)
-    const entryPoint = data.members[0]
-    const members = entryPoint.members as any[]
+    const root = readJson(apiExtractorOutputPath)
+    const getMembers = () => {
+        const members = root.members?.[0]?.members
+        if (!Array.isArray(members)) {
+            throw new Error(
+                `Unable to determine the API from members of ${packageName}.`
+            )
+        }
+        return members
+    }
+    const setMembers = (value: any[]) => {
+        // Check to make sure the data is of the expected shape
+        getMembers()
+        root.members[0].members = value
+    }
     return {
-        root: data,
-        members,
-        references: transform(members, ([i, member]) => [
+        root,
+        getMembers,
+        setMembers,
+        references: transform(getMembers(), ([i, member]) => [
             member.name,
             member.canonicalReference
-        ])
+        ]) as Record<string, string>
     }
 }
 
+type TransformationKind = "toFunction"
+
+type Transformation = {
+    name: string
+    packageName: string
+    kind: TransformationKind
+}
+
 //** Transforms api by mutating its members */
-const transformApiData = (api: Api, ctx: ApiContext) => {
-    const transformedMembers = api.members.map((member) => {
-        // Treat variables with @param tags like functions
+const transformApiData = (api: ApiData, ctx: PackageContext) => {
+    const transformations: Transformation[] = []
+    const members = api.getMembers().map((member) => {
+        const memberData = {
+            name: member.name,
+            packageName: ctx.packageName
+        }
+        // Treat non-functional values with @param tags like functions
         if (
-            member.kind === "Variable" &&
+            member.kind !== "Function" &&
             member.docComment?.includes("@param")
         ) {
+            transformations.push({ ...memberData, kind: "toFunction" })
             return transformVariableToFunction(member, api, ctx)
         }
         return member
     })
-    api.members = transformedMembers
-    api.root.members[0].members = transformedMembers
+    api.root.members[0].members = members
+    return transformations
 }
 
 const transformVariableToFunction = (
     member: any,
-    api: Api,
-    { tsDocParser, modifiedNames }: ApiContext
+    api: ApiData,
+    { tsDocParser }: PackageContext
 ) => {
     const { docComment, log } = tsDocParser.parseString(member.docComment)
     if (log.messages.length) {
@@ -185,7 +229,6 @@ const transformVariableToFunction = (
             text: name
         }
     })
-    modifiedNames.push(member.name)
     return {
         ...member,
         kind: "Function",
@@ -208,47 +251,58 @@ const typeOfBlock = (block: DocBlock | undefined) => {
     return asNode?.tagContent ?? ""
 }
 
-const writeMarkdown = ({ apiExtractorOutputPath }: ApiContext) => {
+type DocsContext = {
+    apiFiles: string[]
+    docsOutputDir: string
+    transformations: Transformation[]
+}
+
+const writeMarkdown = ({ apiFiles, docsOutputDir }: DocsContext) => {
     const apiModel = new ApiModel()
-    apiModel.loadPackage(apiExtractorOutputPath)
+    apiFiles.forEach((path) => apiModel.loadPackage(path))
     const documenter = new MarkdownDocumenter({
         apiModel,
-        outputFolder: "docs",
+        outputFolder: docsOutputDir,
         documenterConfig: undefined
     })
     documenter.generateFiles()
 }
 
-const transformMarkdown = ({
-    docsOutputDir,
-    modifiedNames,
-    packageName
-}: ApiContext) => {
-    const remainingModifiedPaths = modifiedNames.map((name) =>
-        join(docsOutputDir, `${packageName}.${name.toLowerCase()}.md`)
-    )
+const transformMarkdown = ({ docsOutputDir, transformations }: DocsContext) => {
+    const transformationsByPath = transform(transformations, ([i, data]) => [
+        join(
+            docsOutputDir,
+            `${data.packageName}.${data.name}.md`.toLowerCase()
+        ),
+        data
+    ])
     const prettierOptions = {
         ...prettier.resolveConfig.sync(fileName()),
         parser: "markdown"
     }
     walkPaths(docsOutputDir, { excludeDirs: true }).forEach((path) => {
         let contents = readFileSync(path).toString()
-        const modifiedPathIndex = remainingModifiedPaths.findIndex(
-            (_) => _ === path
-        )
-        if (modifiedPathIndex !== -1) {
-            // The signature for variable funtions is garbage, so remove it
-            contents = contents.replace(/<b>Signature(\s|\S)*(?=##)/, "")
-            remainingModifiedPaths.splice(modifiedPathIndex, 1)
+        if (path in transformationsByPath) {
+            if (transformationsByPath[path].kind === "toFunction") {
+                // The signature for variable funtions is garbage, so remove it
+                contents = contents.replace(/<b>Signature(\s|\S)*(?=##)/, "")
+            } else {
+                throw new Error(
+                    `Unknown transformation kind '${transformationsByPath[path].kind}'.`
+                )
+            }
+            delete transformationsByPath[path]
         }
+        // Remove html-style comments from api-documenter
+        contents = contents.replace(/<!--[\s\S]*?-->/g, "")
         contents = prettier.format(contents, prettierOptions)
         writeFileSync(path, contents)
     })
-    if (remainingModifiedPaths.length) {
+    if (Object.keys(transformationsByPath).length) {
         throw new Error(
-            `Unable to find docs corresponding to the following modified paths:\n${remainingModifiedPaths.join(
-                "\n"
-            )}`
+            `Unable to find docs corresponding to the following modified paths:\n${Object.keys(
+                transformationsByPath
+            ).join("\n")}`
         )
     }
 }

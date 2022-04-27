@@ -20,7 +20,7 @@ export type TranspileTsOptions = TsConfig & {
     toDir?: string
 }
 
-export const findPackageName = (rootPath?: string) => {
+export const findPackageName = (rootPath?: string): string => {
     return readJson(
         fromDir(rootPath ?? findPackageRoot(process.cwd()))("package.json")
     ).name
