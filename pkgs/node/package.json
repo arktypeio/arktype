@@ -23,6 +23,7 @@
         "runScript": "./runScript.js",
         "reTsc": "./reTsc.js",
         "reTranspile": "./reTranspile.js",
+        "reDoc": "./reDoc.js",
         "test": "jest 2>&1"
     },
     "bin": {
