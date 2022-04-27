@@ -1,6 +1,6 @@
-import { fromHere, generateDocs } from "@re-/node"
+import { fromHere, reDoc } from "@re-/node"
 
-generateDocs({
-    packageRoots: [fromHere("..", "model")],
-    outputRoot: fromHere("docs", "api")
+reDoc({
+    packages: [{ rootDir: fromHere("..", "model") }],
+    baseOutputDir: fromHere("docs", "api")
 })

@@ -1,3 +1,3 @@
-import { generateDocs } from "./reDoc/index.js"
+import { reDoc } from "./reDoc/index.js"
 
-generateDocs()
+reDoc()
