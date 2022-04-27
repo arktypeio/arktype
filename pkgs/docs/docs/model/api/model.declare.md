@@ -1,4 +1,4 @@
-[Home](./index.md) &gt; [@re-/model](./model.md) &gt; [declare](./model.declare.md)
+[@re-/model](./model.md) &gt; [declare](./model.declare.md)
 
 ## declare variable
 

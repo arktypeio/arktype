@@ -1,4 +1,4 @@
-[Home](./index.md) &gt; [@re-/model](./model.md) &gt; [ParseConfig](./model.parseconfig.md)
+[@re-/model](./model.md) &gt; [ParseConfig](./model.parseconfig.md)
 
 ## ParseConfig type
 

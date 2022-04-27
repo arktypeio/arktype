@@ -1,4 +1,4 @@
-[Home](./index.md) &gt; [@re-/model](./model.md) &gt; [ModelConfig](./model.modelconfig.md)
+[@re-/model](./model.md) &gt; [ModelConfig](./model.modelconfig.md)
 
 ## ModelConfig type
 

@@ -32,20 +32,10 @@ const config = {
         [
             "@docusaurus/plugin-content-docs",
             {
-                id: "api",
-                path: "docs/api",
-                routeBasePath: "api",
-                sidebarPath: require.resolve("./sidebars.js")
-            }
-        ],
-        [
-            "@docusaurus/plugin-content-docs",
-            {
                 id: "model",
                 path: "docs/model",
                 routeBasePath: "model",
-                sidebarPath: require.resolve("./sidebars.js")
-                // sidebarPath: require.resolve("./docs/model/sidebar.js")
+                sidebarPath: require.resolve("./docs/model/sidebar.js")
             }
         ],
         [

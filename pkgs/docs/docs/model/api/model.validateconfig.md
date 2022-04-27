@@ -1,4 +1,4 @@
-[Home](./index.md) &gt; [@re-/model](./model.md) &gt; [ValidateConfig](./model.validateconfig.md)
+[@re-/model](./model.md) &gt; [ValidateConfig](./model.validateconfig.md)
 
 ## ValidateConfig type
 

@@ -1,4 +1,4 @@
-[Home](./index.md) &gt; [@re-/model](./model.md) &gt; [CreateFunction](./model.createfunction.md)
+[@re-/model](./model.md) &gt; [CreateFunction](./model.createfunction.md)
 
 ## CreateFunction type
 

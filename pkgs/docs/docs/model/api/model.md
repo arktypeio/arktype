@@ -1,4 +1,4 @@
-[Home](./index.md) &gt; [@re-/model](./model.md)
+[@re-/model](./model.md)
 
 ## model package
 

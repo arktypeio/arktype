@@ -8,12 +8,14 @@ import { generateDocs } from "./generation/generateDocs.js"
 
 export type PackageConfig = { rootDir: string; outputDir?: string }
 
-export type GenerateDocsOptions = {
+export type ReDocOptions = {
     packages?: PackageConfig[]
     baseOutputDir?: string
+    rewriteExternalImports?: (packageName: string, memberName: string) => string
+    excludeIndexMd?: boolean
 }
 
-export const reDoc = (options: GenerateDocsOptions = {}) => {
+export const reDoc = (options: ReDocOptions = {}) => {
     const ctx = getReDocContext(options)
     console.group(
         `reDoc: Generating docs for ${ctx.packageConfigs.length} package(s)...✍️`
@@ -32,12 +34,14 @@ export const reDoc = (options: GenerateDocsOptions = {}) => {
 
 export type ReDocContext = ReturnType<typeof getReDocContext>
 
-export const getReDocContext = (options: GenerateDocsOptions) => {
+export const getReDocContext = (options: ReDocOptions) => {
     const cwd = process.cwd()
     const packageConfigs = options.packages ?? [
         { rootDir: findPackageRoot(cwd) }
     ]
     const baseOutputDir = options.baseOutputDir ?? join(cwd, "docs")
+    const rewriteExternalImports = options.rewriteExternalImports
+    const excludeIndexMd = options.excludeIndexMd ?? false
     const tempDir = resolve(mkdtempSync("reDoc"))
     // The tsdoc.json in @re-/node
     const tsDocConfigPath = fromPackageRoot("tsdoc.json")
@@ -50,6 +54,8 @@ export const getReDocContext = (options: GenerateDocsOptions) => {
         baseOutputDir,
         tempDir,
         tsDocParser,
-        tsDocLoadedConfiguration
+        tsDocLoadedConfiguration,
+        rewriteExternalImports,
+        excludeIndexMd
     }
 }

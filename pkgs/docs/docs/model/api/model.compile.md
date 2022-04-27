@@ -1,4 +1,4 @@
-[Home](./index.md) &gt; [@re-/model](./model.md) &gt; [compile](./model.compile.md)
+[@re-/model](./model.md) &gt; [compile](./model.compile.md)
 
 ## compile variable
 

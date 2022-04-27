@@ -1,4 +1,4 @@
-[Home](./index.md) &gt; [@re-/model](./model.md) &gt; [ReferencesConfig](./model.referencesconfig.md)
+[@re-/model](./model.md) &gt; [ReferencesConfig](./model.referencesconfig.md)
 
 ## ReferencesConfig type
 

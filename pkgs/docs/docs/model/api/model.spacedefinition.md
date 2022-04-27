@@ -1,4 +1,4 @@
-[Home](./index.md) &gt; [@re-/model](./model.md) &gt; [SpaceDefinition](./model.spacedefinition.md)
+[@re-/model](./model.md) &gt; [SpaceDefinition](./model.spacedefinition.md)
 
 ## SpaceDefinition type
 

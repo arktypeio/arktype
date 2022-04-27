@@ -1,4 +1,4 @@
-[Home](./index.md) &gt; [@re-/model](./model.md) &gt; [create](./model.create.md)
+[@re-/model](./model.md) &gt; [create](./model.create.md)
 
 ## create() function
 

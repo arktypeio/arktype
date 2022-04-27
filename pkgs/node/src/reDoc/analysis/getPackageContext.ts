@@ -6,8 +6,11 @@ export type PackageContext = ReturnType<typeof getPackageContext>
 
 export const getPackageContext = (
     packageRoot: string,
-    { tempDir }: ReDocContext
+    { tempDir, packageConfigs }: ReDocContext
 ) => {
+    const { outputDir } = packageConfigs.find(
+        (config) => config.rootDir === packageRoot
+    )!
     const packageSpecifier = findPackageName(packageRoot)
     // In case the package is scoped to an org (e.g. "@re-/node"), extract the portion following "/"
     const packageName = packageSpecifier.split("/").slice(-1)[0]
@@ -27,7 +30,8 @@ export const getPackageContext = (
         packageName,
         apiExtractorConfigPath,
         apiExtractorOutputPath,
-        tempDir
+        tempDir,
+        outputDir
     }
 }
 
