@@ -1,66 +1,97 @@
-import { existsSync, readFileSync, writeFileSync } from "fs"
+import { readFileSync, writeFileSync } from "fs"
 import {
     TSDocParser,
     TSDocConfiguration,
     DocNode,
-    DocInlineTag
+    DocInlineTag,
+    DocBlock
 } from "@microsoft/tsdoc"
 import { ApiModel } from "@microsoft/api-extractor-model"
 import { Extractor } from "@microsoft/api-extractor"
-import { DocumenterConfig } from "@microsoft/api-documenter/lib/documenters/DocumenterConfig.js"
 import { MarkdownDocumenter } from "@microsoft/api-documenter/lib/documenters/MarkdownDocumenter.js"
 import { TSDocConfigFile } from "@microsoft/tsdoc-config"
+import { transform } from "@re-/tools"
+import prettier from "prettier"
+import { join } from "path"
+import { tmpdir } from "os"
 import {
     readJson,
     writeJson,
     fromHere,
-    shell,
     walkPaths,
-    fileName
-} from "@re-/node"
-import { transform } from "@re-/tools"
-import prettier from "prettier"
-import { join } from "path"
+    fileName,
+    fromPackageRoot,
+    fromCwd,
+    findPackageRoot
+} from "../index.js"
+import { findPackageName } from "../ts.js"
 
-const apiExtractorConfigPath = fromHere("api-extractor.json")
-const apiDocumenterConfigPath = fromHere("api-documenter.json")
-const tsDocConfigPath = fromHere("..", "tsdoc.json")
-const apiExtractorOutputPath = fromHere("model.api.json")
-const docsOutputDir = fromHere("..", "docs")
-
-const tsDocConfiguration = new TSDocConfiguration()
-TSDocConfigFile.loadFile(tsDocConfigPath).configureParser(tsDocConfiguration)
-const tsDocParser = new TSDocParser(tsDocConfiguration)
-
-// Keep track of the names of items we modify so we can access the files later
-const modifiedNames: string[] = []
-
-const generateDocs = () => {
-    const api = getApi()
-    transformApiData(api)
-    writeJson(apiExtractorOutputPath, api.root)
-    writeMarkdown()
-    transformMarkdown()
+export type GenerateDocsOptions = {
+    dir?: string
 }
 
-type ApiData = {
+export const generateDocs = ({ dir }: GenerateDocsOptions = {}) => {
+    const ctx = loadContext(dir ?? process.cwd())
+    const api = getApi(ctx)
+    transformApiData(api, ctx)
+    writeJson(ctx.apiExtractorOutputPath, api.root)
+    writeMarkdown(ctx)
+    transformMarkdown(ctx)
+}
+
+type Api = {
     root: any
     members: any[]
     references: Record<string, string>
 }
 
-const getApi = (): ApiData => {
+type ApiContext = ReturnType<typeof loadContext>
+
+const loadContext = (dir: string) => {
+    const packageRoot = findPackageRoot(dir)
+    const packageName = findPackageName(packageRoot)
+    const docsOutputDir = join(packageRoot, "docs")
+
+    const tsDocConfigPath = fromPackageRoot("tsdoc.json")
+
+    const apiExtractorConfigPath = join(tmpdir(), "api-extractor.json")
+    const apiExtractorOutputPath = fromHere(`${packageName}.api.json`)
+
+    const tsDocConfiguration = new TSDocConfiguration()
+    TSDocConfigFile.loadFile(tsDocConfigPath).configureParser(
+        tsDocConfiguration
+    )
+    const tsDocParser = new TSDocParser(tsDocConfiguration)
+
+    // Keep track of the names of items we modify so we can access the files later
+    const modifiedNames: string[] = []
+    return {
+        packageRoot,
+        packageName,
+        tsDocConfigPath,
+        apiExtractorConfigPath,
+        apiExtractorOutputPath,
+        docsOutputDir,
+        modifiedNames,
+        tsDocParser
+    }
+}
+
+const getApi = ({
+    apiExtractorConfigPath,
+    apiExtractorOutputPath
+}: ApiContext): Api => {
     const result = Extractor.loadConfigAndInvoke(apiExtractorConfigPath)
     // if (!result.succeeded) {
     //     throw new Error(
     //         `API extractor failed with errors that are hopefully above this one.`
     //     )
     // }
-    const root = readJson(apiExtractorOutputPath)
-    const entryPoint = root.members[0]
+    const data = readJson(apiExtractorOutputPath)
+    const entryPoint = data.members[0]
     const members = entryPoint.members as any[]
     return {
-        root,
+        root: data,
         members,
         references: transform(members, ([i, member]) => [
             member.name,
@@ -70,14 +101,14 @@ const getApi = (): ApiData => {
 }
 
 //** Transforms api by mutating its members */
-const transformApiData = (api: ApiData) => {
+const transformApiData = (api: Api, ctx: ApiContext) => {
     const transformedMembers = api.members.map((member) => {
         // Treat variables with @param tags like functions
         if (
             member.kind === "Variable" &&
             member.docComment?.includes("@param")
         ) {
-            return transformVariableToFunction(member, api)
+            return transformVariableToFunction(member, api, ctx)
         }
         return member
     })
@@ -85,18 +116,20 @@ const transformApiData = (api: ApiData) => {
     api.root.members[0].members = transformedMembers
 }
 
-const transformVariableToFunction = (member: any, api: ApiData) => {
+const transformVariableToFunction = (
+    member: any,
+    api: Api,
+    { tsDocParser, modifiedNames }: ApiContext
+) => {
     const { docComment, log } = tsDocParser.parseString(member.docComment)
     if (log.messages.length) {
         throw new Error(log.messages[0].text)
     }
-    const returnTypeName = getCastType(
-        docComment.returnsBlock.content.nodes[0].getChildNodes()
-    )
+    const returnTypeName = typeOfBlock(docComment.returnsBlock)
     // Store the @as type of return, and then parameters in sequential order
     const typeNames = [returnTypeName]
     const parameters = docComment.params.blocks.map((param, index) => {
-        let paramTypeName = getCastType(param.content.nodes[0].getChildNodes())
+        let paramTypeName = typeOfBlock(param)
         let isOptional = false
         if (paramTypeName.endsWith("?")) {
             paramTypeName = paramTypeName.slice(0, -1)
@@ -143,26 +176,27 @@ const transformVariableToFunction = (member: any, api: ApiData) => {
     }
 }
 
-const getCastType = (nodes: readonly (DocNode | DocInlineTag)[]) => {
-    const asNode = nodes.find(
-        (node: DocNode | DocInlineTag, index) =>
+const typeOfBlock = (block: DocBlock | undefined) => {
+    const nodes = block?.content.nodes?.[0].getChildNodes()
+    const asNode = nodes?.find(
+        (node: DocNode | DocInlineTag) =>
             "tagName" in node && node.tagName === "@as"
     ) as DocInlineTag | undefined
     return asNode?.tagContent ?? ""
 }
 
-const writeMarkdown = () => {
+const writeMarkdown = ({ apiExtractorOutputPath }: ApiContext) => {
     const apiModel = new ApiModel()
     apiModel.loadPackage(apiExtractorOutputPath)
     const documenter = new MarkdownDocumenter({
         apiModel,
         outputFolder: "docs",
-        documenterConfig: DocumenterConfig.loadFile(apiDocumenterConfigPath)
+        documenterConfig: undefined
     })
     documenter.generateFiles()
 }
 
-const transformMarkdown = () => {
+const transformMarkdown = ({ docsOutputDir, modifiedNames }: ApiContext) => {
     const remainingModifiedPaths = modifiedNames.map((name) =>
         join(docsOutputDir, `model.${name}.md`)
     )
@@ -172,13 +206,22 @@ const transformMarkdown = () => {
     }
     walkPaths(docsOutputDir, { excludeDirs: true }).forEach((path) => {
         let contents = readFileSync(path).toString()
-        if (remainingModifiedPaths.includes(path)) {
+        const modifiedPathIndex = remainingModifiedPaths.findIndex(
+            (_) => _ === path
+        )
+        if (modifiedPathIndex !== -1) {
             // The signature for variable funtions is garbage, so remove it
             contents = contents.replace(/<b>Signature(\s|\S)*(?=##)/, "")
+            remainingModifiedPaths.splice(modifiedPathIndex, 1)
         }
         contents = prettier.format(contents, prettierOptions)
         writeFileSync(path, contents)
     })
+    if (remainingModifiedPaths.length) {
+        throw new Error(
+            `Unable to find docs corresponding to the following modified paths:\n${remainingModifiedPaths.join(
+                "\n"
+            )}`
+        )
+    }
 }
-// This file is used as a script, so run the main function
-generateDocs()

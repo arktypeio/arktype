@@ -139,6 +139,9 @@ export const dirName = () => dirOfCaller()
 export const fromHere = (...joinWith: string[]) =>
     join(dirOfCaller(), ...joinWith)
 
+export const fromCwd = (...joinWith: string[]) =>
+    join(process.cwd(), ...joinWith)
+
 export const fsRoot = parse(process.cwd()).root
 
 export const findPackageRoot = (fromDir?: string) => {
