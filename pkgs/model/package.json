@@ -2,7 +2,7 @@
     "name": "@re-/model",
     "version": "1.11.0",
     "author": "redo.dev",
-    "description": "Type-first validation from editor to runtime🧬",
+    "description": "One definition from editor to runtime🧬",
     "repository": {
         "type": "git",
         "url": "https://github.com/re-do/re-po.git",

@@ -2,12 +2,20 @@ module.exports = {
     sidebar: [
         {
             type: "category",
-            label: "Quick Start",
+            label: "Tutorial",
             items: [
-                { type: "doc", label: "Models", id: "intro" },
-                { type: "doc", label: "Spaces", id: "spaces" },
-                { type: "doc", label: "Declarations", id: "declarations" },
-                { type: "doc", label: "Constraints", id: "constraints" }
+                { type: "doc", label: "Start Quick ⏱️", id: "intro" },
+                { type: "doc", label: "Types that Clique 🔗", id: "spaces" },
+                {
+                    type: "doc",
+                    label: "Definitions that Split ✂️",
+                    id: "declarations"
+                },
+                {
+                    type: "doc",
+                    label: "Validation that Fits 🧩",
+                    id: "constraints"
+                }
             ]
         },
         {
