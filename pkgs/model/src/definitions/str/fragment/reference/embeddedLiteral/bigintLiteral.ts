@@ -1,7 +1,7 @@
 import { isInteger } from "@re-/tools"
 import { typeOf } from "../../../../../utils.js"
 import { typeDefProxy, validationError, createParser } from "./internal.js"
-import { Literal } from "./literal.js"
+import { EmbeddedLiteral } from "./embeddedLiteral.js"
 
 export namespace BigintLiteral {
     export type Definition<Value extends bigint = bigint> = `${Value}n`
@@ -10,7 +10,7 @@ export namespace BigintLiteral {
     export const parse = createParser(
         {
             type,
-            parent: () => Literal.parse
+            parent: () => EmbeddedLiteral.parse
         },
         {
             matches: (definition) =>

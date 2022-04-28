@@ -1,5 +1,5 @@
 import { defineKeywords, listKeywords } from "./internal.js"
-import { StringLiteral } from "../literal/stringLiteral.js"
+import { StringLiteral } from "../embeddedLiteral/stringLiteral.js"
 import { Func, isAlpha, isAlphaNumeric } from "@re-/tools"
 
 // From https://emailregex.com/

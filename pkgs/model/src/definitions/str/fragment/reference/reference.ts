@@ -1,19 +1,19 @@
 import { createParser, TypeOfContext, typeDefProxy } from "./internal.js"
 import { Fragment } from "../fragment.js"
 import { Keyword } from "./keyword/keyword.js"
-import { Literal } from "./literal/literal.js"
+import { EmbeddedLiteral } from "./embeddedLiteral/embeddedLiteral.js"
 import { Alias } from "./alias.js"
 
 export namespace Reference {
     export type Definition<Resolutions> =
         | Keyword.Definition
-        | Literal.Definition
+        | EmbeddedLiteral.Definition
         | Alias.Definition<Resolutions>
 
     export type Matches<
         Def extends string,
         Resolutions
-    > = Literal.Matches<Def> extends true
+    > = EmbeddedLiteral.Matches<Def> extends true
         ? true
         : Def extends Keyword.Definition | Alias.Definition<Resolutions>
         ? true
@@ -27,8 +27,8 @@ export namespace Reference {
         Options extends TypeOfContext<Resolutions>
     > = N extends Keyword.Definition
         ? Keyword.TypeOf<N>
-        : N extends Literal.Definition
-        ? Literal.TypeOf<N>
+        : N extends EmbeddedLiteral.Definition
+        ? EmbeddedLiteral.TypeOf<N>
         : N extends Alias.Definition<Resolutions>
         ? Alias.TypeOf<N, Resolutions, Options>
         : unknown
@@ -39,7 +39,11 @@ export namespace Reference {
         {
             type,
             parent: () => Fragment.parse,
-            children: () => [Keyword.delegate, Literal.delegate, Alias.delegate]
+            children: () => [
+                Keyword.delegate,
+                EmbeddedLiteral.delegate,
+                Alias.delegate
+            ]
         },
         { references: ({ def }) => [def] }
     )

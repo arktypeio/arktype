@@ -1,24 +1,26 @@
 import { createParser, typeDefProxy } from "../internal.js"
-import { StringLiteral } from "./stringLiteral.js"
-import { NumberLiteral } from "./numberLiteral.js"
-import { BigintLiteral } from "./bigintLiteral.js"
+import { StringLiteral as StringLiteral } from "./stringLiteral.js"
+import { NumberLiteral as EmbeddedNumberLiteral } from "./numberLiteral.js"
+import { BigintLiteral as EmbeddedBigintLiteral } from "./bigintLiteral.js"
 import { Reference } from "../reference.js"
-import { RegexLiteral } from "./regexLiteral.js"
+import { RegexLiteral as EmbeddedRegexLiteral } from "./regexLiteral.js"
 import { FirstEnclosed } from "./internal.js"
 
-export namespace Literal {
+export namespace EmbeddedLiteral {
     export type Definition =
         | StringLiteral.Definition
-        | RegexLiteral.Definition
-        | NumberLiteral.Definition
-        | BigintLiteral.Definition
+        | EmbeddedRegexLiteral.Definition
+        | EmbeddedNumberLiteral.Definition
+        | EmbeddedBigintLiteral.Definition
 
     export type Matches<Def extends string> =
         StringLiteral.Matches<Def> extends true
             ? true
-            : RegexLiteral.Matches<Def> extends true
+            : EmbeddedRegexLiteral.Matches<Def> extends true
             ? true
-            : Def extends NumberLiteral.Definition | BigintLiteral.Definition
+            : Def extends
+                  | EmbeddedNumberLiteral.Definition
+                  | EmbeddedBigintLiteral.Definition
             ? true
             : false
 
@@ -27,12 +29,14 @@ export namespace Literal {
             ? FirstEnclosed<Def, `'`>
             : Def extends StringLiteral.Definition<FirstEnclosed<Def, `"`>>
             ? FirstEnclosed<Def, `"`>
-            : Def extends RegexLiteral.Definition<FirstEnclosed<Def, `/`>>
+            : Def extends EmbeddedRegexLiteral.Definition<
+                  FirstEnclosed<Def, `/`>
+              >
             ? string
             : // For now this is always inferred as 'number', even though the string is a literal like '5'
-            Def extends NumberLiteral.Definition<infer Value>
+            Def extends EmbeddedNumberLiteral.Definition<infer Value>
             ? Value
-            : Def extends BigintLiteral.Definition<infer Value>
+            : Def extends EmbeddedBigintLiteral.Definition<infer Value>
             ? Value
             : unknown
 
@@ -43,9 +47,9 @@ export namespace Literal {
         parent: () => Reference.parse,
         children: () => [
             StringLiteral.delegate,
-            RegexLiteral.delegate,
-            NumberLiteral.delegate,
-            BigintLiteral.delegate
+            EmbeddedRegexLiteral.delegate,
+            EmbeddedNumberLiteral.delegate,
+            EmbeddedBigintLiteral.delegate
         ]
     })
 

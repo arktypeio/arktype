@@ -2,7 +2,7 @@ import { create } from "../../../../../model.js"
 import { typeOf } from "../../../../../utils.js"
 import { typeDefProxy, validationError, createParser } from "../internal.js"
 import { FirstEnclosed } from "./internal.js"
-import { Literal } from "./literal.js"
+import { EmbeddedLiteral } from "./embeddedLiteral.js"
 
 export namespace StringLiteral {
     export type SingleQuoted<Text extends string = string> = `'${Text}'`
@@ -34,7 +34,7 @@ export namespace StringLiteral {
     export const parse = createParser(
         {
             type,
-            parent: () => Literal.parse
+            parent: () => EmbeddedLiteral.parse
         },
         {
             matches,

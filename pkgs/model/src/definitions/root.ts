@@ -1,7 +1,7 @@
 import { TypeOfContext, ParseTypeContext, typeDefProxy } from "./internal.js"
 import { Obj } from "./obj/index.js"
 import { Str } from "./str/index.js"
-import { Primitive } from "./primitive/index.js"
+import { Literal } from "./literal/index.js"
 import { reroot, createParser } from "./parser.js"
 import {
     BadDefinitionType,
@@ -9,10 +9,11 @@ import {
     definitionTypeError
 } from "../errors.js"
 import { ReferencesTypeConfig } from "../internal.js"
+import { Exact } from "@re-/tools"
 
 export namespace Root {
     export type Definition =
-        | Primitive.Definition
+        | Literal.Definition
         | Str.Definition
         | Obj.Definition
 
@@ -22,22 +23,22 @@ export namespace Root {
         Context extends ParseTypeContext
     > = Def extends BadDefinitionType
         ? DefinitionTypeError
-        : Def extends Primitive.Definition
-        ? Def
+        : Def extends Literal.Definition
+        ? Literal.Parse<Def>
         : Def extends Str.Definition
         ? Str.Parse<Def, Resolutions, Context>
         : Def extends Obj.Definition
         ? Obj.Parse<Def, Resolutions, Context>
         : DefinitionTypeError
 
-    export type Node = Primitive.Node | Str.Node | Obj.Node
+    export type Node = Literal.Node | Str.Node | Obj.Node
 
     export type TypeOf<
         N,
         Resolutions,
         Options extends TypeOfContext<Resolutions>
-    > = N extends Primitive.Node
-        ? N
+    > = N extends Literal.Node
+        ? Literal.TypeOf<N>
         : N extends Str.Node
         ? Str.TypeOf<N, Resolutions, Options>
         : N extends Obj.Node
@@ -46,7 +47,7 @@ export namespace Root {
 
     export type Validate<Def, Space> = Def extends BadDefinitionType
         ? DefinitionTypeError
-        : Def extends Primitive.Definition
+        : Def extends Literal.Definition
         ? Def
         : Def extends Str.Definition
         ? Str.Validate<Def, Space>
@@ -60,8 +61,8 @@ export namespace Root {
         Def,
         Resolutions,
         Options extends ReferencesTypeConfig
-    > = Def extends Primitive.Definition
-        ? Primitive.References<Def, Options>
+    > = Def extends Literal.Definition
+        ? Literal.References<Def, Options>
         : Def extends Str.Definition
         ? Str.ReferencesOf<Def, Resolutions, Options>
         : Def extends Obj.Definition
@@ -74,9 +75,11 @@ export namespace Root {
 
     export const parse = createParser(
         {
+            // Somehow RegExp breaks this, but it's internal so not important
+            // @ts-ignore
             type,
             parent: () => reroot,
-            children: () => [Primitive.delegate, Str.delegate, Obj.delegate],
+            children: () => [Literal.delegate, Str.delegate, Obj.delegate],
             fallback: (definition, { path }) => {
                 throw new Error(definitionTypeError(definition, path))
             }

@@ -2,7 +2,7 @@ import { assert } from "@re-/assert"
 import { lazily } from "@re-/tools"
 import { create } from "@re-/model"
 
-export const testPrimitive = () => {
+export const testLiteral = () => {
     describe("number", () => {
         describe("type", () => {
             test("whole", () => {
@@ -161,6 +161,26 @@ export const testPrimitive = () => {
             assert(n.validate(null).error).is(undefined)
             assert(n.validate(undefined).error).snap(
                 `"undefined is not assignable to null."`
+            )
+        })
+    })
+    describe("regex", () => {
+        const regex = lazily(() => create(/.*@redo\.dev/))
+        test("type", () => {
+            assert(regex.type).typed as string
+        })
+        test("generation", () => {
+            assert(() => regex.generate()).throws.snap(
+                `"Generation of regular expressions is not supported."`
+            )
+        })
+        test("validation", () => {
+            assert(regex.validate("david@redo.dev").error).is(undefined)
+            assert(regex.validate("david@redo.qa").error).snap(
+                `"'david@redo.qa' is not assignable to /.*@redo\\\\.dev/."`
+            )
+            assert(regex.validate({ inObject: "david@redo.dev" }).error).snap(
+                `"{inObject: 'david@redo.dev'} is not assignable to /.*@redo\\\\.dev/."`
             )
         })
     })

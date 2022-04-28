@@ -18,7 +18,7 @@ import {
 } from "./internal.js"
 import { Expression } from "../index.js"
 import { Fragment } from "../fragment.js"
-import { NumberLiteral } from "../reference/literal/numberLiteral.js"
+import { NumberLiteral } from "../reference/embeddedLiteral/numberLiteral.js"
 import {
     constraintErrorTemplate,
     invalidBoundError,

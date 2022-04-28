@@ -1,7 +1,7 @@
 import { asNumber, isNumeric, NumericString } from "@re-/tools"
 import { typeOf } from "../../../../../utils.js"
 import { typeDefProxy, validationError, createParser } from "../internal.js"
-import { Literal } from "./literal.js"
+import { EmbeddedLiteral } from "./embeddedLiteral.js"
 
 export namespace NumberLiteral {
     export type Definition<Value extends number = number> = NumericString<Value>
@@ -11,7 +11,7 @@ export namespace NumberLiteral {
     export const parse = createParser(
         {
             type,
-            parent: () => Literal.parse
+            parent: () => EmbeddedLiteral.parse
         },
         {
             matches: (definition) => isNumeric(definition),
