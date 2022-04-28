@@ -33,7 +33,7 @@ This snippet will give you an idea of `@re-/model` syntax, but the best way to g
 import { create } from "@re-/model"
 
 // Most common TypeScript expressions just work...
-const user = create({
+const user = model({
     name: {
         first: "string",
         middle: "string?",
@@ -67,9 +67,9 @@ Working with types that refer to one another or themselves? So can your models!
 [Just compile a **space**.](https://redo.dev/docs/model/spaces)
 
 ```ts
-import { compile } from "@re-/model"
+import { space } from "@re-/model"
 
-const space = compile({
+const space = space({
     user: {
         name: "string",
         bestFriend: "user?",

@@ -1,10 +1,10 @@
 import { assert } from "@re-/assert"
-import { create, compile } from "@re-/model"
+import { create as model, compile as space } from "@re-/model"
 
 describe("demo", () => {
     test("model", () => {
         // Most common TypeScript expressions just work...
-        const user = create({
+        const user = model({
             name: {
                 first: "string",
                 middle: "string?",
@@ -40,7 +40,7 @@ describe("demo", () => {
         )
     })
     test("space", () => {
-        const space = compile({
+        const mySpace = space({
             user: {
                 name: "string",
                 bestFriend: "user?",
@@ -53,11 +53,11 @@ describe("demo", () => {
         })
 
         // Typescript types can be extracted like this
-        type User = typeof space.types.user
+        type User = typeof mySpace.types.user
 
         // Throws: "At path bestFriend/groups/0, required keys 'members' were missing."
         assert(() =>
-            space.models.user.assert({
+            mySpace.models.user.assert({
                 name: "Devin Aldai",
                 bestFriend: {
                     name: "Devin Olnyt",
@@ -68,13 +68,13 @@ describe("demo", () => {
         ).throws(
             "At path bestFriend/groups/0, required keys 'members' were missing."
         )
-        assert(space.types.user).type.toString.snap(
+        assert(mySpace.types.user).type.toString.snap(
             `"{ bestFriend?: { bestFriend?: any | undefined; name: string; groups: { members: { bestFriend?: any | undefined; name: string; groups: any[]; }[]; title: string; }[]; } | undefined; name: string; groups: { members: { bestFriend?: any | undefined; name: string; groups: { members: any[]; title: string; }[]; }[]; title: string; }[]; }"`
         )
     })
     // See multifile.assert.ts for declaration demo
     test("constraints", () => {
-        const employee = create({
+        const employee = model({
             // Not a fan of regex? Don't worry, 'email' is a builtin type :)
             email: `/[a-z]*@redo\.dev/`,
             about: {

@@ -23,8 +23,7 @@
         "build": "reTsc",
         "test": "jest 2>&1",
         "unit": "jest --coverage false -t ",
-        "snapshotTsPerf": "tsc --extendedDiagnostics --noEmit > tsDiagnostics.txt",
-        "buildDocs": "reDoc"
+        "snapshotTsPerf": "tsc --extendedDiagnostics --noEmit > tsDiagnostics.txt"
     },
     "dependencies": {
         "@re-/tools": "workspace:*"
