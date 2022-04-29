@@ -14,7 +14,7 @@ export namespace Modification {
     export type Parse<
         Def extends Definition,
         Resolutions,
-        Context extends ParseTypeContext
+        Context
     > = Def extends Optional.Definition
         ? Optional.Parse<Def, Resolutions, Context>
         : UnknownTypeError<Def>
@@ -24,7 +24,7 @@ export namespace Modification {
     export type TypeOf<
         N extends Node,
         Resolutions,
-        Options extends TypeOfContext<Resolutions>
+        Options
     > = N extends Optional.Node
         ? Optional.TypeOf<N, Resolutions, Options>
         : unknown

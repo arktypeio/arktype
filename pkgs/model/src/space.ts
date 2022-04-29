@@ -19,7 +19,7 @@ import {
     CustomValidator
 } from "./model.js"
 import { Map, Root } from "./definitions/index.js"
-import { DefaultTypeOfContext, typeDefProxy, MergeObjects } from "./internal.js"
+import { DefaultTypeOfContext, typeDefProxy, Merge } from "./internal.js"
 import { ValidateResolution } from "./resolution.js"
 import { DefaultParseTypeContext } from "./definitions/internal.js"
 
@@ -33,7 +33,7 @@ export type ValidateSpaceResolutions<
     : Evaluate<{
           [TypeName in keyof Resolutions]: ValidateResolution<
               Resolutions[TypeName],
-              MergeObjects<SuperSpaceResolutions, Resolutions>
+              Merge<SuperSpaceResolutions, Resolutions>
           >
       }>
 
@@ -134,10 +134,10 @@ export type SpaceOptions<
     }
 }
 
-type ExtendSpaceConfig<OriginalConfig, NewConfig> = MergeObjects<
-    MergeObjects<OriginalConfig, NewConfig>,
+type ExtendSpaceConfig<OriginalConfig, NewConfig> = Merge<
+    Merge<OriginalConfig, NewConfig>,
     {
-        models: MergeObjects<
+        models: Merge<
             KeyValuate<OriginalConfig, "models">,
             KeyValuate<NewConfig, "models">
         >
@@ -147,10 +147,7 @@ type ExtendSpaceConfig<OriginalConfig, NewConfig> = MergeObjects<
 type ExtendSpaceFunction<OriginalResolutions, OriginalConfig> = <
     NewResolutions,
     NewConfig extends SpaceOptions<MergedResolutions>,
-    MergedResolutions extends SpaceResolutions = MergeObjects<
-        OriginalResolutions,
-        NewResolutions
-    >
+    MergedResolutions = Merge<OriginalResolutions, NewResolutions>
 >(
     definitions: Narrow<
         Exact<

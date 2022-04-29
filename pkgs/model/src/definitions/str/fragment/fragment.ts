@@ -1,13 +1,8 @@
+import { GetAs } from "@re-/tools"
 import { Reference } from "./reference/index.js"
 import { Expression } from "./expression/index.js"
 import { Str } from "../str.js"
-import {
-    ParseTypeContext,
-    TypeOfContext,
-    createParser,
-    typeDefProxy,
-    UnknownTypeError
-} from "./internal.js"
+import { createParser, typeDefProxy, UnknownTypeError } from "./internal.js"
 import { Modification } from "../modification/modification.js"
 import {
     invalidModifierError,
@@ -22,12 +17,16 @@ export namespace Fragment {
     export type Parse<
         Def extends string,
         Resolutions,
-        Context extends ParseTypeContext
+        Context
     > = Reference.Matches<Def, Resolutions> extends true
         ? Def
         : Def extends Expression.Definition
         ? Expression.Parse<Def, Resolutions, Context>
-        : Def extends `${infer Left}${Context["delimiter"]}${infer Right}`
+        : Def extends `${infer Left}${GetAs<
+              Context,
+              "delimiter",
+              string
+          >}${infer Right}`
         ? UnpackArgs<
               [
                   Parse<Left, Resolutions, Context>,
@@ -47,11 +46,7 @@ export namespace Fragment {
 
     export type Node = Expression.Node | Reference.Node
 
-    export type TypeOf<
-        N,
-        Resolutions,
-        Options extends TypeOfContext<Resolutions>
-    > = N extends Expression.Node
+    export type TypeOf<N, Resolutions, Options> = N extends Expression.Node
         ? Expression.TypeOf<N, Resolutions, Options>
         : N extends Reference.Node
         ? Reference.TypeOf<N, Resolutions, Options>

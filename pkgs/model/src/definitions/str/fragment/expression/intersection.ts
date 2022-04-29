@@ -27,7 +27,7 @@ export namespace Intersection {
     export type Parse<
         Def extends Definition,
         Resolutions,
-        Context extends ParseTypeContext
+        Context
     > = Def extends Definition<infer Left, infer Right>
         ? {
               intersection: [
@@ -41,11 +41,11 @@ export namespace Intersection {
         intersection: Fragment.Node[]
     }
 
-    export type TypeOf<
-        N extends Node,
+    export type TypeOf<N extends Node, Resolutions, Options> = Fragment.TypeOf<
+        N["intersection"][0],
         Resolutions,
-        Options extends TypeOfContext<Resolutions>
-    > = Fragment.TypeOf<N["intersection"][0], Resolutions, Options> &
+        Options
+    > &
         Fragment.TypeOf<N["intersection"][1], Resolutions, Options>
 
     export const type = typeDefProxy as Definition

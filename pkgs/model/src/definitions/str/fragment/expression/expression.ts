@@ -23,7 +23,7 @@ export namespace Expression {
     export type Parse<
         Def extends string,
         Resolutions,
-        Context extends ParseTypeContext
+        Context
     > = Def extends ArrowFunction.Definition
         ? ArrowFunction.Parse<Def, Resolutions, Context>
         : Def extends Union.Definition
@@ -46,7 +46,7 @@ export namespace Expression {
     export type TypeOf<
         N extends Node,
         Resolutions,
-        Options extends TypeOfContext<Resolutions>
+        Options
     > = N extends ArrowFunction.Node
         ? ArrowFunction.TypeOf<N, Resolutions, Options>
         : N extends Union.Node

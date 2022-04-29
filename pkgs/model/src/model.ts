@@ -1,11 +1,4 @@
-import {
-    Evaluate,
-    Narrow,
-    IsAny,
-    WithDefaults,
-    isEmpty,
-    KeyValuate
-} from "@re-/tools"
+import { Evaluate, Narrow, IsAny, isEmpty, KeyValuate } from "@re-/tools"
 import { Root } from "./definitions/index.js"
 import {
     ParseContext,
@@ -20,9 +13,9 @@ import {
 import { ValidateSpaceResolutions, SpaceDefinition } from "./space.js"
 import {
     errorsFromCustomValidator,
-    MergeObjects,
-    ReferencesTypeConfig,
-    typeDefProxy
+    Merge,
+    typeDefProxy,
+    MergeAll
 } from "./internal.js"
 import { DefaultParseTypeContext } from "./definitions/internal.js"
 
@@ -36,11 +29,7 @@ export type TypeOf<
     Def,
     Resolutions,
     Options extends ParseConfig = {},
-    OptionsWithDefaults extends Required<ParseConfig> = WithDefaults<
-        ParseConfig,
-        Options,
-        DefaultParseOptions
-    >,
+    OptionsWithDefaults = Merge<DefaultParseOptions, Options>,
     Checked = ValidateSpaceResolutions<Resolutions>
 > = IsAny<Def> extends true
     ? Def
@@ -62,14 +51,13 @@ export type ReferencesOf<
     Def extends Root.Definition,
     Resolutions = {},
     Options extends ReferencesTypeOptions = {},
-    Config extends ReferencesTypeConfig = WithDefaults<
-        ReferencesTypeOptions,
-        Options,
+    Config = Merge<
         {
             asTuple: false
             asList: false
             filter: string
-        }
+        },
+        Options
     >
 > = Root.ReferencesOf<Def, Resolutions, Config>
 
@@ -206,20 +194,11 @@ export type Model<
     Def,
     Space extends SpaceDefinition,
     Options extends ParseConfig,
-    SpaceParseConfig extends ParseConfig = KeyValuate<
-        Space["config"],
-        "parse"
-    > extends ParseConfig
-        ? KeyValuate<Space["config"], "parse">
-        : {},
+    SpaceParseConfig = KeyValuate<Space["config"], "parse">,
     ModelType = TypeOf<
         Def,
         Space["resolutions"],
-        WithDefaults<
-            ParseConfig,
-            MergeObjects<SpaceParseConfig, Options>,
-            DefaultParseOptions
-        >
+        MergeAll<[DefaultParseOptions, SpaceParseConfig, Options]>
     >
 > = Evaluate<{
     definition: Def
@@ -252,6 +231,12 @@ export type CreateFunction<PredefinedSpace extends SpaceDefinition | null> = <
     Evaluate<ActiveSpace>,
     Options["parse"] extends ParseConfig ? Options["parse"] : {}
 >
+
+//     {
+//     Def: Def
+//     Space: Evaluate<ActiveSpace>
+//     Config: Options["parse"] extends ParseConfig ? Options["parse"] : {}
+// }
 
 /**
  * Create a model.

@@ -139,6 +139,7 @@ describe("inheritable configs", () => {
                 ).typed as {
                     recursionIs: "create"
                 }
+                const result = space.create("recursionIs")
                 // Space has the least priority
                 assert(space.create("recursionIs").type).typed as {
                     recursionIs: "space"

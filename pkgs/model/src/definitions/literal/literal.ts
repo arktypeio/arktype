@@ -1,4 +1,4 @@
-import { narrow } from "@re-/tools"
+import { KeyValuate, narrow } from "@re-/tools"
 import { typeDefProxy, createParser, validationError } from "./internal.js"
 import { Root } from "../root.js"
 import { ReferencesTypeConfig } from "../internal.js"
@@ -23,16 +23,16 @@ export namespace Literal {
         ? string
         : N
 
-    export type References<
+    export type ReferencesOf<
         Def extends Definition,
-        Config extends ReferencesTypeConfig,
+        Config,
         Result extends string = `${Def extends RegExp
             ? "RegExp"
             : Def}${Def extends bigint ? "n" : ""}` &
-            Config["filter"]
-    > = Config["asTuple"] extends true
+            KeyValuate<Config, "filter">
+    > = KeyValuate<Config, "asTuple"> extends true
         ? [Result]
-        : Config["asList"] extends true
+        : KeyValuate<Config, "asList"> extends true
         ? Result[]
         : Result
 

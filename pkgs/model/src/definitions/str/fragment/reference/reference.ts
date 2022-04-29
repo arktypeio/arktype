@@ -24,7 +24,7 @@ export namespace Reference {
     export type TypeOf<
         N extends Node,
         Resolutions,
-        Options extends TypeOfContext<Resolutions>
+        Options
     > = N extends Keyword.Definition
         ? Keyword.TypeOf<N>
         : N extends EmbeddedLiteral.Definition

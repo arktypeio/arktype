@@ -1,4 +1,4 @@
-import { WithPropValue } from "@re-/tools"
+import { KeyValuate, WithPropValue } from "@re-/tools"
 import { Modification } from "./modification.js"
 import { Fragment } from "../fragment/fragment.js"
 import {
@@ -19,9 +19,9 @@ export namespace Optional {
     export type Parse<
         Def extends Definition,
         Resolutions,
-        Context extends ParseTypeContext
+        Context
     > = Def extends Definition<infer Of>
-        ? "?" extends Context["modifiers"]
+        ? "?" extends KeyValuate<Context, "modifiers">
             ? DuplicateModifierError<"?">
             : {
                   optional: Str.Parse<
@@ -30,7 +30,7 @@ export namespace Optional {
                       WithPropValue<
                           Context,
                           "modifiers",
-                          "?" | Context["modifiers"]
+                          "?" | KeyValuate<Context, "modifiers">
                       >
                   >
               }
@@ -40,11 +40,7 @@ export namespace Optional {
         optional: Str.Node
     }
 
-    export type TypeOf<
-        N extends Node,
-        Resolutions,
-        Options extends TypeOfContext<Resolutions>
-    > = N extends Node
+    export type TypeOf<N extends Node, Resolutions, Options> = N extends Node
         ? Str.TypeOf<N["optional"], Resolutions, Options> | undefined
         : unknown
 

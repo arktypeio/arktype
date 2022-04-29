@@ -17,11 +17,7 @@ export namespace Root {
         | Str.Definition
         | Obj.Definition
 
-    export type Parse<
-        Def,
-        Resolutions,
-        Context extends ParseTypeContext
-    > = Def extends BadDefinitionType
+    export type Parse<Def, Resolutions, Context> = Def extends BadDefinitionType
         ? DefinitionTypeError
         : Def extends Literal.Definition
         ? Literal.Parse<Def>
@@ -33,11 +29,7 @@ export namespace Root {
 
     export type Node = Literal.Node | Str.Node | Obj.Node
 
-    export type TypeOf<
-        N,
-        Resolutions,
-        Options extends TypeOfContext<Resolutions>
-    > = N extends Literal.Node
+    export type TypeOf<N, Resolutions, Options> = N extends Literal.Node
         ? Literal.TypeOf<N>
         : N extends Str.Node
         ? Str.TypeOf<N, Resolutions, Options>
@@ -57,19 +49,16 @@ export namespace Root {
           }
         : DefinitionTypeError
 
-    export type ReferencesOf<
-        Def,
-        Resolutions,
-        Options extends ReferencesTypeConfig
-    > = Def extends Literal.Definition
-        ? Literal.References<Def, Options>
-        : Def extends Str.Definition
-        ? Str.ReferencesOf<Def, Resolutions, Options>
-        : Def extends Obj.Definition
-        ? {
-              [K in keyof Def]: ReferencesOf<Def[K], Resolutions, Options>
-          }
-        : DefinitionTypeError
+    export type ReferencesOf<Def, Resolutions, Options> =
+        Def extends Literal.Definition
+            ? Literal.ReferencesOf<Def, Options>
+            : Def extends Str.Definition
+            ? Str.ReferencesOf<Def, Resolutions, Options>
+            : Def extends Obj.Definition
+            ? {
+                  [K in keyof Def]: ReferencesOf<Def[K], Resolutions, Options>
+              }
+            : DefinitionTypeError
 
     export const type = typeDefProxy as Definition
 

@@ -133,7 +133,7 @@ export namespace Constraint {
     export type Parse<
         Def extends Definition,
         Resolutions,
-        Context extends ParseTypeContext,
+        Context,
         Parts extends string[] = Spliterate<Def, ["<=", ">=", "<", ">"], true> &
             string[]
     > = Parts extends DoubleBoundedParts<
@@ -178,11 +178,11 @@ export namespace Constraint {
         bounded: Fragment.Node
     } & NodeBounds
 
-    export type TypeOf<
-        N extends Node,
+    export type TypeOf<N extends Node, Resolutions, Options> = Fragment.TypeOf<
+        N["bounded"],
         Resolutions,
-        Options extends TypeOfContext<Resolutions>
-    > = Fragment.TypeOf<N["bounded"], Resolutions, Options>
+        Options
+    >
 
     export const matcher = /(<=|>=|<|>)/
 

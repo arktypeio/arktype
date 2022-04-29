@@ -16,7 +16,7 @@ export namespace Obj {
     export type Parse<
         Def extends Definition,
         Resolutions,
-        Context extends ParseTypeContext
+        Context
     > = Def extends Tuple.Definition
         ? Tuple.Parse<Def, Resolutions, Context>
         : Def extends Map.Definition
@@ -28,7 +28,7 @@ export namespace Obj {
     export type TypeOf<
         N extends Node,
         Resolutions,
-        Options extends TypeOfContext<Resolutions>
+        Options
     > = N extends Map.Node
         ? Map.TypeOf<N, Resolutions, Options>
         : N extends Tuple.Node

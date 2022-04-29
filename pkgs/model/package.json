@@ -23,7 +23,8 @@
         "build": "reTsc",
         "test": "jest 2>&1",
         "unit": "jest --coverage false -t ",
-        "snapshotTsPerf": "tsc --extendedDiagnostics --noEmit > tsDiagnostics.txt"
+        "typeDiag": "tsc --extendedDiagnostics --noEmit > typeDiag.txt",
+        "typeTrace": "tsc --generateTrace typeTrace && npx analyze-trace typeTrace >> typeTrace/hotspots.txt"
     },
     "dependencies": {
         "@re-/tools": "workspace:*"
@@ -35,6 +36,7 @@
         "@types/jest": "27.0.3",
         "ts-jest": "27.1.2",
         "@types/node": "17.0.1",
-        "typescript": "4.6.3"
+        "typescript": "4.6.3",
+        "@typescript/analyze-trace": "0.9.0"
     }
 }

@@ -1,4 +1,4 @@
-import { IsAny, Or } from "@re-/tools"
+import { Evaluate, Get, IsAny, Or } from "@re-/tools"
 import {
     TypeOfContext,
     typeDefProxy,
@@ -18,13 +18,13 @@ export namespace Alias {
     export type TypeOf<
         TypeName extends Definition<Resolutions>,
         Resolutions,
-        Options extends TypeOfContext<Resolutions>
+        Options
     > = IsAny<Resolutions> extends true
         ? Resolutions
         : Resolutions[TypeName] extends ValidationErrorMessage
         ? unknown
-        : TypeName extends keyof Options["seen"]
-        ? Options["onCycle"] extends never
+        : TypeName extends keyof Get<Options, "seen">
+        ? Get<Options, "onCycle"> extends never
             ? TypeOfResolvedNonCyclicDefinition<TypeName, Resolutions, Options>
             : TypeOfResolvedCyclicDefinition<TypeName, Resolutions, Options>
         : TypeOfResolvedNonCyclicDefinition<TypeName, Resolutions, Options>
@@ -32,30 +32,30 @@ export namespace Alias {
     export type TypeOfResolvedCyclicDefinition<
         TypeName extends Definition<Resolutions>,
         Resolutions,
-        Options extends TypeOfContext<Resolutions>
+        Options
     > = Root.TypeOf<
         Root.Parse<
-            Options["onCycle"],
+            Get<Options, "onCycle">,
             Omit<Resolutions, "cyclic"> & { cyclic: Resolutions[TypeName] },
             DefaultParseTypeContext
         >,
         Omit<Resolutions, "cyclic"> & { cyclic: Resolutions[TypeName] },
         {
-            onCycle: Options["deepOnCycle"] extends true
-                ? Options["onCycle"]
+            onCycle: Get<Options, "deepOnCycle"> extends true
+                ? Get<Options, "onCycle">
                 : never
             seen: {}
-            onResolve: Options["onResolve"]
-            deepOnCycle: Options["deepOnCycle"]
+            onResolve: Get<Options, "onResolve">
+            deepOnCycle: Get<Options, "deepOnCycle">
         }
     >
 
     export type TypeOfResolvedNonCyclicDefinition<
         TypeName extends Definition<Resolutions>,
         Resolutions,
-        Options extends TypeOfContext<Resolutions>
+        Options
     > = Or<
-        Options["onResolve"] extends never ? true : false,
+        Get<Options, "onResolve"> extends never ? true : false,
         TypeName extends "resolved" ? true : false
     > extends true
         ? Root.TypeOf<
@@ -71,7 +71,7 @@ export namespace Alias {
           >
         : Root.TypeOf<
               Root.Parse<
-                  Options["onResolve"],
+                  Get<Options, "onResolve">,
                   Omit<Resolutions, "resolved"> & {
                       resolved: Resolutions[TypeName]
                   },

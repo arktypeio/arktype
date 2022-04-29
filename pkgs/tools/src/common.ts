@@ -6,8 +6,8 @@ import {
 } from "ts-toolbelt"
 import { WithDefaults } from "./merge.js"
 
-export const memoize = <F extends Func>(f: F, opts?: moize.Options) =>
-    moize(f) as F
+export const memoize = <F extends Func>(f: F, opts: moize.Options = {}) =>
+    moize(f, opts) as F
 
 export type UntilOptions = {
     timeoutSeconds?: number
@@ -493,6 +493,12 @@ export type AnyIsUnknown<T> = (T extends {} ? true : false) extends false
 export type KeyValuate<T, K, Fallback = undefined> = K extends keyof T
     ? T[K]
     : Fallback
+
+// @ts-ignore
+export type Get<T, K> = T[K]
+
+// @ts-ignore
+export type GetAs<T, K, Cast> = T[K] & Cast
 
 export type TypeError<Description extends string> = Description
 

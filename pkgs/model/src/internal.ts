@@ -1,4 +1,4 @@
-import { Evaluate, KeyValuate, TreeOf } from "@re-/tools"
+import { Evaluate, Iteration, KeyValuate, TreeOf } from "@re-/tools"
 import {
     ParseConfig,
     ReferencesTypeOptions,
@@ -11,11 +11,19 @@ import { validationError, ValidationErrors } from "./errors.js"
 
 export * from "./errors.js"
 
-export type MergeObjects<Base, Merged> = Evaluate<{
-    [K in keyof Base | keyof Merged]: K extends keyof Merged
-        ? Merged[K]
-        : KeyValuate<Base, K>
-}>
+export type Mergeable<T> = T extends {} ? T : {}
+
+export type Merge<Base, Merged> = Evaluate<
+    Omit<Mergeable<Base>, Extract<keyof Base, keyof Merged>> & Mergeable<Merged>
+>
+
+export type MergeAll<Types, Result = {}> = Types extends Iteration<
+    unknown,
+    infer Current,
+    infer Remaining
+>
+    ? MergeAll<Remaining, Merge<Result, Current>>
+    : Evaluate<Result>
 
 export type ShallowDefinition = Str.Definition | Literal.Definition
 

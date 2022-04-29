@@ -10,7 +10,7 @@ import {
 } from "./internal.js"
 import { Fragment } from "./fragment/fragment.js"
 import { Modification } from "./modification/modification.js"
-import { LeafOf, ListPossibleTypes } from "@re-/tools"
+import { KeyValuate, LeafOf, ListPossibleTypes } from "@re-/tools"
 
 export namespace Str {
     export type Definition = string
@@ -18,7 +18,7 @@ export namespace Str {
     export type Parse<
         Def extends string,
         Resolutions,
-        Context extends ParseTypeContext
+        Context
     > = Def extends Modification.Definition
         ? Modification.Parse<Def, Resolutions, Context>
         : Fragment.Parse<Def, Resolutions, Context>
@@ -28,7 +28,7 @@ export namespace Str {
     export type TypeOf<
         N extends Node,
         Resolutions,
-        Options extends TypeOfContext<Resolutions>
+        Options
     > = N extends Modification.Node
         ? Modification.TypeOf<N, Resolutions, Options>
         : N extends Fragment.Node
@@ -48,14 +48,14 @@ export namespace Str {
     export type ReferencesOf<
         Def extends Definition,
         Resolutions,
-        Config extends ReferencesTypeConfig,
+        Config,
         Reference extends string = LeafOf<
             Parse<Def, Resolutions, DefaultParseTypeContext>,
-            Config["filter"]
+            KeyValuate<Config, "filter">
         >
-    > = Config["asTuple"] extends true
+    > = KeyValuate<Config, "asTuple"> extends true
         ? ListPossibleTypes<Reference>
-        : Config["asList"] extends true
+        : KeyValuate<Config, "asList"> extends true
         ? Reference[]
         : Reference
 

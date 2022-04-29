@@ -1,4 +1,4 @@
-import { Evaluate, WithPropValue, ToList } from "@re-/tools"
+import { Evaluate, WithPropValue, ToList, Get } from "@re-/tools"
 import {
     typeDefProxy,
     validationError,
@@ -21,7 +21,7 @@ export namespace ArrowFunction {
     export type Parse<
         Def extends Definition,
         Resolutions,
-        Context extends ParseTypeContext
+        Context
     > = Def extends Definition<infer Args, infer Return>
         ? {
               args: Args extends ""
@@ -33,7 +33,7 @@ export namespace ArrowFunction {
                             WithPropValue<
                                 Context,
                                 "delimiter",
-                                Context["delimiter"] | ","
+                                Get<Context, "delimiter"> | ","
                             >
                         >
                     >
@@ -49,7 +49,7 @@ export namespace ArrowFunction {
     export type TypeOf<
         N extends Node,
         Resolutions,
-        Options extends TypeOfContext<Resolutions>,
+        Options,
         Args extends Fragment.Node[] = N["args"]
     > = Evaluate<
         // @ts-ignore
@@ -58,11 +58,7 @@ export namespace ArrowFunction {
         ) => Fragment.TypeOf<N["returns"], Resolutions, Options>
     >
 
-    type TypeOfArgs<
-        Args extends Fragment.Node[],
-        Resolutions,
-        Options extends TypeOfContext<Resolutions>
-    > = {
+    type TypeOfArgs<Args extends Fragment.Node[], Resolutions, Options> = {
         [I in keyof Args]: Fragment.TypeOf<Args[I], Resolutions, Options>
     }
 

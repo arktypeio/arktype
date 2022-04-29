@@ -27,7 +27,7 @@ export namespace Map {
         map: Record<string, Root.Node>
     }
 
-    export type Parse<Def, Resolutions, Context extends ParseTypeContext> = {
+    export type Parse<Def, Resolutions, Context> = {
         map: {
             [PropName in keyof Def]: Root.Parse<
                 Def[PropName],
@@ -40,7 +40,7 @@ export namespace Map {
     export type TypeOf<
         N extends Node,
         Resolutions,
-        Options extends TypeOfContext<Resolutions>,
+        Options,
         MappedNodes extends Definition = N["map"],
         OptionalKey extends keyof MappedNodes = {
             [K in keyof MappedNodes]: MappedNodes[K] extends Optional.Node

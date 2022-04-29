@@ -89,7 +89,6 @@ export const testAlias = () => {
             )
         })
     })
-
     describe("validation", () => {
         test("simple space", () => {
             const groceries = create(
@@ -125,31 +124,29 @@ export const testAlias = () => {
                                 description: "I'm a big banana!",
                                 peel: "slippery"
                             },
-
                             { type: "Fuji" }
                         ]
                     },
-
                     // Verbose should explain why each component of the union type doesn't apply
                     { verbose: true }
                 ).error
             ).toMatchInlineSnapshot(`
-"Encountered errors at the following paths:
-{
-  fruits/0: '{length: 5000, description: 'I'm a big banana!', peel: 'slippery'} is not assignable to any of banana|apple.
-Encountered errors at the following paths:
-{
-  banana: 'At path fruits/0, keys 'peel' were unexpected.',
-  apple: 'At path fruits/0, required keys 'circumference, type' were missing. Keys 'length, description, peel' were unexpected.'
-}',
-  fruits/1: '{type: 'Fuji'} is not assignable to any of banana|apple.
-Encountered errors at the following paths:
-{
-  banana: 'At path fruits/1, required keys 'length' were missing. Keys 'type' were unexpected.',
-  apple: 'At path fruits/1, required keys 'circumference' were missing.'
-}'
-}"
-`)
+    "Encountered errors at the following paths:
+    {
+      fruits/0: '{length: 5000, description: 'I'm a big banana!', peel: 'slippery'} is not assignable to any of banana|apple.
+    Encountered errors at the following paths:
+    {
+      banana: 'At path fruits/0, keys 'peel' were unexpected.',
+      apple: 'At path fruits/0, required keys 'circumference, type' were missing. Keys 'length, description, peel' were unexpected.'
+    }',
+      fruits/1: '{type: 'Fuji'} is not assignable to any of banana|apple.
+    Encountered errors at the following paths:
+    {
+      banana: 'At path fruits/1, required keys 'length' were missing. Keys 'type' were unexpected.',
+      apple: 'At path fruits/1, required keys 'circumference' were missing.'
+    }'
+    }"
+    `)
         })
         test("errors on shallow cycle", () => {
             // @ts-expect-error
@@ -208,7 +205,6 @@ Encountered errors at the following paths:
                             }
                         }
                     },
-
                     b: {
                         isA: false,
                         b: {
@@ -225,7 +221,6 @@ Encountered errors at the following paths:
                             }
                         }
                     },
-
                     c: [
                         { isA: true },
                         { isA: false },
@@ -239,13 +234,13 @@ Encountered errors at the following paths:
                     ]
                 }).error
             ).toMatchInlineSnapshot(`
-"Encountered errors at the following paths:
-{
-  a/a/a/a/a/a/a/isA: 'false is not assignable to true.',
-  b/b/b/b/b/b/b/isA: 'true is not assignable to false.',
-  c/8: '{isA: 'the duck goes quack'} is not assignable to any of a|b.'
-}"
-`)
+    "Encountered errors at the following paths:
+    {
+      a/a/a/a/a/a/a/isA: 'false is not assignable to true.',
+      b/b/b/b/b/b/b/isA: 'true is not assignable to false.',
+      c/8: '{isA: 'the duck goes quack'} is not assignable to any of a|b.'
+    }"
+    `)
         })
         test("doesn't try to parse or validate any", () => {
             // Parse any as type
@@ -333,10 +328,10 @@ Encountered errors at the following paths:
                     }
                 }).generate()
             ).toThrowErrorMatchingInlineSnapshot(`
-            "Unable to generate a default value for type including a required cycle:
-            a=>b=>c=>a
-            If you'd like to avoid throwing in when this occurs, pass a value to return when this occurs to the 'onRequiredCycle' option."
-        `)
+                "Unable to generate a default value for type including a required cycle:
+                a=>b=>c=>a
+                If you'd like to avoid throwing in when this occurs, pass a value to return when this occurs to the 'onRequiredCycle' option."
+            `)
         })
         test("onRequiredCycle", () => {
             expect(
@@ -365,7 +360,6 @@ Encountered errors at the following paths:
                 }).generate({ onRequiredCycle: "cycle" })
             ).toStrictEqual({ b: { a: "cycle" } })
         })
-
         test("from parsed", () => {
             const defaultValue = create(
                 {
