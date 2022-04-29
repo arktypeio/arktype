@@ -3,7 +3,7 @@ import { declare } from "../index.js"
 
 describe("declare", () => {
     test("single", () => {
-        const { define: define, compile } = declare("GottaDefineThis")
+        const { define, compile } = declare("GottaDefineThis")
         const GottaDefineThis = define.GottaDefineThis("boolean")
         assert(() =>
             // @ts-expect-error

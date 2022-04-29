@@ -96,77 +96,77 @@ export const testConstraint = () => {
         describe("errors", () => {
             test("invalid string length", () => {
                 assert(create("string>4").validate("four").error).snap(
-                    `"'four' was less than or equal to 4 characters."`
+                    `"'four' is less than or equal to 4 characters."`
                 )
                 assert(create("string>4").validate("4").error).snap(
-                    `"'4' was less than or equal to 4 characters."`
+                    `"'4' is less than or equal to 4 characters."`
                 )
                 assert(create("string<4").validate("four").error).snap(
-                    `"'four' was greater than or equal to 4 characters."`
+                    `"'four' is greater than or equal to 4 characters."`
                 )
                 assert(
                     create("string<4").validate("longerThanFourCharacters")
                         .error
                 ).snap(
-                    `"'longerThanFourCharacters' was greater than or equal to 4 characters."`
+                    `"'longerThanFourCharacters' is greater than or equal to 4 characters."`
                 )
                 assert(create("string>=4").validate("4").error).snap(
-                    `"'4' was less than 4 characters."`
+                    `"'4' is less than 4 characters."`
                 )
                 assert(
                     create("string<=4").validate("longerThanFourCharacters")
                         .error
                 ).snap(
-                    `"'longerThanFourCharacters' was greater than 4 characters."`
+                    `"'longerThanFourCharacters' is greater than 4 characters."`
                 )
             })
             test("single-bounded invalid", () => {
                 assert(create("number<=5").validate(7).error).snap(
-                    `"7 was greater than 5."`
+                    `"7 is greater than 5."`
                 )
                 assert(create("number>=-999").validate(-1000).error).snap(
-                    `"-1000 was less than -999."`
+                    `"-1000 is less than -999."`
                 )
                 assert(create("number<5").validate(5).error).snap(
-                    `"5 was greater than or equal to 5."`
+                    `"5 is greater than or equal to 5."`
                 )
                 assert(create("number<5").validate(9999).error).snap(
-                    `"9999 was greater than or equal to 5."`
+                    `"9999 is greater than or equal to 5."`
                 )
                 assert(create("number>-5").validate(-5).error).snap(
-                    `"-5 was less than or equal to -5."`
+                    `"-5 is less than or equal to -5."`
                 )
                 assert(create("number>-5").validate(-1000).error).snap(
-                    `"-1000 was less than or equal to -5."`
+                    `"-1000 is less than or equal to -5."`
                 )
             })
             test("double-bounded invalid", () => {
                 assert(create("5<number<10").validate(-9).error).snap(
-                    `"-9 was less than or equal to 5."`
+                    `"-9 is less than or equal to 5."`
                 )
                 assert(create("5<number<10").validate(99).error).snap(
-                    `"99 was greater than or equal to 10."`
+                    `"99 is greater than or equal to 10."`
                 )
                 assert(create("7>number>-2000").validate(-3000).error).snap(
-                    `"-3000 was less than or equal to -2000."`
+                    `"-3000 is less than or equal to -2000."`
                 )
                 assert(create("7>number>-2000").validate(3000).error).snap(
-                    `"3000 was greater than or equal to 7."`
+                    `"3000 is greater than or equal to 7."`
                 )
                 assert(create("5<=number<9999").validate(9999).error).snap(
-                    `"9999 was greater than or equal to 9999."`
+                    `"9999 is greater than or equal to 9999."`
                 )
                 assert(create("5<=number<9999").validate(10000).error).snap(
-                    `"10000 was greater than or equal to 9999."`
+                    `"10000 is greater than or equal to 9999."`
                 )
                 assert(create("5<=number<9999").validate(4).error).snap(
-                    `"4 was less than 5."`
+                    `"4 is less than 5."`
                 )
                 assert(create("-5>=number>=-1000").validate(0).error).snap(
-                    `"0 was greater than -5."`
+                    `"0 is greater than -5."`
                 )
                 assert(create("-5>=number>=-1000").validate(-1001).error).snap(
-                    `"-1001 was less than -1000."`
+                    `"-1001 is less than -1000."`
                 )
             })
         })

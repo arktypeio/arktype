@@ -30,6 +30,7 @@ import {
     validationError
 } from "../internal.js"
 import { typeOf } from "../../../../utils.js"
+import { StringLiteral } from "../reference/embeddedLiteral/stringLiteral.js"
 
 export const getComparables = () => [...numberKeywords, ...stringKeywords]
 
@@ -53,11 +54,19 @@ const buildComparatorErrorMessage = (
     value: string,
     bound: number,
     isString: boolean
-) =>
-    `${toString(value, {
-        quotes: "none",
-        maxNestedStringLength: 50
-    })} was ${comparatorError} ${bound}${isString ? " characters" : ""}.`
+) => {
+    const valueIsStringLiteral = StringLiteral.matches(value)
+    const formattedValue = toString(
+        valueIsStringLiteral ? StringLiteral.valueFrom(value) : value,
+        {
+            quotes: valueIsStringLiteral ? "single" : "none",
+            maxNestedStringLength: 50
+        }
+    )
+    return `${formattedValue} is ${comparatorError} ${bound}${
+        isString ? " characters" : ""
+    }.`
+}
 
 const comparators: {
     [K in ComparatorToken]: (

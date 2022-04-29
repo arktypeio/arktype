@@ -1,5 +1,5 @@
 import { assert } from "@re-/assert"
-import { create as model, compile as space } from "@re-/model"
+import { create as model, compile } from "@re-/model"
 
 describe("demo", () => {
     test("model", () => {
@@ -40,7 +40,7 @@ describe("demo", () => {
         )
     })
     test("space", () => {
-        const mySpace = space({
+        const { models, types } = compile({
             user: {
                 name: "string",
                 bestFriend: "user?",
@@ -53,11 +53,11 @@ describe("demo", () => {
         })
 
         // Typescript types can be extracted like this
-        type User = typeof mySpace.types.user
+        type User = typeof types.user
 
         // Throws: "At path bestFriend/groups/0, required keys 'members' were missing."
         assert(() =>
-            mySpace.models.user.assert({
+            models.user.assert({
                 name: "Devin Aldai",
                 bestFriend: {
                     name: "Devin Olnyt",
@@ -68,7 +68,7 @@ describe("demo", () => {
         ).throws(
             "At path bestFriend/groups/0, required keys 'members' were missing."
         )
-        assert(mySpace.types.user).type.toString.snap(
+        assert(types.user).type.toString.snap(
             `"{ bestFriend?: { bestFriend?: any | undefined; name: string; groups: { members: { bestFriend?: any | undefined; name: string; groups: any[]; }[]; title: string; }[]; } | undefined; name: string; groups: { members: { bestFriend?: any | undefined; name: string; groups: { members: any[]; title: string; }[]; }[]; title: string; }[]; }"`
         )
     })
@@ -104,12 +104,12 @@ describe("demo", () => {
             }
         }
         assert(error).snap(`
-"Encountered errors at the following paths:
-{
-  email: ''david@redo.biz' is not assignable to /[a-z]*@redo.dev/.',
-  about/age: '17 was less than 18.',
-  about/bio: ''I am very interesting.I am very interesting.I am... was greater than 160 characters.'
-}"
-`)
+            "Encountered errors at the following paths:
+            {
+              email: ''david@redo.biz' is not assignable to /[a-z]*@redo.dev/.',
+              about/age: '17 is less than 18.',
+              about/bio: ''I am very interesting.I am very interesting.I am ...' is greater than 160 characters.'
+            }"
+        `)
     })
 })
