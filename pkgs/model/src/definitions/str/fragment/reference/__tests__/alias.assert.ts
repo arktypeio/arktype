@@ -26,7 +26,7 @@ export const testAlias = () => {
                 b: { a: "a", isA: "false", isB: "true" }
             })
         test("with onCycle option", () => {
-            const { type } = getCyclicSpace().create(
+            const cyclic = getCyclicSpace().create(
                 { a: "a", b: "b" },
                 {
                     parse: {
@@ -36,20 +36,20 @@ export const testAlias = () => {
                     }
                 }
             )
-            assert(type.a.b.a.cyclic).type.toString.snap(
+            assert(cyclic.type.a.b.a.cyclic).type.toString.snap(
                 `"{ b: { a: { b: { a: any; isA: false; isB: true; }; isA: true; isB: false; }; isA: false; isB: true; }; isA: true; isB: false; } | undefined"`
             )
-            assert(type.b.a.b.cyclic).type.toString.snap(
+            assert(cyclic.type.b.a.b.cyclic).type.toString.snap(
                 `"{ a: { b: { a: { b: any; isA: true; isB: false; }; isA: false; isB: true; }; isA: true; isB: false; }; isA: false; isB: true; } | undefined"`
             )
             // After initial cycle, no more "cyclic" transformations occur since
             // "deepOnCycle" was not passed
-            assert(type.b.a.b.cyclic?.a.b.a.b.a.b.a.b.isB).typed as
+            assert(cyclic.type.b.a.b.cyclic?.a.b.a.b.a.b.a.b.isB).typed as
                 | true
                 | undefined
         })
         test("with deepOnCycleOption", () => {
-            const { type } = getCyclicSpace().create(
+            const deepCyclic = getCyclicSpace().create(
                 { a: "a", b: "b" },
                 {
                     parse: {
@@ -60,12 +60,14 @@ export const testAlias = () => {
                     }
                 }
             )
-            assert(type.a.b.a.cyclic?.b.a.b.cyclic).type.toString.snap(
+            assert(
+                deepCyclic.type.a.b.a.cyclic?.b.a.b.cyclic
+            ).type.toString.snap(
                 `"{ a: { b: { a: { cyclic?: { b: { a: { b: { cyclic?: { a: { b: { a: any; isA: false; isB: true; }; isA: true; isB: false; }; isA: false; isB: true; } | undefined; }; isA: true; isB: false; }; isA: false; isB: true; }; isA: true; isB: false; } | undefined; }; isA: false; isB: true; }; isA: true; isB: false; }; isA: false; isB: true; } | undefined"`
             )
         })
         test("with onResolve option", () => {
-            const { type } = getCyclicSpace().create(
+            const withOnResolve = getCyclicSpace().create(
                 {
                     referencesA: "a",
                     noReferences: {
@@ -81,10 +83,11 @@ export const testAlias = () => {
                     }
                 }
             )
-            assert(type.referencesA.wasResolved).typed as true
-            assert(type.referencesA.resolvedType.b.wasResolved).typed as true
+            assert(withOnResolve.type.referencesA.wasResolved).typed as true
+            assert(withOnResolve.type.referencesA.resolvedType.b.wasResolved)
+                .typed as true
             // @ts-expect-error
-            assert(type.noReferences.wasResolved).type.errors(
+            assert(withOnResolve.type.noReferences.wasResolved).type.errors(
                 "Property 'wasResolved' does not exist on type '{ favoriteSoup: \"borscht\"; }'."
             )
         })

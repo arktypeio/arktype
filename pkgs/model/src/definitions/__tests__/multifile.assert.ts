@@ -10,19 +10,19 @@ import { groupDef } from "./multifile/group"
 describe("multifile", () => {
     test("compiles", () => {
         // Creates your space (or tells you which definition you forgot to include)
-        const { models, create, types } = compile({ ...userDef, ...groupDef })
-        assert(types.user.name).typed as string
-        assert(types.user).type.toString.snap(
+        const space = compile({ ...userDef, ...groupDef })
+        assert(space.types.user.name).typed as string
+        assert(space.types.user).type.toString.snap(
             `"{ bestFriend?: { bestFriend?: any | undefined; name: string; groups: { name: string; members: { bestFriend?: any | undefined; name: string; groups: any[]; }[]; }[]; } | undefined; name: string; groups: { name: string; members: { bestFriend?: any | undefined; name: string; groups: { name: string; members: any[]; }[]; }[]; }[]; }"`
         )
-        assert(models.group.type).type.toString.snap(
+        assert(space.models.group.type).type.toString.snap(
             `"{ name: string; members: { bestFriend?: any | undefined; name: string; groups: { name: string; members: { bestFriend?: any | undefined; name: string; groups: any[]; }[]; }[]; }[]; }"`
         )
-        assert(models.user.type.bestFriend).type.toString.snap(
+        assert(space.models.user.type.bestFriend).type.toString.snap(
             `"{ bestFriend?: any | undefined; name: string; groups: { name: string; members: { bestFriend?: any | undefined; name: string; groups: any[]; }[]; }[]; } | undefined"`
         )
         assert(
-            create({ foozler: "user", choozler: "group[]" }).type
+            space.create({ foozler: "user", choozler: "group[]" }).type
         ).type.toString.snap(
             `"{ foozler: { bestFriend?: { bestFriend?: any | undefined; name: string; groups: { name: string; members: { bestFriend?: any | undefined; name: string; groups: any[]; }[]; }[]; } | undefined; name: string; groups: { name: string; members: { bestFriend?: any | undefined; name: string; groups: { name: string; members: any[]; }[]; }[]; }[]; }; choozler: { name: string; members: { bestFriend?: any | undefined; name: string; groups: { name: string; members: any[]; }[]; }[]; }[]; }"`
         )

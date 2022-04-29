@@ -1,11 +1,5 @@
-import {
-    TypeOfContext,
-    createParser,
-    typeDefProxy,
-    UnknownTypeError
-} from "./internal.js"
+import { createParser, typeDefProxy, UnknownTypeError } from "./internal.js"
 import { Optional } from "./optional.js"
-import { ParseTypeContext } from "../internal.js"
 import { Str } from "../str.js"
 
 export namespace Modification {

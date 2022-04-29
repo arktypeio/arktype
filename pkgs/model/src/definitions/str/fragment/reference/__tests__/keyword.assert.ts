@@ -3,232 +3,234 @@ import { create } from "@re-/model"
 
 export const testKeyword = () => {
     describe("string", () => {
-        const { type, generate, validate } = create("string")
+        const s = create("string")
         test("type", () => {
-            assert(type).typed as string
+            assert(s.type).typed as string
         })
         test("generation", () => {
-            assert(generate()).is("")
+            assert(s.generate()).is("")
         })
         test("validation", () => {
-            assert(validate("KEKW").error).is(undefined)
-            assert(validate(["whoops"]).error).snap(
+            assert(s.validate("KEKW").error).is(undefined)
+            assert(s.validate(["whoops"]).error).snap(
                 `"['whoops'] is not assignable to string."`
             )
         })
     })
     describe("number", () => {
-        const { type, generate, validate } = create("number")
+        const n = create("number")
         test("type", () => {
-            assert(type).typed as number
+            assert(n.type).typed as number
         })
         test("generation", () => {
-            assert(generate()).is(0)
+            assert(n.generate()).is(0)
         })
         test("validation", () => {
-            assert(validate(-83).error).is(undefined)
-            assert(validate(0.999).error).is(undefined)
-            assert(validate("42").error).snap(
+            assert(n.validate(-83).error).is(undefined)
+            assert(n.validate(0.999).error).is(undefined)
+            assert(n.validate("42").error).snap(
                 `"'42' is not assignable to number."`
             )
         })
     })
     describe("boolean", () => {
-        const { type, generate, validate } = create("boolean")
+        const b = create("boolean")
         test("type", () => {
-            assert(type).typed as boolean
+            assert(b.type).typed as boolean
         })
         test("generation", () => {
-            assert(generate()).is(false)
+            assert(b.generate()).is(false)
         })
         test("validation", () => {
-            assert(validate(true).error).is(undefined)
-            assert(validate(false).error).is(undefined)
-            assert(validate(0).error).snap(`"0 is not assignable to boolean."`)
+            assert(b.validate(true).error).is(undefined)
+            assert(b.validate(false).error).is(undefined)
+            assert(b.validate(0).error).snap(
+                `"0 is not assignable to boolean."`
+            )
         })
     })
     describe("true", () => {
-        const { type, generate, validate } = create("true")
+        const t = create("true")
         test("type", () => {
-            assert(type).typed as true
+            assert(t.type).typed as true
         })
         test("generation", () => {
-            assert(generate()).is(true)
+            assert(t.generate()).is(true)
         })
         test("validation", () => {
-            assert(validate(true).error).is(undefined)
-            assert(validate(false).error).snap(
+            assert(t.validate(true).error).is(undefined)
+            assert(t.validate(false).error).snap(
                 `"false is not assignable to true."`
             )
         })
     })
     describe("false", () => {
-        const { type, generate, validate } = create("false")
+        const f = create("false")
         test("type", () => {
-            assert(type).typed as false
+            assert(f.type).typed as false
         })
         test("generation", () => {
-            assert(generate()).is(false)
+            assert(f.generate()).is(false)
         })
         test("validation", () => {
-            assert(validate(false).error).is(undefined)
-            assert(validate(true).error).snap(
+            assert(f.validate(false).error).is(undefined)
+            assert(f.validate(true).error).snap(
                 `"true is not assignable to false."`
             )
         })
     })
     describe("bigint", () => {
-        const { type, generate, validate } = create("bigint")
+        const b = create("bigint")
         test("type", () => {
-            assert(type).typed as bigint
+            assert(b.type).typed as bigint
         })
         test("generation", () => {
-            assert(generate()).is(0n)
+            assert(b.generate()).is(0n)
         })
         test("validation", () => {
-            assert(validate(999n).error).is(undefined)
-            assert(validate(999).error).snap(
+            assert(b.validate(999n).error).is(undefined)
+            assert(b.validate(999).error).snap(
                 `"999 is not assignable to bigint."`
             )
         })
     })
     describe("symbol", () => {
-        const { type, generate, validate } = create("symbol")
+        const s = create("symbol")
         test("type", () => {
-            assert(type).typed as symbol
+            assert(s.type).typed as symbol
         })
         test("generation", () => {
-            assert(typeof generate()).is("symbol")
+            assert(typeof s.generate()).is("symbol")
         })
         test("validation", () => {
-            assert(validate(Symbol("")).error).is(undefined)
-            assert(validate("@").error).snap(
+            assert(s.validate(Symbol("")).error).is(undefined)
+            assert(s.validate("@").error).snap(
                 `"'@' is not assignable to symbol."`
             )
         })
     })
     describe("function", () => {
-        const { type, generate, validate } = create("function")
+        const f = create("function")
         test("type", () => {
-            assert(type).typed as (...args: any[]) => any
+            assert(f.type).typed as (...args: any[]) => any
         })
         test("generation", () => {
-            const generated = generate()
+            const generated = f.generate()
             assert(typeof generated).is("function")
             assert(generated("irrelevant")).is(undefined)
         })
         test("validation", () => {
-            assert(validate(() => {}).error).is(undefined)
-            assert(validate({}).error).snap(
+            assert(f.validate(() => {}).error).is(undefined)
+            assert(f.validate({}).error).snap(
                 `"{} is not assignable to function."`
             )
         })
     })
     describe("object", () => {
-        const { type, generate, validate } = create("object")
+        const o = create("object")
         test("type", () => {
-            assert(type).typed as object
+            assert(o.type).typed as object
         })
         test("generation", () => {
-            assert(generate()).equals({})
+            assert(o.generate()).equals({})
         })
         test("validation", () => {
-            assert(validate([]).error).is(undefined)
-            assert(validate({}).error).is(undefined)
-            assert(validate(null).error).snap(
+            assert(o.validate([]).error).is(undefined)
+            assert(o.validate({}).error).is(undefined)
+            assert(o.validate(null).error).snap(
                 `"null is not assignable to object."`
             )
         })
     })
     describe("undefined", () => {
-        const { type, generate, validate } = create("undefined")
+        const u = create("undefined")
         test("type", () => {
-            assert(type).typed as undefined
+            assert(u.type).typed as undefined
         })
         test("generation", () => {
-            assert(generate()).is(undefined)
+            assert(u.generate()).is(undefined)
         })
         test("validation", () => {
-            assert(validate(undefined).error).is(undefined)
-            assert(validate(null).error).snap(
+            assert(u.validate(undefined).error).is(undefined)
+            assert(u.validate(null).error).snap(
                 `"null is not assignable to undefined."`
             )
         })
     })
     describe("null", () => {
-        const { type, generate, validate } = create("null")
+        const n = create("null")
         test("type", () => {
-            assert(type).typed as null
+            assert(n.type).typed as null
         })
         test("generation", () => {
-            assert(generate()).is(null)
+            assert(n.generate()).is(null)
         })
         test("validation", () => {
-            assert(validate(null).error).is(undefined)
-            assert(validate(undefined).error).snap(
+            assert(n.validate(null).error).is(undefined)
+            assert(n.validate(undefined).error).snap(
                 `"undefined is not assignable to null."`
             )
         })
     })
     describe("void", () => {
-        const { type, generate, validate } = create("void")
+        const v = create("void")
         test("type", () => {
-            assert(type).typed as void
+            assert(v.type).typed as void
         })
         test("generation", () => {
-            assert(generate()).is(undefined)
+            assert(v.generate()).is(undefined)
         })
         test("validation", () => {
-            assert(validate(undefined).error).is(undefined)
-            assert(validate(null).error).snap(
+            assert(v.validate(undefined).error).is(undefined)
+            assert(v.validate(null).error).snap(
                 `"null is not assignable to void."`
             )
         })
     })
     describe("any", () => {
-        const { type, generate, validate } = create("any")
+        const a = create("any")
         test("type", () => {
-            assert(type).typed as any
+            assert(a.type).typed as any
         })
         test("generation", () => {
-            assert(generate()).is(undefined)
+            assert(a.generate()).is(undefined)
         })
         test("validation", () => {
-            assert(validate(-34324n).error).is(undefined)
-            assert(validate({ yes: "no" }).error).is(undefined)
-            assert(validate([0, "1", 2, "3"]).error).is(undefined)
+            assert(a.validate(-34324n).error).is(undefined)
+            assert(a.validate({ yes: "no" }).error).is(undefined)
+            assert(a.validate([0, "1", 2, "3"]).error).is(undefined)
         })
     })
     describe("unknown", () => {
-        const { type, generate, validate } = create("unknown")
+        const u = create("unknown")
         test("type", () => {
-            assert(type).typed as unknown
+            assert(u.type).typed as unknown
         })
         test("generation", () => {
-            assert(generate()).is(undefined)
+            assert(u.generate()).is(undefined)
         })
         test("validation", () => {
-            assert(validate(34324n).error).is(undefined)
-            assert(validate({ no: "yes" }).error).is(undefined)
-            assert(validate(["0", 1, "2", 3]).error).is(undefined)
+            assert(u.validate(34324n).error).is(undefined)
+            assert(u.validate({ no: "yes" }).error).is(undefined)
+            assert(u.validate(["0", 1, "2", 3]).error).is(undefined)
         })
     })
     describe("never", () => {
-        const { type, generate, validate } = create("never")
+        const n = create("never")
         test("type", () => {
             // @ts-ignore
-            assert(type).typed as never
+            assert(n.type).typed as never
         })
         test("generation", () => {
-            assert(() => generate()).throws(
+            assert(() => n.generate()).throws(
                 "Could not find a default value satisfying never."
             )
         })
         test("validation", () => {
-            assert(validate("sometimes").error).snap(
+            assert(n.validate("sometimes").error).snap(
                 `"'sometimes' is not assignable to never."`
             )
-            assert(validate(undefined).error).snap(
+            assert(n.validate(undefined).error).snap(
                 `"undefined is not assignable to never."`
             )
         })

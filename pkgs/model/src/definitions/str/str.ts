@@ -1,11 +1,8 @@
 import { Root } from "../root.js"
 import {
-    TypeOfContext,
     createParser,
     typeDefProxy,
-    ReferencesTypeConfig,
     ValidationErrorMessage,
-    ParseTypeContext,
     DefaultParseTypeContext
 } from "./internal.js"
 import { Fragment } from "./fragment/fragment.js"

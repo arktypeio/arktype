@@ -40,7 +40,7 @@ describe("demo", () => {
         )
     })
     test("space", () => {
-        const { models, types } = compile({
+        const space = compile({
             user: {
                 name: "string",
                 bestFriend: "user?",
@@ -53,11 +53,11 @@ describe("demo", () => {
         })
 
         // Typescript types can be extracted like this
-        type User = typeof types.user
+        type User = typeof space.types.user
 
         // Throws: "At path bestFriend/groups/0, required keys 'members' were missing."
         assert(() =>
-            models.user.assert({
+            space.models.user.assert({
                 name: "Devin Aldai",
                 bestFriend: {
                     name: "Devin Olnyt",
@@ -68,7 +68,7 @@ describe("demo", () => {
         ).throws(
             "At path bestFriend/groups/0, required keys 'members' were missing."
         )
-        assert(types.user).type.toString.snap(
+        assert(space.types.user).type.toString.snap(
             `"{ bestFriend?: { bestFriend?: any | undefined; name: string; groups: { members: { bestFriend?: any | undefined; name: string; groups: any[]; }[]; title: string; }[]; } | undefined; name: string; groups: { members: { bestFriend?: any | undefined; name: string; groups: { members: any[]; title: string; }[]; }[]; title: string; }[]; }"`
         )
     })

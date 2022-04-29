@@ -24,7 +24,9 @@
         "test": "jest 2>&1",
         "unit": "jest --coverage false -t ",
         "typeDiag": "tsc --extendedDiagnostics --noEmit > typeDiag.txt",
-        "typeTrace": "tsc --generateTrace typeTrace && npx analyze-trace typeTrace >> typeTrace/hotspots.txt"
+        "typeTrace": "tsc --generateTrace typeTrace",
+        "typeHotspots": "npx analyze-trace typeTrace >> typeTrace/hotspots.txt",
+        "typeSimplify": "npx simplify-trace-types typeTrace/types.json typeTrace/simpleTypes.json"
     },
     "dependencies": {
         "@re-/tools": "workspace:*"

@@ -5,13 +5,10 @@ import {
     typeDefProxy,
     createParser,
     duplicateModifierError,
-    invalidModifierError,
-    UnknownTypeError,
-    TypeOfContext
+    UnknownTypeError
 } from "./internal.js"
 import { Str } from "../str.js"
-import { DuplicateModifierError, ParseTypeContext } from "../internal.js"
-import { typeOf } from "../../../utils.js"
+import { DuplicateModifierError } from "../internal.js"
 
 export namespace Optional {
     export type Definition<Of extends string = string> = `${Of}?`

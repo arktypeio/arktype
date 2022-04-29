@@ -232,12 +232,6 @@ export type CreateFunction<PredefinedSpace extends SpaceDefinition | null> = <
     Options["parse"] extends ParseConfig ? Options["parse"] : {}
 >
 
-//     {
-//     Def: Def
-//     Space: Evaluate<ActiveSpace>
-//     Config: Options["parse"] extends ParseConfig ? Options["parse"] : {}
-// }
-
 /**
  * Create a model.
  * @param definition {@as string} Document this.
