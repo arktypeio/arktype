@@ -1,4 +1,4 @@
-import { Evaluate, Narrow, IsAny, isEmpty, KeyValuate } from "@re-/tools"
+import { Evaluate, Narrow, IsAny, isEmpty, KeyValuate, Get } from "@re-/tools"
 import { Root } from "./definitions/index.js"
 import {
     ParseContext,
@@ -28,7 +28,7 @@ export type Validate<Def, Resolutions> = IsAny<Def> extends true
 export type TypeOf<
     Def,
     Resolutions,
-    Options extends ParseConfig = {},
+    Options = {},
     OptionsWithDefaults = Merge<DefaultParseOptions, Options>,
     Checked = ValidateSpaceResolutions<Resolutions>
 > = IsAny<Def> extends true
@@ -146,11 +146,14 @@ const createRootValidate =
               }
     }
 
-export const createCreateFunction =
-    <PredefinedSpace extends SpaceDefinition | null>(
-        predefinedSpace: Narrow<PredefinedSpace>
-    ): CreateFunction<PredefinedSpace> =>
-    (definition, config) => {
+export type CreateCreateFunction = <
+    PredefinedSpace extends SpaceDefinition | null
+>(
+    predefinedSpace: Narrow<PredefinedSpace>
+) => CreateFunction<PredefinedSpace>
+
+export const createCreateFunction: CreateCreateFunction =
+    (predefinedSpace) => (definition, config) => {
         if (predefinedSpace && config?.space) {
             throw new Error(duplicateSpaceError)
         }
@@ -192,12 +195,12 @@ export const createCreateFunction =
 
 export type Model<
     Def,
-    Space extends SpaceDefinition,
-    Options extends ParseConfig,
-    SpaceParseConfig = KeyValuate<Space["config"], "parse">,
+    Space,
+    Options,
+    SpaceParseConfig = KeyValuate<Get<Space, "config">, "parse">,
     ModelType = TypeOf<
         Def,
-        Space["resolutions"],
+        Get<Space, "resolutions">,
         MergeAll<[DefaultParseOptions, SpaceParseConfig, Options]>
     >
 > = Evaluate<{
@@ -210,7 +213,7 @@ export type Model<
     generate: (options?: GenerateConfig) => ModelType
     references: (
         options?: ReferencesConfig
-    ) => ReferencesOf<Def, Space["resolutions"], { asList: true }>
+    ) => ReferencesOf<Def, Get<Space, "resolutions">, { asList: true }>
 }>
 
 export type CreateFunction<PredefinedSpace extends SpaceDefinition | null> = <

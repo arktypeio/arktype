@@ -1,4 +1,4 @@
-import { TypeOfContext, ParseTypeContext, typeDefProxy } from "./internal.js"
+import { typeDefProxy } from "./internal.js"
 import { Obj } from "./obj/index.js"
 import { Str } from "./str/index.js"
 import { Literal } from "./literal/index.js"
@@ -8,8 +8,6 @@ import {
     DefinitionTypeError,
     definitionTypeError
 } from "../errors.js"
-import { ReferencesTypeConfig } from "../internal.js"
-import { Exact } from "@re-/tools"
 
 export namespace Root {
     export type Definition =

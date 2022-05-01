@@ -1,6 +1,5 @@
-import { Evaluate, Get, IsAny, Or } from "@re-/tools"
+import { Get, IsAny, Or } from "@re-/tools"
 import {
-    TypeOfContext,
     typeDefProxy,
     ValidationErrorMessage,
     shallowCycleError,

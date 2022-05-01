@@ -28,15 +28,16 @@ export type DeclaredDefineFunction<
     [K in DefinedTypeName]: Def
 }
 
-export const createDeclaredDefineFunction =
-    <
-        DefinedTypeName extends ElementOf<DeclaredTypeNames>,
-        DeclaredTypeNames extends string[]
-    >(
-        declaredTypeNames: DeclaredTypeNames,
-        definedTypeName: DefinedTypeName
-    ): DeclaredDefineFunction<DefinedTypeName, DeclaredTypeNames> =>
-    (definition: any) => {
+export type CreateDeclaredDefineFunction = <
+    DefinedTypeName extends ElementOf<DeclaredTypeNames>,
+    DeclaredTypeNames extends string[]
+>(
+    declaredTypeNames: DeclaredTypeNames,
+    definedTypeName: DefinedTypeName
+) => DeclaredDefineFunction<DefinedTypeName, DeclaredTypeNames>
+
+export const createDeclaredDefineFunction: CreateDeclaredDefineFunction =
+    (declaredTypeNames, definedTypeName) => (definition: any) => {
         // Dummy create for validation
         create(definition, {
             space: {
@@ -54,9 +55,16 @@ export type Declaration<DeclaredTypeNames extends string[] = string[]> = {
     compile: CompileFunction<DeclaredTypeNames>
 }
 
-export const declare = <DeclaredTypeNames extends string[]>(
+export type DeclareFunction = <DeclaredTypeNames extends string[]>(
     ...names: Narrow<DeclaredTypeNames>
-) => ({
+) => {
+    define: DeclaredDefineFunctionMap<DeclaredTypeNames>
+    compile: CompileFunction<DeclaredTypeNames>
+}
+
+export const declare: DeclareFunction = (...names) => ({
+    // @ts-ignore
     define: createDeclaredDefineFunctionMap(names),
+    // @ts-ignore
     compile: createCompileFunction(names)
 })

@@ -23,9 +23,9 @@
         "build": "reTsc",
         "test": "jest 2>&1",
         "unit": "jest --coverage false -t ",
-        "typeDiag": "tsc --extendedDiagnostics --noEmit > typeDiag.txt",
+        "typeDiag": "tsc --extendedDiagnostics --noEmit > typeDiagTest.txt",
         "typeTrace": "tsc --generateTrace typeTrace",
-        "typeHotspots": "npx analyze-trace typeTrace >> typeTrace/hotspots.txt",
+        "typeHotspots": "npx analyze-trace typeTrace > typeTrace/hotspots.txt",
         "typeSimplify": "npx simplify-trace-types typeTrace/types.json typeTrace/simpleTypes.json"
     },
     "dependencies": {

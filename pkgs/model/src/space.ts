@@ -6,15 +6,13 @@ import {
     Narrow,
     transform,
     IsAny,
-    Exact,
-    WithDefaults
+    Exact
 } from "@re-/tools"
 import {
     createCreateFunction,
     CreateFunction,
     Model,
     ModelConfig,
-    ParseConfig,
     DefaultParseOptions,
     CustomValidator
 } from "./model.js"
@@ -39,7 +37,8 @@ export type ValidateSpaceResolutions<
 
 export type ParseSpaceResolutions<
     Resolutions,
-    Config extends ParseConfig
+    Config,
+    ConfigWithDefaults = Merge<DefaultParseOptions, Config>
 > = Evaluate<{
     [TypeName in keyof Resolutions]: Model<
         Resolutions[TypeName],
@@ -47,18 +46,16 @@ export type ParseSpaceResolutions<
             resolutions: ValidateSpaceResolutions<Resolutions>
             config: { parse: Config }
         },
-        WithDefaults<
-            ParseConfig,
-            Config,
-            DefaultParseOptions & { seen: { [K in TypeName]: true } }
-        >
+        ConfigWithDefaults & { seen: { [K in TypeName]: true } }
     >
 }>
 
-export const createCompileFunction =
-    <DeclaredTypeNames extends string[]>(
-        declaredTypeNames: Narrow<DeclaredTypeNames>
-    ): CompileFunction<DeclaredTypeNames> =>
+export type CreateCompileFunction = <DeclaredTypeNames extends string[]>(
+    declaredTypeNames: Narrow<DeclaredTypeNames>
+) => CompileFunction<DeclaredTypeNames>
+
+export const createCompileFunction: CreateCompileFunction =
+    (declaredTypeNames) =>
     (resolutions: any, config: any = {}) => {
         const declarationErrors = diffSets(
             declaredTypeNames,
@@ -216,4 +213,5 @@ export type CompileFunction<DeclaredTypeNames extends string[]> = <
 
 // Exported compile function is equivalent to compile from an empty declare call
 // and will not validate missing or extraneous definitions
-export const compile = createCompileFunction([])
+// @ts-ignore
+export const compile: CompileFunction<[]> = createCompileFunction([])
