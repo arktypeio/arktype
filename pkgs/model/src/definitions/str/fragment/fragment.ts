@@ -54,13 +54,13 @@ export namespace Fragment {
 
     export const type = typeDefProxy as Definition
 
-    export const parse = createParser(
+    export const parser = createParser(
         {
             type,
-            parent: () => Str.parse,
+            parent: () => Str.parser,
             children: () => [Reference.delegate, Expression.delegate],
             fallback: (def, { path }) => {
-                if (Modification.parse.matches(def as any)) {
+                if (Modification.parser.matches(def as any)) {
                     throw new Error(
                         invalidModifierError(
                             def[def.length - 1] as ModifierToken
@@ -75,5 +75,5 @@ export namespace Fragment {
         }
     )
 
-    export const delegate = parse as any as Definition
+    export const delegate = parser as any as Definition
 }

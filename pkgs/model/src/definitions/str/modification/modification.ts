@@ -25,11 +25,11 @@ export namespace Modification {
 
     export const type = typeDefProxy as Definition
 
-    export const parse = createParser({
+    export const parser = createParser({
         type,
-        parent: () => Str.parse,
+        parent: () => Str.parser,
         children: () => [Optional.delegate]
     })
 
-    export const delegate = parse as any as Definition
+    export const delegate = parser as any as Definition
 }

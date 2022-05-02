@@ -125,7 +125,7 @@ export type ValidateFunction = <Options extends ValidateConfig>(
 
 const createRootValidate =
     (
-        validate: ReturnType<typeof Root.parse>["validate"],
+        validate: ReturnType<typeof Root.parser.parse>["validate"],
         definition: Root.Definition,
         customValidator: CustomValidator | undefined
     ): ValidateFunction =>
@@ -171,7 +171,7 @@ export const createCreateFunction: CreateCreateFunction =
             validate: internalValidate,
             references,
             generate
-        } = Root.parse(definition, context)
+        } = Root.parser.parse(definition, context)
         const validate = createRootValidate(
             internalValidate,
             definition,

@@ -1,11 +1,15 @@
-import { Evaluate, WithPropValue, ToList, Get } from "@re-/tools"
+import {
+    Evaluate,
+    WithPropValue,
+    ToList,
+    Get,
+    EvaluateFunction
+} from "@re-/tools"
 import {
     typeDefProxy,
     validationError,
     createParser,
-    TypeOfContext,
-    UnknownTypeError,
-    ParseTypeContext
+    UnknownTypeError
 } from "./internal.js"
 import { Fragment } from "../fragment.js"
 import { Expression } from "./expression.js"
@@ -50,26 +54,30 @@ export namespace ArrowFunction {
         N extends Node,
         Resolutions,
         Options,
-        Args extends Fragment.Node[] = N["args"]
-    > = Evaluate<
-        // @ts-ignore
+        Args = N["args"]
+    > = EvaluateFunction<
         (
+            // @ts-ignore
             ...args: TypeOfArgs<Args, Resolutions, Options>
         ) => Fragment.TypeOf<N["returns"], Resolutions, Options>
     >
 
-    type TypeOfArgs<Args extends Fragment.Node[], Resolutions, Options> = {
+    type TypeOfArgs<
+        Args extends Fragment.Node[],
+        Resolutions,
+        Options
+    > = Evaluate<{
         [I in keyof Args]: Fragment.TypeOf<Args[I], Resolutions, Options>
-    }
+    }>
 
     export const type = typeDefProxy as Definition
 
     export const matcher = /^\(.*\)\=\>.*$/
 
-    export const parse = createParser(
+    export const parser = createParser(
         {
             type,
-            parent: () => Expression.parse,
+            parent: () => Expression.parser,
             components: (def, ctx) => {
                 const parts = def.split("=>")
                 const parameterDefs = parts[0]
@@ -78,8 +86,10 @@ export namespace ArrowFunction {
                     .filter((arg) => !!arg)
                 const returnDef = parts.slice(1).join("=>")
                 return {
-                    args: parameterDefs.map((arg) => Fragment.parse(arg, ctx)),
-                    returns: Fragment.parse(returnDef, ctx)
+                    args: parameterDefs.map((arg) =>
+                        Fragment.parser.parse(arg, ctx)
+                    ),
+                    returns: Fragment.parser.parse(returnDef, ctx)
                 }
             }
         },
@@ -105,7 +115,7 @@ export namespace ArrowFunction {
         }
     )
 
-    export const delegate = parse as any as Definition
+    export const delegate = parser as any as Definition
 }
 
 // type CheckParameterTuple<

@@ -36,13 +36,13 @@ export namespace Tuple {
 
     export const type = typeDefProxy as Definition
 
-    export const parse = createParser(
+    export const parser = createParser(
         {
             type,
-            parent: () => Obj.parse,
+            parent: () => Obj.parser,
             components: (def, ctx) =>
                 def.map((itemDef, index) =>
-                    Root.parse(itemDef, {
+                    Root.parser.parse(itemDef, {
                         ...ctx,
                         path: [...ctx.path, `${index}`],
                         shallowSeen: []
@@ -85,5 +85,5 @@ export namespace Tuple {
         }
     )
 
-    export const delegate = parse as any as Definition
+    export const delegate = parser as any as Definition
 }

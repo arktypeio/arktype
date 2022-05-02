@@ -61,9 +61,9 @@ export namespace Expression {
 
     export const type = typeDefProxy as Definition
 
-    export const parse = createParser({
+    export const parser = createParser({
         type,
-        parent: () => Fragment.parse,
+        parent: () => Fragment.parser,
         children: () => [
             ArrowFunction.delegate,
             Union.delegate,
@@ -73,5 +73,5 @@ export namespace Expression {
         ]
     })
 
-    export const delegate = parse as any as Definition
+    export const delegate = parser as any as Definition
 }

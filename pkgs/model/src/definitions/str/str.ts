@@ -58,10 +58,10 @@ export namespace Str {
 
     export const type = typeDefProxy as Definition
 
-    export const parse = createParser(
+    export const parser = createParser(
         {
             type,
-            parent: () => Root.parse,
+            parent: () => Root.parser,
             children: () => [Modification.delegate, Fragment.delegate]
         },
         {
@@ -69,5 +69,5 @@ export namespace Str {
         }
     )
 
-    export const delegate = parse as any as Definition
+    export const delegate = parser as any as Definition
 }

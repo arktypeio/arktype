@@ -19,10 +19,10 @@ export namespace Keyword {
 
     export const type = typeDefProxy as Definition
 
-    export const parse = createParser(
+    export const parser = createParser(
         {
             type,
-            parent: () => Reference.parse
+            parent: () => Reference.parser
         },
         {
             matches: (def) => def in handlers,
@@ -40,7 +40,7 @@ export namespace Keyword {
         }
     )
 
-    export const delegate = parse as any as Definition
+    export const delegate = parser as any as Definition
 
     const handlers = { ...extractableHandlers, ...unextractableHandlers }
 

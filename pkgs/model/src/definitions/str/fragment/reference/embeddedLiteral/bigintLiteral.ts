@@ -7,10 +7,10 @@ export namespace BigintLiteral {
     export type Definition<Value extends bigint = bigint> = `${Value}n`
 
     export const type = typeDefProxy as Definition
-    export const parse = createParser(
+    export const parser = createParser(
         {
             type,
-            parent: () => EmbeddedLiteral.parse
+            parent: () => EmbeddedLiteral.parser
         },
         {
             matches: (definition) =>
@@ -26,5 +26,5 @@ export namespace BigintLiteral {
         }
     )
 
-    export const delegate = parse as any as Definition
+    export const delegate = parser as any as Definition
 }

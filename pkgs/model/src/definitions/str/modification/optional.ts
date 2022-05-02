@@ -1,6 +1,5 @@
 import { KeyValuate, WithPropValue } from "@re-/tools"
 import { Modification } from "./modification.js"
-import { Fragment } from "../fragment/fragment.js"
 import {
     typeDefProxy,
     createParser,
@@ -43,16 +42,16 @@ export namespace Optional {
 
     export const type = typeDefProxy as Definition
 
-    export const parse = createParser(
+    export const parser = createParser(
         {
             type,
-            parent: () => Modification.parse,
+            parent: () => Modification.parser,
             components: (def, ctx) => {
                 if (ctx.modifiers.includes("?")) {
                     throw new Error(duplicateModifierError("?"))
                 }
                 return {
-                    optional: Str.parse(def.slice(0, -1), {
+                    optional: Str.parser.parse(def.slice(0, -1), {
                         ...ctx,
                         modifiers: [...ctx.modifiers, "?"]
                     })
@@ -72,5 +71,5 @@ export namespace Optional {
         }
     )
 
-    export const delegate = parse as any as Definition
+    export const delegate = parser as any as Definition
 }

@@ -136,7 +136,7 @@ export type ParserMetadata<DefType, Parent, Handles> = Evaluate<{
 }>
 
 export type Parser<DefType, Parent, Methods> = Evaluate<
-    ParserMetadata<DefType, Parent, Methods> & ParseFunction<DefType>
+    ParserMetadata<DefType, Parent, Methods> & { parse: ParseFunction<DefType> }
 >
 
 export type InheritableMethodName = keyof InheritableMethods<any, any>
@@ -285,7 +285,7 @@ export const createParser = <
             }
             throw new Error(unknownTypeError(def, ctx.path))
         }
-        return match(def, ctx)[methodName]
+        return match.parse(def, ctx)[methodName]
     }
     const getInheritableMethods = (
         def: DefType,
@@ -329,7 +329,8 @@ export const createParser = <
             ...getInheritableMethods(def, ctx, components)
         }
     }
-    return Object.assign(parse, {
+    return {
+        parse,
         type: input.type,
         inherits: getInherited,
         handles: transform(methods, ([name, def]) =>
@@ -346,5 +347,5 @@ export const createParser = <
                 ctx ?? defaultParseContext
             )()
         }
-    }) as any
+    } as any
 }

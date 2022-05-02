@@ -37,10 +37,10 @@ export namespace Obj {
 
     export const type = typeDefProxy as Definition
 
-    export const parse = createParser(
+    export const parser = createParser(
         {
             type,
-            parent: () => Root.parse,
+            parent: () => Root.parser,
             children: () => [Tuple.delegate, Map.delegate]
         },
         {
@@ -48,5 +48,5 @@ export namespace Obj {
         }
     )
 
-    export const delegate = parse as any as Definition
+    export const delegate = parser as any as Definition
 }

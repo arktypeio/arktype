@@ -35,7 +35,7 @@ export type ValidateSpaceResolutions<
           >
       }>
 
-export type ParseSpaceResolutions<
+export type ResolutionsToModels<
     Resolutions,
     Config,
     ConfigWithDefaults = Merge<DefaultParseOptions, Config>
@@ -172,7 +172,7 @@ export type Space<
 > = Evaluate<{
     resolutions: Resolutions
     config: Config
-    models: ParseSpaceResolutions<Resolutions, SpaceParseConfig>
+    models: ResolutionsToModels<Resolutions, SpaceParseConfig>
     types: Evaluate<
         Map.TypeOf<
             Map.Parse<Resolutions, Resolutions, DefaultParseTypeContext>,
@@ -213,5 +213,4 @@ export type CompileFunction<DeclaredTypeNames extends string[]> = <
 
 // Exported compile function is equivalent to compile from an empty declare call
 // and will not validate missing or extraneous definitions
-// @ts-ignore
-export const compile: CompileFunction<[]> = createCompileFunction([])
+export const compile = createCompileFunction([])

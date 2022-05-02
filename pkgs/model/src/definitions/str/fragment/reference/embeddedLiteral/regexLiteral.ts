@@ -29,10 +29,10 @@ export namespace RegexLiteral {
 
     export const valueFrom = (def: Definition) => def.slice(1, -1)
 
-    export const parse = createParser(
+    export const parser = createParser(
         {
             type,
-            parent: () => Reference.parse
+            parent: () => Reference.parser
         },
         {
             matches,
@@ -51,5 +51,5 @@ export namespace RegexLiteral {
         }
     )
 
-    export const delegate = parse as any as Definition
+    export const delegate = parser as any as Definition
 }

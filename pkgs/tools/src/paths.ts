@@ -28,7 +28,7 @@ export type DefaultPathOptions = typeof defaultPathOptions
 const withDefaultValueAtPathOptions =
     withDefaults<PathOptions>(defaultPathOptions)
 
-export const valueAtPath = <
+export type ValueAtPathFunction = <
     Obj,
     Path extends string,
     ProvidedOptions extends PathOptions = {},
@@ -41,7 +41,9 @@ export const valueAtPath = <
     obj: Obj,
     path: PathOf<Obj, Path, Options>,
     options?: ProvidedOptions
-): ValueAtPath<Obj, Path, Options> => {
+) => ValueAtPath<Obj, Path, Options>
+
+export const valueAtPath: ValueAtPathFunction = (obj, path, options) => {
     const { excludeArrayIndices, delimiter } =
         withDefaultValueAtPathOptions(options)
     const recurse = (value: any, segments: Segment[]): any => {

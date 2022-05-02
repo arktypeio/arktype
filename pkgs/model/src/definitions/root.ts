@@ -60,7 +60,7 @@ export namespace Root {
 
     export const type = typeDefProxy as Definition
 
-    export const parse = createParser(
+    export const parser = createParser(
         {
             // Somehow RegExp breaks this, but it's internal so not important
             // @ts-ignore

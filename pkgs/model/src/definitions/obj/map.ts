@@ -69,14 +69,14 @@ export namespace Map {
 
     export const type = typeDefProxy as Definition
 
-    export const parse = createParser(
+    export const parser = createParser(
         {
             type,
-            parent: () => Obj.parse,
+            parent: () => Obj.parser,
             components: (def, ctx) =>
                 transform(def, ([prop, propDef]) => [
                     prop,
-                    Root.parse(propDef, {
+                    Root.parser.parse(propDef, {
                         ...ctx,
                         path: [...ctx.path, prop],
                         shallowSeen: []
@@ -143,7 +143,7 @@ export namespace Map {
                 transform(components, ([propName, component]) => {
                     if (
                         typeof def[propName] === "string" &&
-                        Optional.parse.matches(def[propName], ctx)
+                        Optional.parser.matches(def[propName], ctx)
                     ) {
                         // Exclude prop from object's generated value entirely if it's optional
                         return null
@@ -153,5 +153,5 @@ export namespace Map {
         }
     )
 
-    export const delegate = parse as any as Definition
+    export const delegate = parser as any as Definition
 }

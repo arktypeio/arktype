@@ -188,10 +188,10 @@ export namespace Constraint {
 
     export const type = typeDefProxy as Definition
 
-    export const parse = createParser(
+    export const parser = createParser(
         {
             type,
-            parent: () => Expression.parse,
+            parent: () => Expression.parser,
             components: (
                 def,
                 ctx
@@ -215,7 +215,7 @@ export namespace Constraint {
                         comparatorInverses[parts[1] as ComparatorToken]
                     const secondComparator = parts[3] as ComparatorToken
                     return {
-                        bounded: Fragment.parse(parts[2], ctx) as any,
+                        bounded: Fragment.parser.parse(parts[2], ctx) as any,
                         [firstComparator]: parts[0],
                         [secondComparator]: parts[4]
                     }
@@ -232,7 +232,7 @@ export namespace Constraint {
                     }
                     const comparator = parts[1] as ComparatorToken
                     return {
-                        bounded: Fragment.parse(parts[0], ctx) as any,
+                        bounded: Fragment.parser.parse(parts[0], ctx) as any,
                         [comparator]: parts[2]
                     }
                 }
@@ -279,5 +279,5 @@ export namespace Constraint {
         }
     )
 
-    export const delegate = parse as any as Definition
+    export const delegate = parser as any as Definition
 }

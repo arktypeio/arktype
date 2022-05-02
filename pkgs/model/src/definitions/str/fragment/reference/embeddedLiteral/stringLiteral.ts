@@ -31,10 +31,10 @@ export namespace StringLiteral {
 
     export const valueFrom = (def: string) => def.slice(1, -1)
 
-    export const parse = createParser(
+    export const parser = createParser(
         {
             type,
-            parent: () => EmbeddedLiteral.parse
+            parent: () => EmbeddedLiteral.parser
         },
         {
             matches,
@@ -48,5 +48,5 @@ export namespace StringLiteral {
         }
     )
 
-    export const delegate = parse as any as string
+    export const delegate = parser as any as string
 }

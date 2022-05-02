@@ -79,7 +79,6 @@ export namespace Alias {
               Omit<Resolutions, "resolved"> & {
                   resolved: Resolutions[TypeName]
               },
-              // @ts-ignore
               Options & {
                   seen: { [K in TypeName]: true }
               }
@@ -87,10 +86,10 @@ export namespace Alias {
 
     export const type = typeDefProxy as string
 
-    export const parse = createParser(
+    export const parser = createParser(
         {
             type,
-            parent: () => Reference.parse,
+            parent: () => Reference.parser,
             components: (def, ctx) => {
                 /**
                  * Keep track of definitions we've seen since last resolving to an object or built-in.
@@ -107,7 +106,7 @@ export namespace Alias {
                 }
                 return {
                     resolve: () =>
-                        Root.parse(ctx.config.space!.resolutions[def], {
+                        Root.parser.parse(ctx.config.space!.resolutions[def], {
                             ...ctx,
                             seen: [...ctx.seen, def],
                             shallowSeen: [...ctx.shallowSeen, def],
@@ -150,5 +149,5 @@ export namespace Alias {
         }
     )
 
-    export const delegate = parse as any as string
+    export const delegate = parser as any as string
 }

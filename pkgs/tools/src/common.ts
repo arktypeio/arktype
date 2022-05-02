@@ -47,15 +47,13 @@ export type DeepEvaluate<T, Depth extends number = -1> = T extends NonRecursible
  * but I'm unsure how to fix this without breaking the types that rely on it.
  * */
 
-export type Evaluate<T> = T extends NonRecursible
-    ? T
-    : {
-          [K in keyof T]: T[K]
-      }
+export type Evaluate<T> = {
+    [K in keyof T]: T[K]
+} & unknown
+
+export type EvaluateFunction<F> = F extends Function ? F : never
 
 export type MapReturn<F, V> = F extends (value: V) => infer R ? R : any
-
-export const isIn = (list: any[], value: any) => list.includes(value)
 
 export type Class<T> = new (...args: any[]) => T
 

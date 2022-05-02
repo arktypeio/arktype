@@ -42,9 +42,9 @@ export namespace EmbeddedLiteral {
 
     export const type = typeDefProxy as string
 
-    export const parse = createParser({
+    export const parser = createParser({
         type,
-        parent: () => Reference.parse,
+        parent: () => Reference.parser,
         children: () => [
             StringLiteral.delegate,
             EmbeddedRegexLiteral.delegate,
@@ -53,5 +53,5 @@ export namespace EmbeddedLiteral {
         ]
     })
 
-    export const delegate = parse as any as Definition
+    export const delegate = parser as any as Definition
 }

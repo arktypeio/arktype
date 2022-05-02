@@ -40,10 +40,10 @@ export namespace Literal {
 
     export const typesOf = narrow(["number", "bigint", "boolean", "undefined"])
 
-    export const parse = createParser(
+    export const parser = createParser(
         {
             type,
-            parent: () => Root.parse
+            parent: () => Root.parser
         },
         {
             matches: (definition) =>
@@ -86,5 +86,5 @@ export namespace Literal {
         }
     )
 
-    export const delegate = parse as unknown as Definition
+    export const delegate = parser as unknown as Definition
 }

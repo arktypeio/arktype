@@ -14,7 +14,7 @@ export type KeywordHandler = {
 export type KeywordMap = Record<string, KeywordHandler>
 
 export const defineKeywords = <T extends KeywordMap>(handlers: Narrow<T>) =>
-    handlers as Evaluate<T>
+    handlers
 
 export const listKeywords = <Handlers extends KeywordMap>(handlers: Handlers) =>
     Object.keys(handlers) as ListPossibleTypes<keyof Handlers>

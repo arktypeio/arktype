@@ -33,22 +33,24 @@ export namespace List {
 
     export const type = typeDefProxy as Definition
 
-    export const parse = createParser(
+    export const parser = createParser(
         {
             type,
-            parent: () => Expression.parse,
+            parent: () => Expression.parser,
             components: (def, ctx) => ({
-                item: Fragment.parse(def.slice(0, -2), ctx)
+                item: Fragment.parser.parse(def.slice(0, -2), ctx)
             })
         },
         {
             matches: (def, ctx) => def.endsWith("[]"),
             validate: ({ def, components: { item }, ctx }, value, opts) => {
                 if (Array.isArray(value)) {
-                    return Tuple.parse(
-                        [...Array(value.length)].map(() => item.def),
-                        ctx
-                    ).validate(value, opts)
+                    return Tuple.parser
+                        .parse(
+                            [...Array(value.length)].map(() => item.def),
+                            ctx
+                        )
+                        .validate(value, opts)
                 }
                 return validationError({
                     def,
@@ -61,5 +63,5 @@ export namespace List {
         }
     )
 
-    export const delegate = parse as any as Definition
+    export const delegate = parser as any as Definition
 }

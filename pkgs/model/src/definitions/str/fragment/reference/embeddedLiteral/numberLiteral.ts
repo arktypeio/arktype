@@ -8,10 +8,10 @@ export namespace NumberLiteral {
 
     export const type = typeDefProxy as Definition
 
-    export const parse = createParser(
+    export const parser = createParser(
         {
             type,
-            parent: () => EmbeddedLiteral.parse
+            parent: () => EmbeddedLiteral.parser
         },
         {
             matches: (definition) => isNumeric(definition),
@@ -25,5 +25,5 @@ export namespace NumberLiteral {
         }
     )
 
-    export const delegate = parse as any as Definition
+    export const delegate = parser as any as Definition
 }

@@ -50,12 +50,14 @@ export namespace Intersection {
 
     export const type = typeDefProxy as Definition
 
-    export const parse = createParser(
+    export const parser = createParser(
         {
             type,
-            parent: () => Expression.parse,
+            parent: () => Expression.parser,
             components: (def: Definition, ctx: ParseContext) =>
-                def.split("&").map((fragment) => Fragment.parse(fragment, ctx))
+                def
+                    .split("&")
+                    .map((fragment) => Fragment.parser.parse(fragment, ctx))
         },
         {
             matches: (definition) => definition.includes("&"),
@@ -95,5 +97,5 @@ export namespace Intersection {
         }
     )
 
-    export const delegate = parse as any as Definition
+    export const delegate = parser as any as Definition
 }
