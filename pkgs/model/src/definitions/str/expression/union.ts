@@ -8,13 +8,11 @@ import {
     validationError,
     createParser,
     ParseContext,
-    TypeOfContext,
-    UnknownTypeError,
-    ParseTypeContext
+    UnknownTypeError
 } from "./internal.js"
 import { Fragment } from "../fragment.js"
 import { Expression } from "./expression.js"
-import { typeOf } from "../../../../utils.js"
+import { typeOf } from "../../../utils.js"
 
 type PreferredDefaults = ({ value: any } | { typeOf: TypeCategory })[]
 
@@ -51,7 +49,7 @@ export namespace Union {
         : UnknownTypeError<Def>
 
     export type Node = {
-        union: Fragment.Node[]
+        union: [any, any]
     }
 
     export type TypeOf<N extends Node, Resolutions, Options> = Fragment.TypeOf<

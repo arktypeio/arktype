@@ -1,5 +1,5 @@
 import { asNumber, isNumeric, NumericString } from "@re-/tools"
-import { typeOf } from "../../../../../utils.js"
+import { typeOf } from "../../../../utils.js"
 import { typeDefProxy, validationError, createParser } from "../internal.js"
 import { EmbeddedLiteral } from "./embeddedLiteral.js"
 

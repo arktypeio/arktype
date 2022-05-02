@@ -1,3 +1,5 @@
-export * from "./fragment/index.js"
-export * from "./modification/index.js"
+export * from "./fragment.js"
+export * from "./optional.js"
+export * from "./expression/index.js"
+export * from "./reference/index.js"
 export * from "./str.js"

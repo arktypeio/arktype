@@ -1,9 +1,8 @@
 import {
-    TypeOfContext,
     createParser,
     typeDefProxy,
     UnknownTypeError,
-    ParseTypeContext
+    Precedence
 } from "./internal.js"
 import { ArrowFunction } from "./arrowFunction.js"
 import { List } from "./list.js"
@@ -43,11 +42,7 @@ export namespace Expression {
         | Constraint.Node
         | List.Node
 
-    export type TypeOf<
-        N extends Node,
-        Resolutions,
-        Options
-    > = N extends ArrowFunction.Node
+    export type TypeOf<N, Resolutions, Options> = N extends ArrowFunction.Node
         ? ArrowFunction.TypeOf<N, Resolutions, Options>
         : N extends Union.Node
         ? Union.TypeOf<N, Resolutions, Options>
@@ -58,6 +53,15 @@ export namespace Expression {
         : N extends List.Node
         ? List.TypeOf<N, Resolutions, Options>
         : unknown
+
+    //     Precedence<
+    //     [
+    //         ArrowFunction.TypeOf<N, Resolutions, Options>,
+    //         Union.TypeOf<N, Resolutions, Options>,
+    //         Intersection.TypeOf<N, Resolutions, Options>,
+    //         List.TypeOf<N, Resolutions, Options>
+    //     ]
+    // >
 
     export const type = typeDefProxy as Definition
 

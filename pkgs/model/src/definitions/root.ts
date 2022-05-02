@@ -25,15 +25,11 @@ export namespace Root {
         ? Obj.Parse<Def, Resolutions, Context>
         : DefinitionTypeError
 
-    export type Node = Literal.Node | Str.Node | Obj.Node
-
-    export type TypeOf<N, Resolutions, Options> = N extends Literal.Node
-        ? Literal.TypeOf<N>
-        : N extends Str.Node
-        ? Str.TypeOf<N, Resolutions, Options>
-        : N extends Obj.Node
+    export type TypeOf<N, Resolutions, Options> = N extends Obj.Node
         ? Obj.TypeOf<N, Resolutions, Options>
-        : unknown
+        : N extends Literal.Node
+        ? Literal.TypeOf<N>
+        : Str.TypeOf<N, Resolutions, Options>
 
     export type Validate<Def, Space> = Def extends BadDefinitionType
         ? DefinitionTypeError

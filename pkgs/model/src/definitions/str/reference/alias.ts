@@ -5,11 +5,11 @@ import {
     shallowCycleError,
     generateRequiredCycleError,
     createParser,
-    DefaultParseTypeContext
+    DefaultParseTypeContext,
+    errorsFromCustomValidator
 } from "./internal.js"
-import { Root } from "../../../root.js"
+import { Root } from "../../root.js"
 import { Reference } from "./index.js"
-import { errorsFromCustomValidator } from "../internal.js"
 
 export namespace Alias {
     export type Definition<Resolutions> = keyof Resolutions & string

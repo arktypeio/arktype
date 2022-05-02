@@ -6,17 +6,13 @@ import {
     splittableValidationError,
     validationError,
     createParser,
-    ParseContext
+    ParseContext,
+    ungeneratableError,
+    UnknownTypeError
 } from "./internal.js"
 import { Fragment } from "../fragment.js"
 import { Expression } from "./expression.js"
-import {
-    TypeOfContext,
-    ParseTypeContext,
-    ungeneratableError,
-    UnknownTypeError
-} from "../internal.js"
-import { typeOf } from "../../../../utils.js"
+import { typeOf } from "../../../utils.js"
 
 export namespace Intersection {
     export type Definition<
@@ -38,7 +34,7 @@ export namespace Intersection {
         : UnknownTypeError<Def>
 
     export type Node = {
-        intersection: Fragment.Node[]
+        intersection: [any, any]
     }
 
     export type TypeOf<N extends Node, Resolutions, Options> = Fragment.TypeOf<

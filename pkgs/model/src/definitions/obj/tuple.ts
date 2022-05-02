@@ -16,7 +16,7 @@ export namespace Tuple {
     export type Definition = any[]
 
     export type Node = {
-        tuple: Root.Node[]
+        tuple: Definition
     }
 
     export type Parse<Def extends Definition, Resolutions, Context> = {
@@ -29,7 +29,7 @@ export namespace Tuple {
         N extends Node,
         Resolutions,
         Options,
-        T extends Root.Node[] = N["tuple"]
+        T = N["tuple"]
     > = Evaluate<{
         [Index in keyof T]: Root.TypeOf<T[Index], Resolutions, Options>
     }>

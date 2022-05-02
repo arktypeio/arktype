@@ -1,16 +1,14 @@
+import { Evaluate } from "@re-/tools"
 import {
     typeDefProxy,
     validationError,
     createParser,
-    UnknownTypeError,
-    TypeOfContext,
-    ParseTypeContext
+    UnknownTypeError
 } from "./internal.js"
 import { Fragment } from "../fragment.js"
 import { Expression } from "./expression.js"
-import { Tuple } from "../../../obj/index.js"
-import { Evaluate } from "@re-/tools"
-import { typeOf } from "../../../../utils.js"
+import { Tuple } from "../../obj/index.js"
+import { typeOf } from "../../../utils.js"
 
 export namespace List {
     export type Definition<Of extends string = string> = `${Of}[]`
@@ -24,7 +22,7 @@ export namespace List {
         : UnknownTypeError<Def>
 
     export type Node = {
-        list: Fragment.Node
+        list: any
     }
 
     export type TypeOf<N extends Node, Resolutions, Options> = Evaluate<

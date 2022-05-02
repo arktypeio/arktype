@@ -9,16 +9,11 @@ import {
     toString
 } from "@re-/tools"
 import { numberKeywords, stringKeywords } from "../reference/index.js"
-import {
-    createParser,
-    ParseTypeContext,
-    typeDefProxy,
-    TypeOfContext,
-    ConstraintError
-} from "./internal.js"
-import { Expression } from "../index.js"
+import { createParser, typeDefProxy, ConstraintError } from "./internal.js"
 import { Fragment } from "../fragment.js"
+import { Expression } from "./expression.js"
 import { NumberLiteral } from "../reference/embeddedLiteral/numberLiteral.js"
+import { StringLiteral } from "../reference/embeddedLiteral/stringLiteral.js"
 import {
     constraintErrorTemplate,
     invalidBoundError,
@@ -28,9 +23,8 @@ import {
     UnboundableError,
     ungeneratableError,
     validationError
-} from "../internal.js"
-import { typeOf } from "../../../../utils.js"
-import { StringLiteral } from "../reference/embeddedLiteral/stringLiteral.js"
+} from "./internal.js"
+import { typeOf } from "../../../utils.js"
 
 export const getComparables = () => [...numberKeywords, ...stringKeywords]
 
@@ -175,7 +169,7 @@ export namespace Constraint {
     }
 
     export type Node = {
-        bounded: Fragment.Node
+        bounded: any
     } & NodeBounds
 
     export type TypeOf<N extends Node, Resolutions, Options> = Fragment.TypeOf<

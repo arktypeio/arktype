@@ -1,5 +1,5 @@
-import { create } from "../../../../../model.js"
-import { typeOf } from "../../../../../utils.js"
+import { create } from "../../../../model.js"
+import { typeOf } from "../../../../utils.js"
 import { typeDefProxy, validationError, createParser } from "../internal.js"
 import { FirstEnclosed } from "./internal.js"
 import { EmbeddedLiteral } from "./embeddedLiteral.js"

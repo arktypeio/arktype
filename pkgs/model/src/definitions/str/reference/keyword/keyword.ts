@@ -8,7 +8,7 @@ import {
 } from "./internal.js"
 import { extractableHandlers } from "./extractable.js"
 import { unextractableHandlers } from "./unextractable.js"
-import { typeOf } from "../../../../../utils.js"
+import { typeOf } from "../../../../utils.js"
 
 export namespace Keyword {
     export type Definition<

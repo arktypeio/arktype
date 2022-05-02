@@ -5,9 +5,9 @@ import {
     ValidationErrorMessage,
     DefaultParseTypeContext
 } from "./internal.js"
-import { Fragment } from "./fragment/fragment.js"
-import { Modification } from "./modification/modification.js"
+import { Fragment } from "./fragment.js"
 import { KeyValuate, LeafOf, ListPossibleTypes } from "@re-/tools"
+import { Optional } from "./optional.js"
 
 export namespace Str {
     export type Definition = string
@@ -16,26 +16,18 @@ export namespace Str {
         Def extends string,
         Resolutions,
         Context
-    > = Def extends Modification.Definition
-        ? Modification.Parse<Def, Resolutions, Context>
+    > = Def extends Optional.Definition
+        ? Optional.Parse<Def, Resolutions, Context>
         : Fragment.Parse<Def, Resolutions, Context>
 
-    export type Node = Modification.Node | Fragment.Node
-
-    export type TypeOf<
-        N extends Node,
-        Resolutions,
-        Options
-    > = N extends Modification.Node
-        ? Modification.TypeOf<N, Resolutions, Options>
-        : N extends Fragment.Node
-        ? Fragment.TypeOf<N, Resolutions, Options>
-        : unknown
+    export type TypeOf<N, Resolutions, Options> = N extends Optional.Node
+        ? Optional.TypeOf<N, Resolutions, Options>
+        : Fragment.TypeOf<N, Resolutions, Options>
 
     export type Validate<
         Def extends Definition,
         Resolutions,
-        Errors extends string[] = ReferencesOf<
+        Errors = ReferencesOf<
             Def,
             Resolutions,
             { asTuple: true; asList: false; filter: ValidationErrorMessage }
@@ -62,7 +54,7 @@ export namespace Str {
         {
             type,
             parent: () => Root.parser,
-            children: () => [Modification.delegate, Fragment.delegate]
+            children: () => [Optional.delegate, Fragment.delegate]
         },
         {
             matches: (def) => typeof def === "string"

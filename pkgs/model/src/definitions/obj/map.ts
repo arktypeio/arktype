@@ -24,7 +24,7 @@ export namespace Map {
     export type Definition = Record<string, any>
 
     export type Node = {
-        map: Record<string, Root.Node>
+        map: Definition
     }
 
     export type Parse<Def, Resolutions, Context> = {

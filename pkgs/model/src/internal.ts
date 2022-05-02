@@ -6,7 +6,7 @@ import {
     CustomValidator
 } from "./model.js"
 import { Literal, ExtractableKeyword, Str } from "./definitions/index.js"
-import { StringLiteral } from "./definitions/str/fragment/reference/embeddedLiteral/stringLiteral.js"
+import { StringLiteral } from "./definitions/str/reference/embeddedLiteral/stringLiteral.js"
 import { validationError, ValidationErrors } from "./errors.js"
 
 export * from "./errors.js"
@@ -60,3 +60,13 @@ export const errorsFromCustomValidator = (
     }
     return {}
 }
+
+export type Precedence<T extends any[], Skip = unknown> = T extends Iteration<
+    any,
+    infer Current,
+    infer Remaining
+>
+    ? Current extends Skip
+        ? Precedence<Remaining, Skip>
+        : Current
+    : [T]

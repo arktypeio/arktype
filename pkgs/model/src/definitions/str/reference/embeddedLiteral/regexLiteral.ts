@@ -1,4 +1,4 @@
-import { typeOf } from "../../../../../utils.js"
+import { typeOf } from "../../../../utils.js"
 import {
     typeDefProxy,
     validationError,

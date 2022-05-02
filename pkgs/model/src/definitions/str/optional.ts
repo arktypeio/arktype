@@ -1,13 +1,13 @@
 import { KeyValuate, WithPropValue } from "@re-/tools"
-import { Modification } from "./modification.js"
 import {
     typeDefProxy,
     createParser,
     duplicateModifierError,
-    UnknownTypeError
+    UnknownTypeError,
+    DuplicateModifierError
 } from "./internal.js"
-import { Str } from "../str.js"
-import { DuplicateModifierError } from "../internal.js"
+import { Str } from "./str.js"
+import { Fragment } from "./fragment.js"
 
 export namespace Optional {
     export type Definition<Of extends string = string> = `${Of}?`
@@ -33,10 +33,10 @@ export namespace Optional {
         : UnknownTypeError<Def>
 
     export type Node = {
-        optional: Str.Node
+        optional: any
     }
 
-    export type TypeOf<N extends Node, Resolutions, Options> = N extends Node
+    export type TypeOf<N, Resolutions, Options> = N extends Node
         ? Str.TypeOf<N["optional"], Resolutions, Options> | undefined
         : unknown
 
@@ -45,7 +45,7 @@ export namespace Optional {
     export const parser = createParser(
         {
             type,
-            parent: () => Modification.parser,
+            parent: () => Fragment.parser,
             components: (def, ctx) => {
                 if (ctx.modifiers.includes("?")) {
                     throw new Error(duplicateModifierError("?"))

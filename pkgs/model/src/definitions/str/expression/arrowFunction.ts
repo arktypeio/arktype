@@ -9,12 +9,12 @@ import {
     typeDefProxy,
     validationError,
     createParser,
-    UnknownTypeError
+    UnknownTypeError,
+    ungeneratableError
 } from "./internal.js"
 import { Fragment } from "../fragment.js"
 import { Expression } from "./expression.js"
-import { ungeneratableError } from "../internal.js"
-import { typeOf } from "../../../../utils.js"
+import { typeOf } from "../../../utils.js"
 
 export namespace ArrowFunction {
     export type Definition<
@@ -46,8 +46,8 @@ export namespace ArrowFunction {
         : UnknownTypeError<Def>
 
     export type Node = {
-        args: Fragment.Node[]
-        returns: Fragment.Node
+        args: any[]
+        returns: any
     }
 
     export type TypeOf<
@@ -62,11 +62,7 @@ export namespace ArrowFunction {
         ) => Fragment.TypeOf<N["returns"], Resolutions, Options>
     >
 
-    type TypeOfArgs<
-        Args extends Fragment.Node[],
-        Resolutions,
-        Options
-    > = Evaluate<{
+    type TypeOfArgs<Args, Resolutions, Options> = Evaluate<{
         [I in keyof Args]: Fragment.TypeOf<Args[I], Resolutions, Options>
     }>
 

@@ -1,15 +1,17 @@
 import { GetAs } from "@re-/tools"
 import { Reference } from "./reference/index.js"
 import { Expression } from "./expression/index.js"
-import { Str } from "../str.js"
-import { createParser, typeDefProxy, UnknownTypeError } from "./internal.js"
-import { Modification } from "../modification/modification.js"
+import { Str } from "./str.js"
 import {
     invalidModifierError,
     InvalidModifierError,
     ModifierToken,
-    unknownTypeError
-} from "../internal.js"
+    unknownTypeError,
+    createParser,
+    typeDefProxy,
+    UnknownTypeError
+} from "./internal.js"
+import { Optional } from "./optional.js"
 
 export namespace Fragment {
     export type Definition = string
@@ -34,7 +36,7 @@ export namespace Fragment {
               ]
           >
         : // If we've made it to this point, Modifications should have already been handled
-        Def extends Modification.Definition
+        Def extends Optional.Definition
         ? InvalidModifierError
         : UnknownTypeError<Def>
 
@@ -43,8 +45,6 @@ export namespace Fragment {
             ? [First, ...Second]
             : Args
         : Args
-
-    export type Node = Expression.Node | Reference.Node
 
     export type TypeOf<N, Resolutions, Options> = N extends Expression.Node
         ? Expression.TypeOf<N, Resolutions, Options>
@@ -60,7 +60,7 @@ export namespace Fragment {
             parent: () => Str.parser,
             children: () => [Reference.delegate, Expression.delegate],
             fallback: (def, { path }) => {
-                if (Modification.parser.matches(def as any)) {
+                if (Optional.parser.matches(def as any)) {
                     throw new Error(
                         invalidModifierError(
                             def[def.length - 1] as ModifierToken
