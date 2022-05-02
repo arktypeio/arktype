@@ -1,10 +1,24 @@
 import { asNumber, isNumeric, NumericString } from "@re-/tools"
 import { typeOf } from "../../../../utils.js"
-import { typeDefProxy, validationError, createParser } from "../internal.js"
+import {
+    typeDefProxy,
+    validationError,
+    createParser,
+    Defer,
+    ShallowNode
+} from "./internal.js"
 import { EmbeddedLiteral } from "./embeddedLiteral.js"
 
-export namespace NumberLiteral {
+export namespace EmbeddedNumberLiteral {
     export type Definition<Value extends number = number> = NumericString<Value>
+
+    export type Kind = "embeddedNumberLiteral"
+
+    export type Parse<Def extends string> = Def extends NumericString<
+        infer Value
+    >
+        ? ShallowNode<Kind, Value>
+        : Defer
 
     export const type = typeDefProxy as Definition
 

@@ -1,23 +1,27 @@
 import { KeyValuate, narrow } from "@re-/tools"
-import { typeDefProxy, createParser, validationError } from "./internal.js"
+import {
+    typeDefProxy,
+    createParser,
+    validationError,
+    Precedence,
+    Defer
+} from "./internal.js"
 import { Root } from "../root.js"
-import { ReferencesTypeConfig } from "../internal.js"
 import { typeOf } from "../../utils.js"
 
 export namespace Literal {
-    export type Definition =
-        | number
-        | bigint
-        | boolean
-        | undefined
-        | null
-        | RegExp
+    export type Definition = RegExp | PrimitiveLiteral
 
-    export type Node = Exclude<Definition, RegExp> | { regex: string }
+    export type PrimitiveLiteral = number | bigint | boolean | undefined | null
 
-    export type Parse<Def extends Definition> = Def extends RegExp
-        ? { regex: string }
-        : Def
+    export type Node = PrimitiveLiteral | { regex: string }
+
+    export type Parse<Def> = Precedence<
+        [
+            Def extends RegExp ? { regex: string } : Defer,
+            Def extends PrimitiveLiteral ? Def : Defer
+        ]
+    >
 
     export type TypeOf<N extends Node> = N extends { regex: string }
         ? string

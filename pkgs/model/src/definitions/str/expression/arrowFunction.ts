@@ -9,12 +9,14 @@ import {
     typeDefProxy,
     validationError,
     createParser,
-    UnknownTypeError,
-    ungeneratableError
+    ungeneratableError,
+    Defer,
+    Root
 } from "./internal.js"
 import { Fragment } from "../fragment.js"
 import { Expression } from "./expression.js"
 import { typeOf } from "../../../utils.js"
+import { DeepNode } from "../internal.js"
 
 export namespace ArrowFunction {
     export type Definition<
@@ -22,48 +24,55 @@ export namespace ArrowFunction {
         Return extends string = string
     > = `(${Args})=>${Return}`
 
-    export type Parse<
-        Def extends Definition,
-        Resolutions,
-        Context
-    > = Def extends Definition<infer Args, infer Return>
-        ? {
-              args: Args extends ""
-                  ? []
-                  : ToList<
-                        Fragment.Parse<
-                            Args,
-                            Resolutions,
-                            WithPropValue<
-                                Context,
-                                "delimiter",
-                                Get<Context, "delimiter"> | ","
+    export type Parse<Def, Resolutions, Context> = Def extends Definition<
+        infer Args,
+        infer Return
+    >
+        ? DeepNode<
+              Kind,
+              {
+                  args: Args extends ""
+                      ? []
+                      : ToList<
+                            Fragment.Parse<
+                                Args,
+                                Resolutions,
+                                WithPropValue<
+                                    Context,
+                                    "delimiter",
+                                    Get<Context, "delimiter"> | ","
+                                >
                             >
                         >
-                    >
-              returns: Fragment.Parse<Return, Resolutions, Context>
-          }
-        : UnknownTypeError<Def>
+                  returns: Fragment.Parse<Return, Resolutions, Context>
+              }
+          >
+        : Defer
 
-    export type Node = {
-        args: any[]
-        returns: any
-    }
+    export type Kind = "arrowFunction"
+
+    export type Node = DeepNode<
+        Kind,
+        {
+            args: any[]
+            returns: any
+        }
+    >
 
     export type TypeOf<
         N extends Node,
         Resolutions,
         Options,
-        Args = N["args"]
+        Args = N["children"]["args"]
     > = EvaluateFunction<
         (
             // @ts-ignore
             ...args: TypeOfArgs<Args, Resolutions, Options>
-        ) => Fragment.TypeOf<N["returns"], Resolutions, Options>
+        ) => Root.TypeOf<N["children"]["returns"], Resolutions, Options>
     >
 
     type TypeOfArgs<Args, Resolutions, Options> = Evaluate<{
-        [I in keyof Args]: Fragment.TypeOf<Args[I], Resolutions, Options>
+        [I in keyof Args]: Root.TypeOf<Args[I], Resolutions, Options>
     }>
 
     export const type = typeDefProxy as Definition
@@ -113,15 +122,3 @@ export namespace ArrowFunction {
 
     export const delegate = parser as any as Definition
 }
-
-// type CheckParameterTuple<
-//     Def extends string,
-//     Root extends string,
-//     Space
-// > = Def extends "" ? "" : CheckSplittable<",", Def, Root, Space>
-
-// type ParseParameterTuple<
-//     Def extends string,
-//     Resolutions,
-//     Options extends ParseConfig
-// > = Def extends "" ? [] : ParseSplittable<",", Def, Resolutions, Options>

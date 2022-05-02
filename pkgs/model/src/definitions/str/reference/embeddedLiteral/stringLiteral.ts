@@ -1,7 +1,12 @@
-import { create } from "../../../../model.js"
 import { typeOf } from "../../../../utils.js"
-import { typeDefProxy, validationError, createParser } from "../internal.js"
-import { FirstEnclosed } from "./internal.js"
+import {
+    typeDefProxy,
+    validationError,
+    createParser,
+    Defer,
+    FirstEnclosed,
+    ShallowNode
+} from "./internal.js"
 import { EmbeddedLiteral } from "./embeddedLiteral.js"
 
 export namespace StringLiteral {
@@ -13,13 +18,22 @@ export namespace StringLiteral {
         | SingleQuoted<Text>
         | DoubleQuoted<Text>
 
-    export type Matches<Def extends string> = Def extends SingleQuoted<
+    export type Kind = "stringLiteral"
+
+    export type Parse<
+        Def extends string,
+        ExtractedValue = ValueFrom<Def>
+    > = ExtractedValue extends string
+        ? ShallowNode<Kind, ExtractedValue>
+        : Defer
+
+    export type ValueFrom<Def extends string> = Def extends SingleQuoted<
         FirstEnclosed<Def, `'`>
     >
-        ? true
+        ? FirstEnclosed<Def, `'`>
         : Def extends DoubleQuoted<FirstEnclosed<Def, `"`>>
-        ? true
-        : false
+        ? FirstEnclosed<Def, `"`>
+        : null
 
     export const type = typeDefProxy as string
 

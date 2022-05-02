@@ -3,7 +3,9 @@ import {
     typeDefProxy,
     validationError,
     createParser,
-    UnknownTypeError
+    Defer,
+    DeepNode,
+    Root
 } from "./internal.js"
 import { Fragment } from "../fragment.js"
 import { Expression } from "./expression.js"
@@ -13,20 +15,18 @@ import { typeOf } from "../../../utils.js"
 export namespace List {
     export type Definition<Of extends string = string> = `${Of}[]`
 
-    export type Parse<
-        Def extends Definition,
-        Resolutions,
-        Context
-    > = Def extends Definition<infer Of>
-        ? { list: Fragment.Parse<Of, Resolutions, Context> }
-        : UnknownTypeError<Def>
+    export type Kind = "list"
 
-    export type Node = {
-        list: any
-    }
+    export type Node = DeepNode<Kind>
+
+    export type Parse<Def, Resolutions, Context> = Def extends Definition<
+        infer Child
+    >
+        ? DeepNode<Kind, Fragment.Parse<Child, Resolutions, Context>>
+        : Defer
 
     export type TypeOf<N extends Node, Resolutions, Options> = Evaluate<
-        Fragment.TypeOf<N["list"], Resolutions, Options>[]
+        Root.TypeOf<N["children"], Resolutions, Options>[]
     >
 
     export const type = typeDefProxy as Definition

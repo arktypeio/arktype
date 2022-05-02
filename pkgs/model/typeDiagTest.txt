@@ -1,0 +1,311 @@
+src/__tests__/customValidators.test.ts(40,48): error TS2322: Type 'string' is not assignable to type 'NarrowRecurse<{ errors: [any]; }>'.
+src/__tests__/customValidators.test.ts(58,42): error TS2322: Type 'string' is not assignable to type 'NarrowRecurse<{ errors: [any]; }>'.
+src/__tests__/customValidators.test.ts(77,27): error TS2322: Type 'string' is not assignable to type '{ errors: [any]; }'.
+src/__tests__/declaration.assert.ts(17,25): error TS2322: Type 'string' is not assignable to type '{ errors: [any]; }'.
+src/__tests__/demo.assert.ts(46,17): error TS2322: Type 'string' is not assignable to type 'NarrowRecurse<{ errors: [any]; }>'.
+src/__tests__/demo.assert.ts(47,17): error TS2322: Type 'string' is not assignable to type 'NarrowRecurse<{ errors: [any]; }>'.
+src/__tests__/demo.assert.ts(51,17): error TS2322: Type 'string' is not assignable to type 'NarrowRecurse<{ errors: [any]; }>'.
+src/__tests__/inheritableConfigs.assert.ts(41,22): error TS2345: Argument of type 'string' is not assignable to parameter of type '{ errors: [any]; }'.
+src/__tests__/inheritableConfigs.assert.ts(55,22): error TS2345: Argument of type 'string' is not assignable to parameter of type '{ errors: [any]; }'.
+src/__tests__/inheritableConfigs.assert.ts(65,27): error TS2322: Type 'string' is not assignable to type 'NarrowRecurse<{ errors: [any]; }>'.
+src/__tests__/inheritableConfigs.assert.ts(73,41): error TS2345: Argument of type 'string' is not assignable to parameter of type '{ errors: [any]; }'.
+src/__tests__/inheritableConfigs.assert.ts(83,35): error TS2345: Argument of type 'string' is not assignable to parameter of type '{ errors: [any]; }'.
+src/__tests__/inheritableConfigs.assert.ts(89,31): error TS2322: Type 'string' is not assignable to type 'NarrowRecurse<{ errors: [any]; }>'.
+src/__tests__/inheritableConfigs.assert.ts(101,31): error TS2345: Argument of type 'string' is not assignable to parameter of type '{ errors: [any]; }'.
+src/__tests__/inheritableConfigs.assert.ts(110,28): error TS2345: Argument of type 'string' is not assignable to parameter of type '{ errors: [any]; }'.
+src/__tests__/inheritableConfigs.assert.ts(123,39): error TS2345: Argument of type '{ recursionIs: { recursionIs: "recursionIs"; }; }' is not assignable to parameter of type 'NarrowRecurse<{ recursionIs: { recursionIs: { errors: [any]; }; }; }>'.
+  The types of 'recursionIs.recursionIs' are incompatible between these types.
+    Type 'string' is not assignable to type 'NarrowRecurse<{ errors: [any]; }>'.
+src/__tests__/inheritableConfigs.assert.ts(131,39): error TS2345: Argument of type '{ recursionIs: { recursionIs: "recursionIs"; }; }' is not assignable to parameter of type 'NarrowRecurse<{ recursionIs: { recursionIs: { errors: [any]; }; }; }>'.
+src/__tests__/inheritableConfigs.assert.ts(136,34): error TS2345: Argument of type 'string' is not assignable to parameter of type '{ errors: [any]; }'.
+src/__tests__/inheritableConfigs.assert.ts(142,45): error TS2345: Argument of type 'string' is not assignable to parameter of type '{ errors: [any]; }'.
+src/__tests__/inheritableConfigs.assert.ts(144,37): error TS2345: Argument of type 'string' is not assignable to parameter of type '{ errors: [any]; }'.
+src/__tests__/space.assert.ts(25,44): error TS2322: Type 'string' is not assignable to type 'NarrowRecurse<{ errors: [any]; }>'.
+src/__tests__/space.assert.ts(35,28): error TS2322: Type 'string' is not assignable to type 'NarrowRecurse<{ errors: [any]; }>'.
+src/__tests__/space.assert.ts(39,38): error TS2322: Type 'string' is not assignable to type 'NarrowRecurse<{ errors: [any]; }>'.
+src/__tests__/space.assert.ts(39,53): error TS2322: Type 'string' is not assignable to type 'NarrowRecurse<{ errors: [any]; }>'.
+src/__tests__/space.assert.ts(56,9): error TS2578: Unused '@ts-expect-error' directive.
+src/__tests__/space.assert.ts(62,45): error TS2322: Type 'string' is not assignable to type 'NarrowRecurse<{ errors: [any]; }>'.
+src/__tests__/space.assert.ts(69,38): error TS2322: Type 'string' is not assignable to type 'NarrowRecurse<{ errors: [any]; }>'.
+src/__tests__/space.assert.ts(69,53): error TS2322: Type 'string' is not assignable to type 'NarrowRecurse<{ errors: [any]; }>'.
+src/__tests__/space.assert.ts(70,29): error TS2345: Argument of type 'string' is not assignable to parameter of type '{ errors: [any]; }'.
+src/__tests__/space.assert.ts(79,40): error TS2322: Type 'string' is not assignable to type 'NarrowRecurse<{ errors: [any]; }>'.
+src/__tests__/space.assert.ts(79,56): error TS2322: Type 'string' is not assignable to type 'NarrowRecurse<{ errors: [any]; }>'.
+src/__tests__/space.assert.ts(80,34): error TS2345: Argument of type 'string' is not assignable to parameter of type '{ errors: [any]; }'.
+src/__tests__/space.assert.ts(100,31): error TS2345: Argument of type 'string' is not assignable to parameter of type '{ errors: [any]; }'.
+src/__tests__/space.assert.ts(109,50): error TS2322: Type 'string' is not assignable to type 'NarrowRecurse<{ errors: [any]; }>'.
+src/__tests__/space.assert.ts(123,40): error TS2322: Type 'string' is not assignable to type 'NarrowRecurse<{ errors: [any]; }>'.
+src/__tests__/space.assert.ts(184,22): error TS2322: Type 'string' is not assignable to type 'NarrowRecurse<{ errors: [any]; }>'.
+src/__tests__/space.assert.ts(186,31): error TS2322: Type 'string' is not assignable to type '{ errors: [any]; }'.
+src/__tests__/space.assert.ts(186,49): error TS2322: Type 'string' is not assignable to type '{ errors: [any]; }'.
+src/__tests__/space.assert.ts(209,26): error TS2345: Argument of type 'string' is not assignable to parameter of type '{ errors: [any]; }'.
+src/__tests__/stress.assert.ts(518,17): error TS2322: Type 'string' is not assignable to type 'NarrowRecurse<{ errors: [any]; }>'.
+src/__tests__/stress.assert.ts(519,17): error TS2322: Type 'string' is not assignable to type 'NarrowRecurse<{ errors: [any]; }>'.
+src/__tests__/stress.assert.ts(523,17): error TS2322: Type 'string' is not assignable to type 'NarrowRecurse<{ errors: [any]; }>'.
+src/__tests__/stress.assert.ts(524,17): error TS2322: Type 'string' is not assignable to type 'NarrowRecurse<{ errors: [any]; }>'.
+src/__tests__/stress.assert.ts(528,17): error TS2322: Type 'string' is not assignable to type 'NarrowRecurse<{ errors: [any]; }>'.
+src/__tests__/stress.assert.ts(529,17): error TS2322: Type 'string' is not assignable to type 'NarrowRecurse<{ errors: [any]; }>'.
+src/__tests__/stress.assert.ts(533,17): error TS2322: Type 'string' is not assignable to type 'NarrowRecurse<{ errors: [any]; }>'.
+src/__tests__/stress.assert.ts(534,17): error TS2322: Type 'string' is not assignable to type 'NarrowRecurse<{ errors: [any]; }>'.
+src/__tests__/stress.assert.ts(538,17): error TS2322: Type 'string' is not assignable to type 'NarrowRecurse<{ errors: [any]; }>'.
+src/__tests__/stress.assert.ts(539,17): error TS2322: Type 'string' is not assignable to type 'NarrowRecurse<{ errors: [any]; }>'.
+src/__tests__/stress.assert.ts(543,17): error TS2322: Type 'string' is not assignable to type 'NarrowRecurse<{ errors: [any]; }>'.
+src/__tests__/stress.assert.ts(544,17): error TS2322: Type 'string' is not assignable to type 'NarrowRecurse<{ errors: [any]; }>'.
+src/__tests__/stress.assert.ts(548,17): error TS2322: Type 'string' is not assignable to type 'NarrowRecurse<{ errors: [any]; }>'.
+src/__tests__/stress.assert.ts(549,17): error TS2322: Type 'string' is not assignable to type 'NarrowRecurse<{ errors: [any]; }>'.
+src/__tests__/stress.assert.ts(553,17): error TS2322: Type 'string' is not assignable to type 'NarrowRecurse<{ errors: [any]; }>'.
+src/__tests__/stress.assert.ts(554,17): error TS2322: Type 'string' is not assignable to type 'NarrowRecurse<{ errors: [any]; }>'.
+src/__tests__/stress.assert.ts(558,17): error TS2322: Type 'string' is not assignable to type 'NarrowRecurse<{ errors: [any]; }>'.
+src/__tests__/stress.assert.ts(559,17): error TS2322: Type 'string' is not assignable to type 'NarrowRecurse<{ errors: [any]; }>'.
+src/__tests__/stress.assert.ts(563,17): error TS2322: Type 'string' is not assignable to type 'NarrowRecurse<{ errors: [any]; }>'.
+src/__tests__/stress.assert.ts(564,17): error TS2322: Type 'string' is not assignable to type 'NarrowRecurse<{ errors: [any]; }>'.
+src/__tests__/stress.assert.ts(568,17): error TS2322: Type 'string' is not assignable to type 'NarrowRecurse<{ errors: [any]; }>'.
+src/__tests__/stress.assert.ts(569,17): error TS2322: Type 'string' is not assignable to type 'NarrowRecurse<{ errors: [any]; }>'.
+src/__tests__/stress.assert.ts(573,17): error TS2322: Type 'string' is not assignable to type 'NarrowRecurse<{ errors: [any]; }>'.
+src/__tests__/stress.assert.ts(574,17): error TS2322: Type 'string' is not assignable to type 'NarrowRecurse<{ errors: [any]; }>'.
+src/__tests__/stress.assert.ts(578,17): error TS2322: Type 'string' is not assignable to type 'NarrowRecurse<{ errors: [any]; }>'.
+src/__tests__/stress.assert.ts(579,17): error TS2322: Type 'string' is not assignable to type 'NarrowRecurse<{ errors: [any]; }>'.
+src/__tests__/stress.assert.ts(583,17): error TS2322: Type 'string' is not assignable to type 'NarrowRecurse<{ errors: [any]; }>'.
+src/__tests__/stress.assert.ts(584,17): error TS2322: Type 'string' is not assignable to type 'NarrowRecurse<{ errors: [any]; }>'.
+src/__tests__/stress.assert.ts(588,17): error TS2322: Type 'string' is not assignable to type 'NarrowRecurse<{ errors: [any]; }>'.
+src/__tests__/stress.assert.ts(589,17): error TS2322: Type 'string' is not assignable to type 'NarrowRecurse<{ errors: [any]; }>'.
+src/__tests__/stress.assert.ts(593,17): error TS2322: Type 'string' is not assignable to type 'NarrowRecurse<{ errors: [any]; }>'.
+src/__tests__/stress.assert.ts(594,17): error TS2322: Type 'string' is not assignable to type 'NarrowRecurse<{ errors: [any]; }>'.
+src/__tests__/stress.assert.ts(598,17): error TS2322: Type 'string' is not assignable to type 'NarrowRecurse<{ errors: [any]; }>'.
+src/__tests__/stress.assert.ts(599,17): error TS2322: Type 'string' is not assignable to type 'NarrowRecurse<{ errors: [any]; }>'.
+src/__tests__/stress.assert.ts(603,17): error TS2322: Type 'string' is not assignable to type 'NarrowRecurse<{ errors: [any]; }>'.
+src/__tests__/stress.assert.ts(604,17): error TS2322: Type 'string' is not assignable to type 'NarrowRecurse<{ errors: [any]; }>'.
+src/__tests__/stress.assert.ts(608,17): error TS2322: Type 'string' is not assignable to type 'NarrowRecurse<{ errors: [any]; }>'.
+src/__tests__/stress.assert.ts(609,17): error TS2322: Type 'string' is not assignable to type 'NarrowRecurse<{ errors: [any]; }>'.
+src/__tests__/stress.assert.ts(613,17): error TS2322: Type 'string' is not assignable to type 'NarrowRecurse<{ errors: [any]; }>'.
+src/__tests__/stress.assert.ts(614,17): error TS2322: Type 'string' is not assignable to type 'NarrowRecurse<{ errors: [any]; }>'.
+src/__tests__/stress.assert.ts(618,17): error TS2322: Type 'string' is not assignable to type 'NarrowRecurse<{ errors: [any]; }>'.
+src/__tests__/stress.assert.ts(619,17): error TS2322: Type 'string' is not assignable to type 'NarrowRecurse<{ errors: [any]; }>'.
+src/__tests__/stress.assert.ts(623,17): error TS2322: Type 'string' is not assignable to type 'NarrowRecurse<{ errors: [any]; }>'.
+src/__tests__/stress.assert.ts(624,17): error TS2322: Type 'string' is not assignable to type 'NarrowRecurse<{ errors: [any]; }>'.
+src/__tests__/stress.assert.ts(628,17): error TS2322: Type 'string' is not assignable to type 'NarrowRecurse<{ errors: [any]; }>'.
+src/__tests__/stress.assert.ts(629,17): error TS2322: Type 'string' is not assignable to type 'NarrowRecurse<{ errors: [any]; }>'.
+src/__tests__/stress.assert.ts(633,17): error TS2322: Type 'string' is not assignable to type 'NarrowRecurse<{ errors: [any]; }>'.
+src/__tests__/stress.assert.ts(634,17): error TS2322: Type 'string' is not assignable to type 'NarrowRecurse<{ errors: [any]; }>'.
+src/__tests__/stress.assert.ts(638,17): error TS2322: Type 'string' is not assignable to type 'NarrowRecurse<{ errors: [any]; }>'.
+src/__tests__/stress.assert.ts(639,17): error TS2322: Type 'string' is not assignable to type 'NarrowRecurse<{ errors: [any]; }>'.
+src/__tests__/stress.assert.ts(643,17): error TS2322: Type 'string' is not assignable to type 'NarrowRecurse<{ errors: [any]; }>'.
+src/__tests__/stress.assert.ts(644,17): error TS2322: Type 'string' is not assignable to type 'NarrowRecurse<{ errors: [any]; }>'.
+src/__tests__/stress.assert.ts(648,17): error TS2322: Type 'string' is not assignable to type 'NarrowRecurse<{ errors: [any]; }>'.
+src/__tests__/stress.assert.ts(649,17): error TS2322: Type 'string' is not assignable to type 'NarrowRecurse<{ errors: [any]; }>'.
+src/__tests__/stress.assert.ts(653,17): error TS2322: Type 'string' is not assignable to type 'NarrowRecurse<{ errors: [any]; }>'.
+src/__tests__/stress.assert.ts(654,17): error TS2322: Type 'string' is not assignable to type 'NarrowRecurse<{ errors: [any]; }>'.
+src/__tests__/stress.assert.ts(658,17): error TS2322: Type 'string' is not assignable to type 'NarrowRecurse<{ errors: [any]; }>'.
+src/__tests__/stress.assert.ts(659,17): error TS2322: Type 'string' is not assignable to type 'NarrowRecurse<{ errors: [any]; }>'.
+src/__tests__/stress.assert.ts(663,17): error TS2322: Type 'string' is not assignable to type 'NarrowRecurse<{ errors: [any]; }>'.
+src/__tests__/stress.assert.ts(664,17): error TS2322: Type 'string' is not assignable to type 'NarrowRecurse<{ errors: [any]; }>'.
+src/__tests__/stress.assert.ts(668,17): error TS2322: Type 'string' is not assignable to type 'NarrowRecurse<{ errors: [any]; }>'.
+src/__tests__/stress.assert.ts(669,17): error TS2322: Type 'string' is not assignable to type 'NarrowRecurse<{ errors: [any]; }>'.
+src/__tests__/stress.assert.ts(673,17): error TS2322: Type 'string' is not assignable to type 'NarrowRecurse<{ errors: [any]; }>'.
+src/__tests__/stress.assert.ts(674,17): error TS2322: Type 'string' is not assignable to type 'NarrowRecurse<{ errors: [any]; }>'.
+src/__tests__/stress.assert.ts(678,17): error TS2322: Type 'string' is not assignable to type 'NarrowRecurse<{ errors: [any]; }>'.
+src/__tests__/stress.assert.ts(679,17): error TS2322: Type 'string' is not assignable to type 'NarrowRecurse<{ errors: [any]; }>'.
+src/__tests__/stress.assert.ts(683,17): error TS2322: Type 'string' is not assignable to type 'NarrowRecurse<{ errors: [any]; }>'.
+src/__tests__/stress.assert.ts(684,17): error TS2322: Type 'string' is not assignable to type 'NarrowRecurse<{ errors: [any]; }>'.
+src/__tests__/stress.assert.ts(688,17): error TS2322: Type 'string' is not assignable to type 'NarrowRecurse<{ errors: [any]; }>'.
+src/__tests__/stress.assert.ts(689,17): error TS2322: Type 'string' is not assignable to type 'NarrowRecurse<{ errors: [any]; }>'.
+src/__tests__/stress.assert.ts(693,17): error TS2322: Type 'string' is not assignable to type 'NarrowRecurse<{ errors: [any]; }>'.
+src/__tests__/stress.assert.ts(694,17): error TS2322: Type 'string' is not assignable to type 'NarrowRecurse<{ errors: [any]; }>'.
+src/__tests__/stress.assert.ts(698,17): error TS2322: Type 'string' is not assignable to type 'NarrowRecurse<{ errors: [any]; }>'.
+src/__tests__/stress.assert.ts(699,17): error TS2322: Type 'string' is not assignable to type 'NarrowRecurse<{ errors: [any]; }>'.
+src/__tests__/stress.assert.ts(703,17): error TS2322: Type 'string' is not assignable to type 'NarrowRecurse<{ errors: [any]; }>'.
+src/__tests__/stress.assert.ts(704,17): error TS2322: Type 'string' is not assignable to type 'NarrowRecurse<{ errors: [any]; }>'.
+src/__tests__/stress.assert.ts(708,17): error TS2322: Type 'string' is not assignable to type 'NarrowRecurse<{ errors: [any]; }>'.
+src/__tests__/stress.assert.ts(709,17): error TS2322: Type 'string' is not assignable to type 'NarrowRecurse<{ errors: [any]; }>'.
+src/__tests__/stress.assert.ts(713,17): error TS2322: Type 'string' is not assignable to type 'NarrowRecurse<{ errors: [any]; }>'.
+src/__tests__/stress.assert.ts(714,17): error TS2322: Type 'string' is not assignable to type 'NarrowRecurse<{ errors: [any]; }>'.
+src/__tests__/stress.assert.ts(718,17): error TS2322: Type 'string' is not assignable to type 'NarrowRecurse<{ errors: [any]; }>'.
+src/__tests__/stress.assert.ts(719,17): error TS2322: Type 'string' is not assignable to type 'NarrowRecurse<{ errors: [any]; }>'.
+src/__tests__/stress.assert.ts(723,17): error TS2322: Type 'string' is not assignable to type 'NarrowRecurse<{ errors: [any]; }>'.
+src/__tests__/stress.assert.ts(724,17): error TS2322: Type 'string' is not assignable to type 'NarrowRecurse<{ errors: [any]; }>'.
+src/__tests__/stress.assert.ts(728,17): error TS2322: Type 'string' is not assignable to type 'NarrowRecurse<{ errors: [any]; }>'.
+src/__tests__/stress.assert.ts(729,17): error TS2322: Type 'string' is not assignable to type 'NarrowRecurse<{ errors: [any]; }>'.
+src/__tests__/stress.assert.ts(733,17): error TS2322: Type 'string' is not assignable to type 'NarrowRecurse<{ errors: [any]; }>'.
+src/__tests__/stress.assert.ts(734,17): error TS2322: Type 'string' is not assignable to type 'NarrowRecurse<{ errors: [any]; }>'.
+src/__tests__/stress.assert.ts(738,17): error TS2322: Type 'string' is not assignable to type 'NarrowRecurse<{ errors: [any]; }>'.
+src/__tests__/stress.assert.ts(739,17): error TS2322: Type 'string' is not assignable to type 'NarrowRecurse<{ errors: [any]; }>'.
+src/__tests__/stress.assert.ts(743,17): error TS2322: Type 'string' is not assignable to type 'NarrowRecurse<{ errors: [any]; }>'.
+src/__tests__/stress.assert.ts(744,17): error TS2322: Type 'string' is not assignable to type 'NarrowRecurse<{ errors: [any]; }>'.
+src/__tests__/stress.assert.ts(748,17): error TS2322: Type 'string' is not assignable to type 'NarrowRecurse<{ errors: [any]; }>'.
+src/__tests__/stress.assert.ts(749,17): error TS2322: Type 'string' is not assignable to type 'NarrowRecurse<{ errors: [any]; }>'.
+src/__tests__/stress.assert.ts(753,17): error TS2322: Type 'string' is not assignable to type 'NarrowRecurse<{ errors: [any]; }>'.
+src/__tests__/stress.assert.ts(754,17): error TS2322: Type 'string' is not assignable to type 'NarrowRecurse<{ errors: [any]; }>'.
+src/__tests__/stress.assert.ts(758,17): error TS2322: Type 'string' is not assignable to type 'NarrowRecurse<{ errors: [any]; }>'.
+src/__tests__/stress.assert.ts(759,17): error TS2322: Type 'string' is not assignable to type 'NarrowRecurse<{ errors: [any]; }>'.
+src/__tests__/stress.assert.ts(763,17): error TS2322: Type 'string' is not assignable to type 'NarrowRecurse<{ errors: [any]; }>'.
+src/__tests__/stress.assert.ts(764,17): error TS2322: Type 'string' is not assignable to type 'NarrowRecurse<{ errors: [any]; }>'.
+src/__tests__/stress.assert.ts(768,17): error TS2322: Type 'string' is not assignable to type 'NarrowRecurse<{ errors: [any]; }>'.
+src/__tests__/stress.assert.ts(772,17): error TS2322: Type 'string' is not assignable to type 'NarrowRecurse<{ errors: [any]; }>'.
+src/__tests__/stress.assert.ts(776,17): error TS2322: Type 'string' is not assignable to type 'NarrowRecurse<{ errors: [any]; }>'.
+src/__tests__/stress.assert.ts(780,17): error TS2322: Type 'string' is not assignable to type 'NarrowRecurse<{ errors: [any]; }>'.
+src/__tests__/stress.assert.ts(784,17): error TS2322: Type 'string' is not assignable to type 'NarrowRecurse<{ errors: [any]; }>'.
+src/__tests__/stress.assert.ts(788,17): error TS2322: Type 'string' is not assignable to type 'NarrowRecurse<{ errors: [any]; }>'.
+src/__tests__/stress.assert.ts(792,17): error TS2322: Type 'string' is not assignable to type 'NarrowRecurse<{ errors: [any]; }>'.
+src/__tests__/stress.assert.ts(796,17): error TS2322: Type 'string' is not assignable to type 'NarrowRecurse<{ errors: [any]; }>'.
+src/__tests__/stress.assert.ts(800,17): error TS2322: Type 'string' is not assignable to type 'NarrowRecurse<{ errors: [any]; }>'.
+src/__tests__/stress.assert.ts(804,17): error TS2322: Type 'string' is not assignable to type 'NarrowRecurse<{ errors: [any]; }>'.
+src/__tests__/stress.assert.ts(808,17): error TS2322: Type 'string' is not assignable to type 'NarrowRecurse<{ errors: [any]; }>'.
+src/__tests__/stress.assert.ts(812,17): error TS2322: Type 'string' is not assignable to type 'NarrowRecurse<{ errors: [any]; }>'.
+src/__tests__/stress.assert.ts(816,17): error TS2322: Type 'string' is not assignable to type 'NarrowRecurse<{ errors: [any]; }>'.
+src/__tests__/stress.assert.ts(820,17): error TS2322: Type 'string' is not assignable to type 'NarrowRecurse<{ errors: [any]; }>'.
+src/__tests__/stress.assert.ts(824,17): error TS2322: Type 'string' is not assignable to type 'NarrowRecurse<{ errors: [any]; }>'.
+src/__tests__/stress.assert.ts(828,17): error TS2322: Type 'string' is not assignable to type 'NarrowRecurse<{ errors: [any]; }>'.
+src/__tests__/stress.assert.ts(832,17): error TS2322: Type 'string' is not assignable to type 'NarrowRecurse<{ errors: [any]; }>'.
+src/__tests__/stress.assert.ts(836,17): error TS2322: Type 'string' is not assignable to type 'NarrowRecurse<{ errors: [any]; }>'.
+src/__tests__/stress.assert.ts(840,17): error TS2322: Type 'string' is not assignable to type 'NarrowRecurse<{ errors: [any]; }>'.
+src/__tests__/stress.assert.ts(844,17): error TS2322: Type 'string' is not assignable to type 'NarrowRecurse<{ errors: [any]; }>'.
+src/__tests__/stress.assert.ts(848,17): error TS2322: Type 'string' is not assignable to type 'NarrowRecurse<{ errors: [any]; }>'.
+src/__tests__/stress.assert.ts(852,17): error TS2322: Type 'string' is not assignable to type 'NarrowRecurse<{ errors: [any]; }>'.
+src/__tests__/stress.assert.ts(856,17): error TS2322: Type 'string' is not assignable to type 'NarrowRecurse<{ errors: [any]; }>'.
+src/__tests__/stress.assert.ts(860,17): error TS2322: Type 'string' is not assignable to type 'NarrowRecurse<{ errors: [any]; }>'.
+src/__tests__/stress.assert.ts(864,17): error TS2322: Type 'string' is not assignable to type 'NarrowRecurse<{ errors: [any]; }>'.
+src/__tests__/stress.assert.ts(868,17): error TS2322: Type 'string' is not assignable to type 'NarrowRecurse<{ errors: [any]; }>'.
+src/__tests__/stress.assert.ts(872,17): error TS2322: Type 'string' is not assignable to type 'NarrowRecurse<{ errors: [any]; }>'.
+src/__tests__/stress.assert.ts(876,17): error TS2322: Type 'string' is not assignable to type 'NarrowRecurse<{ errors: [any]; }>'.
+src/__tests__/stress.assert.ts(880,17): error TS2322: Type 'string' is not assignable to type 'NarrowRecurse<{ errors: [any]; }>'.
+src/__tests__/stress.assert.ts(884,17): error TS2322: Type 'string' is not assignable to type 'NarrowRecurse<{ errors: [any]; }>'.
+src/__tests__/stress.assert.ts(888,17): error TS2322: Type 'string' is not assignable to type 'NarrowRecurse<{ errors: [any]; }>'.
+src/__tests__/stress.assert.ts(892,17): error TS2322: Type 'string' is not assignable to type 'NarrowRecurse<{ errors: [any]; }>'.
+src/__tests__/stress.assert.ts(896,17): error TS2322: Type 'string' is not assignable to type 'NarrowRecurse<{ errors: [any]; }>'.
+src/__tests__/stress.assert.ts(900,17): error TS2322: Type 'string' is not assignable to type 'NarrowRecurse<{ errors: [any]; }>'.
+src/__tests__/stress.assert.ts(904,17): error TS2322: Type 'string' is not assignable to type 'NarrowRecurse<{ errors: [any]; }>'.
+src/__tests__/stress.assert.ts(908,17): error TS2322: Type 'string' is not assignable to type 'NarrowRecurse<{ errors: [any]; }>'.
+src/__tests__/stress.assert.ts(912,17): error TS2322: Type 'string' is not assignable to type 'NarrowRecurse<{ errors: [any]; }>'.
+src/__tests__/stress.assert.ts(916,17): error TS2322: Type 'string' is not assignable to type 'NarrowRecurse<{ errors: [any]; }>'.
+src/__tests__/stress.assert.ts(920,17): error TS2322: Type 'string' is not assignable to type 'NarrowRecurse<{ errors: [any]; }>'.
+src/__tests__/stress.assert.ts(924,17): error TS2322: Type 'string' is not assignable to type 'NarrowRecurse<{ errors: [any]; }>'.
+src/__tests__/stress.assert.ts(928,17): error TS2322: Type 'string' is not assignable to type 'NarrowRecurse<{ errors: [any]; }>'.
+src/__tests__/stress.assert.ts(932,17): error TS2322: Type 'string' is not assignable to type 'NarrowRecurse<{ errors: [any]; }>'.
+src/__tests__/stress.assert.ts(936,17): error TS2322: Type 'string' is not assignable to type 'NarrowRecurse<{ errors: [any]; }>'.
+src/__tests__/stress.assert.ts(940,17): error TS2322: Type 'string' is not assignable to type 'NarrowRecurse<{ errors: [any]; }>'.
+src/__tests__/stress.assert.ts(944,17): error TS2322: Type 'string' is not assignable to type 'NarrowRecurse<{ errors: [any]; }>'.
+src/__tests__/stress.assert.ts(948,17): error TS2322: Type 'string' is not assignable to type 'NarrowRecurse<{ errors: [any]; }>'.
+src/__tests__/stress.assert.ts(952,17): error TS2322: Type 'string' is not assignable to type 'NarrowRecurse<{ errors: [any]; }>'.
+src/__tests__/stress.assert.ts(956,17): error TS2322: Type 'string' is not assignable to type 'NarrowRecurse<{ errors: [any]; }>'.
+src/__tests__/stress.assert.ts(960,17): error TS2322: Type 'string' is not assignable to type 'NarrowRecurse<{ errors: [any]; }>'.
+src/__tests__/stress.assert.ts(964,17): error TS2322: Type 'string' is not assignable to type 'NarrowRecurse<{ errors: [any]; }>'.
+src/definitions/__tests__/multifile.assert.ts(13,31): error TS2345: Argument of type '{ group: { name: "string"; members: "user[]"; }; user: { name: "string"; bestFriend: "user?"; groups: "group[]"; }; }' is not assignable to parameter of type 'NarrowRecurse<{ user: { name: "string"; bestFriend: { errors: [any]; }; groups: { errors: [any]; }; }; group: { name: "string"; members: { errors: [any]; }; }; }>'.
+  The types of 'user.bestFriend' are incompatible between these types.
+    Type 'string' is not assignable to type 'NarrowRecurse<{ errors: [any]; }>'.
+src/definitions/__tests__/multifile.assert.ts(25,28): error TS2322: Type 'string' is not assignable to type '{ errors: [any]; }'.
+src/definitions/__tests__/multifile.assert.ts(25,45): error TS2322: Type 'string' is not assignable to type '{ errors: [any]; }'.
+src/definitions/__tests__/multifile/group.ts(5,5): error TS2322: Type 'string' is not assignable to type '{ errors: [any]; }'.
+src/definitions/__tests__/multifile/user.ts(5,5): error TS2322: Type 'string' is not assignable to type '{ errors: [any]; }'.
+src/definitions/__tests__/multifile/user.ts(6,5): error TS2322: Type 'string' is not assignable to type '{ errors: [any]; }'.
+src/definitions/__tests__/references.assert.ts(80,44): error TS2345: Argument of type 'string' is not assignable to parameter of type '{ errors: [any]; }'.
+src/definitions/__tests__/references.assert.ts(101,25): error TS2322: Type 'string' is not assignable to type '{ errors: [any]; }'.
+src/definitions/__tests__/references.assert.ts(117,31): error TS2322: Type '"boolean"' is not assignable to type '"keyword"'.
+src/definitions/__tests__/references.assert.ts(120,36): error TS2322: Type '"null"' is not assignable to type '"keyword"'.
+src/definitions/obj/obj.ts(38,22): error TS2344: Type 'N' does not satisfy the constraint 'ExpressionNode<string, any>'.
+  Property 'children' is missing in type 'ParseNode<string>' but required in type 'ExpressionNode<string, any>'.
+src/definitions/obj/obj.ts(40,24): error TS2344: Type 'N' does not satisfy the constraint 'Node'.
+  Property 'children' is missing in type 'ParseNode<string>' but required in type 'ExpressionNode<"tuple", any[]>'.
+src/definitions/obj/tuple.ts(46,13): error TS2536: Type '"tuple"' cannot be used to index type 'N'.
+src/definitions/parser.ts(86,30): error TS2694: Namespace '"/home/ssalb/2re-po/pkgs/model/src/definitions/obj/obj".Obj' has no exported member 'Definition'.
+src/definitions/parser.ts(152,22): error TS2694: Namespace '"/home/ssalb/2re-po/pkgs/model/src/definitions/root".Root' has no exported member 'Definition'.
+src/definitions/root.ts(33,11): error TS2503: Cannot find namespace 'Expression'.
+src/definitions/root.ts(66,13): error TS2322: Type '() => (string | number | bigint | boolean | object | null | undefined)[]' is not assignable to type '() => object[]'.
+  Type '(string | number | bigint | boolean | object | null | undefined)[]' is not assignable to type 'object[]'.
+    Type 'string | number | bigint | boolean | object | null | undefined' is not assignable to type 'object'.
+      Type 'undefined' is not assignable to type 'object'.
+src/definitions/str/__test__/integration.assert.ts(29,26): error TS2345: Argument of type 'string' is not assignable to parameter of type '{ errors: [any]; }'.
+src/definitions/str/expression/__tests__/arrowFunction.assert.ts(47,27): error TS2345: Argument of type 'string' is not assignable to parameter of type '{ errors: [any]; }'.
+src/definitions/str/expression/__tests__/arrowFunction.assert.ts(51,31): error TS2345: Argument of type 'string' is not assignable to parameter of type '{ errors: [any]; }'.
+src/definitions/str/expression/__tests__/union.assert.ts(69,27): error TS2345: Argument of type 'string' is not assignable to parameter of type '{ errors: [any]; }'.
+src/definitions/str/expression/__tests__/union.assert.ts(70,27): error TS2345: Argument of type 'string' is not assignable to parameter of type '{ errors: [any]; }'.
+src/definitions/str/expression/__tests__/union.assert.ts(74,24): error TS2345: Argument of type 'string' is not assignable to parameter of type '{ errors: [any]; }'.
+src/definitions/str/expression/__tests__/union.assert.ts(86,24): error TS2345: Argument of type 'string' is not assignable to parameter of type '{ errors: [any]; }'.
+src/definitions/str/expression/arrowFunction.ts(70,23): error TS2724: '"/home/ssalb/2re-po/pkgs/model/src/definitions/str/fragment".Fragment' has no exported member named 'TypeOf'. Did you mean 'type'?
+src/definitions/str/expression/arrowFunction.ts(74,37): error TS2724: '"/home/ssalb/2re-po/pkgs/model/src/definitions/str/fragment".Fragment' has no exported member named 'TypeOf'. Did you mean 'type'?
+src/definitions/str/expression/arrowFunction.ts(116,42): error TS2322: Type 'TreeOf<string[]>' is not assignable to type 'string | readonly string[]'.
+  Type '{ [x: string]: TreeOf<string[]>; }' is not assignable to type 'string | readonly string[]'.
+    Type '{ [x: string]: TreeOf<string[]>; }' is missing the following properties from type 'readonly string[]': length, concat, join, slice, and 19 more.
+src/definitions/str/expression/arrowFunction.ts(117,20): error TS2488: Type 'TreeOf<string[]>' must have a '[Symbol.iterator]()' method that returns an iterator.
+src/definitions/str/expression/constraint.ts(199,73): error TS2724: '"/home/ssalb/2re-po/pkgs/model/src/definitions/str/fragment".Fragment' has no exported member named 'TypeOf'. Did you mean 'type'?
+src/definitions/str/expression/expression.ts(26,32): error TS2344: Type 'N' does not satisfy the constraint 'Node'.
+  Property 'children' is missing in type 'ParseNode<string>' but required in type 'ExpressionNode<"arrowFunction", { args: any[]; returns: any; }>'.
+src/definitions/str/expression/expression.ts(28,24): error TS2344: Type 'N' does not satisfy the constraint 'Node'.
+  Property 'children' is missing in type 'ParseNode<string>' but required in type 'ExpressionNode<"union", [unknown, unknown]>'.
+src/definitions/str/expression/expression.ts(30,31): error TS2344: Type 'N' does not satisfy the constraint 'Node'.
+  Property 'children' is missing in type 'ParseNode<string>' but required in type 'ExpressionNode<"intersection", [unknown, unknown]>'.
+src/definitions/str/expression/intersection.ts(42,73): error TS2724: '"/home/ssalb/2re-po/pkgs/model/src/definitions/str/fragment".Fragment' has no exported member named 'TypeOf'. Did you mean 'type'?
+src/definitions/str/expression/intersection.ts(47,18): error TS2724: '"/home/ssalb/2re-po/pkgs/model/src/definitions/str/fragment".Fragment' has no exported member named 'TypeOf'. Did you mean 'type'?
+src/definitions/str/expression/list.ts(28,18): error TS2724: '"/home/ssalb/2re-po/pkgs/model/src/definitions/str/fragment".Fragment' has no exported member named 'TypeOf'. Did you mean 'type'?
+src/definitions/str/expression/union.ts(57,20): error TS2724: '"/home/ssalb/2re-po/pkgs/model/src/definitions/str/fragment".Fragment' has no exported member named 'TypeOf'. Did you mean 'type'?
+src/definitions/str/expression/union.ts(58,20): error TS2724: '"/home/ssalb/2re-po/pkgs/model/src/definitions/str/fragment".Fragment' has no exported member named 'TypeOf'. Did you mean 'type'?
+src/definitions/str/optional.ts(43,22): error TS2344: Type 'N["children"]' does not satisfy the constraint 'ParseNode<string>'.
+src/definitions/str/optional.ts(43,22): error TS2536: Type '"children"' cannot be used to index type 'N'.
+src/definitions/str/reference/__tests__/alias.assert.ts(8,24): error TS2345: Argument of type 'string' is not assignable to parameter of type '{ errors: [any]; }'.
+src/definitions/str/reference/__tests__/alias.assert.ts(14,23): error TS2322: Type 'string' is not assignable to type '{ errors: [any]; }'.
+src/definitions/str/reference/__tests__/alias.assert.ts(25,22): error TS2322: Type 'string' is not assignable to type 'NarrowRecurse<{ errors: [any]; }>'.
+src/definitions/str/reference/__tests__/alias.assert.ts(26,22): error TS2322: Type 'string' is not assignable to type 'NarrowRecurse<{ errors: [any]; }>'.
+src/definitions/str/reference/__tests__/alias.assert.ts(30,19): error TS2322: Type 'string' is not assignable to type '{ errors: [any]; }'.
+src/definitions/str/reference/__tests__/alias.assert.ts(30,27): error TS2322: Type 'string' is not assignable to type '{ errors: [any]; }'.
+src/definitions/str/reference/__tests__/alias.assert.ts(53,19): error TS2322: Type 'string' is not assignable to type '{ errors: [any]; }'.
+src/definitions/str/reference/__tests__/alias.assert.ts(53,27): error TS2322: Type 'string' is not assignable to type '{ errors: [any]; }'.
+src/definitions/str/reference/__tests__/alias.assert.ts(72,21): error TS2322: Type 'string' is not assignable to type '{ errors: [any]; }'.
+src/definitions/str/reference/__tests__/alias.assert.ts(89,13): error TS2578: Unused '@ts-expect-error' directive.
+src/definitions/str/reference/__tests__/alias.assert.ts(98,19): error TS2322: Type 'string' is not assignable to type '{ errors: [any]; }'.
+src/definitions/str/reference/__tests__/alias.assert.ts(168,19): error TS2322: Type 'string' is not assignable to type '{ errors: [any]; }'.
+src/definitions/str/reference/__tests__/alias.assert.ts(168,27): error TS2322: Type 'string' is not assignable to type '{ errors: [any]; }'.
+src/definitions/str/reference/__tests__/alias.assert.ts(168,35): error TS2322: Type 'string' is not assignable to type '{ errors: [any]; }'.
+src/definitions/str/reference/__tests__/alias.assert.ts(254,42): error TS2322: Type 'string' is not assignable to type '{ errors: [any]; }'.
+src/definitions/str/reference/__tests__/alias.assert.ts(268,35): error TS2322: Type 'string' is not assignable to type '{ errors: [any]; }'.
+src/definitions/str/reference/__tests__/alias.assert.ts(279,25): error TS2322: Type 'string' is not assignable to type '{ errors: [any]; }'.
+src/definitions/str/reference/__tests__/alias.assert.ts(280,25): error TS2322: Type 'string' is not assignable to type '{ errors: [any]; }'.
+src/definitions/str/reference/__tests__/alias.assert.ts(281,25): error TS2322: Type 'string' is not assignable to type '{ errors: [any]; }'.
+src/definitions/str/reference/__tests__/alias.assert.ts(282,25): error TS2322: Type 'string' is not assignable to type '{ errors: [any]; }'.
+src/definitions/str/reference/__tests__/alias.assert.ts(283,25): error TS2322: Type 'string' is not assignable to type '{ errors: [any]; }'.
+src/definitions/str/reference/__tests__/alias.assert.ts(311,24): error TS2345: Argument of type 'string' is not assignable to parameter of type '{ errors: [any]; }'.
+src/definitions/str/reference/__tests__/alias.assert.ts(324,24): error TS2345: Argument of type 'string' is not assignable to parameter of type '{ errors: [any]; }'.
+src/definitions/str/reference/__tests__/alias.assert.ts(341,24): error TS2345: Argument of type 'string' is not assignable to parameter of type '{ errors: [any]; }'.
+src/definitions/str/reference/__tests__/alias.assert.ts(356,24): error TS2345: Argument of type 'string' is not assignable to parameter of type '{ errors: [any]; }'.
+src/definitions/str/reference/__tests__/alias.assert.ts(369,21): error TS2322: Type 'string' is not assignable to type '{ errors: [any]; }'.
+src/definitions/str/reference/__tests__/alias.assert.ts(370,21): error TS2322: Type 'string' is not assignable to type '{ errors: [any]; }'.
+src/definitions/str/reference/__tests__/alias.assert.ts(371,21): error TS2322: Type 'string' is not assignable to type '{ errors: [any]; }'.
+src/definitions/str/reference/__tests__/alias.assert.ts(372,21): error TS2322: Type 'string' is not assignable to type '{ errors: [any]; }'.
+src/definitions/str/reference/__tests__/keyword.assert.ts(191,26): error TS2345: Argument of type 'string' is not assignable to parameter of type '{ errors: [any]; }'.
+src/definitions/str/str.ts(35,20): error TS2724: '"/home/ssalb/2re-po/pkgs/model/src/definitions/str/fragment".Fragment' has no exported member named 'TypeOf'. Did you mean 'type'?
+src/model.ts(128,26): error TS2694: Namespace '"/home/ssalb/2re-po/pkgs/model/src/definitions/root".Root' has no exported member 'Definition'.
+src/model.ts(173,31): error TS2345: Argument of type '[] | "Values of type 'function' or 'symbol' are not valid definitions." | NarrowRecurse<Def> | (number & NarrowRecurse<Def>) | (bigint & NarrowRecurse<...>) | ... 5 more ... | []' is not assignable to parameter of type 'object'.
+  Type 'string' is not assignable to type 'object'.
+src/space.ts(178,13): error TS2344: Type 'Parse<Resolutions, Resolutions, DefaultParseTypeContext>' does not satisfy the constraint 'ExpressionNode<string, any>'.
+  Type '"<defer>" | ExpressionNode<"map", { [PropName in keyof Resolutions]: Parse<Resolutions[PropName], Resolutions, DefaultParseTypeContext>; }>' is not assignable to type 'ExpressionNode<string, any>'.
+    Type 'string' is not assignable to type 'ExpressionNode<string, any>'.
+Files:                         528
+Lines of Library:             9294
+Lines of Definitions:        73521
+Lines of TypeScript:          7732
+Lines of JavaScript:             0
+Lines of JSON:                   0
+Lines of Other:                  0
+Nodes of Library:            24093
+Nodes of Definitions:       296262
+Nodes of TypeScript:         31505
+Nodes of JavaScript:             0
+Nodes of JSON:                   0
+Nodes of Other:                  0
+Identifiers:                113801
+Symbols:                    462048
+Types:                      328579
+Instantiations:            2259219
+Memory used:               439179K
+Assignability cache size:    90876
+Identity cache size:           827
+Subtype cache size:            371
+Strict subtype cache size:     178
+I/O Read time:               0.02s
+Parse time:                  0.57s
+ResolveModule time:          0.07s
+ResolveTypeReference time:   0.00s
+Program time:                0.82s
+Bind time:                   0.28s
+Check time:                  5.03s
+printTime time:              0.00s
+Emit time:                   0.00s
+Total time:                  6.14s

@@ -1,10 +1,22 @@
 import { isInteger } from "@re-/tools"
 import { typeOf } from "../../../../utils.js"
-import { typeDefProxy, validationError, createParser } from "./internal.js"
+import {
+    typeDefProxy,
+    validationError,
+    createParser,
+    Defer,
+    ShallowNode
+} from "./internal.js"
 import { EmbeddedLiteral } from "./embeddedLiteral.js"
 
-export namespace BigintLiteral {
+export namespace EmbeddedBigintLiteral {
     export type Definition<Value extends bigint = bigint> = `${Value}n`
+
+    export type Kind = "embeddedBigintLiteral"
+
+    export type Parse<Def extends string> = Def extends Definition<infer Value>
+        ? ShallowNode<Kind, Value>
+        : Defer
 
     export const type = typeDefProxy as Definition
     export const parser = createParser(

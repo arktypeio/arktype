@@ -3,8 +3,9 @@ import {
     typeDefProxy,
     createParser,
     duplicateModifierError,
-    UnknownTypeError,
-    DuplicateModifierError
+    DuplicateModifierError,
+    Defer,
+    DeepNode
 } from "./internal.js"
 import { Str } from "./str.js"
 import { Fragment } from "./fragment.js"
@@ -12,15 +13,18 @@ import { Fragment } from "./fragment.js"
 export namespace Optional {
     export type Definition<Of extends string = string> = `${Of}?`
 
-    export type Parse<
-        Def extends Definition,
-        Resolutions,
-        Context
-    > = Def extends Definition<infer Of>
+    export type Kind = "optional"
+
+    export interface Node extends DeepNode<Kind> {}
+
+    export type Parse<Def, Resolutions, Context> = Def extends Definition<
+        infer Of
+    >
         ? "?" extends KeyValuate<Context, "modifiers">
             ? DuplicateModifierError<"?">
-            : {
-                  optional: Str.Parse<
+            : DeepNode<
+                  Kind,
+                  Str.Parse<
                       Of,
                       Resolutions,
                       WithPropValue<
@@ -29,16 +33,12 @@ export namespace Optional {
                           "?" | KeyValuate<Context, "modifiers">
                       >
                   >
-              }
-        : UnknownTypeError<Def>
+              >
+        : Defer
 
-    export type Node = {
-        optional: any
-    }
-
-    export type TypeOf<N, Resolutions, Options> = N extends Node
-        ? Str.TypeOf<N["optional"], Resolutions, Options> | undefined
-        : unknown
+    export type TypeOf<N extends Node, Resolutions, Options> =
+        | Str.TypeOf<N["children"], Resolutions, Options>
+        | undefined
 
     export const type = typeDefProxy as Definition
 

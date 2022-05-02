@@ -13,7 +13,9 @@ import {
     typeDefProxy,
     createParser,
     ParseResult,
-    ParseTypeContext
+    ParseTypeContext,
+    Defer,
+    DeepNode
 } from "./internal.js"
 import { Root } from "../root.js"
 import { Obj } from "./obj.js"
@@ -23,25 +25,28 @@ import { typeOf } from "../../utils.js"
 export namespace Map {
     export type Definition = Record<string, any>
 
-    export type Node = {
-        map: Definition
-    }
+    export type Kind = "map"
 
-    export type Parse<Def, Resolutions, Context> = {
-        map: {
-            [PropName in keyof Def]: Root.Parse<
-                Def[PropName],
-                Resolutions,
-                Context
-            >
-        }
-    }
+    export interface Node extends DeepNode<Kind> {}
+
+    export type Parse<Def, Resolutions, Context> = Def extends Definition
+        ? DeepNode<
+              Kind,
+              {
+                  [PropName in keyof Def]: Root.Parse<
+                      Def[PropName],
+                      Resolutions,
+                      Context
+                  >
+              }
+          >
+        : Defer
 
     export type TypeOf<
         N extends Node,
         Resolutions,
         Options,
-        MappedNodes extends Definition = N["map"],
+        MappedNodes extends Definition = N["children"],
         OptionalKey extends keyof MappedNodes = {
             [K in keyof MappedNodes]: MappedNodes[K] extends Optional.Node
                 ? K
@@ -66,6 +71,10 @@ export namespace Map {
             >
         }
     >
+
+    export type Validate<N extends Node, Resolutions, T = N["children"]> = {
+        [Index in keyof T]: Root.Validate<T[Index], Resolutions>
+    }
 
     export const type = typeDefProxy as Definition
 

@@ -1,4 +1,4 @@
-import { Get, IsAny, Or } from "@re-/tools"
+import { Get, IsAny, Or, WithPropValue } from "@re-/tools"
 import {
     typeDefProxy,
     ValidationErrorMessage,
@@ -6,43 +6,53 @@ import {
     generateRequiredCycleError,
     createParser,
     DefaultParseTypeContext,
-    errorsFromCustomValidator
+    errorsFromCustomValidator,
+    Defer,
+    Unset,
+    ShallowNode
 } from "./internal.js"
 import { Root } from "../../root.js"
 import { Reference } from "./index.js"
 
 export namespace Alias {
-    export type Definition<Resolutions> = keyof Resolutions & string
+    export type Kind = "alias"
 
-    export type TypeOf<
-        TypeName extends Definition<Resolutions>,
-        Resolutions,
-        Options
-    > = IsAny<Resolutions> extends true
-        ? Resolutions
-        : Resolutions[TypeName] extends ValidationErrorMessage
-        ? unknown
-        : TypeName extends keyof Get<Options, "seen">
-        ? Get<Options, "onCycle"> extends never
-            ? TypeOfResolvedNonCyclicDefinition<TypeName, Resolutions, Options>
-            : TypeOfResolvedCyclicDefinition<TypeName, Resolutions, Options>
-        : TypeOfResolvedNonCyclicDefinition<TypeName, Resolutions, Options>
+    export type Parse<Def, Resolutions, Options> = Def extends keyof Resolutions
+        ? ShallowNode<Kind, TypeOf<Def, Resolutions, Options>>
+        : Defer
+
+    export type TypeOf<Def, Resolutions, Options> =
+        IsAny<Resolutions> extends true
+            ? any
+            : Def extends keyof Resolutions
+            ? Resolutions[Def] extends ValidationErrorMessage
+                ? unknown
+                : Def extends keyof Get<Options, "seen">
+                ? Get<Options, "onCycle"> extends Unset
+                    ? TypeOfResolvedNonCyclicDefinition<
+                          Def,
+                          Resolutions,
+                          Options
+                      >
+                    : TypeOfResolvedCyclicDefinition<Def, Resolutions, Options>
+                : TypeOfResolvedNonCyclicDefinition<Def, Resolutions, Options>
+            : unknown
 
     export type TypeOfResolvedCyclicDefinition<
-        TypeName extends Definition<Resolutions>,
+        TypeName extends keyof Resolutions,
         Resolutions,
         Options
     > = Root.TypeOf<
         Root.Parse<
             Get<Options, "onCycle">,
-            Omit<Resolutions, "cyclic"> & { cyclic: Resolutions[TypeName] },
+            WithPropValue<Resolutions, "cyclic", Resolutions[TypeName]>,
             DefaultParseTypeContext
         >,
-        Omit<Resolutions, "cyclic"> & { cyclic: Resolutions[TypeName] },
+        WithPropValue<Resolutions, "cyclic", Resolutions[TypeName]>,
         {
             onCycle: Get<Options, "deepOnCycle"> extends true
                 ? Get<Options, "onCycle">
-                : never
+                : Unset
             seen: {}
             onResolve: Get<Options, "onResolve">
             deepOnCycle: Get<Options, "deepOnCycle">
@@ -50,11 +60,11 @@ export namespace Alias {
     >
 
     export type TypeOfResolvedNonCyclicDefinition<
-        TypeName extends Definition<Resolutions>,
+        TypeName extends keyof Resolutions,
         Resolutions,
         Options
     > = Or<
-        Get<Options, "onResolve"> extends never ? true : false,
+        Get<Options, "onResolve"> extends Unset ? true : false,
         TypeName extends "resolved" ? true : false
     > extends true
         ? Root.TypeOf<
@@ -71,14 +81,10 @@ export namespace Alias {
         : Root.TypeOf<
               Root.Parse<
                   Get<Options, "onResolve">,
-                  Omit<Resolutions, "resolved"> & {
-                      resolved: Resolutions[TypeName]
-                  },
+                  WithPropValue<Resolutions, "resolved", Resolutions[TypeName]>,
                   DefaultParseTypeContext
               >,
-              Omit<Resolutions, "resolved"> & {
-                  resolved: Resolutions[TypeName]
-              },
+              WithPropValue<Resolutions, "resolved", Resolutions[TypeName]>,
               Options & {
                   seen: { [K in TypeName]: true }
               }

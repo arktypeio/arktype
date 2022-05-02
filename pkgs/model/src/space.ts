@@ -21,7 +21,7 @@ import { DefaultTypeOfContext, typeDefProxy, Merge } from "./internal.js"
 import { ValidateResolution } from "./resolution.js"
 import { DefaultParseTypeContext } from "./definitions/internal.js"
 
-export type SpaceResolutions = Record<string, Root.Definition>
+export type SpaceResolutions = Record<string, any>
 
 export type ValidateSpaceResolutions<
     Resolutions,
@@ -173,13 +173,17 @@ export type Space<
     resolutions: Resolutions
     config: Config
     models: ResolutionsToModels<Resolutions, SpaceParseConfig>
-    types: Evaluate<
-        Map.TypeOf<
-            Map.Parse<Resolutions, Resolutions, DefaultParseTypeContext>,
+    types: Evaluate<{
+        [TypeName in keyof Resolutions]: Root.TypeOf<
+            Root.Parse<
+                Resolutions[TypeName],
+                Resolutions,
+                DefaultParseTypeContext
+            >,
             Resolutions,
             DefaultTypeOfContext
         >
-    >
+    }>
     // @ts-ignore
     create: CreateFunction<{
         resolutions: Resolutions

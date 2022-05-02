@@ -4,7 +4,9 @@ import {
     listKeywords,
     typeDefProxy,
     createParser,
-    validationError
+    validationError,
+    Defer,
+    ShallowNode
 } from "./internal.js"
 import { extractableHandlers } from "./extractable.js"
 import { unextractableHandlers } from "./unextractable.js"
@@ -15,7 +17,11 @@ export namespace Keyword {
         Def extends keyof KeywordTypes = keyof KeywordTypes
     > = Def
 
-    export type TypeOf<Def extends Definition> = KeywordTypes[Def]
+    export type Kind = "keyword"
+
+    export type Parse<Def> = Def extends keyof KeywordTypes
+        ? ShallowNode<Kind, KeywordTypes[Def]>
+        : Defer
 
     export const type = typeDefProxy as Definition
 

@@ -1,10 +1,14 @@
-import { createParser, typeDefProxy } from "../internal.js"
 import { StringLiteral as StringLiteral } from "./stringLiteral.js"
-import { NumberLiteral as EmbeddedNumberLiteral } from "./numberLiteral.js"
-import { BigintLiteral as EmbeddedBigintLiteral } from "./bigintLiteral.js"
+import { EmbeddedNumberLiteral as EmbeddedNumberLiteral } from "./embeddedNumberLiteral.js"
+import { EmbeddedBigintLiteral as EmbeddedBigintLiteral } from "./embeddedBigintLiteral.js"
 import { Reference } from "../reference.js"
-import { RegexLiteral as EmbeddedRegexLiteral } from "./regexLiteral.js"
-import { FirstEnclosed } from "./internal.js"
+import { EmbeddedRegexLiteral as EmbeddedRegexLiteral } from "./embeddedRegexLiteral.js"
+import {
+    FirstEnclosed,
+    createParser,
+    typeDefProxy,
+    Precedence
+} from "./internal.js"
 
 export namespace EmbeddedLiteral {
     export type Definition =
@@ -14,7 +18,7 @@ export namespace EmbeddedLiteral {
         | EmbeddedBigintLiteral.Definition
 
     export type Matches<Def extends string> =
-        StringLiteral.Matches<Def> extends true
+        StringLiteral.ValueFrom<Def> extends string
             ? true
             : EmbeddedRegexLiteral.Matches<Def> extends true
             ? true
@@ -24,21 +28,29 @@ export namespace EmbeddedLiteral {
             ? true
             : false
 
-    export type TypeOf<Def extends string> =
-        Def extends StringLiteral.Definition<FirstEnclosed<Def, `'`>>
-            ? FirstEnclosed<Def, `'`>
-            : Def extends StringLiteral.Definition<FirstEnclosed<Def, `"`>>
-            ? FirstEnclosed<Def, `"`>
-            : Def extends EmbeddedRegexLiteral.Definition<
-                  FirstEnclosed<Def, `/`>
-              >
-            ? string
-            : // For now this is always inferred as 'number', even though the string is a literal like '5'
-            Def extends EmbeddedNumberLiteral.Definition<infer Value>
-            ? Value
-            : Def extends EmbeddedBigintLiteral.Definition<infer Value>
-            ? Value
-            : unknown
+    export type Parse<Def extends string> = Precedence<
+        [
+            StringLiteral.Parse<Def>,
+            EmbeddedRegexLiteral.Parse<Def>,
+            EmbeddedNumberLiteral.Parse<Def>,
+            EmbeddedBigintLiteral.Parse<Def>
+        ]
+    >
+
+    export type TypeOf<N extends string> = N extends StringLiteral.Definition<
+        FirstEnclosed<N, `'`>
+    >
+        ? FirstEnclosed<N, `'`>
+        : N extends StringLiteral.Definition<FirstEnclosed<N, `"`>>
+        ? FirstEnclosed<N, `"`>
+        : N extends EmbeddedRegexLiteral.Definition<FirstEnclosed<N, `/`>>
+        ? string
+        : // For now this is always inferred as 'number', even though the string is a literal like '5'
+        N extends EmbeddedNumberLiteral.Definition<infer Value>
+        ? Value
+        : N extends EmbeddedBigintLiteral.Definition<infer Value>
+        ? Value
+        : unknown
 
     export const type = typeDefProxy as string
 

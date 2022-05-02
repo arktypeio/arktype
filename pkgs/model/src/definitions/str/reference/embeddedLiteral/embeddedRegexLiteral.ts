@@ -3,13 +3,15 @@ import {
     typeDefProxy,
     validationError,
     createParser,
-    ungeneratableError
-} from "../internal.js"
+    ungeneratableError,
+    FirstEnclosed,
+    Defer,
+    ShallowNode
+} from "./internal.js"
 import { Reference } from "../reference.js"
-import { FirstEnclosed } from "./internal.js"
 import { StringLiteral } from "./stringLiteral.js"
 
-export namespace RegexLiteral {
+export namespace EmbeddedRegexLiteral {
     export type Definition<Expression extends string = string> =
         `/${Expression}/`
 
@@ -19,6 +21,12 @@ export namespace RegexLiteral {
     >}/`
         ? true
         : false
+
+    export type Kind = "embeddedRegexLiteral"
+
+    export type Parse<Def extends string> = Matches<Def> extends true
+        ? ShallowNode<Kind, string>
+        : Defer
 
     export const type = typeDefProxy as Definition
 

@@ -8,7 +8,9 @@ import {
     createParser,
     ParseContext,
     ungeneratableError,
-    UnknownTypeError
+    Root,
+    DeepNode,
+    Defer
 } from "./internal.js"
 import { Fragment } from "../fragment.js"
 import { Expression } from "./expression.js"
@@ -20,29 +22,29 @@ export namespace Intersection {
         After extends string = string
     > = `${Before}&${After}`
 
-    export type Parse<
-        Def extends Definition,
-        Resolutions,
-        Context
-    > = Def extends Definition<infer Left, infer Right>
-        ? {
-              intersection: [
+    export type Kind = "intersection"
+
+    export type Node = DeepNode<Kind, [unknown, unknown]>
+
+    export type Parse<Def, Resolutions, Context> = Def extends Definition<
+        infer Left,
+        infer Right
+    >
+        ? DeepNode<
+              Kind,
+              [
                   Fragment.Parse<Left, Resolutions, Context>,
                   Fragment.Parse<Right, Resolutions, Context>
               ]
-          }
-        : UnknownTypeError<Def>
+          >
+        : Defer
 
-    export type Node = {
-        intersection: [any, any]
-    }
-
-    export type TypeOf<N extends Node, Resolutions, Options> = Fragment.TypeOf<
-        N["intersection"][0],
+    export type TypeOf<N extends Node, Resolutions, Options> = Root.TypeOf<
+        N["children"][0],
         Resolutions,
         Options
     > &
-        Fragment.TypeOf<N["intersection"][1], Resolutions, Options>
+        Root.TypeOf<N["children"][1], Resolutions, Options>
 
     export const type = typeDefProxy as Definition
 

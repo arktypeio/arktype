@@ -9,10 +9,9 @@ import {
     toString
 } from "@re-/tools"
 import { numberKeywords, stringKeywords } from "../reference/index.js"
-import { createParser, typeDefProxy, ConstraintError } from "./internal.js"
 import { Fragment } from "../fragment.js"
 import { Expression } from "./expression.js"
-import { NumberLiteral } from "../reference/embeddedLiteral/numberLiteral.js"
+import { EmbeddedNumberLiteral } from "../reference/embeddedLiteral/embeddedNumberLiteral.js"
 import { StringLiteral } from "../reference/embeddedLiteral/stringLiteral.js"
 import {
     constraintErrorTemplate,
@@ -22,9 +21,15 @@ import {
     unboundableError,
     UnboundableError,
     ungeneratableError,
-    validationError
+    validationError,
+    Defer,
+    createParser,
+    typeDefProxy,
+    ConstraintError,
+    Root
 } from "./internal.js"
 import { typeOf } from "../../../utils.js"
+import { DeepNode } from "../internal.js"
 
 export const getComparables = () => [...numberKeywords, ...stringKeywords]
 
@@ -124,56 +129,76 @@ export namespace Constraint {
         Right extends string = string
     > = [Left, FirstComparator, Middle, SecondComparator, Right]
 
+    type NodeBounds = {
+        [K in ComparatorToken]?: EmbeddedNumberLiteral.Definition
+    }
+
+    export type Kind = "constraint"
+
+    export type Node = DeepNode<
+        Kind,
+        {
+            bounded: any
+        } & NodeBounds
+    >
+
     export type Parse<
-        Def extends Definition,
+        Def extends string,
         Resolutions,
         Context,
         Parts extends string[] = Spliterate<Def, ["<=", ">=", "<", ">"], true> &
             string[]
-    > = Parts extends DoubleBoundedParts<
-        infer Left,
-        infer FirstComparator,
-        infer Middle,
-        infer SecondComparator,
-        infer Right
-    >
-        ? Middle extends Comparable
-            ? Left extends NumberLiteral.Definition
-                ? Right extends NumberLiteral.Definition
-                    ? {
-                          bounded: Fragment.Parse<Middle, Resolutions, Context>
-                      } & {
-                          [K in ComparatorInverses[FirstComparator]]: Left
-                      } & {
-                          [K in SecondComparator]: Right
-                      }
-                    : InvalidBoundError<Middle, Right>
-                : InvalidBoundError<Middle, Left>
-            : UnboundableError<Middle>
-        : Parts extends SingleBoundedParts<
-              infer Left,
-              infer Comparator,
-              infer Right
+    > = Def extends Definition
+        ? DeepNode<
+              Kind,
+              Parts extends DoubleBoundedParts<
+                  infer Left,
+                  infer FirstComparator,
+                  infer Middle,
+                  infer SecondComparator,
+                  infer Right
+              >
+                  ? Middle extends Comparable
+                      ? Left extends EmbeddedNumberLiteral.Definition
+                          ? Right extends EmbeddedNumberLiteral.Definition
+                              ? {
+                                    bounded: Fragment.Parse<
+                                        Middle,
+                                        Resolutions,
+                                        Context
+                                    >
+                                } & {
+                                    [K in ComparatorInverses[FirstComparator]]: Left
+                                } & {
+                                    [K in SecondComparator]: Right
+                                }
+                              : InvalidBoundError<Middle, Right>
+                          : InvalidBoundError<Middle, Left>
+                      : UnboundableError<Middle>
+                  : Parts extends SingleBoundedParts<
+                        infer Left,
+                        infer Comparator,
+                        infer Right
+                    >
+                  ? Left extends Comparable
+                      ? Right extends EmbeddedNumberLiteral.Definition
+                          ? {
+                                bounded: Fragment.Parse<
+                                    Left,
+                                    Resolutions,
+                                    Context
+                                >
+                            } & {
+                                [K in Comparator]: Right
+                            }
+                          : InvalidBoundError<Left, Right>
+                      : UnboundableError<Left>
+                  : ConstraintError
           >
-        ? Left extends Comparable
-            ? Right extends NumberLiteral.Definition
-                ? { bounded: Fragment.Parse<Left, Resolutions, Context> } & {
-                      [K in Comparator]: Right
-                  }
-                : InvalidBoundError<Left, Right>
-            : UnboundableError<Left>
-        : ConstraintError
+        : Defer
 
-    type NodeBounds = {
-        [K in ComparatorToken]?: NumberLiteral.Definition
-    }
-
-    export type Node = {
-        bounded: any
-    } & NodeBounds
-
-    export type TypeOf<N extends Node, Resolutions, Options> = Fragment.TypeOf<
-        N["bounded"],
+    export type TypeOf<N extends Node, Resolutions, Options> = Root.TypeOf<
+        N["children"]["bounded"],
         Resolutions,
         Options
     >

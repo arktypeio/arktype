@@ -1,37 +1,32 @@
-import { createParser, TypeOfContext, typeDefProxy } from "./internal.js"
+import { createParser, typeDefProxy, Precedence, Defer } from "./internal.js"
 import { Fragment } from "../fragment.js"
 import { Keyword } from "./keyword/keyword.js"
 import { EmbeddedLiteral } from "./embeddedLiteral/embeddedLiteral.js"
 import { Alias } from "./alias.js"
+import { ShallowNode } from "../internal.js"
 
 export namespace Reference {
     export type Definition<Resolutions> =
         | Keyword.Definition
         | EmbeddedLiteral.Definition
-        | Alias.Definition<Resolutions>
+        | keyof Resolutions
 
     export type Matches<
         Def extends string,
         Resolutions
     > = EmbeddedLiteral.Matches<Def> extends true
         ? true
-        : Def extends Keyword.Definition | Alias.Definition<Resolutions>
+        : Def extends Keyword.Definition | keyof Resolutions
         ? true
         : false
 
-    export type Node = string
-
-    export type TypeOf<
-        N extends Node,
-        Resolutions,
-        Options
-    > = N extends Keyword.Definition
-        ? Keyword.TypeOf<N>
-        : N extends EmbeddedLiteral.Definition
-        ? EmbeddedLiteral.TypeOf<N>
-        : N extends Alias.Definition<Resolutions>
-        ? Alias.TypeOf<N, Resolutions, Options>
-        : unknown
+    export type Parse<Def extends string, Resolutions, Options> = Precedence<
+        [
+            Keyword.Parse<Def>,
+            EmbeddedLiteral.Parse<Def>,
+            Alias.Parse<Def, Resolutions, Options>
+        ]
+    >
 
     export const type = typeDefProxy as string
 

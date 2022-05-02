@@ -3,26 +3,36 @@ import {
     createParser,
     typeDefProxy,
     ValidationErrorMessage,
-    DefaultParseTypeContext
+    DefaultParseTypeContext,
+    Precedence,
+    Defer,
+    UnknownTypeError,
+    ParseNode
 } from "./internal.js"
 import { Fragment } from "./fragment.js"
-import { KeyValuate, LeafOf, ListPossibleTypes } from "@re-/tools"
+import { KeyValuate, LeafOf, ListPossibleTypes, GetAs } from "@re-/tools"
 import { Optional } from "./optional.js"
 
 export namespace Str {
     export type Definition = string
 
-    export type Parse<
-        Def extends string,
-        Resolutions,
-        Context
-    > = Def extends Optional.Definition
-        ? Optional.Parse<Def, Resolutions, Context>
-        : Fragment.Parse<Def, Resolutions, Context>
+    export type Parse<Def, Resolutions, Context> = Def extends string
+        ? Precedence<
+              [
+                  Optional.Parse<Def, Resolutions, Context>,
+                  Fragment.Parse<Def, Resolutions, Context>,
+                  UnknownTypeError<Def>
+              ]
+          >
+        : Defer
 
-    export type TypeOf<N, Resolutions, Options> = N extends Optional.Node
+    export type TypeOf<
+        N extends ParseNode,
+        Resolutions,
+        Options
+    > = N extends Optional.Node
         ? Optional.TypeOf<N, Resolutions, Options>
-        : Fragment.TypeOf<N, Resolutions, Options>
+        : Root.TypeOf<N, Resolutions, Options>
 
     export type Validate<
         Def extends Definition,
@@ -40,7 +50,7 @@ export namespace Str {
         Config,
         Reference extends string = LeafOf<
             Parse<Def, Resolutions, DefaultParseTypeContext>,
-            KeyValuate<Config, "filter">
+            GetAs<Config, "filter", string>
         >
     > = KeyValuate<Config, "asTuple"> extends true
         ? ListPossibleTypes<Reference>

@@ -9,36 +9,36 @@ import {
     unknownTypeError,
     createParser,
     typeDefProxy,
-    UnknownTypeError
+    UnknownTypeError,
+    Precedence,
+    Defer,
+    ParseNode,
+    ShallowNode
 } from "./internal.js"
 import { Optional } from "./optional.js"
 
 export namespace Fragment {
-    export type Definition = string
-
-    export type Parse<
-        Def extends string,
-        Resolutions,
-        Context
-    > = Reference.Matches<Def, Resolutions> extends true
-        ? Def
-        : Def extends Expression.Definition
-        ? Expression.Parse<Def, Resolutions, Context>
-        : Def extends `${infer Left}${GetAs<
-              Context,
-              "delimiter",
-              string
-          >}${infer Right}`
-        ? UnpackArgs<
-              [
-                  Parse<Left, Resolutions, Context>,
-                  Parse<Right, Resolutions, Context>
-              ]
-          >
-        : // If we've made it to this point, Modifications should have already been handled
-        Def extends Optional.Definition
-        ? InvalidModifierError
-        : UnknownTypeError<Def>
+    export type Parse<Def extends string, Resolutions, Context> = Precedence<
+        [
+            Reference.Parse<Def, Resolutions, Context>,
+            Expression.Parse<Def, Resolutions, Context>,
+            Def extends `${infer Left}${GetAs<
+                Context,
+                "delimiter",
+                string
+            >}${infer Right}`
+                ? UnpackArgs<
+                      [
+                          Parse<Left, Resolutions, Context>,
+                          Parse<Right, Resolutions, Context>
+                      ]
+                  >
+                : Defer,
+            Def extends Optional.Definition
+                ? InvalidModifierError
+                : UnknownTypeError<Def>
+        ]
+    >
 
     type UnpackArgs<Args> = Args extends [infer First, infer Second]
         ? Second extends any[]
@@ -46,13 +46,7 @@ export namespace Fragment {
             : Args
         : Args
 
-    export type TypeOf<N, Resolutions, Options> = N extends Expression.Node
-        ? Expression.TypeOf<N, Resolutions, Options>
-        : N extends Reference.Node
-        ? Reference.TypeOf<N, Resolutions, Options>
-        : unknown
-
-    export const type = typeDefProxy as Definition
+    export const type = typeDefProxy as string
 
     export const parser = createParser(
         {
@@ -75,5 +69,5 @@ export namespace Fragment {
         }
     )
 
-    export const delegate = parser as any as Definition
+    export const delegate = parser as any as string
 }

@@ -1,4 +1,4 @@
-import { Evaluate, Iteration, TreeOf } from "@re-/tools"
+import { Evaluate, Iteration, KeyValuate, TreeOf } from "@re-/tools"
 import {
     ParseConfig,
     ReferencesTypeOptions,
@@ -61,12 +61,14 @@ export const errorsFromCustomValidator = (
     return {}
 }
 
-export type Precedence<T extends any[], Skip = unknown> = T extends Iteration<
-    any,
-    infer Current,
-    infer Remaining
->
-    ? Current extends Skip
-        ? Precedence<Remaining, Skip>
+export type Unset = "<unset>"
+
+export type Defer = "<defer>"
+
+export type Precedence<T> = T extends [infer Current, ...infer Remaining]
+    ? Remaining extends []
+        ? Current
+        : Current extends Defer
+        ? Precedence<Remaining>
         : Current
-    : [T]
+    : T

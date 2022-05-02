@@ -15,11 +15,10 @@ import {
     errorsFromCustomValidator,
     Merge,
     typeDefProxy,
-    MergeAll
+    MergeAll,
+    Unset
 } from "./internal.js"
 import { DefaultParseTypeContext } from "./definitions/internal.js"
-
-export type Definition = Root.Definition
 
 export type Validate<Def, Resolutions> = IsAny<Def> extends true
     ? Def
@@ -48,7 +47,7 @@ export type ReferencesTypeOptions = {
 }
 
 export type ReferencesOf<
-    Def extends Root.Definition,
+    Def,
     Resolutions = {},
     Options extends ReferencesTypeOptions = {},
     Config = Merge<
@@ -74,15 +73,15 @@ export type CheckReferences<
 >
 
 export type ParseConfig = {
-    onCycle?: Definition
+    onCycle?: any
     deepOnCycle?: boolean
-    onResolve?: Definition
+    onResolve?: any
 }
 
 export type DefaultParseOptions = {
-    onCycle: never
+    onCycle: Unset
     deepOnCycle: false
-    onResolve: never
+    onResolve: Unset
 }
 
 export type ReferencesConfig = {}

@@ -8,7 +8,9 @@ import {
     validationError,
     createParser,
     ParseContext,
-    UnknownTypeError
+    Defer,
+    DeepNode,
+    Root
 } from "./internal.js"
 import { Fragment } from "../fragment.js"
 import { Expression } from "./expression.js"
@@ -35,28 +37,26 @@ export namespace Union {
         Right extends string = string
     > = `${Left}|${Right}`
 
-    export type Parse<
-        Def extends Definition,
-        Resolutions,
-        Context
-    > = Def extends Definition<infer Left, infer Right>
-        ? {
-              union: [
+    export type Kind = "union"
+
+    export type Node = DeepNode<Kind, [unknown, unknown]>
+
+    export type Parse<Def, Resolutions, Context> = Def extends Definition<
+        infer Left,
+        infer Right
+    >
+        ? DeepNode<
+              Kind,
+              [
                   Fragment.Parse<Left, Resolutions, Context>,
                   Fragment.Parse<Right, Resolutions, Context>
               ]
-          }
-        : UnknownTypeError<Def>
+          >
+        : Defer
 
-    export type Node = {
-        union: [any, any]
-    }
-
-    export type TypeOf<N extends Node, Resolutions, Options> = Fragment.TypeOf<
-        ElementOf<N["union"]>,
-        Resolutions,
-        Options
-    >
+    export type TypeOf<N extends Node, Resolutions, Options> =
+        | Root.TypeOf<N["children"][0], Resolutions, Options>
+        | Root.TypeOf<N["children"][1], Resolutions, Options>
 
     export const type = typeDefProxy as Definition
 

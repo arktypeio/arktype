@@ -4,38 +4,29 @@ import {
     TypeOfContext,
     createParser,
     DefinitionTypeError,
-    ParseTypeContext
+    ParseTypeContext,
+    Precedence,
+    ParseNode
 } from "./internal.js"
 import { Root } from "../root.js"
 import { Map } from "./map.js"
 import { Tuple } from "./tuple.js"
 
 export namespace Obj {
-    export type Definition = Map.Definition | Tuple.Definition
+    export type Parse<Def, Resolutions, Context> = Precedence<
+        [
+            Tuple.Parse<Def, Resolutions, Context>,
+            Map.Parse<Def, Resolutions, Context>
+        ]
+    >
 
-    export type Parse<
-        Def extends Definition,
-        Resolutions,
-        Context
-    > = Def extends Tuple.Definition
-        ? Tuple.Parse<Def, Resolutions, Context>
-        : Def extends Map.Definition
-        ? Map.Parse<Def, Resolutions, Context>
-        : DefinitionTypeError
-
-    export type Node = Map.Node | Tuple.Node
-
-    export type TypeOf<
-        N extends Node,
-        Resolutions,
-        Options
-    > = N extends Map.Node
+    export type TypeOf<N, Resolutions, Options> = N["kind"] extends "map"
         ? Map.TypeOf<N, Resolutions, Options>
-        : N extends Tuple.Node
+        : N["kind"] extends "tuple"
         ? Tuple.TypeOf<N, Resolutions, Options>
         : unknown
 
-    export const type = typeDefProxy as Definition
+    export const type = typeDefProxy as object
 
     export const parser = createParser(
         {
@@ -48,5 +39,5 @@ export namespace Obj {
         }
     )
 
-    export const delegate = parser as any as Definition
+    export const delegate = parser as any as object
 }

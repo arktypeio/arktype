@@ -6,7 +6,9 @@ import {
     tupleLengthError,
     validationError,
     ValidationErrors,
-    ParseTypeContext
+    ParseTypeContext,
+    Defer,
+    DeepNode
 } from "./internal.js"
 import { Root } from "../root.js"
 import { Obj } from "./obj.js"
@@ -15,24 +17,35 @@ import { typeOf } from "../../utils.js"
 export namespace Tuple {
     export type Definition = any[]
 
-    export type Node = {
-        tuple: Definition
-    }
+    export type Kind = "tuple"
 
-    export type Parse<Def extends Definition, Resolutions, Context> = {
-        tuple: {
-            [Index in keyof Def]: Root.Parse<Def[Index], Resolutions, Context>
-        }
-    }
+    export type Node = DeepNode<Kind, any[]>
+
+    export type Parse<Def, Resolutions, Context> = Def extends any[]
+        ? DeepNode<
+              Kind,
+              {
+                  [Index in keyof Def]: Root.Parse<
+                      Def[Index],
+                      Resolutions,
+                      Context
+                  >
+              }
+          >
+        : Defer
 
     export type TypeOf<
         N extends Node,
         Resolutions,
         Options,
-        T = N["tuple"]
+        T = N["children"]
     > = Evaluate<{
         [Index in keyof T]: Root.TypeOf<T[Index], Resolutions, Options>
     }>
+
+    export type Validate<N extends Node, Resolutions, T = N["children"]> = {
+        [Index in keyof T]: Root.Validate<T[Index], Resolutions>
+    }
 
     export const type = typeDefProxy as Definition
 
