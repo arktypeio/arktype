@@ -1,52 +1,62 @@
-import { KeyValuate, WithPropValue } from "@re-/tools"
+import { Evaluate, Get, KeyValuate, WithPropValue } from "@re-/tools"
 import {
     typeDefProxy,
     createParser,
     duplicateModifierError,
     DuplicateModifierError,
     Defer,
-    DeepNode
+    DeepNode,
+    invalidModifierError,
+    Root
 } from "./internal.js"
 import { Str } from "./str.js"
-import { Fragment } from "./fragment.js"
 
 export namespace Optional {
     export type Definition<Of extends string = string> = `${Of}?`
 
     export type Kind = "optional"
 
-    export interface Node extends DeepNode<Kind> {}
-
     export type Parse<Def, Resolutions, Context> = Def extends Definition<
-        infer Of
+        infer Child
     >
         ? "?" extends KeyValuate<Context, "modifiers">
             ? DuplicateModifierError<"?">
             : DeepNode<
+                  Def,
                   Kind,
-                  Str.Parse<
-                      Of,
-                      Resolutions,
-                      WithPropValue<
-                          Context,
-                          "modifiers",
-                          "?" | KeyValuate<Context, "modifiers">
+                  [
+                      Str.Parse<
+                          Child,
+                          Resolutions,
+                          WithPropValue<
+                              Context,
+                              "modifiers",
+                              "?" | KeyValuate<Context, "modifiers">
+                          >
                       >
-                  >
+                  ]
               >
         : Defer
 
-    export type TypeOf<N extends Node, Resolutions, Options> =
-        | Str.TypeOf<N["children"], Resolutions, Options>
-        | undefined
+    export type TypeOf<
+        N,
+        Resolutions,
+        Options,
+        Children = Get<N, "children">
+    > = Evaluate<
+        Root.TypeOf<Get<Children, 0>, Resolutions, Options> | undefined
+    >
 
     export const type = typeDefProxy as Definition
 
     export const parser = createParser(
         {
             type,
-            parent: () => Fragment.parser,
+            parent: () => Str.parser,
             components: (def, ctx) => {
+                if (ctx.stringRoot !== def) {
+                    throw new Error(invalidModifierError("?"))
+                }
                 if (ctx.modifiers.includes("?")) {
                     throw new Error(duplicateModifierError("?"))
                 }

@@ -25,7 +25,7 @@ export type MergeAll<Types, Result = {}> = Types extends Iteration<
     ? MergeAll<Remaining, Merge<Result, Current>>
     : Evaluate<Result>
 
-export type ShallowDefinition = Str.Definition | Literal.Definition
+export type ShallowDefinition = string | Literal.Definition
 
 export type ShallowExtractableDefinition =
     | StringLiteral.Definition

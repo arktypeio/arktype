@@ -25,7 +25,7 @@ export namespace EmbeddedRegexLiteral {
     export type Kind = "embeddedRegexLiteral"
 
     export type Parse<Def extends string> = Matches<Def> extends true
-        ? ShallowNode<Kind, string>
+        ? ShallowNode<Def, Kind, string>
         : Defer
 
     export const type = typeDefProxy as Definition

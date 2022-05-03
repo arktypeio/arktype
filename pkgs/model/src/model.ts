@@ -20,25 +20,23 @@ import {
 } from "./internal.js"
 import { DefaultParseTypeContext } from "./definitions/internal.js"
 
-export type Validate<Def, Resolutions> = IsAny<Def> extends true
+export type Validate<Def, Node> = IsAny<Def> extends true
     ? Def
-    : Root.Validate<Def, Resolutions>
+    : Root.Validate<Node>
 
 export type TypeOf<
-    Def,
+    Node,
     Resolutions,
     Options = {},
     OptionsWithDefaults = Merge<DefaultParseOptions, Options>,
-    Checked = ValidateSpaceResolutions<Resolutions>
-> = IsAny<Def> extends true
-    ? Def
-    : Root.TypeOf<
-          Root.Parse<Def, Resolutions, DefaultParseTypeContext>,
-          Checked,
-          OptionsWithDefaults & {
-              seen: {}
-          }
-      >
+    Checked = Resolutions //ValidateSpaceResolutions<Resolutions>
+> = Root.TypeOf<
+    Node,
+    Checked,
+    OptionsWithDefaults & {
+        seen: {}
+    }
+>
 
 export type ReferencesTypeOptions = {
     asTuple?: boolean
@@ -125,7 +123,7 @@ export type ValidateFunction = <Options extends ValidateConfig>(
 const createRootValidate =
     (
         validate: ReturnType<typeof Root.parser.parse>["validate"],
-        definition: Root.Definition,
+        definition: any,
         customValidator: CustomValidator | undefined
     ): ValidateFunction =>
     (value, options) => {
@@ -193,26 +191,24 @@ export const createCreateFunction: CreateCreateFunction =
     }
 
 export type Model<
-    Def,
+    Node,
     Space,
     Options,
     SpaceParseConfig = KeyValuate<Get<Space, "config">, "parse">,
     ModelType = TypeOf<
-        Def,
+        Node,
         Get<Space, "resolutions">,
         MergeAll<[DefaultParseOptions, SpaceParseConfig, Options]>
     >
 > = Evaluate<{
-    definition: Def
+    definition: Get<Node, "def">
     type: ModelType
     space: Space
     config: ModelConfig
     validate: ValidateFunction
     assert: (value: unknown, options?: AssertOptions) => void
     generate: (options?: GenerateConfig) => ModelType
-    references: (
-        options?: ReferencesConfig
-    ) => ReferencesOf<Def, Get<Space, "resolutions">, { asList: true }>
+    references: (options?: ReferencesConfig) => [] //ReferencesOf<Def, Get<Space, "resolutions">, { asList: true }>
 }>
 
 export type CreateFunction<PredefinedSpace extends SpaceDefinition | null> = <
@@ -222,14 +218,20 @@ export type CreateFunction<PredefinedSpace extends SpaceDefinition | null> = <
         ? Options["space"] extends SpaceDefinition
             ? Options["space"]
             : { resolutions: {} }
-        : PredefinedSpace
+        : PredefinedSpace,
+    Node = Root.Parse<
+        Def,
+        Get<ActiveSpace, "resolutions">,
+        DefaultParseTypeContext
+    >
 >(
-    definition: Validate<Narrow<Def>, ActiveSpace["resolutions"]>,
+    definition: Validate<Narrow<Def>, Node>,
+    // Validate<Narrow<Def>, ActiveSpace["resolutions"]>,
     // TS has a problem inferring the narrowed type of a function hence the intersection hack
     // If removing it doesn't break any types or tests, do it!
     options?: Narrow<Options> & { validate?: { validator?: CustomValidator } }
 ) => Model<
-    Def,
+    Node,
     Evaluate<ActiveSpace>,
     Options["parse"] extends ParseConfig ? Options["parse"] : {}
 >
@@ -241,3 +243,13 @@ export type CreateFunction<PredefinedSpace extends SpaceDefinition | null> = <
  * @returns {@as any} The result.
  */
 export const create = createCreateFunction(null)
+
+const user = create({
+    name: {
+        first: "string",
+        middle: "string?",
+        last: "string"
+    },
+    age: "number",
+    browser: "'chrome'|'firefox'|'other'|null"
+})

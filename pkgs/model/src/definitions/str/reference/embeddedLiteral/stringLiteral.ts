@@ -24,7 +24,7 @@ export namespace StringLiteral {
         Def extends string,
         ExtractedValue = ValueFrom<Def>
     > = ExtractedValue extends string
-        ? ShallowNode<Kind, ExtractedValue>
+        ? ShallowNode<Def, Kind, ExtractedValue>
         : Defer
 
     export type ValueFrom<Def extends string> = Def extends SingleQuoted<

@@ -20,12 +20,6 @@ export namespace Obj {
         ]
     >
 
-    export type TypeOf<N, Resolutions, Options> = N["kind"] extends "map"
-        ? Map.TypeOf<N, Resolutions, Options>
-        : N["kind"] extends "tuple"
-        ? Tuple.TypeOf<N, Resolutions, Options>
-        : unknown
-
     export const type = typeDefProxy as object
 
     export const parser = createParser(

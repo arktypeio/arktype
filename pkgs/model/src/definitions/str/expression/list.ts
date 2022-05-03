@@ -1,4 +1,4 @@
-import { Evaluate } from "@re-/tools"
+import { Evaluate, Get } from "@re-/tools"
 import {
     typeDefProxy,
     validationError,
@@ -7,7 +7,7 @@ import {
     DeepNode,
     Root
 } from "./internal.js"
-import { Fragment } from "../fragment.js"
+import { Str } from "../str.js"
 import { Expression } from "./expression.js"
 import { Tuple } from "../../obj/index.js"
 import { typeOf } from "../../../utils.js"
@@ -17,17 +17,18 @@ export namespace List {
 
     export type Kind = "list"
 
-    export type Node = DeepNode<Kind>
-
     export type Parse<Def, Resolutions, Context> = Def extends Definition<
         infer Child
     >
-        ? DeepNode<Kind, Fragment.Parse<Child, Resolutions, Context>>
+        ? DeepNode<Def, Kind, [Str.Parse<Child, Resolutions, Context>]>
         : Defer
 
-    export type TypeOf<N extends Node, Resolutions, Options> = Evaluate<
-        Root.TypeOf<N["children"], Resolutions, Options>[]
-    >
+    export type TypeOf<
+        N,
+        Resolutions,
+        Options,
+        Children = Get<N, "children">
+    > = Root.TypeOf<Get<Children, 0>, Resolutions, Options>[]
 
     export const type = typeDefProxy as Definition
 
@@ -36,7 +37,7 @@ export namespace List {
             type,
             parent: () => Expression.parser,
             components: (def, ctx) => ({
-                item: Fragment.parser.parse(def.slice(0, -2), ctx)
+                item: Str.parser.parse(def.slice(0, -2), ctx)
             })
         },
         {

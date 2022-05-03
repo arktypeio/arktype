@@ -1,6 +1,7 @@
 import {
     asNumber,
     ElementOf,
+    Get,
     isEmpty,
     isNumeric,
     narrow,
@@ -9,7 +10,7 @@ import {
     toString
 } from "@re-/tools"
 import { numberKeywords, stringKeywords } from "../reference/index.js"
-import { Fragment } from "../fragment.js"
+import { Str } from "../str.js"
 import { Expression } from "./expression.js"
 import { EmbeddedNumberLiteral } from "../reference/embeddedLiteral/embeddedNumberLiteral.js"
 import { StringLiteral } from "../reference/embeddedLiteral/stringLiteral.js"
@@ -135,13 +136,6 @@ export namespace Constraint {
 
     export type Kind = "constraint"
 
-    export type Node = DeepNode<
-        Kind,
-        {
-            bounded: any
-        } & NodeBounds
-    >
-
     export type Parse<
         Def extends string,
         Resolutions,
@@ -150,6 +144,7 @@ export namespace Constraint {
             string[]
     > = Def extends Definition
         ? DeepNode<
+              Def,
               Kind,
               Parts extends DoubleBoundedParts<
                   infer Left,
@@ -162,7 +157,7 @@ export namespace Constraint {
                       ? Left extends EmbeddedNumberLiteral.Definition
                           ? Right extends EmbeddedNumberLiteral.Definition
                               ? {
-                                    bounded: Fragment.Parse<
+                                    bounded: Str.Parse<
                                         Middle,
                                         Resolutions,
                                         Context
@@ -183,11 +178,7 @@ export namespace Constraint {
                   ? Left extends Comparable
                       ? Right extends EmbeddedNumberLiteral.Definition
                           ? {
-                                bounded: Fragment.Parse<
-                                    Left,
-                                    Resolutions,
-                                    Context
-                                >
+                                bounded: Str.Parse<Left, Resolutions, Context>
                             } & {
                                 [K in Comparator]: Right
                             }
@@ -197,11 +188,12 @@ export namespace Constraint {
           >
         : Defer
 
-    export type TypeOf<N extends Node, Resolutions, Options> = Root.TypeOf<
-        N["children"]["bounded"],
+    export type TypeOf<
+        N,
         Resolutions,
-        Options
-    >
+        Options,
+        Children = Get<N, "children">
+    > = Root.TypeOf<Get<Children, "bounded">, Resolutions, Options>
 
     export const matcher = /(<=|>=|<|>)/
 
@@ -234,7 +226,7 @@ export namespace Constraint {
                         comparatorInverses[parts[1] as ComparatorToken]
                     const secondComparator = parts[3] as ComparatorToken
                     return {
-                        bounded: Fragment.parser.parse(parts[2], ctx) as any,
+                        bounded: Str.parser.parse(parts[2], ctx) as any,
                         [firstComparator]: parts[0],
                         [secondComparator]: parts[4]
                     }
@@ -251,7 +243,7 @@ export namespace Constraint {
                     }
                     const comparator = parts[1] as ComparatorToken
                     return {
-                        bounded: Fragment.parser.parse(parts[0], ctx) as any,
+                        bounded: Str.parser.parse(parts[0], ctx) as any,
                         [comparator]: parts[2]
                     }
                 }
@@ -291,7 +283,8 @@ export namespace Constraint {
                 }
                 return {}
             },
-            references: ({ components }) => components.bounded.references(),
+            references: ({ components }) =>
+                components.bounded.references() as string[],
             generate: ({ def }) => {
                 throw new Error(ungeneratableError(def, "constraint"))
             }

@@ -1,75 +1,86 @@
-import { Root } from "../root.js"
+import { Evaluate, GetAs } from "@re-/tools"
+import { Reference } from "./reference/index.js"
+import { Expression } from "./expression/index.js"
 import {
+    invalidModifierError,
+    InvalidModifierError,
+    ModifierToken,
+    unknownTypeError,
     createParser,
     typeDefProxy,
-    ValidationErrorMessage,
-    DefaultParseTypeContext,
+    UnknownTypeError,
     Precedence,
     Defer,
-    UnknownTypeError,
-    ParseNode
+    Root,
+    ErrorNode
 } from "./internal.js"
-import { Fragment } from "./fragment.js"
-import { KeyValuate, LeafOf, ListPossibleTypes, GetAs } from "@re-/tools"
 import { Optional } from "./optional.js"
 
 export namespace Str {
-    export type Definition = string
-
-    export type Parse<Def, Resolutions, Context> = Def extends string
+    export type ParseRoot<Def, Resolutions, Context> = Def extends string
         ? Precedence<
               [
                   Optional.Parse<Def, Resolutions, Context>,
-                  Fragment.Parse<Def, Resolutions, Context>,
-                  UnknownTypeError<Def>
+                  Parse<Def, Resolutions, Context>,
+                  ErrorNode<UnknownTypeError<Def>>
               ]
           >
         : Defer
 
-    export type TypeOf<
-        N extends ParseNode,
-        Resolutions,
-        Options
-    > = N extends Optional.Node
-        ? Optional.TypeOf<N, Resolutions, Options>
-        : Root.TypeOf<N, Resolutions, Options>
+    export type Parse<Def extends string, Resolutions, Context> = Precedence<
+        [
+            Reference.Parse<Def, Resolutions, Context>,
+            Expression.Parse<Def, Resolutions, Context>,
+            Def extends `${infer Left}${GetAs<
+                Context,
+                "delimiter",
+                string
+            >}${infer Right}`
+                ? UnpackArgs<
+                      [
+                          Parse<Left, Resolutions, Context>,
+                          Parse<Right, Resolutions, Context>
+                      ]
+                  >
+                : Defer,
+            Def extends Optional.Definition
+                ? InvalidModifierError
+                : ErrorNode<UnknownTypeError<Def>>
+        ]
+    >
 
-    export type Validate<
-        Def extends Definition,
-        Resolutions,
-        Errors = ReferencesOf<
-            Def,
-            Resolutions,
-            { asTuple: true; asList: false; filter: ValidationErrorMessage }
-        >
-    > = Errors extends [] ? Def : { errors: Errors }
+    type UnpackArgs<Args> = Args extends [infer First, infer Second]
+        ? Second extends any[]
+            ? [First, ...Second]
+            : Args
+        : Args
 
-    export type ReferencesOf<
-        Def extends Definition,
-        Resolutions,
-        Config,
-        Reference extends string = LeafOf<
-            Parse<Def, Resolutions, DefaultParseTypeContext>,
-            GetAs<Config, "filter", string>
-        >
-    > = KeyValuate<Config, "asTuple"> extends true
-        ? ListPossibleTypes<Reference>
-        : KeyValuate<Config, "asList"> extends true
-        ? Reference[]
-        : Reference
-
-    export const type = typeDefProxy as Definition
+    export const type = typeDefProxy as string
 
     export const parser = createParser(
         {
             type,
             parent: () => Root.parser,
-            children: () => [Optional.delegate, Fragment.delegate]
+            children: () => [
+                Optional.delegate,
+                Reference.delegate,
+                Expression.delegate
+            ],
+            fallback: (def, { path }) => {
+                if (Optional.parser.matches(def as any)) {
+                    throw new Error(
+                        invalidModifierError(
+                            def[def.length - 1] as ModifierToken
+                        )
+                    )
+                }
+                throw new Error(unknownTypeError(def, path))
+            }
         },
         {
             matches: (def) => typeof def === "string"
         }
     )
 
-    export const delegate = parser as any as Definition
+    export const delegate = parser as any as string
 }

@@ -20,7 +20,7 @@ export namespace Keyword {
     export type Kind = "keyword"
 
     export type Parse<Def> = Def extends keyof KeywordTypes
-        ? ShallowNode<Kind, KeywordTypes[Def]>
+        ? ShallowNode<Def, Kind, KeywordTypes[Def]>
         : Defer
 
     export const type = typeDefProxy as Definition

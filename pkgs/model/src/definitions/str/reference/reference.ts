@@ -1,5 +1,5 @@
 import { createParser, typeDefProxy, Precedence, Defer } from "./internal.js"
-import { Fragment } from "../fragment.js"
+import { Str } from "../str.js"
 import { Keyword } from "./keyword/keyword.js"
 import { EmbeddedLiteral } from "./embeddedLiteral/embeddedLiteral.js"
 import { Alias } from "./alias.js"
@@ -33,7 +33,7 @@ export namespace Reference {
     export const parser = createParser(
         {
             type,
-            parent: () => Fragment.parser,
+            parent: () => Str.parser,
             children: () => [
                 Keyword.delegate,
                 EmbeddedLiteral.delegate,

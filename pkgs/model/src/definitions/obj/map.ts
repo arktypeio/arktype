@@ -3,17 +3,16 @@ import {
     DiffSetsResult,
     Evaluate,
     isRecursible,
-    transform
+    transform,
+    Get
 } from "@re-/tools"
 import {
-    TypeOfContext,
     mismatchedKeysError,
     validationError,
     ValidationErrors,
     typeDefProxy,
     createParser,
     ParseResult,
-    ParseTypeContext,
     Defer,
     DeepNode
 } from "./internal.js"
@@ -27,10 +26,9 @@ export namespace Map {
 
     export type Kind = "map"
 
-    export interface Node extends DeepNode<Kind> {}
-
     export type Parse<Def, Resolutions, Context> = Def extends Definition
         ? DeepNode<
+              Def,
               Kind,
               {
                   [PropName in keyof Def]: Root.Parse<
@@ -43,12 +41,15 @@ export namespace Map {
         : Defer
 
     export type TypeOf<
-        N extends Node,
+        N,
         Resolutions,
         Options,
-        MappedNodes extends Definition = N["children"],
+        MappedNodes = Get<N, "children">,
         OptionalKey extends keyof MappedNodes = {
-            [K in keyof MappedNodes]: MappedNodes[K] extends Optional.Node
+            [K in keyof MappedNodes]: Get<
+                MappedNodes[K],
+                "kind"
+            > extends Optional.Kind
                 ? K
                 : never
         }[keyof MappedNodes],
@@ -72,8 +73,8 @@ export namespace Map {
         }
     >
 
-    export type Validate<N extends Node, Resolutions, T = N["children"]> = {
-        [Index in keyof T]: Root.Validate<T[Index], Resolutions>
+    export type Validate<N, T = Get<N, "children">> = {
+        [Index in keyof T]: Root.Validate<T[Index]>
     }
 
     export const type = typeDefProxy as Definition

@@ -10,7 +10,6 @@ import {
 } from "@re-/tools"
 import {
     createCreateFunction,
-    CreateFunction,
     Model,
     ModelConfig,
     DefaultParseOptions,
@@ -24,26 +23,26 @@ import { DefaultParseTypeContext } from "./definitions/internal.js"
 export type SpaceResolutions = Record<string, any>
 
 export type ValidateSpaceResolutions<
+    Nodes,
     Resolutions,
     SuperSpaceResolutions = {}
-> = IsAny<Resolutions> extends true
-    ? any
-    : Evaluate<{
-          [TypeName in keyof Resolutions]: ValidateResolution<
-              Resolutions[TypeName],
-              Merge<SuperSpaceResolutions, Resolutions>
-          >
-      }>
+> = Evaluate<{
+    [TypeName in keyof Nodes]: ValidateResolution<
+        Nodes[TypeName],
+        Merge<SuperSpaceResolutions, Resolutions>
+    >
+}>
 
 export type ResolutionsToModels<
+    Nodes,
     Resolutions,
     Config,
     ConfigWithDefaults = Merge<DefaultParseOptions, Config>
 > = Evaluate<{
-    [TypeName in keyof Resolutions]: Model<
-        Resolutions[TypeName],
+    [TypeName in keyof Nodes]: Model<
+        Nodes[TypeName],
         {
-            resolutions: ValidateSpaceResolutions<Resolutions>
+            resolutions: ValidateSpaceResolutions<Nodes, Resolutions>
             config: { parse: Config }
         },
         ConfigWithDefaults & { seen: { [K in TypeName]: true } }
@@ -107,10 +106,15 @@ export const createCompileFunction: CreateCompileFunction =
     }
 
 export type CheckCompileResolutions<
+    Nodes,
     Resolutions,
     DeclaredTypeNames extends string[] = [],
     SuperSpaceResolutions = {},
-    Checked = ValidateSpaceResolutions<Resolutions, SuperSpaceResolutions>,
+    Checked = ValidateSpaceResolutions<
+        Nodes,
+        Resolutions,
+        SuperSpaceResolutions
+    >,
     DefinedTypeName extends string = keyof Checked & string,
     DeclaredTypeName extends string = DeclaredTypeNames extends never[]
         ? DefinedTypeName
@@ -131,29 +135,29 @@ export type SpaceOptions<
     }
 }
 
-type ExtendSpaceConfig<OriginalConfig, NewConfig> = Merge<
-    Merge<OriginalConfig, NewConfig>,
-    {
-        models: Merge<
-            KeyValuate<OriginalConfig, "models">,
-            KeyValuate<NewConfig, "models">
-        >
-    }
->
+// type ExtendSpaceConfig<OriginalConfig, NewConfig> = Merge<
+//     Merge<OriginalConfig, NewConfig>,
+//     {
+//         models: Merge<
+//             KeyValuate<OriginalConfig, "models">,
+//             KeyValuate<NewConfig, "models">
+//         >
+//     }
+// >
 
-type ExtendSpaceFunction<OriginalResolutions, OriginalConfig> = <
-    NewResolutions,
-    NewConfig extends SpaceOptions<MergedResolutions>,
-    MergedResolutions = Merge<OriginalResolutions, NewResolutions>
->(
-    definitions: Narrow<
-        Exact<
-            NewResolutions,
-            CheckCompileResolutions<NewResolutions, [], OriginalResolutions>
-        >
-    >,
-    config?: Narrow<NewConfig>
-) => Space<MergedResolutions, ExtendSpaceConfig<OriginalConfig, NewConfig>>
+// type ExtendSpaceFunction<OriginalResolutions, OriginalConfig> = <
+//     NewResolutions,
+//     NewConfig extends SpaceOptions<MergedResolutions>,
+//     MergedResolutions = Merge<OriginalResolutions, NewResolutions>
+// >(
+//     definitions: Narrow<
+//         Exact<
+//             NewResolutions,
+//             CheckCompileResolutions<NewResolutions, [], OriginalResolutions>
+//         >
+//     >,
+//     config?: Narrow<NewConfig>
+// ) => Space<MergedResolutions, ExtendSpaceConfig<OriginalConfig, NewConfig>>
 
 export type SpaceDefinition<
     Resolutions = SpaceResolutions,
@@ -164,6 +168,7 @@ export type SpaceDefinition<
 }
 
 export type Space<
+    Nodes,
     Resolutions,
     Config,
     SpaceParseConfig = KeyValuate<Config, "parse"> extends undefined
@@ -172,35 +177,39 @@ export type Space<
 > = Evaluate<{
     resolutions: Resolutions
     config: Config
-    models: ResolutionsToModels<Resolutions, SpaceParseConfig>
+    nodes: Nodes
     types: Evaluate<{
-        [TypeName in keyof Resolutions]: Root.TypeOf<
-            Root.Parse<
-                Resolutions[TypeName],
-                Resolutions,
-                DefaultParseTypeContext
-            >,
+        [TypeName in keyof Nodes]: Root.TypeOf<
+            Nodes[TypeName],
             Resolutions,
             DefaultTypeOfContext
         >
     }>
+    // models: ResolutionsToModels<Resolutions, SpaceParseConfig>
     // @ts-ignore
-    create: CreateFunction<{
-        resolutions: Resolutions
-        config: Config
-    }>
-    extend: ExtendSpaceFunction<Resolutions, Config>
+    // create: CreateFunction<{
+    //     resolutions: Resolutions
+    //     config: Config
+    // }>
+    // extend: ExtendSpaceFunction<Resolutions, Config>
     // TODO: Add declare extension
 }>
 
 export type CompileFunction<DeclaredTypeNames extends string[]> = <
     Resolutions,
-    Options extends SpaceOptions<Resolutions> = {}
+    Options extends SpaceOptions<Resolutions> = {},
+    Nodes = Evaluate<{
+        [TypeName in keyof Resolutions]: Root.Parse<
+            Resolutions[TypeName],
+            Resolutions,
+            DefaultParseTypeContext
+        >
+    }>
 >(
     resolutions: Narrow<
         Exact<
             Resolutions,
-            CheckCompileResolutions<Resolutions, DeclaredTypeNames>
+            CheckCompileResolutions<Nodes, Resolutions, DeclaredTypeNames>
         >
     >,
     // TS has a problem inferring the narrowed type of a function hence the intersection hack
@@ -213,7 +222,7 @@ export type CompileFunction<DeclaredTypeNames extends string[]> = <
             }
         }
     >
-) => Space<Resolutions, Options>
+) => Space<Nodes, Resolutions, Options>
 
 // Exported compile function is equivalent to compile from an empty declare call
 // and will not validate missing or extraneous definitions

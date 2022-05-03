@@ -1,12 +1,10 @@
-import { Evaluate } from "@re-/tools"
+import { Evaluate, Get } from "@re-/tools"
 import {
     typeDefProxy,
-    TypeOfContext,
     createParser,
     tupleLengthError,
     validationError,
     ValidationErrors,
-    ParseTypeContext,
     Defer,
     DeepNode
 } from "./internal.js"
@@ -19,10 +17,9 @@ export namespace Tuple {
 
     export type Kind = "tuple"
 
-    export type Node = DeepNode<Kind, any[]>
-
     export type Parse<Def, Resolutions, Context> = Def extends any[]
         ? DeepNode<
+              Def,
               Kind,
               {
                   [Index in keyof Def]: Root.Parse<
@@ -35,16 +32,16 @@ export namespace Tuple {
         : Defer
 
     export type TypeOf<
-        N extends Node,
+        N,
         Resolutions,
         Options,
-        T = N["children"]
+        T = Get<N, "children">
     > = Evaluate<{
         [Index in keyof T]: Root.TypeOf<T[Index], Resolutions, Options>
     }>
 
-    export type Validate<N extends Node, Resolutions, T = N["children"]> = {
-        [Index in keyof T]: Root.Validate<T[Index], Resolutions>
+    export type Validate<N, T = Get<N, "children">> = {
+        [Index in keyof T]: Root.Validate<T[Index]>
     }
 
     export const type = typeDefProxy as Definition

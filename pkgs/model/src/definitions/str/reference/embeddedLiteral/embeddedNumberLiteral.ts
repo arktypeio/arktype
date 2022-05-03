@@ -17,7 +17,7 @@ export namespace EmbeddedNumberLiteral {
     export type Parse<Def extends string> = Def extends NumericString<
         infer Value
     >
-        ? ShallowNode<Kind, Value>
+        ? ShallowNode<Def, Kind, Value>
         : Defer
 
     export const type = typeDefProxy as Definition

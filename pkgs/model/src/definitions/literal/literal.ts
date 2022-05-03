@@ -1,4 +1,4 @@
-import { KeyValuate, narrow } from "@re-/tools"
+import { Evaluate, KeyValuate, narrow } from "@re-/tools"
 import {
     typeDefProxy,
     createParser,
@@ -8,24 +8,23 @@ import {
 } from "./internal.js"
 import { Root } from "../root.js"
 import { typeOf } from "../../utils.js"
+import { ShallowNode } from "../internal.js"
 
 export namespace Literal {
     export type Definition = RegExp | PrimitiveLiteral
 
     export type PrimitiveLiteral = number | bigint | boolean | undefined | null
 
-    export type Node = PrimitiveLiteral | { regex: string }
-
     export type Parse<Def> = Precedence<
         [
-            Def extends RegExp ? { regex: string } : Defer,
-            Def extends PrimitiveLiteral ? Def : Defer
+            Def extends RegExp
+                ? ShallowNode<Def, "regexLiteral", string>
+                : Defer,
+            Def extends PrimitiveLiteral
+                ? ShallowNode<Def, "primitiveLiteral", Def>
+                : Defer
         ]
     >
-
-    export type TypeOf<N extends Node> = N extends { regex: string }
-        ? string
-        : N
 
     export type ReferencesOf<
         Def extends Definition,

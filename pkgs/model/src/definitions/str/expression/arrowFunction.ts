@@ -13,7 +13,7 @@ import {
     Defer,
     Root
 } from "./internal.js"
-import { Fragment } from "../fragment.js"
+import { Str } from "../str.js"
 import { Expression } from "./expression.js"
 import { typeOf } from "../../../utils.js"
 import { DeepNode } from "../internal.js"
@@ -24,17 +24,21 @@ export namespace ArrowFunction {
         Return extends string = string
     > = `(${Args})=>${Return}`
 
+    export type Kind = "arrowFunction"
+
     export type Parse<Def, Resolutions, Context> = Def extends Definition<
         infer Args,
         infer Return
     >
         ? DeepNode<
+              Def,
               Kind,
-              {
-                  args: Args extends ""
+              [
+                  Str.Parse<Return, Resolutions, Context>,
+                  ...(Args extends ""
                       ? []
                       : ToList<
-                            Fragment.Parse<
+                            Str.Parse<
                                 Args,
                                 Resolutions,
                                 WithPropValue<
@@ -43,33 +47,24 @@ export namespace ArrowFunction {
                                     Get<Context, "delimiter"> | ","
                                 >
                             >
-                        >
-                  returns: Fragment.Parse<Return, Resolutions, Context>
-              }
+                        >)
+              ]
           >
         : Defer
 
-    export type Kind = "arrowFunction"
-
-    export type Node = DeepNode<
-        Kind,
-        {
-            args: any[]
-            returns: any
-        }
-    >
-
     export type TypeOf<
-        N extends Node,
+        N,
         Resolutions,
         Options,
-        Args = N["children"]["args"]
-    > = EvaluateFunction<
-        (
-            // @ts-ignore
-            ...args: TypeOfArgs<Args, Resolutions, Options>
-        ) => Root.TypeOf<N["children"]["returns"], Resolutions, Options>
-    >
+        Children = Get<N, "children">
+    > = Children extends [infer Return, ...infer Args]
+        ? EvaluateFunction<
+              (
+                  // @ts-ignore
+                  ...args: TypeOfArgs<Args, Resolutions, Options>
+              ) => Root.TypeOf<Return, Resolutions, Options>
+          >
+        : unknown
 
     type TypeOfArgs<Args, Resolutions, Options> = Evaluate<{
         [I in keyof Args]: Root.TypeOf<Args[I], Resolutions, Options>
@@ -92,9 +87,9 @@ export namespace ArrowFunction {
                 const returnDef = parts.slice(1).join("=>")
                 return {
                     args: parameterDefs.map((arg) =>
-                        Fragment.parser.parse(arg, ctx)
+                        Str.parser.parse(arg, ctx)
                     ),
-                    returns: Fragment.parser.parse(returnDef, ctx)
+                    returns: Str.parser.parse(returnDef, ctx)
                 }
             }
         },

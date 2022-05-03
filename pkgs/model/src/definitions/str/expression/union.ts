@@ -1,4 +1,4 @@
-import { ElementOf, transform, TypeCategory } from "@re-/tools"
+import { ElementOf, Evaluate, Get, transform, TypeCategory } from "@re-/tools"
 import {
     typeDefProxy,
     isRequiredCycleError,
@@ -12,7 +12,7 @@ import {
     DeepNode,
     Root
 } from "./internal.js"
-import { Fragment } from "../fragment.js"
+import { Str } from "../str.js"
 import { Expression } from "./expression.js"
 import { typeOf } from "../../../utils.js"
 
@@ -39,24 +39,28 @@ export namespace Union {
 
     export type Kind = "union"
 
-    export type Node = DeepNode<Kind, [unknown, unknown]>
-
     export type Parse<Def, Resolutions, Context> = Def extends Definition<
         infer Left,
         infer Right
     >
         ? DeepNode<
+              Def,
               Kind,
               [
-                  Fragment.Parse<Left, Resolutions, Context>,
-                  Fragment.Parse<Right, Resolutions, Context>
+                  Str.Parse<Left, Resolutions, Context>,
+                  Str.Parse<Right, Resolutions, Context>
               ]
           >
         : Defer
 
-    export type TypeOf<N extends Node, Resolutions, Options> =
-        | Root.TypeOf<N["children"][0], Resolutions, Options>
-        | Root.TypeOf<N["children"][1], Resolutions, Options>
+    export type TypeOf<
+        N,
+        Resolutions,
+        Options,
+        Children = Get<N, "children">
+    > =
+        | Root.TypeOf<Get<Children, 0>, Resolutions, Options>
+        | Root.TypeOf<Get<Children, 1>, Resolutions, Options>
 
     export const type = typeDefProxy as Definition
 
@@ -67,7 +71,7 @@ export namespace Union {
             components: (def: Definition, ctx: ParseContext) =>
                 def
                     .split("|")
-                    .map((fragment) => Fragment.parser.parse(fragment, ctx))
+                    .map((fragment) => Str.parser.parse(fragment, ctx))
         },
         {
             matches: (definition) => definition.includes("|"),

@@ -2,7 +2,7 @@ import { createParser, typeDefProxy, Precedence } from "./internal.js"
 import { ArrowFunction } from "./arrowFunction.js"
 import { List } from "./list.js"
 import { Union } from "./union.js"
-import { Fragment } from "../fragment.js"
+import { Str } from "../str.js"
 import { Constraint } from "./constraint.js"
 import { Intersection } from "./intersection.js"
 import { DeepNode, ParseNode } from "../internal.js"
@@ -22,7 +22,7 @@ export namespace Expression {
 
     export const parser = createParser({
         type,
-        parent: () => Fragment.parser,
+        parent: () => Str.parser,
         children: () => [
             ArrowFunction.delegate,
             Union.delegate,

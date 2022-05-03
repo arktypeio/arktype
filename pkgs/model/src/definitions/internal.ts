@@ -1,3 +1,5 @@
+import { Evaluate } from "@re-/tools"
+
 export * from "../internal.js"
 export * from "./parser.js"
 
@@ -8,18 +10,24 @@ export type ParseTypeContext = {
     modifiers: string
 }
 
-export type DefaultParseTypeContext = { delimiter: never; modifiers: never }
-
-export interface ParseNode<Kind extends string = string> {
-    kind: Kind
+export type DefaultParseTypeContext = {
+    delimiter: never
+    modifiers: never
 }
 
-export interface ShallowNode<Kind extends string = string, T = unknown>
-    extends ParseNode<Kind> {
+export type ParseNode = {
+    def: any
+    kind: string
+}
+
+export type ShallowNode<Def, Kind extends string, T> = {
+    def: Def
+    kind: Kind
     type: T
 }
 
-export interface DeepNode<Kind extends string = string, Children = any>
-    extends ParseNode<Kind> {
+export type DeepNode<Def, Kind extends string, Children> = {
+    def: Def
+    kind: Kind
     children: Children
 }

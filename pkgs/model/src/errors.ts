@@ -9,6 +9,7 @@ import {
     isAlphaNumeric,
     StringifyPossibleTypes
 } from "@re-/tools"
+import { ShallowNode } from "./definitions/internal.js"
 import { ParseContext } from "./definitions/parser.js"
 import { ExtractableDefinition } from "./internal.js"
 
@@ -174,10 +175,18 @@ export type ValidationErrorMessage =
     | DuplicateModifierError
     | InvalidModifierError
 
+export type ErrorNodeKind = "error"
+
+export type ErrorNode<Message extends string> = ShallowNode<
+    Message,
+    ErrorNodeKind,
+    unknown
+>
+
 export type InferrableValidationErrorMessage<E> =
     E extends ValidationErrorMessage ? E : never
 
-// Paths at which errors occur mapped to their messages
+// Paths at which errorso ccur mapped to their messages
 export type ValidationErrors = Record<string, string>
 
 export type ValidationErrorArgs = { path: string[] } & (

@@ -1,11 +1,11 @@
 import {
     typeDefProxy,
     Precedence,
-    ShallowNode,
     BadDefinitionType,
     DefinitionTypeError,
     definitionTypeError,
-    UnknownTypeError
+    UnknownTypeError,
+    ErrorNode
 } from "./internal.js"
 import { Obj, Map, Tuple } from "./obj/index.js"
 import {
@@ -13,11 +13,14 @@ import {
     Union,
     Intersection,
     Constraint,
-    List
+    List,
+    Str,
+    Optional
 } from "./str/index.js"
-import { Str } from "./str/index.js"
 import { Literal } from "./literal/index.js"
 import { reroot, createParser } from "./parser.js"
+import { Evaluate, Get, ListPossibleTypes } from "@re-/tools"
+import { ValidationErrorMessage } from "../errors.js"
 
 export namespace Root {
     export type Parse<Def, Resolutions, Context> = Def extends BadDefinitionType
@@ -26,52 +29,87 @@ export namespace Root {
               [
                   Obj.Parse<Def, Resolutions, Context>,
                   Literal.Parse<Def>,
-                  Str.Parse<Def, Resolutions, Context>,
-                  UnknownTypeError<Def extends string ? Def : "your definition">
+                  Str.ParseRoot<Def, Resolutions, Context>,
+                  ErrorNode<
+                      UnknownTypeError<
+                          Def extends string ? Def : "your definition"
+                      >
+                  >
               ]
           >
 
-    export type TypeOf<N, Resolutions, Options> = N extends ShallowNode
+    export type TypeOf<
+        N,
+        Resolutions,
+        Options,
+        Kind = Get<N, "kind">
+    > = "type" extends keyof N
         ? N["type"]
-        : N["kind"] extends "tuple"
+        : Kind extends Tuple.Kind
         ? Tuple.TypeOf<N, Resolutions, Options>
-        : N["kind"] extends "map"
+        : Kind extends Map.Kind
         ? Map.TypeOf<N, Resolutions, Options>
-        : N["kind"] extends "arrowFunction"
-        ? ArrowFunction.TypeOf<N, Resolutions, Options>
-        : N["kind"] extends "union"
-        ? Union.TypeOf<N, Resolutions, Options>
-        : N["kind"] extends "intersection"
+        : Kind extends Optional.Kind
+        ? Evaluate<Optional.TypeOf<N, Resolutions, Options>>
+        : Kind extends ArrowFunction.Kind
+        ? Evaluate<ArrowFunction.TypeOf<N, Resolutions, Options>>
+        : Kind extends Union.Kind
+        ? Evaluate<Union.TypeOf<N, Resolutions, Options>>
+        : Kind extends Intersection.Kind
         ? Intersection.TypeOf<N, Resolutions, Options>
-        : N["kind"] extends "constraint"
-        ? Constraint.TypeOf<N, Resolutions, Options>
-        : N["kind"] extends "list"
-        ? List.TypeOf<N, Resolutions, Options>
+        : Kind extends Constraint.Kind
+        ? Evaluate<Constraint.TypeOf<N, Resolutions, Options>>
+        : Kind extends List.Kind
+        ? Evaluate<List.TypeOf<N, Resolutions, Options>>
         : unknown
 
-    export type Validate<N, Resolutions> = N["kind"] extends "map"
-        ? Map.Validate<N, Resolutions>
-        : N["kind"] extends "tuple"
-        ? Tuple.Validate<N, Resolutions>
-        : Str.Validate<N, "">
+    export type Validate<
+        N,
+        Kind = Get<N, "kind">,
+        Children = Get<N, "children">
+    > = Kind extends Tuple.Kind | Map.Kind
+        ? { [K in keyof Children]: Validate<Children[K]> }
+        : ValidateShallow<N>
 
-    export type ReferencesOf<Def, Resolutions, Options> =
-        Def extends Literal.Definition
-            ? Literal.ReferencesOf<Def, Options>
-            : Def extends Str.Definition
-            ? Str.ReferencesOf<Def, Resolutions, Options>
-            : Def extends object
-            ? {
-                  [K in keyof Def]: ReferencesOf<Def[K], Resolutions, Options>
-              }
-            : DefinitionTypeError
+    export type ValidateShallow<
+        N,
+        Errors = ListPossibleTypes<
+            Extract<FlattenReferences<N>, ValidationErrorMessage>
+        >
+    > = Errors extends [] ? Get<N, "def"> : { errors: Errors }
 
-    export const type = typeDefProxy as object
+    export type ReferencesOf<
+        N,
+        Options,
+        Kind = Get<N, "kind">,
+        Children = Get<N, "children">
+    > = Kind extends Tuple.Kind | Map.Kind
+        ? { [K in keyof Children]: ReferencesOf<Children[K], Options> }
+        : FlatReferencesOf<N, {}>
+
+    export type FlatReferencesOf<
+        N,
+        Config,
+        Reference = FlattenReferences<N>
+    > = Get<Config, "asTuple"> extends true
+        ? ListPossibleTypes<Reference>
+        : Get<Config, "asList"> extends true
+        ? Reference[]
+        : Reference
+
+    export type FlattenReferences<
+        N,
+        Children = Get<N, "children">
+    > = Children extends any[]
+        ? FlattenReferences<Children[number]>
+        : Children extends object
+        ? FlattenReferences<Children[keyof Children]>
+        : Get<N, "def">
+
+    export const type = typeDefProxy as any
 
     export const parser = createParser(
         {
-            // Somehow RegExp breaks this, but it's internal so not important
-            // @ts-ignore
             type,
             parent: () => reroot,
             children: () => [Literal.delegate, Str.delegate, Obj.delegate],

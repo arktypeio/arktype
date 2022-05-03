@@ -18,7 +18,7 @@ export namespace Alias {
     export type Kind = "alias"
 
     export type Parse<Def, Resolutions, Options> = Def extends keyof Resolutions
-        ? ShallowNode<Kind, TypeOf<Def, Resolutions, Options>>
+        ? ShallowNode<Def, Kind, TypeOf<Def, Resolutions, Options>>
         : Defer
 
     export type TypeOf<Def, Resolutions, Options> =

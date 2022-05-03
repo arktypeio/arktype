@@ -15,7 +15,7 @@ export namespace EmbeddedBigintLiteral {
     export type Kind = "embeddedBigintLiteral"
 
     export type Parse<Def extends string> = Def extends Definition<infer Value>
-        ? ShallowNode<Kind, Value>
+        ? ShallowNode<Def, Kind, Value>
         : Defer
 
     export const type = typeDefProxy as Definition

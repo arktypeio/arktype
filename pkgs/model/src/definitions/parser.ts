@@ -30,6 +30,7 @@ export type ParseContext = {
     shallowSeen: string[]
     modifiers: string[]
     config: ModelConfig
+    stringRoot: string | null
 }
 
 export const defaultParseContext: ParseContext = {
@@ -37,7 +38,8 @@ export const defaultParseContext: ParseContext = {
     path: [],
     seen: [],
     shallowSeen: [],
-    modifiers: []
+    modifiers: [],
+    stringRoot: null
 }
 
 export type ParseArgs<DefType> = [definition: DefType, context: ParseContext]
@@ -83,7 +85,7 @@ export type InheritableMethods<DefType, Components> = {
             methodContext: InheritableMethodContext<DefType, Components>,
             options: ReferencesConfig
         ]
-    ) => DefType extends Obj.Definition ? TreeOf<string[]> : string[]
+    ) => DefType extends object ? TreeOf<string[]> : string[]
     generate?: (
         ...args: [
             methodContext: InheritableMethodContext<DefType, Components>,
@@ -149,7 +151,7 @@ const inheritableMethodNames = [
 
 // Re:Root, reroot its root by rerouting to reroot
 export const reroot = {
-    type: {} as Root.Definition,
+    type: {} as any,
     inherits: () => {},
     handles: {},
     matches: () => true
@@ -322,6 +324,9 @@ export const createParser = <
         }) as TransformedInheritableMethods<DefType>
     }
     const parse = (def: DefType, ctx: ParseContext): ParseResult<DefType> => {
+        if (!ctx.stringRoot && typeof def === "string") {
+            ctx.stringRoot = def
+        }
         const components = getComponents(def, ctx)
         return {
             def,

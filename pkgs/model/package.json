@@ -23,6 +23,7 @@
         "build": "reTsc",
         "test": "jest 2>&1",
         "unit": "jest --coverage false -t ",
+        "tsc": "tsc --outDir out/types",
         "typeDiag": "tsc --extendedDiagnostics --noEmit > typeDiagTest.txt",
         "typeTrace": "tsc --generateTrace typeTrace",
         "typeHotspots": "npx analyze-trace typeTrace > typeTrace/hotspots.txt",
