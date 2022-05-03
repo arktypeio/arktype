@@ -7,7 +7,8 @@ import {
     Defer,
     DeepNode,
     invalidModifierError,
-    Root
+    Root,
+    ErrorNode
 } from "./internal.js"
 import { Str } from "./str.js"
 
@@ -20,7 +21,7 @@ export namespace Optional {
         infer Child
     >
         ? "?" extends KeyValuate<Context, "modifiers">
-            ? DuplicateModifierError<"?">
+            ? ErrorNode<DuplicateModifierError<"?">>
             : DeepNode<
                   Def,
                   Kind,

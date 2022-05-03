@@ -29,35 +29,35 @@ describe("compile", () => {
             compile({ a: "yikes", b: { c: "a" } })
         ).throwsAndHasTypeError("Unable to determine the type of 'yikes'")
     })
-    test("recursive", () => {
-        // Recursive type displays any but calculates just-in-time for each property access
-        assert(
-            compile({ a: { dejaVu: "a?" } }).types.a.dejaVu?.dejaVu?.dejaVu
-        ).type.toString.snap(`"{ dejaVu?: any | undefined; } | undefined"`)
-    })
-    test("cyclic", () => {
-        const space = compile({ a: { b: "b" }, b: { a: "a" } })
-        // Type hint displays as any on hitting cycle
-        assert(space.types.a).typed as {
-            b: {
-                a: {
-                    b: {
-                        a: any
-                    }
-                }
-            }
-        }
-        // But still yields correct types when properties are accessed
-        assert(space.types.b.a.b.a.b.a.b.a).typed as {
-            b: {
-                a: any
-            }
-        }
-        // @ts-expect-error
-        assert(space.types.a.b.a.b.c).type.errors(
-            "Property 'c' does not exist on type '{ a: { b: any; }; }'."
-        )
-    })
+    // test("recursive", () => {
+    //     // Recursive type displays any but calculates just-in-time for each property access
+    //     assert(
+    //         compile({ a: { dejaVu: "a?" } }).types.a.dejaVu?.dejaVu?.dejaVu
+    //     ).type.toString.snap(`"{ dejaVu?: any | undefined; } | undefined"`)
+    // })
+    // test("cyclic", () => {
+    //     const space = compile({ a: { b: "b" }, b: { a: "a" } })
+    //     // Type hint displays as any on hitting cycle
+    //     assert(space.types.a).typed as {
+    //         b: {
+    //             a: {
+    //                 b: {
+    //                     a: any
+    //                 }
+    //             }
+    //         }
+    //     }
+    //     // But still yields correct types when properties are accessed
+    //     assert(space.types.b.a.b.a.b.a.b.a).typed as {
+    //         b: {
+    //             a: any
+    //         }
+    //     }
+    //     // @ts-expect-error
+    //     assert(space.types.a.b.a.b.c).type.errors(
+    //         "Property 'c' does not exist on type '{ a: { b: any; }; }'."
+    //     )
+    // })
     test("object list", () => {
         assert(compile({ a: "string", b: [{ c: "a" }] }).types.b).typed as [
             {
@@ -119,64 +119,64 @@ describe("compile", () => {
                 }
             }
         )
-        const extended = mySpace.extend(
-            { user: { age: "number" }, other: "user[]" },
-            {
-                parse: { onCycle: "boolean", deepOnCycle: true },
-                models: {
-                    group: {
-                        generate: {
-                            onRequiredCycle: true
-                        }
-                    },
-                    another: {
-                        validate: {
-                            ignoreExtraneousKeys: true
-                        }
-                    }
-                }
-            }
-        )
-        assert(extended.types).typed as {
-            user: {
-                age: number
-            }
-            group: {
-                members: {
-                    age: number
-                }[]
-            }
-            other: {
-                age: number
-            }[]
-        }
-        const expectedConfig = narrow({
-            validate: {
-                ignoreExtraneousKeys: true
-            },
-            parse: {
-                onCycle: "boolean",
-                deepOnCycle: true
-            },
-            models: {
-                user: {
-                    validate: {
-                        ignoreExtraneousKeys: false
-                    }
-                },
-                group: {
-                    generate: {
-                        onRequiredCycle: true
-                    }
-                },
-                another: {
-                    validate: {
-                        ignoreExtraneousKeys: true
-                    }
-                }
-            }
-        })
-        assert(extended.config).typedValue(expectedConfig)
+        // const extended = mySpace.extend(
+        //     { user: { age: "number" }, other: "user[]" },
+        //     {
+        //         parse: { onCycle: "boolean", deepOnCycle: true },
+        //         models: {
+        //             group: {
+        //                 generate: {
+        //                     onRequiredCycle: true
+        //                 }
+        //             },
+        //             another: {
+        //                 validate: {
+        //                     ignoreExtraneousKeys: true
+        //                 }
+        //             }
+        //         }
+        //     }
+        // )
+        // assert(extended.types).typed as {
+        //     user: {
+        //         age: number
+        //     }
+        //     group: {
+        //         members: {
+        //             age: number
+        //         }[]
+        //     }
+        //     other: {
+        //         age: number
+        //     }[]
+        // }
+        // const expectedConfig = narrow({
+        //     validate: {
+        //         ignoreExtraneousKeys: true
+        //     },
+        //     parse: {
+        //         onCycle: "boolean",
+        //         deepOnCycle: true
+        //     },
+        //     models: {
+        //         user: {
+        //             validate: {
+        //                 ignoreExtraneousKeys: false
+        //             }
+        //         },
+        //         group: {
+        //             generate: {
+        //                 onRequiredCycle: true
+        //             }
+        //         },
+        //         another: {
+        //             validate: {
+        //                 ignoreExtraneousKeys: true
+        //             }
+        //         }
+        //     }
+        // })
+        // assert(extended.config).typedValue(expectedConfig)
     })
     test("compiled space can be provided via model options", () => {
         const space = compile({

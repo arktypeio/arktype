@@ -30,7 +30,7 @@ import {
     Root
 } from "./internal.js"
 import { typeOf } from "../../../utils.js"
-import { DeepNode } from "../internal.js"
+import { DeepNode, ErrorNode } from "../internal.js"
 
 export const getComparables = () => [...numberKeywords, ...stringKeywords]
 
@@ -167,9 +167,17 @@ export namespace Constraint {
                                 } & {
                                     [K in SecondComparator]: Right
                                 }
-                              : InvalidBoundError<Middle, Right>
-                          : InvalidBoundError<Middle, Left>
-                      : UnboundableError<Middle>
+                              : {
+                                    bounded: ErrorNode<
+                                        InvalidBoundError<Middle, Right>
+                                    >
+                                }
+                          : {
+                                bounded: ErrorNode<
+                                    InvalidBoundError<Middle, Left>
+                                >
+                            }
+                      : { bounded: ErrorNode<UnboundableError<Middle>> }
                   : Parts extends SingleBoundedParts<
                         infer Left,
                         infer Comparator,
@@ -182,9 +190,13 @@ export namespace Constraint {
                             } & {
                                 [K in Comparator]: Right
                             }
-                          : InvalidBoundError<Left, Right>
-                      : UnboundableError<Left>
-                  : ConstraintError
+                          : {
+                                bounded: ErrorNode<
+                                    InvalidBoundError<Left, Right>
+                                >
+                            }
+                      : { bounded: ErrorNode<UnboundableError<Left>> }
+                  : { bounded: ErrorNode<ConstraintError> }
           >
         : Defer
 

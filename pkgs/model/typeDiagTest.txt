@@ -3,84 +3,48 @@ src/__tests__/declaration.assert.ts(16,36): error TS2345: Argument of type '{ Go
   Types of property 'GottaDefineThis' are incompatible.
     Type 'unknown' is not assignable to type 'NarrowRecurse<{ errors: ["Unable to determine the type of 'your definition'."]; }>'.
 src/__tests__/declaration.assert.ts(42,17): error TS2578: Unused '@ts-expect-error' directive.
-src/__tests__/inheritableConfigs.assert.ts(78,17): error TS2571: Object is of type 'unknown'.
-src/__tests__/inheritableConfigs.assert.ts(81,20): error TS2571: Object is of type 'unknown'.
-src/__tests__/inheritableConfigs.assert.ts(83,20): error TS2571: Object is of type 'unknown'.
-src/__tests__/space.assert.ts(35,62): error TS2339: Property 'dejaVu' does not exist on type '{}'.
-src/__tests__/space.assert.ts(51,16): error TS2571: Object is of type 'unknown'.
-src/__tests__/space.assert.ts(87,56): error TS2345: Argument of type '{ b: string[]; }' is not assignable to parameter of type '[]'.
-  Object literal may only specify known properties, and 'b' does not exist in type '[]'.
-src/__tests__/space.assert.ts(93,39): error TS2345: Argument of type '[string]' is not assignable to parameter of type '[]'.
-  Source has 1 element(s) but target allows only 0.
-src/__tests__/space.assert.ts(105,56): error TS2345: Argument of type '{ a: string[]; }' is not assignable to parameter of type '[]'.
-  Object literal may only specify known properties, and 'a' does not exist in type '[]'.
-src/__tests__/space.assert.ts(122,34): error TS2339: Property 'extend' does not exist on type '{ resolutions: { user: { name: "string"; }; group: { members: "user[]"; }; }; config: { parse: { onCycle: "number"; }; validate: { ignoreExtraneousKeys: true; }; models: { user: { validate: { ignoreExtraneousKeys: false; }; }; }; }; types: { ...; }; models: NodesToModels<...>; nodes: { ...; }; create: CreateFunction...'.
-src/__tests__/space.assert.ts(186,72): error TS2322: Type '{ resolutions: { user: { name: "string"; }; group: { members: "user[]"; }; }; config: {}; types: { user: { name: string; }; group: { members: unknown[]; }; }; models: NodesToModels<{ user: DeepNode<{ name: "string"; }, "map", { name: ShallowNode<"string", "keyword", string>; }>; group: DeepNode<...>; }, { ...; }, {}...' is not assignable to type 'NarrowRecurse<{ resolutions: { user: { name: "string"; }; group: { members: "user[]"; }; }; config: {}; types: { user: { name: string; }; group: { members: unknown[]; }; }; models: NodesToModels<{ user: DeepNode<{ name: "string"; }, "map", { name: ShallowNode<"string", "keyword", string>; }>; group: DeepNode<...>; }...'.
-  The types of 'models.group.type.members' are incompatible between these types.
-    Type 'unknown[]' is not assignable to type 'NarrowRecurse<unknown>[]'.
-      Type 'unknown' is not assignable to type 'NarrowRecurse<unknown>'.
-src/__tests__/stress.assert.ts(967,16): error TS2571: Object is of type 'unknown'.
+src/__tests__/stress.assert.ts(967,45): error TS2339: Property 'members19' does not exist on type '{ children: { title19: { type: unknown; def: string; kind: unknown; }; members19: { children: [{ def: { children: { name48: { type: unknown; def: string; kind: unknown; }; bestFriend48: { def?: { children: { name20: { type: unknown; def: string; kind: unknown; }; bestFriend20: { ...; }; groups20: { ...; }; }; def: {...'.
 src/definitions/__tests__/multifile.assert.ts(13,31): error TS2345: Argument of type '{ group: unknown; user: unknown; }' is not assignable to parameter of type 'NarrowRecurse<{ user: { errors: ["Unable to determine the type of 'your definition'."]; }; group: { errors: ["Unable to determine the type of 'your definition'."]; }; }>'.
   Types of property 'user' are incompatible.
     Type 'unknown' is not assignable to type 'NarrowRecurse<{ errors: ["Unable to determine the type of 'your definition'."]; }>'.
 src/definitions/__tests__/multifile.assert.ts(14,16): error TS2571: Object is of type 'unknown'.
 src/definitions/__tests__/multifile.assert.ts(21,16): error TS2571: Object is of type 'unknown'.
-src/definitions/__tests__/references.assert.ts(57,51): error TS2345: Argument of type '[string]' is not assignable to parameter of type '[]'.
-src/definitions/__tests__/references.assert.ts(58,54): error TS2345: Argument of type '[string]' is not assignable to parameter of type '[]'.
-src/definitions/__tests__/references.assert.ts(59,52): error TS2345: Argument of type '[string]' is not assignable to parameter of type '[]'.
-src/definitions/__tests__/references.assert.ts(60,58): error TS2345: Argument of type '[string]' is not assignable to parameter of type '[]'.
-src/definitions/__tests__/references.assert.ts(108,17): error TS2345: Argument of type '{ primitives: { undefined: string[]; null: string[]; true: string[]; false: string[]; 5: string[]; bigint: string[]; }; strings: { keyword: string[]; expression: string[]; }; listed: string[][]; }' is not assignable to parameter of type '[]'.
-  Object literal may only specify known properties, and 'primitives' does not exist in type '[]'.
+src/definitions/__tests__/references.assert.ts(67,26): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'string[]'.
+src/definitions/__tests__/references.assert.ts(83,49): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'string[]'.
 src/definitions/literal/__tests__/index.ts(168,43): error TS2345: Argument of type 'RegExp' is not assignable to parameter of type '{ exec: { errors: ["Values of type 'function' or 'symbol' are not valid definitions."]; }; test: { errors: ["Values of type 'function' or 'symbol' are not valid definitions."]; }; ... 14 more ...; [Symbol.matchAll]: { ...; }; }'.
   Types of property 'exec' are incompatible.
     Property 'errors' is missing in type '(string: string) => RegExpExecArray | null' but required in type '{ errors: ["Values of type 'function' or 'symbol' are not valid definitions."]; }'.
-src/definitions/str/expression/__tests__/constraint.assert.ts(14,17): error TS2578: Unused '@ts-expect-error' directive.
-src/definitions/str/expression/__tests__/constraint.assert.ts(20,17): error TS2578: Unused '@ts-expect-error' directive.
-src/definitions/str/expression/__tests__/constraint.assert.ts(26,17): error TS2578: Unused '@ts-expect-error' directive.
-src/definitions/str/expression/__tests__/constraint.assert.ts(33,21): error TS2578: Unused '@ts-expect-error' directive.
-src/definitions/str/expression/__tests__/constraint.assert.ts(40,17): error TS2578: Unused '@ts-expect-error' directive.
-src/definitions/str/expression/__tests__/constraint.assert.ts(46,17): error TS2578: Unused '@ts-expect-error' directive.
-src/definitions/str/expression/__tests__/constraint.assert.ts(52,17): error TS2578: Unused '@ts-expect-error' directive.
-src/definitions/str/expression/__tests__/constraint.assert.ts(58,17): error TS2578: Unused '@ts-expect-error' directive.
 src/definitions/str/expression/__tests__/intersection.assert.ts(24,17): error TS2578: Unused '@ts-expect-error' directive.
 src/definitions/str/expression/__tests__/union.assert.ts(25,17): error TS2578: Unused '@ts-expect-error' directive.
-src/definitions/str/reference/__tests__/alias.assert.ts(39,20): error TS2571: Object is of type 'unknown'.
-src/definitions/str/reference/__tests__/alias.assert.ts(42,20): error TS2571: Object is of type 'unknown'.
-src/definitions/str/reference/__tests__/alias.assert.ts(47,20): error TS2571: Object is of type 'unknown'.
-src/definitions/str/reference/__tests__/alias.assert.ts(64,17): error TS2571: Object is of type 'unknown'.
-src/definitions/str/reference/__tests__/alias.assert.ts(86,20): error TS2571: Object is of type 'unknown'.
-src/definitions/str/reference/__tests__/alias.assert.ts(87,20): error TS2571: Object is of type 'unknown'.
-src/definitions/str/reference/__tests__/alias.assert.ts(155,13): error TS2578: Unused '@ts-expect-error' directive.
-src/definitions/str/reference/__tests__/alias.assert.ts(160,13): error TS2578: Unused '@ts-expect-error' directive.
 Files:                         527
 Lines of Library:             9294
 Lines of Definitions:        73521
-Lines of TypeScript:          7782
+Lines of TypeScript:          7768
 Lines of JavaScript:             0
 Lines of JSON:                   0
 Lines of Other:                  0
 Nodes of Library:            24093
 Nodes of Definitions:       296262
-Nodes of TypeScript:         30902
+Nodes of TypeScript:         30894
 Nodes of JavaScript:             0
 Nodes of JSON:                   0
 Nodes of Other:                  0
-Identifiers:                113602
-Symbols:                    453083
-Types:                      319943
-Instantiations:            2130500
-Memory used:               427842K
-Assignability cache size:    78590
-Identity cache size:          1199
-Subtype cache size:            527
+Identifiers:                113606
+Symbols:                    468070
+Types:                      329426
+Instantiations:            2253464
+Memory used:               438665K
+Assignability cache size:    80082
+Identity cache size:          1225
+Subtype cache size:            551
 Strict subtype cache size:     180
 I/O Read time:               0.02s
-Parse time:                  0.71s
-ResolveModule time:          0.10s
+Parse time:                  0.60s
+ResolveModule time:          0.08s
 ResolveTypeReference time:   0.01s
-Program time:                1.01s
-Bind time:                   0.36s
-Check time:                  4.62s
+Program time:                0.88s
+Bind time:                   0.31s
+Check time:                  5.01s
 printTime time:              0.00s
 Emit time:                   0.00s
-Total time:                  6.00s
+Total time:                  6.20s

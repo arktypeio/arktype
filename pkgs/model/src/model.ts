@@ -199,12 +199,9 @@ export type Model<
     Space,
     Options,
     SpaceParseConfig = KeyValuate<Get<Space, "config">, "parse">,
-    SpaceNodes = "nodes" extends keyof Space
-        ? Space["nodes"]
-        : ResolutionsToNodes<Get<Space, "resolutions">>,
     ModelType = TypeOf<
         Node,
-        SpaceNodes,
+        Get<Space, "resolutions">,
         MergeAll<[DefaultParseOptions, SpaceParseConfig, Options]>
     >
 > = Evaluate<{
@@ -215,7 +212,13 @@ export type Model<
     validate: ValidateFunction
     assert: (value: unknown, options?: AssertOptions) => void
     generate: (options?: GenerateConfig) => ModelType
-    references: (options?: ReferencesConfig) => [] //ReferencesOf<Def, Get<Space, "resolutions">, { asList: true }>
+    references: (
+        options?: ReferencesConfig
+    ) => ReferencesOf<
+        Get<Node, "def">,
+        Get<Space, "resolutions">,
+        { asList: true }
+    >
 }>
 
 export type CreateFunction<PredefinedSpace extends SpaceDefinition | null> = <
