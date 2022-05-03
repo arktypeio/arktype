@@ -5,7 +5,9 @@ import {
     DefinitionTypeError,
     definitionTypeError,
     UnknownTypeError,
-    ErrorNode
+    ErrorNode,
+    DefaultParseTypeContext,
+    ValueOf
 } from "./internal.js"
 import { Obj, Map, Tuple } from "./obj/index.js"
 import {
@@ -15,16 +17,17 @@ import {
     Constraint,
     List,
     Str,
-    Optional
+    Optional,
+    Alias
 } from "./str/index.js"
 import { Literal } from "./literal/index.js"
 import { reroot, createParser } from "./parser.js"
 import { Evaluate, Get, ListPossibleTypes } from "@re-/tools"
-import { ValidationErrorMessage } from "../errors.js"
+import { ErrorNodeKind, ValidationErrorMessage } from "../errors.js"
 
 export namespace Root {
     export type Parse<Def, Resolutions, Context> = Def extends BadDefinitionType
-        ? DefinitionTypeError
+        ? ErrorNode<DefinitionTypeError>
         : Precedence<
               [
                   Obj.Parse<Def, Resolutions, Context>,
@@ -40,28 +43,55 @@ export namespace Root {
 
     export type TypeOf<
         N,
-        Resolutions,
+        Nodes,
         Options,
         Kind = Get<N, "kind">
     > = "type" extends keyof N
         ? N["type"]
+        : Kind extends Alias.Kind
+        ? Alias.TypeOf<N, Nodes, Options>
         : Kind extends Tuple.Kind
-        ? Tuple.TypeOf<N, Resolutions, Options>
+        ? Tuple.TypeOf<N, Nodes, Options>
         : Kind extends Map.Kind
-        ? Map.TypeOf<N, Resolutions, Options>
+        ? Map.TypeOf<N, Nodes, Options>
         : Kind extends Optional.Kind
-        ? Evaluate<Optional.TypeOf<N, Resolutions, Options>>
+        ? Evaluate<Optional.TypeOf<N, Nodes, Options>>
         : Kind extends ArrowFunction.Kind
-        ? Evaluate<ArrowFunction.TypeOf<N, Resolutions, Options>>
+        ? Evaluate<ArrowFunction.TypeOf<N, Nodes, Options>>
         : Kind extends Union.Kind
-        ? Evaluate<Union.TypeOf<N, Resolutions, Options>>
+        ? Evaluate<Union.TypeOf<N, Nodes, Options>>
         : Kind extends Intersection.Kind
-        ? Intersection.TypeOf<N, Resolutions, Options>
+        ? Intersection.TypeOf<N, Nodes, Options>
         : Kind extends Constraint.Kind
-        ? Evaluate<Constraint.TypeOf<N, Resolutions, Options>>
+        ? Evaluate<Constraint.TypeOf<N, Nodes, Options>>
         : Kind extends List.Kind
-        ? Evaluate<List.TypeOf<N, Resolutions, Options>>
+        ? Evaluate<List.TypeOf<N, Nodes, Options>>
         : unknown
+
+    // export type TypeOf<
+    //     N,
+    //     Resolutions,
+    //     Options,
+    //     Kind = Get<N, "kind">
+    // > = "type" extends keyof N
+    //     ? N["type"]
+    //     : Kind extends Tuple.Kind
+    //     ? Tuple.TypeOf<N, Resolutions, Options>
+    //     : Kind extends Map.Kind
+    //     ? Map.TypeOf<N, Resolutions, Options>
+    //     : Kind extends Optional.Kind
+    //     ? Evaluate<Optional.TypeOf<N, Resolutions, Options>>
+    //     : Kind extends ArrowFunction.Kind
+    //     ? Evaluate<ArrowFunction.TypeOf<N, Resolutions, Options>>
+    //     : Kind extends Union.Kind
+    //     ? Evaluate<Union.TypeOf<N, Resolutions, Options>>
+    //     : Kind extends Intersection.Kind
+    //     ? Intersection.TypeOf<N, Resolutions, Options>
+    //     : Kind extends Constraint.Kind
+    //     ? Evaluate<Constraint.TypeOf<N, Resolutions, Options>>
+    //     : Kind extends List.Kind
+    //     ? Evaluate<List.TypeOf<N, Resolutions, Options>>
+    //     : unknown
 
     export type Validate<
         N,
@@ -85,17 +115,17 @@ export namespace Root {
         Children = Get<N, "children">
     > = Kind extends Tuple.Kind | Map.Kind
         ? { [K in keyof Children]: ReferencesOf<Children[K], Options> }
-        : FlatReferencesOf<N, {}>
+        : FlattenReferences<N>
 
-    export type FlatReferencesOf<
-        N,
-        Config,
-        Reference = FlattenReferences<N>
-    > = Get<Config, "asTuple"> extends true
-        ? ListPossibleTypes<Reference>
-        : Get<Config, "asList"> extends true
-        ? Reference[]
-        : Reference
+    // export type FlatReferencesOf<
+    //     N,
+    //     Config,
+    //     Reference = FlattenReferences<N>
+    // > = Get<Config, "asTuple"> extends true
+    //     ? ListPossibleTypes<Reference>
+    //     : Get<Config, "asList"> extends true
+    //     ? Reference[]
+    //     : Reference
 
     export type FlattenReferences<
         N,

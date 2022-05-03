@@ -12,7 +12,8 @@ import {
     Precedence,
     Defer,
     Root,
-    ErrorNode
+    ErrorNode,
+    DefaultParseTypeContext
 } from "./internal.js"
 import { Optional } from "./optional.js"
 
@@ -43,9 +44,11 @@ export namespace Str {
                       ]
                   >
                 : Defer,
-            Def extends Optional.Definition
-                ? InvalidModifierError
-                : ErrorNode<UnknownTypeError<Def>>
+            ErrorNode<
+                Def extends Optional.Definition
+                    ? InvalidModifierError
+                    : UnknownTypeError<Def>
+            >
         ]
     >
 

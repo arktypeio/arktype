@@ -1,63 +1,39 @@
-src/__tests__/customValidators.test.ts(31,22): error TS2339: Property 'models' does not exist on type '{ resolutions: { palindrome: "string"; }; config: { models: { palindrome: { validate: { validator: (value: unknown) => string; }; }; }; }; nodes: { palindrome: ShallowNode<"string", "keyword", string>; }; types: { ...; }; }'.
-src/__tests__/customValidators.test.ts(34,22): error TS2339: Property 'models' does not exist on type '{ resolutions: { palindrome: "string"; }; config: { models: { palindrome: { validate: { validator: (value: unknown) => string; }; }; }; }; nodes: { palindrome: ShallowNode<"string", "keyword", string>; }; types: { ...; }; }'.
-src/__tests__/customValidators.test.ts(49,22): error TS2339: Property 'models' does not exist on type '{ resolutions: { palindrome: "string"; yourPal: { name: "palindrome"; }; }; config: { models: { palindrome: { validate: { validator: (value: unknown) => string; }; }; }; }; nodes: { palindrome: ShallowNode<"string", "keyword", string>; yourPal: DeepNode<...>; }; types: { ...; }; }'.
-src/__tests__/customValidators.test.ts(52,22): error TS2339: Property 'models' does not exist on type '{ resolutions: { palindrome: "string"; yourPal: { name: "palindrome"; }; }; config: { models: { palindrome: { validate: { validator: (value: unknown) => string; }; }; }; }; nodes: { palindrome: ShallowNode<"string", "keyword", string>; yourPal: DeepNode<...>; }; types: { ...; }; }'.
-src/__tests__/customValidators.test.ts(72,28): error TS2339: Property 'models' does not exist on type '{ resolutions: { first: "string"; second: { comesAfter: "first"; }; }; config: { validate: { validator: (value: unknown, errors: ValidationErrors, { def }: Omit<{ def: any; ctx: ParseContext; }, "components">) => { ...; } | ... 1 more ... | { ...; }; }; }; nodes: { ...; }; types: { ...; }; }'.
-src/__tests__/customValidators.test.ts(77,18): error TS2339: Property 'create' does not exist on type '{ resolutions: { first: "string"; second: { comesAfter: "first"; }; }; config: { validate: { validator: (value: unknown, errors: ValidationErrors, { def }: Omit<{ def: any; ctx: ParseContext; }, "components">) => { ...; } | ... 1 more ... | { ...; }; }; }; nodes: { ...; }; types: { ...; }; }'.
 src/__tests__/declaration.assert.ts(12,9): error TS2578: Unused '@ts-expect-error' directive.
-src/__tests__/declaration.assert.ts(16,17): error TS2339: Property 'create' does not exist on type '{ resolutions: { GottaDefineThis: unknown; }; config: {}; nodes: { GottaDefineThis: ErrorNode<"Unable to determine the type of 'your definition'.">; }; types: { GottaDefineThis: unknown; }; }'.
 src/__tests__/declaration.assert.ts(16,36): error TS2345: Argument of type '{ GottaDefineThis: unknown; }' is not assignable to parameter of type 'NarrowRecurse<{ GottaDefineThis: { errors: ["Unable to determine the type of 'your definition'."]; }; }>'.
   Types of property 'GottaDefineThis' are incompatible.
     Type 'unknown' is not assignable to type 'NarrowRecurse<{ errors: ["Unable to determine the type of 'your definition'."]; }>'.
 src/__tests__/declaration.assert.ts(42,17): error TS2578: Unused '@ts-expect-error' directive.
-src/__tests__/demo.assert.ts(60,19): error TS2339: Property 'models' does not exist on type '{ resolutions: { user: { name: "string"; bestFriend: "user?"; groups: "group[]"; }; group: { title: "string"; members: "user[]"; }; }; config: {}; nodes: { user: DeepNode<{ name: "string"; bestFriend: "user?"; groups: "group[]"; }, "map", { ...; }>; group: DeepNode<...>; }; types: { ...; }; }'.
-src/__tests__/inheritableConfigs.assert.ts(41,15): error TS2339: Property 'create' does not exist on type '{ resolutions: { user: { name: "string"; }; }; config: { models: { user: { validate: { ignoreExtraneousKeys: true; }; }; }; }; nodes: { user: DeepNode<{ name: "string"; }, "map", { name: ShallowNode<"string", "keyword", string>; }>; }; types: { ...; }; }'.
-src/__tests__/inheritableConfigs.assert.ts(55,15): error TS2339: Property 'create' does not exist on type '{ resolutions: { user: { name: "string"; }; }; config: { validate: { ignoreExtraneousKeys: true; }; }; nodes: { user: DeepNode<{ name: "string"; }, "map", { name: ShallowNode<"string", "keyword", string>; }>; }; types: { ...; }; }'.
-src/__tests__/inheritableConfigs.assert.ts(73,34): error TS2339: Property 'create' does not exist on type '{ resolutions: { doll: { contents: "doll"; }; }; config: { generate: { onRequiredCycle: "space"; }; models: { doll: { generate: { onRequiredCycle: string; }; }; }; }; nodes: { doll: DeepNode<{ contents: "doll"; }, "map", { ...; }>; }; types: { ...; }; }'.
-src/__tests__/inheritableConfigs.assert.ts(83,28): error TS2339: Property 'create' does not exist on type '{ resolutions: { doll: { contents: "doll"; }; }; config: { generate: { onRequiredCycle: "space"; }; models: { doll: { generate: { onRequiredCycle: string; }; }; }; }; nodes: { doll: DeepNode<{ contents: "doll"; }, "map", { ...; }>; }; types: { ...; }; }'.
-src/__tests__/inheritableConfigs.assert.ts(91,19): error TS2339: Property 'models' does not exist on type '{ resolutions: { doll: { contents: "doll"; }; }; config: { generate: { onRequiredCycle: "space"; }; }; nodes: { doll: DeepNode<{ contents: "doll"; }, "map", { contents: ShallowNode<"doll", "alias", unknown>; }>; }; types: { ...; }; }'.
-src/__tests__/inheritableConfigs.assert.ts(126,30): error TS2339: Property 'models' does not exist on type '{ resolutions: { recursionIs: { recursionIs: "recursionIs"; }; }; config: { parse: { onCycle: "'space'"; }; }; nodes: { recursionIs: DeepNode<{ recursionIs: "recursionIs"; }, "map", { recursionIs: ShallowNode<"recursionIs", "alias", unknown>; }>; }; types: { ...; }; }'.
-src/__tests__/inheritableConfigs.assert.ts(136,27): error TS2339: Property 'create' does not exist on type '{ resolutions: { recursionIs: { recursionIs: "recursionIs"; }; }; config: { parse: { onCycle: "'space'"; }; }; nodes: { recursionIs: DeepNode<{ recursionIs: "recursionIs"; }, "map", { recursionIs: ShallowNode<"recursionIs", "alias", unknown>; }>; }; types: { ...; }; }'.
-src/__tests__/inheritableConfigs.assert.ts(142,38): error TS2339: Property 'create' does not exist on type '{ resolutions: { recursionIs: { recursionIs: "recursionIs"; }; }; config: { parse: { onCycle: "'space'"; }; }; nodes: { recursionIs: DeepNode<{ recursionIs: "recursionIs"; }, "map", { recursionIs: ShallowNode<"recursionIs", "alias", unknown>; }>; }; types: { ...; }; }'.
-src/__tests__/inheritableConfigs.assert.ts(144,30): error TS2339: Property 'create' does not exist on type '{ resolutions: { recursionIs: { recursionIs: "recursionIs"; }; }; config: { parse: { onCycle: "'space'"; }; }; nodes: { recursionIs: DeepNode<{ recursionIs: "recursionIs"; }, "map", { recursionIs: ShallowNode<"recursionIs", "alias", unknown>; }>; }; types: { ...; }; }'.
+src/__tests__/inheritableConfigs.assert.ts(78,17): error TS2571: Object is of type 'unknown'.
+src/__tests__/inheritableConfigs.assert.ts(81,20): error TS2571: Object is of type 'unknown'.
+src/__tests__/inheritableConfigs.assert.ts(83,20): error TS2571: Object is of type 'unknown'.
 src/__tests__/space.assert.ts(35,62): error TS2339: Property 'dejaVu' does not exist on type '{}'.
 src/__tests__/space.assert.ts(51,16): error TS2571: Object is of type 'unknown'.
-src/__tests__/space.assert.ts(70,22): error TS2339: Property 'create' does not exist on type '{ resolutions: { a: { b: "b"; }; b: { a: "a"; }; }; config: {}; nodes: { a: DeepNode<{ b: "b"; }, "map", { b: ShallowNode<"b", "alias", unknown>; }>; b: DeepNode<{ a: "a"; }, "map", { a: ShallowNode<"a", "alias", unknown>; }>; }; types: { ...; }; }'.
-src/__tests__/space.assert.ts(80,27): error TS2339: Property 'create' does not exist on type '{ resolutions: { a: { b: "b?"; }; b: { a: "a?"; }; }; config: {}; nodes: { a: DeepNode<{ b: "b?"; }, "map", { b: DeepNode<"b?", "optional", [ShallowNode<"b", "alias", unknown>]>; }>; b: DeepNode<...>; }; types: { ...; }; }'.
-src/__tests__/space.assert.ts(87,24): error TS2339: Property 'models' does not exist on type '{ resolutions: { a: { b: "b?"; }; b: { a: "a?"; }; }; config: {}; nodes: { a: DeepNode<{ b: "b?"; }, "map", { b: DeepNode<"b?", "optional", [ShallowNode<"b", "alias", unknown>]>; }>; b: DeepNode<...>; }; types: { ...; }; }'.
-src/__tests__/space.assert.ts(100,24): error TS2339: Property 'create' does not exist on type '{ resolutions: { a: { b: "b?"; }; b: { a: "a?"; }; }; config: {}; nodes: { a: DeepNode<{ b: "b?"; }, "map", { b: DeepNode<"b?", "optional", [ShallowNode<"b", "alias", unknown>]>; }>; b: DeepNode<...>; }; types: { ...; }; }'.
-src/__tests__/space.assert.ts(105,24): error TS2339: Property 'models' does not exist on type '{ resolutions: { a: { b: "b?"; }; b: { a: "a?"; }; }; config: {}; nodes: { a: DeepNode<{ b: "b?"; }, "map", { b: DeepNode<"b?", "optional", [ShallowNode<"b", "alias", unknown>]>; }>; b: DeepNode<...>; }; types: { ...; }; }'.
-src/__tests__/space.assert.ts(122,34): error TS2339: Property 'extend' does not exist on type '{ resolutions: { user: { name: "string"; }; group: { members: "user[]"; }; }; config: { parse: { onCycle: "number"; }; validate: { ignoreExtraneousKeys: true; }; models: { user: { validate: { ignoreExtraneousKeys: false; }; }; }; }; nodes: { ...; }; types: { ...; }; }'.
-src/__tests__/space.assert.ts(186,72): error TS2322: Type '{ resolutions: { user: { name: "string"; }; group: { members: "user[]"; }; }; config: {}; nodes: { user: DeepNode<{ name: "string"; }, "map", { name: ShallowNode<"string", "keyword", string>; }>; group: DeepNode<...>; }; types: { ...; }; }' is not assignable to type 'NarrowRecurse<{ resolutions: { user: { name: "string"; }; group: { members: "user[]"; }; }; config: {}; nodes: { user: DeepNode<{ name: "string"; }, "map", { name: ShallowNode<"string", "keyword", string>; }>; group: DeepNode<...>; }; types: { ...; }; }>'.
-  The types of 'nodes.group.children.members.children' are incompatible between these types.
-    Type '[ShallowNode<"user", "alias", unknown>]' is not assignable to type '[NarrowRecurse<ShallowNode<"user", "alias", unknown>>]'.
-      Type 'ShallowNode<"user", "alias", unknown>' is not assignable to type 'NarrowRecurse<ShallowNode<"user", "alias", unknown>>'.
-        Types of property 'type' are incompatible.
-          Type 'unknown' is not assignable to type 'NarrowRecurse<unknown>'.
-src/__tests__/space.assert.ts(209,19): error TS2339: Property 'create' does not exist on type '{ resolutions: { a: "string"; }; config: {}; nodes: { a: ShallowNode<"string", "keyword", string>; }; types: { a: string; }; }'.
+src/__tests__/space.assert.ts(87,56): error TS2345: Argument of type '{ b: string[]; }' is not assignable to parameter of type '[]'.
+  Object literal may only specify known properties, and 'b' does not exist in type '[]'.
+src/__tests__/space.assert.ts(93,39): error TS2345: Argument of type '[string]' is not assignable to parameter of type '[]'.
+  Source has 1 element(s) but target allows only 0.
+src/__tests__/space.assert.ts(105,56): error TS2345: Argument of type '{ a: string[]; }' is not assignable to parameter of type '[]'.
+  Object literal may only specify known properties, and 'a' does not exist in type '[]'.
+src/__tests__/space.assert.ts(122,34): error TS2339: Property 'extend' does not exist on type '{ resolutions: { user: { name: "string"; }; group: { members: "user[]"; }; }; config: { parse: { onCycle: "number"; }; validate: { ignoreExtraneousKeys: true; }; models: { user: { validate: { ignoreExtraneousKeys: false; }; }; }; }; types: { ...; }; models: NodesToModels<...>; nodes: { ...; }; create: CreateFunction...'.
+src/__tests__/space.assert.ts(186,72): error TS2322: Type '{ resolutions: { user: { name: "string"; }; group: { members: "user[]"; }; }; config: {}; types: { user: { name: string; }; group: { members: unknown[]; }; }; models: NodesToModels<{ user: DeepNode<{ name: "string"; }, "map", { name: ShallowNode<"string", "keyword", string>; }>; group: DeepNode<...>; }, { ...; }, {}...' is not assignable to type 'NarrowRecurse<{ resolutions: { user: { name: "string"; }; group: { members: "user[]"; }; }; config: {}; types: { user: { name: string; }; group: { members: unknown[]; }; }; models: NodesToModels<{ user: DeepNode<{ name: "string"; }, "map", { name: ShallowNode<"string", "keyword", string>; }>; group: DeepNode<...>; }...'.
+  The types of 'models.group.type.members' are incompatible between these types.
+    Type 'unknown[]' is not assignable to type 'NarrowRecurse<unknown>[]'.
+      Type 'unknown' is not assignable to type 'NarrowRecurse<unknown>'.
 src/__tests__/stress.assert.ts(967,16): error TS2571: Object is of type 'unknown'.
 src/definitions/__tests__/multifile.assert.ts(13,31): error TS2345: Argument of type '{ group: unknown; user: unknown; }' is not assignable to parameter of type 'NarrowRecurse<{ user: { errors: ["Unable to determine the type of 'your definition'."]; }; group: { errors: ["Unable to determine the type of 'your definition'."]; }; }>'.
   Types of property 'user' are incompatible.
     Type 'unknown' is not assignable to type 'NarrowRecurse<{ errors: ["Unable to determine the type of 'your definition'."]; }>'.
 src/definitions/__tests__/multifile.assert.ts(14,16): error TS2571: Object is of type 'unknown'.
-src/definitions/__tests__/multifile.assert.ts(18,22): error TS2339: Property 'models' does not exist on type '{ resolutions: { group: unknown; user: unknown; }; config: {}; nodes: { group: ErrorNode<"Unable to determine the type of 'your definition'.">; user: ErrorNode<"Unable to determine the type of 'your definition'.">; }; types: { ...; }; }'.
-src/definitions/__tests__/multifile.assert.ts(21,22): error TS2339: Property 'models' does not exist on type '{ resolutions: { group: unknown; user: unknown; }; config: {}; nodes: { group: ErrorNode<"Unable to determine the type of 'your definition'.">; user: ErrorNode<"Unable to determine the type of 'your definition'.">; }; types: { ...; }; }'.
-src/definitions/__tests__/multifile.assert.ts(25,19): error TS2339: Property 'create' does not exist on type '{ resolutions: { group: unknown; user: unknown; }; config: {}; nodes: { group: ErrorNode<"Unable to determine the type of 'your definition'.">; user: ErrorNode<"Unable to determine the type of 'your definition'.">; }; types: { ...; }; }'.
+src/definitions/__tests__/multifile.assert.ts(21,16): error TS2571: Object is of type 'unknown'.
 src/definitions/__tests__/references.assert.ts(57,51): error TS2345: Argument of type '[string]' is not assignable to parameter of type '[]'.
-  Source has 1 element(s) but target allows only 0.
 src/definitions/__tests__/references.assert.ts(58,54): error TS2345: Argument of type '[string]' is not assignable to parameter of type '[]'.
 src/definitions/__tests__/references.assert.ts(59,52): error TS2345: Argument of type '[string]' is not assignable to parameter of type '[]'.
 src/definitions/__tests__/references.assert.ts(60,58): error TS2345: Argument of type '[string]' is not assignable to parameter of type '[]'.
 src/definitions/__tests__/references.assert.ts(108,17): error TS2345: Argument of type '{ primitives: { undefined: string[]; null: string[]; true: string[]; false: string[]; 5: string[]; bigint: string[]; }; strings: { keyword: string[]; expression: string[]; }; listed: string[][]; }' is not assignable to parameter of type '[]'.
   Object literal may only specify known properties, and 'primitives' does not exist in type '[]'.
-src/definitions/__tests__/root.assert.ts(13,9): error TS2578: Unused '@ts-expect-error' directive.
-src/definitions/__tests__/root.assert.ts(17,9): error TS2578: Unused '@ts-expect-error' directive.
-src/definitions/literal/__tests__/index.ts(168,43): error TS2345: Argument of type 'RegExp' is not assignable to parameter of type '{ exec: unknown; test: unknown; readonly source: { errors: [`Unable to determine the type of '${string}'.`]; }; readonly global: boolean; readonly ignoreCase: boolean; readonly multiline: boolean; lastIndex: number; compile: unknown; readonly flags: { errors: [`Unable to determine the type of '${string}'.`]; }; ... ...'.
-  Types of property 'source' are incompatible.
-    Type 'string' is not assignable to type '{ errors: [`Unable to determine the type of '${string}'.`]; }'.
-src/definitions/str/__test__/optional.assert.ts(28,17): error TS2578: Unused '@ts-expect-error' directive.
-src/definitions/str/__test__/optional.assert.ts(37,25): error TS2578: Unused '@ts-expect-error' directive.
-src/definitions/str/__test__/optional.assert.ts(46,21): error TS2578: Unused '@ts-expect-error' directive.
+src/definitions/literal/__tests__/index.ts(168,43): error TS2345: Argument of type 'RegExp' is not assignable to parameter of type '{ exec: { errors: ["Values of type 'function' or 'symbol' are not valid definitions."]; }; test: { errors: ["Values of type 'function' or 'symbol' are not valid definitions."]; }; ... 14 more ...; [Symbol.matchAll]: { ...; }; }'.
+  Types of property 'exec' are incompatible.
+    Property 'errors' is missing in type '(string: string) => RegExpExecArray | null' but required in type '{ errors: ["Values of type 'function' or 'symbol' are not valid definitions."]; }'.
 src/definitions/str/expression/__tests__/constraint.assert.ts(14,17): error TS2578: Unused '@ts-expect-error' directive.
 src/definitions/str/expression/__tests__/constraint.assert.ts(20,17): error TS2578: Unused '@ts-expect-error' directive.
 src/definitions/str/expression/__tests__/constraint.assert.ts(26,17): error TS2578: Unused '@ts-expect-error' directive.
@@ -68,44 +44,43 @@ src/definitions/str/expression/__tests__/constraint.assert.ts(52,17): error TS25
 src/definitions/str/expression/__tests__/constraint.assert.ts(58,17): error TS2578: Unused '@ts-expect-error' directive.
 src/definitions/str/expression/__tests__/intersection.assert.ts(24,17): error TS2578: Unused '@ts-expect-error' directive.
 src/definitions/str/expression/__tests__/union.assert.ts(25,17): error TS2578: Unused '@ts-expect-error' directive.
-src/definitions/str/reference/__tests__/alias.assert.ts(29,45): error TS2339: Property 'create' does not exist on type '{ resolutions: { a: { b: "b"; isA: "true"; isB: "false"; }; b: { a: "a"; isA: "false"; isB: "true"; }; }; config: {}; nodes: { a: DeepNode<{ b: "b"; isA: "true"; isB: "false"; }, "map", { b: ShallowNode<"b", "alias", unknown>; isA: ShallowNode<...>; isB: ShallowNode<...>; }>; b: DeepNode<...>; }; types: { ...; }; }'.
-src/definitions/str/reference/__tests__/alias.assert.ts(52,49): error TS2339: Property 'create' does not exist on type '{ resolutions: { a: { b: "b"; isA: "true"; isB: "false"; }; b: { a: "a"; isA: "false"; isB: "true"; }; }; config: {}; nodes: { a: DeepNode<{ b: "b"; isA: "true"; isB: "false"; }, "map", { b: ShallowNode<"b", "alias", unknown>; isA: ShallowNode<...>; isB: ShallowNode<...>; }>; b: DeepNode<...>; }; types: { ...; }; }'.
-src/definitions/str/reference/__tests__/alias.assert.ts(70,52): error TS2339: Property 'create' does not exist on type '{ resolutions: { a: { b: "b"; isA: "true"; isB: "false"; }; b: { a: "a"; isA: "false"; isB: "true"; }; }; config: {}; nodes: { a: DeepNode<{ b: "b"; isA: "true"; isB: "false"; }, "map", { b: ShallowNode<"b", "alias", unknown>; isA: ShallowNode<...>; isB: ShallowNode<...>; }>; b: DeepNode<...>; }; types: { ...; }; }'.
-src/definitions/str/reference/__tests__/alias.assert.ts(89,13): error TS2578: Unused '@ts-expect-error' directive.
+src/definitions/str/reference/__tests__/alias.assert.ts(39,20): error TS2571: Object is of type 'unknown'.
+src/definitions/str/reference/__tests__/alias.assert.ts(42,20): error TS2571: Object is of type 'unknown'.
+src/definitions/str/reference/__tests__/alias.assert.ts(47,20): error TS2571: Object is of type 'unknown'.
+src/definitions/str/reference/__tests__/alias.assert.ts(64,17): error TS2571: Object is of type 'unknown'.
+src/definitions/str/reference/__tests__/alias.assert.ts(86,20): error TS2571: Object is of type 'unknown'.
+src/definitions/str/reference/__tests__/alias.assert.ts(87,20): error TS2571: Object is of type 'unknown'.
 src/definitions/str/reference/__tests__/alias.assert.ts(155,13): error TS2578: Unused '@ts-expect-error' directive.
-src/definitions/str/reference/__tests__/alias.assert.ts(158,34): error TS2339: Property 'models' does not exist on type '{ resolutions: { a: "a"; }; config: {}; nodes: { a: ShallowNode<"a", "alias", unknown>; }; types: { a: unknown; }; }'.
 src/definitions/str/reference/__tests__/alias.assert.ts(160,13): error TS2578: Unused '@ts-expect-error' directive.
-src/definitions/str/reference/__tests__/alias.assert.ts(163,31): error TS2339: Property 'models' does not exist on type '{ resolutions: { a: "b"; b: "c"; c: "a|b|c"; }; config: {}; nodes: { a: ShallowNode<"b", "alias", unknown>; b: ShallowNode<"c", "alias", unknown>; c: DeepNode<"a|b|c", "union", [ShallowNode<"a", "alias", unknown>, DeepNode<...>]>; }; types: { ...; }; }'.
-src/resolution.ts(29,15): error TS2694: Namespace '"/home/ssalb/2re-po/pkgs/model/src/definitions/str/str".Str' has no exported member 'ReferencesOf'.
 Files:                         527
 Lines of Library:             9294
 Lines of Definitions:        73521
-Lines of TypeScript:          7733
+Lines of TypeScript:          7782
 Lines of JavaScript:             0
 Lines of JSON:                   0
 Lines of Other:                  0
 Nodes of Library:            24093
 Nodes of Definitions:       296262
-Nodes of TypeScript:         31313
+Nodes of TypeScript:         30902
 Nodes of JavaScript:             0
 Nodes of JSON:                   0
 Nodes of Other:                  0
-Identifiers:                113753
-Symbols:                    401808
-Types:                      289206
-Instantiations:            1904371
-Memory used:               411749K
-Assignability cache size:    74153
-Identity cache size:          1196
-Subtype cache size:            519
+Identifiers:                113602
+Symbols:                    453083
+Types:                      319943
+Instantiations:            2130500
+Memory used:               427842K
+Assignability cache size:    78590
+Identity cache size:          1199
+Subtype cache size:            527
 Strict subtype cache size:     180
 I/O Read time:               0.02s
-Parse time:                  0.55s
-ResolveModule time:          0.07s
-ResolveTypeReference time:   0.00s
-Program time:                0.80s
-Bind time:                   0.27s
-Check time:                  3.98s
+Parse time:                  0.71s
+ResolveModule time:          0.10s
+ResolveTypeReference time:   0.01s
+Program time:                1.01s
+Bind time:                   0.36s
+Check time:                  4.62s
 printTime time:              0.00s
 Emit time:                   0.00s
-Total time:                  5.05s
+Total time:                  6.00s

@@ -72,3 +72,5 @@ export type Precedence<T> = T extends [infer Current, ...infer Remaining]
         ? Precedence<Remaining>
         : Current
     : T
+
+export type ValueOf<T> = T extends any[] ? T[number] : T[keyof T]

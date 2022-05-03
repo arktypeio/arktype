@@ -18,77 +18,81 @@ export namespace Alias {
     export type Kind = "alias"
 
     export type Parse<Def, Resolutions, Options> = Def extends keyof Resolutions
-        ? ShallowNode<Def, Kind, TypeOf<Def, Resolutions, Options>>
+        ? { kind: Kind; def: Def }
         : Defer
 
-    export type TypeOf<Def, Resolutions, Options> =
-        IsAny<Resolutions> extends true
-            ? any
-            : Def extends keyof Resolutions
-            ? Resolutions[Def] extends ValidationErrorMessage
-                ? unknown
-                : Def extends keyof Get<Options, "seen">
-                ? Get<Options, "onCycle"> extends Unset
-                    ? TypeOfResolvedNonCyclicDefinition<
-                          Def,
-                          Resolutions,
-                          Options
-                      >
-                    : TypeOfResolvedCyclicDefinition<Def, Resolutions, Options>
-                : TypeOfResolvedNonCyclicDefinition<Def, Resolutions, Options>
-            : unknown
+    export type TypeOf<Def, Nodes, Options> = Def extends keyof Nodes
+        ? Root.TypeOf<Nodes[Def], Nodes, Options>
+        : unknown
 
-    export type TypeOfResolvedCyclicDefinition<
-        TypeName extends keyof Resolutions,
-        Resolutions,
-        Options
-    > = Root.TypeOf<
-        Root.Parse<
-            Get<Options, "onCycle">,
-            WithPropValue<Resolutions, "cyclic", Resolutions[TypeName]>,
-            DefaultParseTypeContext
-        >,
-        WithPropValue<Resolutions, "cyclic", Resolutions[TypeName]>,
-        {
-            onCycle: Get<Options, "deepOnCycle"> extends true
-                ? Get<Options, "onCycle">
-                : Unset
-            seen: {}
-            onResolve: Get<Options, "onResolve">
-            deepOnCycle: Get<Options, "deepOnCycle">
-        }
-    >
+    // export type TypeOf<Def, Resolutions, Options> =
+    //     IsAny<Resolutions> extends true
+    //         ? any
+    //         : Def extends keyof Resolutions
+    //         ? Resolutions[Def] extends ValidationErrorMessage
+    //             ? unknown
+    //             : Def extends keyof Get<Options, "seen">
+    //             ? Get<Options, "onCycle"> extends Unset
+    //                 ? TypeOfResolvedNonCyclicDefinition<
+    //                       Def,
+    //                       Resolutions,
+    //                       Options
+    //                   >
+    //                 : TypeOfResolvedCyclicDefinition<Def, Resolutions, Options>
+    //             : TypeOfResolvedNonCyclicDefinition<Def, Resolutions, Options>
+    //         : unknown
 
-    export type TypeOfResolvedNonCyclicDefinition<
-        TypeName extends keyof Resolutions,
-        Resolutions,
-        Options
-    > = Or<
-        Get<Options, "onResolve"> extends Unset ? true : false,
-        TypeName extends "resolved" ? true : false
-    > extends true
-        ? Root.TypeOf<
-              Root.Parse<
-                  Resolutions[TypeName],
-                  Resolutions,
-                  DefaultParseTypeContext
-              >,
-              Resolutions,
-              Options & {
-                  seen: { [K in TypeName]: true }
-              }
-          >
-        : Root.TypeOf<
-              Root.Parse<
-                  Get<Options, "onResolve">,
-                  WithPropValue<Resolutions, "resolved", Resolutions[TypeName]>,
-                  DefaultParseTypeContext
-              >,
-              WithPropValue<Resolutions, "resolved", Resolutions[TypeName]>,
-              Options & {
-                  seen: { [K in TypeName]: true }
-              }
-          >
+    // export type TypeOfResolvedCyclicDefinition<
+    //     TypeName extends keyof Resolutions,
+    //     Resolutions,
+    //     Options
+    // > = Root.TypeOf<
+    //     Root.Parse<
+    //         Get<Options, "onCycle">,
+    //         WithPropValue<Resolutions, "cyclic", Resolutions[TypeName]>,
+    //         DefaultParseTypeContext
+    //     >,
+    //     WithPropValue<Resolutions, "cyclic", Resolutions[TypeName]>,
+    //     {
+    //         onCycle: Get<Options, "deepOnCycle"> extends true
+    //             ? Get<Options, "onCycle">
+    //             : Unset
+    //         seen: {}
+    //         onResolve: Get<Options, "onResolve">
+    //         deepOnCycle: Get<Options, "deepOnCycle">
+    //     }
+    // >
+
+    // export type TypeOfResolvedNonCyclicDefinition<
+    //     TypeName extends keyof Resolutions,
+    //     Resolutions,
+    //     Options
+    // > = Or<
+    //     Get<Options, "onResolve"> extends Unset ? true : false,
+    //     TypeName extends "resolved" ? true : false
+    // > extends true
+    //     ? Root.TypeOf<
+    //           Root.Parse<
+    //               Resolutions[TypeName],
+    //               Resolutions,
+    //               DefaultParseTypeContext
+    //           >,
+    //           Resolutions,
+    //           Options & {
+    //               seen: { [K in TypeName]: true }
+    //           }
+    //       >
+    //     : Root.TypeOf<
+    //           Root.Parse<
+    //               Get<Options, "onResolve">,
+    //               WithPropValue<Resolutions, "resolved", Resolutions[TypeName]>,
+    //               DefaultParseTypeContext
+    //           >,
+    //           WithPropValue<Resolutions, "resolved", Resolutions[TypeName]>,
+    //           Options & {
+    //               seen: { [K in TypeName]: true }
+    //           }
+    //       >
 
     export const type = typeDefProxy as string
 

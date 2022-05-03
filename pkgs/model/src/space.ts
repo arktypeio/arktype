@@ -6,48 +6,39 @@ import {
     Narrow,
     transform,
     IsAny,
-    Exact
+    Exact,
+    Get
 } from "@re-/tools"
 import {
     createCreateFunction,
     Model,
     ModelConfig,
     DefaultParseOptions,
-    CustomValidator
+    CustomValidator,
+    CreateFunction
 } from "./model.js"
 import { Map, Root } from "./definitions/index.js"
 import { DefaultTypeOfContext, typeDefProxy, Merge } from "./internal.js"
-import { ValidateResolution } from "./resolution.js"
+// import { ValidateResolution } from "./resolution.js"
 import { DefaultParseTypeContext } from "./definitions/internal.js"
 
 export type SpaceResolutions = Record<string, any>
 
-export type ValidateSpaceResolutions<
-    Nodes,
-    Resolutions,
-    SuperSpaceResolutions = {}
-> = Evaluate<{
-    [TypeName in keyof Nodes]: ValidateResolution<
-        Nodes[TypeName],
-        Merge<SuperSpaceResolutions, Resolutions>
-    >
-}>
-
-export type ResolutionsToModels<
+export type NodesToModels<
     Nodes,
     Resolutions,
     Config,
     ConfigWithDefaults = Merge<DefaultParseOptions, Config>
-> = Evaluate<{
+> = {
     [TypeName in keyof Nodes]: Model<
         Nodes[TypeName],
         {
-            resolutions: ValidateSpaceResolutions<Nodes, Resolutions>
+            resolutions: Resolutions
             config: { parse: Config }
         },
         ConfigWithDefaults & { seen: { [K in TypeName]: true } }
     >
-}>
+}
 
 export type CreateCompileFunction = <DeclaredTypeNames extends string[]>(
     declaredTypeNames: Narrow<DeclaredTypeNames>
@@ -84,6 +75,7 @@ export const createCompileFunction: CreateCompileFunction =
         }
         const create = createCreateFunction({ resolutions, config })
         const extend = (newDefinitions: any, newConfig: any) =>
+            // @ts-ignore
             compile(
                 { ...resolutions, ...newDefinitions },
                 {
@@ -97,6 +89,7 @@ export const createCompileFunction: CreateCompileFunction =
             config,
             models: transform(resolutions, ([typeName, definition]) => [
                 typeName,
+                // @ts-ignore
                 create(definition, { ...config, ...config?.models?.[typeName] })
             ]),
             types: typeDefProxy,
@@ -104,24 +97,6 @@ export const createCompileFunction: CreateCompileFunction =
             extend
         } as any
     }
-
-export type CheckCompileResolutions<
-    Nodes,
-    Resolutions,
-    DeclaredTypeNames extends string[] = [],
-    SuperSpaceResolutions = {},
-    Checked = ValidateSpaceResolutions<
-        Nodes,
-        Resolutions,
-        SuperSpaceResolutions
-    >,
-    DefinedTypeName extends string = keyof Checked & string,
-    DeclaredTypeName extends string = DeclaredTypeNames extends never[]
-        ? DefinedTypeName
-        : ElementOf<DeclaredTypeNames>
-> = Evaluate<{
-    [TypeName in DeclaredTypeName]: KeyValuate<Checked, TypeName>
-}>
 
 export const extraneousTypesErrorMessage = `Defined types @types were never declared.`
 export const missingTypesErrorMessage = `Declared types @types were never defined.`
@@ -177,40 +152,65 @@ export type Space<
 > = Evaluate<{
     resolutions: Resolutions
     config: Config
-    nodes: Nodes
     types: Evaluate<{
         [TypeName in keyof Nodes]: Root.TypeOf<
             Nodes[TypeName],
-            Resolutions,
+            Nodes,
             DefaultTypeOfContext
         >
     }>
-    // models: ResolutionsToModels<Resolutions, SpaceParseConfig>
+    models: NodesToModels<Nodes, Resolutions, SpaceParseConfig>
+    nodes: Nodes
     // @ts-ignore
-    // create: CreateFunction<{
-    //     resolutions: Resolutions
-    //     config: Config
-    // }>
+    create: CreateFunction<{
+        resolutions: Resolutions
+        config: Config
+        nodes: Nodes
+    }>
     // extend: ExtendSpaceFunction<Resolutions, Config>
     // TODO: Add declare extension
 }>
 
+export type CheckCompileResolutions<
+    Resolutions,
+    Nodes,
+    DeclaredTypeNames extends string[] = [],
+    Checked = ValidateSpaceResolutions<Nodes>,
+    DefinedTypeName extends string = keyof Checked & string,
+    DeclaredTypeName extends string = DeclaredTypeNames extends never[]
+        ? DefinedTypeName
+        : ElementOf<DeclaredTypeNames>
+> = IsAny<Resolutions> extends true
+    ? Resolutions
+    : {
+          [TypeName in DeclaredTypeName]: KeyValuate<Checked, TypeName>
+      }
+
+export type ValidateSpaceResolutions<Nodes> = {
+    [TypeName in keyof Nodes]: Root.Validate<Nodes[TypeName]>
+}
+
+export type ResolutionsToNodes<Resolutions> = {
+    [TypeName in keyof Resolutions]: Root.Parse<
+        Resolutions[TypeName],
+        Resolutions,
+        DefaultParseTypeContext
+    >
+}
+
 export type CompileFunction<DeclaredTypeNames extends string[]> = <
     Resolutions,
     Options extends SpaceOptions<Resolutions> = {},
-    Nodes = Evaluate<{
+    Nodes = {
         [TypeName in keyof Resolutions]: Root.Parse<
             Resolutions[TypeName],
             Resolutions,
             DefaultParseTypeContext
         >
-    }>
+    }
 >(
     resolutions: Narrow<
-        Exact<
-            Resolutions,
-            CheckCompileResolutions<Nodes, Resolutions, DeclaredTypeNames>
-        >
+        CheckCompileResolutions<Resolutions, Nodes, DeclaredTypeNames>
     >,
     // TS has a problem inferring the narrowed type of a function hence the intersection hack
     // If removing it doesn't break any types or tests, do it!
@@ -227,3 +227,12 @@ export type CompileFunction<DeclaredTypeNames extends string[]> = <
 // Exported compile function is equivalent to compile from an empty declare call
 // and will not validate missing or extraneous definitions
 export const compile = createCompileFunction([])
+
+const space = compile({
+    a: {
+        ok: "string"
+    },
+    b: {
+        cool: "number|bigint"
+    }
+})

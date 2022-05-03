@@ -10,7 +10,11 @@ import {
     stringifyErrors,
     ValidationErrors
 } from "./errors.js"
-import { ValidateSpaceResolutions, SpaceDefinition } from "./space.js"
+import {
+    ValidateSpaceResolutions,
+    SpaceDefinition,
+    ResolutionsToNodes
+} from "./space.js"
 import {
     errorsFromCustomValidator,
     Merge,
@@ -195,9 +199,12 @@ export type Model<
     Space,
     Options,
     SpaceParseConfig = KeyValuate<Get<Space, "config">, "parse">,
+    SpaceNodes = "nodes" extends keyof Space
+        ? Space["nodes"]
+        : ResolutionsToNodes<Get<Space, "resolutions">>,
     ModelType = TypeOf<
         Node,
-        Get<Space, "resolutions">,
+        SpaceNodes,
         MergeAll<[DefaultParseOptions, SpaceParseConfig, Options]>
     >
 > = Evaluate<{
@@ -226,7 +233,6 @@ export type CreateFunction<PredefinedSpace extends SpaceDefinition | null> = <
     >
 >(
     definition: Validate<Narrow<Def>, Node>,
-    // Validate<Narrow<Def>, ActiveSpace["resolutions"]>,
     // TS has a problem inferring the narrowed type of a function hence the intersection hack
     // If removing it doesn't break any types or tests, do it!
     options?: Narrow<Options> & { validate?: { validator?: CustomValidator } }
@@ -244,12 +250,16 @@ export type CreateFunction<PredefinedSpace extends SpaceDefinition | null> = <
  */
 export const create = createCreateFunction(null)
 
-const user = create({
-    name: {
-        first: "string",
-        middle: "string?",
-        last: "string"
+const user = create(
+    {
+        name: {
+            first: "string",
+            middle: "string?",
+            last: "string"
+        },
+        age: "number",
+        browser: "'chrome'|'firefox'|'other'|null",
+        extra: "a"
     },
-    age: "number",
-    browser: "'chrome'|'firefox'|'other'|null"
-})
+    { space: { resolutions: { a: { a: "'ok'" } } } }
+)

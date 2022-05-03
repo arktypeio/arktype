@@ -7,7 +7,8 @@ import {
     isDigits,
     filterChars,
     isAlphaNumeric,
-    StringifyPossibleTypes
+    StringifyPossibleTypes,
+    Evaluate
 } from "@re-/tools"
 import { ShallowNode } from "./definitions/internal.js"
 import { ParseContext } from "./definitions/parser.js"
@@ -177,10 +178,8 @@ export type ValidationErrorMessage =
 
 export type ErrorNodeKind = "error"
 
-export type ErrorNode<Message extends string> = ShallowNode<
-    Message,
-    ErrorNodeKind,
-    unknown
+export type ErrorNode<Message extends string> = Evaluate<
+    ShallowNode<Message, ErrorNodeKind, unknown>
 >
 
 export type InferrableValidationErrorMessage<E> =

@@ -40,10 +40,6 @@ export namespace Tuple {
         [Index in keyof T]: Root.TypeOf<T[Index], Resolutions, Options>
     }>
 
-    export type Validate<N, T = Get<N, "children">> = {
-        [Index in keyof T]: Root.Validate<T[Index]>
-    }
-
     export const type = typeDefProxy as Definition
 
     export const parser = createParser(
