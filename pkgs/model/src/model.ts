@@ -1,4 +1,12 @@
-import { Evaluate, Narrow, IsAny, isEmpty, KeyValuate, Get } from "@re-/tools"
+import {
+    Evaluate,
+    Narrow,
+    IsAny,
+    isEmpty,
+    KeyValuate,
+    Get,
+    LeafOf
+} from "@re-/tools"
 import { Root } from "./definitions/index.js"
 import {
     ParseContext,
@@ -10,11 +18,7 @@ import {
     stringifyErrors,
     ValidationErrors
 } from "./errors.js"
-import {
-    ValidateSpaceResolutions,
-    SpaceDefinition,
-    ResolutionsToNodes
-} from "./space.js"
+import { SpaceDefinition } from "./space.js"
 import {
     errorsFromCustomValidator,
     Merge,
@@ -24,18 +28,14 @@ import {
 } from "./internal.js"
 import { DefaultParseTypeContext } from "./definitions/internal.js"
 
-export type Validate<Def, Node> = IsAny<Def> extends true
-    ? Def
-    : Root.Validate<Node>
-
-export type TypeOf<
-    Node,
+export type FastParse<
+    Def,
     Resolutions,
     Options = {},
     OptionsWithDefaults = Merge<DefaultParseOptions, Options>,
     Checked = Resolutions //ValidateSpaceResolutions<Resolutions>
-> = Root.TypeOf<
-    Node,
+> = Root.FastParse<
+    Def,
     Checked,
     OptionsWithDefaults & {
         seen: {}
@@ -47,32 +47,6 @@ export type ReferencesTypeOptions = {
     asList?: boolean
     filter?: string
 }
-
-export type ReferencesOf<
-    Def,
-    Resolutions = {},
-    Options extends ReferencesTypeOptions = {},
-    Config = Merge<
-        {
-            asTuple: false
-            asList: false
-            filter: string
-        },
-        Options
-    >
-> = Root.ReferencesOf<Def, Resolutions, Config>
-
-// Just use unknown for now since we don't have all the definitions yet
-// but we still want to allow references to other declared types
-export type CheckReferences<
-    Def,
-    DeclaredTypeName extends string
-> = Root.Validate<
-    Def,
-    {
-        [TypeName in DeclaredTypeName]: "unknown"
-    }
->
 
 export type ParseConfig = {
     onCycle?: any
@@ -195,30 +169,29 @@ export const createCreateFunction: CreateCreateFunction =
     }
 
 export type Model<
-    Node,
+    Def,
     Space,
     Options,
-    SpaceParseConfig = KeyValuate<Get<Space, "config">, "parse">,
-    ModelType = TypeOf<
-        Node,
+    ModelType = FastParse<
+        Def,
         Get<Space, "resolutions">,
-        MergeAll<[DefaultParseOptions, SpaceParseConfig, Options]>
+        MergeAll<
+            [
+                DefaultParseOptions,
+                KeyValuate<Get<Space, "config">, "parse">,
+                Options
+            ]
+        >
     >
 > = Evaluate<{
-    definition: Get<Node, "def">
+    definition: Def
     type: ModelType
     space: Space
     config: ModelConfig
     validate: ValidateFunction
     assert: (value: unknown, options?: AssertOptions) => void
     generate: (options?: GenerateConfig) => ModelType
-    references: (
-        options?: ReferencesConfig
-    ) => ReferencesOf<
-        Get<Node, "def">,
-        Get<Space, "resolutions">,
-        { asList: true }
-    >
+    references: (options?: ReferencesConfig) => any
 }>
 
 export type CreateFunction<PredefinedSpace extends SpaceDefinition | null> = <
@@ -229,20 +202,28 @@ export type CreateFunction<PredefinedSpace extends SpaceDefinition | null> = <
             ? Options["space"]
             : { resolutions: {} }
         : PredefinedSpace,
-    Node = Root.Parse<
+    T = FastParse<
         Def,
         Get<ActiveSpace, "resolutions">,
-        DefaultParseTypeContext
+        MergeAll<
+            [
+                DefaultParseOptions,
+                KeyValuate<Get<ActiveSpace, "config">, "parse">,
+                Options
+            ]
+        >
     >
 >(
-    definition: Validate<Narrow<Def>, Node>,
+    definition: Narrow<Validate<Def, T>>,
+    // Validate<Narrow<Def>, Node>,
     // TS has a problem inferring the narrowed type of a function hence the intersection hack
     // If removing it doesn't break any types or tests, do it!
     options?: Narrow<Options> & { validate?: { validator?: CustomValidator } }
 ) => Model<
-    Node,
+    Def,
     Evaluate<ActiveSpace>,
-    Options["parse"] extends ParseConfig ? Options["parse"] : {}
+    Options["parse"] extends ParseConfig ? Options["parse"] : {},
+    T
 >
 
 /**
@@ -266,3 +247,13 @@ const user = create(
     },
     { space: { resolutions: { a: { a: "'ok'" } } } }
 )
+
+type Z = typeof user.type
+
+export type Validate<Def, T> = {
+    [K in keyof Def]: T[K] extends `Unable ${string}`
+        ? T[K]
+        : Def[K] extends object
+        ? Validate<Def[K], T[K]>
+        : Def[K]
+}

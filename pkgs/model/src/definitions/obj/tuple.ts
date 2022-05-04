@@ -15,29 +15,8 @@ import { typeOf } from "../../utils.js"
 export namespace Tuple {
     export type Definition = any[]
 
-    export type Kind = "tuple"
-
-    export type Parse<Def, Resolutions, Context> = Def extends any[]
-        ? DeepNode<
-              Def,
-              Kind,
-              {
-                  [Index in keyof Def]: Root.Parse<
-                      Def[Index],
-                      Resolutions,
-                      Context
-                  >
-              }
-          >
-        : Defer
-
-    export type TypeOf<
-        N,
-        Resolutions,
-        Options,
-        T = Get<N, "children">
-    > = Evaluate<{
-        [Index in keyof T]: Root.TypeOf<T[Index], Resolutions, Options>
+    export type TypeOf<Def, Dict, Ctx> = Evaluate<{
+        [I in keyof Def]: Root.FastParse<Def[I], Dict, Ctx>
     }>
 
     export const type = typeDefProxy as Definition

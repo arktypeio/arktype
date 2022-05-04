@@ -15,30 +15,6 @@ export namespace Literal {
 
     export type PrimitiveLiteral = number | bigint | boolean | undefined | null
 
-    export type Parse<Def> = Precedence<
-        [
-            Def extends RegExp
-                ? ShallowNode<Def, "regexLiteral", string>
-                : Defer,
-            Def extends PrimitiveLiteral
-                ? ShallowNode<Def, "primitiveLiteral", Def>
-                : Defer
-        ]
-    >
-
-    export type ReferencesOf<
-        Def extends Definition,
-        Config,
-        Result extends string = `${Def extends RegExp
-            ? "RegExp"
-            : Def}${Def extends bigint ? "n" : ""}` &
-            KeyValuate<Config, "filter">
-    > = KeyValuate<Config, "asTuple"> extends true
-        ? [Result]
-        : KeyValuate<Config, "asList"> extends true
-        ? Result[]
-        : Result
-
     export const type = typeDefProxy as Definition
 
     export const typesOf = narrow(["number", "bigint", "boolean", "undefined"])

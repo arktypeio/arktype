@@ -24,52 +24,19 @@ import { typeOf } from "../../utils.js"
 export namespace Map {
     export type Definition = Record<string, any>
 
-    export type Kind = "map"
-
-    export type Parse<Def, Resolutions, Context> = Def extends Definition
-        ? DeepNode<
-              Def,
-              Kind,
-              {
-                  [PropName in keyof Def]: Root.Parse<
-                      Def[PropName],
-                      Resolutions,
-                      Context
-                  >
-              }
-          >
-        : Defer
-
     export type TypeOf<
-        N,
+        Def,
         Resolutions,
         Options,
-        MappedNodes = Get<N, "children">,
-        OptionalKey extends keyof MappedNodes = {
-            [K in keyof MappedNodes]: Get<
-                MappedNodes[K],
-                "kind"
-            > extends Optional.Kind
-                ? K
-                : never
-        }[keyof MappedNodes],
-        RequiredKey extends keyof MappedNodes = Exclude<
-            keyof MappedNodes,
-            OptionalKey
-        >
+        OptionalKey extends keyof Def = {
+            [K in keyof Def]: Def[K] extends Optional.Definition ? K : never
+        }[keyof Def],
+        RequiredKey extends keyof Def = Exclude<keyof Def, OptionalKey>
     > = Evaluate<
         {
-            [K in OptionalKey]?: Root.TypeOf<
-                MappedNodes[K],
-                Resolutions,
-                Options
-            >
+            [K in OptionalKey]?: Root.FastParse<Def[K], Resolutions, Options>
         } & {
-            [K in RequiredKey]: Root.TypeOf<
-                MappedNodes[K],
-                Resolutions,
-                Options
-            >
+            [K in RequiredKey]: Root.FastParse<Def[K], Resolutions, Options>
         }
     >
 

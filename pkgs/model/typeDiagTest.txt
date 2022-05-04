@@ -1,50 +1,163 @@
 src/__tests__/declaration.assert.ts(12,9): error TS2578: Unused '@ts-expect-error' directive.
-src/__tests__/declaration.assert.ts(16,36): error TS2345: Argument of type '{ GottaDefineThis: unknown; }' is not assignable to parameter of type 'NarrowRecurse<{ GottaDefineThis: { errors: ["Unable to determine the type of 'your definition'."]; }; }>'.
+src/__tests__/declaration.assert.ts(16,36): error TS2345: Argument of type '{ GottaDefineThis: unknown; }' is not assignable to parameter of type 'NarrowRecurse<{ GottaDefineThis: Validate<unknown, "Unable to determine the type of your definition.">; }>'.
   Types of property 'GottaDefineThis' are incompatible.
-    Type 'unknown' is not assignable to type 'NarrowRecurse<{ errors: ["Unable to determine the type of 'your definition'."]; }>'.
+    Type 'unknown' is not assignable to type 'NarrowRecurse<Validate<unknown, "Unable to determine the type of your definition.">>'.
+src/__tests__/declaration.assert.ts(17,25): error TS2322: Type '"GottaDefineThis"' is not assignable to type '"Unable to determine the type of your definition."'.
 src/__tests__/declaration.assert.ts(42,17): error TS2578: Unused '@ts-expect-error' directive.
-src/__tests__/stress.assert.ts(967,45): error TS2339: Property 'members19' does not exist on type '{ children: { title19: { type: unknown; def: string; kind: unknown; }; members19: { children: [{ def: { children: { name48: { type: unknown; def: string; kind: unknown; }; bestFriend48: { def?: { children: { name20: { type: unknown; def: string; kind: unknown; }; bestFriend20: { ...; }; groups20: { ...; }; }; def: {...'.
-src/definitions/__tests__/multifile.assert.ts(13,31): error TS2345: Argument of type '{ group: unknown; user: unknown; }' is not assignable to parameter of type 'NarrowRecurse<{ user: { errors: ["Unable to determine the type of 'your definition'."]; }; group: { errors: ["Unable to determine the type of 'your definition'."]; }; }>'.
+src/__tests__/inheritableConfigs.assert.ts(78,64): error TS2339: Property 'contents' does not exist on type '{ toString: "Values of type 'function' or 'symbol' are not valid definitions."; charAt: "Values of type 'function' or 'symbol' are not valid definitions."; charCodeAt: "Values of type 'function' or 'symbol' are not valid definitions."; ... 46 more ...; [Symbol.iterator]: "Values of type 'function' or 'symbol' are no...'.
+src/__tests__/inheritableConfigs.assert.ts(81,36): error TS2339: Property 'contents' does not exist on type '{ toString: "Values of type 'function' or 'symbol' are not valid definitions."; charAt: "Values of type 'function' or 'symbol' are not valid definitions."; charCodeAt: "Values of type 'function' or 'symbol' are not valid definitions."; ... 46 more ...; [Symbol.iterator]: "Values of type 'function' or 'symbol' are no...'.
+src/__tests__/inheritableConfigs.assert.ts(83,54): error TS2339: Property 'contents' does not exist on type '{ toString: "Values of type 'function' or 'symbol' are not valid definitions."; charAt: "Values of type 'function' or 'symbol' are not valid definitions."; charCodeAt: "Values of type 'function' or 'symbol' are not valid definitions."; ... 46 more ...; [Symbol.iterator]: "Values of type 'function' or 'symbol' are no...'.
+src/__tests__/space.assert.ts(10,9): error TS2578: Unused '@ts-expect-error' directive.
+src/__tests__/space.assert.ts(92,37): error TS2345: Argument of type '{}' is not assignable to parameter of type '{ toString: "Values of type 'function' or 'symbol' are not valid definitions."; charAt: "Values of type 'function' or 'symbol' are not valid definitions."; charCodeAt: "Values of type 'function' or 'symbol' are not valid definitions."; ... 46 more ...; [Symbol.iterator]: "Values of type 'function' or 'symbol' are no...'.
+  Type '{}' is missing the following properties from type '{ toString: "Values of type 'function' or 'symbol' are not valid definitions."; charAt: "Values of type 'function' or 'symbol' are not valid definitions."; charCodeAt: "Values of type 'function' or 'symbol' are not valid definitions."; ... 46 more ...; [Symbol.iterator]: "Values of type 'function' or 'symbol' are no...': charAt, charCodeAt, concat, indexOf, and 44 more.
+src/declaration.ts(2,18): error TS2305: Module '"./model.js"' has no exported member 'CheckReferences'.
+src/definitions/__tests__/multifile.assert.ts(13,31): error TS2345: Argument of type '{ group: unknown; user: unknown; }' is not assignable to parameter of type 'NarrowRecurse<{ user: Validate<unknown, "Unable to determine the type of your definition.">; group: Validate<unknown, "Unable to determine the type of your definition.">; }>'.
   Types of property 'user' are incompatible.
-    Type 'unknown' is not assignable to type 'NarrowRecurse<{ errors: ["Unable to determine the type of 'your definition'."]; }>'.
-src/definitions/__tests__/multifile.assert.ts(14,16): error TS2571: Object is of type 'unknown'.
-src/definitions/__tests__/multifile.assert.ts(21,16): error TS2571: Object is of type 'unknown'.
-src/definitions/__tests__/references.assert.ts(67,26): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'string[]'.
-src/definitions/__tests__/references.assert.ts(83,49): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'string[]'.
-src/definitions/literal/__tests__/index.ts(168,43): error TS2345: Argument of type 'RegExp' is not assignable to parameter of type '{ exec: { errors: ["Values of type 'function' or 'symbol' are not valid definitions."]; }; test: { errors: ["Values of type 'function' or 'symbol' are not valid definitions."]; }; ... 14 more ...; [Symbol.matchAll]: { ...; }; }'.
-  Types of property 'exec' are incompatible.
-    Property 'errors' is missing in type '(string: string) => RegExpExecArray | null' but required in type '{ errors: ["Values of type 'function' or 'symbol' are not valid definitions."]; }'.
+    Type 'unknown' is not assignable to type 'NarrowRecurse<Validate<unknown, "Unable to determine the type of your definition.">>'.
+src/definitions/__tests__/multifile.assert.ts(14,33): error TS2339: Property 'name' does not exist on type '"Unable to determine the type of your definition."'.
+src/definitions/__tests__/multifile.assert.ts(21,39): error TS2339: Property 'bestFriend' does not exist on type '"Unable to determine the type of your definition."'.
+src/definitions/__tests__/multifile.assert.ts(25,28): error TS2322: Type '"user"' is not assignable to type '"Unable to determine the type of your definition."'.
+src/definitions/__tests__/references.assert.ts(4,10): error TS2305: Module '"../../model.js"' has no exported member 'ReferencesOf'.
+src/definitions/__tests__/references.assert.ts(58,27): error TS2345: Argument of type 'null' is not assignable to parameter of type 'NarrowRecurse<Validate<unknown, "Unable to determine the type of your definition.">>'.
+src/definitions/__tests__/references.assert.ts(59,27): error TS2345: Argument of type 'bigint' is not assignable to parameter of type 'NarrowRecurse<Validate<{ toString: (radix?: number | undefined) => string; toLocaleString: (locales?: string | undefined, options?: BigIntToLocaleStringOptions | undefined) => string; valueOf: () => bigint; readonly [Symbol.toStringTag]: "BigInt"; }, { ...; }>>'.
+src/definitions/__tests__/root.assert.ts(13,9): error TS2578: Unused '@ts-expect-error' directive.
+src/definitions/__tests__/root.assert.ts(17,9): error TS2578: Unused '@ts-expect-error' directive.
+src/definitions/literal/__tests__/index.ts(49,50): error TS2345: Argument of type 'number' is not assignable to parameter of type '{ toString: "Values of type 'function' or 'symbol' are not valid definitions."; toFixed: "Values of type 'function' or 'symbol' are not valid definitions."; toExponential: "Values of type 'function' or 'symbol' are not valid definitions."; toPrecision: "Values of type 'function' or 'symbol' are not valid definitions...'.
+src/definitions/literal/__tests__/index.ts(52,53): error TS2345: Argument of type 'number' is not assignable to parameter of type '{ toString: "Values of type 'function' or 'symbol' are not valid definitions."; toFixed: "Values of type 'function' or 'symbol' are not valid definitions."; toExponential: "Values of type 'function' or 'symbol' are not valid definitions."; toPrecision: "Values of type 'function' or 'symbol' are not valid definitions...'.
+src/definitions/literal/__tests__/index.ts(55,54): error TS2345: Argument of type 'number' is not assignable to parameter of type '{ toString: "Values of type 'function' or 'symbol' are not valid definitions."; toFixed: "Values of type 'function' or 'symbol' are not valid definitions."; toExponential: "Values of type 'function' or 'symbol' are not valid definitions."; toPrecision: "Values of type 'function' or 'symbol' are not valid definitions...'.
+src/definitions/literal/__tests__/index.ts(62,31): error TS2345: Argument of type 'bigint' is not assignable to parameter of type 'NarrowRecurse<Validate<{ toString: (radix?: number | undefined) => string; toLocaleString: (locales?: string | undefined, options?: BigIntToLocaleStringOptions | undefined) => string; valueOf: () => bigint; readonly [Symbol.toStringTag]: "BigInt"; }, { ...; }>>'.
+src/definitions/literal/__tests__/index.ts(65,31): error TS2345: Argument of type 'bigint' is not assignable to parameter of type 'NarrowRecurse<Validate<{ toString: (radix?: number | undefined) => string; toLocaleString: (locales?: string | undefined, options?: BigIntToLocaleStringOptions | undefined) => string; valueOf: () => bigint; readonly [Symbol.toStringTag]: "BigInt"; }, { ...; }>>'.
+src/definitions/literal/__tests__/index.ts(72,28): error TS2345: Argument of type 'bigint' is not assignable to parameter of type 'NarrowRecurse<Validate<{ toString: (radix?: number | undefined) => string; toLocaleString: (locales?: string | undefined, options?: BigIntToLocaleStringOptions | undefined) => string; valueOf: () => bigint; readonly [Symbol.toStringTag]: "BigInt"; }, { ...; }>>'.
+src/definitions/literal/__tests__/index.ts(79,28): error TS2345: Argument of type 'bigint' is not assignable to parameter of type 'NarrowRecurse<Validate<{ toString: (radix?: number | undefined) => string; toLocaleString: (locales?: string | undefined, options?: BigIntToLocaleStringOptions | undefined) => string; valueOf: () => bigint; readonly [Symbol.toStringTag]: "BigInt"; }, { ...; }>>'.
+src/definitions/literal/__tests__/index.ts(85,35): error TS2345: Argument of type 'bigint' is not assignable to parameter of type 'NarrowRecurse<Validate<{ toString: (radix?: number | undefined) => string; toLocaleString: (locales?: string | undefined, options?: BigIntToLocaleStringOptions | undefined) => string; valueOf: () => bigint; readonly [Symbol.toStringTag]: "BigInt"; }, { ...; }>>'.
+src/definitions/literal/__tests__/index.ts(90,35): error TS2345: Argument of type 'bigint' is not assignable to parameter of type 'NarrowRecurse<Validate<{ toString: (radix?: number | undefined) => string; toLocaleString: (locales?: string | undefined, options?: BigIntToLocaleStringOptions | undefined) => string; valueOf: () => bigint; readonly [Symbol.toStringTag]: "BigInt"; }, { ...; }>>'.
+src/definitions/literal/__tests__/index.ts(98,31): error TS2345: Argument of type 'bigint' is not assignable to parameter of type 'NarrowRecurse<Validate<{ toString: (radix?: number | undefined) => string; toLocaleString: (locales?: string | undefined, options?: BigIntToLocaleStringOptions | undefined) => string; valueOf: () => bigint; readonly [Symbol.toStringTag]: "BigInt"; }, { ...; }>>'.
+src/definitions/literal/__tests__/index.ts(98,50): error TS2345: Argument of type 'bigint' is not assignable to parameter of type '{ toString: "Values of type 'function' or 'symbol' are not valid definitions."; toLocaleString: "Values of type 'function' or 'symbol' are not valid definitions."; valueOf: "Values of type 'function' or 'symbol' are not valid definitions."; readonly [Symbol.toStringTag]: "Unable to determine the type of BigInt."; }'.
+src/definitions/literal/__tests__/index.ts(101,31): error TS2345: Argument of type 'bigint' is not assignable to parameter of type 'NarrowRecurse<Validate<{ toString: (radix?: number | undefined) => string; toLocaleString: (locales?: string | undefined, options?: BigIntToLocaleStringOptions | undefined) => string; valueOf: () => bigint; readonly [Symbol.toStringTag]: "BigInt"; }, { ...; }>>'.
+src/definitions/literal/__tests__/index.ts(101,51): error TS2345: Argument of type 'bigint' is not assignable to parameter of type '{ toString: "Values of type 'function' or 'symbol' are not valid definitions."; toLocaleString: "Values of type 'function' or 'symbol' are not valid definitions."; valueOf: "Values of type 'function' or 'symbol' are not valid definitions."; readonly [Symbol.toStringTag]: "Unable to determine the type of BigInt."; }'.
+src/definitions/literal/__tests__/index.ts(112,41): error TS2345: Argument of type 'boolean' is not assignable to parameter of type '{ valueOf: "Values of type 'function' or 'symbol' are not valid definitions."; }'.
+src/definitions/literal/__tests__/index.ts(127,41): error TS2345: Argument of type 'boolean' is not assignable to parameter of type '{ valueOf: "Values of type 'function' or 'symbol' are not valid definitions."; }'.
+src/definitions/literal/__tests__/index.ts(138,39): error TS2345: Argument of type 'undefined' is not assignable to parameter of type 'NarrowRecurse<Validate<unknown, "Unable to determine the type of your definition.">>'.
+src/definitions/literal/__tests__/index.ts(143,37): error TS2345: Argument of type 'undefined' is not assignable to parameter of type '"Unable to determine the type of your definition."'.
+src/definitions/literal/__tests__/index.ts(153,39): error TS2345: Argument of type 'null' is not assignable to parameter of type 'NarrowRecurse<Validate<unknown, "Unable to determine the type of your definition.">>'.
+src/definitions/literal/__tests__/index.ts(158,37): error TS2345: Argument of type 'null' is not assignable to parameter of type '"Unable to determine the type of your definition."'.
+src/definitions/obj/__tests__/map.assert.ts(18,45): error TS2345: Argument of type '{}' is not assignable to parameter of type '"Unable to determine the type of your definition."'.
+src/definitions/obj/__tests__/tuple.assert.ts(30,25): error TS2578: Unused '@ts-expect-error' directive.
+src/definitions/str/__test__/optional.assert.ts(22,17): error TS2578: Unused '@ts-expect-error' directive.
+src/definitions/str/__test__/optional.assert.ts(28,17): error TS2578: Unused '@ts-expect-error' directive.
+src/definitions/str/__test__/optional.assert.ts(37,25): error TS2578: Unused '@ts-expect-error' directive.
+src/definitions/str/__test__/optional.assert.ts(46,21): error TS2578: Unused '@ts-expect-error' directive.
+src/definitions/str/__test__/optional.assert.ts(79,51): error TS2345: Argument of type 'undefined' is not assignable to parameter of type '{ toString: "Values of type 'function' or 'symbol' are not valid definitions."; charAt: "Values of type 'function' or 'symbol' are not valid definitions."; charCodeAt: "Values of type 'function' or 'symbol' are not valid definitions."; ... 46 more ...; [Symbol.iterator]: "Values of type 'function' or 'symbol' are no...'.
+src/definitions/str/__test__/optional.assert.ts(84,22): error TS2345: Argument of type '{ required: string; }' is not assignable to parameter of type '{ required: string; optional: string | undefined; }'.
+  Property 'optional' is missing in type '{ required: string; }' but required in type '{ required: string; optional: string | undefined; }'.
+src/definitions/str/expression/__tests__/arrowFunction.assert.ts(23,21): error TS2578: Unused '@ts-expect-error' directive.
+src/definitions/str/expression/__tests__/arrowFunction.assert.ts(32,17): error TS2578: Unused '@ts-expect-error' directive.
+src/definitions/str/expression/__tests__/arrowFunction.assert.ts(38,17): error TS2578: Unused '@ts-expect-error' directive.
+src/definitions/str/expression/__tests__/constraint.assert.ts(14,17): error TS2578: Unused '@ts-expect-error' directive.
+src/definitions/str/expression/__tests__/constraint.assert.ts(20,17): error TS2578: Unused '@ts-expect-error' directive.
+src/definitions/str/expression/__tests__/constraint.assert.ts(26,17): error TS2578: Unused '@ts-expect-error' directive.
+src/definitions/str/expression/__tests__/constraint.assert.ts(33,21): error TS2578: Unused '@ts-expect-error' directive.
+src/definitions/str/expression/__tests__/constraint.assert.ts(40,17): error TS2578: Unused '@ts-expect-error' directive.
+src/definitions/str/expression/__tests__/constraint.assert.ts(46,17): error TS2578: Unused '@ts-expect-error' directive.
+src/definitions/str/expression/__tests__/constraint.assert.ts(52,17): error TS2578: Unused '@ts-expect-error' directive.
+src/definitions/str/expression/__tests__/constraint.assert.ts(58,17): error TS2578: Unused '@ts-expect-error' directive.
+src/definitions/str/expression/__tests__/intersection.assert.ts(18,17): error TS2578: Unused '@ts-expect-error' directive.
 src/definitions/str/expression/__tests__/intersection.assert.ts(24,17): error TS2578: Unused '@ts-expect-error' directive.
+src/definitions/str/expression/__tests__/list.assert.ts(15,17): error TS2578: Unused '@ts-expect-error' directive.
+src/definitions/str/expression/__tests__/list.assert.ts(21,17): error TS2578: Unused '@ts-expect-error' directive.
+src/definitions/str/expression/__tests__/list.assert.ts(27,17): error TS2578: Unused '@ts-expect-error' directive.
+src/definitions/str/expression/__tests__/list.assert.ts(62,58): error TS2345: Argument of type 'never[]' is not assignable to parameter of type '{ toString: "Values of type 'function' or 'symbol' are not valid definitions."; charAt: "Values of type 'function' or 'symbol' are not valid definitions."; charCodeAt: "Values of type 'function' or 'symbol' are not valid definitions."; ... 46 more ...; [Symbol.iterator]: "Values of type 'function' or 'symbol' are no...'.
+  Type 'never[]' is missing the following properties from type '{ toString: "Values of type 'function' or 'symbol' are not valid definitions."; charAt: "Values of type 'function' or 'symbol' are not valid definitions."; charCodeAt: "Values of type 'function' or 'symbol' are not valid definitions."; ... 46 more ...; [Symbol.iterator]: "Values of type 'function' or 'symbol' are no...': charAt, charCodeAt, localeCompare, match, and 36 more.
+src/definitions/str/expression/__tests__/union.assert.ts(19,17): error TS2578: Unused '@ts-expect-error' directive.
 src/definitions/str/expression/__tests__/union.assert.ts(25,17): error TS2578: Unused '@ts-expect-error' directive.
+src/definitions/str/expression/__tests__/union.assert.ts(57,62): error TS2345: Argument of type 'undefined' is not assignable to parameter of type '{ toString: "Values of type 'function' or 'symbol' are not valid definitions."; charAt: "Values of type 'function' or 'symbol' are not valid definitions."; charCodeAt: "Values of type 'function' or 'symbol' are not valid definitions."; ... 46 more ...; [Symbol.iterator]: "Values of type 'function' or 'symbol' are no...'.
+src/definitions/str/expression/__tests__/union.assert.ts(59,63): error TS2345: Argument of type '{}' is not assignable to parameter of type '{ toString: "Values of type 'function' or 'symbol' are not valid definitions."; charAt: "Values of type 'function' or 'symbol' are not valid definitions."; charCodeAt: "Values of type 'function' or 'symbol' are not valid definitions."; ... 46 more ...; [Symbol.iterator]: "Values of type 'function' or 'symbol' are no...'.
+  Type '{}' is missing the following properties from type '{ toString: "Values of type 'function' or 'symbol' are not valid definitions."; charAt: "Values of type 'function' or 'symbol' are not valid definitions."; charCodeAt: "Values of type 'function' or 'symbol' are not valid definitions."; ... 46 more ...; [Symbol.iterator]: "Values of type 'function' or 'symbol' are no...': charAt, charCodeAt, concat, indexOf, and 44 more.
+src/definitions/str/expression/__tests__/union.assert.ts(95,18): error TS2345: Argument of type 'boolean' is not assignable to parameter of type '{ toString: "Values of type 'function' or 'symbol' are not valid definitions."; charAt: "Values of type 'function' or 'symbol' are not valid definitions."; charCodeAt: "Values of type 'function' or 'symbol' are not valid definitions."; ... 46 more ...; [Symbol.iterator]: "Values of type 'function' or 'symbol' are no...'.
+src/definitions/str/expression/arrowFunction.ts(37,23): error TS2724: '"/home/ssalb/2re-po/pkgs/model/src/definitions/str/str".Str' has no exported member named 'Parse'. Did you mean 'parser'?
+src/definitions/str/expression/arrowFunction.ts(41,33): error TS2724: '"/home/ssalb/2re-po/pkgs/model/src/definitions/str/str".Str' has no exported member named 'Parse'. Did you mean 'parser'?
+src/definitions/str/expression/arrowFunction.ts(65,25): error TS2724: '"/home/ssalb/2re-po/pkgs/model/src/definitions/root".Root' has no exported member named 'TypeOf'. Did you mean 'type'?
+src/definitions/str/expression/arrowFunction.ts(70,33): error TS2724: '"/home/ssalb/2re-po/pkgs/model/src/definitions/root".Root' has no exported member named 'TypeOf'. Did you mean 'type'?
+src/definitions/str/expression/intersection.ts(35,23): error TS2724: '"/home/ssalb/2re-po/pkgs/model/src/definitions/str/str".Str' has no exported member named 'Parse'. Did you mean 'parser'?
+src/definitions/str/expression/intersection.ts(36,23): error TS2724: '"/home/ssalb/2re-po/pkgs/model/src/definitions/str/str".Str' has no exported member named 'Parse'. Did you mean 'parser'?
+src/definitions/str/expression/intersection.ts(46,14): error TS2724: '"/home/ssalb/2re-po/pkgs/model/src/definitions/root".Root' has no exported member named 'TypeOf'. Did you mean 'type'?
+src/definitions/str/expression/intersection.ts(47,14): error TS2724: '"/home/ssalb/2re-po/pkgs/model/src/definitions/root".Root' has no exported member named 'TypeOf'. Did you mean 'type'?
+src/definitions/str/expression/list.ts(23,36): error TS2724: '"/home/ssalb/2re-po/pkgs/model/src/definitions/str/str".Str' has no exported member named 'Parse'. Did you mean 'parser'?
+src/definitions/str/expression/list.ts(31,14): error TS2724: '"/home/ssalb/2re-po/pkgs/model/src/definitions/root".Root' has no exported member named 'TypeOf'. Did you mean 'type'?
+src/definitions/str/expression/union.ts(50,23): error TS2724: '"/home/ssalb/2re-po/pkgs/model/src/definitions/str/str".Str' has no exported member named 'Parse'. Did you mean 'parser'?
+src/definitions/str/expression/union.ts(51,23): error TS2724: '"/home/ssalb/2re-po/pkgs/model/src/definitions/str/str".Str' has no exported member named 'Parse'. Did you mean 'parser'?
+src/definitions/str/expression/union.ts(62,16): error TS2724: '"/home/ssalb/2re-po/pkgs/model/src/definitions/root".Root' has no exported member named 'TypeOf'. Did you mean 'type'?
+src/definitions/str/expression/union.ts(63,16): error TS2724: '"/home/ssalb/2re-po/pkgs/model/src/definitions/root".Root' has no exported member named 'TypeOf'. Did you mean 'type'?
+src/definitions/str/reference/__tests__/alias.assert.ts(39,38): error TS2339: Property 'cyclic' does not exist on type '{ b: { a: ...; isA: false; isB: true; }; isA: true; isB: false; }'.
+src/definitions/str/reference/__tests__/alias.assert.ts(42,38): error TS2339: Property 'cyclic' does not exist on type '{ a: { b: ...; isA: true; isB: false; }; isA: false; isB: true; }'.
+src/definitions/str/reference/__tests__/alias.assert.ts(47,38): error TS2339: Property 'cyclic' does not exist on type '{ a: { b: ...; isA: true; isB: false; }; isA: false; isB: true; }'.
+src/definitions/str/reference/__tests__/alias.assert.ts(64,39): error TS2339: Property 'cyclic' does not exist on type '{ b: { a: ...; isA: false; isB: true; }; isA: true; isB: false; }'.
+src/definitions/str/reference/__tests__/alias.assert.ts(86,51): error TS2339: Property 'wasResolved' does not exist on type '{ b: { a: ...; isA: false; isB: true; }; isA: true; isB: false; }'.
+src/definitions/str/reference/__tests__/alias.assert.ts(87,51): error TS2339: Property 'resolvedType' does not exist on type '{ b: { a: ...; isA: false; isB: true; }; isA: true; isB: false; }'.
+src/definitions/str/reference/__tests__/alias.assert.ts(254,21): error TS2589: Type instantiation is excessively deep and possibly infinite.
+src/definitions/str/reference/__tests__/alias.assert.ts(268,17): error TS2589: Type instantiation is excessively deep and possibly infinite.
+src/definitions/str/reference/__tests__/bigintLiteral.assert.ts(14,17): error TS2578: Unused '@ts-expect-error' directive.
+src/definitions/str/reference/__tests__/bigintLiteral.assert.ts(50,48): error TS2345: Argument of type 'bigint' is not assignable to parameter of type '{ toString: "Values of type 'function' or 'symbol' are not valid definitions."; charAt: "Values of type 'function' or 'symbol' are not valid definitions."; charCodeAt: "Values of type 'function' or 'symbol' are not valid definitions."; ... 46 more ...; [Symbol.iterator]: "Values of type 'function' or 'symbol' are no...'.
+src/definitions/str/reference/__tests__/bigintLiteral.assert.ts(53,49): error TS2345: Argument of type 'bigint' is not assignable to parameter of type '{ toString: "Values of type 'function' or 'symbol' are not valid definitions."; charAt: "Values of type 'function' or 'symbol' are not valid definitions."; charCodeAt: "Values of type 'function' or 'symbol' are not valid definitions."; ... 46 more ...; [Symbol.iterator]: "Values of type 'function' or 'symbol' are no...'.
+src/definitions/str/reference/__tests__/keyword.assert.ts(11,37): error TS2345: Argument of type 'string' is not assignable to parameter of type '{ toString: "Values of type 'function' or 'symbol' are not valid definitions."; charAt: "Values of type 'function' or 'symbol' are not valid definitions."; charCodeAt: "Values of type 'function' or 'symbol' are not valid definitions."; ... 46 more ...; [Symbol.iterator]: "Values of type 'function' or 'symbol' are no...'.
+src/definitions/str/reference/__tests__/keyword.assert.ts(26,37): error TS2345: Argument of type 'number' is not assignable to parameter of type '{ toString: "Values of type 'function' or 'symbol' are not valid definitions."; charAt: "Values of type 'function' or 'symbol' are not valid definitions."; charCodeAt: "Values of type 'function' or 'symbol' are not valid definitions."; ... 46 more ...; [Symbol.iterator]: "Values of type 'function' or 'symbol' are no...'.
+src/definitions/str/reference/__tests__/keyword.assert.ts(42,37): error TS2345: Argument of type 'boolean' is not assignable to parameter of type '{ toString: "Values of type 'function' or 'symbol' are not valid definitions."; charAt: "Values of type 'function' or 'symbol' are not valid definitions."; charCodeAt: "Values of type 'function' or 'symbol' are not valid definitions."; ... 46 more ...; [Symbol.iterator]: "Values of type 'function' or 'symbol' are no...'.
+src/definitions/str/reference/__tests__/keyword.assert.ts(58,37): error TS2345: Argument of type 'boolean' is not assignable to parameter of type '{ toString: "Values of type 'function' or 'symbol' are not valid definitions."; charAt: "Values of type 'function' or 'symbol' are not valid definitions."; charCodeAt: "Values of type 'function' or 'symbol' are not valid definitions."; ... 46 more ...; [Symbol.iterator]: "Values of type 'function' or 'symbol' are no...'.
+src/definitions/str/reference/__tests__/keyword.assert.ts(73,37): error TS2345: Argument of type 'boolean' is not assignable to parameter of type '{ toString: "Values of type 'function' or 'symbol' are not valid definitions."; charAt: "Values of type 'function' or 'symbol' are not valid definitions."; charCodeAt: "Values of type 'function' or 'symbol' are not valid definitions."; ... 46 more ...; [Symbol.iterator]: "Values of type 'function' or 'symbol' are no...'.
+src/definitions/str/reference/__tests__/keyword.assert.ts(88,37): error TS2345: Argument of type 'bigint' is not assignable to parameter of type '{ toString: "Values of type 'function' or 'symbol' are not valid definitions."; charAt: "Values of type 'function' or 'symbol' are not valid definitions."; charCodeAt: "Values of type 'function' or 'symbol' are not valid definitions."; ... 46 more ...; [Symbol.iterator]: "Values of type 'function' or 'symbol' are no...'.
+src/definitions/str/reference/__tests__/keyword.assert.ts(120,20): error TS2349: This expression is not callable.
+  Type '{ toString: "Values of type 'function' or 'symbol' are not valid definitions."; charAt: "Values of type 'function' or 'symbol' are not valid definitions."; charCodeAt: "Values of type 'function' or 'symbol' are not valid definitions."; ... 46 more ...; [Symbol.iterator]: "Values of type 'function' or 'symbol' are no...' has no call signatures.
+src/definitions/str/reference/__tests__/keyword.assert.ts(135,41): error TS2345: Argument of type '{}' is not assignable to parameter of type '{ toString: "Values of type 'function' or 'symbol' are not valid definitions."; charAt: "Values of type 'function' or 'symbol' are not valid definitions."; charCodeAt: "Values of type 'function' or 'symbol' are not valid definitions."; ... 46 more ...; [Symbol.iterator]: "Values of type 'function' or 'symbol' are no...'.
+  Type '{}' is missing the following properties from type '{ toString: "Values of type 'function' or 'symbol' are not valid definitions."; charAt: "Values of type 'function' or 'symbol' are not valid definitions."; charCodeAt: "Values of type 'function' or 'symbol' are not valid definitions."; ... 46 more ...; [Symbol.iterator]: "Values of type 'function' or 'symbol' are no...': charAt, charCodeAt, concat, indexOf, and 44 more.
+src/definitions/str/reference/__tests__/keyword.assert.ts(151,37): error TS2345: Argument of type 'undefined' is not assignable to parameter of type '{ toString: "Values of type 'function' or 'symbol' are not valid definitions."; charAt: "Values of type 'function' or 'symbol' are not valid definitions."; charCodeAt: "Values of type 'function' or 'symbol' are not valid definitions."; ... 46 more ...; [Symbol.iterator]: "Values of type 'function' or 'symbol' are no...'.
+src/definitions/str/reference/__tests__/keyword.assert.ts(166,37): error TS2345: Argument of type 'null' is not assignable to parameter of type '{ toString: "Values of type 'function' or 'symbol' are not valid definitions."; charAt: "Values of type 'function' or 'symbol' are not valid definitions."; charCodeAt: "Values of type 'function' or 'symbol' are not valid definitions."; ... 46 more ...; [Symbol.iterator]: "Values of type 'function' or 'symbol' are no...'.
+src/definitions/str/reference/__tests__/keyword.assert.ts(181,37): error TS2345: Argument of type 'undefined' is not assignable to parameter of type '{ toString: "Values of type 'function' or 'symbol' are not valid definitions."; charAt: "Values of type 'function' or 'symbol' are not valid definitions."; charCodeAt: "Values of type 'function' or 'symbol' are not valid definitions."; ... 46 more ...; [Symbol.iterator]: "Values of type 'function' or 'symbol' are no...'.
+src/definitions/str/reference/__tests__/keyword.assert.ts(196,37): error TS2345: Argument of type 'undefined' is not assignable to parameter of type '{ toString: "Values of type 'function' or 'symbol' are not valid definitions."; charAt: "Values of type 'function' or 'symbol' are not valid definitions."; charCodeAt: "Values of type 'function' or 'symbol' are not valid definitions."; ... 46 more ...; [Symbol.iterator]: "Values of type 'function' or 'symbol' are no...'.
+src/definitions/str/reference/__tests__/keyword.assert.ts(210,37): error TS2345: Argument of type 'undefined' is not assignable to parameter of type '{ toString: "Values of type 'function' or 'symbol' are not valid definitions."; charAt: "Values of type 'function' or 'symbol' are not valid definitions."; charCodeAt: "Values of type 'function' or 'symbol' are not valid definitions."; ... 46 more ...; [Symbol.iterator]: "Values of type 'function' or 'symbol' are no...'.
+src/definitions/str/reference/__tests__/numberLiteral.assert.ts(20,17): error TS2578: Unused '@ts-expect-error' directive.
+src/definitions/str/reference/__tests__/numberLiteral.assert.ts(26,17): error TS2578: Unused '@ts-expect-error' directive.
+src/definitions/str/reference/__tests__/numberLiteral.assert.ts(62,48): error TS2345: Argument of type 'number' is not assignable to parameter of type '{ toString: "Values of type 'function' or 'symbol' are not valid definitions."; charAt: "Values of type 'function' or 'symbol' are not valid definitions."; charCodeAt: "Values of type 'function' or 'symbol' are not valid definitions."; ... 46 more ...; [Symbol.iterator]: "Values of type 'function' or 'symbol' are no...'.
+src/definitions/str/reference/__tests__/numberLiteral.assert.ts(65,51): error TS2345: Argument of type 'number' is not assignable to parameter of type '{ toString: "Values of type 'function' or 'symbol' are not valid definitions."; charAt: "Values of type 'function' or 'symbol' are not valid definitions."; charCodeAt: "Values of type 'function' or 'symbol' are not valid definitions."; ... 46 more ...; [Symbol.iterator]: "Values of type 'function' or 'symbol' are no...'.
+src/definitions/str/reference/__tests__/numberLiteral.assert.ts(68,52): error TS2345: Argument of type 'number' is not assignable to parameter of type '{ toString: "Values of type 'function' or 'symbol' are not valid definitions."; charAt: "Values of type 'function' or 'symbol' are not valid definitions."; charCodeAt: "Values of type 'function' or 'symbol' are not valid definitions."; ... 46 more ...; [Symbol.iterator]: "Values of type 'function' or 'symbol' are no...'.
+src/definitions/str/reference/__tests__/regex.assert.ts(11,17): error TS2578: Unused '@ts-expect-error' directive.
+src/definitions/str/reference/__tests__/regex.assert.ts(17,17): error TS2578: Unused '@ts-expect-error' directive.
+src/definitions/str/reference/__tests__/stringLiteral.assert.ts(23,17): error TS2578: Unused '@ts-expect-error' directive.
+src/definitions/str/reference/__tests__/stringLiteral.assert.ts(29,17): error TS2578: Unused '@ts-expect-error' directive.
+src/definitions/str/reference/__tests__/stringLiteral.assert.ts(36,21): error TS2578: Unused '@ts-expect-error' directive.
+src/definitions/str/reference/__tests__/stringLiteral.assert.ts(44,21): error TS2578: Unused '@ts-expect-error' directive.
+src/definitions/str/reference/__tests__/stringLiteral.assert.ts(68,57): error TS2345: Argument of type 'string' is not assignable to parameter of type '{ toString: "Values of type 'function' or 'symbol' are not valid definitions."; charAt: "Values of type 'function' or 'symbol' are not valid definitions."; charCodeAt: "Values of type 'function' or 'symbol' are not valid definitions."; ... 46 more ...; [Symbol.iterator]: "Values of type 'function' or 'symbol' are no...'.
+src/model.ts(254,23): error TS2536: Type 'K' cannot be used to index type 'T'.
+src/model.ts(257,28): error TS2536: Type 'K' cannot be used to index type 'T'.
+src/space.ts(182,56): error TS2536: Type 'TypeName' cannot be used to index type 'Types'.
 Files:                         527
 Lines of Library:             9294
 Lines of Definitions:        73521
-Lines of TypeScript:          7768
+Lines of TypeScript:          7343
 Lines of JavaScript:             0
 Lines of JSON:                   0
 Lines of Other:                  0
 Nodes of Library:            24093
 Nodes of Definitions:       296262
-Nodes of TypeScript:         30894
+Nodes of TypeScript:         29344
 Nodes of JavaScript:             0
 Nodes of JSON:                   0
 Nodes of Other:                  0
-Identifiers:                113606
-Symbols:                    468070
-Types:                      329426
-Instantiations:            2253464
-Memory used:               438665K
-Assignability cache size:    80082
-Identity cache size:          1225
-Subtype cache size:            551
-Strict subtype cache size:     180
+Identifiers:                113029
+Symbols:                    143242
+Types:                       92372
+Instantiations:            1392059
+Memory used:               220564K
+Assignability cache size:    55847
+Identity cache size:           339
+Subtype cache size:            579
+Strict subtype cache size:     182
 I/O Read time:               0.02s
-Parse time:                  0.60s
+Parse time:                  0.54s
 ResolveModule time:          0.08s
-ResolveTypeReference time:   0.01s
-Program time:                0.88s
-Bind time:                   0.31s
-Check time:                  5.01s
+ResolveTypeReference time:   0.00s
+Program time:                0.79s
+Bind time:                   0.27s
+Check time:                  2.61s
 printTime time:              0.00s
 Emit time:                   0.00s
-Total time:                  6.20s
+Total time:                  3.67s

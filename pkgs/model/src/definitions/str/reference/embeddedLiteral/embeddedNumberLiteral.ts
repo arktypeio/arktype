@@ -12,14 +12,6 @@ import { EmbeddedLiteral } from "./embeddedLiteral.js"
 export namespace EmbeddedNumberLiteral {
     export type Definition<Value extends number = number> = NumericString<Value>
 
-    export type Kind = "embeddedNumberLiteral"
-
-    export type Parse<Def extends string> = Def extends NumericString<
-        infer Value
-    >
-        ? ShallowNode<Def, Kind, Value>
-        : Defer
-
     export const type = typeDefProxy as Definition
 
     export const parser = createParser(

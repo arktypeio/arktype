@@ -1,5 +1,3 @@
-import { Evaluate } from "@re-/tools"
-
 export * from "../internal.js"
 export * from "./parser.js"
 
@@ -8,6 +6,7 @@ export * from "./root.js"
 export type ParseTypeContext = {
     delimiter: string
     modifiers: string
+    strRoot?: string
 }
 
 export type DefaultParseTypeContext = {
@@ -31,3 +30,7 @@ export type DeepNode<Def, Kind extends string, Children> = {
     kind: Kind
     children: Children
 }
+
+export type ParseError<Message, Ctx> = "onError" extends keyof Ctx
+    ? Ctx["onError"]
+    : Message

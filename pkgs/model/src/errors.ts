@@ -42,12 +42,13 @@ export const getBaseTypeName = (definition: string) =>
 export const baseUnknownTypeError =
     "Unable to determine the type of '@def'@context."
 
-export type UnknownTypeError<Definition extends string = string> =
-    StringReplace<
-        StringReplace<typeof baseUnknownTypeError, "@def", `${Definition}`>,
-        "@context",
-        ""
-    >
+export type UnknownTypeError<Definition extends string = "your definition"> =
+    `Unable to determine the type of ${Definition}.`
+// StringReplace<
+//     StringReplace<typeof baseUnknownTypeError, "@def", `${Definition}`>,
+//     "@context",
+//     ""
+// >
 
 export const unknownTypeError = <Definition>(def: Definition, path: string[]) =>
     baseUnknownTypeError

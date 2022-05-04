@@ -13,12 +13,9 @@ import { Map } from "./map.js"
 import { Tuple } from "./tuple.js"
 
 export namespace Obj {
-    export type Parse<Def, Resolutions, Context> = Precedence<
-        [
-            Tuple.Parse<Def, Resolutions, Context>,
-            Map.Parse<Def, Resolutions, Context>
-        ]
-    >
+    export type FastParse<Def extends object, Dict, Ctx> = Def extends any[]
+        ? { [I in keyof Def]: Root.FastParse<Def[I], Dict, Ctx> }
+        : { [K in keyof Def]: Root.FastParse<Def[K], Dict, Ctx> }
 
     export const type = typeDefProxy as object
 

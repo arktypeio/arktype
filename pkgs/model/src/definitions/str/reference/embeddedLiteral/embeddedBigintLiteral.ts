@@ -12,12 +12,6 @@ import { EmbeddedLiteral } from "./embeddedLiteral.js"
 export namespace EmbeddedBigintLiteral {
     export type Definition<Value extends bigint = bigint> = `${Value}n`
 
-    export type Kind = "embeddedBigintLiteral"
-
-    export type Parse<Def extends string> = Def extends Definition<infer Value>
-        ? ShallowNode<Def, Kind, Value>
-        : Defer
-
     export const type = typeDefProxy as Definition
     export const parser = createParser(
         {

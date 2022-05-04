@@ -22,12 +22,6 @@ export namespace EmbeddedRegexLiteral {
         ? true
         : false
 
-    export type Kind = "embeddedRegexLiteral"
-
-    export type Parse<Def extends string> = Matches<Def> extends true
-        ? ShallowNode<Def, Kind, string>
-        : Defer
-
     export const type = typeDefProxy as Definition
 
     // Matches a definition enclosed by forward slashes that does not contain any other forward slashes

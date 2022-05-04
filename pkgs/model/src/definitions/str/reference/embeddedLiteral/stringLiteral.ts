@@ -18,15 +18,6 @@ export namespace StringLiteral {
         | SingleQuoted<Text>
         | DoubleQuoted<Text>
 
-    export type Kind = "stringLiteral"
-
-    export type Parse<
-        Def extends string,
-        ExtractedValue = ValueFrom<Def>
-    > = ExtractedValue extends string
-        ? ShallowNode<Def, Kind, ExtractedValue>
-        : Defer
-
     export type ValueFrom<Def extends string> = Def extends SingleQuoted<
         FirstEnclosed<Def, `'`>
     >

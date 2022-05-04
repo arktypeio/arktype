@@ -15,7 +15,8 @@ import {
     ModelConfig,
     DefaultParseOptions,
     CustomValidator,
-    CreateFunction
+    CreateFunction,
+    Validate
 } from "./model.js"
 import { Map, Root } from "./definitions/index.js"
 import { DefaultTypeOfContext, typeDefProxy, Merge } from "./internal.js"
@@ -24,16 +25,15 @@ import { DefaultParseTypeContext } from "./definitions/internal.js"
 
 export type SpaceResolutions = Record<string, any>
 
-export type NodesToModels<
-    Nodes,
-    Resolutions,
+export type DictionaryToModels<
+    Dict,
     Config,
     ConfigWithDefaults = Merge<DefaultParseOptions, Config>
 > = {
-    [TypeName in keyof Nodes]: Model<
-        Nodes[TypeName],
+    [TypeName in keyof Dict]: Model<
+        Dict[TypeName],
         {
-            resolutions: Resolutions
+            resolutions: Dict
             config: { parse: Config }
         },
         ConfigWithDefaults & { seen: { [K in TypeName]: true } }
@@ -143,74 +143,58 @@ export type SpaceDefinition<
 }
 
 export type Space<
-    Nodes,
-    Resolutions,
+    Dict,
     Config,
+    Types,
     SpaceParseConfig = KeyValuate<Config, "parse"> extends undefined
         ? {}
         : KeyValuate<Config, "parse">
 > = Evaluate<{
-    resolutions: Resolutions
+    resolutions: Dict
     config: Config
-    types: Evaluate<{
-        [TypeName in keyof Nodes]: Root.TypeOf<
-            Nodes[TypeName],
-            Nodes,
-            DefaultTypeOfContext
-        >
-    }>
-    models: NodesToModels<Nodes, Resolutions, SpaceParseConfig>
-    nodes: Nodes
+    types: Types
+    models: DictionaryToModels<Dict, SpaceParseConfig>
     // @ts-ignore
     create: CreateFunction<{
-        resolutions: Resolutions
+        resolutions: Dict
         config: Config
-        nodes: Nodes
     }>
     // extend: ExtendSpaceFunction<Resolutions, Config>
     // TODO: Add declare extension
 }>
 
-export type CheckCompileResolutions<
-    Resolutions,
-    Nodes,
+export type CheckCompilation<
+    Dict,
+    Types,
     DeclaredTypeNames extends string[] = [],
-    Checked = ValidateSpaceResolutions<Nodes>,
+    Checked = ValidateSpaceDictionary<Dict, Types>,
     DefinedTypeName extends string = keyof Checked & string,
     DeclaredTypeName extends string = DeclaredTypeNames extends never[]
         ? DefinedTypeName
         : ElementOf<DeclaredTypeNames>
-> = IsAny<Resolutions> extends true
-    ? Resolutions
+> = IsAny<Dict> extends true
+    ? Dict
     : {
           [TypeName in DeclaredTypeName]: KeyValuate<Checked, TypeName>
       }
 
-export type ValidateSpaceResolutions<Nodes> = {
-    [TypeName in keyof Nodes]: Root.Validate<Nodes[TypeName]>
-}
-
-export type ResolutionsToNodes<Resolutions> = {
-    [TypeName in keyof Resolutions]: Root.Parse<
-        Resolutions[TypeName],
-        Resolutions,
-        DefaultParseTypeContext
-    >
+export type ValidateSpaceDictionary<Dict, Types> = {
+    [TypeName in keyof Dict]: Validate<Dict[TypeName], Types[TypeName]>
 }
 
 export type CompileFunction<DeclaredTypeNames extends string[]> = <
     Resolutions,
     Options extends SpaceOptions<Resolutions> = {},
-    Nodes = {
-        [TypeName in keyof Resolutions]: Root.Parse<
+    Types = {
+        [TypeName in keyof Resolutions]: Root.FastParse<
             Resolutions[TypeName],
             Resolutions,
-            DefaultParseTypeContext
+            DefaultTypeOfContext
         >
     }
 >(
     resolutions: Narrow<
-        CheckCompileResolutions<Resolutions, Nodes, DeclaredTypeNames>
+        CheckCompilation<Resolutions, Types, DeclaredTypeNames>
     >,
     // TS has a problem inferring the narrowed type of a function hence the intersection hack
     // If removing it doesn't break any types or tests, do it!
@@ -222,7 +206,7 @@ export type CompileFunction<DeclaredTypeNames extends string[]> = <
             }
         }
     >
-) => Space<Nodes, Resolutions, Options>
+) => Space<Resolutions, Options, Types>
 
 // Exported compile function is equivalent to compile from an empty declare call
 // and will not validate missing or extraneous definitions

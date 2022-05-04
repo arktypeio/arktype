@@ -13,15 +13,7 @@ import { unextractableHandlers } from "./unextractable.js"
 import { typeOf } from "../../../../utils.js"
 
 export namespace Keyword {
-    export type Definition<
-        Def extends keyof KeywordTypes = keyof KeywordTypes
-    > = Def
-
-    export type Kind = "keyword"
-
-    export type Parse<Def> = Def extends keyof KeywordTypes
-        ? ShallowNode<Def, Kind, KeywordTypes[Def]>
-        : Defer
+    export type Definition = keyof KeywordTypes
 
     export const type = typeDefProxy as Definition
 

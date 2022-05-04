@@ -8,45 +8,13 @@ import {
     DeepNode,
     invalidModifierError,
     Root,
-    ErrorNode
+    ErrorNode,
+    ParseError
 } from "./internal.js"
 import { Str } from "./str.js"
 
 export namespace Optional {
-    export type Definition<Of extends string = string> = `${Of}?`
-
-    export type Kind = "optional"
-
-    export type Parse<Def, Resolutions, Context> = Def extends Definition<
-        infer Child
-    >
-        ? "?" extends KeyValuate<Context, "modifiers">
-            ? ErrorNode<DuplicateModifierError<"?">>
-            : DeepNode<
-                  Def,
-                  Kind,
-                  [
-                      Str.Parse<
-                          Child,
-                          Resolutions,
-                          WithPropValue<
-                              Context,
-                              "modifiers",
-                              "?" | KeyValuate<Context, "modifiers">
-                          >
-                      >
-                  ]
-              >
-        : Defer
-
-    export type TypeOf<
-        N,
-        Resolutions,
-        Options,
-        Children = Get<N, "children">
-    > = Evaluate<
-        Root.TypeOf<Get<Children, 0>, Resolutions, Options> | undefined
-    >
+    export type Definition<Child extends string = string> = `${Child}?`
 
     export const type = typeDefProxy as Definition
 

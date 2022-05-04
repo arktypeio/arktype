@@ -13,7 +13,7 @@ export namespace Expression {
             ArrowFunction.Parse<Def, Resolutions, Context>,
             Union.Parse<Def, Resolutions, Context>,
             Intersection.Parse<Def, Resolutions, Context>,
-            Constraint.Parse<Def, Resolutions, Context>,
+            Constraint.FastParse<Def, Resolutions, Context>,
             List.Parse<Def, Resolutions, Context>
         ]
     >

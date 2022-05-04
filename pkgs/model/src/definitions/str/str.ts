@@ -1,5 +1,5 @@
 import { Evaluate, GetAs } from "@re-/tools"
-import { Reference } from "./reference/index.js"
+import { Keyword, Reference } from "./reference/index.js"
 import { Expression } from "./expression/index.js"
 import {
     invalidModifierError,
@@ -13,50 +13,46 @@ import {
     Defer,
     Root,
     ErrorNode,
-    DefaultParseTypeContext
+    DefaultParseTypeContext,
+    ParseError
 } from "./internal.js"
 import { Optional } from "./optional.js"
+import { Union, Intersection, Constraint, List } from "./expression/index.js"
+import { StringLiteral } from "./reference/embeddedLiteral/stringLiteral.js"
+import { EmbeddedRegexLiteral } from "./reference/embeddedLiteral/embeddedRegexLiteral.js"
+import { EmbeddedNumberLiteral } from "./reference/embeddedLiteral/embeddedNumberLiteral.js"
+import { EmbeddedBigintLiteral } from "./reference/embeddedLiteral/embeddedBigintLiteral.js"
 
 export namespace Str {
-    export type ParseRoot<Def, Resolutions, Context> = Def extends string
-        ? Precedence<
-              [
-                  Optional.Parse<Def, Resolutions, Context>,
-                  Parse<Def, Resolutions, Context>,
-                  ErrorNode<UnknownTypeError<Def>>
-              ]
-          >
-        : Defer
-
-    export type Parse<Def extends string, Resolutions, Context> = Precedence<
-        [
-            Reference.Parse<Def, Resolutions, Context>,
-            Expression.Parse<Def, Resolutions, Context>,
-            Def extends `${infer Left}${GetAs<
-                Context,
-                "delimiter",
-                string
-            >}${infer Right}`
-                ? UnpackArgs<
-                      [
-                          Parse<Left, Resolutions, Context>,
-                          Parse<Right, Resolutions, Context>
-                      ]
-                  >
-                : Defer,
-            ErrorNode<
-                Def extends Optional.Definition
-                    ? InvalidModifierError
-                    : UnknownTypeError<Def>
-            >
-        ]
-    >
-
-    type UnpackArgs<Args> = Args extends [infer First, infer Second]
-        ? Second extends any[]
-            ? [First, ...Second]
-            : Args
-        : Args
+    export type FastParse<
+        Def extends string,
+        Dict,
+        Ctx
+    > = Def extends Keyword.Definition
+        ? Keyword.KeywordTypes[Def]
+        : Def extends keyof Dict
+        ? Root.FastParse<Dict[Def], Dict, Ctx>
+        : Def extends Optional.Definition<infer Child>
+        ? FastParse<Child, Dict, Ctx> | undefined
+        : Def extends Union.Definition<infer Left, infer Right>
+        ? FastParse<Left, Dict, Ctx> | FastParse<Right, Dict, Ctx>
+        : Def extends Intersection.Definition<infer Left, infer Right>
+        ? FastParse<Left, Dict, Ctx> & FastParse<Right, Dict, Ctx>
+        : Def extends List.Definition<infer Child>
+        ? FastParse<Child, Dict, Ctx>[]
+        : Def extends Constraint.Definition
+        ? Constraint.FastParse<Def, Dict, Ctx>
+        : Def extends StringLiteral.SingleQuoted<infer Text>
+        ? Text
+        : Def extends StringLiteral.DoubleQuoted<infer Text>
+        ? Text
+        : Def extends EmbeddedRegexLiteral.Definition<infer Expression>
+        ? string
+        : Def extends EmbeddedNumberLiteral.Definition<infer Value>
+        ? Value
+        : Def extends EmbeddedBigintLiteral.Definition<infer Value>
+        ? Value
+        : ParseError<UnknownTypeError<Def>, Ctx>
 
     export const type = typeDefProxy as string
 

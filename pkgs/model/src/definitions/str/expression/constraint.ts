@@ -27,10 +27,11 @@ import {
     createParser,
     typeDefProxy,
     ConstraintError,
-    Root
+    Root,
+    ParseError
 } from "./internal.js"
 import { typeOf } from "../../../utils.js"
-import { DeepNode, ErrorNode } from "../internal.js"
+import {} from "../internal.js"
 
 export const getComparables = () => [...numberKeywords, ...stringKeywords]
 
@@ -134,78 +135,37 @@ export namespace Constraint {
         [K in ComparatorToken]?: EmbeddedNumberLiteral.Definition
     }
 
-    export type Kind = "constraint"
-
-    export type Parse<
+    export type FastParse<
         Def extends string,
-        Resolutions,
-        Context,
+        Dict,
+        Ctx,
         Parts extends string[] = Spliterate<Def, ["<=", ">=", "<", ">"], true> &
             string[]
-    > = Def extends Definition
-        ? DeepNode<
-              Def,
-              Kind,
-              Parts extends DoubleBoundedParts<
-                  infer Left,
-                  infer FirstComparator,
-                  infer Middle,
-                  infer SecondComparator,
-                  infer Right
-              >
-                  ? Middle extends Comparable
-                      ? Left extends EmbeddedNumberLiteral.Definition
-                          ? Right extends EmbeddedNumberLiteral.Definition
-                              ? {
-                                    bounded: Str.Parse<
-                                        Middle,
-                                        Resolutions,
-                                        Context
-                                    >
-                                } & {
-                                    [K in ComparatorInverses[FirstComparator]]: Left
-                                } & {
-                                    [K in SecondComparator]: Right
-                                }
-                              : {
-                                    bounded: ErrorNode<
-                                        InvalidBoundError<Middle, Right>
-                                    >
-                                }
-                          : {
-                                bounded: ErrorNode<
-                                    InvalidBoundError<Middle, Left>
-                                >
-                            }
-                      : { bounded: ErrorNode<UnboundableError<Middle>> }
-                  : Parts extends SingleBoundedParts<
-                        infer Left,
-                        infer Comparator,
-                        infer Right
-                    >
-                  ? Left extends Comparable
-                      ? Right extends EmbeddedNumberLiteral.Definition
-                          ? {
-                                bounded: Str.Parse<Left, Resolutions, Context>
-                            } & {
-                                [K in Comparator]: Right
-                            }
-                          : {
-                                bounded: ErrorNode<
-                                    InvalidBoundError<Left, Right>
-                                >
-                            }
-                      : { bounded: ErrorNode<UnboundableError<Left>> }
-                  : { bounded: ErrorNode<ConstraintError> }
+    > = Parts extends DoubleBoundedParts<
+        infer Left,
+        infer FirstComparator,
+        infer Middle,
+        infer SecondComparator,
+        infer Right
+    >
+        ? Middle extends Comparable
+            ? Left extends EmbeddedNumberLiteral.Definition
+                ? Right extends EmbeddedNumberLiteral.Definition
+                    ? Str.FastParse<Middle, Dict, Ctx>
+                    : ParseError<InvalidBoundError<Middle, Right>, Ctx>
+                : ParseError<InvalidBoundError<Middle, Left>, Ctx>
+            : ParseError<UnboundableError<Middle>, Ctx>
+        : Parts extends SingleBoundedParts<
+              infer Left,
+              infer Comparator,
+              infer Right
           >
-        : Defer
-
-    export type TypeOf<
-        N,
-        Resolutions,
-        Options,
-        Children = Get<N, "children">
-    > = Root.TypeOf<Get<Children, "bounded">, Resolutions, Options>
+        ? Left extends Comparable
+            ? Right extends EmbeddedNumberLiteral.Definition
+                ? Str.FastParse<Left, Dict, Ctx>
+                : ParseError<InvalidBoundError<Left, Right>, Ctx>
+            : ParseError<UnboundableError<Left>, Ctx>
+        : ParseError<ConstraintError, Ctx>
 
     export const matcher = /(<=|>=|<|>)/
 
