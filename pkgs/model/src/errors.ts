@@ -10,18 +10,13 @@ import {
     StringifyPossibleTypes,
     Evaluate
 } from "@re-/tools"
-import { ShallowNode } from "./definitions/internal.js"
 import { ParseContext } from "./definitions/parser.js"
 import { ExtractableDefinition } from "./internal.js"
 
+export type ParseError<Message extends string = string> = `Error: ${Message}`
+
 export const stringifyDefinition = (def: unknown) =>
     toString(def, { quotes: "none", maxNestedStringLength: 50 })
-
-export const definitionTypeError = (definition: unknown, path: string[]) =>
-    `Definition value ${stringifyDefinition(definition)}${stringifyPathContext(
-        path,
-        true
-    )}is invalid. ${definitionTypeErrorTemplate}`
 
 export const stringifyPathContext = (
     path: string[],
@@ -29,10 +24,14 @@ export const stringifyPathContext = (
 ) =>
     path.length ? ` at path ${path.join("/")}${trailingSpace ? " " : ""}` : ""
 
+export const definitionTypeError = (definition: unknown, path: string[]) =>
+    `Definition value ${stringifyDefinition(definition)}${stringifyPathContext(
+        path,
+        true
+    )}is invalid. ${definitionTypeErrorTemplate}`
+
 export const definitionTypeErrorTemplate =
     "Values of type 'function' or 'symbol' are not valid definitions."
-
-export type BadDefinitionType = Function | symbol
 
 export type DefinitionTypeError = typeof definitionTypeErrorTemplate
 
@@ -44,46 +43,11 @@ export const baseUnknownTypeError =
 
 export type UnknownTypeError<Definition extends string = "your definition"> =
     `Unable to determine the type of ${Definition}.`
-// StringReplace<
-//     StringReplace<typeof baseUnknownTypeError, "@def", `${Definition}`>,
-//     "@context",
-//     ""
-// >
 
 export const unknownTypeError = <Definition>(def: Definition, path: string[]) =>
-    baseUnknownTypeError
-        .replace("@def", stringifyDefinition(def))
-        .replace("@context", stringifyPathContext(path))
-
-export const duplicateModifierErrorTemplate =
-    "Modifier '@modifier' cannot appear more than once in a string definition."
-
-export type ModifierToken = "?"
-
-export const duplicateModifierError = (modifier: ModifierToken) =>
-    duplicateModifierErrorTemplate.replace("@modifier", modifier)
-
-export type DuplicateModifierError<
-    DuplicatedModifier extends ModifierToken = ModifierToken
-> = StringReplace<
-    typeof duplicateModifierErrorTemplate,
-    "@modifier",
-    `${DuplicatedModifier}`
->
-
-export const invalidModifierErrorTemplate =
-    "Modifier '@modifier' is only valid at the end of a type definition."
-
-export const invalidModifierError = (modifier: ModifierToken) =>
-    invalidModifierErrorTemplate.replace("@modifier", modifier)
-
-export type InvalidModifierError<
-    InvalidModifier extends ModifierToken = ModifierToken
-> = StringReplace<
-    typeof invalidModifierErrorTemplate,
-    "@modifier",
-    `${InvalidModifier}`
->
+    `Unable to determine the type of ${stringifyDefinition(
+        def
+    )}${stringifyPathContext(path)}.`
 
 // Members of a union type to errors that occurred validating those types
 export type SplittableErrors = Record<string, string>
@@ -94,9 +58,6 @@ export type SplittableErrorArgs = BaseAssignmentArgs & {
     verbose: boolean
 }
 
-export const splittableValidationErrorTemplate =
-    "@valueType is not assignable to @components of @def.@errors"
-
 export const splittableValidationError = ({
     def,
     valueType,
@@ -104,89 +65,29 @@ export const splittableValidationError = ({
     delimiter,
     verbose
 }: SplittableErrorArgs) =>
-    splittableValidationErrorTemplate
-        .replace("@valueType", stringifyDefinition(valueType))
-        .replace("@components", delimiter === "|" ? "any" : "all")
-        .replace("@def", stringifyDefinition(def))
-        .replace("@errors", verbose ? "\n" + stringifyErrors(errors) : "")
+    `${stringifyDefinition(valueType)} is not assignable to ${
+        delimiter === "|" ? "any" : "all"
+    } of ${stringifyDefinition(def)}.${
+        verbose ? "\n" + stringifyErrors(errors) : ""
+    }`
 
 export type BaseParseArgs = {
     def: unknown
     ctx: ParseContext
 }
 
-export const shallowCycleErrorTemplate =
-    "@def references a shallow cycle: @resolutions."
-
 export type ShallowCycleError<
     Def extends string = string,
     Seen extends string = string
-> = StringReplace<
-    StringReplace<typeof shallowCycleErrorTemplate, "@def", Def>,
-    "@resolutions",
-    StringifyPossibleTypes<Seen>
->
+> = `${Def} references a shallow cycle: ${StringifyPossibleTypes<Seen>}.`
 
 export const shallowCycleError = ({ def, ctx }: BaseParseArgs) =>
-    shallowCycleErrorTemplate
-        .replace("@def", stringifyDefinition(def))
-        .replace("@space", stringifyDefinition(ctx.config.space?.resolutions))
-        .replace("@resolutions", [...ctx.seen, def].join("=>"))
+    `${stringifyDefinition(def)} references a shallow cycle: ${[
+        ...ctx.seen,
+        def
+    ].join("=>")}.`
 
-export const invalidBoundErrorTemplate =
-    "'@limit' must be a number literal to bound '@inner'."
-
-export type InvalidBoundError<
-    Inner extends string = string,
-    Limit extends string = string
-> = StringReplace<
-    StringReplace<typeof invalidBoundErrorTemplate, "@inner", Inner>,
-    "@limit",
-    Limit
->
-
-export const invalidBoundError = (inner: string, limit: string) =>
-    invalidBoundErrorTemplate
-        .replace("@inner", stringifyDefinition(inner))
-        .replace("@limit", stringifyDefinition(limit))
-
-export const unboundableErrorTemplate =
-    "Bounded definition '@inner' must be a number or string keyword."
-
-export type UnboundableError<Inner extends string = string> = StringReplace<
-    typeof unboundableErrorTemplate,
-    "@inner",
-    Inner
->
-
-export const unboundableError = (inner: string) =>
-    unboundableErrorTemplate.replace("@inner", stringifyDefinition(inner))
-
-export const constraintErrorTemplate =
-    "Constraints must be either of the form N<L or L<N<L, where N is a constrainable type (e.g. number), L is a number literal (e.g. 5), and < is any comparison operator."
-
-export type ConstraintError = typeof constraintErrorTemplate
-
-export type ValidationErrorMessage =
-    | UnknownTypeError
-    | ShallowCycleError
-    | DefinitionTypeError
-    | ConstraintError
-    | InvalidBoundError
-    | UnboundableError
-    | DuplicateModifierError
-    | InvalidModifierError
-
-export type ErrorNodeKind = "error"
-
-export type ErrorNode<Message extends string> = Evaluate<
-    ShallowNode<Message, ErrorNodeKind, unknown>
->
-
-export type InferrableValidationErrorMessage<E> =
-    E extends ValidationErrorMessage ? E : never
-
-// Paths at which errorso ccur mapped to their messages
+// Paths at which errors occur mapped to their messages
 export type ValidationErrors = Record<string, string>
 
 export type ValidationErrorArgs = { path: string[] } & (
@@ -254,8 +155,6 @@ export const valueGenerationError = ({ def, ctx: { path } }: BaseParseArgs) =>
 export const duplicateSpaceError =
     "Space has already been determined according to the source of this 'create' method."
 
-export type DuplicateSpaceError = typeof duplicateSpaceError
-
 export const stringifyErrors = (errors: ValidationErrors) => {
     const errorPaths = Object.keys(errors)
     if (errorPaths.length === 0) {
@@ -273,3 +172,17 @@ export const stringifyErrors = (errors: ValidationErrors) => {
         indent: 2
     })}`
 }
+
+// export type ModifierToken = "?"
+
+// export const duplicateModifierError = (modifier: ModifierToken) =>
+//     `Modifier '${modifier}' cannot appear more than once in a string definition.`
+
+// export type DuplicateModifierError<DuplicatedModifier extends ModifierToken> =
+//     `Modifier '${DuplicatedModifier}' cannot appear more than once in a string definition.`
+
+// export const invalidModifierError = (modifier: ModifierToken) =>
+//     `Modifier '${modifier}' is only valid at the end of a type definition.`
+
+// export type InvalidModifierError<InvalidModifier extends ModifierToken> =
+//     `Modifier '${InvalidModifier}' is only valid at the end of a type definition.`

@@ -1,23 +1,15 @@
-import { Evaluate, GetAs } from "@re-/tools"
 import { Keyword, Reference } from "./reference/index.js"
 import { Expression } from "./expression/index.js"
 import {
-    invalidModifierError,
-    InvalidModifierError,
-    ModifierToken,
-    unknownTypeError,
     createParser,
     typeDefProxy,
     UnknownTypeError,
-    Precedence,
-    Defer,
     Root,
-    ErrorNode,
-    DefaultParseTypeContext,
-    ParseError
+    ParseError,
+    BinaryValidate
 } from "./internal.js"
 import { Optional } from "./optional.js"
-import { Union, Intersection, Constraint, List } from "./expression/index.js"
+import { Union, Intersection, List, Constraint } from "./expression/index.js"
 import { StringLiteral } from "./reference/embeddedLiteral/stringLiteral.js"
 import { EmbeddedRegexLiteral } from "./reference/embeddedLiteral/embeddedRegexLiteral.js"
 import { EmbeddedNumberLiteral } from "./reference/embeddedLiteral/embeddedNumberLiteral.js"
@@ -35,9 +27,9 @@ export namespace Str {
         : Def extends Optional.Definition<infer Child>
         ? FastParse<Child, Dict, Ctx> | undefined
         : Def extends Union.Definition<infer Left, infer Right>
-        ? FastParse<Left, Dict, Ctx> | FastParse<Right, Dict, Ctx>
+        ? Str.FastParse<Left, Dict, Ctx> | Str.FastParse<Right, Dict, Ctx>
         : Def extends Intersection.Definition<infer Left, infer Right>
-        ? FastParse<Left, Dict, Ctx> & FastParse<Right, Dict, Ctx>
+        ? Str.FastParse<Left, Dict, Ctx> & Str.FastParse<Right, Dict, Ctx>
         : Def extends List.Definition<infer Child>
         ? FastParse<Child, Dict, Ctx>[]
         : Def extends Constraint.Definition
@@ -46,13 +38,36 @@ export namespace Str {
         ? Text
         : Def extends StringLiteral.DoubleQuoted<infer Text>
         ? Text
-        : Def extends EmbeddedRegexLiteral.Definition<infer Expression>
+        : Def extends EmbeddedRegexLiteral.Definition
         ? string
         : Def extends EmbeddedNumberLiteral.Definition<infer Value>
         ? Value
         : Def extends EmbeddedBigintLiteral.Definition<infer Value>
         ? Value
-        : ParseError<UnknownTypeError<Def>, Ctx>
+        : ParseError<UnknownTypeError<Def>>
+
+    export type FastValidate<Def extends string, Dict, Root> = Def extends
+        | Keyword.Definition
+        | keyof Dict
+        ? Root
+        : Def extends Optional.Definition<infer Child>
+        ? FastValidate<Child, Dict, Root>
+        : Def extends Union.Definition<infer Left, infer Right>
+        ? BinaryValidate<Left, Right, Dict, Root>
+        : Def extends Intersection.Definition<infer Left, infer Right>
+        ? BinaryValidate<Left, Right, Dict, Root>
+        : Def extends List.Definition<infer Child>
+        ? FastValidate<Child, Dict, Root>
+        : Def extends Constraint.Definition
+        ? Constraint.FastValidate<Def, Dict, Root>
+        : Def extends
+              | StringLiteral.SingleQuoted
+              | StringLiteral.DoubleQuoted
+              | EmbeddedRegexLiteral.Definition
+              | EmbeddedNumberLiteral.Definition
+              | EmbeddedBigintLiteral.Definition
+        ? Root
+        : ParseError<UnknownTypeError<Def>>
 
     export const type = typeDefProxy as string
 
@@ -64,17 +79,7 @@ export namespace Str {
                 Optional.delegate,
                 Reference.delegate,
                 Expression.delegate
-            ],
-            fallback: (def, { path }) => {
-                if (Optional.parser.matches(def as any)) {
-                    throw new Error(
-                        invalidModifierError(
-                            def[def.length - 1] as ModifierToken
-                        )
-                    )
-                }
-                throw new Error(unknownTypeError(def, path))
-            }
+            ]
         },
         {
             matches: (def) => typeof def === "string"

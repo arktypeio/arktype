@@ -1,9 +1,8 @@
-import { createParser, typeDefProxy, Precedence, Defer } from "./internal.js"
+import { createParser, typeDefProxy } from "./internal.js"
 import { Str } from "../str.js"
 import { Keyword } from "./keyword/keyword.js"
 import { EmbeddedLiteral } from "./embeddedLiteral/embeddedLiteral.js"
 import { Alias } from "./alias.js"
-import { ShallowNode } from "../internal.js"
 
 export namespace Reference {
     export const type = typeDefProxy as string

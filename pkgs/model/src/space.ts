@@ -5,9 +5,7 @@ import {
     KeyValuate,
     Narrow,
     transform,
-    IsAny,
-    Exact,
-    Get
+    IsAny
 } from "@re-/tools"
 import {
     createCreateFunction,
@@ -15,15 +13,10 @@ import {
     ModelConfig,
     DefaultParseOptions,
     CustomValidator,
-    CreateFunction,
-    Validate
+    CreateFunction
 } from "./model.js"
-import { Map, Root } from "./definitions/index.js"
+import { Root } from "./definitions/index.js"
 import { DefaultTypeOfContext, typeDefProxy, Merge } from "./internal.js"
-// import { ValidateResolution } from "./resolution.js"
-import { DefaultParseTypeContext } from "./definitions/internal.js"
-
-export type SpaceResolutions = Record<string, any>
 
 export type DictionaryToModels<
     Dict,
@@ -134,25 +127,27 @@ export type SpaceOptions<
 //     config?: Narrow<NewConfig>
 // ) => Space<MergedResolutions, ExtendSpaceConfig<OriginalConfig, NewConfig>>
 
-export type SpaceDefinition<
-    Resolutions = SpaceResolutions,
-    Config = SpaceOptions<Resolutions>
-> = {
-    resolutions: Resolutions
-    config?: Config
+export type SpaceDefinition = {
+    resolutions: Record<string, any>
+    config?: SpaceOptions<any>
 }
 
 export type Space<
     Dict,
     Config,
-    Types,
     SpaceParseConfig = KeyValuate<Config, "parse"> extends undefined
         ? {}
         : KeyValuate<Config, "parse">
 > = Evaluate<{
     resolutions: Dict
     config: Config
-    types: Types
+    types: {
+        [TypeName in keyof Dict]: Root.FastParse<
+            Dict[TypeName],
+            Dict,
+            DefaultTypeOfContext
+        >
+    }
     models: DictionaryToModels<Dict, SpaceParseConfig>
     // @ts-ignore
     create: CreateFunction<{
@@ -165,9 +160,8 @@ export type Space<
 
 export type CheckCompilation<
     Dict,
-    Types,
     DeclaredTypeNames extends string[] = [],
-    Checked = ValidateSpaceDictionary<Dict, Types>,
+    Checked = ValidateDictionary<Dict>,
     DefinedTypeName extends string = keyof Checked & string,
     DeclaredTypeName extends string = DeclaredTypeNames extends never[]
         ? DefinedTypeName
@@ -178,35 +172,26 @@ export type CheckCompilation<
           [TypeName in DeclaredTypeName]: KeyValuate<Checked, TypeName>
       }
 
-export type ValidateSpaceDictionary<Dict, Types> = {
-    [TypeName in keyof Dict]: Validate<Dict[TypeName], Types[TypeName]>
+export type ValidateDictionary<Dict> = {
+    [TypeName in keyof Dict]: Root.FastValidate<Dict[TypeName], Dict>
 }
 
 export type CompileFunction<DeclaredTypeNames extends string[]> = <
-    Resolutions,
-    Options extends SpaceOptions<Resolutions> = {},
-    Types = {
-        [TypeName in keyof Resolutions]: Root.FastParse<
-            Resolutions[TypeName],
-            Resolutions,
-            DefaultTypeOfContext
-        >
-    }
+    Dict,
+    Options extends SpaceOptions<Dict> = {}
 >(
-    resolutions: Narrow<
-        CheckCompilation<Resolutions, Types, DeclaredTypeNames>
-    >,
+    resolutions: ValidateDictionary<Dict>,
     // TS has a problem inferring the narrowed type of a function hence the intersection hack
     // If removing it doesn't break any types or tests, do it!
     config?: Narrow<
         Options & {
             validate?: { validator?: CustomValidator }
             models?: {
-                [Name in keyof Resolutions]?: Omit<ModelConfig, "parse">
+                [Name in keyof Dict]?: Omit<ModelConfig, "parse">
             }
         }
     >
-) => Space<Resolutions, Options, Types>
+) => Space<Dict, Options>
 
 // Exported compile function is equivalent to compile from an empty declare call
 // and will not validate missing or extraneous definitions

@@ -4,9 +4,7 @@ import {
     validationError,
     createParser,
     ungeneratableError,
-    FirstEnclosed,
-    Defer,
-    ShallowNode
+    FirstEnclosed
 } from "./internal.js"
 import { Reference } from "../reference.js"
 import { StringLiteral } from "./stringLiteral.js"

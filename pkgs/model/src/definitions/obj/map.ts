@@ -12,9 +12,7 @@ import {
     ValidationErrors,
     typeDefProxy,
     createParser,
-    ParseResult,
-    Defer,
-    DeepNode
+    ParseResult
 } from "./internal.js"
 import { Root } from "../root.js"
 import { Obj } from "./obj.js"

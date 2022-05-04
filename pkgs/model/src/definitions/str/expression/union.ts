@@ -1,4 +1,4 @@
-import { ElementOf, Evaluate, Get, transform, TypeCategory } from "@re-/tools"
+import { transform, TypeCategory } from "@re-/tools"
 import {
     typeDefProxy,
     isRequiredCycleError,
@@ -8,9 +8,7 @@ import {
     validationError,
     createParser,
     ParseContext,
-    Defer,
-    DeepNode,
-    Root
+    ParseError
 } from "./internal.js"
 import { Str } from "../str.js"
 import { Expression } from "./expression.js"
@@ -36,31 +34,6 @@ export namespace Union {
         Left extends string = string,
         Right extends string = string
     > = `${Left}|${Right}`
-
-    export type Kind = "union"
-
-    export type Parse<Def, Resolutions, Context> = Def extends Definition<
-        infer Left,
-        infer Right
-    >
-        ? DeepNode<
-              Def,
-              Kind,
-              [
-                  Str.Parse<Left, Resolutions, Context>,
-                  Str.Parse<Right, Resolutions, Context>
-              ]
-          >
-        : Defer
-
-    export type TypeOf<
-        N,
-        Resolutions,
-        Options,
-        Children = Get<N, "children">
-    > =
-        | Root.TypeOf<Get<Children, 0>, Resolutions, Options>
-        | Root.TypeOf<Get<Children, 1>, Resolutions, Options>
 
     export const type = typeDefProxy as Definition
 

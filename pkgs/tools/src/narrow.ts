@@ -1,7 +1,10 @@
-import { NonRecursible, CastWithExclusion } from "./common"
+import { CastWithExclusion } from "./common"
 
+export type Narrowable = string | boolean | number | bigint
+
+// Checking for the empty tuple ensures arrays are narrowed to tuples
 export type NarrowRecurse<T> = {
-    [K in keyof T]: T[K] extends NonRecursible | [] ? T[K] : NarrowRecurse<T[K]>
+    [K in keyof T]: T[K] extends Narrowable | [] ? T[K] : NarrowRecurse<T[K]>
 }
 
 export type Narrow<T> = CastWithExclusion<T, NarrowRecurse<T>, []>

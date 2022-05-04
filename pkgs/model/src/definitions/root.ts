@@ -1,43 +1,39 @@
 import {
     typeDefProxy,
-    Precedence,
-    BadDefinitionType,
     DefinitionTypeError,
     definitionTypeError,
     UnknownTypeError,
-    ErrorNode,
-    DefaultParseTypeContext,
-    ValueOf,
     ParseError
 } from "./internal.js"
-import { Obj, Map, Tuple } from "./obj/index.js"
-import {
-    ArrowFunction,
-    Union,
-    Intersection,
-    Constraint,
-    List,
-    Str,
-    Optional,
-    Alias
-} from "./str/index.js"
+import { Obj } from "./obj/index.js"
 import { Literal } from "./literal/index.js"
 import { reroot, createParser } from "./parser.js"
-import { Evaluate, Get, ListPossibleTypes } from "@re-/tools"
-import { ErrorNodeKind, ValidationErrorMessage } from "../errors.js"
+import { Str } from "./str/index.js"
 
 export namespace Root {
-    export type FastParse<Def, Resolutions, Ctx> = Def extends BadDefinitionType
-        ? ParseError<DefinitionTypeError, Ctx>
+    export type FastParse<Def, Dict, Ctx> = Def extends BadDefinitionType
+        ? ParseError<DefinitionTypeError>
         : Def extends string
-        ? Str.FastParse<Def, Resolutions, Ctx>
+        ? Str.FastParse<Def, Dict, Ctx>
         : Def extends RegExp
         ? string
         : Def extends object
-        ? Obj.FastParse<Def, Resolutions, Ctx>
+        ? Obj.FastParse<Def, Dict, Ctx>
         : Def extends Literal.PrimitiveLiteral
         ? Def
-        : ParseError<UnknownTypeError, Ctx>
+        : ParseError<UnknownTypeError>
+
+    export type FastValidate<Def, Dict> = Def extends BadDefinitionType
+        ? ParseError<DefinitionTypeError>
+        : Def extends string
+        ? Str.FastValidate<Def, Dict, Def>
+        : Def extends Literal.Definition
+        ? Def
+        : Def extends object
+        ? { [K in keyof Def]: FastValidate<Def[K], Dict> }
+        : ParseError<UnknownTypeError>
+
+    export type BadDefinitionType = Function | symbol
 
     export const type = typeDefProxy
 

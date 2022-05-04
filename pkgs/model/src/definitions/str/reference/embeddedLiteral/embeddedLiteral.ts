@@ -3,12 +3,7 @@ import { EmbeddedNumberLiteral as EmbeddedNumberLiteral } from "./embeddedNumber
 import { EmbeddedBigintLiteral as EmbeddedBigintLiteral } from "./embeddedBigintLiteral.js"
 import { Reference } from "../reference.js"
 import { EmbeddedRegexLiteral as EmbeddedRegexLiteral } from "./embeddedRegexLiteral.js"
-import {
-    FirstEnclosed,
-    createParser,
-    typeDefProxy,
-    Precedence
-} from "./internal.js"
+import { createParser, typeDefProxy } from "./internal.js"
 
 export namespace EmbeddedLiteral {
     export const type = typeDefProxy as string

@@ -3,9 +3,7 @@ import {
     typeDefProxy,
     validationError,
     createParser,
-    Defer,
-    FirstEnclosed,
-    ShallowNode
+    FirstEnclosed
 } from "./internal.js"
 import { EmbeddedLiteral } from "./embeddedLiteral.js"
 

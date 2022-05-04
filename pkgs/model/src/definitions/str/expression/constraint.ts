@@ -1,7 +1,6 @@
 import {
     asNumber,
     ElementOf,
-    Get,
     isEmpty,
     isNumeric,
     narrow,
@@ -15,23 +14,15 @@ import { Expression } from "./expression.js"
 import { EmbeddedNumberLiteral } from "../reference/embeddedLiteral/embeddedNumberLiteral.js"
 import { StringLiteral } from "../reference/embeddedLiteral/stringLiteral.js"
 import {
-    constraintErrorTemplate,
-    invalidBoundError,
-    InvalidBoundError,
     ParseResult,
-    unboundableError,
-    UnboundableError,
     ungeneratableError,
     validationError,
-    Defer,
     createParser,
     typeDefProxy,
-    ConstraintError,
-    Root,
     ParseError
 } from "./internal.js"
 import { typeOf } from "../../../utils.js"
-import {} from "../internal.js"
+import { stringifyDefinition } from "../internal.js"
 
 export const getComparables = () => [...numberKeywords, ...stringKeywords]
 
@@ -68,6 +59,29 @@ const buildComparatorErrorMessage = (
         isString ? " characters" : ""
     }.`
 }
+
+type InvalidBoundError<
+    Inner extends string,
+    Limit extends string
+> = `'${Limit}' must be a number literal to bound '${Inner}'.`
+
+const invalidBoundError = (inner: string, limit: string) =>
+    `'${stringifyDefinition(
+        limit
+    )}' must be a number literal to bound '${stringifyDefinition(inner)}'.`
+
+type UnboundableError<Bounded extends string> =
+    `Bounded definition '${Bounded}' must be a number or string keyword.`
+
+const unboundableError = (inner: string) =>
+    `Bounded definition '${stringifyDefinition(
+        inner
+    )}' must be a number or string keyword.`
+
+const constraintErrorTemplate =
+    "Constraints must be either of the form N<L or L<N<L, where N is a constrainable type (e.g. number), L is a number literal (e.g. 5), and < is any comparison operator."
+
+type ConstraintError = typeof constraintErrorTemplate
 
 const comparators: {
     [K in ComparatorToken]: (
@@ -111,11 +125,23 @@ const comparators: {
 }
 
 export namespace Constraint {
-    export type Definition<
-        Left extends string = string,
-        Comparator extends ComparatorToken = ComparatorToken,
-        Right extends string = string
-    > = `${Left}${Comparator}${Right}`
+    export type Definition = `${string}${ComparatorToken}${string}`
+
+    export type FastParse<
+        Def extends string,
+        Dict,
+        Ctx,
+        Bounded extends string = ExtractBounded<Def>
+    > = Bounded extends ParseError ? Bounded : Str.FastParse<Bounded, Dict, Ctx>
+
+    export type FastValidate<
+        Def extends string,
+        Dict,
+        Root,
+        Bounded extends string = ExtractBounded<Def>
+    > = Bounded extends ParseError
+        ? Bounded
+        : Str.FastValidate<Bounded, Dict, Root>
 
     type SingleBoundedParts<
         Left extends string = string,
@@ -131,16 +157,9 @@ export namespace Constraint {
         Right extends string = string
     > = [Left, FirstComparator, Middle, SecondComparator, Right]
 
-    type NodeBounds = {
-        [K in ComparatorToken]?: EmbeddedNumberLiteral.Definition
-    }
-
-    export type FastParse<
+    type ExtractBounded<
         Def extends string,
-        Dict,
-        Ctx,
-        Parts extends string[] = Spliterate<Def, ["<=", ">=", "<", ">"], true> &
-            string[]
+        Parts = Spliterate<Def, ["<=", ">=", "<", ">"], true>
     > = Parts extends DoubleBoundedParts<
         infer Left,
         infer FirstComparator,
@@ -151,10 +170,10 @@ export namespace Constraint {
         ? Middle extends Comparable
             ? Left extends EmbeddedNumberLiteral.Definition
                 ? Right extends EmbeddedNumberLiteral.Definition
-                    ? Str.FastParse<Middle, Dict, Ctx>
-                    : ParseError<InvalidBoundError<Middle, Right>, Ctx>
-                : ParseError<InvalidBoundError<Middle, Left>, Ctx>
-            : ParseError<UnboundableError<Middle>, Ctx>
+                    ? Middle
+                    : ParseError<InvalidBoundError<Middle, Right>>
+                : ParseError<InvalidBoundError<Middle, Left>>
+            : ParseError<UnboundableError<Middle>>
         : Parts extends SingleBoundedParts<
               infer Left,
               infer Comparator,
@@ -162,10 +181,14 @@ export namespace Constraint {
           >
         ? Left extends Comparable
             ? Right extends EmbeddedNumberLiteral.Definition
-                ? Str.FastParse<Left, Dict, Ctx>
-                : ParseError<InvalidBoundError<Left, Right>, Ctx>
-            : ParseError<UnboundableError<Left>, Ctx>
-        : ParseError<ConstraintError, Ctx>
+                ? Left
+                : ParseError<InvalidBoundError<Left, Right>>
+            : ParseError<UnboundableError<Left>>
+        : ParseError<ConstraintError>
+
+    type NodeBounds = {
+        [K in ComparatorToken]?: EmbeddedNumberLiteral.Definition
+    }
 
     export const matcher = /(<=|>=|<|>)/
 

@@ -1,34 +1,12 @@
 import { Evaluate, Get } from "@re-/tools"
-import {
-    typeDefProxy,
-    validationError,
-    createParser,
-    Defer,
-    DeepNode,
-    Root
-} from "./internal.js"
+import { typeDefProxy, validationError, createParser } from "./internal.js"
 import { Str } from "../str.js"
 import { Expression } from "./expression.js"
 import { Tuple } from "../../obj/index.js"
 import { typeOf } from "../../../utils.js"
 
 export namespace List {
-    export type Definition<Of extends string = string> = `${Of}[]`
-
-    export type Kind = "list"
-
-    export type Parse<Def, Resolutions, Context> = Def extends Definition<
-        infer Child
-    >
-        ? DeepNode<Def, Kind, [Str.Parse<Child, Resolutions, Context>]>
-        : Defer
-
-    export type TypeOf<
-        N,
-        Resolutions,
-        Options,
-        Children = Get<N, "children">
-    > = Root.TypeOf<Get<Children, 0>, Resolutions, Options>[]
+    export type Definition<Child extends string = string> = `${Child}[]`
 
     export const type = typeDefProxy as Definition
 

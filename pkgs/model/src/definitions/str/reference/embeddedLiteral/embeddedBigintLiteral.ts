@@ -1,12 +1,6 @@
 import { isInteger } from "@re-/tools"
 import { typeOf } from "../../../../utils.js"
-import {
-    typeDefProxy,
-    validationError,
-    createParser,
-    Defer,
-    ShallowNode
-} from "./internal.js"
+import { typeDefProxy, validationError, createParser } from "./internal.js"
 import { EmbeddedLiteral } from "./embeddedLiteral.js"
 
 export namespace EmbeddedBigintLiteral {

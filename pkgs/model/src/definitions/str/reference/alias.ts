@@ -1,15 +1,9 @@
-import { Get, IsAny, Or, WithPropValue } from "@re-/tools"
 import {
     typeDefProxy,
-    ValidationErrorMessage,
     shallowCycleError,
     generateRequiredCycleError,
     createParser,
-    DefaultParseTypeContext,
-    errorsFromCustomValidator,
-    Defer,
-    Unset,
-    ShallowNode
+    errorsFromCustomValidator
 } from "./internal.js"
 import { Root } from "../../root.js"
 import { Reference } from "./index.js"

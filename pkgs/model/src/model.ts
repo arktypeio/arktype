@@ -7,15 +7,29 @@ import {
     Get,
     LeafOf
 } from "@re-/tools"
-import { Root } from "./definitions/index.js"
+import {
+    Constraint,
+    Intersection,
+    Keyword,
+    List,
+    Literal,
+    Obj,
+    Optional,
+    Root,
+    Str,
+    Union
+} from "./definitions/index.js"
 import {
     ParseContext,
     defaultParseContext,
     InheritableMethodContext
 } from "./definitions/parser.js"
 import {
+    DefinitionTypeError,
     duplicateSpaceError,
+    ParseError,
     stringifyErrors,
+    UnknownTypeError,
     ValidationErrors
 } from "./errors.js"
 import { SpaceDefinition } from "./space.js"
@@ -26,7 +40,11 @@ import {
     MergeAll,
     Unset
 } from "./internal.js"
-import { DefaultParseTypeContext } from "./definitions/internal.js"
+import { BinaryValidate } from "./definitions/str/internal.js"
+import { StringLiteral } from "./definitions/str/reference/embeddedLiteral/stringLiteral.js"
+import { EmbeddedRegexLiteral } from "./definitions/str/reference/embeddedLiteral/embeddedRegexLiteral.js"
+import { EmbeddedNumberLiteral } from "./definitions/str/reference/embeddedLiteral/embeddedNumberLiteral.js"
+import { EmbeddedBigintLiteral } from "./definitions/str/reference/embeddedLiteral/embeddedBigintLiteral.js"
 
 export type FastParse<
     Def,
@@ -202,20 +220,16 @@ export type CreateFunction<PredefinedSpace extends SpaceDefinition | null> = <
             ? Options["space"]
             : { resolutions: {} }
         : PredefinedSpace,
-    T = FastParse<
-        Def,
-        Get<ActiveSpace, "resolutions">,
-        MergeAll<
-            [
-                DefaultParseOptions,
-                KeyValuate<Get<ActiveSpace, "config">, "parse">,
-                Options
-            ]
-        >
+    Resolutions = Get<ActiveSpace, "resolutions">,
+    Ctx = MergeAll<
+        [
+            DefaultParseOptions,
+            KeyValuate<Get<ActiveSpace, "config">, "parse">,
+            Options
+        ]
     >
 >(
-    definition: Narrow<Validate<Def, T>>,
-    // Validate<Narrow<Def>, Node>,
+    definition: Root.FastValidate<Def, Resolutions>,
     // TS has a problem inferring the narrowed type of a function hence the intersection hack
     // If removing it doesn't break any types or tests, do it!
     options?: Narrow<Options> & { validate?: { validator?: CustomValidator } }
@@ -223,7 +237,7 @@ export type CreateFunction<PredefinedSpace extends SpaceDefinition | null> = <
     Def,
     Evaluate<ActiveSpace>,
     Options["parse"] extends ParseConfig ? Options["parse"] : {},
-    T
+    FastParse<Def, Resolutions, Ctx>
 >
 
 /**
@@ -243,17 +257,7 @@ const user = create(
         },
         age: "number",
         browser: "'chrome'|'firefox'|'other'|null",
-        extra: "a"
+        ok: "a"
     },
     { space: { resolutions: { a: { a: "'ok'" } } } }
 )
-
-type Z = typeof user.type
-
-export type Validate<Def, T> = {
-    [K in keyof Def]: T[K] extends `Unable ${string}`
-        ? T[K]
-        : Def[K] extends object
-        ? Validate<Def[K], T[K]>
-        : Def[K]
-}

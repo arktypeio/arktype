@@ -1,16 +1,4 @@
-import { Evaluate, Get, KeyValuate, WithPropValue } from "@re-/tools"
-import {
-    typeDefProxy,
-    createParser,
-    duplicateModifierError,
-    DuplicateModifierError,
-    Defer,
-    DeepNode,
-    invalidModifierError,
-    Root,
-    ErrorNode,
-    ParseError
-} from "./internal.js"
+import { typeDefProxy, createParser } from "./internal.js"
 import { Str } from "./str.js"
 
 export namespace Optional {
@@ -23,12 +11,6 @@ export namespace Optional {
             type,
             parent: () => Str.parser,
             components: (def, ctx) => {
-                if (ctx.stringRoot !== def) {
-                    throw new Error(invalidModifierError("?"))
-                }
-                if (ctx.modifiers.includes("?")) {
-                    throw new Error(duplicateModifierError("?"))
-                }
                 return {
                     optional: Str.parser.parse(def.slice(0, -1), {
                         ...ctx,

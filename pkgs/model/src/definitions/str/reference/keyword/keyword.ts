@@ -4,9 +4,7 @@ import {
     listKeywords,
     typeDefProxy,
     createParser,
-    validationError,
-    Defer,
-    ShallowNode
+    validationError
 } from "./internal.js"
 import { extractableHandlers } from "./extractable.js"
 import { unextractableHandlers } from "./unextractable.js"

@@ -4,9 +4,7 @@ import {
     createParser,
     tupleLengthError,
     validationError,
-    ValidationErrors,
-    Defer,
-    DeepNode
+    ValidationErrors
 } from "./internal.js"
 import { Root } from "../root.js"
 import { Obj } from "./obj.js"

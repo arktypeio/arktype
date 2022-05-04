@@ -63,14 +63,4 @@ export const errorsFromCustomValidator = (
 
 export type Unset = "<unset>"
 
-export type Defer = "<defer>"
-
-export type Precedence<T> = T extends [infer Current, ...infer Remaining]
-    ? Remaining extends []
-        ? Current
-        : Current extends Defer
-        ? Precedence<Remaining>
-        : Current
-    : T
-
 export type ValueOf<T> = T extends any[] ? T[number] : T[keyof T]

@@ -1,14 +1,7 @@
-import { Evaluate, KeyValuate, narrow } from "@re-/tools"
-import {
-    typeDefProxy,
-    createParser,
-    validationError,
-    Precedence,
-    Defer
-} from "./internal.js"
+import { narrow } from "@re-/tools"
+import { typeDefProxy, createParser, validationError } from "./internal.js"
 import { Root } from "../root.js"
 import { typeOf } from "../../utils.js"
-import { ShallowNode } from "../internal.js"
 
 export namespace Literal {
     export type Definition = RegExp | PrimitiveLiteral
