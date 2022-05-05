@@ -6,7 +6,7 @@ export const testAlias = () => {
         test("with space", () => {
             assert(
                 create("borf", {
-                    space: { resolutions: { borf: true } }
+                    space: { dictionary: { borf: true } }
                 }).type
             ).typed as true
             assert(
@@ -14,7 +14,7 @@ export const testAlias = () => {
                     { snorf: "borf[]" },
                     {
                         space: {
-                            resolutions: { borf: { f: false, u: undefined } }
+                            dictionary: { borf: { f: false, u: undefined } }
                         }
                     }
                 ).type
@@ -98,7 +98,7 @@ export const testAlias = () => {
                 { fruits: "fruit[]" },
                 {
                     space: {
-                        resolutions: {
+                        dictionary: {
                             banana: {
                                 length: "number",
                                 description: "string?"
@@ -134,22 +134,22 @@ export const testAlias = () => {
                     { verbose: true }
                 ).error
             ).toMatchInlineSnapshot(`
-    "Encountered errors at the following paths:
-    {
-      fruits/0: '{length: 5000, description: 'I'm a big banana!', peel: 'slippery'} is not assignable to any of banana|apple.
-    Encountered errors at the following paths:
-    {
-      banana: 'At path fruits/0, keys 'peel' were unexpected.',
-      apple: 'At path fruits/0, required keys 'circumference, type' were missing. Keys 'length, description, peel' were unexpected.'
-    }',
-      fruits/1: '{type: 'Fuji'} is not assignable to any of banana|apple.
-    Encountered errors at the following paths:
-    {
-      banana: 'At path fruits/1, required keys 'length' were missing. Keys 'type' were unexpected.',
-      apple: 'At path fruits/1, required keys 'circumference' were missing.'
-    }'
-    }"
-    `)
+        "Encountered errors at the following paths:
+        {
+          fruits/0: '{length: 5000, description: 'I'm a big banana!', peel: 'slippery'} is not assignable to any of banana|apple.
+        Encountered errors at the following paths:
+        {
+          banana: 'At path fruits/0, keys 'peel' were unexpected.',
+          apple: 'At path fruits/0, required keys 'circumference, type' were missing. Keys 'length, description, peel' were unexpected.'
+        }',
+          fruits/1: '{type: 'Fuji'} is not assignable to any of banana|apple.
+        Encountered errors at the following paths:
+        {
+          banana: 'At path fruits/1, required keys 'length' were missing. Keys 'type' were unexpected.',
+          apple: 'At path fruits/1, required keys 'circumference' were missing.'
+        }'
+        }"
+        `)
         })
         // test("errors on shallow cycle", () => {
         //     // @ts-expect-error
@@ -168,7 +168,7 @@ export const testAlias = () => {
                 { a: "a", b: "b", c: "either[]" },
                 {
                     space: {
-                        resolutions: {
+                        dictionary: {
                             a: { a: "a?", b: "b?", isA: "true" },
                             b: { a: "a?", b: "b?", isA: "false" },
                             either: "a|b"
@@ -237,13 +237,13 @@ export const testAlias = () => {
                     ]
                 }).error
             ).toMatchInlineSnapshot(`
-    "Encountered errors at the following paths:
-    {
-      a/a/a/a/a/a/a/isA: 'false is not assignable to true.',
-      b/b/b/b/b/b/b/isA: 'true is not assignable to false.',
-      c/8: '{isA: 'the duck goes quack'} is not assignable to any of a|b.'
-    }"
-    `)
+        "Encountered errors at the following paths:
+        {
+          a/a/a/a/a/a/a/isA: 'false is not assignable to true.',
+          b/b/b/b/b/b/b/isA: 'true is not assignable to false.',
+          c/8: '{isA: 'the duck goes quack'} is not assignable to any of a|b.'
+        }"
+        `)
         })
         test("doesn't try to parse or validate any", () => {
             // Parse any as type
@@ -266,7 +266,7 @@ export const testAlias = () => {
             // Parse any as space member
             assert(
                 create(["number", "a"], {
-                    space: { resolutions: { a: {} as any } }
+                    space: { dictionary: { a: {} as any } }
                 }).type
             ).typed as [number, any]
         })
@@ -284,7 +284,7 @@ export const testAlias = () => {
                     },
                     {
                         space: {
-                            resolutions: {
+                            dictionary: {
                                 banana: {
                                     length: "number",
                                     description: "string?"
@@ -310,7 +310,7 @@ export const testAlias = () => {
             expect(
                 create("a", {
                     space: {
-                        resolutions: {
+                        dictionary: {
                             a: { b: "b" },
                             b: { c: "c?" },
                             c: "a|b"
@@ -323,7 +323,7 @@ export const testAlias = () => {
             expect(() =>
                 create("a", {
                     space: {
-                        resolutions: {
+                        dictionary: {
                             a: { b: "b" },
                             b: { c: "c" },
                             c: "a|b"
@@ -331,16 +331,16 @@ export const testAlias = () => {
                     }
                 }).generate()
             ).toThrowErrorMatchingInlineSnapshot(`
-                "Unable to generate a default value for type including a required cycle:
-                a=>b=>c=>a
-                If you'd like to avoid throwing in when this occurs, pass a value to return when this occurs to the 'onRequiredCycle' option."
-            `)
+                    "Unable to generate a default value for type including a required cycle:
+                    a=>b=>c=>a
+                    If you'd like to avoid throwing in when this occurs, pass a value to return when this occurs to the 'onRequiredCycle' option."
+                `)
         })
         test("onRequiredCycle", () => {
             expect(
                 create("a", {
                     space: {
-                        resolutions: {
+                        dictionary: {
                             a: { b: "b" },
                             b: { c: "c" },
                             c: "a|b"
@@ -355,7 +355,7 @@ export const testAlias = () => {
             expect(
                 create("a|b", {
                     space: {
-                        resolutions: {
+                        dictionary: {
                             a: { b: "b" },
                             b: { a: "a" }
                         }
@@ -373,7 +373,7 @@ export const testAlias = () => {
                 },
                 {
                     space: {
-                        resolutions: {
+                        dictionary: {
                             group: { name: "string", description: "string?" }
                         }
                     }

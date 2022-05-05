@@ -31,7 +31,7 @@ export namespace Alias {
                 }
                 return {
                     resolve: () =>
-                        Root.parser.parse(ctx.config.space!.resolutions[def], {
+                        Root.parser.parse(ctx.config.space!.dictionary[def], {
                             ...ctx,
                             seen: [...ctx.seen, def],
                             shallowSeen: [...ctx.shallowSeen, def],
@@ -41,8 +41,7 @@ export namespace Alias {
             }
         },
         {
-            matches: (def, ctx) =>
-                def in (ctx.config?.space?.resolutions ?? {}),
+            matches: (def, ctx) => def in (ctx.config?.space?.dictionary ?? {}),
             validate: ({ ctx, def, components: { resolve } }, value, opts) => {
                 const errors = resolve().validate(value, opts)
                 const customValidator =

@@ -1,5 +1,6 @@
 import { assert } from "@re-/assert"
 import { create } from "@re-/model"
+import { narrow } from "@re-/tools"
 
 export const testUnion = () => {
     describe("type", () => {
@@ -59,39 +60,45 @@ export const testUnion = () => {
             assert(create("symbol|object").generate()).equals({})
         })
         test("prefers simple aliases", () => {
-            const space = {
-                resolutions: {
+            const space = narrow({
+                dictionary: {
                     five: 5,
                     duck: "'duck'",
                     func: "function"
                 }
-            } as const
+            })
             assert(create("func|five|duck", { space }).generate() as any).is(5)
             assert(create("duck|func", { space }).generate() as any).is("duck")
         })
         test("generates onCycle values if needed", () => {
             assert(
-                create("a|b", {
-                    space: {
-                        resolutions: {
-                            a: { b: "b" },
-                            b: { a: "a" }
+                create(
+                    "a|b",
+                    narrow({
+                        space: {
+                            dictionary: {
+                                a: { b: "b" },
+                                b: { a: "a" }
+                            }
                         }
-                    }
-                }).generate({ onRequiredCycle: "cycle" }) as any
+                    })
+                ).generate({ onRequiredCycle: "cycle" }) as any
             ).equals({ b: { a: "cycle" } })
         })
         test("avoids required cycles if possible", () => {
             assert(
-                create("a|b|safe", {
-                    space: {
-                        resolutions: {
-                            a: { b: "b" },
-                            b: { a: "a" },
-                            safe: "false"
+                create(
+                    "a|b|safe",
+                    narrow({
+                        space: {
+                            dictionary: {
+                                a: { b: "b" },
+                                b: { a: "a" },
+                                safe: "false"
+                            }
                         }
-                    }
-                }).generate()
+                    })
+                ).generate()
             ).is(false)
         })
     })

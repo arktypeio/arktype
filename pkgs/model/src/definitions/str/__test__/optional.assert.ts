@@ -13,8 +13,8 @@ export const testOptional = () => {
                     optional: "boolean?"
                 }).type
             ).typed as {
-                optional?: boolean | undefined
                 required: boolean
+                optional?: boolean | undefined
             }
         })
         describe("errors", () => {
@@ -27,7 +27,7 @@ export const testOptional = () => {
             test("multiple consecutive", () => {
                 // @ts-expect-error
                 assert(() => create("boolean??")).throwsAndHasTypeError(
-                    "Modifier '?' cannot appear more than once in a string definition."
+                    "Modifier '?' is only valid at the end of a type definition."
                 )
             })
             test("multiple non-consecutive", () => {

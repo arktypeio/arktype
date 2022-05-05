@@ -1,6 +1,7 @@
-import { ElementOf, Narrow, transform } from "@re-/tools"
+import { ElementOf, Exact, Get, Narrow, transform } from "@re-/tools"
+import { Root } from "./definitions/internal.js"
 import { create, CheckReferences } from "./model.js"
-import { CompileFunction, createCompileFunction } from "./space.js"
+import { compile, Space, SpaceConfig, ValidateDictionary } from "./space.js"
 
 export const createDeclaredDefineFunctionMap = <
     DeclaredTypeNames extends string[]
@@ -22,9 +23,7 @@ export type DeclaredDefineFunctionMap<DeclaredTypeNames extends string[]> = {
 export type DeclaredDefineFunction<
     DefinedTypeName extends ElementOf<DeclaredTypeNames>,
     DeclaredTypeNames extends string[]
-> = <Def>(
-    definition: CheckReferences<Narrow<Def>, ElementOf<DeclaredTypeNames>>
-) => {
+> = <Def>(definition: CheckReferences<Def, ElementOf<DeclaredTypeNames>>) => {
     [K in DefinedTypeName]: Def
 }
 
@@ -39,32 +38,56 @@ export type CreateDeclaredDefineFunction = <
 export const createDeclaredDefineFunction: CreateDeclaredDefineFunction =
     (declaredTypeNames, definedTypeName) => (definition: any) => {
         // Dummy create for validation
+        // @ts-ignore
         create(definition, {
             space: {
-                resolutions: transform(declaredTypeNames, ([i, typeName]) => [
+                dictionary: transform(declaredTypeNames, ([i, typeName]) => [
                     typeName,
                     "unknown"
                 ])
-            } as any
+            }
         })
         return { [definedTypeName]: definition } as any
     }
 
-export type Declaration<DeclaredTypeNames extends string[] = string[]> = {
-    define: DeclaredDefineFunctionMap<DeclaredTypeNames>
-    compile: CompileFunction<DeclaredTypeNames>
+export type CheckDeclaredCompilation<
+    Dict,
+    DeclaredTypeNames extends string[],
+    Checked = ValidateDictionary<Dict>,
+    DeclaredTypeName extends string = ElementOf<DeclaredTypeNames>
+> = {
+    [TypeName in DeclaredTypeName]: Get<Checked, TypeName>
 }
+
+export type DeclaredCompileFunction<DeclaredTypeNames extends string[]> = <
+    Dict,
+    Config extends SpaceConfig<Dict>
+>(
+    dictionary: Exact<Dict, CheckDeclaredCompilation<Dict, DeclaredTypeNames>>,
+    config?: Config
+) => Space<Dict, Config>
 
 export type DeclareFunction = <DeclaredTypeNames extends string[]>(
     ...names: Narrow<DeclaredTypeNames>
 ) => {
     define: DeclaredDefineFunctionMap<DeclaredTypeNames>
-    compile: CompileFunction<DeclaredTypeNames>
+    compile: DeclaredCompileFunction<DeclaredTypeNames>
 }
 
 export const declare: DeclareFunction = (...names) => ({
     // @ts-ignore
     define: createDeclaredDefineFunctionMap(names),
     // @ts-ignore
-    compile: createCompileFunction(names)
+    compile: (dict, config) =>
+        // @ts-ignore
+        compile(dict, { ...config, delcaredTypeNames: names })
+})
+
+const declaration = declare("a", "b")
+
+declaration.compile({
+    a: "string",
+    b: {
+        a: "string[]|a"
+    }
 })

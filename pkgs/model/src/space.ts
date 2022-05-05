@@ -5,14 +5,15 @@ import {
     KeyValuate,
     Narrow,
     transform,
-    IsAny
+    IsAny,
+    narrow,
+    Exact
 } from "@re-/tools"
 import {
     createCreateFunction,
     Model,
     ModelConfig,
     DefaultParseOptions,
-    CustomValidator,
     CreateFunction
 } from "./model.js"
 import { Root } from "./definitions/index.js"
@@ -26,25 +27,20 @@ export type DictionaryToModels<
     [TypeName in keyof Dict]: Model<
         Dict[TypeName],
         {
-            resolutions: Dict
+            dictionary: Dict
             config: { parse: Config }
         },
         ConfigWithDefaults & { seen: { [K in TypeName]: true } }
     >
 }
 
-export type CreateCompileFunction = <DeclaredTypeNames extends string[]>(
-    declaredTypeNames: Narrow<DeclaredTypeNames>
-) => CompileFunction<DeclaredTypeNames>
-
-export const createCompileFunction: CreateCompileFunction =
-    (declaredTypeNames) =>
-    (resolutions: any, config: any = {}) => {
+export const compile: CompileFunction = (dictionary: any, config: any = {}) => {
+    if (config.declaredTypeNames) {
         const declarationErrors = diffSets(
-            declaredTypeNames,
-            Object.keys(resolutions)
+            config.declaredTypeNames,
+            Object.keys(dictionary)
         )
-        if (declaredTypeNames.length && declarationErrors) {
+        if (declarationErrors) {
             const errorParts = [] as string[]
             if (declarationErrors.added) {
                 errorParts.push(
@@ -66,40 +62,38 @@ export const createCompileFunction: CreateCompileFunction =
             }
             throw new Error(errorParts.join(" "))
         }
-        const create = createCreateFunction({ resolutions, config })
-        const extend = (newDefinitions: any, newConfig: any) =>
-            // @ts-ignore
-            compile(
-                { ...resolutions, ...newDefinitions },
-                {
-                    ...config,
-                    ...newConfig,
-                    models: { ...config?.models, ...newConfig?.models }
-                }
-            )
-        return {
-            resolutions,
-            config,
-            models: transform(resolutions, ([typeName, definition]) => [
-                typeName,
-                // @ts-ignore
-                create(definition, { ...config, ...config?.models?.[typeName] })
-            ]),
-            types: typeDefProxy,
-            create,
-            extend
-        } as any
     }
+    const create = createCreateFunction({ dictionary, config })
+    const extend = (newDefinitions: any, newConfig: any) =>
+        // @ts-ignore
+        compile(
+            { ...dictionary, ...newDefinitions },
+            {
+                ...config,
+                ...newConfig,
+                models: { ...config?.models, ...newConfig?.models }
+            }
+        )
+    return {
+        dictionary,
+        config,
+        models: transform(dictionary, ([typeName, definition]) => [
+            typeName,
+            // @ts-ignore
+            create(definition, { ...config, ...config?.models?.[typeName] })
+        ]),
+        types: typeDefProxy,
+        create,
+        extend
+    } as any
+}
 
 export const extraneousTypesErrorMessage = `Defined types @types were never declared.`
 export const missingTypesErrorMessage = `Declared types @types were never defined.`
 
-export type SpaceOptions<
-    Resolutions,
-    ModelName extends string = keyof Resolutions & string
-> = ModelConfig & {
+export interface SpaceConfig<Dict> extends ModelConfig {
     models?: {
-        [Name in ModelName]?: Omit<ModelConfig, "parse">
+        [Name in keyof Dict]?: Omit<ModelConfig, "parse">
     }
 }
 
@@ -113,23 +107,23 @@ export type SpaceOptions<
 //     }
 // >
 
-// type ExtendSpaceFunction<OriginalResolutions, OriginalConfig> = <
-//     NewResolutions,
-//     NewConfig extends SpaceOptions<MergedResolutions>,
-//     MergedResolutions = Merge<OriginalResolutions, NewResolutions>
+// type ExtendSpaceFunction<OriginalDict, OriginalConfig> = <
+//     NewDict,
+//     NewConfig extends SpaceOptions<MergedDict>,
+//     MergedDict = Merge<OriginalDict, NewDict>
 // >(
 //     definitions: Narrow<
 //         Exact<
-//             NewResolutions,
-//             CheckCompileResolutions<NewResolutions, [], OriginalResolutions>
+//             NewDict,
+//             CheckCompileDict<NewDict, [], OriginalDict>
 //         >
 //     >,
 //     config?: Narrow<NewConfig>
-// ) => Space<MergedResolutions, ExtendSpaceConfig<OriginalConfig, NewConfig>>
+// ) => Space<MergedDict, ExtendSpaceConfig<OriginalConfig, NewConfig>>
 
 export type SpaceDefinition = {
-    resolutions: Record<string, any>
-    config?: SpaceOptions<any>
+    dictionary: Record<string, any>
+    config?: SpaceConfig<any>
 }
 
 export type Space<
@@ -139,7 +133,7 @@ export type Space<
         ? {}
         : KeyValuate<Config, "parse">
 > = Evaluate<{
-    resolutions: Dict
+    dictionary: Dict
     config: Config
     types: {
         [TypeName in keyof Dict]: Root.FastParse<
@@ -151,51 +145,25 @@ export type Space<
     models: DictionaryToModels<Dict, SpaceParseConfig>
     // @ts-ignore
     create: CreateFunction<{
-        resolutions: Dict
+        dictionary: Dict
         config: Config
     }>
-    // extend: ExtendSpaceFunction<Resolutions, Config>
+    // extend: ExtendSpaceFunction<Dict, Config>
     // TODO: Add declare extension
 }>
-
-export type CheckCompilation<
-    Dict,
-    DeclaredTypeNames extends string[] = [],
-    Checked = ValidateDictionary<Dict>,
-    DefinedTypeName extends string = keyof Checked & string,
-    DeclaredTypeName extends string = DeclaredTypeNames extends never[]
-        ? DefinedTypeName
-        : ElementOf<DeclaredTypeNames>
-> = IsAny<Dict> extends true
-    ? Dict
-    : {
-          [TypeName in DeclaredTypeName]: KeyValuate<Checked, TypeName>
-      }
 
 export type ValidateDictionary<Dict> = {
     [TypeName in keyof Dict]: Root.FastValidate<Dict[TypeName], Dict>
 }
 
-export type CompileFunction<DeclaredTypeNames extends string[]> = <
-    Dict,
-    Options extends SpaceOptions<Dict> = {}
->(
-    resolutions: ValidateDictionary<Dict>,
-    // TS has a problem inferring the narrowed type of a function hence the intersection hack
-    // If removing it doesn't break any types or tests, do it!
-    config?: Narrow<
-        Options & {
-            validate?: { validator?: CustomValidator }
-            models?: {
-                [Name in keyof Dict]?: Omit<ModelConfig, "parse">
-            }
-        }
-    >
-) => Space<Dict, Options>
+export type CompileFunction = <Dict, Config extends SpaceConfig<Dict>>(
+    dictionary: ValidateDictionary<Dict>,
+    config?: Config
+) => Space<Dict, Config>
 
-// Exported compile function is equivalent to compile from an empty declare call
-// and will not validate missing or extraneous definitions
-export const compile = createCompileFunction([])
+// // Exported compile function is equivalent to compile from an empty declare call
+// // and will not validate missing or extraneous definitions
+// export const compile = createCompileFunction()
 
 const space = compile({
     a: {

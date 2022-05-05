@@ -22,19 +22,19 @@ import { typeOf } from "../../utils.js"
 export namespace Map {
     export type Definition = Record<string, any>
 
-    export type TypeOf<
+    export type FastParse<
         Def,
-        Resolutions,
-        Options,
+        Dict,
+        Ctx,
         OptionalKey extends keyof Def = {
             [K in keyof Def]: Def[K] extends Optional.Definition ? K : never
         }[keyof Def],
         RequiredKey extends keyof Def = Exclude<keyof Def, OptionalKey>
     > = Evaluate<
         {
-            [K in OptionalKey]?: Root.FastParse<Def[K], Resolutions, Options>
+            [K in RequiredKey]: Root.FastParse<Def[K], Dict, Ctx>
         } & {
-            [K in RequiredKey]: Root.FastParse<Def[K], Resolutions, Options>
+            [K in OptionalKey]?: Root.FastParse<Def[K], Dict, Ctx>
         }
     >
 

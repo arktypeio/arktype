@@ -3,31 +3,23 @@ import {
     typeDefProxy,
     validationError,
     createParser,
-    ungeneratableError,
-    FirstEnclosed
+    ungeneratableError
 } from "./internal.js"
 import { Reference } from "../reference.js"
 import { StringLiteral } from "./stringLiteral.js"
 
 export namespace EmbeddedRegexLiteral {
-    export type Definition<Expression extends string = string> =
-        `/${Expression}/`
+    export type Definition<Expression extends string> =
+        Expression extends `${string}/${string}` ? never : `/${Expression}/`
 
-    export type Matches<Def extends string> = Def extends `/${FirstEnclosed<
-        Def,
-        `/`
-    >}/`
-        ? true
-        : false
-
-    export const type = typeDefProxy as Definition
+    export const type = typeDefProxy as string
 
     // Matches a definition enclosed by forward slashes that does not contain any other forward slashes
     export const matcher = /^\/[^\/]*\/$/
 
-    export const matches = (def: any): def is Definition => matcher.test(def)
+    export const matches = (def: any): def is string => matcher.test(def)
 
-    export const valueFrom = (def: Definition) => def.slice(1, -1)
+    export const valueFrom = (def: string) => def.slice(1, -1)
 
     export const parser = createParser(
         {
@@ -51,5 +43,5 @@ export namespace EmbeddedRegexLiteral {
         }
     )
 
-    export const delegate = parser as any as Definition
+    export const delegate = parser as any as string
 }

@@ -26,24 +26,22 @@ export namespace Str {
         ? Root.FastParse<Dict[Def], Dict, Ctx>
         : Def extends Optional.Definition<infer Child>
         ? FastParse<Child, Dict, Ctx> | undefined
-        : Def extends Union.Definition<infer Left, infer Right>
-        ? Str.FastParse<Left, Dict, Ctx> | Str.FastParse<Right, Dict, Ctx>
-        : Def extends Intersection.Definition<infer Left, infer Right>
-        ? Str.FastParse<Left, Dict, Ctx> & Str.FastParse<Right, Dict, Ctx>
-        : Def extends List.Definition<infer Child>
-        ? FastParse<Child, Dict, Ctx>[]
-        : Def extends Constraint.Definition
-        ? Constraint.FastParse<Def, Dict, Ctx>
-        : Def extends StringLiteral.SingleQuoted<infer Text>
+        : Def extends StringLiteral.Definition<infer Text>
         ? Text
-        : Def extends StringLiteral.DoubleQuoted<infer Text>
-        ? Text
-        : Def extends EmbeddedRegexLiteral.Definition
+        : Def extends EmbeddedRegexLiteral.Definition<infer Expression>
         ? string
         : Def extends EmbeddedNumberLiteral.Definition<infer Value>
         ? Value
         : Def extends EmbeddedBigintLiteral.Definition<infer Value>
         ? Value
+        : Def extends Intersection.Definition<infer Left, infer Right>
+        ? Str.FastParse<Left, Dict, Ctx> & Str.FastParse<Right, Dict, Ctx>
+        : Def extends Union.Definition<infer Left, infer Right>
+        ? Str.FastParse<Left, Dict, Ctx> | Str.FastParse<Right, Dict, Ctx>
+        : Def extends List.Definition<infer Child>
+        ? FastParse<Child, Dict, Ctx>[]
+        : Def extends Constraint.Definition
+        ? Constraint.FastParse<Def, Dict, Ctx>
         : ParseError<UnknownTypeError<Def>>
 
     export type FastValidate<Def extends string, Dict, Root> = Def extends
@@ -51,22 +49,21 @@ export namespace Str {
         | keyof Dict
         ? Root
         : Def extends Optional.Definition<infer Child>
-        ? FastValidate<Child, Dict, Root>
-        : Def extends Union.Definition<infer Left, infer Right>
-        ? BinaryValidate<Left, Right, Dict, Root>
+        ? Optional.FastValidate<Child, Dict, Root>
+        : Def extends
+              | StringLiteral.Definition<infer Text>
+              | EmbeddedRegexLiteral.Definition<infer Expression>
+              | EmbeddedNumberLiteral.Definition
+              | EmbeddedBigintLiteral.Definition
+        ? Root
         : Def extends Intersection.Definition<infer Left, infer Right>
+        ? BinaryValidate<Left, Right, Dict, Root>
+        : Def extends Union.Definition<infer Left, infer Right>
         ? BinaryValidate<Left, Right, Dict, Root>
         : Def extends List.Definition<infer Child>
         ? FastValidate<Child, Dict, Root>
         : Def extends Constraint.Definition
         ? Constraint.FastValidate<Def, Dict, Root>
-        : Def extends
-              | StringLiteral.SingleQuoted
-              | StringLiteral.DoubleQuoted
-              | EmbeddedRegexLiteral.Definition
-              | EmbeddedNumberLiteral.Definition
-              | EmbeddedBigintLiteral.Definition
-        ? Root
         : ParseError<UnknownTypeError<Def>>
 
     export const type = typeDefProxy as string

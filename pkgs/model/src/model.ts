@@ -1,35 +1,13 @@
-import {
-    Evaluate,
-    Narrow,
-    IsAny,
-    isEmpty,
-    KeyValuate,
-    Get,
-    LeafOf
-} from "@re-/tools"
-import {
-    Constraint,
-    Intersection,
-    Keyword,
-    List,
-    Literal,
-    Obj,
-    Optional,
-    Root,
-    Str,
-    Union
-} from "./definitions/index.js"
+import { Evaluate, Narrow, isEmpty, KeyValuate, Get, narrow } from "@re-/tools"
+import { Root } from "./definitions/index.js"
 import {
     ParseContext,
     defaultParseContext,
     InheritableMethodContext
 } from "./definitions/parser.js"
 import {
-    DefinitionTypeError,
     duplicateSpaceError,
-    ParseError,
     stringifyErrors,
-    UnknownTypeError,
     ValidationErrors
 } from "./errors.js"
 import { SpaceDefinition } from "./space.js"
@@ -40,18 +18,13 @@ import {
     MergeAll,
     Unset
 } from "./internal.js"
-import { BinaryValidate } from "./definitions/str/internal.js"
-import { StringLiteral } from "./definitions/str/reference/embeddedLiteral/stringLiteral.js"
-import { EmbeddedRegexLiteral } from "./definitions/str/reference/embeddedLiteral/embeddedRegexLiteral.js"
-import { EmbeddedNumberLiteral } from "./definitions/str/reference/embeddedLiteral/embeddedNumberLiteral.js"
-import { EmbeddedBigintLiteral } from "./definitions/str/reference/embeddedLiteral/embeddedBigintLiteral.js"
 
 export type FastParse<
     Def,
-    Resolutions,
+    Dict,
     Options = {},
     OptionsWithDefaults = Merge<DefaultParseOptions, Options>,
-    Checked = Resolutions //ValidateSpaceResolutions<Resolutions>
+    Checked = Dict //ValidateSpaceDict<Dict>
 > = Root.FastParse<
     Def,
     Checked,
@@ -77,6 +50,18 @@ export type DefaultParseOptions = {
     deepOnCycle: false
     onResolve: Unset
 }
+
+// Just use unknown for now since we don't have all the definitions yet
+// but we still want to allow references to other declared types
+export type CheckReferences<
+    Def,
+    DeclaredTypeName extends string
+> = Root.FastValidate<
+    Def,
+    {
+        [TypeName in DeclaredTypeName]: "unknown"
+    }
+>
 
 export type ReferencesConfig = {}
 
@@ -151,7 +136,7 @@ export const createCreateFunction: CreateCreateFunction =
             throw new Error(duplicateSpaceError)
         }
         const space: any = predefinedSpace ??
-            config?.space ?? { resolutions: {} }
+            config?.space ?? { dictionary: {} }
         const context: ParseContext = {
             ...defaultParseContext,
             // @ts-ignore
@@ -192,7 +177,7 @@ export type Model<
     Options,
     ModelType = FastParse<
         Def,
-        Get<Space, "resolutions">,
+        Get<Space, "dictionary">,
         MergeAll<
             [
                 DefaultParseOptions,
@@ -212,15 +197,18 @@ export type Model<
     references: (options?: ReferencesConfig) => any
 }>
 
+// Ensures that tuple definitions are not widened to arrays, similar to Narrow
+type Validate<Def, Dict> = Def extends [] ? Def : Root.FastValidate<Def, Dict>
+
 export type CreateFunction<PredefinedSpace extends SpaceDefinition | null> = <
     Def,
-    Options extends ModelConfig = {},
+    Options extends ModelConfig,
     ActiveSpace extends SpaceDefinition = PredefinedSpace extends null
         ? Options["space"] extends SpaceDefinition
             ? Options["space"]
-            : { resolutions: {} }
+            : { dictionary: {} }
         : PredefinedSpace,
-    Resolutions = Get<ActiveSpace, "resolutions">,
+    Dict = Get<ActiveSpace, "dictionary">,
     Ctx = MergeAll<
         [
             DefaultParseOptions,
@@ -229,15 +217,15 @@ export type CreateFunction<PredefinedSpace extends SpaceDefinition | null> = <
         ]
     >
 >(
-    definition: Root.FastValidate<Def, Resolutions>,
+    definition: Validate<Def, Dict>,
     // TS has a problem inferring the narrowed type of a function hence the intersection hack
     // If removing it doesn't break any types or tests, do it!
-    options?: Narrow<Options> & { validate?: { validator?: CustomValidator } }
+    options?: Options
 ) => Model<
     Def,
     Evaluate<ActiveSpace>,
     Options["parse"] extends ParseConfig ? Options["parse"] : {},
-    FastParse<Def, Resolutions, Ctx>
+    FastParse<Def, Dict, Ctx>
 >
 
 /**
@@ -247,6 +235,8 @@ export type CreateFunction<PredefinedSpace extends SpaceDefinition | null> = <
  * @returns {@as any} The result.
  */
 export const create = createCreateFunction(null)
+
+const f = create(["string", 5]).type
 
 const user = create(
     {
@@ -259,5 +249,5 @@ const user = create(
         browser: "'chrome'|'firefox'|'other'|null",
         ok: "a"
     },
-    { space: { resolutions: { a: { a: "'ok'" } } } }
+    narrow({ space: { dictionary: { a: { a: "'ok'" } } } })
 )

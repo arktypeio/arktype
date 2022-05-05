@@ -42,8 +42,8 @@ import { Root, Str } from "./definitions/index.js"
 //     never
 // >
 
-// export type ValidateResolution<Def, Resolutions> = IsAny<Def> extends true
+// export type ValidateResolution<Def, Dict> = IsAny<Def> extends true
 //     ? "any"
-//     : CheckForShallowCycle<Def, Resolutions> extends never
-//     ? Root.Validate<Def, Resolutions>
-//     : ShallowCycleError<Def & string, CheckForShallowCycle<Def, Resolutions>>
+//     : CheckForShallowCycle<Def, Dict> extends never
+//     ? Root.Validate<Def, Dict>
+//     : ShallowCycleError<Def & string, CheckForShallowCycle<Def, Dict>>

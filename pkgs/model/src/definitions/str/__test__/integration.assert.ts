@@ -4,11 +4,6 @@ import { typeDefProxy } from "../internal.js"
 
 export const testIntegration = () => {
     describe("type", () => {
-        test("precedence", () => {
-            assert(create("(string|number[])=>void?").type).typed as
-                | ((args_0: string | number[]) => void)
-                | undefined
-        })
         test("union of lists", () => {
             assert(create("boolean[]|number[]|null").type).typed as
                 | boolean[]
@@ -27,10 +22,10 @@ export const testIntegration = () => {
     })
     test("model props", () => {
         const a = create("a", {
-            space: { resolutions: { a: "true" } }
+            space: { dictionary: { a: "true" } }
         })
         expect(a.definition).toBe("a")
-        expect(a.space).toStrictEqual({ resolutions: { a: "true" } })
+        expect(a.space).toStrictEqual({ dictionary: { a: "true" } })
         expect(a.validate(true).error).toBeFalsy()
         expect(() => a.assert(false)).toThrow()
         expect(a.generate()).toBe(true)

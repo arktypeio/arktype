@@ -12,8 +12,8 @@ export namespace Expression {
         type,
         parent: () => Str.parser,
         children: () => [
-            Union.delegate,
             Intersection.delegate,
+            Union.delegate,
             Constraint.delegate,
             List.delegate
         ]

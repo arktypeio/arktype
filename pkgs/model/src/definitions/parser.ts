@@ -8,10 +8,7 @@ import {
     toString,
     TreeOf
 } from "@re-/tools"
-import { SpaceResolutions } from "../space.js"
 import { ValidationErrors, unknownTypeError } from "../errors.js"
-import { Root } from "./root.js"
-import { Obj } from "./obj/index.js"
 import {
     GenerateConfig,
     ModelConfig,
@@ -21,7 +18,7 @@ import {
 
 export type MatchesArgs<DefType> = {
     definition: DefType
-    resolutions: SpaceResolutions
+    dictionary: Record<string, any>
 }
 
 export type ParseContext = {

@@ -28,7 +28,7 @@ export type MergeAll<Types, Result = {}> = Types extends Iteration<
 export type ShallowDefinition = string | Literal.Definition
 
 export type ShallowExtractableDefinition =
-    | StringLiteral.Definition
+    | `'${string}'`
     | ExtractableKeyword
     | number
     | bigint
@@ -40,7 +40,7 @@ export const typeDefProxy: any = new Proxy({}, { get: () => typeDefProxy })
 
 export type ReferencesTypeConfig = Required<ReferencesTypeOptions>
 
-export type TypeOfContext<Resolutions> = Required<ParseConfig> & {
+export type TypeOfContext<Dict> = Required<ParseConfig> & {
     seen: Record<string, boolean>
 }
 

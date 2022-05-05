@@ -7,7 +7,7 @@ import { Tuple } from "./tuple.js"
 export namespace Obj {
     export type FastParse<Def extends object, Dict, Ctx> = Def extends any[]
         ? { [I in keyof Def]: Root.FastParse<Def[I], Dict, Ctx> }
-        : { [K in keyof Def]: Root.FastParse<Def[K], Dict, Ctx> }
+        : Map.FastParse<Def, Dict, Ctx>
 
     export const type = typeDefProxy as object
 

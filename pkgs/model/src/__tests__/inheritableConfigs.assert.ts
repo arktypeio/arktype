@@ -94,11 +94,11 @@ describe("inheritable configs", () => {
     })
     describe("parse", () => {
         describe("types", () => {
-            const resolutions = narrow({
+            const dictionary = narrow({
                 recursionIs: { recursionIs: "recursionIs" }
             })
             test("no config", () => {
-                assert(create("recursionIs", { space: { resolutions } }).type)
+                assert(create("recursionIs", { space: { dictionary } }).type)
                     .typed as {
                     recursionIs: {
                         recursionIs: any
@@ -109,7 +109,7 @@ describe("inheritable configs", () => {
                 assert(
                     create("recursionIs", {
                         space: {
-                            resolutions
+                            dictionary
                         },
                         parse: {
                             onCycle: "'create'"
@@ -120,7 +120,7 @@ describe("inheritable configs", () => {
                 }
             })
             test("space config", () => {
-                const space = compile(resolutions, {
+                const space = compile(dictionary, {
                     parse: { onCycle: "'space'" }
                 })
                 assert(space.models.recursionIs.type).typed as {
@@ -128,7 +128,7 @@ describe("inheritable configs", () => {
                 }
             })
             test("precedence", () => {
-                const space = compile(resolutions, {
+                const space = compile(dictionary, {
                     parse: { onCycle: "'space'" }
                 })
                 // When all three configs are provided, create call wins

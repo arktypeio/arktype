@@ -172,17 +172,3 @@ export const stringifyErrors = (errors: ValidationErrors) => {
         indent: 2
     })}`
 }
-
-// export type ModifierToken = "?"
-
-// export const duplicateModifierError = (modifier: ModifierToken) =>
-//     `Modifier '${modifier}' cannot appear more than once in a string definition.`
-
-// export type DuplicateModifierError<DuplicatedModifier extends ModifierToken> =
-//     `Modifier '${DuplicatedModifier}' cannot appear more than once in a string definition.`
-
-// export const invalidModifierError = (modifier: ModifierToken) =>
-//     `Modifier '${modifier}' is only valid at the end of a type definition.`
-
-// export type InvalidModifierError<InvalidModifier extends ModifierToken> =
-//     `Modifier '${InvalidModifier}' is only valid at the end of a type definition.`

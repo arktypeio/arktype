@@ -1,28 +1,26 @@
 import { typeOf } from "../../../../utils.js"
-import {
-    typeDefProxy,
-    validationError,
-    createParser,
-    FirstEnclosed
-} from "./internal.js"
+import { typeDefProxy, validationError, createParser } from "./internal.js"
 import { EmbeddedLiteral } from "./embeddedLiteral.js"
 
 export namespace StringLiteral {
-    export type SingleQuoted<Text extends string = string> = `'${Text}'`
+    export type SingleQuoted<Text extends string> =
+        Text extends `${string}'${string}` ? never : `'${Text}'`
 
-    export type DoubleQuoted<Text extends string = string> = `"${Text}"`
+    export type DoubleQuoted<Text extends string> =
+        Text extends `${string}"${string}` ? never : `"${Text}"`
 
-    export type Definition<Text extends string = string> =
+    /**
+     * If Text is just string, it won't validate that it doesn't contain inner quotes.
+     * Should be used like this to avoid definitions like 'foo'oo' being considered valid:
+     *
+     * Def extends StringLiteral.Definition<infer Text> ? Text : false
+     *
+     * Text would then infer the quoted value only if it doesn't contain its own quote type.
+     * This ensures the same behavior as the regex matcher
+     */
+    export type Definition<Text extends string> =
         | SingleQuoted<Text>
         | DoubleQuoted<Text>
-
-    export type ValueFrom<Def extends string> = Def extends SingleQuoted<
-        FirstEnclosed<Def, `'`>
-    >
-        ? FirstEnclosed<Def, `'`>
-        : Def extends DoubleQuoted<FirstEnclosed<Def, `"`>>
-        ? FirstEnclosed<Def, `"`>
-        : null
 
     export const type = typeDefProxy as string
 

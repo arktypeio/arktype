@@ -11,13 +11,7 @@ import { Obj } from "./obj.js"
 import { typeOf } from "../../utils.js"
 
 export namespace Tuple {
-    export type Definition = any[]
-
-    export type TypeOf<Def, Dict, Ctx> = Evaluate<{
-        [I in keyof Def]: Root.FastParse<Def[I], Dict, Ctx>
-    }>
-
-    export const type = typeDefProxy as Definition
+    export const type = typeDefProxy as any[]
 
     export const parser = createParser(
         {
@@ -68,5 +62,5 @@ export namespace Tuple {
         }
     )
 
-    export const delegate = parser as any as Definition
+    export const delegate = parser as any as any[]
 }

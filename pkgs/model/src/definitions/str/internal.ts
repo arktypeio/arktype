@@ -3,11 +3,11 @@ export * from "../internal.js"
 import { ParseError } from "../internal.js"
 import { Str } from "./index.js"
 
-type BinaryValidationResult<Left, Right, Root> = Left extends ParseError
+type BinaryValidationResult<Left, Right> = Left extends ParseError
     ? Left
     : Right extends ParseError
     ? Right
-    : Root
+    : Left
 
 export type BinaryValidate<
     Left extends string,
@@ -16,6 +16,5 @@ export type BinaryValidate<
     Root
 > = BinaryValidationResult<
     Str.FastValidate<Left, Dict, Root>,
-    Str.FastValidate<Right, Dict, Root>,
-    Root
+    Str.FastValidate<Right, Dict, Root>
 >
