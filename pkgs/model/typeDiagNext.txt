@@ -1,38 +1,32 @@
-src/definitions/str/reference/__tests__/alias.assert.ts(39,38): error TS2339: Property 'cyclic' does not exist on type '{ b: { a: ...; isA: false; isB: true; }; isA: true; isB: false; }'.
-src/definitions/str/reference/__tests__/alias.assert.ts(42,38): error TS2339: Property 'cyclic' does not exist on type '{ a: { b: ...; isA: true; isB: false; }; isA: false; isB: true; }'.
-src/definitions/str/reference/__tests__/alias.assert.ts(47,38): error TS2339: Property 'cyclic' does not exist on type '{ a: { b: ...; isA: true; isB: false; }; isA: false; isB: true; }'.
-src/definitions/str/reference/__tests__/alias.assert.ts(64,39): error TS2339: Property 'cyclic' does not exist on type '{ b: { a: ...; isA: false; isB: true; }; isA: true; isB: false; }'.
-src/definitions/str/reference/__tests__/alias.assert.ts(86,51): error TS2339: Property 'wasResolved' does not exist on type '{ b: { a: ...; isA: false; isB: true; }; isA: true; isB: false; }'.
-src/definitions/str/reference/__tests__/alias.assert.ts(87,51): error TS2339: Property 'resolvedType' does not exist on type '{ b: { a: ...; isA: false; isB: true; }; isA: true; isB: false; }'.
 Files:                         526
 Lines of Library:             9294
 Lines of Definitions:        73524
-Lines of TypeScript:          6876
+Lines of TypeScript:          6819
 Lines of JavaScript:             0
 Lines of JSON:                   0
 Lines of Other:                  0
 Nodes of Library:            24093
 Nodes of Definitions:       296271
-Nodes of TypeScript:         26084
+Nodes of TypeScript:         25844
 Nodes of JavaScript:             0
 Nodes of JSON:                   0
 Nodes of Other:                  0
-Identifiers:                112036
-Symbols:                    206896
-Types:                      131763
-Instantiations:             668983
-Memory used:               246211K
-Assignability cache size:    25600
-Identity cache size:            67
-Subtype cache size:            258
+Identifiers:                111935
+Symbols:                    205148
+Types:                      140811
+Instantiations:             482871
+Memory used:               255338K
+Assignability cache size:    31451
+Identity cache size:            77
+Subtype cache size:            271
 Strict subtype cache size:     153
 I/O Read time:               0.02s
-Parse time:                  0.56s
+Parse time:                  0.58s
 ResolveModule time:          0.08s
 ResolveTypeReference time:   0.00s
-Program time:                0.82s
-Bind time:                   0.28s
-Check time:                  2.62s
+Program time:                0.84s
+Bind time:                   0.30s
+Check time:                  2.43s
 printTime time:              0.00s
 Emit time:                   0.00s
-Total time:                  3.71s
+Total time:                  3.57s

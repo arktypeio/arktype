@@ -12,21 +12,23 @@ import { Str } from "./str/index.js"
 import { IsAny, IsAnyOrUnknown } from "@re-/tools"
 
 export namespace Root {
-    export type FastParse<Def, Dict, Ctx> = IsAnyOrUnknown<Def> extends true
+    export type FastParse<Def, Dict, Seen> = IsAnyOrUnknown<Def> extends true
         ? Def
         : Def extends BadDefinitionType
         ? ParseError<DefinitionTypeError>
         : Def extends string
-        ? Str.FastParse<Def, Dict, Ctx>
+        ? Str.FastParse<Def, Dict, Seen>
         : Def extends RegExp
         ? string
         : Def extends object
-        ? Obj.FastParse<Def, Dict, Ctx>
+        ? Obj.FastParse<Def, Dict, Seen>
         : Def extends Literal.PrimitiveLiteral
         ? Def
         : ParseError<UnknownTypeError>
 
-    export type FastValidate<Def, Dict> = Def extends BadDefinitionType
+    export type FastValidate<Def, Dict> = Def extends []
+        ? Def
+        : Def extends BadDefinitionType
         ? ParseError<DefinitionTypeError>
         : Def extends string
         ? Str.FastValidate<Def, Dict, Def>

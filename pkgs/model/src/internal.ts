@@ -40,7 +40,7 @@ export const typeDefProxy: any = new Proxy({}, { get: () => typeDefProxy })
 
 export type ReferencesTypeConfig = Required<ReferencesTypeOptions>
 
-export type TypeOfContext<Dict> = Required<ParseConfig> & {
+export type TypeOfContext = Required<ParseConfig> & {
     seen: Record<string, boolean>
 }
 

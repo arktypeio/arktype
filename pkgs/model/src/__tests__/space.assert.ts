@@ -92,11 +92,6 @@ describe("compile", () => {
         assert(a.generate()).equals({})
         assert(a.references()).equals(["a"])
         assert(a.definition).typedValue("a")
-        const expectedSpace = narrow({
-            dictionary: { a: { b: "b?" }, b: { a: "a?" } },
-            config: {}
-        })
-        assert(a.space).typedValue(expectedSpace)
         assert(mySpace.create("b").type)
             .is(typeDefProxy)
             .type.toString.snap(
@@ -106,9 +101,12 @@ describe("compile", () => {
     })
     test("extension", () => {
         const mySpace = compile(
-            { user: { name: "string" }, group: { members: "user[]" } },
             {
-                parse: { onCycle: "number" },
+                user: { name: "string" },
+                group: { members: "user[]" },
+                onCycle: "number"
+            },
+            {
                 validate: { ignoreExtraneousKeys: true },
                 models: {
                     user: {

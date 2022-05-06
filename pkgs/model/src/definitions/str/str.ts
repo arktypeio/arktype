@@ -1,4 +1,4 @@
-import { Keyword, Reference } from "./reference/index.js"
+import { Keyword, Reference, Alias } from "./reference/index.js"
 import { Expression } from "./expression/index.js"
 import {
     createParser,
@@ -19,13 +19,14 @@ export namespace Str {
     export type FastParse<
         Def extends string,
         Dict,
-        Ctx
+        Seen
     > = Def extends Keyword.Definition
         ? Keyword.KeywordTypes[Def]
         : Def extends keyof Dict
-        ? Root.FastParse<Dict[Def], Dict, Ctx>
+        ? // @ts-ignore
+          Alias.FastParse<Def, Dict, Seen> //Root.FastParse<Dict[Def], Dict, Ctx>
         : Def extends Optional.Definition<infer Child>
-        ? FastParse<Child, Dict, Ctx> | undefined
+        ? FastParse<Child, Dict, Seen> | undefined
         : Def extends StringLiteral.Definition<infer Text>
         ? Text
         : Def extends EmbeddedRegexLiteral.Definition<infer Expression>
@@ -35,18 +36,20 @@ export namespace Str {
         : Def extends EmbeddedBigintLiteral.Definition<infer Value>
         ? Value
         : Def extends Intersection.Definition<infer Left, infer Right>
-        ? Str.FastParse<Left, Dict, Ctx> & Str.FastParse<Right, Dict, Ctx>
+        ? Str.FastParse<Left, Dict, Seen> & Str.FastParse<Right, Dict, Seen>
         : Def extends Union.Definition<infer Left, infer Right>
-        ? Str.FastParse<Left, Dict, Ctx> | Str.FastParse<Right, Dict, Ctx>
+        ? Str.FastParse<Left, Dict, Seen> | Str.FastParse<Right, Dict, Seen>
         : Def extends List.Definition<infer Child>
-        ? FastParse<Child, Dict, Ctx>[]
+        ? FastParse<Child, Dict, Seen>[]
         : Def extends Constraint.Definition
-        ? Constraint.FastParse<Def, Dict, Ctx>
+        ? Constraint.FastParse<Def, Dict, Seen>
         : ParseError<UnknownTypeError<Def>>
 
     export type FastValidate<Def extends string, Dict, Root> = Def extends
         | Keyword.Definition
         | keyof Dict
+        | "cyclic"
+        | "resolution"
         ? Root
         : Def extends Optional.Definition<infer Child>
         ? Optional.FastValidate<Child, Dict, Root>

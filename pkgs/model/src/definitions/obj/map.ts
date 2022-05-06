@@ -25,16 +25,16 @@ export namespace Map {
     export type FastParse<
         Def,
         Dict,
-        Ctx,
+        Seen,
         OptionalKey extends keyof Def = {
             [K in keyof Def]: Def[K] extends Optional.Definition ? K : never
         }[keyof Def],
         RequiredKey extends keyof Def = Exclude<keyof Def, OptionalKey>
     > = Evaluate<
         {
-            [K in RequiredKey]: Root.FastParse<Def[K], Dict, Ctx>
+            [K in RequiredKey]: Root.FastParse<Def[K], Dict, Seen>
         } & {
-            [K in OptionalKey]?: Root.FastParse<Def[K], Dict, Ctx>
+            [K in OptionalKey]?: Root.FastParse<Def[K], Dict, Seen>
         }
     >
 

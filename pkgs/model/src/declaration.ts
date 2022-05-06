@@ -1,7 +1,12 @@
 import { ElementOf, Exact, Get, Narrow, transform } from "@re-/tools"
-import { Root } from "./definitions/internal.js"
 import { create, CheckReferences } from "./model.js"
-import { compile, Space, SpaceConfig, ValidateDictionary } from "./space.js"
+import {
+    compile,
+    CompileFunction,
+    Space,
+    SpaceConfig,
+    ValidateDictionary
+} from "./space.js"
 
 export const createDeclaredDefineFunctionMap = <
     DeclaredTypeNames extends string[]
@@ -52,20 +57,18 @@ export const createDeclaredDefineFunction: CreateDeclaredDefineFunction =
 
 export type CheckDeclaredCompilation<
     Dict,
-    DeclaredTypeNames extends string[],
-    Checked = ValidateDictionary<Dict>,
-    DeclaredTypeName extends string = ElementOf<DeclaredTypeNames>
+    DeclaredTypeNames extends string[]
 > = {
-    [TypeName in DeclaredTypeName]: Get<Checked, TypeName>
+    // @ts-ignore
+    [TypeName in ElementOf<DeclaredTypeNames>]: ValidateDictionary<Dict>[TypeName]
 }
 
 export type DeclaredCompileFunction<DeclaredTypeNames extends string[]> = <
-    Dict,
-    Config extends SpaceConfig<Dict>
+    Dict
 >(
     dictionary: Exact<Dict, CheckDeclaredCompilation<Dict, DeclaredTypeNames>>,
-    config?: Config
-) => Space<Dict, Config>
+    config?: SpaceConfig<keyof Dict & string>
+) => Space<Dict>
 
 export type DeclareFunction = <DeclaredTypeNames extends string[]>(
     ...names: Narrow<DeclaredTypeNames>

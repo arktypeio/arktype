@@ -95,7 +95,7 @@ describe("inheritable configs", () => {
     describe("parse", () => {
         describe("types", () => {
             const dictionary = narrow({
-                recursionIs: { recursionIs: "recursionIs" }
+                recursionIs: { recursionIs: "recursionIs", onCycle: "'create'" }
             })
             test("no config", () => {
                 assert(create("recursionIs", { space: { dictionary } }).type)
@@ -110,41 +110,38 @@ describe("inheritable configs", () => {
                     create("recursionIs", {
                         space: {
                             dictionary
-                        },
-                        parse: {
-                            onCycle: "'create'"
                         }
                     }).type
                 ).typed as {
                     recursionIs: "create"
                 }
             })
-            test("space config", () => {
-                const space = compile(dictionary, {
-                    parse: { onCycle: "'space'" }
-                })
-                assert(space.models.recursionIs.type).typed as {
-                    recursionIs: "space"
-                }
-            })
-            test("precedence", () => {
-                const space = compile(dictionary, {
-                    parse: { onCycle: "'space'" }
-                })
-                // When all three configs are provided, create call wins
-                assert(
-                    space.create("recursionIs", {
-                        parse: { onCycle: "'create'" }
-                    }).type
-                ).typed as {
-                    recursionIs: "create"
-                }
-                const result = space.create("recursionIs")
-                // Space has the least priority
-                assert(space.create("recursionIs").type).typed as {
-                    recursionIs: "space"
-                }
-            })
+            // test("space config", () => {
+            //     const space = compile(dictionary, {
+            //         parse: { onCycle: "'space'" }
+            //     })
+            //     assert(space.models.recursionIs.type).typed as {
+            //         recursionIs: "space"
+            //     }
+            // })
+            // test("precedence", () => {
+            //     const space = compile(dictionary, {
+            //         parse: { onCycle: "'space'" }
+            //     })
+            //     // When all three configs are provided, create call wins
+            //     assert(
+            //         space.create("recursionIs", {
+            //             parse: { onCycle: "'create'" }
+            //         }).type
+            //     ).typed as {
+            //         recursionIs: "create"
+            //     }
+            //     const result = space.create("recursionIs")
+            //     // Space has the least priority
+            //     assert(space.create("recursionIs").type).typed as {
+            //         recursionIs: "space"
+            //     }
+            // })
         })
     })
 })

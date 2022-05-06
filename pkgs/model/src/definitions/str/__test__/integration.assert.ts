@@ -1,5 +1,6 @@
 import { assert } from "@re-/assert"
 import { create } from "@re-/model"
+import { narrow } from "@re-/tools"
 import { typeDefProxy } from "../internal.js"
 
 export const testIntegration = () => {
@@ -22,10 +23,9 @@ export const testIntegration = () => {
     })
     test("model props", () => {
         const a = create("a", {
-            space: { dictionary: { a: "true" } }
+            space: { dictionary: narrow({ a: "true" }) }
         })
         expect(a.definition).toBe("a")
-        expect(a.space).toStrictEqual({ dictionary: { a: "true" } })
         expect(a.validate(true).error).toBeFalsy()
         expect(() => a.assert(false)).toThrow()
         expect(a.generate()).toBe(true)

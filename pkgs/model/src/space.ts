@@ -17,22 +17,17 @@ import {
     CreateFunction
 } from "./model.js"
 import { Root } from "./definitions/index.js"
-import { DefaultTypeOfContext, typeDefProxy, Merge } from "./internal.js"
+import { typeDefProxy } from "./internal.js"
 
-export type DictionaryToModels<
-    Dict,
-    Config,
-    ConfigWithDefaults = Merge<DefaultParseOptions, Config>
-> = {
+export type DictionaryToModels<Dict> = Evaluate<{
     [TypeName in keyof Dict]: Model<
         Dict[TypeName],
-        {
-            dictionary: Dict
-            config: { parse: Config }
-        },
-        ConfigWithDefaults & { seen: { [K in TypeName]: true } }
+        // {
+        //     dictionary: Dict
+        // },
+        Root.FastParse<Dict[TypeName], Dict, { [K in TypeName]: true }>
     >
-}
+}>
 
 export const compile: CompileFunction = (dictionary: any, config: any = {}) => {
     if (config.declaredTypeNames) {
@@ -91,10 +86,9 @@ export const compile: CompileFunction = (dictionary: any, config: any = {}) => {
 export const extraneousTypesErrorMessage = `Defined types @types were never declared.`
 export const missingTypesErrorMessage = `Declared types @types were never defined.`
 
-export interface SpaceConfig<Dict> extends ModelConfig {
-    models?: {
-        [Name in keyof Dict]?: Omit<ModelConfig, "parse">
-    }
+export interface SpaceConfig<ModelName> extends ModelConfig {
+    // @ts-ignore
+    models?: { [K in ModelName]?: ModelConfig }
 }
 
 // type ExtendSpaceConfig<OriginalConfig, NewConfig> = Merge<
@@ -123,31 +117,24 @@ export interface SpaceConfig<Dict> extends ModelConfig {
 
 export type SpaceDefinition = {
     dictionary: Record<string, any>
-    config?: SpaceConfig<any>
+    config?: SpaceConfig<string>
 }
 
-export type Space<
-    Dict,
-    Config,
-    SpaceParseConfig = KeyValuate<Config, "parse"> extends undefined
-        ? {}
-        : KeyValuate<Config, "parse">
-> = Evaluate<{
+export type DictToTypes<Dict> = Evaluate<{
+    [TypeName in keyof Dict]: Root.FastParse<
+        Dict[TypeName],
+        Dict,
+        { [K in TypeName]: true }
+    >
+}>
+
+export type Space<Dict> = Evaluate<{
     dictionary: Dict
-    config: Config
-    types: {
-        [TypeName in keyof Dict]: Root.FastParse<
-            Dict[TypeName],
-            Dict,
-            DefaultTypeOfContext
-        >
-    }
-    models: DictionaryToModels<Dict, SpaceParseConfig>
+    config: SpaceConfig<keyof Dict & string>
+    types: DictToTypes<Dict>
+    models: DictionaryToModels<Dict>
     // @ts-ignore
-    create: CreateFunction<{
-        dictionary: Dict
-        config: Config
-    }>
+    create: CreateFunction<Dict>
     // extend: ExtendSpaceFunction<Dict, Config>
     // TODO: Add declare extension
 }>
@@ -156,20 +143,20 @@ export type ValidateDictionary<Dict> = {
     [TypeName in keyof Dict]: Root.FastValidate<Dict[TypeName], Dict>
 }
 
-export type CompileFunction = <Dict, Config extends SpaceConfig<Dict>>(
+export type CompileFunction = <Dict>(
     dictionary: ValidateDictionary<Dict>,
-    config?: Config
-) => Space<Dict, Config>
+    config?: SpaceConfig<keyof Dict & string>
+) => Space<Dict>
 
-// // Exported compile function is equivalent to compile from an empty declare call
-// // and will not validate missing or extraneous definitions
-// export const compile = createCompileFunction()
-
-const space = compile({
-    a: {
-        ok: "string"
+const space = compile(
+    {
+        a: {
+            ok: "string"
+        },
+        b: {
+            cool: "number|bigint"
+        },
+        c: { a: ["string", "number"] }
     },
-    b: {
-        cool: "number|bigint"
-    }
-})
+    { models: { a: {} } }
+)

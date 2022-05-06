@@ -10,7 +10,6 @@ import {
     stringifyErrors,
     ValidationErrors
 } from "./errors.js"
-import { SpaceDefinition } from "./space.js"
 import {
     errorsFromCustomValidator,
     Merge,
@@ -18,6 +17,7 @@ import {
     MergeAll,
     Unset
 } from "./internal.js"
+import { SpaceDefinition } from "./space.js"
 
 export type FastParse<
     Def,
@@ -71,8 +71,7 @@ export type GenerateConfig = {
     onRequiredCycle?: any
 }
 
-export type ModelConfig = {
-    parse?: ParseConfig
+export interface ModelConfig {
     validate?: ValidateConfig
     generate?: GenerateConfig
     references?: ReferencesConfig
@@ -124,9 +123,7 @@ const createRootValidate =
               }
     }
 
-export type CreateCreateFunction = <
-    PredefinedSpace extends SpaceDefinition | null
->(
+export type CreateCreateFunction = <PredefinedSpace>(
     predefinedSpace: Narrow<PredefinedSpace>
 ) => CreateFunction<PredefinedSpace>
 
@@ -171,25 +168,9 @@ export const createCreateFunction: CreateCreateFunction =
         } as any
     }
 
-export type Model<
-    Def,
-    Space,
-    Options,
-    ModelType = FastParse<
-        Def,
-        Get<Space, "dictionary">,
-        MergeAll<
-            [
-                DefaultParseOptions,
-                KeyValuate<Get<Space, "config">, "parse">,
-                Options
-            ]
-        >
-    >
-> = Evaluate<{
+export type Model<Def, ModelType> = Evaluate<{
     definition: Def
     type: ModelType
-    space: Space
     config: ModelConfig
     validate: ValidateFunction
     assert: (value: unknown, options?: AssertOptions) => void
@@ -197,36 +178,14 @@ export type Model<
     references: (options?: ReferencesConfig) => any
 }>
 
-// Ensures that tuple definitions are not widened to arrays, similar to Narrow
-type Validate<Def, Dict> = Def extends [] ? Def : Root.FastValidate<Def, Dict>
-
-export type CreateFunction<PredefinedSpace extends SpaceDefinition | null> = <
+export type CreateFunction<PredefinedDict> = <
     Def,
     Options extends ModelConfig,
-    ActiveSpace extends SpaceDefinition = PredefinedSpace extends null
-        ? Options["space"] extends SpaceDefinition
-            ? Options["space"]
-            : { dictionary: {} }
-        : PredefinedSpace,
-    Dict = Get<ActiveSpace, "dictionary">,
-    Ctx = MergeAll<
-        [
-            DefaultParseOptions,
-            KeyValuate<Get<ActiveSpace, "config">, "parse">,
-            Options
-        ]
-    >
+    ActiveDict = KeyValuate<Options["space"], "dictionary", PredefinedDict>
 >(
-    definition: Validate<Def, Dict>,
-    // TS has a problem inferring the narrowed type of a function hence the intersection hack
-    // If removing it doesn't break any types or tests, do it!
+    definition: Root.FastValidate<Def, ActiveDict>,
     options?: Options
-) => Model<
-    Def,
-    Evaluate<ActiveSpace>,
-    Options["parse"] extends ParseConfig ? Options["parse"] : {},
-    FastParse<Def, Dict, Ctx>
->
+) => Model<Def, FastParse<Def, ActiveDict>> & { dict: ActiveDict }
 
 /**
  * Create a model.
@@ -234,9 +193,7 @@ export type CreateFunction<PredefinedSpace extends SpaceDefinition | null> = <
  * @param options {@as ModelConfig?} And that.
  * @returns {@as any} The result.
  */
-export const create = createCreateFunction(null)
-
-const f = create(["string", 5]).type
+export const create = createCreateFunction({})
 
 const user = create(
     {
@@ -249,5 +206,5 @@ const user = create(
         browser: "'chrome'|'firefox'|'other'|null",
         ok: "a"
     },
-    narrow({ space: { dictionary: { a: { a: "'ok'" } } } })
+    { space: { dictionary: narrow({ a: { a: "'ok'" } }) } }
 )

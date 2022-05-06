@@ -7,9 +7,33 @@ import {
 } from "./internal.js"
 import { Root } from "../../root.js"
 import { Reference } from "./index.js"
+import { And, Or, WithPropValue } from "@re-/tools"
+import { TypeOfContext, Unset } from "../internal.js"
 
 export namespace Alias {
     export const type = typeDefProxy as string
+
+    export type FastParse<Def extends keyof Dict, Dict, Seen> = And<
+        "onResolve" extends keyof Dict ? true : false,
+        Def extends "resolution" ? false : true
+    > extends true
+        ? Root.FastParse<
+              // @ts-ignore
+              Dict["onResolve"],
+              WithPropValue<Dict, "resolution", Dict[Def]>,
+              Seen & { [K in Def]: true }
+          >
+        : And<
+              "onCycle" extends keyof Dict ? true : false,
+              Def extends keyof Seen ? true : false
+          > extends true
+        ? Root.FastParse<
+              // @ts-ignore
+              Dict["onCycle"],
+              WithPropValue<Dict, "cyclic", Dict[Def]>,
+              {}
+          >
+        : Root.FastParse<Dict[Def], Dict, Seen & { [K in Def]: true }>
 
     export const parser = createParser(
         {
