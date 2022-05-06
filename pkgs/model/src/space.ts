@@ -1,30 +1,19 @@
-import {
-    diffSets,
-    ElementOf,
-    Evaluate,
-    KeyValuate,
-    Narrow,
-    transform,
-    IsAny,
-    narrow,
-    Exact
-} from "@re-/tools"
+import { diffSets, Evaluate, transform } from "@re-/tools"
 import {
     createCreateFunction,
     Model,
     ModelConfig,
-    DefaultParseOptions,
-    CreateFunction
+    CreateFunction,
+    BaseConfig
 } from "./model.js"
 import { Root } from "./definitions/index.js"
-import { typeDefProxy } from "./internal.js"
+import { typeDefProxy, Merge } from "./internal.js"
+
+export type MetaKey = "onCycle" | "onResolve"
 
 export type DictionaryToModels<Dict> = Evaluate<{
-    [TypeName in keyof Dict]: Model<
+    [TypeName in Exclude<keyof Dict, MetaKey>]: Model<
         Dict[TypeName],
-        // {
-        //     dictionary: Dict
-        // },
         Root.FastParse<Dict[TypeName], Dict, { [K in TypeName]: true }>
     >
 }>
@@ -39,20 +28,16 @@ export const compile: CompileFunction = (dictionary: any, config: any = {}) => {
             const errorParts = [] as string[]
             if (declarationErrors.added) {
                 errorParts.push(
-                    extraneousTypesErrorMessage.replace(
-                        "@types",
-                        declarationErrors.added.map((_) => `'${_}'`).join(", ")
-                    )
+                    `Defined types ${declarationErrors.added
+                        .map((_) => `'${_}'`)
+                        .join(", ")} were never declared.`
                 )
             }
             if (declarationErrors.removed) {
                 errorParts.push(
-                    missingTypesErrorMessage.replace(
-                        "@types",
-                        declarationErrors.removed
-                            .map((_) => `'${_}'`)
-                            .join(", ")
-                    )
+                    `Declared types ${declarationErrors.removed
+                        .map((_) => `'${_}'`)
+                        .join(", ")} were never defined.`
                 )
             }
             throw new Error(errorParts.join(" "))
@@ -83,37 +68,14 @@ export const compile: CompileFunction = (dictionary: any, config: any = {}) => {
     } as any
 }
 
-export const extraneousTypesErrorMessage = `Defined types @types were never declared.`
-export const missingTypesErrorMessage = `Declared types @types were never defined.`
-
-export interface SpaceConfig<ModelName> extends ModelConfig {
-    // @ts-ignore
+export interface SpaceConfig<ModelName extends string> extends BaseConfig {
     models?: { [K in ModelName]?: ModelConfig }
 }
 
-// type ExtendSpaceConfig<OriginalConfig, NewConfig> = Merge<
-//     Merge<OriginalConfig, NewConfig>,
-//     {
-//         models: Merge<
-//             KeyValuate<OriginalConfig, "models">,
-//             KeyValuate<NewConfig, "models">
-//         >
-//     }
-// >
-
-// type ExtendSpaceFunction<OriginalDict, OriginalConfig> = <
-//     NewDict,
-//     NewConfig extends SpaceOptions<MergedDict>,
-//     MergedDict = Merge<OriginalDict, NewDict>
-// >(
-//     definitions: Narrow<
-//         Exact<
-//             NewDict,
-//             CheckCompileDict<NewDict, [], OriginalDict>
-//         >
-//     >,
-//     config?: Narrow<NewConfig>
-// ) => Space<MergedDict, ExtendSpaceConfig<OriginalConfig, NewConfig>>
+export type ExtendFunction<BaseDict> = <Dict>(
+    dictionary: ValidateDictionary<Dict>,
+    config?: SpaceConfig<(keyof Dict | keyof BaseDict) & string>
+) => Space<Merge<BaseDict, Dict>>
 
 export type SpaceDefinition = {
     dictionary: Record<string, any>
@@ -121,23 +83,21 @@ export type SpaceDefinition = {
 }
 
 export type DictToTypes<Dict> = Evaluate<{
-    [TypeName in keyof Dict]: Root.FastParse<
+    [TypeName in Exclude<keyof Dict, MetaKey>]: Root.FastParse<
         Dict[TypeName],
         Dict,
         { [K in TypeName]: true }
     >
 }>
 
-export type Space<Dict> = Evaluate<{
-    dictionary: Dict
+export type Space<Dict> = {
+    models: DictionaryToModels<Dict>
     config: SpaceConfig<keyof Dict & string>
     types: DictToTypes<Dict>
-    models: DictionaryToModels<Dict>
-    // @ts-ignore
+    dictionary: Dict
     create: CreateFunction<Dict>
-    // extend: ExtendSpaceFunction<Dict, Config>
-    // TODO: Add declare extension
-}>
+    extend: ExtendFunction<Dict>
+}
 
 export type ValidateDictionary<Dict> = {
     [TypeName in keyof Dict]: Root.FastValidate<Dict[TypeName], Dict>
@@ -148,15 +108,12 @@ export type CompileFunction = <Dict>(
     config?: SpaceConfig<keyof Dict & string>
 ) => Space<Dict>
 
-const space = compile(
-    {
-        a: {
-            ok: "string"
-        },
-        b: {
-            cool: "number|bigint"
-        },
-        c: { a: ["string", "number"] }
+const space = compile({
+    a: {
+        ok: "string"
     },
-    { models: { a: {} } }
-)
+    b: {
+        cool: "number|bigint"
+    },
+    c: { a: ["string", "number"] }
+}).extend({ a: "string", d: ["string", "number"] })

@@ -71,10 +71,13 @@ export type GenerateConfig = {
     onRequiredCycle?: any
 }
 
-export interface ModelConfig {
+export interface BaseConfig {
     validate?: ValidateConfig
     generate?: GenerateConfig
     references?: ReferencesConfig
+}
+
+export interface ModelConfig extends BaseConfig {
     space?: SpaceDefinition
 }
 
@@ -123,17 +126,16 @@ const createRootValidate =
               }
     }
 
-export type CreateCreateFunction = <PredefinedSpace>(
-    predefinedSpace: Narrow<PredefinedSpace>
-) => CreateFunction<PredefinedSpace>
-
-export const createCreateFunction: CreateCreateFunction =
-    (predefinedSpace) => (definition, config) => {
+export const createCreateFunction =
+    (predefinedSpace?: SpaceDefinition): CreateFunction<any> =>
+    (definition, config) => {
         if (predefinedSpace && config?.space) {
             throw new Error(duplicateSpaceError)
         }
-        const space: any = predefinedSpace ??
-            config?.space ?? { dictionary: {} }
+        const space: any = config?.space ??
+            predefinedSpace ?? {
+                dictionary: {}
+            }
         const context: ParseContext = {
             ...defaultParseContext,
             // @ts-ignore
@@ -185,7 +187,7 @@ export type CreateFunction<PredefinedDict> = <
 >(
     definition: Root.FastValidate<Def, ActiveDict>,
     options?: Options
-) => Model<Def, FastParse<Def, ActiveDict>> & { dict: ActiveDict }
+) => Model<Def, FastParse<Def, ActiveDict>>
 
 /**
  * Create a model.
@@ -193,7 +195,7 @@ export type CreateFunction<PredefinedDict> = <
  * @param options {@as ModelConfig?} And that.
  * @returns {@as any} The result.
  */
-export const create = createCreateFunction({})
+export const create: CreateFunction<{}> = createCreateFunction()
 
 const user = create(
     {

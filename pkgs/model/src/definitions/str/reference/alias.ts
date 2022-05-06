@@ -9,6 +9,7 @@ import { Root } from "../../root.js"
 import { Reference } from "./index.js"
 import { And, Or, WithPropValue } from "@re-/tools"
 import { TypeOfContext, Unset } from "../internal.js"
+import { config } from "process"
 
 export namespace Alias {
     export const type = typeDefProxy as string
@@ -59,7 +60,7 @@ export namespace Alias {
                             ...ctx,
                             seen: [...ctx.seen, def],
                             shallowSeen: [...ctx.shallowSeen, def],
-                            modifiers: []
+                            stringRoot: null
                         })
                 }
             }

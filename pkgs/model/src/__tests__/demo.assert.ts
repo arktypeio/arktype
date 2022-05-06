@@ -28,9 +28,9 @@ describe("demo", () => {
         })
         assert(user.type).typed as {
             name: {
-                middle?: string | undefined
                 first: string
                 last: string
+                middle?: string | undefined
             }
             age: number
             browser: "chrome" | "firefox" | "other" | null
@@ -69,7 +69,7 @@ describe("demo", () => {
             "At path bestFriend/groups/0, required keys 'members' were missing."
         )
         assert(space.types.user).type.toString.snap(
-            `"{ bestFriend?: { bestFriend?: any | undefined; name: string; groups: { members: { bestFriend?: any | undefined; name: string; groups: any[]; }[]; title: string; }[]; } | undefined; name: string; groups: { members: { bestFriend?: any | undefined; name: string; groups: { members: any[]; title: string; }[]; }[]; title: string; }[]; }"`
+            `"{ name: string; groups: { members: { name: string; groups: { members: any[]; title: string; }[]; bestFriend?: any | undefined; }[]; title: string; }[]; bestFriend?: { name: string; groups: { members: { name: string; groups: any[]; bestFriend?: any | undefined; }[]; title: string; }[]; bestFriend?: any | undefined; } | undefined; }"`
         )
     })
     // See multifile.assert.ts for declaration demo

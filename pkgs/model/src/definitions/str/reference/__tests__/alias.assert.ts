@@ -1,22 +1,28 @@
 import { assert } from "@re-/assert"
 import { create, compile } from "@re-/model"
+import { narrow } from "@re-/tools"
 
 export const testAlias = () => {
     describe("type", () => {
         test("with space", () => {
             assert(
-                create("borf", {
-                    space: { dictionary: { borf: true } }
-                }).type
+                create(
+                    "borf",
+                    narrow({
+                        space: { dictionary: { borf: true } }
+                    })
+                ).type
             ).typed as true
             assert(
                 create(
                     { snorf: "borf[]" },
-                    {
+                    narrow({
                         space: {
-                            dictionary: { borf: { f: false, u: undefined } }
+                            dictionary: {
+                                borf: { f: false, u: undefined }
+                            }
                         }
-                    }
+                    })
                 ).type
             ).typed as { snorf: { f: false; u: undefined }[] }
         })
@@ -68,7 +74,7 @@ export const testAlias = () => {
         test("simple space", () => {
             const groceries = create(
                 { fruits: "fruit[]" },
-                {
+                narrow({
                     space: {
                         dictionary: {
                             banana: {
@@ -79,7 +85,7 @@ export const testAlias = () => {
                             fruit: "banana|apple"
                         }
                     }
-                }
+                })
             )
             expect(
                 groceries.validate({
@@ -138,7 +144,7 @@ export const testAlias = () => {
         test("cyclic space", () => {
             const bicycle = create(
                 { a: "a", b: "b", c: "either[]" },
-                {
+                narrow({
                     space: {
                         dictionary: {
                             a: { a: "a?", b: "b?", isA: "true" },
@@ -146,7 +152,7 @@ export const testAlias = () => {
                             either: "a|b"
                         }
                     }
-                }
+                })
             )
             expect(
                 bicycle.validate({
@@ -254,7 +260,7 @@ export const testAlias = () => {
                         bestFruit: "fruit",
                         optionalFruit: "fruit?"
                     },
-                    {
+                    narrow({
                         space: {
                             dictionary: {
                                 banana: {
@@ -268,7 +274,7 @@ export const testAlias = () => {
                                 fruit: "banana|apple"
                             }
                         }
-                    }
+                    })
                 ).generate()
             ).toStrictEqual({
                 fruits: [],
@@ -280,28 +286,34 @@ export const testAlias = () => {
         test("optional cycle", () => {
             // If it's optional, the cycle should be ignored and just return undefined
             expect(
-                create("a", {
-                    space: {
-                        dictionary: {
-                            a: { b: "b" },
-                            b: { c: "c?" },
-                            c: "a|b"
+                create(
+                    "a",
+                    narrow({
+                        space: {
+                            dictionary: {
+                                a: { b: "b" },
+                                b: { c: "c?" },
+                                c: "a|b"
+                            }
                         }
-                    }
-                }).generate()
+                    })
+                ).generate()
             ).toStrictEqual({ b: {} })
         })
         test("required cycle", () => {
             expect(() =>
-                create("a", {
-                    space: {
-                        dictionary: {
-                            a: { b: "b" },
-                            b: { c: "c" },
-                            c: "a|b"
+                create(
+                    "a",
+                    narrow({
+                        space: {
+                            dictionary: {
+                                a: { b: "b" },
+                                b: { c: "c" },
+                                c: "a|b"
+                            }
                         }
-                    }
-                }).generate()
+                    })
+                ).generate()
             ).toThrowErrorMatchingInlineSnapshot(`
                     "Unable to generate a default value for type including a required cycle:
                     a=>b=>c=>a
@@ -310,29 +322,35 @@ export const testAlias = () => {
         })
         test("onRequiredCycle", () => {
             expect(
-                create("a", {
-                    space: {
-                        dictionary: {
-                            a: { b: "b" },
-                            b: { c: "c" },
-                            c: "a|b"
+                create(
+                    "a",
+                    narrow({
+                        space: {
+                            dictionary: {
+                                a: { b: "b" },
+                                b: { c: "c" },
+                                c: "a|b"
+                            }
                         }
-                    }
-                }).generate({ onRequiredCycle: { whoops: ["cycle"] } })
+                    })
+                ).generate({ onRequiredCycle: { whoops: ["cycle"] } })
             ).toStrictEqual({
                 b: { c: { whoops: ["cycle"] } }
             })
         })
         test("onRequiredCycle with union", () => {
             expect(
-                create("a|b", {
-                    space: {
-                        dictionary: {
-                            a: { b: "b" },
-                            b: { a: "a" }
+                create(
+                    "a|b",
+                    narrow({
+                        space: {
+                            dictionary: {
+                                a: { b: "b" },
+                                b: { a: "a" }
+                            }
                         }
-                    }
-                }).generate({ onRequiredCycle: "cycle" })
+                    })
+                ).generate({ onRequiredCycle: "cycle" })
             ).toStrictEqual({ b: { a: "cycle" } })
         })
         test("from parsed", () => {
@@ -343,13 +361,13 @@ export const testAlias = () => {
                     optionalGroup: "group?",
                     optionalGroups: "group[]?"
                 },
-                {
+                narrow({
                     space: {
                         dictionary: {
                             group: { name: "string", description: "string?" }
                         }
                     }
-                }
+                })
             ).generate()
             expect(defaultValue).toStrictEqual({
                 requiredGroup: { name: "" },

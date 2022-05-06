@@ -25,7 +25,6 @@ export type ParseContext = {
     path: string[]
     seen: string[]
     shallowSeen: string[]
-    modifiers: string[]
     config: ModelConfig
     stringRoot: string | null
 }
@@ -35,7 +34,6 @@ export const defaultParseContext: ParseContext = {
     path: [],
     seen: [],
     shallowSeen: [],
-    modifiers: [],
     stringRoot: null
 }
 

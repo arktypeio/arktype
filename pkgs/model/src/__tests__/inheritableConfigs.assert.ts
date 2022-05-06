@@ -1,6 +1,5 @@
 import { assert } from "@re-/assert"
 import { create, compile } from "@re-/model"
-import { narrow } from "@re-/tools"
 
 describe("inheritable configs", () => {
     describe("methods", () => {
@@ -90,58 +89,6 @@ describe("inheritable configs", () => {
                     { generate: { onRequiredCycle: "space" } }
                 ).models.doll.generate().contents
             ).equals({ contents: "space" } as any)
-        })
-    })
-    describe("parse", () => {
-        describe("types", () => {
-            const dictionary = narrow({
-                recursionIs: { recursionIs: "recursionIs", onCycle: "'create'" }
-            })
-            test("no config", () => {
-                assert(create("recursionIs", { space: { dictionary } }).type)
-                    .typed as {
-                    recursionIs: {
-                        recursionIs: any
-                    }
-                }
-            })
-            test("create config", () => {
-                assert(
-                    create("recursionIs", {
-                        space: {
-                            dictionary
-                        }
-                    }).type
-                ).typed as {
-                    recursionIs: "create"
-                }
-            })
-            // test("space config", () => {
-            //     const space = compile(dictionary, {
-            //         parse: { onCycle: "'space'" }
-            //     })
-            //     assert(space.models.recursionIs.type).typed as {
-            //         recursionIs: "space"
-            //     }
-            // })
-            // test("precedence", () => {
-            //     const space = compile(dictionary, {
-            //         parse: { onCycle: "'space'" }
-            //     })
-            //     // When all three configs are provided, create call wins
-            //     assert(
-            //         space.create("recursionIs", {
-            //             parse: { onCycle: "'create'" }
-            //         }).type
-            //     ).typed as {
-            //         recursionIs: "create"
-            //     }
-            //     const result = space.create("recursionIs")
-            //     // Space has the least priority
-            //     assert(space.create("recursionIs").type).typed as {
-            //         recursionIs: "space"
-            //     }
-            // })
         })
     })
 })

@@ -6,7 +6,6 @@ import {
     CustomValidator
 } from "./model.js"
 import { Literal, ExtractableKeyword, Str } from "./definitions/index.js"
-import { StringLiteral } from "./definitions/str/reference/embeddedLiteral/stringLiteral.js"
 import { validationError, ValidationErrors } from "./errors.js"
 
 export * from "./errors.js"

@@ -42,12 +42,14 @@ export const baseUnknownTypeError =
     "Unable to determine the type of '@def'@context."
 
 export type UnknownTypeError<Definition extends string = "your definition"> =
-    `Unable to determine the type of ${Definition}.`
+    `Unable to determine the type of ${Definition extends "your definition"
+        ? Definition
+        : `'${Definition}'`}.`
 
 export const unknownTypeError = <Definition>(def: Definition, path: string[]) =>
-    `Unable to determine the type of ${stringifyDefinition(
+    `Unable to determine the type of '${stringifyDefinition(
         def
-    )}${stringifyPathContext(path)}.`
+    )}'${stringifyPathContext(path)}.`
 
 // Members of a union type to errors that occurred validating those types
 export type SplittableErrors = Record<string, string>

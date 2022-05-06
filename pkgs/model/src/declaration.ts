@@ -83,7 +83,7 @@ export const declare: DeclareFunction = (...names) => ({
     // @ts-ignore
     compile: (dict, config) =>
         // @ts-ignore
-        compile(dict, { ...config, delcaredTypeNames: names })
+        compile(dict, { ...config, declaredTypeNames: names })
 })
 
 const declaration = declare("a", "b")

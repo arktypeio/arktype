@@ -27,10 +27,7 @@ export namespace Optional {
                     throw new Error(invalidModifierError)
                 }
                 return {
-                    optional: Str.parser.parse(def.slice(0, -1), {
-                        ...ctx,
-                        modifiers: [...ctx.modifiers, "?"]
-                    })
+                    optional: Str.parser.parse(def.slice(0, -1), ctx)
                 }
             }
         },
