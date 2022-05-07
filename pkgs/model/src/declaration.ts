@@ -1,22 +1,16 @@
-import { ElementOf, Exact, Get, Narrow, transform } from "@re-/tools"
-import { create, CheckReferences } from "./model.js"
-import {
-    compile,
-    CompileFunction,
-    Space,
-    SpaceOptions,
-    ValidateDictionary
-} from "./space.js"
+import { ElementOf, Exact, Narrow, transform } from "@re-/tools"
+import { model, CheckReferences } from "./model.js"
+import { compile, Space, SpaceOptions, ValidateDictionary } from "./space.js"
 
 export const createDeclaredDefineFunctionMap = <
     DeclaredTypeNames extends string[]
 >(
     typeNames: DeclaredTypeNames
-) =>
-    transform(typeNames, ([i, typeName]) => [
+): DeclaredDefineFunctionMap<DeclaredTypeNames> =>
+    transform(typeNames, ([, typeName]) => [
         typeName as string,
-        createDeclaredDefineFunction(typeNames, typeName as any)
-    ]) as DeclaredDefineFunctionMap<DeclaredTypeNames>
+        createDeclaredDefineFunction(typeNames, typeName)
+    ])
 
 export type DeclaredDefineFunctionMap<DeclaredTypeNames extends string[]> = {
     [DefinedTypeName in ElementOf<DeclaredTypeNames>]: DeclaredDefineFunction<
@@ -41,10 +35,10 @@ export type CreateDeclaredDefineFunction = <
 ) => DeclaredDefineFunction<DefinedTypeName, DeclaredTypeNames>
 
 export const createDeclaredDefineFunction: CreateDeclaredDefineFunction =
-    (declaredTypeNames, definedTypeName) => (definition: any) => {
+    (declaredTypeNames, definedTypeName) => (definition) => {
         // Dummy create for validation
         // @ts-ignore
-        create(definition, {
+        model(definition, {
             space: {
                 dictionary: transform(declaredTypeNames, ([i, typeName]) => [
                     typeName,
@@ -80,7 +74,6 @@ export type DeclareFunction = <DeclaredTypeNames extends string[]>(
 export const declare: DeclareFunction = (...names) => ({
     // @ts-ignore
     define: createDeclaredDefineFunctionMap(names),
-    // @ts-ignore
     compile: (dict, config) =>
         // @ts-ignore
         compile(dict, { ...config, declaredTypeNames: names })

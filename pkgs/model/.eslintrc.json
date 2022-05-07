@@ -1,0 +1,27 @@
+{
+    "root": true,
+    "parser": "@typescript-eslint/parser",
+    "parserOptions": {
+        "project": ["./src/tsconfig.json", "./tests/tsconfig.json"]
+    },
+    "plugins": ["@typescript-eslint", "prefer-arrow"],
+    "extends": [
+        "eslint:recommended",
+        "plugin:@typescript-eslint/recommended",
+        "plugin:@typescript-eslint/recommended-requiring-type-checking",
+        "prettier"
+    ],
+    "ignorePatterns": ["jest.config.js"],
+    "rules": {
+        "prefer-arrow/prefer-arrow-functions": [
+            "error",
+            {
+                "disallowPrototype": true,
+                "singleReturnOnly": false,
+                "classPropertiesAllowed": false
+            }
+        ],
+        "prefer-arrow-callback": ["error", { "allowNamedFunctions": true }],
+        "func-style": ["error", "expression"]
+    }
+}

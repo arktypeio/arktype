@@ -1,7 +1,7 @@
-import { findPackageRoot, mapFilesToContents } from "@re-/node"
+import { findPackageRoot, mapFilesToContents, readJson } from "@re-/node"
 import { dirname, join, relative } from "path"
 import typescript from "typescript"
-import { memoize, print, toString } from "@re-/tools"
+import { memoize, toString } from "@re-/tools"
 
 // Absolute file paths TS will parse to raw contents
 export type ContentsByFile = Record<string, string>
@@ -42,7 +42,11 @@ ensure context can be shared across tests.`
 
 const getConfig = (options: TypeContextOptions) => {
     const packageRoot = findPackageRoot(process.cwd())
-    const tsConfig = options.tsConfig ?? join(packageRoot, "tsconfig.json")
+    const packageJson = readJson(join(packageRoot, "package.json"))
+    const tsConfig =
+        options.tsConfig ?? packageJson.assertTsConfig
+            ? join(packageRoot, packageJson.assertTsConfig)
+            : join(packageRoot, "tsconfig.json")
     const parsedConfig = compileTsConfig(tsConfig)
     const sourcePaths = options.sourcePaths ?? parsedConfig.fileNames
     return { tsOptions: parsedConfig.options, sourcePaths }

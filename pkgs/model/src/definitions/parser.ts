@@ -321,7 +321,7 @@ export const createParser = <
             } else {
                 return [methodName, delegateMethod(methodName, def, ctx)]
             }
-        }) as TransformedInheritableMethods<DefType>
+        })
     }
     const parse = (def: DefType, ctx: ParseContext): ParseResult<DefType> => {
         if (!ctx.stringRoot && typeof def === "string") {

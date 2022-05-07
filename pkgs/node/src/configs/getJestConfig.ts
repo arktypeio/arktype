@@ -27,9 +27,7 @@ export const getJestConfig = (
             ],
             extensionsToTreatAsEsm: [".ts", ".tsx", ".mts", ".mtsx"],
             moduleNameMapper: {
-                "^(\\.{1,2}/.*)\\.js$": "$1",
-                "^@re-/tools/node$":
-                    "<rootDir>/node_modules/@re-/tools/out/cjs/node"
+                "^(\\.{1,2}/.*)\\.js$": "$1"
             },
             globals: {
                 "ts-jest": {

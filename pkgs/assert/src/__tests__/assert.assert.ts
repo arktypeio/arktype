@@ -1,5 +1,7 @@
 import { assert } from ".."
 
+export const f = {}
+
 const n: number = 5
 const o = { re: "do" }
 

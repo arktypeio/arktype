@@ -1,6 +1,8 @@
 import { getJestConfig } from "@re-/node"
 
 export default getJestConfig({
+    testRegex: undefined,
+    roots: ["<rootDir>/tests/"],
     reporters: undefined,
     collectCoverage: true,
     coverageThreshold: {

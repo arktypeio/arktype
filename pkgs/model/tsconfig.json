@@ -1,11 +1,5 @@
 {
-    "extends": "@re-/node/tsconfig.base",
-    "compilerOptions": {
-        "baseUrl": "src",
-        "outDir": "out",
-        "paths": {
-            "@re-/model": ["."]
-        }
-    },
-    "include": ["src"]
+    "files": [],
+    "include": [],
+    "references": [{ "path": "./src" }, { "path": "./tests" }]
 }

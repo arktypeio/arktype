@@ -1,4 +1,4 @@
-import { Evaluate, Narrow, isEmpty, KeyValuate, Get, narrow } from "@re-/tools"
+import { Evaluate, isEmpty, KeyValuate, narrow } from "@re-/tools"
 import { Root } from "./definitions/index.js"
 import {
     ParseContext,
@@ -147,6 +147,7 @@ const configureSpace = (definition: SpaceDefinition): ConfiguredSpace => {
 
 export const createCreateFunction =
     (predefinedSpace?: SpaceDefinition): CreateFunction<any> =>
+    // @ts-ignore
     (definition, config) => {
         if (predefinedSpace && config?.space) {
             throw new Error(duplicateSpaceError)
@@ -187,7 +188,7 @@ export const createCreateFunction =
                     throw new Error(error)
                 }
             }
-        } as any
+        }
     }
 
 export type Model<Def, ModelType> = Evaluate<{
@@ -215,9 +216,9 @@ export type CreateFunction<PredefinedDict> = <
  * @param options {@as ModelConfig?} And that.
  * @returns {@as any} The result.
  */
-export const create: CreateFunction<{}> = createCreateFunction()
+export const model: CreateFunction<{}> = createCreateFunction()
 
-const user = create(
+const user = model(
     {
         name: {
             first: "string",

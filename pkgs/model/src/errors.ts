@@ -18,10 +18,9 @@ export type ParseError<Message extends string = string> = `Error: ${Message}`
 export const stringifyDefinition = (def: unknown) =>
     toString(def, { quotes: "none", maxNestedStringLength: 50 })
 
-export const stringifyPathContext = (
-    path: string[],
-    trailingSpace: boolean = false
-) =>
+export const unused = {}
+
+export const stringifyPathContext = (path: string[], trailingSpace = false) =>
     path.length ? ` at path ${path.join("/")}${trailingSpace ? " " : ""}` : ""
 
 export const definitionTypeError = (definition: unknown, path: string[]) =>

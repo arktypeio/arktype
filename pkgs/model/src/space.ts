@@ -1,4 +1,4 @@
-import { diffSets, ElementOf, Evaluate, narrow, transform } from "@re-/tools"
+import { diffSets, Evaluate, transform } from "@re-/tools"
 import {
     createCreateFunction,
     Model,
@@ -18,7 +18,7 @@ export type DictionaryToModels<Dict> = Evaluate<{
     >
 }>
 
-export const compile: CompileFunction = (dictionary: any, config: any = {}) => {
+export const compile: CompileFunction = (dictionary, config: any = {}) => {
     if (config.declaredTypeNames) {
         const declarationErrors = diffSets(
             config.declaredTypeNames,
