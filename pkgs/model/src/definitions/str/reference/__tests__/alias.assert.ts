@@ -38,10 +38,10 @@ export const testAlias = () => {
                 b: "b"
             })
             assert(cyclic.type.a.b.a.cyclic).type.toString.snap(
-                `"{ b: { a: { b: { a: any; isA: false; isB: true; }; isA: true; isB: false; }; isA: false; isB: true; }; isA: true; isB: false; } | undefined"`
+                `"{ b: { a: { b: { cyclic?: { a: { b: { a: { cyclic?: { b: { a: { b: any; isA: true; isB: false; }; isA: false; isB: true; }; isA: true; isB: false; } | undefined; }; isA: false; isB: true; }; isA: true; isB: false; }; isA: false; isB: true; } | undefined; }; isA: true; isB: false; }; isA: false; isB: true; }; isA: true; isB: false; } | undefined"`
             )
             assert(cyclic.type.b.a.b.cyclic).type.toString.snap(
-                `"{ a: { b: { a: { b: any; isA: true; isB: false; }; isA: false; isB: true; }; isA: true; isB: false; }; isA: false; isB: true; } | undefined"`
+                `"{ a: { b: { a: { cyclic?: { b: { a: { b: { cyclic?: { a: { b: { a: any; isA: false; isB: true; }; isA: true; isB: false; }; isA: false; isB: true; } | undefined; }; isA: true; isB: false; }; isA: false; isB: true; }; isA: true; isB: false; } | undefined; }; isA: false; isB: true; }; isA: true; isB: false; }; isA: false; isB: true; } | undefined"`
             )
             assert(cyclic.type.a.b.a.cyclic?.b.a.b.cyclic).type.toString.snap(
                 `"{ a: { b: { a: { cyclic?: { b: { a: { b: { cyclic?: { a: { b: { a: any; isA: false; isB: true; }; isA: true; isB: false; }; isA: false; isB: true; } | undefined; }; isA: true; isB: false; }; isA: false; isB: true; }; isA: true; isB: false; } | undefined; }; isA: false; isB: true; }; isA: true; isB: false; }; isA: false; isB: true; } | undefined"`
@@ -230,7 +230,7 @@ export const testAlias = () => {
             const parseWithAnySpace = () =>
                 create(
                     { literal: "string", alias: "myType" },
-                    { space: {} as any }
+                    { space: { dictionary: {} } as any }
                 ).type
             assert(parseWithAnySpace).typed as () => {
                 literal: string

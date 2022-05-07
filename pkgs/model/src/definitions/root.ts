@@ -9,7 +9,7 @@ import { Obj } from "./obj/index.js"
 import { Literal } from "./literal/index.js"
 import { reroot, createParser } from "./parser.js"
 import { Str } from "./str/index.js"
-import { IsAny, IsAnyOrUnknown } from "@re-/tools"
+import { IsAnyOrUnknown } from "@re-/tools"
 
 export namespace Root {
     export type FastParse<Def, Dict, Seen> = IsAnyOrUnknown<Def> extends true

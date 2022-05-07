@@ -14,17 +14,16 @@ import {
     errorsFromCustomValidator,
     Merge,
     typeDefProxy,
-    MergeAll,
     Unset
 } from "./internal.js"
-import { SpaceDefinition } from "./space.js"
+import { ConfiguredSpace, SpaceConfig, SpaceDefinition } from "./space.js"
 
 export type FastParse<
     Def,
     Dict,
     Options = {},
     OptionsWithDefaults = Merge<DefaultParseOptions, Options>,
-    Checked = Dict //ValidateSpaceDict<Dict>
+    Checked = Dict
 > = Root.FastParse<
     Def,
     Checked,
@@ -71,14 +70,18 @@ export type GenerateConfig = {
     onRequiredCycle?: any
 }
 
-export interface BaseConfig {
+export interface BaseOptions {
     validate?: ValidateConfig
     generate?: GenerateConfig
     references?: ReferencesConfig
 }
 
-export interface ModelConfig extends BaseConfig {
+export interface ModelOptions extends BaseOptions {
     space?: SpaceDefinition
+}
+
+export interface ModelConfig extends BaseOptions {
+    space: ConfiguredSpace
 }
 
 export type ValidateConfig = {
@@ -126,19 +129,36 @@ const createRootValidate =
               }
     }
 
+// Move meta keys like onCycle and onResolve to config, since they are not valid types
+const configureSpace = (definition: SpaceDefinition): ConfiguredSpace => {
+    const { onCycle, onResolve, ...dictionary } = definition.dictionary
+    const config: SpaceConfig<string> = definition.config ?? {}
+    if (onCycle) {
+        config.onCycle = onCycle
+    }
+    if (onResolve) {
+        config.onResolve = onResolve
+    }
+    return {
+        dictionary,
+        config
+    }
+}
+
 export const createCreateFunction =
     (predefinedSpace?: SpaceDefinition): CreateFunction<any> =>
     (definition, config) => {
         if (predefinedSpace && config?.space) {
             throw new Error(duplicateSpaceError)
         }
-        const space: any = config?.space ??
-            predefinedSpace ?? {
-                dictionary: {}
-            }
+        const space = configureSpace(
+            config?.space ??
+                predefinedSpace ?? {
+                    dictionary: {}
+                }
+        )
         const context: ParseContext = {
             ...defaultParseContext,
-            // @ts-ignore
             config: {
                 ...config,
                 space
@@ -173,7 +193,7 @@ export const createCreateFunction =
 export type Model<Def, ModelType> = Evaluate<{
     definition: Def
     type: ModelType
-    config: ModelConfig
+    config: ModelOptions
     validate: ValidateFunction
     assert: (value: unknown, options?: AssertOptions) => void
     generate: (options?: GenerateConfig) => ModelType
@@ -182,7 +202,7 @@ export type Model<Def, ModelType> = Evaluate<{
 
 export type CreateFunction<PredefinedDict> = <
     Def,
-    Options extends ModelConfig,
+    Options extends ModelOptions,
     ActiveDict = KeyValuate<Options["space"], "dictionary", PredefinedDict>
 >(
     definition: Root.FastValidate<Def, ActiveDict>,

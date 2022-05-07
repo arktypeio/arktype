@@ -54,9 +54,23 @@ export namespace Alias {
                         })
                     )
                 }
+                let nextDef = ctx.config.space.dictionary[def]
+                if (
+                    ctx.seen.includes(def) &&
+                    "onCycle" in ctx.config.space.config
+                ) {
+                    ctx.config.space.dictionary.cyclic = nextDef
+                    nextDef = ctx.config.space.config.onCycle
+                } else if (
+                    ctx.seen.includes(def) &&
+                    "onResolve" in ctx.config.space.config
+                ) {
+                    ctx.config.space.dictionary.resolution = nextDef
+                    nextDef = ctx.config.space.config.onResolve
+                }
                 return {
                     resolve: () =>
-                        Root.parser.parse(ctx.config.space!.dictionary[def], {
+                        Root.parser.parse(nextDef, {
                             ...ctx,
                             seen: [...ctx.seen, def],
                             shallowSeen: [...ctx.shallowSeen, def],
@@ -66,14 +80,16 @@ export namespace Alias {
             }
         },
         {
-            matches: (def, ctx) => def in (ctx.config?.space?.dictionary ?? {}),
+            matches: (def, ctx) =>
+                def in ctx.config.space.dictionary ||
+                def === "cyclic" ||
+                def === "resolution",
             validate: ({ ctx, def, components: { resolve } }, value, opts) => {
                 const errors = resolve().validate(value, opts)
                 const customValidator =
-                    ctx.config.space?.config?.models?.[def]?.validate
+                    ctx.config.space.config?.models?.[def]?.validate
                         ?.validator ??
-                    ctx.config.space?.config?.validate?.validator ??
-                    undefined
+                    ctx.config.space.config.validate?.validator
                 if (customValidator) {
                     return errorsFromCustomValidator(customValidator, [
                         value,

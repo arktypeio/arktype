@@ -1,10 +1,10 @@
-import { diffSets, Evaluate, transform } from "@re-/tools"
+import { diffSets, ElementOf, Evaluate, narrow, transform } from "@re-/tools"
 import {
     createCreateFunction,
     Model,
-    ModelConfig,
+    ModelOptions,
     CreateFunction,
-    BaseConfig
+    BaseOptions
 } from "./model.js"
 import { Root } from "./definitions/index.js"
 import { typeDefProxy, Merge } from "./internal.js"
@@ -68,19 +68,30 @@ export const compile: CompileFunction = (dictionary: any, config: any = {}) => {
     } as any
 }
 
-export interface SpaceConfig<ModelName extends string> extends BaseConfig {
-    models?: { [K in ModelName]?: ModelConfig }
+export interface SpaceOptions<ModelName extends string> extends BaseOptions {
+    models?: { [K in ModelName]?: ModelOptions }
+}
+
+export interface SpaceConfig<ModelName extends string>
+    extends SpaceOptions<ModelName> {
+    onCycle?: any
+    onResolve?: any
+}
+
+export type SpaceDefinition = {
+    dictionary: Record<string, any>
+    config?: SpaceOptions<string>
+}
+
+export type ConfiguredSpace = {
+    dictionary: Record<string, any>
+    config: SpaceConfig<string>
 }
 
 export type ExtendFunction<BaseDict> = <Dict>(
     dictionary: ValidateDictionary<Dict>,
-    config?: SpaceConfig<(keyof Dict | keyof BaseDict) & string>
+    config?: SpaceOptions<(keyof Dict | keyof BaseDict) & string>
 ) => Space<Merge<BaseDict, Dict>>
-
-export type SpaceDefinition = {
-    dictionary: Record<string, any>
-    config?: SpaceConfig<string>
-}
 
 export type DictToTypes<Dict> = Evaluate<{
     [TypeName in Exclude<keyof Dict, MetaKey>]: Root.FastParse<
@@ -105,7 +116,7 @@ export type ValidateDictionary<Dict> = {
 
 export type CompileFunction = <Dict>(
     dictionary: ValidateDictionary<Dict>,
-    config?: SpaceConfig<keyof Dict & string>
+    config?: SpaceOptions<keyof Dict & string>
 ) => Space<Dict>
 
 const space = compile({

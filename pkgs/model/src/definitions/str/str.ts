@@ -23,8 +23,7 @@ export namespace Str {
     > = Def extends Keyword.Definition
         ? Keyword.KeywordTypes[Def]
         : Def extends keyof Dict
-        ? // @ts-ignore
-          Alias.FastParse<Def, Dict, Seen> //Root.FastParse<Dict[Def], Dict, Ctx>
+        ? Alias.FastParse<Def, Dict, Seen>
         : Def extends Optional.Definition<infer Child>
         ? FastParse<Child, Dict, Seen> | undefined
         : Def extends StringLiteral.Definition<infer Text>

@@ -1,7 +1,7 @@
 export { create } from "./model.js"
 export type {
     CreateFunction,
-    ModelConfig,
+    ModelOptions as ModelConfig,
     ParseConfig,
     ValidateConfig,
     ReferencesConfig,

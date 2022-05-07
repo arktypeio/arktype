@@ -30,7 +30,12 @@ export type ParseContext = {
 }
 
 export const defaultParseContext: ParseContext = {
-    config: {},
+    config: {
+        space: {
+            dictionary: {},
+            config: {}
+        }
+    },
     path: [],
     seen: [],
     shallowSeen: [],

@@ -147,6 +147,7 @@ describe("compile", () => {
             }[]
         }
         assert(extended.config).equals({
+            onCycle: "boolean",
             validate: {
                 ignoreExtraneousKeys: true
             },

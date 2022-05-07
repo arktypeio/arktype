@@ -4,7 +4,7 @@ import {
     compile,
     CompileFunction,
     Space,
-    SpaceConfig,
+    SpaceOptions,
     ValidateDictionary
 } from "./space.js"
 
@@ -67,7 +67,7 @@ export type DeclaredCompileFunction<DeclaredTypeNames extends string[]> = <
     Dict
 >(
     dictionary: Exact<Dict, CheckDeclaredCompilation<Dict, DeclaredTypeNames>>,
-    config?: SpaceConfig<keyof Dict & string>
+    config?: SpaceOptions<keyof Dict & string>
 ) => Space<Dict>
 
 export type DeclareFunction = <DeclaredTypeNames extends string[]>(
