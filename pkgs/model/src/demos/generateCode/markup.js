@@ -2,12 +2,9 @@ import { readFile, writeFile } from "fs/promises"
 import path from "path"
 import { remark } from "remark"
 import parseMarkdown from "remark-parse"
-import { getMapData } from "./index.js"
-
+import { regex } from "./regex.js"
 const README_PATH = path.resolve("./README.md")
 const CODE_TAG = "code"
-const regex =
-    /([*]{3}GENERATED[*]{3}( ){1,})?( ){0,}[\w]+\.(ts|js)(( ){1,}([\w]+))?/g
 const GENERATED = "***GENERATED***"
 
 const visitor = (root, mapData, keys) => {
@@ -17,7 +14,7 @@ const visitor = (root, mapData, keys) => {
     for (const child in root.children) {
         const node = root.children[child]
         if (node.type === CODE_TAG && node.meta) {
-            if (node.meta.match(regex)) {
+            if (node.meta.match(regex.markdownTagMatch)) {
                 const metaData = node.meta.replace(GENERATED, "").trim()
                 if (mapData[metaData]) {
                     node.value = mapData[metaData]
