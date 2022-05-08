@@ -23,10 +23,14 @@
         "build": "reTsc",
         "test": "jest 2>&1",
         "unit": "jest --coverage false -t ",
-        "snapshotTsPerf": "tsc --extendedDiagnostics --noEmit > tsDiagnostics.txt"
+        "snapshotTsPerf": "tsc --extendedDiagnostics --noEmit > tsDiagnostics.txt",
+        "generateCode": "node ./src/demos/generateCode/generator.js"
     },
     "dependencies": {
-        "@re-/tools": "workspace:*"
+        "@re-/tools": "workspace:*",
+        "ts-morph": "~14.0.0",
+        "remark": "~14.0.2",
+        "remark-parse": "~10.0.1"
     },
     "devDependencies": {
         "@re-/assert": "workspace:*",
@@ -35,6 +39,6 @@
         "@types/jest": "27.0.3",
         "ts-jest": "27.1.2",
         "@types/node": "17.0.1",
-        "typescript": "4.6.3"
+        "typescript": "4.6.3",
     }
 }

@@ -29,11 +29,11 @@ If you're using TypeScript, you'll need at least `4.4`.
 
 This snippet will give you an idea of `@re-/model` syntax, but the best way to get a feel for it is in a live editor. Try messing around with the `user` definition in [our demo](https://redo.dev/docs/model/intro#start-quick-%EF%B8%8F) or paste it in your own editor and see how the type hints help guide you in the right direction.
 
-```ts
+```ts ***GENERATED*** createModelDemo.ts
 import { create } from "@re-/model"
 
 // Most common TypeScript expressions just work...
-const user = create({
+export const userModel = create({
     name: {
         first: "string",
         middle: "string?",
@@ -43,21 +43,21 @@ const user = create({
     browser: "'chrome'|'firefox'|'other'|null"
 })
 
-// If you're using TypeScript, you can create your type...
-type User = typeof user.type
+// Mouse over "User" to see the inferred type...
+export type User = typeof userModel.type
 
 // But a model can also validate your data at runtime...
-const { error } = user.validate({
+export const userData = {
     name: {
         first: "Reed",
         last: "Doe"
     },
     age: 28,
-    browser: "Internet Explorer" // :(
-})
+    browser: null // :(
+}
 
-// Output: "At path browser, 'Internet Explorer' is not assignable to any of 'chrome'|'firefox'|'other'|null."
-console.log(error ?? "All good!")
+export const userValidationResult = userModel.validate(userData)
+// Try changing "userModel" or "userData" and see what happens!
 ```
 
 ## Types that clique 🔗
@@ -66,33 +66,35 @@ Working with types that refer to one another or themselves? So can your models!
 
 [Just compile a **space**.](https://redo.dev/docs/model/spaces)
 
-```ts
-import { compile } from "@re-/model"
+```ts ***GENERATED*** createModelDemo.ts
+import { create } from "@re-/model"
 
-const space = compile({
-    user: {
-        name: "string",
-        bestFriend: "user?",
-        groups: "group[]"
+// Most common TypeScript expressions just work...
+export const userModel = create({
+    name: {
+        first: "string",
+        middle: "string?",
+        last: "string"
     },
-    group: {
-        title: "string",
-        members: "user[]"
-    }
+    age: "number",
+    browser: "'chrome'|'firefox'|'other'|null"
 })
 
-// Even recursive and cyclic types are precisely inferred
-type User = typeof space.types.user
+// Mouse over "User" to see the inferred type...
+export type User = typeof userModel.type
 
-// Throws: "At path bestFriend/groups/0, required keys 'members' were missing."
-space.models.user.assert({
-    name: "Devin Aldai",
-    bestFriend: {
-        name: "Devin Olnyt",
-        groups: [{ title: "Type Enjoyers" }]
+// But a model can also validate your data at runtime...
+export const userData = {
+    name: {
+        first: "Reed",
+        last: "Doe"
     },
-    groups: []
-})
+    age: 28,
+    browser: null // :(
+}
+
+export const userValidationResult = userModel.validate(userData)
+// Try changing "userModel" or "userData" and see what happens!
 ```
 
 ## Definitions that split ✂️
@@ -103,7 +105,7 @@ Like keeping your files small and tidy? Perhaps you'd prefer to split your defin
 
 `index.ts`
 
-```ts
+```ts ***GENERATED*** declareDemo.ts
 import { declare } from "@re-/model"
 
 // Declare the models you will define
@@ -118,7 +120,7 @@ const space = compile({ ...userDef, ...groupDef })
 
 `user.ts`
 
-```ts
+```ts ***GENERATED*** user.ts
 import { define } from "./index"
 
 export const userDef = define.user({
@@ -131,7 +133,7 @@ export const userDef = define.user({
 
 `group.ts`
 
-```ts
+```ts ***GENERATED*** group.ts
 import { define } from "./index"
 
 export const groupDef = define.group({
@@ -146,7 +148,7 @@ TypeScript can do a lot, but sometimes things you care about at runtime shouldn'
 
 [**Constraints** have you covered.](https://redo.dev/docs/model/constraints)
 
-```ts
+```ts ***GENERATED*** validationDemo.ts
 import { create } from "@re-/model"
 
 const employee = create({
@@ -343,8 +345,8 @@ Detailed API docs are coming soon! For now, check out the examples from this REA
 
 If you're interested in contributing to `@re-/model`...
 
-1. Thank you 😍 We'll do everything we can to make this as straightforward as possible, regardless of your level of experience.
-2. Check out our [guide](../../CONTRIBUTING.md) to get started!
+1.  Thank you 😍 We'll do everything we can to make this as straightforward as possible, regardless of your level of experience.
+2.  Check out our [guide](../../CONTRIBUTING.md) to get started!
 
 ## About Redo
 
