@@ -1,5 +1,5 @@
 //@re_place group.ts
-import { define } from "./index"
+import { define } from "./declareDemo"
 
 export const groupDef = define.group({
     title: "string",
