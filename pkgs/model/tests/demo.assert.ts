@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars*/
 import { assert } from "@re-/assert"
 import { model, compile } from "@re-/model"
 

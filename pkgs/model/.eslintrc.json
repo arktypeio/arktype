@@ -34,13 +34,5 @@
         "@typescript-eslint/no-unsafe-argument": "off",
         "@typescript-eslint/no-non-null-assertion": "off",
         "@typescript-eslint/restrict-template-expressions": "off"
-    },
-    "overrides": [
-        {
-            "files": ["demo.assert.ts"],
-            "rules": {
-                "@typescript-eslint/no-unused-vars": "off"
-            }
-        }
-    ]
+    }
 }

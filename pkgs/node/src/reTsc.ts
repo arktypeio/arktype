@@ -1,5 +1,5 @@
 import { transform } from "@re-/tools"
-import { rmSync } from "fs"
+import { existsSync, rmSync } from "fs"
 import { join } from "path"
 import { stdout } from "process"
 import { findPackageRoot, walkPaths } from "./fs.js"
@@ -15,26 +15,39 @@ const cjsOut = join(outRoot, "cjs")
 const successMessage = `🎁 Successfully built ${packageName}!`
 
 export type BuildTypesOptions = {
+    asBuild?: boolean
     noEmit?: boolean
 }
 
 export const checkTypes = () => buildTypes({ noEmit: true })
 
-export const buildTypes = ({ noEmit }: BuildTypesOptions = {}) => {
+export const buildTypes = ({ noEmit, asBuild }: BuildTypesOptions = {}) => {
     stdout.write(
         `${noEmit ? "🧐 Checking" : "⏳ Building"} types...`.padEnd(
             successMessage.length
         )
     )
-    let cmdSuffix = noEmit
-        ? "--noEmit"
-        : `--declaration --emitDeclarationOnly --outDir ${typesOut}`
-    shell(`npx tsc --jsx react --pretty ${cmdSuffix}`, {
+    let cmd = "npx tsc"
+    if (asBuild) {
+        cmd += " --build"
+    } else {
+        if (noEmit) {
+            cmd += " --noEmit"
+        } else {
+            cmd += ` --declaration --emitDeclarationOnly --outDir ${typesOut}`
+        }
+    }
+    shell(cmd, {
         cwd: packageRoot,
         stdio: "pipe",
         suppressCmdStringLogging: true
     })
     if (!noEmit) {
+        if (!existsSync(typesOut)) {
+            throw new Error(
+                `Expected type output did not exist at '${typesOut}'.`
+            )
+        }
         walkPaths(typesOut)
             .filter((path) => isTest(path))
             .forEach((path) => rmSync(path, { recursive: true, force: true }))
@@ -103,6 +116,7 @@ export const redoTsc = async (options?: RedoTscOptions) => {
 export const runRedoTsc = () =>
     redoTsc({
         types: {
+            asBuild: process.argv.includes("--asBuild"),
             noEmit: process.argv.includes("--noEmitTypes")
         },
         skip: {

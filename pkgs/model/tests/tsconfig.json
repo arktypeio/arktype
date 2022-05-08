@@ -3,8 +3,8 @@
     "compilerOptions": {
         "composite": true,
         "noEmit": true,
-        "outDir": "../out",
-        "tsBuildInfoFile": "../out/.tsbuildinfo.test",
+        "outDir": "../out/types",
+        "tsBuildInfoFile": "../out/types/.tsbuildinfo.test",
         "paths": {
             "@re-/model": ["../src"]
         }
