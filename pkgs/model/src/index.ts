@@ -1,7 +1,6 @@
 export type {
     CreateFunction,
-    ModelOptions as ModelConfig,
-    ParseConfig,
+    ModelOptions,
     ValidateConfig,
     ReferencesConfig,
     CustomValidator,

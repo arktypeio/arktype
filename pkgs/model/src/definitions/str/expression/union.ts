@@ -7,8 +7,7 @@ import {
     splittableValidationError,
     validationError,
     createParser,
-    ParseContext,
-    ParseError
+    ParseContext
 } from "./internal.js"
 import { Str } from "../str.js"
 import { Expression } from "./expression.js"

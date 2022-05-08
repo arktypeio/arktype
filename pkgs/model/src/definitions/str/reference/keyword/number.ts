@@ -20,5 +20,3 @@ export const numberHandlers = defineKeywords({
 })
 
 export const numberKeywords = listKeywords(numberHandlers)
-
-export type NumberKeyword = keyof typeof numberHandlers

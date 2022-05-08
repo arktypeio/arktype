@@ -1,5 +1,4 @@
-import { valueGenerationError } from "../internal.js"
-import { defineKeywords, listKeywords } from "./internal.js"
+import { defineKeywords, valueGenerationError } from "./internal.js"
 import { numberHandlers } from "./number.js"
 import { stringHandlers } from "./string.js"
 
@@ -48,7 +47,3 @@ export const unextractableHandlers = defineKeywords({
         validate: (valueType) => typeof valueType === "bigint"
     }
 })
-
-export const unextractableKeywords = listKeywords(unextractableHandlers)
-
-export type UnextractableKeyword = keyof typeof unextractableHandlers

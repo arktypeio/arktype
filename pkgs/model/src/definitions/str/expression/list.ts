@@ -1,4 +1,3 @@
-import { Evaluate, Get } from "@re-/tools"
 import { typeDefProxy, validationError, createParser } from "./internal.js"
 import { Str } from "../str.js"
 import { Expression } from "./expression.js"
@@ -19,7 +18,7 @@ export namespace List {
             })
         },
         {
-            matches: (def, ctx) => def.endsWith("[]"),
+            matches: (def) => def.endsWith("[]"),
             validate: ({ def, components: { item }, ctx }, value, opts) => {
                 if (Array.isArray(value)) {
                     return Tuple.parser

@@ -1,6 +1,7 @@
-import { IsAny, Iteration, KeyValuate } from "@re-/tools"
-import { ShallowCycleError } from "./internal.js"
-import { Root, Str } from "./definitions/index.js"
+export {}
+// import { IsAny, Iteration, KeyValuate } from "@re-/tools"
+// import { ShallowCycleError } from "./internal.js"
+// import { Root, Str } from "./definitions/index.js"
 
 // type CheckReferencesForShallowCycle<
 //     References extends string[],

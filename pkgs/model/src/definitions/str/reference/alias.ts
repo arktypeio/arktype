@@ -7,9 +7,7 @@ import {
 } from "./internal.js"
 import { Root } from "../../root.js"
 import { Reference } from "./index.js"
-import { And, Or, WithPropValue } from "@re-/tools"
-import { TypeOfContext, Unset } from "../internal.js"
-import { config } from "process"
+import { And, WithPropValue } from "@re-/tools"
 
 export namespace Alias {
     export const type = typeDefProxy as string

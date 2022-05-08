@@ -76,7 +76,7 @@ describe("demo", () => {
     test("constraints", () => {
         const employee = model({
             // Not a fan of regex? Don't worry, 'email' is a builtin type :)
-            email: `/[a-z]*@redo\.dev/`,
+            email: /[a-z]*@redo\.dev/,
             about: {
                 // Single or double bound numeric types
                 age: "18<=integer<125",
@@ -106,7 +106,7 @@ describe("demo", () => {
         assert(error).snap(`
             "Encountered errors at the following paths:
             {
-              email: ''david@redo.biz' is not assignable to /[a-z]*@redo.dev/.',
+              email: ''david@redo.biz' is not assignable to /[a-z]*@redo\\\\.dev/.',
               about/age: '17 is less than 18.',
               about/bio: ''I am very interesting.I am very interesting.I am ...' is greater than 160 characters.'
             }"

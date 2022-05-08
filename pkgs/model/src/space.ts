@@ -18,7 +18,15 @@ export type DictionaryToModels<Dict> = Evaluate<{
     >
 }>
 
-export const compile: CompileFunction = (dictionary, config: any = {}) => {
+interface InternalSpaceOptions extends SpaceOptions<string> {
+    declaredTypeNames?: string[]
+}
+
+// @ts-ignore
+export const compile: CompileFunction = (
+    dictionary,
+    config: InternalSpaceOptions = {}
+) => {
     if (config.declaredTypeNames) {
         const declarationErrors = diffSets(
             config.declaredTypeNames,
@@ -44,9 +52,9 @@ export const compile: CompileFunction = (dictionary, config: any = {}) => {
         }
     }
     const create = createCreateFunction({ dictionary, config })
-    const extend = (newDefinitions: any, newConfig: any) =>
-        // @ts-ignore
+    const extend: ExtendFunction<unknown> = (newDefinitions, newConfig) =>
         compile(
+            // @ts-ignore
             { ...dictionary, ...newDefinitions },
             {
                 ...config,
@@ -65,7 +73,7 @@ export const compile: CompileFunction = (dictionary, config: any = {}) => {
         types: typeDefProxy,
         create,
         extend
-    } as any
+    }
 }
 
 export interface SpaceOptions<ModelName extends string> extends BaseOptions {
@@ -74,17 +82,17 @@ export interface SpaceOptions<ModelName extends string> extends BaseOptions {
 
 export interface SpaceConfig<ModelName extends string>
     extends SpaceOptions<ModelName> {
-    onCycle?: any
-    onResolve?: any
+    onCycle?: unknown
+    onResolve?: unknown
 }
 
 export type SpaceDefinition = {
-    dictionary: Record<string, any>
+    dictionary: Record<string, unknown>
     config?: SpaceOptions<string>
 }
 
 export type ConfiguredSpace = {
-    dictionary: Record<string, any>
+    dictionary: Record<string, unknown>
     config: SpaceConfig<string>
 }
 
@@ -118,13 +126,3 @@ export type CompileFunction = <Dict>(
     dictionary: ValidateDictionary<Dict>,
     config?: SpaceOptions<keyof Dict & string>
 ) => Space<Dict>
-
-const space = compile({
-    a: {
-        ok: "string"
-    },
-    b: {
-        cool: "number|bigint"
-    },
-    c: { a: ["string", "number"] }
-}).extend({ a: "string", d: ["string", "number"] })

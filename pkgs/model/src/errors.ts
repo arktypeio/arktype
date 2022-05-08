@@ -2,13 +2,9 @@ import {
     DiffSetsResult,
     List,
     toString,
-    StringReplace,
     uncapitalize,
     isDigits,
-    filterChars,
-    isAlphaNumeric,
-    StringifyPossibleTypes,
-    Evaluate
+    StringifyPossibleTypes
 } from "@re-/tools"
 import { ParseContext } from "./definitions/parser.js"
 import { ExtractableDefinition } from "./internal.js"
@@ -17,8 +13,6 @@ export type ParseError<Message extends string = string> = `Error: ${Message}`
 
 export const stringifyDefinition = (def: unknown) =>
     toString(def, { quotes: "none", maxNestedStringLength: 50 })
-
-export const unused = {}
 
 export const stringifyPathContext = (path: string[], trailingSpace = false) =>
     path.length ? ` at path ${path.join("/")}${trailingSpace ? " " : ""}` : ""
@@ -34,12 +28,6 @@ export const definitionTypeErrorTemplate =
 
 export type DefinitionTypeError = typeof definitionTypeErrorTemplate
 
-export const getBaseTypeName = (definition: string) =>
-    filterChars(definition, isAlphaNumeric)
-
-export const baseUnknownTypeError =
-    "Unable to determine the type of '@def'@context."
-
 export type UnknownTypeError<Definition extends string = "your definition"> =
     `Unable to determine the type of ${Definition extends "your definition"
         ? Definition
@@ -53,7 +41,7 @@ export const unknownTypeError = <Definition>(def: Definition, path: string[]) =>
 // Members of a union type to errors that occurred validating those types
 export type SplittableErrors = Record<string, string>
 
-export type SplittableErrorArgs = BaseAssignmentArgs & {
+export interface SplittableErrorArgs extends BaseAssignmentArgs {
     delimiter: "|" | "&"
     errors: SplittableErrors
     verbose: boolean
@@ -72,7 +60,7 @@ export const splittableValidationError = ({
         verbose ? "\n" + stringifyErrors(errors) : ""
     }`
 
-export type BaseParseArgs = {
+export interface BaseParseArgs {
     def: unknown
     ctx: ParseContext
 }
@@ -101,10 +89,10 @@ export const validationError = (args: ValidationErrorArgs) => ({
         "message" in args ? args.message : unassignableError(args)
 })
 
-export type BaseAssignmentArgs<
+export interface BaseAssignmentArgs<
     DefType = unknown,
     AssignmentType = ExtractableDefinition
-> = {
+> {
     def: DefType
     valueType: AssignmentType
 }
@@ -154,7 +142,7 @@ export const valueGenerationError = ({ def, ctx: { path } }: BaseParseArgs) =>
     )}${stringifyPathContext(path)}.`
 
 export const duplicateSpaceError =
-    "Space has already been determined according to the source of this 'create' method."
+    "Space has already been determined according to the source of this 'model' method."
 
 export const stringifyErrors = (errors: ValidationErrors) => {
     const errorPaths = Object.keys(errors)

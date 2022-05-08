@@ -19,7 +19,13 @@ for (const sourceFile of project.getSourceFiles()) {
         const references = exportedSymbol
             .getDeclarations()
             .flatMap((declaration) => {
+                if (exportName === "unused") {
+                    console.log("here")
+                }
                 if (declaration.getKindName() === "ExportSpecifier") {
+                    return []
+                }
+                if (declaration.getSourceFile() !== sourceFile) {
                     return []
                 }
                 return declaration
@@ -31,16 +37,20 @@ for (const sourceFile of project.getSourceFiles()) {
         }
     }
     if (unusedInFile.length) {
-        console.group(`${file}:`)
-        unusedInFile.forEach((unusedName) => {
-            console.log(`❌${unusedName}`)
-        })
         unused[file] = unusedInFile
-        console.groupEnd()
     }
 }
 
 if (Object.keys(unused).length) {
-    console.error("Unused references must be removed before building.")
+    console.error(
+        "The following unused exports must be removed before building:"
+    )
+    Object.entries(unused).forEach(([file, unusedNames]) => {
+        console.group(`\n${file}:`)
+        unusedNames.forEach((unusedName) => {
+            console.log(`❌${unusedName}`)
+        })
+        console.groupEnd("\n")
+    })
     process.exit(1)
 }

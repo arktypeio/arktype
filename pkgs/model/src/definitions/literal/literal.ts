@@ -22,7 +22,7 @@ export namespace Literal {
                 typesOf.includes(typeof definition as any) ||
                 definition === null ||
                 definition instanceof RegExp,
-            validate: ({ def, ctx: { path } }, value, opts) => {
+            validate: ({ def, ctx: { path } }, value) => {
                 const valueType = typeOf(value)
                 if (def instanceof RegExp) {
                     return def.test(value as any)

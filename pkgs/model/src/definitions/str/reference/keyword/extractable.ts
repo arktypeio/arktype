@@ -1,4 +1,4 @@
-import { defineKeywords, listKeywords } from "./internal.js"
+import { defineKeywords } from "./internal.js"
 
 // These are the named types we can extract from a valueType at runtime
 export const extractableHandlers = defineKeywords({
@@ -11,6 +11,7 @@ export const extractableHandlers = defineKeywords({
     function: {
         generate:
             () =>
+            // eslint-disable-next-line
             (...args: any[]) =>
                 undefined as any,
         validate: (valueType) => valueType === "function"
@@ -18,11 +19,11 @@ export const extractableHandlers = defineKeywords({
     // These can be represented via their respective primitives,
     // but are extracted as literals for clarity
     true: {
-        generate: () => true as true,
+        generate: () => true as const,
         validate: (valueType) => valueType === "true"
     },
     false: {
-        generate: () => false as false,
+        generate: () => false as const,
         validate: (valueType) => valueType === "false"
     },
     undefined: {
@@ -34,7 +35,5 @@ export const extractableHandlers = defineKeywords({
         validate: (valueType) => valueType === "null"
     }
 })
-
-export const extractableKeywords = listKeywords(extractableHandlers)
 
 export type ExtractableKeyword = keyof typeof extractableHandlers

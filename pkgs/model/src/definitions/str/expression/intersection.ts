@@ -1,15 +1,12 @@
-import { Get, isEmpty } from "@re-/tools"
+import { isEmpty } from "@re-/tools"
 import {
     typeDefProxy,
     stringifyErrors,
-    SplittableErrors,
     splittableValidationError,
     validationError,
     createParser,
     ParseContext,
-    ungeneratableError,
-    Root,
-    ParseError
+    ungeneratableError
 } from "./internal.js"
 import { Str } from "../str.js"
 import { Expression } from "./expression.js"
@@ -36,7 +33,7 @@ export namespace Intersection {
             matches: (definition) => definition.includes("&"),
             validate: ({ def, ctx, components }, value, opts) => {
                 const valueType = typeOf(value)
-                const errors: SplittableErrors = {}
+                const errors: Record<string, string> = {}
                 for (const component of components) {
                     const componentErrors = stringifyErrors(
                         component.validate(value, opts)
@@ -59,7 +56,7 @@ export namespace Intersection {
                     })
                 })
             },
-            generate: ({ def, components }, opts) => {
+            generate: ({ def }) => {
                 throw new Error(ungeneratableError(def, "intersection"))
             },
             references: ({ components }) =>

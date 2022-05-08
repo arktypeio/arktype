@@ -15,7 +15,7 @@ describe("root", () => {
             definitionTypeErrorTemplate
         )
         // @ts-expect-error
-        assert(() => model({ bad: () => {} })).throwsAndHasTypeError(
+        assert(() => model({ bad: () => ({}) })).throwsAndHasTypeError(
             definitionTypeErrorTemplate
         )
     })

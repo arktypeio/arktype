@@ -15,7 +15,7 @@ export namespace EmbeddedRegexLiteral {
     export const type = typeDefProxy as string
 
     // Matches a definition enclosed by forward slashes that does not contain any other forward slashes
-    export const matcher = /^\/[^\/]*\/$/
+    export const matcher = /^\/[^/]*\/$/
 
     export const matches = (def: any): def is string => matcher.test(def)
 

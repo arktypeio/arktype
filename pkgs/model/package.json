@@ -23,15 +23,13 @@
     "scripts": {
         "build": "reTsc",
         "tsc": "tsc -b",
+        "lint": "eslint .",
         "test": "jest 2>&1",
         "unit": "jest --coverage false -t ",
         "generateSpace": "runScript src/__tests__/generateSpace.ts",
         "findUnused": "runScript findUnused.cjs",
         "typeDiag": "tsc --build --force --extendedDiagnostics > typeDiagNext.txt",
-        "typeDiagSrc": "tsc --extendedDiagnostics --force --noEmit -p src/tsconfig.json > typeDiagSrc.txt",
-        "typeTrace": "tsc --generateTrace typeTrace",
-        "typeHotspots": "npx analyze-trace typeTrace > typeTrace/hotspots.txt",
-        "typeSimplify": "npx simplify-trace-types typeTrace/types.json typeTrace/simpleTypes.json"
+        "typeTrace": "tsc --build --force --generateTrace typeTrace"
     },
     "dependencies": {
         "@re-/tools": "workspace:*"

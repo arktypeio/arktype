@@ -3,8 +3,7 @@ import {
     DiffSetsResult,
     Evaluate,
     isRecursible,
-    transform,
-    Get
+    transform
 } from "@re-/tools"
 import {
     mismatchedKeysError,
@@ -44,7 +43,7 @@ export namespace Map {
         {
             type,
             parent: () => Obj.parser,
-            components: (def, ctx) =>
+            components: (def, ctx): Record<string, ParseResult<any>> =>
                 transform(def, ([prop, propDef]) => [
                     prop,
                     Root.parser.parse(propDef, {
@@ -52,7 +51,7 @@ export namespace Map {
                         path: [...ctx.path, prop],
                         shallowSeen: []
                     })
-                ]) as Record<string, ParseResult<any>>
+                ])
         },
         {
             matches: (def) => isRecursible(def) && !Array.isArray(def),

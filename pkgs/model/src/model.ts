@@ -1,4 +1,4 @@
-import { Evaluate, isEmpty, KeyValuate, narrow } from "@re-/tools"
+import { Evaluate, isEmpty, KeyValuate } from "@re-/tools"
 import { Root } from "./definitions/index.js"
 import {
     ParseContext,
@@ -10,45 +10,8 @@ import {
     stringifyErrors,
     ValidationErrors
 } from "./errors.js"
-import {
-    errorsFromCustomValidator,
-    Merge,
-    typeDefProxy,
-    Unset
-} from "./internal.js"
+import { errorsFromCustomValidator, typeDefProxy } from "./internal.js"
 import { ConfiguredSpace, SpaceConfig, SpaceDefinition } from "./space.js"
-
-export type FastParse<
-    Def,
-    Dict,
-    Options = {},
-    OptionsWithDefaults = Merge<DefaultParseOptions, Options>,
-    Checked = Dict
-> = Root.FastParse<
-    Def,
-    Checked,
-    OptionsWithDefaults & {
-        seen: {}
-    }
->
-
-export type ReferencesTypeOptions = {
-    asTuple?: boolean
-    asList?: boolean
-    filter?: string
-}
-
-export type ParseConfig = {
-    onCycle?: any
-    deepOnCycle?: boolean
-    onResolve?: any
-}
-
-export type DefaultParseOptions = {
-    onCycle: Unset
-    deepOnCycle: false
-    onResolve: Unset
-}
 
 // Just use unknown for now since we don't have all the definitions yet
 // but we still want to allow references to other declared types
@@ -109,7 +72,7 @@ export type ValidateFunction = <Options extends ValidateConfig>(
 const createRootValidate =
     (
         validate: ReturnType<typeof Root.parser.parse>["validate"],
-        definition: any,
+        definition: unknown,
         customValidator: CustomValidator | undefined
     ): ValidateFunction =>
     (value, options) => {
@@ -208,7 +171,7 @@ export type CreateFunction<PredefinedDict> = <
 >(
     definition: Root.FastValidate<Def, ActiveDict>,
     options?: Options
-) => Model<Def, FastParse<Def, ActiveDict>>
+) => Model<Def, Root.FastParse<Def, ActiveDict, {}>>
 
 /**
  * Create a model.
@@ -217,17 +180,3 @@ export type CreateFunction<PredefinedDict> = <
  * @returns {@as any} The result.
  */
 export const model: CreateFunction<{}> = createCreateFunction()
-
-const user = model(
-    {
-        name: {
-            first: "string",
-            middle: "string?",
-            last: "string"
-        },
-        age: "number",
-        browser: "'chrome'|'firefox'|'other'|null",
-        ok: "a"
-    },
-    { space: { dictionary: narrow({ a: { a: "'ok'" } }) } }
-)

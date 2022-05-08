@@ -27,7 +27,8 @@ export const testRegex = () => {
         })
         test("messy string", () => {
             assert(
-                model(`/\((a|b)\,[^?&]*\)=>e+f?/`).validate("(b,c)=>eee").error
+                model(`/\\((a|b)\\,[^?&]*\\)=>e+f?/`).validate("(b,c)=>eee")
+                    .error
             ).is(undefined)
         })
         describe("errors", () => {
@@ -43,10 +44,11 @@ export const testRegex = () => {
             })
             test("messy string", () => {
                 assert(
-                    model(`/\((a|b)\,[^?&]*\)=>e+f?/`).validate("(b,c&d)=>eeef")
-                        .error
+                    model(`/\\((a|b)\\,[^?&]*\\)=>e+f?/`).validate(
+                        "(b,c&d)=>eeef"
+                    ).error
                 ).equals(
-                    `'(b,c&d)=>eeef' is not assignable to /((a|b),[^?&]*)=>e+f?/.`
+                    `'(b,c&d)=>eeef' is not assignable to /\\((a|b)\\,[^?&]*\\)=>e+f?/.`
                 )
             })
         })

@@ -4,7 +4,6 @@ import {
     isEmpty,
     isNumeric,
     narrow,
-    NumericString,
     Spliterate,
     toString
 } from "@re-/tools"
@@ -19,16 +18,14 @@ import {
     validationError,
     createParser,
     typeDefProxy,
-    ParseError
+    ParseError,
+    stringifyDefinition
 } from "./internal.js"
 import { typeOf } from "../../../utils.js"
-import { stringifyDefinition } from "../internal.js"
 
 export const getComparables = () => [...numberKeywords, ...stringKeywords]
 
 export type Comparable = ElementOf<ReturnType<typeof getComparables>>
-
-export type Bound = NumericString
 
 export type ComparatorToken = "<=" | ">=" | "<" | ">"
 
@@ -38,8 +35,6 @@ export const comparatorInverses = narrow({
     "<": ">",
     ">": "<"
 })
-
-export type ComparatorInverses = typeof comparatorInverses
 
 const buildComparatorErrorMessage = (
     comparatorError: string,
@@ -162,9 +157,9 @@ export namespace Constraint {
         Parts = Spliterate<Def, ["<=", ">=", "<", ">"], true>
     > = Parts extends DoubleBoundedParts<
         infer Left,
-        infer FirstComparator,
+        ComparatorToken,
         infer Middle,
-        infer SecondComparator,
+        ComparatorToken,
         infer Right
     >
         ? Middle extends Comparable
@@ -176,7 +171,7 @@ export namespace Constraint {
             : ParseError<UnboundableError<Middle>>
         : Parts extends SingleBoundedParts<
               infer Left,
-              infer Comparator,
+              ComparatorToken,
               infer Right
           >
         ? Left extends Comparable

@@ -47,7 +47,7 @@ describe("declare", () => {
                 "Defined types 'CantDefineThis', 'WontDefineThis' were never declared."
             )
             .type.errors(
-                /Invalid property 'CantDefineThis'\. Valid properties are\: GottaDefineThis"[\s\S]*'WontDefineThis'/
+                /Invalid property 'CantDefineThis'\. Valid properties are: GottaDefineThis"[\s\S]*'WontDefineThis'/
             )
     })
 })

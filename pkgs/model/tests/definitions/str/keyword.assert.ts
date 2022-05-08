@@ -120,7 +120,7 @@ export const testKeyword = () => {
             assert(generated("irrelevant")).is(undefined)
         })
         test("validation", () => {
-            assert(f.validate(() => {}).error).is(undefined)
+            assert(f.validate(() => ({})).error).is(undefined)
             assert(f.validate({}).error).snap(
                 `"{} is not assignable to function."`
             )
@@ -204,6 +204,7 @@ export const testKeyword = () => {
     describe("unknown", () => {
         const u = model("unknown")
         test("type", () => {
+            // eslint-disable-next-line
             assert(u.type).typed as unknown
         })
         test("generation", () => {

@@ -28,7 +28,8 @@ export namespace Str {
         ? FastParse<Child, Dict, Seen> | undefined
         : Def extends StringLiteral.Definition<infer Text>
         ? Text
-        : Def extends EmbeddedRegexLiteral.Definition<infer Expression>
+        : // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        Def extends EmbeddedRegexLiteral.Definition<infer Expression>
         ? string
         : Def extends EmbeddedNumberLiteral.Definition<infer Value>
         ? Value
@@ -52,8 +53,9 @@ export namespace Str {
         ? Root
         : Def extends Optional.Definition<infer Child>
         ? Optional.FastValidate<Child, Dict, Root>
-        : Def extends
+        : Def extends  // eslint-disable-next-line @typescript-eslint/no-unused-vars
               | StringLiteral.Definition<infer Text>
+              // eslint-disable-next-line @typescript-eslint/no-unused-vars
               | EmbeddedRegexLiteral.Definition<infer Expression>
               | EmbeddedNumberLiteral.Definition
               | EmbeddedBigintLiteral.Definition

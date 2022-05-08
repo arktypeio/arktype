@@ -1,4 +1,4 @@
-import { Evaluate, ListPossibleTypes, Narrow } from "@re-/tools"
+import { ListPossibleTypes } from "@re-/tools"
 import { InheritableMethodContext } from "./internal.js"
 
 export * from "../internal.js"

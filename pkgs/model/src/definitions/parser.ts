@@ -16,11 +16,6 @@ import {
     ValidateConfig
 } from "../model.js"
 
-export type MatchesArgs<DefType> = {
-    definition: DefType
-    dictionary: Record<string, any>
-}
-
 export type ParseContext = {
     path: string[]
     seen: string[]
@@ -110,12 +105,13 @@ export type ParseResult<DefType> = {
 
 export type TransformedInheritableMethods<DefType> = {
     [MethodName in InheritableMethodName]-?: TransformInputMethod<
+        // @ts-ignore
         NonNullable<InheritableMethods<DefType, any>[MethodName]>
     >
 }
 
 export type TransformInputMethod<
-    Method extends ValueOf<InheritableMethods<any, any>>
+    Method extends ValueOf<InheritableMethods<unknown, unknown>>
 > = Method extends (
     ...args: [infer ParseResult, ...infer Rest, infer Opts]
 ) => infer Return
@@ -152,7 +148,7 @@ const inheritableMethodNames = [
 // Re:Root, reroot its root by rerouting to reroot
 export const reroot = {
     type: {} as any,
-    inherits: () => {},
+    inherits: () => ({}),
     handles: {},
     matches: () => true
 }
@@ -294,7 +290,7 @@ export const createParser = <
         ctx: ParseContext,
         components: any
     ) => {
-        return transform(inheritableMethodNames, ([i, methodName]) => {
+        return transform(inheritableMethodNames, ([, methodName]) => {
             const inherited = getInherited()
             if (methods[methodName]) {
                 return [

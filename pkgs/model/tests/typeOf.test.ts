@@ -29,18 +29,14 @@ describe("typeOf", () => {
         })
     })
     test("function", () => {
-        expect(
-            typeOf(function saySomething() {
-                console.log("I'm giving up on you")
-            })
-        ).toBe("function")
-        expect(typeOf((someParam: any) => "someReturn")).toBe("function")
+        const saySomething = () => console.log("I'm giving up on you")
+        expect(typeOf(saySomething)).toBe("function")
     })
     test("array", () => {
         expect(typeOf([7, "up"])).toStrictEqual([7, "'up'"])
     })
     test("complex", () => {
-        expect(typeOf([true, { a: ["ok", [() => {}]] }])).toStrictEqual([
+        expect(typeOf([true, { a: ["ok", [() => []]] }])).toStrictEqual([
             "true",
             { a: ["'ok'", ["function"]] }
         ])

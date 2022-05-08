@@ -1,11 +1,6 @@
-import { Evaluate, Iteration, KeyValuate, TreeOf } from "@re-/tools"
-import {
-    ParseConfig,
-    ReferencesTypeOptions,
-    DefaultParseOptions,
-    CustomValidator
-} from "./model.js"
-import { Literal, ExtractableKeyword, Str } from "./definitions/index.js"
+import { Evaluate, Iteration, TreeOf } from "@re-/tools"
+import { CustomValidator } from "./model.js"
+import { ExtractableKeyword } from "./definitions/index.js"
 import { validationError, ValidationErrors } from "./errors.js"
 
 export * from "./errors.js"
@@ -24,8 +19,6 @@ export type MergeAll<Types, Result = {}> = Types extends Iteration<
     ? MergeAll<Remaining, Merge<Result, Current>>
     : Evaluate<Result>
 
-export type ShallowDefinition = string | Literal.Definition
-
 export type ShallowExtractableDefinition =
     | `'${string}'`
     | ExtractableKeyword
@@ -36,16 +29,6 @@ export type ExtractableDefinition = TreeOf<ShallowExtractableDefinition>
 
 // Allow a user to extract types from arbitrary chains of props
 export const typeDefProxy: any = new Proxy({}, { get: () => typeDefProxy })
-
-export type ReferencesTypeConfig = Required<ReferencesTypeOptions>
-
-export type TypeOfContext = Required<ParseConfig> & {
-    seen: Record<string, boolean>
-}
-
-export type DefaultTypeOfContext = DefaultParseOptions & {
-    seen: {}
-}
 
 export const errorsFromCustomValidator = (
     customValidator: CustomValidator,
@@ -59,7 +42,3 @@ export const errorsFromCustomValidator = (
     }
     return {}
 }
-
-export type Unset = "<unset>"
-
-export type ValueOf<T> = T extends any[] ? T[number] : T[keyof T]
