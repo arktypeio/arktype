@@ -21,7 +21,7 @@
     "assertTsConfig": "tests/tsconfig.json",
     "//": "2>&1 redirects stderr to stdout to avoid rush test failing CI since Jest always outputs to stderr",
     "scripts": {
-        "build": "reTsc --tsBuildFlag",
+        "build": "reTsc --asBuild",
         "test": "jest 2>&1",
         "unit": "jest --coverage false -t ",
         "lint": "eslint .",
