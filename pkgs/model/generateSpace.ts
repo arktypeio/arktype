@@ -1,6 +1,3 @@
-import { writeJson, fromHere } from "@re-/node"
-import { transform } from "@re-/tools"
-
 const generateSpaceJson = () => {
     const simpleSpaceSeed = {
         user: {
@@ -31,9 +28,8 @@ const generateSpaceJson = () => {
                 Math.floor(Math.random() * (max - min + 1)) + min
             const defCopyCount = 500
             for (let i = 2; i <= defCopyCount; i++) {
-                variants[`${name}${i}`] = transform(
-                    seedDef as any,
-                    ([k, def]) => {
+                variants[`${name}${i}`] = Object.fromEntries(
+                    Object.entries(seedDef).map(([k, def]) => {
                         if (typeof def === "string") {
                             for (const name in cyclicSpaceSeed) {
                                 def = def.replaceAll(
@@ -43,14 +39,14 @@ const generateSpaceJson = () => {
                             }
                         }
                         return [`${k}${i}`, def]
-                    }
+                    })
                 )
             }
             return { ...result, ...variants }
         },
         {} as Record<string, any>
     )
-    writeJson(fromHere("generatedSpace.json"), defs)
+    Deno.writeTextFileSync("generatedSpace.json", JSON.stringify(defs, null, 4))
 }
 
 generateSpaceJson()

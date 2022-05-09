@@ -1,5 +1,5 @@
 import { EntryOf, Entry, isRecursible } from "./common.js"
-import { WithDefaults } from "./merge.js"
+import { Merge } from "./merge.js"
 import { isNumeric } from "./stringUtils.js"
 
 export type DeepMapContext = {
@@ -13,8 +13,8 @@ export type EntryMapper<
     Returned extends Entry | null
 > = (entry: Original, context: DeepMapContext) => Returned
 
-export type TransformOptions<Deep extends boolean = boolean> = {
-    deep?: Deep
+export type TransformOptions = {
+    deep?: boolean
     recurseWhen?: EntryChecker
     asArray?: "infer" | "always" | "never"
 }
@@ -22,18 +22,16 @@ export type TransformOptions<Deep extends boolean = boolean> = {
 export const transform = <
     From,
     MapReturnType extends Entry | null,
-    ProvidedOptions extends TransformOptions<Deep>,
-    Options extends Required<TransformOptions> = WithDefaults<
-        TransformOptions,
-        ProvidedOptions,
+    ProvidedOptions extends TransformOptions,
+    Options extends TransformOptions = Merge<
         {
             recurseWhen: () => true
             filterWhen: () => false
             asArray: "infer"
             deep: false
-        }
+        },
+        ProvidedOptions
     >,
-    Deep extends boolean = true,
     InferredAsArray extends boolean = MapReturnType extends Entry
         ? MapReturnType[0] extends number
             ? From extends any[]
@@ -41,9 +39,9 @@ export const transform = <
                 : false
             : false
         : false,
-    AsArray extends boolean = Options["asArray"] extends "infer"
+    AsArray extends boolean = "infer" extends Options["asArray"]
         ? InferredAsArray
-        : Options["asArray"] extends "always"
+        : "always" extends Options["asArray"]
         ? true
         : false,
     Result = AsArray extends true

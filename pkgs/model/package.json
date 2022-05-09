@@ -19,14 +19,12 @@
         }
     },
     "assertTsConfig": "tests/tsconfig.json",
-    "//": "2>&1 redirects stderr to stdout to avoid rush test failing CI since Jest always outputs to stderr",
     "scripts": {
         "build": "reTsc --asBuild",
         "test": "jest 2>&1",
-        "unit": "jest --coverage false -t ",
         "lint": "eslint .",
-        "generateSpace": "runScript src/__tests__/generateSpace.ts",
-        "findUnused": "runScript findUnused.cjs",
+        "unit": "jest --coverage false -t ",
+        "generateSpace": "deno run --allow-write generateSpace.ts",
         "typeDiag": "tsc --build --force --extendedDiagnostics > typeDiagNext.txt",
         "typeTrace": "tsc --build --force --generateTrace typeTrace"
     },
@@ -43,10 +41,10 @@
         "typescript": "4.6.3",
         "ts-node": "10.4.0",
         "eslint": "8.15.0",
+        "ts-morph": "14.0.0",
         "@typescript-eslint/parser": "5.22.0",
         "@typescript-eslint/eslint-plugin": "5.22.0",
         "eslint-config-prettier": "8.5.0",
-        "eslint-plugin-prefer-arrow": "1.2.3",
-        "ts-morph": "14.0.0"
+        "eslint-plugin-prefer-arrow": "1.2.3"
     }
 }

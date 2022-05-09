@@ -1,7 +1,6 @@
 import { readFileSync, rmSync, writeFileSync } from "fs"
 import { ApiModel } from "@microsoft/api-extractor-model"
 import { MarkdownDocumenter } from "@microsoft/api-documenter/lib/documenters/MarkdownDocumenter.js"
-import { transform } from "@re-/tools"
 import prettier from "prettier"
 import { basename, join } from "path"
 import { walkPaths, fileName, ensureDir } from "../../index.js"

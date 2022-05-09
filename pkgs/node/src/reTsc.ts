@@ -55,36 +55,32 @@ export const buildTypes = ({ noEmit, asBuild }: BuildTypesOptions = {}) => {
     stdout.write(`✅\n`)
 }
 
-export const buildEsm = async () => {
+export const buildEsm = () =>
     transpileTs({
         packageRoot,
         toDir: esmOut,
         module: "esnext"
     })
-}
 
-export const buildCjs = async () => {
+export const buildCjs = () =>
     transpileTs({
         packageRoot,
         toDir: cjsOut,
         module: "commonjs"
     })
-}
 
-type Transpiler = () => Promise<void>
+type Transpiler = () => void
 
 const defaultTranspilers = {
     esm: buildEsm,
     cjs: buildCjs
 }
 
-export const transpile = async (
+export const transpile = (
     transpilers: Transpiler[] = Object.values(defaultTranspilers)
 ) => {
     stdout.write(`⌛ Transpiling...`.padEnd(successMessage.length))
-    await Promise.all(
-        Object.values(transpilers).map((transpiler) => transpiler())
-    )
+    Object.values(transpilers).map((transpiler) => transpiler())
     stdout.write("✅\n")
 }
 
@@ -97,7 +93,7 @@ export type RedoTscOptions = {
     }
 }
 
-export const redoTsc = async (options?: RedoTscOptions) => {
+export const redoTsc = (options?: RedoTscOptions) => {
     console.log(`🔨 Building ${packageName}...`)
     rmSync(outRoot, { recursive: true, force: true })
     if (!options?.skip?.types) {
@@ -109,7 +105,7 @@ export const redoTsc = async (options?: RedoTscOptions) => {
             options?.skip?.[name] ? null : [name, transpiler],
         { asArray: "always" }
     )
-    await transpile(transpilers)
+    transpile(transpilers)
     console.log(successMessage)
 }
 

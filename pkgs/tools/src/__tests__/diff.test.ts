@@ -1,4 +1,3 @@
-import { assert } from "console"
 import { diff, addedOrChanged, diffSets, deepEquals } from ".."
 import { o } from "./common"
 

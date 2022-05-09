@@ -14,5 +14,8 @@
         "*.lock": true,
         "**/coverage/*": true
     },
-    "typescript.tsdk": "node_modules/typescript/lib"
+    "typescript.tsdk": "node_modules/typescript/lib",
+    "eslint.packageManager": "pnpm",
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "deno.enablePaths": ["generateSpace.ts"]
 }

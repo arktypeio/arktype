@@ -23,7 +23,7 @@ export const getPackageApi = (
         packageJsonFullPath: join(packageRoot, "package.json"),
         configObjectFullPath: undefined
     })
-    const result = Extractor.invoke(extractorConfig)
+    Extractor.invoke(extractorConfig)
     // if (!result.succeeded) {
     //     throw new Error(
     //         `API extractor failed with errors that are hopefully above this one.`
@@ -52,9 +52,9 @@ export const getPackageApi = (
         root,
         getMembers,
         applyTransformations,
-        references: transform(getMembers(), ([i, member]) => [
+        references: transform(getMembers(), ([, member]) => [
             member.name,
             member.canonicalReference
-        ]) as Record<string, string>
+        ])
     }
 }

@@ -1,6 +1,4 @@
 import "./exact.assert.js"
-import "./merge.assert.js"
 import "./narrow.assert.js"
 import "./transform.assert.js"
-import "./curry.assert.js"
 import "./lazily.assert.js"

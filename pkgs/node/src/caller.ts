@@ -44,7 +44,8 @@ export const formatFilePath = (
 }
 
 export const caller = (options: CallerOfOptions = {}): SourcePosition => {
-    let { upStackBy = 0, formatPath, skip, methodName } = options
+    let { upStackBy = 0 } = options
+    const { formatPath, skip, methodName } = options
     if (!methodName) {
         upStackBy = 3
     }

@@ -1,8 +1,6 @@
 import {
     readdirSync,
     lstatSync,
-    chmodSync,
-    createWriteStream,
     existsSync,
     mkdirSync,
     statSync,
@@ -16,15 +14,8 @@ import {
 import { fileURLToPath, URL } from "url"
 import { homedir } from "os"
 import { join, dirname, parse } from "path"
-import { once } from "events"
-import { finished } from "stream"
-import { promisify } from "util"
 import { caller } from "./caller.js"
 import { FilterFunction } from "@re-/tools"
-
-export const streamFinished = promisify(finished)
-
-export const HOME = homedir()
 
 export const fromDir =
     (dir: string) =>
@@ -39,35 +30,6 @@ export const ensureDir = (path: string) => {
     } else {
         mkdirSync(path, { recursive: true })
     }
-}
-
-export const fromHome = fromDir(HOME)
-
-export const REDO_DIR = fromHome(".redo")
-
-export const fromRedo = fromDir(REDO_DIR)
-
-export const ensureRedoDir = () => {
-    ensureDir(REDO_DIR)
-    return REDO_DIR
-}
-
-export const makeExecutable = (path: string) => chmodSync(path, "755")
-
-export const streamToFile = async (
-    stream: NodeJS.ReadableStream,
-    path: string
-) => {
-    const fileStream = createWriteStream(path)
-    for await (const chunk of stream) {
-        if (!fileStream.write(chunk)) {
-            await once(fileStream, "drain")
-        }
-    }
-    fileStream.end()
-    await streamFinished(fileStream)
-    await streamFinished(stream)
-    return path
 }
 
 export const readFile = (path: string) => readFileSync(path).toString()
@@ -142,6 +104,8 @@ export const fromHere = (...joinWith: string[]) =>
 export const fromCwd = (...joinWith: string[]) =>
     join(process.cwd(), ...joinWith)
 
+export const fromHome = (...joinWith: string[]) => join(homedir(), ...joinWith)
+
 export const fsRoot = parse(process.cwd()).root
 
 export const findPackageRoot = (fromDir?: string) => {
@@ -155,7 +119,9 @@ export const findPackageRoot = (fromDir?: string) => {
             if (contents.name) {
                 return dirToCheck
             }
-        } catch {}
+        } catch {
+            // If the file doesn't exist, go up another level
+        }
         dirToCheck = join(dirToCheck, "..")
     }
     throw new Error(`${startDir} is not part of a node package.`)

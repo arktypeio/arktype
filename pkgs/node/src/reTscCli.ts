@@ -1,2 +1,3 @@
 import { runRedoTsc } from "./reTsc.js"
-runRedoTsc()
+
+void runRedoTsc()

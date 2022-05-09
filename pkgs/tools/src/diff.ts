@@ -10,7 +10,7 @@ import {
     isEmpty
 } from "./common.js"
 import { transform } from "./transform.js"
-import { merge } from "./merge.js"
+//import { merge } from "./merge.js"
 
 export type UnionDiffResult<Added extends any[], Removed extends any[]> = {
     added: Added
@@ -171,7 +171,10 @@ export const addedOrChanged = <Base, Compare>(
                           extractAddedOrChanged(v)
                       ])
                     : {}
-                return merge(result.added ?? {}, extractedChanged)
+                return {
+                    ...result.added,
+                    ...extractedChanged
+                }
             }
         }
     }

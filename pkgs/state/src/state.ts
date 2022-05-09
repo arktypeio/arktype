@@ -34,8 +34,6 @@ import {
 } from "./store"
 
 /**
- * This is a hacky version of ExactObject from @re-/tools that accomodates anomalies
- * in the way TS interprets a statelessly config to avoid widening. Notable differences:
  * - Assumes Compare is passed as an arg directly and therefore will always be a simple
  *   object, so we don't have to worry about things like optional properties that only exist
  *   on a type. We do still have to worry about any/unknown as they can be inferred.

@@ -1,3 +1,3 @@
 import { redoTsc } from "./reTsc.js"
 
-redoTsc({ skip: { types: true } })
+void redoTsc({ skip: { types: true } })

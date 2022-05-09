@@ -20,8 +20,7 @@
     },
     "scripts": {
         "build": "reTsc",
-        "test": "jest 2>&1",
-        "debug": "jest -t hmm"
+        "test": "jest 2>&1"
     },
     "dependencies": {
         "@re-/tools": "2.0.0",

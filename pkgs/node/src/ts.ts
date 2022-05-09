@@ -43,7 +43,7 @@ export const getTsSources = (
         excludeDirs: true
     })
 
-export const transpileTs = async ({
+export const transpileTs = ({
     packageRoot,
     toDir,
     ...tsOptions
@@ -58,6 +58,7 @@ export const transpileTs = async ({
     const fakeParseConfigHost: ParseConfigFileHost = {
         getCurrentDirectory: () => pkgRoot,
         useCaseSensitiveFileNames: false,
+        // eslint-disable-next-line
         readDirectory: (...args: any[]) => [],
         fileExists: () => false,
         readFile: () => "",

@@ -7,9 +7,9 @@ import {
     ExecaChildProcess,
     ExecaSyncError
 } from "execa"
+import { platform } from "os"
 import { isRecursible, Merge } from "@re-/tools"
 import prompts, { PromptObject, PromptType } from "prompts"
-import { getOs } from "./os.js"
 import { fromPackageRoot } from "./fs.js"
 
 type CommonOptions = {
@@ -76,16 +76,14 @@ export type RunScriptOptions = {
     processArgs?: string[]
 }
 
-export const getTsNodeCmd = ({ esm }: RunScriptOptions) => {
-    let cmd = esm
+export const getTsNodeCmd = ({ esm }: RunScriptOptions) =>
+    esm
         ? `node --loader ts-node/esm`
         : `ts-node -O ${
-              getOs() === "windows"
+              platform() === "win32"
                   ? `"{""module"": ""commonjs"", ""isolatedModules"": false}"`
                   : `'{"module": "commonjs", "isolatedModules": false}'`
           }`
-    return cmd
-}
 
 export const getFilterWarningsArg = () =>
     `-r ${fromPackageRoot("filterWarnings.cjs")}`

@@ -1,12 +1,11 @@
 import {
-    DefaultDelimiter,
     ElementOf,
     Iteration,
     List,
     ListPossibleTypes,
     Stringifiable
 } from "./common.js"
-import { FilterFunction } from "./filter.js"
+import { FilterFunction } from "./common.js"
 
 export const alphaOnlyRegex = /^[a-zA-Z]+$/
 
@@ -186,7 +185,7 @@ type UnpackNestedTuples<
 
 export type Join<
     Segments extends Stringifiable[],
-    Delimiter extends string = DefaultDelimiter,
+    Delimiter extends string,
     Result extends string = ""
 > = Segments extends Iteration<Stringifiable, infer Segment, infer Remaining>
     ? Join<

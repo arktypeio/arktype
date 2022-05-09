@@ -5,7 +5,7 @@ import {
 } from "./transformations/index.js"
 import { getPackageApi, PackageApi } from "./getPackageApi.js"
 import { getPackageContext, PackageContext } from "./getPackageContext.js"
-import { reDoc, ReDocContext } from "../reDoc.js"
+import { ReDocContext } from "../reDoc.js"
 
 export type PackageData = {
     ctx: PackageContext

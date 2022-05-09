@@ -116,7 +116,7 @@ export const withCallRange = <
             formatPath,
             skip
         })
-        const { file: fromFile, method: fromMethod, ...from } = startCaller
+        const { file: fromFile, ...from } = startCaller
         let range: SourceRange
         const endArgsRange = () => {
             if (!range) {
@@ -124,7 +124,7 @@ export const withCallRange = <
                     formatPath,
                     skip
                 })
-                const { file, method, ...to } = endCaller
+                const { file, ...to } = endCaller
                 if (
                     file !== fromFile ||
                     from.line > to.line ||

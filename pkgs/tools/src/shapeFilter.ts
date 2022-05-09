@@ -1,5 +1,7 @@
-import { isRecursible, fromEntries, Unlisted, NonRecursible } from "./common.js"
+import { isRecursible, fromEntries, NonRecursible, List } from "./common.js"
 import { toString } from "./toString.js"
+
+type Unlisted<T> = T extends List<infer Item> ? Item : T
 
 export type ShapeFilter<O, S> = O extends NonRecursible
     ? O
