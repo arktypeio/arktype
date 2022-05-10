@@ -20,8 +20,10 @@
         }
     },
     "scripts": {
-        "build": "reTsc",
-        "test": "jest 2>&1"
+        "build": "echo Temporarily disabled",
+        "test": "echo Temporarily disabled",
+        "buildDev": "reTsc",
+        "testDev": "jest 2>&1"
     },
     "dependencies": {
         "@re-/tools": "workspace:*",

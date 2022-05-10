@@ -1,4 +1,4 @@
-import { diffSets, Evaluate, transform } from "@re-/tools"
+import { diffSets, Evaluate, transform, Merge } from "@re-/tools"
 import {
     createCreateFunction,
     Model,
@@ -7,7 +7,7 @@ import {
     BaseOptions
 } from "./model.js"
 import { Root } from "./definitions/index.js"
-import { typeDefProxy, Merge } from "./internal.js"
+import { typeDefProxy } from "./internal.js"
 
 export type MetaKey = "onCycle" | "onResolve"
 

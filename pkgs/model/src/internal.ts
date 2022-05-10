@@ -1,23 +1,9 @@
-import { Evaluate, Iteration, TreeOf } from "@re-/tools"
+import { TreeOf } from "@re-/tools"
 import { CustomValidator } from "./model.js"
 import { ExtractableKeyword } from "./definitions/index.js"
 import { validationError, ValidationErrors } from "./errors.js"
 
 export * from "./errors.js"
-
-export type Mergeable<T> = T extends {} ? T : {}
-
-export type Merge<Base, Merged> = Evaluate<
-    Omit<Mergeable<Base>, Extract<keyof Base, keyof Merged>> & Mergeable<Merged>
->
-
-export type MergeAll<Types, Result = {}> = Types extends Iteration<
-    unknown,
-    infer Current,
-    infer Remaining
->
-    ? MergeAll<Remaining, Merge<Result, Current>>
-    : Evaluate<Result>
 
 export type ShallowExtractableDefinition =
     | `'${string}'`

@@ -5,6 +5,7 @@ import { Box, Button, Stack, Typography } from "@mui/material"
 import Terminal from "@mui/icons-material/Terminal"
 import Expand from "@mui/icons-material/ExpandMore"
 import Collapse from "@mui/icons-material/ExpandLess"
+import useMediaQuery from "@mui/material/useMediaQuery"
 import { useColorMode } from "@docusaurus/theme-common"
 import { modelDemo } from "./demos/model"
 
@@ -50,6 +51,7 @@ const ToolSummary = ({
     const { colorMode } = useColorMode()
     const buttonColor = colorMode === "dark" ? "secondary" : "primary"
     const isActiveDemo = activeDemo === demoElement
+    const isDesktop = useMediaQuery("(min-width:1000px)")
     return (
         <Box className={clsx("col col--4")}>
             <div className="text--center">{illustration}</div>
@@ -82,7 +84,7 @@ const ToolSummary = ({
                     >
                         Learn more
                     </Button>
-                    {demoElement && window.screen.width >= 1000 ? (
+                    {demoElement && isDesktop ? (
                         <>
                             <Typography
                                 component="p"

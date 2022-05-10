@@ -52,9 +52,10 @@ export const getPackageApi = (
         root,
         getMembers,
         applyTransformations,
-        references: transform(getMembers(), ([, member]) => [
-            member.name,
-            member.canonicalReference
-        ])
+        references: transform(
+            getMembers(),
+            ([, member]) => [member.name, member.canonicalReference],
+            { asArray: "never" }
+        )
     }
 }

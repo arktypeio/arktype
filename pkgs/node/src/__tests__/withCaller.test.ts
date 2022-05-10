@@ -20,10 +20,12 @@ describe("withArgsRange", () => {
                 "from": {
                   "column": 51,
                   "line": 35,
+                  "method": "getAllUsingThunk",
                 },
                 "to": {
                   "column": 6,
                   "line": 42,
+                  "method": "getAllUsingThunk",
                 },
               },
             }
@@ -38,10 +40,12 @@ describe("withArgsRange", () => {
                 "from": {
                   "column": 70,
                   "line": 79,
+                  "method": "getAllUsingCallback",
                 },
                 "to": {
                   "column": 6,
                   "line": 84,
+                  "method": "getAllUsingCallback",
                 },
               },
             }
@@ -56,10 +60,12 @@ describe("withArgsRange", () => {
                 "from": {
                   "column": 7,
                   "line": 50,
+                  "method": "getAllUsingProp",
                 },
                 "to": {
                   "column": 33,
                   "line": 50,
+                  "method": "getAllUsingProp",
                 },
               },
             }
@@ -74,10 +80,12 @@ describe("withArgsRange", () => {
                 "from": {
                   "column": 7,
                   "line": 59,
+                  "method": "getAllUsingPropThunk",
                 },
                 "to": {
                   "column": 27,
                   "line": 59,
+                  "method": "getAllUsingPropThunk",
                 },
               },
             }
@@ -93,10 +101,12 @@ describe("withArgsRange", () => {
                 "from": {
                   "column": 59,
                   "line": 72,
+                  "method": "getForwardedReturn",
                 },
                 "to": {
                   "column": 6,
                   "line": 76,
+                  "method": "getForwardedReturn",
                 },
               },
             }
@@ -109,10 +119,12 @@ describe("withArgsRange", () => {
               "from": {
                 "column": 51,
                 "line": 62,
+                "method": "getSingleProp",
               },
               "to": {
                 "column": 6,
                 "line": 69,
+                "method": "getSingleProp",
               },
             }
         `)
@@ -127,10 +139,12 @@ describe("withArgsRange", () => {
               "from": {
                 "column": 51,
                 "line": 93,
+                "method": "getPropFromChainedCall",
               },
               "to": {
                 "column": 72,
                 "line": 93,
+                "method": "getPropFromChainedCall",
               },
             }
         `)

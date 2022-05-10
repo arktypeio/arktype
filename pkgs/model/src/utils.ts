@@ -1,8 +1,8 @@
-import { transform, TypeCategory } from "@re-/tools"
+import { transform, TypeOfResult } from "@re-/tools"
 import { ExtractableDefinition } from "./internal.js"
 
 export const typeOf = (value: any): ExtractableDefinition => {
-    const typeMap: { [Category in TypeCategory]: () => ExtractableDefinition } =
+    const typeMap: { [Category in TypeOfResult]: () => ExtractableDefinition } =
         {
             string: () => `'${value}'`,
             number: () => value,

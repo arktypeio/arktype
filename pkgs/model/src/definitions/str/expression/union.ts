@@ -1,4 +1,4 @@
-import { transform, TypeCategory } from "@re-/tools"
+import { transform, TypeOfResult } from "@re-/tools"
 import {
     typeDefProxy,
     isRequiredCycleError,
@@ -13,7 +13,7 @@ import { Str } from "../str.js"
 import { Expression } from "./expression.js"
 import { typeOf } from "../../../utils.js"
 
-type PreferredDefaults = ({ value: any } | { typeOf: TypeCategory })[]
+type PreferredDefaults = ({ value: any } | { typeOf: TypeOfResult })[]
 
 export const preferredDefaults: PreferredDefaults = [
     { value: undefined },

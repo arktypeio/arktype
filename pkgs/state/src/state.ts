@@ -2,9 +2,7 @@ import {
     NonRecursible,
     Unlisted,
     KeyValuate,
-    Segment,
     Join,
-    TypeError,
     Narrow,
     ListPossibleTypes,
     Recursible,
@@ -13,7 +11,6 @@ import {
     DeepUpdate,
     And,
     Or,
-    Not,
     ExcludeNever,
     NeverEmptyObject,
     IntersectProps,
@@ -22,12 +19,11 @@ import {
     withDefaults,
     ElementOf
 } from "@re-/tools"
-import { create, TypeOf, CheckReferences, SpaceResolutions } from "@re-/model"
+import { model, TypeOf, CheckReferences, SpaceResolutions } from "@re-/model"
 import { ConfigureStoreOptions, Store as ReduxStore } from "@reduxjs/toolkit"
 import {
     createMemoryDb,
     Interactions,
-    Store,
     ParseStoredType,
     CompileInputTypeSet,
     CompileStoredTypeSet
@@ -96,6 +92,8 @@ type DefinitionFromConfig<Config, UseDefinedTypeNames extends boolean> = {
     [K in keyof Config]: DefinitionFromField<Config[K], UseDefinedTypeNames>
 }
 
+type Segment = string | number
+
 type DefinitionFromField<
     Config,
     UseDefinedTypeNames extends boolean
@@ -143,7 +141,7 @@ type ModelConfigRecurse<
     DeclaredTypeNames extends string[]
 > = Config extends string
     ? PathToType extends Segment[]
-        ? TypeError<`A type has already been determined via ${Join<PathToType>}.`>
+        ? `A type has already been determined via ${Join<PathToType>}.`
         : CheckReferences<Config, ElementOf<DeclaredTypeNames>>
     : ModelConfigOptions<
           T,
@@ -342,7 +340,7 @@ export const createState: CreateState = (config, options) => {
         idKey
     )
     const storedPaths = findStoredPaths(config, "")
-    const model = create(modelTypeDef, { space: { resolutions: modelTypeSet } })
+    const model = model(modelTypeDef, { space: { resolutions: modelTypeSet } })
     const initialState = model.generate()
     // copy the object by value
     const persisted = createMemoryDb(

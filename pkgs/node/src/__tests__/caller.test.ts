@@ -1,4 +1,5 @@
-import { caller, getOs } from ".."
+import { caller } from ".."
+import { platform } from "os"
 import { callMeFromDir, callPipeSeperated } from "./fromDir/reflectedFromDir.js"
 import { callMe, callMeAnonymous } from "./reflected.js"
 
@@ -27,7 +28,7 @@ describe("caller", () => {
     })
     test("fromDir", () => {
         const result = callMeFromDir()
-        if (getOs() === "windows") {
+        if (platform() === "win32") {
             expect(result).toMatchInlineSnapshot(`
                             {
                               "column": 12,
