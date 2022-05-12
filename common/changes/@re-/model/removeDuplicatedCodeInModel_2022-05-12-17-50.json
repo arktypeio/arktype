@@ -1,0 +1,10 @@
+{
+    "changes": [
+        {
+            "packageName": "@re-/model",
+            "comment": "added demos folder to root path. Includes demos + code for copying from demos to docs ",
+            "type": "patch"
+        }
+    ],
+    "packageName": "@re-/model"
+}
