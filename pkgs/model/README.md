@@ -66,35 +66,33 @@ Working with types that refer to one another or themselves? So can your models!
 
 [Just compile a **space**.](https://redo.dev/docs/model/spaces)
 
-```ts ***GENERATED*** createModelDemo.ts
-import { create } from "@re-/model"
+```ts ***GENERATED*** compileSpaceDemo.ts
+import { compile } from "@re-/model"
 
-// Most common TypeScript expressions just work...
-export const userModel = create({
-    name: {
-        first: "string",
-        middle: "string?",
-        last: "string"
+const space = compile({
+    user: {
+        name: "string",
+        bestFriend: "user?",
+        groups: "group[]"
     },
-    age: "number",
-    browser: "'chrome'|'firefox'|'other'|null"
+    group: {
+        title: "string",
+        members: "user[]"
+    }
 })
 
-// Mouse over "User" to see the inferred type...
-export type User = typeof userModel.type
+// Even recursive and cyclic types are precisely inferred
+type User = typeof space.types.user
 
-// But a model can also validate your data at runtime...
-export const userData = {
-    name: {
-        first: "Reed",
-        last: "Doe"
+// Throws: "At path bestFriend/groups/0, required keys 'members' were missing."
+space.models.user.assert({
+    name: "Devin Aldai",
+    bestFriend: {
+        name: "Devin Olnyt",
+        groups: [{ title: "Type Enjoyers" }]
     },
-    age: 28,
-    browser: null // :(
-}
-
-export const userValidationResult = userModel.validate(userData)
-// Try changing "userModel" or "userData" and see what happens!
+    groups: []
+})
 ```
 
 ## Definitions that split ✂️
@@ -121,7 +119,7 @@ const space = compile({ ...userDef, ...groupDef })
 `user.ts`
 
 ```ts ***GENERATED*** user.ts
-import { define } from "./index"
+import { define } from "./declareDemo"
 
 export const userDef = define.user({
     name: "string",
@@ -134,7 +132,7 @@ export const userDef = define.user({
 `group.ts`
 
 ```ts ***GENERATED*** group.ts
-import { define } from "./index"
+import { define } from "./declareDemo"
 
 export const groupDef = define.group({
     title: "string",

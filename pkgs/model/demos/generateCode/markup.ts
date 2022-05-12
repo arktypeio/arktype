@@ -1,16 +1,15 @@
-import { readFile, writeFile } from "fs/promises"
-import path from "path"
 import { remark } from "remark"
 import parseMarkdown from "remark-parse"
 import { regex } from "./regex.js"
-const README_PATH = path.resolve("./README.md")
+import { fromDir, fromHere, readFile, writeFile } from "@re-/node"
+
+const README_PATH = fromHere("../../README.md")
 const CODE_TAG = "code"
 const GENERATED = "***GENERATED***"
 
-const visitor = (root, mapData, keys) => {
-    if (!keys) {
-        keys = Object.keys(mapData)
-    }
+const visitor = (root: any, mapData: any) => {
+    const keys = Object.keys(mapData)
+
     for (const child in root.children) {
         const node = root.children[child]
         if (node.type === CODE_TAG && node.meta) {
@@ -27,15 +26,15 @@ const visitor = (root, mapData, keys) => {
     }
     return root
 }
-const generateCode = (options) => async (tree) => {
+const generateCode = (options: any) => async (tree: any) => {
     visitor(tree, options.mapData)
 }
 
-export const replaceMarkupCode = async (mapData) => {
-    const mdFile = await readFile(README_PATH, "utf-8")
+export const replaceMarkupCode = async (mapData: any) => {
+    const mdFile = readFile(README_PATH)
     const file = await remark()
         .use(parseMarkdown)
         .use(generateCode, { mapData })
         .process(mdFile)
-    await writeFile(README_PATH, file.toString())
+    writeFile(README_PATH, file.toString())
 }
