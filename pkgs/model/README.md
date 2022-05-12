@@ -53,7 +53,7 @@ export const userData = {
         last: "Doe"
     },
     age: 28,
-    browser: null // :(
+    browser: "Internet Explorer" // :(
 }
 
 export const userValidationResult = userModel.validate(userData)
