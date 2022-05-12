@@ -1,16 +1,13 @@
-import { SourcePosition, withCallPosition } from "@re-/node"
-import { ListPossibleTypes, WithDefaults, withDefaults } from "@re-/tools"
-import { typeAssertions, TypeAssertions } from "./type"
-import { valueAssertions, ValueAssertion } from "./value"
+// import { SourcePosition, withCallPosition } from "@re-/node"
+import { ListPossibleTypes, Merge } from "@re-/tools"
+import { typeAssertions, TypeAssertions } from "./type/index.ts"
+import { valueAssertions, ValueAssertion } from "./value/index.ts"
+import { SourcePosition } from "./positions.ts"
 
 export type AssertionResult<
     T,
     Opts extends AssertionOptions = {},
-    Config extends AssertionConfig = WithDefaults<
-        AssertionOptions,
-        Opts,
-        { allowTypeAssertions: true; returnsCount: 0 }
-    >
+    Config = Merge<{ allowTypeAssertions: true; returnsCount: 0 }, Opts>
 > = ValueAssertion<ListPossibleTypes<T>, Config> &
     (Config["allowTypeAssertions"] extends true ? TypeAssertions : {})
 
@@ -46,10 +43,11 @@ export const assertionContext: AssertionContext = (
     value: unknown,
     opts?: AssertionOptions
 ) => {
-    const config = withDefaults<AssertionOptions>({
+    const config = {
         allowTypeAssertions: true,
-        returnsCount: 0
-    })(opts)
+        returnsCount: 0,
+        ...opts
+    }
     let assertionContext: PartialAssertionResult = valueAssertions(
         position,
         value,
@@ -62,7 +60,8 @@ export const assertionContext: AssertionContext = (
 }
 
 // @ts-ignore
-export const assert = withCallPosition(assertionContext, {
-    // TS uses "/" as their path seperator, even on Windows
-    formatPath: { seperator: "/" }
-}) as any as Assertion
+export const assert: Assertion = () =>
+    withCallPosition(assertionContext, {
+        // TS uses "/" as their path seperator, even on Windows
+        formatPath: { seperator: "/" }
+    })

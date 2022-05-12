@@ -3,8 +3,8 @@ import {
     NonObject,
     Recursible,
     Stringifiable
-} from "./common.js"
-import { StringifyPossibleTypes } from "./stringUtils.js"
+} from "./common.ts"
+import { StringifyPossibleTypes } from "./stringUtils.ts"
 
 export type Exact<Compare, Base> = IsAnyOrUnknown<Compare> extends true
     ? Base

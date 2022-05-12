@@ -53,7 +53,7 @@ describe("transform", () => {
     test("recurseWhen", () => {
         const result = transform(deepO, mapLeavesToPaths, {
             deep: true,
-            recurseWhen: ([k, v], { path }) => k === "b" && path.includes("b")
+            recurseWhen: ([k], { path }) => k === "b" && path.includes("b")
         })
         expect(result).toStrictEqual({ a: o, b: pathsOfDeepO.b })
     })

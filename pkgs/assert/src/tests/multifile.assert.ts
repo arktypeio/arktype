@@ -1,4 +1,4 @@
-import { assert } from ".."
+import { assert } from "../index.ts"
 
 export const multifile = describe("multifile", () => {
     test("gathers types across files", () => {

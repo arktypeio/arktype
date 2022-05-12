@@ -15,5 +15,16 @@
         "**/coverage/*": true
     },
     "eslint.packageManager": "pnpm",
-    "editor.defaultFormatter": "esbenp.prettier-vscode"
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "deno.lint": true,
+    "deno.unstable": true,
+    "eslint.enable": false,
+    "folders": [
+        {
+            "path": "pkgs/tools"
+        },
+        {
+            "path": "pkgs/assert"
+        }
+    ]
 }

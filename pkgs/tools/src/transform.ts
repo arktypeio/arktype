@@ -1,6 +1,6 @@
-import { EntryOf, Entry, isRecursible } from "./common.js"
-import { Merge } from "./merge.js"
-import { isNumeric } from "./stringUtils.js"
+import { EntryOf, Entry, isRecursible } from "./common.ts"
+import { Merge } from "./merge.ts"
+import { isNumeric } from "./stringUtils.ts"
 
 export type DeepMapContext = {
     path: string[]
@@ -85,9 +85,9 @@ export const transform = <
                 : asArray === "never"
                 ? false
                 : Array.isArray(currentFrom) &&
-                  mappedEntries.every(([k, v]) => isNumeric(k))
+                  mappedEntries.every(([k]) => isNumeric(k))
         return toArray
-            ? Array.from(mappedEntries, ([i, v]) => v)
+            ? Array.from(mappedEntries, ([, v]) => v)
             : Object.fromEntries(mappedEntries)
     }
     if (!isRecursible(from)) {

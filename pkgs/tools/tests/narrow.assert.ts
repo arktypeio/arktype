@@ -21,13 +21,20 @@ describe("Narrow", () => {
     })
     test("function", () => {
         // Function return values can't be narrowed
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         assert(narrow((args: -1) => 1)).typed as (args: -1) => number
-        assert(narrow((...args: [["hi", 5], { a: "nother" }]) => {})).typed as (
+        assert(narrow((...args: [["hi", 5], { a: "nother" }]) => args))
+            .typed as (
             args_0: ["hi", 5],
             args_1: {
                 a: "nother"
             }
-        ) => void
+        ) => [
+            ["hi", 5],
+            {
+                a: "nother"
+            }
+        ]
     })
     test("any", () => {
         assert(narrow({} as any)).typed as any

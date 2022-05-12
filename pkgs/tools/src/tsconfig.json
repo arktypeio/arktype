@@ -1,0 +1,9 @@
+{
+    "extends": "@re-/node/tsconfig.base",
+    "compilerOptions": {
+        "outDir": "../out/types",
+        "composite": true,
+        "emitDeclarationOnly": true
+    },
+    "include": ["."]
+}

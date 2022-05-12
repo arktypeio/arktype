@@ -1,2 +1,2 @@
-export * from "./assert.js"
-export * from "./type/index.js"
+export * from "./assert.ts"
+export * from "./type/index.ts"

@@ -14,7 +14,6 @@ export const getEslintConfig = (options: object = {}) =>
             ],
             ignorePatterns: [
                 "jest.config.js",
-                "findUnused.cjs",
                 ".eslintrc.cjs",
                 "out",
                 "coverage"

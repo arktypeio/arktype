@@ -1,0 +1,8 @@
+{
+    "imports": {
+        "@re-/tools": "../tools/src/index.ts",
+        "@re-/node": "../node/src/index.ts",
+        "@deno/testing": "https://deno.land/std@0.139.0/testing/asserts.ts",
+        "ts-morph": "https://deno.land/x/ts_morph@14.0.0/mod.ts"
+    }
+}

@@ -1,15 +1,16 @@
-import { SourcePosition, withCallPosition } from "@re-/node"
+// import { SourcePosition, withCallPosition } from "@re-/node"
+import { SourcePosition } from "../positions.ts"
 import {
     Func,
     isRecursible,
     IsAnyOrUnknown,
-    Evaluate,
     ListPossibleTypes,
     ElementOf
 } from "@re-/tools"
-import { AssertionConfig } from "../assert.js"
-import { TypeAssertions, typeAssertions } from "../type/context.js"
-import { errorsOfNextType, nextTypeToString } from "../type/types.js"
+import { AssertionConfig } from "../assert.ts"
+import { TypeAssertions, typeAssertions } from "../type/context.ts"
+import { errorsOfNextType, nextTypeToString } from "../type/types.ts"
+import * as testing from "@deno/testing"
 
 const getThrownMessage = (value: Function) => {
     try {
@@ -148,17 +149,12 @@ export type ValueAssertion<
     ? FunctionalValueAssertion<Args, Return, Config>
     : ComparableValueAssertion<PossibleValues, Config>
 
-const defaultAssert = (
-    value: unknown,
-    expected: unknown,
-    allowRegex: boolean = false
-) =>
+const defaultAssert = (value: unknown, expected: unknown, allowRegex = false) =>
     isRecursible(value)
-        ? expect(value).toStrictEqual(expected)
-        : allowRegex &&
-          (typeof expected === "string" || expected instanceof RegExp)
-        ? expect(value).toMatch(expected)
-        : expect(value).toBe(expected)
+        ? testing.assertStrictEquals(value, expected)
+        : allowRegex && typeof value === "string" && expected instanceof RegExp
+        ? testing.assertMatch(value, expected)
+        : testing.assertEquals(value, expected)
 
 export const getNextAssertions = (
     position: SourcePosition,
@@ -195,8 +191,12 @@ export const valueAssertions = <T, Config extends AssertionConfig>(
             return {
                 ...functionAssertions,
                 throwsAndHasTypeError: (matchValue: string | RegExp) => {
-                    expect(getThrownMessage(value)).toMatch(matchValue)
-                    expect(errorsOfNextType(position)).toMatch(matchValue)
+                    const matcher =
+                        matchValue instanceof RegExp
+                            ? matchValue
+                            : RegExp(matchValue)
+                    testing.assertMatch(getThrownMessage(value), matcher)
+                    testing.assertMatch(errorsOfNextType(position), matcher)
                 }
             }
         }
@@ -204,32 +204,32 @@ export const valueAssertions = <T, Config extends AssertionConfig>(
     }
     const baseAssertions = {
         is: (expected: unknown) => {
-            expect(value).toBe(expected)
+            testing.assertEquals(value, expected)
             return nextAssertions
         },
-        // TODO: Decouple snap from jest so it can be chained
-        snap: Object.assign(expect(value).toMatchInlineSnapshot, {
-            toFile: expect(value).toMatchSnapshot
-        }) as any,
+        // snap: Object.assign(expect(value).toMatchInlineSnapshot, {
+        //     toFile: expect(value).toMatchSnapshot
+        // }) as any,
         equals: (expected: unknown) => {
-            expect(value).toStrictEqual(expected)
+            testing.assertStrictEquals(value, expected)
             return nextAssertions
         }
     } as any
     if (config["allowTypeAssertions"]) {
         return {
-            ...baseAssertions,
-            typedValue: withCallPosition(
-                (expectedPosition, expectedValue) => {
-                    defaultAssert(value, expectedValue)
-                    expect(
-                        nextTypeToString(position, {
-                            returnsCount: config.returnsCount
-                        })
-                    ).toBe(nextTypeToString(expectedPosition))
-                },
-                { formatPath: { seperator: "/" } }
-            )
+            ...baseAssertions
+            // typedValue: withCallPosition(
+            //     (expectedPosition, expectedValue) => {
+            //         defaultAssert(value, expectedValue)
+            //         testing.assertEquals(
+            //             nextTypeToString(position, {
+            //                 returnsCount: config.returnsCount
+            //             }),
+            //             nextTypeToString(expectedPosition)
+            //         )
+            //     },
+            //     { formatPath: { seperator: "/" } }
+            // )
         }
     }
     return baseAssertions

@@ -1,0 +1,14 @@
+{
+    "extends": "@re-/node/tsconfig.base",
+    "compilerOptions": {
+        "composite": true,
+        "noEmit": true,
+        "outDir": "../out/types",
+        "tsBuildInfoFile": "../out/types/.tsbuildinfo.test",
+        "paths": {
+            "@re-/tools": ["../src"]
+        }
+    },
+    "include": ["."],
+    "references": [{ "path": "../src" }]
+}

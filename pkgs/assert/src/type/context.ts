@@ -1,11 +1,11 @@
-import { SourcePosition } from "@re-/node"
-import { nextTypeToString, errorsOfNextType } from "./types.js"
-import { expect } from "@jest/globals"
+import { SourcePosition } from "../positions.ts"
+import { nextTypeToString, errorsOfNextType } from "./types.ts"
 import {
     chainableAssertion,
     ChainableValueAssertion
-} from "../value/context.js"
-import { AssertionConfig } from "../assert.js"
+} from "../value/context.ts"
+import { AssertionConfig } from "../assert.ts"
+import * as testing from "@deno/testing"
 
 export type ValueFromTypeAssertion<
     Expected,
@@ -56,11 +56,10 @@ export const typeAssertions: AssertTypeContext = (
         {
             get: (target, prop) => {
                 if (prop === "typed") {
-                    expect(
+                    testing.assertEquals(
                         nextTypeToString(position, {
                             returnsCount: config.returnsCount
-                        })
-                    ).toBe(
+                        }),
                         // Offset back to the original assert and cast expression
                         nextTypeToString(position, {
                             findParentMatching: (node) =>

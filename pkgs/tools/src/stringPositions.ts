@@ -1,4 +1,4 @@
-import { toString } from "./toString.js"
+import { toString } from "./toString.ts"
 
 export type GetDelimitedPositionOptions = {
     delimiter?: string
@@ -32,7 +32,7 @@ const translatePositions = <From extends number[] | LinePosition[]>(
     const lines = contents.split(options?.delimiter ?? "\n")
     let currentPosition = 0
     let lineNumber = 1
-    let result = Array(positions.length)
+    const result = Array(positions.length)
     const getRemaining = () =>
         (positions as any[]).filter((_, i) => result[i] === undefined)
     while (getRemaining().length) {

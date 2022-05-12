@@ -19,9 +19,6 @@ for (const sourceFile of project.getSourceFiles()) {
         const references = exportedSymbol
             .getDeclarations()
             .flatMap((declaration) => {
-                if (exportName === "unused") {
-                    console.log("here")
-                }
                 if (declaration.getKindName() === "ExportSpecifier") {
                     return []
                 }

@@ -8,9 +8,9 @@ import {
     split,
     Entry,
     isEmpty
-} from "./common.js"
-import { transform } from "./transform.js"
-//import { merge } from "./merge.js"
+} from "./common.ts"
+import { transform } from "./transform.ts"
+//import { merge } from "./merge.ts"
 
 export type UnionDiffResult<Added extends any[], Removed extends any[]> = {
     added: Added
@@ -111,7 +111,7 @@ export const diff = <Base, Compare>(
                     diff((base as any)[k], (compare as any)[k], options)
                 ] as Entry
         )
-        .filter(([k, changes]) => changes !== undefined)
+        .filter(([, changes]) => changes !== undefined)
     if (changedEntries.length && !options.excludeChanged) {
         result.changed = Object.fromEntries(changedEntries) as any
     }

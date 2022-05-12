@@ -1,7 +1,0 @@
-// Jest Snapshot v1, https://goo.gl/fbAQLP
-
-exports[`assert snap 3`] = `
-{
-  "re": "do",
-}
-`;

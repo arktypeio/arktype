@@ -24,12 +24,12 @@ describe("lazily", () => {
     test("errors on args", () => {
         assert(() => {
             // @ts-expect-error
-            const badProxy = lazily((n: number) => ({})) as any
+            const badProxy = lazily((n: number) => n) as any
             badProxy.someProp
         })
             .throws("no arguments")
             .type.errors.snap(
-                `"Argument of type '(n: number) => {}' is not assignable to parameter of type '() => object'."`
+                `"Argument of type '(n: number) => number' is not assignable to parameter of type '() => object'."`
             )
     })
     test("errors on non-object", () => {

@@ -1,63 +1,39 @@
-import { findPackageRoot, mapFilesToContents, readJson } from "@re-/node"
-import { dirname, join, relative } from "path"
-import typescript from "typescript"
-import { memoize, toString } from "@re-/tools"
+import { Project } from "ts-morph"
+import * as morph from "ts-morph"
 
 // Absolute file paths TS will parse to raw contents
 export type ContentsByFile = Record<string, string>
 
-export type TsContext = {
-    ts: typescript.Program
-    sources: ContentsByFile
-}
-
 export type TypeContextOptions = {
     tsConfig?: string
-    sourcePaths?: string[]
 }
 
-export const getTsContext = memoize(
-    (options: TypeContextOptions = {}): TsContext => {
-        const { tsOptions, sourcePaths } = getConfig(options)
-        const packageRoot = findPackageRoot(process.cwd())
-        console.log(
-            `Analyzing types for ${toString(
-                sourcePaths.map((fullPath) => relative(packageRoot, fullPath))
-            )}.
-If you see this message more than once,
-you may want to reconfigure your test environment to
-ensure context can be shared across tests.`
-        )
-        const sources = mapFilesToContents(sourcePaths)
-        const ts = typescript.createProgram({
-            rootNames: sourcePaths,
-            options: tsOptions
-        })
-        return {
-            sources,
-            ts
-        }
+let project: Project | undefined = undefined
+
+export const getTsProject = (options: TypeContextOptions = {}) => {
+    if (!project) {
+        const packageJson = JSON.parse(Deno.readTextFileSync("package.json"))
+        const tsConfigFilePath =
+            options.tsConfig ?? packageJson.assertTsConfig
+                ? packageJson.assertTsConfig
+                : "tsconfig.json"
+        project = new Project({ tsConfigFilePath })
     }
-)
-
-const getConfig = (options: TypeContextOptions) => {
-    const packageRoot = findPackageRoot(process.cwd())
-    const packageJson = readJson(join(packageRoot, "package.json"))
-    const tsConfig =
-        options.tsConfig ?? packageJson.assertTsConfig
-            ? join(packageRoot, packageJson.assertTsConfig)
-            : join(packageRoot, "tsconfig.json")
-    const parsedConfig = compileTsConfig(tsConfig)
-    const sourcePaths = options.sourcePaths ?? parsedConfig.fileNames
-    return { tsOptions: parsedConfig.options, sourcePaths }
+    return project
 }
 
-const compileTsConfig = (configPath: string) => {
-    const config = typescript.parseJsonSourceFileConfigFileContent(
-        typescript.readJsonConfigFile(configPath, typescript.sys.readFile),
-        typescript.sys,
-        dirname(configPath)
-    )
-    config.options.noErrorTruncation = true
-    return config
+export const serializeTypeData = (project: Project) => {
+    const assertFile = project.getSourceFile("assert.ts")
+    if (assertFile) {
+        const assertFunction = assertFile
+            .getExportSymbols()
+            .find((_) => _.getName() === "assert")
+        const declaration = assertFunction
+            ?.getValueDeclaration()
+            ?.asKind(morph.SyntaxKind.VariableDeclaration)
+        const references = declaration?.findReferences()
+        console.log(references)
+    }
 }
+
+serializeTypeData(getTsProject())

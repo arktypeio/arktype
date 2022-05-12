@@ -3,7 +3,7 @@ import {
     fromEntries,
     PropertyOf,
     NonRecursible
-} from "./common.js"
+} from "./common.ts"
 
 export type UpdateFunction<T> = (currentValue: T) => T
 
@@ -27,9 +27,7 @@ export const updateMap = <T>(obj: T, updates: DeepUpdate<T>): T => {
                     return [k, currentValue]
                 }
                 if (typeof updaterValue === "function") {
-                    const update = updaterValue as any as UpdateFunction<
-                        PropertyOf<T>
-                    >
+                    const update = updaterValue as UpdateFunction<PropertyOf<T>>
                     return [k, update(currentValue)]
                 } else {
                     return isRecursible(currentValue) &&
@@ -39,10 +37,10 @@ export const updateMap = <T>(obj: T, updates: DeepUpdate<T>): T => {
                             ? [
                                   k,
                                   currentValue.map((item) =>
-                                      recurse(item, updaterValue as any)
+                                      recurse(item, updaterValue)
                                   )
                               ]
-                            : [k, recurse(currentValue, updaterValue as any)]
+                            : [k, recurse(currentValue, updaterValue)]
                         : [k, updaterValue]
                 }
             })

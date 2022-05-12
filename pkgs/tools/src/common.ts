@@ -1,4 +1,4 @@
-import { toString } from "./toString.js"
+import { toString } from "./toString.ts"
 
 export const sleep = async (seconds: number) =>
     new Promise<void>((resolve) => setTimeout(() => resolve(), seconds * 1000))
@@ -149,7 +149,9 @@ export type MapFunction<T, ReturnType> = (
 
 export const fromEntries = (entries: Entry[], asArray = false) => {
     const obj: any = asArray ? [] : {}
-    entries.forEach(([k, v]) => (obj[k] = v))
+    entries.forEach(([k, v]) => {
+        obj[k] = v
+    })
     return obj
 }
 
