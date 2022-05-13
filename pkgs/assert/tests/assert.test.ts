@@ -59,7 +59,7 @@ Deno.test("throws", () => {
         // Snap should never be populated
         () => assert(() => shouldThrow(false)).throws.snap(),
         undefined,
-        "()=>shouldThrow(false) didn't throw."
+        "didn't throw"
     )
 })
 Deno.test("args", () => {
@@ -110,7 +110,7 @@ Deno.test("bad type errors", () => {
 Deno.test("TS diagnostic chain", () => {
     // @ts-expect-error
     assert(() => shouldThrow({} as {} | false)).type.errors.snap(
-        `"Argument of type 'false | {}' is not assignable to parameter of type 'false'.Type '{}' is not assignable to type 'false'."`
+        `'Argument of type 'false | {}' is not assignable to parameter of type 'false'.Type '{}' is not assignable to type 'false'.'`
     )
 })
 Deno.test("chainable", () => {
@@ -120,85 +120,105 @@ Deno.test("chainable", () => {
         .throws("Test error.")
         .type.errors("Expected 0 arguments, but got 1.")
 })
-// Deno.test("bad chainable", () => {
-//     expect(() =>
-//         assert(n)
-//             .equals(5)
-//             .type.errors.equals("Expecting an error here will throw")
-//     ).toThrow("Expecting an error")
-//     expect(() => assert(n).is(7).type.toString("string")).toThrow("7")
-//     expect(
-//         () => assert(() => {}).returns.is(undefined).typed as () => null
-//     ).toThrow("null")
-// })
-// Deno.test("snap", () => {
-//     // You can delete the snapshot and it will be re-generated,
-//     // but not going to bother to write a test for that yet
-//     // since it's just calling jest's snapshot functionality
-//     assert(o).snap(`
-//             {
-//               "re": "do",
-//             }
-//         `)
-//     assert(o).equals({ re: "do" }).type.toString.snap(`"{ re: string; }"`)
-//     assert(o).snap.toFile()
-// })
-// Deno.test("any type", () => {
-//     assert(n as any).typedValue(5 as any)
-//     assert(o as any).typed as any
-//     expect(() => assert(n).typedValue(5 as any)).toThrow(/any[\s\S]*number/g)
-//     expect(() => assert({} as unknown).typed as any).toThrow(
-//         /any[\s\S]*unknown/g
-//     )
-// })
-// Deno.test("typedValue", () => {
-//     const getDo = () => "do"
-//     assert(o).typedValue({ re: getDo() })
-//     expect(() => assert(o).typedValue({ re: "do" as any })).toThrow("any")
-//     expect(() => assert(o).typedValue({ re: "don't" })).toThrow("don't")
-// })
-// Deno.test("return has typed value", () => {
-//     assert(() => "ooo").returns.typedValue("ooo")
-//     // Wrong value
-//     expect(() =>
-//         assert((input: string) => input)
-//             .args("yes")
-//             .returns.typedValue("whoop")
-//     ).toThrow("whoop")
-//     // Wrong type
-//     expect(() =>
-//         assert((input: string) => input)
-//             .args("yes")
-//             .returns.typedValue("yes" as unknown)
-//     ).toThrow("unknown")
-// })
-// Deno.test("throwsAndHasTypeError", () => {
-//     // @ts-expect-error
-//     assert(() => shouldThrow(true)).throwsAndHasTypeError(
-//         /true[\s\S]*not assignable[\s\S]*false/
-//     )
-//     // No thrown error
-//     expect(() =>
-//         // @ts-expect-error
-//         assert(() => shouldThrow(null)).throwsAndHasTypeError("not assignable")
-//     ).toThrow("didn't throw")
-//     // No type error
-//     expect(() =>
-//         assert(() => shouldThrow(true as any)).throwsAndHasTypeError(
-//             "not assignable"
-//         )
-//     ).toThrow(/Received[\s\S]*""/g)
-// })
-// Deno.test("sourcemap issues", () => {
-//     // Running this test with ts-node results in the wrong sourcemap,
-//     // where .typed's call position is wrong and potentially nonexistent
-//     // prettier-ignore
-//     assert(n)
-//             .is(5)
-//             .typed as number
-//     // prettier-ignore
-//     assert((a: number, b: number) => a + b)
-//             .args(1, 2)
-//             .returns
-//             .typedValue(3 as number)
-// })
+Deno.test("bad chainable", () => {
+    assertThrows(
+        () =>
+            assert(n)
+                .equals(5)
+                .type.errors.equals("Expecting an error here will throw"),
+        undefined,
+        "Expecting an error"
+    )
+    assertThrows(() => assert(n).is(7).type.toString("string"), undefined, "7")
+    assertThrows(
+        () => assert(() => {}).returns.is(undefined).typed as () => null,
+        undefined,
+        "null"
+    )
+})
+Deno.test("snap", () => {
+    assert(o).snap(`{re: 'do'}`)
+    assert(o).equals({ re: "do" }).type.toString.snap(`'{ re: string; }'`)
+})
+Deno.test("snap toFile", () => {
+    assert(o).snap.toFile()
+})
+Deno.test("any type", () => {
+    assert(n as any).typedValue(5 as any)
+    assert(o as any).typed as any
+    assertThrows(() => assert(n).typedValue(5 as any), undefined, "number")
+    assertThrows(() => assert({} as unknown).typed as any, undefined, "unknown")
+})
+Deno.test("typedValue", () => {
+    const getDo = () => "do"
+    assert(o).typedValue({ re: getDo() })
+    assertThrows(
+        () => assert(o).typedValue({ re: "do" as any }),
+        undefined,
+        "any"
+    )
+    assertThrows(
+        () => assert(o).typedValue({ re: "don't" }),
+        undefined,
+        "don't"
+    )
+})
+Deno.test("return has typed value", () => {
+    assert(() => "ooo").returns.typedValue("ooo")
+    // Wrong value
+    assertThrows(
+        () =>
+            assert((input: string) => input)
+                .args("yes")
+                .returns.typedValue("whoop"),
+        undefined,
+        "whoop"
+    )
+    // Wrong type
+    assertThrows(
+        () =>
+            assert((input: string) => input)
+                .args("yes")
+                .returns.typedValue("yes" as unknown),
+        undefined,
+        "unknown"
+    )
+})
+Deno.test("throwsAndHasTypeError", () => {
+    // @ts-expect-error
+    assert(() => shouldThrow(true)).throwsAndHasTypeError(
+        /true[\s\S]*not assignable[\s\S]*false/
+    )
+    // No thrown error
+    assertThrows(
+        () =>
+            // @ts-expect-error
+            assert(() => shouldThrow(null)).throwsAndHasTypeError(
+                "not assignable"
+            ),
+        undefined,
+        "didn't throw"
+    )
+    // No type error
+    assertThrows(
+        () =>
+            assert(() => shouldThrow(true as any)).throwsAndHasTypeError(
+                "not assignable"
+            ),
+        undefined,
+        "not assignable"
+    )
+})
+Deno.test("sourcemap issues", () => {
+    // Running this test with ts-node results in the wrong sourcemap,
+    // where .typed's call position is wrong and potentially nonexistent
+    // prettier-ignore
+    assert(n)
+            .is(5)
+            .typed as number
+    // prettier-ignore
+    assert((a: number, b: number) => a + b)
+            .args(1, 2)
+            .returns
+            .typedValue(3 as number)
+})

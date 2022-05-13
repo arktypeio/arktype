@@ -12,7 +12,7 @@ export type ValueFromTypeAssertion<
     Chained = Expected
 > = ChainableValueAssertion<
     [expected: Expected],
-    { allowTypeAssertions: false; returnsCount: 0 },
+    { allowTypeAssertions: false; returnsCount: 0; project: any },
     Chained,
     false
 >

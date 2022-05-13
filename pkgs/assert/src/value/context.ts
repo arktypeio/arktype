@@ -1,14 +1,21 @@
-import { SourcePosition } from "../positions.ts"
 import {
     Func,
     isRecursible,
     IsAnyOrUnknown,
     ListPossibleTypes,
-    ElementOf
+    ElementOf,
+    toString
 } from "@re-/tools"
+import { SourcePosition } from "../positions.ts"
 import { AssertionConfig } from "../assert.ts"
 import { TypeAssertions, typeAssertions } from "../type/context.ts"
-import * as testing from "@deno/testing"
+import { getAssertionData } from "../type/ts.ts"
+import {
+    updateInlineSnapshot,
+    getSnapshotByPosition,
+    updateExternalSnapshot
+} from "./snapshot.ts"
+import { assertEquals, assertMatch } from "@deno/testing"
 
 const getThrownMessage = (value: Function) => {
     try {
@@ -149,10 +156,10 @@ export type ValueAssertion<
 
 const defaultAssert = (value: unknown, expected: unknown, allowRegex = false) =>
     isRecursible(value)
-        ? testing.assertEquals(value, expected)
+        ? assertEquals(value, expected)
         : allowRegex && typeof value === "string" && expected instanceof RegExp
-        ? testing.assertMatch(value, expected)
-        : testing.assertEquals(value, expected)
+        ? assertMatch(value, expected)
+        : assertEquals(value, expected)
 
 export const getNextAssertions = (
     position: SourcePosition,
@@ -165,6 +172,7 @@ export const valueAssertions = <T, Config extends AssertionConfig>(
     config: Config
 ): ValueAssertion<ListPossibleTypes<T>, Config> => {
     const nextAssertions = getNextAssertions(position, config)
+    const serializedValue = toString(value)
     if (typeof value === "function") {
         const functionAssertions = {
             args: (...args: any[]) =>
@@ -186,30 +194,49 @@ export const valueAssertions = <T, Config extends AssertionConfig>(
             )
         } as any
         if (config["allowTypeAssertions"]) {
-            // return {
-            //     ...functionAssertions,
-            //     throwsAndHasTypeError: (matchValue: string | RegExp) => {
-            //         const matcher =
-            //             matchValue instanceof RegExp
-            //                 ? matchValue
-            //                 : RegExp(matchValue)
-            //         testing.assertMatch(getThrownMessage(value), matcher)
-            //         testing.assertMatch(errorsOfNextType(position), matcher)
-            //     }
-            // }
+            return {
+                ...functionAssertions,
+                throwsAndHasTypeError: (matchValue: string | RegExp) => {
+                    const matcher =
+                        matchValue instanceof RegExp
+                            ? matchValue
+                            : RegExp(matchValue)
+                    assertMatch(getThrownMessage(value), matcher)
+                    assertMatch(getAssertionData(position).errors, matcher)
+                }
+            }
         }
         return functionAssertions
     }
+    const inlineSnap = (expected?: string) => {
+        if (expected) {
+            assertEquals(serializedValue, expected)
+        } else {
+            updateInlineSnapshot({
+                value: serializedValue,
+                position,
+                project: config.project
+            })
+        }
+    }
+
     const baseAssertions = {
         is: (expected: unknown) => {
-            testing.assertEquals(value, expected)
+            assertEquals(value, expected)
             return nextAssertions
         },
-        // snap: Object.assign(expect(value).toMatchInlineSnapshot, {
-        //     toFile: expect(value).toMatchSnapshot
-        // }) as any,
+        snap: Object.assign(inlineSnap, {
+            toFile: () => {
+                const expectedSnapshot = getSnapshotByPosition(position)
+                if (expectedSnapshot) {
+                    assertEquals(serializedValue, expectedSnapshot)
+                } else {
+                    updateExternalSnapshot({ value: serializedValue, position })
+                }
+            }
+        }),
         equals: (expected: unknown) => {
-            testing.assertEquals(value, expected)
+            assertEquals(value, expected)
             return nextAssertions
         }
     } as any
@@ -218,7 +245,14 @@ export const valueAssertions = <T, Config extends AssertionConfig>(
             ...baseAssertions,
             typedValue: (expectedValue) => {
                 defaultAssert(value, expectedValue)
-                testing.assertEquals(value, expectedValue)
+                const typeData = getAssertionData(position)
+                if (!typeData.type.expected) {
+                    throw new Error(
+                        `Expected an 'as' expression after 'typed' prop access at position ${position.char} on` +
+                            `line ${position.line} of ${position.file}.`
+                    )
+                }
+                defaultAssert(typeData.type.actual, typeData.type.expected)
             }
         }
     }

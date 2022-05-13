@@ -198,7 +198,7 @@
             "type": {
                 "actual": "() => void"
             },
-            "errors": "Argument of type 'false | {}' is not assignable to parameter of type 'false'.",
+            "errors": "Argument of type 'false | {}' is not assignable to parameter of type 'false'.Type '{}' is not assignable to type 'false'.",
             "position": {
                 "line": 112,
                 "char": 5
@@ -222,6 +222,229 @@
             "errors": "Expected 0 arguments, but got 1.",
             "position": {
                 "line": 119,
+                "char": 5
+            }
+        },
+        {
+            "type": {
+                "actual": "number"
+            },
+            "errors": "",
+            "position": {
+                "line": 126,
+                "char": 13
+            }
+        },
+        {
+            "type": {
+                "actual": "number"
+            },
+            "errors": "",
+            "position": {
+                "line": 132,
+                "char": 24
+            }
+        },
+        {
+            "type": {
+                "actual": "void",
+                "expected": "() => null"
+            },
+            "errors": "",
+            "position": {
+                "line": 134,
+                "char": 15
+            }
+        },
+        {
+            "type": {
+                "actual": "{ re: string; }"
+            },
+            "errors": "",
+            "position": {
+                "line": 140,
+                "char": 5
+            }
+        },
+        {
+            "type": {
+                "actual": "{ re: string; }"
+            },
+            "errors": "",
+            "position": {
+                "line": 141,
+                "char": 5
+            }
+        },
+        {
+            "type": {
+                "actual": "{ re: string; }"
+            },
+            "errors": "",
+            "position": {
+                "line": 144,
+                "char": 5
+            }
+        },
+        {
+            "type": {
+                "actual": "any",
+                "expected": "any"
+            },
+            "errors": "",
+            "position": {
+                "line": 147,
+                "char": 5
+            }
+        },
+        {
+            "type": {
+                "actual": "any",
+                "expected": "any"
+            },
+            "errors": "",
+            "position": {
+                "line": 148,
+                "char": 5
+            }
+        },
+        {
+            "type": {
+                "actual": "number",
+                "expected": "any"
+            },
+            "errors": "",
+            "position": {
+                "line": 149,
+                "char": 24
+            }
+        },
+        {
+            "type": {
+                "actual": "unknown",
+                "expected": "any"
+            },
+            "errors": "",
+            "position": {
+                "line": 150,
+                "char": 24
+            }
+        },
+        {
+            "type": {
+                "actual": "{ re: string; }",
+                "expected": "{ re: string; }"
+            },
+            "errors": "",
+            "position": {
+                "line": 154,
+                "char": 5
+            }
+        },
+        {
+            "type": {
+                "actual": "{ re: string; }",
+                "expected": "{ re: any; }"
+            },
+            "errors": "",
+            "position": {
+                "line": 156,
+                "char": 15
+            }
+        },
+        {
+            "type": {
+                "actual": "{ re: string; }",
+                "expected": "{ re: string; }"
+            },
+            "errors": "",
+            "position": {
+                "line": 161,
+                "char": 15
+            }
+        },
+        {
+            "type": {
+                "actual": "\"ooo\"",
+                "expected": "\"ooo\""
+            },
+            "errors": "",
+            "position": {
+                "line": 167,
+                "char": 5
+            }
+        },
+        {
+            "type": {
+                "actual": "string",
+                "expected": "\"whoop\""
+            },
+            "errors": "",
+            "position": {
+                "line": 171,
+                "char": 13
+            }
+        },
+        {
+            "type": {
+                "actual": "string",
+                "expected": "unknown"
+            },
+            "errors": "",
+            "position": {
+                "line": 180,
+                "char": 13
+            }
+        },
+        {
+            "type": {
+                "actual": "() => void"
+            },
+            "errors": "Argument of type 'true' is not assignable to parameter of type 'false'.",
+            "position": {
+                "line": 189,
+                "char": 5
+            }
+        },
+        {
+            "type": {
+                "actual": "() => void"
+            },
+            "errors": "Argument of type 'null' is not assignable to parameter of type 'false'.",
+            "position": {
+                "line": 196,
+                "char": 13
+            }
+        },
+        {
+            "type": {
+                "actual": "() => void"
+            },
+            "errors": "",
+            "position": {
+                "line": 205,
+                "char": 13
+            }
+        },
+        {
+            "type": {
+                "actual": "number",
+                "expected": "number"
+            },
+            "errors": "",
+            "position": {
+                "line": 216,
+                "char": 5
+            }
+        },
+        {
+            "type": {
+                "actual": "number",
+                "expected": "number"
+            },
+            "errors": "",
+            "position": {
+                "line": 220,
                 "char": 5
             }
         }

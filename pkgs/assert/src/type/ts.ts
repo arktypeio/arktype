@@ -91,17 +91,17 @@ type AssertionsByFile = Record<string, AssertionData[]>
 
 type DiagnosticsByFile = Record<string, DiagnosticData[]>
 
-// const concatenateChainedErrors = (
-//     errors: ts.DiagnosticMessageChain[]
-// ): string =>
-//     errors
-//         .map(
-//             (msg) =>
-//                 `${msg.messageText}${
-//                     msg.next ? concatenateChainedErrors(msg.next) : ""
-//                 }`
-//         )
-//         .join(",")
+const concatenateChainedErrors = (
+    diagnostics: ts.DiagnosticMessageChain[]
+): string =>
+    diagnostics
+        .map(
+            (msg) =>
+                `${msg.messageText}${
+                    msg.next ? concatenateChainedErrors(msg.next) : ""
+                }`
+        )
+        .join("\n")
 
 export const serializeTypeData = (project: Project) => {
     const diagnosticsByFile: DiagnosticsByFile = {}
@@ -120,7 +120,7 @@ export const serializeTypeData = (project: Project) => {
         const end = start + (diagnostic.length ?? 0)
         let message = diagnostic.messageText
         if (typeof message === "object") {
-            message = message.messageText
+            message = concatenateChainedErrors([message])
         }
         const data: DiagnosticData = {
             start,
@@ -163,59 +163,67 @@ export const serializeTypeData = (project: Project) => {
         }
         const assertArg = assertCall.getArguments()[0]
         let typeToCheck = assertArg.getType()
+        let expectedType: string | undefined
         for (const ancestor of assertCall.getAncestors()) {
             const kind = ancestor.getKind()
             if (kind === SyntaxKind.ExpressionStatement) {
                 break
             }
-            const accessedProp = ancestor
-                .asKind(SyntaxKind.PropertyAccessExpression)
-                ?.getLastChildIfKind(SyntaxKind.Identifier)
-            if (accessedProp?.getText() === "returns") {
-                const signatures = typeToCheck.getCallSignatures()
-                if (!signatures.length) {
-                    throw new Error(`Unable to extract the return type.`)
-                } else if (signatures.length > 1) {
-                    throw new Error(
-                        `Unable to extract the return of a function with multiple signatures.`
+            if (kind === SyntaxKind.PropertyAccessExpression) {
+                const propName = ancestor.getLastChild()?.getText()
+                if (propName === "returns") {
+                    const signatures = typeToCheck.getCallSignatures()
+                    if (!signatures.length) {
+                        throw new Error(`Unable to extract the return type.`)
+                    } else if (signatures.length > 1) {
+                        throw new Error(
+                            `Unable to extract the return of a function with multiple signatures.`
+                        )
+                    }
+                    typeToCheck = signatures[0].getReturnType()
+                } else if (propName === "typedValue") {
+                    const typedValueCall = ancestor.getParentIfKind(
+                        SyntaxKind.CallExpression
                     )
+                    if (typedValueCall) {
+                        expectedType = typedValueCall
+                            .getArguments()[0]
+                            .getType()
+                            .getText()
+                    }
+                } else if (propName === "typed") {
+                    const typedAsExpression = ancestor.getParentIfKind(
+                        SyntaxKind.AsExpression
+                    )
+                    if (typedAsExpression) {
+                        expectedType = typedAsExpression.getType().getText()
+                    }
                 }
-                typeToCheck = signatures[0].getReturnType()
             }
         }
         const pos = ts.getLineAndCharacterOfPosition(
             assertCall.getSourceFile().compilerNode,
             assertCall.getPos() + assertCall.getLeadingTriviaWidth()
         )
-        const typedAsExpression = assertCall.getAncestors().find((ancestor) => {
-            const asExpression = ancestor.asKind(SyntaxKind.AsExpression)
-            if (!asExpression) {
-                return false
-            }
-            const castedProp = asExpression
-                .getFirstChildIfKind(SyntaxKind.PropertyAccessExpression)
-                ?.getLastChildIfKind(SyntaxKind.Identifier)
-            if (castedProp?.getText() === "typed") {
-                return true
-            }
-        })
         const errors = diagnosticsByFile[filePath].reduce(
             (message, diagnostic) => {
                 if (
                     diagnostic.start >= assertArg.getStart() &&
                     diagnostic.end <= assertArg.getEnd()
                 ) {
-                    return message + diagnostic.message
+                    if (message) {
+                        return `${message}\n${diagnostic.message}`
+                    }
+                    return diagnostic.message
                 }
                 return message
             },
             ""
         )
-
         const assertionData: AssertionData = {
             type: {
                 actual: typeToCheck.getText(),
-                expected: typedAsExpression?.getType().getText()
+                expected: expectedType
             },
             errors,
             // TypeScript's line + character are 0-based. Convert to 1-based.
@@ -248,11 +256,10 @@ const readAssertionData = (): AssertionsByFile => {
 
 export const getAssertionData = (position: SourcePosition) => {
     const data = readAssertionData()
-    const fileName = fromFileUrl(position.file)
-    if (!data[fileName]) {
+    if (!data[position.file]) {
         throw new Error(`Found no assertion data for ${fileName}.`)
     }
-    const match = data[fileName].find(
+    const match = data[position.file].find(
         (assertion) =>
             assertion.position.line === position.line &&
             assertion.position.char === position.char
@@ -264,5 +271,3 @@ export const getAssertionData = (position: SourcePosition) => {
     }
     return match
 }
-
-serializeTypeData(getTsProject())
