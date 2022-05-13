@@ -1,194 +1,249 @@
 {
-    "/home/ssalb/2re-po/pkgs/assert/tests/assert.assert.ts": [
+    "/home/ssalb/2re-po/pkgs/assert/tests/assert.test.ts": [
         {
-            "type": "{ re: string; }",
-            "errors": [],
+            "type": {
+                "actual": "{ re: string; }"
+            },
+            "errors": "",
             "position": {
                 "line": 20,
                 "char": 5
             }
         },
         {
-            "type": "{ re: string; }",
-            "errors": [],
+            "type": {
+                "actual": "{ re: string; }"
+            },
+            "errors": "",
             "position": {
                 "line": 21,
                 "char": 5
             }
         },
         {
-            "type": "{ re: string; }",
-            "errors": [],
+            "type": {
+                "actual": "{ re: string; }"
+            },
+            "errors": "",
             "position": {
                 "line": 22,
                 "char": 5
             }
         },
         {
-            "type": "{ re: string; }",
-            "errors": [],
+            "type": {
+                "actual": "{ re: string; }",
+                "expected": "{ re: string; }"
+            },
+            "errors": "",
             "position": {
                 "line": 25,
                 "char": 5
             }
         },
         {
-            "type": "{ re: string; }",
-            "errors": [],
+            "type": {
+                "actual": "{ re: string; }",
+                "expected": "{ re: number; }"
+            },
+            "errors": "",
             "position": {
                 "line": 28,
                 "char": 24
             }
         },
         {
-            "type": "{ re: string; }",
-            "errors": [],
+            "type": {
+                "actual": "{ re: string; }"
+            },
+            "errors": "",
             "position": {
                 "line": 31,
                 "char": 5
             }
         },
         {
-            "type": "{ re: string; }",
-            "errors": [],
+            "type": {
+                "actual": "{ re: string; }"
+            },
+            "errors": "",
             "position": {
                 "line": 34,
                 "char": 24
             }
         },
         {
-            "type": "() => null",
-            "errors": [],
+            "type": {
+                "actual": "null",
+                "expected": "null"
+            },
+            "errors": "",
             "position": {
                 "line": 37,
                 "char": 5
             }
         },
         {
-            "type": "(input: string) => string",
-            "errors": [],
+            "type": {
+                "actual": "string",
+                "expected": "number"
+            },
+            "errors": "",
             "position": {
                 "line": 40,
                 "char": 13
             }
         },
         {
-            "type": "(input: string) => string",
-            "errors": [],
+            "type": {
+                "actual": "string"
+            },
+            "errors": "",
             "position": {
                 "line": 48,
                 "char": 13
             }
         },
         {
-            "type": "() => never",
-            "errors": [],
+            "type": {
+                "actual": "() => never"
+            },
+            "errors": "",
             "position": {
                 "line": 57,
                 "char": 5
             }
         },
         {
-            "type": "() => void",
-            "errors": [],
+            "type": {
+                "actual": "() => void"
+            },
+            "errors": "",
             "position": {
                 "line": 60,
                 "char": 15
             }
         },
         {
-            "type": "(input: string) => string",
-            "errors": [],
+            "type": {
+                "actual": "string"
+            },
+            "errors": "",
             "position": {
                 "line": 66,
                 "char": 5
             }
         },
         {
-            "type": "(input: string) => never",
-            "errors": [],
+            "type": {
+                "actual": "(input: string) => never"
+            },
+            "errors": "",
             "position": {
                 "line": 72,
                 "char": 13
             }
         },
         {
-            "type": "any",
-            "errors": [],
+            "type": {
+                "actual": "any"
+            },
+            "errors": "Property 'nonexistent' does not exist on type 'number'.",
             "position": {
                 "line": 83,
                 "char": 5
             }
         },
         {
-            "type": "{ re: string; }",
-            "errors": [],
+            "type": {
+                "actual": "{ re: string; }"
+            },
+            "errors": "",
             "position": {
                 "line": 86,
                 "char": 5
             }
         },
         {
-            "type": "() => void",
-            "errors": [],
+            "type": {
+                "actual": "() => void"
+            },
+            "errors": "Expected 1 arguments, but got 2.",
             "position": {
                 "line": 88,
                 "char": 5
             }
         },
         {
-            "type": "{ re: string; }",
-            "errors": [],
+            "type": {
+                "actual": "{ re: string; }"
+            },
+            "errors": "",
             "position": {
                 "line": 94,
                 "char": 15
             }
         },
         {
-            "type": "() => void",
-            "errors": [],
+            "type": {
+                "actual": "() => void"
+            },
+            "errors": "Argument of type '\"this is a type error\"' is not assignable to parameter of type 'false'.",
             "position": {
                 "line": 101,
                 "char": 13
             }
         },
         {
-            "type": "() => void",
-            "errors": [],
+            "type": {
+                "actual": "() => void"
+            },
+            "errors": "Argument of type 'false | {}' is not assignable to parameter of type 'false'.",
             "position": {
                 "line": 112,
                 "char": 5
             }
         },
         {
-            "type": "{ re: string; }",
-            "errors": [],
+            "type": {
+                "actual": "{ re: string; }",
+                "expected": "{ re: string; }"
+            },
+            "errors": "",
             "position": {
                 "line": 117,
                 "char": 5
             }
         },
         {
-            "type": "() => never",
-            "errors": [],
+            "type": {
+                "actual": "() => never"
+            },
+            "errors": "Expected 0 arguments, but got 1.",
             "position": {
                 "line": 119,
                 "char": 5
             }
         }
     ],
-    "/home/ssalb/2re-po/pkgs/assert/tests/multifile.assert.ts": [
+    "/home/ssalb/2re-po/pkgs/assert/tests/multifile.test.ts": [
         {
-            "type": "{ i: string; }",
-            "errors": [],
+            "type": {
+                "actual": "{ i: string; }",
+                "expected": "{ i: string; }"
+            },
+            "errors": "",
             "position": {
                 "line": 5,
                 "char": 5
             }
         },
         {
-            "type": "{ g: unknown; }",
-            "errors": [],
+            "type": {
+                "actual": "{ g: unknown; }",
+                "expected": "{ g: string; }"
+            },
+            "errors": "",
             "position": {
                 "line": 7,
                 "char": 15

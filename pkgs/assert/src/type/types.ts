@@ -74,20 +74,20 @@
 //                 node = node.parent
 //             }
 //             let nodeType = checker.getTypeAtLocation(node)
-//             const errorMessages = errorsInFile
-//                 .filter(
-//                     (e) =>
-//                         (e.start ?? -1) >= node.getStart() &&
-//                         (e.start ?? -1) + (e.length ?? 0) <= node.getEnd()
-//                 )
-//                 .map((e) => {
-//                     if (typeof e.messageText === "string") {
-//                         return e.messageText
-//                     }
-//                     return `${
-//                         e.messageText.messageText
-//                     }${concatenateChainedErrors(e.messageText.next ?? [])}`
-//                 })
+// const errorMessages = errorsInFile
+//     .filter(
+//         (e) =>
+//             (e.start ?? -1) >= node.getStart() &&
+//             (e.start ?? -1) + (e.length ?? 0) <= node.getEnd()
+//     )
+//     .map((e) => {
+//         if (typeof e.messageText === "string") {
+//             return e.messageText
+//         }
+//         return `${
+//             e.messageText.messageText
+//         }${concatenateChainedErrors(e.messageText.next ?? [])}`
+//     })
 //             if (
 //                 // If intrinsic name is error but there are no corresponding
 //                 // diagnostics, node should not have a type (e.g. something like "(")

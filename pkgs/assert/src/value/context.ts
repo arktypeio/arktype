@@ -1,4 +1,3 @@
-// import { SourcePosition, withCallPosition } from "@re-/node"
 import { SourcePosition } from "../positions.ts"
 import {
     Func,
@@ -150,7 +149,7 @@ export type ValueAssertion<
 
 const defaultAssert = (value: unknown, expected: unknown, allowRegex = false) =>
     isRecursible(value)
-        ? testing.assertStrictEquals(value, expected)
+        ? testing.assertEquals(value, expected)
         : allowRegex && typeof value === "string" && expected instanceof RegExp
         ? testing.assertMatch(value, expected)
         : testing.assertEquals(value, expected)
@@ -210,25 +209,17 @@ export const valueAssertions = <T, Config extends AssertionConfig>(
         //     toFile: expect(value).toMatchSnapshot
         // }) as any,
         equals: (expected: unknown) => {
-            testing.assertStrictEquals(value, expected)
+            testing.assertEquals(value, expected)
             return nextAssertions
         }
     } as any
     if (config["allowTypeAssertions"]) {
         return {
-            ...baseAssertions
-            // typedValue: withCallPosition(
-            //     (expectedPosition, expectedValue) => {
-            //         defaultAssert(value, expectedValue)
-            //         testing.assertEquals(
-            //             nextTypeToString(position, {
-            //                 returnsCount: config.returnsCount
-            //             }),
-            //             nextTypeToString(expectedPosition)
-            //         )
-            //     },
-            //     { formatPath: { seperator: "/" } }
-            // )
+            ...baseAssertions,
+            typedValue: (expectedValue) => {
+                defaultAssert(value, expectedValue)
+                testing.assertEquals(value, expectedValue)
+            }
         }
     }
     return baseAssertions

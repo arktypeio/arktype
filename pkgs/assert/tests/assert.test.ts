@@ -59,7 +59,7 @@ Deno.test("throws", () => {
         // Snap should never be populated
         () => assert(() => shouldThrow(false)).throws.snap(),
         undefined,
-        "() => shouldThrow(false) didn't throw."
+        "()=>shouldThrow(false) didn't throw."
     )
 })
 Deno.test("args", () => {

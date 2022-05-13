@@ -6,13 +6,28 @@
     "configurations": [
         {
             "request": "launch",
-            "name": "Deno",
+            "name": "deno run",
             "type": "pwa-node",
             "program": "${file}",
             "cwd": "${workspaceFolder}",
             "runtimeExecutable": "deno",
             "runtimeArgs": [
                 "run",
+                "--import-map",
+                "./import_map.json",
+                "--inspect-brk",
+                "--allow-all"
+            ],
+            "attachSimplePort": 9229
+        },
+        {
+            "request": "launch",
+            "name": "deno test",
+            "type": "pwa-node",
+            "cwd": "${workspaceFolder}",
+            "runtimeExecutable": "deno",
+            "runtimeArgs": [
+                "test",
                 "--import-map",
                 "./import_map.json",
                 "--inspect-brk",

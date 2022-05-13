@@ -5,7 +5,7 @@ import {
 } from "../value/context.ts"
 import { AssertionConfig } from "../assert.ts"
 import * as testing from "@deno/testing"
-import { getAssertedTypeString, getAssertedTypeErrors } from "./ts.ts"
+import { getAssertionData } from "./ts.ts"
 
 export type ValueFromTypeAssertion<
     Expected,
@@ -39,12 +39,12 @@ export const typeAssertions: AssertTypeContext = (
             type: {
                 toString: chainableAssertion(
                     position,
-                    () => getAssertedTypeString(position),
+                    () => getAssertionData(position).type.actual,
                     { ...config, allowTypeAssertions: false }
                 ),
                 errors: chainableAssertion(
                     position,
-                    () => getAssertedTypeErrors(position),
+                    () => getAssertionData(position).errors,
                     { ...config, allowTypeAssertions: false },
                     { allowRegex: true }
                 )
@@ -53,16 +53,17 @@ export const typeAssertions: AssertTypeContext = (
         {
             get: (target, prop) => {
                 if (prop === "typed") {
-                    // testing.assertEquals(
-                    //     nextTypeToString(position, {
-                    //         returnsCount: config.returnsCount
-                    //     }),
-                    //     // Offset back to the original assert and cast expression
-                    //     nextTypeToString(position, {
-                    //         findParentMatching: (node) =>
-                    //             /[\s\S]*\.typed[\s\S]*as/.test(node.getText())
-                    //     })
-                    // )
+                    const assertionData = getAssertionData(position)
+                    if (!assertionData.type.expected) {
+                        throw new Error(
+                            `Expected an 'as' expression after 'typed' prop access at position ${position.char} on` +
+                                `line ${position.line} of ${position.file}.`
+                        )
+                    }
+                    testing.assertEquals(
+                        assertionData.type.actual,
+                        assertionData.type.expected
+                    )
                 }
                 return (target as any)[prop]
             }
