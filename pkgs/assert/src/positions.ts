@@ -1,6 +1,6 @@
 export type LinePosition = {
     line: number
-    column: number
+    char: number
 }
 
 export type SourcePosition = LinePosition & {

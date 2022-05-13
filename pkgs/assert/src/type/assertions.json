@@ -1,0 +1,198 @@
+{
+    "/home/ssalb/2re-po/pkgs/assert/tests/assert.assert.ts": [
+        {
+            "type": "{ re: string; }",
+            "errors": [],
+            "position": {
+                "line": 20,
+                "char": 5
+            }
+        },
+        {
+            "type": "{ re: string; }",
+            "errors": [],
+            "position": {
+                "line": 21,
+                "char": 5
+            }
+        },
+        {
+            "type": "{ re: string; }",
+            "errors": [],
+            "position": {
+                "line": 22,
+                "char": 5
+            }
+        },
+        {
+            "type": "{ re: string; }",
+            "errors": [],
+            "position": {
+                "line": 25,
+                "char": 5
+            }
+        },
+        {
+            "type": "{ re: string; }",
+            "errors": [],
+            "position": {
+                "line": 28,
+                "char": 24
+            }
+        },
+        {
+            "type": "{ re: string; }",
+            "errors": [],
+            "position": {
+                "line": 31,
+                "char": 5
+            }
+        },
+        {
+            "type": "{ re: string; }",
+            "errors": [],
+            "position": {
+                "line": 34,
+                "char": 24
+            }
+        },
+        {
+            "type": "() => null",
+            "errors": [],
+            "position": {
+                "line": 37,
+                "char": 5
+            }
+        },
+        {
+            "type": "(input: string) => string",
+            "errors": [],
+            "position": {
+                "line": 40,
+                "char": 13
+            }
+        },
+        {
+            "type": "(input: string) => string",
+            "errors": [],
+            "position": {
+                "line": 48,
+                "char": 13
+            }
+        },
+        {
+            "type": "() => never",
+            "errors": [],
+            "position": {
+                "line": 57,
+                "char": 5
+            }
+        },
+        {
+            "type": "() => void",
+            "errors": [],
+            "position": {
+                "line": 60,
+                "char": 15
+            }
+        },
+        {
+            "type": "(input: string) => string",
+            "errors": [],
+            "position": {
+                "line": 66,
+                "char": 5
+            }
+        },
+        {
+            "type": "(input: string) => never",
+            "errors": [],
+            "position": {
+                "line": 72,
+                "char": 13
+            }
+        },
+        {
+            "type": "any",
+            "errors": [],
+            "position": {
+                "line": 83,
+                "char": 5
+            }
+        },
+        {
+            "type": "{ re: string; }",
+            "errors": [],
+            "position": {
+                "line": 86,
+                "char": 5
+            }
+        },
+        {
+            "type": "() => void",
+            "errors": [],
+            "position": {
+                "line": 88,
+                "char": 5
+            }
+        },
+        {
+            "type": "{ re: string; }",
+            "errors": [],
+            "position": {
+                "line": 94,
+                "char": 15
+            }
+        },
+        {
+            "type": "() => void",
+            "errors": [],
+            "position": {
+                "line": 101,
+                "char": 13
+            }
+        },
+        {
+            "type": "() => void",
+            "errors": [],
+            "position": {
+                "line": 112,
+                "char": 5
+            }
+        },
+        {
+            "type": "{ re: string; }",
+            "errors": [],
+            "position": {
+                "line": 117,
+                "char": 5
+            }
+        },
+        {
+            "type": "() => never",
+            "errors": [],
+            "position": {
+                "line": 119,
+                "char": 5
+            }
+        }
+    ],
+    "/home/ssalb/2re-po/pkgs/assert/tests/multifile.assert.ts": [
+        {
+            "type": "{ i: string; }",
+            "errors": [],
+            "position": {
+                "line": 5,
+                "char": 5
+            }
+        },
+        {
+            "type": "{ g: unknown; }",
+            "errors": [],
+            "position": {
+                "line": 7,
+                "char": 15
+            }
+        }
+    ]
+}

@@ -20,14 +20,18 @@
     },
     "scripts": {
         "build": "reTsc",
-        "test": "jest 2>&1"
+        "test": "jest 2>&1",
+        "data": "deno run --import-map ./import_map.json --allow-all ./src/type/ts.ts",
+        "denoTest": "deno test --import-map ./import_map.json --allow-all"
     },
     "dependencies": {
         "@re-/tools": "2.0.0",
-        "@re-/node": "2.0.0"
+        "@re-/node": "2.0.0",
+        "ts-morph": "14.0.0"
     },
     "devDependencies": {
         "@types/node": "17.0.1",
-        "typescript": "4.6.3"
+        "typescript": "4.6.3",
+        "ts-node": "10.4.0"
     }
 }

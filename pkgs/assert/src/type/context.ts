@@ -1,11 +1,11 @@
 import { SourcePosition } from "../positions.ts"
-import { nextTypeToString, errorsOfNextType } from "./types.ts"
 import {
     chainableAssertion,
     ChainableValueAssertion
 } from "../value/context.ts"
 import { AssertionConfig } from "../assert.ts"
 import * as testing from "@deno/testing"
+import { getAssertedTypeString, getAssertedTypeErrors } from "./ts.ts"
 
 export type ValueFromTypeAssertion<
     Expected,
@@ -39,15 +39,12 @@ export const typeAssertions: AssertTypeContext = (
             type: {
                 toString: chainableAssertion(
                     position,
-                    () =>
-                        nextTypeToString(position, {
-                            returnsCount: config.returnsCount
-                        }),
+                    () => getAssertedTypeString(position),
                     { ...config, allowTypeAssertions: false }
                 ),
                 errors: chainableAssertion(
                     position,
-                    () => errorsOfNextType(position),
+                    () => getAssertedTypeErrors(position),
                     { ...config, allowTypeAssertions: false },
                     { allowRegex: true }
                 )
@@ -56,16 +53,16 @@ export const typeAssertions: AssertTypeContext = (
         {
             get: (target, prop) => {
                 if (prop === "typed") {
-                    testing.assertEquals(
-                        nextTypeToString(position, {
-                            returnsCount: config.returnsCount
-                        }),
-                        // Offset back to the original assert and cast expression
-                        nextTypeToString(position, {
-                            findParentMatching: (node) =>
-                                /[\s\S]*\.typed[\s\S]*as/.test(node.getText())
-                        })
-                    )
+                    // testing.assertEquals(
+                    //     nextTypeToString(position, {
+                    //         returnsCount: config.returnsCount
+                    //     }),
+                    //     // Offset back to the original assert and cast expression
+                    //     nextTypeToString(position, {
+                    //         findParentMatching: (node) =>
+                    //             /[\s\S]*\.typed[\s\S]*as/.test(node.getText())
+                    //     })
+                    // )
                 }
                 return (target as any)[prop]
             }

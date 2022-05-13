@@ -6,29 +6,29 @@
 
 // export type NodeFilter = (node: ts.Node) => boolean
 
-// export type NextTypeOptions = {
-//     positionOffset?: number
-//     returnsCount?: number
-//     findParentMatching?: NodeFilter
-//     nodeFilter?: NodeFilter
-// }
+// // export type NextTypeOptions = {
+// //     positionOffset?: number
+// //     returnsCount?: number
+// //     findParentMatching?: NodeFilter
+// //     nodeFilter?: NodeFilter
+// // }
 
-// export const errorsOfNextType = (
-//     position: SourcePosition,
-//     options: NextTypeOptions = {}
-// ) => {
-//     const context = getTsProject()
-//     return nextTypedNode(context, position, options).errors.join("\n")
-// }
+// // export const errorsOfNextType = (
+// //     position: SourcePosition,
+// //     options: NextTypeOptions = {}
+// // ) => {
+// //     const context = getTsProject()
+// //     return nextTypedNode(context, position, options).errors.join("\n")
+// // }
 
-// export const nextTypeToString = (
-//     position: SourcePosition,
-//     options: NextTypeOptions = {}
-// ) => {
-//     const context = getTsProject()
-//     const { type } = nextTypedNode(context, position, options)
-//     return context.ts.getTypeChecker().typeToString(type)
-// }
+// // export const nextTypeToString = (
+// //     position: SourcePosition,
+// //     options: NextTypeOptions = {}
+// // ) => {
+// //     const context = getTsProject()
+// //     const { type } = nextTypedNode(context, position, options)
+// //     return context.ts.getTypeChecker().typeToString(type)
+// // }
 
 // const concatenateChainedErrors = (e: ts.DiagnosticMessageChain[]): string =>
 //     e

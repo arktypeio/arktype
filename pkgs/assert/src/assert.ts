@@ -3,12 +3,15 @@ import { ListPossibleTypes, Merge } from "@re-/tools"
 import { typeAssertions, TypeAssertions } from "./type/index.ts"
 import { valueAssertions, ValueAssertion } from "./value/index.ts"
 import { SourcePosition } from "./positions.ts"
+import getCurrentLine from "https://unpkg.com/get-current-line@6.6.0/edition-deno/index.ts"
 
 export type AssertionResult<
     T,
     Opts extends AssertionOptions = {},
     Config = Merge<{ allowTypeAssertions: true; returnsCount: 0 }, Opts>
+    // @ts-ignore
 > = ValueAssertion<ListPossibleTypes<T>, Config> &
+    // @ts-ignore
     (Config["allowTypeAssertions"] extends true ? TypeAssertions : {})
 
 export type Assertion = <T>(value: T) => AssertionResult<T>
@@ -38,11 +41,8 @@ type AssertionResultKey =
 
 type PartialAssertionResult = { [K in AssertionResultKey]?: any }
 
-export const assertionContext: AssertionContext = (
-    position: SourcePosition,
-    value: unknown,
-    opts?: AssertionOptions
-) => {
+export const assert: Assertion = (value: unknown, opts?: AssertionOptions) => {
+    const position = getCurrentLine({ method: "assert" })
     const config = {
         allowTypeAssertions: true,
         returnsCount: 0,
@@ -58,10 +58,3 @@ export const assertionContext: AssertionContext = (
     }
     return assertionContext as any
 }
-
-// @ts-ignore
-export const assert: Assertion = () =>
-    withCallPosition(assertionContext, {
-        // TS uses "/" as their path seperator, even on Windows
-        formatPath: { seperator: "/" }
-    })

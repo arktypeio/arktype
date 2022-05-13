@@ -9,7 +9,6 @@ import {
 } from "@re-/tools"
 import { AssertionConfig } from "../assert.ts"
 import { TypeAssertions, typeAssertions } from "../type/context.ts"
-import { errorsOfNextType, nextTypeToString } from "../type/types.ts"
 import * as testing from "@deno/testing"
 
 const getThrownMessage = (value: Function) => {
@@ -188,17 +187,17 @@ export const valueAssertions = <T, Config extends AssertionConfig>(
             )
         } as any
         if (config["allowTypeAssertions"]) {
-            return {
-                ...functionAssertions,
-                throwsAndHasTypeError: (matchValue: string | RegExp) => {
-                    const matcher =
-                        matchValue instanceof RegExp
-                            ? matchValue
-                            : RegExp(matchValue)
-                    testing.assertMatch(getThrownMessage(value), matcher)
-                    testing.assertMatch(errorsOfNextType(position), matcher)
-                }
-            }
+            // return {
+            //     ...functionAssertions,
+            //     throwsAndHasTypeError: (matchValue: string | RegExp) => {
+            //         const matcher =
+            //             matchValue instanceof RegExp
+            //                 ? matchValue
+            //                 : RegExp(matchValue)
+            //         testing.assertMatch(getThrownMessage(value), matcher)
+            //         testing.assertMatch(errorsOfNextType(position), matcher)
+            //     }
+            // }
         }
         return functionAssertions
     }
