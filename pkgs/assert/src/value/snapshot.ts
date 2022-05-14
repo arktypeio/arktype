@@ -2,75 +2,84 @@ import { resolve } from "@deno/path"
 import { SourcePosition, LinePosition } from "../positions.ts"
 import { Project, ts, SyntaxKind, CallExpression } from "ts-morph"
 
-export type SnapshotUpdateArgs = {
+export interface BaseSnapShotArgs {
     position: SourcePosition
     value: string
-    project?: Project
 }
 
-const linePositionToKey = (position: LinePosition) =>
-    `${position.line}:${position.char}`
+export interface InlineSnapshotArgs extends BaseSnapShotArgs {
+    project: Project
+}
 
-export const expectedSnapshotsPath = resolve("assert.snapshots.json")
+export interface ExternalSnapshotArgs extends BaseSnapShotArgs {
+    name: string
+    path?: string
+}
 
 export const updateInlineSnapshot = ({
     position,
     value,
     project
-}: SnapshotUpdateArgs) => {
-    if (project) {
-        const file = project.getSourceFile(position.file)
-        if (!file) {
-            throw new Error(`Unknown file ${file}.`)
-        }
-        const assertIdentifier = file.getDescendantAtPos(
-            ts.getPositionOfLineAndCharacter(
-                file.compilerNode,
-                // TS uses 0-based line and char #s
-                position.line - 1,
-                position.char - 1
-            )
-        )
-        if (
-            assertIdentifier?.getKind() !== SyntaxKind.Identifier ||
-            assertIdentifier.getText() !== "assert"
-        ) {
-            throw new Error(`Unable to update your snapshot.`)
-        }
-        const snapCall = assertIdentifier
-            .getAncestors()
-            .find(
-                (ancestor) =>
-                    ancestor.getKind() === SyntaxKind.CallExpression &&
-                    ancestor.getText().replace(" ", "").endsWith("snap()")
-            ) as CallExpression
-        snapCall.addArgument("`" + value + "`")
-        file.saveSync()
+}: InlineSnapshotArgs) => {
+    const file = project.getSourceFile(position.file)
+    if (!file) {
+        throw new Error(`Unknown file ${file}.`)
     }
+    const assertIdentifier = file.getDescendantAtPos(
+        ts.getPositionOfLineAndCharacter(
+            file.compilerNode,
+            // TS uses 0-based line and char #s
+            position.line - 1,
+            position.char - 1
+        )
+    )
+    if (
+        assertIdentifier?.getKind() !== SyntaxKind.Identifier ||
+        assertIdentifier.getText() !== "assert"
+    ) {
+        throw new Error(`Unable to update your snapshot.`)
+    }
+    const snapCall = assertIdentifier
+        .getAncestors()
+        .find(
+            (ancestor) =>
+                ancestor.getKind() === SyntaxKind.CallExpression &&
+                ancestor.getText().replace(" ", "").endsWith("snap()")
+        ) as CallExpression
+    snapCall.addArgument("`" + value + "`")
+    file.saveSync()
 }
+
+export const defaultExternalSnapshotPath = resolve("assert.snapshots.json")
 
 export const updateExternalSnapshot = ({
+    value,
     position,
-    value
-}: SnapshotUpdateArgs) => {
-    const snapshotData = getSnapshots()
+    name,
+    path = defaultExternalSnapshotPath
+}: ExternalSnapshotArgs) => {
+    const snapshotData = getSnapshots(path)
     snapshotData[position.file] = {
         ...snapshotData[position.file],
-        [linePositionToKey(position)]: value
+        [name]: value
     }
-    Deno.writeTextFileSync(
-        expectedSnapshotsPath,
-        JSON.stringify(snapshotData, null, 4)
-    )
+    Deno.writeTextFileSync(path, JSON.stringify(snapshotData, null, 4))
 }
 
-export const getSnapshots = () => {
+export interface GetSnapshotsOptions {
+    path?: string
+}
+
+export const getSnapshots = (path: string) => {
     try {
-        return JSON.parse(Deno.readTextFileSync(expectedSnapshotsPath))
+        return JSON.parse(Deno.readTextFileSync(path))
     } catch {
         return {}
     }
 }
 
-export const getSnapshotByPosition = (position: SourcePosition) =>
-    getSnapshots()[position.file]?.[linePositionToKey(position)]
+export const getSnapshotByName = (
+    file: string,
+    name: string,
+    { path = defaultExternalSnapshotPath }: GetSnapshotsOptions
+) => getSnapshots(path)[file]?.[name]

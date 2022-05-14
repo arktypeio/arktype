@@ -1,5 +1,5 @@
-import { Project, SyntaxKind, ResolutionHostFactory, ts } from "ts-morph"
-import { fromFileUrl, dirname, join } from "@deno/path"
+import { Project, SyntaxKind, ResolutionHostFactory, ts, Type } from "ts-morph"
+import { fromFileUrl, dirname, resolve } from "@deno/path"
 import { SourcePosition, LinePosition } from "../positions.ts"
 
 // Absolute file paths TS will parse to raw contents
@@ -41,9 +41,6 @@ const resolutionHost: ResolutionHostFactory = (
                             moduleResolutionHost
                         ).resolvedModule!
                     )
-                    // throw new Error(
-                    //     `TypeScript was unable to resolve module ${moduleName} from '${containingFile}'.`
-                    // )
                 }
             }
             return resolvedModules
@@ -163,7 +160,7 @@ export const serializeTypeData = (project: Project) => {
         }
         const assertArg = assertCall.getArguments()[0]
         let typeToCheck = assertArg.getType()
-        let expectedType: string | undefined
+        let expectedType: Type | undefined
         for (const ancestor of assertCall.getAncestors()) {
             const kind = ancestor.getKind()
             if (kind === SyntaxKind.ExpressionStatement) {
@@ -189,14 +186,13 @@ export const serializeTypeData = (project: Project) => {
                         expectedType = typedValueCall
                             .getArguments()[0]
                             .getType()
-                            .getText()
                     }
                 } else if (propName === "typed") {
                     const typedAsExpression = ancestor.getParentIfKind(
                         SyntaxKind.AsExpression
                     )
                     if (typedAsExpression) {
-                        expectedType = typedAsExpression.getType().getText()
+                        expectedType = typedAsExpression.getType()
                     }
                 }
             }
@@ -223,7 +219,7 @@ export const serializeTypeData = (project: Project) => {
         const assertionData: AssertionData = {
             type: {
                 actual: typeToCheck.getText(),
-                expected: expectedType
+                expected: expectedType?.getText()
             },
             errors,
             // TypeScript's line + character are 0-based. Convert to 1-based.
@@ -238,7 +234,7 @@ export const serializeTypeData = (project: Project) => {
     return assertionsByFile
 }
 
-const expectedAssertionsPath = join(dirName, "assertions.json")
+const expectedAssertionsPath = resolve(".assertions.json")
 
 const writeAssertionData = (assertionsByFile: AssertionsByFile) =>
     Deno.writeTextFileSync(

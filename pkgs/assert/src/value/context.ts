@@ -12,8 +12,8 @@ import { TypeAssertions, typeAssertions } from "../type/context.ts"
 import { getAssertionData } from "../type/ts.ts"
 import {
     updateInlineSnapshot,
-    getSnapshotByPosition,
-    updateExternalSnapshot
+    updateExternalSnapshot,
+    getSnapshotByName
 } from "./snapshot.ts"
 import { assertEquals, assertMatch } from "@deno/testing"
 
@@ -92,12 +92,18 @@ export const chainableAssertion = (
         }
     )
 
+export type ExternalSnapshotOptions = {
+    path?: string
+}
+
 export type ComparableValueAssertion<
     PossibleValues extends any[],
     Config extends AssertionConfig
 > = {
     is: (value: ElementOf<PossibleValues>) => NextAssertions<Config>
-    snap: ((value?: string) => undefined) & { toFile: () => undefined }
+    snap: ((value?: string) => undefined) & {
+        toFile: (name: string, options?: ExternalSnapshotOptions) => undefined
+    }
     equals: (value: ElementOf<PossibleValues>) => NextAssertions<Config>
 } & (Config["allowTypeAssertions"] extends true
     ? { typedValue: (expected: unknown) => undefined }
@@ -226,12 +232,21 @@ export const valueAssertions = <T, Config extends AssertionConfig>(
             return nextAssertions
         },
         snap: Object.assign(inlineSnap, {
-            toFile: () => {
-                const expectedSnapshot = getSnapshotByPosition(position)
+            toFile: (name: string, options: ExternalSnapshotOptions = {}) => {
+                const expectedSnapshot = getSnapshotByName(
+                    position.file,
+                    name,
+                    options
+                )
                 if (expectedSnapshot) {
                     assertEquals(serializedValue, expectedSnapshot)
                 } else {
-                    updateExternalSnapshot({ value: serializedValue, position })
+                    updateExternalSnapshot({
+                        value: serializedValue,
+                        position,
+                        name,
+                        ...options
+                    })
                 }
             }
         }),

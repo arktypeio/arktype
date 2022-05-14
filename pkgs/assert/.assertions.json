@@ -6,16 +6,6 @@
             },
             "errors": "",
             "position": {
-                "line": 20,
-                "char": 5
-            }
-        },
-        {
-            "type": {
-                "actual": "{ re: string; }"
-            },
-            "errors": "",
-            "position": {
                 "line": 21,
                 "char": 5
             }
@@ -32,12 +22,22 @@
         },
         {
             "type": {
+                "actual": "{ re: string; }"
+            },
+            "errors": "",
+            "position": {
+                "line": 23,
+                "char": 5
+            }
+        },
+        {
+            "type": {
                 "actual": "{ re: string; }",
                 "expected": "{ re: string; }"
             },
             "errors": "",
             "position": {
-                "line": 25,
+                "line": 26,
                 "char": 5
             }
         },
@@ -48,7 +48,7 @@
             },
             "errors": "",
             "position": {
-                "line": 28,
+                "line": 29,
                 "char": 24
             }
         },
@@ -58,7 +58,7 @@
             },
             "errors": "",
             "position": {
-                "line": 31,
+                "line": 32,
                 "char": 5
             }
         },
@@ -68,7 +68,7 @@
             },
             "errors": "",
             "position": {
-                "line": 34,
+                "line": 35,
                 "char": 24
             }
         },
@@ -79,7 +79,7 @@
             },
             "errors": "",
             "position": {
-                "line": 37,
+                "line": 38,
                 "char": 5
             }
         },
@@ -90,7 +90,7 @@
             },
             "errors": "",
             "position": {
-                "line": 40,
+                "line": 41,
                 "char": 13
             }
         },
@@ -100,7 +100,7 @@
             },
             "errors": "",
             "position": {
-                "line": 48,
+                "line": 49,
                 "char": 13
             }
         },
@@ -110,7 +110,7 @@
             },
             "errors": "",
             "position": {
-                "line": 57,
+                "line": 58,
                 "char": 5
             }
         },
@@ -120,7 +120,7 @@
             },
             "errors": "",
             "position": {
-                "line": 60,
+                "line": 61,
                 "char": 15
             }
         },
@@ -130,7 +130,7 @@
             },
             "errors": "",
             "position": {
-                "line": 66,
+                "line": 67,
                 "char": 5
             }
         },
@@ -140,7 +140,7 @@
             },
             "errors": "",
             "position": {
-                "line": 72,
+                "line": 73,
                 "char": 13
             }
         },
@@ -150,7 +150,7 @@
             },
             "errors": "Property 'nonexistent' does not exist on type 'number'.",
             "position": {
-                "line": 83,
+                "line": 84,
                 "char": 5
             }
         },
@@ -160,7 +160,7 @@
             },
             "errors": "",
             "position": {
-                "line": 86,
+                "line": 87,
                 "char": 5
             }
         },
@@ -170,7 +170,7 @@
             },
             "errors": "Expected 1 arguments, but got 2.",
             "position": {
-                "line": 88,
+                "line": 89,
                 "char": 5
             }
         },
@@ -180,7 +180,7 @@
             },
             "errors": "",
             "position": {
-                "line": 94,
+                "line": 95,
                 "char": 15
             }
         },
@@ -190,7 +190,7 @@
             },
             "errors": "Argument of type '\"this is a type error\"' is not assignable to parameter of type 'false'.",
             "position": {
-                "line": 101,
+                "line": 102,
                 "char": 13
             }
         },
@@ -200,7 +200,7 @@
             },
             "errors": "Argument of type 'false | {}' is not assignable to parameter of type 'false'.Type '{}' is not assignable to type 'false'.",
             "position": {
-                "line": 112,
+                "line": 113,
                 "char": 5
             }
         },
@@ -211,7 +211,7 @@
             },
             "errors": "",
             "position": {
-                "line": 117,
+                "line": 118,
                 "char": 5
             }
         },
@@ -221,7 +221,7 @@
             },
             "errors": "Expected 0 arguments, but got 1.",
             "position": {
-                "line": 119,
+                "line": 120,
                 "char": 5
             }
         },
@@ -231,7 +231,7 @@
             },
             "errors": "",
             "position": {
-                "line": 126,
+                "line": 127,
                 "char": 13
             }
         },
@@ -241,7 +241,7 @@
             },
             "errors": "",
             "position": {
-                "line": 132,
+                "line": 133,
                 "char": 24
             }
         },
@@ -252,18 +252,8 @@
             },
             "errors": "",
             "position": {
-                "line": 134,
+                "line": 135,
                 "char": 15
-            }
-        },
-        {
-            "type": {
-                "actual": "{ re: string; }"
-            },
-            "errors": "",
-            "position": {
-                "line": 140,
-                "char": 5
             }
         },
         {
@@ -282,29 +272,49 @@
             },
             "errors": "",
             "position": {
-                "line": 144,
+                "line": 142,
                 "char": 5
             }
         },
         {
             "type": {
-                "actual": "any",
-                "expected": "any"
+                "actual": "{ re: string; }"
             },
             "errors": "",
             "position": {
-                "line": 147,
+                "line": 145,
                 "char": 5
             }
         },
         {
             "type": {
-                "actual": "any",
-                "expected": "any"
+                "actual": "{ re: string; }"
             },
             "errors": "",
             "position": {
                 "line": 148,
+                "char": 5
+            }
+        },
+        {
+            "type": {
+                "actual": "any",
+                "expected": "any"
+            },
+            "errors": "",
+            "position": {
+                "line": 151,
+                "char": 5
+            }
+        },
+        {
+            "type": {
+                "actual": "any",
+                "expected": "any"
+            },
+            "errors": "",
+            "position": {
+                "line": 152,
                 "char": 5
             }
         },
@@ -315,7 +325,7 @@
             },
             "errors": "",
             "position": {
-                "line": 149,
+                "line": 153,
                 "char": 24
             }
         },
@@ -326,7 +336,7 @@
             },
             "errors": "",
             "position": {
-                "line": 150,
+                "line": 154,
                 "char": 24
             }
         },
@@ -337,7 +347,7 @@
             },
             "errors": "",
             "position": {
-                "line": 154,
+                "line": 158,
                 "char": 5
             }
         },
@@ -348,7 +358,7 @@
             },
             "errors": "",
             "position": {
-                "line": 156,
+                "line": 160,
                 "char": 15
             }
         },
@@ -359,7 +369,7 @@
             },
             "errors": "",
             "position": {
-                "line": 161,
+                "line": 165,
                 "char": 15
             }
         },
@@ -370,7 +380,7 @@
             },
             "errors": "",
             "position": {
-                "line": 167,
+                "line": 171,
                 "char": 5
             }
         },
@@ -381,7 +391,7 @@
             },
             "errors": "",
             "position": {
-                "line": 171,
+                "line": 175,
                 "char": 13
             }
         },
@@ -392,7 +402,7 @@
             },
             "errors": "",
             "position": {
-                "line": 180,
+                "line": 184,
                 "char": 13
             }
         },
@@ -402,7 +412,7 @@
             },
             "errors": "Argument of type 'true' is not assignable to parameter of type 'false'.",
             "position": {
-                "line": 189,
+                "line": 193,
                 "char": 5
             }
         },
@@ -412,7 +422,7 @@
             },
             "errors": "Argument of type 'null' is not assignable to parameter of type 'false'.",
             "position": {
-                "line": 196,
+                "line": 200,
                 "char": 13
             }
         },
@@ -422,30 +432,8 @@
             },
             "errors": "",
             "position": {
-                "line": 205,
+                "line": 209,
                 "char": 13
-            }
-        },
-        {
-            "type": {
-                "actual": "number",
-                "expected": "number"
-            },
-            "errors": "",
-            "position": {
-                "line": 216,
-                "char": 5
-            }
-        },
-        {
-            "type": {
-                "actual": "number",
-                "expected": "number"
-            },
-            "errors": "",
-            "position": {
-                "line": 220,
-                "char": 5
             }
         }
     ],

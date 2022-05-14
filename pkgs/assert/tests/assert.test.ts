@@ -1,5 +1,6 @@
 import { assert } from "../src/index.ts"
 import { assertEquals, assertThrows } from "@deno/testing"
+import { resolve } from "@deno/path"
 
 export const f = {}
 
@@ -141,7 +142,10 @@ Deno.test("snap", () => {
     assert(o).equals({ re: "do" }).type.toString.snap(`'{ re: string; }'`)
 })
 Deno.test("snap toFile", () => {
-    assert(o).snap.toFile()
+    assert(o).snap.toFile("toFile")
+})
+Deno.test("snap to custom file", () => {
+    assert(o).snap.toFile("toFileAtPath", { path: "custom.snapshots.json" })
 })
 Deno.test("any type", () => {
     assert(n as any).typedValue(5 as any)
@@ -208,17 +212,4 @@ Deno.test("throwsAndHasTypeError", () => {
         undefined,
         "not assignable"
     )
-})
-Deno.test("sourcemap issues", () => {
-    // Running this test with ts-node results in the wrong sourcemap,
-    // where .typed's call position is wrong and potentially nonexistent
-    // prettier-ignore
-    assert(n)
-            .is(5)
-            .typed as number
-    // prettier-ignore
-    assert((a: number, b: number) => a + b)
-            .args(1, 2)
-            .returns
-            .typedValue(3 as number)
 })

@@ -1,5 +1,5 @@
 {
     "/home/ssalb/2re-po/pkgs/assert/tests/assert.test.ts": {
-        "toFile": "{re: 'do'}"
+        "toFileAtPath": "{re: 'do'}"
     }
 }
