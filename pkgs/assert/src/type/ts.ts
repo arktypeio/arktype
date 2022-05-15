@@ -1,10 +1,11 @@
-import { Project, SyntaxKind, ResolutionHostFactory, ts, Type } from "ts-morph"
+import { Project, SyntaxKind, ts, Type } from "ts-morph"
 import { dirname, join, basename } from "deno/std/path/mod.ts"
 import {
     SourcePosition,
     LinePosition,
     readJsonSync,
-    writeJsonSync
+    writeJsonSync,
+    existsSync
 } from "src/common.ts"
 
 // Absolute file paths TS will parse to raw contents
@@ -14,18 +15,28 @@ export type TypeContextOptions = {
     tsConfig?: string
 }
 
-let project: Project | undefined = undefined
+let project: Project | undefined
+let assertionsByDir: AssertionsByDir | undefined
+
+export const serializeAssertions = (assertionsByDir: AssertionsByDir) => {
+    Object.entries(assertionsByDir).forEach(([dirPath, assertionsByFile]) => {
+        writeJsonSync(getAssertionCachePath(dirPath), assertionsByFile)
+    })
+}
 
 export const getTsProject = (options: TypeContextOptions = {}) => {
     if (!project) {
-        const packageJson = JSON.parse(Deno.readTextFileSync("package.json"))
+        const reJson = readJsonSync("re.json")
         const tsConfigFilePath =
-            options.tsConfig ?? packageJson.assertTsConfig
-                ? packageJson.assertTsConfig
-                : "tsconfig.json"
+            options.tsConfig ?? reJson?.assert?.tsconfig ?? "tsconfig.json"
         project = new Project({
-            tsConfigFilePath
+            tsConfigFilePath: existsSync(tsConfigFilePath)
+                ? tsConfigFilePath
+                : undefined
         })
+        if (!reJson?.assert?.precached) {
+            assertionsByDir = serializeTypeData(project)
+        }
     }
     return project
 }
@@ -196,29 +207,46 @@ export const serializeTypeData = (project: Project) => {
         }
         assertionsByDir[dirPath][fileName].push(assertionData)
     })
-    Object.entries(assertionsByDir).forEach(([dirPath, assertionsByFile]) => {
-        writeJsonSync(getExpectedAssertionsPath(dirPath), assertionsByFile)
-    })
+    return assertionsByDir
 }
 
-export const getExpectedAssertionsPath = (dirPath: string) =>
+export const getAssertionCachePath = (dirPath: string) =>
     join(dirPath, ".assertions.json")
 
-const getAssertionsForFile = (file: string): AssertionData[] => {
+const getAssertionDataForFile = (
+    file: string,
+    cachePath: string | undefined
+): AssertionData[] => {
     const dirPath = dirname(file)
-    let dirAssertionData = readJsonSync(getExpectedAssertionsPath(dirPath))
-    if (!dirAssertionData) {
-        serializeTypeData(getTsProject())
+    const fileName = basename(file)
+    let dataForDir: AssertionsByFile | undefined
+    if (cachePath) {
+        dataForDir = readJsonSync(cachePath)
+        if (!dataForDir) {
+            throw new Error(
+                `Unable to find precached assertion data for ${dirPath}.` +
+                    `Did you forget to call serialize before running your tests?`
+            )
+        }
+    } else {
+        if (!assertionsByDir) {
+            throw new Error(`Found no assertion data.`)
+        } else if (!assertionsByDir[dirPath]) {
+            throw new Error(`Found no assertion data for dir '${dirPath}'.`)
+        }
+        dataForDir = assertionsByDir[dirPath]
     }
-    dirAssertionData = readJsonSync(getExpectedAssertionsPath(dirPath))
-    if (!dirAssertionData || !dirAssertionData[basename(file)]) {
-        throw new Error(`Unable to find serialized assertion data for ${file}.`)
+    if (!dataForDir[fileName]) {
+        throw new Error(`Found no assertion data for '${file}'.`)
     }
-    return dirAssertionData[basename(file)]
+    return dataForDir[fileName]
 }
 
-export const getAssertionData = (position: SourcePosition) => {
-    const fileAssertions = getAssertionsForFile(position.file)
+export const getAssertionDataForPosition = (
+    position: SourcePosition,
+    cachePath: string | undefined
+) => {
+    const fileAssertions = getAssertionDataForFile(position.file, cachePath)
     const match = fileAssertions.find(
         (assertion) =>
             assertion.position.line === position.line &&

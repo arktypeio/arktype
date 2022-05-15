@@ -5,7 +5,7 @@ import {
 } from "src/value/context.ts"
 import { AssertionConfig } from "src/assert.ts"
 import { assertEquals } from "deno/std/testing/asserts.ts"
-import { getAssertionData } from "src/type/ts.ts"
+import { getAssertionDataForPosition } from "src/type/ts.ts"
 
 export type ValueFromTypeAssertion<
     Expected,
@@ -34,12 +34,16 @@ export const typeAssertions: AssertTypeContext = (
             type: {
                 toString: chainableAssertion(
                     position,
-                    () => getAssertionData(position).type.actual,
+                    () =>
+                        getAssertionDataForPosition(position, config.cachePath)
+                            .type.actual,
                     { ...config, allowTypeAssertions: false }
                 ),
                 errors: chainableAssertion(
                     position,
-                    () => getAssertionData(position).errors,
+                    () =>
+                        getAssertionDataForPosition(position, config.cachePath)
+                            .errors,
                     { ...config, allowTypeAssertions: false },
                     { allowRegex: true }
                 )
@@ -48,7 +52,10 @@ export const typeAssertions: AssertTypeContext = (
         {
             get: (target, prop) => {
                 if (prop === "typed") {
-                    const assertionData = getAssertionData(position)
+                    const assertionData = getAssertionDataForPosition(
+                        position,
+                        config.cachePath
+                    )
                     if (!assertionData.type.expected) {
                         throw new Error(
                             `Expected an 'as' expression after 'typed' prop access at position ${position.char} on` +

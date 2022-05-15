@@ -1,7 +1,9 @@
 import { toString } from "./toString.ts"
 
 export const sleep = async (seconds: number) =>
-    new Promise<void>((resolve) => setTimeout(() => resolve(), seconds * 1000))
+    await new Promise<void>((resolve) =>
+        setTimeout(() => resolve(), seconds * 1000)
+    )
 
 export type UntilOptions = {
     timeoutSeconds?: number

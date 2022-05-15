@@ -9,11 +9,12 @@ import {
 import { SourcePosition } from "src/common.ts"
 import { AssertionConfig } from "src/assert.ts"
 import { TypeAssertions, typeAssertions } from "src/type/context.ts"
-import { getAssertionData } from "src/type/ts.ts"
+import { getAssertionDataForPosition } from "src/type/ts.ts"
 import {
-    updateInlineSnapshot,
     updateExternalSnapshot,
-    getSnapshotByName
+    getSnapshotByName,
+    queueInlineSnapshotUpdate,
+    writeInlineSnapshotToFile
 } from "src/value/snapshot.ts"
 import { assertEquals, assertMatch } from "deno/std/testing/asserts.ts"
 
@@ -226,21 +227,40 @@ export const valueAssertions = <T, Config extends AssertionConfig>(
                             ? matchValue
                             : RegExp(matchValue)
                     assertMatch(getThrownMessage(value), matcher)
-                    assertMatch(getAssertionData(position).errors, matcher)
+                    assertMatch(
+                        getAssertionDataForPosition(position, config.cachePath)
+                            .errors,
+                        matcher
+                    )
                 }
             }
         }
         return functionAssertions
     }
     const inlineSnap = (expected?: string) => {
-        if (expected) {
+        if (expected && !config.updateSnapshots) {
             assertEquals(serializedValue, expected)
         } else {
-            updateInlineSnapshot({
-                value: serializedValue,
+            const args = {
                 position,
-                project: config.project
-            })
+                value: serializedValue
+            }
+            if (config.cachePath) {
+                // If the precached option is enabled, we queue the snapshot updates for after tests finish
+                queueInlineSnapshotUpdate({
+                    ...args,
+                    cachePath: config.cachePath
+                })
+            } else if (config.project) {
+                writeInlineSnapshotToFile({
+                    ...args,
+                    project: config.project
+                })
+            } else {
+                throw new Error(
+                    `Expected either 'cachePath' or 'project' to be set.`
+                )
+            }
         }
     }
 
@@ -256,7 +276,7 @@ export const valueAssertions = <T, Config extends AssertionConfig>(
                     name,
                     options.path
                 )
-                if (expectedSnapshot) {
+                if (expectedSnapshot && !config.updateSnapshots) {
                     assertEquals(serializedValue, expectedSnapshot)
                 } else {
                     updateExternalSnapshot({
@@ -278,7 +298,10 @@ export const valueAssertions = <T, Config extends AssertionConfig>(
             ...baseAssertions,
             typedValue: (expectedValue) => {
                 defaultAssert(value, expectedValue)
-                const typeData = getAssertionData(position)
+                const typeData = getAssertionDataForPosition(
+                    position,
+                    config.cachePath
+                )
                 if (!typeData.type.expected) {
                     throw new Error(
                         `Expected an 'as' expression after 'typed' prop access at position ${position.char} on` +

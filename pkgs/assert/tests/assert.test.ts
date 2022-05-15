@@ -1,8 +1,11 @@
 import { assert } from "src/assert.ts"
-import { assertThrows } from "deno/std/testing/asserts.ts"
+import { assertThrows, assertEquals } from "deno/std/testing/asserts.ts"
+import { readJsonSync, writeJsonSync } from "src/common.ts"
+import { dirname, join, fromFileUrl } from "deno/std/path/mod.ts"
 
 const n: number = 5
 const o = { re: "do" }
+const testDir = dirname(fromFileUrl(import.meta.url))
 
 const shouldThrow = (a: false) => {
     if (a) {
@@ -137,12 +140,52 @@ Deno.test("bad chainable", () => {
 Deno.test("snap", () => {
     assert(o).snap(`{re: 'do'}`)
     assert(o).equals({ re: "do" }).type.toString.snap(`'{ re: string; }'`)
+    assertThrows(() => assert(o).snap(`{re: 'dorf'}`), undefined, "dorf")
 })
+
+const defaultSnapshotFile = join(testDir, "assert.snapshots.json")
+const defaultSnapshotFileContents = {
+    "assert.test.ts": {
+        toFile: "{re: 'do'}",
+        toFileUpdate: "{re: 'oldValue'}"
+    }
+}
+
 Deno.test("snap toFile", () => {
+    writeJsonSync(defaultSnapshotFile, defaultSnapshotFileContents)
     assert(o).snap.toFile("toFile")
+    assertThrows(
+        () => assert({ re: "kt" }).snap.toFile("toFile"),
+        undefined,
+        "kt"
+    )
+    const contentsAfterSnap = readJsonSync(defaultSnapshotFile)
+    assertEquals(defaultSnapshotFileContents, contentsAfterSnap)
+})
+Deno.test("snap update toFile", () => {
+    writeJsonSync(defaultSnapshotFile, defaultSnapshotFileContents)
+    // @ts-ignore (using internal updateSnapshots hook)
+    assert({ re: "dew" }, { updateSnapshots: true }).snap.toFile("toFileUpdate")
+    const updatedContents = readJsonSync(defaultSnapshotFile)
+    const expectedContents = {
+        "assert.test.ts": {
+            ...defaultSnapshotFileContents["assert.test.ts"],
+            ["toFileUpdate"]: "{re: 'dew'}"
+        }
+    }
+    assertEquals(updatedContents, expectedContents)
+    writeJsonSync(defaultSnapshotFile, defaultSnapshotFileContents)
 })
 Deno.test("snap to custom file", () => {
-    assert(o).snap.toFile("toFileAtPath", { path: "custom.snapshots.json" })
+    assert(o).snap.toFile("toCustomFile", {
+        path: "custom.snapshots.json"
+    })
+    const contents = readJsonSync(join(testDir, "custom.snapshots.json"))
+    assert(contents).equals({
+        "assert.test.ts": {
+            toCustomFile: "{re: 'do'}"
+        }
+    })
 })
 Deno.test("any type", () => {
     assert(n as any).typedValue(5 as any)

@@ -1,5 +1,4 @@
 // ex. scripts/build_npm.ts
-// @ts-ignore (this import will not be available outside of Deno)
 import { build, emptyDir } from "dnt"
 
 await emptyDir("./npm")
@@ -10,7 +9,6 @@ await build({
     shims: {
         deno: true
     },
-    scriptModule: false,
     packageManager: "pnpm",
     importMap: "import_map.json",
     package: {
@@ -41,8 +39,5 @@ await build({
     }
 })
 
-// post build steps
-// @ts-ignore
 Deno.copyFileSync("../../LICENSE", "npm/LICENSE")
-// @ts-ignore
 Deno.copyFileSync("README.md", "npm/README.md")

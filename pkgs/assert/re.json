@@ -1,0 +1,6 @@
+{
+    "assert": {
+        "tsconfig": "tsconfig.json",
+        "precached": false
+    }
+}

@@ -19,3 +19,12 @@ export const readJsonSync = (path: string) => {
         return undefined
     }
 }
+
+export const existsSync = (path: string) => {
+    try {
+        Deno.openSync(path).close()
+        return true
+    } catch {
+        return false
+    }
+}

@@ -1,10 +1,15 @@
 import { ListPossibleTypes, Merge } from "@re-/tools"
 import { fromFileUrl } from "deno/std/path/mod.ts"
-import { typeAssertions, TypeAssertions, getTsProject } from "src/type/index.ts"
+import {
+    typeAssertions,
+    TypeAssertions,
+    getTsProject,
+    getAssertionCachePath
+} from "src/type/index.ts"
 import { valueAssertions, ValueAssertion } from "src/value/index.ts"
 import { Project } from "ts-morph"
 import getCurrentLine from "get-current-line"
-import { SourcePosition } from "src/common.ts"
+import { readJsonSync, SourcePosition } from "src/common.ts"
 
 export type AssertionResult<
     T,
@@ -22,19 +27,30 @@ export type AssertionContext = <T, AllowTypeAssertions extends boolean>(
 export type AssertionConfig = {
     allowTypeAssertions: boolean
     returnsCount: number
-    project: Project
+    updateSnapshots: boolean
+    project: Project | undefined
+    cachePath: string | undefined
 }
 
-export const assert: Assertion = (value: unknown) => {
+export const assert: Assertion = (
+    value: unknown,
+    internalConfigHooks?: Partial<AssertionConfig>
+) => {
     const position = getCurrentLine({ method: "assert" })
-    const project = getTsProject()
     if (position.file.startsWith("file:///")) {
         position.file = fromFileUrl(position.file)
     }
-    const config = {
+    const updateSnapshots = !!(
+        internalConfigHooks?.updateSnapshots ||
+        Deno.args.find((arg) => arg === "--update" || arg === "-u")
+    )
+    const precached = !!readJsonSync("re.json")?.assert?.precached
+    const config: AssertionConfig = {
         allowTypeAssertions: true,
         returnsCount: 0,
-        project
+        updateSnapshots,
+        project: precached ? undefined : getTsProject(),
+        cachePath: precached ? getAssertionCachePath(position.file) : undefined
     }
     const assertionContext = valueAssertions(position, value, config)
     if (config.allowTypeAssertions) {

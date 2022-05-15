@@ -1,7 +1,3 @@
 {
-    "importMap": "import_map.json",
-    "tasks": {
-        "build": "deno run --allow-all build.ts",
-        "test": "deno test --allow-all"
-    }
+    "importMap": "import_map.json"
 }
