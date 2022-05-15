@@ -1,4 +1,4 @@
-import { assert } from "../src/index.ts"
+import { assert } from "../src/index.js"
 import { assertThrows } from "@deno/testing"
 
 Deno.test("gathers types across files", () => {

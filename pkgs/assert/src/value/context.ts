@@ -6,15 +6,15 @@ import {
     ElementOf,
     toString
 } from "@re-/tools"
-import { SourcePosition } from "../positions.ts"
-import { AssertionConfig } from "../assert.ts"
-import { TypeAssertions, typeAssertions } from "../type/context.ts"
-import { getAssertionData } from "../type/ts.ts"
+import { SourcePosition } from "../positions.js"
+import { AssertionConfig } from "../assert.js"
+import { TypeAssertions, typeAssertions } from "../type/context.js"
+import { getAssertionData } from "../type/ts.js"
 import {
     updateInlineSnapshot,
     updateExternalSnapshot,
     getSnapshotByName
-} from "./snapshot.ts"
+} from "./snapshot.js"
 import { assertEquals, assertMatch } from "@deno/testing"
 
 const getThrownMessage = (value: Function) => {

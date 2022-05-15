@@ -1,5 +1,5 @@
-import { resolve } from "@deno/path"
-import { SourcePosition, LinePosition } from "../positions.ts"
+import { join, dirname } from "@deno/path"
+import { SourcePosition, LinePosition } from "../positions.js"
 import { Project, ts, SyntaxKind, CallExpression } from "ts-morph"
 
 export interface BaseSnapShotArgs {
@@ -50,20 +50,22 @@ export const updateInlineSnapshot = ({
     file.saveSync()
 }
 
-export const defaultExternalSnapshotPath = resolve("assert.snapshots.json")
+export const getDefaultSnapshotPath = (testFile: string) =>
+    join(dirname(testFile), "assert.snapshots.json")
 
 export const updateExternalSnapshot = ({
     value,
     position,
     name,
-    path = defaultExternalSnapshotPath
+    path
 }: ExternalSnapshotArgs) => {
-    const snapshotData = getSnapshots(path)
+    const snapshotPath = path ?? getDefaultSnapshotPath(position.file)
+    const snapshotData = getSnapshots(snapshotPath)
     snapshotData[position.file] = {
         ...snapshotData[position.file],
         [name]: value
     }
-    Deno.writeTextFileSync(path, JSON.stringify(snapshotData, null, 4))
+    Deno.writeTextFileSync(snapshotPath, JSON.stringify(snapshotData, null, 4))
 }
 
 export interface GetSnapshotsOptions {
@@ -81,5 +83,5 @@ export const getSnapshots = (path: string) => {
 export const getSnapshotByName = (
     file: string,
     name: string,
-    { path = defaultExternalSnapshotPath }: GetSnapshotsOptions
-) => getSnapshots(path)[file]?.[name]
+    { path }: GetSnapshotsOptions
+) => getSnapshots(path ?? getDefaultSnapshotPath(file))[file]?.[name]

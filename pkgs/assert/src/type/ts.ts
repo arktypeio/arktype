@@ -1,6 +1,6 @@
 import { Project, SyntaxKind, ResolutionHostFactory, ts, Type } from "ts-morph"
 import { fromFileUrl, dirname, resolve } from "@deno/path"
-import { SourcePosition, LinePosition } from "../positions.ts"
+import { SourcePosition, LinePosition } from "../positions.js"
 
 // Absolute file paths TS will parse to raw contents
 export type ContentsByFile = Record<string, string>

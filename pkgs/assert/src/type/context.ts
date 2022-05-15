@@ -1,11 +1,11 @@
-import { SourcePosition } from "../positions.ts"
+import { SourcePosition } from "../positions.js"
 import {
     chainableAssertion,
     ChainableValueAssertion
-} from "../value/context.ts"
-import { AssertionConfig } from "../assert.ts"
+} from "../value/context.js"
+import { AssertionConfig } from "../assert.js"
 import * as testing from "@deno/testing"
-import { getAssertionData } from "./ts.ts"
+import { getAssertionData } from "./ts.js"
 
 export type ValueFromTypeAssertion<
     Expected,

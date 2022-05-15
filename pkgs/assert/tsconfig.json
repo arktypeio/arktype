@@ -2,7 +2,8 @@
     "extends": "@re-/node/tsconfig.base",
     "compilerOptions": {
         "baseUrl": "src",
-        "outDir": "out"
+        "outDir": "out",
+        "typeRoots": ["./node_modules/@deno"]
     },
     "include": ["src", "tests"]
 }

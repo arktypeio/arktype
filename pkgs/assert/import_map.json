@@ -2,10 +2,12 @@
     "imports": {
         "@re-/tools": "../tools/src/index.ts",
         "@re-/node": "../node/src/index.ts",
+        "@deno/std/": "https://deno.land/std@0.139.0/",
         "@deno/testing": "https://deno.land/std@0.139.0/testing/asserts.ts",
         "@deno/snapshot": "https://deno.land/std@0.139.0/testing/snapshot.ts",
         "@deno/path": "https://deno.land/std@0.139.0/path/mod.ts",
         "@deno/fs": "https://deno.land/std@0.139.0/fs/mod.ts",
-        "ts-morph": "https://deno.land/x/ts_morph@14.0.0/mod.ts"
+        "ts-morph": "https://deno.land/x/ts_morph@14.0.0/mod.ts",
+        "positions": "./src/positions.ts"
     }
 }
