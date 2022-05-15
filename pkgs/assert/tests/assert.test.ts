@@ -1,9 +1,5 @@
-import { assert } from "../src/assert.js"
-import { Deno } from "@deno/shim-deno"
-import { assertEquals, assertThrows } from "@std/0.139.0"
-import { resolve } from "@deno/path"
-
-export { assertEquals, assertThrows } from "@deno/testing"
+import { assert } from "src/assert.ts"
+import { assertThrows } from "deno/std/testing/asserts.ts"
 
 const n: number = 5
 const o = { re: "do" }

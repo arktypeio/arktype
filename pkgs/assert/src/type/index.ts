@@ -1,2 +1,2 @@
-export * from "./context.js"
-export * from "./ts.js"
+export * from "src/type/context.ts"
+export * from "src/type/ts.ts"

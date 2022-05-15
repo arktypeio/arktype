@@ -6,16 +6,16 @@ import {
     ElementOf,
     toString
 } from "@re-/tools"
-import { SourcePosition } from "../positions.js"
-import { AssertionConfig } from "../assert.js"
-import { TypeAssertions, typeAssertions } from "../type/context.js"
-import { getAssertionData } from "../type/ts.js"
+import { SourcePosition } from "src/common.ts"
+import { AssertionConfig } from "src/assert.ts"
+import { TypeAssertions, typeAssertions } from "src/type/context.ts"
+import { getAssertionData } from "src/type/ts.ts"
 import {
     updateInlineSnapshot,
     updateExternalSnapshot,
     getSnapshotByName
-} from "./snapshot.js"
-import { assertEquals, assertMatch } from "@deno/testing"
+} from "src/value/snapshot.ts"
+import { assertEquals, assertMatch } from "deno/std/testing/asserts.ts"
 
 const getThrownMessage = (value: Function) => {
     try {
@@ -31,14 +31,19 @@ const getThrownMessage = (value: Function) => {
 
 export type ChainableValueAssertion<
     ArgsType extends [value: any, ...rest: any[]],
-    Config extends AssertionConfig,
+    AllowTypeAssertions extends boolean,
     Chained = ArgsType[0],
     IsReturn extends boolean = false,
-    ImmediateAssertions = ValueAssertion<ListPossibleTypes<Chained>, Config> &
-        (IsReturn extends true ? NextAssertions<Config> : {})
+    ImmediateAssertions = ValueAssertion<
+        ListPossibleTypes<Chained>,
+        AllowTypeAssertions
+    > &
+        (IsReturn extends true ? NextAssertions<AllowTypeAssertions> : {})
 > = (<Args extends ArgsType | [] = []>(
     ...args: Args
-) => Args extends [] ? ImmediateAssertions : NextAssertions<Config>) &
+) => Args extends []
+    ? ImmediateAssertions
+    : NextAssertions<AllowTypeAssertions>) &
     ImmediateAssertions
 
 export type ChainableAssertionOptions = {
@@ -98,24 +103,37 @@ export type ExternalSnapshotOptions = {
 
 export type ComparableValueAssertion<
     PossibleValues extends any[],
-    Config extends AssertionConfig
+    AllowTypeAssertions extends boolean
 > = {
-    is: (value: ElementOf<PossibleValues>) => NextAssertions<Config>
+    is: (
+        value: ElementOf<PossibleValues>
+    ) => NextAssertions<AllowTypeAssertions>
     snap: ((value?: string) => undefined) & {
         toFile: (name: string, options?: ExternalSnapshotOptions) => undefined
     }
-    equals: (value: ElementOf<PossibleValues>) => NextAssertions<Config>
-} & (Config["allowTypeAssertions"] extends true
+    equals: (
+        value: ElementOf<PossibleValues>
+    ) => NextAssertions<AllowTypeAssertions>
+} & (AllowTypeAssertions extends true
     ? { typedValue: (expected: unknown) => undefined }
     : {})
 
 export type CallableFunctionAssertion<
     Return,
-    Config extends AssertionConfig
+    AllowTypeAssertions extends boolean
 > = {
-    returns: ChainableValueAssertion<[value: Return], Config, Return, true>
-    throws: ChainableValueAssertion<[message: string | RegExp], Config, string>
-} & (Config["allowTypeAssertions"] extends true
+    returns: ChainableValueAssertion<
+        [value: Return],
+        AllowTypeAssertions,
+        Return,
+        true
+    >
+    throws: ChainableValueAssertion<
+        [message: string | RegExp],
+        AllowTypeAssertions,
+        string
+    >
+} & (AllowTypeAssertions extends true
     ? {
           throwsAndHasTypeError: (message: string | RegExp) => undefined
       }
@@ -124,10 +142,10 @@ export type CallableFunctionAssertion<
 export type FunctionalValueAssertion<
     Args extends any[],
     Return,
-    Config extends AssertionConfig
+    AllowTypeAssertions extends boolean
 > = FunctionAssertionWithArgsIfNeeded<
     Args,
-    CallableFunctionAssertion<Return, Config>
+    CallableFunctionAssertion<Return, AllowTypeAssertions>
 >
 
 export type FunctionAssertionWithArgsIfNeeded<
@@ -140,8 +158,8 @@ export type FunctionAssertionWithArgsIfNeeded<
               args: (...args: Args) => AssertionsOnceCallable
           })
 
-export type NextAssertions<Config extends AssertionConfig> =
-    Config["allowTypeAssertions"] extends true ? TypeAssertions : {}
+export type NextAssertions<AllowTypeAssertions extends boolean> =
+    AllowTypeAssertions extends true ? TypeAssertions : {}
 
 /**
  *  If we don't pass the possible values as a list, TS
@@ -151,14 +169,14 @@ export type NextAssertions<Config extends AssertionConfig> =
 
 export type ValueAssertion<
     PossibleValues extends any[],
-    Config extends AssertionConfig,
+    AllowTypeAssertions extends boolean,
     T = ElementOf<PossibleValues>
 > = IsAnyOrUnknown<T> extends true
-    ? FunctionalValueAssertion<T[], T, Config> &
-          ComparableValueAssertion<PossibleValues, Config>
+    ? FunctionalValueAssertion<T[], T, AllowTypeAssertions> &
+          ComparableValueAssertion<PossibleValues, AllowTypeAssertions>
     : T extends Func<infer Args, infer Return>
-    ? FunctionalValueAssertion<Args, Return, Config>
-    : ComparableValueAssertion<PossibleValues, Config>
+    ? FunctionalValueAssertion<Args, Return, AllowTypeAssertions>
+    : ComparableValueAssertion<PossibleValues, AllowTypeAssertions>
 
 const defaultAssert = (value: unknown, expected: unknown, allowRegex = false) =>
     isRecursible(value)
@@ -176,7 +194,7 @@ export const valueAssertions = <T, Config extends AssertionConfig>(
     position: SourcePosition,
     value: T,
     config: Config
-): ValueAssertion<ListPossibleTypes<T>, Config> => {
+): ValueAssertion<ListPossibleTypes<T>, Config["allowTypeAssertions"]> => {
     const nextAssertions = getNextAssertions(position, config)
     const serializedValue = toString(value)
     if (typeof value === "function") {
@@ -236,7 +254,7 @@ export const valueAssertions = <T, Config extends AssertionConfig>(
                 const expectedSnapshot = getSnapshotByName(
                     position.file,
                     name,
-                    options
+                    options.path
                 )
                 if (expectedSnapshot) {
                     assertEquals(serializedValue, expectedSnapshot)

@@ -1,6 +1,11 @@
 import { Project, SyntaxKind, ResolutionHostFactory, ts, Type } from "ts-morph"
-import { fromFileUrl, dirname, resolve } from "@deno/path"
-import { SourcePosition, LinePosition } from "../positions.js"
+import { dirname, join, basename } from "deno/std/path/mod.ts"
+import {
+    SourcePosition,
+    LinePosition,
+    readJsonSync,
+    writeJsonSync
+} from "src/common.ts"
 
 // Absolute file paths TS will parse to raw contents
 export type ContentsByFile = Record<string, string>
@@ -11,49 +16,6 @@ export type TypeContextOptions = {
 
 let project: Project | undefined = undefined
 
-const fileName = fromFileUrl(import.meta.url)
-const dirName = dirname(fileName)
-
-const resolutionHost: ResolutionHostFactory = (
-    moduleResolutionHost,
-    getCompilerOptions
-) => {
-    return {
-        resolveModuleNames: (moduleNames, containingFile) => {
-            const compilerOptions = getCompilerOptions()
-            const resolvedModules: ts.ResolvedModule[] = []
-
-            for (const moduleName of moduleNames.map(removeTsExtension)) {
-                const result = ts.resolveModuleName(
-                    moduleName,
-                    containingFile,
-                    compilerOptions,
-                    moduleResolutionHost
-                )
-                if (result.resolvedModule) {
-                    resolvedModules.push(result.resolvedModule)
-                } else {
-                    resolvedModules.push(
-                        ts.resolveModuleName(
-                            fileName,
-                            containingFile,
-                            compilerOptions,
-                            moduleResolutionHost
-                        ).resolvedModule!
-                    )
-                }
-            }
-            return resolvedModules
-        }
-    }
-
-    function removeTsExtension(moduleName: string) {
-        if (moduleName.slice(-3).toLowerCase() === ".ts")
-            return moduleName.slice(0, -3)
-        return moduleName
-    }
-}
-
 export const getTsProject = (options: TypeContextOptions = {}) => {
     if (!project) {
         const packageJson = JSON.parse(Deno.readTextFileSync("package.json"))
@@ -62,8 +24,7 @@ export const getTsProject = (options: TypeContextOptions = {}) => {
                 ? packageJson.assertTsConfig
                 : "tsconfig.json"
         project = new Project({
-            tsConfigFilePath,
-            resolutionHost
+            tsConfigFilePath
         })
     }
     return project
@@ -85,6 +46,8 @@ type DiagnosticData = {
 }
 
 type AssertionsByFile = Record<string, AssertionData[]>
+
+type AssertionsByDir = Record<string, AssertionsByFile>
 
 type DiagnosticsByFile = Record<string, DiagnosticData[]>
 
@@ -130,8 +93,8 @@ export const serializeTypeData = (project: Project) => {
             diagnosticsByFile[filePath] = [data]
         }
     })
-    const assertionsByFile: AssertionsByFile = {}
-    const assertFile = project.getSourceFile("assert.ts")
+    const assertionsByDir: AssertionsByDir = {}
+    const assertFile = project.getSourceFile("src/assert.ts")
     const assertFunction = assertFile
         ?.getExportSymbols()
         .find((_) => _.getName() === "assert")
@@ -149,14 +112,19 @@ export const serializeTypeData = (project: Project) => {
     references.forEach((ref) => {
         const file = ref.getSourceFile()
         const filePath = file.getFilePath()
+        const dirPath = dirname(filePath)
+        const fileName = basename(filePath)
         const assertCall = ref
             .getNode()
             .getParentIfKind(SyntaxKind.CallExpression)
         if (!assertCall) {
             return
         }
-        if (!assertionsByFile[filePath]) {
-            assertionsByFile[filePath] = []
+        if (!assertionsByDir[dirPath]) {
+            assertionsByDir[dirPath] = {}
+        }
+        if (!assertionsByDir[dirPath][fileName]) {
+            assertionsByDir[dirPath][fileName] = []
         }
         const assertArg = assertCall.getArguments()[0]
         let typeToCheck = assertArg.getType()
@@ -201,8 +169,8 @@ export const serializeTypeData = (project: Project) => {
             assertCall.getSourceFile().compilerNode,
             assertCall.getPos() + assertCall.getLeadingTriviaWidth()
         )
-        const errors = diagnosticsByFile[filePath].reduce(
-            (message, diagnostic) => {
+        const errors =
+            diagnosticsByFile[filePath]?.reduce((message, diagnostic) => {
                 if (
                     diagnostic.start >= assertArg.getStart() &&
                     diagnostic.end <= assertArg.getEnd()
@@ -213,9 +181,7 @@ export const serializeTypeData = (project: Project) => {
                     return diagnostic.message
                 }
                 return message
-            },
-            ""
-        )
+            }, "") ?? ""
         const assertionData: AssertionData = {
             type: {
                 actual: typeToCheck.getText(),
@@ -228,41 +194,39 @@ export const serializeTypeData = (project: Project) => {
                 char: pos.character + 1
             }
         }
-        assertionsByFile[filePath].push(assertionData)
+        assertionsByDir[dirPath][fileName].push(assertionData)
     })
-    writeAssertionData(assertionsByFile)
-    return assertionsByFile
+    Object.entries(assertionsByDir).forEach(([dirPath, assertionsByFile]) => {
+        writeJsonSync(getExpectedAssertionsPath(dirPath), assertionsByFile)
+    })
 }
 
-const expectedAssertionsPath = resolve(".assertions.json")
+export const getExpectedAssertionsPath = (dirPath: string) =>
+    join(dirPath, ".assertions.json")
 
-const writeAssertionData = (assertionsByFile: AssertionsByFile) =>
-    Deno.writeTextFileSync(
-        expectedAssertionsPath,
-        JSON.stringify(assertionsByFile, null, 4)
-    )
-
-const readAssertionData = (): AssertionsByFile => {
-    try {
-        return JSON.parse(Deno.readTextFileSync(expectedAssertionsPath))
-    } catch {
-        return serializeTypeData(getTsProject())
+const getAssertionsForFile = (file: string): AssertionData[] => {
+    const dirPath = dirname(file)
+    let dirAssertionData = readJsonSync(getExpectedAssertionsPath(dirPath))
+    if (!dirAssertionData) {
+        serializeTypeData(getTsProject())
     }
+    dirAssertionData = readJsonSync(getExpectedAssertionsPath(dirPath))
+    if (!dirAssertionData || !dirAssertionData[basename(file)]) {
+        throw new Error(`Unable to find serialized assertion data for ${file}.`)
+    }
+    return dirAssertionData[basename(file)]
 }
 
 export const getAssertionData = (position: SourcePosition) => {
-    const data = readAssertionData()
-    if (!data[position.file]) {
-        throw new Error(`Found no assertion data for ${fileName}.`)
-    }
-    const match = data[position.file].find(
+    const fileAssertions = getAssertionsForFile(position.file)
+    const match = fileAssertions.find(
         (assertion) =>
             assertion.position.line === position.line &&
             assertion.position.char === position.char
     )
     if (!match) {
         throw new Error(
-            `Found no assertion at line ${position.line} char ${position.char} in ${fileName}.`
+            `Found no assertion at line ${position.line} char ${position.char} in ${position.file}.`
         )
     }
     return match

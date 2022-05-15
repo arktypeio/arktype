@@ -1,21 +1,16 @@
-import { SourcePosition } from "../positions.js"
+import { SourcePosition } from "src/common.ts"
 import {
     chainableAssertion,
     ChainableValueAssertion
-} from "../value/context.js"
-import { AssertionConfig } from "../assert.js"
-import * as testing from "@deno/testing"
-import { getAssertionData } from "./ts.js"
+} from "src/value/context.ts"
+import { AssertionConfig } from "src/assert.ts"
+import { assertEquals } from "deno/std/testing/asserts.ts"
+import { getAssertionData } from "src/type/ts.ts"
 
 export type ValueFromTypeAssertion<
     Expected,
     Chained = Expected
-> = ChainableValueAssertion<
-    [expected: Expected],
-    { allowTypeAssertions: false; returnsCount: 0; project: any },
-    Chained,
-    false
->
+> = ChainableValueAssertion<[expected: Expected], false, Chained, false>
 
 export type TypeAssertions = {
     type: {
@@ -60,7 +55,7 @@ export const typeAssertions: AssertTypeContext = (
                                 `line ${position.line} of ${position.file}.`
                         )
                     }
-                    testing.assertEquals(
+                    assertEquals(
                         assertionData.type.actual,
                         assertionData.type.expected
                     )

@@ -1,5 +1,5 @@
-import { join, dirname } from "@deno/path"
-import { SourcePosition, LinePosition } from "../positions.js"
+import { join, dirname, relative, isAbsolute } from "deno/std/path/mod.ts"
+import { readJsonSync, SourcePosition, writeJsonSync } from "src/common.ts"
 import { Project, ts, SyntaxKind, CallExpression } from "ts-morph"
 
 export interface BaseSnapShotArgs {
@@ -50,8 +50,15 @@ export const updateInlineSnapshot = ({
     file.saveSync()
 }
 
-export const getDefaultSnapshotPath = (testFile: string) =>
-    join(dirname(testFile), "assert.snapshots.json")
+export const resolveSnapshotPath = (
+    testFile: string,
+    customPath: string | undefined
+) => {
+    if (customPath && isAbsolute(customPath)) {
+        return customPath
+    }
+    return join(dirname(testFile), customPath ?? "assert.snapshots.json")
+}
 
 export const updateExternalSnapshot = ({
     value,
@@ -59,29 +66,20 @@ export const updateExternalSnapshot = ({
     name,
     path
 }: ExternalSnapshotArgs) => {
-    const snapshotPath = path ?? getDefaultSnapshotPath(position.file)
-    const snapshotData = getSnapshots(snapshotPath)
+    const snapshotPath = resolveSnapshotPath(position.file, path)
+    const snapshotData = readJsonSync(snapshotPath) ?? {}
     snapshotData[position.file] = {
         ...snapshotData[position.file],
         [name]: value
     }
-    Deno.writeTextFileSync(snapshotPath, JSON.stringify(snapshotData, null, 4))
-}
-
-export interface GetSnapshotsOptions {
-    path?: string
-}
-
-export const getSnapshots = (path: string) => {
-    try {
-        return JSON.parse(Deno.readTextFileSync(path))
-    } catch {
-        return {}
-    }
+    writeJsonSync(snapshotPath, snapshotData)
 }
 
 export const getSnapshotByName = (
     file: string,
     name: string,
-    { path }: GetSnapshotsOptions
-) => getSnapshots(path ?? getDefaultSnapshotPath(file))[file]?.[name]
+    customPath: string | undefined
+) => {
+    const snapshotPath = resolveSnapshotPath(file, customPath)
+    return readJsonSync(snapshotPath)?.[file]?.[name]
+}

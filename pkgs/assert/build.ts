@@ -1,5 +1,6 @@
 // ex. scripts/build_npm.ts
-import { build, emptyDir } from "https://deno.land/x/dnt/mod.ts"
+// @ts-ignore (this import will not be available outside of Deno)
+import { build, emptyDir } from "dnt"
 
 await emptyDir("./npm")
 
@@ -9,6 +10,7 @@ await build({
     shims: {
         deno: true
     },
+    scriptModule: false,
     packageManager: "pnpm",
     importMap: "import_map.json",
     package: {
@@ -31,12 +33,16 @@ await build({
         "https://deno.land/x/ts_morph@14.0.0/mod.ts": {
             name: "ts-morph",
             version: "14.0.0"
+        },
+        "https://unpkg.com/get-current-line@6.6.0/edition-deno/index.ts": {
+            name: "get-current-line",
+            version: "6.6.0"
         }
-    },
-    typeCheck: false,
-    test: false
+    }
 })
 
 // post build steps
+// @ts-ignore
 Deno.copyFileSync("../../LICENSE", "npm/LICENSE")
+// @ts-ignore
 Deno.copyFileSync("README.md", "npm/README.md")

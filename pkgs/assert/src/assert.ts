@@ -1,45 +1,29 @@
-// import { SourcePosition, withCallPosition } from "@re-/node"
 import { ListPossibleTypes, Merge } from "@re-/tools"
-import { fromFileUrl } from "@deno/path"
-import { typeAssertions, TypeAssertions, getTsProject } from "./type/index.js"
-import { valueAssertions, ValueAssertion } from "./value/index.js"
-import { SourcePosition } from "positions"
+import { fromFileUrl } from "deno/std/path/mod.ts"
+import { typeAssertions, TypeAssertions, getTsProject } from "src/type/index.ts"
+import { valueAssertions, ValueAssertion } from "src/value/index.ts"
 import { Project } from "ts-morph"
-import getCurrentLine from "https://unpkg.com/get-current-line@6.6.0/edition-deno/index.js"
+import getCurrentLine from "get-current-line"
+import { SourcePosition } from "src/common.ts"
 
 export type AssertionResult<
     T,
-    AllowTypeAssertions extends boolean,
-    Config = {}
-> = ValueAssertion<ListPossibleTypes<T>, Config> &
-    AllowTypeAssertions extends true
-    ? TypeAssertions
-    : {}
+    AllowTypeAssertions extends boolean
+> = ValueAssertion<ListPossibleTypes<T>, AllowTypeAssertions> &
+    (AllowTypeAssertions extends true ? TypeAssertions : {})
 
 export type Assertion = <T>(value: T) => AssertionResult<T, true>
 
-export type AssertionContext = <T, Config extends AssertionConfig>(
+export type AssertionContext = <T, AllowTypeAssertions extends boolean>(
     position: SourcePosition,
     value: T
-) => AssertionResult<T, Config>
+) => AssertionResult<T, AllowTypeAssertions>
 
 export type AssertionConfig = {
     allowTypeAssertions: boolean
     returnsCount: number
     project: Project
 }
-
-// type AssertionResultOfType<T> = AssertionResult<
-//     T,
-//     { allowTypeAssertions: true }
-// >
-
-// type AssertionResultKey =
-//     | keyof AssertionResultOfType<() => {}>
-//     | keyof AssertionResultOfType<"">
-//     | keyof AssertionResultOfType<{}>
-
-// type PartialAssertionResult = { [K in AssertionResultKey]?: any }
 
 export const assert: Assertion = (value: unknown) => {
     const position = getCurrentLine({ method: "assert" })
@@ -52,11 +36,7 @@ export const assert: Assertion = (value: unknown) => {
         returnsCount: 0,
         project
     }
-    let assertionContext: PartialAssertionResult = valueAssertions(
-        position,
-        value,
-        config
-    )
+    const assertionContext = valueAssertions(position, value, config)
     if (config.allowTypeAssertions) {
         return Object.assign(typeAssertions(position, config), assertionContext)
     }

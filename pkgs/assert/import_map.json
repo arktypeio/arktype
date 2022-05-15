@@ -2,12 +2,10 @@
     "imports": {
         "@re-/tools": "../tools/src/index.ts",
         "@re-/node": "../node/src/index.ts",
-        "@deno/std/": "https://deno.land/std@0.139.0/",
-        "@deno/testing": "https://deno.land/std@0.139.0/testing/asserts.ts",
-        "@deno/snapshot": "https://deno.land/std@0.139.0/testing/snapshot.ts",
-        "@deno/path": "https://deno.land/std@0.139.0/path/mod.ts",
-        "@deno/fs": "https://deno.land/std@0.139.0/fs/mod.ts",
         "ts-morph": "https://deno.land/x/ts_morph@14.0.0/mod.ts",
-        "positions": "./src/positions.ts"
+        "get-current-line": "https://unpkg.com/get-current-line@6.6.0/edition-deno/index.ts",
+        "dnt": "https://deno.land/x/dnt@0.23.0/mod.ts",
+        "src/": "./src/",
+        "deno/std/": "https://deno.land/std@0.139.0/"
     }
 }

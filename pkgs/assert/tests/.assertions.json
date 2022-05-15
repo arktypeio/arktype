@@ -1,12 +1,36 @@
 {
-    "/home/ssalb/2re-po/pkgs/assert/tests/assert.test.ts": [
+    "multifile.test.ts": [
+        {
+            "type": {
+                "actual": "{ i: string; }",
+                "expected": "{ i: string; }"
+            },
+            "errors": "",
+            "position": {
+                "line": 5,
+                "char": 5
+            }
+        },
+        {
+            "type": {
+                "actual": "{ g: unknown; }",
+                "expected": "{ g: string; }"
+            },
+            "errors": "",
+            "position": {
+                "line": 7,
+                "char": 15
+            }
+        }
+    ],
+    "assert.test.ts": [
         {
             "type": {
                 "actual": "{ re: string; }"
             },
             "errors": "",
             "position": {
-                "line": 21,
+                "line": 18,
                 "char": 5
             }
         },
@@ -16,13 +40,24 @@
             },
             "errors": "",
             "position": {
-                "line": 22,
+                "line": 19,
                 "char": 5
             }
         },
         {
             "type": {
                 "actual": "{ re: string; }"
+            },
+            "errors": "",
+            "position": {
+                "line": 20,
+                "char": 5
+            }
+        },
+        {
+            "type": {
+                "actual": "{ re: string; }",
+                "expected": "{ re: string; }"
             },
             "errors": "",
             "position": {
@@ -33,22 +68,11 @@
         {
             "type": {
                 "actual": "{ re: string; }",
-                "expected": "{ re: string; }"
-            },
-            "errors": "",
-            "position": {
-                "line": 26,
-                "char": 5
-            }
-        },
-        {
-            "type": {
-                "actual": "{ re: string; }",
                 "expected": "{ re: number; }"
             },
             "errors": "",
             "position": {
-                "line": 29,
+                "line": 26,
                 "char": 24
             }
         },
@@ -58,7 +82,7 @@
             },
             "errors": "",
             "position": {
-                "line": 32,
+                "line": 29,
                 "char": 5
             }
         },
@@ -68,7 +92,7 @@
             },
             "errors": "",
             "position": {
-                "line": 35,
+                "line": 32,
                 "char": 24
             }
         },
@@ -79,7 +103,7 @@
             },
             "errors": "",
             "position": {
-                "line": 38,
+                "line": 35,
                 "char": 5
             }
         },
@@ -90,7 +114,7 @@
             },
             "errors": "",
             "position": {
-                "line": 41,
+                "line": 38,
                 "char": 13
             }
         },
@@ -100,7 +124,7 @@
             },
             "errors": "",
             "position": {
-                "line": 49,
+                "line": 46,
                 "char": 13
             }
         },
@@ -110,7 +134,7 @@
             },
             "errors": "",
             "position": {
-                "line": 58,
+                "line": 55,
                 "char": 5
             }
         },
@@ -120,7 +144,7 @@
             },
             "errors": "",
             "position": {
-                "line": 61,
+                "line": 58,
                 "char": 15
             }
         },
@@ -130,7 +154,7 @@
             },
             "errors": "",
             "position": {
-                "line": 67,
+                "line": 64,
                 "char": 5
             }
         },
@@ -140,7 +164,7 @@
             },
             "errors": "",
             "position": {
-                "line": 73,
+                "line": 70,
                 "char": 13
             }
         },
@@ -150,7 +174,7 @@
             },
             "errors": "Property 'nonexistent' does not exist on type 'number'.",
             "position": {
-                "line": 84,
+                "line": 81,
                 "char": 5
             }
         },
@@ -160,7 +184,7 @@
             },
             "errors": "",
             "position": {
-                "line": 87,
+                "line": 84,
                 "char": 5
             }
         },
@@ -170,7 +194,7 @@
             },
             "errors": "Expected 1 arguments, but got 2.",
             "position": {
-                "line": 89,
+                "line": 86,
                 "char": 5
             }
         },
@@ -180,7 +204,7 @@
             },
             "errors": "",
             "position": {
-                "line": 95,
+                "line": 92,
                 "char": 15
             }
         },
@@ -190,7 +214,7 @@
             },
             "errors": "Argument of type '\"this is a type error\"' is not assignable to parameter of type 'false'.",
             "position": {
-                "line": 102,
+                "line": 99,
                 "char": 13
             }
         },
@@ -200,7 +224,7 @@
             },
             "errors": "Argument of type 'false | {}' is not assignable to parameter of type 'false'.Type '{}' is not assignable to type 'false'.",
             "position": {
-                "line": 113,
+                "line": 110,
                 "char": 5
             }
         },
@@ -211,7 +235,7 @@
             },
             "errors": "",
             "position": {
-                "line": 118,
+                "line": 115,
                 "char": 5
             }
         },
@@ -221,7 +245,7 @@
             },
             "errors": "Expected 0 arguments, but got 1.",
             "position": {
-                "line": 120,
+                "line": 117,
                 "char": 5
             }
         },
@@ -231,7 +255,7 @@
             },
             "errors": "",
             "position": {
-                "line": 127,
+                "line": 124,
                 "char": 13
             }
         },
@@ -241,7 +265,7 @@
             },
             "errors": "",
             "position": {
-                "line": 133,
+                "line": 130,
                 "char": 24
             }
         },
@@ -252,7 +276,7 @@
             },
             "errors": "",
             "position": {
-                "line": 135,
+                "line": 132,
                 "char": 15
             }
         },
@@ -262,7 +286,17 @@
             },
             "errors": "",
             "position": {
-                "line": 141,
+                "line": 138,
+                "char": 5
+            }
+        },
+        {
+            "type": {
+                "actual": "{ re: string; }"
+            },
+            "errors": "",
+            "position": {
+                "line": 139,
                 "char": 5
             }
         },
@@ -288,7 +322,8 @@
         },
         {
             "type": {
-                "actual": "{ re: string; }"
+                "actual": "any",
+                "expected": "any"
             },
             "errors": "",
             "position": {
@@ -303,18 +338,7 @@
             },
             "errors": "",
             "position": {
-                "line": 151,
-                "char": 5
-            }
-        },
-        {
-            "type": {
-                "actual": "any",
-                "expected": "any"
-            },
-            "errors": "",
-            "position": {
-                "line": 152,
+                "line": 149,
                 "char": 5
             }
         },
@@ -325,7 +349,7 @@
             },
             "errors": "",
             "position": {
-                "line": 153,
+                "line": 150,
                 "char": 24
             }
         },
@@ -336,7 +360,7 @@
             },
             "errors": "",
             "position": {
-                "line": 154,
+                "line": 151,
                 "char": 24
             }
         },
@@ -347,7 +371,7 @@
             },
             "errors": "",
             "position": {
-                "line": 158,
+                "line": 155,
                 "char": 5
             }
         },
@@ -358,7 +382,7 @@
             },
             "errors": "",
             "position": {
-                "line": 160,
+                "line": 157,
                 "char": 15
             }
         },
@@ -369,7 +393,7 @@
             },
             "errors": "",
             "position": {
-                "line": 165,
+                "line": 162,
                 "char": 15
             }
         },
@@ -380,7 +404,7 @@
             },
             "errors": "",
             "position": {
-                "line": 171,
+                "line": 168,
                 "char": 5
             }
         },
@@ -391,7 +415,7 @@
             },
             "errors": "",
             "position": {
-                "line": 175,
+                "line": 172,
                 "char": 13
             }
         },
@@ -402,7 +426,7 @@
             },
             "errors": "",
             "position": {
-                "line": 184,
+                "line": 181,
                 "char": 13
             }
         },
@@ -412,7 +436,7 @@
             },
             "errors": "Argument of type 'true' is not assignable to parameter of type 'false'.",
             "position": {
-                "line": 193,
+                "line": 190,
                 "char": 5
             }
         },
@@ -422,7 +446,7 @@
             },
             "errors": "Argument of type 'null' is not assignable to parameter of type 'false'.",
             "position": {
-                "line": 200,
+                "line": 197,
                 "char": 13
             }
         },
@@ -432,32 +456,8 @@
             },
             "errors": "",
             "position": {
-                "line": 209,
+                "line": 206,
                 "char": 13
-            }
-        }
-    ],
-    "/home/ssalb/2re-po/pkgs/assert/tests/multifile.test.ts": [
-        {
-            "type": {
-                "actual": "{ i: string; }",
-                "expected": "{ i: string; }"
-            },
-            "errors": "",
-            "position": {
-                "line": 5,
-                "char": 5
-            }
-        },
-        {
-            "type": {
-                "actual": "{ g: unknown; }",
-                "expected": "{ g: string; }"
-            },
-            "errors": "",
-            "position": {
-                "line": 7,
-                "char": 15
             }
         }
     ]
