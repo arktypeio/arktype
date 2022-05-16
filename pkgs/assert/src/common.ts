@@ -1,3 +1,5 @@
+import { resolve } from "deno/std/path/mod.ts"
+
 export type LinePosition = {
     line: number
     char: number
@@ -20,6 +22,9 @@ export const readJsonSync = (path: string) => {
     }
 }
 
+export const setJsonKey = (path: string, key: string, value: unknown) =>
+    writeJsonSync(path, { ...readJsonSync(path), [key]: value })
+
 export const existsSync = (path: string) => {
     try {
         Deno.openSync(path).close()
@@ -27,4 +32,37 @@ export const existsSync = (path: string) => {
     } catch {
         return false
     }
+}
+
+export interface ReAssertConfig extends Required<ReAssertJson> {
+    updateSnapshots: boolean
+}
+
+export interface ReAssertJson {
+    tsconfig?: string
+    precached?: boolean
+    precachePath?: string
+}
+
+export interface ReJson {
+    assert?: ReAssertJson
+}
+
+export type Memoized<F> = F & { cache?: any }
+
+export const getReAssertConfig: Memoized<() => ReAssertConfig> = () => {
+    if (!getReAssertConfig.cache) {
+        const reJson: ReJson = readJsonSync("re.json") ?? {}
+        const reAssertJson: ReAssertJson = reJson.assert ?? {}
+        getReAssertConfig.cache = {
+            updateSnapshots: !!Deno.args.find(
+                (arg) => arg === "--update" || arg === "-u"
+            ),
+            tsconfig: resolve("tsconfig.json"),
+            precached: false,
+            precachePath: resolve(".assertions.cache.json"),
+            ...reAssertJson
+        }
+    }
+    return getReAssertConfig.cache
 }

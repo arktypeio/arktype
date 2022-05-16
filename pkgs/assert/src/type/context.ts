@@ -3,9 +3,9 @@ import {
     chainableAssertion,
     ChainableValueAssertion
 } from "src/value/context.ts"
-import { AssertionConfig } from "src/assert.ts"
+import { AssertionContext } from "src/assert.ts"
 import { assertEquals } from "deno/std/testing/asserts.ts"
-import { getAssertionDataForPosition } from "src/type/ts.ts"
+import { getAssertionData } from "src/type/analysis.ts"
 
 export type ValueFromTypeAssertion<
     Expected,
@@ -22,28 +22,24 @@ export type TypeAssertions = {
 
 export type AssertTypeContext = (
     position: SourcePosition,
-    config: AssertionConfig
+    config: AssertionContext
 ) => TypeAssertions
 
 export const typeAssertions: AssertTypeContext = (
     position: SourcePosition,
-    config: AssertionConfig
+    config: AssertionContext
 ) => {
     return new Proxy(
         {
             type: {
                 toString: chainableAssertion(
                     position,
-                    () =>
-                        getAssertionDataForPosition(position, config.cachePath)
-                            .type.actual,
+                    () => getAssertionData(position).type.actual,
                     { ...config, allowTypeAssertions: false }
                 ),
                 errors: chainableAssertion(
                     position,
-                    () =>
-                        getAssertionDataForPosition(position, config.cachePath)
-                            .errors,
+                    () => getAssertionData(position).errors,
                     { ...config, allowTypeAssertions: false },
                     { allowRegex: true }
                 )
@@ -52,10 +48,7 @@ export const typeAssertions: AssertTypeContext = (
         {
             get: (target, prop) => {
                 if (prop === "typed") {
-                    const assertionData = getAssertionDataForPosition(
-                        position,
-                        config.cachePath
-                    )
+                    const assertionData = getAssertionData(position)
                     if (!assertionData.type.expected) {
                         throw new Error(
                             `Expected an 'as' expression after 'typed' prop access at position ${position.char} on` +

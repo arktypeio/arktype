@@ -1,7 +1,12 @@
 import { join, dirname, isAbsolute, basename } from "deno/std/path/mod.ts"
-import { readJsonSync, SourcePosition, writeJsonSync } from "src/common.ts"
-import { getAssertionDataForPosition } from "src/type/ts.ts"
-import { Project, ts, SyntaxKind, CallExpression } from "ts-morph"
+import {
+    readJsonSync,
+    setJsonKey,
+    SourcePosition,
+    writeJsonSync
+} from "src/common.ts"
+import { getTsProject } from "src/type/analysis.ts"
+import { ts, SyntaxKind, CallExpression } from "ts-morph"
 
 export interface BaseSnapshotArgs {
     position: SourcePosition
@@ -12,13 +17,18 @@ export interface QueueInlineSnapshotArgs extends BaseSnapshotArgs {
     cachePath: string
 }
 
-export interface WriteInlineSnapshotArgs extends BaseSnapshotArgs {
-    project: Project
-}
+export interface WriteInlineSnapshotArgs extends BaseSnapshotArgs {}
 
 export interface ExternalSnapshotArgs extends BaseSnapshotArgs {
     name: string
     customPath?: string
+}
+
+const getQueuedSnapshotUpdates = (
+    cachePath: string
+): WriteInlineSnapshotArgs[] => {
+    const cacheData = readJsonSync(cachePath)
+    return cacheData.queuedUpdates ?? []
 }
 
 export const queueInlineSnapshotUpdate = ({
@@ -26,20 +36,24 @@ export const queueInlineSnapshotUpdate = ({
     value,
     cachePath
 }: QueueInlineSnapshotArgs) => {
-    const cacheData = readJsonSync(cachePath)
-    const queuedUpdates = cacheData.queuedUpdates ?? []
+    const queuedUpdates = getQueuedSnapshotUpdates(cachePath)
     queuedUpdates.push({ position, value })
-    writeJsonSync(cachePath, { ...cacheData, queuedUpdates })
+    setJsonKey(cachePath, "queuedUpdates", queuedUpdates)
+}
+
+export const writeQueuedSnapshotUpdates = (cachePath: string) => {
+    const queuedUpdates = getQueuedSnapshotUpdates(cachePath)
+    queuedUpdates.forEach((update) => writeInlineSnapshotToFile(update))
 }
 
 export const writeInlineSnapshotToFile = ({
     position,
-    value,
-    project
+    value
 }: WriteInlineSnapshotArgs) => {
+    const project = getTsProject()
     const file = project.getSourceFile(position.file)
     if (!file) {
-        throw new Error(`Unknown file ${file}.`)
+        throw new Error(`No type information available for '${position.file}'.`)
     }
     const assertIdentifier = file.getDescendantAtPos(
         ts.getPositionOfLineAndCharacter(

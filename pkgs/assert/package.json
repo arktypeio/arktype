@@ -20,7 +20,7 @@
     },
     "scripts": {
         "build": "deno run --allow-all ./build.ts",
-        "test": "deno test --allow-all"
+        "test": "deno run --allow-all ./precached.ts"
     },
     "dependencies": {
         "@re-/tools": "2.0.0",

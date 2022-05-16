@@ -1,44 +1,40 @@
 import { Project, SyntaxKind, ts, Type } from "ts-morph"
-import { dirname, join, basename } from "deno/std/path/mod.ts"
+import { relative } from "deno/std/path/mod.ts"
 import {
     SourcePosition,
     LinePosition,
     readJsonSync,
     writeJsonSync,
-    existsSync
+    existsSync,
+    getReAssertConfig,
+    Memoized
 } from "src/common.ts"
+import { writeQueuedSnapshotUpdates } from "src/value/snapshot.ts"
 
-// Absolute file paths TS will parse to raw contents
-export type ContentsByFile = Record<string, string>
-
-export type TypeContextOptions = {
-    tsConfig?: string
+export const cacheTypeAssertions = () => {
+    const config = getReAssertConfig()
+    writeJsonSync(
+        config.precachePath,
+        analyzeTypeAssertions({ isInitialCache: true })
+    )
 }
 
-let project: Project | undefined
-let assertionsByDir: AssertionsByDir | undefined
-
-export const serializeAssertions = (assertionsByDir: AssertionsByDir) => {
-    Object.entries(assertionsByDir).forEach(([dirPath, assertionsByFile]) => {
-        writeJsonSync(getAssertionCachePath(dirPath), assertionsByFile)
-    })
+export const cleanupTypeAssertionCache = () => {
+    const config = getReAssertConfig()
+    writeQueuedSnapshotUpdates(config.precachePath)
+    Deno.removeSync(config.precachePath)
 }
 
-export const getTsProject = (options: TypeContextOptions = {}) => {
-    if (!project) {
-        const reJson = readJsonSync("re.json")
-        const tsConfigFilePath =
-            options.tsConfig ?? reJson?.assert?.tsconfig ?? "tsconfig.json"
-        project = new Project({
-            tsConfigFilePath: existsSync(tsConfigFilePath)
-                ? tsConfigFilePath
+export const getTsProject: Memoized<() => Project> = () => {
+    if (!getTsProject.cache) {
+        const config = getReAssertConfig()
+        getTsProject.cache = new Project({
+            tsConfigFilePath: existsSync(config.tsconfig)
+                ? config.tsconfig
                 : undefined
         })
-        if (!reJson?.assert?.precached) {
-            assertionsByDir = serializeTypeData(project)
-        }
     }
-    return project
+    return getTsProject.cache
 }
 
 type AssertionData = {
@@ -58,8 +54,6 @@ type DiagnosticData = {
 
 type AssertionsByFile = Record<string, AssertionData[]>
 
-type AssertionsByDir = Record<string, AssertionsByFile>
-
 type DiagnosticsByFile = Record<string, DiagnosticData[]>
 
 const concatenateChainedErrors = (
@@ -74,7 +68,32 @@ const concatenateChainedErrors = (
         )
         .join("\n")
 
-export const serializeTypeData = (project: Project) => {
+const getFileKey = (path: string) => relative(".", path)
+
+type AnalyzeTypeAssertionsOptions = {
+    isInitialCache?: boolean
+}
+
+/** Mutates the module-level assertionsByFile variable */
+const analyzeTypeAssertions: Memoized<
+    (options?: AnalyzeTypeAssertionsOptions) => AssertionsByFile
+> = ({ isInitialCache } = {}) => {
+    if (analyzeTypeAssertions.cache) {
+        return analyzeTypeAssertions.cache
+    }
+    const config = getReAssertConfig()
+    if (config.precached && !isInitialCache) {
+        analyzeTypeAssertions.cache = readJsonSync(config.precachePath)
+        if (!analyzeTypeAssertions.cache) {
+            throw new Error(
+                `Unable to find precached assertion data at '${config.precachePath}'.` +
+                    `Did you forget to call 'cacheTypeAssertions' before running your tests?`
+            )
+        }
+        return analyzeTypeAssertions.cache
+    }
+    const project = getTsProject()
+    const assertionsByFile: AssertionsByFile = {}
     const diagnosticsByFile: DiagnosticsByFile = {}
 
     // We have to use this internal checker to access errors ignore by @ts-ignore or @ts-expect-error
@@ -87,6 +106,7 @@ export const serializeTypeData = (project: Project) => {
         if (!filePath) {
             return
         }
+        const fileKey = getFileKey(filePath)
         const start = diagnostic.start ?? -1
         const end = start + (diagnostic.length ?? 0)
         let message = diagnostic.messageText
@@ -98,13 +118,12 @@ export const serializeTypeData = (project: Project) => {
             end,
             message
         }
-        if (diagnosticsByFile[filePath]) {
-            diagnosticsByFile[filePath].push(data)
+        if (diagnosticsByFile[fileKey]) {
+            diagnosticsByFile[fileKey].push(data)
         } else {
-            diagnosticsByFile[filePath] = [data]
+            diagnosticsByFile[fileKey] = [data]
         }
     })
-    const assertionsByDir: AssertionsByDir = {}
     const assertFile = project.getSourceFile("src/assert.ts")
     const assertFunction = assertFile
         ?.getExportSymbols()
@@ -122,20 +141,15 @@ export const serializeTypeData = (project: Project) => {
         .flatMap((ref) => ref.getReferences())
     references.forEach((ref) => {
         const file = ref.getSourceFile()
-        const filePath = file.getFilePath()
-        const dirPath = dirname(filePath)
-        const fileName = basename(filePath)
+        const fileKey = getFileKey(file.getFilePath())
         const assertCall = ref
             .getNode()
             .getParentIfKind(SyntaxKind.CallExpression)
         if (!assertCall) {
             return
         }
-        if (!assertionsByDir[dirPath]) {
-            assertionsByDir[dirPath] = {}
-        }
-        if (!assertionsByDir[dirPath][fileName]) {
-            assertionsByDir[dirPath][fileName] = []
+        if (!assertionsByFile[fileKey]) {
+            assertionsByFile[fileKey] = []
         }
         const assertArg = assertCall.getArguments()[0]
         let typeToCheck = assertArg.getType()
@@ -181,7 +195,7 @@ export const serializeTypeData = (project: Project) => {
             assertCall.getPos() + assertCall.getLeadingTriviaWidth()
         )
         const errors =
-            diagnosticsByFile[filePath]?.reduce((message, diagnostic) => {
+            diagnosticsByFile[fileKey]?.reduce((message, diagnostic) => {
                 if (
                     diagnostic.start >= assertArg.getStart() &&
                     diagnostic.end <= assertArg.getEnd()
@@ -205,57 +219,27 @@ export const serializeTypeData = (project: Project) => {
                 char: pos.character + 1
             }
         }
-        assertionsByDir[dirPath][fileName].push(assertionData)
+        assertionsByFile[fileKey].push(assertionData)
     })
-    return assertionsByDir
+    analyzeTypeAssertions.cache = assertionsByFile
+    return assertionsByFile
 }
 
-export const getAssertionCachePath = (dirPath: string) =>
-    join(dirPath, ".assertions.json")
-
-const getAssertionDataForFile = (
-    file: string,
-    cachePath: string | undefined
-): AssertionData[] => {
-    const dirPath = dirname(file)
-    const fileName = basename(file)
-    let dataForDir: AssertionsByFile | undefined
-    if (cachePath) {
-        dataForDir = readJsonSync(cachePath)
-        if (!dataForDir) {
-            throw new Error(
-                `Unable to find precached assertion data for ${dirPath}.` +
-                    `Did you forget to call serialize before running your tests?`
-            )
-        }
-    } else {
-        if (!assertionsByDir) {
-            throw new Error(`Found no assertion data.`)
-        } else if (!assertionsByDir[dirPath]) {
-            throw new Error(`Found no assertion data for dir '${dirPath}'.`)
-        }
-        dataForDir = assertionsByDir[dirPath]
+export const getAssertionData = (position: SourcePosition) => {
+    const fileKey = getFileKey(position.file)
+    const assertionsByFile = analyzeTypeAssertions()
+    if (!assertionsByFile[fileKey]) {
+        throw new Error(`Found no assertion data for '${fileKey}'.`)
     }
-    if (!dataForDir[fileName]) {
-        throw new Error(`Found no assertion data for '${file}'.`)
-    }
-    return dataForDir[fileName]
-}
-
-export const getAssertionDataForPosition = (
-    position: SourcePosition,
-    cachePath: string | undefined
-) => {
-    const fileAssertions = getAssertionDataForFile(position.file, cachePath)
-    const match = fileAssertions.find(
+    const matchingAssertion = assertionsByFile[fileKey].find(
         (assertion) =>
             assertion.position.line === position.line &&
             assertion.position.char === position.char
     )
-    if (!match) {
+    if (!matchingAssertion) {
         throw new Error(
-            `Found no assertion at line ${position.line} char ${position.char} in ${position.file}.`
+            `Found no assertion at line ${position.line} char ${position.char} in '${fileKey}'.`
         )
     }
-    return match
+    return matchingAssertion
 }

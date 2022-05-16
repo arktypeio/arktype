@@ -7,9 +7,9 @@ import {
     toString
 } from "@re-/tools"
 import { SourcePosition } from "src/common.ts"
-import { AssertionConfig } from "src/assert.ts"
+import { AssertionContext } from "src/assert.ts"
 import { TypeAssertions, typeAssertions } from "src/type/context.ts"
-import { getAssertionDataForPosition } from "src/type/ts.ts"
+import { getAssertionData } from "src/type/analysis.ts"
 import {
     updateExternalSnapshot,
     getSnapshotByName,
@@ -55,7 +55,7 @@ export type ChainableAssertionOptions = {
 export const chainableAssertion = (
     position: SourcePosition,
     valueThunk: () => unknown,
-    config: AssertionConfig,
+    config: AssertionContext,
     { isReturn = false, allowRegex = false }: ChainableAssertionOptions = {}
 ) =>
     new Proxy(
@@ -188,37 +188,37 @@ const defaultAssert = (value: unknown, expected: unknown, allowRegex = false) =>
 
 export const getNextAssertions = (
     position: SourcePosition,
-    config: AssertionConfig
+    config: AssertionContext
 ) => (config.allowTypeAssertions ? typeAssertions(position, config) : undefined)
 
-export const valueAssertions = <T, Config extends AssertionConfig>(
+export const valueAssertions = <T, Ctx extends AssertionContext>(
     position: SourcePosition,
     value: T,
-    config: Config
-): ValueAssertion<ListPossibleTypes<T>, Config["allowTypeAssertions"]> => {
-    const nextAssertions = getNextAssertions(position, config)
+    ctx: Ctx
+): ValueAssertion<ListPossibleTypes<T>, Ctx["allowTypeAssertions"]> => {
+    const nextAssertions = getNextAssertions(position, ctx)
     const serializedValue = toString(value)
     if (typeof value === "function") {
         const functionAssertions = {
             args: (...args: any[]) =>
-                valueAssertions(position, () => value(...args), config),
+                valueAssertions(position, () => value(...args), ctx),
             returns: chainableAssertion(
                 position,
                 () => value(),
                 {
-                    ...config,
-                    returnsCount: config.returnsCount + 1
+                    ...ctx,
+                    returnsCount: ctx.returnsCount + 1
                 },
                 { isReturn: true }
             ),
             throws: chainableAssertion(
                 position,
                 () => getThrownMessage(value),
-                config,
+                ctx,
                 { allowRegex: true }
             )
         } as any
-        if (config["allowTypeAssertions"]) {
+        if (ctx["allowTypeAssertions"]) {
             return {
                 ...functionAssertions,
                 throwsAndHasTypeError: (matchValue: string | RegExp) => {
@@ -227,39 +227,27 @@ export const valueAssertions = <T, Config extends AssertionConfig>(
                             ? matchValue
                             : RegExp(matchValue)
                     assertMatch(getThrownMessage(value), matcher)
-                    assertMatch(
-                        getAssertionDataForPosition(position, config.cachePath)
-                            .errors,
-                        matcher
-                    )
+                    assertMatch(getAssertionData(position).errors, matcher)
                 }
             }
         }
         return functionAssertions
     }
     const inlineSnap = (expected?: string) => {
-        if (expected && !config.updateSnapshots) {
+        if (expected && !ctx.config.updateSnapshots) {
             assertEquals(serializedValue, expected)
         } else {
             const args = {
                 position,
                 value: serializedValue
             }
-            if (config.cachePath) {
-                // If the precached option is enabled, we queue the snapshot updates for after tests finish
+            if (ctx.config.precached) {
                 queueInlineSnapshotUpdate({
                     ...args,
-                    cachePath: config.cachePath
-                })
-            } else if (config.project) {
-                writeInlineSnapshotToFile({
-                    ...args,
-                    project: config.project
+                    cachePath: ctx.config.precachePath
                 })
             } else {
-                throw new Error(
-                    `Expected either 'cachePath' or 'project' to be set.`
-                )
+                writeInlineSnapshotToFile(args)
             }
         }
     }
@@ -276,7 +264,7 @@ export const valueAssertions = <T, Config extends AssertionConfig>(
                     name,
                     options.path
                 )
-                if (expectedSnapshot && !config.updateSnapshots) {
+                if (expectedSnapshot && !ctx.config.updateSnapshots) {
                     assertEquals(serializedValue, expectedSnapshot)
                 } else {
                     updateExternalSnapshot({
@@ -293,15 +281,12 @@ export const valueAssertions = <T, Config extends AssertionConfig>(
             return nextAssertions
         }
     } as any
-    if (config["allowTypeAssertions"]) {
+    if (ctx["allowTypeAssertions"]) {
         return {
             ...baseAssertions,
             typedValue: (expectedValue) => {
                 defaultAssert(value, expectedValue)
-                const typeData = getAssertionDataForPosition(
-                    position,
-                    config.cachePath
-                )
+                const typeData = getAssertionData(position)
                 if (!typeData.type.expected) {
                     throw new Error(
                         `Expected an 'as' expression after 'typed' prop access at position ${position.char} on` +
