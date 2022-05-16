@@ -60,7 +60,7 @@ export const getReAssertConfig: Memoized<() => ReAssertConfig> = () => {
             ),
             tsconfig: resolve("tsconfig.json"),
             precached: false,
-            precachePath: resolve(".assertions.cache.json"),
+            precachePath: resolve(".assert.cache.json"),
             ...reAssertJson
         }
     }
