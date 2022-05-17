@@ -12,7 +12,8 @@
             "cwd": "${workspaceFolder}",
             "runtimeExecutable": "deno",
             "runtimeArgs": ["run", "--inspect-brk", "--allow-all"],
-            "attachSimplePort": 9229
+            "attachSimplePort": 9229,
+            "console": "integratedTerminal"
         },
         {
             "request": "launch",
@@ -21,7 +22,8 @@
             "cwd": "${workspaceFolder}/tests",
             "runtimeExecutable": "deno",
             "runtimeArgs": ["test", "--inspect-brk", "--allow-all"],
-            "attachSimplePort": 9229
+            "attachSimplePort": 9229,
+            "console": "integratedTerminal"
         }
     ]
 }

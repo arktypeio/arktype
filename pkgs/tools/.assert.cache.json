@@ -1,0 +1,291 @@
+{
+    "tests/exact.test.ts": [
+        {
+            "caller": {
+                "name": "assert",
+                "line": 6,
+                "char": 9
+            },
+            "type": {
+                "actual": "{ a: \"hi\"; nested: { on: false; }; }",
+                "expected": "{ a: \"hi\"; nested: { on: false; }; }"
+            },
+            "errors": ""
+        },
+        {
+            "caller": {
+                "name": "assert",
+                "line": 19,
+                "char": 9
+            },
+            "type": {
+                "actual": "{ a: \"ok\"; nested: { on: true; }; }",
+                "expected": "{ a: \"ok\"; nested: { on: true; }; }"
+            },
+            "errors": ""
+        },
+        {
+            "caller": {
+                "name": "assert",
+                "line": 29,
+                "char": 9
+            },
+            "type": {
+                "actual": "{ a: string | number; }",
+                "expected": "{ a: string | number; }"
+            },
+            "errors": ""
+        },
+        {
+            "caller": {
+                "name": "assert",
+                "line": 34,
+                "char": 9
+            },
+            "type": {
+                "actual": "{ a: string | number; }",
+                "expected": "{ a: string | number; }"
+            },
+            "errors": ""
+        },
+        {
+            "caller": {
+                "name": "assert",
+                "line": 42,
+                "char": 9
+            },
+            "type": {
+                "actual": "{ a: { nested: true; }; }",
+                "expected": "{ a: { nested: true; }; }"
+            },
+            "errors": ""
+        }
+    ],
+    "tests/lazily.test.ts": [
+        {
+            "caller": {
+                "name": "assert",
+                "line": 14,
+                "char": 9
+            },
+            "type": {
+                "actual": "{ high: number; low: string; }",
+                "expected": "{ high: number; low: string; }"
+            },
+            "errors": ""
+        },
+        {
+            "caller": {
+                "name": "assert",
+                "line": 18,
+                "char": 9
+            },
+            "type": {
+                "actual": "number"
+            },
+            "errors": ""
+        },
+        {
+            "caller": {
+                "name": "assert",
+                "line": 19,
+                "char": 9
+            },
+            "type": {
+                "actual": "number"
+            },
+            "errors": ""
+        },
+        {
+            "caller": {
+                "name": "assert",
+                "line": 20,
+                "char": 9
+            },
+            "type": {
+                "actual": "number"
+            },
+            "errors": ""
+        },
+        {
+            "caller": {
+                "name": "assert",
+                "line": 21,
+                "char": 9
+            },
+            "type": {
+                "actual": "string"
+            },
+            "errors": ""
+        },
+        {
+            "caller": {
+                "name": "assert",
+                "line": 22,
+                "char": 9
+            },
+            "type": {
+                "actual": "number"
+            },
+            "errors": ""
+        },
+        {
+            "caller": {
+                "name": "assert",
+                "line": 25,
+                "char": 9
+            },
+            "type": {
+                "actual": "() => void"
+            },
+            "errors": "Argument of type '(n: number) => number' is not assignable to parameter of type '() => object'."
+        },
+        {
+            "caller": {
+                "name": "assert",
+                "line": 36,
+                "char": 9
+            },
+            "type": {
+                "actual": "() => void"
+            },
+            "errors": "Type 'number' is not assignable to type 'object'."
+        }
+    ],
+    "tests/narrow.test.ts": [
+        {
+            "caller": {
+                "name": "assert",
+                "line": 6,
+                "char": 9
+            },
+            "type": {
+                "actual": "\"ok\"",
+                "expected": "\"ok\""
+            },
+            "errors": ""
+        },
+        {
+            "caller": {
+                "name": "assert",
+                "line": 7,
+                "char": 9
+            },
+            "type": {
+                "actual": "{ nested: { string: \"narrowed\"; number: 1337; }; }",
+                "expected": "{ nested: { string: \"narrowed\"; number: 1337; }; }"
+            },
+            "errors": ""
+        },
+        {
+            "caller": {
+                "name": "assert",
+                "line": 14,
+                "char": 9
+            },
+            "type": {
+                "actual": "[{ first: \"narrowed\"; }, { second: 1337; }]",
+                "expected": "[{ first: \"narrowed\"; }, { second: 1337; }]"
+            },
+            "errors": ""
+        },
+        {
+            "caller": {
+                "name": "assert",
+                "line": 18,
+                "char": 9
+            },
+            "type": {
+                "actual": "{ nested: [\"yeah\", { good: \"okay\"; }]; }",
+                "expected": "{ nested: [\"yeah\", { good: \"okay\"; }]; }"
+            },
+            "errors": ""
+        },
+        {
+            "caller": {
+                "name": "assert",
+                "line": 25,
+                "char": 9
+            },
+            "type": {
+                "actual": "(args: -1) => number",
+                "expected": "(args: -1) => number"
+            },
+            "errors": ""
+        },
+        {
+            "caller": {
+                "name": "assert",
+                "line": 26,
+                "char": 9
+            },
+            "type": {
+                "actual": "(args_0: [\"hi\", 5], args_1: { a: \"nother\"; }) => [[\"hi\", 5], { a: \"nother\"; }]",
+                "expected": "(args_0: [\"hi\", 5], args_1: { a: \"nother\"; }) => [[\"hi\", 5], { a: \"nother\"; }]"
+            },
+            "errors": ""
+        },
+        {
+            "caller": {
+                "name": "assert",
+                "line": 40,
+                "char": 9
+            },
+            "type": {
+                "actual": "any",
+                "expected": "any"
+            },
+            "errors": ""
+        }
+    ],
+    "tests/transform.test.ts": [
+        {
+            "caller": {
+                "name": "assert",
+                "line": 80,
+                "char": 9
+            },
+            "type": {
+                "actual": "boolean[]",
+                "expected": "boolean[]"
+            },
+            "errors": ""
+        },
+        {
+            "caller": {
+                "name": "assert",
+                "line": 88,
+                "char": 9
+            },
+            "type": {
+                "actual": "boolean[]",
+                "expected": "boolean[]"
+            },
+            "errors": ""
+        },
+        {
+            "caller": {
+                "name": "assert",
+                "line": 99,
+                "char": 9
+            },
+            "type": {
+                "actual": "{ [x: number]: boolean; }",
+                "expected": "{ [x: number]: boolean; }"
+            },
+            "errors": ""
+        },
+        {
+            "caller": {
+                "name": "assert",
+                "line": 107,
+                "char": 9
+            },
+            "type": {
+                "actual": "string[]",
+                "expected": "string[]"
+            },
+            "errors": ""
+        }
+    ]
+}

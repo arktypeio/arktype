@@ -1,9 +1,9 @@
 {
-    "extends": "@re-/node/tsconfig.base",
+    "extends": "../tsconfig.json",
     "compilerOptions": {
-        "outDir": "../out/types",
-        "composite": true,
-        "emitDeclarationOnly": true
+        "paths": {
+            "@src/*.ts": ["./*.js"]
+        }
     },
     "include": ["."]
 }

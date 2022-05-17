@@ -1,6 +1,6 @@
-import { EntryOf, Entry, isRecursible } from "./common.ts"
-import { Merge } from "./merge.ts"
-import { isNumeric } from "./stringUtils.ts"
+import { EntryOf, Entry, isRecursible } from "@src/common.ts"
+import { Merge } from "@src/merge.ts"
+import { isNumeric } from "@src/stringUtils.ts"
 
 export type DeepMapContext = {
     path: string[]

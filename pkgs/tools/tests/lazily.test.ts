@@ -1,5 +1,5 @@
 import { assert } from "@re-/assert"
-import { lazily } from ".."
+import { lazily } from "@re-/tools"
 
 describe("lazily", () => {
     test("calls thunk on prop access", () => {

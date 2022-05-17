@@ -6,5 +6,10 @@
         "ts-morph": "https://deno.land/x/ts_morph@14.0.0/mod.ts",
         "get-current-line": "https://unpkg.com/get-current-line@6.6.0/edition-deno/index.ts",
         "dnt": "https://deno.land/x/dnt@0.23.0/mod.ts"
+    },
+    "scopes": {
+        "../tools/": {
+            "@src/": "../tools/src/"
+        }
     }
 }

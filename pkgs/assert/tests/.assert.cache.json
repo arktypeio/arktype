@@ -1,0 +1,647 @@
+{
+    "multifile.test.ts": [
+        {
+            "caller": {
+                "name": "assert",
+                "line": 5,
+                "char": 5
+            },
+            "type": {
+                "actual": "{ i: string; }",
+                "expected": "{ i: string; }"
+            },
+            "errors": ""
+        },
+        {
+            "caller": {
+                "name": "assert",
+                "line": 7,
+                "char": 15
+            },
+            "type": {
+                "actual": "{ g: unknown; }",
+                "expected": "{ g: string; }"
+            },
+            "errors": ""
+        }
+    ],
+    "assert.test.ts": [
+        {
+            "caller": {
+                "name": "assert",
+                "line": 25,
+                "char": 5
+            },
+            "type": {
+                "actual": "{ re: string; }"
+            },
+            "errors": ""
+        },
+        {
+            "caller": {
+                "name": "assert",
+                "line": 26,
+                "char": 5
+            },
+            "type": {
+                "actual": "{ re: string; }"
+            },
+            "errors": ""
+        },
+        {
+            "caller": {
+                "name": "assert",
+                "line": 27,
+                "char": 5
+            },
+            "type": {
+                "actual": "{ re: string; }"
+            },
+            "errors": ""
+        },
+        {
+            "caller": {
+                "name": "assert",
+                "line": 30,
+                "char": 5
+            },
+            "type": {
+                "actual": "{ re: string; }",
+                "expected": "{ re: string; }"
+            },
+            "errors": ""
+        },
+        {
+            "caller": {
+                "name": "assert",
+                "line": 34,
+                "char": 15
+            },
+            "type": {
+                "actual": "{ re: string; }",
+                "expected": "{ re: number; }"
+            },
+            "errors": ""
+        },
+        {
+            "caller": {
+                "name": "assert",
+                "line": 40,
+                "char": 5
+            },
+            "type": {
+                "actual": "{ re: string; }"
+            },
+            "errors": ""
+        },
+        {
+            "caller": {
+                "name": "assert",
+                "line": 43,
+                "char": 24
+            },
+            "type": {
+                "actual": "{ re: string; }"
+            },
+            "errors": ""
+        },
+        {
+            "caller": {
+                "name": "assert",
+                "line": 46,
+                "char": 5
+            },
+            "type": {
+                "actual": "null",
+                "expected": "null"
+            },
+            "errors": ""
+        },
+        {
+            "caller": {
+                "name": "assert",
+                "line": 49,
+                "char": 13
+            },
+            "type": {
+                "actual": "string",
+                "expected": "number"
+            },
+            "errors": ""
+        },
+        {
+            "caller": {
+                "name": "assert",
+                "line": 57,
+                "char": 13
+            },
+            "type": {
+                "actual": "string"
+            },
+            "errors": ""
+        },
+        {
+            "caller": {
+                "name": "assert",
+                "line": 66,
+                "char": 5
+            },
+            "type": {
+                "actual": "() => never"
+            },
+            "errors": ""
+        },
+        {
+            "caller": {
+                "name": "assert",
+                "line": 69,
+                "char": 15
+            },
+            "type": {
+                "actual": "() => void"
+            },
+            "errors": ""
+        },
+        {
+            "caller": {
+                "name": "assert",
+                "line": 75,
+                "char": 5
+            },
+            "type": {
+                "actual": "string"
+            },
+            "errors": ""
+        },
+        {
+            "caller": {
+                "name": "assert",
+                "line": 81,
+                "char": 13
+            },
+            "type": {
+                "actual": "(input: string) => never"
+            },
+            "errors": ""
+        },
+        {
+            "caller": {
+                "name": "assert",
+                "line": 92,
+                "char": 5
+            },
+            "type": {
+                "actual": "any"
+            },
+            "errors": "Property 'nonexistent' does not exist on type 'number'."
+        },
+        {
+            "caller": {
+                "name": "assert",
+                "line": 95,
+                "char": 5
+            },
+            "type": {
+                "actual": "{ re: string; }"
+            },
+            "errors": ""
+        },
+        {
+            "caller": {
+                "name": "assert",
+                "line": 97,
+                "char": 5
+            },
+            "type": {
+                "actual": "() => void"
+            },
+            "errors": "Expected 1 arguments, but got 2."
+        },
+        {
+            "caller": {
+                "name": "assert",
+                "line": 103,
+                "char": 15
+            },
+            "type": {
+                "actual": "{ re: string; }"
+            },
+            "errors": ""
+        },
+        {
+            "caller": {
+                "name": "assert",
+                "line": 110,
+                "char": 13
+            },
+            "type": {
+                "actual": "() => void"
+            },
+            "errors": "Argument of type '\"this is a type error\"' is not assignable to parameter of type 'false'."
+        },
+        {
+            "caller": {
+                "name": "assert",
+                "line": 121,
+                "char": 5
+            },
+            "type": {
+                "actual": "() => void"
+            },
+            "errors": "Argument of type 'false | {}' is not assignable to parameter of type 'false'.Type '{}' is not assignable to type 'false'."
+        },
+        {
+            "caller": {
+                "name": "assert",
+                "line": 126,
+                "char": 5
+            },
+            "type": {
+                "actual": "{ re: string; }",
+                "expected": "{ re: string; }"
+            },
+            "errors": ""
+        },
+        {
+            "caller": {
+                "name": "assert",
+                "line": 128,
+                "char": 5
+            },
+            "type": {
+                "actual": "() => never"
+            },
+            "errors": "Expected 0 arguments, but got 1."
+        },
+        {
+            "caller": {
+                "name": "assert",
+                "line": 135,
+                "char": 13
+            },
+            "type": {
+                "actual": "number"
+            },
+            "errors": ""
+        },
+        {
+            "caller": {
+                "name": "assert",
+                "line": 142,
+                "char": 15
+            },
+            "type": {
+                "actual": "number"
+            },
+            "errors": ""
+        },
+        {
+            "caller": {
+                "name": "assert",
+                "line": 147,
+                "char": 15
+            },
+            "type": {
+                "actual": "void",
+                "expected": "() => null"
+            },
+            "errors": ""
+        },
+        {
+            "caller": {
+                "name": "assert",
+                "line": 153,
+                "char": 5
+            },
+            "type": {
+                "actual": "{ re: string; }"
+            },
+            "errors": ""
+        },
+        {
+            "caller": {
+                "name": "assert",
+                "line": 154,
+                "char": 5
+            },
+            "type": {
+                "actual": "{ re: string; }"
+            },
+            "errors": ""
+        },
+        {
+            "caller": {
+                "name": "assert",
+                "line": 155,
+                "char": 24
+            },
+            "type": {
+                "actual": "{ re: string; }"
+            },
+            "errors": ""
+        },
+        {
+            "caller": {
+                "name": "assert",
+                "line": 169,
+                "char": 5
+            },
+            "type": {
+                "actual": "{ re: string; }"
+            },
+            "errors": ""
+        },
+        {
+            "caller": {
+                "name": "assert",
+                "line": 172,
+                "char": 15
+            },
+            "type": {
+                "actual": "{ re: string; }"
+            },
+            "errors": ""
+        },
+        {
+            "caller": {
+                "name": "assert",
+                "line": 177,
+                "char": 5
+            },
+            "type": {
+                "actual": "1337"
+            },
+            "errors": ""
+        },
+        {
+            "caller": {
+                "name": "assert",
+                "line": 179,
+                "char": 5
+            },
+            "type": {
+                "actual": "any"
+            },
+            "errors": ""
+        },
+        {
+            "caller": {
+                "name": "assert",
+                "line": 189,
+                "char": 5
+            },
+            "type": {
+                "actual": "{ re: string; }"
+            },
+            "errors": ""
+        },
+        {
+            "caller": {
+                "name": "assert",
+                "line": 211,
+                "char": 5
+            },
+            "type": {
+                "actual": "{ re: string; }"
+            },
+            "errors": ""
+        },
+        {
+            "caller": {
+                "name": "assert",
+                "line": 217,
+                "char": 13
+            },
+            "type": {
+                "actual": "{ re: string; }"
+            },
+            "errors": ""
+        },
+        {
+            "caller": {
+                "name": "assert",
+                "line": 224,
+                "char": 5
+            },
+            "type": {
+                "actual": "null"
+            },
+            "errors": ""
+        },
+        {
+            "caller": {
+                "name": "assert",
+                "line": 228,
+                "char": 5
+            },
+            "type": {
+                "actual": "any"
+            },
+            "errors": ""
+        },
+        {
+            "caller": {
+                "name": "assert",
+                "line": 237,
+                "char": 5
+            },
+            "type": {
+                "actual": "{ re: string; }"
+            },
+            "errors": ""
+        },
+        {
+            "caller": {
+                "name": "assert",
+                "line": 239,
+                "char": 15
+            },
+            "type": {
+                "actual": "{ re: string; }"
+            },
+            "errors": ""
+        },
+        {
+            "caller": {
+                "name": "assert",
+                "line": 246,
+                "char": 5
+            },
+            "type": {
+                "actual": "any",
+                "expected": "any"
+            },
+            "errors": ""
+        },
+        {
+            "caller": {
+                "name": "assert",
+                "line": 247,
+                "char": 5
+            },
+            "type": {
+                "actual": "any",
+                "expected": "any"
+            },
+            "errors": ""
+        },
+        {
+            "caller": {
+                "name": "assert",
+                "line": 248,
+                "char": 24
+            },
+            "type": {
+                "actual": "number",
+                "expected": "any"
+            },
+            "errors": ""
+        },
+        {
+            "caller": {
+                "name": "assert",
+                "line": 250,
+                "char": 15
+            },
+            "type": {
+                "actual": "unknown",
+                "expected": "any"
+            },
+            "errors": ""
+        },
+        {
+            "caller": {
+                "name": "assert",
+                "line": 257,
+                "char": 5
+            },
+            "type": {
+                "actual": "{ re: string; }",
+                "expected": "{ re: string; }"
+            },
+            "errors": ""
+        },
+        {
+            "caller": {
+                "name": "assert",
+                "line": 259,
+                "char": 15
+            },
+            "type": {
+                "actual": "{ re: string; }",
+                "expected": "{ re: any; }"
+            },
+            "errors": ""
+        },
+        {
+            "caller": {
+                "name": "assert",
+                "line": 264,
+                "char": 15
+            },
+            "type": {
+                "actual": "{ re: string; }",
+                "expected": "{ re: string; }"
+            },
+            "errors": ""
+        },
+        {
+            "caller": {
+                "name": "assert",
+                "line": 270,
+                "char": 5
+            },
+            "type": {
+                "actual": "\"ooo\"",
+                "expected": "\"ooo\""
+            },
+            "errors": ""
+        },
+        {
+            "caller": {
+                "name": "assert",
+                "line": 274,
+                "char": 13
+            },
+            "type": {
+                "actual": "string",
+                "expected": "\"whoop\""
+            },
+            "errors": ""
+        },
+        {
+            "caller": {
+                "name": "assert",
+                "line": 283,
+                "char": 13
+            },
+            "type": {
+                "actual": "string",
+                "expected": "unknown"
+            },
+            "errors": ""
+        },
+        {
+            "caller": {
+                "name": "assert",
+                "line": 292,
+                "char": 5
+            },
+            "type": {
+                "actual": "() => void"
+            },
+            "errors": "Argument of type 'true' is not assignable to parameter of type 'false'."
+        },
+        {
+            "caller": {
+                "name": "assert",
+                "line": 299,
+                "char": 13
+            },
+            "type": {
+                "actual": "() => void"
+            },
+            "errors": "Argument of type 'null' is not assignable to parameter of type 'false'."
+        },
+        {
+            "caller": {
+                "name": "assert",
+                "line": 308,
+                "char": 13
+            },
+            "type": {
+                "actual": "() => void"
+            },
+            "errors": ""
+        }
+    ],
+    "queuedUpdates": [
+        {
+            "position": {
+                "method": "",
+                "file": "/home/ssalb/2re-po/pkgs/assert/tests/assert.test.ts",
+                "line": 237,
+                "char": 5
+            },
+            "value": "{re: \"do\"}"
+        },
+        {
+            "position": {
+                "method": "",
+                "file": "/home/ssalb/2re-po/pkgs/assert/tests/assert.test.ts",
+                "line": 237,
+                "char": 5
+            },
+            "value": "\"{ re: string; }\""
+        },
+        {
+            "position": {
+                "method": "",
+                "file": "/home/ssalb/2re-po/pkgs/assert/tests/assert.test.ts",
+                "line": 239,
+                "char": 15
+            },
+            "value": "{re: \"do\"}"
+        }
+    ]
+}

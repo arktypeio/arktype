@@ -1,4 +1,4 @@
-import { toString } from "./toString.ts"
+import { toString } from "@src/toString.ts"
 
 export const sleep = async (seconds: number) =>
     await new Promise<void>((resolve) =>

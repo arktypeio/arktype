@@ -1,4 +1,8 @@
-import { assertThrows, assertEquals } from "@deno/std/testing/asserts.ts"
+import {
+    assertThrows,
+    assertEquals,
+    AssertionError
+} from "@deno/std/testing/asserts.ts"
 import { dirname, join, fromFileUrl } from "@deno/std/path/mod.ts"
 import { assert } from "@src/assert.ts"
 import { readJsonSync, writeJsonSync } from "@src/common.ts"
@@ -26,13 +30,17 @@ Deno.test("typed", () => {
     assert(o).typed as { re: string }
 })
 Deno.test("badTyped", () => {
-    assertThrows(() => assert(o).typed as { re: number }, undefined, "number")
+    assertThrows(
+        () => assert(o).typed as { re: number },
+        AssertionError,
+        "number"
+    )
 })
 Deno.test("equals", () => {
     assert(o).equals({ re: "do" })
 })
 Deno.test("bad equals", () => {
-    assertThrows(() => assert(o).equals({ re: "doo" }), undefined, "doo")
+    assertThrows(() => assert(o).equals({ re: "doo" }), AssertionError, "doo")
 })
 Deno.test("returns", () => {
     assert(() => null).returns(null).typed as null
@@ -41,7 +49,7 @@ Deno.test("returns", () => {
             assert((input: string) => `${input}!`)
                 .args("hi")
                 .returns("hi!").typed as number,
-        undefined,
+        AssertionError,
         "number"
     )
     assertThrows(
@@ -50,7 +58,7 @@ Deno.test("returns", () => {
                 .args("hi")
                 .returns.type.toString()
                 .is("number"),
-        undefined,
+        AssertionError,
         "string"
     )
 })
@@ -59,7 +67,7 @@ Deno.test("throws", () => {
     assertThrows(
         // Snap should never be populated
         () => assert(() => shouldThrow(false)).throws.snap(),
-        undefined,
+        AssertionError,
         "didn't throw"
     )
 })
@@ -75,7 +83,7 @@ Deno.test("args", () => {
             })
                 .args("fail")
                 .throws("omg!"),
-        undefined,
+        AssertionError,
         "fail"
     )
 })
@@ -93,7 +101,7 @@ Deno.test("valid type errors", () => {
 Deno.test("bad type errors", () => {
     assertThrows(
         () => assert(o).type.errors(/This error doesn't exist/),
-        undefined,
+        AssertionError,
         "doesn't exist"
     )
     assertThrows(
@@ -102,7 +110,7 @@ Deno.test("bad type errors", () => {
             assert(() => shouldThrow("this is a type error")).type.errors.is(
                 ""
             ),
-        undefined,
+        AssertionError,
         "not assignable"
     )
 })
@@ -111,7 +119,7 @@ Deno.test("bad type errors", () => {
 Deno.test("TS diagnostic chain", () => {
     // @ts-expect-error
     assert(() => shouldThrow({} as {} | false)).type.errors.snap(
-        `'Argument of type 'false | {}' is not assignable to parameter of type 'false'.Type '{}' is not assignable to type 'false'.'`
+        `"Argument of type 'false | {}' is not assignable to parameter of type 'false'.Type '{}' is not assignable to type 'false'."`
     )
 })
 Deno.test("chainable", () => {
@@ -127,27 +135,31 @@ Deno.test("bad chainable", () => {
             assert(n)
                 .equals(5)
                 .type.errors.equals("Expecting an error here will throw"),
-        undefined,
+        AssertionError,
         "Expecting an error"
     )
-    assertThrows(() => assert(n).is(7).type.toString("string"), undefined, "7")
+    assertThrows(
+        () => assert(n).is(7).type.toString("string"),
+        AssertionError,
+        "7"
+    )
     assertThrows(
         () => assert(() => {}).returns.is(undefined).typed as () => null,
-        undefined,
+        AssertionError,
         "null"
     )
 })
 Deno.test("snap", () => {
-    assert(o).snap(`{re: 'do'}`)
-    assert(o).equals({ re: "do" }).type.toString.snap(`'{ re: string; }'`)
-    assertThrows(() => assert(o).snap(`{re: 'dorf'}`), undefined, "dorf")
+    assert(o).snap(`{re: "do"}`)
+    assert(o).equals({ re: "do" }).type.toString.snap(`"{ re: string; }"`)
+    assertThrows(() => assert(o).snap(`{re: "dorf"}`), AssertionError, "dorf")
 })
 
 const defaultSnapshotPath = join(testDir, "assert.snapshots.json")
 const defaultSnapshotFileContents = {
     "assert.test.ts": {
-        toFile: "{re: 'do'}",
-        toFileUpdate: "{re: 'oldValue'}"
+        toFile: '{re: "do"}',
+        toFileUpdate: '{re: "oldValue"}'
     }
 }
 
@@ -158,7 +170,7 @@ Deno.test("snap toFile", () => {
     // Check existing fail
     assertThrows(
         () => assert({ re: "kt" }).snap.toFile("toFile"),
-        undefined,
+        AssertionError,
         "kt"
     )
     // Add new
@@ -179,7 +191,7 @@ Deno.test("snap update toFile", () => {
     const expectedContents = {
         "assert.test.ts": {
             ...defaultSnapshotFileContents["assert.test.ts"],
-            ["toFileUpdate"]: "{re: 'dew'}"
+            ["toFileUpdate"]: '{re: "dew"}'
         }
     }
     assertEquals(updatedContents, expectedContents)
@@ -189,7 +201,7 @@ Deno.test("snap update toFile", () => {
 const defaultSnapshotCustomPath = join(testDir, "custom.snapshots.json")
 const defaultSnapshotCustomFileContents = {
     "assert.test.ts": {
-        toCustomFile: "{re: 'do'}"
+        toCustomFile: '{re: "do"}'
     }
 }
 
@@ -205,7 +217,7 @@ Deno.test("snap to custom file", () => {
             assert({ re: "kt" }).snap.toFile("toCustomFile", {
                 path: "custom.snapshots.json"
             }),
-        undefined,
+        AssertionError,
         "kt"
     )
     // Add new
@@ -220,23 +232,37 @@ Deno.test("snap to custom file", () => {
         }
     })
 })
+
+Deno.test("value and type snap", () => {
+    assert(o).snap().type.toString.snap()
+    assertThrows(
+        () => assert(o).snap().type.toString.snap(`"{ re: number; }"`),
+        AssertionError,
+        "number"
+    )
+})
+
 Deno.test("any type", () => {
     assert(n as any).typedValue(5 as any)
     assert(o as any).typed as any
-    assertThrows(() => assert(n).typedValue(5 as any), undefined, "number")
-    assertThrows(() => assert({} as unknown).typed as any, undefined, "unknown")
+    assertThrows(() => assert(n).typedValue(5 as any), AssertionError, "number")
+    assertThrows(
+        () => assert({} as unknown).typed as any,
+        AssertionError,
+        "unknown"
+    )
 })
 Deno.test("typedValue", () => {
     const getDo = () => "do"
     assert(o).typedValue({ re: getDo() })
     assertThrows(
         () => assert(o).typedValue({ re: "do" as any }),
-        undefined,
+        AssertionError,
         "any"
     )
     assertThrows(
         () => assert(o).typedValue({ re: "don't" }),
-        undefined,
+        AssertionError,
         "don't"
     )
 })
@@ -248,7 +274,7 @@ Deno.test("return has typed value", () => {
             assert((input: string) => input)
                 .args("yes")
                 .returns.typedValue("whoop"),
-        undefined,
+        AssertionError,
         "whoop"
     )
     // Wrong type
@@ -257,7 +283,7 @@ Deno.test("return has typed value", () => {
             assert((input: string) => input)
                 .args("yes")
                 .returns.typedValue("yes" as unknown),
-        undefined,
+        AssertionError,
         "unknown"
     )
 })
@@ -273,7 +299,7 @@ Deno.test("throwsAndHasTypeError", () => {
             assert(() => shouldThrow(null)).throwsAndHasTypeError(
                 "not assignable"
             ),
-        undefined,
+        AssertionError,
         "didn't throw"
     )
     // No type error
@@ -282,7 +308,7 @@ Deno.test("throwsAndHasTypeError", () => {
             assert(() => shouldThrow(true as any)).throwsAndHasTypeError(
                 "not assignable"
             ),
-        undefined,
+        AssertionError,
         "not assignable"
     )
 })

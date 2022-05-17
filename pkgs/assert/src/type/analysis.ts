@@ -1,11 +1,4 @@
-import {
-    Project,
-    SourceFile,
-    SyntaxKind,
-    ts,
-    Type,
-    VariableDeclaration
-} from "ts-morph"
+import { Project, SourceFile, SyntaxKind, ts, Type } from "ts-morph"
 import { dirname, join, relative } from "@deno/std/path/mod.ts"
 import {
     SourcePosition,
@@ -54,8 +47,12 @@ export const getTsProject: Memoized<() => Project> = () => {
     return getTsProject.cache
 }
 
+type CallerPosition = LinePosition & {
+    name: string
+}
+
 type AssertionData = {
-    position: LinePosition
+    caller: CallerPosition
     type: {
         actual: string
         expected?: string
@@ -224,10 +221,6 @@ const analyzeTypeAssertions: Memoized<
                 }
             }
         }
-        const pos = ts.getLineAndCharacterOfPosition(
-            assertCall.getSourceFile().compilerNode,
-            assertCall.getPos() + assertCall.getLeadingTriviaWidth()
-        )
         const errors =
             diagnosticsByFile[fileKey]?.reduce((message, diagnostic) => {
                 if (
@@ -241,17 +234,30 @@ const analyzeTypeAssertions: Memoized<
                 }
                 return message
             }, "") ?? ""
+        // The start position of the "assert" identifier from the assert call should be the position
+        // we get when we check the line from which assert was called at runtime.
+        const assertCallIdentifier = assertCall.getFirstChildByKindOrThrow(
+            SyntaxKind.Identifier
+        )
+        const identifierName = assertCallIdentifier.getSymbolOrThrow().getName()
+        const caller: CallerPosition = {
+            name: identifierName,
+            line: assertCallIdentifier.getStartLineNumber(),
+            char:
+                // ts-morph doesn't seem to directly expose inline character position.
+                // Subtract the line's start from the node's start to calculate it.
+                assertCallIdentifier.getStart() -
+                assertCallIdentifier.getStartLinePos() +
+                // Add 1 so the inline position is 1-based instead of 0-based.
+                1
+        }
         const assertionData: AssertionData = {
+            caller,
             type: {
                 actual: typeToCheck.getText(),
                 expected: expectedType?.getText()
             },
-            errors,
-            // TypeScript's line + character are 0-based. Convert to 1-based.
-            position: {
-                line: pos.line + 1,
-                char: pos.character + 1
-            }
+            errors
         }
         assertionsByFile[fileKey].push(assertionData)
     })
@@ -265,11 +271,19 @@ export const getAssertionData = (position: SourcePosition) => {
     if (!assertionsByFile[fileKey]) {
         throw new Error(`Found no assertion data for '${fileKey}'.`)
     }
-    const matchingAssertion = assertionsByFile[fileKey].find(
-        (assertion) =>
-            assertion.position.line === position.line &&
-            assertion.position.char === position.char
-    )
+    const matchingAssertion = assertionsByFile[fileKey].find((assertion) => {
+        if (assertion.caller.line === position.line) {
+            if (assertion.caller.char === position.char) {
+                return true
+            } else if (
+                // In some environments, stack trace positions start from the end of the identifier instead of the start
+                assertion.caller.char + assertion.caller.name.length ===
+                position.char
+            ) {
+                return true
+            }
+        }
+    })
     if (!matchingAssertion) {
         throw new Error(
             `Found no assertion at line ${position.line} char ${position.char} in '${fileKey}'.`

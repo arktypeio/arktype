@@ -1,6 +1,6 @@
 {
     "typescript.tsdk": "node_modules/typescript/lib",
-    "deno.enable": true,
+    "deno.enable": false,
     "deno.lint": true,
     "deno.unstable": true,
     "eslint.enable": false

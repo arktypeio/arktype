@@ -1,5 +1,5 @@
 import { assert } from "@re-/assert"
-import { EntryMapper, transform } from ".."
+import { EntryMapper, transform } from "@re-/tools"
 
 const o = {
     a: 1,

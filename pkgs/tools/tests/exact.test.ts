@@ -1,4 +1,4 @@
-import { DeepEvaluate, Exact } from ".."
+import { DeepEvaluate, Exact } from "../out/types"
 import { assert } from "@re-/assert"
 
 describe("exact", () => {
@@ -25,7 +25,6 @@ describe("exact", () => {
             >
         ).typed as { a: "ok"; nested: { on: true } }
     })
-
     test("unions", () => {
         assert(
             {} as DeepEvaluate<

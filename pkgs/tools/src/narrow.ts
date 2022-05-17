@@ -1,4 +1,4 @@
-import { CastWithExclusion } from "./common.ts"
+import { CastWithExclusion } from "@src/common.ts"
 
 export type Narrowable = string | boolean | number | bigint
 

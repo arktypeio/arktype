@@ -16,7 +16,11 @@ import {
     queueInlineSnapshotUpdate,
     writeInlineSnapshotToFile
 } from "@src/value/snapshot.ts"
-import { assertEquals, assertMatch } from "@deno/std/testing/asserts.ts"
+import {
+    assertEquals,
+    assertMatch,
+    AssertionError
+} from "@deno/std/testing/asserts.ts"
 
 const getThrownMessage = (value: Function) => {
     try {
@@ -27,7 +31,7 @@ const getThrownMessage = (value: Function) => {
         }
         return String(e)
     }
-    throw new Error(`${value.toString()} didn't throw.`)
+    throw new AssertionError(`Function didn't throw.`)
 }
 
 export type ChainableValueAssertion<
@@ -109,8 +113,11 @@ export type ComparableValueAssertion<
     is: (
         value: ElementOf<PossibleValues>
     ) => NextAssertions<AllowTypeAssertions>
-    snap: ((value?: string) => undefined) & {
-        toFile: (name: string, options?: ExternalSnapshotOptions) => undefined
+    snap: ((value?: string) => NextAssertions<AllowTypeAssertions>) & {
+        toFile: (
+            name: string,
+            options?: ExternalSnapshotOptions
+        ) => NextAssertions<AllowTypeAssertions>
     }
     equals: (
         value: ElementOf<PossibleValues>
@@ -179,12 +186,31 @@ export type ValueAssertion<
     ? FunctionalValueAssertion<Args, Return, AllowTypeAssertions>
     : ComparableValueAssertion<PossibleValues, AllowTypeAssertions>
 
-const defaultAssert = (value: unknown, expected: unknown, allowRegex = false) =>
-    isRecursible(value)
-        ? assertEquals(value, expected)
-        : allowRegex && typeof value === "string" && expected instanceof RegExp
-        ? assertMatch(value, expected)
-        : assertEquals(value, expected)
+const defaultAssert = (
+    value: unknown,
+    expected: unknown,
+    allowRegex = false
+) => {
+    if (isRecursible(value)) {
+        assertEquals(value, expected)
+    } else if (allowRegex) {
+        if (typeof value !== "string") {
+            throw new AssertionError(
+                `Value was of type ${typeof value} (expected a string).`
+            )
+        }
+        if (!(typeof expected === "string" || expected instanceof RegExp)) {
+            throw new AssertionError(
+                `Expected value for this assertion should be a string or RegExp. Received: ${toString(
+                    expected
+                )}.`
+            )
+        }
+        assertMatch(value, new RegExp(expected))
+    } else {
+        assertEquals(value, expected)
+    }
+}
 
 export const getNextAssertions = (
     position: SourcePosition,
@@ -197,7 +223,7 @@ export const valueAssertions = <T, Ctx extends AssertionContext>(
     ctx: Ctx
 ): ValueAssertion<ListPossibleTypes<T>, Ctx["allowTypeAssertions"]> => {
     const nextAssertions = getNextAssertions(position, ctx)
-    const serializedValue = toString(value)
+    const serializedValue = toString(value, { quotes: "double" })
     if (typeof value === "function") {
         const functionAssertions = {
             args: (...args: any[]) =>
@@ -250,6 +276,7 @@ export const valueAssertions = <T, Ctx extends AssertionContext>(
                 writeInlineSnapshotToFile(args)
             }
         }
+        return nextAssertions
     }
 
     const baseAssertions = {
@@ -274,6 +301,7 @@ export const valueAssertions = <T, Ctx extends AssertionContext>(
                         customPath: options.path
                     })
                 }
+                return nextAssertions
             }
         }),
         equals: (expected: unknown) => {
