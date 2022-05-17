@@ -8,18 +8,18 @@ importers:
   ../../pkgs/assert:
     specifiers:
       '@deno/shim-deno': 0.5.0
-      '@re-/node': 2.0.0
       '@re-/tools': 2.0.0
+      chalk: 4.1.2
       get-current-line: 6.6.0
       ts-morph: 14.0.0
       typescript: 4.6.3
     dependencies:
-      '@deno/shim-deno': 0.5.0
-      '@re-/node': 2.0.0
       '@re-/tools': 2.0.0
       get-current-line: 6.6.0
       ts-morph: 14.0.0
     devDependencies:
+      '@deno/shim-deno': 0.5.0
+      chalk: 4.1.2
       typescript: 4.6.3
 
   ../../pkgs/docs:
@@ -1939,14 +1939,14 @@ packages:
 
   /@deno/shim-deno-test/0.3.2:
     resolution: {integrity: sha512-STxWMnLuA0/bT0F41yKx6AbyzVVSjXYvgleFE4xit/m4aooMG/0Bs0MiQUe95EVS8DrzYmWbuCtdIlWymAdlsw==}
-    dev: false
+    dev: true
 
   /@deno/shim-deno/0.5.0:
     resolution: {integrity: sha512-bx2TT/WwmpRlnk2Q0qe9xJMzbyKyl7Uyz9cdXEn756Obu15bRanLiVa/3+09Bg8HYL+mUXydWzh32/oxsVv6dw==}
     dependencies:
       '@deno/shim-deno-test': 0.3.2
       which: 2.0.2
-    dev: false
+    dev: true
 
   /@docsearch/css/3.0.0:
     resolution: {integrity: sha512-1kkV7tkAsiuEd0shunYRByKJe3xQDG2q7wYg24SOw1nV9/2lwEd4WrUYRJC/ukGTl2/kHeFxsaUvtiOy0y6fFA==}
@@ -3370,32 +3370,6 @@ packages:
 
   /@popperjs/core/2.11.5:
     resolution: {integrity: sha512-9X2obfABZuDVLCgPK9aX0a/x4jaOEweTTWE2+9sr0Qqqevj2Uv5XorvusThmc9XGYpS9yI+fhh8RTafBtGposw==}
-    dev: false
-
-  /@re-/node/2.0.0:
-    resolution: {integrity: sha512-fE+hNsc8wg6cguzmSyAvCx/Ke/MnxF3TjrGNwikXV2buPqIaUjHqgyBDW8eXW/Iuo9TK0LtGIrVjDnZ8oJTvXg==}
-    hasBin: true
-    dependencies:
-      '@re-/tools': 1.4.0
-      deepmerge: 4.2.2
-      execa: 5.0.0
-      get-current-line: 6.6.0
-      prompts: 2.4.1
-      tree-kill: 1.2.2
-      ts-node: 10.4.0_typescript@4.6.3
-      typescript: 4.6.3
-    transitivePeerDependencies:
-      - '@swc/core'
-      - '@swc/wasm'
-      - '@types/node'
-    dev: false
-
-  /@re-/tools/1.4.0:
-    resolution: {integrity: sha512-r1pGun88cgWG4iVpLk0CKG3/ghfvODCs1C3Wo/RLmGdTcp/bGKIFG+5yqPa9dhGAfflnoOZYvB/nvQ98feM4Sw==}
-    dependencies:
-      deepmerge: 4.2.2
-      moize: 5.4.7
-      ts-toolbelt: 9.5.10
     dev: false
 
   /@re-/tools/2.0.0:
@@ -10861,35 +10835,6 @@ packages:
       make-error: 1.3.6
       typescript: 4.6.3
       yn: 3.1.1
-
-  /ts-node/10.4.0_typescript@4.6.3:
-    resolution: {integrity: sha512-g0FlPvvCXSIO1JDF6S232P5jPYqBkRL9qly81ZgAOSU7rwI0stphCgd2kLiCrU9DjQCrJMWEqcNSjQL02s6d8A==}
-    hasBin: true
-    peerDependencies:
-      '@swc/core': '>=1.2.50'
-      '@swc/wasm': '>=1.2.50'
-      '@types/node': '*'
-      typescript: '>=2.7'
-    peerDependenciesMeta:
-      '@swc/core':
-        optional: true
-      '@swc/wasm':
-        optional: true
-    dependencies:
-      '@cspotcode/source-map-support': 0.7.0
-      '@tsconfig/node10': 1.0.8
-      '@tsconfig/node12': 1.0.9
-      '@tsconfig/node14': 1.0.1
-      '@tsconfig/node16': 1.0.2
-      acorn: 8.7.1
-      acorn-walk: 8.2.0
-      arg: 4.1.3
-      create-require: 1.1.1
-      diff: 4.0.2
-      make-error: 1.3.6
-      typescript: 4.6.3
-      yn: 3.1.1
-    dev: false
 
   /ts-toolbelt/9.5.10:
     resolution: {integrity: sha512-nyfx1+97Bl86XFkHYC3TyM0IP2mP0Yc30KbZod9S6VaUNC9aJl4kcKnjKopBm+GG1TjOFsAtRbhKZZjuji86wQ==}

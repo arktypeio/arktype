@@ -1,3 +1,4 @@
+import { Func } from "@re-/tools"
 import { resolve } from "deno/std/path/mod.ts"
 
 export type LinePosition = {
@@ -48,7 +49,7 @@ export interface ReJson {
     assert?: ReAssertJson
 }
 
-export type Memoized<F> = F & { cache?: any }
+export type Memoized<F extends Func> = F & { cache?: ReturnType<F> }
 
 export const getReAssertConfig: Memoized<() => ReAssertConfig> = () => {
     if (!getReAssertConfig.cache) {

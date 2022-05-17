@@ -21,7 +21,7 @@ export interface WriteInlineSnapshotArgs extends BaseSnapshotArgs {}
 
 export interface ExternalSnapshotArgs extends BaseSnapshotArgs {
     name: string
-    customPath?: string
+    customPath: string | undefined
 }
 
 const getQueuedSnapshotUpdates = (
@@ -94,9 +94,9 @@ export const updateExternalSnapshot = ({
     value,
     position,
     name,
-    customPath: path
+    customPath
 }: ExternalSnapshotArgs) => {
-    const snapshotPath = resolveSnapshotPath(position.file, path)
+    const snapshotPath = resolveSnapshotPath(position.file, customPath)
     const snapshotData = readJsonSync(snapshotPath) ?? {}
     const fileKey = basename(position.file)
     snapshotData[fileKey] = {

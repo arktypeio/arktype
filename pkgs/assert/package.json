@@ -20,7 +20,8 @@
     },
     "scripts": {
         "build": "deno run --allow-all ./build.ts",
-        "test": "deno run --allow-all ./precached.ts"
+        "test": "deno run --allow-all --no-check ./precached.ts",
+        "testNode": "npx ts-node --esm -T out/src/nodeTestRunner.ts"
     },
     "dependencies": {
         "@re-/tools": "2.0.0",
@@ -28,6 +29,8 @@
         "get-current-line": "6.6.0"
     },
     "devDependencies": {
-        "typescript": "4.6.3"
+        "typescript": "4.6.3",
+        "chalk": "4.1.2",
+        "@deno/shim-deno": "0.5.0"
     }
 }

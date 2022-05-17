@@ -11,28 +11,16 @@
             "program": "${file}",
             "cwd": "${workspaceFolder}",
             "runtimeExecutable": "deno",
-            "runtimeArgs": [
-                "run",
-                "--import-map",
-                "./import_map.json",
-                "--inspect-brk",
-                "--allow-all"
-            ],
+            "runtimeArgs": ["run", "--inspect-brk", "--allow-all"],
             "attachSimplePort": 9229
         },
         {
             "request": "launch",
             "name": "deno test",
             "type": "pwa-node",
-            "cwd": "${workspaceFolder}",
+            "cwd": "${workspaceFolder}/tests",
             "runtimeExecutable": "deno",
-            "runtimeArgs": [
-                "test",
-                "--import-map",
-                "./import_map.json",
-                "--inspect-brk",
-                "--allow-all"
-            ],
+            "runtimeArgs": ["test", "--inspect-brk", "--allow-all"],
             "attachSimplePort": 9229
         }
     ]

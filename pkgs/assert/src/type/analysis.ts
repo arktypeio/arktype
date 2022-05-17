@@ -10,6 +10,7 @@ import {
     Memoized
 } from "src/common.ts"
 import { writeQueuedSnapshotUpdates } from "src/value/snapshot.ts"
+import { getAssertFilePath } from "src/assert.ts"
 
 export const cacheTypeAssertions = () => {
     const config = getReAssertConfig()
@@ -28,11 +29,14 @@ export const cleanupTypeAssertionCache = () => {
 export const getTsProject: Memoized<() => Project> = () => {
     if (!getTsProject.cache) {
         const config = getReAssertConfig()
-        getTsProject.cache = new Project({
-            tsConfigFilePath: existsSync(config.tsconfig)
-                ? config.tsconfig
-                : undefined
-        })
+        if (existsSync(config.tsconfig)) {
+            getTsProject.cache = new Project({
+                tsConfigFilePath: config.tsconfig
+            })
+        } else {
+            getTsProject.cache = new Project()
+            getTsProject.cache.addSourceFilesAtPaths(["**"])
+        }
     }
     return getTsProject.cache
 }
@@ -86,7 +90,7 @@ const analyzeTypeAssertions: Memoized<
         analyzeTypeAssertions.cache = readJsonSync(config.precachePath)
         if (!analyzeTypeAssertions.cache) {
             throw new Error(
-                `Unable to find precached assertion data at '${config.precachePath}'.` +
+                `Unable to find precached assertion data at '${config.precachePath}'. ` +
                     `Did you forget to call 'cacheTypeAssertions' before running your tests?`
             )
         }
@@ -124,7 +128,8 @@ const analyzeTypeAssertions: Memoized<
             diagnosticsByFile[fileKey] = [data]
         }
     })
-    const assertFile = project.getSourceFile("src/assert.ts")
+
+    const assertFile = project.addSourceFileAtPath(getAssertFilePath())
     const assertFunction = assertFile
         ?.getExportSymbols()
         .find((_) => _.getName() === "assert")

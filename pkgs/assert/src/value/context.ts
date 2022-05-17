@@ -271,7 +271,7 @@ export const valueAssertions = <T, Ctx extends AssertionContext>(
                         value: serializedValue,
                         position,
                         name,
-                        ...options
+                        customPath: options.path
                     })
                 }
             }

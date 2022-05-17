@@ -19,11 +19,18 @@ export type AssertionContext = {
     config: ReAssertConfig
 }
 
+export const getAssertFilePath = () => fromFileUrl(import.meta.url)
+
 export const assert: Assertion = (
     value: unknown,
     internalConfigHooks?: Partial<AssertionContext>
 ) => {
     const position = getCurrentLine({ method: "assert" })
+    if (!position.file.endsWith("ts")) {
+        throw new Error(
+            `Assert cannot be called from outside a TypeScript source file (got '${position.file}'). `
+        )
+    }
     if (position.file.startsWith("file:///")) {
         position.file = fromFileUrl(position.file)
     }

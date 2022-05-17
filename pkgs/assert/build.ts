@@ -1,43 +1,105 @@
-// ex. scripts/build_npm.ts
 import { build, emptyDir } from "dnt"
+import packageJson from "./package.json" assert { type: "json" }
+import importMap from "./import_map.json" assert { type: "json" }
 
-await emptyDir("./npm")
+await emptyDir("./out")
+
+type DntMappings = NonNullable<Parameters<typeof build>[0]["mappings"]>
+
+const { dependencies } = packageJson
+const imports: Record<string, string> = importMap.imports
+
+const ignoreDeps: string[] = []
+const customMappings: DntMappings = {
+    "../tools/src/index.ts": {
+        name: "@re-/tools",
+        version: dependencies["@re-/tools"]
+    }
+}
+const preservedPackageJsonKeys = [
+    "name",
+    "version",
+    "description",
+    "author",
+    "repository",
+    "type"
+]
+
+const { mappings, errors } = Object.entries(dependencies).reduce(
+    ({ mappings, errors }, [name, version]) => {
+        if (ignoreDeps.includes(name)) {
+            return { mappings, errors }
+        }
+        if (name in imports) {
+            if (imports[name] in customMappings) {
+                return {
+                    mappings,
+                    errors
+                }
+            }
+            if (!imports[name].includes(version)) {
+                return {
+                    mappings,
+                    errors: [
+                        ...errors,
+                        `Version mismatch for ${name}: import '${imports[name]}' did not include ${version}.`
+                    ]
+                }
+            }
+            return {
+                mappings: { ...mappings, [imports[name]]: { name, version } },
+                errors
+            }
+        }
+        return {
+            mappings,
+            errors: [
+                ...errors,
+                `Dependency ${name} not found in imports. If you'd like to exclude it, specify it in excludeDeps.`
+            ]
+        }
+    },
+    {
+        mappings: customMappings,
+        errors: [] as string[]
+    }
+)
+
+if (errors.length) {
+    throw new Error(
+        `The following errors must be resolved before building:\n${errors.join(
+            "\n"
+        )}`
+    )
+}
+
+const outPackageJson: any = Object.fromEntries(
+    Object.entries(packageJson).filter(([k, v]) =>
+        preservedPackageJsonKeys.includes(k)
+    )
+)
+
+outPackageJson.scripts = {
+    test: "npx ts-node --esm -T test_runner.ts"
+}
+
+Deno.copyFileSync("nodeTestRunner.ts", "out/test_runner.ts")
 
 await build({
     entryPoints: ["./src/index.ts"],
-    outDir: "./npm",
+    outDir: "./out",
+    rootTestDir: "./tests",
     shims: {
         deno: true
     },
     packageManager: "pnpm",
     importMap: "import_map.json",
-    package: {
-        name: "@re-/assert",
-        version: "0.2.2",
-        author: "redo.dev",
-        license: "MIT",
-        description: "Seamless testing for types and code✅",
-        repository: {
-            type: "git",
-            url: "https://github.com/re-do/re-po.git",
-            directory: "pkgs/assert"
-        }
-    },
-    mappings: {
-        "../tools/src/index.ts": {
-            name: "@re-/tools",
-            version: "2.0.0"
-        },
-        "https://deno.land/x/ts_morph@14.0.0/mod.ts": {
-            name: "ts-morph",
-            version: "14.0.0"
-        },
-        "https://unpkg.com/get-current-line@6.6.0/edition-deno/index.ts": {
-            name: "get-current-line",
-            version: "6.6.0"
-        }
+    package: outPackageJson,
+    mappings,
+    compilerOptions: {
+        sourceMap: true
     }
 })
 
-Deno.copyFileSync("../../LICENSE", "npm/LICENSE")
-Deno.copyFileSync("README.md", "npm/README.md")
+Deno.copyFileSync("../../LICENSE", "out/LICENSE")
+Deno.copyFileSync("README.md", "out/README.md")
