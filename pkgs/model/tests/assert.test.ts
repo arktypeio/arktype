@@ -1,4 +1,4 @@
-import { getTsContext } from "@re-/assert"
+import { cacheTypeAssertions } from "@re-/assert"
 
 beforeAll(() => {
     /**
@@ -9,7 +9,7 @@ beforeAll(() => {
      */
     const startTime = Date.now()
     console.log("Analyzing types...")
-    getTsContext()
+    cacheTypeAssertions()
     console.log(
         `Finished analyzing types in ${
             (Date.now() - startTime) / 1000

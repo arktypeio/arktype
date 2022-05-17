@@ -1,3 +1,4 @@
+// @ts-ignore
 import chalk from "chalk"
 // @ts-ignore
 import { testDefinitions } from "@deno/shim-deno/test-internals"
@@ -145,6 +146,7 @@ export async function runTestDefinitions(
             options.process.stdout.write("\n\n")
             options.process.stdout.write(failure.name + "\n")
             options.process.stdout.write(
+                // @ts-ignore
                 indentText((failure.err?.stack ?? failure.err).toString(), 1)
             )
         }

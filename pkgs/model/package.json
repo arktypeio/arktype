@@ -18,7 +18,6 @@
             "require": "./out/cjs/index.cjs"
         }
     },
-    "assertTsConfig": "tests/tsconfig.json",
     "scripts": {
         "build": "reTsc --asBuild",
         "test": "jest 2>&1",

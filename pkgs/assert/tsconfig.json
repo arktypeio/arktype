@@ -8,12 +8,14 @@
         "isolatedModules": true,
         "esModuleInterop": true,
         "resolveJsonModule": true,
+        "composite": true,
         "jsx": "react",
         "lib": ["ESNext"],
+        "typeRoots": ["./deno"],
         "paths": {
-            "src/*.ts": ["./src/*.js"],
-            "deno/std/*.ts": ["./deno/std/*.js"]
+            "@src/*.ts": ["./src/*.js"],
+            "@deno/std/*.ts": ["./deno/std/*.js"]
         }
     },
-    "include": ["src", "tests", "deno"]
+    "include": ["src", "tests", "*"]
 }

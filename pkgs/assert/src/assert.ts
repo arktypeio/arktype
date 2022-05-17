@@ -1,9 +1,9 @@
 import { ListPossibleTypes } from "@re-/tools"
-import { fromFileUrl } from "deno/std/path/mod.ts"
-import { typeAssertions, TypeAssertions } from "src/type/index.ts"
-import { valueAssertions, ValueAssertion } from "src/value/index.ts"
 import getCurrentLine from "get-current-line"
-import { getReAssertConfig, ReAssertConfig } from "src/common.ts"
+import { fromFileUrl } from "@deno/std/path/mod.ts"
+import { typeAssertions, TypeAssertions } from "@src/type/index.ts"
+import { valueAssertions, ValueAssertion } from "@src/value/index.ts"
+import { getReAssertConfig, ReAssertConfig } from "@src/common.ts"
 
 export type AssertionResult<
     T,

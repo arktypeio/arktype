@@ -9,19 +9,18 @@
         "directory": "pkgs/assert"
     },
     "type": "module",
-    "main": "out/cjs/index.cjs",
-    "types": "out/types/index.d.ts",
+    "main": "./out/script/src/index.js",
+    "types": "./out/types/src/index.d.ts",
     "exports": {
         ".": {
-            "types": "./out/types/index.d.ts",
-            "import": "./out/esm/index.js",
-            "require": "./out/cjs/index.cjs"
+            "types": "./out/types/src/index.d.ts",
+            "import": "./out/esm/src/index.js",
+            "require": "./out/script/src/index.js"
         }
     },
     "scripts": {
         "build": "deno run --allow-all ./build.ts",
-        "test": "deno run --allow-all --no-check ./precached.ts",
-        "testNode": "npx ts-node --esm -T out/src/nodeTestRunner.ts"
+        "test": "deno run --allow-all --no-check ./runTests.ts"
     },
     "dependencies": {
         "@re-/tools": "2.0.0",
@@ -29,8 +28,6 @@
         "get-current-line": "6.6.0"
     },
     "devDependencies": {
-        "typescript": "4.6.3",
-        "chalk": "4.1.2",
-        "@deno/shim-deno": "0.5.0"
+        "typescript": "4.6.3"
     }
 }

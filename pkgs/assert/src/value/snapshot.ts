@@ -1,11 +1,11 @@
-import { join, dirname, isAbsolute, basename } from "deno/std/path/mod.ts"
+import { join, dirname, isAbsolute, basename } from "@deno/std/path/mod.ts"
 import {
     readJsonSync,
     setJsonKey,
     SourcePosition,
     writeJsonSync
-} from "src/common.ts"
-import { getTsProject } from "src/type/analysis.ts"
+} from "@src/common.ts"
+import { getTsProject } from "@src/type/analysis.ts"
 import { ts, SyntaxKind, CallExpression } from "ts-morph"
 
 export interface BaseSnapshotArgs {

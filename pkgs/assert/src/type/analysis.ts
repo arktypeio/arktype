@@ -1,5 +1,12 @@
-import { Project, SyntaxKind, ts, Type } from "ts-morph"
-import { relative } from "deno/std/path/mod.ts"
+import {
+    Project,
+    SourceFile,
+    SyntaxKind,
+    ts,
+    Type,
+    VariableDeclaration
+} from "ts-morph"
+import { dirname, join, relative } from "@deno/std/path/mod.ts"
 import {
     SourcePosition,
     LinePosition,
@@ -8,12 +15,18 @@ import {
     existsSync,
     getReAssertConfig,
     Memoized
-} from "src/common.ts"
-import { writeQueuedSnapshotUpdates } from "src/value/snapshot.ts"
-import { getAssertFilePath } from "src/assert.ts"
+} from "@src/common.ts"
+import { writeQueuedSnapshotUpdates } from "@src/value/snapshot.ts"
+import { getAssertFilePath } from "@src/assert.ts"
 
 export const cacheTypeAssertions = () => {
     const config = getReAssertConfig()
+    if (!config.precached) {
+        throw new Error(
+            `You must set 'precached' to true in the 'assert' section ` +
+                ` of your re.json config to enable precaching.`
+        )
+    }
     writeJsonSync(
         config.precachePath,
         analyzeTypeAssertions({ isInitialCache: true })
@@ -128,20 +141,36 @@ const analyzeTypeAssertions: Memoized<
             diagnosticsByFile[fileKey] = [data]
         }
     })
+    const assertSourcePath = getAssertFilePath()
+    let assertFile: SourceFile
 
-    const assertFile = project.addSourceFileAtPath(getAssertFilePath())
-    const assertFunction = assertFile
-        ?.getExportSymbols()
+    if (assertSourcePath.endsWith("js")) {
+        // In external node environments, we should use the .d.ts file to find references
+        // assertSourcePath should be something like: node_modules/@re-/assert/out/script/src/assert.js
+        const assertDefinitionPath = join(
+            dirname(assertSourcePath),
+            "..",
+            "..",
+            "types",
+            "src",
+            "assert.d.ts"
+        )
+        assertFile = project.addSourceFileAtPath(assertDefinitionPath)
+    } else {
+        // Otherwise, we're importing a .ts file directly, so should be able to access references that way
+        assertFile = project.addSourceFileAtPath(assertSourcePath)
+    }
+    const exportedAssertDeclaration = assertFile
+        .getExportSymbols()
         .find((_) => _.getName() === "assert")
-    const declaration = assertFunction
         ?.getValueDeclaration()
         ?.asKind(SyntaxKind.VariableDeclaration)
-    if (!declaration) {
+    if (!exportedAssertDeclaration) {
         throw new Error(
             `Unable to locate the 'assert' function from @re-/assert.`
         )
     }
-    const references = declaration
+    const references = exportedAssertDeclaration
         .findReferences()
         .flatMap((ref) => ref.getReferences())
     references.forEach((ref) => {

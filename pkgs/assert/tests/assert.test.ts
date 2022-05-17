@@ -1,7 +1,7 @@
-import { assert } from "src/assert.ts"
-import { assertThrows, assertEquals } from "deno/std/testing/asserts.ts"
-import { readJsonSync, writeJsonSync } from "src/common.ts"
-import { dirname, join, fromFileUrl } from "deno/std/path/mod.ts"
+import { assertThrows, assertEquals } from "@deno/std/testing/asserts.ts"
+import { dirname, join, fromFileUrl } from "@deno/std/path/mod.ts"
+import { assert } from "@src/assert.ts"
+import { readJsonSync, writeJsonSync } from "@src/common.ts"
 
 const n: number = 5
 const o = { re: "do" }

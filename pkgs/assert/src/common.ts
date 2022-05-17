@@ -1,5 +1,5 @@
 import { Func } from "@re-/tools"
-import { resolve } from "deno/std/path/mod.ts"
+import { resolve } from "@deno/std/path/mod.ts"
 
 export type LinePosition = {
     line: number

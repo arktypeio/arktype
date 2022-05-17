@@ -1,11 +1,11 @@
-import { SourcePosition } from "src/common.ts"
+import { SourcePosition } from "@src/common.ts"
 import {
     chainableAssertion,
     ChainableValueAssertion
-} from "src/value/context.ts"
-import { AssertionContext } from "src/assert.ts"
-import { assertEquals } from "deno/std/testing/asserts.ts"
-import { getAssertionData } from "src/type/analysis.ts"
+} from "@src/value/context.ts"
+import { AssertionContext } from "@src/assert.ts"
+import { assertEquals } from "@deno/std/testing/asserts.ts"
+import { getAssertionData } from "@src/type/analysis.ts"
 
 export type ValueFromTypeAssertion<
     Expected,

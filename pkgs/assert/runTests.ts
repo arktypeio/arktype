@@ -1,7 +1,7 @@
 import {
     cacheTypeAssertions,
     cleanupTypeAssertionCache
-} from "./src/type/analysis.ts"
+} from "@src/type/analysis.ts"
 
 Deno.chdir("tests")
 cacheTypeAssertions()

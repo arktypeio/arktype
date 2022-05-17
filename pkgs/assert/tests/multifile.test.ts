@@ -1,5 +1,5 @@
-import { assert } from "src/index.ts"
-import { assertThrows } from "deno/std/testing/asserts.ts"
+import { assert } from "@src/index.ts"
+import { assertThrows } from "@deno/std/testing/asserts.ts"
 
 Deno.test("gathers types across files", () => {
     assert({ i: "love my wife" }).typed as { i: string }
