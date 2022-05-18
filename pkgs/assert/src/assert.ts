@@ -26,7 +26,7 @@ export const assert: Assertion = (
     internalConfigHooks?: Partial<AssertionContext>
 ) => {
     const position = getCurrentLine({ method: "assert" })
-    if (!position.file.endsWith("ts")) {
+    if (!position.file.match(/\.(c|m)?tsx?$/)) {
         throw new Error(
             `Assert cannot be called from outside a TypeScript source file (got '${position.file}'). `
         )

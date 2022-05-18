@@ -623,15 +623,6 @@
                 "line": 237,
                 "char": 5
             },
-            "value": "{re: \"do\"}"
-        },
-        {
-            "position": {
-                "method": "",
-                "file": "/home/ssalb/2re-po/pkgs/assert/tests/assert.test.ts",
-                "line": 237,
-                "char": 5
-            },
             "value": "\"{ re: string; }\""
         },
         {

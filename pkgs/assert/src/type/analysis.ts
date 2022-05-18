@@ -35,14 +35,16 @@ export const cleanupTypeAssertionCache = () => {
 export const getTsProject: Memoized<() => Project> = () => {
     if (!getTsProject.cache) {
         const config = getReAssertConfig()
-        if (existsSync(config.tsconfig)) {
-            getTsProject.cache = new Project({
-                tsConfigFilePath: config.tsconfig
-            })
-        } else {
-            getTsProject.cache = new Project()
-            getTsProject.cache.addSourceFilesAtPaths(["**"])
+        const tsConfigFilePath = existsSync(config.tsconfig)
+            ? config.tsconfig
+            : undefined
+        const project = new Project({
+            tsConfigFilePath
+        })
+        if (!tsConfigFilePath) {
+            project.addSourceFilesAtPaths(["**"])
         }
+        getTsProject.cache = project
     }
     return getTsProject.cache
 }

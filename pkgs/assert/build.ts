@@ -1,8 +1,10 @@
 import { build, emptyDir } from "dnt"
 import packageJson from "./package.json" assert { type: "json" }
-import importMap from "./import_map.json" assert { type: "json" }
+import importMap from "../import_map.json" assert { type: "json" }
 
-await emptyDir("./out")
+Deno.chdir("..")
+
+await emptyDir("./assert/out")
 
 type DntMappings = NonNullable<Parameters<typeof build>[0]["mappings"]>
 
@@ -11,7 +13,7 @@ const imports: Record<string, string> = importMap.imports
 
 const ignoreDeps: string[] = []
 const customMappings: DntMappings = {
-    "../tools/src/index.ts": {
+    "./tools/src/index.ts": {
         name: "@re-/tools",
         version: dependencies["@re-/tools"]
     }
@@ -83,23 +85,20 @@ outPackageJson.scripts = {
     test: "npx ts-node --esm -T test_runner.ts"
 }
 
-Deno.copyFileSync("nodeTestRunner.ts", "out/test_runner.ts")
+Deno.copyFileSync("./assert/nodeTestRunner.ts", "./assert/out/test_runner.ts")
 
 await build({
-    entryPoints: ["./src/index.ts"],
-    outDir: "./out",
-    rootTestDir: "./tests",
+    entryPoints: ["./assert/src/index.ts"],
+    outDir: "./assert/out",
+    rootTestDir: "./assert/tests",
     shims: {
         deno: true
     },
     packageManager: "pnpm",
-    importMap: "import_map.json",
+    importMap: "./import_map.json",
     package: outPackageJson,
-    mappings,
-    compilerOptions: {
-        sourceMap: true
-    }
+    mappings
 })
 
-Deno.copyFileSync("../../LICENSE", "out/LICENSE")
-Deno.copyFileSync("README.md", "out/README.md")
+Deno.copyFileSync("../LICENSE", "./assert/out/LICENSE")
+Deno.copyFileSync("./assert/README.md", "./assert/out/README.md")

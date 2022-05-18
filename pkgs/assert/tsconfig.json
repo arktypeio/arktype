@@ -13,8 +13,8 @@
         "lib": ["ESNext"],
         "typeRoots": ["./deno"],
         "paths": {
-            "@src/*.ts": ["./src/*.js"],
-            "@deno/std/*.ts": ["./deno/std/*.js"]
+            "@src/*.ts": ["./src/*"],
+            "@deno/std/*.ts": ["./deno/std/*"]
         }
     },
     "include": ["src", "tests", "*"]

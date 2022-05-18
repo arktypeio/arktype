@@ -1,30 +1,28 @@
 {
-    "files.watcherExclude": {
-        "**/.git/objects/**": true,
-        "**/.git/subtree-cache/**": true
+    "settings": {
+        "files.watcherExclude": {
+            "**/.git/objects/**": true,
+            "**/.git/subtree-cache/**": true
+        },
+        "search.exclude": {
+            "common/temp": true,
+            ".git": true,
+            "**/out/*": true,
+            "**/dist/*": true,
+            "**/node_modules/*": true,
+            "test/**/__snapshots__": true,
+            "pnpm-lock.*": true,
+            "*.lock": true,
+            "**/coverage/*": true
+        },
+        "deno.config": "../pkgs/deno.json"
     },
-    "search.exclude": {
-        "common/temp": true,
-        ".git": true,
-        "**/out/*": true,
-        "**/dist/*": true,
-        "**/node_modules/*": true,
-        "test/**/__snapshots__": true,
-        "pnpm-lock.*": true,
-        "*.lock": true,
-        "**/coverage/*": true
-    },
-    "eslint.packageManager": "pnpm",
-    "editor.defaultFormatter": "esbenp.prettier-vscode",
-    "deno.lint": true,
-    "deno.unstable": true,
-    "eslint.enable": false,
     "folders": [
         {
-            "path": "pkgs/tools"
+            "path": "../pkgs/tools"
         },
         {
-            "path": "pkgs/assert"
+            "path": "../pkgs/assert"
         }
     ]
 }

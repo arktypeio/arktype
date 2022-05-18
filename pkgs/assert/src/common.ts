@@ -52,6 +52,9 @@ export type Memoized<F extends (...args: any[]) => any> = F & {
     cache?: ReturnType<F>
 }
 
+export const isNode = !!(globalThis as any).process?.versions?.node
+export const isDeno = !!(globalThis as any).Deno?.version?.deno
+
 export const getReAssertConfig: Memoized<() => ReAssertConfig> = () => {
     if (!getReAssertConfig.cache) {
         const reJson: ReJson = readJsonSync("re.json") ?? {}

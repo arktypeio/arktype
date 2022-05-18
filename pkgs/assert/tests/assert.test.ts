@@ -234,7 +234,7 @@ Deno.test("snap to custom file", () => {
 })
 
 Deno.test("value and type snap", () => {
-    assert(o).snap().type.toString.snap()
+    assert(o).snap(`{re: "do"}`).type.toString.snap()
     assertThrows(
         () => assert(o).snap().type.toString.snap(`"{ re: number; }"`),
         AssertionError,
