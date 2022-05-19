@@ -13,6 +13,9 @@
         },
         "./tools/": {
             "@src/": "./tools/src/"
+        },
+        "./tools/tests/": {
+            "@tests/": "./tools/tests/"
         }
     }
 }

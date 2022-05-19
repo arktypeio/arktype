@@ -312,3 +312,16 @@ Deno.test("throwsAndHasTypeError", () => {
         "not assignable"
     )
 })
+
+Deno.test("assert value ignores type", () => {
+    const myValue = { a: ["+"] } as const
+    const myExpectedValue = { a: ["+"] }
+    // @ts-expect-error
+    assert(myValue).equals(myExpectedValue)
+    assert(myValue).value.equals(myExpectedValue)
+    assertThrows(
+        () => assert(myValue).value.is(myExpectedValue),
+        AssertionError,
+        "not reference-equal"
+    )
+})

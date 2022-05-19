@@ -11,120 +11,120 @@ import {
     asNumber,
     filterChars,
     isInteger
-} from ".."
+} from "@re-/tools"
+import { assert } from "@re-/assert"
+const { test } = Deno
 
 const original = "hello"
 const transform = (_: string) => _.toUpperCase()
 
-describe("transformSubstring", () => {
-    test("start only", () => {
-        expect(
+test("transformSubstring", ({ step }) => {
+    step("start only", () => {
+        assert(
             transformSubstring({
                 original,
                 transform,
                 start: 1
             })
-        ).toEqual("hELLO")
+        ).equals("hELLO")
     })
-    test("end only", () => {
-        expect(
+    step("end only", () => {
+        assert(
             transformSubstring({
                 original,
                 transform,
                 end: 1
             })
-        ).toEqual("Hello")
+        ).equals("Hello")
     })
-    test("both start and end", () => {
-        expect(
+    step("both start and end", () => {
+        assert(
             transformSubstring({
                 original,
                 transform,
                 start: 1,
                 end: 4
             })
-        ).toEqual("hELLo")
+        ).equals("hELLo")
     })
-    test("neither start nor end", () => {
-        expect(
+    step("neither start nor end", () => {
+        assert(
             transformSubstring({
                 original,
                 transform
             })
-        ).toEqual("HELLO")
+        ).equals("HELLO")
     })
 })
 
-describe("camelCase", () => {
-    test("single word", () => {
-        expect(camelCase(["HELLO"])).toEqual("hello")
+test("camelCase", ({ step }) => {
+    step("single word", () => {
+        assert(camelCase(["HELLO"])).equals("hello")
     })
-    test("multiple words", () => {
-        expect(camelCase(["HELLO", "hELLO", "hELLO"])).toEqual(
-            "helloHelloHello"
-        )
+    step("multiple words", () => {
+        assert(camelCase(["HELLO", "hELLO", "hELLO"])).equals("helloHelloHello")
     })
 })
 
-describe("capsCase", () => {
-    test("single word", () => {
-        expect(capsCase(["hELLO"])).toEqual("Hello")
+test("capsCase", ({ step }) => {
+    step("single word", () => {
+        assert(capsCase(["hELLO"])).equals("Hello")
     })
-    test("multiple words", () => {
-        expect(capsCase(["hELLO", "hELLO", "hELLO"])).toEqual("HelloHelloHello")
-    })
-})
-
-describe("capitalize", () => {
-    test("works", () => {
-        expect(capitalize("hello")).toEqual("Hello")
+    step("multiple words", () => {
+        assert(capsCase(["hELLO", "hELLO", "hELLO"])).equals("HelloHelloHello")
     })
 })
 
-describe("lettersAfterFirstToLower", () => {
-    test("works", () => {
-        expect(lettersAfterFirstToLower("HELLO")).toEqual("Hello")
+test("capitalize", ({ step }) => {
+    step("works", () => {
+        assert(capitalize("hello")).equals("Hello")
     })
 })
 
-describe("alphanumeric regex", () => {
-    test("isAlphaNumeric", () => {
-        expect(isAlphaNumeric("aB0")).toBe(true)
-        expect(isAlphaNumeric("aB0!")).toBe(false)
-        expect(isAlphaNumeric(" ")).toBe(false)
+test("lettersAfterFirstToLower", ({ step }) => {
+    step("works", () => {
+        assert(lettersAfterFirstToLower("HELLO")).equals("Hello")
     })
-    test("isAlpha", () => {
-        expect(isAlpha("aB")).toBe(true)
-        expect(isAlpha("aB0")).toBe(false)
-        expect(isAlpha(" ")).toBe(false)
+})
+
+test("alphanumeric regex", ({ step }) => {
+    step("isAlphaNumeric", () => {
+        assert(isAlphaNumeric("aB0")).equals(true)
+        assert(isAlphaNumeric("aB0!")).equals(false)
+        assert(isAlphaNumeric(" ")).equals(false)
     })
-    test("isDigits", () => {
-        expect(isDigits("01")).toBe(true)
-        expect(isDigits("01A")).toBe(false)
-        expect(isDigits("5.0")).toBe(false)
-        expect(isDigits(" ")).toBe(false)
+    step("isAlpha", () => {
+        assert(isAlpha("aB")).equals(true)
+        assert(isAlpha("aB0")).equals(false)
+        assert(isAlpha(" ")).equals(false)
     })
-    test("isNumeric", () => {
-        expect(isNumeric("7.5")).toBe(true)
-        expect(isNumeric(7.5)).toBe(true)
-        expect(isNumeric("f")).toBe(false)
-        expect(isInteger("0")).toBe(true)
-        expect(isInteger(654)).toBe(true)
-        expect(isInteger("0.1")).toBe(false)
-        expect(isInteger(654.456)).toBe(false)
-        expect(asNumber("7")).toBe(7)
-        expect(asNumber("7.5")).toBe(7.5)
-        expect(asNumber("7", { asFloat: true })).toBe(7)
-        expect(asNumber("7.5", { asFloat: false })).toBe(7)
-        expect(asNumber("-3.14159", { asFloat: true })).toBe(-3.14159)
-        expect(asNumber("4.567n")).toBe(null)
-        expect(asNumber("I'm a number ;-)")).toBe(null)
-        expect(() => asNumber("KEKW", { assert: true })).toThrow()
-        expect(asNumber(12)).toBe(12)
+    step("isDigits", () => {
+        assert(isDigits("01")).equals(true)
+        assert(isDigits("01A")).equals(false)
+        assert(isDigits("5.0")).equals(false)
+        assert(isDigits(" ")).equals(false)
     })
-    test("filterChars", () => {
+    step("isNumeric", () => {
+        assert(isNumeric("7.5")).equals(true)
+        assert(isNumeric(7.5)).equals(true)
+        assert(isNumeric("f")).equals(false)
+        assert(isInteger("0")).equals(true)
+        assert(isInteger(654)).equals(true)
+        assert(isInteger("0.1")).equals(false)
+        assert(isInteger(654.456)).equals(false)
+        assert(asNumber("7")).equals(7)
+        assert(asNumber("7.5")).equals(7.5)
+        assert(asNumber("7", { asFloat: true })).equals(7)
+        assert(asNumber("7.5", { asFloat: false })).equals(7)
+        assert(asNumber("-3.14159", { asFloat: true })).equals(-3.14159)
+        assert(asNumber("4.567n")).equals(null)
+        assert(asNumber("I'm a number ;-)")).equals(null)
+        assert(() => asNumber("KEKW", { assert: true })).throws()
+        assert(asNumber(12)).equals(12)
+    })
+    step("filterChars", () => {
         const s = "aB0 !a"
-        expect(filterChars(s, isAlpha)).toBe("aBa")
-        expect(filterChars(s, (char) => char === "a")).toBe("aa")
+        assert(filterChars(s, isAlpha)).equals("aBa")
+        assert(filterChars(s, (char) => char === "a")).equals("aa")
     })
 })

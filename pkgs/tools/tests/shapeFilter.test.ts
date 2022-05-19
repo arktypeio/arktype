@@ -1,5 +1,6 @@
-import { shapeFilter } from ".."
-import { o } from "./common"
+import { shapeFilter } from "@re-/tools"
+import { o } from "./common.ts"
+const { test } = Deno
 
 const filter = {
     a: {

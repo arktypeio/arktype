@@ -1,5 +1,7 @@
-import { updateMap, DeepUpdate } from ".."
-import { o } from "./common"
+import { updateMap, DeepUpdate } from "@re-/tools"
+import { assert } from "@re-/assert"
+import { o } from "@tests/common.ts"
+const { test } = Deno
 
 const map: DeepUpdate<typeof o> = {
     a: {
@@ -41,17 +43,17 @@ const expected = {
 
 test("updates simple objects", () => {
     const result: typeof expected = updateMap(o, map)
-    expect(result).toStrictEqual(expected)
+    assert(result).equals(expected)
 })
 
 test("updates objects to null", () => {
     const result = updateMap(o, { a: null } as any)
-    expect(result).toStrictEqual({ ...o, a: null })
+    assert(result).value.equals({ ...o, a: null })
 })
 
 test("updates keys missing that aren't defined in the original object", () => {
     const result = updateMap(o, { a: { c: { d: true } } })
-    expect(result).toStrictEqual({
+    assert(result).equals({
         ...o,
         a: { ...o.a, c: { ...o.a.c, d: true } }
     })
@@ -65,5 +67,5 @@ test("updates deep arrays", () => {
     const result: typeof deepArrayExpected = updateMap(o, {
         e: (_) => _.concat({ a: ["new"] })
     })
-    expect(result).toStrictEqual(deepArrayExpected)
+    assert(result).equals(deepArrayExpected)
 })

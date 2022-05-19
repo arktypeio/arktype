@@ -11,10 +11,14 @@
         "composite": true,
         "jsx": "react",
         "lib": ["ESNext"],
-        "typeRoots": ["./deno", "node_modules/@types"],
+        "typeRoots": ["../assert/deno", "node_modules/@types"],
         "paths": {
+            "@re-/assert": ["../assert/src/index.js"],
+            "@re-/tools": ["./src/index.js"],
+            "@src/*.ts": ["./src/*"],
+            "@tests/*.ts": ["./tests/*"],
             "@deno/std/*.ts": ["./deno/std/*.js"]
         }
     },
-    "include": ["*"]
+    "include": ["src", "tests"]
 }

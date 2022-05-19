@@ -1,106 +1,102 @@
-export {}
+import { assert } from "@re-/assert"
+import { diff, addedOrChanged, diffSets, deepEquals } from "../src/index.ts"
+import { o } from "./common.ts"
 
-test("nothing", () => {})
+const updatedO = Object.freeze({
+    a: {
+        a: "new",
+        b: [0],
+        c: {
+            a: true,
+            b: false,
+            c: null
+        }
+    },
+    b: {
+        a: {
+            a: 0
+        }
+    },
+    c: null,
+    d: "initial",
+    e: [{ a: ["old"] }, { a: ["old"] }, { a: ["new"] }]
+})
 
-// import { assertEquals } from "https://deno.land/std@0.139.0/testing/asserts.ts"
-// import { diff, addedOrChanged, diffSets, deepEquals } from "../src/index.ts"
-// import { o } from "./common.ts"
+const diffedChanges = {
+    changed: {
+        a: { changed: { a: { base: "", compare: "new" } } },
+        b: { changed: { a: { changed: { a: { base: 1, compare: 0 } } } } },
+        e: { added: { 2: { a: ["new"] } } }
+    }
+}
 
-// const updatedO = Object.freeze({
-//     a: {
-//         a: "new",
-//         b: [0],
-//         c: {
-//             a: true,
-//             b: false,
-//             c: null
-//         }
-//     },
-//     b: {
-//         a: {
-//             a: 0
-//         }
-//     },
-//     c: null,
-//     d: "initial",
-//     e: [{ a: ["old"] }, { a: ["old"] }, { a: ["new"] }]
-// })
+const extractedChanges = {
+    a: {
+        a: "new"
+    },
+    b: {
+        a: {
+            a: 0
+        }
+    },
+    e: [{ a: ["old"] }, { a: ["old"] }, { a: ["new"] }]
+}
 
-// const diffedChanges = {
-//     changed: {
-//         a: { changed: { a: { base: "", compare: "new" } } },
-//         b: { changed: { a: { changed: { a: { base: 1, compare: 0 } } } } },
-//         e: { added: { 2: { a: ["new"] } } }
-//     }
-// }
+Deno.test("diffs shallow", () => {
+    assert(diff("hey", "hey")).equals(undefined)
+    assert(diff("hey", "hi")).equals({ base: "hey", compare: "hi" })
+})
 
-// const extractedChanges = {
-//     a: {
-//         a: "new"
-//     },
-//     b: {
-//         a: {
-//             a: 0
-//         }
-//     },
-//     e: [{ a: ["old"] }, { a: ["old"] }, { a: ["new"] }]
-// }
+Deno.test("diffs deep", () => {
+    assert(diff(o, o)).equals(undefined)
+    assert(diff(o, updatedO)).value.equals(diffedChanges)
+})
 
-// Deno.test("diffs shallow", () => {
-//     assertEquals(diff("hey", "hey"), undefined)
-//     assertEquals(diff("hey", "hi"), { base: "hey", compare: "hi" })
-// })
+Deno.test("removed keys", () => {
+    assert(diff({ a: "", b: "" }, { a: "" })).equals({
+        removed: { b: "" }
+    })
+    assert(
+        diff({ nested: { a: true, b: false } }, { nested: { b: false } })
+    ).equals({ changed: { nested: { removed: { a: true } } } })
+})
 
-// Deno.test("diffs deep", () => {
-//     expect(diff(o, o)).toBe(undefined)
-//     expect(diff(o, updatedO)).toStrictEqual(diffedChanges)
-// })
+Deno.test("added keys", () => {
+    assert(diff({ a: "" }, { a: "", b: "" })).equals({
+        added: { b: "" }
+    })
+    assert(
+        diff({ nested: { b: false } }, { nested: { a: true, b: false } })
+    ).equals({ changed: { nested: { added: { a: true } } } })
+})
 
-// Deno.test("removed keys", () => {
-//     expect(diff({ a: "", b: "" }, { a: "" })).toStrictEqual({
-//         removed: { b: "" }
-//     })
-//     expect(
-//         diff({ nested: { a: true, b: false } }, { nested: { b: false } })
-//     ).toStrictEqual({ changed: { nested: { removed: { a: true } } } })
-// })
+Deno.test("diffs array", () => {
+    assert(diff(["ok"], ["different"])).value.equals({
+        changed: { 0: { base: "ok", compare: "different" } }
+    })
+})
 
-// Deno.test("added keys", () => {
-//     expect(diff({ a: "" }, { a: "", b: "" })).toStrictEqual({
-//         added: { b: "" }
-//     })
-//     expect(
-//         diff({ nested: { b: false } }, { nested: { a: true, b: false } })
-//     ).toStrictEqual({ changed: { nested: { added: { a: true } } } })
-// })
+Deno.test("extracts changes from deep objects", () => {
+    assert(addedOrChanged(o, updatedO)).equals(extractedChanges)
+})
 
-// Deno.test("diffs array", () => {
-//     expect(diff(["ok"], ["different"])).toStrictEqual({
-//         changed: { 0: { base: "ok", compare: "different" } }
-//     })
-// })
+Deno.test("diff sets", () => {
+    assert(diffSets(["a", "b"], ["b", "a"])).equals(undefined)
+    assert(
+        diffSets([{ a: true }, { b: true }], [{ b: true }, { a: true }])
+    ).equals(undefined)
+    assert(diffSets(["a", "b"], ["b", "c"])).equals({
+        added: ["c"],
+        removed: ["a"]
+    })
+})
 
-// Deno.test("extracts changes from deep objects", () => {
-//     expect(addedOrChanged(o, updatedO)).toStrictEqual(extractedChanges)
-// })
-
-// Deno.test("diff sets", () => {
-//     expect(diffSets(["a", "b"], ["b", "a"])).toBe(undefined)
-//     expect(
-//         diffSets([{ a: true }, { b: true }], [{ b: true }, { a: true }])
-//     ).toBe(undefined)
-//     expect(diffSets(["a", "b"], ["b", "c"])).toStrictEqual({
-//         added: ["c"],
-//         removed: ["a"]
-//     })
-// })
-
-// Deno.test("deepEquals", () => {
-//     expect(deepEquals(o, { ...o })).toBe(true)
-//     expect(
-//         deepEquals(o, {
-//             ...o,
-//             e: [{ a: ["old"], b: "extraneous" }, { a: ["old"] }]
-//         })
-//     ).toBe(false)
-// })
+Deno.test("deepEquals", () => {
+    assert(deepEquals(o, { ...o })).equals(true)
+    assert(
+        deepEquals(o, {
+            ...o,
+            e: [{ a: ["old"], b: "extraneous" }, { a: ["old"] }]
+        })
+    ).equals(false)
+})

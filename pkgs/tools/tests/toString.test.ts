@@ -1,42 +1,43 @@
-import { toString } from ".."
-import { o } from "./common"
+import { assert } from "@re-/assert"
+import { toString } from "@re-/tools"
+import { o } from "@tests/common.ts"
+const { test } = Deno
 
-describe("toString", () => {
-    test("default", () => {
-        expect(toString(o)).toMatchInlineSnapshot(
-            `"{a: {a: '', b: [0], c: {a: true, b: false, c: null}}, b: {a: {a: 1}}, c: null, d: 'initial', e: [{a: ['old']}, {a: ['old']}]}"`
+test("default", () => {
+    assert(toString(o)).snap(
+        `"{a: {a: '', b: [0], c: {a: true, b: false, c: null}}, b: {a: {a: 1}}, c: null, d: 'initial', e: [{a: ['old']}, {a: ['old']}]}"`
+    )
+})
+test("quotes", () => {
+    assert(toString({ a: "quoteless" }, { quotes: "none" })).equals(
+        `{a: quoteless}`
+    )
+    assert(toString({ a: "single" }, { quotes: "single" })).equals(
+        `{a: 'single'}`
+    )
+    assert(toString({ a: "double" }, { quotes: "double" })).equals(
+        `{a: "double"}`
+    )
+    assert(toString({ a: "backtick" }, { quotes: "backtick" })).equals(
+        "{a: `backtick`}"
+    )
+    assert(toString({ a: "quoteKeys" }, { quoteKeys: true })).equals(
+        "{'a': 'quoteKeys'}"
+    )
+})
+test("truncate", () => {
+    assert(
+        toString(
+            { a: "include this but not that" },
+            { maxNestedStringLength: 17 }
         )
-    })
-    test("quotes", () => {
-        expect(toString({ a: "quoteless" }, { quotes: "none" })).toBe(
-            `{a: quoteless}`
-        )
-        expect(toString({ a: "single" }, { quotes: "single" })).toBe(
-            `{a: 'single'}`
-        )
-        expect(toString({ a: "double" }, { quotes: "double" })).toBe(
-            `{a: "double"}`
-        )
-        expect(toString({ a: "backtick" }, { quotes: "backtick" })).toBe(
-            "{a: `backtick`}"
-        )
-        expect(toString({ a: "quoteKeys" }, { quoteKeys: true })).toBe(
-            "{'a': 'quoteKeys'}"
-        )
-    })
-    test("truncate", () => {
-        expect(
-            toString(
-                { a: "include this but not that" },
-                { maxNestedStringLength: 17 }
-            )
-        ).toMatchInlineSnapshot(`"{a: 'include this but...'}"`)
-        expect(
-            toString({ a: "include this" }, { maxNestedStringLength: 17 })
-        ).toMatchInlineSnapshot(`"{a: 'include this'}"`)
-    })
-    test("indent", () => {
-        expect(toString(o, { indent: 2 })).toMatchInlineSnapshot(`
+    ).snap(`"{a: 'include this but...'}"`)
+    assert(toString({ a: "include this" }, { maxNestedStringLength: 17 })).snap(
+        `"{a: 'include this'}"`
+    )
+})
+test("indent", () => {
+    assert(toString(o, { indent: 2 })).snap(`
             "{
               a: {
                 a: '',
@@ -70,7 +71,7 @@ describe("toString", () => {
               ]
             }"
         `)
-        expect(toString(o, { indent: 4 })).toMatchInlineSnapshot(`
+    assert(toString(o, { indent: 4 })).snap(`
         "{
             a: {
                 a: '',
@@ -104,13 +105,12 @@ describe("toString", () => {
             ]
         }"
     `)
-    })
-    test("symbol keys", () => {
-        const symbolKey = Symbol("example")
-        expect(
-            toString({
-                [symbolKey]: true
-            })
-        ).toMatchInlineSnapshot(`"{Symbol(example): true}"`)
-    })
+})
+test("symbol keys", () => {
+    const symbolKey = Symbol("example")
+    assert(
+        toString({
+            [symbolKey]: true
+        })
+    ).snap(`"{Symbol(example): true}"`)
 })

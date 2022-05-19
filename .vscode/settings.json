@@ -14,6 +14,7 @@
         "*.lock": true,
         "**/coverage/*": true
     },
-    "eslint.packageManager": "pnpm",
-    "editor.defaultFormatter": "esbenp.prettier-vscode"
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "deno.enablePaths": ["./pkgs/tools"],
+    "deno.config": "./pkgs/deno.json"
 }

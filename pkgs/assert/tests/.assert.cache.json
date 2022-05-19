@@ -613,6 +613,39 @@
                 "actual": "() => void"
             },
             "errors": ""
+        },
+        {
+            "caller": {
+                "name": "assert",
+                "line": 320,
+                "char": 5
+            },
+            "type": {
+                "actual": "{ readonly a: readonly [\"+\"]; }"
+            },
+            "errors": ""
+        },
+        {
+            "caller": {
+                "name": "assert",
+                "line": 321,
+                "char": 5
+            },
+            "type": {
+                "actual": "{ readonly a: readonly [\"+\"]; }"
+            },
+            "errors": ""
+        },
+        {
+            "caller": {
+                "name": "assert",
+                "line": 323,
+                "char": 15
+            },
+            "type": {
+                "actual": "{ readonly a: readonly [\"+\"]; }"
+            },
+            "errors": ""
         }
     ],
     "queuedUpdates": [

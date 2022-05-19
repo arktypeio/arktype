@@ -19,7 +19,8 @@ import {
 import {
     assertEquals,
     assertMatch,
-    AssertionError
+    AssertionError,
+    assertStrictEquals
 } from "@deno/std/testing/asserts.ts"
 
 const getThrownMessage = (value: Function) => {
@@ -122,6 +123,10 @@ export type ComparableValueAssertion<
     equals: (
         value: ElementOf<PossibleValues>
     ) => NextAssertions<AllowTypeAssertions>
+    value: {
+        is: (value: unknown) => NextAssertions<AllowTypeAssertions>
+        equals: (value: unknown) => NextAssertions<AllowTypeAssertions>
+    }
 } & (AllowTypeAssertions extends true
     ? { typedValue: (expected: unknown) => undefined }
     : {})
@@ -279,11 +284,20 @@ export const valueAssertions = <T, Ctx extends AssertionContext>(
         return nextAssertions
     }
 
-    const baseAssertions = {
+    const baseValueAssertions = {
         is: (expected: unknown) => {
-            assertEquals(value, expected)
+            assertStrictEquals(value, expected)
             return nextAssertions
         },
+        equals: (expected: unknown) => {
+            assertEquals(value, expected)
+            return nextAssertions
+        }
+    }
+
+    const baseAssertions = {
+        ...baseValueAssertions,
+        value: baseValueAssertions,
         snap: Object.assign(inlineSnap, {
             toFile: (name: string, options: ExternalSnapshotOptions = {}) => {
                 const expectedSnapshot = getSnapshotByName(
@@ -303,11 +317,7 @@ export const valueAssertions = <T, Ctx extends AssertionContext>(
                 }
                 return nextAssertions
             }
-        }),
-        equals: (expected: unknown) => {
-            assertEquals(value, expected)
-            return nextAssertions
-        }
+        })
     } as any
     if (ctx["allowTypeAssertions"]) {
         return {
