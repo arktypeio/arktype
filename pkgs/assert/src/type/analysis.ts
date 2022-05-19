@@ -1,6 +1,6 @@
 import { readJson, writeJson } from "@re-/node"
-import { existsSync, rmSync } from "fs"
-import { Project, SourceFile, SyntaxKind, ts } from "ts-morph"
+import { rmSync } from "fs"
+import { Project, SourceFile, SyntaxKind, ts, Type } from "ts-morph"
 import {
     SourcePosition,
     LinePosition,
@@ -9,7 +9,7 @@ import {
 } from "../common.js"
 import { writeQueuedSnapshotUpdates } from "../value/index.js"
 import { getAssertFilePath } from "../assert.js"
-import { relative } from "path"
+import { dirname, join, relative } from "node:path"
 
 export const cacheTypeAssertions = () => {
     const config = getReAssertConfig()
@@ -34,9 +34,7 @@ export const cleanupTypeAssertionCache = () => {
 export const getTsProject: Memoized<() => Project> = () => {
     if (!getTsProject.cache) {
         const config = getReAssertConfig()
-        const tsConfigFilePath = existsSync(config.tsconfig)
-            ? config.tsconfig
-            : undefined
+        const tsConfigFilePath = config.tsconfig ? config.tsconfig : undefined
         const project = new Project({
             tsConfigFilePath
         })
@@ -48,12 +46,13 @@ export const getTsProject: Memoized<() => Project> = () => {
     return getTsProject.cache
 }
 
-type CallerPosition = LinePosition & {
-    name: string
+type LinePositionRange = {
+    start: LinePosition
+    end: LinePosition
 }
 
 type AssertionData = {
-    caller: CallerPosition
+    location: LinePositionRange
     type: {
         actual: string
         expected?: string
@@ -144,13 +143,11 @@ const analyzeTypeAssertions: Memoized<
 
     if (assertSourcePath.endsWith("js")) {
         // In external node environments, we should use the .d.ts file to find references
-        // assertSourcePath should be something like: node_modules/@re-/assert/out/script/src/assert.js
+        // assertSourcePath should be something like: node_modules/@re-/assert/out/cjs/assert.js
         const assertDefinitionPath = join(
             dirname(assertSourcePath),
             "..",
-            "..",
             "types",
-            "src",
             "assert.d.ts"
         )
         assertFile = project.addSourceFileAtPath(assertDefinitionPath)
@@ -185,7 +182,7 @@ const analyzeTypeAssertions: Memoized<
         }
         const assertArg = assertCall.getArguments()[0]
         let typeToCheck = assertArg.getType()
-        let expectedType: tsMorph.Type | undefined
+        let expectedType: Type | undefined
         for (const ancestor of assertCall.getAncestors()) {
             const kind = ancestor.getKind()
             if (kind === SyntaxKind.ExpressionStatement) {
@@ -235,25 +232,32 @@ const analyzeTypeAssertions: Memoized<
                 }
                 return message
             }, "") ?? ""
-        // The start position of the "assert" identifier from the assert call should be the position
-        // we get when we check the line from which assert was called at runtime.
-        const assertCallIdentifier = assertCall.getFirstChildByKindOrThrow(
-            SyntaxKind.Identifier
+        // // The start position of the "assert" identifier from the assert call should be the position
+        // // we get when we check the line from which assert was called at runtime.
+        // const assertCallIdentifier = assertCall.getFirstChildByKindOrThrow(
+        //     SyntaxKind.Identifier
+        // )
+        const start = ts.getLineAndCharacterOfPosition(
+            file.compilerNode,
+            assertCall.getStart()
         )
-        const identifierName = assertCallIdentifier.getSymbolOrThrow().getName()
-        const caller: CallerPosition = {
-            name: identifierName,
-            line: assertCallIdentifier.getStartLineNumber(),
-            char:
-                // ts-morph doesn't seem to directly expose inline character position.
-                // Subtract the line's start from the node's start to calculate it.
-                assertCallIdentifier.getStart() -
-                assertCallIdentifier.getStartLinePos() +
-                // Add 1 so the inline position is 1-based instead of 0-based.
-                1
+        const end = ts.getLineAndCharacterOfPosition(
+            file.compilerNode,
+            assertCall.getEnd()
+        )
+        // Add 1 to everything, since trace positions are 1-based and TS positions are 0-based.
+        const location: LinePositionRange = {
+            start: {
+                line: start.line + 1,
+                char: start.character + 1
+            },
+            end: {
+                line: end.line + 1,
+                char: end.character + 1
+            }
         }
         const assertionData: AssertionData = {
-            caller,
+            location,
             type: {
                 actual: typeToCheck.getText(),
                 expected: expectedType?.getText()
@@ -266,6 +270,22 @@ const analyzeTypeAssertions: Memoized<
     return assertionsByFile
 }
 
+const isPositionWithinRange = (
+    { line, char }: LinePosition,
+    { start, end }: LinePositionRange
+) => {
+    if (line < start.line || line > end.line) {
+        return false
+    }
+    if (line === start.line) {
+        return char >= start.char
+    }
+    if (line === end.line) {
+        return char <= end.char
+    }
+    return true
+}
+
 export const getAssertionData = (position: SourcePosition) => {
     const fileKey = getFileKey(position.file)
     const assertionsByFile = analyzeTypeAssertions()
@@ -273,17 +293,12 @@ export const getAssertionData = (position: SourcePosition) => {
         throw new Error(`Found no assertion data for '${fileKey}'.`)
     }
     const matchingAssertion = assertionsByFile[fileKey].find((assertion) => {
-        if (assertion.caller.line === position.line) {
-            if (assertion.caller.char === position.char) {
-                return true
-            } else if (
-                // In some environments, stack trace positions start from the end of the identifier instead of the start
-                assertion.caller.char + assertion.caller.name.length ===
-                position.char
-            ) {
-                return true
-            }
-        }
+        /** Depending on the environment, a trace can refer to any of these points
+         * assert(...)
+         * ^     ^   ^
+         * Because of this, it's safest to check if the call came from anywhere in the expected range.
+         **/
+        return isPositionWithinRange(position, assertion.location)
     })
     if (!matchingAssertion) {
         throw new Error(

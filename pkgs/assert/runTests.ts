@@ -1,6 +1,8 @@
-import { cacheTypeAssertions, cleanupTypeAssertionCache } from "./src/index.ts"
+import { shell } from "@re-/node"
+import { chdir } from "node:process"
+import { cacheTypeAssertions, cleanupTypeAssertionCache } from "./src/index.js"
 
-Deno.chdir("tests")
+chdir("tests")
 cacheTypeAssertions()
-await Deno.run({ cmd: ["deno", "test", "--allow-all"] }).status()
-//cleanupTypeAssertionCache()
+shell("pnpm test")
+cleanupTypeAssertionCache()

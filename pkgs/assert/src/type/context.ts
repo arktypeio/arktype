@@ -1,8 +1,8 @@
-import { assertEquals } from "@deno/std/testing/asserts.js"
 import { AssertionContext } from "../assert.js"
 import { getAssertionData } from "./analysis.js"
 import { chainableAssertion, ChainableValueAssertion } from "../value/index.js"
 import { SourcePosition } from "../common.js"
+import { deepEqual } from "node:assert/strict"
 
 export type ValueFromTypeAssertion<
     Expected,
@@ -52,7 +52,7 @@ export const typeAssertions: AssertTypeContext = (
                                 `line ${position.line} of ${position.file}.`
                         )
                     }
-                    assertEquals(
+                    deepEqual(
                         assertionData.type.actual,
                         assertionData.type.expected
                     )

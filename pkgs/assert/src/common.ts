@@ -1,5 +1,6 @@
-import { readJson } from "@re-/node"
-import { resolve } from "path"
+import { readJson, writeJson } from "@re-/node"
+import { existsSync } from "node:fs"
+import { resolve } from "node:path"
 
 export type LinePosition = {
     line: number
@@ -16,7 +17,7 @@ export interface ReAssertConfig extends Required<ReAssertJson> {
 }
 
 export interface ReAssertJson {
-    tsconfig?: string
+    tsconfig?: string | undefined
     precached?: boolean
     precachePath?: string
 }
@@ -29,15 +30,23 @@ export type Memoized<F extends (...args: any[]) => any> = F & {
     cache?: ReturnType<F>
 }
 
+export type JsonTransformer = (data: object) => object
+
+export const rewriteJson = (path: string, transform: JsonTransformer) =>
+    writeJson(path, transform(readJson(path)))
+
 export const getReAssertConfig: Memoized<() => ReAssertConfig> = () => {
     if (!getReAssertConfig.cache) {
-        const reJson: ReJson = readJson("re.json") ?? {}
+        const reJson: ReJson = existsSync("re.json") ? readJson("re.json") : {}
+        const tsconfig = existsSync("tsconfig.json")
+            ? resolve("tsconfig.json")
+            : ""
         const reAssertJson: ReAssertJson = reJson.assert ?? {}
         getReAssertConfig.cache = {
             updateSnapshots: !!process.argv.find(
                 (arg) => arg === "--update" || arg === "-u"
             ),
-            tsconfig: resolve("tsconfig.json"),
+            tsconfig,
             precached: false,
             precachePath: resolve(".assert.cache.json"),
             ...reAssertJson

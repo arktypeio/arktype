@@ -1,12 +1,7 @@
-import { join, dirname, isAbsolute, basename } from "../deps.js"
-import {} from "path"
+import { readJson, writeJson } from "@re-/node"
+import { join, isAbsolute, basename, dirname } from "node:path"
 import { ts, SyntaxKind, CallExpression } from "ts-morph"
-import {
-    readJsonSync,
-    setJsonKey,
-    SourcePosition,
-    writeJsonSync
-} from "../common.js"
+import { SourcePosition, rewriteJson } from "../common.js"
 import { getTsProject } from "../type/analysis.js"
 
 export interface BaseSnapshotArgs {
@@ -18,17 +13,13 @@ export interface QueueInlineSnapshotArgs extends BaseSnapshotArgs {
     cachePath: string
 }
 
-export interface WriteInlineSnapshotArgs extends BaseSnapshotArgs {}
-
 export interface ExternalSnapshotArgs extends BaseSnapshotArgs {
     name: string
     customPath: string | undefined
 }
 
-const getQueuedSnapshotUpdates = (
-    cachePath: string
-): WriteInlineSnapshotArgs[] => {
-    const cacheData = readJsonSync(cachePath)
+const getQueuedSnapshotUpdates = (cachePath: string): BaseSnapshotArgs[] => {
+    const cacheData = readJson(cachePath)
     return cacheData.queuedUpdates ?? []
 }
 
@@ -39,7 +30,7 @@ export const queueInlineSnapshotUpdate = ({
 }: QueueInlineSnapshotArgs) => {
     const queuedUpdates = getQueuedSnapshotUpdates(cachePath)
     queuedUpdates.push({ position, value })
-    setJsonKey(cachePath, "queuedUpdates", queuedUpdates)
+    rewriteJson(cachePath, (data) => ({ ...data, queuedUpdates }))
 }
 
 export const writeQueuedSnapshotUpdates = (cachePath: string) => {
@@ -50,13 +41,13 @@ export const writeQueuedSnapshotUpdates = (cachePath: string) => {
 export const writeInlineSnapshotToFile = ({
     position,
     value
-}: WriteInlineSnapshotArgs) => {
+}: BaseSnapshotArgs) => {
     const project = getTsProject()
     const file = project.getSourceFile(position.file)
     if (!file) {
         throw new Error(`No type information available for '${position.file}'.`)
     }
-    const assertIdentifier = file.getDescendantAtPos(
+    const assertNode = file.getDescendantAtPos(
         ts.getPositionOfLineAndCharacter(
             file.compilerNode,
             // TS uses 0-based line and char #s
@@ -64,19 +55,16 @@ export const writeInlineSnapshotToFile = ({
             position.char - 1
         )
     )
-    if (
-        assertIdentifier?.getKind() !== SyntaxKind.Identifier ||
-        assertIdentifier.getText() !== "assert"
-    ) {
-        throw new Error(`Unable to update your snapshot.`)
-    }
-    const snapCall = assertIdentifier
-        .getAncestors()
+    const snapCall = assertNode
+        ?.getAncestors()
         .find(
             (ancestor) =>
                 ancestor.getKind() === SyntaxKind.CallExpression &&
                 ancestor.getText().replace(" ", "").endsWith("snap()")
-        ) as CallExpression
+        ) as CallExpression | undefined
+    if (!snapCall) {
+        throw new Error(`Unable to update your snapshot.`)
+    }
     snapCall.addArgument("`" + value + "`")
     file.saveSync()
 }
@@ -98,13 +86,13 @@ export const updateExternalSnapshot = ({
     customPath
 }: ExternalSnapshotArgs) => {
     const snapshotPath = resolveSnapshotPath(position.file, customPath)
-    const snapshotData = readJsonSync(snapshotPath) ?? {}
+    const snapshotData = readJson(snapshotPath) ?? {}
     const fileKey = basename(position.file)
     snapshotData[fileKey] = {
         ...snapshotData[fileKey],
         [name]: value
     }
-    writeJsonSync(snapshotPath, snapshotData)
+    writeJson(snapshotPath, snapshotData)
 }
 
 export const getSnapshotByName = (
@@ -113,5 +101,5 @@ export const getSnapshotByName = (
     customPath: string | undefined
 ) => {
     const snapshotPath = resolveSnapshotPath(file, customPath)
-    return readJsonSync(snapshotPath)?.[basename(file)]?.[name]
+    return readJson(snapshotPath)?.[basename(file)]?.[name]
 }

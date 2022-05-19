@@ -10,7 +10,10 @@
         "resolveJsonModule": true,
         "composite": true,
         "jsx": "react",
-        "lib": ["ESNext"]
+        "lib": ["ESNext"],
+        "paths": {
+            "@re-/assert": ["./src/index.js"]
+        }
     },
-    "include": ["src", "tests"]
+    "include": ["src", "tests", "runTests.ts"]
 }

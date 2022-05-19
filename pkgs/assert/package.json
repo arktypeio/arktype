@@ -19,17 +19,13 @@
         }
     },
     "scripts": {
-        "build": "deno run --allow-all ./build.ts",
-        "test": "deno run --allow-all --no-check ./runTests.ts"
+        "build": "reTsc",
+        "test": "../../node_modules/jest/bin/jest.js 2>&1"
     },
     "dependencies": {
         "@re-/tools": "2.0.0",
         "@re-/node": "2.0.0",
         "ts-morph": "14.0.0",
         "get-current-line": "6.6.0"
-    },
-    "devDependencies": {
-        "typescript": "4.6.3",
-        "@types/node": "17.0.1"
     }
 }

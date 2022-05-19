@@ -6,12 +6,6 @@ import {
     ElementOf,
     toString
 } from "@re-/tools"
-import {
-    assertEquals,
-    assertMatch,
-    AssertionError,
-    assertStrictEquals
-} from "../deps.js"
 import { SourcePosition } from "../common.js"
 import { AssertionContext } from "../assert.js"
 import {
@@ -25,6 +19,7 @@ import {
     queueInlineSnapshotUpdate,
     writeInlineSnapshotToFile
 } from "./snapshot.js"
+import { deepEqual, match, AssertionError, equal } from "node:assert/strict"
 
 const getThrownMessage = (value: Function) => {
     try {
@@ -35,7 +30,9 @@ const getThrownMessage = (value: Function) => {
         }
         return String(e)
     }
-    throw new AssertionError(`Function didn't throw.`)
+    throw new AssertionError({
+        message: "Function didn't throw."
+    })
 }
 
 export type ChainableValueAssertion<
@@ -195,28 +192,28 @@ export type ValueAssertion<
     : ComparableValueAssertion<PossibleValues, AllowTypeAssertions>
 
 const defaultAssert = (
-    value: unknown,
+    actual: unknown,
     expected: unknown,
     allowRegex = false
 ) => {
-    if (isRecursible(value)) {
-        assertEquals(value, expected)
+    if (isRecursible(actual)) {
+        deepEqual(actual, expected)
     } else if (allowRegex) {
-        if (typeof value !== "string") {
-            throw new AssertionError(
-                `Value was of type ${typeof value} (expected a string).`
-            )
+        if (typeof actual !== "string") {
+            throw new AssertionError({
+                message: `Value was of type ${typeof actual} (expected a string).`
+            })
         }
         if (!(typeof expected === "string" || expected instanceof RegExp)) {
-            throw new AssertionError(
-                `Expected value for this assertion should be a string or RegExp. Received: ${toString(
-                    expected
-                )}.`
-            )
+            throw new AssertionError({
+                message: `Expected value for this assertion should be a string or RegExp.`,
+                expected,
+                actual
+            })
         }
-        assertMatch(value, new RegExp(expected))
+        match(actual, new RegExp(expected))
     } else {
-        assertEquals(value, expected)
+        deepEqual(actual, expected)
     }
 }
 
@@ -260,8 +257,8 @@ export const valueAssertions = <T, Ctx extends AssertionContext>(
                         matchValue instanceof RegExp
                             ? matchValue
                             : RegExp(matchValue)
-                    assertMatch(getThrownMessage(value), matcher)
-                    assertMatch(getAssertionData(position).errors, matcher)
+                    match(getThrownMessage(value), matcher)
+                    match(getAssertionData(position).errors, matcher)
                 }
             }
         }
@@ -269,7 +266,7 @@ export const valueAssertions = <T, Ctx extends AssertionContext>(
     }
     const inlineSnap = (expected?: string) => {
         if (expected && !ctx.config.updateSnapshots) {
-            assertEquals(serializedValue, expected)
+            deepEqual(serializedValue, expected)
         } else {
             const args = {
                 position,
@@ -289,11 +286,11 @@ export const valueAssertions = <T, Ctx extends AssertionContext>(
 
     const baseValueAssertions = {
         is: (expected: unknown) => {
-            assertStrictEquals(value, expected)
+            equal(value, expected)
             return nextAssertions
         },
         equals: (expected: unknown) => {
-            assertEquals(value, expected)
+            deepEqual(value, expected)
             return nextAssertions
         }
     }
@@ -309,7 +306,7 @@ export const valueAssertions = <T, Ctx extends AssertionContext>(
                     options.path
                 )
                 if (expectedSnapshot && !ctx.config.updateSnapshots) {
-                    assertEquals(serializedValue, expectedSnapshot)
+                    deepEqual(serializedValue, expectedSnapshot)
                 } else {
                     updateExternalSnapshot({
                         value: serializedValue,

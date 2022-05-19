@@ -1,12 +1,12 @@
-import { assert } from "@re-/assert"
-import { assertThrows } from "@deno/std/testing/asserts.ts"
-const { test } = Deno
+import { test } from "@jest/globals"
+import { assert } from "../src/index.js"
+import { throws, AssertionError } from "node:assert/strict"
 
 test("gathers types across files", () => {
     assert({ i: "love my wife" }).typed as { i: string }
-    assertThrows(
+    throws(
         () => assert({ g: "whiz" as unknown }).typed as { g: string },
-        undefined,
+        AssertionError,
         "unknown"
     )
 })
