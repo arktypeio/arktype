@@ -16,5 +16,7 @@
     },
     "editor.defaultFormatter": "esbenp.prettier-vscode",
     "deno.enablePaths": ["./pkgs/tools"],
-    "deno.config": "./pkgs/deno.json"
+    "deno.config": "./pkgs/deno.json",
+    "eslint.alwaysShowStatus": true,
+    "eslint.lintTask.options": "--resolve-plugins-relative-to path ./pkgs/node ."
 }

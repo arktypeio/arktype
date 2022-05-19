@@ -1,13 +1,13 @@
-import { join, dirname, isAbsolute, basename } from "../deps.ts"
-import { tsMorph } from "../deps.ts"
-const { ts, SyntaxKind } = tsMorph
+import { join, dirname, isAbsolute, basename } from "../deps.js"
+import {} from "path"
+import { ts, SyntaxKind, CallExpression } from "ts-morph"
 import {
     readJsonSync,
     setJsonKey,
     SourcePosition,
     writeJsonSync
-} from "../common.ts"
-import { getTsProject } from "../type/analysis.ts"
+} from "../common.js"
+import { getTsProject } from "../type/analysis.js"
 
 export interface BaseSnapshotArgs {
     position: SourcePosition
@@ -76,7 +76,7 @@ export const writeInlineSnapshotToFile = ({
             (ancestor) =>
                 ancestor.getKind() === SyntaxKind.CallExpression &&
                 ancestor.getText().replace(" ", "").endsWith("snap()")
-        ) as tsMorph.CallExpression
+        ) as CallExpression
     snapCall.addArgument("`" + value + "`")
     file.saveSync()
 }

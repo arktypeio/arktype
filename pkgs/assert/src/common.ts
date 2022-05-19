@@ -1,4 +1,5 @@
-import { resolve } from "./deps.ts"
+import { readJson } from "@re-/node"
+import { resolve } from "path"
 
 export type LinePosition = {
     line: number
@@ -8,30 +9,6 @@ export type LinePosition = {
 export type SourcePosition = LinePosition & {
     file: string
     method: string
-}
-
-export const writeJsonSync = (path: string, data: unknown) => {
-    Deno.writeTextFileSync(path, JSON.stringify(data, null, 4))
-}
-
-export const readJsonSync = (path: string) => {
-    try {
-        return JSON.parse(Deno.readTextFileSync(path))
-    } catch {
-        return undefined
-    }
-}
-
-export const setJsonKey = (path: string, key: string, value: unknown) =>
-    writeJsonSync(path, { ...readJsonSync(path), [key]: value })
-
-export const existsSync = (path: string) => {
-    try {
-        Deno.openSync(path).close()
-        return true
-    } catch {
-        return false
-    }
 }
 
 export interface ReAssertConfig extends Required<ReAssertJson> {
@@ -52,15 +29,12 @@ export type Memoized<F extends (...args: any[]) => any> = F & {
     cache?: ReturnType<F>
 }
 
-export const isNode = !!(globalThis as any).process?.versions?.node
-export const isDeno = !!(globalThis as any).Deno?.version?.deno
-
 export const getReAssertConfig: Memoized<() => ReAssertConfig> = () => {
     if (!getReAssertConfig.cache) {
-        const reJson: ReJson = readJsonSync("re.json") ?? {}
+        const reJson: ReJson = readJson("re.json") ?? {}
         const reAssertJson: ReAssertJson = reJson.assert ?? {}
         getReAssertConfig.cache = {
-            updateSnapshots: !!Deno.args.find(
+            updateSnapshots: !!process.argv.find(
                 (arg) => arg === "--update" || arg === "-u"
             ),
             tsconfig: resolve("tsconfig.json"),

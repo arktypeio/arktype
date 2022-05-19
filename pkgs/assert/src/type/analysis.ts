@@ -1,56 +1,15 @@
-import { tsMorph } from "../deps.ts"
-const { Project, SyntaxKind, ts } = tsMorph
-import { dirname, join, relative, fromFileUrl } from "../deps.ts"
+import { readJson, writeJson } from "@re-/node"
+import { existsSync, rmSync } from "fs"
+import { Project, SourceFile, SyntaxKind, ts } from "ts-morph"
 import {
     SourcePosition,
     LinePosition,
-    readJsonSync,
-    writeJsonSync,
-    existsSync,
     getReAssertConfig,
-    Memoized,
-    isDeno
-} from "../common.ts"
-import { writeQueuedSnapshotUpdates } from "../value/index.ts"
-import { getAssertFilePath } from "../assert.ts"
-
-const removeTsExtension = (moduleName: string) =>
-    moduleName.replace(/\.(m|c)?tsx?$/, "")
-
-const denoResolutionHost: tsMorph.ResolutionHostFactory = (
-    moduleResolutionHost,
-    getCompilerOptions
-) => {
-    return {
-        resolveModuleNames: (moduleNames, containingFile) => {
-            const compilerOptions = getCompilerOptions()
-            const resolvedModules: tsMorph.ts.ResolvedModule[] = []
-
-            for (const moduleName of moduleNames.map(removeTsExtension)) {
-                const result = ts.resolveModuleName(
-                    moduleName,
-                    containingFile,
-                    compilerOptions,
-                    moduleResolutionHost
-                )
-                if (result.resolvedModule) {
-                    resolvedModules.push(result.resolvedModule)
-                } else {
-                    resolvedModules.push(
-                        ts.resolveModuleName(
-                            // Resolve this file as a dummy to avoid crashing.
-                            fromFileUrl(import.meta.url),
-                            containingFile,
-                            compilerOptions,
-                            moduleResolutionHost
-                        ).resolvedModule!
-                    )
-                }
-            }
-            return resolvedModules
-        }
-    }
-}
+    Memoized
+} from "../common.js"
+import { writeQueuedSnapshotUpdates } from "../value/index.js"
+import { getAssertFilePath } from "../assert.js"
+import { relative } from "path"
 
 export const cacheTypeAssertions = () => {
     const config = getReAssertConfig()
@@ -60,7 +19,7 @@ export const cacheTypeAssertions = () => {
                 ` of your re.json config to enable precaching.`
         )
     }
-    writeJsonSync(
+    writeJson(
         config.precachePath,
         analyzeTypeAssertions({ isInitialCache: true })
     )
@@ -69,19 +28,17 @@ export const cacheTypeAssertions = () => {
 export const cleanupTypeAssertionCache = () => {
     const config = getReAssertConfig()
     writeQueuedSnapshotUpdates(config.precachePath)
-    Deno.removeSync(config.precachePath)
+    rmSync(config.precachePath, { recursive: true })
 }
 
-export const getTsProject: Memoized<() => tsMorph.Project> = () => {
+export const getTsProject: Memoized<() => Project> = () => {
     if (!getTsProject.cache) {
         const config = getReAssertConfig()
         const tsConfigFilePath = existsSync(config.tsconfig)
             ? config.tsconfig
             : undefined
-        const resolutionHost = isDeno ? denoResolutionHost : undefined
         const project = new Project({
-            tsConfigFilePath,
-            resolutionHost
+            tsConfigFilePath
         })
         if (!tsConfigFilePath) {
             project.addSourceFilesAtPaths(["**"])
@@ -115,7 +72,7 @@ type AssertionsByFile = Record<string, AssertionData[]>
 type DiagnosticsByFile = Record<string, DiagnosticData[]>
 
 const concatenateChainedErrors = (
-    diagnostics: tsMorph.ts.DiagnosticMessageChain[]
+    diagnostics: ts.DiagnosticMessageChain[]
 ): string =>
     diagnostics
         .map(
@@ -141,7 +98,7 @@ const analyzeTypeAssertions: Memoized<
     }
     const config = getReAssertConfig()
     if (config.precached && !isInitialCache) {
-        analyzeTypeAssertions.cache = readJsonSync(config.precachePath)
+        analyzeTypeAssertions.cache = readJson(config.precachePath)
         if (!analyzeTypeAssertions.cache) {
             throw new Error(
                 `Unable to find precached assertion data at '${config.precachePath}'. ` +
@@ -156,7 +113,7 @@ const analyzeTypeAssertions: Memoized<
 
     // We have to use this internal checker to access errors ignore by @ts-ignore or @ts-expect-error
     const tsProgram = project.getProgram().compilerObject as any
-    const diagnostics: tsMorph.ts.Diagnostic[] = tsProgram
+    const diagnostics: ts.Diagnostic[] = tsProgram
         .getDiagnosticsProducingTypeChecker()
         .getDiagnostics()
     diagnostics.forEach((diagnostic) => {
@@ -183,7 +140,7 @@ const analyzeTypeAssertions: Memoized<
         }
     })
     const assertSourcePath = getAssertFilePath()
-    let assertFile: tsMorph.SourceFile
+    let assertFile: SourceFile
 
     if (assertSourcePath.endsWith("js")) {
         // In external node environments, we should use the .d.ts file to find references

@@ -1,8 +1,9 @@
+import { fileName } from "@re-/node"
 import { ListPossibleTypes } from "@re-/tools"
-import { getCurrentLine, fromFileUrl } from "./deps.ts"
-import { typeAssertions, TypeAssertions } from "./type/index.ts"
-import { valueAssertions, ValueAssertion } from "./value/index.ts"
-import { getReAssertConfig, ReAssertConfig } from "./common.ts"
+import getCurrentLine from "get-current-line"
+import { typeAssertions, TypeAssertions } from "./type/index.js"
+import { valueAssertions, ValueAssertion } from "./value/index.js"
+import { getReAssertConfig, ReAssertConfig } from "./common.js"
 
 export type AssertionResult<
     T,
@@ -18,7 +19,7 @@ export type AssertionContext = {
     config: ReAssertConfig
 }
 
-export const getAssertFilePath = () => fromFileUrl(import.meta.url)
+export const getAssertFilePath = () => fileName()
 
 export const assert: Assertion = (
     value: unknown,
@@ -31,7 +32,7 @@ export const assert: Assertion = (
         )
     }
     if (position.file.startsWith("file:///")) {
-        position.file = fromFileUrl(position.file)
+        position.file = ""
     }
     const config: AssertionContext = {
         allowTypeAssertions: true,

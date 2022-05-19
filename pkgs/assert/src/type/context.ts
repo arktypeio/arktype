@@ -1,8 +1,8 @@
-import { assertEquals } from "@deno/std/testing/asserts.ts"
-import { AssertionContext } from "../assert.ts"
-import { getAssertionData } from "./analysis.ts"
-import { chainableAssertion, ChainableValueAssertion } from "../value/index.ts"
-import { SourcePosition } from "../common.ts"
+import { assertEquals } from "@deno/std/testing/asserts.js"
+import { AssertionContext } from "../assert.js"
+import { getAssertionData } from "./analysis.js"
+import { chainableAssertion, ChainableValueAssertion } from "../value/index.js"
+import { SourcePosition } from "../common.js"
 
 export type ValueFromTypeAssertion<
     Expected,

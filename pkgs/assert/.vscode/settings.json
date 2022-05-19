@@ -1,5 +1,6 @@
 {
     "typescript.tsdk": "node_modules/typescript/lib",
-    "deno.enablePaths": ["./build.ts", "./runTests.ts", "."],
-    "deno.lint": false
+    "eslint.packageManager": "pnpm",
+    "eslint.enable": true,
+    "eslint.alwaysShowStatus": true
 }

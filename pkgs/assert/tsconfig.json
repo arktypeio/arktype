@@ -10,12 +10,7 @@
         "resolveJsonModule": true,
         "composite": true,
         "jsx": "react",
-        "lib": ["ESNext"],
-        "typeRoots": ["./deno"],
-        "paths": {
-            "@deno/std/*.ts": ["./deno/std/*"],
-            "@re-/assert": ["./src/index.ts"]
-        }
+        "lib": ["ESNext"]
     },
     "include": ["src", "tests"]
 }

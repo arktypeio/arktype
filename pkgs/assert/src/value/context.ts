@@ -11,20 +11,20 @@ import {
     assertMatch,
     AssertionError,
     assertStrictEquals
-} from "../deps.ts"
-import { SourcePosition } from "../common.ts"
-import { AssertionContext } from "../assert.ts"
+} from "../deps.js"
+import { SourcePosition } from "../common.js"
+import { AssertionContext } from "../assert.js"
 import {
     getAssertionData,
     TypeAssertions,
     typeAssertions
-} from "../type/index.ts"
+} from "../type/index.js"
 import {
     updateExternalSnapshot,
     getSnapshotByName,
     queueInlineSnapshotUpdate,
     writeInlineSnapshotToFile
-} from "./snapshot.ts"
+} from "./snapshot.js"
 
 const getThrownMessage = (value: Function) => {
     try {
