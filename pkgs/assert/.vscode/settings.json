@@ -1,5 +1,5 @@
 {
     "typescript.tsdk": "node_modules/typescript/lib",
-    "deno.enablePaths": ["./build.ts", "./precached.ts"],
+    "deno.enablePaths": ["./build.ts", "./runTests.ts", "."],
     "deno.lint": false
 }

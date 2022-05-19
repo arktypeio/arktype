@@ -1,42 +1,5 @@
 {
-    "multifile.test.ts": [
-        {
-            "caller": {
-                "name": "assert",
-                "line": 5,
-                "char": 5
-            },
-            "type": {
-                "actual": "{ i: string; }",
-                "expected": "{ i: string; }"
-            },
-            "errors": ""
-        },
-        {
-            "caller": {
-                "name": "assert",
-                "line": 7,
-                "char": 15
-            },
-            "type": {
-                "actual": "{ g: unknown; }",
-                "expected": "{ g: string; }"
-            },
-            "errors": ""
-        }
-    ],
     "assert.test.ts": [
-        {
-            "caller": {
-                "name": "assert",
-                "line": 25,
-                "char": 5
-            },
-            "type": {
-                "actual": "{ re: string; }"
-            },
-            "errors": ""
-        },
         {
             "caller": {
                 "name": "assert",
@@ -62,7 +25,18 @@
         {
             "caller": {
                 "name": "assert",
-                "line": 30,
+                "line": 28,
+                "char": 5
+            },
+            "type": {
+                "actual": "{ re: string; }"
+            },
+            "errors": ""
+        },
+        {
+            "caller": {
+                "name": "assert",
+                "line": 31,
                 "char": 5
             },
             "type": {
@@ -74,7 +48,7 @@
         {
             "caller": {
                 "name": "assert",
-                "line": 34,
+                "line": 35,
                 "char": 15
             },
             "type": {
@@ -86,7 +60,7 @@
         {
             "caller": {
                 "name": "assert",
-                "line": 40,
+                "line": 41,
                 "char": 5
             },
             "type": {
@@ -97,7 +71,7 @@
         {
             "caller": {
                 "name": "assert",
-                "line": 43,
+                "line": 44,
                 "char": 24
             },
             "type": {
@@ -108,7 +82,7 @@
         {
             "caller": {
                 "name": "assert",
-                "line": 46,
+                "line": 47,
                 "char": 5
             },
             "type": {
@@ -120,7 +94,7 @@
         {
             "caller": {
                 "name": "assert",
-                "line": 49,
+                "line": 50,
                 "char": 13
             },
             "type": {
@@ -132,7 +106,7 @@
         {
             "caller": {
                 "name": "assert",
-                "line": 57,
+                "line": 58,
                 "char": 13
             },
             "type": {
@@ -143,7 +117,7 @@
         {
             "caller": {
                 "name": "assert",
-                "line": 66,
+                "line": 67,
                 "char": 5
             },
             "type": {
@@ -154,7 +128,7 @@
         {
             "caller": {
                 "name": "assert",
-                "line": 69,
+                "line": 70,
                 "char": 15
             },
             "type": {
@@ -165,7 +139,7 @@
         {
             "caller": {
                 "name": "assert",
-                "line": 75,
+                "line": 76,
                 "char": 5
             },
             "type": {
@@ -176,7 +150,7 @@
         {
             "caller": {
                 "name": "assert",
-                "line": 81,
+                "line": 82,
                 "char": 13
             },
             "type": {
@@ -187,7 +161,7 @@
         {
             "caller": {
                 "name": "assert",
-                "line": 92,
+                "line": 93,
                 "char": 5
             },
             "type": {
@@ -198,7 +172,7 @@
         {
             "caller": {
                 "name": "assert",
-                "line": 95,
+                "line": 96,
                 "char": 5
             },
             "type": {
@@ -209,7 +183,7 @@
         {
             "caller": {
                 "name": "assert",
-                "line": 97,
+                "line": 98,
                 "char": 5
             },
             "type": {
@@ -220,7 +194,7 @@
         {
             "caller": {
                 "name": "assert",
-                "line": 103,
+                "line": 104,
                 "char": 15
             },
             "type": {
@@ -231,7 +205,7 @@
         {
             "caller": {
                 "name": "assert",
-                "line": 110,
+                "line": 111,
                 "char": 13
             },
             "type": {
@@ -242,7 +216,7 @@
         {
             "caller": {
                 "name": "assert",
-                "line": 121,
+                "line": 122,
                 "char": 5
             },
             "type": {
@@ -253,7 +227,7 @@
         {
             "caller": {
                 "name": "assert",
-                "line": 126,
+                "line": 127,
                 "char": 5
             },
             "type": {
@@ -265,7 +239,7 @@
         {
             "caller": {
                 "name": "assert",
-                "line": 128,
+                "line": 129,
                 "char": 5
             },
             "type": {
@@ -276,7 +250,7 @@
         {
             "caller": {
                 "name": "assert",
-                "line": 135,
+                "line": 136,
                 "char": 13
             },
             "type": {
@@ -287,7 +261,7 @@
         {
             "caller": {
                 "name": "assert",
-                "line": 142,
+                "line": 143,
                 "char": 15
             },
             "type": {
@@ -298,23 +272,12 @@
         {
             "caller": {
                 "name": "assert",
-                "line": 147,
+                "line": 148,
                 "char": 15
             },
             "type": {
                 "actual": "void",
                 "expected": "() => null"
-            },
-            "errors": ""
-        },
-        {
-            "caller": {
-                "name": "assert",
-                "line": 153,
-                "char": 5
-            },
-            "type": {
-                "actual": "{ re: string; }"
             },
             "errors": ""
         },
@@ -333,6 +296,17 @@
             "caller": {
                 "name": "assert",
                 "line": 155,
+                "char": 5
+            },
+            "type": {
+                "actual": "{ re: string; }"
+            },
+            "errors": ""
+        },
+        {
+            "caller": {
+                "name": "assert",
+                "line": 156,
                 "char": 24
             },
             "type": {
@@ -343,7 +317,7 @@
         {
             "caller": {
                 "name": "assert",
-                "line": 169,
+                "line": 170,
                 "char": 5
             },
             "type": {
@@ -354,7 +328,7 @@
         {
             "caller": {
                 "name": "assert",
-                "line": 172,
+                "line": 173,
                 "char": 15
             },
             "type": {
@@ -365,7 +339,7 @@
         {
             "caller": {
                 "name": "assert",
-                "line": 177,
+                "line": 178,
                 "char": 5
             },
             "type": {
@@ -376,7 +350,7 @@
         {
             "caller": {
                 "name": "assert",
-                "line": 179,
+                "line": 180,
                 "char": 5
             },
             "type": {
@@ -387,7 +361,7 @@
         {
             "caller": {
                 "name": "assert",
-                "line": 189,
+                "line": 190,
                 "char": 5
             },
             "type": {
@@ -398,7 +372,7 @@
         {
             "caller": {
                 "name": "assert",
-                "line": 211,
+                "line": 212,
                 "char": 5
             },
             "type": {
@@ -409,7 +383,7 @@
         {
             "caller": {
                 "name": "assert",
-                "line": 217,
+                "line": 218,
                 "char": 13
             },
             "type": {
@@ -420,7 +394,7 @@
         {
             "caller": {
                 "name": "assert",
-                "line": 224,
+                "line": 225,
                 "char": 5
             },
             "type": {
@@ -431,7 +405,7 @@
         {
             "caller": {
                 "name": "assert",
-                "line": 228,
+                "line": 229,
                 "char": 5
             },
             "type": {
@@ -442,7 +416,7 @@
         {
             "caller": {
                 "name": "assert",
-                "line": 237,
+                "line": 238,
                 "char": 5
             },
             "type": {
@@ -453,23 +427,11 @@
         {
             "caller": {
                 "name": "assert",
-                "line": 239,
+                "line": 240,
                 "char": 15
             },
             "type": {
                 "actual": "{ re: string; }"
-            },
-            "errors": ""
-        },
-        {
-            "caller": {
-                "name": "assert",
-                "line": 246,
-                "char": 5
-            },
-            "type": {
-                "actual": "any",
-                "expected": "any"
             },
             "errors": ""
         },
@@ -489,6 +451,18 @@
             "caller": {
                 "name": "assert",
                 "line": 248,
+                "char": 5
+            },
+            "type": {
+                "actual": "any",
+                "expected": "any"
+            },
+            "errors": ""
+        },
+        {
+            "caller": {
+                "name": "assert",
+                "line": 249,
                 "char": 24
             },
             "type": {
@@ -500,7 +474,7 @@
         {
             "caller": {
                 "name": "assert",
-                "line": 250,
+                "line": 251,
                 "char": 15
             },
             "type": {
@@ -512,7 +486,7 @@
         {
             "caller": {
                 "name": "assert",
-                "line": 257,
+                "line": 258,
                 "char": 5
             },
             "type": {
@@ -524,7 +498,7 @@
         {
             "caller": {
                 "name": "assert",
-                "line": 259,
+                "line": 260,
                 "char": 15
             },
             "type": {
@@ -536,7 +510,7 @@
         {
             "caller": {
                 "name": "assert",
-                "line": 264,
+                "line": 265,
                 "char": 15
             },
             "type": {
@@ -548,7 +522,7 @@
         {
             "caller": {
                 "name": "assert",
-                "line": 270,
+                "line": 271,
                 "char": 5
             },
             "type": {
@@ -560,7 +534,7 @@
         {
             "caller": {
                 "name": "assert",
-                "line": 274,
+                "line": 275,
                 "char": 13
             },
             "type": {
@@ -572,7 +546,7 @@
         {
             "caller": {
                 "name": "assert",
-                "line": 283,
+                "line": 284,
                 "char": 13
             },
             "type": {
@@ -584,7 +558,7 @@
         {
             "caller": {
                 "name": "assert",
-                "line": 292,
+                "line": 293,
                 "char": 5
             },
             "type": {
@@ -595,7 +569,7 @@
         {
             "caller": {
                 "name": "assert",
-                "line": 299,
+                "line": 300,
                 "char": 13
             },
             "type": {
@@ -606,22 +580,11 @@
         {
             "caller": {
                 "name": "assert",
-                "line": 308,
+                "line": 309,
                 "char": 13
             },
             "type": {
                 "actual": "() => void"
-            },
-            "errors": ""
-        },
-        {
-            "caller": {
-                "name": "assert",
-                "line": 320,
-                "char": 5
-            },
-            "type": {
-                "actual": "{ readonly a: readonly [\"+\"]; }"
             },
             "errors": ""
         },
@@ -639,11 +602,48 @@
         {
             "caller": {
                 "name": "assert",
-                "line": 323,
+                "line": 322,
+                "char": 5
+            },
+            "type": {
+                "actual": "{ readonly a: readonly [\"+\"]; }"
+            },
+            "errors": ""
+        },
+        {
+            "caller": {
+                "name": "assert",
+                "line": 324,
                 "char": 15
             },
             "type": {
                 "actual": "{ readonly a: readonly [\"+\"]; }"
+            },
+            "errors": ""
+        }
+    ],
+    "multifile.test.ts": [
+        {
+            "caller": {
+                "name": "assert",
+                "line": 6,
+                "char": 5
+            },
+            "type": {
+                "actual": "{ i: string; }",
+                "expected": "{ i: string; }"
+            },
+            "errors": ""
+        },
+        {
+            "caller": {
+                "name": "assert",
+                "line": 8,
+                "char": 15
+            },
+            "type": {
+                "actual": "{ g: unknown; }",
+                "expected": "{ g: string; }"
             },
             "errors": ""
         }
@@ -653,7 +653,7 @@
             "position": {
                 "method": "",
                 "file": "/home/ssalb/2re-po/pkgs/assert/tests/assert.test.ts",
-                "line": 237,
+                "line": 238,
                 "char": 5
             },
             "value": "\"{ re: string; }\""
@@ -662,7 +662,7 @@
             "position": {
                 "method": "",
                 "file": "/home/ssalb/2re-po/pkgs/assert/tests/assert.test.ts",
-                "line": 239,
+                "line": 240,
                 "char": 15
             },
             "value": "{re: \"do\"}"

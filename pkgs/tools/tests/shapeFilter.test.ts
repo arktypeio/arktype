@@ -1,4 +1,5 @@
 import { shapeFilter } from "@re-/tools"
+import { assert } from "@re-/assert"
 import { o } from "./common.ts"
 const { test } = Deno
 
@@ -11,7 +12,7 @@ const filter = {
     },
     c: ""
 }
-const expected = {
+const asserted = {
     a: {
         b: [0],
         c: {
@@ -24,23 +25,23 @@ test("doesn't modify objects", () => {
     const originalSource = JSON.parse(JSON.stringify(o))
     const originalFilter = JSON.parse(JSON.stringify(filter))
     shapeFilter(o, filter)
-    expect(o).toStrictEqual(originalSource)
-    expect(filter).toStrictEqual(originalFilter)
+    assert(o).equals(originalSource)
+    assert(filter).equals(originalFilter)
 })
 
 test("filters simple objects", () => {
-    const result: typeof expected = shapeFilter(o, filter)
-    expect(result).toStrictEqual(expected)
+    const result: typeof asserted = shapeFilter(o, filter)
+    assert(result).equals(asserted)
 })
 
 test("preserves source when filter is non-recursible", () => {
-    const expected = { b: o.b }
-    const result: typeof expected = shapeFilter(o, { b: null })
-    expect(result).toStrictEqual(expected)
+    const asserted = { b: o.b }
+    const result: typeof asserted = shapeFilter(o, { b: null })
+    assert(result).equals(asserted)
 })
 
 test("stops recursing if filter is deeper than source", () => {
-    const result: typeof expected = shapeFilter(o, {
+    const result: typeof asserted = shapeFilter(o, {
         ...filter,
         c: {
             d: {
@@ -48,17 +49,17 @@ test("stops recursing if filter is deeper than source", () => {
             }
         }
     })
-    expect(result).toStrictEqual(expected)
+    assert(result).equals(asserted)
 })
 
 test("ignores filter keys not in source", () => {
-    const result: typeof expected = shapeFilter(o, {
+    const result: typeof asserted = shapeFilter(o, {
         ...filter,
         ...{ extraneous: null }
     })
-    expect(result).toStrictEqual(expected)
+    assert(result).equals(asserted)
 })
 
 test("errors on non-object", () => {
-    expect(() => shapeFilter(0, 0)).toThrow()
+    assert(() => shapeFilter(0, 0)).throws()
 })

@@ -1,5 +1,6 @@
-import { Project, SourceFile, SyntaxKind, ts, Type } from "ts-morph"
-import { dirname, join, relative } from "@deno/std/path/mod.ts"
+import { tsMorph } from "../deps.ts"
+const { Project, SyntaxKind, ts } = tsMorph
+import { dirname, join, relative, fromFileUrl } from "../deps.ts"
 import {
     SourcePosition,
     LinePosition,
@@ -7,10 +8,49 @@ import {
     writeJsonSync,
     existsSync,
     getReAssertConfig,
-    Memoized
-} from "@src/common.ts"
-import { writeQueuedSnapshotUpdates } from "@src/value/snapshot.ts"
-import { getAssertFilePath } from "@src/assert.ts"
+    Memoized,
+    isDeno
+} from "../common.ts"
+import { writeQueuedSnapshotUpdates } from "../value/index.ts"
+import { getAssertFilePath } from "../assert.ts"
+
+const removeTsExtension = (moduleName: string) =>
+    moduleName.replace(/\.(m|c)?tsx?$/, "")
+
+const denoResolutionHost: tsMorph.ResolutionHostFactory = (
+    moduleResolutionHost,
+    getCompilerOptions
+) => {
+    return {
+        resolveModuleNames: (moduleNames, containingFile) => {
+            const compilerOptions = getCompilerOptions()
+            const resolvedModules: tsMorph.ts.ResolvedModule[] = []
+
+            for (const moduleName of moduleNames.map(removeTsExtension)) {
+                const result = ts.resolveModuleName(
+                    moduleName,
+                    containingFile,
+                    compilerOptions,
+                    moduleResolutionHost
+                )
+                if (result.resolvedModule) {
+                    resolvedModules.push(result.resolvedModule)
+                } else {
+                    resolvedModules.push(
+                        ts.resolveModuleName(
+                            // Resolve this file as a dummy to avoid crashing.
+                            fromFileUrl(import.meta.url),
+                            containingFile,
+                            compilerOptions,
+                            moduleResolutionHost
+                        ).resolvedModule!
+                    )
+                }
+            }
+            return resolvedModules
+        }
+    }
+}
 
 export const cacheTypeAssertions = () => {
     const config = getReAssertConfig()
@@ -32,14 +72,16 @@ export const cleanupTypeAssertionCache = () => {
     Deno.removeSync(config.precachePath)
 }
 
-export const getTsProject: Memoized<() => Project> = () => {
+export const getTsProject: Memoized<() => tsMorph.Project> = () => {
     if (!getTsProject.cache) {
         const config = getReAssertConfig()
         const tsConfigFilePath = existsSync(config.tsconfig)
             ? config.tsconfig
             : undefined
+        const resolutionHost = isDeno ? denoResolutionHost : undefined
         const project = new Project({
-            tsConfigFilePath
+            tsConfigFilePath,
+            resolutionHost
         })
         if (!tsConfigFilePath) {
             project.addSourceFilesAtPaths(["**"])
@@ -73,7 +115,7 @@ type AssertionsByFile = Record<string, AssertionData[]>
 type DiagnosticsByFile = Record<string, DiagnosticData[]>
 
 const concatenateChainedErrors = (
-    diagnostics: ts.DiagnosticMessageChain[]
+    diagnostics: tsMorph.ts.DiagnosticMessageChain[]
 ): string =>
     diagnostics
         .map(
@@ -114,7 +156,7 @@ const analyzeTypeAssertions: Memoized<
 
     // We have to use this internal checker to access errors ignore by @ts-ignore or @ts-expect-error
     const tsProgram = project.getProgram().compilerObject as any
-    const diagnostics: ts.Diagnostic[] = tsProgram
+    const diagnostics: tsMorph.ts.Diagnostic[] = tsProgram
         .getDiagnosticsProducingTypeChecker()
         .getDiagnostics()
     diagnostics.forEach((diagnostic) => {
@@ -141,7 +183,7 @@ const analyzeTypeAssertions: Memoized<
         }
     })
     const assertSourcePath = getAssertFilePath()
-    let assertFile: SourceFile
+    let assertFile: tsMorph.SourceFile
 
     if (assertSourcePath.endsWith("js")) {
         // In external node environments, we should use the .d.ts file to find references
@@ -186,7 +228,7 @@ const analyzeTypeAssertions: Memoized<
         }
         const assertArg = assertCall.getArguments()[0]
         let typeToCheck = assertArg.getType()
-        let expectedType: Type | undefined
+        let expectedType: tsMorph.Type | undefined
         for (const ancestor of assertCall.getAncestors()) {
             const kind = ancestor.getKind()
             if (kind === SyntaxKind.ExpressionStatement) {

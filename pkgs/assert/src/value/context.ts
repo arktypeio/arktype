@@ -6,22 +6,25 @@ import {
     ElementOf,
     toString
 } from "@re-/tools"
-import { SourcePosition } from "@src/common.ts"
-import { AssertionContext } from "@src/assert.ts"
-import { TypeAssertions, typeAssertions } from "@src/type/context.ts"
-import { getAssertionData } from "@src/type/analysis.ts"
-import {
-    updateExternalSnapshot,
-    getSnapshotByName,
-    queueInlineSnapshotUpdate,
-    writeInlineSnapshotToFile
-} from "@src/value/snapshot.ts"
 import {
     assertEquals,
     assertMatch,
     AssertionError,
     assertStrictEquals
-} from "@deno/std/testing/asserts.ts"
+} from "../deps.ts"
+import { SourcePosition } from "../common.ts"
+import { AssertionContext } from "../assert.ts"
+import {
+    getAssertionData,
+    TypeAssertions,
+    typeAssertions
+} from "../type/index.ts"
+import {
+    updateExternalSnapshot,
+    getSnapshotByName,
+    queueInlineSnapshotUpdate,
+    writeInlineSnapshotToFile
+} from "./snapshot.ts"
 
 const getThrownMessage = (value: Function) => {
     try {

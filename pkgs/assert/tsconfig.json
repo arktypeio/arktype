@@ -13,9 +13,9 @@
         "lib": ["ESNext"],
         "typeRoots": ["./deno"],
         "paths": {
-            "@src/*.ts": ["./src/*"],
-            "@deno/std/*.ts": ["./deno/std/*"]
+            "@deno/std/*.ts": ["./deno/std/*"],
+            "@re-/assert": ["./src/index.ts"]
         }
     },
-    "include": ["src", "tests", "*"]
+    "include": ["src", "tests"]
 }

@@ -1,4 +1,4 @@
-import { resolve } from "@deno/std/path/mod.ts"
+import { resolve } from "./deps.ts"
 
 export type LinePosition = {
     line: number

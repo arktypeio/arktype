@@ -1,6 +1,6 @@
 {
     "typescript.tsdk": "node_modules/typescript/lib",
-    "deno.enablePaths": [],
+    "deno.enablePaths": ["."],
     "deno.unstable": true,
     "deno.lint": false,
     "eslint.enable": false

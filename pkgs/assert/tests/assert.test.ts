@@ -4,8 +4,9 @@ import {
     AssertionError
 } from "@deno/std/testing/asserts.ts"
 import { dirname, join, fromFileUrl } from "@deno/std/path/mod.ts"
-import { assert } from "@src/assert.ts"
-import { readJsonSync, writeJsonSync } from "@src/common.ts"
+import { assert } from "@re-/assert"
+import { readJsonSync, writeJsonSync } from "../src/common.ts"
+const { test } = Deno
 
 const n: number = 5
 const o = { re: "do" }
@@ -21,28 +22,28 @@ const throwError = () => {
     throw new Error("Test error.")
 }
 
-Deno.test("type toString", () => {
+test("type toString", () => {
     assert(o).type.toString("{ re: string; }")
     assert(o).type.toString().is("{ re: string; }")
     assert(o).type.toString.is("{ re: string; }")
 })
-Deno.test("typed", () => {
+test("typed", () => {
     assert(o).typed as { re: string }
 })
-Deno.test("badTyped", () => {
+test("badTyped", () => {
     assertThrows(
         () => assert(o).typed as { re: number },
         AssertionError,
         "number"
     )
 })
-Deno.test("equals", () => {
+test("equals", () => {
     assert(o).equals({ re: "do" })
 })
-Deno.test("bad equals", () => {
+test("bad equals", () => {
     assertThrows(() => assert(o).equals({ re: "doo" }), AssertionError, "doo")
 })
-Deno.test("returns", () => {
+test("returns", () => {
     assert(() => null).returns(null).typed as null
     assertThrows(
         () =>
@@ -62,7 +63,7 @@ Deno.test("returns", () => {
         "string"
     )
 })
-Deno.test("throws", () => {
+test("throws", () => {
     assert(throwError).throws(/error/g)
     assertThrows(
         // Snap should never be populated
@@ -71,7 +72,7 @@ Deno.test("throws", () => {
         "didn't throw"
     )
 })
-Deno.test("args", () => {
+test("args", () => {
     assert((input: string) => `${input}!`)
         .args("omg")
         .returns()
@@ -87,7 +88,7 @@ Deno.test("args", () => {
         "fail"
     )
 })
-Deno.test("valid type errors", () => {
+test("valid type errors", () => {
     // @ts-expect-error
     assert(o.re.length.nonexistent).type.errors(
         /Property 'nonexistent' does not exist on type 'number'/
@@ -98,7 +99,7 @@ Deno.test("valid type errors", () => {
         "Expected 1 arguments, but got 2."
     )
 })
-Deno.test("bad type errors", () => {
+test("bad type errors", () => {
     assertThrows(
         () => assert(o).type.errors(/This error doesn't exist/),
         AssertionError,
@@ -116,20 +117,20 @@ Deno.test("bad type errors", () => {
 })
 // Some TS errors as formatted as diagnostic "chains"
 // We represent them by joining the parts of the message with newlines
-Deno.test("TS diagnostic chain", () => {
+test("TS diagnostic chain", () => {
     // @ts-expect-error
     assert(() => shouldThrow({} as {} | false)).type.errors.snap(
         `"Argument of type 'false | {}' is not assignable to parameter of type 'false'.Type '{}' is not assignable to type 'false'."`
     )
 })
-Deno.test("chainable", () => {
+test("chainable", () => {
     assert(o).equals({ re: "do" }).typed as { re: string }
     // @ts-expect-error
     assert(() => throwError("this is a type error"))
         .throws("Test error.")
         .type.errors("Expected 0 arguments, but got 1.")
 })
-Deno.test("bad chainable", () => {
+test("bad chainable", () => {
     assertThrows(
         () =>
             assert(n)
@@ -149,7 +150,7 @@ Deno.test("bad chainable", () => {
         "null"
     )
 })
-Deno.test("snap", () => {
+test("snap", () => {
     assert(o).snap(`{re: "do"}`)
     assert(o).equals({ re: "do" }).type.toString.snap(`"{ re: string; }"`)
     assertThrows(() => assert(o).snap(`{re: "dorf"}`), AssertionError, "dorf")
@@ -163,7 +164,7 @@ const defaultSnapshotFileContents = {
     }
 }
 
-Deno.test("snap toFile", () => {
+test("snap toFile", () => {
     writeJsonSync(defaultSnapshotPath, defaultSnapshotFileContents)
     // Check existing
     assert(o).snap.toFile("toFile")
@@ -183,7 +184,7 @@ Deno.test("snap toFile", () => {
         }
     })
 })
-Deno.test("snap update toFile", () => {
+test("snap update toFile", () => {
     writeJsonSync(defaultSnapshotPath, defaultSnapshotFileContents)
     // @ts-ignore (using internal updateSnapshots hook)
     assert({ re: "dew" }, { updateSnapshots: true }).snap.toFile("toFileUpdate")
@@ -205,7 +206,7 @@ const defaultSnapshotCustomFileContents = {
     }
 }
 
-Deno.test("snap to custom file", () => {
+test("snap to custom file", () => {
     writeJsonSync(defaultSnapshotCustomPath, defaultSnapshotCustomFileContents)
     // Check existing
     assert(o).snap.toFile("toCustomFile", {
@@ -233,7 +234,7 @@ Deno.test("snap to custom file", () => {
     })
 })
 
-Deno.test("value and type snap", () => {
+test("value and type snap", () => {
     assert(o).snap(`{re: "do"}`).type.toString.snap()
     assertThrows(
         () => assert(o).snap().type.toString.snap(`"{ re: number; }"`),
@@ -242,7 +243,7 @@ Deno.test("value and type snap", () => {
     )
 })
 
-Deno.test("any type", () => {
+test("any type", () => {
     assert(n as any).typedValue(5 as any)
     assert(o as any).typed as any
     assertThrows(() => assert(n).typedValue(5 as any), AssertionError, "number")
@@ -252,7 +253,7 @@ Deno.test("any type", () => {
         "unknown"
     )
 })
-Deno.test("typedValue", () => {
+test("typedValue", () => {
     const getDo = () => "do"
     assert(o).typedValue({ re: getDo() })
     assertThrows(
@@ -266,7 +267,7 @@ Deno.test("typedValue", () => {
         "don't"
     )
 })
-Deno.test("return has typed value", () => {
+test("return has typed value", () => {
     assert(() => "ooo").returns.typedValue("ooo")
     // Wrong value
     assertThrows(
@@ -287,7 +288,7 @@ Deno.test("return has typed value", () => {
         "unknown"
     )
 })
-Deno.test("throwsAndHasTypeError", () => {
+test("throwsAndHasTypeError", () => {
     // @ts-expect-error
     assert(() => shouldThrow(true)).throwsAndHasTypeError(
         /true[\s\S]*not assignable[\s\S]*false/
@@ -313,7 +314,7 @@ Deno.test("throwsAndHasTypeError", () => {
     )
 })
 
-Deno.test("assert value ignores type", () => {
+test("assert value ignores type", () => {
     const myValue = { a: ["+"] } as const
     const myExpectedValue = { a: ["+"] }
     // @ts-expect-error

@@ -1,5 +1,5 @@
-import { isRecursible, fromEntries, NonRecursible, List } from "@src/common.ts"
-import { toString } from "@src/toString.ts"
+import { isRecursible, fromEntries, NonRecursible, List } from "./common.ts"
+import { toString } from "./toString.ts"
 
 type Unlisted<T> = T extends List<infer Item> ? Item : T
 

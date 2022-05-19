@@ -1,6 +1,6 @@
 import { assert } from "@re-/assert"
 import { toString } from "@re-/tools"
-import { o } from "@tests/common.ts"
+import { o } from "./common.ts"
 const { test } = Deno
 
 test("default", () => {

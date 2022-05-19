@@ -1,6 +1,6 @@
 import { updateMap, DeepUpdate } from "@re-/tools"
 import { assert } from "@re-/assert"
-import { o } from "@tests/common.ts"
+import { o } from "./common.ts"
 const { test } = Deno
 
 const map: DeepUpdate<typeof o> = {

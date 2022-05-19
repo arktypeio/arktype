@@ -1,12 +1,13 @@
-import { join, dirname, isAbsolute, basename } from "@deno/std/path/mod.ts"
+import { join, dirname, isAbsolute, basename } from "../deps.ts"
+import { tsMorph } from "../deps.ts"
+const { ts, SyntaxKind } = tsMorph
 import {
     readJsonSync,
     setJsonKey,
     SourcePosition,
     writeJsonSync
-} from "@src/common.ts"
-import { getTsProject } from "@src/type/analysis.ts"
-import { ts, SyntaxKind, CallExpression } from "ts-morph"
+} from "../common.ts"
+import { getTsProject } from "../type/analysis.ts"
 
 export interface BaseSnapshotArgs {
     position: SourcePosition
@@ -75,7 +76,7 @@ export const writeInlineSnapshotToFile = ({
             (ancestor) =>
                 ancestor.getKind() === SyntaxKind.CallExpression &&
                 ancestor.getText().replace(" ", "").endsWith("snap()")
-        ) as CallExpression
+        ) as tsMorph.CallExpression
     snapCall.addArgument("`" + value + "`")
     file.saveSync()
 }
