@@ -1,6 +1,6 @@
 import { readJson, writeJson } from "@re-/node"
-import { rmSync } from "fs"
-import { Project, SourceFile, SyntaxKind, ts, Type } from "ts-morph"
+import { existsSync, rmSync } from "fs"
+import { Project, SyntaxKind, ts, Type } from "ts-morph"
 import {
     SourcePosition,
     LinePosition,
@@ -8,8 +8,7 @@ import {
     Memoized
 } from "../common.js"
 import { writeQueuedSnapshotUpdates } from "../value/index.js"
-import { getAssertFilePath } from "../assert.js"
-import { dirname, join, relative } from "node:path"
+import { relative } from "node:path"
 
 export const cacheTypeAssertions = () => {
     const config = getReAssertConfig()
@@ -97,14 +96,14 @@ const analyzeTypeAssertions: Memoized<
     }
     const config = getReAssertConfig()
     if (config.precached && !isInitialCache) {
-        analyzeTypeAssertions.cache = readJson(config.precachePath)
-        if (!analyzeTypeAssertions.cache) {
+        if (!existsSync(config.precachePath)) {
             throw new Error(
                 `Unable to find precached assertion data at '${config.precachePath}'. ` +
                     `Did you forget to call 'cacheTypeAssertions' before running your tests?`
             )
         }
-        return analyzeTypeAssertions.cache
+        analyzeTypeAssertions.cache = readJson(config.precachePath)
+        return analyzeTypeAssertions.cache!
     }
     const project = getTsProject()
     const assertionsByFile: AssertionsByFile = {}
@@ -138,133 +137,103 @@ const analyzeTypeAssertions: Memoized<
             diagnosticsByFile[fileKey] = [data]
         }
     })
-    const assertSourcePath = getAssertFilePath()
-    let assertFile: SourceFile
-
-    if (assertSourcePath.endsWith("js")) {
-        // In external node environments, we should use the .d.ts file to find references
-        // assertSourcePath should be something like: node_modules/@re-/assert/out/cjs/assert.js
-        const assertDefinitionPath = join(
-            dirname(assertSourcePath),
-            "..",
-            "types",
-            "assert.d.ts"
-        )
-        assertFile = project.addSourceFileAtPath(assertDefinitionPath)
-    } else {
-        // Otherwise, we're importing a .ts file directly, so should be able to access references that way
-        assertFile = project.addSourceFileAtPath(assertSourcePath)
-    }
-    const exportedAssertDeclaration = assertFile
-        .getExportSymbols()
-        .find((_) => _.getName() === "assert")
-        ?.getValueDeclaration()
-        ?.asKind(SyntaxKind.VariableDeclaration)
-    if (!exportedAssertDeclaration) {
-        throw new Error(
-            `Unable to locate the 'assert' function from @re-/assert.`
-        )
-    }
-    const references = exportedAssertDeclaration
-        .findReferences()
-        .flatMap((ref) => ref.getReferences())
-    references.forEach((ref) => {
-        const file = ref.getSourceFile()
+    project.getSourceFiles().forEach((file) => {
         const fileKey = getFileKey(file.getFilePath())
-        const assertCall = ref
-            .getNode()
-            .getParentIfKind(SyntaxKind.CallExpression)
-        if (!assertCall) {
+        const assertCalls = file
+            .getDescendantsOfKind(SyntaxKind.CallExpression)
+            .filter(
+                (callExpression) =>
+                    // We get might get some extraneous calls to other "assert" functions,
+                    // but they won't be referenced at runtime so shouldn't matter.
+                    callExpression.getFirstChild()?.getText() ===
+                    config.assertAlias
+            )
+        if (!assertCalls.length) {
             return
         }
-        if (!assertionsByFile[fileKey]) {
-            assertionsByFile[fileKey] = []
-        }
-        const assertArg = assertCall.getArguments()[0]
-        let typeToCheck = assertArg.getType()
-        let expectedType: Type | undefined
-        for (const ancestor of assertCall.getAncestors()) {
-            const kind = ancestor.getKind()
-            if (kind === SyntaxKind.ExpressionStatement) {
-                break
-            }
-            if (kind === SyntaxKind.PropertyAccessExpression) {
-                const propName = ancestor.getLastChild()?.getText()
-                if (propName === "returns") {
-                    const signatures = typeToCheck.getCallSignatures()
-                    if (!signatures.length) {
-                        throw new Error(`Unable to extract the return type.`)
-                    } else if (signatures.length > 1) {
-                        throw new Error(
-                            `Unable to extract the return of a function with multiple signatures.`
+        assertionsByFile[fileKey] = assertCalls.map((assertCall) => {
+            const assertArg = assertCall.getArguments()[0]
+            let typeToCheck = assertArg.getType()
+            let expectedType: Type | undefined
+            for (const ancestor of assertCall.getAncestors()) {
+                const kind = ancestor.getKind()
+                if (kind === SyntaxKind.ExpressionStatement) {
+                    break
+                }
+                if (kind === SyntaxKind.PropertyAccessExpression) {
+                    const propName = ancestor.getLastChild()?.getText()
+                    if (propName === "returns") {
+                        const signatures = typeToCheck.getCallSignatures()
+                        if (!signatures.length) {
+                            throw new Error(
+                                `Unable to extract the return type.`
+                            )
+                        } else if (signatures.length > 1) {
+                            throw new Error(
+                                `Unable to extract the return of a function with multiple signatures.`
+                            )
+                        }
+                        typeToCheck = signatures[0].getReturnType()
+                    } else if (propName === "typedValue") {
+                        const typedValueCall = ancestor.getParentIfKind(
+                            SyntaxKind.CallExpression
                         )
-                    }
-                    typeToCheck = signatures[0].getReturnType()
-                } else if (propName === "typedValue") {
-                    const typedValueCall = ancestor.getParentIfKind(
-                        SyntaxKind.CallExpression
-                    )
-                    if (typedValueCall) {
-                        expectedType = typedValueCall
-                            .getArguments()[0]
-                            .getType()
-                    }
-                } else if (propName === "typed") {
-                    const typedAsExpression = ancestor.getParentIfKind(
-                        SyntaxKind.AsExpression
-                    )
-                    if (typedAsExpression) {
-                        expectedType = typedAsExpression.getType()
+                        if (typedValueCall) {
+                            expectedType = typedValueCall
+                                .getArguments()[0]
+                                .getType()
+                        }
+                    } else if (propName === "typed") {
+                        const typedAsExpression = ancestor.getParentIfKind(
+                            SyntaxKind.AsExpression
+                        )
+                        if (typedAsExpression) {
+                            expectedType = typedAsExpression.getType()
+                        }
                     }
                 }
             }
-        }
-        const errors =
-            diagnosticsByFile[fileKey]?.reduce((message, diagnostic) => {
-                if (
-                    diagnostic.start >= assertArg.getStart() &&
-                    diagnostic.end <= assertArg.getEnd()
-                ) {
-                    if (message) {
-                        return `${message}\n${diagnostic.message}`
+            const errors =
+                diagnosticsByFile[fileKey]?.reduce((message, diagnostic) => {
+                    if (
+                        diagnostic.start >= assertArg.getStart() &&
+                        diagnostic.end <= assertArg.getEnd()
+                    ) {
+                        if (message) {
+                            return `${message}\n${diagnostic.message}`
+                        }
+                        return diagnostic.message
                     }
-                    return diagnostic.message
+                    return message
+                }, "") ?? ""
+            const start = ts.getLineAndCharacterOfPosition(
+                file.compilerNode,
+                assertCall.getStart()
+            )
+            const end = ts.getLineAndCharacterOfPosition(
+                file.compilerNode,
+                assertCall.getEnd()
+            )
+            // Add 1 to everything, since trace positions are 1-based and TS positions are 0-based.
+            const location: LinePositionRange = {
+                start: {
+                    line: start.line + 1,
+                    char: start.character + 1
+                },
+                end: {
+                    line: end.line + 1,
+                    char: end.character + 1
                 }
-                return message
-            }, "") ?? ""
-        // // The start position of the "assert" identifier from the assert call should be the position
-        // // we get when we check the line from which assert was called at runtime.
-        // const assertCallIdentifier = assertCall.getFirstChildByKindOrThrow(
-        //     SyntaxKind.Identifier
-        // )
-        const start = ts.getLineAndCharacterOfPosition(
-            file.compilerNode,
-            assertCall.getStart()
-        )
-        const end = ts.getLineAndCharacterOfPosition(
-            file.compilerNode,
-            assertCall.getEnd()
-        )
-        // Add 1 to everything, since trace positions are 1-based and TS positions are 0-based.
-        const location: LinePositionRange = {
-            start: {
-                line: start.line + 1,
-                char: start.character + 1
-            },
-            end: {
-                line: end.line + 1,
-                char: end.character + 1
             }
-        }
-        const assertionData: AssertionData = {
-            location,
-            type: {
-                actual: typeToCheck.getText(),
-                expected: expectedType?.getText()
-            },
-            errors
-        }
-        assertionsByFile[fileKey].push(assertionData)
+            return {
+                location,
+                type: {
+                    actual: typeToCheck.getText(),
+                    expected: expectedType?.getText()
+                },
+                errors
+            }
+        })
     })
     analyzeTypeAssertions.cache = assertionsByFile
     return assertionsByFile

@@ -8,6 +8,15 @@
         "plugin:@typescript-eslint/recommended-requiring-type-checking",
         "prettier"
     ],
+    "parserOptions": {
+        "project": [
+            "*/tsconfig.json",
+            "*/tests/tsconfig.json",
+            "pkgs/*/tsconfig.json",
+            "pkgs/*/tests/tsconfig.json"
+        ]
+    },
+    "ignorePatterns": ["out", "*.js"],
     "rules": {
         "prefer-arrow/prefer-arrow-functions": [
             "error",

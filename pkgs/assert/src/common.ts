@@ -20,6 +20,7 @@ export interface ReAssertJson {
     tsconfig?: string | undefined
     precached?: boolean
     precachePath?: string
+    assertAlias?: string
 }
 
 export interface ReJson {
@@ -49,6 +50,7 @@ export const getReAssertConfig: Memoized<() => ReAssertConfig> = () => {
             tsconfig,
             precached: false,
             precachePath: resolve(".assert.cache.json"),
+            assertAlias: "assert",
             ...reAssertJson
         }
     }

@@ -1,8 +1,13 @@
 import path from "path"
 import getCurrentLine from "get-current-line"
-import { LinePosition, narrow, deepEquals, toString } from "@re-/tools"
+import { narrow, deepEquals, toString } from "@re-/tools"
 
-export type SourcePosition = LinePosition & {
+export interface LinePosition {
+    line: number
+    char: number
+}
+
+export interface SourcePosition extends LinePosition {
     file: string
     method: string
 }
@@ -63,10 +68,8 @@ export const caller = (options: CallerOfOptions = {}): SourcePosition => {
             )
         }
         const candidate = {
-            file: formatFilePath(location.file, formatPath ?? {}),
-            line: location.line,
-            column: location.char,
-            method: location.method
+            ...location,
+            file: formatFilePath(location.file, formatPath ?? {})
         }
         if (skip?.(candidate)) {
             upStackBy++

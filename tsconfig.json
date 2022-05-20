@@ -8,9 +8,12 @@
         "isolatedModules": true,
         "esModuleInterop": true,
         "resolveJsonModule": true,
+        "composite": true,
         "jsx": "react",
         "lib": ["ESNext"]
     },
+    "include": [],
+    "exclude": [],
     "ts-node": {
         "esm": true,
         "swc": true,

@@ -1,0 +1,4 @@
+{
+    "extends": "@re-/node/tsconfig.base",
+    "include": ["."]
+}

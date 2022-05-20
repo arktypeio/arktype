@@ -1,5 +1,0 @@
-{
-    "parserOptions": {
-        "project": ["./pkgs/assert/tsconfig.json"]
-    }
-}
