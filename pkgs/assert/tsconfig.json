@@ -15,5 +15,5 @@
             "@re-/assert": ["./src/index.js"]
         }
     },
-    "include": ["src", "tests", "runTests.ts"]
+    "include": ["src", "tests", "runJest.ts"]
 }

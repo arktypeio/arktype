@@ -27,7 +27,6 @@
         {
             "packageName": "@re-/assert",
             "projectFolder": "pkgs/assert",
-            "cyclicDependencyProjects": ["@re-/node", "@re-/tools"],
             "shouldPublish": true
         },
         {

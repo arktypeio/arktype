@@ -5,5 +5,6 @@ export default {
     },
     moduleNameMapper: {
         "^(\\.{1,2}/.*)\\.jsx?$": "$1"
-    }
+    },
+    verbose: true
 }

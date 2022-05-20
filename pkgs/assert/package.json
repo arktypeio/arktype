@@ -20,11 +20,11 @@
     },
     "scripts": {
         "build": "reTsc",
-        "test": "../../node_modules/jest/bin/jest.js 2>&1"
+        "test": "node --loader ts-node/esm runJest.ts"
     },
     "dependencies": {
-        "@re-/tools": "2.0.0",
-        "@re-/node": "2.0.0",
+        "@re-/tools": "workspace:*",
+        "@re-/node": "workspace:*",
         "ts-morph": "14.0.0",
         "get-current-line": "6.6.0"
     }
