@@ -4,10 +4,5 @@
         "baseUrl": "src",
         "outDir": "out"
     },
-    "include": ["src"],
-    "ts-node": {
-        "esm": true,
-        "swc": true,
-        "experimentalResolverFeatures": true
-    }
+    "include": ["src"]
 }

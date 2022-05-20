@@ -22,7 +22,6 @@ if (runner !== "jest" && runner !== "mocha" && runner !== "node") {
             `where runner is either jest, mocha, or node.`
     )
 }
-let runnerMainPath: string
 if (runner === "node") {
     const nodeMajorVersion = parseInt(versions.node.split(".")[0])
     if (nodeMajorVersion < 18) {
@@ -32,8 +31,9 @@ if (runner === "node") {
     }
     runTestsCmd += "node --loader ts-node/esm --test "
 } else {
+    let runnerIndexPath: string
     try {
-        runnerMainPath = requireResolve(runner)
+        runnerIndexPath = requireResolve(runner)
     } catch (e) {
         throw new Error(
             `To use @re-/assert's ${runner} runner, ${runner} must be resolvable in your environment.`,
@@ -43,12 +43,12 @@ if (runner === "node") {
         )
     }
     const runnerBinPath = join(
-        dirname(runnerMainPath),
+        dirname(runnerIndexPath),
         ...(runner === "jest" ? ["..", "bin", "jest.js"] : ["bin", "mocha.js"])
     )
     if (!existsSync(runnerBinPath)) {
         throw new Error(
-            `Resolved ${runner} to '${runnerMainPath}' but was unable to find ` +
+            `Resolved ${runner} to '${runnerIndexPath}' but was unable to find ` +
                 `an executable at the expected location ('${runnerBinPath}').`
         )
     }

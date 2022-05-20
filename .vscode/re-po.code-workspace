@@ -14,8 +14,7 @@
             "pnpm-lock.*": true,
             "*.lock": true,
             "**/coverage/*": true
-        },
-        "deno.config": "../pkgs/deno.json"
+        }
     },
     "folders": [
         {

@@ -14,6 +14,5 @@
         "*.lock": true,
         "**/coverage/*": true
     },
-    "editor.defaultFormatter": "esbenp.prettier-vscode",
-    "eslint.alwaysShowStatus": true
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
 }

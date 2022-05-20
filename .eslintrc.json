@@ -16,7 +16,7 @@
             "pkgs/*/tests/tsconfig.json"
         ]
     },
-    "ignorePatterns": ["out", "*.js"],
+    "ignorePatterns": ["out", "**/*js"],
     "rules": {
         "prefer-arrow/prefer-arrow-functions": [
             "error",
