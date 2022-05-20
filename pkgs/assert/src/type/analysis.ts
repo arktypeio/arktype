@@ -10,9 +10,13 @@ import {
 import { writeQueuedSnapshotUpdates } from "../value/index.js"
 import { relative } from "node:path"
 
-export const cacheTypeAssertions = () => {
+export interface SetupCacheOptions {
+    forcePrecache?: boolean
+}
+
+export const cacheAssertions = ({ forcePrecache }: SetupCacheOptions = {}) => {
     const config = getReAssertConfig()
-    if (!config.precached) {
+    if (!config.precached && !forcePrecache) {
         throw new Error(
             `You must set 'precached' to true in the 'assert' section ` +
                 ` of your re.json config to enable precaching.`
@@ -24,10 +28,12 @@ export const cacheTypeAssertions = () => {
     )
 }
 
-export const cleanupTypeAssertionCache = () => {
+export const cleanupAssertions = () => {
     const config = getReAssertConfig()
     writeQueuedSnapshotUpdates(config.precachePath)
-    rmSync(config.precachePath, { recursive: true })
+    if (!config.preserveCache) {
+        rmSync(config.precachePath, { force: true })
+    }
 }
 
 export const getTsProject: Memoized<() => Project> = () => {
@@ -141,12 +147,13 @@ const analyzeTypeAssertions: Memoized<
         const fileKey = getFileKey(file.getFilePath())
         const assertCalls = file
             .getDescendantsOfKind(SyntaxKind.CallExpression)
-            .filter(
-                (callExpression) =>
-                    // We get might get some extraneous calls to other "assert" functions,
-                    // but they won't be referenced at runtime so shouldn't matter.
-                    callExpression.getFirstChild()?.getText() ===
-                    config.assertAlias
+            .filter((callExpression) =>
+                // We get might get some extraneous calls to other "assert" functions,
+                // but they won't be referenced at runtime so shouldn't matter.
+                config.assertAliases.find(
+                    (alias) =>
+                        alias === callExpression.getFirstChild()?.getText()
+                )
             )
         if (!assertCalls.length) {
             return

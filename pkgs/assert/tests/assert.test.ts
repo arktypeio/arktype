@@ -1,4 +1,4 @@
-// import { it } from "@jest/globals"
+import { test } from "mocha"
 import { dirName, readJson, writeJson } from "@re-/node"
 import { assert } from "../src/index.js"
 import { throws, AssertionError, deepEqual } from "node:assert/strict"
@@ -18,24 +18,24 @@ const throwError = () => {
     throw new Error("Test error.")
 }
 
-it("type toString", () => {
+test("type toString", () => {
     assert(o).type.toString("{ re: string; }")
     assert(o).type.toString().is("{ re: string; }")
     assert(o).type.toString.is("{ re: string; }")
 })
-it("typed", () => {
+test("typed", () => {
     assert(o).typed as { re: string }
 })
-it("badTyped", () => {
+test("badTyped", () => {
     throws(() => assert(o).typed as { re: number }, AssertionError, "number")
 })
-it("equals", () => {
+test("equals", () => {
     assert(o).equals({ re: "do" })
 })
-it("bad equals", () => {
+test("bad equals", () => {
     throws(() => assert(o).equals({ re: "doo" }), AssertionError, "doo")
 })
-it("returns", () => {
+test("returns", () => {
     assert(() => null).returns(null).typed as null
     throws(
         () =>
@@ -55,7 +55,7 @@ it("returns", () => {
         "string"
     )
 })
-it("throws", () => {
+test("throws", () => {
     assert(throwError).throws(/error/g)
     throws(
         // Snap should never be populated
@@ -64,7 +64,7 @@ it("throws", () => {
         "didn't throw"
     )
 })
-it("args", () => {
+test("args", () => {
     assert((input: string) => `${input}!`)
         .args("omg")
         .returns()
@@ -80,7 +80,7 @@ it("args", () => {
         "fail"
     )
 })
-it("valid type errors", () => {
+test("valid type errors", () => {
     // @ts-expect-error
     assert(o.re.length.nonexistent).type.errors(
         /Property 'nonexistent' does not exist on type 'number'/
@@ -91,7 +91,7 @@ it("valid type errors", () => {
         "Expected 1 arguments, but got 2."
     )
 })
-it("bad type errors", () => {
+test("bad type errors", () => {
     throws(
         () => assert(o).type.errors(/This error doesn't exist/),
         AssertionError,
@@ -109,20 +109,20 @@ it("bad type errors", () => {
 })
 // Some TS errors as formatted as diagnostic "chains"
 // We represent them by joining the parts of the message with newlines
-it("TS diagnostic chain", () => {
+test("TS diagnostic chain", () => {
     // @ts-expect-error
     assert(() => shouldThrow({} as {} | false)).type.errors.snap(
         `"Argument of type 'false | {}' is not assignable to parameter of type 'false'.Type '{}' is not assignable to type 'false'."`
     )
 })
-it("chainable", () => {
+test("chainable", () => {
     assert(o).equals({ re: "do" }).typed as { re: string }
     // @ts-expect-error
     assert(() => throwError("this is a type error"))
         .throws("Test error.")
         .type.errors("Expected 0 arguments, but got 1.")
 })
-it("bad chainable", () => {
+test("bad chainable", () => {
     throws(
         () =>
             assert(n)
@@ -138,7 +138,7 @@ it("bad chainable", () => {
         "null"
     )
 })
-it("snap", () => {
+test("snap", () => {
     assert(o).snap(`{re: "do"}`)
     assert(o).equals({ re: "do" }).type.toString.snap(`"{ re: string; }"`)
     throws(() => assert(o).snap(`{re: "dorf"}`), AssertionError, "dorf")
@@ -152,7 +152,7 @@ const defaultSnapshotFileContents = {
     }
 }
 
-it("snap toFile", () => {
+test("snap toFile", () => {
     writeJson(defaultSnapshotPath, defaultSnapshotFileContents)
     // Check existing
     assert(o).snap.toFile("toFile")
@@ -172,7 +172,7 @@ it("snap toFile", () => {
         }
     })
 })
-it("snap update toFile", () => {
+test("snap update toFile", () => {
     writeJson(defaultSnapshotPath, defaultSnapshotFileContents)
     // @ts-ignore (using internal updateSnapshots hook)
     assert({ re: "dew" }, { updateSnapshots: true }).snap.toFile("toFileUpdate")
@@ -194,7 +194,7 @@ const defaultSnapshotCustomFileContents = {
     }
 }
 
-it("snap to custom file", () => {
+test("snap to custom file", () => {
     writeJson(defaultSnapshotCustomPath, defaultSnapshotCustomFileContents)
     // Check existing
     assert(o).snap.toFile("toCustomFile", {
@@ -222,7 +222,7 @@ it("snap to custom file", () => {
     })
 })
 
-it("value and type snap", () => {
+test("value and type snap", () => {
     assert(o).snap(`{re: "do"}`).type.toString.snap(`"{ re: string; }"`)
     throws(
         () =>
@@ -234,13 +234,13 @@ it("value and type snap", () => {
     )
 })
 
-it("any type", () => {
+test("any type", () => {
     assert(n as any).typedValue(5 as any)
     assert(o as any).typed as any
     throws(() => assert(n).typedValue(5 as any), AssertionError, "number")
     throws(() => assert({} as unknown).typed as any, AssertionError, "unknown")
 })
-it("typedValue", () => {
+test("typedValue", () => {
     const getDo = () => "do"
     assert(o).typedValue({ re: getDo() })
     throws(
@@ -250,7 +250,7 @@ it("typedValue", () => {
     )
     throws(() => assert(o).typedValue({ re: "don't" }), AssertionError, "don't")
 })
-it("return has typed value", () => {
+test("return has typed value", () => {
     assert(() => "ooo").returns.typedValue("ooo")
     // Wrong value
     throws(
@@ -271,7 +271,7 @@ it("return has typed value", () => {
         "unknown"
     )
 })
-it("throwsAndHasTypeError", () => {
+test("throwsAndHasTypeError", () => {
     // @ts-expect-error
     assert(() => shouldThrow(true)).throwsAndHasTypeError(
         /true[\s\S]*not assignable[\s\S]*false/
@@ -297,7 +297,7 @@ it("throwsAndHasTypeError", () => {
     )
 })
 
-it("multiline", () => {
+test("multiline", () => {
     assert({
         several: true,
         lines: true,
@@ -315,7 +315,7 @@ it("multiline", () => {
     )
 })
 
-it("assert value ignores type", () => {
+test("assert value ignores type", () => {
     const myValue = { a: ["+"] } as const
     const myExpectedValue = { a: ["+"] }
     // @ts-expect-error

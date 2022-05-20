@@ -6,16 +6,17 @@ import {
     statSync,
     readFileSync,
     writeFileSync
-} from "fs"
+} from "node:fs"
 import {
     readFile as readFileAsync,
     writeFile as writeFileAsync
-} from "fs/promises"
-import { fileURLToPath, URL } from "url"
-import { homedir } from "os"
-import { join, dirname, parse } from "path"
+} from "node:fs/promises"
+import { fileURLToPath, URL } from "node:url"
+import { homedir } from "node:os"
+import { join, dirname, parse } from "node:path"
 import { caller } from "./caller.js"
 import { FilterFunction } from "@re-/tools"
+import { createRequire } from "node:module"
 
 export const fromDir =
     (dir: string) =>
@@ -129,3 +130,17 @@ export const findPackageRoot = (fromDir?: string) => {
 
 export const fromPackageRoot = (...joinWith: string[]) =>
     join(findPackageRoot(dirOfCaller()), ...joinWith)
+
+export const readPackageJson = (startDir?: string) =>
+    readJson(join(findPackageRoot(startDir), "package.json"))
+
+/** Esm+Cjs compatible require.resolve */
+export const requireResolve = (specifier: string) => {
+    try {
+        // This will work in CJS
+        return require.resolve(specifier)
+    } catch {
+        // This will work in ESM
+        return createRequire(eval("import.meta.url")).resolve(specifier)
+    }
+}

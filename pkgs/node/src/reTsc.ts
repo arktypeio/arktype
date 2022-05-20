@@ -1,13 +1,14 @@
 import { transform } from "@re-/tools"
-import { existsSync, rmSync } from "fs"
+import { chmodSync, existsSync, rmSync } from "fs"
 import { join } from "path"
 import { stdout } from "process"
-import { findPackageRoot, walkPaths } from "./fs.js"
+import { findPackageRoot, walkPaths, readPackageJson } from "./fs.js"
 import { shell } from "./shell.js"
 import { transpileTs, findPackageName, isTest } from "./ts.js"
 
 const packageRoot = findPackageRoot(process.cwd())
-const packageName = findPackageName(packageRoot)
+const packageJson = readPackageJson(packageRoot)
+const packageName = packageJson.name
 const outRoot = join(packageRoot, "out")
 const typesOut = join(outRoot, "types")
 const esmOut = join(outRoot, "esm")
@@ -81,6 +82,13 @@ export const transpile = (
 ) => {
     stdout.write(`⌛ Transpiling...`.padEnd(successMessage.length))
     Object.values(transpilers).map((transpiler) => transpiler())
+    if (packageJson.bin) {
+        Object.values(packageJson.bin).forEach((executable) => {
+            if (typeof executable === "string" && existsSync(executable)) {
+                chmodSync(executable, "755")
+            }
+        })
+    }
     stdout.write("✅\n")
 }
 

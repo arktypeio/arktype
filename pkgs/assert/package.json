@@ -20,10 +20,10 @@
     },
     "scripts": {
         "build": "reTsc",
-        "test": "./reAssert.js mocha"
+        "test": "./out/cjs/runner.cjs mocha"
     },
     "bin": {
-        "reAssert": "./reAssert.js"
+        "reassert": "./out/cjs/runner.cjs"
     },
     "dependencies": {
         "@re-/tools": "workspace:*",
