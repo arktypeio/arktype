@@ -1,24 +1,4 @@
 {
-    "compilerOptions": {
-        "module": "esnext",
-        "target": "esnext",
-        "moduleResolution": "node",
-        "skipLibCheck": true,
-        "strict": true,
-        "isolatedModules": true,
-        "esModuleInterop": true,
-        "resolveJsonModule": true,
-        "composite": true,
-        "jsx": "react",
-        "lib": ["ESNext"],
-        "typeRoots": ["../assert/deno", "node_modules/@types"],
-        "paths": {
-            "@re-/assert": ["../assert/src/index.js"],
-            "@re-/tools": ["./src/index.js"],
-            "@src/*.ts": ["./src/*"],
-            "@tests/*.ts": ["./tests/*"],
-            "@deno/std/*.ts": ["./deno/std/*.js"]
-        }
-    },
-    "include": ["src", "tests"]
+    "extends": "../../tsconfig.json",
+    "include": ["src", "test"]
 }

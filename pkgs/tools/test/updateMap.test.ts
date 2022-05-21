@@ -1,7 +1,7 @@
-import { updateMap, DeepUpdate } from "@re-/tools"
 import { assert } from "@re-/assert"
-import { o } from "./common.ts"
-const { test } = Deno
+import { updateMap, DeepUpdate } from "../src/index.js"
+import { o } from "./common.js"
+import { test } from "mocha"
 
 const map: DeepUpdate<typeof o> = {
     a: {

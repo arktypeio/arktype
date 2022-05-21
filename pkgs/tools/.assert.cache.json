@@ -1,10 +1,257 @@
 {
-    "tests/exact.test.ts": [
+    "test/diff.test.ts": [
         {
-            "caller": {
-                "name": "assert",
-                "line": 6,
-                "char": 9
+            "location": {
+                "start": {
+                    "line": 47,
+                    "char": 5
+                },
+                "end": {
+                    "line": 47,
+                    "char": 31
+                }
+            },
+            "type": {
+                "actual": "import(\"/home/ssalb/2re-po/pkgs/tools/src/diff\").DeepDiffResult<string, string>"
+            },
+            "errors": ""
+        },
+        {
+            "location": {
+                "start": {
+                    "line": 48,
+                    "char": 5
+                },
+                "end": {
+                    "line": 48,
+                    "char": 30
+                }
+            },
+            "type": {
+                "actual": "import(\"/home/ssalb/2re-po/pkgs/tools/src/diff\").DeepDiffResult<string, string>"
+            },
+            "errors": ""
+        },
+        {
+            "location": {
+                "start": {
+                    "line": 52,
+                    "char": 5
+                },
+                "end": {
+                    "line": 52,
+                    "char": 23
+                }
+            },
+            "type": {
+                "actual": "import(\"/home/ssalb/2re-po/pkgs/tools/src/diff\").DeepDiffResult<Readonly<{ a: { a: string; b: number[]; c: { a: boolean; b: boolean; c: null; d?: boolean | undefined; }; }; b: { a: { a: number; }; }; c: null; d: string; e: { a: string[]; }[]; }>, Readonly<{ a: { a: string; b: number[]; c: { a: boolean; b: boolean; c: null; d?: boolean | undefined; }; }; b: { a: { a: number; }; }; c: null; d: string; e: { a: string[]; }[]; }>>"
+            },
+            "errors": ""
+        },
+        {
+            "location": {
+                "start": {
+                    "line": 53,
+                    "char": 5
+                },
+                "end": {
+                    "line": 53,
+                    "char": 30
+                }
+            },
+            "type": {
+                "actual": "import(\"/home/ssalb/2re-po/pkgs/tools/src/diff\").DeepDiffResult<Readonly<{ a: { a: string; b: number[]; c: { a: boolean; b: boolean; c: null; d?: boolean | undefined; }; }; b: { a: { a: number; }; }; c: null; d: string; e: { a: string[]; }[]; }>, Readonly<{ a: { a: string; b: number[]; c: { a: boolean; b: boolean; c: null; }; }; b: { a: { a: number; }; }; c: null; d: string; e: { a: string[]; }[]; }>>"
+            },
+            "errors": ""
+        },
+        {
+            "location": {
+                "start": {
+                    "line": 57,
+                    "char": 5
+                },
+                "end": {
+                    "line": 57,
+                    "char": 46
+                }
+            },
+            "type": {
+                "actual": "import(\"/home/ssalb/2re-po/pkgs/tools/src/diff\").DeepDiffResult<{ a: string; b: string; }, { a: string; }>"
+            },
+            "errors": ""
+        },
+        {
+            "location": {
+                "start": {
+                    "line": 60,
+                    "char": 5
+                },
+                "end": {
+                    "line": 62,
+                    "char": 6
+                }
+            },
+            "type": {
+                "actual": "import(\"/home/ssalb/2re-po/pkgs/tools/src/diff\").DeepDiffResult<{ nested: { a: true; b: false; }; }, { nested: { b: false; }; }>"
+            },
+            "errors": ""
+        },
+        {
+            "location": {
+                "start": {
+                    "line": 66,
+                    "char": 5
+                },
+                "end": {
+                    "line": 66,
+                    "char": 46
+                }
+            },
+            "type": {
+                "actual": "import(\"/home/ssalb/2re-po/pkgs/tools/src/diff\").DeepDiffResult<{ a: string; }, { a: string; b: string; }>"
+            },
+            "errors": ""
+        },
+        {
+            "location": {
+                "start": {
+                    "line": 69,
+                    "char": 5
+                },
+                "end": {
+                    "line": 71,
+                    "char": 6
+                }
+            },
+            "type": {
+                "actual": "import(\"/home/ssalb/2re-po/pkgs/tools/src/diff\").DeepDiffResult<{ nested: { b: false; }; }, { nested: { a: true; b: false; }; }>"
+            },
+            "errors": ""
+        },
+        {
+            "location": {
+                "start": {
+                    "line": 75,
+                    "char": 5
+                },
+                "end": {
+                    "line": 75,
+                    "char": 40
+                }
+            },
+            "type": {
+                "actual": "import(\"/home/ssalb/2re-po/pkgs/tools/src/diff\").DeepDiffResult<string[], string[]>"
+            },
+            "errors": ""
+        },
+        {
+            "location": {
+                "start": {
+                    "line": 81,
+                    "char": 5
+                },
+                "end": {
+                    "line": 81,
+                    "char": 40
+                }
+            },
+            "type": {
+                "actual": "import(\"/home/ssalb/2re-po/pkgs/tools/src/common\").DeepPartial<Readonly<{ a: { a: string; b: number[]; c: { a: boolean; b: boolean; c: null; }; }; b: { a: { a: number; }; }; c: null; d: string; e: { a: string[]; }[]; }>>"
+            },
+            "errors": ""
+        },
+        {
+            "location": {
+                "start": {
+                    "line": 85,
+                    "char": 5
+                },
+                "end": {
+                    "line": 85,
+                    "char": 45
+                }
+            },
+            "type": {
+                "actual": "{ added: string[]; removed: string[]; } | { added: string[]; removed?: undefined; } | { removed: string[]; added?: undefined; } | undefined"
+            },
+            "errors": ""
+        },
+        {
+            "location": {
+                "start": {
+                    "line": 86,
+                    "char": 5
+                },
+                "end": {
+                    "line": 88,
+                    "char": 6
+                }
+            },
+            "type": {
+                "actual": "{ added: ({ b: true; a?: undefined; } | { a: true; b?: undefined; })[]; removed: ({ b: true; a?: undefined; } | { a: true; b?: undefined; })[]; } | { added: ({ b: true; a?: undefined; } | { a: true; b?: undefined; })[]; removed?: undefined; } | { removed: ({ b: true; a?: undefined; } | { a: true; b?: undefined; })[]; added?: undefined; } | undefined"
+            },
+            "errors": ""
+        },
+        {
+            "location": {
+                "start": {
+                    "line": 89,
+                    "char": 5
+                },
+                "end": {
+                    "line": 89,
+                    "char": 45
+                }
+            },
+            "type": {
+                "actual": "{ added: string[]; removed: string[]; } | { added: string[]; removed?: undefined; } | { removed: string[]; added?: undefined; } | undefined"
+            },
+            "errors": ""
+        },
+        {
+            "location": {
+                "start": {
+                    "line": 96,
+                    "char": 5
+                },
+                "end": {
+                    "line": 96,
+                    "char": 36
+                }
+            },
+            "type": {
+                "actual": "boolean"
+            },
+            "errors": ""
+        },
+        {
+            "location": {
+                "start": {
+                    "line": 97,
+                    "char": 5
+                },
+                "end": {
+                    "line": 102,
+                    "char": 6
+                }
+            },
+            "type": {
+                "actual": "boolean"
+            },
+            "errors": ""
+        }
+    ],
+    "test/exact.test.ts": [
+        {
+            "location": {
+                "start": {
+                    "line": 7,
+                    "char": 5
+                },
+                "end": {
+                    "line": 14,
+                    "char": 6
+                }
             },
             "type": {
                 "actual": "{ a: \"hi\"; nested: { on: false; }; }",
@@ -13,10 +260,15 @@
             "errors": ""
         },
         {
-            "caller": {
-                "name": "assert",
-                "line": 19,
-                "char": 9
+            "location": {
+                "start": {
+                    "line": 20,
+                    "char": 5
+                },
+                "end": {
+                    "line": 27,
+                    "char": 6
+                }
             },
             "type": {
                 "actual": "{ a: \"ok\"; nested: { on: true; }; }",
@@ -25,10 +277,15 @@
             "errors": ""
         },
         {
-            "caller": {
-                "name": "assert",
-                "line": 29,
-                "char": 9
+            "location": {
+                "start": {
+                    "line": 30,
+                    "char": 5
+                },
+                "end": {
+                    "line": 34,
+                    "char": 6
+                }
             },
             "type": {
                 "actual": "{ a: string | number; }",
@@ -37,10 +294,15 @@
             "errors": ""
         },
         {
-            "caller": {
-                "name": "assert",
-                "line": 34,
-                "char": 9
+            "location": {
+                "start": {
+                    "line": 35,
+                    "char": 5
+                },
+                "end": {
+                    "line": 39,
+                    "char": 6
+                }
             },
             "type": {
                 "actual": "{ a: string | number; }",
@@ -49,10 +311,15 @@
             "errors": ""
         },
         {
-            "caller": {
-                "name": "assert",
-                "line": 42,
-                "char": 9
+            "location": {
+                "start": {
+                    "line": 43,
+                    "char": 5
+                },
+                "end": {
+                    "line": 47,
+                    "char": 6
+                }
             },
             "type": {
                 "actual": "{ a: { nested: true; }; }",
@@ -61,12 +328,17 @@
             "errors": ""
         }
     ],
-    "tests/lazily.test.ts": [
+    "test/lazily.test.ts": [
         {
-            "caller": {
-                "name": "assert",
-                "line": 14,
-                "char": 9
+            "location": {
+                "start": {
+                    "line": 14,
+                    "char": 5
+                },
+                "end": {
+                    "line": 14,
+                    "char": 22
+                }
             },
             "type": {
                 "actual": "{ high: number; low: string; }",
@@ -75,10 +347,15 @@
             "errors": ""
         },
         {
-            "caller": {
-                "name": "assert",
-                "line": 18,
-                "char": 9
+            "location": {
+                "start": {
+                    "line": 18,
+                    "char": 5
+                },
+                "end": {
+                    "line": 18,
+                    "char": 24
+                }
             },
             "type": {
                 "actual": "number"
@@ -86,10 +363,15 @@
             "errors": ""
         },
         {
-            "caller": {
-                "name": "assert",
-                "line": 19,
-                "char": 9
+            "location": {
+                "start": {
+                    "line": 19,
+                    "char": 5
+                },
+                "end": {
+                    "line": 19,
+                    "char": 27
+                }
             },
             "type": {
                 "actual": "number"
@@ -97,10 +379,15 @@
             "errors": ""
         },
         {
-            "caller": {
-                "name": "assert",
-                "line": 20,
-                "char": 9
+            "location": {
+                "start": {
+                    "line": 20,
+                    "char": 5
+                },
+                "end": {
+                    "line": 20,
+                    "char": 24
+                }
             },
             "type": {
                 "actual": "number"
@@ -108,10 +395,15 @@
             "errors": ""
         },
         {
-            "caller": {
-                "name": "assert",
-                "line": 21,
-                "char": 9
+            "location": {
+                "start": {
+                    "line": 21,
+                    "char": 5
+                },
+                "end": {
+                    "line": 21,
+                    "char": 26
+                }
             },
             "type": {
                 "actual": "string"
@@ -119,10 +411,15 @@
             "errors": ""
         },
         {
-            "caller": {
-                "name": "assert",
-                "line": 22,
-                "char": 9
+            "location": {
+                "start": {
+                    "line": 22,
+                    "char": 5
+                },
+                "end": {
+                    "line": 22,
+                    "char": 24
+                }
             },
             "type": {
                 "actual": "number"
@@ -130,10 +427,15 @@
             "errors": ""
         },
         {
-            "caller": {
-                "name": "assert",
-                "line": 25,
-                "char": 9
+            "location": {
+                "start": {
+                    "line": 25,
+                    "char": 5
+                },
+                "end": {
+                    "line": 29,
+                    "char": 7
+                }
             },
             "type": {
                 "actual": "() => void"
@@ -141,10 +443,15 @@
             "errors": "Argument of type '(n: number) => number' is not assignable to parameter of type '() => object'."
         },
         {
-            "caller": {
-                "name": "assert",
-                "line": 36,
-                "char": 9
+            "location": {
+                "start": {
+                    "line": 36,
+                    "char": 5
+                },
+                "end": {
+                    "line": 40,
+                    "char": 7
+                }
             },
             "type": {
                 "actual": "() => void"
@@ -152,12 +459,17 @@
             "errors": "Type 'number' is not assignable to type 'object'."
         }
     ],
-    "tests/narrow.test.ts": [
+    "test/narrow.test.ts": [
         {
-            "caller": {
-                "name": "assert",
-                "line": 6,
-                "char": 9
+            "location": {
+                "start": {
+                    "line": 6,
+                    "char": 5
+                },
+                "end": {
+                    "line": 6,
+                    "char": 25
+                }
             },
             "type": {
                 "actual": "\"ok\"",
@@ -166,10 +478,15 @@
             "errors": ""
         },
         {
-            "caller": {
-                "name": "assert",
-                "line": 7,
-                "char": 9
+            "location": {
+                "start": {
+                    "line": 7,
+                    "char": 5
+                },
+                "end": {
+                    "line": 11,
+                    "char": 6
+                }
             },
             "type": {
                 "actual": "{ nested: { string: \"narrowed\"; number: 1337; }; }",
@@ -178,10 +495,15 @@
             "errors": ""
         },
         {
-            "caller": {
-                "name": "assert",
-                "line": 14,
-                "char": 9
+            "location": {
+                "start": {
+                    "line": 14,
+                    "char": 5
+                },
+                "end": {
+                    "line": 14,
+                    "char": 62
+                }
             },
             "type": {
                 "actual": "[{ first: \"narrowed\"; }, { second: 1337; }]",
@@ -190,10 +512,15 @@
             "errors": ""
         },
         {
-            "caller": {
-                "name": "assert",
-                "line": 18,
-                "char": 9
+            "location": {
+                "start": {
+                    "line": 18,
+                    "char": 5
+                },
+                "end": {
+                    "line": 18,
+                    "char": 59
+                }
             },
             "type": {
                 "actual": "{ nested: [\"yeah\", { good: \"okay\"; }]; }",
@@ -202,10 +529,15 @@
             "errors": ""
         },
         {
-            "caller": {
-                "name": "assert",
-                "line": 25,
-                "char": 9
+            "location": {
+                "start": {
+                    "line": 25,
+                    "char": 5
+                },
+                "end": {
+                    "line": 25,
+                    "char": 36
+                }
             },
             "type": {
                 "actual": "(args: -1) => number",
@@ -214,10 +546,15 @@
             "errors": ""
         },
         {
-            "caller": {
-                "name": "assert",
-                "line": 26,
-                "char": 9
+            "location": {
+                "start": {
+                    "line": 26,
+                    "char": 5
+                },
+                "end": {
+                    "line": 26,
+                    "char": 68
+                }
             },
             "type": {
                 "actual": "(args_0: [\"hi\", 5], args_1: { a: \"nother\"; }) => [[\"hi\", 5], { a: \"nother\"; }]",
@@ -226,10 +563,15 @@
             "errors": ""
         },
         {
-            "caller": {
-                "name": "assert",
-                "line": 40,
-                "char": 9
+            "location": {
+                "start": {
+                    "line": 39,
+                    "char": 5
+                },
+                "end": {
+                    "line": 39,
+                    "char": 30
+                }
             },
             "type": {
                 "actual": "any",
@@ -238,12 +580,1047 @@
             "errors": ""
         }
     ],
-    "tests/transform.test.ts": [
+    "test/shapeFilter.test.ts": [
         {
-            "caller": {
-                "name": "assert",
-                "line": 80,
-                "char": 9
+            "location": {
+                "start": {
+                    "line": 28,
+                    "char": 5
+                },
+                "end": {
+                    "line": 28,
+                    "char": 14
+                }
+            },
+            "type": {
+                "actual": "Readonly<{ a: { a: string; b: number[]; c: { a: boolean; b: boolean; c: null; d?: boolean | undefined; }; }; b: { a: { a: number; }; }; c: null; d: string; e: { a: string[]; }[]; }>"
+            },
+            "errors": ""
+        },
+        {
+            "location": {
+                "start": {
+                    "line": 29,
+                    "char": 5
+                },
+                "end": {
+                    "line": 29,
+                    "char": 19
+                }
+            },
+            "type": {
+                "actual": "{ a: { b: null; c: { a: number; }; }; c: string; }"
+            },
+            "errors": ""
+        },
+        {
+            "location": {
+                "start": {
+                    "line": 34,
+                    "char": 5
+                },
+                "end": {
+                    "line": 34,
+                    "char": 19
+                }
+            },
+            "type": {
+                "actual": "{ a: { b: number[]; c: { a: boolean; }; }; c: null; }"
+            },
+            "errors": ""
+        },
+        {
+            "location": {
+                "start": {
+                    "line": 40,
+                    "char": 5
+                },
+                "end": {
+                    "line": 40,
+                    "char": 19
+                }
+            },
+            "type": {
+                "actual": "{ b: { a: { a: number; }; }; }"
+            },
+            "errors": ""
+        },
+        {
+            "location": {
+                "start": {
+                    "line": 52,
+                    "char": 5
+                },
+                "end": {
+                    "line": 52,
+                    "char": 19
+                }
+            },
+            "type": {
+                "actual": "{ a: { b: number[]; c: { a: boolean; }; }; c: null; }"
+            },
+            "errors": ""
+        },
+        {
+            "location": {
+                "start": {
+                    "line": 60,
+                    "char": 5
+                },
+                "end": {
+                    "line": 60,
+                    "char": 19
+                }
+            },
+            "type": {
+                "actual": "{ a: { b: number[]; c: { a: boolean; }; }; c: null; }"
+            },
+            "errors": ""
+        },
+        {
+            "location": {
+                "start": {
+                    "line": 64,
+                    "char": 5
+                },
+                "end": {
+                    "line": 64,
+                    "char": 36
+                }
+            },
+            "type": {
+                "actual": "() => number"
+            },
+            "errors": ""
+        }
+    ],
+    "test/stringUtils.test.ts": [
+        {
+            "location": {
+                "start": {
+                    "line": 23,
+                    "char": 9
+                },
+                "end": {
+                    "line": 29,
+                    "char": 10
+                }
+            },
+            "type": {
+                "actual": "string"
+            },
+            "errors": ""
+        },
+        {
+            "location": {
+                "start": {
+                    "line": 32,
+                    "char": 9
+                },
+                "end": {
+                    "line": 38,
+                    "char": 10
+                }
+            },
+            "type": {
+                "actual": "string"
+            },
+            "errors": ""
+        },
+        {
+            "location": {
+                "start": {
+                    "line": 41,
+                    "char": 9
+                },
+                "end": {
+                    "line": 48,
+                    "char": 10
+                }
+            },
+            "type": {
+                "actual": "string"
+            },
+            "errors": ""
+        },
+        {
+            "location": {
+                "start": {
+                    "line": 51,
+                    "char": 9
+                },
+                "end": {
+                    "line": 56,
+                    "char": 10
+                }
+            },
+            "type": {
+                "actual": "string"
+            },
+            "errors": ""
+        },
+        {
+            "location": {
+                "start": {
+                    "line": 62,
+                    "char": 9
+                },
+                "end": {
+                    "line": 62,
+                    "char": 37
+                }
+            },
+            "type": {
+                "actual": "string"
+            },
+            "errors": ""
+        },
+        {
+            "location": {
+                "start": {
+                    "line": 65,
+                    "char": 9
+                },
+                "end": {
+                    "line": 65,
+                    "char": 55
+                }
+            },
+            "type": {
+                "actual": "string"
+            },
+            "errors": ""
+        },
+        {
+            "location": {
+                "start": {
+                    "line": 71,
+                    "char": 9
+                },
+                "end": {
+                    "line": 71,
+                    "char": 36
+                }
+            },
+            "type": {
+                "actual": "string"
+            },
+            "errors": ""
+        },
+        {
+            "location": {
+                "start": {
+                    "line": 74,
+                    "char": 9
+                },
+                "end": {
+                    "line": 74,
+                    "char": 54
+                }
+            },
+            "type": {
+                "actual": "string"
+            },
+            "errors": ""
+        },
+        {
+            "location": {
+                "start": {
+                    "line": 80,
+                    "char": 9
+                },
+                "end": {
+                    "line": 80,
+                    "char": 36
+                }
+            },
+            "type": {
+                "actual": "\"Hello\""
+            },
+            "errors": ""
+        },
+        {
+            "location": {
+                "start": {
+                    "line": 86,
+                    "char": 9
+                },
+                "end": {
+                    "line": 86,
+                    "char": 50
+                }
+            },
+            "type": {
+                "actual": "string"
+            },
+            "errors": ""
+        },
+        {
+            "location": {
+                "start": {
+                    "line": 92,
+                    "char": 9
+                },
+                "end": {
+                    "line": 92,
+                    "char": 38
+                }
+            },
+            "type": {
+                "actual": "boolean"
+            },
+            "errors": ""
+        },
+        {
+            "location": {
+                "start": {
+                    "line": 93,
+                    "char": 9
+                },
+                "end": {
+                    "line": 93,
+                    "char": 39
+                }
+            },
+            "type": {
+                "actual": "boolean"
+            },
+            "errors": ""
+        },
+        {
+            "location": {
+                "start": {
+                    "line": 94,
+                    "char": 9
+                },
+                "end": {
+                    "line": 94,
+                    "char": 36
+                }
+            },
+            "type": {
+                "actual": "boolean"
+            },
+            "errors": ""
+        },
+        {
+            "location": {
+                "start": {
+                    "line": 97,
+                    "char": 9
+                },
+                "end": {
+                    "line": 97,
+                    "char": 30
+                }
+            },
+            "type": {
+                "actual": "boolean"
+            },
+            "errors": ""
+        },
+        {
+            "location": {
+                "start": {
+                    "line": 98,
+                    "char": 9
+                },
+                "end": {
+                    "line": 98,
+                    "char": 31
+                }
+            },
+            "type": {
+                "actual": "boolean"
+            },
+            "errors": ""
+        },
+        {
+            "location": {
+                "start": {
+                    "line": 99,
+                    "char": 9
+                },
+                "end": {
+                    "line": 99,
+                    "char": 29
+                }
+            },
+            "type": {
+                "actual": "boolean"
+            },
+            "errors": ""
+        },
+        {
+            "location": {
+                "start": {
+                    "line": 102,
+                    "char": 9
+                },
+                "end": {
+                    "line": 102,
+                    "char": 31
+                }
+            },
+            "type": {
+                "actual": "boolean"
+            },
+            "errors": ""
+        },
+        {
+            "location": {
+                "start": {
+                    "line": 103,
+                    "char": 9
+                },
+                "end": {
+                    "line": 103,
+                    "char": 32
+                }
+            },
+            "type": {
+                "actual": "boolean"
+            },
+            "errors": ""
+        },
+        {
+            "location": {
+                "start": {
+                    "line": 104,
+                    "char": 9
+                },
+                "end": {
+                    "line": 104,
+                    "char": 32
+                }
+            },
+            "type": {
+                "actual": "boolean"
+            },
+            "errors": ""
+        },
+        {
+            "location": {
+                "start": {
+                    "line": 105,
+                    "char": 9
+                },
+                "end": {
+                    "line": 105,
+                    "char": 30
+                }
+            },
+            "type": {
+                "actual": "boolean"
+            },
+            "errors": ""
+        },
+        {
+            "location": {
+                "start": {
+                    "line": 108,
+                    "char": 9
+                },
+                "end": {
+                    "line": 108,
+                    "char": 33
+                }
+            },
+            "type": {
+                "actual": "boolean"
+            },
+            "errors": ""
+        },
+        {
+            "location": {
+                "start": {
+                    "line": 109,
+                    "char": 9
+                },
+                "end": {
+                    "line": 109,
+                    "char": 31
+                }
+            },
+            "type": {
+                "actual": "boolean"
+            },
+            "errors": ""
+        },
+        {
+            "location": {
+                "start": {
+                    "line": 110,
+                    "char": 9
+                },
+                "end": {
+                    "line": 110,
+                    "char": 31
+                }
+            },
+            "type": {
+                "actual": "boolean"
+            },
+            "errors": ""
+        },
+        {
+            "location": {
+                "start": {
+                    "line": 111,
+                    "char": 9
+                },
+                "end": {
+                    "line": 111,
+                    "char": 31
+                }
+            },
+            "type": {
+                "actual": "boolean"
+            },
+            "errors": ""
+        },
+        {
+            "location": {
+                "start": {
+                    "line": 112,
+                    "char": 9
+                },
+                "end": {
+                    "line": 112,
+                    "char": 31
+                }
+            },
+            "type": {
+                "actual": "boolean"
+            },
+            "errors": ""
+        },
+        {
+            "location": {
+                "start": {
+                    "line": 113,
+                    "char": 9
+                },
+                "end": {
+                    "line": 113,
+                    "char": 33
+                }
+            },
+            "type": {
+                "actual": "boolean"
+            },
+            "errors": ""
+        },
+        {
+            "location": {
+                "start": {
+                    "line": 114,
+                    "char": 9
+                },
+                "end": {
+                    "line": 114,
+                    "char": 35
+                }
+            },
+            "type": {
+                "actual": "boolean"
+            },
+            "errors": ""
+        },
+        {
+            "location": {
+                "start": {
+                    "line": 115,
+                    "char": 9
+                },
+                "end": {
+                    "line": 115,
+                    "char": 30
+                }
+            },
+            "type": {
+                "actual": "number | null"
+            },
+            "errors": ""
+        },
+        {
+            "location": {
+                "start": {
+                    "line": 116,
+                    "char": 9
+                },
+                "end": {
+                    "line": 116,
+                    "char": 32
+                }
+            },
+            "type": {
+                "actual": "number | null"
+            },
+            "errors": ""
+        },
+        {
+            "location": {
+                "start": {
+                    "line": 117,
+                    "char": 9
+                },
+                "end": {
+                    "line": 117,
+                    "char": 49
+                }
+            },
+            "type": {
+                "actual": "number | null"
+            },
+            "errors": ""
+        },
+        {
+            "location": {
+                "start": {
+                    "line": 118,
+                    "char": 9
+                },
+                "end": {
+                    "line": 118,
+                    "char": 52
+                }
+            },
+            "type": {
+                "actual": "number | null"
+            },
+            "errors": ""
+        },
+        {
+            "location": {
+                "start": {
+                    "line": 119,
+                    "char": 9
+                },
+                "end": {
+                    "line": 119,
+                    "char": 56
+                }
+            },
+            "type": {
+                "actual": "number | null"
+            },
+            "errors": ""
+        },
+        {
+            "location": {
+                "start": {
+                    "line": 120,
+                    "char": 9
+                },
+                "end": {
+                    "line": 120,
+                    "char": 35
+                }
+            },
+            "type": {
+                "actual": "number | null"
+            },
+            "errors": ""
+        },
+        {
+            "location": {
+                "start": {
+                    "line": 121,
+                    "char": 9
+                },
+                "end": {
+                    "line": 121,
+                    "char": 45
+                }
+            },
+            "type": {
+                "actual": "number | null"
+            },
+            "errors": ""
+        },
+        {
+            "location": {
+                "start": {
+                    "line": 122,
+                    "char": 9
+                },
+                "end": {
+                    "line": 122,
+                    "char": 57
+                }
+            },
+            "type": {
+                "actual": "() => number"
+            },
+            "errors": ""
+        },
+        {
+            "location": {
+                "start": {
+                    "line": 123,
+                    "char": 9
+                },
+                "end": {
+                    "line": 123,
+                    "char": 29
+                }
+            },
+            "type": {
+                "actual": "number | null"
+            },
+            "errors": ""
+        },
+        {
+            "location": {
+                "start": {
+                    "line": 127,
+                    "char": 9
+                },
+                "end": {
+                    "line": 127,
+                    "char": 40
+                }
+            },
+            "type": {
+                "actual": "string"
+            },
+            "errors": ""
+        },
+        {
+            "location": {
+                "start": {
+                    "line": 128,
+                    "char": 9
+                },
+                "end": {
+                    "line": 128,
+                    "char": 55
+                }
+            },
+            "type": {
+                "actual": "string"
+            },
+            "errors": ""
+        }
+    ],
+    "test/toString.test.ts": [
+        {
+            "location": {
+                "start": {
+                    "line": 7,
+                    "char": 5
+                },
+                "end": {
+                    "line": 7,
+                    "char": 24
+                }
+            },
+            "type": {
+                "actual": "string"
+            },
+            "errors": ""
+        },
+        {
+            "location": {
+                "start": {
+                    "line": 12,
+                    "char": 5
+                },
+                "end": {
+                    "line": 12,
+                    "char": 61
+                }
+            },
+            "type": {
+                "actual": "string"
+            },
+            "errors": ""
+        },
+        {
+            "location": {
+                "start": {
+                    "line": 15,
+                    "char": 5
+                },
+                "end": {
+                    "line": 15,
+                    "char": 60
+                }
+            },
+            "type": {
+                "actual": "string"
+            },
+            "errors": ""
+        },
+        {
+            "location": {
+                "start": {
+                    "line": 18,
+                    "char": 5
+                },
+                "end": {
+                    "line": 18,
+                    "char": 60
+                }
+            },
+            "type": {
+                "actual": "string"
+            },
+            "errors": ""
+        },
+        {
+            "location": {
+                "start": {
+                    "line": 21,
+                    "char": 5
+                },
+                "end": {
+                    "line": 21,
+                    "char": 64
+                }
+            },
+            "type": {
+                "actual": "string"
+            },
+            "errors": ""
+        },
+        {
+            "location": {
+                "start": {
+                    "line": 24,
+                    "char": 5
+                },
+                "end": {
+                    "line": 24,
+                    "char": 62
+                }
+            },
+            "type": {
+                "actual": "string"
+            },
+            "errors": ""
+        },
+        {
+            "location": {
+                "start": {
+                    "line": 29,
+                    "char": 5
+                },
+                "end": {
+                    "line": 34,
+                    "char": 6
+                }
+            },
+            "type": {
+                "actual": "string"
+            },
+            "errors": ""
+        },
+        {
+            "location": {
+                "start": {
+                    "line": 35,
+                    "char": 5
+                },
+                "end": {
+                    "line": 35,
+                    "char": 75
+                }
+            },
+            "type": {
+                "actual": "string"
+            },
+            "errors": ""
+        },
+        {
+            "location": {
+                "start": {
+                    "line": 40,
+                    "char": 5
+                },
+                "end": {
+                    "line": 40,
+                    "char": 39
+                }
+            },
+            "type": {
+                "actual": "string"
+            },
+            "errors": ""
+        },
+        {
+            "location": {
+                "start": {
+                    "line": 72,
+                    "char": 5
+                },
+                "end": {
+                    "line": 72,
+                    "char": 39
+                }
+            },
+            "type": {
+                "actual": "string"
+            },
+            "errors": ""
+        },
+        {
+            "location": {
+                "start": {
+                    "line": 107,
+                    "char": 5
+                },
+                "end": {
+                    "line": 111,
+                    "char": 6
+                }
+            },
+            "type": {
+                "actual": "string"
+            },
+            "errors": ""
+        }
+    ],
+    "test/transform.test.ts": [
+        {
+            "location": {
+                "start": {
+                    "line": 35,
+                    "char": 5
+                },
+                "end": {
+                    "line": 35,
+                    "char": 60
+                }
+            },
+            "type": {
+                "actual": "{ [x: string]: number; }"
+            },
+            "errors": ""
+        },
+        {
+            "location": {
+                "start": {
+                    "line": 43,
+                    "char": 5
+                },
+                "end": {
+                    "line": 43,
+                    "char": 19
+                }
+            },
+            "type": {
+                "actual": "{ [k: number]: string; }"
+            },
+            "errors": ""
+        },
+        {
+            "location": {
+                "start": {
+                    "line": 51,
+                    "char": 5
+                },
+                "end": {
+                    "line": 51,
+                    "char": 19
+                }
+            },
+            "type": {
+                "actual": "{ [x: string]: any; }"
+            },
+            "errors": ""
+        },
+        {
+            "location": {
+                "start": {
+                    "line": 58,
+                    "char": 5
+                },
+                "end": {
+                    "line": 58,
+                    "char": 19
+                }
+            },
+            "type": {
+                "actual": "{ [x: string]: any; }"
+            },
+            "errors": ""
+        },
+        {
+            "location": {
+                "start": {
+                    "line": 64,
+                    "char": 5
+                },
+                "end": {
+                    "line": 64,
+                    "char": 19
+                }
+            },
+            "type": {
+                "actual": "{ b: { a: number; b: number; c: number; }; }"
+            },
+            "errors": ""
+        },
+        {
+            "location": {
+                "start": {
+                    "line": 67,
+                    "char": 5
+                },
+                "end": {
+                    "line": 67,
+                    "char": 51
+                }
+            },
+            "type": {
+                "actual": "() => { [x: string]: any; }"
+            },
+            "errors": ""
+        },
+        {
+            "location": {
+                "start": {
+                    "line": 68,
+                    "char": 5
+                },
+                "end": {
+                    "line": 68,
+                    "char": 56
+                }
+            },
+            "type": {
+                "actual": "() => { [x: string]: any; }"
+            },
+            "errors": ""
+        },
+        {
+            "location": {
+                "start": {
+                    "line": 69,
+                    "char": 5
+                },
+                "end": {
+                    "line": 69,
+                    "char": 51
+                }
+            },
+            "type": {
+                "actual": "() => { [x: string]: any; }"
+            },
+            "errors": ""
+        },
+        {
+            "location": {
+                "start": {
+                    "line": 73,
+                    "char": 5
+                },
+                "end": {
+                    "line": 73,
+                    "char": 34
+                }
             },
             "type": {
                 "actual": "boolean[]",
@@ -252,10 +1629,15 @@
             "errors": ""
         },
         {
-            "caller": {
-                "name": "assert",
-                "line": 88,
-                "char": 9
+            "location": {
+                "start": {
+                    "line": 81,
+                    "char": 5
+                },
+                "end": {
+                    "line": 81,
+                    "char": 38
+                }
             },
             "type": {
                 "actual": "boolean[]",
@@ -264,10 +1646,15 @@
             "errors": ""
         },
         {
-            "caller": {
-                "name": "assert",
-                "line": 99,
-                "char": 9
+            "location": {
+                "start": {
+                    "line": 91,
+                    "char": 5
+                },
+                "end": {
+                    "line": 91,
+                    "char": 35
+                }
             },
             "type": {
                 "actual": "{ [x: number]: boolean; }",
@@ -276,16 +1663,161 @@
             "errors": ""
         },
         {
-            "caller": {
-                "name": "assert",
-                "line": 107,
-                "char": 9
+            "location": {
+                "start": {
+                    "line": 99,
+                    "char": 5
+                },
+                "end": {
+                    "line": 99,
+                    "char": 19
+                }
             },
             "type": {
                 "actual": "string[]",
                 "expected": "string[]"
             },
             "errors": ""
+        }
+    ],
+    "test/updateMap.test.ts": [
+        {
+            "location": {
+                "start": {
+                    "line": 46,
+                    "char": 5
+                },
+                "end": {
+                    "line": 46,
+                    "char": 19
+                }
+            },
+            "type": {
+                "actual": "{ a: { a: string; b: number[]; c: { a: boolean; b: boolean; c: null; }; }; b: { a: { a: number; }; }; c: null; d: string; e: { a: string[]; }[]; }"
+            },
+            "errors": ""
+        },
+        {
+            "location": {
+                "start": {
+                    "line": 51,
+                    "char": 5
+                },
+                "end": {
+                    "line": 51,
+                    "char": 19
+                }
+            },
+            "type": {
+                "actual": "Readonly<{ a: { a: string; b: number[]; c: { a: boolean; b: boolean; c: null; d?: boolean | undefined; }; }; b: { a: { a: number; }; }; c: null; d: string; e: { a: string[]; }[]; }>"
+            },
+            "errors": ""
+        },
+        {
+            "location": {
+                "start": {
+                    "line": 56,
+                    "char": 5
+                },
+                "end": {
+                    "line": 56,
+                    "char": 19
+                }
+            },
+            "type": {
+                "actual": "Readonly<{ a: { a: string; b: number[]; c: { a: boolean; b: boolean; c: null; d?: boolean | undefined; }; }; b: { a: { a: number; }; }; c: null; d: string; e: { a: string[]; }[]; }>"
+            },
+            "errors": ""
+        },
+        {
+            "location": {
+                "start": {
+                    "line": 70,
+                    "char": 5
+                },
+                "end": {
+                    "line": 70,
+                    "char": 19
+                }
+            },
+            "type": {
+                "actual": "{ e: { a: string[]; }[]; a: { a: string; b: number[]; c: { a: boolean; b: boolean; c: null; d?: boolean | undefined; }; }; b: { a: { a: number; }; }; c: null; d: string; }"
+            },
+            "errors": ""
+        }
+    ],
+    "queuedUpdates": [
+        {
+            "position": {
+                "method": "Context.<anonymous>",
+                "file": "/home/ssalb/2re-po/pkgs/tools/test/lazily.test.ts",
+                "line": 25,
+                "char": 5
+            },
+            "serializedValue": "`Argument of type '(n: number) => number' is not assignable to parameter of type '() => object'.`"
+        },
+        {
+            "position": {
+                "method": "Context.<anonymous>",
+                "file": "/home/ssalb/2re-po/pkgs/tools/test/lazily.test.ts",
+                "line": 36,
+                "char": 5
+            },
+            "serializedValue": "`Type 'number' is not assignable to type 'object'.`"
+        },
+        {
+            "position": {
+                "method": "Context.<anonymous>",
+                "file": "/home/ssalb/2re-po/pkgs/tools/test/toString.test.ts",
+                "line": 7,
+                "char": 5
+            },
+            "serializedValue": "`{a: {a: '', b: [0], c: {a: true, b: false, c: null}}, b: {a: {a: 1}}, c: null, d: 'initial', e: [{a: ['old']}, {a: ['old']}]}`"
+        },
+        {
+            "position": {
+                "method": "Context.<anonymous>",
+                "file": "/home/ssalb/2re-po/pkgs/tools/test/toString.test.ts",
+                "line": 29,
+                "char": 5
+            },
+            "serializedValue": "`{a: 'include this but...'}`"
+        },
+        {
+            "position": {
+                "method": "Context.<anonymous>",
+                "file": "/home/ssalb/2re-po/pkgs/tools/test/toString.test.ts",
+                "line": 35,
+                "char": 5
+            },
+            "serializedValue": "`{a: 'include this'}`"
+        },
+        {
+            "position": {
+                "method": "Context.<anonymous>",
+                "file": "/home/ssalb/2re-po/pkgs/tools/test/toString.test.ts",
+                "line": 40,
+                "char": 5
+            },
+            "serializedValue": "`{\n  a: {\n    a: '',\n    b: [\n      0\n    ],\n    c: {\n      a: true,\n      b: false,\n      c: null\n    }\n  },\n  b: {\n    a: {\n      a: 1\n    }\n  },\n  c: null,\n  d: 'initial',\n  e: [\n    {\n      a: [\n        'old'\n      ]\n    },\n    {\n      a: [\n        'old'\n      ]\n    }\n  ]\n}`"
+        },
+        {
+            "position": {
+                "method": "Context.<anonymous>",
+                "file": "/home/ssalb/2re-po/pkgs/tools/test/toString.test.ts",
+                "line": 72,
+                "char": 5
+            },
+            "serializedValue": "`{\n    a: {\n        a: '',\n        b: [\n            0\n        ],\n        c: {\n            a: true,\n            b: false,\n            c: null\n        }\n    },\n    b: {\n        a: {\n            a: 1\n        }\n    },\n    c: null,\n    d: 'initial',\n    e: [\n        {\n            a: [\n                'old'\n            ]\n        },\n        {\n            a: [\n                'old'\n            ]\n        }\n    ]\n}`"
+        },
+        {
+            "position": {
+                "method": "Context.<anonymous>",
+                "file": "/home/ssalb/2re-po/pkgs/tools/test/toString.test.ts",
+                "line": 107,
+                "char": 5
+            },
+            "serializedValue": "`{Symbol(example): true}`"
         }
     ]
 }

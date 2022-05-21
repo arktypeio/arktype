@@ -22,6 +22,7 @@ export interface ReAssertJson {
     precachePath?: string
     preserveCache?: boolean
     assertAliases?: string[]
+    stringifySnapshots?: boolean
 }
 
 export interface ReJson {
@@ -53,6 +54,7 @@ export const getReAssertConfig: Memoized<() => ReAssertConfig> = () => {
             precachePath: resolve(".assert.cache.json"),
             preserveCache: false,
             assertAliases: ["assert"],
+            stringifySnapshots: false,
             ...reAssertJson
         }
     }

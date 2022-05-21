@@ -1,6 +1,6 @@
 import { assert } from "@re-/assert"
-import { EntryMapper, transform } from "@re-/tools"
-const { test } = Deno
+import { EntryMapper, transform } from "../src/index.js"
+import { test } from "mocha"
 
 const o = {
     a: 1,

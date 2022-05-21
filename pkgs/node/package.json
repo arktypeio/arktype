@@ -19,7 +19,7 @@
         }
     },
     "scripts": {
-        "build": "set TS_NODE_TRANSPILE_ONLY=1&& node -r ./filterWarnings.cjs --loader ts-node/esm ./src/reTscCli.ts",
+        "build": "node --no-warnings --loader ts-node/esm ./src/reTscCli.ts",
         "test": "jest 2>&1",
         "lint": "eslint .",
         "runScript": "./runScript.js",

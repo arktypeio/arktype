@@ -1,4 +1,4 @@
-import { isRecursible } from "./common.ts"
+import { isRecursible } from "./common.js"
 
 export type ToStringOptions = {
     indent?: number

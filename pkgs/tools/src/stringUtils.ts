@@ -4,8 +4,8 @@ import {
     List,
     ListPossibleTypes,
     Stringifiable
-} from "./common.ts"
-import { FilterFunction } from "./common.ts"
+} from "./common.js"
+import { FilterFunction } from "./common.js"
 
 export const alphaOnlyRegex = /^[a-zA-Z]+$/
 

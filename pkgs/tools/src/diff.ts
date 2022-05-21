@@ -8,9 +8,8 @@ import {
     split,
     Entry,
     isEmpty
-} from "./common.ts"
-import { transform } from "./transform.ts"
-//import { merge } from "./merge.ts"
+} from "./common.js"
+import { transform } from "./transform.js"
 
 export type UnionDiffResult<Added extends any[], Removed extends any[]> = {
     added: Added

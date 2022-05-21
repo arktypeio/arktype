@@ -1,7 +1,7 @@
-import { shapeFilter } from "@re-/tools"
+import { shapeFilter } from "../src/index.js"
 import { assert } from "@re-/assert"
-import { o } from "./common.ts"
-const { test } = Deno
+import { o } from "./common.js"
+import { test } from "mocha"
 
 const filter = {
     a: {

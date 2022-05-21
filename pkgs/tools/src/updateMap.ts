@@ -3,7 +3,7 @@ import {
     fromEntries,
     PropertyOf,
     NonRecursible
-} from "./common.ts"
+} from "./common.js"
 
 export type UpdateFunction<T> = (currentValue: T) => T
 

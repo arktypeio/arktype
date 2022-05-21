@@ -17,7 +17,8 @@ import {
     updateExternalSnapshot,
     getSnapshotByName,
     queueInlineSnapshotUpdate,
-    writeInlineSnapshotToFile
+    writeInlineSnapshotToFile,
+    BaseSnapshotArgs
 } from "./snapshot.js"
 import { deepEqual, match, AssertionError, equal } from "node:assert/strict"
 
@@ -73,8 +74,8 @@ export const chainableAssertion = (
                 )
                 if (isReturn) {
                     return Object.assign(
-                        getNextAssertions(position, config),
-                        baseAssertions
+                        baseAssertions,
+                        getNextAssertions(position, config)
                     )
                 }
                 return baseAssertions
@@ -94,8 +95,8 @@ export const chainableAssertion = (
                 )
                 if (isReturn) {
                     return Object.assign(
-                        getNextAssertions(position, config),
-                        baseAssertions
+                        baseAssertions,
+                        getNextAssertions(position, config)
                     )[prop]
                 }
                 return baseAssertions[prop]
@@ -114,7 +115,7 @@ export type ComparableValueAssertion<
     is: (
         value: ElementOf<PossibleValues>
     ) => NextAssertions<AllowTypeAssertions>
-    snap: ((value?: string) => NextAssertions<AllowTypeAssertions>) & {
+    snap: ((value?: unknown) => NextAssertions<AllowTypeAssertions>) & {
         toFile: (
             name: string,
             options?: ExternalSnapshotOptions
@@ -224,18 +225,22 @@ export const getNextAssertions = (
 
 export const valueAssertions = <T, Ctx extends AssertionContext>(
     position: SourcePosition,
-    value: T,
+    actual: T,
     ctx: Ctx
 ): ValueAssertion<ListPossibleTypes<T>, Ctx["allowTypeAssertions"]> => {
     const nextAssertions = getNextAssertions(position, ctx)
-    const serializedValue = toString(value, { quotes: "double" })
-    if (typeof value === "function") {
+    const serialize = (value: unknown) =>
+        ctx.config.stringifySnapshots
+            ? `${toString(value, { quotes: "double" })}`
+            : toString(value, { quotes: "backtick" })
+    const actualSerialized = serialize(actual)
+    if (typeof actual === "function") {
         const functionAssertions = {
             args: (...args: any[]) =>
-                valueAssertions(position, () => value(...args), ctx),
+                valueAssertions(position, () => actual(...args), ctx),
             returns: chainableAssertion(
                 position,
-                () => value(),
+                () => actual(),
                 {
                     ...ctx,
                     returnsCount: ctx.returnsCount + 1
@@ -244,7 +249,7 @@ export const valueAssertions = <T, Ctx extends AssertionContext>(
             ),
             throws: chainableAssertion(
                 position,
-                () => getThrownMessage(value),
+                () => getThrownMessage(actual),
                 ctx,
                 { allowRegex: true }
             )
@@ -257,28 +262,28 @@ export const valueAssertions = <T, Ctx extends AssertionContext>(
                         matchValue instanceof RegExp
                             ? matchValue
                             : RegExp(matchValue)
-                    match(getThrownMessage(value), matcher)
+                    match(getThrownMessage(actual), matcher)
                     match(getAssertionData(position).errors, matcher)
                 }
             }
         }
         return functionAssertions
     }
-    const inlineSnap = (expected?: string) => {
+    const inlineSnap = (expected?: unknown) => {
         if (expected && !ctx.config.updateSnapshots) {
-            deepEqual(serializedValue, expected)
+            deepEqual(actualSerialized, serialize(expected))
         } else {
-            const args = {
+            const baseSnapshotArgs: BaseSnapshotArgs = {
                 position,
-                value: serializedValue
+                serializedValue: actualSerialized
             }
             if (ctx.config.precached) {
                 queueInlineSnapshotUpdate({
-                    ...args,
+                    ...baseSnapshotArgs,
                     cachePath: ctx.config.precachePath
                 })
             } else {
-                writeInlineSnapshotToFile(args)
+                writeInlineSnapshotToFile(baseSnapshotArgs)
             }
         }
         return nextAssertions
@@ -286,11 +291,11 @@ export const valueAssertions = <T, Ctx extends AssertionContext>(
 
     const baseValueAssertions = {
         is: (expected: unknown) => {
-            equal(value, expected)
+            equal(actual, expected)
             return nextAssertions
         },
         equals: (expected: unknown) => {
-            deepEqual(value, expected)
+            deepEqual(actual, expected)
             return nextAssertions
         }
     }
@@ -306,10 +311,10 @@ export const valueAssertions = <T, Ctx extends AssertionContext>(
                     options.path
                 )
                 if (expectedSnapshot && !ctx.config.updateSnapshots) {
-                    deepEqual(serializedValue, expectedSnapshot)
+                    deepEqual(actualSerialized, expectedSnapshot)
                 } else {
                     updateExternalSnapshot({
-                        value: serializedValue,
+                        serializedValue: actualSerialized,
                         position,
                         name,
                         customPath: options.path
@@ -323,7 +328,7 @@ export const valueAssertions = <T, Ctx extends AssertionContext>(
         return {
             ...baseAssertions,
             typedValue: (expectedValue) => {
-                defaultAssert(value, expectedValue)
+                defaultAssert(actual, expectedValue)
                 const typeData = getAssertionData(position)
                 if (!typeData.type.expected) {
                     throw new Error(

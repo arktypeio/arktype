@@ -1,8 +1,8 @@
 {
     "compilerOptions": {
-        "module": "esnext",
-        "target": "esnext",
-        "moduleResolution": "node",
+        "module": "NodeNext",
+        "target": "ESNext",
+        "moduleResolution": "NodeNext",
         "skipLibCheck": true,
         "strict": true,
         "isolatedModules": true,
@@ -13,10 +13,10 @@
         "lib": ["ESNext"]
     },
     "include": [],
-    "exclude": [],
     "ts-node": {
         "esm": true,
         "swc": true,
+        "transpileOnly": true,
         "experimentalResolverFeatures": true
     }
 }

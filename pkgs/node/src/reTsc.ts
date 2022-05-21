@@ -4,11 +4,12 @@ import { join } from "path"
 import { stdout } from "process"
 import { findPackageRoot, walkPaths, readPackageJson } from "./fs.js"
 import { shell } from "./shell.js"
-import { transpileTs, findPackageName, isTest } from "./ts.js"
+import { transpileTs, isTest } from "./ts.js"
 
 const packageRoot = findPackageRoot(process.cwd())
 const packageJson = readPackageJson(packageRoot)
 const packageName = packageJson.name
+const buildTsconfigPath = join(packageRoot, "tsconfig.build.json")
 const outRoot = join(packageRoot, "out")
 const typesOut = join(outRoot, "types")
 const esmOut = join(outRoot, "esm")
@@ -29,6 +30,9 @@ export const buildTypes = ({ noEmit, asBuild }: BuildTypesOptions = {}) => {
         )
     )
     let cmd = "npx tsc"
+    if (existsSync(buildTsconfigPath)) {
+        cmd += ` --project ${buildTsconfigPath}`
+    }
     if (asBuild) {
         cmd += " --build"
     } else {

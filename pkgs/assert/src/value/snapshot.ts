@@ -6,7 +6,7 @@ import { getTsProject } from "../type/analysis.js"
 
 export interface BaseSnapshotArgs {
     position: SourcePosition
-    value: string
+    serializedValue: string
 }
 
 export interface QueueInlineSnapshotArgs extends BaseSnapshotArgs {
@@ -25,11 +25,11 @@ const getQueuedSnapshotUpdates = (cachePath: string): BaseSnapshotArgs[] => {
 
 export const queueInlineSnapshotUpdate = ({
     position,
-    value,
+    serializedValue: value,
     cachePath
 }: QueueInlineSnapshotArgs) => {
     const queuedUpdates = getQueuedSnapshotUpdates(cachePath)
-    queuedUpdates.push({ position, value })
+    queuedUpdates.push({ position, serializedValue: value })
     rewriteJson(cachePath, (data) => ({ ...data, queuedUpdates }))
 }
 
@@ -40,7 +40,7 @@ export const writeQueuedSnapshotUpdates = (cachePath: string) => {
 
 export const writeInlineSnapshotToFile = ({
     position,
-    value
+    serializedValue
 }: BaseSnapshotArgs) => {
     const project = getTsProject()
     const file = project.getSourceFile(position.file)
@@ -63,10 +63,15 @@ export const writeInlineSnapshotToFile = ({
                 ancestor.getText().replace(" ", "").endsWith("snap()")
         ) as CallExpression | undefined
     if (!snapCall) {
-        throw new Error(`Unable to update your snapshot.`)
+        throw new Error(
+            `Unable to locate expected inline snap associated with assertion from ${position.file} ` +
+                `on line ${position.line}, char ${position.char}.`
+        )
     }
-    snapCall.addArgument("`" + value + "`")
-    file.saveSync()
+    process.on("exit", () => {
+        snapCall.addArgument(serializedValue)
+        file.saveSync()
+    })
 }
 
 export const resolveSnapshotPath = (
@@ -80,7 +85,7 @@ export const resolveSnapshotPath = (
 }
 
 export const updateExternalSnapshot = ({
-    value,
+    serializedValue: value,
     position,
     name,
     customPath

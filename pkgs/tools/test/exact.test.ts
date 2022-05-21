@@ -1,7 +1,7 @@
 import { assert } from "@re-/assert"
-import { DeepEvaluate, Exact } from "@re-/tools"
+import { DeepEvaluate, Exact } from "../src/index.js"
 
-const { test } = Deno
+import { test } from "mocha"
 
 test("exact", () => {
     assert(

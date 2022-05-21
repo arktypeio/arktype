@@ -1,6 +1,7 @@
+import { test } from "mocha"
 import { assert } from "@re-/assert"
-import { diff, addedOrChanged, diffSets, deepEquals } from "../src/index.ts"
-import { o } from "./common.ts"
+import { diff, addedOrChanged, diffSets, deepEquals } from "../src/index.js"
+import { o } from "./common.js"
 
 const updatedO = Object.freeze({
     a: {
@@ -42,17 +43,17 @@ const extractedChanges = {
     e: [{ a: ["old"] }, { a: ["old"] }, { a: ["new"] }]
 }
 
-Deno.test("diffs shallow", () => {
+test("diffs shallow", () => {
     assert(diff("hey", "hey")).equals(undefined)
     assert(diff("hey", "hi")).equals({ base: "hey", compare: "hi" })
 })
 
-Deno.test("diffs deep", () => {
+test("diffs deep", () => {
     assert(diff(o, o)).equals(undefined)
     assert(diff(o, updatedO)).value.equals(diffedChanges)
 })
 
-Deno.test("removed keys", () => {
+test("removed keys", () => {
     assert(diff({ a: "", b: "" }, { a: "" })).equals({
         removed: { b: "" }
     })
@@ -61,7 +62,7 @@ Deno.test("removed keys", () => {
     ).equals({ changed: { nested: { removed: { a: true } } } })
 })
 
-Deno.test("added keys", () => {
+test("added keys", () => {
     assert(diff({ a: "" }, { a: "", b: "" })).equals({
         added: { b: "" }
     })
@@ -70,17 +71,17 @@ Deno.test("added keys", () => {
     ).equals({ changed: { nested: { added: { a: true } } } })
 })
 
-Deno.test("diffs array", () => {
+test("diffs array", () => {
     assert(diff(["ok"], ["different"])).value.equals({
         changed: { 0: { base: "ok", compare: "different" } }
     })
 })
 
-Deno.test("extracts changes from deep objects", () => {
+test("extracts changes from deep objects", () => {
     assert(addedOrChanged(o, updatedO)).equals(extractedChanges)
 })
 
-Deno.test("diff sets", () => {
+test("diff sets", () => {
     assert(diffSets(["a", "b"], ["b", "a"])).equals(undefined)
     assert(
         diffSets([{ a: true }, { b: true }], [{ b: true }, { a: true }])
@@ -91,7 +92,7 @@ Deno.test("diff sets", () => {
     })
 })
 
-Deno.test("deepEquals", () => {
+test("deepEquals", () => {
     assert(deepEquals(o, { ...o })).equals(true)
     assert(
         deepEquals(o, {

@@ -56,5 +56,5 @@ if (runner === "node") {
 }
 runTestsCmd += process.argv.slice(runnerArgIndex + 2).join(" ")
 cacheAssertions({ forcePrecache: true })
-shell(runTestsCmd, { env: { NODE_NO_WARNINGS: "1" } })
+shell(runTestsCmd)
 cleanupAssertions()

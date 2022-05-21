@@ -1,6 +1,6 @@
 {
     "assert.test.ts": {
-        "toCustomFile": "{re: \"do\"}",
+        "toCustomFile": "{re: `do`}",
         "toCustomFileNew": "null"
     }
 }

@@ -139,7 +139,7 @@ export const requireResolve = (specifier: string) => {
     try {
         // This will work in CJS
         return require.resolve(specifier)
-    } catch {
+    } catch (e) {
         // This will work in ESM
         return createRequire(eval("import.meta.url")).resolve(specifier)
     }

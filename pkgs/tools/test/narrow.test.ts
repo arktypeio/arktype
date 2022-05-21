@@ -1,6 +1,6 @@
-import { narrow } from "@re-/tools"
+import { narrow } from "../src/index.js"
 import { assert } from "@re-/assert"
-const { test } = Deno
+import { test } from "mocha"
 
 test("literals", () => {
     assert(narrow("ok")).typed as "ok"

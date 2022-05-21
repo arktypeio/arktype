@@ -1,8 +1,4 @@
 {
-    "extends": "@re-/node/tsconfig.base",
-    "compilerOptions": {
-        "baseUrl": "src",
-        "outDir": "out"
-    },
-    "include": ["src"]
+    "extends": "../../tsconfig.json",
+    "include": ["src", "test"]
 }

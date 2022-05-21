@@ -9,13 +9,13 @@
         "directory": "pkgs/assert"
     },
     "type": "module",
-    "main": "./out/script/src/index.js",
-    "types": "./out/types/src/index.d.ts",
+    "main": "./out/cjs/index.cjs",
+    "types": "./out/types/index.d.ts",
     "exports": {
         ".": {
-            "types": "./out/types/src/index.d.ts",
-            "import": "./out/esm/src/index.js",
-            "require": "./out/script/src/index.js"
+            "types": "./out/types/index.d.ts",
+            "import": "./out/esm/index.js",
+            "require": "./out/cjs/index.cjs"
         }
     },
     "scripts": {

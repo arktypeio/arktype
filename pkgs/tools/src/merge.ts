@@ -1,4 +1,4 @@
-import { Evaluate, Iteration } from "./common.ts"
+import { Evaluate, Iteration } from "./common.js"
 
 export type Mergeable<T> = T extends {} ? T : {}
 
