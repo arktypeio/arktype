@@ -16,7 +16,6 @@
         {
             "packageName": "@re-/node",
             "projectFolder": "pkgs/node",
-            "cyclicDependencyProjects": ["@re-/tools"],
             "shouldPublish": true
         },
         {

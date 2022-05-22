@@ -1,6 +1,7 @@
 {
     "packageManager": "pnpm@7.1.2",
     "devDependencies": {
+        "@re-/assert": "workspace:*",
         "@swc/cli": "0.1.57",
         "@swc/core": "1.2.186",
         "@types/mocha": "9.1.1",

@@ -1,5 +1,4 @@
 import { Extractor, ExtractorConfig } from "@microsoft/api-extractor"
-import { transform } from "@re-/tools"
 import { join } from "path"
 import { readJson } from "../../index.js"
 import { ReDocContext } from "../reDoc.js"
@@ -52,10 +51,11 @@ export const getPackageApi = (
         root,
         getMembers,
         applyTransformations,
-        references: transform(
-            getMembers(),
-            ([, member]) => [member.name, member.canonicalReference],
-            { asArray: "never" }
+        references: Object.fromEntries(
+            getMembers().map((member) => [
+                member.name,
+                member.canonicalReference
+            ])
         )
     }
 }

@@ -1,6 +1,7 @@
 import path from "path"
+// @ts-ignore Can't resolve these types yet with NodeNext
 import getCurrentLine from "get-current-line"
-import { narrow, deepEquals, toString } from "@re-/tools"
+import { isDeepStrictEqual } from "node:util"
 
 export interface LinePosition {
     line: number
@@ -19,12 +20,12 @@ export type CallerOfOptions = {
     methodName?: string
 }
 
-const nonexistentCurrentLine = narrow({
+const nonexistentCurrentLine = {
     line: -1,
     char: -1,
     method: "",
     file: ""
-})
+}
 
 export type FormatFilePathOptions = {
     relative?: string | boolean
@@ -60,10 +61,12 @@ export const caller = (options: CallerOfOptions = {}): SourcePosition => {
             method: methodName,
             frames: upStackBy
         })
-        if (!location || deepEquals(location, nonexistentCurrentLine)) {
+        if (!location || isDeepStrictEqual(location, nonexistentCurrentLine)) {
             throw new Error(
-                `No caller of '${methodName}' matches given options ${toString(
-                    options
+                `No caller of '${methodName}' matches given options: ${JSON.stringify(
+                    options,
+                    null,
+                    4
                 )}.`
             )
         }

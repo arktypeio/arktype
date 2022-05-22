@@ -1,5 +1,5 @@
 import { join } from "path"
-import { writeJson, findPackageName } from "../../index.js"
+import { writeJson, readPackageJson } from "../../index.js"
 import { ReDocContext } from "../reDoc.js"
 
 export type PackageContext = ReturnType<typeof getPackageContext>
@@ -11,7 +11,7 @@ export const getPackageContext = (
     const { outputDir } = packageConfigs.find(
         (config) => config.rootDir === packageRoot
     )!
-    const packageSpecifier = findPackageName(packageRoot)
+    const packageSpecifier = readPackageJson(packageRoot).name
     // In case the package is scoped to an org (e.g. "@re-/node"), extract the portion following "/"
     const packageName = packageSpecifier.split("/").slice(-1)[0]
 

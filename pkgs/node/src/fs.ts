@@ -15,7 +15,6 @@ import { fileURLToPath, URL } from "node:url"
 import { homedir } from "node:os"
 import { join, dirname, parse } from "node:path"
 import { caller } from "./caller.js"
-import { FilterFunction } from "@re-/tools"
 import { createRequire } from "node:module"
 
 export const fromDir =
@@ -53,8 +52,8 @@ export const writeJsonAsync = async (path: string, data: object) =>
 export type WalkOptions = {
     excludeFiles?: boolean
     excludeDirs?: boolean
-    exclude?: FilterFunction<string>
-    include?: FilterFunction<string>
+    exclude?: (path: string) => boolean
+    include?: (path: string) => boolean
 }
 
 export const walkPaths = (dir: string, options: WalkOptions = {}): string[] =>
@@ -64,8 +63,8 @@ export const walkPaths = (dir: string, options: WalkOptions = {}): string[] =>
         const excludeCurrent =
             (options.excludeDirs && isDir) ||
             (options.excludeFiles && !isDir) ||
-            (options.exclude && options.exclude(path, index, siblings)) ||
-            (options.include && !options.include(path, index, siblings))
+            (options.exclude && options.exclude(path)) ||
+            (options.include && !options.include(path))
         const nestedPaths = isDir ? walkPaths(path, options) : []
         return [...paths, ...(excludeCurrent ? [] : [path]), ...nestedPaths]
     }, [] as string[])
@@ -134,13 +133,5 @@ export const fromPackageRoot = (...joinWith: string[]) =>
 export const readPackageJson = (startDir?: string) =>
     readJson(join(findPackageRoot(startDir), "package.json"))
 
-/** Esm+Cjs compatible require.resolve */
-export const requireResolve = (specifier: string) => {
-    try {
-        // This will work in CJS
-        return require.resolve(specifier)
-    } catch (e) {
-        // This will work in ESM
-        return createRequire(eval("import.meta.url")).resolve(specifier)
-    }
-}
+export const requireResolve = (specifier: string) =>
+    createRequire(import.meta.url).resolve(specifier)

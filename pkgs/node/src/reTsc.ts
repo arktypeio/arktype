@@ -1,14 +1,19 @@
-import { transform } from "@re-/tools"
 import { chmodSync, existsSync, rmSync } from "fs"
-import { join } from "path"
+import { basename, join } from "path"
 import { stdout } from "process"
-import { findPackageRoot, walkPaths, readPackageJson } from "./fs.js"
+import {
+    findPackageRoot,
+    walkPaths,
+    readPackageJson,
+    requireResolve,
+    writeJson
+} from "./fs.js"
 import { shell } from "./shell.js"
-import { transpileTs, isTest } from "./ts.js"
 
 const packageRoot = findPackageRoot(process.cwd())
 const packageJson = readPackageJson(packageRoot)
 const packageName = packageJson.name
+const srcRoot = join(packageRoot, "src")
 const buildTsconfigPath = join(packageRoot, "tsconfig.build.json")
 const outRoot = join(packageRoot, "out")
 const typesOut = join(outRoot, "types")
@@ -47,39 +52,41 @@ export const buildTypes = ({ noEmit, asBuild }: BuildTypesOptions = {}) => {
         stdio: "pipe",
         suppressCmdStringLogging: true
     })
-    if (!noEmit) {
-        if (!existsSync(typesOut)) {
-            throw new Error(
-                `Expected type output did not exist at '${typesOut}'.`
-            )
-        }
-        walkPaths(typesOut)
-            .filter((path) => isTest(path))
-            .forEach((path) => rmSync(path, { recursive: true, force: true }))
-    }
     stdout.write(`✅\n`)
 }
 
-export const buildEsm = () =>
-    transpileTs({
-        packageRoot,
-        toDir: esmOut,
-        module: "esnext"
-    })
+type SwcOptions = {
+    outDir: string
+    moduleType?: string
+}
 
-export const buildCjs = () =>
-    transpileTs({
-        packageRoot,
-        toDir: cjsOut,
-        module: "commonjs"
-    })
+const swc = ({ outDir, moduleType }: SwcOptions) => {
+    let cmd = `node ${requireResolve(
+        "@swc/cli"
+    )} --out-dir ${outDir} -C jsc.target=es2015 --quiet `
+    if (moduleType) {
+        cmd += ` -C module.type=${moduleType} `
+    }
+    cmd += srcRoot
+    shell(cmd, { suppressCmdStringLogging: true })
+}
+
+export const buildEsm = () => {
+    swc({ outDir: esmOut })
+    writeJson(join(esmOut, "package.json"), { type: "module" })
+}
+
+export const buildCjs = () => {
+    swc({ outDir: cjsOut, moduleType: "commonjs" })
+    writeJson(join(cjsOut, "package.json"), { type: "commonjs" })
+}
 
 type Transpiler = () => void
 
 const defaultTranspilers = {
     esm: buildEsm,
     cjs: buildCjs
-}
+} as const
 
 export const transpile = (
     transpilers: Transpiler[] = Object.values(defaultTranspilers)
@@ -105,23 +112,35 @@ export type RedoTscOptions = {
     }
 }
 
+export const removeTests = () => {
+    if (!existsSync(outRoot)) {
+        return
+    }
+    walkPaths(outRoot)
+        .filter((path) => basename(path) === "__tests__")
+        .forEach((path) => rmSync(path, { recursive: true, force: true }))
+}
+
 export const redoTsc = (options?: RedoTscOptions) => {
     console.log(`🔨 Building ${packageName}...`)
     rmSync(outRoot, { recursive: true, force: true })
     if (!options?.skip?.types) {
         buildTypes(options?.types)
     }
-    const transpilers = transform(
-        defaultTranspilers,
-        ([name, transpiler]) =>
-            options?.skip?.[name] ? null : [name, transpiler],
-        { asArray: "always" }
-    )
+    const transpilers = Object.keys(defaultTranspilers)
+        .filter(
+            (name) => !options?.skip?.[name as keyof typeof defaultTranspilers]
+        )
+        .map(
+            (name) =>
+                defaultTranspilers[name as keyof typeof defaultTranspilers]
+        )
     transpile(transpilers)
+    removeTests()
     console.log(successMessage)
 }
 
-export const runRedoTsc = () =>
+export const runReTsc = () =>
     redoTsc({
         types: {
             asBuild: process.argv.includes("--asBuild"),

@@ -19,7 +19,7 @@
         }
     },
     "scripts": {
-        "build": "reTsc",
+        "build": "re tsc",
         "test": "./out/cjs/runner.cjs mocha"
     },
     "bin": {

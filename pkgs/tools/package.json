@@ -23,7 +23,6 @@
         "test": "reassert mocha"
     },
     "devDependencies": {
-        "@re-/node": "workspace:*",
-        "@re-/assert": "workspace:*"
+        "@re-/node": "workspace:*"
     }
 }

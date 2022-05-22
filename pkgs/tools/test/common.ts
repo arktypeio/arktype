@@ -14,6 +14,6 @@ export const o = Object.freeze({
         }
     },
     c: null,
-    d: "initial",
+    d: "initial" as string,
     e: [{ a: ["old"] }, { a: ["old"] }]
 })
