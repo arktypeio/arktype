@@ -74,3 +74,4 @@ generated
 dist
 out
 typeTrace
+*.tsbuildinfo

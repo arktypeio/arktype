@@ -11,7 +11,7 @@ import {
     asNumber,
     filterChars,
     isInteger
-} from "../src/index.js"
+} from "../index.js"
 import { assert } from "@re-/assert"
 import { describe, test } from "mocha"
 

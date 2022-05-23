@@ -9,13 +9,13 @@
         "directory": "pkgs/node"
     },
     "type": "module",
-    "main": "out/cjs/index.js",
-    "types": "out/types/index.d.ts",
+    "main": "./dist/cjs/index.js",
+    "types": "./dist/types/index.d.ts",
     "exports": {
         ".": {
-            "types": "./out/types/index.d.ts",
-            "import": "./out/esm/index.js",
-            "require": "./out/cjs/index.js"
+            "types": "./dist/types/index.d.ts",
+            "import": "./dist/mjs/index.js",
+            "require": "./dist/cjs/index.js"
         }
     },
     "scripts": {
@@ -24,7 +24,7 @@
         "lint": "eslint ."
     },
     "bin": {
-        "re": "./out/cjs/cli.js"
+        "re": "./dist/cjs/cli.js"
     },
     "dependencies": {
         "execa": "5.0.0",
@@ -37,5 +37,8 @@
         "@microsoft/api-extractor-model": "7.17.2",
         "@microsoft/api-documenter": "7.17.10",
         "ts-morph": "14.0.0"
+    },
+    "devDependencies": {
+        "@re-/assert": "link:../assert"
     }
 }

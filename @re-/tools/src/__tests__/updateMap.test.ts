@@ -1,5 +1,5 @@
 import { assert } from "@re-/assert"
-import { updateMap, DeepUpdate } from "../src/index.js"
+import { updateMap, DeepUpdate } from "../index.js"
 import { o } from "./common.js"
 import { test } from "mocha"
 

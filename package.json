@@ -1,7 +1,7 @@
 {
     "packageManager": "pnpm@7.1.2",
     "scripts": {
-        "preinstall": "npx only-allow pnpm",
+        "preinstall": "npx -y only-allow pnpm",
         "prepare": "husky install",
         "pre-commit": "pretty-quick --staged"
     },

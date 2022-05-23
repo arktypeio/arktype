@@ -1,5 +1,5 @@
 import { assert } from "@re-/assert"
-import { toString } from "../src/index.js"
+import { toString } from "../index.js"
 import { o } from "./common.js"
 import { test } from "mocha"
 

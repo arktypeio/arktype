@@ -149,6 +149,7 @@ importers:
       '@microsoft/api-extractor-model': 7.17.2
       '@microsoft/tsdoc': 0.14.1
       '@microsoft/tsdoc-config': 0.16.1
+      '@re-/assert': link:../assert
       deepmerge: 4.2.2
       execa: 5.0.0
       get-current-line: 6.6.0
@@ -165,6 +166,8 @@ importers:
       get-current-line: 6.6.0
       prompts: 2.4.1
       ts-morph: 14.0.0
+    devDependencies:
+      '@re-/assert': link:../assert
 
   '@re-/state':
     specifiers:

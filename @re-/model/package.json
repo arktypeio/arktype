@@ -9,13 +9,13 @@
         "directory": "pkgs/model"
     },
     "type": "module",
-    "main": "out/cjs/index.cjs",
-    "types": "out/types/index.d.ts",
+    "main": "./dist/cjs/index.js",
+    "types": "./dist/types/index.d.ts",
     "exports": {
         ".": {
-            "types": "./out/types/index.d.ts",
-            "import": "./out/esm/index.js",
-            "require": "./out/cjs/index.cjs"
+            "types": "./dist/types/index.d.ts",
+            "import": "./dist/mjs/index.js",
+            "require": "./dist/cjs/index.js"
         }
     },
     "scripts": {

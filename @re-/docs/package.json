@@ -6,11 +6,11 @@
     "scripts": {
         "docusaurus": "docusaurus",
         "start": "docusaurus start",
-        "build": "docusaurus build --out-dir out && echo 'redo.dev' >> out/CNAME",
+        "build": "docusaurus build --out-dir dist && echo 'redo.dev' >> dist/CNAME",
         "swizzle": "docusaurus swizzle",
         "deploy": "docusaurus deploy",
         "clear": "docusaurus clear",
-        "serve": "docusaurus serve --dir out",
+        "serve": "docusaurus serve --dir dist",
         "write-translations": "docusaurus write-translations",
         "write-heading-ids": "docusaurus write-heading-ids",
         "typecheck": "tsc",
@@ -19,7 +19,7 @@
         "set-current-model-version": "docusaurus docs:version:model ",
         "set-current-state-version": "docusaurus docs:version:state ",
         "set-current-test-version": "docusaurus docs:version:test ",
-        "build-pages": "npm run build && rm -rf ../../docs && mkdir ../../docs && cp -r out/* ../../docs"
+        "build-pages": "npm run build && rm -rf ../../docs && mkdir ../../docs && cp -r dist/* ../../docs"
     },
     "dependencies": {
         "@docusaurus/core": "2.0.0-beta.20",

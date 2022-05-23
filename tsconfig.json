@@ -9,11 +9,11 @@
         "esModuleInterop": true,
         "resolveJsonModule": true,
         "composite": true,
+        "emitDeclarationOnly": true,
         "jsx": "react",
         "lib": ["ESNext"]
     },
-    "include": [],
-    "exclude": [],
+    "exclude": ["**/node_modules", "**/dist"],
     "ts-node": {
         "esm": true,
         "swc": true,

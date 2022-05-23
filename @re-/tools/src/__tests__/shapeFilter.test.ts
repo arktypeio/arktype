@@ -1,4 +1,4 @@
-import { shapeFilter } from "../src/index.js"
+import { shapeFilter } from "../index.js"
 import { assert } from "@re-/assert"
 import { o } from "./common.js"
 import { test } from "mocha"

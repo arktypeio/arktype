@@ -1,6 +1,6 @@
 import { test } from "mocha"
 import { assert } from "@re-/assert"
-import { diff, addedOrChanged, diffSets, deepEquals } from "../src/index.js"
+import { diff, addedOrChanged, diffSets, deepEquals } from "../index.js"
 import { o } from "./common.js"
 
 const updatedO = Object.freeze({

@@ -1,6 +1,6 @@
-import { chmodSync, existsSync, rmSync } from "fs"
-import { basename, join } from "path"
-import { stdout } from "process"
+import { chmodSync, existsSync, renameSync, rmSync } from "node:fs"
+import { basename, join, relative } from "node:path"
+import { stdout } from "node:process"
 import {
     findPackageRoot,
     walkPaths,
@@ -10,48 +10,30 @@ import {
 } from "./fs.js"
 import { shell } from "./shell.js"
 
-const packageRoot = findPackageRoot(process.cwd())
+const cwd = process.cwd()
+const packageRoot = findPackageRoot(cwd)
 const packageJson = readPackageJson(packageRoot)
 const packageName = packageJson.name
-const srcRoot = join(packageRoot, "src")
-const buildTsconfigPath = join(packageRoot, "tsconfig.build.json")
-const outRoot = join(packageRoot, "out")
+const tsconfig = relative(cwd, join(packageRoot, "tsconfig.build.json"))
+const srcRoot = relative(cwd, join(packageRoot, "src"))
+const outRoot = relative(cwd, join(packageRoot, "dist"))
 const typesOut = join(outRoot, "types")
-const esmOut = join(outRoot, "esm")
+const mjsOut = join(outRoot, "mjs")
 const cjsOut = join(outRoot, "cjs")
 const successMessage = `🎁 Successfully built ${packageName}!`
 
-export type BuildTypesOptions = {
-    asBuild?: boolean
-    noEmit?: boolean
-}
-
-export const checkTypes = () => buildTypes({ noEmit: true })
-
-export const buildTypes = ({ noEmit, asBuild }: BuildTypesOptions = {}) => {
-    stdout.write(
-        `${noEmit ? "🧐 Checking" : "⏳ Building"} types...`.padEnd(
-            successMessage.length
-        )
-    )
-    let cmd = "npx tsc"
-    if (existsSync(buildTsconfigPath)) {
-        cmd += ` --project ${buildTsconfigPath}`
+export const buildTypes = () => {
+    stdout.write("⏳ Building types...".padEnd(successMessage.length))
+    if (!existsSync(tsconfig)) {
+        throw new Error(`Expected config at '${tsconfig}' did not exist.`)
     }
-    if (asBuild) {
-        cmd += " --build"
-    } else {
-        if (noEmit) {
-            cmd += " --noEmit"
-        } else {
-            cmd += ` --declaration --emitDeclarationOnly --outDir ${typesOut}`
-        }
-    }
+    const cmd = `pnpm tsc --project ${tsconfig} --outDir ${outRoot}`
     shell(cmd, {
         cwd: packageRoot,
         stdio: "pipe",
         suppressCmdStringLogging: true
     })
+    renameSync(join(outRoot, "src"), typesOut)
     stdout.write(`✅\n`)
 }
 
@@ -72,8 +54,8 @@ const swc = ({ outDir, moduleType }: SwcOptions) => {
 }
 
 export const buildEsm = () => {
-    swc({ outDir: esmOut })
-    writeJson(join(esmOut, "package.json"), { type: "module" })
+    swc({ outDir: mjsOut })
+    writeJson(join(mjsOut, "package.json"), { type: "module" })
 }
 
 export const buildCjs = () => {
@@ -104,7 +86,6 @@ export const transpile = (
 }
 
 export type RedoTscOptions = {
-    types?: BuildTypesOptions
     skip?: {
         cjs?: boolean
         esm?: boolean
@@ -125,7 +106,7 @@ export const redoTsc = (options?: RedoTscOptions) => {
     console.log(`🔨 Building ${packageName}...`)
     rmSync(outRoot, { recursive: true, force: true })
     if (!options?.skip?.types) {
-        buildTypes(options?.types)
+        buildTypes()
     }
     const transpilers = Object.keys(defaultTranspilers)
         .filter(
@@ -142,10 +123,6 @@ export const redoTsc = (options?: RedoTscOptions) => {
 
 export const runReTsc = () =>
     redoTsc({
-        types: {
-            asBuild: process.argv.includes("--asBuild"),
-            noEmit: process.argv.includes("--noEmitTypes")
-        },
         skip: {
             esm: process.argv.includes("--skipEsm"),
             cjs: process.argv.includes("--skipCjs"),

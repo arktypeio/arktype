@@ -1,4 +1,4 @@
-import { narrow } from "../src/index.js"
+import { narrow } from "../index.js"
 import { assert } from "@re-/assert"
 import { test } from "mocha"
 
