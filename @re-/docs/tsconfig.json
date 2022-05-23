@@ -3,7 +3,6 @@
     "compilerOptions": {
         "module": "CommonJS",
         "target": "ES2017",
-        "baseUrl": ".",
         "types": [
             "@types/node",
             "@docusaurus/module-type-aliases",

@@ -14,7 +14,7 @@
     "exports": {
         ".": {
             "types": "./dist/types/index.d.ts",
-            "import": "./dist/mjs/index.js",
+            "import": "./dist/esm/index.js",
             "require": "./dist/cjs/index.js"
         }
     },
@@ -24,7 +24,7 @@
         "lint": "eslint ."
     },
     "bin": {
-        "re": "./dist/cjs/cli.js"
+        "re": "./cli.cjs"
     },
     "dependencies": {
         "execa": "5.0.0",

@@ -6,7 +6,8 @@ import {
     walkPaths,
     readPackageJson,
     requireResolve,
-    writeJson
+    writeJson,
+    readJson
 } from "./fs.js"
 import { shell } from "./shell.js"
 
@@ -14,7 +15,7 @@ const cwd = process.cwd()
 const packageRoot = findPackageRoot(cwd)
 const packageJson = readPackageJson(packageRoot)
 const packageName = packageJson.name
-const tsconfig = relative(cwd, join(packageRoot, "tsconfig.build.json"))
+const tsconfig = relative(cwd, join(packageRoot, "tsconfig.json"))
 const srcRoot = relative(cwd, join(packageRoot, "src"))
 const outRoot = relative(cwd, join(packageRoot, "dist"))
 const typesOut = join(outRoot, "types")
@@ -27,13 +28,20 @@ export const buildTypes = () => {
     if (!existsSync(tsconfig)) {
         throw new Error(`Expected config at '${tsconfig}' did not exist.`)
     }
-    const cmd = `pnpm tsc --project ${tsconfig} --outDir ${outRoot}`
-    shell(cmd, {
-        cwd: packageRoot,
-        stdio: "pipe",
-        suppressCmdStringLogging: true
-    })
-    renameSync(join(outRoot, "src"), typesOut)
+    const config = readJson(tsconfig)
+    const tempTsConfig = join(packageRoot, "tsconfig.temp.json")
+    writeJson(tempTsConfig, { ...config, exclude: ["**/__tests__", "**/test"] })
+    try {
+        const cmd = `pnpm tsc --project ${tempTsConfig} --outDir ${outRoot}`
+        shell(cmd, {
+            cwd: packageRoot,
+            stdio: "pipe",
+            suppressCmdStringLogging: true
+        })
+        renameSync(join(outRoot, "src"), typesOut)
+    } finally {
+        rmSync(tempTsConfig)
+    }
     stdout.write(`✅\n`)
 }
 

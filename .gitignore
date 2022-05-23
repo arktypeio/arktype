@@ -75,3 +75,4 @@ dist
 out
 typeTrace
 *.tsbuildinfo
+tsconfig.temp.json

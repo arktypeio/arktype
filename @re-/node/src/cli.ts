@@ -1,12 +1,15 @@
+import { basename } from "path"
 import { fileName } from "./fs.js"
 import { reDoc } from "./reDoc/reDoc.js"
 import { redoTsc } from "./reTsc.js"
 
-const fileArgIndex = process.argv.findIndex((arg) => arg === fileName())
+const fileArgIndex = process.argv.findIndex((arg) =>
+    basename(arg).match(/cli\.c?(j|t)s$/)
+)
 
 if (fileArgIndex === -1) {
     throw new Error(
-        `Expected to find ${fileName()} in process args (got '${process.argv.join(
+        `Expected to find  'cli.cjs' in process args (got '${process.argv.join(
             " "
         )}').`
     )

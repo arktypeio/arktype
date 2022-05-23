@@ -122,25 +122,11 @@ importers:
       '@re-/assert': workspace:*
       '@re-/node': workspace:*
       '@re-/tools': workspace:*
-      '@types/jest': 27.0.3
-      '@types/node': 17.0.35
-      jest: 28.1.0
-      ts-jest: 27.1.2
-      ts-morph: 14.0.0
-      ts-node: 10.7.0
-      typescript: 4.6.3
     dependencies:
       '@re-/tools': link:../tools
     devDependencies:
       '@re-/assert': link:../assert
       '@re-/node': link:../node
-      '@types/jest': 27.0.3
-      '@types/node': 17.0.35
-      jest: 28.1.0_zuhvkrqe5nffiby7nc5qkbljmi
-      ts-jest: 27.1.2_g6jtdudeixk7oyguczfcl5muj4
-      ts-morph: 14.0.0
-      ts-node: 10.7.0_s3cismmvluuyuogbac6se7rdsy
-      typescript: 4.6.3
 
   '@re-/node':
     specifiers:
@@ -3782,6 +3768,7 @@ packages:
       minimatch: 5.1.0
       mkdirp: 1.0.4
       path-browserify: 1.0.1
+    dev: false
 
   /@tsconfig/docusaurus/1.0.5:
     resolution: {integrity: sha512-KM/TuJa9fugo67dTGx+ktIqf3fVc077J6jwHu845Hex4EQf7LABlNonP/mohDKT0cmncdtlYVHHF74xR/YpThg==}
@@ -5317,6 +5304,7 @@ packages:
     resolution: {integrity: sha512-GEqWvEWWsOvER+g9keO4ohFoD3ymwyCnqY3hoTr7GZipYFwEhMHJw+TtV0rfgRhNImM6QWZGO2XYjlJVyYT62w==}
     dependencies:
       tslib: 2.3.1
+    dev: false
 
   /collapse-white-space/1.0.6:
     resolution: {integrity: sha512-jEovNnrhMuqyCcjfEJA56v0Xq8SkIoPKDyaHahwo3POf4qcSXqMYuwNcOTzp74vTsR9Tn08z4MxWqAhcekogkQ==}
@@ -8986,6 +8974,7 @@ packages:
     engines: {node: '>=10'}
     dependencies:
       brace-expansion: 2.0.1
+    dev: false
 
   /minimist-options/4.1.0:
     resolution: {integrity: sha512-Q4r8ghd80yhO/0j1O3B2BjweX3fiHg9cdOwjJd2J76Q135c+NDxGCqdYKQ1SKBuFfgWbAUzBfvYjPUEeNgqN1A==}
@@ -9009,6 +8998,7 @@ packages:
     resolution: {integrity: sha512-vVqVZQyf3WLx2Shd0qJ9xuvqgAyKPLAiqITEtqW0oIUjzo3PePDd6fW9iFz30ef7Ysp/oiWqbhszeGWW2T6Gzw==}
     engines: {node: '>=10'}
     hasBin: true
+    dev: false
 
   /mocha/10.0.0:
     resolution: {integrity: sha512-0Wl+elVUD43Y0BqPZBzZt8Tnkw9CMUdNYnUsTfOM1vuhJVZL+kiesFYsqwBkEEuEixaiPe5ZQdqDgX2jddhmoA==}
@@ -9431,6 +9421,7 @@ packages:
 
   /path-browserify/1.0.1:
     resolution: {integrity: sha512-b7uo2UCUOYZcnF/3ID0lulOJi/bafxa1xPe7ZPsammBSpjSWQkjNxlt635YGS2MiR9GjvuXCtz2emr3jbsz98g==}
+    dev: false
 
   /path-exists/3.0.0:
     resolution: {integrity: sha1-zg6+ql94yxiSXqfYENe1mwEP1RU=}
@@ -11499,7 +11490,7 @@ packages:
       '@types/jest': 27.0.3
       bs-logger: 0.2.6
       fast-json-stable-stringify: 2.1.0
-      jest: 28.1.0_zuhvkrqe5nffiby7nc5qkbljmi
+      jest: 28.1.0_@types+node@17.0.35
       jest-util: 27.5.1
       json5: 2.2.1
       lodash.memoize: 4.1.2
@@ -11514,6 +11505,7 @@ packages:
     dependencies:
       '@ts-morph/common': 0.13.0
       code-block-writer: 11.0.0
+    dev: false
 
   /ts-node/10.7.0_s3cismmvluuyuogbac6se7rdsy:
     resolution: {integrity: sha512-TbIGS4xgJoX2i3do417KSaep1uRAW/Lu+WAL2doDHC0D6ummjirVOXU5/7aiZotbQ5p1Zp9tP7U6cYhA0O7M8A==}
@@ -11584,6 +11576,7 @@ packages:
 
   /tslib/2.3.1:
     resolution: {integrity: sha512-77EbyPPpMz+FRFRuAFlWMtmgUWGe9UOG2Z25NqCwiIjRhOf5iKGuzSe5P2w1laq+FkRy4p+PCuVkJSGkzTEKVw==}
+    dev: false
 
   /tslib/2.4.0:
     resolution: {integrity: sha512-d6xOpEDfsi2CZVlPQzGeux8XMwLT9hssAsaPYExaQMuYskwb+x1x7J371tWlbBdWHroy99KnVB6qIkUbs5X3UQ==}

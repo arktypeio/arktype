@@ -19,7 +19,7 @@
         }
     },
     "scripts": {
-        "build": "reTsc --asBuild",
+        "build": "re tsc",
         "test": "jest 2>&1",
         "lint": "eslint .",
         "unit": "jest --coverage false -t ",
@@ -32,13 +32,6 @@
     },
     "devDependencies": {
         "@re-/assert": "workspace:*",
-        "@re-/node": "workspace:*",
-        "jest": "28.1.0",
-        "@types/jest": "27.0.3",
-        "ts-jest": "27.1.2",
-        "@types/node": "17.0.35",
-        "typescript": "4.6.3",
-        "ts-node": "10.7.0",
-        "ts-morph": "14.0.0"
+        "@re-/node": "workspace:*"
     }
 }
