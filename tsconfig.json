@@ -13,6 +13,7 @@
         "lib": ["ESNext"]
     },
     "include": [],
+    "exclude": [],
     "ts-node": {
         "esm": true,
         "swc": true,

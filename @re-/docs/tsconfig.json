@@ -1,0 +1,15 @@
+{
+    "extends": "../../tsconfig",
+    "compilerOptions": {
+        "module": "CommonJS",
+        "target": "ES2017",
+        "baseUrl": ".",
+        "types": [
+            "@types/node",
+            "@docusaurus/module-type-aliases",
+            "@docusaurus/preset-classic"
+        ],
+        "lib": ["DOM"]
+    },
+    "include": ["src"]
+}
