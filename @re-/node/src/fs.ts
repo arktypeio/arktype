@@ -63,7 +63,7 @@ export const walkPaths = (dir: string, options: WalkOptions = {}): string[] =>
         const excludeCurrent =
             (options.excludeDirs && isDir) ||
             (options.excludeFiles && !isDir) ||
-            (options.exclude && options.exclude(path)) ||
+            options.exclude?.(path) ||
             (options.include && !options.include(path))
         const nestedPaths = isDir ? walkPaths(path, options) : []
         return [...paths, ...(excludeCurrent ? [] : [path]), ...nestedPaths]

@@ -3,10 +3,9 @@ import { caller, dirName } from "../index.js"
 
 const formatPath = { relative: dirName() }
 
-export const callMe = (...args: any[]) => {
+export const callMe = () => {
     const inTheNight = () => caller({ formatPath })
     return inTheNight()
 }
 
-export const callMeAnonymous = (...args: any[]) =>
-    (() => caller({ formatPath }))()
+export const callMeAnonymous = () => (() => caller({ formatPath }))()

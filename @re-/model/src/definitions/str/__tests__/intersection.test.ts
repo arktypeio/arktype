@@ -1,7 +1,7 @@
 import { assert } from "@re-/assert"
 import { model } from "@re-/model"
 
-export const testIntersection = () => {
+describe("intersection", () => {
     describe("type", () => {
         test("two types", () => {
             assert(model("boolean&true").type).typed as true
@@ -73,4 +73,4 @@ export const testIntersection = () => {
             )
         })
     })
-}
+})

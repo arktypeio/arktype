@@ -3,12 +3,12 @@ import { caller, fromHere } from "../../index.js"
 
 const formatPath = { relative: fromHere("..") }
 
-export const callMeFromDir = (...args: any[]) => {
+export const callMeFromDir = () => {
     const dial = () => caller({ formatPath })
     return dial()
 }
 
-export const callPipeSeperated = (...args: any[]) => {
+export const callPipeSeperated = () => {
     const pipeIt = () =>
         caller({ formatPath: { ...formatPath, seperator: "|" } })
     return pipeIt()

@@ -1,7 +1,7 @@
 import { assert } from "@re-/assert"
 import { model } from "@re-/model"
 
-export const testStringLiteral = () => {
+describe("stringLiteral", () => {
     describe("type", () => {
         test("single quotes", () => {
             assert(model("'hello'").type).typed as "hello"
@@ -66,4 +66,4 @@ export const testStringLiteral = () => {
             assert(model("'generated'").generate()).is("generated")
         })
     })
-}
+})

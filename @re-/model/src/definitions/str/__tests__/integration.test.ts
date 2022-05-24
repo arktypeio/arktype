@@ -2,7 +2,7 @@ import { assert } from "@re-/assert"
 import { model } from "@re-/model"
 import { narrow } from "@re-/tools"
 
-export const testIntegration = () => {
+describe("integration", () => {
     describe("type", () => {
         test("union of lists", () => {
             assert(model("boolean[]|number[]|null").type).typed as
@@ -29,4 +29,4 @@ export const testIntegration = () => {
         expect(() => a.assert(false)).toThrow()
         expect(a.generate()).toBe(true)
     })
-}
+})

@@ -39,7 +39,7 @@ export namespace Optional {
                 }
                 return components.optional.validate(value, opts)
             },
-            generate: () => {},
+            generate: () => undefined,
             references: ({ components }) => components.optional.references()
         }
     )

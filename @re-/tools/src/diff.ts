@@ -129,11 +129,11 @@ export type DiffSetsResult<T = any> =
 export const diffSets = <T>(base: T[], compare: T[]) => {
     const added = compare.filter(
         (compareItem) =>
-            !base.find((baseItem) => deepEquals(compareItem, baseItem))
+            !base.some((baseItem) => deepEquals(compareItem, baseItem))
     )
     const removed = base.filter(
         (baseItem) =>
-            !compare.find((compareItem) => deepEquals(baseItem, compareItem))
+            !compare.some((compareItem) => deepEquals(baseItem, compareItem))
     )
     if (added.length) {
         if (removed.length) {

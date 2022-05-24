@@ -4,17 +4,15 @@ export const randomInRange = (min: number, max: number) =>
 export const randomFromList = <T>(list: T[]) =>
     list[randomInRange(0, list.length - 1)]
 
-export const randomsFromList = <T>(list: T[], count: number) =>
-    [...new Array(count)].map(() => randomFromList(list))
+export const randomsFromList = <T>(list: T[], length: number) =>
+    Array.from({ length }).map(() => randomFromList(list))
 
 export const randomFromSeed = (seed: any, min: number, max: number) =>
     (Math.abs(
-        JSON.stringify(seed)
-            .split("")
-            .reduce((hash, char) => {
-                const updated = (hash << 5) - hash + char.charCodeAt(0)
-                return updated & updated
-            }, 0)
+        [...JSON.stringify(seed)].reduce((hash, char) => {
+            const updated = (hash << 5) - hash + char.codePointAt(0)!
+            return updated & updated
+        }, 0)
     ) %
         (max - min + 1)) +
     min

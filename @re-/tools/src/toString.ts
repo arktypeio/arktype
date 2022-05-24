@@ -23,7 +23,7 @@ export const toString = (value: any, options: ToStringOptions = {}) => {
     const keyQuote = options.quoteKeys ? quote : ""
     const valueSeperator = options.indent ? ",\n" : ", "
     const recurse = (
-        value: any,
+        value: unknown,
         seen: any[],
         depth: number,
         key: string | null
@@ -65,7 +65,7 @@ export const toString = (value: any, options: ToStringOptions = {}) => {
                       .map(
                           (k) =>
                               `${recurse(
-                                  value[k],
+                                  value[k as any],
                                   [...seen, value],
                                   depth + 1,
                                   String(k)

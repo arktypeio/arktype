@@ -1,7 +1,7 @@
 import { assert } from "@re-/assert"
 import { model } from "@re-/model"
 
-export const testBigintLiteral = () => {
+describe("bigintLiteral", () => {
     describe("type", () => {
         test("positive", () => {
             assert(model("999999999999999n").type).typed as bigint
@@ -53,4 +53,4 @@ export const testBigintLiteral = () => {
             assert(model("-1n").generate()).is(-1n)
         })
     })
-}
+})

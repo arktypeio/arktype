@@ -62,7 +62,7 @@ export const transform = <
         const mappedEntries = Object.entries(currentFrom).reduce(
             (results, [k, v]) => {
                 const contextForKey = {
-                    path: path.concat(k)
+                    path: [...path, k]
                 }
                 const shouldRecurse =
                     isRecursible(v) &&
@@ -91,7 +91,11 @@ export const transform = <
             : Object.fromEntries(mappedEntries)
     }
     if (!isRecursible(from)) {
-        throw new Error(`Cannot transform non-object ${from}.`)
+        throw new Error(
+            `Cannot transform non-object '${String(
+                from
+            )}' of type ${typeof from}.`
+        )
     }
     return recurse(from, { path: [] })
 }

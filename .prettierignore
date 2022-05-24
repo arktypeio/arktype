@@ -93,4 +93,5 @@ shrinkwrap.json
 # Generated files
 docs/assets
 
+# Temporarily disabled packages
 @re-/state

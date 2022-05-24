@@ -32,6 +32,7 @@
     },
     "devDependencies": {
         "@re-/assert": "workspace:*",
-        "@re-/node": "workspace:*"
+        "@re-/node": "workspace:*",
+        "@types/jest": "27.5.1"
     }
 }

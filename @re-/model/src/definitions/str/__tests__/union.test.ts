@@ -2,7 +2,7 @@ import { assert } from "@re-/assert"
 import { model } from "@re-/model"
 import { narrow } from "@re-/tools"
 
-export const testUnion = () => {
+describe("union", () => {
     describe("type", () => {
         test("two types", () => {
             assert(model("number|string").type).typed as string | number
@@ -102,4 +102,4 @@ export const testUnion = () => {
             ).is(false)
         })
     })
-}
+})

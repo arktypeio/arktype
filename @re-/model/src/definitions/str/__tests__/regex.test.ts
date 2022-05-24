@@ -1,7 +1,7 @@
 import { assert } from "@re-/assert"
 import { model } from "@re-/model"
 
-export const testRegex = () => {
+describe("regex", () => {
     describe("type", () => {
         test("inferred as string", () => {
             assert(model("/.*/").type).typed as string
@@ -60,4 +60,4 @@ export const testRegex = () => {
             )
         })
     })
-}
+})

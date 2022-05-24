@@ -11,11 +11,9 @@ export const extractableHandlers = defineKeywords({
         validate: (valueType) => valueType === "symbol"
     },
     function: {
-        generate:
-            () =>
-            // eslint-disable-next-line
-            (...args: any[]) =>
-                undefined as any,
+        generate: () => {
+            throw new Error(`Generation of functions is not supported.`)
+        },
         validate: (valueType) => valueType === "function"
     },
     /*
@@ -31,7 +29,7 @@ export const extractableHandlers = defineKeywords({
         validate: (valueType) => valueType === "false"
     },
     undefined: {
-        generate: () => {},
+        generate: () => undefined,
         validate: (valueType) => valueType === "undefined"
     },
     null: {

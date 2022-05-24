@@ -51,7 +51,7 @@ export const asNumber = <Options extends AsNumberOptions>(
         const asFloat = options?.asFloat ?? parsable.includes(".")
         const parser = asFloat ? Number.parseFloat : Number.parseInt
         const result = parser(parsable)
-        if (!isNaN(result)) {
+        if (!Number.isNaN(result)) {
             return result
         }
     }
@@ -64,7 +64,7 @@ export const asNumber = <Options extends AsNumberOptions>(
 export const isAlphaNumeric = (s: string) => alphaNumericRegex.test(s)
 
 export const filterChars = (s: string, charFilter: FilterFunction<string>) =>
-    s.split("").filter(charFilter).join("")
+    [...s].filter(charFilter).join("")
 
 type TransformSubstringOptions = {
     original: string

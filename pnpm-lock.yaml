@@ -130,11 +130,13 @@ importers:
       '@re-/assert': workspace:*
       '@re-/node': workspace:*
       '@re-/tools': workspace:*
+      '@types/jest': 27.5.1
     dependencies:
       '@re-/tools': link:../tools
     devDependencies:
       '@re-/assert': link:../assert
       '@re-/node': link:../node
+      '@types/jest': 27.5.1
 
   '@re-/node':
     specifiers:
@@ -3940,6 +3942,13 @@ packages:
     resolution: {integrity: sha512-cmmwv9t7gBYt7hNKH5Spu7Kuu/DotGa+Ff+JGRKZ4db5eh8PnKS4LuebJ3YLUoyOyIHraTGyULn23YtEAm0VSg==}
     dependencies:
       jest-diff: 27.5.1
+      pretty-format: 27.5.1
+    dev: true
+
+  /@types/jest/27.5.1:
+    resolution: {integrity: sha512-fUy7YRpT+rHXto1YlL+J9rs0uLGyiqVt3ZOTQR+4ROc47yNl8WLdVLgUloBRhOxP1PZvguHl44T3H0wAWxahYQ==}
+    dependencies:
+      jest-matcher-utils: 27.5.1
       pretty-format: 27.5.1
     dev: true
 
@@ -8521,6 +8530,16 @@ packages:
     dependencies:
       jest-get-type: 28.0.2
       pretty-format: 28.1.0
+    dev: true
+
+  /jest-matcher-utils/27.5.1:
+    resolution: {integrity: sha512-z2uTx/T6LBaCoNWNFWwChLBKYxTMcGBRjAt+2SbP929/Fflb9aa5LGma654Rz8z9HLxsrUaYzxE9T/EFIL/PAw==}
+    engines: {node: ^10.13.0 || ^12.13.0 || ^14.15.0 || >=15.0.0}
+    dependencies:
+      chalk: 4.1.2
+      jest-diff: 27.5.1
+      jest-get-type: 27.5.1
+      pretty-format: 27.5.1
     dev: true
 
   /jest-matcher-utils/28.1.0:

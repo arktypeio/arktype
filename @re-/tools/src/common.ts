@@ -142,8 +142,6 @@ export type ExcludeNever<O> = Pick<
     { [K in keyof O]: O[K] extends never ? never : K }[keyof O]
 >
 
-export const listify = <T>(o: T | T[]) => ([] as T[]).concat(o)
-
 export type Key = string | number | symbol
 
 export type MapFunction<T, ReturnType> = (

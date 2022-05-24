@@ -2,7 +2,7 @@ import { assert } from "@re-/assert"
 import { model } from "@re-/model"
 import { lazily } from "@re-/tools"
 
-export const testList = () => {
+describe("list", () => {
     describe("type", () => {
         test("basic", () => {
             assert(model("string[]").type).typed as string[]
@@ -62,4 +62,4 @@ export const testList = () => {
             assert(model("number[]").generate()).equals([])
         })
     })
-}
+})

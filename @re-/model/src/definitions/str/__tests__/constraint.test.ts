@@ -1,7 +1,7 @@
 import { assert } from "@re-/assert"
 import { model } from "@re-/model"
 
-export const testConstraint = () => {
+describe("constraint", () => {
     describe("type", () => {
         test("single-bounded", () => {
             assert(model("string>5").type).typed as string
@@ -177,4 +177,4 @@ export const testConstraint = () => {
             )
         })
     })
-}
+})

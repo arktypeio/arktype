@@ -2,7 +2,7 @@ import { assert } from "@re-/assert"
 import { compile, model } from "@re-/model"
 import { narrow } from "@re-/tools"
 
-export const testAlias = () => {
+describe("alias", () => {
     describe("type", () => {
         test("with space", () => {
             assert(
@@ -377,4 +377,4 @@ export const testAlias = () => {
             })
         })
     })
-}
+})

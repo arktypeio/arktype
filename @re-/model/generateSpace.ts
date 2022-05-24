@@ -1,5 +1,8 @@
 import { writeJson } from "@re-/node"
 
+const randomInRange = (min: number, max: number) =>
+    Math.floor(Math.random() * (max - min + 1)) + min
+
 const generateSpaceJson = () => {
     const simpleSpaceSeed = {
         user: {
@@ -26,21 +29,20 @@ const generateSpaceJson = () => {
     const defs = Object.entries(simpleSpaceSeed).reduce(
         (result, [name, seedDef]) => {
             const variants: Record<string, any> = { [name]: seedDef }
-            const randomInRange = (min: number, max: number) =>
-                Math.floor(Math.random() * (max - min + 1)) + min
             const defCopyCount = 500
             for (let i = 2; i <= defCopyCount; i++) {
                 variants[`${name}${i}`] = Object.fromEntries(
                     Object.entries(seedDef).map(([k, def]) => {
+                        let randomizedDef = def
                         if (typeof def === "string") {
                             for (const name in cyclicSpaceSeed) {
-                                def = def.replaceAll(
+                                randomizedDef = randomizedDef.replaceAll(
                                     name,
                                     `${name}${randomInRange(2, defCopyCount)}`
                                 )
                             }
                         }
-                        return [`${k}${i}`, def]
+                        return [`${k}${i}`, randomizedDef]
                     })
                 )
             }

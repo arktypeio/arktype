@@ -1,42 +1,41 @@
+import { assert } from "@re-/assert"
 import { typeOf } from "@re-/model"
 
 describe("typeOf", () => {
     test("string", () => {
-        expect(typeOf("redo")).toBe("'redo'")
-        expect(typeOf("")).toBe("''")
+        assert(typeOf("redo")).equals("'redo'")
+        assert(typeOf("")).equals("''")
     })
     test("number", () => {
-        expect(typeOf(0)).toBe(0)
-        expect(typeOf(3.141_59)).toBe(3.141_59)
+        assert(typeOf(0)).equals(0)
+        assert(typeOf(3.141_59)).equals(3.141_59)
     })
     test("boolean", () => {
-        expect(typeOf(true)).toBe("true")
-        expect(typeOf(false)).toBe("false")
+        assert(typeOf(true)).equals("true")
+        assert(typeOf(false)).equals("false")
     })
-    test("bigint", () => expect(typeOf(BigInt(0))).toBe(0n))
-    test("symbol", () => expect(typeOf(Symbol())).toBe("symbol"))
+    test("bigint", () => assert(typeOf(BigInt(0))).equals(0n))
+    test("symbol", () => assert(typeOf(Symbol())).equals("symbol"))
     test("undefined", () => {
         const x: any = {}
-        expect(typeOf()).toBe("undefined")
-        expect(typeOf(x.nonexistent)).toBe("undefined")
+        assert(typeOf(undefined)).equals("undefined")
+        assert(typeOf(x.nonexistent)).equals("undefined")
     })
-    test("null", () => expect(typeOf(null)).toBe("null"))
+    test("null", () => assert(typeOf(null)).equals("null"))
     test("object", () => {
-        expect(
-            typeOf({ a: { b: "nested", c: 5, d: { deep: null } } })
-        ).toStrictEqual({
+        assert(typeOf({ a: { b: "nested", c: 5, d: { deep: null } } })).equals({
             a: { b: "'nested'", c: 5, d: { deep: "null" } }
         })
     })
     test("function", () => {
         const saySomething = () => console.log("I'm giving up on you")
-        expect(typeOf(saySomething)).toBe("function")
+        assert(typeOf(saySomething)).equals("function")
     })
     test("array", () => {
-        expect(typeOf([7, "up"])).toStrictEqual([7, "'up'"])
+        assert(typeOf([7, "up"])).equals([7, "'up'"])
     })
     test("complex", () => {
-        expect(typeOf([true, { a: ["ok", [() => []]] }])).toStrictEqual([
+        assert(typeOf([true, { a: ["ok", [() => []]] }])).equals([
             "true",
             { a: ["'ok'", ["function"]] }
         ])

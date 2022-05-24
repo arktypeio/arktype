@@ -1,7 +1,7 @@
 import { assert } from "@re-/assert"
 import { model } from "@re-/model"
 
-export const testKeyword = () => {
+describe("keyword", () => {
     describe("string", () => {
         const s = model("string")
         test("type", () => {
@@ -151,7 +151,7 @@ export const testKeyword = () => {
             assert(u.generate()).is(undefined)
         })
         test("validation", () => {
-            assert(u.validate().error).is(undefined)
+            assert(u.validate(undefined).error).is(undefined)
             assert(u.validate(null).error).snap(
                 `"null is not assignable to undefined."`
             )
@@ -204,7 +204,7 @@ export const testKeyword = () => {
     describe("unknown", () => {
         const u = model("unknown")
         test("type", () => {
-            // eslint-disable-next-line
+            // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion
             assert(u.type).typed as unknown
         })
         test("generation", () => {
@@ -231,7 +231,7 @@ export const testKeyword = () => {
             assert(n.validate("sometimes").error).snap(
                 `"'sometimes' is not assignable to never."`
             )
-            assert(n.validate().error).snap(
+            assert(n.validate(undefined).error).snap(
                 `"undefined is not assignable to never."`
             )
         })
@@ -316,4 +316,4 @@ export const testKeyword = () => {
             )
         })
     })
-}
+})

@@ -7,7 +7,7 @@ import { fileName, requireResolve, shell } from "@re-/node"
 import { cacheAssertions, cleanupAssertions } from "./index.js"
 
 let runTestsCmd = ""
-const runnerArgIndex = process.argv.findIndex((arg) => arg === fileName())
+const runnerArgIndex = process.argv.indexOf(fileName())
 if (runnerArgIndex === -1) {
     throw new Error(
         `Unable to parse @re-/assert CLI args '${process.argv.join(

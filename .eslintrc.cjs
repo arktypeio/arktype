@@ -22,7 +22,7 @@ module.exports = defineConfig({
     parserOptions: {
         project: ["tsconfig.json", "@re-/*/tsconfig.json"]
     },
-    ignorePatterns: ["dist", "**/*js"],
+    ignorePatterns: ["**/*js"],
     rules: {
         /**
          * General restrictions
@@ -87,14 +87,6 @@ module.exports = defineConfig({
             }
         ],
         /**
-         * Modify unicorn/recommended
-         */
-        "unicorn/explicit-length-check": "off",
-        "unicorn/no-useless-undefined": ["error", { checkArguments: false }],
-        "unicorn/filename-case": ["error", { case: "camelCase" }],
-        "unicorn/prefer-switch": "off",
-        "unicorn/prevent-abbreviations": "off",
-        /**
          * Allow more flexible typing
          */
         "@typescript-eslint/ban-ts-comment": "off",
@@ -106,10 +98,16 @@ module.exports = defineConfig({
         "@typescript-eslint/no-unsafe-member-access": "off",
         "@typescript-eslint/no-unsafe-argument": "off",
         "@typescript-eslint/no-non-null-assertion": "off",
-        "@typescript-eslint/restrict-template-expressions": [
-            "error",
-            { allowBoolean: true, allowAny: true }
-        ],
+        "@typescript-eslint/restrict-template-expressions": "off",
+        /**
+         * Disable or adjust unicorn/recommended rules that don't fit our code style
+         */
+        "unicorn/explicit-length-check": "off",
+        "unicorn/no-useless-undefined": "off",
+        "unicorn/filename-case": ["error", { case: "camelCase" }],
+        "unicorn/prefer-switch": "off",
+        "unicorn/prevent-abbreviations": "off",
+        "unicorn/no-array-callback-reference": "off",
         /**
          * Temporarily disabled settings we may enable in the future
          */
@@ -122,26 +120,40 @@ module.exports = defineConfig({
          * These rules apply only to src (i.e. not scripts or tests)
          */
         {
-            files: ["**/src/*"],
-            excludedFiles: "**/__tests__/*",
-            /**
-             * In tests and scripts, we can safely import from the monorepo's root devDependencies,
-             * so no need to worry about checking imports beyond what TypeScript does by default.
-             **/
-            extends: ["plugin:import/recommended", "plugin:import/typescript"],
+            files: ["**/src/**"],
+            excludedFiles: "**/__tests__/**",
             rules: {
-                complexity: ["error", 10],
-                "max-depth": ["error", 5],
-                "max-lines": ["error", 250],
-                "max-lines-per-function": ["error", 50],
-                "max-statements": ["error", 10],
-                "import/no-unused-modules": [
-                    "error",
-                    { unusedExports: true, missingExports: true }
-                ],
+                /**
+                 * Keep functions and files concise and readable
+                 */
+                // TODO [2022-05-31] Reenable these rules
+                // complexity: ["error", 10],
+                // "max-depth": ["error", 5],
+                // "max-lines": ["error", 250],
+                // "max-lines-per-function": ["error", 50],
+                // "max-statements": ["error", 10],
+                /**
+                 * In tests and scripts, we can safely import from the monorepo's root devDependencies,
+                 * so no need to worry about checking imports beyond what TypeScript does by default.
+                 **/
                 "import/no-extraneous-dependencies": "error"
+                // "import/no-unused-modules": [
+                //     "error",
+                //     { unusedExports: true, missingExports: true }
+                // ],
             }
         },
+        /**
+         * These rules apply only to tests
+         */
+        {
+            files: ["**/__tests__/**"],
+            rules: {
+                "@typescript-eslint/no-empty-function": "off",
+                "unicorn/consistent-function-scoping": "off"
+            }
+        },
+        // Docusaurus requires pages export a default component
         {
             files: ["@re-/docs/src/pages/*"],
             rules: {

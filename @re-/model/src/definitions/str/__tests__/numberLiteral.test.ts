@@ -1,7 +1,7 @@
 import { assert } from "@re-/assert"
 import { model } from "@re-/model"
 
-export const testNumberLiteral = () => {
+describe("numberLiteral", () => {
     /*
      * As of TS 4.5, I don't think it's possible to parse a number literal from a string type
      * Runtime functionality like "getDefault" and "validate" will still use the more specific
@@ -70,4 +70,4 @@ export const testNumberLiteral = () => {
             assert(model("-31.31").generate()).is(-31.31)
         })
     })
-}
+})

@@ -1,7 +1,7 @@
 import { assert } from "@re-/assert"
 import { model } from "@re-/model"
 
-export const testOptional = () => {
+describe("optional", () => {
     describe("type", () => {
         test("adds undefined to standalone type", () => {
             assert(model("string?").type).typed as string | undefined
@@ -56,7 +56,7 @@ export const testOptional = () => {
             assert(model("false?").validate(false).error).is(undefined)
         })
         test("allows undefined", () => {
-            assert(model("false?").validate().error).is(undefined)
+            assert(model("false?").validate(undefined).error).is(undefined)
         })
         test("allows omission of key", () => {
             assert(
@@ -84,4 +84,4 @@ export const testOptional = () => {
             ).equals({ required: "" })
         })
     })
-}
+})

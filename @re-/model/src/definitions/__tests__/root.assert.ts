@@ -1,14 +1,8 @@
 import { assert } from "@re-/assert"
 import { model } from "@re-/model"
-import { definitionTypeErrorTemplate } from "../../src/internal.js"
-import { testLiteral } from "./literal/index.js"
-import { testObj } from "./obj/index.js"
-import { testStr } from "./str/index.js"
+import { definitionTypeErrorTemplate } from "../../internal.js"
 
-describe("root", () => {
-    describe("str", testStr)
-    describe("literal", testLiteral)
-    describe("obj", testObj)
+describe("root definition", () => {
     test("bad type def type", () => {
         // @ts-expect-error
         assert(() => model({ bad: Symbol() })).throwsAndHasTypeError(

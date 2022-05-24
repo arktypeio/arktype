@@ -258,7 +258,7 @@ export namespace Constraint {
                 for (const [comparator, bound] of boundEntries) {
                     const token = comparator as ComparatorToken
                     const boundError = comparators[token](
-                        `${valueType}`,
+                        String(valueType),
                         comparable,
                         asNumber(bound, { assert: true }),
                         isString
