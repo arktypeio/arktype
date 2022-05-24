@@ -22,8 +22,9 @@ export const testBigintLiteral = () => {
         test("positive", () => {
             assert(
                 // Is prime :D
-                model("12345678910987654321n").validate(12345678910987654321n)
-                    .error
+                model("12345678910987654321n").validate(
+                    12_345_678_910_987_654_321n
+                ).error
             ).is(undefined)
         })
         test("negative", () => {

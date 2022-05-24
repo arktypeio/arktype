@@ -1,8 +1,8 @@
-import { test, describe } from "mocha"
-import { dirName, readJson, writeJson } from "@re-/node"
-import { assert } from "../src/index.js"
-import { throws, AssertionError, deepEqual } from "node:assert/strict"
+import { AssertionError, deepEqual, throws } from "node:assert/strict"
 import { join } from "node:path"
+import { dirName, readJson, writeJson } from "@re-/node"
+import { describe, test } from "mocha"
+import { assert } from "../src/index.js"
 
 const n = 5
 const o = { re: "do" }
@@ -112,8 +112,10 @@ describe("assertions", () => {
             "not assignable"
         )
     })
-    // Some TS errors as formatted as diagnostic "chains"
-    // We represent them by joining the parts of the message with newlines
+    /*
+     * Some TS errors as formatted as diagnostic "chains"
+     * We represent them by joining the parts of the message with newlines
+     */
     test("TS diagnostic chain", () => {
         // @ts-expect-error
         assert(() => shouldThrow({} as {} | false)).type.errors.snap(
@@ -293,7 +295,7 @@ describe("assertions", () => {
     test("throwsAndHasTypeError", () => {
         // @ts-expect-error
         assert(() => shouldThrow(true)).throwsAndHasTypeError(
-            /true[\s\S]*not assignable[\s\S]*false/
+            /true[\S\s]*not assignable[\S\s]*false/
         )
         // No thrown error
         throws(

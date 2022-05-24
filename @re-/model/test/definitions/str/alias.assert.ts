@@ -1,5 +1,5 @@
 import { assert } from "@re-/assert"
-import { model, compile } from "@re-/model"
+import { compile, model } from "@re-/model"
 import { narrow } from "@re-/tools"
 
 export const testAlias = () => {
@@ -91,7 +91,7 @@ export const testAlias = () => {
                 groceries.validate({
                     fruits: [
                         { length: 10 },
-                        { circumference: 4.832321, type: "Granny Smith" },
+                        { circumference: 4.832_321, type: "Granny Smith" },
                         { length: 15, description: "nice" }
                     ]
                 }).error
@@ -112,35 +112,37 @@ export const testAlias = () => {
                     { verbose: true }
                 ).error
             ).toMatchInlineSnapshot(`
-        "Encountered errors at the following paths:
-        {
-          fruits/0: '{length: 5000, description: 'I'm a big banana!', peel: 'slippery'} is not assignable to any of banana|apple.
-        Encountered errors at the following paths:
-        {
-          banana: 'At path fruits/0, keys 'peel' were unexpected.',
-          apple: 'At path fruits/0, required keys 'circumference, type' were missing. Keys 'length, description, peel' were unexpected.'
-        }',
-          fruits/1: '{type: 'Fuji'} is not assignable to any of banana|apple.
-        Encountered errors at the following paths:
-        {
-          banana: 'At path fruits/1, required keys 'length' were missing. Keys 'type' were unexpected.',
-          apple: 'At path fruits/1, required keys 'circumference' were missing.'
-        }'
-        }"
-        `)
+              "Encountered errors at the following paths:
+              {
+                fruits/0: '{length: 5000, description: 'I'm a big banana!', peel: 'slippery'} is not assignable to any of banana|apple.
+              Encountered errors at the following paths:
+              {
+                banana: 'At path fruits/0, keys 'peel' were unexpected.',
+                apple: 'At path fruits/0, required keys 'circumference, type' were missing. Keys 'length, description, peel' were unexpected.'
+              }',
+                fruits/1: '{type: 'Fuji'} is not assignable to any of banana|apple.
+              Encountered errors at the following paths:
+              {
+                banana: 'At path fruits/1, required keys 'length' were missing. Keys 'type' were unexpected.',
+                apple: 'At path fruits/1, required keys 'circumference' were missing.'
+              }'
+              }"
+            `)
         })
-        // test("errors on shallow cycle", () => {
-        //     // @ts-expect-error
-        //     const shallowRecursive = compile({ a: "a" })
-        //     expect(() =>
-        //         shallowRecursive.models.a.assert("what's an a?")
-        //     ).toThrowError("shallow")
-        //     // @ts-expect-error
-        //     const shallowCyclic = compile({ a: "b", b: "c", c: "a|b|c" })
-        //     expect(() =>
-        //         shallowCyclic.models.a.assert(["what's a b?"])
-        //     ).toThrowError("shallow")
-        // })
+        /*
+         * test("errors on shallow cycle", () => {
+         *     // @ts-expect-error
+         *     const shallowRecursive = compile({ a: "a" })
+         *     expect(() =>
+         *         shallowRecursive.models.a.assert("what's an a?")
+         *     ).toThrowError("shallow")
+         *     // @ts-expect-error
+         *     const shallowCyclic = compile({ a: "b", b: "c", c: "a|b|c" })
+         *     expect(() =>
+         *         shallowCyclic.models.a.assert(["what's a b?"])
+         *     ).toThrowError("shallow")
+         * })
+         */
         test("cyclic space", () => {
             const bicycle = model(
                 { a: "a", b: "b", c: "either[]" },
@@ -215,13 +217,13 @@ export const testAlias = () => {
                     ]
                 }).error
             ).toMatchInlineSnapshot(`
-        "Encountered errors at the following paths:
-        {
-          a/a/a/a/a/a/a/isA: 'false is not assignable to true.',
-          b/b/b/b/b/b/b/isA: 'true is not assignable to false.',
-          c/8: '{isA: 'the duck goes quack'} is not assignable to any of a|b.'
-        }"
-        `)
+              "Encountered errors at the following paths:
+              {
+                a/a/a/a/a/a/a/isA: 'false is not assignable to true.',
+                b/b/b/b/b/b/b/isA: 'true is not assignable to false.',
+                c/8: '{isA: 'the duck goes quack'} is not assignable to any of a|b.'
+              }"
+            `)
         })
         test("doesn't try to parse or validate any", () => {
             // Parse any as type

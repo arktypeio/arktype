@@ -1,9 +1,9 @@
-import React from "react"
-import Layout from "@theme/Layout"
-import useDocusaurusContext from "@docusaurus/useDocusaurusContext"
 import { useColorMode } from "@docusaurus/theme-common"
-import { AnimatedLogo, getTheme, ToolSummaries } from "../components"
+import useDocusaurusContext from "@docusaurus/useDocusaurusContext"
 import { ThemeProvider, Typography } from "@mui/material"
+import Layout from "@theme/Layout"
+import React from "react"
+import { AnimatedLogo, getTheme, ToolSummaries } from "../components"
 
 const Contents = () => {
     const { siteConfig } = useDocusaurusContext()

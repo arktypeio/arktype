@@ -1,6 +1,6 @@
-import { fromHere, dirName } from "./fs.js"
-import { BindingNamedNode, Project } from "ts-morph"
 import { relative } from "node:path"
+import { BindingNamedNode, Project } from "ts-morph"
+import { dirName, fromHere } from "./fs.js"
 
 const project = new Project({
     tsConfigFilePath: fromHere("src", "tsconfig.json")
@@ -42,12 +42,12 @@ if (Object.keys(unused).length) {
     console.error(
         "The following unused exports must be removed before building:"
     )
-    Object.entries(unused).forEach(([file, unusedNames]) => {
+    for (const [file, unusedNames] of Object.entries(unused)) {
         console.group(`\n${file}:`)
-        unusedNames.forEach((unusedName) => {
+        for (const unusedName of unusedNames) {
             console.log(`❌${unusedName}`)
-        })
+        }
         console.groupEnd()
-    })
+    }
     process.exit(1)
 }

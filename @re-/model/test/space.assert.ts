@@ -1,7 +1,7 @@
 import { assert } from "@re-/assert"
 import { compile, model } from "@re-/model"
-import { typeDefProxy } from "../src/internal.js"
 import { duplicateSpaceError } from "../src/errors.js"
+import { typeDefProxy } from "../src/internal.js"
 
 describe("compile", () => {
     test("single", () => {

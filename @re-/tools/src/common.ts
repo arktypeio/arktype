@@ -36,7 +36,8 @@ export type DeepEvaluate<T> = T extends NonRecursible
  * Note: Similarly to Narrow, trying to Evaluate 'unknown'
  * directly (i.e. not nested in an object) leads to the type '{}',
  * but I'm unsure how to fix this without breaking the types that rely on it.
- * */
+ *
+ */
 
 export type Evaluate<T> = {
     [K in keyof T]: T[K]
@@ -151,9 +152,9 @@ export type MapFunction<T, ReturnType> = (
 
 export const fromEntries = (entries: Entry[], asArray = false) => {
     const obj: any = asArray ? [] : {}
-    entries.forEach(([k, v]) => {
+    for (const [k, v] of entries) {
         obj[k] = v
-    })
+    }
     return obj
 }
 

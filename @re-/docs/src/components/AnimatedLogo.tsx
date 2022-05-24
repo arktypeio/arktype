@@ -1,6 +1,6 @@
-import React, { CSSProperties } from "react"
-import { motion } from "framer-motion"
 import { useTheme } from "@mui/material"
+import { motion } from "framer-motion"
+import React, { CSSProperties } from "react"
 
 const animationProps = (delay: number) => ({
     initial: {
@@ -25,8 +25,10 @@ export const AnimatedLogo = ({ style = {} }: AnimatedLogoProps) => {
     const {
         palette: { primary, secondary, error }
     } = useTheme()
-    // Since the Logo is currently always displayed on a #1b1b1b background,
-    // always use dark version of primary
+    /*
+     * Since the Logo is currently always displayed on a #1b1b1b background,
+     * always use dark version of primary
+     */
     const primaryDark = "#264bcf"
     return (
         <motion.svg style={style} viewBox="0 0 1823 576">

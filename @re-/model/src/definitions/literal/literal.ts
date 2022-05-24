@@ -1,7 +1,7 @@
 import { narrow } from "@re-/tools"
-import { typeDefProxy, createParser, validationError } from "./internal.js"
-import { Root } from "../root.js"
 import { typeOf } from "../../utils.js"
+import { Root } from "../root.js"
+import { createParser, typeDefProxy, validationError } from "./internal.js"
 
 export namespace Literal {
     export type Definition = RegExp | PrimitiveLiteral
@@ -44,7 +44,7 @@ export namespace Literal {
             },
             generate: ({ def }) => {
                 if (def instanceof RegExp) {
-                    throw new Error(
+                    throw new TypeError(
                         `Generation of regular expressions is not supported.`
                     )
                 }

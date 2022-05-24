@@ -1,4 +1,4 @@
-import { typeDefProxy, createParser } from "./internal.js"
+import { createParser, typeDefProxy } from "./internal.js"
 import { Str } from "./str.js"
 
 const invalidModifierError = `Modifier '?' is only valid at the end of a type definition.`
@@ -39,7 +39,7 @@ export namespace Optional {
                 }
                 return components.optional.validate(value, opts)
             },
-            generate: () => undefined,
+            generate: () => {},
             references: ({ components }) => components.optional.references()
         }
     )

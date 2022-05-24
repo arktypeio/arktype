@@ -1,5 +1,5 @@
 import { ElementOf, Exact, Narrow, transform } from "@re-/tools"
-import { model, CheckReferences } from "./model.js"
+import { CheckReferences, model } from "./model.js"
 import { compile, Space, SpaceOptions, ValidateDictionary } from "./space.js"
 
 export const createDeclaredDefineFunctionMap = <

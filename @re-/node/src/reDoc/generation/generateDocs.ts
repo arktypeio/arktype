@@ -1,9 +1,9 @@
-import { readFileSync, rmSync, writeFileSync } from "fs"
-import { ApiModel } from "@microsoft/api-extractor-model"
+import { readFileSync, rmSync, writeFileSync } from "node:fs"
+import { basename, join } from "node:path"
 import { MarkdownDocumenter } from "@microsoft/api-documenter/lib/documenters/MarkdownDocumenter.js"
+import { ApiModel } from "@microsoft/api-extractor-model"
 import prettier from "prettier"
-import { basename, join } from "path"
-import { walkPaths, fileName, ensureDir } from "../../index.js"
+import { ensureDir, fileName, walkPaths } from "../../index.js"
 import { PackageData } from "../analysis/index.js"
 import { ReDocContext } from "../reDoc.js"
 
@@ -15,9 +15,10 @@ export const generateDocs = (packages: PackageData[], ctx: ReDocContext) => {
 
 const writeMarkdown = (packages: PackageData[], ctx: ReDocContext) => {
     const apiModel = new ApiModel()
-    packages.forEach((pkg) =>
+    for (const pkg of packages) {
         apiModel.loadPackage(pkg.ctx.apiExtractorOutputPath)
-    )
+    }
+
     const documenter = new MarkdownDocumenter({
         apiModel,
         outputFolder: ctx.baseOutputDir,
@@ -69,7 +70,7 @@ const transformMarkdown = (
         ...prettier.resolveConfig.sync(fileName()),
         parser: "markdown"
     }
-    walkPaths(baseOutputDir, { excludeDirs: true }).forEach((currentPath) => {
+    for (const currentPath of walkPaths(baseOutputDir, { excludeDirs: true })) {
         const { packageName, memberName } = extractNamesFromDocPath(currentPath)
         let outputPath = currentPath
         let contents = readFileSync(currentPath).toString()
@@ -129,15 +130,15 @@ const transformMarkdown = (
         } else if (excludeIndexMd) {
             // The only time packageName is undefined is index.md
             rmSync(currentPath)
-            return
+            continue
         }
         if (excludeIndexMd) {
             // By default, all files start with this reference to index.md, so just remove it directly
             contents = contents.replace("[Home](./index.md) &gt; ", "")
         }
         // Remove html-style comments from api-documenter
-        contents = contents.replace(/<!--[\s\S]*?-->/g, "")
+        contents = contents.replace(/<!--[\S\s]*?-->/g, "")
         contents = prettier.format(contents, prettierOptions)
         writeFileSync(outputPath, contents)
-    })
+    }
 }

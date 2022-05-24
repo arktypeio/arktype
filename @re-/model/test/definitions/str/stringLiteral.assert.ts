@@ -28,7 +28,7 @@ export const testStringLiteral = () => {
             test("mismatched quotes", () => {
                 // @ts-expect-error
                 assert(() => model(`"mismatched'`)).throwsAndHasTypeError(
-                    /Unable to determine the type of[\s\S]*mismatched'/
+                    /Unable to determine the type of[\S\s]*mismatched'/
                 )
             })
             test("extraneous single quotes", () => {
@@ -36,7 +36,7 @@ export const testStringLiteral = () => {
                     // @ts-expect-error
                     model(`'this isn't allowed'`)
                 ).throwsAndHasTypeError(
-                    /Unable to determine the type of[\s\S]*allowed'/
+                    /Unable to determine the type of[\S\s]*allowed'/
                 )
             })
             test("nested double quote pair", () => {
@@ -44,7 +44,7 @@ export const testStringLiteral = () => {
                     // @ts-expect-error
                     model(`"not "ok""`)
                 ).throwsAndHasTypeError(
-                    /Unable to determine the type of[\s\S]*ok/
+                    /Unable to determine the type of[\S\s]*ok/
                 )
             })
         })

@@ -1,11 +1,11 @@
 import {
-    commandSync,
-    SyncOptions,
     command,
-    Options,
-    ExecaSyncReturnValue,
+    commandSync,
     ExecaChildProcess,
-    ExecaSyncError
+    ExecaSyncError,
+    ExecaSyncReturnValue,
+    Options,
+    SyncOptions
 } from "execa"
 
 type CommonOptions = {
@@ -36,9 +36,9 @@ export const shell = (
     }
     try {
         return commandSync(cmd, execaOptions)
-    } catch (e) {
-        if (e && typeof e === "object" && "exitCode" in e) {
-            const execaError = e as ExecaSyncError
+    } catch (error) {
+        if (error && typeof error === "object" && "exitCode" in error) {
+            const execaError = error as ExecaSyncError
             throw new Error(
                 `Command '${cmd}' failed with code ${
                     execaError.exitCode
@@ -47,7 +47,7 @@ export const shell = (
                 }`
             )
         }
-        throw e
+        throw error
     }
 }
 

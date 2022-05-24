@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 
-import { shell, requireResolve, fileName } from "@re-/node"
 import { existsSync } from "node:fs"
-import { join, dirname } from "node:path"
+import { dirname, join } from "node:path"
 import { version, versions } from "node:process"
+import { fileName, requireResolve, shell } from "@re-/node"
 import { cacheAssertions, cleanupAssertions } from "./index.js"
 
 let runTestsCmd = ""
@@ -23,7 +23,7 @@ if (runner !== "jest" && runner !== "mocha" && runner !== "node") {
     )
 }
 if (runner === "node") {
-    const nodeMajorVersion = parseInt(versions.node.split(".")[0])
+    const nodeMajorVersion = Number.parseInt(versions.node.split(".")[0])
     if (nodeMajorVersion < 18) {
         throw new Error(
             `Node's test runner requires at least version 18. You are running ${version}.`
@@ -34,11 +34,11 @@ if (runner === "node") {
     let runnerIndexPath: string
     try {
         runnerIndexPath = requireResolve(runner)
-    } catch (e) {
+    } catch (error) {
         throw new Error(
             `To use @re-/assert's ${runner} runner, ${runner} must be resolvable in your environment.`,
             {
-                cause: e instanceof Error ? e : undefined
+                cause: error instanceof Error ? error : undefined
             }
         )
     }

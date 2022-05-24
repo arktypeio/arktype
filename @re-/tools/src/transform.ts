@@ -1,4 +1,4 @@
-import { EntryOf, Entry, isRecursible } from "./common.js"
+import { Entry, EntryOf, isRecursible } from "./common.js"
 import { Merge } from "./merge.js"
 import { isNumeric } from "./stringUtils.js"
 
@@ -87,7 +87,7 @@ export const transform = <
                 : Array.isArray(currentFrom) &&
                   mappedEntries.every(([k]) => isNumeric(k))
         return toArray
-            ? Array.from(mappedEntries, ([, v]) => v)
+            ? [...mappedEntries].map(([, v]) => v)
             : Object.fromEntries(mappedEntries)
     }
     if (!isRecursible(from)) {

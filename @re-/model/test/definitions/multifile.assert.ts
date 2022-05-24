@@ -4,8 +4,8 @@ import { declare } from "@re-/model"
 // Declare the models you will define
 export const { define, compile } = declare("user", "group")
 
-import { userDef } from "./multifile/user.js"
 import { groupDef } from "./multifile/group.js"
+import { userDef } from "./multifile/user.js"
 
 describe("multifile", () => {
     test("compiles", () => {

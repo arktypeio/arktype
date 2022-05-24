@@ -1,7 +1,7 @@
 import { asNumber, isNumeric, NumericString } from "@re-/tools"
 import { typeOf } from "../../../../utils.js"
-import { typeDefProxy, validationError, createParser } from "./internal.js"
 import { EmbeddedLiteral } from "./embeddedLiteral.js"
+import { createParser, typeDefProxy, validationError } from "./internal.js"
 
 export namespace EmbeddedNumberLiteral {
     export type Definition<Value extends number = number> = NumericString<Value>

@@ -1,16 +1,16 @@
 import { isEmpty } from "@re-/tools"
-import {
-    typeDefProxy,
-    stringifyErrors,
-    splittableValidationError,
-    validationError,
-    createParser,
-    ParseContext,
-    ungeneratableError
-} from "./internal.js"
+import { typeOf } from "../../../utils.js"
 import { Str } from "../str.js"
 import { Expression } from "./expression.js"
-import { typeOf } from "../../../utils.js"
+import {
+    createParser,
+    ParseContext,
+    splittableValidationError,
+    stringifyErrors,
+    typeDefProxy,
+    ungeneratableError,
+    validationError
+} from "./internal.js"
 
 export namespace Intersection {
     export type Definition<

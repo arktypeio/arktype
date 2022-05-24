@@ -1,4 +1,4 @@
-import { platform } from "os"
+import { platform } from "node:os"
 import { assert } from "@re-/assert"
 import { describe, test } from "mocha"
 import { caller } from "../index.js"

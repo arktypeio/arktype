@@ -1,4 +1,4 @@
-import { basename } from "path"
+import { basename } from "node:path"
 import { reDoc } from "./reDoc/reDoc.js"
 import { redoTsc } from "./reTsc.js"
 

@@ -1,7 +1,7 @@
 import { TreeOf } from "@re-/tools"
-import { CustomValidator } from "./model.js"
 import { ExtractableKeyword } from "./definitions/index.js"
 import { validationError, ValidationErrors } from "./errors.js"
+import { CustomValidator } from "./model.js"
 
 export * from "./errors.js"
 

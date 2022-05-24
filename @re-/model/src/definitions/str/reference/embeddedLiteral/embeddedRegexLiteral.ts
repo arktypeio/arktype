@@ -1,11 +1,11 @@
 import { typeOf } from "../../../../utils.js"
-import {
-    typeDefProxy,
-    validationError,
-    createParser,
-    ungeneratableError
-} from "./internal.js"
 import { Reference } from "../reference.js"
+import {
+    createParser,
+    typeDefProxy,
+    ungeneratableError,
+    validationError
+} from "./internal.js"
 import { StringLiteral } from "./stringLiteral.js"
 
 export namespace EmbeddedRegexLiteral {

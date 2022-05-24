@@ -1,5 +1,5 @@
 import { assert } from "@re-/assert"
-import { model, compile } from "@re-/model"
+import { compile, model } from "@re-/model"
 
 describe("inheritable configs", () => {
     describe("methods", () => {

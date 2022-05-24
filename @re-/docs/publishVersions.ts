@@ -3,7 +3,7 @@ import modelPackageJson from "../model/package.json"
 
 const versionedPackages = [modelPackageJson]
 
-versionedPackages.forEach((data) => {
+for (const data of versionedPackages) {
     const unscopedName = data.name.replace("@re-/", "")
     shell(`docusaurus docs:version:${unscopedName} ${data.version}`)
-})
+}

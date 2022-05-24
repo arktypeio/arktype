@@ -1,17 +1,17 @@
 import { transform, TypeOfResult } from "@re-/tools"
-import {
-    typeDefProxy,
-    isRequiredCycleError,
-    stringifyErrors,
-    SplittableErrors,
-    splittableValidationError,
-    validationError,
-    createParser,
-    ParseContext
-} from "./internal.js"
+import { typeOf } from "../../../utils.js"
 import { Str } from "../str.js"
 import { Expression } from "./expression.js"
-import { typeOf } from "../../../utils.js"
+import {
+    createParser,
+    isRequiredCycleError,
+    ParseContext,
+    SplittableErrors,
+    splittableValidationError,
+    stringifyErrors,
+    typeDefProxy,
+    validationError
+} from "./internal.js"
 
 type PreferredDefaults = ({ value: any } | { typeOf: TypeOfResult })[]
 
@@ -79,16 +79,16 @@ export namespace Union {
                     ([i, fragment]) => {
                         try {
                             return [i, fragment.generate(opts)]
-                        } catch (e: any) {
-                            if (isRequiredCycleError(e.message)) {
+                        } catch (error: any) {
+                            if (isRequiredCycleError(error.message)) {
                                 if (errorMessage === unknownErrorMessage) {
-                                    errorMessage = e.message
+                                    errorMessage = error.message
                                 }
                                 // Omit it from "possibleValues"
                                 return null
                             }
                             /* istanbul ignore next */
-                            throw e
+                            throw error
                         }
                     },
                     { asArray: "always" }
@@ -103,8 +103,10 @@ export namespace Union {
                         return matches[0]
                     }
                 }
-                // If we've made it to this point without returning, throw the
-                // most descriptive error message we have
+                /*
+                 * If we've made it to this point without returning, throw the
+                 * most descriptive error message we have
+                 */
                 throw new Error(errorMessage)
             },
             references: ({ components }) =>

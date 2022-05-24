@@ -1,6 +1,6 @@
 import { assert } from "@re-/assert"
-import { lazily } from "../index.js"
 import { test } from "mocha"
+import { lazily } from "../index.js"
 
 test("calls thunk on prop access", () => {
     let callCounter = 0

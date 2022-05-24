@@ -7,7 +7,7 @@ describe("typeOf", () => {
     })
     test("number", () => {
         expect(typeOf(0)).toBe(0)
-        expect(typeOf(3.14159)).toBe(3.14159)
+        expect(typeOf(3.141_59)).toBe(3.141_59)
     })
     test("boolean", () => {
         expect(typeOf(true)).toBe("true")
@@ -17,7 +17,7 @@ describe("typeOf", () => {
     test("symbol", () => expect(typeOf(Symbol())).toBe("symbol"))
     test("undefined", () => {
         const x: any = {}
-        expect(typeOf(undefined)).toBe("undefined")
+        expect(typeOf()).toBe("undefined")
         expect(typeOf(x.nonexistent)).toBe("undefined")
     })
     test("null", () => expect(typeOf(null)).toBe("null"))

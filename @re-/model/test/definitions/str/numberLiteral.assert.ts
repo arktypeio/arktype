@@ -2,9 +2,11 @@ import { assert } from "@re-/assert"
 import { model } from "@re-/model"
 
 export const testNumberLiteral = () => {
-    // As of TS 4.5, I don't think it's possible to parse a number literal from a string type
-    // Runtime functionality like "getDefault" and "validate" will still use the more specific
-    // value, but the TS type is inferred as "number"
+    /*
+     * As of TS 4.5, I don't think it's possible to parse a number literal from a string type
+     * Runtime functionality like "getDefault" and "validate" will still use the more specific
+     * value, but the TS type is inferred as "number"
+     */
     describe("type", () => {
         test("whole", () => {
             assert(model("4").type).typed as number
@@ -34,8 +36,8 @@ export const testNumberLiteral = () => {
         test("whole", () => {
             const { validate } = model("8")
             assert(validate(8).error).is(undefined)
-            assert(validate(8.0).error).is(undefined)
-            assert(validate(8.000001).error).is(
+            assert(validate(8).error).is(undefined)
+            assert(validate(8.000_001).error).is(
                 "8.000001 is not assignable to 8."
             )
             assert(validate("8").error).is("'8' is not assignable to 8.")

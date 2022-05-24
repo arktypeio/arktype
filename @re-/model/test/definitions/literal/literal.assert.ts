@@ -1,6 +1,6 @@
 import { assert } from "@re-/assert"
-import { lazily } from "@re-/tools"
 import { model } from "@re-/model"
+import { lazily } from "@re-/tools"
 
 export const testLiteral = () => {
     describe("number", () => {
@@ -19,8 +19,8 @@ export const testLiteral = () => {
             test("whole", () => {
                 const { validate } = model(8)
                 assert(validate(8).error).is(undefined)
-                assert(validate(8.0).error).is(undefined)
-                assert(validate(8.000001).error).is(
+                assert(validate(8).error).is(undefined)
+                assert(validate(8.000_001).error).is(
                     "8.000001 is not assignable to 8."
                 )
                 assert(validate("8").error).is("'8' is not assignable to 8.")
@@ -59,7 +59,8 @@ export const testLiteral = () => {
     describe("bigint", () => {
         describe("type", () => {
             test("positive", () => {
-                assert(model(999999999999999n).type).typed as 999999999999999n
+                assert(model(999_999_999_999_999n).type)
+                    .typed as 999_999_999_999_999n
             })
             test("negative", () => {
                 assert(model(-1n).type).typed as -1n
@@ -69,14 +70,16 @@ export const testLiteral = () => {
             test("positive", () => {
                 assert(
                     // Is prime :D
-                    model(12345678910987654321n).validate(12345678910987654321n)
-                        .error
+                    model(12_345_678_910_987_654_321n).validate(
+                        12_345_678_910_987_654_321n
+                    ).error
                 ).is(undefined)
             })
             test("negative", () => {
                 assert(
-                    model(-18446744073709551616n).validate(-BigInt(2 ** 64))
-                        .error
+                    model(-18_446_744_073_709_551_616n).validate(
+                        -BigInt(2 ** 64)
+                    ).error
                 ).is(undefined)
             })
             describe("errors", () => {
@@ -134,7 +137,7 @@ export const testLiteral = () => {
         })
     })
     describe("undefined", () => {
-        const u = lazily(() => model(undefined))
+        const u = lazily(() => model())
         test("type", () => {
             assert(u.type).typed as undefined
         })
@@ -142,7 +145,7 @@ export const testLiteral = () => {
             assert(u.generate()).is(undefined)
         })
         test("validation", () => {
-            assert(u.validate(undefined).error).is(undefined)
+            assert(u.validate().error).is(undefined)
             assert(u.validate(null).error).snap(
                 `"null is not assignable to undefined."`
             )
@@ -158,7 +161,7 @@ export const testLiteral = () => {
         })
         test("validation", () => {
             assert(n.validate(null).error).is(undefined)
-            assert(n.validate(undefined).error).snap(
+            assert(n.validate().error).snap(
                 `"undefined is not assignable to null."`
             )
         })

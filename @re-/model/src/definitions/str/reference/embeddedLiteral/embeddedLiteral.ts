@@ -1,9 +1,9 @@
-import { StringLiteral as StringLiteral } from "./stringLiteral.js"
-import { EmbeddedNumberLiteral as EmbeddedNumberLiteral } from "./embeddedNumberLiteral.js"
-import { EmbeddedBigintLiteral as EmbeddedBigintLiteral } from "./embeddedBigintLiteral.js"
 import { Reference } from "../reference.js"
+import { EmbeddedBigintLiteral as EmbeddedBigintLiteral } from "./embeddedBigintLiteral.js"
+import { EmbeddedNumberLiteral as EmbeddedNumberLiteral } from "./embeddedNumberLiteral.js"
 import { EmbeddedRegexLiteral as EmbeddedRegexLiteral } from "./embeddedRegexLiteral.js"
 import { createParser, typeDefProxy } from "./internal.js"
+import { StringLiteral as StringLiteral } from "./stringLiteral.js"
 
 export namespace EmbeddedLiteral {
     export const type = typeDefProxy as string

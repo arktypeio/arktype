@@ -1,9 +1,9 @@
 import { Evaluate, isEmpty, KeyValuate } from "@re-/tools"
 import { Root } from "./definitions/index.js"
 import {
-    ParseContext,
     defaultParseContext,
-    InheritableMethodContext
+    InheritableMethodContext,
+    ParseContext
 } from "./definitions/parser.js"
 import {
     duplicateSpaceError,
@@ -13,8 +13,10 @@ import {
 import { errorsFromCustomValidator, typeDefProxy } from "./internal.js"
 import { ConfiguredSpace, SpaceConfig, SpaceDefinition } from "./space.js"
 
-// Just use unknown for now since we don't have all the definitions yet
-// but we still want to allow references to other declared types
+/*
+ * Just use unknown for now since we don't have all the definitions yet
+ * but we still want to allow references to other declared types
+ */
 export type CheckReferences<
     Def,
     DeclaredTypeName extends string
@@ -28,8 +30,10 @@ export type CheckReferences<
 export type ReferencesConfig = {}
 
 export type GenerateConfig = {
-    // By default, generate will throw if it encounters a cyclic required type
-    // If this options is provided, it will return its value instead
+    /*
+     * By default, generate will throw if it encounters a cyclic required type
+     * If this options is provided, it will return its value instead
+     */
     onRequiredCycle?: any
 }
 

@@ -39,8 +39,10 @@ export const unextractableHandlers = defineKeywords({
         validate: (valueType) => valueType === "true" || valueType === "false"
     },
     ...stringHandlers,
-    // These types are extracted as primitives to avoid type widening
-    // that occurs when inferring a number from a template string
+    /*
+     * These types are extracted as primitives to avoid type widening
+     * that occurs when inferring a number from a template string
+     */
     ...numberHandlers,
     bigint: {
         generate: () => BigInt(0),

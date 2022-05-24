@@ -1,14 +1,14 @@
 import {
     Evaluate,
+    Exact,
     Func,
     KeyValuate,
-    transform,
-    ValueOf,
-    Exact,
     toString,
-    TreeOf
+    transform,
+    TreeOf,
+    ValueOf
 } from "@re-/tools"
-import { ValidationErrors, unknownTypeError } from "../errors.js"
+import { unknownTypeError, ValidationErrors } from "../errors.js"
 import {
     GenerateConfig,
     ModelConfig,
@@ -174,8 +174,10 @@ export const createParser = <
 ): Parser<DefType, Parent, Methods> => {
     const input = args[0] as ParserInput<DefType, Parent, Children, Components>
     const methods = ((args[1] as any) ?? {}) as AnyMethodsInput
-    // Need to wait until parse is called to access parent to avoid it being undefined
-    // due to circular import
+    /*
+     * Need to wait until parse is called to access parent to avoid it being undefined
+     * due to circular import
+     */
     const getInherited = () => {
         const parent = input.parent() as any as ParserMetadata<any, any, any>
         return {
@@ -225,16 +227,17 @@ export const createParser = <
              * override all other config values. From then on, we can use the "useProvidedArgs"
              * key to let us know the validate call was internal and whatever options were passed
              * can safely be ignored in favor of the standard config precedence.
-             **/
+             *
+             */
             const useProvidedArgs = providedConfig
                 ? "useProvidedArgs" in providedConfig
                     ? providedConfig["useProvidedArgs"]
                     : true
                 : false
             const configValue = {
-                ...(ctx.config?.space?.config?.[name] ?? {}),
+                ...ctx.config?.space?.config?.[name],
                 ...activeModelConfig[name],
-                ...(ctx.config?.[name] ?? {}),
+                ...ctx.config?.[name],
                 useProvidedArgs
             }
             const compiledOpts = {

@@ -151,7 +151,7 @@ export const testKeyword = () => {
             assert(u.generate()).is(undefined)
         })
         test("validation", () => {
-            assert(u.validate(undefined).error).is(undefined)
+            assert(u.validate().error).is(undefined)
             assert(u.validate(null).error).snap(
                 `"null is not assignable to undefined."`
             )
@@ -167,7 +167,7 @@ export const testKeyword = () => {
         })
         test("validation", () => {
             assert(n.validate(null).error).is(undefined)
-            assert(n.validate(undefined).error).snap(
+            assert(n.validate().error).snap(
                 `"undefined is not assignable to null."`
             )
         })
@@ -181,7 +181,7 @@ export const testKeyword = () => {
             assert(v.generate()).is(undefined)
         })
         test("validation", () => {
-            assert(v.validate(undefined).error).is(undefined)
+            assert(v.validate().error).is(undefined)
             assert(v.validate(null).error).snap(
                 `"null is not assignable to void."`
             )
@@ -196,7 +196,7 @@ export const testKeyword = () => {
             assert(a.generate()).is(undefined)
         })
         test("validation", () => {
-            assert(a.validate(-34324n).error).is(undefined)
+            assert(a.validate(-34_324n).error).is(undefined)
             assert(a.validate({ yes: "no" }).error).is(undefined)
             assert(a.validate([0, "1", 2, "3"]).error).is(undefined)
         })
@@ -211,7 +211,7 @@ export const testKeyword = () => {
             assert(u.generate()).is(undefined)
         })
         test("validation", () => {
-            assert(u.validate(34324n).error).is(undefined)
+            assert(u.validate(34_324n).error).is(undefined)
             assert(u.validate({ no: "yes" }).error).is(undefined)
             assert(u.validate(["0", 1, "2", 3]).error).is(undefined)
         })
@@ -231,7 +231,7 @@ export const testKeyword = () => {
             assert(n.validate("sometimes").error).snap(
                 `"'sometimes' is not assignable to never."`
             )
-            assert(n.validate(undefined).error).snap(
+            assert(n.validate().error).snap(
                 `"undefined is not assignable to never."`
             )
         })
@@ -294,7 +294,7 @@ export const testKeyword = () => {
         test("integer", () => {
             const integer = model("integer")
             assert(integer.type).typed as number
-            assert(integer.validate(5.0).error).is(undefined)
+            assert(integer.validate(5).error).is(undefined)
             assert(integer.validate(5.0001).error).snap(
                 `"5.0001 is not assignable to integer."`
             )

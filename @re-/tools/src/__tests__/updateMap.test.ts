@@ -1,12 +1,12 @@
 import { assert } from "@re-/assert"
-import { updateMap, DeepUpdate } from "../index.js"
-import { o } from "./common.js"
 import { test } from "mocha"
+import { DeepUpdate, updateMap } from "../index.js"
+import { o } from "./common.js"
 
 const map: DeepUpdate<typeof o> = {
     a: {
         a: "new",
-        b: (_) => _.concat([1, 2, 3]),
+        b: (_) => [..._, 1, 2, 3],
         c: {
             a: false,
             b: (_) => !_,
@@ -65,7 +65,7 @@ test("updates deep arrays", () => {
         e: [{ a: ["old"] }, { a: ["old"] }, { a: ["new"] }]
     }
     const result: typeof deepArrayExpected = updateMap(o, {
-        e: (_) => _.concat({ a: ["new"] })
+        e: (_) => [..._, { a: ["new"] }]
     })
     assert(result).equals(deepArrayExpected)
 })

@@ -1,9 +1,9 @@
-import { createParser, typeDefProxy } from "./internal.js"
-import { List } from "./list.js"
-import { Union } from "./union.js"
 import { Str } from "../str.js"
 import { Constraint } from "./constraint.js"
+import { createParser, typeDefProxy } from "./internal.js"
 import { Intersection } from "./intersection.js"
+import { List } from "./list.js"
+import { Union } from "./union.js"
 
 export namespace Expression {
     export const type = typeDefProxy as string

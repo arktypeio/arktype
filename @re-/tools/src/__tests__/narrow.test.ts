@@ -1,6 +1,6 @@
-import { narrow } from "../index.js"
 import { assert } from "@re-/assert"
 import { test } from "mocha"
+import { narrow } from "../index.js"
 
 test("literals", () => {
     assert(narrow("ok")).typed as "ok"
@@ -38,7 +38,9 @@ test("function", () => {
 test("any", () => {
     assert(narrow({} as any)).typed as any
 })
-// See note in narrow.ts.
-// test("unknown", () => {
-//     assert(narrow({} as unknown)).typed as unknown
-// })
+/*
+ * See note in narrow.ts.
+ * test("unknown", () => {
+ *     assert(narrow({} as unknown)).typed as unknown
+ * })
+ */

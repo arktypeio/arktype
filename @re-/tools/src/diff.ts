@@ -1,13 +1,13 @@
 import {
-    isRecursible,
-    DeepPartial,
     Cast,
+    DeepPartial,
+    Entry,
+    isEmpty,
+    isRecursible,
     ListPossibleTypes,
     NonRecursible,
     Or,
-    split,
-    Entry,
-    isEmpty
+    split
 } from "./common.js"
 import { transform } from "./transform.js"
 
@@ -144,7 +144,7 @@ export const diffSets = <T>(base: T[], compare: T[]) => {
         if (removed.length) {
             return { removed }
         }
-        return undefined
+        return
     }
 }
 

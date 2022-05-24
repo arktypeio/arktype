@@ -1,4 +1,4 @@
-import { isRecursible, fromEntries, NonRecursible, List } from "./common.js"
+import { fromEntries, isRecursible, List, NonRecursible } from "./common.js"
 import { toString } from "./toString.js"
 
 type Unlisted<T> = T extends List<infer Item> ? Item : T
@@ -27,7 +27,7 @@ export type ShapeFilter<O, S> = O extends NonRecursible
 
 export const shapeFilter = <O, S>(o: O, shape: S): ShapeFilter<O, S> => {
     if (!isRecursible(o) || !isRecursible(shape)) {
-        throw Error(
+        throw new Error(
             `Can't shapeFilter non-objects. Parameters '${toString(
                 o
             )}' and '${toString(

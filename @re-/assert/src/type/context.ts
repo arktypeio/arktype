@@ -1,8 +1,8 @@
-import { AssertionContext } from "../assert.js"
-import { getAssertionData } from "./analysis.js"
-import { chainableAssertion, ChainableValueAssertion } from "../value/index.js"
-import { SourcePosition } from "../common.js"
 import { deepEqual } from "node:assert/strict"
+import { AssertionContext } from "../assert.js"
+import { SourcePosition } from "../common.js"
+import { chainableAssertion, ChainableValueAssertion } from "../value/index.js"
+import { getAssertionData } from "./analysis.js"
 
 export type ValueFromTypeAssertion<
     Expected,

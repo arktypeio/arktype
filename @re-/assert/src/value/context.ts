@@ -1,35 +1,35 @@
+import { AssertionError, deepEqual, equal, match } from "node:assert/strict"
 import {
-    Func,
-    isRecursible,
-    IsAnyOrUnknown,
-    ListPossibleTypes,
     ElementOf,
+    Func,
+    IsAnyOrUnknown,
+    isRecursible,
+    ListPossibleTypes,
     toString
 } from "@re-/tools"
-import { SourcePosition } from "../common.js"
 import { AssertionContext } from "../assert.js"
+import { SourcePosition } from "../common.js"
 import {
     getAssertionData,
     TypeAssertions,
     typeAssertions
 } from "../type/index.js"
 import {
-    updateExternalSnapshot,
+    BaseSnapshotArgs,
     getSnapshotByName,
     queueInlineSnapshotUpdate,
-    writeInlineSnapshotToFile,
-    BaseSnapshotArgs
+    updateExternalSnapshot,
+    writeInlineSnapshotToFile
 } from "./snapshot.js"
-import { deepEqual, match, AssertionError, equal } from "node:assert/strict"
 
 const getThrownMessage = (value: Function) => {
     try {
         value()
-    } catch (e) {
-        if (isRecursible(e) && "message" in e) {
-            return String(e.message)
+    } catch (error) {
+        if (isRecursible(error) && "message" in error) {
+            return String(error.message)
         }
-        return String(e)
+        return String(error)
     }
     throw new AssertionError({
         message: "Function didn't throw."
@@ -179,7 +179,8 @@ export type NextAssertions<AllowTypeAssertions extends boolean> =
  *  If we don't pass the possible values as a list, TS
  *  takes a union of the whole assertion object instead
  *  of a function that accepts one of a union type
- **/
+ *
+ */
 
 export type ValueAssertion<
     PossibleValues extends any[],
@@ -261,7 +262,7 @@ export const valueAssertions = <T, Ctx extends AssertionContext>(
                     const matcher =
                         matchValue instanceof RegExp
                             ? matchValue
-                            : RegExp(matchValue)
+                            : new RegExp(matchValue)
                     match(getThrownMessage(actual), matcher)
                     match(getAssertionData(position).errors, matcher)
                 }

@@ -1,22 +1,22 @@
 import {
     ElementOf,
+    FilterFunction,
     Iteration,
     List,
     ListPossibleTypes,
-    Stringifiable,
-    FilterFunction
+    Stringifiable
 } from "./common.js"
 
-export const alphaOnlyRegex = /^[a-zA-Z]+$/
+export const alphaOnlyRegex = /^[A-Za-z]+$/
 
-export const digitsOnlyRegex = /^[0-9]+$/
+export const digitsOnlyRegex = /^\d+$/
 
 // https://stackoverflow.com/questions/2811031/decimal-or-numeric-values-in-regular-expression-validation
 export const numericRegex = /^-?(0|[1-9]\d*)(\.\d+)?$/
 
 export const integerRegex = /^-?(0|[1-9]\d*)$/
 
-export const alphaNumericRegex = /^[0-9a-zA-Z]+$/
+export const alphaNumericRegex = /^[\dA-Za-z]+$/
 
 export const isAlpha = (s: string) => alphaOnlyRegex.test(s)
 

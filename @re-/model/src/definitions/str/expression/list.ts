@@ -1,8 +1,8 @@
-import { typeDefProxy, validationError, createParser } from "./internal.js"
+import { typeOf } from "../../../utils.js"
+import { Tuple } from "../../obj/index.js"
 import { Str } from "../str.js"
 import { Expression } from "./expression.js"
-import { Tuple } from "../../obj/index.js"
-import { typeOf } from "../../../utils.js"
+import { createParser, typeDefProxy, validationError } from "./internal.js"
 
 export namespace List {
     export type Definition<Child extends string = string> = `${Child}[]`
@@ -23,7 +23,9 @@ export namespace List {
                 if (Array.isArray(value)) {
                     return Tuple.parser
                         .parse(
-                            [...Array(value.length)].map(() => item.def),
+                            [...Array.from({ length: value.length })].map(
+                                () => item.def
+                            ),
                             ctx
                         )
                         .validate(value, opts)

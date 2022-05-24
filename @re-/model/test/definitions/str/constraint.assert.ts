@@ -155,7 +155,7 @@ export const testConstraint = () => {
                 assert(model("5<=number<9999").validate(9999).error).snap(
                     `"9999 is greater than or equal to 9999."`
                 )
-                assert(model("5<=number<9999").validate(10000).error).snap(
+                assert(model("5<=number<9999").validate(10_000).error).snap(
                     `"10000 is greater than or equal to 9999."`
                 )
                 assert(model("5<=number<9999").validate(4).error).snap(

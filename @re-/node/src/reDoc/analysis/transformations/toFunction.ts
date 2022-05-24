@@ -1,4 +1,4 @@
-import { DocNode, DocInlineTag, DocBlock } from "@microsoft/tsdoc"
+import { DocBlock, DocInlineTag, DocNode } from "@microsoft/tsdoc"
 import { ReDocContext } from "../../reDoc.js"
 import { PackageApi } from "../getPackageApi.js"
 import { PackageContext } from "../getPackageContext.js"
@@ -33,8 +33,10 @@ export const transformToFunction = (
             isOptional
         }
     })
-    // Use excerptTokens to store @as types of return and parameters
-    // That way, we can force api-documenter to use them to populate type information
+    /*
+     * Use excerptTokens to store @as types of return and parameters
+     * That way, we can force api-documenter to use them to populate type information
+     */
     const excerptTokens = typeNames.map((name) => {
         // If the type is part of our API, add a link
         if (name in api.references) {

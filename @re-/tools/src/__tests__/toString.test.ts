@@ -1,7 +1,7 @@
 import { assert } from "@re-/assert"
+import { test } from "mocha"
 import { toString } from "../index.js"
 import { o } from "./common.js"
-import { test } from "mocha"
 
 test("default", () => {
     assert(toString(o)).snap(

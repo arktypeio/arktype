@@ -1,6 +1,6 @@
 import { assert } from "@re-/assert"
-import { EntryMapper, transform } from "../index.js"
 import { test } from "mocha"
+import { EntryMapper, transform } from "../index.js"
 
 const o = {
     a: 1,

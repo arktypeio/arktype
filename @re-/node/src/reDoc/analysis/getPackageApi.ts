@@ -1,5 +1,5 @@
+import { join } from "node:path"
 import { Extractor, ExtractorConfig } from "@microsoft/api-extractor"
-import { join } from "path"
 import { readJson } from "../../index.js"
 import { ReDocContext } from "../reDoc.js"
 import { PackageContext } from "./getPackageContext.js"
@@ -23,16 +23,18 @@ export const getPackageApi = (
         configObjectFullPath: undefined
     })
     Extractor.invoke(extractorConfig)
-    // if (!result.succeeded) {
-    //     throw new Error(
-    //         `API extractor failed with errors that are hopefully above this one.`
-    //     )
-    // }
+    /*
+     * if (!result.succeeded) {
+     *     throw new Error(
+     *         `API extractor failed with errors that are hopefully above this one.`
+     *     )
+     * }
+     */
     const root = readJson(apiExtractorOutputPath)
     const getMembers = () => {
         const members = root.members?.[0]?.members
         if (!Array.isArray(members)) {
-            throw new Error(
+            throw new TypeError(
                 `Unable to determine the API from members of ${packageName}.`
             )
         }

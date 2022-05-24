@@ -1,7 +1,7 @@
 import path from "node:path"
+import { isDeepStrictEqual } from "node:util"
 // @ts-ignore Can't resolve these types yet with NodeNext
 import getCurrentLine from "get-current-line"
-import { isDeepStrictEqual } from "node:util"
 
 export interface LinePosition {
     line: number
@@ -44,7 +44,10 @@ export const formatFilePath = (
         )
     }
     if (seperator) {
-        formatted = formatted.replace(RegExp(`\\${path.sep}`, "g"), seperator)
+        formatted = formatted.replace(
+            new RegExp(`\\${path.sep}`, "g"),
+            seperator
+        )
     }
     return formatted
 }

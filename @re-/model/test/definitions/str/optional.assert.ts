@@ -56,7 +56,7 @@ export const testOptional = () => {
             assert(model("false?").validate(false).error).is(undefined)
         })
         test("allows undefined", () => {
-            assert(model("false?").validate(undefined).error).is(undefined)
+            assert(model("false?").validate().error).is(undefined)
         })
         test("allows omission of key", () => {
             assert(

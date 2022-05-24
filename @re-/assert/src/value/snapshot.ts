@@ -1,7 +1,7 @@
+import { basename, dirname, isAbsolute, join } from "node:path"
 import { readJson, writeJson } from "@re-/node"
-import { join, isAbsolute, basename, dirname } from "node:path"
-import { ts, SyntaxKind, CallExpression } from "ts-morph"
-import { SourcePosition, rewriteJson } from "../common.js"
+import { CallExpression, SyntaxKind, ts } from "ts-morph"
+import { rewriteJson, SourcePosition } from "../common.js"
 import { getTsProject } from "../type/analysis.js"
 
 export interface BaseSnapshotArgs {
@@ -35,7 +35,9 @@ export const queueInlineSnapshotUpdate = ({
 
 export const writeQueuedSnapshotUpdates = (cachePath: string) => {
     const queuedUpdates = getQueuedSnapshotUpdates(cachePath)
-    queuedUpdates.forEach((update) => writeInlineSnapshotToFile(update))
+    for (const update of queuedUpdates) {
+        writeInlineSnapshotToFile(update)
+    }
 }
 
 export const writeInlineSnapshotToFile = ({

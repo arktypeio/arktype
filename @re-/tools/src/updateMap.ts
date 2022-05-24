@@ -1,8 +1,8 @@
 import {
-    isRecursible,
     fromEntries,
-    PropertyOf,
-    NonRecursible
+    isRecursible,
+    NonRecursible,
+    PropertyOf
 } from "./common.js"
 
 export type UpdateFunction<T> = (currentValue: T) => T

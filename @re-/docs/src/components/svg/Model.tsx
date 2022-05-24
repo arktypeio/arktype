@@ -1,5 +1,5 @@
-import React from "react"
 import { useTheme } from "@mui/material"
+import React from "react"
 
 export const Model = () => {
     const { palette } = useTheme()

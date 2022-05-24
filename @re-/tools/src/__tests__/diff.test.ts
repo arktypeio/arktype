@@ -1,6 +1,6 @@
-import { test } from "mocha"
 import { assert } from "@re-/assert"
-import { diff, addedOrChanged, diffSets, deepEquals } from "../index.js"
+import { test } from "mocha"
+import { addedOrChanged, deepEquals, diff, diffSets } from "../index.js"
 import { o } from "./common.js"
 
 const updatedO = Object.freeze({
@@ -44,12 +44,12 @@ const extractedChanges = {
 }
 
 test("diffs shallow", () => {
-    assert(diff("hey", "hey")).equals(undefined)
+    assert(diff("hey", "hey")).equals()
     assert(diff("hey", "hi")).equals({ base: "hey", compare: "hi" })
 })
 
 test("diffs deep", () => {
-    assert(diff(o, o)).equals(undefined)
+    assert(diff(o, o)).equals()
     assert(diff(o, updatedO)).value.equals(diffedChanges)
 })
 
@@ -82,10 +82,10 @@ test("extracts changes from deep objects", () => {
 })
 
 test("diff sets", () => {
-    assert(diffSets(["a", "b"], ["b", "a"])).equals(undefined)
+    assert(diffSets(["a", "b"], ["b", "a"])).equals()
     assert(
         diffSets([{ a: true }, { b: true }], [{ b: true }, { a: true }])
-    ).equals(undefined)
+    ).equals()
     assert(diffSets(["a", "b"], ["b", "c"])).equals({
         added: ["c"],
         removed: ["a"]

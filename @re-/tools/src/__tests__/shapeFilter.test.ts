@@ -1,7 +1,7 @@
-import { shapeFilter } from "../index.js"
 import { assert } from "@re-/assert"
-import { o } from "./common.js"
 import { test } from "mocha"
+import { shapeFilter } from "../index.js"
+import { o } from "./common.js"
 
 const filter = {
     a: {
@@ -55,7 +55,7 @@ test("stops recursing if filter is deeper than source", () => {
 test("ignores filter keys not in source", () => {
     const result: typeof asserted = shapeFilter(o, {
         ...filter,
-        ...{ extraneous: null }
+        extraneous: null
     })
     assert(result).equals(asserted)
 })

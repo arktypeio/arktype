@@ -5,7 +5,7 @@ export const randomFromList = <T>(list: T[]) =>
     list[randomInRange(0, list.length - 1)]
 
 export const randomsFromList = <T>(list: T[], count: number) =>
-    [...Array(count)].map(() => randomFromList(list))
+    [...new Array(count)].map(() => randomFromList(list))
 
 export const randomFromSeed = (seed: any, min: number, max: number) =>
     (Math.abs(

@@ -1,13 +1,13 @@
+import { typeOf } from "../../utils.js"
+import { Root } from "../root.js"
 import {
-    typeDefProxy,
     createParser,
     tupleLengthError,
+    typeDefProxy,
     validationError,
     ValidationErrors
 } from "./internal.js"
-import { Root } from "../root.js"
 import { Obj } from "./obj.js"
-import { typeOf } from "../../utils.js"
 
 export namespace Tuple {
     export const type = typeDefProxy as any[]

@@ -1,19 +1,24 @@
-import { Keyword, Reference, Alias } from "./reference/index.js"
-import { Expression } from "./expression/index.js"
 import {
+    Constraint,
+    Expression,
+    Intersection,
+    List,
+    Union
+} from "./expression/index.js"
+import {
+    BinaryValidate,
     createParser,
-    typeDefProxy,
-    UnknownTypeError,
-    Root,
     ParseError,
-    BinaryValidate
+    Root,
+    typeDefProxy,
+    UnknownTypeError
 } from "./internal.js"
 import { Optional } from "./optional.js"
-import { Union, Intersection, List, Constraint } from "./expression/index.js"
-import { StringLiteral } from "./reference/embeddedLiteral/stringLiteral.js"
-import { EmbeddedRegexLiteral } from "./reference/embeddedLiteral/embeddedRegexLiteral.js"
-import { EmbeddedNumberLiteral } from "./reference/embeddedLiteral/embeddedNumberLiteral.js"
 import { EmbeddedBigintLiteral } from "./reference/embeddedLiteral/embeddedBigintLiteral.js"
+import { EmbeddedNumberLiteral } from "./reference/embeddedLiteral/embeddedNumberLiteral.js"
+import { EmbeddedRegexLiteral } from "./reference/embeddedLiteral/embeddedRegexLiteral.js"
+import { StringLiteral } from "./reference/embeddedLiteral/stringLiteral.js"
+import { Alias, Keyword, Reference } from "./reference/index.js"
 
 export namespace Str {
     export type FastParse<

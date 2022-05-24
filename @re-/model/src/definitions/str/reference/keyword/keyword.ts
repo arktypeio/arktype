@@ -1,14 +1,14 @@
+import { typeOf } from "../../../../utils.js"
 import { Reference } from "../reference.js"
+import { extractableHandlers } from "./extractable.js"
 import {
+    createParser,
     HandledTypes,
     listKeywords,
     typeDefProxy,
-    createParser,
     validationError
 } from "./internal.js"
-import { extractableHandlers } from "./extractable.js"
 import { unextractableHandlers } from "./unextractable.js"
-import { typeOf } from "../../../../utils.js"
 
 export namespace Keyword {
     export type Definition = keyof KeywordTypes

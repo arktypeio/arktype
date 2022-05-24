@@ -7,21 +7,21 @@ import {
     Spliterate,
     toString
 } from "@re-/tools"
+import { typeOf } from "../../../utils.js"
+import { EmbeddedNumberLiteral } from "../reference/embeddedLiteral/embeddedNumberLiteral.js"
+import { StringLiteral } from "../reference/embeddedLiteral/stringLiteral.js"
 import { numberKeywords, stringKeywords } from "../reference/index.js"
 import { Str } from "../str.js"
 import { Expression } from "./expression.js"
-import { EmbeddedNumberLiteral } from "../reference/embeddedLiteral/embeddedNumberLiteral.js"
-import { StringLiteral } from "../reference/embeddedLiteral/stringLiteral.js"
 import {
-    ParseResult,
-    ungeneratableError,
-    validationError,
     createParser,
-    typeDefProxy,
     ParseError,
-    stringifyDefinition
+    ParseResult,
+    stringifyDefinition,
+    typeDefProxy,
+    ungeneratableError,
+    validationError
 } from "./internal.js"
-import { typeOf } from "../../../utils.js"
 
 export const getComparables = () => [...numberKeywords, ...stringKeywords]
 

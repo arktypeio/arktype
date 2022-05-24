@@ -5,18 +5,18 @@ import {
     isRecursible,
     transform
 } from "@re-/tools"
-import {
-    mismatchedKeysError,
-    validationError,
-    ValidationErrors,
-    typeDefProxy,
-    createParser,
-    ParseResult
-} from "./internal.js"
-import { Root } from "../root.js"
-import { Obj } from "./obj.js"
-import { Optional } from "../str/index.js"
 import { typeOf } from "../../utils.js"
+import { Root } from "../root.js"
+import { Optional } from "../str/index.js"
+import {
+    createParser,
+    mismatchedKeysError,
+    ParseResult,
+    typeDefProxy,
+    validationError,
+    ValidationErrors
+} from "./internal.js"
+import { Obj } from "./obj.js"
 
 export namespace Map {
     export type Definition = Record<string, any>

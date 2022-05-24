@@ -1,6 +1,6 @@
 import { typeOf } from "../../../../utils.js"
-import { typeDefProxy, validationError, createParser } from "./internal.js"
 import { EmbeddedLiteral } from "./embeddedLiteral.js"
+import { createParser, typeDefProxy, validationError } from "./internal.js"
 
 export namespace StringLiteral {
     export type SingleQuoted<Text extends string> =
@@ -24,8 +24,10 @@ export namespace StringLiteral {
 
     export const type = typeDefProxy as string
 
-    // Matches a definition enclosed by single quotes that does not contain any other single quotes
-    // Or a definition enclosed by double quotes that does not contain any other double quotes
+    /*
+     * Matches a definition enclosed by single quotes that does not contain any other single quotes
+     * Or a definition enclosed by double quotes that does not contain any other double quotes
+     */
     export const matcher = /^('[^']*'|^"[^"]*?")$/
 
     export const matches = (def: any): def is string => matcher.test(def)

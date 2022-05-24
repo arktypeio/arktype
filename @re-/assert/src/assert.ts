@@ -1,9 +1,9 @@
-import { fileName, caller } from "@re-/node"
-import { ListPossibleTypes } from "@re-/tools"
 import { fileURLToPath } from "node:url"
-import { typeAssertions, TypeAssertions } from "./type/index.js"
-import { valueAssertions, ValueAssertion } from "./value/index.js"
+import { caller, fileName } from "@re-/node"
+import { ListPossibleTypes } from "@re-/tools"
 import { getReAssertConfig, ReAssertConfig } from "./common.js"
+import { typeAssertions, TypeAssertions } from "./type/index.js"
+import { ValueAssertion, valueAssertions } from "./value/index.js"
 
 export type AssertionResult<
     T,
@@ -26,7 +26,7 @@ export const assert: Assertion = (
     internalConfigHooks?: Partial<AssertionContext>
 ) => {
     const position = caller() //getCurrentLine({ method: "assert" })
-    if (!position.file.match(/\.(c|m)?tsx?$/)) {
+    if (!/\.(c|m)?tsx?$/.test(position.file)) {
         throw new Error(
             `Assert cannot be called from outside a TypeScript source file (got '${position.file}'). `
         )

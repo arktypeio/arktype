@@ -1,6 +1,6 @@
 import { isRecursible } from "@re-/tools"
-import { typeDefProxy, createParser } from "./internal.js"
 import { Root } from "../root.js"
+import { createParser, typeDefProxy } from "./internal.js"
 import { Map } from "./map.js"
 import { Tuple } from "./tuple.js"
 

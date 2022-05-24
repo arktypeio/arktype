@@ -3,11 +3,11 @@ import { basename, join, relative } from "node:path"
 import { stdout } from "node:process"
 import {
     findPackageRoot,
-    walkPaths,
+    readJson,
     readPackageJson,
     requireResolve,
-    writeJson,
-    readJson
+    walkPaths,
+    writeJson
 } from "./fs.js"
 import { shell } from "./shell.js"
 
@@ -84,11 +84,11 @@ export const transpile = (
     stdout.write(`⌛ Transpiling...`.padEnd(successMessage.length))
     Object.values(transpilers).map((transpiler) => transpiler())
     if (packageJson.bin) {
-        Object.values(packageJson.bin).forEach((executable) => {
+        for (const executable of Object.values(packageJson.bin)) {
             if (typeof executable === "string" && existsSync(executable)) {
                 chmodSync(executable, "755")
             }
-        })
+        }
     }
     stdout.write("✅\n")
 }
@@ -105,9 +105,11 @@ export const removeTests = () => {
     if (!existsSync(outRoot)) {
         return
     }
-    walkPaths(outRoot)
-        .filter((path) => basename(path) === "__tests__")
-        .forEach((path) => rmSync(path, { recursive: true, force: true }))
+    for (const path of walkPaths(outRoot).filter(
+        (path) => basename(path) === "__tests__"
+    )) {
+        rmSync(path, { recursive: true, force: true })
+    }
 }
 
 export const redoTsc = (options?: RedoTscOptions) => {

@@ -1,14 +1,14 @@
+import { existsSync, rmSync } from "node:fs"
+import { relative } from "node:path"
 import { readJson, writeJson } from "@re-/node"
-import { existsSync, rmSync } from "fs"
 import { Project, SyntaxKind, ts, Type } from "ts-morph"
 import {
-    SourcePosition,
-    LinePosition,
     getReAssertConfig,
-    Memoized
+    LinePosition,
+    Memoized,
+    SourcePosition
 } from "../common.js"
 import { writeQueuedSnapshotUpdates } from "../value/index.js"
-import { relative } from "node:path"
 
 export interface SetupCacheOptions {
     forcePrecache?: boolean
@@ -120,10 +120,10 @@ const analyzeTypeAssertions: Memoized<
     const diagnostics: ts.Diagnostic[] = tsProgram
         .getDiagnosticsProducingTypeChecker()
         .getDiagnostics()
-    diagnostics.forEach((diagnostic) => {
+    for (const diagnostic of diagnostics) {
         const filePath = diagnostic.file?.fileName
         if (!filePath) {
-            return
+            continue
         }
         const fileKey = getFileKey(filePath)
         const start = diagnostic.start ?? -1
@@ -142,21 +142,23 @@ const analyzeTypeAssertions: Memoized<
         } else {
             diagnosticsByFile[fileKey] = [data]
         }
-    })
-    project.getSourceFiles().forEach((file) => {
+    }
+    for (const file of project.getSourceFiles()) {
         const fileKey = getFileKey(file.getFilePath())
         const assertCalls = file
             .getDescendantsOfKind(SyntaxKind.CallExpression)
             .filter((callExpression) =>
-                // We get might get some extraneous calls to other "assert" functions,
-                // but they won't be referenced at runtime so shouldn't matter.
+                /*
+                 * We get might get some extraneous calls to other "assert" functions,
+                 * but they won't be referenced at runtime so shouldn't matter.
+                 */
                 config.assertAliases.find(
                     (alias) =>
                         alias === callExpression.getFirstChild()?.getText()
                 )
             )
         if (!assertCalls.length) {
-            return
+            continue
         }
         assertionsByFile[fileKey] = assertCalls.map((assertCall) => {
             const assertArg = assertCall.getArguments()[0]
@@ -241,7 +243,7 @@ const analyzeTypeAssertions: Memoized<
                 errors
             }
         })
-    })
+    }
     analyzeTypeAssertions.cache = assertionsByFile
     return assertionsByFile
 }
@@ -269,11 +271,13 @@ export const getAssertionData = (position: SourcePosition) => {
         throw new Error(`Found no assertion data for '${fileKey}'.`)
     }
     const matchingAssertion = assertionsByFile[fileKey].find((assertion) => {
-        /** Depending on the environment, a trace can refer to any of these points
+        /**
+         * Depending on the environment, a trace can refer to any of these points
          * assert(...)
          * ^     ^   ^
          * Because of this, it's safest to check if the call came from anywhere in the expected range.
-         **/
+         *
+         */
         return isPositionWithinRange(position, assertion.location)
     })
     if (!matchingAssertion) {

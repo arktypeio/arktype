@@ -1,7 +1,7 @@
-import { transformToFunction } from "./toFunction.js"
+import { ReDocContext } from "../../reDoc.js"
 import { PackageApi } from "../getPackageApi.js"
 import { PackageContext } from "../getPackageContext.js"
-import { ReDocContext } from "../../reDoc.js"
+import { transformToFunction } from "./toFunction.js"
 
 export type TransformationKind = "toFunction"
 

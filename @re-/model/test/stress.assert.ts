@@ -1,5 +1,5 @@
-import { compile } from "@re-/model"
 import { assert } from "@re-/assert"
+import { compile } from "@re-/model"
 
 describe("stress", () => {
     test("large simple space", () => {

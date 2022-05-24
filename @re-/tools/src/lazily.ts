@@ -12,7 +12,7 @@ export const lazily = <F extends () => object>(f: F): ReturnType<F> => {
                 }
                 result = f()
                 if (typeof result !== "object") {
-                    throw new Error(
+                    throw new TypeError(
                         `Lazily must be passed a function that returns an object, e.g. () => ({re: "do"}). ` +
                             `Returned value was of type ${typeof result}.`
                     )

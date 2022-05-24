@@ -2,8 +2,10 @@ import { defineKeywords } from "./internal.js"
 
 // These are the named types we can extract from a valueType at runtime
 export const extractableHandlers = defineKeywords({
-    // Values of these types cannot be meaningfully compared,
-    // so they are extracted at the 'typeof' level
+    /*
+     * Values of these types cannot be meaningfully compared,
+     * so they are extracted at the 'typeof' level
+     */
     symbol: {
         generate: () => Symbol(),
         validate: (valueType) => valueType === "symbol"
@@ -16,8 +18,10 @@ export const extractableHandlers = defineKeywords({
                 undefined as any,
         validate: (valueType) => valueType === "function"
     },
-    // These can be represented via their respective primitives,
-    // but are extracted as literals for clarity
+    /*
+     * These can be represented via their respective primitives,
+     * but are extracted as literals for clarity
+     */
     true: {
         generate: () => true as const,
         validate: (valueType) => valueType === "true"
@@ -27,7 +31,7 @@ export const extractableHandlers = defineKeywords({
         validate: (valueType) => valueType === "false"
     },
     undefined: {
-        generate: () => undefined,
+        generate: () => {},
         validate: (valueType) => valueType === "undefined"
     },
     null: {

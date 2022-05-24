@@ -1,10 +1,10 @@
 import {
     DiffSetsResult,
-    List,
-    toString,
-    uncapitalize,
     isDigits,
-    StringifyPossibleTypes
+    List,
+    StringifyPossibleTypes,
+    toString,
+    uncapitalize
 } from "@re-/tools"
 import { ParseContext } from "./definitions/parser.js"
 import { ExtractableDefinition } from "./internal.js"

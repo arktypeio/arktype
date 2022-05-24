@@ -57,23 +57,21 @@ export const toString = (value: any, options: ToStringOptions = {}) => {
         } else if (seen.includes(value)) {
             result += "(cyclic value)"
         } else {
-            if (Array.isArray(value)) {
-                result += `[${beforeRecurse}${value
-                    .map((v) => recurse(v, [...seen, value], depth + 1, null))
-                    .join(valueSeperator)}${afterRecurse}]`
-            } else {
-                result += `{${beforeRecurse}${Reflect.ownKeys(value)
-                    .map(
-                        (k) =>
-                            `${recurse(
-                                value[k],
-                                [...seen, value],
-                                depth + 1,
-                                String(k)
-                            )}`
-                    )
-                    .join(valueSeperator)}${afterRecurse}}`
-            }
+            result += Array.isArray(value)
+                ? `[${beforeRecurse}${value
+                      .map((v) => recurse(v, [...seen, value], depth + 1, null))
+                      .join(valueSeperator)}${afterRecurse}]`
+                : `{${beforeRecurse}${Reflect.ownKeys(value)
+                      .map(
+                          (k) =>
+                              `${recurse(
+                                  value[k],
+                                  [...seen, value],
+                                  depth + 1,
+                                  String(k)
+                              )}`
+                      )
+                      .join(valueSeperator)}${afterRecurse}}`
         }
         return indent + result
     }

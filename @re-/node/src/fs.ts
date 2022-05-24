@@ -1,21 +1,21 @@
 import {
-    readdirSync,
-    lstatSync,
     existsSync,
+    lstatSync,
     mkdirSync,
-    statSync,
+    readdirSync,
     readFileSync,
+    statSync,
     writeFileSync
 } from "node:fs"
 import {
     readFile as readFileAsync,
     writeFile as writeFileAsync
 } from "node:fs/promises"
-import { fileURLToPath, URL } from "node:url"
-import { homedir } from "node:os"
-import { join, dirname, parse } from "node:path"
-import { caller } from "./caller.js"
 import { createRequire } from "node:module"
+import { homedir } from "node:os"
+import { dirname, join, parse } from "node:path"
+import { fileURLToPath, URL } from "node:url"
+import { caller } from "./caller.js"
 
 export const fromDir =
     (dir: string) =>
@@ -114,8 +114,10 @@ export const findPackageRoot = (fromDir?: string) => {
     while (dirToCheck !== fsRoot) {
         try {
             const contents = readJson(join(dirToCheck, "package.json"))
-            // If the file is just a stub with no package name, don't consider
-            // it a package root
+            /*
+             * If the file is just a stub with no package name, don't consider
+             * it a package root
+             */
             if (contents.name) {
                 return dirToCheck
             }

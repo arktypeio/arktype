@@ -1,19 +1,19 @@
+import { assert } from "@re-/assert"
+import { describe, test } from "mocha"
 import {
-    transformSubstring,
+    asNumber,
     camelCase,
     capitalize,
     capsCase,
-    lettersAfterFirstToLower,
-    isAlphaNumeric,
-    isAlpha,
-    isDigits,
-    isNumeric,
-    asNumber,
     filterChars,
-    isInteger
+    isAlpha,
+    isAlphaNumeric,
+    isDigits,
+    isInteger,
+    isNumeric,
+    lettersAfterFirstToLower,
+    transformSubstring
 } from "../index.js"
-import { assert } from "@re-/assert"
-import { describe, test } from "mocha"
 
 const original = "hello"
 const transform = (_: string) => _.toUpperCase()
@@ -116,7 +116,7 @@ describe("alphanumeric regex", () => {
         assert(asNumber("7.5")).equals(7.5)
         assert(asNumber("7", { asFloat: true })).equals(7)
         assert(asNumber("7.5", { asFloat: false })).equals(7)
-        assert(asNumber("-3.14159", { asFloat: true })).equals(-3.14159)
+        assert(asNumber("-3.14159", { asFloat: true })).equals(-3.141_59)
         assert(asNumber("4.567n")).equals(null)
         assert(asNumber("I'm a number ;-)")).equals(null)
         assert(() => asNumber("KEKW", { assert: true })).throws()

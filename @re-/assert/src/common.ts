@@ -1,6 +1,6 @@
-import { readJson, writeJson } from "@re-/node"
 import { existsSync } from "node:fs"
 import { resolve } from "node:path"
+import { readJson, writeJson } from "@re-/node"
 
 export type LinePosition = {
     line: number
@@ -46,7 +46,7 @@ export const getReAssertConfig: Memoized<() => ReAssertConfig> = () => {
             : ""
         const reAssertJson: ReAssertJson = reJson.assert ?? {}
         getReAssertConfig.cache = {
-            updateSnapshots: !!process.argv.find(
+            updateSnapshots: process.argv.some(
                 (arg) => arg === "--update" || arg === "-u"
             ),
             tsconfig,

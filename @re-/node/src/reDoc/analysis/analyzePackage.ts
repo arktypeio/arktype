@@ -1,11 +1,11 @@
 import { writeJson } from "../../index.js"
+import { ReDocContext } from "../reDoc.js"
+import { getPackageApi, PackageApi } from "./getPackageApi.js"
+import { getPackageContext, PackageContext } from "./getPackageContext.js"
 import {
     getPackageTransformations,
     Transformations
 } from "./transformations/index.js"
-import { getPackageApi, PackageApi } from "./getPackageApi.js"
-import { getPackageContext, PackageContext } from "./getPackageContext.js"
-import { ReDocContext } from "../reDoc.js"
 
 export type PackageData = {
     ctx: PackageContext

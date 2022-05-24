@@ -1,13 +1,13 @@
-import {
-    typeDefProxy,
-    shallowCycleError,
-    generateRequiredCycleError,
-    createParser,
-    errorsFromCustomValidator
-} from "./internal.js"
-import { Root } from "../../root.js"
-import { Reference } from "./index.js"
 import { And, WithPropValue } from "@re-/tools"
+import { Root } from "../../root.js"
+import {
+    createParser,
+    errorsFromCustomValidator,
+    generateRequiredCycleError,
+    shallowCycleError,
+    typeDefProxy
+} from "./internal.js"
+import { Reference } from "./index.js"
 
 export namespace Alias {
     export const type = typeDefProxy as string
@@ -43,7 +43,8 @@ export namespace Alias {
                  * Keep track of definitions we've seen since last resolving to an object or built-in.
                  * If we encounter the same definition twice, we're dealing with a shallow cyclic space
                  * like {user: "person", person: "user"}.
-                 **/
+                 *
+                 */
                 if (ctx.shallowSeen.includes(def)) {
                     throw new Error(
                         shallowCycleError({
