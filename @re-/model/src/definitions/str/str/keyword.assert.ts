@@ -167,7 +167,7 @@ export const testKeyword = () => {
         })
         test("validation", () => {
             assert(n.validate(null).error).is(undefined)
-            assert(n.validate().error).snap(
+            assert(n.validate(undefined).error).snap(
                 `"undefined is not assignable to null."`
             )
         })
@@ -181,7 +181,7 @@ export const testKeyword = () => {
             assert(v.generate()).is(undefined)
         })
         test("validation", () => {
-            assert(v.validate().error).is(undefined)
+            assert(v.validate(undefined).error).is(undefined)
             assert(v.validate(null).error).snap(
                 `"null is not assignable to void."`
             )

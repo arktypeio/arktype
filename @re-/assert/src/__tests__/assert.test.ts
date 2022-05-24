@@ -2,7 +2,7 @@ import { AssertionError, deepEqual, throws } from "node:assert/strict"
 import { join } from "node:path"
 import { dirName, readJson, writeJson } from "@re-/node"
 import { describe, test } from "mocha"
-import { assert } from "../src/index.js"
+import { assert } from "../index.js"
 
 const n = 5
 const o = { re: "do" }

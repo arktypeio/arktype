@@ -1,0 +1,51 @@
+import { assert } from "@re-/assert"
+import { declare } from "@re-/model"
+
+describe("declare", () => {
+    test("single", () => {
+        const { define, compile } = declare("gottaDefineThis")
+        const gottaDefineThis = define.gottaDefineThis("boolean")
+        assert(() =>
+            // @ts-expect-error
+            define.somethingUndeclared("string")
+        ).throwsAndHasTypeError("somethingUndeclared")
+        // @ts-expect-error
+        assert(() => define.gottaDefineThis("whoops")).throwsAndHasTypeError(
+            "Unable to determine the type of 'whoops'"
+        )
+        const { create } = compile(gottaDefineThis)
+        assert(create({ a: "gottaDefineThis" }).type).typed as {
+            a: boolean
+        }
+    })
+    test("errors on compile with declared type undefined", () => {
+        const { define, compile } = declare(
+            "gottaDefineThis",
+            "gottaDefineThisToo"
+        )
+        const gottaDefineThis = define.gottaDefineThis({
+            a: "string"
+        })
+        // @ts-expect-error
+        assert(() => compile(gottaDefineThis))
+            .throws("Declared types 'gottaDefineThisToo' were never defined.")
+            .type.errors("Property 'gottaDefineThisToo' is missing")
+    })
+    test("errors on compile with undeclared type defined", () => {
+        const { define, compile } = declare("gottaDefineThis")
+        const gottaDefineThis = define.gottaDefineThis("boolean")
+        assert(() =>
+            compile({
+                ...gottaDefineThis,
+                // @ts-expect-error
+                cantDefineThis: "boolean",
+                // @ts-expect-error
+                wontDefineThis: "string"
+            })
+        )
+            .throws(
+                "Defined types 'cantDefineThis', 'wontDefineThis' were never declared."
+            )
+            .type.errors.snap()
+    })
+})

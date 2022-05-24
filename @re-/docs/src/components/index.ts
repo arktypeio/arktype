@@ -1,4 +1,4 @@
-export * from "./Theme"
-export * from "./ToolSummaries"
+export * from "./theme"
+export * from "./toolSummaries"
 export * from "./svg"
-export * from "./AnimatedLogo"
+export * from "./animatedLogo"

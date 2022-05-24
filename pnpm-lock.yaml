@@ -14,6 +14,7 @@ importers:
       '@typescript-eslint/parser': 5.22.0
       eslint: 8.15.0
       eslint-config-prettier: 8.5.0
+      eslint-define-config: 1.4.1
       eslint-import-resolver-typescript: 2.7.1
       eslint-plugin-import: 2.26.0
       eslint-plugin-prefer-arrow: 1.2.3
@@ -36,6 +37,7 @@ importers:
       '@typescript-eslint/parser': 5.22.0_y4475bkyifzi7y77t2navqsegi
       eslint: 8.15.0
       eslint-config-prettier: 8.5.0_eslint@8.15.0
+      eslint-define-config: 1.4.1
       eslint-import-resolver-typescript: 2.7.1_gwd37gqv3vjv3xlpl7ju3ag2qu
       eslint-plugin-import: 2.26.0_5v5qjrtguv7otneb3mumlvzpgm
       eslint-plugin-prefer-arrow: 1.2.3_eslint@8.15.0
@@ -6534,6 +6536,11 @@ packages:
       eslint: '>=7.0.0'
     dependencies:
       eslint: 8.15.0
+    dev: true
+
+  /eslint-define-config/1.4.1:
+    resolution: {integrity: sha512-3kjqLpYgAjr8XtI0ufInSX7cIWe1rDbiG1AjyOHY+00BgWhce8LZ/xd2BMKpgSsDI6bqd59eMmRcxOZSLme+Mg==}
+    engines: {node: '>= 14.6.0', npm: '>= 6.0.0', pnpm: '>= 7.0.0'}
     dev: true
 
   /eslint-import-resolver-node/0.3.6:

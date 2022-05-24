@@ -137,7 +137,7 @@ export const testLiteral = () => {
         })
     })
     describe("undefined", () => {
-        const u = lazily(() => model())
+        const u = lazily(() => model(undefined))
         test("type", () => {
             assert(u.type).typed as undefined
         })
@@ -145,7 +145,7 @@ export const testLiteral = () => {
             assert(u.generate()).is(undefined)
         })
         test("validation", () => {
-            assert(u.validate().error).is(undefined)
+            assert(u.validate(undefined).error).is(undefined)
             assert(u.validate(null).error).snap(
                 `"null is not assignable to undefined."`
             )
@@ -161,7 +161,7 @@ export const testLiteral = () => {
         })
         test("validation", () => {
             assert(n.validate(null).error).is(undefined)
-            assert(n.validate().error).snap(
+            assert(n.validate(undefined).error).snap(
                 `"undefined is not assignable to null."`
             )
         })

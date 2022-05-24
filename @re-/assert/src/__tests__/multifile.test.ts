@@ -1,6 +1,6 @@
 import { AssertionError, throws } from "node:assert/strict"
 import { test } from "mocha"
-import { assert } from "../src/index.js"
+import { assert } from "../index.js"
 
 describe("multifile", () => {
     test("gathers types across files", () => {

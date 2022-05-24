@@ -23,7 +23,7 @@ export type AnimatedLogoProps = {
 
 export const AnimatedLogo = ({ style = {} }: AnimatedLogoProps) => {
     const {
-        palette: { primary, secondary, error }
+        palette: { secondary, error }
     } = useTheme()
     /*
      * Since the Logo is currently always displayed on a #1b1b1b background,
