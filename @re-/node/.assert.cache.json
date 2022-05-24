@@ -1,0 +1,116 @@
+{
+    "src/__tests__/caller.test.ts": [
+        {
+            "location": {
+                "start": {
+                    "line": 11,
+                    "char": 9
+                },
+                "end": {
+                    "line": 11,
+                    "char": 23
+                }
+            },
+            "type": {
+                "actual": "import(\"/home/ssalb/2re-po/@re-/node/src/caller\").SourcePosition"
+            },
+            "errors": ""
+        },
+        {
+            "location": {
+                "start": {
+                    "line": 15,
+                    "char": 9
+                },
+                "end": {
+                    "line": 15,
+                    "char": 23
+                }
+            },
+            "type": {
+                "actual": "import(\"/home/ssalb/2re-po/@re-/node/src/caller\").SourcePosition"
+            },
+            "errors": ""
+        },
+        {
+            "location": {
+                "start": {
+                    "line": 25,
+                    "char": 13
+                },
+                "end": {
+                    "line": 25,
+                    "char": 27
+                }
+            },
+            "type": {
+                "actual": "import(\"/home/ssalb/2re-po/@re-/node/src/caller\").SourcePosition"
+            },
+            "errors": ""
+        },
+        {
+            "location": {
+                "start": {
+                    "line": 27,
+                    "char": 13
+                },
+                "end": {
+                    "line": 27,
+                    "char": 27
+                }
+            },
+            "type": {
+                "actual": "import(\"/home/ssalb/2re-po/@re-/node/src/caller\").SourcePosition"
+            },
+            "errors": ""
+        },
+        {
+            "location": {
+                "start": {
+                    "line": 32,
+                    "char": 9
+                },
+                "end": {
+                    "line": 32,
+                    "char": 23
+                }
+            },
+            "type": {
+                "actual": "import(\"/home/ssalb/2re-po/@re-/node/src/caller\").SourcePosition"
+            },
+            "errors": ""
+        },
+        {
+            "location": {
+                "start": {
+                    "line": 43,
+                    "char": 9
+                },
+                "end": {
+                    "line": 43,
+                    "char": 31
+                }
+            },
+            "type": {
+                "actual": "string"
+            },
+            "errors": ""
+        },
+        {
+            "location": {
+                "start": {
+                    "line": 50,
+                    "char": 9
+                },
+                "end": {
+                    "line": 50,
+                    "char": 31
+                }
+            },
+            "type": {
+                "actual": "string"
+            },
+            "errors": ""
+        }
+    ]
+}

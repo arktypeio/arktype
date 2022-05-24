@@ -1,4 +1,6 @@
 {
+    "name": "@re-/po",
+    "private": true,
     "packageManager": "pnpm@7.1.2",
     "scripts": {
         "preinstall": "npx -y only-allow pnpm",

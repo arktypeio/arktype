@@ -14,13 +14,13 @@
     "exports": {
         ".": {
             "types": "./dist/types/index.d.ts",
-            "import": "./dist/esm/index.js",
+            "import": "./dist/mjs/index.js",
             "require": "./dist/cjs/index.js"
         }
     },
     "scripts": {
         "build": "node --no-warnings --loader ts-node/esm ./src/cli.ts tsc",
-        "test": "jest 2>&1",
+        "test": "reassert mocha",
         "lint": "eslint ."
     },
     "bin": {

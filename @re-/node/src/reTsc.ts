@@ -21,6 +21,10 @@ const outRoot = relative(cwd, join(packageRoot, "dist"))
 const typesOut = join(outRoot, "types")
 const mjsOut = join(outRoot, "mjs")
 const cjsOut = join(outRoot, "cjs")
+const inFiles = walkPaths(srcRoot, {
+    excludeDirs: true,
+    exclude: (path) => path.includes("__tests__")
+})
 const successMessage = `🎁 Successfully built ${packageName}!`
 
 export const buildTypes = () => {
@@ -30,7 +34,10 @@ export const buildTypes = () => {
     }
     const config = readJson(tsconfig)
     const tempTsConfig = join(packageRoot, "tsconfig.temp.json")
-    writeJson(tempTsConfig, { ...config, exclude: ["**/__tests__", "**/test"] })
+    writeJson(tempTsConfig, {
+        ...config,
+        files: inFiles
+    })
     try {
         const cmd = `pnpm tsc --project ${tempTsConfig} --outDir ${outRoot}`
         shell(cmd, {
@@ -57,7 +64,7 @@ const swc = ({ outDir, moduleType }: SwcOptions) => {
     if (moduleType) {
         cmd += ` -C module.type=${moduleType} `
     }
-    cmd += srcRoot
+    cmd += inFiles.join(" ")
     shell(cmd, { suppressCmdStringLogging: true })
 }
 
@@ -105,6 +112,7 @@ export const removeTests = () => {
     if (!existsSync(outRoot)) {
         return
     }
+
     for (const path of walkPaths(outRoot).filter(
         (path) => basename(path) === "__tests__"
     )) {

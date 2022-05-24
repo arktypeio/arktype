@@ -12,32 +12,32 @@ jobs:
     test:
         strategy:
             matrix:
-                node-version: [16.14.0]
+                node-version: [14, 16, 18]
                 os: [ubuntu-latest, windows-latest, macOS-latest]
             fail-fast: false
         runs-on: ${{ matrix.os }}
-        env:
-            NODE_OPTIONS: "--unhandled-rejections=strict"
         steps:
             - name: Checkout re-po
               uses: actions/checkout@v2
               with:
                   fetch-depth: 0
 
+            - name: Setup pnpm
+              uses: pnpm/action-setup@v2.0.1
+              with:
+                  version: 7.1.2
+
             - name: Setup Node.js ${{ matrix.node-version }}
               uses: actions/setup-node@v2
               with:
                   node-version: ${{ matrix.node-version }}
                   registry-url: "https://registry.npmjs.org"
-
-            - name: Verify changelogs
-              run: node common/scripts/install-run-rush.js change -v
-
+                  cache: "pnpm"
             - name: Install dependencies
-              run: node common/scripts/install-run-rush.js install
+              run: pnpm install
 
             - name: Build packages
-              run: node common/scripts/install-run-rush.js build
+              run: pnpm build
 
             - name: Test packages
-              run: node common/scripts/install-run-rush.js test
+              run: pnpm test

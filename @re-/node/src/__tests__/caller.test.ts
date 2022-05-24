@@ -8,7 +8,12 @@ import { callMe, callMeAnonymous } from "./reflected.js"
 describe("caller", () => {
     test("named", () => {
         const result = callMe()
-        assert(result).snap()
+        assert(result).snap({
+            method: `callMe`,
+            file: `../../file:/home/ssalb/2re-po/@re-/node/src/__tests__/reflected.ts`,
+            line: 8,
+            char: 12
+        })
     })
     test("anonymous", () => {
         const result = callMeAnonymous()
@@ -24,7 +29,12 @@ describe("caller", () => {
         if (platform() === "win32") {
             assert(result).snap()
         } else {
-            assert(result).snap()
+            assert(result).snap({
+                method: `callMeFromDir`,
+                file: `../../file:/home/ssalb/2re-po/@re-/node/src/__tests__/fromDir/reflectedFromDir.ts`,
+                line: 8,
+                char: 12
+            })
         }
     })
     test("with custom seperator", () => {

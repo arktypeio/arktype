@@ -9,7 +9,7 @@ const hideModelVersionDropdownCss = `
 `
 
 // Default implementation, that you can customize
-export const Root = ({ children }) => {
+export default ({ children }) => {
     const { pathname } = useLocation()
     return (
         <>
