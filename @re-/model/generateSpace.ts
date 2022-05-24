@@ -1,3 +1,5 @@
+import { writeJson } from "@re-/node"
+
 const generateSpaceJson = () => {
     const simpleSpaceSeed = {
         user: {
@@ -46,7 +48,7 @@ const generateSpaceJson = () => {
         },
         {} as Record<string, any>
     )
-    Deno.writeTextFileSync("generatedSpace.json", JSON.stringify(defs, null, 4))
+    writeJson("generatedSpace.json", defs)
 }
 
 generateSpaceJson()

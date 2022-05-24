@@ -57,7 +57,7 @@ export type WalkOptions = {
 }
 
 export const walkPaths = (dir: string, options: WalkOptions = {}): string[] =>
-    readdirSync(dir).reduce((paths, item, index, siblings) => {
+    readdirSync(dir).reduce((paths, item) => {
         const path = join(dir, item)
         const isDir = lstatSync(path).isDirectory()
         const excludeCurrent =

@@ -3,9 +3,9 @@ import {
     Iteration,
     List,
     ListPossibleTypes,
-    Stringifiable
+    Stringifiable,
+    FilterFunction
 } from "./common.js"
-import { FilterFunction } from "./common.js"
 
 export const alphaOnlyRegex = /^[a-zA-Z]+$/
 
