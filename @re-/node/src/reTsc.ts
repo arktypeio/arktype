@@ -1,4 +1,4 @@
-import { chmodSync, existsSync, renameSync, rmSync } from "node:fs"
+import { existsSync, renameSync, rmSync } from "node:fs"
 import { basename, join, relative } from "node:path"
 import { stdout } from "node:process"
 import {
@@ -90,13 +90,6 @@ export const transpile = (
 ) => {
     stdout.write(`⌛ Transpiling...`.padEnd(successMessage.length))
     Object.values(transpilers).map((transpiler) => transpiler())
-    if (packageJson.bin) {
-        for (const executable of Object.values(packageJson.bin)) {
-            if (typeof executable === "string" && existsSync(executable)) {
-                chmodSync(executable, "755")
-            }
-        }
-    }
     stdout.write("✅\n")
 }
 

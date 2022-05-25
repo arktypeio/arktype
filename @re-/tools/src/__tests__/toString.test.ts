@@ -5,7 +5,7 @@ import { o } from "./common.js"
 
 test("default", () => {
     assert(toString(o)).snap(
-        `"{a: {a: '', b: [0], c: {a: true, b: false, c: null}}, b: {a: {a: 1}}, c: null, d: 'initial', e: [{a: ['old']}, {a: ['old']}]}"`
+        `{a: {a: '', b: [0], c: {a: true, b: false, c: null}}, b: {a: {a: 1}}, c: null, d: 'initial', e: [{a: ['old']}, {a: ['old']}]}`
     )
 })
 test("quotes", () => {
@@ -31,13 +31,13 @@ test("truncate", () => {
             { a: "include this but not that" },
             { maxNestedStringLength: 17 }
         )
-    ).snap(`"{a: 'include this but...'}"`)
+    ).snap(`{a: 'include this but...'}`)
     assert(toString({ a: "include this" }, { maxNestedStringLength: 17 })).snap(
-        `"{a: 'include this'}"`
+        `{a: 'include this'}`
     )
 })
 test("indent", () => {
-    assert(toString(o, { indent: 2 })).snap(`"{
+    assert(toString(o, { indent: 2 })).snap(`{
   a: {
     a: '',
     b: [
@@ -68,8 +68,8 @@ test("indent", () => {
       ]
     }
   ]
-}"`)
-    assert(toString(o, { indent: 4 })).snap(`"{
+}`)
+    assert(toString(o, { indent: 4 })).snap(`{
     a: {
         a: '',
         b: [
@@ -100,7 +100,7 @@ test("indent", () => {
             ]
         }
     ]
-}"`)
+}`)
 })
 test("symbol keys", () => {
     const symbolKey = Symbol("example")
@@ -108,5 +108,5 @@ test("symbol keys", () => {
         toString({
             [symbolKey]: true
         })
-    ).snap(`"{Symbol(example): true}"`)
+    ).snap(`{Symbol(example): true}`)
 })

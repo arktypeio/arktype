@@ -29,7 +29,7 @@ test("errors on args", () => {
     })
         .throws("no arguments")
         .type.errors.snap(
-            `"Argument of type '(n: number) => number' is not assignable to parameter of type '() => object'."`
+            `Argument of type '(n: number) => number' is not assignable to parameter of type '() => object'.`
         )
 })
 test("errors on non-object", () => {
@@ -39,5 +39,5 @@ test("errors on non-object", () => {
         badProxy.someProp
     })
         .throws("returns an object")
-        .type.errors.snap(`"Type 'number' is not assignable to type 'object'."`)
+        .type.errors.snap(`Type 'number' is not assignable to type 'object'.`)
 })
