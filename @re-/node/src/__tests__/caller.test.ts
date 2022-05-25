@@ -10,7 +10,7 @@ describe("caller", () => {
         const result = callMe()
         assert(result).snap({
             method: `callMe`,
-            file: `../../file:/home/ssalb/2re-po/@re-/node/src/__tests__/reflected.ts`,
+            file: `reflected.ts`,
             line: 8,
             char: 12
         })
@@ -18,10 +18,10 @@ describe("caller", () => {
     test("anonymous", () => {
         const result = callMeAnonymous()
         assert(result).snap({
-            char: 35,
-            file: "reflected.ts",
-            line: 19,
-            method: "callMeAnonymous"
+            method: `callMeAnonymous`,
+            file: `reflected.ts`,
+            line: 11,
+            char: 68
         })
     })
     test("fromDir", () => {
@@ -31,7 +31,7 @@ describe("caller", () => {
         } else {
             assert(result).snap({
                 method: `callMeFromDir`,
-                file: `../../file:/home/ssalb/2re-po/@re-/node/src/__tests__/fromDir/reflectedFromDir.ts`,
+                file: `fromDir/reflectedFromDir.ts`,
                 line: 8,
                 char: 12
             })
@@ -40,10 +40,10 @@ describe("caller", () => {
     test("with custom seperator", () => {
         const result = callPipeSeperated()
         assert(result).snap({
-            char: 12,
-            file: "fromDir|reflectedFromDir.ts",
+            method: `callPipeSeperated`,
+            file: `fromDir|reflectedFromDir.ts`,
             line: 14,
-            method: "callPipeSeperated"
+            char: 12
         })
     })
     test("with methodName", () => {

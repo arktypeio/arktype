@@ -1,4 +1,5 @@
 import path from "node:path"
+import { fileURLToPath } from "node:url"
 import { isDeepStrictEqual } from "node:util"
 // @ts-ignore Can't resolve these types yet with NodeNext
 import getCurrentLine from "get-current-line"
@@ -37,10 +38,13 @@ export const formatFilePath = (
     { relative, seperator }: FormatFilePathOptions
 ) => {
     let formatted = original
+    if (original.startsWith("file:///")) {
+        formatted = fileURLToPath(original)
+    }
     if (relative) {
         formatted = path.relative(
             typeof relative === "string" ? relative : process.cwd(),
-            original
+            formatted
         )
     }
     if (seperator) {

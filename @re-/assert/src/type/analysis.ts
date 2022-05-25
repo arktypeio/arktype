@@ -30,9 +30,12 @@ export const cacheAssertions = ({ forcePrecache }: SetupCacheOptions = {}) => {
 
 export const cleanupAssertions = () => {
     const config = getReAssertConfig()
-    writeQueuedSnapshotUpdates(config.precachePath)
-    if (!config.preserveCache) {
-        rmSync(config.precachePath, { force: true })
+    try {
+        writeQueuedSnapshotUpdates(config.precachePath)
+    } finally {
+        if (!config.preserveCache) {
+            rmSync(config.precachePath, { force: true })
+        }
     }
 }
 

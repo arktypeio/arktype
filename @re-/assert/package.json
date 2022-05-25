@@ -20,10 +20,10 @@
     },
     "scripts": {
         "build": "re tsc",
-        "test": "./dist/cjs/runner.js mocha"
+        "test": "node --no-warnings --loader ts-node/esm ./src/runner.ts mocha"
     },
     "bin": {
-        "reassert": "./dist/cjs/runner.js"
+        "reassert": "./runner.cjs"
     },
     "dependencies": {
         "@re-/tools": "workspace:*",

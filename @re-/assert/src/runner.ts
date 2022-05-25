@@ -7,7 +7,9 @@ import { fileName, requireResolve, shell } from "@re-/node"
 import { cacheAssertions, cleanupAssertions } from "./index.js"
 
 let runTestsCmd = ""
-const runnerArgIndex = process.argv.indexOf(fileName())
+const runnerArgIndex = process.argv.findIndex((arg) =>
+    /.*runner\.c?(j|t)s$/.test(arg)
+)
 if (runnerArgIndex === -1) {
     throw new Error(
         `Unable to parse @re-/assert CLI args '${process.argv.join(
@@ -55,6 +57,9 @@ if (runner === "node") {
     runTestsCmd += runnerBinPath + " "
 }
 runTestsCmd += process.argv.slice(runnerArgIndex + 2).join(" ")
-cacheAssertions({ forcePrecache: true })
-shell(runTestsCmd)
-cleanupAssertions()
+try {
+    cacheAssertions({ forcePrecache: true })
+    shell(runTestsCmd)
+} finally {
+    cleanupAssertions()
+}

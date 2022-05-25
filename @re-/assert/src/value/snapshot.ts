@@ -1,6 +1,6 @@
 import { basename, dirname, isAbsolute, join } from "node:path"
 import { readJson, writeJson } from "@re-/node"
-import { CallExpression, SyntaxKind, ts } from "ts-morph"
+import { CallExpression, Identifier, SyntaxKind, ts } from "ts-morph"
 import { rewriteJson, SourcePosition } from "../common.js"
 import { getTsProject } from "../type/analysis.js"
 
@@ -62,7 +62,10 @@ export const writeInlineSnapshotToFile = ({
         .find(
             (ancestor) =>
                 ancestor.getKind() === SyntaxKind.CallExpression &&
-                ancestor.getText().replace(" ", "").endsWith("snap()")
+                ancestor
+                    .asKind(SyntaxKind.CallExpression)
+                    ?.getExpressionIfKind(SyntaxKind.PropertyAccessExpression)
+                    ?.getName() === "snap"
         ) as CallExpression | undefined
     if (!snapCall) {
         throw new Error(
@@ -71,6 +74,9 @@ export const writeInlineSnapshotToFile = ({
         )
     }
     process.on("exit", () => {
+        for (const originalArg of snapCall.getArguments()) {
+            snapCall.removeArgument(originalArg)
+        }
         snapCall.addArgument(serializedValue)
         file.saveSync()
     })
