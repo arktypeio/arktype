@@ -1,7 +1,9 @@
+import { randomUUID } from "node:crypto"
+import { readdirSync } from "node:fs"
 import { basename, dirname, isAbsolute, join } from "node:path"
 import { readJson, writeJson } from "@re-/node"
 import { CallExpression, SyntaxKind, ts } from "ts-morph"
-import { rewriteJson, SourcePosition } from "../common.js"
+import { SourcePosition } from "../common.js"
 import { getTsProject } from "../type/analysis.js"
 
 export interface BaseSnapshotArgs {
@@ -18,25 +20,39 @@ export interface ExternalSnapshotArgs extends BaseSnapshotArgs {
     customPath: string | undefined
 }
 
-const getQueuedSnapshotUpdates = (cachePath: string): BaseSnapshotArgs[] => {
-    const cacheData = readJson(cachePath)
-    return cacheData.queuedUpdates ?? []
-}
-
 export const queueInlineSnapshotUpdate = ({
     position,
-    serializedValue: value,
+    serializedValue,
     cachePath
 }: QueueInlineSnapshotArgs) => {
-    const queuedUpdates = getQueuedSnapshotUpdates(cachePath)
-    queuedUpdates.push({ position, serializedValue: value })
-    rewriteJson(cachePath, (data) => ({ ...data, queuedUpdates }))
+    const snapshotQueueDir: string = readJson(cachePath).snapshotQueueDir
+    writeJson(join(snapshotQueueDir, `snap-${randomUUID()}.json`), {
+        position,
+        serializedValue
+    })
 }
 
-export const writeQueuedSnapshotUpdates = (cachePath: string) => {
-    const queuedUpdates = getQueuedSnapshotUpdates(cachePath)
-    for (const update of queuedUpdates) {
-        writeInlineSnapshotToFile(update)
+export const writeQueuedSnapshotUpdates = (snapshotQueueDir: string) => {
+    for (const updateFile of readdirSync(snapshotQueueDir)) {
+        if (/snaps*\.json$/.test(updateFile)) {
+            let snapshotData: BaseSnapshotArgs | undefined
+            try {
+                snapshotData = readJson(updateFile)
+            } catch {
+                // If we can't read the snapshot, log an error and move onto the next update
+                console.error(
+                    `Unable to read snapshot data from expected location ${updateFile}.`
+                )
+            }
+            if (snapshotData) {
+                try {
+                    writeInlineSnapshotToFile(snapshotData)
+                } catch (error) {
+                    // If writeInlineSnapshotToFile throws an error, log it and move on to the next update
+                    console.error(String(error))
+                }
+            }
+        }
     }
 }
 

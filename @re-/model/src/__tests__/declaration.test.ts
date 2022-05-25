@@ -42,10 +42,10 @@ describe("declare", () => {
                 // @ts-expect-error
                 wontDefineThis: "string"
             })
-        )
-            .throws(
-                "Defined types 'cantDefineThis', 'wontDefineThis' were never declared."
-            )
-            .type.errors.snap()
+        ).throws(
+            "Defined types 'cantDefineThis', 'wontDefineThis' were never declared."
+        ).type.errors
+            .snap(`Type '"boolean"' is not assignable to type '"Invalid property 'cantDefineThis'. Valid properties are: gottaDefineThis"'.
+Type '"string"' is not assignable to type '"Invalid property 'wontDefineThis'. Valid properties are: gottaDefineThis"'.`)
     })
 })

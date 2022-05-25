@@ -34,7 +34,6 @@ module.exports = defineConfig({
         /**
          * Conventions
          */
-        "multiline-comment-style": ["error", "starred-block"],
         "@typescript-eslint/consistent-type-assertions": [
             "error",
             { assertionStyle: "as" }

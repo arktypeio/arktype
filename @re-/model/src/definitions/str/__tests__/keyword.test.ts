@@ -13,7 +13,7 @@ describe("keyword", () => {
         test("validation", () => {
             assert(s.validate("KEKW").error).is(undefined)
             assert(s.validate(["whoops"]).error).snap(
-                `"['whoops'] is not assignable to string."`
+                `['whoops'] is not assignable to string.`
             )
         })
     })
@@ -29,7 +29,7 @@ describe("keyword", () => {
             assert(n.validate(-83).error).is(undefined)
             assert(n.validate(0.999).error).is(undefined)
             assert(n.validate("42").error).snap(
-                `"'42' is not assignable to number."`
+                `'42' is not assignable to number.`
             )
         })
     })
@@ -44,9 +44,7 @@ describe("keyword", () => {
         test("validation", () => {
             assert(b.validate(true).error).is(undefined)
             assert(b.validate(false).error).is(undefined)
-            assert(b.validate(0).error).snap(
-                `"0 is not assignable to boolean."`
-            )
+            assert(b.validate(0).error).snap(`0 is not assignable to boolean.`)
         })
     })
     describe("true", () => {
@@ -60,7 +58,7 @@ describe("keyword", () => {
         test("validation", () => {
             assert(t.validate(true).error).is(undefined)
             assert(t.validate(false).error).snap(
-                `"false is not assignable to true."`
+                `false is not assignable to true.`
             )
         })
     })
@@ -75,7 +73,7 @@ describe("keyword", () => {
         test("validation", () => {
             assert(f.validate(false).error).is(undefined)
             assert(f.validate(true).error).snap(
-                `"true is not assignable to false."`
+                `true is not assignable to false.`
             )
         })
     })
@@ -90,7 +88,7 @@ describe("keyword", () => {
         test("validation", () => {
             assert(b.validate(999n).error).is(undefined)
             assert(b.validate(999).error).snap(
-                `"999 is not assignable to bigint."`
+                `999 is not assignable to bigint.`
             )
         })
     })
@@ -105,7 +103,7 @@ describe("keyword", () => {
         test("validation", () => {
             assert(s.validate(Symbol("")).error).is(undefined)
             assert(s.validate("@").error).snap(
-                `"'@' is not assignable to symbol."`
+                `'@' is not assignable to symbol.`
             )
         })
     })
@@ -122,7 +120,7 @@ describe("keyword", () => {
         test("validation", () => {
             assert(f.validate(() => ({})).error).is(undefined)
             assert(f.validate({}).error).snap(
-                `"{} is not assignable to function."`
+                `{} is not assignable to function.`
             )
         })
     })
@@ -138,7 +136,7 @@ describe("keyword", () => {
             assert(o.validate([]).error).is(undefined)
             assert(o.validate({}).error).is(undefined)
             assert(o.validate(null).error).snap(
-                `"null is not assignable to object."`
+                `null is not assignable to object.`
             )
         })
     })
@@ -153,7 +151,7 @@ describe("keyword", () => {
         test("validation", () => {
             assert(u.validate(undefined).error).is(undefined)
             assert(u.validate(null).error).snap(
-                `"null is not assignable to undefined."`
+                `null is not assignable to undefined.`
             )
         })
     })
@@ -168,7 +166,7 @@ describe("keyword", () => {
         test("validation", () => {
             assert(n.validate(null).error).is(undefined)
             assert(n.validate(undefined).error).snap(
-                `"undefined is not assignable to null."`
+                `undefined is not assignable to null.`
             )
         })
     })
@@ -183,7 +181,7 @@ describe("keyword", () => {
         test("validation", () => {
             assert(v.validate(undefined).error).is(undefined)
             assert(v.validate(null).error).snap(
-                `"null is not assignable to void."`
+                `null is not assignable to void.`
             )
         })
     })
@@ -229,10 +227,10 @@ describe("keyword", () => {
         })
         test("validation", () => {
             assert(n.validate("sometimes").error).snap(
-                `"'sometimes' is not assignable to never."`
+                `'sometimes' is not assignable to never.`
             )
             assert(n.validate(undefined).error).snap(
-                `"undefined is not assignable to never."`
+                `undefined is not assignable to never.`
             )
         })
     })
@@ -241,16 +239,14 @@ describe("keyword", () => {
             const email = model("email")
             assert(email.type).typed as string
             assert(email.validate("david@redo.dev").error).is(undefined)
-            assert(email.validate("david@redo@dev").error).snap(
-                `"'david@redo@dev' is not assignable to email."`
-            )
+            assert(email.validate("david@redo@dev").error).snap(undefined)
         })
         test("alpha", () => {
             const alpha = model("alpha")
             assert(alpha.type).typed as string
             assert(alpha.validate("aBc").error).is(undefined)
             assert(alpha.validate("a B c").error).snap(
-                `"'a B c' is not assignable to alpha."`
+                `'a B c' is not assignable to alpha.`
             )
         })
         test("alphanumeric", () => {
@@ -258,7 +254,7 @@ describe("keyword", () => {
             assert(alphaNumeric.type).typed as string
             assert(alphaNumeric.validate("aBc123").error).is(undefined)
             assert(alphaNumeric.validate("aBc+123").error).snap(
-                `"'aBc+123' is not assignable to alphanumeric."`
+                `'aBc+123' is not assignable to alphanumeric.`
             )
         })
         test("lowercase", () => {
@@ -268,7 +264,7 @@ describe("keyword", () => {
                 undefined
             )
             assert(lowercase.validate("whoOps").error).snap(
-                `"'whoOps' is not assignable to lowercase."`
+                `'whoOps' is not assignable to lowercase.`
             )
         })
         test("uppercase", () => {
@@ -278,7 +274,7 @@ describe("keyword", () => {
                 undefined
             )
             assert(uppercase.validate("WHOoPS").error).snap(
-                `"'WHOoPS' is not assignable to uppercase."`
+                `'WHOoPS' is not assignable to uppercase.`
             )
         })
         test("character", () => {
@@ -286,7 +282,7 @@ describe("keyword", () => {
             assert(character.type).typed as string
             assert(character.validate("!").error).is(undefined)
             assert(character.validate(":(").error).snap(
-                `"':(' is not assignable to character."`
+                `':(' is not assignable to character.`
             )
         })
     })
@@ -296,7 +292,7 @@ describe("keyword", () => {
             assert(integer.type).typed as number
             assert(integer.validate(5).error).is(undefined)
             assert(integer.validate(5.0001).error).snap(
-                `"5.0001 is not assignable to integer."`
+                `5.0001 is not assignable to integer.`
             )
         })
         test("positive", () => {
@@ -304,7 +300,7 @@ describe("keyword", () => {
             assert(positive.type).typed as number
             assert(positive.validate(0.0001).error).is(undefined)
             assert(positive.validate(-0.0001).error).snap(
-                `"-0.0001 is not assignable to positive."`
+                `-0.0001 is not assignable to positive.`
             )
         })
         test("nonNegative", () => {
@@ -312,7 +308,7 @@ describe("keyword", () => {
             assert(nonNegative.type).typed as number
             assert(nonNegative.validate(0).error).is(undefined)
             assert(nonNegative.validate(-999).error).snap(
-                `"-999 is not assignable to nonnegative."`
+                `-999 is not assignable to nonnegative.`
             )
         })
     })

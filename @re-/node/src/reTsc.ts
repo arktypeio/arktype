@@ -55,26 +55,30 @@ export const buildTypes = () => {
 type SwcOptions = {
     outDir: string
     moduleType?: string
+    sourceMaps?: boolean
 }
 
-const swc = ({ outDir, moduleType }: SwcOptions) => {
+const swc = ({ outDir, moduleType, sourceMaps }: SwcOptions) => {
     let cmd = `node ${requireResolve(
         "@swc/cli"
     )} --out-dir ${outDir} -C jsc.target=es2015 --quiet `
     if (moduleType) {
-        cmd += ` -C module.type=${moduleType} `
+        cmd += `-C module.type=${moduleType} `
+    }
+    if (sourceMaps) {
+        cmd += `--source-maps inline `
     }
     cmd += inFiles.join(" ")
     shell(cmd, { suppressCmdStringLogging: true })
 }
 
 export const buildEsm = () => {
-    swc({ outDir: mjsOut })
+    swc({ outDir: mjsOut, sourceMaps: true })
     writeJson(join(mjsOut, "package.json"), { type: "module" })
 }
 
 export const buildCjs = () => {
-    swc({ outDir: cjsOut, moduleType: "commonjs" })
+    swc({ outDir: cjsOut, moduleType: "commonjs", sourceMaps: true })
     writeJson(join(cjsOut, "package.json"), { type: "commonjs" })
 }
 

@@ -96,76 +96,76 @@ describe("constraint", () => {
         describe("errors", () => {
             test("invalid string length", () => {
                 assert(model("string>4").validate("four").error).snap(
-                    `"'four' is less than or equal to 4 characters."`
+                    `'four' is less than or equal to 4 characters.`
                 )
                 assert(model("string>4").validate("4").error).snap(
-                    `"'4' is less than or equal to 4 characters."`
+                    `'4' is less than or equal to 4 characters.`
                 )
                 assert(model("string<4").validate("four").error).snap(
-                    `"'four' is greater than or equal to 4 characters."`
+                    `'four' is greater than or equal to 4 characters.`
                 )
                 assert(
                     model("string<4").validate("longerThanFourCharacters").error
                 ).snap(
-                    `"'longerThanFourCharacters' is greater than or equal to 4 characters."`
+                    `'longerThanFourCharacters' is greater than or equal to 4 characters.`
                 )
                 assert(model("string>=4").validate("4").error).snap(
-                    `"'4' is less than 4 characters."`
+                    `'4' is less than 4 characters.`
                 )
                 assert(
                     model("string<=4").validate("longerThanFourCharacters")
                         .error
                 ).snap(
-                    `"'longerThanFourCharacters' is greater than 4 characters."`
+                    `'longerThanFourCharacters' is greater than 4 characters.`
                 )
             })
             test("single-bounded invalid", () => {
                 assert(model("number<=5").validate(7).error).snap(
-                    `"7 is greater than 5."`
+                    `7 is greater than 5.`
                 )
                 assert(model("number>=-999").validate(-1000).error).snap(
-                    `"-1000 is less than -999."`
+                    `-1000 is less than -999.`
                 )
                 assert(model("number<5").validate(5).error).snap(
-                    `"5 is greater than or equal to 5."`
+                    `5 is greater than or equal to 5.`
                 )
                 assert(model("number<5").validate(9999).error).snap(
-                    `"9999 is greater than or equal to 5."`
+                    `9999 is greater than or equal to 5.`
                 )
                 assert(model("number>-5").validate(-5).error).snap(
-                    `"-5 is less than or equal to -5."`
+                    `-5 is less than or equal to -5.`
                 )
                 assert(model("number>-5").validate(-1000).error).snap(
-                    `"-1000 is less than or equal to -5."`
+                    `-1000 is less than or equal to -5.`
                 )
             })
             test("double-bounded invalid", () => {
                 assert(model("5<number<10").validate(-9).error).snap(
-                    `"-9 is less than or equal to 5."`
+                    `-9 is less than or equal to 5.`
                 )
                 assert(model("5<number<10").validate(99).error).snap(
-                    `"99 is greater than or equal to 10."`
+                    `99 is greater than or equal to 10.`
                 )
                 assert(model("7>number>-2000").validate(-3000).error).snap(
-                    `"-3000 is less than or equal to -2000."`
+                    `-3000 is less than or equal to -2000.`
                 )
                 assert(model("7>number>-2000").validate(3000).error).snap(
-                    `"3000 is greater than or equal to 7."`
+                    `3000 is greater than or equal to 7.`
                 )
                 assert(model("5<=number<9999").validate(9999).error).snap(
-                    `"9999 is greater than or equal to 9999."`
+                    `9999 is greater than or equal to 9999.`
                 )
                 assert(model("5<=number<9999").validate(10_000).error).snap(
-                    `"10000 is greater than or equal to 9999."`
+                    `10000 is greater than or equal to 9999.`
                 )
                 assert(model("5<=number<9999").validate(4).error).snap(
-                    `"4 is less than 5."`
+                    `4 is less than 5.`
                 )
                 assert(model("-5>=number>=-1000").validate(0).error).snap(
-                    `"0 is greater than -5."`
+                    `0 is greater than -5.`
                 )
                 assert(model("-5>=number>=-1000").validate(-1001).error).snap(
-                    `"-1001 is less than -1000."`
+                    `-1001 is less than -1000.`
                 )
             })
         })
@@ -173,7 +173,7 @@ describe("constraint", () => {
     describe("generation", () => {
         test("unsupported", () => {
             assert(() => model("1<number<5").generate()).throws.snap(
-                `"Unable to generate a value for '1<number<5' (constraint generation is unsupported)."`
+                `Unable to generate a value for '1<number<5' (constraint generation is unsupported).`
             )
         })
     })

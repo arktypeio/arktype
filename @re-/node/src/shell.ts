@@ -1,3 +1,4 @@
+import { platform } from "node:os"
 import {
     command,
     commandSync,
@@ -22,6 +23,26 @@ const defaultOptions: SyncOptions = {
 }
 
 export type ShellResult = ExecaSyncReturnValue
+
+export const getCmdFromPid = (pid: number) => {
+    if (platform() === "win32") {
+        const { stdout } = shell(
+            `wmic.exe path Win32_Process where handle='${pid}' get commandline`,
+            { reject: false }
+        )
+        if (stdout.includes("No Instance(s) Available.")) {
+            return undefined
+        }
+        return stdout
+    }
+    const { stdout } = shell(`xargs -0 < /proc/${pid}/cmdline`, {
+        reject: false
+    })
+    if (stdout.includes("No such file or directory")) {
+        return undefined
+    }
+    return stdout
+}
 
 export const shell = (
     cmd: string,

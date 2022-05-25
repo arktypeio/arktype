@@ -1,4 +1,4 @@
-import { existsSync, rmSync } from "node:fs"
+import { existsSync, mkdtempSync, rmSync } from "node:fs"
 import { relative } from "node:path"
 import { readJson, writeJson } from "@re-/node"
 import { Project, SyntaxKind, ts, Type } from "ts-morph"
@@ -22,20 +22,32 @@ export const cacheAssertions = ({ forcePrecache }: SetupCacheOptions = {}) => {
                 ` of your re.json config to enable precaching.`
         )
     }
-    writeJson(
-        config.precachePath,
-        analyzeTypeAssertions({ isInitialCache: true })
-    )
+    writeJson(config.precachePath, {
+        snapshotQueueDir: mkdtempSync("reassert-snapshots"),
+        ...analyzeTypeAssertions({ isInitialCache: true })
+    })
 }
 
 export const cleanupAssertions = () => {
     const config = getReAssertConfig()
+    const snapshotQueueDir = readJson(config.precachePath).snapshotQueueDir
+    if (!snapshotQueueDir) {
+        throw new Error(
+            `Unable to update snapshots as 'snapshotQueueDir' was missing from ${config.precachePath}.`
+        )
+    }
+    if (!existsSync(snapshotQueueDir)) {
+        throw new Error(
+            `Unable to update snapshots as specified directory ${snapshotQueueDir} does not exist.`
+        )
+    }
     try {
-        writeQueuedSnapshotUpdates(config.precachePath)
+        writeQueuedSnapshotUpdates(snapshotQueueDir)
     } finally {
         if (!config.preserveCache) {
             rmSync(config.precachePath, { force: true })
         }
+        // rmSync(snapshotQueueDir, { recursive: true, force: true })
     }
 }
 

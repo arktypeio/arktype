@@ -48,7 +48,7 @@ describe("union", () => {
             })
             test("several types", () => {
                 assert(model("2|4|6|8").validate(5).error).snap(
-                    `"5 is not assignable to any of 2|4|6|8."`
+                    `5 is not assignable to any of 2|4|6|8.`
                 )
             })
         })

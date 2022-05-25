@@ -56,10 +56,14 @@ if (runner === "node") {
     }
     runTestsCmd += runnerBinPath + " "
 }
-runTestsCmd += process.argv.slice(runnerArgIndex + 2).join(" ")
+
+const runnerArgs = process.argv.slice(runnerArgIndex + 2).join(" ")
+
+runTestsCmd += runnerArgs
+
 try {
     cacheAssertions({ forcePrecache: true })
-    shell(runTestsCmd)
+    shell(runTestsCmd, { env: { RE_ASSERT_CMD: runTestsCmd } })
 } finally {
     cleanupAssertions()
 }

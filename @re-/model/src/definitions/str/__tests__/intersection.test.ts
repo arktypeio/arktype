@@ -44,24 +44,24 @@ describe("intersection", () => {
             test("empty intersection", () => {
                 // @ts-ignore
                 assert(model("number&string").validate("5").error).snap(
-                    `"'5' is not assignable to all of number&string."`
+                    `'5' is not assignable to all of number&string.`
                 )
             })
             test("two types", () => {
                 assert(model("boolean&true").validate("false").error).snap(
-                    `"'false' is not assignable to all of boolean&true."`
+                    `'false' is not assignable to all of boolean&true.`
                 )
             })
             test("several types", () => {
                 assert(
                     model("unknown&true&boolean").validate(false).error
                 ).snap(
-                    `"false is not assignable to all of unknown&true&boolean."`
+                    `false is not assignable to all of unknown&true&boolean.`
                 )
             })
             test("bad keyword specifiers", () => {
                 assert(model("integer&positive").validate(7.5).error).snap(
-                    `"7.5 is not assignable to all of integer&positive."`
+                    `7.5 is not assignable to all of integer&positive.`
                 )
             })
         })
@@ -69,7 +69,7 @@ describe("intersection", () => {
     describe("generation", () => {
         test("unsupported", () => {
             assert(() => model("boolean&true").generate()).throws.snap(
-                `"Unable to generate a value for 'boolean&true' (intersection generation is unsupported)."`
+                `Unable to generate a value for 'boolean&true' (intersection generation is unsupported).`
             )
         })
     })

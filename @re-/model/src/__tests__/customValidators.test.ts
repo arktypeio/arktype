@@ -49,7 +49,7 @@ describe("custom validators", () => {
             undefined
         )
         assert(space.models.yourPal.validate({ name: "rob" }).error).snap(
-            `"At path name, rob is not a palindrome!"`
+            `At path name, rob is not a palindrome!`
         )
     })
     test("space", () => {
@@ -101,7 +101,7 @@ describe("custom validators", () => {
         })
         assert(num.validate(7.43).error).is(undefined)
         assert(num.validate("ssalbdivad").error).snap(
-            `"'ssalbdivad' is not assignable to number.!!!"`
+            `'ssalbdivad' is not assignable to number.!!!`
         )
     })
 })

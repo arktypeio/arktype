@@ -35,12 +35,12 @@ describe("bigintLiteral", () => {
         describe("errors", () => {
             test("wrong value", () => {
                 assert(model("999n").validate(1000n).error).snap(
-                    `"1000n is not assignable to 999n."`
+                    `1000n is not assignable to 999n.`
                 )
             })
             test("non-bigint", () => {
                 assert(model("0n").validate(0).error).snap(
-                    `"0 is not assignable to 0n."`
+                    `0 is not assignable to 0n.`
                 )
             })
         })

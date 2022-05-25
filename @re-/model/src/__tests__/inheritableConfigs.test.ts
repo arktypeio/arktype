@@ -9,7 +9,7 @@ describe("inheritable configs", () => {
                     name: "David Blass",
                     age: 28
                 }).error
-            ).snap(`"Keys 'age' were unexpected."`)
+            ).snap(`Keys 'age' were unexpected.`)
         })
         test("ad hoc", () => {
             const user = model({ name: "string" })

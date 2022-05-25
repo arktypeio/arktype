@@ -39,7 +39,7 @@ describe("regex", () => {
             })
             test("non-string", () => {
                 assert(model("/^[0-9]*$/").validate(5).error).snap(
-                    `"5 is not assignable to /^[0-9]*$/."`
+                    `5 is not assignable to /^[0-9]*$/.`
                 )
             })
             test("messy string", () => {
