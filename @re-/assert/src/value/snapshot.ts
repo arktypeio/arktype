@@ -1,6 +1,6 @@
 import { basename, dirname, isAbsolute, join } from "node:path"
 import { readJson, writeJson } from "@re-/node"
-import { CallExpression, Identifier, SyntaxKind, ts } from "ts-morph"
+import { CallExpression, SyntaxKind, ts } from "ts-morph"
 import { rewriteJson, SourcePosition } from "../common.js"
 import { getTsProject } from "../type/analysis.js"
 
