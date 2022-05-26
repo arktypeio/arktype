@@ -3,32 +3,32 @@ import { model } from "@re-/model"
 
 describe("constraint", () => {
     describe("type", () => {
-        test("single-bounded", () => {
+        it("single-bounded", () => {
             assert(model("string>5").type).typed as string
         })
-        test("double-bounded", () => {
+        it("double-bounded", () => {
             assert(model("-7<integer<99").type).typed as number
         })
         describe("errors", () => {
-            test("invalid single bound", () => {
+            it("invalid single bound", () => {
                 // @ts-expect-error
                 assert(() => model("number<integer")).throwsAndHasTypeError(
                     "'integer' must be a number literal to bound 'number'."
                 )
             })
-            test("invalid left bound", () => {
+            it("invalid left bound", () => {
                 // @ts-expect-error
                 assert(() => model("null<number<5")).throwsAndHasTypeError(
                     "'null' must be a number literal to bound 'number'."
                 )
             })
-            test("invalid right bound", () => {
+            it("invalid right bound", () => {
                 // @ts-expect-error
                 assert(() => model("1<number<string")).throwsAndHasTypeError(
                     "'string' must be a number literal to bound 'number'."
                 )
             })
-            test("two invalid bounds", () => {
+            it("two invalid bounds", () => {
                 assert(() =>
                     // @ts-expect-error
                     model("number<number<number")
@@ -36,25 +36,25 @@ describe("constraint", () => {
                     "'number' must be a number literal to bound 'number'."
                 )
             })
-            test("single-bounded unboundable", () => {
+            it("single-bounded unboundable", () => {
                 // @ts-expect-error
                 assert(() => model("object<999")).throwsAndHasTypeError(
                     "Bounded definition 'object' must be a number or string keyword."
                 )
             })
-            test("double-bounded unboundable", () => {
+            it("double-bounded unboundable", () => {
                 // @ts-expect-error
                 assert(() => model("1<object<999")).throwsAndHasTypeError(
                     "Bounded definition 'object' must be a number or string keyword."
                 )
             })
-            test("doubly invalid bounded unboundable", () => {
+            it("doubly invalid bounded unboundable", () => {
                 // @ts-expect-error
                 assert(() => model("null<object<true")).throwsAndHasTypeError(
                     "Bounded definition 'object' must be a number or string keyword."
                 )
             })
-            test("too many values", () => {
+            it("too many values", () => {
                 // @ts-expect-error
                 assert(() => model("1<2<number<4")).throwsAndHasTypeError(
                     "Constraints must be either of the form N<L or L<N<L, where N is a constrainable type (e.g. number), L is a number literal (e.g. 5), and < is any comparison operator."
@@ -63,7 +63,7 @@ describe("constraint", () => {
         })
     })
     describe("validation", () => {
-        test("string length", () => {
+        it("string length", () => {
             assert(
                 model("string>4").validate("longerThanFourCharacters").error
             ).is(undefined)
@@ -75,7 +75,7 @@ describe("constraint", () => {
                 model("string>=4").validate("longerThanFourCharacters").error
             ).is(undefined)
         })
-        test("valid single-bounded", () => {
+        it("valid single-bounded", () => {
             assert(model("number>5").validate(7).error).is(undefined)
             assert(model("number<-999").validate(-1000).error).is(undefined)
             assert(model("number>=5").validate(5).error).is(undefined)
@@ -83,7 +83,7 @@ describe("constraint", () => {
             assert(model("number<=-5").validate(-5).error).is(undefined)
             assert(model("number<=-5").validate(-1000).error).is(undefined)
         })
-        test("valid double-bounded", () => {
+        it("valid double-bounded", () => {
             assert(model("5<number<10").validate(7).error).is(undefined)
             assert(model("7>number>-2000").validate(-1000).error).is(undefined)
             assert(model("5<=number<9999").validate(5).error).is(undefined)
@@ -94,7 +94,7 @@ describe("constraint", () => {
             )
         })
         describe("errors", () => {
-            test("invalid string length", () => {
+            it("invalid string length", () => {
                 assert(model("string>4").validate("four").error).snap(
                     `'four' is less than or equal to 4 characters.`
                 )
@@ -119,7 +119,7 @@ describe("constraint", () => {
                     `'longerThanFourCharacters' is greater than 4 characters.`
                 )
             })
-            test("single-bounded invalid", () => {
+            it("single-bounded invalid", () => {
                 assert(model("number<=5").validate(7).error).snap(
                     `7 is greater than 5.`
                 )
@@ -139,7 +139,7 @@ describe("constraint", () => {
                     `-1000 is less than or equal to -5.`
                 )
             })
-            test("double-bounded invalid", () => {
+            it("double-bounded invalid", () => {
                 assert(model("5<number<10").validate(-9).error).snap(
                     `-9 is less than or equal to 5.`
                 )
@@ -171,7 +171,7 @@ describe("constraint", () => {
         })
     })
     describe("generation", () => {
-        test("unsupported", () => {
+        it("unsupported", () => {
             assert(() => model("1<number<5").generate()).throws.snap(
                 `Unable to generate a value for '1<number<5' (constraint generation is unsupported).`
             )

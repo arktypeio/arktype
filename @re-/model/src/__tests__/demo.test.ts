@@ -3,7 +3,7 @@ import { assert } from "@re-/assert"
 import { compile, model } from "@re-/model"
 
 describe("demo", () => {
-    test("model", () => {
+    it("model", () => {
         // Most common TypeScript expressions just work...
         const user = model({
             name: {
@@ -40,7 +40,7 @@ describe("demo", () => {
             "At path browser, 'Internet Explorer' is not assignable to any of 'chrome'|'firefox'|'other'|null."
         )
     })
-    test("space", () => {
+    it("space", () => {
         const space = compile({
             user: {
                 name: "string",
@@ -74,7 +74,7 @@ describe("demo", () => {
         )
     })
     // See multifile.assert.ts for declaration demo
-    test("constraints", () => {
+    it("constraints", () => {
         const employee = model({
             // Not a fan of regex? Don't worry, 'email' is a builtin type :)
             email: /[a-z]*@redo\.dev/,

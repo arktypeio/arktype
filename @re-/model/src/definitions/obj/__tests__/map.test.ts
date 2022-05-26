@@ -2,19 +2,17 @@ import { assert } from "@re-/assert"
 import { model } from "@re-/model"
 import { lazily } from "@re-/tools"
 
-export const testMap = () => {
+describe("map", () => {
     describe("empty", () => {
         const empty = lazily(() => model({}))
-        test("type", () => {
+        it("type", () => {
             assert(empty.type).typed as {}
         })
-        test("validation", () => {
+        it("validation", () => {
             assert(empty.validate({}).error).is(undefined)
-            assert(empty.validate([]).error).snap(
-                `"[] is not assignable to {}."`
-            )
+            assert(empty.validate([]).error).snap(`[] is not assignable to {}.`)
         })
-        test("generation", () => {
+        it("generation", () => {
             assert(empty.generate()).equals({})
         })
     })
@@ -26,7 +24,7 @@ export const testMap = () => {
                 c: 67
             })
         )
-        test("type", () => {
+        it("type", () => {
             assert(shallow.type).typed as {
                 a: string
                 b: number
@@ -34,12 +32,12 @@ export const testMap = () => {
             }
         })
         describe("validation", () => {
-            test("standard", () => {
+            it("standard", () => {
                 assert(shallow.validate({ a: "ok", b: 4.321, c: 67 }).error).is(
                     undefined
                 )
             })
-            test("ignore extraneous keys", () => {
+            it("ignore extraneous keys", () => {
                 assert(
                     shallow.validate(
                         {
@@ -63,20 +61,20 @@ export const testMap = () => {
 
                         { ignoreExtraneousKeys: true }
                     ).error
-                ).snap(`"Required keys 'b' were missing."`)
+                ).snap(`Required keys 'b' were missing.`)
             })
             describe("errors", () => {
-                test("bad value", () => {
+                it("bad value", () => {
                     assert(
                         shallow.validate({ a: "ko", b: 123.4, c: 76 }).error
-                    ).snap(`"At path c, 76 is not assignable to 67."`)
+                    ).snap(`At path c, 76 is not assignable to 67.`)
                 })
-                test("missing keys", () => {
+                it("missing keys", () => {
                     assert(shallow.validate({ a: "ok" }).error).snap(
-                        `"Required keys 'b, c' were missing."`
+                        `Required keys 'b, c' were missing.`
                     )
                 })
-                test("extraneous keys", () => {
+                it("extraneous keys", () => {
                     assert(
                         shallow.validate({
                             a: "ok",
@@ -85,9 +83,9 @@ export const testMap = () => {
                             d: "extraneous",
                             e: "x-ray-knee-us"
                         }).error
-                    ).snap(`"Keys 'd, e' were unexpected."`)
+                    ).snap(`Keys 'd, e' were unexpected.`)
                 })
-                test("missing and extraneous keys", () => {
+                it("missing and extraneous keys", () => {
                     assert(
                         shallow.validate({
                             a: "ok",
@@ -95,12 +93,12 @@ export const testMap = () => {
                             e: "x-ray-knee-us"
                         }).error
                     ).snap(
-                        `"Required keys 'b, c' were missing. Keys 'd, e' were unexpected."`
+                        `Required keys 'b, c' were missing. Keys 'd, e' were unexpected.`
                     )
                 })
             })
         })
-        test("generation", () => {
+        it("generation", () => {
             assert(shallow.generate()).equals({ a: "", b: 0, c: 67 })
         })
     })
@@ -113,7 +111,7 @@ export const testMap = () => {
             })
         )
         describe("type", () => {
-            test("standard", () => {
+            it("standard", () => {
                 assert(nested.type).typed as {
                     nested: {
                         russian: "doll"
@@ -121,7 +119,7 @@ export const testMap = () => {
                 }
             })
             describe("errors", () => {
-                test("invalid prop def", () => {
+                it("invalid prop def", () => {
                     // @ts-expect-error
                     assert(() => model({ a: { b: "whoops" } }))
                         .throws(
@@ -132,21 +130,21 @@ export const testMap = () => {
             })
         })
         describe("validation", () => {
-            test("standard", () => {
+            it("standard", () => {
                 assert(
                     nested.validate({ nested: { russian: "doll" } }).error
                 ).is(undefined)
             })
             describe("errors", () => {
-                test("bad prop value", () => {
+                it("bad prop value", () => {
                     assert(
                         nested.validate({ nested: { russian: "tortoise" } })
                             .error
                     ).snap(
-                        `"At path nested/russian, 'tortoise' is not assignable to 'doll'."`
+                        `At path nested/russian, 'tortoise' is not assignable to 'doll'.`
                     )
                 })
-                test("multiple", () => {
+                it("multiple", () => {
                     assert(
                         model({
                             a: { b: "string" },
@@ -157,19 +155,17 @@ export const testMap = () => {
                             c: { d: 20, y: "why?" },
                             e: { f: 0n }
                         }).error
-                    ).snap(`
-"Encountered errors at the following paths:
+                    ).snap(`Encountered errors at the following paths:
 {
   a: 'Required keys 'b' were missing.',
   c: 'Keys 'y' were unexpected.',
   e/f: '0n is not assignable to object.'
-}"
-`)
+}`)
                 })
             })
         })
-        test("generation", () => {
+        it("generation", () => {
             assert(nested.generate()).equals({ nested: { russian: "doll" } })
         })
     })
-}
+})

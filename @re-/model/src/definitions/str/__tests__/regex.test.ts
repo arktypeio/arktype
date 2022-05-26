@@ -3,17 +3,17 @@ import { model } from "@re-/model"
 
 describe("regex", () => {
     describe("type", () => {
-        test("inferred as string", () => {
+        it("inferred as string", () => {
             assert(model("/.*/").type).typed as string
         })
         describe("errors", () => {
-            test("unterminated", () => {
+            it("unterminated", () => {
                 // @ts-expect-error
                 assert(() => model("/.*")).throwsAndHasTypeError(
                     "Unable to determine the type of '/.*'."
                 )
             })
-            test("extra forward slash", () => {
+            it("extra forward slash", () => {
                 // @ts-expect-error
                 assert(() => model("/.*//")).throwsAndHasTypeError(
                     "Unable to determine the type of '/.*//'."
@@ -22,27 +22,27 @@ describe("regex", () => {
         })
     })
     describe("validation", () => {
-        test("matching string", () => {
+        it("matching string", () => {
             assert(model("/.*/").validate("dursurdo").error).is(undefined)
         })
-        test("messy string", () => {
+        it("messy string", () => {
             assert(
                 model(`/\\((a|b)\\,[^?&]*\\)=>e+f?/`).validate("(b,c)=>eee")
                     .error
             ).is(undefined)
         })
         describe("errors", () => {
-            test("bad string", () => {
+            it("bad string", () => {
                 assert(model("/^[0-9]*$/").validate("durrrrrr").error).snap(
                     "'durrrrrr' is not assignable to /^[0-9]*$/."
                 )
             })
-            test("non-string", () => {
+            it("non-string", () => {
                 assert(model("/^[0-9]*$/").validate(5).error).snap(
                     `5 is not assignable to /^[0-9]*$/.`
                 )
             })
-            test("messy string", () => {
+            it("messy string", () => {
                 assert(
                     model(`/\\((a|b)\\,[^?&]*\\)=>e+f?/`).validate(
                         "(b,c&d)=>eeef"
@@ -54,7 +54,7 @@ describe("regex", () => {
         })
     })
     describe("generation", () => {
-        test("unsupported", () => {
+        it("unsupported", () => {
             assert(() => model("/.*/").generate()).throws.snap(
                 "Unable to generate a value for '/.*/' (regex generation is unsupported)."
             )

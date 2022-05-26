@@ -2,7 +2,7 @@ import { assert } from "@re-/assert"
 import { compile } from "@re-/model"
 
 describe("stress", () => {
-    test("large simple space", () => {
+    it("large simple space", () => {
         const space = compile({
             user: {
                 name: "string",
@@ -457,7 +457,7 @@ describe("stress", () => {
         })
         assert(space.types.group12.members12[0]).typed as string
     })
-    test("large cyclic space", () => {
+    it("large cyclic space", () => {
         const space = compile({
             user: {
                 name: "string",

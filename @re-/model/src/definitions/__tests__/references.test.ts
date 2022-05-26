@@ -1,4 +1,11 @@
-export {}
+import { assert } from "@re-/assert"
+import { model } from "@re-/model"
+
+describe("resolutions", () => {
+    it("disabled", () => {
+        assert(model("true").type).typed as true
+    })
+})
 /*
  * import { assert } from "@re-/assert"
  * import { diffSets } from "@re-/tools"
@@ -9,7 +16,7 @@ export {}
 /*
  * describe("references", () => {
  *     describe("type", () => {
- *         test("primitive", () => {
+ *         it("primitive", () => {
  *             let placeholder: any
  *             assert(placeholder as ReferencesOf<null>).typed as "null"
  *             assert(placeholder as ReferencesOf<undefined>).typed as "undefined"
@@ -18,7 +25,7 @@ export {}
  *             assert(placeholder as ReferencesOf<true>).typed as "true"
  *             assert(placeholder as ReferencesOf<false>).typed as "false"
  *         })
- *         test("string", () => {
+ *         it("string", () => {
  *             const references = {} as ReferencesOf<
  *                 "(user[],group[])=>boolean|number|null",
  *                 { user: "any"; group: "any" }
@@ -39,7 +46,7 @@ export {}
  *             >
  *             assert(listedFilteredReferences).typed as ["boolean", "group"]
  *         })
- *         test("object", () => {
+ *         it("object", () => {
  *             const refs = {} as ReferencesOf<
  *                 {
  *                     listed: ["group|null", "user|null"]
@@ -61,7 +68,7 @@ export {}
 
 /*
  *     describe("value", () => {
- *         test("shallow", () => {
+ *         it("shallow", () => {
  *             assert(create(5).references()).equals(["5"]).typed as "5"[]
  *             assert(create(null).references()).equals(["null"]).typed as "null"[]
  *             assert(create(0n).references()).equals(["0n"]).typed as "0n"[]
@@ -95,7 +102,7 @@ export {}
  *             )
  *             assert(aliasReferences).typed as ("string" | "user")[]
  *         })
- *         test("object", () => {
+ *         it("object", () => {
  *             const objectReferences = create(
  *                 {
  *                     primitives: {

@@ -4,26 +4,26 @@ import { lazily } from "@re-/tools"
 
 describe("list", () => {
     describe("type", () => {
-        test("basic", () => {
+        it("basic", () => {
             assert(model("string[]").type).typed as string[]
         })
-        test("two-dimensional", () => {
+        it("two-dimensional", () => {
             assert(model("number[][]").type).typed as number[][]
         })
         describe("errors", () => {
-            test("bad item type", () => {
+            it("bad item type", () => {
                 // @ts-expect-error
                 assert(() => model("nonexistent[]")).throwsAndHasTypeError(
                     "Unable to determine the type of 'nonexistent'."
                 )
             })
-            test("unclosed bracket", () => {
+            it("unclosed bracket", () => {
                 // @ts-expect-error
                 assert(() => model("boolean[")).throwsAndHasTypeError(
                     "Unable to determine the type of 'boolean['."
                 )
             })
-            test("tuple", () => {
+            it("tuple", () => {
                 // @ts-expect-error
                 assert(() => model("[any]")).throwsAndHasTypeError(
                     "Unable to determine the type of '[any]'."
@@ -33,24 +33,24 @@ describe("list", () => {
     })
     describe("validation", () => {
         const numberArray = lazily(() => model("number[]"))
-        test("empty", () => {
+        it("empty", () => {
             assert(numberArray.validate([]).error).is(undefined)
         })
-        test("singleton", () => {
+        it("singleton", () => {
             assert(numberArray.validate([0]).error).is(undefined)
         })
-        test("multiple", () => {
+        it("multiple", () => {
             assert(numberArray.validate([8, 6, 7, 5, 3, 0, 9]).error).is(
                 undefined
             )
         })
         describe("errors", () => {
-            test("non-list", () => {
+            it("non-list", () => {
                 assert(numberArray.validate({}).error).snap(
                     `{} is not assignable to number[].`
                 )
             })
-            test("bad item", () => {
+            it("bad item", () => {
                 assert(numberArray.validate([1, 2, "3", 4, 5]).error).snap(
                     `At index 2, '3' is not assignable to number.`
                 )
@@ -58,7 +58,7 @@ describe("list", () => {
         })
     })
     describe("generation", () => {
-        test("empty by default", () => {
+        it("empty by default", () => {
             assert(model("number[]").generate()).equals([])
         })
     })

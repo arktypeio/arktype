@@ -11,7 +11,7 @@ describe("custom validators", () => {
         }
         return `${value} is not a palindrome!`
     }
-    test("inline", () => {
+    it("inline", () => {
         const palindrome = model("string", {
             validate: { validator }
         })
@@ -22,7 +22,7 @@ describe("custom validators", () => {
             "": `step on your cat is not a palindrome!`
         })
     })
-    test("model root", () => {
+    it("model root", () => {
         const space = compile(
             { palindrome: "string" },
             { models: { palindrome: { validate: { validator } } } }
@@ -34,7 +34,7 @@ describe("custom validators", () => {
             `predivider is not a palindrome!`
         )
     })
-    test("model nested", () => {
+    it("model nested", () => {
         const space = compile(
             { palindrome: "string", yourPal: { name: "palindrome" } },
             {
@@ -52,7 +52,7 @@ describe("custom validators", () => {
             `At path name, rob is not a palindrome!`
         )
     })
-    test("space", () => {
+    it("space", () => {
         const space = compile(
             { first: "string", second: { comesAfter: "first" } },
             {
@@ -81,7 +81,7 @@ describe("custom validators", () => {
   from/second: 'hi'
 }`)
     })
-    test("can access standard validation errors and ctx", () => {
+    it("can access standard validation errors and ctx", () => {
         const num = model("number", {
             validate: {
                 validator: (value, errors, { ctx }) => {

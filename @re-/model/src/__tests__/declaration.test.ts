@@ -2,7 +2,7 @@ import { assert } from "@re-/assert"
 import { declare } from "@re-/model"
 
 describe("declare", () => {
-    test("single", () => {
+    it("single", () => {
         const { define, compile } = declare("gottaDefineThis")
         const gottaDefineThis = define.gottaDefineThis("boolean")
         assert(() =>
@@ -18,7 +18,7 @@ describe("declare", () => {
             a: boolean
         }
     })
-    test("errors on compile with declared type undefined", () => {
+    it("errors on compile with declared type undefined", () => {
         const { define, compile } = declare(
             "gottaDefineThis",
             "gottaDefineThisToo"
@@ -31,7 +31,7 @@ describe("declare", () => {
             .throws("Declared types 'gottaDefineThisToo' were never defined.")
             .type.errors("Property 'gottaDefineThisToo' is missing")
     })
-    test("errors on compile with undeclared type defined", () => {
+    it("errors on compile with undeclared type defined", () => {
         const { define, compile } = declare("gottaDefineThis")
         const gottaDefineThis = define.gottaDefineThis("boolean")
         assert(() =>

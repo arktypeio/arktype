@@ -2,45 +2,45 @@ import { assert } from "@re-/assert"
 import { typeOf } from "@re-/model"
 
 describe("typeOf", () => {
-    test("string", () => {
+    it("string", () => {
         assert(typeOf("redo")).equals("'redo'")
         assert(typeOf("")).equals("''")
     })
-    test("number", () => {
+    it("number", () => {
         assert(typeOf(0)).equals(0)
         assert(typeOf(3.141_59)).equals(3.141_59)
     })
-    test("boolean", () => {
+    it("boolean", () => {
         assert(typeOf(true)).equals("true")
         assert(typeOf(false)).equals("false")
     })
-    test("bigint", () => {
+    it("bigint", () => {
         assert(typeOf(BigInt(0))).equals(0n)
     })
-    test("symbol", () => {
+    it("symbol", () => {
         assert(typeOf(Symbol())).equals("symbol")
     })
-    test("undefined", () => {
+    it("undefined", () => {
         const x: any = {}
         assert(typeOf(undefined)).equals("undefined")
         assert(typeOf(x.nonexistent)).equals("undefined")
     })
-    test("null", () => {
+    it("null", () => {
         assert(typeOf(null)).equals("null")
     })
-    test("object", () => {
+    it("object", () => {
         assert(typeOf({ a: { b: "nested", c: 5, d: { deep: null } } })).equals({
             a: { b: "'nested'", c: 5, d: { deep: "null" } }
         })
     })
-    test("function", () => {
+    it("function", () => {
         const saySomething = () => console.log("I'm giving up on you")
         assert(typeOf(saySomething)).equals("function")
     })
-    test("array", () => {
+    it("array", () => {
         assert(typeOf([7, "up"])).equals([7, "'up'"])
     })
-    test("complex", () => {
+    it("complex", () => {
         assert(typeOf([true, { a: ["ok", [() => []]] }])).equals([
             "true",
             { a: ["'ok'", ["function"]] }

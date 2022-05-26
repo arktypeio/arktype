@@ -2,30 +2,28 @@ import { assert } from "@re-/assert"
 import { model } from "@re-/model"
 import { lazily } from "@re-/tools"
 
-export const testTuple = () => {
+describe("tuple", () => {
     describe("empty", () => {
         const empty = lazily(() => model([]))
-        test("type", () => {
+        it("type", () => {
             assert(empty.type).typed as []
         })
-        test("validation", () => {
+        it("validation", () => {
             assert(empty.validate([]).error).is(undefined)
-            assert(empty.validate({}).error).snap(
-                `"{} is not assignable to []."`
-            )
+            assert(empty.validate({}).error).snap(`{} is not assignable to [].`)
         })
-        test("generation", () => {
+        it("generation", () => {
             assert(empty.generate()).equals([])
         })
     })
     describe("shallow", () => {
         const shallow = lazily(() => model(["string", "number", 6]))
         describe("type", () => {
-            test("standard", () => {
+            it("standard", () => {
                 assert(shallow.type).typed as [string, number, 6]
             })
             describe("errors", () => {
-                test("invalid item definition", () => {
+                it("invalid item definition", () => {
                     assert(() =>
                         // @ts-expect-error
                         model(["string", ["number", "boolean", "whoops"]])
@@ -38,30 +36,30 @@ export const testTuple = () => {
             })
         })
         describe("validation", () => {
-            test("standard", () => {
+            it("standard", () => {
                 assert(shallow.validate(["violin", 42, 6]).error).is(undefined)
             })
             describe("errors", () => {
-                test("bad item value", () => {
+                it("bad item value", () => {
                     assert(shallow.validate(["violin", 42n, 6]).error).snap(
-                        `"At index 1, 42n is not assignable to number."`
+                        `At index 1, 42n is not assignable to number.`
                     )
                 })
-                test("too short", () => {
+                it("too short", () => {
                     assert(shallow.validate(["violin", 42]).error).snap(
-                        `"Tuple of length 2 is not assignable to tuple of length 3."`
+                        `Tuple of length 2 is not assignable to tuple of length 3.`
                     )
                 })
-                test("too long", () => {
+                it("too long", () => {
                     assert(
                         shallow.validate(["violin", 42, 6, null]).error
                     ).snap(
-                        `"Tuple of length 4 is not assignable to tuple of length 3."`
+                        `Tuple of length 4 is not assignable to tuple of length 3.`
                     )
                 })
             })
         })
-        test("generation", () => {
+        it("generation", () => {
             assert(shallow.generate()).equals(["", 0, 6])
         })
     })
@@ -69,7 +67,7 @@ export const testTuple = () => {
         const nested = lazily(() =>
             model(["'Cuckoo'", ["'Swallow'", "'Oriole'", "'Condor'"], []])
         )
-        test("type", () => {
+        it("type", () => {
             assert(nested.type).typed as [
                 "Cuckoo",
                 ["Swallow", "Oriole", "Condor"],
@@ -77,7 +75,7 @@ export const testTuple = () => {
             ]
         })
         describe("validation", () => {
-            test("standard", () => {
+            it("standard", () => {
                 assert(
                     nested.validate([
                         "Cuckoo",
@@ -87,35 +85,33 @@ export const testTuple = () => {
                 ).is(undefined)
             })
             describe("errors", () => {
-                test("single", () => {
+                it("single", () => {
                     assert(
                         nested.validate([
                             "Cuckoo",
                             ["Swallow", "Oriole", "Gondor"]
                         ]).error
                     ).snap(
-                        `"Tuple of length 2 is not assignable to tuple of length 3."`
+                        `Tuple of length 2 is not assignable to tuple of length 3.`
                     )
                 })
-                test("multiple", () => {
+                it("multiple", () => {
                     assert(
                         nested.validate([
                             "Clock",
                             ["Swallow", "Oriole", "Gondor"],
                             ["Too long"]
                         ]).error
-                    ).snap(`
-"Encountered errors at the following paths:
+                    ).snap(`Encountered errors at the following paths:
 {
   0: ''Clock' is not assignable to 'Cuckoo'.',
   2: 'Tuple of length 1 is not assignable to tuple of length 0.',
   1/2: ''Gondor' is not assignable to 'Condor'.'
-}"
-`)
+}`)
                 })
             })
         })
-        test("generation", () => {
+        it("generation", () => {
             assert(nested.generate()).equals([
                 "Cuckoo",
                 ["Swallow", "Oriole", "Condor"],
@@ -123,4 +119,4 @@ export const testTuple = () => {
             ])
         })
     })
-}
+})

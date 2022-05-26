@@ -61,9 +61,37 @@ const runnerArgs = process.argv.slice(runnerArgIndex + 2).join(" ")
 
 runTestsCmd += runnerArgs
 
+let exitCode: number | undefined
+
 try {
+    console.log(`⏳ @re-/assert: Analyzing type assertions...`)
+    const cacheStart = Date.now()
     cacheAssertions({ forcePrecache: true })
-    shell(runTestsCmd, { env: { RE_ASSERT_CMD: runTestsCmd } })
+    const cacheSeconds = (Date.now() - cacheStart) / 1000
+    console.log(
+        `✅ @re-/assert: Finished caching type assertions in ${cacheSeconds} seconds.\n`
+    )
+    console.log(`⏳ @re-/assert: Using ${runner} to run your tests...`)
+    const runnerStart = Date.now()
+    exitCode = shell(runTestsCmd, {
+        env: { RE_ASSERT_CMD: runTestsCmd },
+        reject: false
+    }).exitCode
+    const runnerSeconds = (Date.now() - runnerStart) / 1000
+    console.log(
+        `✅ @re-/assert: ${runner} completed in ${runnerSeconds} seconds.\n`
+    )
 } finally {
+    console.log(
+        `⏳ @re-/assert: Updating inline snapshots and cleaning up cache...`
+    )
+    const cleanupStart = Date.now()
     cleanupAssertions()
+    const cleanupSeconds = (Date.now() - cleanupStart) / 1000
+    console.log(
+        `✅ @re-/assert: Finished cleanup in ${cleanupSeconds} seconds.`
+    )
+    if (exitCode) {
+        process.exit(exitCode)
+    }
 }

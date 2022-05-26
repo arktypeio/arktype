@@ -4,7 +4,7 @@ import { narrow } from "@re-/tools"
 
 describe("alias", () => {
     describe("type", () => {
-        test("with space", () => {
+        it("with space", () => {
             assert(
                 model(
                     "borf",
@@ -26,7 +26,7 @@ describe("alias", () => {
                 ).type
             ).typed as { snorf: { f: false; u: undefined }[] }
         })
-        test("with onCycle option", () => {
+        it("with onCycle option", () => {
             const cyclic = compile({
                 a: { b: "b", isA: "true", isB: "false" },
                 b: { a: "a", isA: "false", isB: "true" },
@@ -47,7 +47,7 @@ describe("alias", () => {
                 `{ a: { b: { a: { cyclic?: { b: { a: { b: { cyclic?: { a: { b: { a: any; isA: false; isB: true; }; isA: true; isB: false; }; isA: false; isB: true; } | undefined; }; isA: true; isB: false; }; isA: false; isB: true; }; isA: true; isB: false; } | undefined; }; isA: false; isB: true; }; isA: true; isB: false; }; isA: false; isB: true; } | undefined`
             )
         })
-        test("with onResolve option", () => {
+        it("with onResolve option", () => {
             const withOnResolve = compile({
                 a: { b: "b", isA: "true", isB: "false" },
                 b: { a: "a", isA: "false", isB: "true" },
@@ -71,7 +71,7 @@ describe("alias", () => {
         })
     })
     describe("validation", () => {
-        test("simple space", () => {
+        it("simple space", () => {
             const groceries = model(
                 { fruits: "fruit[]" },
                 narrow({
@@ -87,7 +87,7 @@ describe("alias", () => {
                     }
                 })
             )
-            expect(
+            assert(
                 groceries.validate({
                     fruits: [
                         { length: 10 },
@@ -95,8 +95,8 @@ describe("alias", () => {
                         { length: 15, description: "nice" }
                     ]
                 }).error
-            ).toBeFalsy()
-            expect(
+            ).equals(undefined)
+            assert(
                 groceries.validate(
                     {
                         fruits: [
@@ -111,39 +111,37 @@ describe("alias", () => {
                     // Verbose should explain why each component of the union type doesn't apply
                     { verbose: true }
                 ).error
-            ).toMatchInlineSnapshot(`
-              "Encountered errors at the following paths:
-              {
-                fruits/0: '{length: 5000, description: 'I'm a big banana!', peel: 'slippery'} is not assignable to any of banana|apple.
-              Encountered errors at the following paths:
-              {
-                banana: 'At path fruits/0, keys 'peel' were unexpected.',
-                apple: 'At path fruits/0, required keys 'circumference, type' were missing. Keys 'length, description, peel' were unexpected.'
-              }',
-                fruits/1: '{type: 'Fuji'} is not assignable to any of banana|apple.
-              Encountered errors at the following paths:
-              {
-                banana: 'At path fruits/1, required keys 'length' were missing. Keys 'type' were unexpected.',
-                apple: 'At path fruits/1, required keys 'circumference' were missing.'
-              }'
-              }"
-            `)
+            ).snap(`Encountered errors at the following paths:
+{
+  fruits/0: '{length: 5000, description: 'I'm a big banana!', peel: 'slippery'} is not assignable to any of banana|apple.
+Encountered errors at the following paths:
+{
+  banana: 'At path fruits/0, keys 'peel' were unexpected.',
+  apple: 'At path fruits/0, required keys 'circumference, type' were missing. Keys 'length, description, peel' were unexpected.'
+}',
+  fruits/1: '{type: 'Fuji'} is not assignable to any of banana|apple.
+Encountered errors at the following paths:
+{
+  banana: 'At path fruits/1, required keys 'length' were missing. Keys 'type' were unexpected.',
+  apple: 'At path fruits/1, required keys 'circumference' were missing.'
+}'
+}`)
         })
         /*
-         * test("errors on shallow cycle", () => {
+         * it("errors on shallow cycle", () => {
          *     // @ts-expect-error
          *     const shallowRecursive = compile({ a: "a" })
-         *     expect(() =>
+         *     assert(() =>
          *         shallowRecursive.models.a.assert("what's an a?")
-         *     ).toThrowError("shallow")
+         *     ).throws("shallow")
          *     // @ts-expect-error
          *     const shallowCyclic = compile({ a: "b", b: "c", c: "a|b|c" })
-         *     expect(() =>
+         *     assert(() =>
          *         shallowCyclic.models.a.assert(["what's a b?"])
-         *     ).toThrowError("shallow")
+         *     ).throws("shallow")
          * })
          */
-        test("cyclic space", () => {
+        it("cyclic space", () => {
             const bicycle = model(
                 { a: "a", b: "b", c: "either[]" },
                 narrow({
@@ -156,7 +154,7 @@ describe("alias", () => {
                     }
                 })
             )
-            expect(
+            assert(
                 bicycle.validate({
                     a: {
                         isA: true,
@@ -169,8 +167,8 @@ describe("alias", () => {
                         { isA: true, b: { isA: false } }
                     ]
                 }).error
-            ).toBeFalsy()
-            expect(
+            ).equals(undefined)
+            assert(
                 bicycle.validate({
                     a: {
                         isA: true,
@@ -216,16 +214,14 @@ describe("alias", () => {
                         { isA: "the duck goes quack" }
                     ]
                 }).error
-            ).toMatchInlineSnapshot(`
-              "Encountered errors at the following paths:
-              {
-                a/a/a/a/a/a/a/isA: 'false is not assignable to true.',
-                b/b/b/b/b/b/b/isA: 'true is not assignable to false.',
-                c/8: '{isA: 'the duck goes quack'} is not assignable to any of a|b.'
-              }"
-            `)
+            ).snap(`Encountered errors at the following paths:
+{
+  a/a/a/a/a/a/a/isA: 'false is not assignable to true.',
+  b/b/b/b/b/b/b/isA: 'true is not assignable to false.',
+  c/8: '{isA: 'the duck goes quack'} is not assignable to any of a|b.'
+}`)
         })
-        test("doesn't try to parse or validate any", () => {
+        it("doesn't try to parse or validate any", () => {
             // Parse any as type
             assert(model({} as any).type).typed as any
             // Parse any as space
@@ -250,8 +246,8 @@ describe("alias", () => {
         })
     })
     describe("generation", () => {
-        test("simple space", () => {
-            expect(
+        it("simple space", () => {
+            assert(
                 model(
                     {
                         fruits: "fruit[]",
@@ -276,16 +272,16 @@ describe("alias", () => {
                         }
                     })
                 ).generate()
-            ).toStrictEqual({
+            ).equals({
                 fruits: [],
                 bestBanana: { length: 0 },
                 bestApple: { circumference: 0, type: "" },
                 bestFruit: { length: 0 }
             })
         })
-        test("optional cycle", () => {
+        it("optional cycle", () => {
             // If it's optional, the cycle should be ignored and just return undefined
-            expect(
+            assert(
                 model(
                     "a",
                     narrow({
@@ -298,10 +294,10 @@ describe("alias", () => {
                         }
                     })
                 ).generate()
-            ).toStrictEqual({ b: {} })
+            ).equals({ b: {} })
         })
-        test("required cycle", () => {
-            expect(() =>
+        it("required cycle", () => {
+            assert(() =>
                 model(
                     "a",
                     narrow({
@@ -314,14 +310,13 @@ describe("alias", () => {
                         }
                     })
                 ).generate()
-            ).toThrowErrorMatchingInlineSnapshot(`
-                    "Unable to generate a default value for type including a required cycle:
-                    a=>b=>c=>a
-                    If you'd like to avoid throwing in when this occurs, pass a value to return when this occurs to the 'onRequiredCycle' option."
-                `)
+            ).throws
+                .snap(`Unable to generate a default value for type including a required cycle:
+a=>b=>c=>a
+If you'd like to avoid throwing in when this occurs, pass a value to return when this occurs to the 'onRequiredCycle' option.`)
         })
-        test("onRequiredCycle", () => {
-            expect(
+        it("onRequiredCycle", () => {
+            assert(
                 model(
                     "a",
                     narrow({
@@ -334,12 +329,12 @@ describe("alias", () => {
                         }
                     })
                 ).generate({ onRequiredCycle: { whoops: ["cycle"] } })
-            ).toStrictEqual({
+            ).value.equals({
                 b: { c: { whoops: ["cycle"] } }
             })
         })
-        test("onRequiredCycle with union", () => {
-            expect(
+        it("onRequiredCycle with union", () => {
+            assert(
                 model(
                     "a|b",
                     narrow({
@@ -351,9 +346,9 @@ describe("alias", () => {
                         }
                     })
                 ).generate({ onRequiredCycle: "cycle" })
-            ).toStrictEqual({ b: { a: "cycle" } })
+            ).value.equals({ b: { a: "cycle" } })
         })
-        test("from parsed", () => {
+        it("from parsed", () => {
             const defaultValue = model(
                 {
                     requiredGroup: "group",
@@ -369,7 +364,7 @@ describe("alias", () => {
                     }
                 })
             ).generate()
-            expect(defaultValue).toStrictEqual({
+            assert(defaultValue).equals({
                 requiredGroup: { name: "" },
                 requiredGroups: []
             })

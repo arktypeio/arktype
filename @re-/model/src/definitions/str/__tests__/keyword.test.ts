@@ -4,13 +4,13 @@ import { model } from "@re-/model"
 describe("keyword", () => {
     describe("string", () => {
         const s = model("string")
-        test("type", () => {
+        it("type", () => {
             assert(s.type).typed as string
         })
-        test("generation", () => {
+        it("generation", () => {
             assert(s.generate()).is("")
         })
-        test("validation", () => {
+        it("validation", () => {
             assert(s.validate("KEKW").error).is(undefined)
             assert(s.validate(["whoops"]).error).snap(
                 `['whoops'] is not assignable to string.`
@@ -19,13 +19,13 @@ describe("keyword", () => {
     })
     describe("number", () => {
         const n = model("number")
-        test("type", () => {
+        it("type", () => {
             assert(n.type).typed as number
         })
-        test("generation", () => {
+        it("generation", () => {
             assert(n.generate()).is(0)
         })
-        test("validation", () => {
+        it("validation", () => {
             assert(n.validate(-83).error).is(undefined)
             assert(n.validate(0.999).error).is(undefined)
             assert(n.validate("42").error).snap(
@@ -35,13 +35,13 @@ describe("keyword", () => {
     })
     describe("boolean", () => {
         const b = model("boolean")
-        test("type", () => {
+        it("type", () => {
             assert(b.type).typed as boolean
         })
-        test("generation", () => {
+        it("generation", () => {
             assert(b.generate()).is(false)
         })
-        test("validation", () => {
+        it("validation", () => {
             assert(b.validate(true).error).is(undefined)
             assert(b.validate(false).error).is(undefined)
             assert(b.validate(0).error).snap(`0 is not assignable to boolean.`)
@@ -49,13 +49,13 @@ describe("keyword", () => {
     })
     describe("true", () => {
         const t = model("true")
-        test("type", () => {
+        it("type", () => {
             assert(t.type).typed as true
         })
-        test("generation", () => {
+        it("generation", () => {
             assert(t.generate()).is(true)
         })
-        test("validation", () => {
+        it("validation", () => {
             assert(t.validate(true).error).is(undefined)
             assert(t.validate(false).error).snap(
                 `false is not assignable to true.`
@@ -64,13 +64,13 @@ describe("keyword", () => {
     })
     describe("false", () => {
         const f = model("false")
-        test("type", () => {
+        it("type", () => {
             assert(f.type).typed as false
         })
-        test("generation", () => {
+        it("generation", () => {
             assert(f.generate()).is(false)
         })
-        test("validation", () => {
+        it("validation", () => {
             assert(f.validate(false).error).is(undefined)
             assert(f.validate(true).error).snap(
                 `true is not assignable to false.`
@@ -79,13 +79,13 @@ describe("keyword", () => {
     })
     describe("bigint", () => {
         const b = model("bigint")
-        test("type", () => {
+        it("type", () => {
             assert(b.type).typed as bigint
         })
-        test("generation", () => {
+        it("generation", () => {
             assert(b.generate()).is(0n)
         })
-        test("validation", () => {
+        it("validation", () => {
             assert(b.validate(999n).error).is(undefined)
             assert(b.validate(999).error).snap(
                 `999 is not assignable to bigint.`
@@ -94,13 +94,13 @@ describe("keyword", () => {
     })
     describe("symbol", () => {
         const s = model("symbol")
-        test("type", () => {
+        it("type", () => {
             assert(s.type).typed as symbol
         })
-        test("generation", () => {
+        it("generation", () => {
             assert(typeof s.generate()).is("symbol")
         })
-        test("validation", () => {
+        it("validation", () => {
             assert(s.validate(Symbol("")).error).is(undefined)
             assert(s.validate("@").error).snap(
                 `'@' is not assignable to symbol.`
@@ -109,15 +109,15 @@ describe("keyword", () => {
     })
     describe("function", () => {
         const f = model("function")
-        test("type", () => {
+        it("type", () => {
             assert(f.type).typed as (...args: any[]) => any
         })
-        test("generation", () => {
+        it("generation", () => {
             assert(() => f.generate()).throws.snap(
                 `Unable to generate a value for 'function' (function generation is unsupported).`
             )
         })
-        test("validation", () => {
+        it("validation", () => {
             assert(f.validate(() => ({})).error).is(undefined)
             assert(f.validate({}).error).snap(
                 `{} is not assignable to function.`
@@ -126,13 +126,13 @@ describe("keyword", () => {
     })
     describe("object", () => {
         const o = model("object")
-        test("type", () => {
+        it("type", () => {
             assert(o.type).typed as object
         })
-        test("generation", () => {
+        it("generation", () => {
             assert(o.generate()).equals({})
         })
-        test("validation", () => {
+        it("validation", () => {
             assert(o.validate([]).error).is(undefined)
             assert(o.validate({}).error).is(undefined)
             assert(o.validate(null).error).snap(
@@ -142,13 +142,13 @@ describe("keyword", () => {
     })
     describe("undefined", () => {
         const u = model("undefined")
-        test("type", () => {
+        it("type", () => {
             assert(u.type).typed as undefined
         })
-        test("generation", () => {
+        it("generation", () => {
             assert(u.generate()).is(undefined)
         })
-        test("validation", () => {
+        it("validation", () => {
             assert(u.validate(undefined).error).is(undefined)
             assert(u.validate(null).error).snap(
                 `null is not assignable to undefined.`
@@ -157,13 +157,13 @@ describe("keyword", () => {
     })
     describe("null", () => {
         const n = model("null")
-        test("type", () => {
+        it("type", () => {
             assert(n.type).typed as null
         })
-        test("generation", () => {
+        it("generation", () => {
             assert(n.generate()).is(null)
         })
-        test("validation", () => {
+        it("validation", () => {
             assert(n.validate(null).error).is(undefined)
             assert(n.validate(undefined).error).snap(
                 `undefined is not assignable to null.`
@@ -172,13 +172,13 @@ describe("keyword", () => {
     })
     describe("void", () => {
         const v = model("void")
-        test("type", () => {
+        it("type", () => {
             assert(v.type).typed as void
         })
-        test("generation", () => {
+        it("generation", () => {
             assert(v.generate()).is(undefined)
         })
-        test("validation", () => {
+        it("validation", () => {
             assert(v.validate(undefined).error).is(undefined)
             assert(v.validate(null).error).snap(
                 `null is not assignable to void.`
@@ -187,13 +187,13 @@ describe("keyword", () => {
     })
     describe("any", () => {
         const a = model("any")
-        test("type", () => {
+        it("type", () => {
             assert(a.type).typed as any
         })
-        test("generation", () => {
+        it("generation", () => {
             assert(a.generate()).is(undefined)
         })
-        test("validation", () => {
+        it("validation", () => {
             assert(a.validate(-34_324n).error).is(undefined)
             assert(a.validate({ yes: "no" }).error).is(undefined)
             assert(a.validate([0, "1", 2, "3"]).error).is(undefined)
@@ -201,14 +201,14 @@ describe("keyword", () => {
     })
     describe("unknown", () => {
         const u = model("unknown")
-        test("type", () => {
+        it("type", () => {
             // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion
             assert(u.type).typed as unknown
         })
-        test("generation", () => {
+        it("generation", () => {
             assert(u.generate()).is(undefined)
         })
-        test("validation", () => {
+        it("validation", () => {
             assert(u.validate(34_324n).error).is(undefined)
             assert(u.validate({ no: "yes" }).error).is(undefined)
             assert(u.validate(["0", 1, "2", 3]).error).is(undefined)
@@ -216,16 +216,16 @@ describe("keyword", () => {
     })
     describe("never", () => {
         const n = model("never")
-        test("type", () => {
+        it("type", () => {
             // @ts-ignore
             assert(n.type).typed as never
         })
-        test("generation", () => {
+        it("generation", () => {
             assert(() => n.generate()).throws.snap(
                 `Unable to generate a value for 'never' (never generation is unsupported).`
             )
         })
-        test("validation", () => {
+        it("validation", () => {
             assert(n.validate("sometimes").error).snap(
                 `'sometimes' is not assignable to never.`
             )
@@ -235,13 +235,13 @@ describe("keyword", () => {
         })
     })
     describe("string subtypes", () => {
-        test("email", () => {
+        it("email", () => {
             const email = model("email")
             assert(email.type).typed as string
             assert(email.validate("david@redo.dev").error).is(undefined)
             assert(email.validate("david@redo@dev").error).snap(undefined)
         })
-        test("alpha", () => {
+        it("alpha", () => {
             const alpha = model("alpha")
             assert(alpha.type).typed as string
             assert(alpha.validate("aBc").error).is(undefined)
@@ -249,7 +249,7 @@ describe("keyword", () => {
                 `'a B c' is not assignable to alpha.`
             )
         })
-        test("alphanumeric", () => {
+        it("alphanumeric", () => {
             const alphaNumeric = model("alphanumeric")
             assert(alphaNumeric.type).typed as string
             assert(alphaNumeric.validate("aBc123").error).is(undefined)
@@ -257,7 +257,7 @@ describe("keyword", () => {
                 `'aBc+123' is not assignable to alphanumeric.`
             )
         })
-        test("lowercase", () => {
+        it("lowercase", () => {
             const lowercase = model("lowercase")
             assert(lowercase.type).typed as string
             assert(lowercase.validate("as long as no uppercase").error).is(
@@ -267,7 +267,7 @@ describe("keyword", () => {
                 `'whoOps' is not assignable to lowercase.`
             )
         })
-        test("uppercase", () => {
+        it("uppercase", () => {
             const uppercase = model("uppercase")
             assert(uppercase.type).typed as string
             assert(uppercase.validate("AS LONG AS NO LOWERCASE").error).is(
@@ -277,7 +277,7 @@ describe("keyword", () => {
                 `'WHOoPS' is not assignable to uppercase.`
             )
         })
-        test("character", () => {
+        it("character", () => {
             const character = model("character")
             assert(character.type).typed as string
             assert(character.validate("!").error).is(undefined)
@@ -287,7 +287,7 @@ describe("keyword", () => {
         })
     })
     describe("number subtypes", () => {
-        test("integer", () => {
+        it("integer", () => {
             const integer = model("integer")
             assert(integer.type).typed as number
             assert(integer.validate(5).error).is(undefined)
@@ -295,7 +295,7 @@ describe("keyword", () => {
                 `5.0001 is not assignable to integer.`
             )
         })
-        test("positive", () => {
+        it("positive", () => {
             const positive = model("positive")
             assert(positive.type).typed as number
             assert(positive.validate(0.0001).error).is(undefined)
@@ -303,7 +303,7 @@ describe("keyword", () => {
                 `-0.0001 is not assignable to positive.`
             )
         })
-        test("nonNegative", () => {
+        it("nonNegative", () => {
             const nonNegative = model("nonnegative")
             assert(nonNegative.type).typed as number
             assert(nonNegative.validate(0).error).is(undefined)

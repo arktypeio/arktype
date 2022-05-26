@@ -3,7 +3,7 @@ import { compile, model } from "@re-/model"
 
 describe("inheritable configs", () => {
     describe("methods", () => {
-        test("no config", () => {
+        it("no config", () => {
             assert(
                 model({ name: "string" }).validate({
                     name: "David Blass",
@@ -11,7 +11,7 @@ describe("inheritable configs", () => {
                 }).error
             ).snap(`Keys 'age' were unexpected.`)
         })
-        test("ad hoc", () => {
+        it("ad hoc", () => {
             const user = model({ name: "string" })
             assert(
                 user.validate(
@@ -20,7 +20,7 @@ describe("inheritable configs", () => {
                 ).error
             ).is(undefined)
         })
-        test("create options", () => {
+        it("create options", () => {
             const user = model(
                 { name: "string" },
                 { validate: { ignoreExtraneousKeys: true } }
@@ -29,7 +29,7 @@ describe("inheritable configs", () => {
                 undefined
             )
         })
-        test("model config in space", () => {
+        it("model config in space", () => {
             const user = compile(
                 { user: { name: "string" } },
                 {
@@ -45,7 +45,7 @@ describe("inheritable configs", () => {
                 }).error
             ).is(undefined)
         })
-        test("space config", () => {
+        it("space config", () => {
             const user = compile(
                 { user: { name: "string" } },
                 {
@@ -59,7 +59,7 @@ describe("inheritable configs", () => {
                 }).error
             ).is(undefined)
         })
-        test("precedence", () => {
+        it("precedence", () => {
             const nesting = compile(
                 { doll: { contents: "doll" } },
                 {
