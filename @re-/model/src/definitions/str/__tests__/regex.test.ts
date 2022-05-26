@@ -34,7 +34,7 @@ describe("regex", () => {
         describe("errors", () => {
             test("bad string", () => {
                 assert(model("/^[0-9]*$/").validate("durrrrrr").error).snap(
-                    `"'durrrrrr' is not assignable to /^[0-9]*$/."`
+                    "'durrrrrr' is not assignable to /^[0-9]*$/."
                 )
             })
             test("non-string", () => {
@@ -56,7 +56,7 @@ describe("regex", () => {
     describe("generation", () => {
         test("unsupported", () => {
             assert(() => model("/.*/").generate()).throws.snap(
-                `"Unable to generate a value for '/.*/' (regex generation is unsupported)."`
+                "Unable to generate a value for '/.*/' (regex generation is unsupported)."
             )
         })
     })

@@ -70,7 +70,7 @@ describe("demo", () => {
             "At path bestFriend/groups/0, required keys 'members' were missing."
         )
         assert(space.types.user).type.toString.snap(
-            `"{ name: string; groups: { members: { name: string; groups: { members: any[]; title: string; }[]; bestFriend?: any | undefined; }[]; title: string; }[]; bestFriend?: { name: string; groups: { members: { name: string; groups: any[]; bestFriend?: any | undefined; }[]; title: string; }[]; bestFriend?: any | undefined; } | undefined; }"`
+            "{ name: string; groups: { title: string; members: { name: string; groups: { title: string; members: any[]; }[]; bestFriend?: any | undefined; }[]; }[]; bestFriend?: { name: string; groups: { title: string; members: { name: string; groups: any[]; bestFriend?: any | undefined; }[]; }[]; bestFriend?: any | undefined; } | undefined; }"
         )
     })
     // See multifile.assert.ts for declaration demo
@@ -104,13 +104,11 @@ describe("demo", () => {
                 bio: string
             }
         }
-        assert(error).snap(`
-            "Encountered errors at the following paths:
-            {
-              email: ''david@redo.biz' is not assignable to /[a-z]*@redo\\\\.dev/.',
-              about/age: '17 is less than 18.',
-              about/bio: ''I am very interesting.I am very interesting.I am ...' is greater than 160 characters.'
-            }"
-        `)
+        assert(error).snap(`Encountered errors at the following paths:
+{
+  email: ''david@redo.biz' is not assignable to /[a-z]*@redo\.dev/.',
+  about/age: '17 is less than 18.',
+  about/bio: ''I am very interesting.I am very interesting.I am ...' is greater than 160 characters.'
+}`)
     })
 })

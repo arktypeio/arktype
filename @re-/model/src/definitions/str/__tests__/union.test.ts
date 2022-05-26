@@ -43,7 +43,7 @@ describe("union", () => {
         describe("errors", () => {
             test("two types", () => {
                 assert(model("'yes'|'no'").validate("maybe").error).snap(
-                    `"'maybe' is not assignable to any of 'yes'|'no'."`
+                    `'maybe' is not assignable to any of 'yes'|'no'.`
                 )
             })
             test("several types", () => {

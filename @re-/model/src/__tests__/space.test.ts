@@ -1,7 +1,7 @@
 import { assert } from "@re-/assert"
 import { compile, model } from "@re-/model"
-import { duplicateSpaceError } from "../src/errors.js"
-import { typeDefProxy } from "../src/internal.js"
+import { duplicateSpaceError } from "../errors.js"
+import { typeDefProxy } from "../internal.js"
 
 describe("compile", () => {
     test("single", () => {
@@ -32,7 +32,7 @@ describe("compile", () => {
         // Recursive type displays any but calculates just-in-time for each property access
         assert(
             compile({ a: { dejaVu: "a?" } }).types.a.dejaVu?.dejaVu?.dejaVu
-        ).type.toString.snap(`"{ dejaVu?: any | undefined; } | undefined"`)
+        ).type.toString.snap("{ dejaVu?: any | undefined; } | undefined")
     })
     test("cyclic", () => {
         const space = compile({ a: { b: "b" }, b: { a: "a" } })
@@ -67,7 +67,7 @@ describe("compile", () => {
     test("can parse from compiled types", () => {
         const space = compile({ a: { b: "b" }, b: { a: "a" } })
         assert(space.create("a|b|null").type).type.toString.snap(
-            `"{ b: { a: { b: { a: any; }; }; }; } | { a: { b: { a: { b: any; }; }; }; } | null"`
+            "{ b: { a: { b: { a: any; }; }; }; } | { a: { b: { a: { b: any; }; }; }; } | null"
         )
         assert(() =>
             // @ts-expect-error

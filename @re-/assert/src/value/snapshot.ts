@@ -1,43 +1,46 @@
 import { randomUUID } from "node:crypto"
-import { readdirSync } from "node:fs"
+import { existsSync, readdirSync } from "node:fs"
 import { basename, dirname, isAbsolute, join } from "node:path"
 import { readJson, writeJson } from "@re-/node"
 import { CallExpression, SyntaxKind, ts } from "ts-morph"
-import { SourcePosition } from "../common.js"
+import { getReAssertConfig, SourcePosition } from "../common.js"
 import { getTsProject } from "../type/analysis.js"
 
-export interface BaseSnapshotArgs {
+export interface SnapshotArgs {
     position: SourcePosition
     serializedValue: string
 }
 
-export interface QueueInlineSnapshotArgs extends BaseSnapshotArgs {
-    cachePath: string
-}
-
-export interface ExternalSnapshotArgs extends BaseSnapshotArgs {
+export interface ExternalSnapshotArgs extends SnapshotArgs {
     name: string
     customPath: string | undefined
 }
 
 export const queueInlineSnapshotUpdate = ({
     position,
-    serializedValue,
-    cachePath
-}: QueueInlineSnapshotArgs) => {
-    const snapshotQueueDir: string = readJson(cachePath).snapshotQueueDir
-    writeJson(join(snapshotQueueDir, `snap-${randomUUID()}.json`), {
-        position,
-        serializedValue
-    })
+    serializedValue
+}: SnapshotArgs) => {
+    writeJson(
+        join(getReAssertConfig().snapCacheDir, `snap-${randomUUID()}.json`),
+        {
+            position,
+            serializedValue
+        }
+    )
 }
 
-export const writeQueuedSnapshotUpdates = (snapshotQueueDir: string) => {
-    for (const updateFile of readdirSync(snapshotQueueDir)) {
-        if (/snaps*\.json$/.test(updateFile)) {
-            let snapshotData: BaseSnapshotArgs | undefined
+export const writeQueuedSnapshotUpdates = () => {
+    const config = getReAssertConfig()
+    if (!existsSync(config.snapCacheDir)) {
+        throw new Error(
+            `Unable to update snapshots as expected cache directory ${config.snapCacheDir} does not exist.`
+        )
+    }
+    for (const updateFile of readdirSync(config.snapCacheDir)) {
+        if (/snap.*\.json$/.test(updateFile)) {
+            let snapshotData: SnapshotArgs | undefined
             try {
-                snapshotData = readJson(updateFile)
+                snapshotData = readJson(join(config.snapCacheDir, updateFile))
             } catch {
                 // If we can't read the snapshot, log an error and move onto the next update
                 console.error(
@@ -59,7 +62,7 @@ export const writeQueuedSnapshotUpdates = (snapshotQueueDir: string) => {
 export const writeInlineSnapshotToFile = ({
     position,
     serializedValue
-}: BaseSnapshotArgs) => {
+}: SnapshotArgs) => {
     const project = getTsProject()
     const file = project.getSourceFile(position.file)
     if (!file) {

@@ -1,4 +1,5 @@
 import { AssertionError, deepEqual, equal, match } from "node:assert/strict"
+import { isDeepStrictEqual } from "node:util"
 import {
     ElementOf,
     Func,
@@ -15,9 +16,9 @@ import {
     typeAssertions
 } from "../type/index.js"
 import {
-    BaseSnapshotArgs,
     getSnapshotByName,
     queueInlineSnapshotUpdate,
+    SnapshotArgs,
     updateExternalSnapshot,
     writeInlineSnapshotToFile
 } from "./snapshot.js"
@@ -271,25 +272,23 @@ export const valueAssertions = <T, Ctx extends AssertionContext>(
         return functionAssertions
     }
     const inlineSnap = (expected?: unknown) => {
-        if (expected && !ctx.config.updateSnapshots) {
-            deepEqual(actualSerialized, serialize(expected))
+        if (!expected || ctx.config.updateSnapshots) {
+            if (!isDeepStrictEqual(actualSerialized, serialize(expected))) {
+                const snapshotArgs: SnapshotArgs = {
+                    position,
+                    serializedValue: actualSerialized
+                }
+                if (ctx.config.precached) {
+                    queueInlineSnapshotUpdate(snapshotArgs)
+                } else {
+                    writeInlineSnapshotToFile(snapshotArgs)
+                }
+            }
         } else {
-            const baseSnapshotArgs: BaseSnapshotArgs = {
-                position,
-                serializedValue: actualSerialized
-            }
-            if (ctx.config.precached) {
-                queueInlineSnapshotUpdate({
-                    ...baseSnapshotArgs,
-                    cachePath: ctx.config.precachePath
-                })
-            } else {
-                writeInlineSnapshotToFile(baseSnapshotArgs)
-            }
+            deepEqual(actualSerialized, serialize(expected))
         }
         return nextAssertions
     }
-
     const baseValueAssertions = {
         is: (expected: unknown) => {
             equal(actual, expected)
@@ -300,7 +299,6 @@ export const valueAssertions = <T, Ctx extends AssertionContext>(
             return nextAssertions
         }
     }
-
     const baseAssertions = {
         ...baseValueAssertions,
         value: baseValueAssertions,
@@ -311,15 +309,19 @@ export const valueAssertions = <T, Ctx extends AssertionContext>(
                     name,
                     options.path
                 )
-                if (expectedSnapshot && !ctx.config.updateSnapshots) {
-                    deepEqual(actualSerialized, expectedSnapshot)
+                if (!expectedSnapshot || ctx.config.updateSnapshots) {
+                    if (
+                        !isDeepStrictEqual(actualSerialized, expectedSnapshot)
+                    ) {
+                        updateExternalSnapshot({
+                            serializedValue: actualSerialized,
+                            position,
+                            name,
+                            customPath: options.path
+                        })
+                    }
                 } else {
-                    updateExternalSnapshot({
-                        serializedValue: actualSerialized,
-                        position,
-                        name,
-                        customPath: options.path
-                    })
+                    deepEqual(actualSerialized, expectedSnapshot)
                 }
                 return nextAssertions
             }

@@ -56,7 +56,7 @@ describe("stringLiteral", () => {
         describe("errors", () => {
             test("mismatched literal", () => {
                 assert(model("'dursurdo'").validate("durrrrrr").error).snap(
-                    `"'durrrrrr' is not assignable to 'dursurdo'."`
+                    "'durrrrrr' is not assignable to 'dursurdo'."
                 )
             })
         })

@@ -1,4 +1,4 @@
-import { existsSync, mkdtempSync, rmSync } from "node:fs"
+import { existsSync, mkdirSync, rmSync } from "node:fs"
 import { relative } from "node:path"
 import { readJson, writeJson } from "@re-/node"
 import { Project, SyntaxKind, ts, Type } from "ts-morph"
@@ -22,32 +22,23 @@ export const cacheAssertions = ({ forcePrecache }: SetupCacheOptions = {}) => {
                 ` of your re.json config to enable precaching.`
         )
     }
-    writeJson(config.precachePath, {
-        snapshotQueueDir: mkdtempSync("reassert-snapshots"),
-        ...analyzeTypeAssertions({ isInitialCache: true })
-    })
+    rmSync(config.cacheDir, { recursive: true, force: true })
+    mkdirSync(config.cacheDir)
+    mkdirSync(config.snapCacheDir)
+    writeJson(
+        config.assertionCacheFile,
+        analyzeTypeAssertions({ isInitialCache: true })
+    )
 }
 
 export const cleanupAssertions = () => {
     const config = getReAssertConfig()
-    const snapshotQueueDir = readJson(config.precachePath).snapshotQueueDir
-    if (!snapshotQueueDir) {
-        throw new Error(
-            `Unable to update snapshots as 'snapshotQueueDir' was missing from ${config.precachePath}.`
-        )
-    }
-    if (!existsSync(snapshotQueueDir)) {
-        throw new Error(
-            `Unable to update snapshots as specified directory ${snapshotQueueDir} does not exist.`
-        )
-    }
     try {
-        writeQueuedSnapshotUpdates(snapshotQueueDir)
+        writeQueuedSnapshotUpdates()
     } finally {
         if (!config.preserveCache) {
-            rmSync(config.precachePath, { force: true })
+            rmSync(config.cacheDir, { recursive: true, force: true })
         }
-        // rmSync(snapshotQueueDir, { recursive: true, force: true })
     }
 }
 
@@ -117,13 +108,13 @@ const analyzeTypeAssertions: Memoized<
     }
     const config = getReAssertConfig()
     if (config.precached && !isInitialCache) {
-        if (!existsSync(config.precachePath)) {
+        if (!existsSync(config.assertionCacheFile)) {
             throw new Error(
-                `Unable to find precached assertion data at '${config.precachePath}'. ` +
+                `Unable to find precached assertion data at '${config.assertionCacheFile}'. ` +
                     `Did you forget to call 'cacheTypeAssertions' before running your tests?`
             )
         }
-        analyzeTypeAssertions.cache = readJson(config.precachePath)
+        analyzeTypeAssertions.cache = readJson(config.assertionCacheFile)
         return analyzeTypeAssertions.cache!
     }
     const project = getTsProject()

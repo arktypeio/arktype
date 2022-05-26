@@ -20,7 +20,7 @@
     },
     "scripts": {
         "build": "re tsc",
-        "test": "reassert jest",
+        "test": "reassert jest --updateSnapshot",
         "lint": "eslint .",
         "unit": "jest --coverage false -t ",
         "generateSpace": "deno run --allow-write generateSpace.ts",

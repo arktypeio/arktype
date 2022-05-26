@@ -1,5 +1,5 @@
 import { existsSync } from "node:fs"
-import { resolve } from "node:path"
+import { join, resolve } from "node:path"
 import { getCmdFromPid, readJson, writeJson } from "@re-/node"
 
 export type LinePosition = {
@@ -14,12 +14,14 @@ export type SourcePosition = LinePosition & {
 
 export interface ReAssertConfig extends Required<ReAssertJson> {
     updateSnapshots: boolean
+    cacheDir: string
+    assertionCacheFile: string
+    snapCacheDir: string
 }
 
 export interface ReAssertJson {
     tsconfig?: string | undefined
     precached?: boolean
-    precachePath?: string
     preserveCache?: boolean
     assertAliases?: string[]
     stringifySnapshots?: boolean
@@ -66,15 +68,17 @@ export const getReAssertConfig: Memoized<() => ReAssertConfig> = () => {
                 updateSnapshots = argsIncludeUpdateFlag(parentCmd.split(" "))
             }
         }
-        const precachePath = resolve(".assert.cache.json")
+        const cacheDir = resolve(".reassert")
         getReAssertConfig.cache = {
             updateSnapshots,
             tsconfig,
             precached: false,
-            precachePath,
             preserveCache: false,
             assertAliases: ["assert"],
             stringifySnapshots: false,
+            cacheDir,
+            snapCacheDir: join(cacheDir, "snaps"),
+            assertionCacheFile: join(cacheDir, "assertions.json"),
             ...reAssertJson
         }
     }

@@ -69,19 +69,17 @@ describe("custom validators", () => {
             }
         )
         assert(() => space.models.first.assert("hmm")).throws.snap(
-            `"At path from/unknown, ???"`
+            "At path from/unknown, ???"
         )
         assert(
             space
                 .create({ something: "second" })
                 .validate({ something: { comesAfter: "no" } }).error
-        ).snap(`
-"Encountered errors at the following paths:
+        ).snap(`Encountered errors at the following paths:
 {
   from/first: 'test',
   from/second: 'hi'
-}"
-`)
+}`)
     })
     test("can access standard validation errors and ctx", () => {
         const num = model("number", {
