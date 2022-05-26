@@ -14,14 +14,20 @@ describe("typeOf", () => {
         assert(typeOf(true)).equals("true")
         assert(typeOf(false)).equals("false")
     })
-    test("bigint", () => assert(typeOf(BigInt(0))).equals(0n))
-    test("symbol", () => assert(typeOf(Symbol())).equals("symbol"))
+    test("bigint", () => {
+        assert(typeOf(BigInt(0))).equals(0n)
+    })
+    test("symbol", () => {
+        assert(typeOf(Symbol())).equals("symbol")
+    })
     test("undefined", () => {
         const x: any = {}
         assert(typeOf(undefined)).equals("undefined")
         assert(typeOf(x.nonexistent)).equals("undefined")
     })
-    test("null", () => assert(typeOf(null)).equals("null"))
+    test("null", () => {
+        assert(typeOf(null)).equals("null")
+    })
     test("object", () => {
         assert(typeOf({ a: { b: "nested", c: 5, d: { deep: null } } })).equals({
             a: { b: "'nested'", c: 5, d: { deep: "null" } }

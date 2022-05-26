@@ -112,6 +112,12 @@ export const generateRequiredCycleError = ({
 }: BaseParseArgs) =>
     requiredCycleErrorTemplate.replace("@cycle", [...seen, def].join("=>"))
 
+export class UngeneratableError extends Error {
+    constructor(def: string, defType: string) {
+        super(ungeneratableError(def, defType))
+    }
+}
+
 export const ungeneratableError = (def: string, defType: string) =>
     `Unable to generate a value for '${def}' (${defType} generation is unsupported).`
 

@@ -1,3 +1,4 @@
+import { Merge } from "@re-/tools"
 import { typeOf } from "../../../../utils.js"
 import { Reference } from "../reference.js"
 import { extractableHandlers } from "./extractable.js"
@@ -22,7 +23,7 @@ export namespace Keyword {
         },
         {
             matches: (def) => def in handlers,
-            generate: (ctx) => handlers[ctx.def].generate(ctx),
+            generate: (ctx) => handlers[ctx.def].generate(),
             validate: (ctx, value) => {
                 const valueType = typeOf(value)
                 return handlers[ctx.def].validate(valueType)
@@ -42,5 +43,8 @@ export namespace Keyword {
 
     export const keywords = listKeywords(handlers)
 
-    export type KeywordTypes = HandledTypes<typeof handlers>
+    export type KeywordTypes = Merge<
+        HandledTypes<typeof handlers>,
+        { function: (...args: any[]) => any }
+    >
 }

@@ -113,9 +113,9 @@ describe("keyword", () => {
             assert(f.type).typed as (...args: any[]) => any
         })
         test("generation", () => {
-            const generated = f.generate()
-            assert(typeof generated).is("function")
-            assert(generated("irrelevant")).is(undefined)
+            assert(() => f.generate()).throws.snap(
+                `Unable to generate a value for 'function' (function generation is unsupported).`
+            )
         })
         test("validation", () => {
             assert(f.validate(() => ({})).error).is(undefined)
@@ -221,8 +221,8 @@ describe("keyword", () => {
             assert(n.type).typed as never
         })
         test("generation", () => {
-            assert(() => n.generate()).throws(
-                "Could not find a default value satisfying never."
+            assert(() => n.generate()).throws.snap(
+                `Unable to generate a value for 'never' (never generation is unsupported).`
             )
         })
         test("validation", () => {

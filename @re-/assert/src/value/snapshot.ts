@@ -96,7 +96,7 @@ export const writeInlineSnapshotToFile = ({
         for (const originalArg of snapCall.getArguments()) {
             snapCall.removeArgument(originalArg)
         }
-        snapCall.addArgument(serializedValue)
+        snapCall.addArgument(serializedValue.replace(`\\`, `\\\\`))
         file.saveSync()
     })
 }

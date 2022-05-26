@@ -56,19 +56,23 @@ describe("union", () => {
     describe("generation", () => {
         test("prefers simple values", () => {
             assert(model("undefined|string").generate()).is(undefined)
-            assert(model("number|false|function").generate() as any).is(false)
+            assert(model("number|false|bigint").generate() as any).is(false)
             assert(model("symbol|object").generate()).equals({})
+        })
+        test("avoids ungeneratable", () => {
+            assert(model("object|function").generate()).equals({})
+            assert(model("never|number|boolean").generate()).equals(false)
         })
         test("prefers simple aliases", () => {
             const space = narrow({
                 dictionary: {
                     five: 5,
                     duck: "'duck'",
-                    func: "function"
+                    nested: {}
                 }
             })
-            assert(model("func|five|duck", { space }).generate() as any).is(5)
-            assert(model("duck|func", { space }).generate() as any).is("duck")
+            assert(model("nested|five|duck", { space }).generate() as any).is(5)
+            assert(model("duck|nested", { space }).generate() as any).is("duck")
         })
         test("generates onCycle values if needed", () => {
             assert(

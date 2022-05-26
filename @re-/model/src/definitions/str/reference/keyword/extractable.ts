@@ -1,4 +1,4 @@
-import { defineKeywords } from "./internal.js"
+import { defineKeywords, UngeneratableError } from "./internal.js"
 
 // These are the named types we can extract from a valueType at runtime
 export const extractableHandlers = defineKeywords({
@@ -12,7 +12,7 @@ export const extractableHandlers = defineKeywords({
     },
     function: {
         generate: () => {
-            throw new Error(`Generation of functions is not supported.`)
+            throw new UngeneratableError("function", "function")
         },
         validate: (valueType) => valueType === "function"
     },

@@ -1,5 +1,6 @@
 import { transform, TypeOfResult } from "@re-/tools"
 import { typeOf } from "../../../utils.js"
+import { UngeneratableError } from "../internal.js"
 import { Str } from "../str.js"
 import { Expression } from "./expression.js"
 import {
@@ -80,6 +81,12 @@ export namespace Union {
                         try {
                             return [i, fragment.generate(opts)]
                         } catch (error: any) {
+                            if (error instanceof UngeneratableError) {
+                                if (errorMessage === unknownErrorMessage) {
+                                    errorMessage = error.message
+                                }
+                                return null
+                            }
                             if (isRequiredCycleError(error.message)) {
                                 if (errorMessage === unknownErrorMessage) {
                                     errorMessage = error.message
@@ -87,7 +94,6 @@ export namespace Union {
                                 // Omit it from "possibleValues"
                                 return null
                             }
-                            /* istanbul ignore next */
                             throw error
                         }
                     },

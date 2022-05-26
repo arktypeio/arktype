@@ -355,4 +355,8 @@ secondLine`)
         assert("firstLine\nsecondLine").snap(`firstLine
 secondLine`)
     })
+    test("union of function chainable", () => {
+        const t = {} as object | ((...args: any[]) => any)
+        assert(t).equals({})
+    })
 })

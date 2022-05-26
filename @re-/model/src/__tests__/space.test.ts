@@ -1,7 +1,6 @@
 import { assert } from "@re-/assert"
 import { compile, model } from "@re-/model"
 import { duplicateSpaceError } from "../errors.js"
-import { typeDefProxy } from "../internal.js"
 
 describe("compile", () => {
     test("single", () => {
@@ -53,8 +52,8 @@ describe("compile", () => {
             }
         }
         // @ts-expect-error
-        assert(space.types.a.b.a.b.c).type.errors(
-            "Property 'c' does not exist on type '{ a: { b: any; }; }'."
+        assert(space.types.a.b.a.b.c).type.errors.snap(
+            `Property 'c' does not exist on type '{ a: { b: ...; }; }'.`
         )
     })
     test("object list", () => {
@@ -78,10 +77,9 @@ describe("compile", () => {
         const mySpace = compile({ a: { b: "b?" }, b: { a: "a?" } })
         const a = mySpace.create("a")
         assert(a.type)
-            .is(typeDefProxy)
             .type.toString()
             .snap(
-                `"{ b?: { a?: { b?: any | undefined; } | undefined; } | undefined; }"`
+                `{ b?: { a?: { b?: any | undefined; } | undefined; } | undefined; }`
             )
         assert(mySpace.models.a.references()).equals({ b: ["b"] })
         const aWithExtraneousKey = { c: "extraneous" }
@@ -91,11 +89,9 @@ describe("compile", () => {
         assert(a.generate()).equals({})
         assert(a.references()).equals(["a"])
         assert(a.definition).typedValue("a")
-        assert(mySpace.create("b").type)
-            .is(typeDefProxy)
-            .type.toString.snap(
-                `"{ a?: { b?: { a?: any | undefined; } | undefined; } | undefined; }"`
-            )
+        assert(mySpace.create("b").type).type.toString.snap(
+            `{ a?: { b?: { a?: any | undefined; } | undefined; } | undefined; }`
+        )
         assert(mySpace.models.b.references()).equals({ a: ["a"] })
     })
     test("extension", () => {
@@ -133,19 +129,9 @@ describe("compile", () => {
                 }
             }
         )
-        assert(extended.types).typed as {
-            user: {
-                age: number
-            }
-            group: {
-                members: {
-                    age: number
-                }[]
-            }
-            other: {
-                age: number
-            }[]
-        }
+        assert(extended.types).type.toString.snap(
+            `{ other: { age: number; }[]; user: { age: number; }; group: { members: { age: number; }[]; }; }`
+        )
         assert(extended.config).equals({
             onCycle: "boolean",
             validate: {
@@ -176,23 +162,16 @@ describe("compile", () => {
             group: { members: "user[]" }
         })
         const city = model({ people: "user[]", groups: "group[]" }, { space })
-        assert(city.type).typed as {
-            people: {
-                name: string
-            }[]
-            groups: {
-                members: {
-                    name: string
-                }[]
-            }[]
-        }
+        assert(city.type).type.toString.snap(
+            `{ groups: { members: { name: string; }[]; }[]; people: { name: string; }[]; }`
+        )
         assert(
             city.validate({
                 people: [{ name: "David" }],
                 groups: [{ members: [{ first: "David", last: "Blass" }] }]
             }).error
         ).snap(
-            `"At path groups/0/members/0, required keys 'name' were missing. Keys 'first, last' were unexpected."`
+            `At path groups/0/members/0, required keys 'name' were missing. Keys 'first, last' were unexpected.`
         )
     })
     test("space cannot be redefined from create", () => {

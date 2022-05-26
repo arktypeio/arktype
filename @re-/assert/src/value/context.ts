@@ -180,9 +180,7 @@ export type NextAssertions<AllowTypeAssertions extends boolean> =
  *  If we don't pass the possible values as a list, TS
  *  takes a union of the whole assertion object instead
  *  of a function that accepts one of a union type
- *
  */
-
 export type ValueAssertion<
     PossibleValues extends any[],
     AllowTypeAssertions extends boolean,
@@ -190,31 +188,41 @@ export type ValueAssertion<
 > = IsAnyOrUnknown<T> extends true
     ? FunctionalValueAssertion<T[], T, AllowTypeAssertions> &
           ComparableValueAssertion<PossibleValues, AllowTypeAssertions>
-    : T extends Func<infer Args, infer Return>
-    ? FunctionalValueAssertion<Args, Return, AllowTypeAssertions>
-    : ComparableValueAssertion<PossibleValues, AllowTypeAssertions>
+    : PossibleValues extends Func[]
+    ? T extends Func<infer Args, infer Return>
+        ? FunctionalValueAssertion<Args, Return, AllowTypeAssertions>
+        : {}
+    : ComparableValueAssertion<
+          ListPossibleTypes<Exclude<T, Func>>,
+          AllowTypeAssertions
+      >
 
 const defaultAssert = (
     actual: unknown,
     expected: unknown,
     allowRegex = false
 ) => {
-    if (isRecursible(actual)) {
-        deepEqual(actual, expected)
-    } else if (allowRegex) {
+    if (allowRegex) {
         if (typeof actual !== "string") {
             throw new AssertionError({
                 message: `Value was of type ${typeof actual} (expected a string).`
             })
         }
-        if (!(typeof expected === "string" || expected instanceof RegExp)) {
+        if (typeof expected === "string") {
+            if (!actual.includes(expected)) {
+                throw new AssertionError({
+                    message: `Expected string '${expected}' did not appear in actual string '${actual}'.`
+                })
+            }
+        } else if (expected instanceof RegExp) {
+            match(actual, expected)
+        } else {
             throw new AssertionError({
                 message: `Expected value for this assertion should be a string or RegExp.`,
                 expected,
                 actual
             })
         }
-        match(actual, new RegExp(expected))
     } else {
         deepEqual(actual, expected)
     }
@@ -260,12 +268,12 @@ export const valueAssertions = <T, Ctx extends AssertionContext>(
             return {
                 ...functionAssertions,
                 throwsAndHasTypeError: (matchValue: string | RegExp) => {
-                    const matcher =
-                        matchValue instanceof RegExp
-                            ? matchValue
-                            : new RegExp(matchValue)
-                    match(getThrownMessage(actual), matcher)
-                    match(getAssertionData(position).errors, matcher)
+                    defaultAssert(getThrownMessage(actual), matchValue, true)
+                    defaultAssert(
+                        getAssertionData(position).errors,
+                        matchValue,
+                        true
+                    )
                 }
             }
         }

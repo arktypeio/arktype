@@ -149,7 +149,8 @@ module.exports = defineConfig({
             files: ["**/__tests__/**"],
             rules: {
                 "@typescript-eslint/no-empty-function": "off",
-                "unicorn/consistent-function-scoping": "off"
+                "unicorn/consistent-function-scoping": "off",
+                "unicorn/numeric-separators-style": "off"
             }
         },
         // Docusaurus requires pages export a default component

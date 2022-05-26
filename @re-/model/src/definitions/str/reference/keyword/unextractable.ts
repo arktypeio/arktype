@@ -1,4 +1,5 @@
-import { defineKeywords, valueGenerationError } from "./internal.js"
+import { UngeneratableError } from "../internal.js"
+import { defineKeywords } from "./internal.js"
 import { numberHandlers } from "./number.js"
 import { stringHandlers } from "./string.js"
 
@@ -24,8 +25,8 @@ export const unextractableHandlers = defineKeywords({
         validate: (valueType) => valueType === "undefined"
     },
     never: {
-        generate: ({ def, ctx }) => {
-            throw new Error(valueGenerationError({ def, ctx }))
+        generate: () => {
+            throw new UngeneratableError("never", "never")
         },
         validate: () => false
     },
