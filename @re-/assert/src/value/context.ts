@@ -25,23 +25,18 @@ import {
 export type ChainableValueAssertion<
     ArgsType extends [value: any, ...rest: any[]],
     AllowTypeAssertions extends boolean,
-    IsBenchable extends boolean,
     Chained = ArgsType[0],
     IsReturn extends boolean = false,
     ImmediateAssertions = ValueAssertion<
         ListPossibleTypes<Chained>,
-        AllowTypeAssertions,
-        IsBenchable
+        AllowTypeAssertions
     > &
-        (IsReturn extends true
-            ? NextAssertions<AllowTypeAssertions, IsBenchable>
-            : {}) &
-        (IsBenchable extends true ? BenchAssertions : {})
+        (IsReturn extends true ? NextAssertions<AllowTypeAssertions> : {})
 > = (<Args extends ArgsType | [] = []>(
     ...args: Args
 ) => Args extends []
     ? ImmediateAssertions
-    : NextAssertions<AllowTypeAssertions, IsBenchable>) &
+    : NextAssertions<AllowTypeAssertions>) &
     ImmediateAssertions
 
 export type ChainableAssertionOptions = {
@@ -101,28 +96,23 @@ export type ExternalSnapshotOptions = {
 
 export type ComparableValueAssertion<
     PossibleValues extends any[],
-    AllowTypeAssertions extends boolean,
-    IsBenchable extends boolean
+    AllowTypeAssertions extends boolean
 > = {
     is: (
         value: ElementOf<PossibleValues>
-    ) => NextAssertions<AllowTypeAssertions, IsBenchable>
-    snap: ((
-        value?: unknown
-    ) => NextAssertions<AllowTypeAssertions, IsBenchable>) & {
+    ) => NextAssertions<AllowTypeAssertions>
+    snap: ((value?: unknown) => NextAssertions<AllowTypeAssertions>) & {
         toFile: (
             name: string,
             options?: ExternalSnapshotOptions
-        ) => NextAssertions<AllowTypeAssertions, IsBenchable>
+        ) => NextAssertions<AllowTypeAssertions>
     }
     equals: (
         value: ElementOf<PossibleValues>
-    ) => NextAssertions<AllowTypeAssertions, IsBenchable>
+    ) => NextAssertions<AllowTypeAssertions>
     value: {
-        is: (value: unknown) => NextAssertions<AllowTypeAssertions, IsBenchable>
-        equals: (
-            value: unknown
-        ) => NextAssertions<AllowTypeAssertions, IsBenchable>
+        is: (value: unknown) => NextAssertions<AllowTypeAssertions>
+        equals: (value: unknown) => NextAssertions<AllowTypeAssertions>
     }
 } & (AllowTypeAssertions extends true
     ? { typedValue: (expected: unknown) => undefined }
@@ -135,23 +125,20 @@ export type CallableFunctionAssertion<
     returns: ChainableValueAssertion<
         [value: Return],
         AllowTypeAssertions,
-        true,
         Return,
         true
     >
     throws: ChainableValueAssertion<
         [message: string | RegExp],
         AllowTypeAssertions,
-        true,
         string,
         false
     >
 } & (AllowTypeAssertions extends true
     ? {
-          throwsAndHasTypeError: (message: string | RegExp) => BenchAssertions
+          throwsAndHasTypeError: (message: string | RegExp) => undefined
       }
-    : {}) &
-    BenchAssertions
+    : {})
 
 export type FunctionalValueAssertion<
     Args extends any[],
@@ -172,35 +159,8 @@ export type FunctionAssertionWithArgsIfNeeded<
               args: (...args: Args) => AssertionsOnceCallable
           })
 
-export type BenchAssertions = ReturnType<typeof benchAssertions>
-
-export const benchAssertions = (ctx: AssertionContext) => {
-    return {
-        bench: (expected?: number) => {
-            if (!ctx.benchTime) {
-                if (typeof ctx.originalAssertedValue !== "function") {
-                    throw new TypeError(
-                        `Unable to benchmark non-functional assertion ${toString(
-                            ctx.originalAssertedValue
-                        )} of type ${typeof ctx.originalAssertedValue}.`
-                    )
-                }
-                runAssertionFunction(ctx.originalAssertedValue, ctx)
-            }
-            console.log(`Expected: ${expected}`)
-            console.log(`Actual: ${ctx.benchTime}`)
-        }
-    }
-}
-
-export type NextAssertions<
-    AllowTypeAssertions extends boolean,
-    IsBenchable extends boolean
-> = AllowTypeAssertions extends true
-    ? TypeAssertions<IsBenchable>
-    : IsBenchable extends true
-    ? BenchAssertions
-    : {}
+export type NextAssertions<AllowTypeAssertions extends boolean> =
+    AllowTypeAssertions extends true ? TypeAssertions : {}
 
 /**
  *  If we don't pass the possible values as a list, TS
@@ -210,23 +170,17 @@ export type NextAssertions<
 export type ValueAssertion<
     PossibleValues extends any[],
     AllowTypeAssertions extends boolean,
-    IsBenchable extends boolean,
     T = ElementOf<PossibleValues>
 > = IsAnyOrUnknown<T> extends true
     ? FunctionalValueAssertion<T[], T, AllowTypeAssertions> &
-          ComparableValueAssertion<
-              PossibleValues,
-              AllowTypeAssertions,
-              IsBenchable
-          >
+          ComparableValueAssertion<PossibleValues, AllowTypeAssertions>
     : PossibleValues extends Func[]
     ? T extends Func<infer Args, infer Return>
         ? FunctionalValueAssertion<Args, Return, AllowTypeAssertions>
         : {}
     : ComparableValueAssertion<
           ListPossibleTypes<Exclude<T, Func>>,
-          AllowTypeAssertions,
-          IsBenchable
+          AllowTypeAssertions
       >
 
 const defaultAssert = (
@@ -279,26 +233,18 @@ export const runAssertionFunction = (
     ctx: AssertionContext
 ): RunAssertionFunctionResult => {
     const result: RunAssertionFunctionResult = {}
-    const startTime = Date.now()
-    let endTime: number
     try {
         result.returned = asserted(...ctx.args)
-        endTime = Date.now()
     } catch (error) {
-        endTime = Date.now()
         result.threw = String(error)
     }
-    ctx.benchTime = endTime - startTime
     return result
 }
 
 export const getNextAssertions = (
     position: SourcePosition,
     ctx: AssertionContext
-) =>
-    ctx.allowTypeAssertions
-        ? typeAssertions(position, ctx)
-        : benchAssertions(ctx)
+) => (ctx.allowTypeAssertions ? typeAssertions(position, ctx) : {})
 
 export const valueAssertions = <T>(
     position: SourcePosition,
@@ -335,8 +281,7 @@ export const valueAssertions = <T>(
                 () => getThrownMessage(runAssertionFunction(actual, ctx)),
                 ctx,
                 { allowRegex: true }
-            ),
-            ...benchAssertions(ctx)
+            )
         }
         if (ctx["allowTypeAssertions"]) {
             // @ts-ignore
@@ -355,7 +300,7 @@ export const valueAssertions = <T>(
                 )
             }
         }
-        return functionAssertions as any
+        return functionAssertions
     }
     const serialize = (value: unknown) =>
         ctx.config.stringifySnapshots

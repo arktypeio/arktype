@@ -7,10 +7,9 @@ import { ValueAssertion, valueAssertions } from "./value/index.js"
 
 export type AvailableAssertions<T> = ValueAssertion<
     ListPossibleTypes<T>,
-    true,
-    false
+    true
 > &
-    TypeAssertions<false>
+    TypeAssertions
 
 export type AssertionResult<T> = AvailableAssertions<T>
 
@@ -19,7 +18,6 @@ export type Assertion = <T>(value: T) => AssertionResult<T>
 export type AssertionContext = {
     allowTypeAssertions: boolean
     returnsCount: number
-    benchTime: number | undefined
     originalAssertedValue: unknown
     args: unknown[]
     config: ReAssertConfig
@@ -42,7 +40,6 @@ export const assert: Assertion = (
     const config: AssertionContext = {
         allowTypeAssertions: true,
         returnsCount: 0,
-        benchTime: undefined,
         originalAssertedValue: value,
         args: [],
         config: { ...getReAssertConfig(), ...internalConfigHooks }

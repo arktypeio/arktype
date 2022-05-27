@@ -1,40 +1,28 @@
 import { deepEqual } from "node:assert/strict"
 import { AssertionContext } from "../assert.js"
 import { SourcePosition } from "../common.js"
-import {
-    benchAssertions,
-    BenchAssertions,
-    chainableAssertion,
-    ChainableValueAssertion
-} from "../value/index.js"
+import { chainableAssertion, ChainableValueAssertion } from "../value/index.js"
 import { getAssertionData } from "./analysis.js"
 
 export type ValueFromTypeAssertion<
     Expected,
-    IsBenchable extends boolean,
     Chained = Expected
-> = ChainableValueAssertion<
-    [expected: Expected],
-    false,
-    IsBenchable,
-    Chained,
-    false
->
+> = ChainableValueAssertion<[expected: Expected], false, Chained, false>
 
-export type TypeAssertions<IsBenchable extends boolean> = {
+export type TypeAssertions = {
     type: {
-        toString: ValueFromTypeAssertion<string, IsBenchable>
-        errors: ValueFromTypeAssertion<string | RegExp, IsBenchable, string>
+        toString: ValueFromTypeAssertion<string>
+        errors: ValueFromTypeAssertion<string | RegExp, string>
     }
     typed: unknown
-} & (IsBenchable extends true ? BenchAssertions : {})
+}
 
-export type AssertTypeContext<IsBenchable extends boolean> = (
+export type AssertTypeContext = (
     position: SourcePosition,
     config: AssertionContext
-) => TypeAssertions<IsBenchable>
+) => TypeAssertions
 
-export const typeAssertions: AssertTypeContext<boolean> = (
+export const typeAssertions: AssertTypeContext = (
     position: SourcePosition,
     ctx: AssertionContext
 ) => {
@@ -52,8 +40,7 @@ export const typeAssertions: AssertTypeContext<boolean> = (
                     { ...ctx, allowTypeAssertions: false },
                     { allowRegex: true }
                 )
-            },
-            ...benchAssertions(ctx)
+            }
         },
         {
             get: (target, prop) => {
@@ -61,7 +48,7 @@ export const typeAssertions: AssertTypeContext<boolean> = (
                     const assertionData = getAssertionData(position)
                     if (!assertionData.type.expected) {
                         throw new Error(
-                            `Expected an 'as' expression after 'typed' prop access at position ${position.char} on` +
+                            `Expected an 'as' expression after 'typed' prop access at position ${position.char} on ` +
                                 `line ${position.line} of ${position.file}.`
                         )
                     }
