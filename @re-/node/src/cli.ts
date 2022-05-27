@@ -1,3 +1,4 @@
+/* eslint-disable import/no-unused-modules */
 import { basename } from "node:path"
 import { reDoc } from "./reDoc/reDoc.js"
 import { redoTsc } from "./reTsc.js"

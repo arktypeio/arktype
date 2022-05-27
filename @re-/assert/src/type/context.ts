@@ -1,30 +1,42 @@
 import { deepEqual } from "node:assert/strict"
 import { AssertionContext } from "../assert.js"
 import { SourcePosition } from "../common.js"
-import { chainableAssertion, ChainableValueAssertion } from "../value/index.js"
+import {
+    benchAssertions,
+    BenchAssertions,
+    chainableAssertion,
+    ChainableValueAssertion
+} from "../value/index.js"
 import { getAssertionData } from "./analysis.js"
 
 export type ValueFromTypeAssertion<
     Expected,
+    IsBenchable extends boolean,
     Chained = Expected
-> = ChainableValueAssertion<[expected: Expected], false, Chained, false>
+> = ChainableValueAssertion<
+    [expected: Expected],
+    false,
+    IsBenchable,
+    Chained,
+    false
+>
 
-export type TypeAssertions = {
+export type TypeAssertions<IsBenchable extends boolean> = {
     type: {
-        toString: ValueFromTypeAssertion<string>
-        errors: ValueFromTypeAssertion<string | RegExp, string>
+        toString: ValueFromTypeAssertion<string, IsBenchable>
+        errors: ValueFromTypeAssertion<string | RegExp, IsBenchable, string>
     }
     typed: unknown
-}
+} & (IsBenchable extends true ? BenchAssertions : {})
 
-export type AssertTypeContext = (
+export type AssertTypeContext<IsBenchable extends boolean> = (
     position: SourcePosition,
     config: AssertionContext
-) => TypeAssertions
+) => TypeAssertions<IsBenchable>
 
-export const typeAssertions: AssertTypeContext = (
+export const typeAssertions: AssertTypeContext<boolean> = (
     position: SourcePosition,
-    config: AssertionContext
+    ctx: AssertionContext
 ) => {
     return new Proxy(
         {
@@ -32,15 +44,16 @@ export const typeAssertions: AssertTypeContext = (
                 toString: chainableAssertion(
                     position,
                     () => getAssertionData(position).type.actual,
-                    { ...config, allowTypeAssertions: false }
+                    { ...ctx, allowTypeAssertions: false }
                 ),
                 errors: chainableAssertion(
                     position,
                     () => getAssertionData(position).errors,
-                    { ...config, allowTypeAssertions: false },
+                    { ...ctx, allowTypeAssertions: false },
                     { allowRegex: true }
                 )
-            }
+            },
+            ...benchAssertions(ctx)
         },
         {
             get: (target, prop) => {

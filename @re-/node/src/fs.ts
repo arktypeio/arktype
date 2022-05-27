@@ -43,6 +43,11 @@ export const readJson = (path: string) =>
 export const writeJson = (path: string, data: object) =>
     writeFileSync(path, JSON.stringify(data, null, 4))
 
+export type JsonTransformer = (data: object) => object
+
+export const rewriteJson = (path: string, transform: JsonTransformer) =>
+    writeJson(path, transform(readJson(path)))
+
 export const readJsonAsync = async (path: string) =>
     JSON.parse(await readFileAsync(path, { encoding: "utf8" }))
 

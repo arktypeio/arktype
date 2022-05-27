@@ -1,10 +1,9 @@
 #!/usr/bin/env node
-
 import { existsSync } from "node:fs"
 import { dirname, join } from "node:path"
 import { version, versions } from "node:process"
 import { fileName, requireResolve, shell } from "@re-/node"
-import { cacheAssertions, cleanupAssertions } from "./index.js"
+import { cacheAssertions, cleanupAssertions } from "./type/index.js"
 
 let runTestsCmd = ""
 const runnerArgIndex = process.argv.findIndex((arg) =>

@@ -1,6 +1,6 @@
 import { existsSync } from "node:fs"
 import { join, resolve } from "node:path"
-import { getCmdFromPid, readJson, writeJson } from "@re-/node"
+import { getCmdFromPid, readJson } from "@re-/node"
 
 export type LinePosition = {
     line: number
@@ -19,26 +19,23 @@ export interface ReAssertConfig extends Required<ReAssertJson> {
     snapCacheDir: string
 }
 
-export interface ReAssertJson {
+interface ReAssertJson {
     tsconfig?: string | undefined
     precached?: boolean
     preserveCache?: boolean
     assertAliases?: string[]
     stringifySnapshots?: boolean
+    benchPercentThreshold?: number
+    benchRuns?: number
 }
 
-export interface ReJson {
+interface ReJson {
     assert?: ReAssertJson
 }
 
 export type Memoized<F extends (...args: any[]) => any> = F & {
     cache?: ReturnType<F>
 }
-
-export type JsonTransformer = (data: object) => object
-
-export const rewriteJson = (path: string, transform: JsonTransformer) =>
-    writeJson(path, transform(readJson(path)))
 
 const argsIncludeUpdateFlag = (args: string[]) =>
     args.some((arg) => ["-u", "--update", "--updateSnapshot"].includes(arg))
@@ -79,6 +76,8 @@ export const getReAssertConfig: Memoized<() => ReAssertConfig> = () => {
             cacheDir,
             snapCacheDir: join(cacheDir, "snaps"),
             assertionCacheFile: join(cacheDir, "assertions.json"),
+            benchPercentThreshold: 10,
+            benchRuns: 1,
             ...reAssertJson
         }
     }

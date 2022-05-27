@@ -23,8 +23,8 @@
         "build": "echo Temporarily disabled",
         "test": "echo Temporarily disabled",
         "lint": "echo Temporarily disabled",
-        "buildDev": "reTsc",
-        "testDev": "jest 2>&1"
+        "buildDev": "re tsc",
+        "testDev": "reassert mocha"
     },
     "dependencies": {
         "@re-/tools": "workspace:*",

@@ -22,7 +22,7 @@ module.exports = defineConfig({
     parserOptions: {
         project: ["tsconfig.json", "@re-/*/tsconfig.json"]
     },
-    ignorePatterns: ["**/*js"],
+    ignorePatterns: ["**/dist/**", "**/*js"],
     rules: {
         /**
          * General restrictions
@@ -107,6 +107,7 @@ module.exports = defineConfig({
         "unicorn/prefer-switch": "off",
         "unicorn/prevent-abbreviations": "off",
         "unicorn/no-array-callback-reference": "off",
+        "unicorn/no-process-exit": "off",
         /**
          * Temporarily disabled settings we may enable in the future
          */
@@ -136,10 +137,6 @@ module.exports = defineConfig({
                  * so no need to worry about checking imports beyond what TypeScript does by default.
                  **/
                 "import/no-extraneous-dependencies": "error"
-                // "import/no-unused-modules": [
-                //     "error",
-                //     { unusedExports: true, missingExports: true }
-                // ],
             }
         },
         /**

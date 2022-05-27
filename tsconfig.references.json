@@ -1,0 +1,10 @@
+{
+    "extends": "./tsconfig.json",
+    "include": ["./@re-/*/src/index.ts"],
+    "exclude": ["**/node_modules", "**/dist"],
+    "compilerOptions": {
+        "paths": {
+            "@re-/*": ["./@re-/*/src/index.js"]
+        }
+    }
+}

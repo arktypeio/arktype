@@ -1,6 +1,4 @@
 {
     "typescript.tsdk": "../../node_modules/typescript/lib",
-    "eslint.packageManager": "pnpm",
-    "eslint.enable": true,
-    "eslint.alwaysShowStatus": true
+    "eslint.packageManager": "pnpm"
 }
