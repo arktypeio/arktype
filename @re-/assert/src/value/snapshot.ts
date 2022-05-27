@@ -78,27 +78,32 @@ export const writeInlineSnapshotToFile = ({
             position.char - 1
         )
     )
-    const snapCall = startNode
-        ?.getAncestors()
-        .find(
-            (ancestor) =>
-                ancestor.getKind() === SyntaxKind.CallExpression &&
-                ancestor
-                    .asKind(SyntaxKind.CallExpression)
-                    ?.getExpressionIfKind(SyntaxKind.PropertyAccessExpression)
-                    ?.getName() === snapFunctionName
-        ) as CallExpression | undefined
-    if (!snapCall) {
+    const matchingCall = startNode?.getAncestors().find((ancestor) => {
+        const expression = ancestor
+            .asKind(SyntaxKind.CallExpression)
+            ?.getExpression()
+        if (expression) {
+            const name =
+                // If the call is made directly, e.g. snap(...), the expression will be an identifier, so can use its whole text
+                expression.asKind(SyntaxKind.Identifier)?.getText() ??
+                // If the call is made from a prop, e.g. snap in assert(...).snap(), check the name of the prop accessed
+                expression
+                    .asKind(SyntaxKind.PropertyAccessExpression)
+                    ?.getName()
+            return name === snapFunctionName
+        }
+    }) as CallExpression | undefined
+    if (!matchingCall) {
         throw new Error(
             `Unable to locate expected inline ${snapFunctionName} associated with assertion from ${position.file} ` +
                 `on line ${position.line}, char ${position.char}.`
         )
     }
     process.on("exit", () => {
-        for (const originalArg of snapCall.getArguments()) {
-            snapCall.removeArgument(originalArg)
+        for (const originalArg of matchingCall.getArguments()) {
+            matchingCall.removeArgument(originalArg)
         }
-        snapCall.addArgument(serializedValue.replace(`\\`, `\\\\`))
+        matchingCall.addArgument(serializedValue.replace(`\\`, `\\\\`))
         file.saveSync()
     })
 }

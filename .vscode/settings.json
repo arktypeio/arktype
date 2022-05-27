@@ -18,8 +18,5 @@
     "typescript.tsdk": "./node_modules/typescript/lib",
     "eslint.packageManager": "pnpm",
     "eslint.enable": true,
-    "eslint.alwaysShowStatus": true,
-    "editor.codeActionsOnSave": {
-        "source.organizeImports": true
-    }
+    "eslint.alwaysShowStatus": true
 }
