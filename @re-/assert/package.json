@@ -20,7 +20,8 @@
     },
     "scripts": {
         "build": "re tsc",
-        "test": "node --no-warnings --loader ts-node/esm ./src/runner.ts mocha"
+        "test": "node --no-warnings --loader ts-node/esm ./src/runner.ts mocha",
+        "bench": "node --no-warnings --loader ts-node/esm ./src/__tests__/bench.bench.ts"
     },
     "bin": {
         "reassert": "./runner.cjs"

@@ -26,7 +26,6 @@ interface ReAssertJson {
     assertAliases?: string[]
     stringifySnapshots?: boolean
     benchPercentThreshold?: number
-    benchRuns?: number
 }
 
 interface ReJson {
@@ -77,7 +76,6 @@ export const getReAssertConfig: Memoized<() => ReAssertConfig> = () => {
             snapCacheDir: join(cacheDir, "snaps"),
             assertionCacheFile: join(cacheDir, "assertions.json"),
             benchPercentThreshold: 10,
-            benchRuns: 1,
             ...reAssertJson
         }
     }

@@ -9,6 +9,7 @@ import { getTsProject } from "../type/analysis.js"
 export interface SnapshotArgs {
     position: SourcePosition
     serializedValue: string
+    snapFunctionName?: string
 }
 
 export interface ExternalSnapshotArgs extends SnapshotArgs {
@@ -61,14 +62,15 @@ export const writeQueuedSnapshotUpdates = () => {
 
 export const writeInlineSnapshotToFile = ({
     position,
-    serializedValue
+    serializedValue,
+    snapFunctionName = "snap"
 }: SnapshotArgs) => {
     const project = getTsProject()
     const file = project.getSourceFile(position.file)
     if (!file) {
         throw new Error(`No type information available for '${position.file}'.`)
     }
-    const assertNode = file.getDescendantAtPos(
+    const startNode = file.getDescendantAtPos(
         ts.getPositionOfLineAndCharacter(
             file.compilerNode,
             // TS uses 0-based line and char #s
@@ -76,7 +78,7 @@ export const writeInlineSnapshotToFile = ({
             position.char - 1
         )
     )
-    const snapCall = assertNode
+    const snapCall = startNode
         ?.getAncestors()
         .find(
             (ancestor) =>
@@ -84,11 +86,11 @@ export const writeInlineSnapshotToFile = ({
                 ancestor
                     .asKind(SyntaxKind.CallExpression)
                     ?.getExpressionIfKind(SyntaxKind.PropertyAccessExpression)
-                    ?.getName() === "snap"
+                    ?.getName() === snapFunctionName
         ) as CallExpression | undefined
     if (!snapCall) {
         throw new Error(
-            `Unable to locate expected inline snap associated with assertion from ${position.file} ` +
+            `Unable to locate expected inline ${snapFunctionName} associated with assertion from ${position.file} ` +
                 `on line ${position.line}, char ${position.char}.`
         )
     }
