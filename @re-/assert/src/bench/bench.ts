@@ -1,9 +1,9 @@
 import { performance } from "node:perf_hooks"
 import { caller } from "@re-/node"
-import { toString, transform } from "@re-/tools"
+import { asNumber, ElementOf, isAlpha, toString, transform } from "@re-/tools"
 import { default as memoize } from "micro-memoize"
-import { getReAssertConfig, ReAssertConfig, SourcePosition } from "./common.js"
-import { writeInlineSnapshotToFile } from "./value/snapshot.js"
+import { getReAssertConfig, ReAssertConfig, SourcePosition } from "../common.js"
+import { writeInlineSnapshotToFile } from "../value/snapshot.js"
 
 export type BenchOptions = {
     until?: {
@@ -12,7 +12,9 @@ export type BenchOptions = {
     }
 }
 
-type TimeUnit = "s" | "ms"
+const timeUnits = ["s", "ms", "μs", "ns"] as const
+
+type TimeUnit = ElementOf<typeof timeUnits>
 
 type BaselineKind = "mean" | "median"
 
@@ -31,10 +33,24 @@ type MeasureComparison = {
 }
 
 const parseMeasure = (s: MeasureString): Measure => {
-    const unitLength = s.endsWith("ms") ? 2 : 1
+    // If both the last characters are alpha, the unit should be exactly 2 characters.
+    // Otherwise, it should be "s" (seconds)
+    const unitLength = isAlpha(s.slice(-2)) ? 2 : 1
+    const n = asNumber(s.slice(0, -unitLength))
+    const unit = s.slice(-unitLength) as TimeUnit
+    if (n === null) {
+        throw new Error(
+            `Unable to parse baseline '${s}': expected '${n}' to be numeric.`
+        )
+    }
+    if (!timeUnits.includes(unit)) {
+        throw new Error(
+            `Unable to parse baseline '${s}': unknown timing unit '${unit}'.`
+        )
+    }
     return {
-        n: Number(s.slice(0, -unitLength)),
-        unit: s.slice(-unitLength) as TimeUnit
+        n,
+        unit
     }
 }
 
@@ -42,6 +58,8 @@ const stringifyMeasure = (m: Measure) =>
     `${m.n.toPrecision(3)}${m.unit}` as MeasureString
 
 const TIME_UNIT_RATIOS: { [Unit in TimeUnit]: number } = {
+    ns: 0.000_001,
+    μs: 0.001,
     ms: 1,
     s: 1000
 }
@@ -53,7 +71,7 @@ const convert = (n: number, from: TimeUnit, to: TimeUnit) => {
 /**
  * Establish a new baseline using the most appropriate time unit
  */
-const createBaseline = (ms: number) => {
+const createMeasure = (ms: number) => {
     let bestMatch: Measure | undefined
     for (const u in TIME_UNIT_RATIOS) {
         const unit = u as TimeUnit
@@ -77,7 +95,7 @@ const createBaseline = (ms: number) => {
     return bestMatch!
 }
 
-const toMeasureComparison = (
+const createMeasureComparison = (
     ms: number,
     baselineString: MeasureString | undefined
 ): MeasureComparison => {
@@ -93,12 +111,12 @@ const toMeasureComparison = (
         }
     }
     return {
-        result: createBaseline(ms),
+        result: createMeasure(ms),
         baseline: undefined
     }
 }
 
-export const checkBenchResult = (
+const checkBenchResult = (
     { result, baseline }: MeasureComparison,
     { name, config }: BenchContext
 ) => {
@@ -106,12 +124,15 @@ export const checkBenchResult = (
     if (baseline && !config.updateSnapshots) {
         console.log(`⛳ Baseline: ${baseline.n.toPrecision(3)}${baseline.unit}`)
         const delta = ((result.n - baseline.n) / baseline.n) * 100
-        const formattedDelta = `${delta.toPrecision(3)}%`
+        const formattedDelta = `${delta.toFixed(2)}%`
         if (delta > config.benchPercentThreshold) {
-            console.error(
-                `📈 ${name} exceeded baseline by ${formattedDelta} (treshold is ${config.benchPercentThreshold}%).`
-            )
+            const message = `'${name}' exceeded baseline by ${formattedDelta} (treshold is ${config.benchPercentThreshold}%).`
+            console.error(`📈 ${message}`)
             process.exitCode = 1
+            // Summarize failures at the end of output
+            process.on("exit", () => {
+                console.error(`❌ ${message}`)
+            })
         } else if (delta < -config.benchPercentThreshold) {
             console.log(
                 // Remove the leading negative when formatting our delta
@@ -136,12 +157,34 @@ interface BenchAssertionContext extends BenchContext {
     kind: BaselineAssertionFunction
 }
 
-const updateBaseline = (newValue: string, ctx: BenchAssertionContext) => {
-    console.log(`✍️ Establishing your new baseline...`)
+const serializeBaseline = (baseline: string | object) =>
+    toString(baseline, { quotes: "double" })
+
+const updateBaseline = (
+    result: string | object,
+    baseline: string | object | undefined,
+    ctx: BenchAssertionContext
+) => {
+    console.log(
+        `✍️  ${baseline ? "Establishing" : "Updating"} your baseline...`
+    )
+    const serializedValue = serializeBaseline(result)
     writeInlineSnapshotToFile({
         position: ctx.position,
-        serializedValue: newValue,
+        serializedValue,
         snapFunctionName: ctx.kind
+    })
+    // Summarize updates at the end of output
+    process.on("beforeExit", () => {
+        let updateSummary = `  ${
+            baseline ? "⬆️  Updated" : "✨  Established"
+        } baseline '${ctx.name}' `
+        updateSummary += baseline
+            ? `from ${serializeBaseline(baseline)} to `
+            : "at "
+        updateSummary += `${serializedValue}.`
+        console.groupEnd()
+        console.log(updateSummary)
     })
 }
 
@@ -178,7 +221,7 @@ const getBenchAssertions = (results: number[], ctx: BenchContext) => {
             ([, [kind, kindBaseline]]) => {
                 console.group(kind)
                 const ms = stats[kind]()
-                const comparison = toMeasureComparison(ms, kindBaseline)
+                const comparison = createMeasureComparison(ms, kindBaseline)
                 checkBenchResult(comparison, ctx)
                 console.groupEnd()
                 return [kind, stringifyMeasure(comparison.result)]
@@ -186,7 +229,7 @@ const getBenchAssertions = (results: number[], ctx: BenchContext) => {
         )
         console.groupEnd()
         if (!baseline || ctx.config.updateSnapshots) {
-            updateBaseline(toString(markResults), {
+            updateBaseline(markResults, baseline, {
                 ...ctx,
                 kind: "mark"
             })
@@ -195,12 +238,15 @@ const getBenchAssertions = (results: number[], ctx: BenchContext) => {
     const individualAssertions = transform(stats, ([kind, calculate]) => {
         const assertionOfKind = (baseline?: MeasureString) => {
             const ms = calculate()
-            const comparison = toMeasureComparison(ms, baseline)
+            const comparison = createMeasureComparison(
+                ms,
+                ctx.config.updateSnapshots ? undefined : baseline
+            )
             console.group(`${ctx.name} (${kind}):`)
             checkBenchResult(comparison, ctx)
             console.groupEnd()
             if (!baseline || ctx.config.updateSnapshots) {
-                updateBaseline(`"${stringifyMeasure(comparison.result)}"`, {
+                updateBaseline(stringifyMeasure(comparison.result), baseline, {
                     ...ctx,
                     kind
                 })

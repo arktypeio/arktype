@@ -1,17 +1,17 @@
-import { bench } from "../bench.js"
+import { bench } from "../index.js"
 
 bench("includes", () => {
     return "boofoozoo".includes("foo")
-}).median("0.0000480ms")
+}).median("1.0ns")
 
 bench("includes", () => {
     return "boofoozoo".includes("foo")
-}).mark({ mean: "0.0000600ms", median: "0.0000510ms" })
+}).mark({ mean: "61.7ns", median: "48.0ns" })
 
 bench("regex", () => {
     return /.*foo.*/.test("boofoozoo")
-}).mean("0.0000746ms")
+}).mean("74.4ns")
 
 bench("regex", () => {
     return /.*foo.*/.test("boofoozoo")
-}).mark({ mean: "0.0000794ms", median: "0.0000600ms" })
+}).mark({ mean: "1.7ns", median: "62.0ns" })
