@@ -1,5 +1,7 @@
 import { performance } from "node:perf_hooks"
 import { caller } from "@re-/node"
+import { toString, transform } from "@re-/tools"
+import { default as memoize } from "micro-memoize"
 import { getReAssertConfig, ReAssertConfig, SourcePosition } from "./common.js"
 import { writeInlineSnapshotToFile } from "./value/snapshot.js"
 
@@ -12,7 +14,9 @@ export type BenchOptions = {
 
 type TimeUnit = "s" | "ms"
 
-type BaselineKind = "mean"
+type BaselineKind = "mean" | "median"
+
+type BaselineAssertionFunction = "mark" | BaselineKind
 
 type Measure = {
     n: number
@@ -34,7 +38,8 @@ const parseMeasure = (s: MeasureString): Measure => {
     }
 }
 
-const stringifyMeasure = (m: Measure) => `${m.n.toPrecision(3)}${m.unit}`
+const stringifyMeasure = (m: Measure) =>
+    `${m.n.toPrecision(3)}${m.unit}` as MeasureString
 
 const TIME_UNIT_RATIOS: { [Unit in TimeUnit]: number } = {
     ms: 1,
@@ -93,11 +98,10 @@ const toMeasureComparison = (
     }
 }
 
-export const compareMeasures = (
+export const checkBenchResult = (
     { result, baseline }: MeasureComparison,
-    { name, config, kind, position }: ComparisonContext
+    { name, config }: BenchContext
 ) => {
-    console.group(`${name}:`)
     console.log(`🏌️ Result: ${result.n.toPrecision(3)}${result.unit}`)
     if (baseline && !config.updateSnapshots) {
         console.log(`⛳ Baseline: ${baseline.n.toPrecision(3)}${baseline.unit}`)
@@ -118,23 +122,96 @@ export const compareMeasures = (
         } else {
             console.log(`📊 Delta: ${delta > 0 ? "+" : ""}${formattedDelta}`)
         }
-    } else {
-        console.log(`✍️ Establishing your new baseline...`)
-        writeInlineSnapshotToFile({
-            position,
-            serializedValue: `"${stringifyMeasure(result)}"`,
-            snapFunctionName: kind
-        })
     }
-    console.groupEnd()
 }
 
-type ComparisonContext = {
+interface BenchContext {
     name: string
-    kind: BaselineKind
     options: BenchOptions
     config: ReAssertConfig
     position: SourcePosition
+}
+
+interface BenchAssertionContext extends BenchContext {
+    kind: BaselineAssertionFunction
+}
+
+const updateBaseline = (newValue: string, ctx: BenchAssertionContext) => {
+    console.log(`✍️ Establishing your new baseline...`)
+    writeInlineSnapshotToFile({
+        position: ctx.position,
+        serializedValue: newValue,
+        snapFunctionName: ctx.kind
+    })
+}
+
+const getBenchAssertions = (results: number[], ctx: BenchContext) => {
+    const getSortedResults = memoize(() => results.sort())
+    const stats = {
+        mean: () => {
+            const totalCallMs = results.reduce(
+                (sum, duration) => sum + duration,
+                0
+            )
+            return totalCallMs / results.length
+        },
+        median: () => {
+            const sortedResults = getSortedResults()
+            const middleIndex = Math.floor(sortedResults.length / 2)
+            return sortedResults.length % 2 === 0
+                ? (sortedResults[middleIndex - 1] +
+                      sortedResults[middleIndex]) /
+                      2
+                : sortedResults[middleIndex]
+        }
+    }
+    const mark = (baseline?: Record<BaselineKind, MeasureString>) => {
+        const markEntries: [BaselineKind, MeasureString][] = (
+            baseline
+                ? Object.entries(baseline)
+                : // If nothing was passed, gather all available baselines by setting their values to undefined.
+                  Object.entries(stats).map(([kind]) => [kind, undefined])
+        ) as any
+        console.group(`${ctx.name}:`)
+        const markResults = transform(
+            markEntries,
+            ([, [kind, kindBaseline]]) => {
+                console.group(kind)
+                const ms = stats[kind]()
+                const comparison = toMeasureComparison(ms, kindBaseline)
+                checkBenchResult(comparison, ctx)
+                console.groupEnd()
+                return [kind, stringifyMeasure(comparison.result)]
+            }
+        )
+        console.groupEnd()
+        if (!baseline || ctx.config.updateSnapshots) {
+            updateBaseline(toString(markResults), {
+                ...ctx,
+                kind: "mark"
+            })
+        }
+    }
+    const individualAssertions = transform(stats, ([kind, calculate]) => {
+        const assertionOfKind = (baseline?: MeasureString) => {
+            const ms = calculate()
+            const comparison = toMeasureComparison(ms, baseline)
+            console.group(`${ctx.name} (${kind}):`)
+            checkBenchResult(comparison, ctx)
+            console.groupEnd()
+            if (!baseline || ctx.config.updateSnapshots) {
+                updateBaseline(`"${stringifyMeasure(comparison.result)}"`, {
+                    ...ctx,
+                    kind
+                })
+            }
+        }
+        return [kind, assertionOfKind]
+    })
+    return {
+        mark,
+        ...individualAssertions
+    }
 }
 
 export const bench = (
@@ -142,12 +219,6 @@ export const bench = (
     functionToTest: () => void,
     options: BenchOptions = {}
 ) => {
-    const ctx = {
-        name,
-        options,
-        config: getReAssertConfig(),
-        position: caller()
-    }
     const results: number[] = []
     const benchStart = performance.now()
     const until = options?.until ?? {}
@@ -160,7 +231,6 @@ export const bench = (
             // If either option was passed directly and the condition has been met, stop looping
             return false
         }
-        // Else, default to a relatively conservative standard
         return (results.length < 1_000_000 || elapsed < 1000) && elapsed < 5000
     }
     while (shouldContinue()) {
@@ -168,15 +238,10 @@ export const bench = (
         functionToTest()
         results.push(performance.now() - invocationStart)
     }
-    return {
-        mean: (baseline?: MeasureString) => {
-            const totalCallMs = results.reduce(
-                (sum, duration) => sum + duration,
-                0
-            )
-            const meanCallMs = totalCallMs / results.length
-            const comparison = toMeasureComparison(meanCallMs, baseline)
-            compareMeasures(comparison, { ...ctx, kind: "mean" })
-        }
-    }
+    return getBenchAssertions(results, {
+        name,
+        options,
+        config: getReAssertConfig(),
+        position: caller()
+    })
 }
