@@ -29,6 +29,7 @@
     "dependencies": {
         "@re-/tools": "workspace:*",
         "@re-/node": "workspace:*",
-        "ts-morph": "14.0.0"
+        "ts-morph": "14.0.0",
+        "micro-memoize": "4.0.10"
     }
 }

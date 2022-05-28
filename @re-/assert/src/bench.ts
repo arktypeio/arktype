@@ -103,12 +103,12 @@ export const compareMeasures = (
         console.log(`⛳ Baseline: ${baseline.n.toPrecision(3)}${baseline.unit}`)
         const delta = ((result.n - baseline.n) / baseline.n) * 100
         const formattedDelta = `${delta.toPrecision(3)}%`
-        if (delta > 10) {
+        if (delta > config.benchPercentThreshold) {
             console.error(
-                `📈 ${name} exceeded baseline by ${formattedDelta} (treshold is 10%).`
+                `📈 ${name} exceeded baseline by ${formattedDelta} (treshold is ${config.benchPercentThreshold}%).`
             )
             process.exitCode = 1
-        } else if (delta < -10) {
+        } else if (delta < -config.benchPercentThreshold) {
             console.log(
                 // Remove the leading negative when formatting our delta
                 `📉 ${name} was under baseline by ${formattedDelta.slice(

@@ -54,10 +54,12 @@ importers:
     specifiers:
       '@re-/node': workspace:*
       '@re-/tools': workspace:*
+      micro-memoize: 4.0.10
       ts-morph: 14.0.0
     dependencies:
       '@re-/node': link:../node
       '@re-/tools': link:../tools
+      micro-memoize: 4.0.10
       ts-morph: 14.0.0
 
   '@re-/docs':
@@ -9141,6 +9143,10 @@ packages:
 
   /micro-memoize/2.1.2:
     resolution: {integrity: sha512-COjNutiFgnDHXZEIM/jYuZPwq2h8zMUeScf6Sh6so98a+REqdlpaNS7Cb2ffGfK5I+xfgoA3Rx49NGuNJTJq3w==}
+    dev: false
+
+  /micro-memoize/4.0.10:
+    resolution: {integrity: sha512-rk0OlvEQkShjbr2EvGn1+GdCsgLDgABQyM9ZV6VoHNU7hiNM+eSOkjGWhiNabU/XWiEalWbjNQrNO+zcqd+pEA==}
     dev: false
 
   /micromatch/4.0.5:
