@@ -1,4 +1,5 @@
-import { ListPossibleTypes } from "@re-/tools"
+import { ListPossibleTypes, StringReplace } from "@re-/tools"
+import { Type, Node } from "ts-morph"
 import { bench } from "../index.js"
 
 // bench("includes", () => {
@@ -17,16 +18,24 @@ import { bench } from "../index.js"
 //     return /.*foo.*/.test("boofoozoo")
 // }).mark({ mean: "84.83ns", median: "63.00ns" })
 
-type GetChars<S> = S extends `${infer First}${infer Second}`
-    ? GetChars<First> | GetChars<Second>
-    : S
+type GetChars<S extends string> = StringReplace<S, "a", "!">
 
-type Z = ListPossibleTypes<keyof Window>
+type Z = ListPossibleTypes<GetChars<keyof Type>>
 
 bench("regex", () => {
-    const zyv = {} as any as Z
+    const f = {} as any as Z
+    return f
+})
+    .mean("38.46ns")
+    .type({ until: { ms: 10000 } })
+    .median("753.75ms")
+
+bench("regex2", () => {
+    const zyv = {} as any as ListPossibleTypes<
+        StringReplace<keyof Type, "e", "?">
+    >
     return zyv
-}).type("53.22ms")
+}).type.mark({ mean: "173.61ms", median: "170.51ms" })
 
 // bench("long running function", () => {})
 //     .call({ until: { count: 1000 } })

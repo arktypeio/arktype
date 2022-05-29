@@ -1,64 +1,61 @@
-import { SyntaxKind, ts } from "ts-morph"
-import {
-    getReAssertConfig,
-    positionToString,
-    SourcePosition
-} from "../common.js"
-import {
-    getTraceData,
-    getTsProject,
-    tsNodeAtPosition
-} from "../type/analysis.js"
+import { Func } from "@re-/tools"
+import { Node } from "ts-morph"
 import { findCallExpressionAncestor } from "../value/snapshot.js"
-import { compareToBaseline, updateBaselineIfNeeded } from "./baseline.js"
-import { BenchContext } from "./bench.js"
-import {
-    createMeasure,
-    createMeasureComparison,
-    MeasureString,
-    stringifyMeasure
-} from "./measure.js"
+import { BenchContext, BaseBenchOptions } from "./bench.js"
+import { BenchCallAssertions, getBenchCallAssertions, stats } from "./call.js"
 
-export const getBenchTypeAssertions = (
-    position: SourcePosition,
-    ctx: BenchContext
-) => {
-    return {
-        type: (baseline?: MeasureString) => {
-            const config = getReAssertConfig()
-            const benchFn = findCallExpressionAncestor(
-                position,
-                "bench"
-            ).getArguments()[1]
-            benchFn.getType()
-            const trace: any[] = getTraceData()
-            const benchCheckEvent = trace.find(
-                (event) =>
-                    event.name === "checkExpression" &&
-                    event.args?.path === position.file &&
-                    event.args?.pos === benchFn.getPos() &&
-                    event.args?.end === benchFn.getEnd()
-            )
-            if (!benchCheckEvent) {
-                throw new Error(
-                    `Unable to type trace data for bench call at ${positionToString(
-                        position
-                    )}.`
-                )
-            }
-            // TODO: Put this in its own function
-            // dur timings are in microseconds, correct to our default of millis
-            const ms = benchCheckEvent.dur / 1000
-            const comparison = createMeasureComparison(ms, baseline)
-            compareToBaseline(comparison, ctx)
-            updateBaselineIfNeeded(
-                stringifyMeasure(createMeasure(ms)),
-                baseline,
-                {
-                    ...ctx,
-                    kind: "type"
-                }
+export type BenchTypeAssertions = {
+    [K in keyof BenchCallAssertions]: Func<
+        Parameters<BenchCallAssertions[K]>,
+        void
+    >
+}
+
+export type BenchType = {
+    type: BenchTypeAssertions &
+        ((options?: BaseBenchOptions) => BenchTypeAssertions)
+}
+
+export const getBenchTypeAssertions = (ctx: BenchContext) => {
+    const benchmarkTypes = (options: BaseBenchOptions = {}) => {
+        const benchFn = findCallExpressionAncestor(
+            ctx.position,
+            "bench"
+        ).getArguments()[1]
+        if (!Node.isBodied(benchFn)) {
+            throw new Error(
+                `Expected the second arg passed to bench to be a function, e.g.:` +
+                    `bench("myFn", () => doSomethingCool())` +
+                    `Your second arg was parsed as '${benchFn.getKindName()}'.`
             )
         }
+        return getBenchCallAssertions(
+            () => {
+                benchFn
+                    .getBody()
+                    .getDescendants()
+                    .map((node) => Node.isTyped(node) && node.getType())
+            },
+            {
+                ...ctx,
+                options: {
+                    ...options,
+                    hooks: {
+                        beforeCall: () =>
+                            benchFn.setBodyText(benchFn.getBodyText())
+                    }
+                }
+            }
+        )
     }
+    return {
+        type: new Proxy(benchmarkTypes, {
+            get: (target, prop) => {
+                if (prop in stats || prop === "mark") {
+                    return (benchmarkTypes() as any)[prop]
+                }
+                return (target as any)[prop]
+            }
+        })
+    } as any as BenchType
 }

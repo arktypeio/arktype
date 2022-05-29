@@ -1,5 +1,5 @@
 import { performance } from "node:perf_hooks"
-import { transform } from "@re-/tools"
+import { ElementOf, transform } from "@re-/tools"
 import { default as memoize } from "micro-memoize"
 import {
     compareToBaseline,
@@ -12,10 +12,27 @@ import {
     MeasureString,
     stringifyMeasure
 } from "./measure.js"
+import { getBenchTypeAssertions } from "./type.js"
 
-type StatName = "mean" | "median"
+export type StatName = keyof typeof stats
 
-export type CallTimeAssertionName = "mark" | StatName
+export type AssertionName = StatName | "mark"
+
+export const stats = {
+    mean: (callTimes: number[]) => {
+        const totalCallMs = callTimes.reduce(
+            (sum, duration) => sum + duration,
+            0
+        )
+        return totalCallMs / callTimes.length
+    },
+    median: (callTimes: number[]) => {
+        const middleIndex = Math.floor(callTimes.length / 2)
+        return callTimes.length % 2 === 0
+            ? (callTimes[middleIndex - 1] + callTimes[middleIndex]) / 2
+            : callTimes[middleIndex]
+    }
+}
 
 const loopCalls = (fn: () => void, ctx: BenchContext) => {
     const results: number[] = []
@@ -33,12 +50,16 @@ const loopCalls = (fn: () => void, ctx: BenchContext) => {
         return (results.length < 1_000_000 || elapsed < 1000) && elapsed < 5000
     }
     while (shouldContinue()) {
+        ctx.options.hooks?.beforeCall?.()
         const invocationStart = performance.now()
         fn()
         results.push(performance.now() - invocationStart)
+        ctx.options.hooks?.afterCall?.()
     }
     return results
 }
+
+export type BenchCallAssertions = ReturnType<typeof getBenchCallAssertions>
 
 export const getBenchCallAssertions = (fn: () => void, ctx: BenchContext) => {
     const getCallTimes = memoize(() => {
@@ -46,23 +67,7 @@ export const getBenchCallAssertions = (fn: () => void, ctx: BenchContext) => {
         results.sort()
         return results
     })
-    const stats = {
-        mean: () => {
-            const callTimes = getCallTimes()
-            const totalCallMs = callTimes.reduce(
-                (sum, duration) => sum + duration,
-                0
-            )
-            return totalCallMs / callTimes.length
-        },
-        median: () => {
-            const callTimes = getCallTimes()
-            const middleIndex = Math.floor(callTimes.length / 2)
-            return callTimes.length % 2 === 0
-                ? (callTimes[middleIndex - 1] + callTimes[middleIndex]) / 2
-                : callTimes[middleIndex]
-        }
-    }
+    const nextAssertions = getBenchTypeAssertions(ctx)
     const mark = (baseline?: Record<StatName, MeasureString>) => {
         const markEntries: [StatName, MeasureString | undefined][] = (
             baseline
@@ -75,7 +80,7 @@ export const getBenchCallAssertions = (fn: () => void, ctx: BenchContext) => {
             markEntries,
             ([, [kind, kindBaseline]]) => {
                 console.group(kind)
-                const ms = stats[kind]()
+                const ms = stats[kind](getCallTimes())
                 const comparison = createMeasureComparison(ms, kindBaseline)
                 compareToBaseline(comparison, ctx)
                 console.groupEnd()
@@ -87,10 +92,11 @@ export const getBenchCallAssertions = (fn: () => void, ctx: BenchContext) => {
             ...ctx,
             kind: "mark"
         })
+        return nextAssertions
     }
     const individualAssertions = transform(stats, ([kind, calculate]) => {
         const assertionOfKind = (baseline?: MeasureString) => {
-            const ms = calculate()
+            const ms = calculate(getCallTimes())
             const comparison = createMeasureComparison(ms, baseline)
             console.group(`${ctx.name} (${kind}):`)
             compareToBaseline(comparison, ctx)
@@ -103,6 +109,7 @@ export const getBenchCallAssertions = (fn: () => void, ctx: BenchContext) => {
                     kind
                 }
             )
+            return nextAssertions
         }
         return [kind, assertionOfKind]
     })

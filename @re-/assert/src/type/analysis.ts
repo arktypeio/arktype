@@ -67,31 +67,28 @@ export const tsNodeAtPosition = (position: SourcePosition) => {
     return node
 }
 
-export const getTraceData = () => {
-    const config = getReAssertConfig()
-    // Trigger initial trace if the result hasn't been cached yet
-    getTsProject()
-    if (!existsSync(config.typeTraceCacheFile)) {
-        throw new Error(
-            `Expected TypeScript trace file at path '${config.typeTraceCacheFile}' did not exist.`
-        )
-    }
-    let traceContents = readFileSync(config.typeTraceCacheFile).toString()
-    if (!traceContents.endsWith("]")) {
-        // Add a trailing "]" so it's valid JSON (TypeScript doesn't do this until the process ends)
-        traceContents += "]"
-    }
-    return JSON.parse(traceContents)
-}
+// export const getTraceData = () => {
+//     const config = getReAssertConfig()
+//     // Trigger initial trace if the result hasn't been cached yet
+//     getTsProject()
+//     if (!existsSync(config.typeTraceCacheFile)) {
+//         throw new Error(
+//             `Expected TypeScript trace file at path '${config.typeTraceCacheFile}' did not exist.`
+//         )
+//     }
+//     let traceContents = readFileSync(config.typeTraceCacheFile).toString()
+//     if (!traceContents.endsWith("]")) {
+//         // Add a trailing "]" so it's valid JSON (TypeScript doesn't do this until the process ends)
+//         traceContents += "]"
+//     }
+//     return JSON.parse(traceContents)
+// }
 
 export const getTsProject = memoize(() => {
     const config = getReAssertConfig()
     const tsConfigFilePath = config.tsconfig ? config.tsconfig : undefined
-    // @ts-ignore We're using an internal API to avoid recompiling TS to get trace info
-    ts.startTracing("project", config.cacheDir, "tsconfig.json")
     const project = new Project({
-        tsConfigFilePath,
-        compilerOptions: { generateTrace: config.cacheDir }
+        tsConfigFilePath
     })
     if (!tsConfigFilePath) {
         project.addSourceFilesAtPaths(["**"])

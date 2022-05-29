@@ -1,12 +1,19 @@
 import { caller } from "@re-/node"
 import { getReAssertConfig, ReAssertConfig, SourcePosition } from "../common.js"
-import { CallTimeAssertionName, getBenchCallAssertions } from "./call.js"
+import { AssertionName, getBenchCallAssertions } from "./call.js"
 import { getBenchTypeAssertions } from "./type.js"
 
-export interface BenchOptions {
+export interface BaseBenchOptions {
     until?: {
         ms?: number
         count?: number
+    }
+}
+
+export interface BenchOptions extends BaseBenchOptions {
+    hooks?: {
+        beforeCall?: () => void
+        afterCall?: () => void
     }
 }
 
@@ -17,15 +24,13 @@ export interface BenchContext {
     position: SourcePosition
 }
 
-export type AssertionName = CallTimeAssertionName | "type"
-
 export interface BenchAssertionContext extends BenchContext {
     kind: AssertionName
 }
 
-export const bench = (
+export const bench = <Fn extends () => unknown>(
     name: string,
-    fn: () => void,
+    fn: Fn,
     options: BenchOptions = {}
 ) => {
     const ctx: BenchContext = {
@@ -36,6 +41,6 @@ export const bench = (
     }
     return {
         ...getBenchCallAssertions(fn, ctx),
-        ...getBenchTypeAssertions(caller(), ctx)
+        ...getBenchTypeAssertions(ctx)
     }
 }
