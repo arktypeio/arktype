@@ -1,11 +1,11 @@
 import { performance } from "node:perf_hooks"
-import { ElementOf, transform } from "@re-/tools"
+import { ElementOf, isEmpty, toString, transform } from "@re-/tools"
 import { default as memoize } from "micro-memoize"
 import {
     compareToBaseline,
     updateBaselineIfNeeded as updateBaselineIfNeeded
 } from "./baseline.js"
-import { BenchContext } from "./bench.js"
+import { BenchContext, UntilOptions } from "./bench.js"
 import {
     createMeasure,
     createMeasureComparison,
@@ -13,6 +13,7 @@ import {
     stringifyMeasure
 } from "./measure.js"
 import { getBenchTypeAssertions } from "./type.js"
+import { caller } from "@re-/node"
 
 export type StatName = keyof typeof stats
 
@@ -37,19 +38,22 @@ export const stats = {
 const loopCalls = (fn: () => void, ctx: BenchContext) => {
     const results: number[] = []
     const benchStart = performance.now()
-    const until = ctx.options.until ?? {}
-    const shouldContinue = () => {
-        const elapsed = performance.now() - benchStart
-        if (
-            (until.count && results.length >= until.count) ||
-            (until.ms && elapsed >= until.ms)
-        ) {
-            // If either option was passed directly and the condition has been met, stop looping
-            return false
-        }
-        return (results.length < 1_000_000 || elapsed < 1000) && elapsed < 5000
+    // By default, will run for either 5 seconds or 1M calls, whichever comes first
+    const bounds: Required<UntilOptions> = {
+        ms: 5000,
+        count: 1_000_000,
+        ...ctx.options.until
     }
-    while (shouldContinue()) {
+    const untilConditions = Object.entries(bounds).map(([metric, bound]) => {
+        const conditionMap: {
+            [K in keyof UntilOptions]-?: () => boolean
+        } = {
+            ms: () => performance.now() - benchStart >= bound,
+            count: () => results.length >= bound
+        }
+        return conditionMap[metric as keyof UntilOptions]!
+    })
+    while (!untilConditions.some((isMet) => isMet())) {
         ctx.options.hooks?.beforeCall?.()
         const invocationStart = performance.now()
         fn()
@@ -67,15 +71,17 @@ export const getBenchCallAssertions = (fn: () => void, ctx: BenchContext) => {
         results.sort()
         return results
     })
+    const label = `${ctx.fromType ? "Typechecking" : "Calling"}: ${ctx.name}`
     const nextAssertions = getBenchTypeAssertions(ctx)
     const mark = (baseline?: Record<StatName, MeasureString>) => {
+        ctx.lastSnapCallPosition = caller()
         const markEntries: [StatName, MeasureString | undefined][] = (
             baseline
                 ? Object.entries(baseline)
                 : // If nothing was passed, gather all available baselines by setting their values to undefined.
                   Object.entries(stats).map(([kind]) => [kind, undefined])
         ) as any
-        console.group(`${ctx.name}:`)
+        console.group(`${label}:`)
         const markResults = transform(
             markEntries,
             ([, [kind, kindBaseline]]) => {
@@ -96,9 +102,10 @@ export const getBenchCallAssertions = (fn: () => void, ctx: BenchContext) => {
     }
     const individualAssertions = transform(stats, ([kind, calculate]) => {
         const assertionOfKind = (baseline?: MeasureString) => {
+            ctx.lastSnapCallPosition = caller()
             const ms = calculate(getCallTimes())
             const comparison = createMeasureComparison(ms, baseline)
-            console.group(`${ctx.name} (${kind}):`)
+            console.group(`${label} (${kind}):`)
             compareToBaseline(comparison, ctx)
             console.groupEnd()
             updateBaselineIfNeeded(

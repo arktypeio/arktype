@@ -18,9 +18,9 @@ export const positionToString = (position: SourcePosition) =>
 
 export interface ReAssertConfig extends Required<ReAssertJson> {
     updateSnapshots: boolean
+    matcher: RegExp | undefined
     cacheDir: string
     assertionCacheFile: string
-    typeTraceCacheFile: string
     snapCacheDir: string
 }
 
@@ -40,27 +40,41 @@ interface ReJson {
 const argsIncludeUpdateFlag = (args: string[]) =>
     args.some((arg) => ["-u", "--update", "--updateSnapshot"].includes(arg))
 
+const checkArgsForMatcher = (args: string[]) => {
+    const filterFlagIndex = args.indexOf("--only")
+    if (filterFlagIndex === -1) {
+        return false
+    }
+    return args.at(filterFlagIndex + 1)
+}
+
 export const getReAssertConfig = memoize((): ReAssertConfig => {
     const reJson: ReJson = existsSync("re.json") ? readJson("re.json") : {}
     const tsconfig = existsSync("tsconfig.json") ? resolve("tsconfig.json") : ""
     const reAssertJson: ReAssertJson = reJson.assert ?? {}
-    // By default, do not update snapshots
-    let updateSnapshots = false
+    let argsToCheck: string[] | undefined
     if (process.env.RE_ASSERT_CMD) {
         // If using @re-/assert runner, RE_ASSERT_CMD will be set to the original cmd.
-        // Check whether it contains an update flag.
-        updateSnapshots = argsIncludeUpdateFlag(
-            process.env.RE_ASSERT_CMD.split(" ")
-        )
-    } else if (argsIncludeUpdateFlag(process.argv)) {
-        // If the command for this process contains an update flag, update snapshots.
-        updateSnapshots = true
+        argsToCheck = process.env.RE_ASSERT_CMD.split(" ")
     } else if (process.env.JEST_WORKER_ID) {
-        // If we're in a jest worker process, check if the parent process cmd contains an update flag.
+        // If we're in a jest worker process, check the parent process cmd args
         const parentCmd = getCmdFromPid(process.ppid)
         if (parentCmd) {
-            updateSnapshots = argsIncludeUpdateFlag(parentCmd.split(" "))
+            argsToCheck = parentCmd.split(" ")
         }
+    }
+    if (!argsToCheck) {
+        // By default, just use the args from the current process
+        argsToCheck = process.argv
+    }
+    // This matcher can be used to filter processes we have control over like benches
+    const possibleMatcher = checkArgsForMatcher(argsToCheck)
+    let matcher: RegExp | undefined
+    if (possibleMatcher) {
+        console.log(
+            `Running benches matching expression '${possibleMatcher}'...`
+        )
+        matcher = new RegExp(possibleMatcher)
     }
     const cacheDir = resolve(".reassert")
     const snapCacheDir = join(cacheDir, "snaps")
@@ -68,7 +82,8 @@ export const getReAssertConfig = memoize((): ReAssertConfig => {
     mkdirSync(cacheDir)
     mkdirSync(snapCacheDir)
     return {
-        updateSnapshots,
+        updateSnapshots: argsIncludeUpdateFlag(argsToCheck),
+        matcher,
         tsconfig,
         precached: false,
         preserveCache: false,
@@ -77,7 +92,6 @@ export const getReAssertConfig = memoize((): ReAssertConfig => {
         cacheDir,
         snapCacheDir,
         assertionCacheFile: join(cacheDir, "assertions.json"),
-        typeTraceCacheFile: join(cacheDir, "trace.json"),
         benchPercentThreshold: 10,
         ...reAssertJson
     }

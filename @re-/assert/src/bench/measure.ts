@@ -1,8 +1,15 @@
-import { asNumber, ElementOf, isAlpha } from "@re-/tools"
+import { asNumber, ElementOf } from "@re-/tools"
 
-const timeUnits = ["s", "ms", "μs", "ns"] as const
+const TIME_UNIT_RATIOS = Object.freeze({
+    ns: 0.000_001,
+    us: 0.001,
+    ms: 1,
+    s: 1000
+})
 
-type TimeUnit = ElementOf<typeof timeUnits>
+const timeUnits = Object.keys(TIME_UNIT_RATIOS)
+
+type TimeUnit = keyof typeof TIME_UNIT_RATIOS
 
 export type Measure = {
     n: number
@@ -20,7 +27,9 @@ export type MeasureComparison = {
     baseline: Measure | undefined
 }
 
-export const parseMeasure = (s: MeasureString): Measure => {
+const assertMeasureString: (s: string) => asserts s is MeasureString = (
+    s: string
+) => {
     if (!measureRegex.test(s)) {
         throw new Error(
             `Bench measure '${s}' must be of the format "<number><${timeUnits.join(
@@ -28,9 +37,13 @@ export const parseMeasure = (s: MeasureString): Measure => {
             )}>".`
         )
     }
-    // If both the last characters are alpha, the unit should be exactly 2 characters.
-    // Otherwise, it should be "s" (seconds)
-    const unitLength = isAlpha(s.slice(-2)) ? 2 : 1
+}
+
+export const parseMeasure = (s: string): Measure => {
+    assertMeasureString(s)
+    // If the two last characters match one of the units, split based on a unit length of two
+    // The only other possibility since the regex was matched is length one ("s")
+    const unitLength = timeUnits.includes(s.slice(-2)) ? 2 : 1
     const n = asNumber(s.slice(0, -unitLength), { assert: true })
     const unit = s.slice(-unitLength) as TimeUnit
     return {
@@ -41,13 +54,6 @@ export const parseMeasure = (s: MeasureString): Measure => {
 
 export const stringifyMeasure = (m: Measure) =>
     `${m.n.toFixed(2)}${m.unit}` as MeasureString
-
-const TIME_UNIT_RATIOS: { [Unit in TimeUnit]: number } = {
-    ns: 0.000_001,
-    μs: 0.001,
-    ms: 1,
-    s: 1000
-}
 
 const convert = (n: number, from: TimeUnit, to: TimeUnit) => {
     return (n * TIME_UNIT_RATIOS[from]) / TIME_UNIT_RATIOS[to]

@@ -17,15 +17,20 @@ export const updateBaselineIfNeeded = (
     }
     console.log(`✍️  ${baseline ? "Rewriting" : "Writing"} your baseline...`)
     const serializedValue = serializeBaseline(result)
+    if (!ctx.lastSnapCallPosition) {
+        throw new Error(
+            `Unable to update baseline for ${ctx.name} ('lastSnapCallPosition' was unset).`
+        )
+    }
     writeInlineSnapshotToFile({
-        position: ctx.position,
+        position: ctx.lastSnapCallPosition,
         serializedValue,
         snapFunctionName: ctx.kind
     })
     // Summarize updates at the end of output
     process.on("beforeExit", () => {
         let updateSummary = `  ${
-            baseline ? "⬆️  Updated" : "✨  Established"
+            baseline ? "🆙  Updated" : "✨  Established"
         } baseline '${ctx.name}' `
         updateSummary += baseline
             ? `from ${serializeBaseline(baseline)} to `

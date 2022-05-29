@@ -1,52 +1,50 @@
 import { ListPossibleTypes, StringReplace } from "@re-/tools"
-import { Type, Node } from "ts-morph"
+import { Type } from "ts-morph"
 import { bench } from "../index.js"
 
-// bench("includes", () => {
-//     return "boofoozoo".includes("foo")
-// }).median("45.00ns")
+bench("bench call single stat", () => {
+    return "boofoozoo".includes("foo")
+}).median("47.00ns")
 
-// bench("includes", () => {
-//     return "boofoozoo".includes("foo")
-// }).mark({ mean: "61.23ns", median: "48.00ns" })
+bench("bench call mark", () => {
+    return /.*foo.*/.test("boofoozoo")
+}).mark({ mean: "71.72ns", median: "59.00ns" })
 
-// bench("regex", () => {
-//     return /.*foo.*/.test("boofoozoo")
-// }).mean("83.22ns")
+type MakeComplexType<S extends string> = ListPossibleTypes<
+    StringReplace<keyof Type, "e", S>
+>
 
-// bench("regex", () => {
-//     return /.*foo.*/.test("boofoozoo")
-// }).mark({ mean: "84.83ns", median: "63.00ns" })
+// Complex type returned directly
+bench("bench type", () => {
+    return [] as any as MakeComplexType<"!">
+}).type.mean("177.46ms")
 
-type GetChars<S extends string> = StringReplace<S, "a", "!">
-
-type Z = ListPossibleTypes<GetChars<keyof Type>>
-
-bench("regex", () => {
-    const f = {} as any as Z
-    return f
+// Complex type as an intermediate value (results should be similar to above)
+bench("bench unreturned type", () => {
+    const doNothing = () => {}
+    const f = [] as any as MakeComplexType<"!">
+    return {}
 })
-    .mean("38.46ns")
-    .type({ until: { ms: 10000 } })
-    .median("753.75ms")
+    .type()
+    .mark({ mean: "184.99ms", median: "184.58ms" })
 
-bench("regex2", () => {
-    const zyv = {} as any as ListPossibleTypes<
-        StringReplace<keyof Type, "e", "?">
-    >
-    return zyv
-}).type.mark({ mean: "173.61ms", median: "170.51ms" })
+// Type should be similar to above, call should be similar to includes
+bench("chained call and type assertion", () => {
+    const f = [] as any as MakeComplexType<"!">
+    return "boofoozoo".includes("foo")
+})
+    .median("48.00ns")
+    .type()
+    .median("163.36ms")
 
-// bench("long running function", () => {})
-//     .call({ until: { count: 1000 } })
-//     .mean("74.4ns")
-
-// bench("my complex type", () => {
-//     const f = [] as any as ListPossibleTypes<keyof Window>
-// }).type("74ns")
-
-// bench("my complex typed long running function", () => {
-//     const f = [] as any as ListPossibleTypes<keyof Window>
-// })
-//     .call.mean("74.4ns")
-//     .type("74.4ns")
+// Should be very fast
+bench(
+    "until conditions",
+    () => {
+        return "boofoozoo".includes("foo")
+    },
+    { until: { count: 100 } }
+)
+    .mean("578.77ns")
+    .type({ until: { ms: 500 } })
+    .mean("70.54us")

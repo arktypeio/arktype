@@ -3,11 +3,13 @@ import { getReAssertConfig, ReAssertConfig, SourcePosition } from "../common.js"
 import { AssertionName, getBenchCallAssertions } from "./call.js"
 import { getBenchTypeAssertions } from "./type.js"
 
+export interface UntilOptions {
+    ms?: number
+    count?: number
+}
+
 export interface BaseBenchOptions {
-    until?: {
-        ms?: number
-        count?: number
-    }
+    until?: UntilOptions
 }
 
 export interface BenchOptions extends BaseBenchOptions {
@@ -21,7 +23,9 @@ export interface BenchContext {
     name: string
     options: BenchOptions
     config: ReAssertConfig
-    position: SourcePosition
+    benchCallPosition: SourcePosition
+    lastSnapCallPosition: SourcePosition | undefined
+    fromType: boolean
 }
 
 export interface BenchAssertionContext extends BenchContext {
@@ -37,7 +41,24 @@ export const bench = <Fn extends () => unknown>(
         name,
         options,
         config: getReAssertConfig(),
-        position: caller()
+        benchCallPosition: caller(),
+        fromType: false,
+        lastSnapCallPosition: undefined
+    }
+    if (ctx.config.matcher && !ctx.config.matcher.test(name)) {
+        // If a matcher was provided via --only and it does not match,
+        // return a noop that lets you arbitrarily chain properties.
+        const noopProxy: any = new Proxy(() => noopProxy, {
+            get: (target, prop) => {
+                // This tries to chain arbitrary prop access and function calls, but technically could throw if
+                // accessing prop from the function prototype, e.g. 'apply' (should not happen normally)
+                if (prop in target) {
+                    return (target as any)[prop]
+                }
+                return noopProxy
+            }
+        })
+        return noopProxy
     }
     return {
         ...getBenchCallAssertions(fn, ctx),

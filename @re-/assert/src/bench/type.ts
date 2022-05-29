@@ -19,7 +19,7 @@ export type BenchType = {
 export const getBenchTypeAssertions = (ctx: BenchContext) => {
     const benchmarkTypes = (options: BaseBenchOptions = {}) => {
         const benchFn = findCallExpressionAncestor(
-            ctx.position,
+            ctx.benchCallPosition,
             "bench"
         ).getArguments()[1]
         if (!Node.isBodied(benchFn)) {
@@ -44,7 +44,8 @@ export const getBenchTypeAssertions = (ctx: BenchContext) => {
                         beforeCall: () =>
                             benchFn.setBodyText(benchFn.getBodyText())
                     }
-                }
+                },
+                fromType: true
             }
         )
     }
