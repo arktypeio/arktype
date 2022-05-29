@@ -1,9 +1,20 @@
-import { existsSync, mkdirSync, rmSync } from "node:fs"
-import { relative } from "node:path"
-import { readJson, writeJson } from "@re-/node"
+import {
+    existsSync,
+    mkdirSync,
+    readFileSync,
+    rmSync,
+    writeFileSync
+} from "node:fs"
+import { join, relative } from "node:path"
+import { readJson, shell, writeJson } from "@re-/node"
 import { default as memoize } from "micro-memoize"
-import { Project, SyntaxKind, ts, Type } from "ts-morph"
-import { getReAssertConfig, LinePosition, SourcePosition } from "../common.js"
+import { Project, SourceFile, SyntaxKind, ts, Type } from "ts-morph"
+import {
+    getReAssertConfig,
+    LinePosition,
+    positionToString,
+    SourcePosition
+} from "../common.js"
 import { writeQueuedSnapshotUpdates } from "../value/index.js"
 
 export interface SetupCacheOptions {
@@ -38,21 +49,52 @@ export const cleanupAssertions = () => {
     }
 }
 
-export const getTsProject = memoize((trace?: boolean) => {
+export const tsNodeAtPosition = (position: SourcePosition) => {
+    const sourceFile = getTsProject().getSourceFileOrThrow(position.file)
+    const node = sourceFile.getDescendantAtPos(
+        ts.getPositionOfLineAndCharacter(
+            sourceFile.compilerNode,
+            // TS uses 0-based line and char #s
+            position.line - 1,
+            position.char - 1
+        )
+    )
+    if (!node) {
+        throw new Error(
+            `Expected node at ${positionToString(position)} did not exist.`
+        )
+    }
+    return node
+}
+
+export const getTraceData = () => {
+    const config = getReAssertConfig()
+    // Trigger initial trace if the result hasn't been cached yet
+    getTsProject()
+    if (!existsSync(config.typeTraceCacheFile)) {
+        throw new Error(
+            `Expected TypeScript trace file at path '${config.typeTraceCacheFile}' did not exist.`
+        )
+    }
+    let traceContents = readFileSync(config.typeTraceCacheFile).toString()
+    if (!traceContents.endsWith("]")) {
+        // Add a trailing "]" so it's valid JSON (TypeScript doesn't do this until the process ends)
+        traceContents += "]"
+    }
+    return JSON.parse(traceContents)
+}
+
+export const getTsProject = memoize(() => {
     const config = getReAssertConfig()
     const tsConfigFilePath = config.tsconfig ? config.tsconfig : undefined
+    // @ts-ignore We're using an internal API to avoid recompiling TS to get trace info
+    ts.startTracing("project", config.cacheDir, "tsconfig.json")
     const project = new Project({
         tsConfigFilePath,
-        compilerOptions: { generateTrace: "generated" }
+        compilerOptions: { generateTrace: config.cacheDir }
     })
     if (!tsConfigFilePath) {
         project.addSourceFilesAtPaths(["**"])
-    }
-    if (trace) {
-        // @ts-ignore We're using an internal API to avoid recompiling TS to get trace info
-        ts.startTracing("project", config.cacheDir, "tsconfig.json")
-        // Trigger checks that we care about for tracing
-        project.emitToMemory()
     }
     return project
 })

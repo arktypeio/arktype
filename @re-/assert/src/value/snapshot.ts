@@ -2,9 +2,13 @@ import { randomUUID } from "node:crypto"
 import { existsSync, readdirSync } from "node:fs"
 import { basename, dirname, isAbsolute, join } from "node:path"
 import { readJson, writeJson } from "@re-/node"
-import { CallExpression, SyntaxKind, ts } from "ts-morph"
-import { getReAssertConfig, SourcePosition } from "../common.js"
-import { getTsProject } from "../type/analysis.js"
+import { CallExpression, Node, SyntaxKind, ts } from "ts-morph"
+import {
+    getReAssertConfig,
+    positionToString,
+    SourcePosition
+} from "../common.js"
+import { getTsProject, tsNodeAtPosition } from "../type/analysis.js"
 
 export interface SnapshotArgs {
     position: SourcePosition
@@ -60,25 +64,12 @@ export const writeQueuedSnapshotUpdates = () => {
     }
 }
 
-export const writeInlineSnapshotToFile = ({
-    position,
-    serializedValue,
-    snapFunctionName = "snap"
-}: SnapshotArgs) => {
-    const project = getTsProject()
-    const file = project.getSourceFile(position.file)
-    if (!file) {
-        throw new Error(`No type information available for '${position.file}'.`)
-    }
-    const startNode = file.getDescendantAtPos(
-        ts.getPositionOfLineAndCharacter(
-            file.compilerNode,
-            // TS uses 0-based line and char #s
-            position.line - 1,
-            position.char - 1
-        )
-    )
-    const matchingCall = startNode?.getAncestors().find((ancestor) => {
+export const findCallExpressionAncestor = (
+    position: SourcePosition,
+    functionName: string
+) => {
+    const startNode = tsNodeAtPosition(position)
+    const matchingCall = startNode.getAncestors().find((ancestor) => {
         const expression = ancestor
             .asKind(SyntaxKind.CallExpression)
             ?.getExpression()
@@ -90,20 +81,32 @@ export const writeInlineSnapshotToFile = ({
                 expression
                     .asKind(SyntaxKind.PropertyAccessExpression)
                     ?.getName()
-            return name === snapFunctionName
+            return name === functionName
         }
     }) as CallExpression | undefined
     if (!matchingCall) {
         throw new Error(
-            `Unable to locate expected inline ${snapFunctionName} associated with assertion from ${position.file} ` +
-                `on line ${position.line}, char ${position.char}.`
+            `Unable to locate expected inline ${functionName} call from assertion at ${positionToString(
+                position
+            )}.`
         )
     }
+    return matchingCall
+}
+
+export const writeInlineSnapshotToFile = ({
+    position,
+    serializedValue,
+    snapFunctionName = "snap"
+}: SnapshotArgs) => {
+    const project = getTsProject()
+    const file = project.getSourceFileOrThrow(position.file)
+    const snapCall = findCallExpressionAncestor(position, snapFunctionName)
     process.on("exit", () => {
-        for (const originalArg of matchingCall.getArguments()) {
-            matchingCall.removeArgument(originalArg)
+        for (const originalArg of snapCall.getArguments()) {
+            snapCall.removeArgument(originalArg)
         }
-        matchingCall.addArgument(serializedValue.replace(`\\`, `\\\\`))
+        snapCall.addArgument(serializedValue.replace(`\\`, `\\\\`))
         file.saveSync()
     })
 }

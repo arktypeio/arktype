@@ -39,12 +39,14 @@ test("objects", () => {
     })
 })
 test("value type change", () => {
-    const result: { [k: number]: string } = transform(o, ([k, v]) => [v, k])
+    const result = transform(o, ([k, v]) => [v, k])
     assert(result).equals({
         1: "a",
         2: "b",
         3: "c"
-    })
+    }).typed as {
+        [x: number]: "a" | "b" | "c"
+    }
 })
 test("deep", () => {
     const result = transform(deepO, mapLeavesToPaths, { deep: true })

@@ -1,4 +1,4 @@
-import { existsSync } from "node:fs"
+import { existsSync, mkdirSync, rmSync } from "node:fs"
 import { join, resolve } from "node:path"
 import { getCmdFromPid, readJson } from "@re-/node"
 import { default as memoize } from "micro-memoize"
@@ -13,10 +13,14 @@ export type SourcePosition = LinePosition & {
     method: string
 }
 
+export const positionToString = (position: SourcePosition) =>
+    `line ${position.line}, character ${position.char} at path '${position.file}'`
+
 export interface ReAssertConfig extends Required<ReAssertJson> {
     updateSnapshots: boolean
     cacheDir: string
     assertionCacheFile: string
+    typeTraceCacheFile: string
     snapCacheDir: string
 }
 
@@ -59,6 +63,10 @@ export const getReAssertConfig = memoize((): ReAssertConfig => {
         }
     }
     const cacheDir = resolve(".reassert")
+    const snapCacheDir = join(cacheDir, "snaps")
+    rmSync(cacheDir, { recursive: true, force: true })
+    mkdirSync(cacheDir)
+    mkdirSync(snapCacheDir)
     return {
         updateSnapshots,
         tsconfig,
@@ -67,8 +75,9 @@ export const getReAssertConfig = memoize((): ReAssertConfig => {
         assertAliases: ["assert"],
         stringifySnapshots: false,
         cacheDir,
-        snapCacheDir: join(cacheDir, "snaps"),
+        snapCacheDir,
         assertionCacheFile: join(cacheDir, "assertions.json"),
+        typeTraceCacheFile: join(cacheDir, "trace.json"),
         benchPercentThreshold: 10,
         ...reAssertJson
     }
