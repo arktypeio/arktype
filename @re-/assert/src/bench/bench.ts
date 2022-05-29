@@ -1,7 +1,11 @@
 import { caller } from "@re-/node"
 import { getReAssertConfig, ReAssertConfig, SourcePosition } from "../common.js"
-import { AssertionName, getBenchCallAssertions } from "./call.js"
-import { getBenchTypeAssertions } from "./type.js"
+import {
+    AssertionName,
+    BenchCallAssertions,
+    getBenchCallAssertions
+} from "./call.js"
+import { BenchType, getBenchTypeAssertions } from "./type.js"
 
 export interface UntilOptions {
     ms?: number
@@ -32,11 +36,13 @@ export interface BenchAssertionContext extends BenchContext {
     kind: AssertionName
 }
 
+export type BenchAssertions = BenchType & BenchCallAssertions
+
 export const bench = <Fn extends () => unknown>(
     name: string,
     fn: Fn,
     options: BenchOptions = {}
-) => {
+): BenchAssertions => {
     const ctx: BenchContext = {
         name,
         options,

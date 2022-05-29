@@ -21,18 +21,14 @@
     "scripts": {
         "build": "re tsc",
         "test": "reassert mocha",
-        "lint": "eslint .",
-        "unit": "jest --coverage false -t ",
-        "generateSpace": "deno run --allow-write generateSpace.ts",
-        "typeDiag": "tsc --build --force --extendedDiagnostics > typeDiagNext.txt",
-        "typeTrace": "tsc --build --force --generateTrace typeTrace"
+        "bench": "node --no-warnings --loader ts-node/esm ./src/__benches__/compileCyclic.bench.ts",
+        "generateBenches": "node --no-warnings --loader ts-node/esm generateBenches.ts"
     },
     "dependencies": {
         "@re-/tools": "workspace:*"
     },
     "devDependencies": {
         "@re-/assert": "workspace:*",
-        "@re-/node": "workspace:*",
-        "@types/jest": "27.5.1"
+        "@re-/node": "workspace:*"
     }
 }
