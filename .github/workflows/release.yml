@@ -15,12 +15,12 @@ jobs:
                   fetch-depth: 0
 
             - name: Setup pnpm
-              uses: pnpm/action-setup@v2.0.1
+              uses: pnpm/action-setup@v2
               with:
                   version: 7.1.2
 
             - name: Setup Node.js 16
-              uses: actions/setup-node@v4
+              uses: actions/setup-node@v3
               with:
                   node-version: 16
                   registry-url: "https://registry.npmjs.org"
@@ -33,7 +33,7 @@ jobs:
               run: pnpm build
 
             - name: Create and publish versions
-              uses: changesets/action@1.3.0
+              uses: changesets/action@v1
               with:
                   commit: "chore: update versions"
                   title: "chore: update versions"
