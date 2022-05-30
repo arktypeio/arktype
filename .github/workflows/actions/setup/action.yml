@@ -1,5 +1,5 @@
 name: Setup re-po
-description: Clone and set up re-do/re-po
+description: Install dependencies and perform setup re-do/re-po
 
 inputs:
     node:
@@ -8,11 +8,6 @@ inputs:
 runs:
     using: composite
     steps:
-        - name: Checkout re-po
-          uses: actions/checkout@v3
-          with:
-              fetch-depth: 0
-
         - name: Setup pnpm
           uses: pnpm/action-setup@v2
           with:
