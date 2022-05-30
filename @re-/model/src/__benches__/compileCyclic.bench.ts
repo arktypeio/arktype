@@ -55,8 +55,8 @@ bench("compile-cyclic(10)", () => {
         }
     })
 })
-    .median("")
-    .type.median("")
+    .median()
+    .type.median()
 
 bench("compile-cyclic(50)", () => {
     const space = compile({
@@ -312,8 +312,8 @@ bench("compile-cyclic(50)", () => {
         }
     })
 })
-    .median("")
-    .type.median("")
+    .median()
+    .type.median()
 
 bench("compile-cyclic(100)", () => {
     const space = compile({
@@ -819,8 +819,8 @@ bench("compile-cyclic(100)", () => {
         }
     })
 })
-    .median("")
-    .type.median("")
+    .median()
+    .type.median()
 
 bench("compile-cyclic(250)", () => {
     const space = compile({
@@ -2076,8 +2076,8 @@ bench("compile-cyclic(250)", () => {
         }
     })
 })
-    .median("")
-    .type.median("")
+    .median()
+    .type.median()
 
 bench("compile-cyclic(500)", () => {
     const space = compile({
@@ -4583,5 +4583,5 @@ bench("compile-cyclic(500)", () => {
         }
     })
 })
-    .median("")
-    .type.median("")
+    .median()
+    .type.median()
