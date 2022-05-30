@@ -22,7 +22,7 @@ module.exports = defineConfig({
     parserOptions: {
         project: ["tsconfig.json", "@re-/*/tsconfig.json"]
     },
-    ignorePatterns: ["**/dist/**", "**/*js"],
+    ignorePatterns: ["**/dist/**", "**/demos/**", "**/*js"],
     rules: {
         /**
          * General restrictions
@@ -157,16 +157,6 @@ module.exports = defineConfig({
             files: ["**/__benches__/**"],
             rules: {
                 // Assignment to a variable is required to ensure types are parsed
-                "@typescript-eslint/no-unused-vars": "off"
-            }
-        },
-        /**
-         * These rules apply to demos
-         */
-        {
-            files: ["**/demos/**"],
-            rules: {
-                // Variables are often unused in demos
                 "@typescript-eslint/no-unused-vars": "off"
             }
         },
