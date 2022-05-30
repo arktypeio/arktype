@@ -1,4 +1,4 @@
-import { asNumber, ElementOf } from "@re-/tools"
+import { asNumber } from "@re-/tools"
 
 const TIME_UNIT_RATIOS = Object.freeze({
     ns: 0.000_001,

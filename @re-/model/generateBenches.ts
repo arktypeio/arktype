@@ -1,5 +1,5 @@
-import { fromHere, writeJson } from "@re-/node"
-import { writeFileSync } from "fs"
+import { writeFileSync } from "node:fs"
+import { fromHere } from "@re-/node"
 
 const randomInRange = (min: number, max: number) =>
     Math.floor(Math.random() * (max - min + 1)) + min

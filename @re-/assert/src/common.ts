@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, rmSync } from "node:fs"
+import { existsSync } from "node:fs"
 import { join, resolve } from "node:path"
 import { ensureDir, getCmdFromPid, readJson } from "@re-/node"
 import { default as memoize } from "micro-memoize"

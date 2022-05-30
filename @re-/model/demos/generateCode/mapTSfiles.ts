@@ -21,11 +21,12 @@ const addFileContentsToMap = (
             const foundMatchingComment = getComment(fileText, range[0]).match(
                 tagMatch
             )
-            if (foundMatchingComment) {
-                if (foundMatchingComment[0].split(" ").length > 2) {
-                    const tag = stripCodeTag(foundMatchingComment[0])
-                    map[tag] = content.getText()
-                }
+            if (
+                foundMatchingComment &&
+                foundMatchingComment[0].split(" ").length > 2
+            ) {
+                const tag = stripCodeTag(foundMatchingComment[0])
+                map[tag] = content.getText()
             }
         }
     }
@@ -36,7 +37,7 @@ export const getMapData = () => {
         tsConfigFilePath: fromHere("../tsconfig.json")
     })
     const files = project.getSourceFiles()
-    let map: Record<string, string> = {}
+    const map: Record<string, string> = {}
     for (const file of files) {
         const fullFileText = file.getFullText()
         const foundMatchingComments = [...fullFileText.matchAll(tagMatch)]

@@ -140,14 +140,34 @@ module.exports = defineConfig({
             }
         },
         /**
-         * These rules apply only to tests
+         * These rules apply only to tests and benches
          */
         {
-            files: ["**/__tests__/**"],
+            files: ["**/__tests__/**", "**/__benches__/**"],
             rules: {
                 "@typescript-eslint/no-empty-function": "off",
                 "unicorn/consistent-function-scoping": "off",
                 "unicorn/numeric-separators-style": "off"
+            }
+        },
+        /**
+         * These rules apply only to benches
+         */
+        {
+            files: ["**/__benches__/**"],
+            rules: {
+                // Assignment to a variable is required to ensure types are parsed
+                "@typescript-eslint/no-unused-vars": "off"
+            }
+        },
+        /**
+         * These rules apply to demos
+         */
+        {
+            files: ["**/demos/**"],
+            rules: {
+                // Variables are often unused in demos
+                "@typescript-eslint/no-unused-vars": "off"
             }
         },
         // Docusaurus requires pages export a default component

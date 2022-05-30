@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto"
 import { existsSync, readdirSync } from "node:fs"
 import { basename, dirname, isAbsolute, join } from "node:path"
 import { readJson, writeJson } from "@re-/node"
-import { CallExpression, Node, SyntaxKind, ts } from "ts-morph"
+import { CallExpression, SyntaxKind } from "ts-morph"
 import {
     getReAssertConfig,
     positionToString,

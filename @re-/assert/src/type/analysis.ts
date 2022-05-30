@@ -1,14 +1,8 @@
-import {
-    existsSync,
-    mkdirSync,
-    readFileSync,
-    rmSync,
-    writeFileSync
-} from "node:fs"
-import { join, relative } from "node:path"
-import { readJson, shell, writeJson } from "@re-/node"
+import { existsSync, mkdirSync, rmSync } from "node:fs"
+import { relative } from "node:path"
+import { readJson, writeJson } from "@re-/node"
 import { default as memoize } from "micro-memoize"
-import { Project, SourceFile, SyntaxKind, ts, Type } from "ts-morph"
+import { Project, SyntaxKind, ts, Type } from "ts-morph"
 import {
     getReAssertConfig,
     LinePosition,

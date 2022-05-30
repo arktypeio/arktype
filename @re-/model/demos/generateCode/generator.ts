@@ -1,11 +1,5 @@
 import { getMapData } from "./mapTSfiles.js"
 import { replaceMarkupCode } from "./markup.js"
 
-/**
- * Main runnable for the code {inserter/generator/@re_placer/thing}
- */
-const generator = () => {
-    const mappedTSData = getMapData()
-    replaceMarkupCode(mappedTSData)
-}
-generator()
+const mappedTSData = getMapData()
+await replaceMarkupCode(mappedTSData)

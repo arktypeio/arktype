@@ -1,7 +1,7 @@
-import { create } from "@re-/model"
+import { model } from "@re-/model"
 
 // Most common TypeScript expressions just work...
-export const userModel = create({
+export const userModel = model({
     name: {
         first: "string",
         middle: "string?",

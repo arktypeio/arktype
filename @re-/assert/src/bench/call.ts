@@ -1,5 +1,6 @@
 import { performance } from "node:perf_hooks"
-import { ElementOf, isEmpty, toString, transform } from "@re-/tools"
+import { caller } from "@re-/node"
+import { transform } from "@re-/tools"
 import { default as memoize } from "micro-memoize"
 import {
     compareToBaseline,
@@ -13,7 +14,6 @@ import {
     stringifyMeasure
 } from "./measure.js"
 import { getBenchTypeAssertions } from "./type.js"
-import { caller } from "@re-/node"
 
 export type StatName = keyof typeof stats
 

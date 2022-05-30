@@ -1,8 +1,8 @@
-import { create } from "@re-/model"
+import { model } from "@re-/model"
 
-const employee = create({
+const employee = model({
     // Not a fan of regex? Don't worry, 'email' is a builtin type :)
-    email: `/[a-z]*@redo\.dev/`,
+    email: `/[a-z]*@redo\\.dev/`,
     about: {
         // Single or double bound numeric types
         age: "18<=integer<125",

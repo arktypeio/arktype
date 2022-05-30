@@ -1,7 +1,7 @@
 import { Func } from "@re-/tools"
 import { Node } from "ts-morph"
 import { findCallExpressionAncestor } from "../value/snapshot.js"
-import { BenchContext, BaseBenchOptions } from "./bench.js"
+import { BaseBenchOptions, BenchContext } from "./bench.js"
 import { BenchCallAssertions, getBenchCallAssertions, stats } from "./call.js"
 
 export type BenchTypeAssertions = {
