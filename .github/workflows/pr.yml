@@ -19,7 +19,7 @@ jobs:
                   fetch-depth: 0
 
             - name: Setup re-po
-              uses: .github/actions/setup
+              uses: ./.github/actions/setup
 
             - name: lint
               run: pnpm lint
@@ -47,7 +47,7 @@ jobs:
                   fetch-depth: 0
 
             - name: Setup re-po
-              uses: .github/actions/setup
+              uses: ./.github/actions/setup
               with:
                   node: ${{ matrix.node }}
 
