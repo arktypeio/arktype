@@ -2,6 +2,9 @@
     "name": "@re-/po",
     "private": true,
     "packageManager": "pnpm@7.1.2",
+    "engines": {
+        "node": ">=16"
+    },
     "type": "module",
     "scripts": {
         "build": "pnpm -r build",
@@ -11,7 +14,8 @@
         "prepare": "husky install",
         "pre-commit": "pretty-quick --staged",
         "find-unused": "ts-node findUnused.ts",
-        "lint": "eslint ."
+        "lint": "eslint .",
+        "ci:publish": "pnpm -r publish --access public"
     },
     "devDependencies": {
         "@swc/cli": "0.1.57",
