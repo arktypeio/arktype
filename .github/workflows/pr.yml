@@ -9,12 +9,35 @@ defaults:
         shell: bash
 
 jobs:
-    check:
+    core:
+        runs-on: ubuntu-latest
+
+        steps:
+            - name: Checkout re-po
+              uses: actions/checkout@v3
+              with:
+                  fetch-depth: 0
+
+            - name: Setup re-po
+              uses: ./.github/actions/setup
+
+            - name: lint
+              run: pnpm lint
+
+            - name: test
+              run: pnpm test
+
+    compatibility:
+        needs: core
         strategy:
             matrix:
-                node-version: [14, 16, 18]
-                os: [ubuntu-latest, windows-latest, macOS-latest]
-            fail-fast: false
+                node: [lts/*]
+                os: [ubuntu-latest, windows-latest, macos-latest]
+                include:
+                    - os: ubuntu-latest
+                      node: 14
+                    - os: ubuntu-latest
+                      node: 18
 
         runs-on: ${{ matrix.os }}
         steps:
@@ -23,23 +46,10 @@ jobs:
               with:
                   fetch-depth: 0
 
-            - name: Setup pnpm
-              uses: pnpm/action-setup@v2.0.1
+            - name: Setup re-po
+              uses: ./.github/actions/setup
               with:
-                  version: 7.1.2
+                  node: ${{ matrix.node }}
 
-            - name: Setup Node.js ${{ matrix.node-version }}
-              uses: actions/setup-node@v4
-              with:
-                  node-version: ${{ matrix.node-version }}
-                  registry-url: "https://registry.npmjs.org"
-                  cache: "pnpm"
-
-            - name: Install dependencies
-              run: pnpm install
-
-            - name: Build packages
-              run: pnpm build
-
-            - name: Test packages
+            - name: test
               run: pnpm test
