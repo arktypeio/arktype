@@ -10,8 +10,11 @@ defaults:
 
 jobs:
     core:
+        runs-on: ubuntu-latest
+
         steps:
             - uses: ./.github/actions/setup
+
             - name: lint
               run: pnpm lint
 
@@ -19,10 +22,11 @@ jobs:
               run: pnpm test
 
     compatibility:
+        needs: core
         strategy:
             matrix:
                 node: [lts/*]
-                os: [ubuntu-latest, windows-latest, macOS-latest]
+                os: [ubuntu-latest, windows-latest, macos-latest]
                 include:
                     - os: ubuntu-latest
                       node: 14

@@ -1,4 +1,4 @@
-name: "Setup re-po"
+name: Setup re-po
 description: Clone and set up re-do/re-po
 
 inputs:
@@ -6,7 +6,7 @@ inputs:
         default: lts/*
 
 runs:
-    using: "composite"
+    using: composite
     steps:
         - name: Checkout re-po
           uses: actions/checkout@v3
