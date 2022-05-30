@@ -21,7 +21,9 @@ runs:
               cache: "pnpm"
 
         - name: Install dependencies
+          shell: bash
           run: pnpm install
 
         - name: Build packages
+          shell: bash
           run: pnpm build
