@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto"
 import { existsSync, readdirSync } from "node:fs"
 import { basename, dirname, isAbsolute, join } from "node:path"
 import { readJson, writeJson } from "@re-/node"
-import { CallExpression, SyntaxKind } from "ts-morph"
+import { CallExpression, SyntaxKind, ts } from "ts-morph"
 import {
     getReAssertConfig,
     positionToString,
@@ -67,7 +67,7 @@ export const writeQueuedSnapshotUpdates = () => {
 export const findCallExpressionAncestor = (
     position: SourcePosition,
     functionName: string
-) => {
+): CallExpression<ts.CallExpression> => {
     const startNode = tsNodeAtPosition(position)
     const matchingCall = startNode.getAncestors().find((ancestor) => {
         const expression = ancestor
