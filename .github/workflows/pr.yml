@@ -20,8 +20,6 @@ jobs:
 
             - name: Setup re-po
               uses: ./.github/actions/setup
-              with:
-                  node: ${{ matrix.node }}
 
             - name: lint
               run: pnpm lint
