@@ -12,7 +12,7 @@ jobs:
     check:
         strategy:
             matrix:
-                node: [16]
+                node: [lts/*]
                 os: [ubuntu-latest, windows-latest, macOS-latest]
                 include:
                     - os: ubuntu-latest
@@ -23,28 +23,10 @@ jobs:
         runs-on: ${{ matrix.os }}
 
         steps:
-            - name: Checkout re-po
-              uses: actions/checkout@v3
+            - name: Setup re-po
+              uses: ./.github/workflows/setup
               with:
-                  fetch-depth: 0
-
-            - name: Setup pnpm
-              uses: pnpm/action-setup@v2.0.1
-              with:
-                  version: 7.1.2
-
-            - name: Setup Node.js ${{ matrix.node }}
-              uses: actions/setup-node@v3
-              with:
-                  node-version: ${{ matrix.node }}
-                  registry-url: "https://registry.npmjs.org"
-                  cache: "pnpm"
-
-            - name: Install dependencies
-              run: pnpm install
-
-            - name: Build packages
-              run: pnpm build
+                  node: ${{ matrix.node }}
 
             - name: Run linter
               run: pnpm lint
