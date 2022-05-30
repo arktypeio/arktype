@@ -1,4 +1,4 @@
-import { deepEqual } from "node:assert/strict"
+import { strict } from "node:assert"
 import { AssertionContext } from "../assert.js"
 import { SourcePosition } from "../common.js"
 import { chainableAssertion, ChainableValueAssertion } from "../value/index.js"
@@ -52,7 +52,7 @@ export const typeAssertions: AssertTypeContext = (
                                 `line ${position.line} of ${position.file}.`
                         )
                     }
-                    deepEqual(
+                    strict.equal(
                         assertionData.type.actual,
                         assertionData.type.expected
                     )

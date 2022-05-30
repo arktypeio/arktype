@@ -1,13 +1,13 @@
-import { AssertionError, throws } from "node:assert/strict"
+import { strict } from "node:assert"
 import { test } from "mocha"
 import { assert } from "../index.js"
 
 describe("multifile", () => {
     test("gathers types across files", () => {
         assert({ i: "love my wife" }).typed as { i: string }
-        throws(
+        strict.throws(
             () => assert({ g: "whiz" as unknown }).typed as { g: string },
-            AssertionError,
+            strict.AssertionError,
             "unknown"
         )
     })

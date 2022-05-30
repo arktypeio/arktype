@@ -1,4 +1,4 @@
-import { AssertionError, deepEqual, equal, match } from "node:assert/strict"
+import { strict } from "node:assert"
 import { isDeepStrictEqual } from "node:util"
 import {
     ElementOf,
@@ -190,33 +190,33 @@ const defaultAssert = (
 ) => {
     if (allowRegex) {
         if (typeof actual !== "string") {
-            throw new AssertionError({
+            throw new strict.AssertionError({
                 message: `Value was of type ${typeof actual} (expected a string).`
             })
         }
         if (typeof expected === "string") {
             if (!actual.includes(expected)) {
-                throw new AssertionError({
+                throw new strict.AssertionError({
                     message: `Expected string '${expected}' did not appear in actual string '${actual}'.`
                 })
             }
         } else if (expected instanceof RegExp) {
-            match(actual, expected)
+            strict.match(actual, expected)
         } else {
-            throw new AssertionError({
+            throw new strict.AssertionError({
                 message: `Expected value for this assertion should be a string or RegExp.`,
                 expected,
                 actual
             })
         }
     } else {
-        deepEqual(actual, expected)
+        strict.deepEqual(actual, expected)
     }
 }
 
 const getThrownMessage = (result: RunAssertionFunctionResult) => {
     if (!("threw" in result)) {
-        throw new AssertionError({
+        throw new strict.AssertionError({
             message: "Function didn't throw."
         })
     }
@@ -264,7 +264,7 @@ export const valueAssertions = <T>(
                 () => {
                     const result = runAssertionFunction(actual, ctx)
                     if (!("returned" in result)) {
-                        throw new AssertionError({
+                        throw new strict.AssertionError({
                             message: result.threw
                         })
                     }
@@ -321,17 +321,17 @@ export const valueAssertions = <T>(
                 }
             }
         } else {
-            deepEqual(actualSerialized, serialize(expected))
+            strict.deepEqual(actualSerialized, serialize(expected))
         }
         return nextAssertions
     }
     const baseValueAssertions = {
         is: (expected: unknown) => {
-            equal(actual, expected)
+            strict.equal(actual, expected)
             return nextAssertions
         },
         equals: (expected: unknown) => {
-            deepEqual(actual, expected)
+            strict.deepEqual(actual, expected)
             return nextAssertions
         }
     }
@@ -357,7 +357,7 @@ export const valueAssertions = <T>(
                         })
                     }
                 } else {
-                    deepEqual(actualSerialized, expectedSnapshot)
+                    strict.deepEqual(actualSerialized, expectedSnapshot)
                 }
                 return nextAssertions
             }
