@@ -6,6 +6,7 @@
     "scripts": {
         "build": "pnpm -r build",
         "test": "pnpm -r test",
+        "changeset": "changeset",
         "preinstall": "npx -y only-allow pnpm",
         "prepare": "husky install",
         "pre-commit": "pretty-quick --staged",

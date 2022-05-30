@@ -6,7 +6,7 @@
     "repository": {
         "type": "git",
         "url": "https://github.com/re-do/re-po.git",
-        "directory": "pkgs/assert"
+        "directory": "@re-/assert"
     },
     "type": "module",
     "main": "./dist/cjs/index.js",
