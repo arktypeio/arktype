@@ -8,13 +8,14 @@
     "type": "module",
     "scripts": {
         "build": "pnpm -r build",
+        "lint": "eslint .",
         "test": "pnpm -r test",
+        "bench": "pnpm -r bench",
         "changeset": "changeset",
         "preinstall": "npx -y only-allow pnpm",
         "prepare": "husky install",
         "pre-commit": "pretty-quick --staged",
         "find-unused": "ts-node findUnused.ts",
-        "lint": "eslint .",
         "ci:publish": "pnpm -r publish --access public"
     },
     "devDependencies": {
