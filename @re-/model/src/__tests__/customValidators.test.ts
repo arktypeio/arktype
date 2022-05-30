@@ -69,7 +69,7 @@ describe("custom validators", () => {
             }
         )
         assert(() => space.models.first.assert("hmm")).throws.snap(
-            "At path from/unknown, ???"
+            `Error: At path from/unknown, ???`
         )
         assert(
             space

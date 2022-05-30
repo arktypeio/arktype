@@ -1,4 +1,4 @@
-name: Test
+name: pr
 
 on:
     pull_request:
@@ -9,16 +9,17 @@ defaults:
         shell: bash
 
 jobs:
-    test:
+    check:
         strategy:
             matrix:
                 node-version: [14, 16, 18]
                 os: [ubuntu-latest, windows-latest, macOS-latest]
             fail-fast: false
+
         runs-on: ${{ matrix.os }}
         steps:
             - name: Checkout re-po
-              uses: actions/checkout@v2
+              uses: actions/checkout@v3
               with:
                   fetch-depth: 0
 
@@ -28,11 +29,12 @@ jobs:
                   version: 7.1.2
 
             - name: Setup Node.js ${{ matrix.node-version }}
-              uses: actions/setup-node@v2
+              uses: actions/setup-node@v4
               with:
                   node-version: ${{ matrix.node-version }}
                   registry-url: "https://registry.npmjs.org"
                   cache: "pnpm"
+
             - name: Install dependencies
               run: pnpm install
 

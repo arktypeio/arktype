@@ -67,23 +67,6 @@ export const tsNodeAtPosition = (position: SourcePosition) => {
     return node
 }
 
-// export const getTraceData = () => {
-//     const config = getReAssertConfig()
-//     // Trigger initial trace if the result hasn't been cached yet
-//     getTsProject()
-//     if (!existsSync(config.typeTraceCacheFile)) {
-//         throw new Error(
-//             `Expected TypeScript trace file at path '${config.typeTraceCacheFile}' did not exist.`
-//         )
-//     }
-//     let traceContents = readFileSync(config.typeTraceCacheFile).toString()
-//     if (!traceContents.endsWith("]")) {
-//         // Add a trailing "]" so it's valid JSON (TypeScript doesn't do this until the process ends)
-//         traceContents += "]"
-//     }
-//     return JSON.parse(traceContents)
-// }
-
 export const getTsProject = memoize(() => {
     const config = getReAssertConfig()
     const tsConfigFilePath = config.tsconfig ? config.tsconfig : undefined

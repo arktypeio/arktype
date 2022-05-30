@@ -169,7 +169,7 @@ describe("regex", () => {
     })
     it("generation", () => {
         assert(() => regex.generate()).throws.snap(
-            `Generation of regular expressions is not supported.`
+            `TypeError: Generation of regular expressions is not supported.`
         )
     })
     it("validation", () => {

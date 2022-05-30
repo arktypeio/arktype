@@ -1,6 +1,6 @@
 import { existsSync, mkdirSync, rmSync } from "node:fs"
 import { join, resolve } from "node:path"
-import { getCmdFromPid, readJson } from "@re-/node"
+import { ensureDir, getCmdFromPid, readJson } from "@re-/node"
 import { default as memoize } from "micro-memoize"
 
 export type LinePosition = {
@@ -78,9 +78,8 @@ export const getReAssertConfig = memoize((): ReAssertConfig => {
     }
     const cacheDir = resolve(".reassert")
     const snapCacheDir = join(cacheDir, "snaps")
-    rmSync(cacheDir, { recursive: true, force: true })
-    mkdirSync(cacheDir)
-    mkdirSync(snapCacheDir)
+    ensureDir(cacheDir)
+    ensureDir(snapCacheDir)
     return {
         updateSnapshots: argsIncludeUpdateFlag(argsToCheck),
         matcher,

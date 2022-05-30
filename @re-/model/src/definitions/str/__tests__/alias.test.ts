@@ -236,7 +236,9 @@ Encountered errors at the following paths:
             }
             assert(parseWithAnySpace)
                 .throws()
-                .snap(`Unable to determine the type of 'myType' at path alias.`)
+                .snap(
+                    `Error: Unable to determine the type of 'myType' at path alias.`
+                )
             // Parse any as space member
             assert(
                 model(["number", "a"], {
@@ -311,7 +313,7 @@ Encountered errors at the following paths:
                     })
                 ).generate()
             ).throws
-                .snap(`Unable to generate a default value for type including a required cycle:
+                .snap(`Error: Unable to generate a default value for type including a required cycle:
 a=>b=>c=>a
 If you'd like to avoid throwing in when this occurs, pass a value to return when this occurs to the 'onRequiredCycle' option.`)
         })
