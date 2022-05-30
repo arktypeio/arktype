@@ -12,9 +12,13 @@ jobs:
     check:
         strategy:
             matrix:
-                node-version: [14, 16, 18]
+                node: 16
                 os: [ubuntu-latest, windows-latest, macOS-latest]
-            fail-fast: false
+                include:
+                    - os: ubuntu-latest
+                      node: 14
+                    - os: ubuntu-latest
+                      node: 18
 
         runs-on: ${{ matrix.os }}
 
@@ -29,10 +33,10 @@ jobs:
               with:
                   version: 7.1.2
 
-            - name: Setup Node.js ${{ matrix.node-version }}
+            - name: Setup Node.js ${{ matrix.node }}
               uses: actions/setup-node@v3
               with:
-                  node-version: ${{ matrix.node-version }}
+                  node-version: ${{ matrix.node }}
                   registry-url: "https://registry.npmjs.org"
                   cache: "pnpm"
 
