@@ -30,7 +30,7 @@ jobs:
                   version: 7.1.2
 
             - name: Setup Node.js ${{ matrix.node-version }}
-              uses: actions/setup-node@v4
+              uses: actions/setup-node@v3
               with:
                   node-version: ${{ matrix.node-version }}
                   registry-url: "https://registry.npmjs.org"
