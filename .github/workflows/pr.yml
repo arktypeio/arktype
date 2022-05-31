@@ -27,6 +27,9 @@ jobs:
             - name: test
               run: pnpm test
 
+            - name: bench
+              run: pnpm bench
+
     compatibility:
         needs: core
         strategy:
