@@ -27,7 +27,12 @@ describe("caller", () => {
     test("fromDir", () => {
         const result = callMeFromDir()
         if (platform() === "win32") {
-            assert(result).snap()
+            assert(result).snap({
+                method: `callMeFromDir`,
+                file: `fromDir\\reflectedFromDir.ts`,
+                line: 8,
+                char: 12
+            })
         } else {
             assert(result).snap({
                 method: `callMeFromDir`,

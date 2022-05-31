@@ -6,7 +6,7 @@
     "scripts": {
         "docusaurus": "docusaurus",
         "start": "docusaurus start",
-        "build": "docusaurus build --out-dir dist && echo 'redo.dev' >> dist/CNAME",
+        "build": " pnpm ts-node ./build.ts",
         "swizzle": "docusaurus swizzle",
         "deploy": "docusaurus deploy",
         "clear": "docusaurus clear",
