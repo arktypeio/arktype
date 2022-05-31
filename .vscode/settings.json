@@ -14,5 +14,9 @@
         "*.lock": true,
         "**/coverage/*": true
     },
-    "typescript.tsdk": "node_modules/typescript/lib"
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "typescript.tsdk": "./node_modules/typescript/lib",
+    "eslint.packageManager": "pnpm",
+    "eslint.enable": true,
+    "eslint.alwaysShowStatus": true
 }

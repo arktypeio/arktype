@@ -73,3 +73,9 @@ release
 generated
 dist
 out
+typeTrace
+*.tsbuildinfo
+tsconfig.temp.json
+
+# @re-/assert cache
+.reassert

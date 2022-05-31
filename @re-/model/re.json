@@ -1,0 +1,6 @@
+{
+    "assert": {
+        "precached": true,
+        "benchPercentThreshold": 20
+    }
+}

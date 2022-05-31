@@ -1,9 +1,0 @@
-{
-    "extends": "@re-/node/tsconfig.base",
-    "compilerOptions": {
-        "baseUrl": "demos",
-        "paths": {
-            "@re-/model": ["."]
-        }
-    }
-}

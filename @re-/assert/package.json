@@ -1,0 +1,38 @@
+{
+    "name": "@re-/assert",
+    "version": "0.2.2",
+    "author": "redo.dev",
+    "description": "Seamless testing for types and code✅",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/re-do/re-po.git",
+        "directory": "@re-/assert"
+    },
+    "engines": {
+        "node": ">=14.18.0"
+    },
+    "type": "module",
+    "main": "./dist/cjs/index.js",
+    "types": "./dist/types/index.d.ts",
+    "exports": {
+        ".": {
+            "types": "./dist/types/index.d.ts",
+            "import": "./dist/mjs/index.js",
+            "require": "./dist/cjs/index.js"
+        }
+    },
+    "scripts": {
+        "build": "re tsc",
+        "test": "pnpm ts-node ./src/runner.ts mocha",
+        "test-bench": "pnpm ts-node ./src/__benches__/test.bench.ts"
+    },
+    "bin": {
+        "reassert": "./runner.cjs"
+    },
+    "dependencies": {
+        "@re-/node": "workspace:*",
+        "@re-/tools": "workspace:*",
+        "micro-memoize": "4.0.10",
+        "ts-morph": "14.0.0"
+    }
+}

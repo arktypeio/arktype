@@ -1,0 +1,40 @@
+{
+    "name": "@re-/model",
+    "version": "2.0.1-alpha",
+    "author": "redo.dev",
+    "description": "One definition from editor to runtime🧬",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/re-do/re-po.git",
+        "directory": "@re-/model"
+    },
+    "engines": {
+        "node": ">=14.18.0"
+    },
+    "type": "module",
+    "main": "./dist/cjs/index.js",
+    "types": "./dist/types/index.d.ts",
+    "exports": {
+        ".": {
+            "types": "./dist/types/index.d.ts",
+            "import": "./dist/mjs/index.js",
+            "require": "./dist/cjs/index.js"
+        }
+    },
+    "scripts": {
+        "build": "re tsc",
+        "test": "reassert mocha",
+        "bench": "pnpm ts-node ./src/__benches__/compileCyclic.bench.ts",
+        "generateBenches": "pnpm ts-node generateBenches.ts"
+    },
+    "dependencies": {
+        "@re-/tools": "workspace:*"
+    },
+    "devDependencies": {
+        "@re-/assert": "workspace:*",
+        "@re-/node": "workspace:*",
+        "ts-morph": "14.0.0",
+        "remark": "14.0.2",
+        "remark-parse": "10.0.1"
+    }
+}

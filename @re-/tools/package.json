@@ -1,0 +1,29 @@
+{
+    "name": "@re-/tools",
+    "version": "2.0.0",
+    "author": "redo.dev",
+    "description": "Lightweight utilities and types shared across Redo packages 🧰",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/re-do/re-po.git",
+        "directory": "@re-/tools"
+    },
+    "type": "module",
+    "main": "./dist/cjs/index.js",
+    "types": "./dist/types/index.d.ts",
+    "exports": {
+        ".": {
+            "types": "./dist/types/index.d.ts",
+            "import": "./dist/mjs/index.js",
+            "require": "./dist/cjs/index.js"
+        }
+    },
+    "scripts": {
+        "build": "re tsc",
+        "test": "reassert mocha"
+    },
+    "devDependencies": {
+        "@re-/node": "workspace:*",
+        "@re-/assert": "link:../assert"
+    }
+}
