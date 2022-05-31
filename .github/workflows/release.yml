@@ -5,32 +5,17 @@ on:
         branches: [main]
 
 jobs:
-    release:
+    core:
         runs-on: ubuntu-latest
-
+        timeout-minutes: 10
         steps:
             - name: Checkout re-po
               uses: actions/checkout@v3
               with:
                   fetch-depth: 0
 
-            - name: Setup pnpm
-              uses: pnpm/action-setup@v2
-              with:
-                  version: 7.1.2
-
-            - name: Setup Node.js 16
-              uses: actions/setup-node@v3
-              with:
-                  node-version: 16
-                  registry-url: "https://registry.npmjs.org"
-                  cache: "pnpm"
-
-            - name: Install dependencies
-              run: pnpm install
-
-            - name: Build packages
-              run: pnpm build
+            - name: Setup re-po
+              uses: ./.github/actions/setup
 
             - name: Create and publish versions
               uses: changesets/action@v1
