@@ -55,8 +55,8 @@ bench("compile-cyclic(10)", () => {
         }
     })
 })
-    .median()
-    .type.median()
+    .median("2.37ms")
+    .type.median("81.61ms")
 
 bench("compile-cyclic(50)", () => {
     const space = compile({
@@ -312,8 +312,8 @@ bench("compile-cyclic(50)", () => {
         }
     })
 })
-    .median()
-    .type.median()
+    .median("47.96ms")
+    .type.median("132.46ms")
 
 bench("compile-cyclic(100)", () => {
     const space = compile({
@@ -819,8 +819,8 @@ bench("compile-cyclic(100)", () => {
         }
     })
 })
-    .median()
-    .type.median()
+    .median("206.11ms")
+    .type.median("194.43ms")
 
 bench("compile-cyclic(250)", () => {
     const space = compile({
@@ -2076,8 +2076,8 @@ bench("compile-cyclic(250)", () => {
         }
     })
 })
-    .median()
-    .type.median()
+    .median("14.16s")
+    .type.median("419.11ms")
 
 bench("compile-cyclic(500)", () => {
     const space = compile({

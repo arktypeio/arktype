@@ -19,7 +19,7 @@
         }
     },
     "scripts": {
-        "build": "node --no-warnings --loader ts-node/esm ./src/cli.ts tsc",
+        "build": "pnpm ts-node ./src/cli.ts tsc",
         "test": "reassert mocha",
         "lint": "eslint ."
     },

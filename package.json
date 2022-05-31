@@ -2,9 +2,6 @@
     "name": "@re-/po",
     "private": true,
     "packageManager": "pnpm@7.1.2",
-    "engines": {
-        "node": ">=16"
-    },
     "type": "module",
     "scripts": {
         "build": "pnpm -r build",
