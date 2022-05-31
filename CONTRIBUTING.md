@@ -102,7 +102,7 @@ We use a [pnpm workspace](https://pnpm.io/workspaces) to manage our packages. Yo
 -   [@re-/model](@re-/model): Beautiful types from IDE to runtime 🧬
 -   [@re-/assert](@re-/assert): Seamless testing for types and code ✅
 -   [@re-/tools](@re-/tools): Lightweight utilities and types shared across Redo packages 🧰
--   [@re-/tools](@re-/tools): Node-based utilities, scripts, and configs for Redo packages ⚙️
+-   [@re-/tools](@re-/node): Node-based utilities, scripts, and configs for Redo packages ⚙️
 -   [@re-/docs](@re-/docs): Documentation for this repo 📚
 
 ## Project
@@ -115,4 +115,4 @@ By contributing your code to the re-do/re-po GitHub repository, you agree to lic
 
 ### Attribution note
 
-At Redo, we're huge fans of (https://mui.com/). In addition to depending on them for many of our React components, we borrowed parts of this contributing guide from their repo.
+At Redo, we're huge fans of [material-ui](https://mui.com/). In addition to depending on them for many of our React components, we borrowed parts of this contributing guide from their repo.
