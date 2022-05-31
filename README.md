@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="./pkgs/docs/static/img/logo.svg" height="120px" />
+  <img src="./@re-/docs/static/img/logo.svg" height="120px" />
   <h1>re-do</h1>
 </div>
 <div align="center">
@@ -16,17 +16,18 @@ In other words, you can finally get back to doing what you love.
 
 ## re-po
 
-All of our packages are completely modular and can be used either independently or alongside other tools from Redo. We use a [rush](https://rushjs.io) monorepo to simplify versioning and ensure everything works together exactly how you'd expect. Take a look at any of the individual packages to learn more:
+We use a [pnpm workspace](https://pnpm.io/workspaces) to manage our packages. You might want to make changes to one or more of them depending on the goals of your contribution. Take a look at any of them individually to learn more:
 
 -   [@re-/model](pkgs/model): Type-first validation from editor to runtime 🧬
--   @re-/state (coming soon): Self-validating states from simple shapes 🧮
--   @re-/do (coming soon): Web testing that writes itself 🤖
+-   [@re-/state] (coming soon): Self-validating states from simple shapes 🧮
+-   [@re-/test] (coming soon): Web testing that writes itself 🤖
 
 You might also find parts of these packages useful, but they are mostly for internal use and/or are missing documentation:
 
--   [@re-/assert](pkgs/assert): Seamless testing for types and code ✅
--   [@re-/tools](pkgs/tools): Utilities, scripts, and configs for this repo 🧰
--   [@re-/docs](pkgs/docs): Documentation for this repo 📚
+-   [@re-/assert](@re-/assert): Seamless testing for types and code ✅
+-   [@re-/tools](@re-/tools): Lightweight utilities and types shared across Redo packages 🧰
+-   [@re-/tools](@re-/node): Node-based utilities, scripts, and configs for Redo packages ⚙️
+-   [@re-/docs](@re-/docs): Documentation for this repo 📚
 
 ## Contributing
 
@@ -37,7 +38,7 @@ If you're interested in contributing to one of our packages for the first time:
 
 ## Project
 
-Our current and planned work can always be found [here](https://github.com/re-do/re-po/projects/1).
+Our current and planned work can always be found [here](https://github.com/orgs/re-do/projects/1/views/15).
 
 ## License
 
