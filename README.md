@@ -10,7 +10,7 @@ In other words, you can finally get back to doing what you love.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 ![Code style](https://img.shields.io/badge/code_style-prettier-ff69b4.svg)
-[![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-v2.0%20adopted-ff69b4.svg)](code-of-conduct.md)
+[![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-v2.0%20adopted-ff69b4.svg)](./CODE_OF_CONDUCT.md)
 
 </div>
 
@@ -38,7 +38,7 @@ If you're interested in contributing to one of our packages for the first time:
 
 ## Project
 
-Our current and planned work can always be found [here](https://github.com/orgs/re-do/projects/1/views/15).
+Our current and planned work can always be found [here](https://github.com/re-do/re-po/projects/1).
 
 ## License
 

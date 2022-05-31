@@ -2,7 +2,7 @@
 
 Thank you so much for making it this far ❤️ If you're intersted in contributing to one of the packages in the Redo repository, we want to make sure we do everything we can to make that process as straightforward and fruitful as possible.
 
-We've put together this guide to cover some of that, but please don't hesitate to comment on any of GitHub issues, create your own, or reach out to me directly at david@redo.dev 🍾
+We've put together this guide to cover some of that, but please don't hesitate to comment on any of GitHub issues, create your own, or reach out to me directly at david@redo.dev 😻
 
 ## Code of Conduct
 
@@ -70,16 +70,21 @@ Take a look at [their documentation](https://pnpm.io/workspaces) if you are conf
 git checkout -b my-topic-branch
 ```
 
-6. Once you've made the changes you want, be sure all of our packages still build:
+6. Once you've made the changes you want to:
+
+- Run the linter and resolve any warnings or errors:
+
+```sh
+pnpm lint
+```
+
+- Make sure everything still builds successfully:
 
 ```sh
 pnpm build
 ```
 
-and that
-
--   You've added new tests to cover any affected functionality
--   All of our existing tests are passing:
+- You've added new tests to cover your changes, and that all of our existing tests are passing:
 
 ```sh
 pnpm test
@@ -107,7 +112,7 @@ We use a [pnpm workspace](https://pnpm.io/workspaces) to manage our packages. Yo
 
 ## Project
 
-Our current and planned work can always be found [here](https://github.com/re-do/re-po/projects/1/views/15). If you want to contribute but aren't sure where to get started, see if any of the issues in our backlog sound interesting! Not all are well-documented, so it usually makes sense to comment on the issue with any questions you may have before you start coding.
+Our current and planned work can always be found [here](https://github.com/re-do/re-po/projects/1). If you want to contribute but aren't sure where to get started, see if any of the issues in our backlog sound interesting! Not all are well-documented, so it usually makes sense to comment on the issue with any questions you may have before you start coding.
 
 ## License
 
