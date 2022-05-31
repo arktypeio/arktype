@@ -1,10 +1,14 @@
 <!DOCTYPE html>
-<html lang="en" dir="ltr" class="plugin-native plugin-id-default">
+<html
+    lang="en"
+    dir="ltr"
+    class="docs-wrapper docs-doc-page docs-version-1.11.0 plugin-docs plugin-id-model docs-doc-id-api"
+>
     <head>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width,initial-scale=1" />
         <meta name="generator" content="Docusaurus v2.0.0-beta.20" />
-        <title data-rh="true">Page Not Found | Redo</title>
+        <title data-rh="true">API | Redo</title>
         <meta
             data-rh="true"
             name="twitter:card"
@@ -13,33 +17,49 @@
         <meta
             data-rh="true"
             property="og:url"
-            content="https://redo.dev/404.html"
+            content="https://redo.dev/model/api"
         />
         <meta data-rh="true" name="docusaurus_locale" content="en" />
-        <meta data-rh="true" name="docusaurus_tag" content="default" />
         <meta data-rh="true" name="docsearch:language" content="en" />
+        <meta data-rh="true" name="docusaurus_version" content="1.11.0" />
+        <meta
+            data-rh="true"
+            name="docusaurus_tag"
+            content="docs-model-1.11.0"
+        />
+        <meta data-rh="true" name="docsearch:version" content="1.11.0" />
         <meta
             data-rh="true"
             name="docsearch:docusaurus_tag"
-            content="default"
+            content="docs-model-1.11.0"
+        />
+        <meta data-rh="true" property="og:title" content="API | Redo" />
+        <meta
+            data-rh="true"
+            name="description"
+            content="Detailed API docs are coming soon! For now, check out the examples from this README and use the type hints you get to learn how you can customize your models and spaces. If you have any questions, don&#x27;t hesitate to reach out on the dedicated Discord channel!"
         />
         <meta
             data-rh="true"
-            property="og:title"
-            content="Page Not Found | Redo"
+            property="og:description"
+            content="Detailed API docs are coming soon! For now, check out the examples from this README and use the type hints you get to learn how you can customize your models and spaces. If you have any questions, don&#x27;t hesitate to reach out on the dedicated Discord channel!"
         />
         <link data-rh="true" rel="icon" href="/img/favicon.ico" />
-        <link data-rh="true" rel="canonical" href="https://redo.dev/404.html" />
+        <link
+            data-rh="true"
+            rel="canonical"
+            href="https://redo.dev/model/api"
+        />
         <link
             data-rh="true"
             rel="alternate"
-            href="https://redo.dev/404.html"
+            href="https://redo.dev/model/api"
             hreflang="en"
         />
         <link
             data-rh="true"
             rel="alternate"
-            href="https://redo.dev/404.html"
+            href="https://redo.dev/model/api"
             hreflang="x-default"
         />
         <link rel="stylesheet" href="/assets/css/styles.97cb29f0.css" />
@@ -105,7 +125,7 @@
                                     class="themedImage_oHxL themedImage--dark_V_TW"
                                 /></div></a
                         ><a
-                            class="navbar__item navbar__link"
+                            class="navbar__item navbar__link navbar__link--active"
                             href="/model/intro"
                             >Model</a
                         ><a class="navbar__item navbar__link" href="/state/"
@@ -136,8 +156,9 @@
                                 </li>
                                 <li>
                                     <a
-                                        class="dropdown__link"
-                                        href="/model/intro"
+                                        aria-current="page"
+                                        class="dropdown__link dropdown__link--active"
+                                        href="/model/api"
                                         >1.11.0</a
                                     >
                                 </li>
@@ -185,20 +206,182 @@
                 </div>
                 <div role="presentation" class="navbar-sidebar__backdrop"></div>
             </nav>
-            <div class="main-wrapper">
-                <main class="container margin-vert--xl">
-                    <div class="row">
-                        <div class="col col--6 col--offset-3">
-                            <h1 class="hero__title">Page Not Found</h1>
-                            <p>We could not find what you were looking for.</p>
-                            <p>
-                                Please contact the owner of the site that linked
-                                you to the original URL and let them know their
-                                link is broken.
-                            </p>
+            <div class="main-wrapper docsWrapper_zY8L">
+                <button
+                    aria-label="Scroll back to top"
+                    class="clean-btn theme-back-to-top-button backToTopButton_5rU_"
+                    type="button"
+                ></button>
+                <div class="docPage_isOw">
+                    <aside
+                        class="theme-doc-sidebar-container docSidebarContainer_ydpZ"
+                    >
+                        <div class="sidebar_At8i">
+                            <nav class="menu thin-scrollbar menu_ey7p">
+                                <ul class="theme-doc-sidebar-menu menu__list">
+                                    <li
+                                        class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-1 menu__list-item"
+                                    >
+                                        <a
+                                            class="menu__link"
+                                            href="/model/intro"
+                                            >Model</a
+                                        >
+                                    </li>
+                                    <li
+                                        class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-1 menu__list-item"
+                                    >
+                                        <a
+                                            class="menu__link"
+                                            href="/model/spaces"
+                                            >Spaces</a
+                                        >
+                                    </li>
+                                    <li
+                                        class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-1 menu__list-item"
+                                    >
+                                        <a
+                                            class="menu__link"
+                                            href="/model/declarations"
+                                            >Declarations</a
+                                        >
+                                    </li>
+                                    <li
+                                        class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-1 menu__list-item"
+                                    >
+                                        <a
+                                            class="menu__link"
+                                            href="/model/constraints"
+                                            >Constraints</a
+                                        >
+                                    </li>
+                                    <li
+                                        class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-1 menu__list-item"
+                                    >
+                                        <a
+                                            class="menu__link"
+                                            href="/model/syntax"
+                                            >Syntax</a
+                                        >
+                                    </li>
+                                    <li
+                                        class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-1 menu__list-item"
+                                    >
+                                        <a
+                                            class="menu__link menu__link--active"
+                                            aria-current="page"
+                                            href="/model/api"
+                                            >API</a
+                                        >
+                                    </li>
+                                </ul>
+                            </nav>
                         </div>
-                    </div>
-                </main>
+                    </aside>
+                    <main class="docMainContainer_NxXk">
+                        <div
+                            class="container padding-top--md padding-bottom--lg"
+                        >
+                            <div class="row">
+                                <div class="col">
+                                    <div class="docItemContainer_kaBO">
+                                        <article>
+                                            <nav
+                                                class="theme-doc-breadcrumbs breadcrumbsContainer_EqtY"
+                                                aria-label="Breadcrumbs"
+                                            >
+                                                <ul
+                                                    class="breadcrumbs"
+                                                    itemscope=""
+                                                    itemtype="https://schema.org/BreadcrumbList"
+                                                >
+                                                    <li
+                                                        class="breadcrumbs__item"
+                                                    >
+                                                        <a
+                                                            aria-label="Home page"
+                                                            class="breadcrumbs__link"
+                                                            href="/"
+                                                            ><svg
+                                                                viewBox="0 0 24 24"
+                                                                class="breadcrumbHomeIcon_IJ7X"
+                                                            >
+                                                                <path
+                                                                    d="M10 19v-5h4v5c0 .55.45 1 1 1h3c.55 0 1-.45 1-1v-7h1.7c.46 0 .68-.57.33-.87L12.67 3.6c-.38-.34-.96-.34-1.34 0l-8.36 7.53c-.34.3-.13.87.33.87H5v7c0 .55.45 1 1 1h3c.55 0 1-.45 1-1z"
+                                                                    fill="currentColor"
+                                                                ></path></svg
+                                                        ></a>
+                                                    </li>
+                                                    <li
+                                                        itemscope=""
+                                                        itemprop="itemListElement"
+                                                        itemtype="https://schema.org/ListItem"
+                                                        class="breadcrumbs__item breadcrumbs__item--active"
+                                                    >
+                                                        <span
+                                                            class="breadcrumbs__link"
+                                                            itemprop="name"
+                                                            >API</span
+                                                        ><meta
+                                                            itemprop="position"
+                                                            content="1"
+                                                        />
+                                                    </li>
+                                                </ul>
+                                            </nav>
+                                            <span
+                                                class="theme-doc-version-badge badge badge--secondary"
+                                                >Version: 1.11.0</span
+                                            >
+                                            <div
+                                                class="theme-doc-markdown markdown"
+                                            >
+                                                <h1>API</h1>
+                                                <p>
+                                                    Detailed API docs are coming
+                                                    soon! For now, check out the
+                                                    examples from this README
+                                                    and use the type hints you
+                                                    get to learn how you can
+                                                    customize your models and
+                                                    spaces. If you have any
+                                                    questions, don&#x27;t
+                                                    hesitate to reach out on the
+                                                    <a
+                                                        href="https://discord.gg/WSNF3Kc4xh"
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        >dedicated Discord
+                                                        channel</a
+                                                    >!
+                                                </p>
+                                            </div>
+                                        </article>
+                                        <nav
+                                            class="pagination-nav docusaurus-mt-lg"
+                                            aria-label="Docs pages navigation"
+                                        >
+                                            <a
+                                                class="pagination-nav__link pagination-nav__link--prev"
+                                                href="/model/syntax"
+                                                ><div
+                                                    class="pagination-nav__sublabel"
+                                                >
+                                                    Previous
+                                                </div>
+                                                <div
+                                                    class="pagination-nav__label"
+                                                >
+                                                    Syntax
+                                                </div></a
+                                            >
+                                        </nav>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </main>
+                </div>
             </div>
             <footer class="footer footer--dark">
                 <div class="container container-fluid">
