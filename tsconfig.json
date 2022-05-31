@@ -18,6 +18,6 @@
         "esm": true,
         "swc": true,
         "transpileOnly": true,
-        "experimentalResolverFeatures": true
+        "experimentalResolverFeatures": false
     }
 }

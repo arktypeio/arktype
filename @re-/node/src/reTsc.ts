@@ -23,7 +23,8 @@ const mjsOut = join(outRoot, "mjs")
 const cjsOut = join(outRoot, "cjs")
 const inFiles = walkPaths(srcRoot, {
     excludeDirs: true,
-    exclude: (path) => path.includes("__tests__")
+    exclude: (path) =>
+        path.includes("__tests__") || path.includes("__benches__")
 })
 const successMessage = `🎁 Successfully built ${packageName}!`
 
