@@ -31,6 +31,7 @@ interface ReAssertJson {
     assertAliases?: string[]
     stringifySnapshots?: boolean
     benchPercentThreshold?: number
+    benchErrorOnThresholdExceeded?: boolean
 }
 
 interface ReJson {
@@ -91,7 +92,8 @@ export const getReAssertConfig = memoize((): ReAssertConfig => {
         cacheDir,
         snapCacheDir,
         assertionCacheFile: join(cacheDir, "assertions.json"),
-        benchPercentThreshold: 10,
+        benchPercentThreshold: 20,
+        benchErrorOnThresholdExceeded: false,
         ...reAssertJson
     }
 })
