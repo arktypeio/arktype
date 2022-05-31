@@ -11,7 +11,7 @@ defaults:
 jobs:
     core:
         runs-on: ubuntu-latest
-
+        timeout-minutes: 10
         steps:
             - name: Checkout re-po
               uses: actions/checkout@v3
@@ -32,10 +32,11 @@ jobs:
 
     compatibility:
         needs: core
+        timeout-minutes: 10
         strategy:
             matrix:
                 node: [lts/*]
-                os: [ubuntu-latest, windows-latest, macos-latest]
+                os: [windows-latest, macos-latest]
                 include:
                     - os: ubuntu-latest
                       node: 14
@@ -43,7 +44,6 @@ jobs:
                       node: 18
 
         runs-on: ${{ matrix.os }}
-
         steps:
             - name: Checkout re-po
               uses: actions/checkout@v3

@@ -1,0 +1,27 @@
+{
+    "settings": {
+        "files.watcherExclude": {
+            "**/.git/objects/**": true,
+            "**/.git/subtree-cache/**": true
+        },
+        "search.exclude": {
+            "common/temp": true,
+            ".git": true,
+            "**/out/*": true,
+            "**/dist/*": true,
+            "**/node_modules/*": true,
+            "test/**/__snapshots__": true,
+            "pnpm-lock.*": true,
+            "*.lock": true,
+            "**/coverage/*": true
+        }
+    },
+    "folders": [
+        {
+            "path": "../pkgs/tools"
+        },
+        {
+            "path": "../pkgs/assert"
+        }
+    ]
+}

@@ -92,3 +92,9 @@ shrinkwrap.json
 
 # Generated files
 docs/assets
+
+# @re-/assert cache
+.reassert
+
+# Temporarily disabled packages
+@re-/state

@@ -1,8 +1,8 @@
 # Contributing
 
-Thank you so much for making it this far ❤️ If you're intersted in contributing to one of the packages in the Redo repository, we want to make sure we do everything we can to make that process as straightforward and fruitful as possible 🍍🍐🥝
+Thank you so much for making it this far ❤️ If you're intersted in contributing to one of the packages in the Redo repository, we want to make sure we do everything we can to make that process as straightforward and fruitful as possible.
 
-We've put together this guide to cover some of that, but please don't hesitate to comment on any of GitHub issues, create your own, or reach out to me directly at david@redo.qa 🍾
+We've put together this guide to cover some of that, but please don't hesitate to comment on any of GitHub issues, create your own, or reach out to me directly at david@redo.dev 🍾
 
 ## Code of Conduct
 
@@ -44,20 +44,25 @@ git pull upstream main
 
 4. Install dependencies and build:
 
-If you don't have [rush](https://rushjs.io) installed:
+If you don't have [pnpm](https://pnpm.io/) installed:
 
 ```sh
-npm install -g @microsoft/rush
+npm i -g pnpm
 ```
 
 then:
 
 ```sh
-rush update # install package.json dependencies across all packages
-rush build # builds all packages
+pnpm i # install package.json dependencies across all packages
+pnpm build # builds all packages
 ```
 
-[Rush](https://rushjs.io) is an awesome way to manage related packages, and mostly preserves the way you'd act with an isolated package outside a monorepo. Take a look at their documention if you need to install new dependencies or are confused about the way packages are linked together and built.
+We use a pnpm workspace to manage our packages. The most important things to keep in mind are:
+
+-   The `package.json` at the re-po root contains devDependencies which are not directly imported (like `typescript`, `eslint`, etc.) and scripts that operate on the workspace as a whole (like `build`, which sequentially builds each package in the re-po).
+-   Each package has its own `package.json`. These are used the usual way: to manage dependencies directly imported by the code, and to define scripts that run within the scope of that package (those scripts are sometimes called from scripts at the monorepo root).
+
+Take a look at [their documentation](https://pnpm.io/workspaces) if you are confused about the way packages are linked together or need to learn more.
 
 5. Create a new topic branch:
 
@@ -68,7 +73,7 @@ git checkout -b my-topic-branch
 6. Once you've made the changes you want, be sure all of our packages still build:
 
 ```sh
-rush build
+pnpm build
 ```
 
 and that
@@ -77,7 +82,7 @@ and that
 -   All of our existing tests are passing:
 
 ```sh
-rush test
+pnpm test
 ```
 
 Once that's done, commit your changes and push to your fork:
@@ -92,16 +97,17 @@ The core team is monitoring for Pull Requests. We will review your Pull Request 
 
 ## Packages
 
-We use a [rush](https://rushjs.io) monorepo to manage our packages. You might want to make changes to one or more of them depending on the goals of your contribution. Take a look at any of them individually to learn more:
+We use a [pnpm workspace](https://pnpm.io/workspaces) to manage our packages. You might want to make changes to one or more of them depending on the goals of your contribution. Take a look at any of them individually to learn more:
 
--   [@re-/model](pkgs/model): Beautiful types from IDE to runtime 🧬
--   [@re-/assert](pkgs/assert): Seamless testing for types and code ✅
--   [@re-/tools](pkgs/tools): Utilities, scripts, and configs for this repo 🧰
--   [@re-/docs](pkgs/docs): Documentation for this repo 📚
+-   [@re-/model](@re-/model): Beautiful types from IDE to runtime 🧬
+-   [@re-/assert](@re-/assert): Seamless testing for types and code ✅
+-   [@re-/tools](@re-/tools): Lightweight utilities and types shared across Redo packages 🧰
+-   [@re-/tools](@re-/tools): Node-based utilities, scripts, and configs for Redo packages ⚙️
+-   [@re-/docs](@re-/docs): Documentation for this repo 📚
 
 ## Project
 
-Our current and planned work can always be found [here](https://github.com/re-do/re-po/projects/1). If you want to contribute but aren't sure where to get started, see if any of the issues in our backlog sound interesting! Not all are well-documented, so it usually makes sense to comment on the issue with any questions you may have before you start coding.
+Our current and planned work can always be found [here](https://github.com/re-do/re-po/projects/1/views/15). If you want to contribute but aren't sure where to get started, see if any of the issues in our backlog sound interesting! Not all are well-documented, so it usually makes sense to comment on the issue with any questions you may have before you start coding.
 
 ## License
 
