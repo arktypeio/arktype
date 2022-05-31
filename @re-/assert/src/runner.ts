@@ -53,14 +53,15 @@ if (runner === "node") {
                 `an executable at the expected location ('${runnerBinPath}').`
         )
     }
-    runTestsCmd += runnerBinPath + " "
+    runTestsCmd += `node ${runnerBinPath} `
 }
 
 const runnerArgs = process.argv.slice(runnerArgIndex + 2).join(" ")
 
 runTestsCmd += runnerArgs
 
-let exitCode: number | undefined
+// If the test process doesn't return successfully, this stays at 1
+let exitCode = 1
 
 try {
     console.log(`⏳ @re-/assert: Analyzing type assertions...`)
@@ -73,8 +74,7 @@ try {
     console.log(`⏳ @re-/assert: Using ${runner} to run your tests...`)
     const runnerStart = Date.now()
     exitCode = shell(runTestsCmd, {
-        env: { RE_ASSERT_CMD: runTestsCmd },
-        reject: false
+        env: { RE_ASSERT_CMD: runTestsCmd }
     }).exitCode
     const runnerSeconds = (Date.now() - runnerStart) / 1000
     console.log(

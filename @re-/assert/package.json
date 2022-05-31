@@ -8,6 +8,9 @@
         "url": "https://github.com/re-do/re-po.git",
         "directory": "@re-/assert"
     },
+    "engines": {
+        "node": ">=14.18.0"
+    },
     "type": "module",
     "main": "./dist/cjs/index.js",
     "types": "./dist/types/index.d.ts",
@@ -20,16 +23,16 @@
     },
     "scripts": {
         "build": "re tsc",
-        "test": "node --no-warnings --loader ts-node/esm ./src/runner.ts mocha",
-        "test-bench": "node --no-warnings --loader ts-node/esm ./src/__benches__/test.bench.ts"
+        "test": "pnpm ts-node-esm ./src/runner.ts mocha",
+        "test-bench": "pnpm ts-node-esm ./src/__benches__/test.bench.ts"
     },
     "bin": {
         "reassert": "./runner.cjs"
     },
     "dependencies": {
-        "@re-/tools": "workspace:*",
         "@re-/node": "workspace:*",
-        "ts-morph": "14.0.0",
-        "micro-memoize": "4.0.10"
+        "@re-/tools": "workspace:*",
+        "micro-memoize": "4.0.10",
+        "ts-morph": "14.0.0"
     }
 }

@@ -1,4 +1,0 @@
-{
-    "spec": "**/__tests__/*.test.ts",
-    "node-option": ["no-warnings", "loader=ts-node/esm"]
-}
