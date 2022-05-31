@@ -1,0 +1,7 @@
+titleOnly: true
+scopes:
+    - assert
+    - model
+    - node
+    - state
+    - tools
