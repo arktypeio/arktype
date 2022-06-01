@@ -1,5 +1,11 @@
 # @re-/docs
 
+## 0.0.2
+
+### Patch Changes
+
+-   85441b3: Test changesets.
+
 ## 0.0.1
 
 ### Patch Changes
