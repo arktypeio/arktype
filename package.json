@@ -14,7 +14,7 @@
         "pre-commit": "pretty-quick --staged",
         "find-unused": "ts-node ./scripts/findUnused.ts",
         "ci:version": "changeset version && ts-node ./scripts/addVersionSuffixes.ts",
-        "ci:publish": "pnpm -r publish --access public"
+        "ci:publish": "changeset publish"
     },
     "devDependencies": {
         "@changesets/cli": "2.22.0",
