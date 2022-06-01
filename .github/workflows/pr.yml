@@ -21,13 +21,14 @@ jobs:
             - name: Setup re-po
               uses: ./.github/actions/setup
 
-            - id: lint
+            - name: Lint
               run: pnpm lint
 
-            - id: test
+            - name: Test
               run: pnpm test
 
-            - id: bench
+            - name: Bench
+              id: bench
               # Avoid truncating the output to one line
               run: |
                   results=$(pnpm bench)
@@ -70,5 +71,5 @@ jobs:
               with:
                   node: ${{ matrix.node }}
 
-            - id: test
+            - name: Test
               run: pnpm test
