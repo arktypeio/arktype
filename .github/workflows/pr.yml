@@ -28,14 +28,14 @@ jobs:
               run: pnpm test
 
             - id: bench
-              run: echo "::set-output name=results::$(pnpm bench)"
+              run: echo "BENCH_RESULTS=$(pnpm bench)" >> $GITHUB_ENV
 
             - name: Report benches
               uses: thollander/actions-comment-pull-request@v1
               with:
                   message: |
                       :judge: Your updated bench results:
-                      ${{ steps.bench.outputs.results }}
+                      ${{ env.BENCH_RESULTS }}
                   comment_includes: "updated bench results"
                   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
