@@ -23,7 +23,7 @@ jobs:
                   commit: "chore: update versions"
                   title: "chore: update versions"
                   version: pnpm ci:version
-                  publish: pnpm ci:publish
+                  publish: echo //registry.npmjs.org/:_authToken=$NPM_TOKEN >> .npmrc && pnpm ci:publish
               env:
                   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
                   NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
