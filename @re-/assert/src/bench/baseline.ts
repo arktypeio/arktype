@@ -54,11 +54,13 @@ export const compareToBaseline = (
         if (delta > config.benchPercentThreshold) {
             const message = `'${name}' exceeded baseline by ${formattedDelta} (treshold is ${config.benchPercentThreshold}%).`
             console.error(`📈 ${message}`)
-            process.exitCode = 1
-            // Summarize failures at the end of output
-            process.on("exit", () => {
-                console.error(`❌ ${message}`)
-            })
+            if (config.benchErrorOnThresholdExceeded) {
+                process.exitCode = 1
+                // Summarize failures at the end of output
+                process.on("exit", () => {
+                    console.error(`❌ ${message}`)
+                })
+            }
         } else if (delta < -config.benchPercentThreshold) {
             console.log(
                 // Remove the leading negative when formatting our delta
