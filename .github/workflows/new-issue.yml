@@ -1,0 +1,19 @@
+name: Auto Assign to re-do/re-po
+
+on:
+    issues:
+        types: [opened]
+    pull_request:
+        types: [opened]
+
+env:
+    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+jobs:
+    assign_one_project:
+        runs-on: ubuntu-latest
+        name: Add to project
+        steps:
+            - uses: srggrs/assign-one-project-github-action@1.2.1
+              with:
+                  project: "https://github.com/re-do/re-po/projects/1"
