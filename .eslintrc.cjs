@@ -22,7 +22,7 @@ module.exports = defineConfig({
     parserOptions: {
         project: ["tsconfig.json", "@re-/*/tsconfig.json"]
     },
-    ignorePatterns: ["**/dist/**", "**/demos/**", "**/*js"],
+    ignorePatterns: ["@re-/state/**", "**/dist/**", "**/demos/**", "**/*js"],
     rules: {
         /**
          * General restrictions
