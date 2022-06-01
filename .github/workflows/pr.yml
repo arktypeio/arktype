@@ -11,7 +11,7 @@ defaults:
 jobs:
     core:
         runs-on: ubuntu-latest
-        timeout-minutes: 10
+        timeout-minutes: 20
         steps:
             - name: Checkout re-po
               uses: actions/checkout@v3
@@ -21,18 +21,27 @@ jobs:
             - name: Setup re-po
               uses: ./.github/actions/setup
 
-            - name: lint
+            - id: lint
               run: pnpm lint
 
-            - name: test
+            - id: test
               run: pnpm test
 
-            - name: bench
-              run: pnpm bench
+            - id: bench
+              run: echo "::set-output name=results::$(pnpm bench)"
+
+            - name: Report benches
+              uses: thollander/actions-comment-pull-request@v1
+              with:
+                  message: |
+                      :judge: Your updated bench results:
+                      ${{ steps.bench.outputs.results }}
+                  comment_includes: "updated bench results"
+                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
     compatibility:
         needs: core
-        timeout-minutes: 10
+        timeout-minutes: 20
         strategy:
             matrix:
                 node: [lts/*]
@@ -55,5 +64,5 @@ jobs:
               with:
                   node: ${{ matrix.node }}
 
-            - name: test
+            - id: test
               run: pnpm test
