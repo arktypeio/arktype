@@ -1,4 +1,4 @@
-name: Auto Assign to re-do/re-po
+name: new-issue
 
 on:
     issues:
