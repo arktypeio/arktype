@@ -31,7 +31,7 @@ function createTestState() {
                 fields: {
                     name: {
                         type: "string",
-                        onChange: (_) => ""
+                        onChange: (_) => {}
                     },
                     members: {
                         type: "user[]"
