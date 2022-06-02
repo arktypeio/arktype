@@ -20,7 +20,7 @@ import { ConfiguredSpace, SpaceConfig, SpaceDefinition } from "./space.js"
 export type CheckReferences<
     Def,
     DeclaredTypeName extends string
-> = Root.FastValidate<
+> = Root.Validate<
     Def,
     {
         [TypeName in DeclaredTypeName]: "unknown"
@@ -173,9 +173,9 @@ export type CreateFunction<PredefinedDict> = <
     Options extends ModelOptions,
     ActiveDict = KeyValuate<Options["space"], "dictionary", PredefinedDict>
 >(
-    definition: Root.FastValidate<Def, ActiveDict>,
+    definition: Root.Validate<Def, ActiveDict>,
     options?: Options
-) => Model<Def, Root.FastParse<Def, ActiveDict, {}>>
+) => Model<Def, Root.Parse<Def, ActiveDict, {}>>
 
 /**
  * Create a model.

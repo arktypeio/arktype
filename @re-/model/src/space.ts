@@ -14,7 +14,7 @@ export type MetaKey = "onCycle" | "onResolve"
 export type DictionaryToModels<Dict> = Evaluate<{
     [TypeName in Exclude<keyof Dict, MetaKey>]: Model<
         Dict[TypeName],
-        Root.FastParse<Dict[TypeName], Dict, { [K in TypeName]: true }>
+        Root.Parse<Dict[TypeName], Dict, { [K in TypeName]: true }>
     >
 }>
 
@@ -102,7 +102,7 @@ export type ExtendFunction<BaseDict> = <Dict>(
 ) => Space<Merge<BaseDict, Dict>>
 
 export type DictToTypes<Dict> = Evaluate<{
-    [TypeName in Exclude<keyof Dict, MetaKey>]: Root.FastParse<
+    [TypeName in Exclude<keyof Dict, MetaKey>]: Root.Parse<
         Dict[TypeName],
         Dict,
         { [K in TypeName]: true }
@@ -119,7 +119,7 @@ export type Space<Dict> = {
 }
 
 export type ValidateDictionary<Dict> = {
-    [TypeName in keyof Dict]: Root.FastValidate<Dict[TypeName], Dict>
+    [TypeName in keyof Dict]: Root.Validate<Dict[TypeName], Dict>
 }
 
 export type CompileFunction = <Dict>(

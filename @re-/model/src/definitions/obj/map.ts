@@ -31,9 +31,9 @@ export namespace Map {
         RequiredKey extends keyof Def = Exclude<keyof Def, OptionalKey>
     > = Evaluate<
         {
-            [K in RequiredKey]: Root.FastParse<Def[K], Dict, Seen>
+            -readonly [K in RequiredKey]: Root.Parse<Def[K], Dict, Seen>
         } & {
-            [K in OptionalKey]?: Root.FastParse<Def[K], Dict, Seen>
+            -readonly [K in OptionalKey]?: Root.Parse<Def[K], Dict, Seen>
         }
     >
 

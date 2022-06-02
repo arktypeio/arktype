@@ -12,7 +12,6 @@
         "preinstall": "npx only-allow pnpm",
         "prepare": "husky install",
         "pre-commit": "pretty-quick --staged",
-        "cz": "cz",
         "find-unused": "ts-node ./scripts/findUnused.ts",
         "ci:version": "changeset version && ts-node ./scripts/addVersionSuffixes.ts",
         "ci:publish": "changeset publish"

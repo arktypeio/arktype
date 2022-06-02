@@ -16,7 +16,7 @@ export namespace Alias {
         "onResolve" extends keyof Dict ? true : false,
         Def extends "resolution" ? false : true
     > extends true
-        ? Root.FastParse<
+        ? Root.Parse<
               // @ts-ignore
               Dict["onResolve"],
               WithPropValue<Dict, "resolution", Dict[Def]>,
@@ -26,13 +26,13 @@ export namespace Alias {
               "onCycle" extends keyof Dict ? true : false,
               Def extends keyof Seen ? true : false
           > extends true
-        ? Root.FastParse<
+        ? Root.Parse<
               // @ts-ignore
               Dict["onCycle"],
               WithPropValue<Dict, "cyclic", Dict[Def]>,
               {}
           >
-        : Root.FastParse<Dict[Def], Dict, Seen & { [K in Def]: true }>
+        : Root.Parse<Dict[Def], Dict, Seen & { [K in Def]: true }>
 
     export const parser = createParser(
         {

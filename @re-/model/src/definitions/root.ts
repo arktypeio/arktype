@@ -1,8 +1,8 @@
 import { IsAnyOrUnknown } from "@re-/tools"
 import {
-    definitionTypeError,
     DefinitionTypeError,
     ParseError,
+    ParseErrorMessage,
     typeDefProxy,
     UnknownTypeError
 } from "./internal.js"
@@ -12,10 +12,22 @@ import { createParser, reroot } from "./parser.js"
 import { Str } from "./str/index.js"
 
 export namespace Root {
-    export type FastParse<Def, Dict, Seen> = IsAnyOrUnknown<Def> extends true
+    export type Validate<Def, Dict> = Def extends []
         ? Def
         : Def extends BadDefinitionType
-        ? ParseError<DefinitionTypeError>
+        ? ParseErrorMessage<DefinitionTypeError>
+        : Def extends string
+        ? Str.FastValidate<Def, Dict, Def>
+        : Def extends Literal.Definition
+        ? Def
+        : Def extends object
+        ? { [K in keyof Def]: Validate<Def[K], Dict> }
+        : ParseErrorMessage<UnknownTypeError>
+
+    export type Parse<Def, Dict, Seen> = IsAnyOrUnknown<Def> extends true
+        ? Def
+        : Def extends BadDefinitionType
+        ? ParseErrorMessage<DefinitionTypeError>
         : Def extends string
         ? Str.FastParse<Def, Dict, Seen>
         : Def extends RegExp
@@ -24,23 +36,21 @@ export namespace Root {
         ? Obj.FastParse<Def, Dict, Seen>
         : Def extends Literal.PrimitiveLiteral
         ? Def
-        : ParseError<UnknownTypeError>
-
-    export type FastValidate<Def, Dict> = Def extends []
-        ? Def
-        : Def extends BadDefinitionType
-        ? ParseError<DefinitionTypeError>
-        : Def extends string
-        ? Str.FastValidate<Def, Dict, Def>
-        : Def extends Literal.Definition
-        ? Def
-        : Def extends object
-        ? { [K in keyof Def]: FastValidate<Def[K], Dict> }
-        : ParseError<UnknownTypeError>
+        : ParseErrorMessage<UnknownTypeError>
 
     export type BadDefinitionType = Function | symbol
 
     export const type = typeDefProxy
+
+    export const parse = (def: unknown) => {
+        const defType = typeof def
+        if (defType === "string") {
+            return
+        }
+        if (defType === "function" || defType === "symbol") {
+            throw new ParseError(def, [], `is of disallowed type ${defType}.`)
+        }
+    }
 
     export const parser = createParser(
         {
@@ -48,7 +58,11 @@ export namespace Root {
             parent: () => reroot,
             children: () => [Literal.delegate, Str.delegate, Obj.delegate],
             fallback: (definition, { path }) => {
-                throw new Error(definitionTypeError(definition, path))
+                throw new ParseError(
+                    definition,
+                    path,
+                    `is of disallowed type ${typeof definition}.`
+                )
             }
         },
         { matches: () => true }

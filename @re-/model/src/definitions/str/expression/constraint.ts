@@ -15,7 +15,7 @@ import { Str } from "../str.js"
 import { Expression } from "./expression.js"
 import {
     createParser,
-    ParseError,
+    ParseErrorMessage,
     ParseResult,
     stringifyDefinition,
     typeDefProxy,
@@ -127,14 +127,16 @@ export namespace Constraint {
         Dict,
         Ctx,
         Bounded extends string = ExtractBounded<Def>
-    > = Bounded extends ParseError ? Bounded : Str.FastParse<Bounded, Dict, Ctx>
+    > = Bounded extends ParseErrorMessage
+        ? Bounded
+        : Str.FastParse<Bounded, Dict, Ctx>
 
     export type FastValidate<
         Def extends string,
         Dict,
         Root,
         Bounded extends string = ExtractBounded<Def>
-    > = Bounded extends ParseError
+    > = Bounded extends ParseErrorMessage
         ? Bounded
         : Str.FastValidate<Bounded, Dict, Root>
 
@@ -166,9 +168,9 @@ export namespace Constraint {
             ? Left extends EmbeddedNumberLiteral.Definition
                 ? Right extends EmbeddedNumberLiteral.Definition
                     ? Middle
-                    : ParseError<InvalidBoundError<Middle, Right>>
-                : ParseError<InvalidBoundError<Middle, Left>>
-            : ParseError<UnboundableError<Middle>>
+                    : ParseErrorMessage<InvalidBoundError<Middle, Right>>
+                : ParseErrorMessage<InvalidBoundError<Middle, Left>>
+            : ParseErrorMessage<UnboundableError<Middle>>
         : Parts extends SingleBoundedParts<
               infer Left,
               ComparatorToken,
@@ -177,9 +179,9 @@ export namespace Constraint {
         ? Left extends Comparable
             ? Right extends EmbeddedNumberLiteral.Definition
                 ? Left
-                : ParseError<InvalidBoundError<Left, Right>>
-            : ParseError<UnboundableError<Left>>
-        : ParseError<ConstraintError>
+                : ParseErrorMessage<InvalidBoundError<Left, Right>>
+            : ParseErrorMessage<UnboundableError<Left>>
+        : ParseErrorMessage<ConstraintError>
 
     type NodeBounds = {
         [K in ComparatorToken]?: EmbeddedNumberLiteral.Definition

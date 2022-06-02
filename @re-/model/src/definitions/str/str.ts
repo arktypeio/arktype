@@ -8,7 +8,7 @@ import {
 import {
     BinaryValidate,
     createParser,
-    ParseError,
+    ParseErrorMessage,
     Root,
     typeDefProxy,
     UnknownTypeError
@@ -48,7 +48,7 @@ export namespace Str {
         ? FastParse<Child, Dict, Seen>[]
         : Def extends Constraint.Definition
         ? Constraint.FastParse<Def, Dict, Seen>
-        : ParseError<UnknownTypeError<Def>>
+        : ParseErrorMessage<UnknownTypeError<Def>>
 
     export type FastValidate<Def extends string, Dict, Root> = Def extends
         | Keyword.Definition
@@ -73,7 +73,7 @@ export namespace Str {
         ? FastValidate<Child, Dict, Root>
         : Def extends Constraint.Definition
         ? Constraint.FastValidate<Def, Dict, Root>
-        : ParseError<UnknownTypeError<Def>>
+        : ParseErrorMessage<UnknownTypeError<Def>>
 
     export const type = typeDefProxy as string
 

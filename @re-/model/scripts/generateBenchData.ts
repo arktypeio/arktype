@@ -56,35 +56,34 @@ const generateSpaceJson = (interval: number, seedDefs: object) => {
     return JSON.stringify(defs, null, 4)
 }
 
-const importTemplate = `import { bench } from "@re-/assert"
-import { compile } from "@re-/model"
-
-`
-
 const seedMap = {
     simple: simpleSpaceSeed,
     cyclic: cyclicSpaceSeed
 }
 
 type GenerateSpaceBenchesOptions = {
-    toFile: string
     intervals: number[]
     seed: keyof typeof seedMap
 }
 
 const generateSpaceBenches = ({
-    toFile,
     intervals,
     seed
 }: GenerateSpaceBenchesOptions) => {
-    writeFileSync(toFile, importTemplate)
-    for (const interval of intervals) {
-        const benchName = `compile-${seed}(${interval})`
-        console.log(`Generating bench '${benchName}'...`)
-        const benchForInterval = `bench("${benchName}", () => {
-    const space = compile(${generateSpaceJson(interval, seedMap[seed])}
+    const toFile = fromHere(
+        "..",
+        "src",
+        "__benches__",
+        "generated",
+        `${seed}.ts`
     )
-}).median().type.median()
+    for (const interval of intervals) {
+        const spaceName = `${seed}${interval}`
+        console.log(`Generating dictionary '${spaceName}'...`)
+        const benchForInterval = `export const ${spaceName} = ${generateSpaceJson(
+            interval,
+            seedMap[seed]
+        )} as const
 
 `
         writeFileSync(toFile, benchForInterval, { flag: "a" })
@@ -92,7 +91,6 @@ const generateSpaceBenches = ({
 }
 
 generateSpaceBenches({
-    toFile: fromHere("src", "__benches__", "compileCyclic.bench.ts"),
     intervals: [10, 50, 100, 250, 500],
     seed: "cyclic"
 })

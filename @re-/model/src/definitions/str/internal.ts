@@ -1,11 +1,11 @@
 export * from "../internal.js"
 
-import { ParseError } from "../internal.js"
+import { ParseErrorMessage } from "../internal.js"
 import { Str } from "./index.js"
 
-type BinaryValidationResult<Left, Right> = Left extends ParseError
+type BinaryValidationResult<Left, Right> = Left extends ParseErrorMessage
     ? Left
-    : Right extends ParseError
+    : Right extends ParseErrorMessage
     ? Right
     : Left
 

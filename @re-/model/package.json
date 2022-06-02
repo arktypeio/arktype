@@ -24,8 +24,9 @@
     "scripts": {
         "build": "re tsc",
         "test": "reassert mocha",
-        "bench": "pnpm ts-node ./src/__benches__/compileCyclic.bench.ts",
-        "generateBenches": "pnpm ts-node ./scripts/generateBenches.ts"
+        "bench": "pnpm ts-node ./src/__benches__/cyclic.bench.ts",
+        "generateBenchData": "pnpm ts-node ./scripts/generateBenchData.ts",
+        "benchNode": "pnpm ts-node ./test.ts"
     },
     "dependencies": {
         "@re-/tools": "workspace:*"

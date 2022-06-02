@@ -9,7 +9,14 @@ import {
 import { ParseContext } from "./definitions/parser.js"
 import { ExtractableDefinition } from "./internal.js"
 
-export type ParseError<Message extends string = string> = `Error: ${Message}`
+export type ParseErrorMessage<Message extends string = string> =
+    `Error: ${Message}`
+
+export class ParseError extends Error {
+    constructor(definition: unknown, path: string[], description: string) {
+        super(buildErrorMessage(definition, path, description))
+    }
+}
 
 export const stringifyDefinition = (def: unknown) =>
     toString(def, { quotes: "none", maxNestedStringLength: 50 })
@@ -17,11 +24,15 @@ export const stringifyDefinition = (def: unknown) =>
 export const stringifyPathContext = (path: string[], trailingSpace = false) =>
     path.length ? ` at path ${path.join("/")}${trailingSpace ? " " : ""}` : ""
 
-export const definitionTypeError = (definition: unknown, path: string[]) =>
-    `Definition value ${stringifyDefinition(definition)}${stringifyPathContext(
-        path,
-        true
-    )}is invalid. ${definitionTypeErrorTemplate}`
+/** Description should start with a verb, e.g. "is of invalid type 'function'" or "contains a shallow cycle" */
+export const buildErrorMessage = (
+    definition: unknown,
+    path: string[],
+    description: string
+) =>
+    `Definition ${stringifyDefinition(definition)}${stringifyPathContext(
+        path
+    )} ${description}.`
 
 export const definitionTypeErrorTemplate =
     "Values of type 'function' or 'symbol' are not valid definitions."
