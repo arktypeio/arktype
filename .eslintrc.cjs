@@ -22,7 +22,7 @@ module.exports = defineConfig({
     parserOptions: {
         project: ["tsconfig.json", "@re-/*/tsconfig.json"]
     },
-    ignorePatterns: ["**/dist/**", "**/demos/**", "**/*js"],
+    ignorePatterns: ["@re-/state/**", "**/dist/**", "**/demos/**", "**/*js"],
     rules: {
         /**
          * General restrictions
@@ -86,6 +86,14 @@ module.exports = defineConfig({
             }
         ],
         /**
+         * Don't look for empty expressions as they're easy to catch in a PR
+         * and clutter the IDE as you type
+         */
+        "no-empty": "off",
+        "@typescript-eslint/no-empty-function": "off",
+        "@typescript-eslint/no-empty-interface": "off",
+        "unicorn/no-lonely-if": "off",
+        /**
          * Allow more flexible typing
          */
         "@typescript-eslint/ban-ts-comment": "off",
@@ -121,12 +129,12 @@ module.exports = defineConfig({
          */
         {
             files: ["**/src/**"],
-            excludedFiles: "**/__tests__/**",
+            excludedFiles: ["**/__tests__/**", "**/__benches__/**"],
             rules: {
                 /**
                  * Keep functions and files concise and readable
                  */
-                // TODO [2022-05-31] Reenable these rules
+                // TODO Enable these rules
                 // complexity: ["error", 10],
                 // "max-depth": ["error", 5],
                 // "max-lines": ["error", 250],
@@ -145,7 +153,6 @@ module.exports = defineConfig({
         {
             files: ["**/__tests__/**", "**/__benches__/**"],
             rules: {
-                "@typescript-eslint/no-empty-function": "off",
                 "unicorn/consistent-function-scoping": "off",
                 "unicorn/numeric-separators-style": "off"
             }

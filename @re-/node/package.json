@@ -20,8 +20,7 @@
     },
     "scripts": {
         "build": "pnpm ts-node ./src/cli.ts tsc",
-        "test": "reassert mocha",
-        "lint": "eslint ."
+        "test": "reassert mocha"
     },
     "bin": {
         "re": "./cli.cjs"
