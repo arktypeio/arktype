@@ -5,16 +5,23 @@ import {
     Merge,
     KeyValuate,
     narrow,
-    WithDefaults
+    WithDefaults,
+    Evaluate
 } from "@re-/tools"
 import {
     TypeOf,
     Definition,
     ReferencesOf,
     SpaceResolutions,
-    ValidateSpaceResolutions
+    ValidateSpaceResolutions,
+    compile
 } from "@re-/model"
-import { Interactions } from "./interactions"
+import {
+    getInteractions,
+    InteractionContext,
+    Interactions
+} from "./interactions"
+import { createMemoryDb, Db } from "./db.js"
 
 export type CompileStoredTypeSet<
     FullTypeSet,
@@ -22,9 +29,11 @@ export type CompileStoredTypeSet<
     StoredTypeNames = string
 > = {
     [TypeName in keyof FullTypeSet]: TypeName extends StoredTypeNames
-        ? FullTypeSet[TypeName] & {
-              [K in IdKey]: "number"
-          }
+        ? Evaluate<
+              FullTypeSet[TypeName] & {
+                  [K in IdKey]: "number"
+              }
+          >
         : FullTypeSet[TypeName]
 }
 
@@ -77,15 +86,16 @@ export type CustomInputDefinitions<Types> = {
 }
 
 export type Store<
-    Types extends SpaceResolutions,
-    ProvidedConfig extends StoreConfigOptions<Types> = {},
-    Config extends StoreConfig<Types> = WithDefaults<
-        StoreConfigOptions<Types>,
+    Resolutions extends SpaceResolutions,
+    ProvidedConfig extends StoreConfigOptions<Resolutions> = {},
+    Config extends StoreConfig<Resolutions> = WithDefaults<
+        StoreConfigOptions<Resolutions>,
         ProvidedConfig,
+        // @ts-ignore
         DefaultStoreConfig
     >,
-    FullTypeSet = Types & Config["referencedTypes"],
-    StoredTypeName = keyof Types & string,
+    FullTypeSet = Resolutions & Config["referencedTypes"],
+    StoredTypeName = keyof Resolutions & string,
     StoredTypeSet = CompileStoredTypeSet<
         FullTypeSet,
         Config["idKey"],
@@ -97,13 +107,14 @@ export type Store<
         Config["inputs"]
     >
 > = {
-    [TypeName in keyof Types]: Interactions<
+    [TypeName in keyof Resolutions]: Interactions<
         ParseStoredType<TypeName, StoredTypeSet, Config["idKey"]>,
         TypeOf<TypeName, InputTypeSet>
     >
 }
 
 export type StoreConfigOptions<T> = {
+    db?: Db<any, any, any>
     idKey?: string
     inputs?: CustomInputDefinitions<T>
     referencedTypes?: SpaceResolutions
@@ -117,17 +128,34 @@ const defaultStoreConfig = narrow({
 
 export type DefaultStoreConfig = typeof defaultStoreConfig
 
-export type StoreConfig<T> = Required<StoreConfigOptions<T>>
+export type StoreConfig<T> = Omit<Required<StoreConfigOptions<T>>, "db">
 
-export const createStore = <
+type CreateStore = <
     Types extends SpaceResolutions,
     ProvidedConfig extends StoreConfigOptions<Types> = {}
 >(
-    types: ValidateSpaceResolutions<Types>,
-    { inputs }: Narrow<StoreConfigOptions<Types>>
-) => {
+    types: Narrow<ValidateSpaceResolutions<Types>>,
+    options?: Narrow<StoreConfigOptions<Types>>
+) => Store<Types, ProvidedConfig>
+
+export const createStore: CreateStore = (types, options = {}) => {
+    const context = {
+        db:
+            options.db ??
+            createMemoryDb(
+                // @ts-ignore
+                transform(types, ([typeName, definition]) => {
+                    return [typeName, []]
+                }),
+                { idKey: options.idKey }
+            ),
+        idKey: options.idKey ?? "id",
+        // @ts-ignore
+        model: compile(types)
+    }
     const store = transform(types, ([typeName, definition]) => {
-        return [typeName, definition]
-    }) as Store<Types, ProvidedConfig>
-    return store
+        // @ts-ignore
+        return [typeName, getInteractions(typeName as string, context)]
+    })
+    return store as any
 }

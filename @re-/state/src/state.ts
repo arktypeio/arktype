@@ -2,7 +2,9 @@ import {
     NonRecursible,
     Unlisted,
     KeyValuate,
+    Segment,
     Join,
+    TypeError,
     Narrow,
     ListPossibleTypes,
     Recursible,
@@ -11,6 +13,7 @@ import {
     DeepUpdate,
     And,
     Or,
+    Not,
     ExcludeNever,
     NeverEmptyObject,
     IntersectProps,
@@ -19,17 +22,20 @@ import {
     withDefaults,
     ElementOf
 } from "@re-/tools"
-import { model, TypeOf, CheckReferences, SpaceResolutions } from "@re-/model"
+import { create, TypeOf, CheckReferences, SpaceResolutions } from "@re-/model"
 import { ConfigureStoreOptions, Store as ReduxStore } from "@reduxjs/toolkit"
 import {
     createMemoryDb,
     Interactions,
+    Store,
     ParseStoredType,
     CompileInputTypeSet,
     CompileStoredTypeSet
 } from "./store"
 
 /**
+ * This is a hacky version of ExactObject from @re-/tools that accomodates anomalies
+ * in the way TS interprets a statelessly config to avoid widening. Notable differences:
  * - Assumes Compare is passed as an arg directly and therefore will always be a simple
  *   object, so we don't have to worry about things like optional properties that only exist
  *   on a type. We do still have to worry about any/unknown as they can be inferred.
@@ -92,8 +98,6 @@ type DefinitionFromConfig<Config, UseDefinedTypeNames extends boolean> = {
     [K in keyof Config]: DefinitionFromField<Config[K], UseDefinedTypeNames>
 }
 
-type Segment = string | number
-
 type DefinitionFromField<
     Config,
     UseDefinedTypeNames extends boolean
@@ -141,7 +145,7 @@ type ModelConfigRecurse<
     DeclaredTypeNames extends string[]
 > = Config extends string
     ? PathToType extends Segment[]
-        ? `A type has already been determined via ${Join<PathToType>}.`
+        ? TypeError<`A type has already been determined via ${Join<PathToType>}.`>
         : CheckReferences<Config, ElementOf<DeclaredTypeNames>>
     : ModelConfigOptions<
           T,
@@ -340,7 +344,7 @@ export const createState: CreateState = (config, options) => {
         idKey
     )
     const storedPaths = findStoredPaths(config, "")
-    const model = model(modelTypeDef, { space: { resolutions: modelTypeSet } })
+    const model = create(modelTypeDef, { space: { resolutions: modelTypeSet } })
     const initialState = model.generate()
     // copy the object by value
     const persisted = createMemoryDb(
@@ -431,7 +435,7 @@ const extractTypeSet = (
             if (!(v.stores in externalTypeSet)) {
                 throw new Error(
                     `Stored type '${v.stores}' was not provided in your typeSet via options.` +
-                        ` If you'd like to define it the config, use 'defines' instead of 'stores'.`
+                        ` If you'd like to define it in the config, use 'defines' instead of 'stores'.`
                 )
             }
             return { ...typeSet, [v.stores]: externalTypeSet[v.stores] }
