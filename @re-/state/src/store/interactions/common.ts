@@ -1,7 +1,9 @@
 import { DeepUpdate, DeepPartial } from "@re-/tools"
-import { create } from "./create.js"
 import { Space } from "@re-/model"
 import { Db, DbContents } from "../db.js"
+import { create } from "./create.js"
+import { all } from "./all.js"
+import { filter } from "./filter"
 
 export type Interactions<Stored, Input> = {
     create: (data: Input) => Stored
@@ -29,7 +31,9 @@ export const getInteractions = <
     context: Context
 ): Partial<Interactions<Stored, Input>> => {
     return {
-        create: (data) => create(typeName, data, context)
+        all: () => all(typeName, context),
+        create: (data) => create(typeName, data, context),
+        filter: (by) => filter(typeName, by, context)
     }
 }
 
