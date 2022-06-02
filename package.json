@@ -12,6 +12,7 @@
         "preinstall": "npx only-allow pnpm",
         "prepare": "husky install",
         "pre-commit": "pretty-quick --staged",
+        "cz": "cz",
         "find-unused": "ts-node ./scripts/findUnused.ts",
         "ci:version": "changeset version && ts-node ./scripts/addVersionSuffixes.ts",
         "ci:publish": "changeset publish"
@@ -24,6 +25,8 @@
         "@types/node": "17.0.36",
         "@typescript-eslint/eslint-plugin": "5.22.0",
         "@typescript-eslint/parser": "5.22.0",
+        "commitizen": "4.2.4",
+        "cz-conventional-changelog": "3.3.0",
         "eslint": "8.15.0",
         "eslint-config-prettier": "8.5.0",
         "eslint-define-config": "1.4.1",
@@ -38,5 +41,10 @@
         "ts-morph": "15.0.0",
         "ts-node": "10.8.0",
         "typescript": "4.7.2"
+    },
+    "config": {
+        "commitizen": {
+            "path": "cz-conventional-changelog"
+        }
     }
 }
