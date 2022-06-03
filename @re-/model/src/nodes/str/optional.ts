@@ -1,4 +1,4 @@
-import { Node, ParseFunction, Parser } from "./internal.js"
+import { NonTerminalNode } from "./internal.js"
 import { Str } from "./str.js"
 
 const invalidModifierError = `Modifier '?' is only valid at the end of a type definition.`
@@ -16,35 +16,23 @@ export namespace Optional {
         ? Str.Validate<Child, Dict, Root>
         : InvalidModifierError
 
-    class OptionalParser extends Parser<Definition> {
+    export class Node extends NonTerminalNode<Definition> {
         next() {
             // if (this.ctx.stringRoot !== this.def) {
             //     throw new Error(invalidModifierError)
             // }
-            return { def: this.def.slice(0, -1), ctx: this.ctx, node: Str.node }
+            return Str.parse(this.def.slice(0, -1), this.ctx)
         }
 
         validate(value: unknown) {
             if (value === undefined) {
                 return true
             }
-            return this.parseNext().validate(value)
+            return this.next().validate(value)
         }
-    }
 
-    export const node: Node<Definition, string> = {
-        matches: (def) => def.endsWith("?"),
-        parser: OptionalParser
-    }
-
-    export const parse: ParseFunction<string> = (def, ctx) => {
-        return {
-            validate: (value: unknown) => {
-                if (value === undefined) {
-                    return true
-                }
-                return Str.parse(def.slice(0, -1), ctx).validate(value)
-            }
+        generate() {
+            return undefined
         }
     }
 }

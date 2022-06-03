@@ -6,8 +6,6 @@ import { StringLiteral } from "./embeddedLiteral/stringLiteral.js"
 import { Constraint, Intersection, List, Union } from "./expression/index.js"
 import {
     BinaryValidate,
-    Node,
-    ParseError,
     ParseErrorMessage,
     ParseFunction,
     UnknownTypeError
@@ -70,16 +68,11 @@ export namespace Str {
         ? Constraint.Parse<Def, Dict, Seen>
         : ParseErrorMessage<UnknownTypeError<Def>>
 
-    export const node: Node<string, unknown> = {
-        matches: (def) => typeof def === "string",
-        children: [Optional.node, Keyword.node]
-    }
-
     export const parse: ParseFunction<string> = (def, ctx) => {
         if (def.endsWith("?")) {
-            return Optional.parse(def, ctx)
+            return new Optional.Node(def, ctx)
         } else if (def in Keyword.handlers) {
-            return Keyword.parse(def, ctx)
+            return new Keyword.Node(def, ctx)
         }
         throw new Error("hi")
         // if (defType === "function" || defType === "symbol") {
