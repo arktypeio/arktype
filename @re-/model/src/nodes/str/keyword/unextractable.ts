@@ -1,4 +1,5 @@
-import { defineKeywords, UngeneratableError } from "./internal.js"
+import { UngeneratableError } from "../../../errors.js"
+import { defineKeywords } from "./common.js"
 import { numberHandlers } from "./number.js"
 import { stringHandlers } from "./string.js"
 

@@ -29,6 +29,7 @@ export const errorsFromCustomValidator = (
 ): ValidationErrors => {
     const result = customValidator(...args)
     if (result && typeof result === "string") {
+        // @ts-ignore
         return validationError({ path: args[2].ctx.path, message: result })
     } else if (result) {
         return result as ValidationErrors

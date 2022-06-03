@@ -1,4 +1,5 @@
-import { defineKeywords, UngeneratableError } from "./internal.js"
+import { UngeneratableError } from "../../../errors.js"
+import { defineKeywords } from "./common.js"
 
 // These are the named types we can extract from a valueType at runtime
 export const extractableHandlers = defineKeywords({

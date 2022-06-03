@@ -1,16 +1,16 @@
 import { Func, isAlpha, isAlphaNumeric } from "@re-/tools"
 import { StringLiteral } from "../embeddedLiteral/stringLiteral.js"
-import { defineKeywords, listKeywords } from "./internal.js"
+import { defineKeywords, listKeywords } from "./common.js"
 
 const emailRegex = /^(.+)@(.+)$/
 
 const validateLiteral = (
     valueType: unknown,
     validate: Func<[string], boolean>
-) =>
-    typeof valueType === "string" &&
-    StringLiteral.matches(valueType) &&
-    validate(StringLiteral.valueFrom(valueType))
+) => typeof valueType === "string"
+// &&
+// StringLiteral.matches(valueType) &&
+// validate(StringLiteral.valueFrom(valueType))
 
 export const stringHandlers = defineKeywords({
     string: {

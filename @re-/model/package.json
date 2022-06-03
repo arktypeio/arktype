@@ -21,6 +21,9 @@
             "require": "./dist/cjs/index.js"
         }
     },
+    "imports": {
+        "#node": "./src/nodes/node.js"
+    },
     "scripts": {
         "build": "re tsc",
         "test": "reassert mocha",

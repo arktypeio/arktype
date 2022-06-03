@@ -6,11 +6,7 @@ import {
 } from "./errors.js"
 import { errorsFromCustomValidator, typeDefProxy } from "./internal.js"
 import { Root } from "./nodes/index.js"
-import {
-    defaultParseContext,
-    InheritableMethodContext,
-    ParseContext
-} from "./nodes/parser.js"
+import { defaultParseContext, ParseContext } from "./nodes/node.js"
 import { ConfiguredSpace, SpaceConfig, SpaceDefinition } from "./space.js"
 
 /*
@@ -60,7 +56,7 @@ export type ValidateConfig = {
 export type CustomValidator = (
     value: unknown,
     errors: ValidationErrors,
-    ctx: Omit<InheritableMethodContext<any, any>, "components">
+    ctx: ParseContext
 ) => string | ValidationErrors
 
 export type AssertOptions = ValidateConfig
@@ -75,7 +71,7 @@ export type ValidateFunction = <Options extends ValidateConfig>(
 
 const createRootValidate =
     (
-        validate: ReturnType<typeof Root.parser.parse>["validate"],
+        validate: any,
         definition: unknown,
         customValidator: CustomValidator | undefined
     ): ValidateFunction =>
@@ -85,6 +81,7 @@ const createRootValidate =
             errorsByPath = errorsFromCustomValidator(customValidator, [
                 value,
                 errorsByPath,
+                // @ts-ignore
                 { def: definition, ctx: defaultParseContext }
             ])
         }
@@ -136,7 +133,7 @@ export const createCreateFunction =
             validate: internalValidate,
             references,
             generate
-        } = Root.parser.parse(definition, context)
+        } = Root.Node.parse(definition, context) as any
         const validate = createRootValidate(
             internalValidate,
             definition,

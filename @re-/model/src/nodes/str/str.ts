@@ -1,17 +1,29 @@
+import { ParseErrorMessage, UnknownTypeError } from "../../errors.js"
+import { ParentNode } from "../node.js"
 import { Alias } from "./alias.js"
 import { EmbeddedBigintLiteral } from "./embeddedLiteral/embeddedBigintLiteral.js"
 import { EmbeddedNumberLiteral } from "./embeddedLiteral/embeddedNumberLiteral.js"
 import { EmbeddedRegexLiteral } from "./embeddedLiteral/embeddedRegexLiteral.js"
 import { StringLiteral } from "./embeddedLiteral/stringLiteral.js"
 import { Constraint, Intersection, List, Union } from "./expression/index.js"
-import {
-    BinaryValidate,
-    ParentNode,
-    ParseErrorMessage,
-    UnknownTypeError
-} from "./internal.js"
 import { Keyword } from "./keyword/index.js"
 import { Optional } from "./optional.js"
+
+type BinaryValidationResult<Left, Right> = Left extends ParseErrorMessage
+    ? Left
+    : Right extends ParseErrorMessage
+    ? Right
+    : Left
+
+type BinaryValidate<
+    Left extends string,
+    Right extends string,
+    Dict,
+    Root
+> = BinaryValidationResult<
+    Str.Validate<Left, Dict, Root>,
+    Str.Validate<Right, Dict, Root>
+>
 
 export namespace Str {
     export type Validate<Def extends string, Dict, Root> = Def extends

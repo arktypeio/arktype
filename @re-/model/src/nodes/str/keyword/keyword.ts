@@ -1,7 +1,8 @@
 import { Merge } from "@re-/tools"
+import { HandledTypes } from "./common.js"
 import { extractableHandlers } from "./extractable.js"
-import { BaseNodeClass, HandledTypes, TerminalNode } from "./internal.js"
 import { unextractableHandlers } from "./unextractable.js"
+import { BaseNodeClass, TerminalNode } from "#node"
 
 export namespace Keyword {
     export type Definition = keyof KeywordTypes

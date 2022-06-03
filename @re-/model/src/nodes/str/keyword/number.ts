@@ -1,4 +1,4 @@
-import { defineKeywords, listKeywords } from "./internal.js"
+import { defineKeywords, listKeywords } from "./common.js"
 
 export const numberHandlers = defineKeywords({
     number: {

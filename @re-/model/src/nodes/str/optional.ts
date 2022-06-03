@@ -1,4 +1,4 @@
-import { BaseNodeClass, NonTerminalNode } from "./internal.js"
+import { BaseNodeClass, NonTerminalNode } from "../node.js"
 import { Str } from "./str.js"
 
 const invalidModifierError = `Modifier '?' is only valid at the end of a type definition.`

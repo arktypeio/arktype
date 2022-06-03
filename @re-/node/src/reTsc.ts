@@ -62,7 +62,7 @@ type SwcOptions = {
 const swc = ({ outDir, moduleType, sourceMaps }: SwcOptions) => {
     let cmd = `node ${requireResolve(
         "@swc/cli"
-    )} --out-dir ${outDir} -C jsc.target=es2015 --quiet `
+    )} --out-dir ${outDir} -C jsc.target=es2020 --quiet `
     if (moduleType) {
         cmd += `-C module.type=${moduleType} `
     }
@@ -73,14 +73,29 @@ const swc = ({ outDir, moduleType, sourceMaps }: SwcOptions) => {
     shell(cmd, { suppressCmdStringLogging: true })
 }
 
+const buildDistPackageJson = (type: "module" | "commonjs") => {
+    const contents: any = { type }
+    if (packageJson.imports) {
+        for (const [alias, path] of Object.entries(packageJson.imports)) {
+            if (typeof path === "string" && path.startsWith("./src/")) {
+                if (!contents.imports) {
+                    contents.imports = {}
+                }
+                contents.imports[alias] = path.replace("./src/", "./")
+            }
+        }
+    }
+    return contents
+}
+
 export const buildEsm = () => {
     swc({ outDir: mjsOut, sourceMaps: true })
-    writeJson(join(mjsOut, "package.json"), { type: "module" })
+    writeJson(join(mjsOut, "package.json"), buildDistPackageJson("module"))
 }
 
 export const buildCjs = () => {
     swc({ outDir: cjsOut, moduleType: "commonjs", sourceMaps: true })
-    writeJson(join(cjsOut, "package.json"), { type: "commonjs" })
+    writeJson(join(cjsOut, "package.json"), buildDistPackageJson("commonjs"))
 }
 
 type Transpiler = () => void

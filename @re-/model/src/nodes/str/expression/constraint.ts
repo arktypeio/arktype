@@ -1,8 +1,8 @@
 import { ElementOf, Spliterate } from "@re-/tools"
+import { ParseErrorMessage } from "../../../errors.js"
 import { EmbeddedNumberLiteral } from "../embeddedLiteral/embeddedNumberLiteral.js"
 import { numberKeywords, stringKeywords } from "../keyword/index.js"
 import { Str } from "../str.js"
-import { ParseErrorMessage } from "./internal.js"
 
 export const getComparables = () => [...numberKeywords, ...stringKeywords]
 

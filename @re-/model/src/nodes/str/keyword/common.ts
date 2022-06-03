@@ -1,7 +1,5 @@
 import { ListPossibleTypes } from "@re-/tools"
-import { ParseContext } from "./internal.js"
-
-export * from "../internal.js"
+import { ParseContext } from "../../node.js"
 
 export type KeywordHandler = {
     generate: (ctx: ParseContext) => any
