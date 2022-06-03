@@ -6,7 +6,7 @@ import { EmbeddedNumberLiteral } from "./embeddedLiteral/embeddedNumberLiteral.j
 import { EmbeddedRegexLiteral } from "./embeddedLiteral/embeddedRegexLiteral.js"
 import { StringLiteral } from "./embeddedLiteral/stringLiteral.js"
 import { Constraint, Intersection, List, Union } from "./expression/index.js"
-import { Keyword } from "./keyword/index.js"
+import { Keyword } from "./keyword.js"
 import { Optional } from "./optional.js"
 
 type BinaryValidationResult<Left, Right> = Left extends ParseErrorMessage
@@ -56,7 +56,7 @@ export namespace Str {
         Dict,
         Seen
     > = Def extends Keyword.Definition
-        ? Keyword.KeywordTypes[Def]
+        ? Keyword.Types[Def]
         : Def extends keyof Dict
         ? Alias.Parse<Def, Dict, Seen>
         : Def extends Optional.Definition<infer Child>

@@ -14,14 +14,7 @@ export type ShallowExtractableDefinition =
 export type ExtractableDefinition = TreeOf<ShallowExtractableDefinition>
 
 // Allow a user to extract types from arbitrary chains of props
-export const typeDefProxy: any = new Proxy(() => typeDefProxy, {
-    get: (target, prop) => {
-        if (prop in target) {
-            return (target as any)[prop]
-        }
-        return typeDefProxy
-    }
-})
+export const typeDefProxy: any = new Proxy({}, { get: () => typeDefProxy })
 
 export const errorsFromCustomValidator = (
     customValidator: CustomValidator,
