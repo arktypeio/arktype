@@ -1,16 +1,16 @@
 import { Evaluate, isEmpty, KeyValuate } from "@re-/tools"
-import { Root } from "./definitions/index.js"
-import {
-    defaultParseContext,
-    InheritableMethodContext,
-    ParseContext
-} from "./definitions/parser.js"
 import {
     duplicateSpaceError,
     stringifyErrors,
     ValidationErrors
 } from "./errors.js"
 import { errorsFromCustomValidator, typeDefProxy } from "./internal.js"
+import { Root } from "./nodes/index.js"
+import {
+    defaultParseContext,
+    InheritableMethodContext,
+    ParseContext
+} from "./nodes/parser.js"
 import { ConfiguredSpace, SpaceConfig, SpaceDefinition } from "./space.js"
 
 /*

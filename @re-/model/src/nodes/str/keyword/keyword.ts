@@ -1,6 +1,6 @@
 import { Merge } from "@re-/tools"
 import { extractableHandlers } from "./extractable.js"
-import { HandledTypes, TerminalNode } from "./internal.js"
+import { BaseNodeClass, HandledTypes, TerminalNode } from "./internal.js"
 import { unextractableHandlers } from "./unextractable.js"
 
 export namespace Keyword {
@@ -13,7 +13,14 @@ export namespace Keyword {
         { function: (...args: any[]) => any }
     >
 
-    export class Node extends TerminalNode<Definition> {
+    export const Node: BaseNodeClass<
+        Definition,
+        string
+    > = class extends TerminalNode<Definition> {
+        static matches(def: string): def is Definition {
+            return def in handlers
+        }
+
         validate(value: unknown) {
             return typeof value === this.def
         }

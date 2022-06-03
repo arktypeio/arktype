@@ -1,4 +1,4 @@
-import { NonTerminalNode } from "./internal.js"
+import { BaseNodeClass, NonTerminalNode } from "./internal.js"
 import { Str } from "./str.js"
 
 const invalidModifierError = `Modifier '?' is only valid at the end of a type definition.`
@@ -16,12 +16,19 @@ export namespace Optional {
         ? Str.Validate<Child, Dict, Root>
         : InvalidModifierError
 
-    export class Node extends NonTerminalNode<Definition> {
+    export const Node: BaseNodeClass<
+        Definition,
+        string
+    > = class extends NonTerminalNode<Definition> {
+        static matches(def: string): def is Definition {
+            return def.endsWith("?")
+        }
+
         next() {
             // if (this.ctx.stringRoot !== this.def) {
             //     throw new Error(invalidModifierError)
             // }
-            return Str.parse(this.def.slice(0, -1), this.ctx)
+            return Str.Node.parse(this.def.slice(0, -1), this.ctx)
         }
 
         validate(value: unknown) {

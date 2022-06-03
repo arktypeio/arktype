@@ -6,8 +6,8 @@ import { StringLiteral } from "./embeddedLiteral/stringLiteral.js"
 import { Constraint, Intersection, List, Union } from "./expression/index.js"
 import {
     BinaryValidate,
+    ParentNode,
     ParseErrorMessage,
-    ParseFunction,
     UnknownTypeError
 } from "./internal.js"
 import { Keyword } from "./keyword/index.js"
@@ -68,15 +68,15 @@ export namespace Str {
         ? Constraint.Parse<Def, Dict, Seen>
         : ParseErrorMessage<UnknownTypeError<Def>>
 
-    export const parse: ParseFunction<string> = (def, ctx) => {
-        if (def.endsWith("?")) {
-            return new Optional.Node(def, ctx)
-        } else if (def in Keyword.handlers) {
-            return new Keyword.Node(def, ctx)
+    export const Node: ParentNode<string, unknown> = {
+        matches: (def): def is string => typeof def === "string",
+        parse: (def, ctx) => {
+            if (Optional.Node.matches(def, ctx)) {
+                return new Optional.Node(def, ctx)
+            } else if (Keyword.Node.matches(def, ctx)) {
+                return new Keyword.Node(def, ctx)
+            }
+            throw new Error("hi")
         }
-        throw new Error("hi")
-        // if (defType === "function" || defType === "symbol") {
-        //     throw new ParseError(def, [], `is of disallowed type ${defType}.`)
-        // }
     }
 }

@@ -2,12 +2,10 @@ import { bench } from "@re-/assert"
 import { defaultParseContext } from "./src/nodes/node.js"
 import { Root } from "./src/nodes/root.js"
 
-console.log(Root.parse("string?", defaultParseContext).validate("test"))
+bench("validate undefined", () => {
+    Root.Node.parse("string?", defaultParseContext).validate(undefined)
+}).median("42.00ns")
 
-bench("f parse", () => {
-    Root.parse("string?", defaultParseContext).validate(undefined)
-}).median("43.00ns")
-
-bench("f parse", () => {
-    Root.parse("string?", defaultParseContext).validate("test")
-}).median("95.00ns")
+bench("valdiate string", () => {
+    Root.Node.parse("string?", defaultParseContext).validate("test")
+}).median("98.00ns")

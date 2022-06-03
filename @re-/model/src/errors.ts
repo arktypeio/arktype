@@ -6,8 +6,8 @@ import {
     toString,
     uncapitalize
 } from "@re-/tools"
-import { ParseContext } from "./definitions/parser.js"
 import { ExtractableDefinition } from "./internal.js"
+import { ParseContext } from "./nodes/node.js"
 
 export type ParseErrorMessage<Message extends string = string> =
     `Error: ${Message}`

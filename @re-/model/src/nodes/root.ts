@@ -5,7 +5,7 @@ import {
     UnknownTypeError
 } from "../errors.js"
 import { Literal } from "./literal/index.js"
-import { ParseFunction } from "./node.js"
+import { ParentNode } from "./node.js"
 import { Obj } from "./obj/index.js"
 import { Str } from "./str/index.js"
 
@@ -38,11 +38,16 @@ export namespace Root {
 
     export type BadDefinitionType = Function | symbol
 
-    export const parse: ParseFunction<unknown> = (def, ctx) => {
-        const defType = typeof def
-        if (defType === "string") {
-            return Str.parse(def, ctx)
+    export const Node: ParentNode<unknown, unknown> = {
+        matches: (def): def is unknown => true,
+        parse: (def, ctx) => {
+            if (Str.Node.matches(def, ctx)) {
+                return Str.Node.parse(def, ctx)
+            }
+            throw new Error("nop")
+            // if (defType === "function" || defType === "symbol") {
+            //     throw new ParseError(def, [], `is of disallowed type ${defType}.`)
+            // }
         }
-        throw new Error("nop")
     }
 }
