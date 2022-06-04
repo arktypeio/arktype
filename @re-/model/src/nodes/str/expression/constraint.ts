@@ -1,14 +1,16 @@
-import { ElementOf, Spliterate } from "@re-/tools"
+import { Spliterate } from "@re-/tools"
 import { ParseErrorMessage } from "../../../errors.js"
 import { EmbeddedNumberLiteral } from "../embeddedLiteral/embeddedNumberLiteral.js"
-import { numberKeywords, stringKeywords } from "../keyword/index.js"
+import { Keyword } from "../keyword.js"
 import { Str } from "../str.js"
 
-export const getComparables = () => [...numberKeywords, ...stringKeywords]
+type Comparable = {
+    [K in keyof Keyword.Types]: Keyword.Types[K] extends number | string
+        ? K
+        : never
+}[keyof Keyword.Types]
 
-export type Comparable = ElementOf<ReturnType<typeof getComparables>>
-
-export type ComparatorToken = "<=" | ">=" | "<" | ">"
+type ComparatorToken = "<=" | ">=" | "<" | ">"
 
 type InvalidBoundError<
     Inner extends string,
