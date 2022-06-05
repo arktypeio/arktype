@@ -24,9 +24,11 @@ export namespace Map {
         object
     > = class extends BaseNode<object> {
         // We don't need any extra validation besides Obj's match function
-        static matches = (def: object): def is object => true
+        static matches(def: object): def is object {
+            return true
+        }
 
-        next() {
+        props() {
             return Object.entries(this.def).map(([prop, propDef]) => [
                 prop,
                 Root.Node.parse(propDef, {
@@ -45,14 +47,14 @@ export namespace Map {
             if (keyDiff) {
                 return false
             }
-            return this.next().every(([prop, node]) =>
+            return this.props().every(([prop, node]) =>
                 node.validate((value as any)[prop])
             )
         }
 
         generate() {
             return Object.fromEntries(
-                this.next().map(([prop, node]) => [prop, node.generate()])
+                this.props().map(([prop, node]) => [prop, node.generate()])
             )
         }
     }
