@@ -1,11 +1,6 @@
 import { Entry } from "@re-/tools"
 import { Root } from "../root.js"
-import {
-    BaseNode,
-    BaseNodeClass,
-    buildUnassignableErrorMessage,
-    ErrorsByPath
-} from "#node"
+import { BaseNode, BaseNodeClass, ErrorsByPath } from "#node"
 
 export namespace Tuple {
     export type Definition = unknown[] | readonly unknown[]
@@ -21,7 +16,7 @@ export namespace Tuple {
                 elementIndex,
                 Root.Node.parse(elementDef, {
                     ...this.ctx,
-                    path: [...this.ctx.path, `${elementIndex}`],
+                    path: this.ctx.path + `/${elementIndex}`,
                     shallowSeen: []
                 })
             ]) as Entry<number, BaseNode<unknown>>[]
@@ -29,17 +24,11 @@ export namespace Tuple {
 
         validate(value: unknown, errors: ErrorsByPath) {
             if (!Array.isArray(value)) {
-                errors[this.ctx.path.join("/")] = buildUnassignableErrorMessage(
-                    this.def,
-                    value
-                )
+                this.addUnassignable(value, errors)
                 return
             }
             if (this.def.length !== value.length) {
-                errors[this.ctx.path.join("/")] = buildUnassignableErrorMessage(
-                    this.def,
-                    value
-                )
+                this.addUnassignable(value, errors)
                 return
             }
             for (const [i, node] of this.elements()) {

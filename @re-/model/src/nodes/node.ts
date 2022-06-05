@@ -2,7 +2,7 @@ import { toString } from "@re-/tools"
 import { ModelConfig } from "../model.js"
 
 export type ParseContext = {
-    path: string[]
+    path: string
     seen: string[]
     shallowSeen: string[]
     config: ModelConfig
@@ -16,7 +16,7 @@ export const defaultParseContext: ParseContext = {
             config: {}
         }
     },
-    path: [],
+    path: "",
     seen: [],
     shallowSeen: [],
     stringRoot: null
@@ -31,7 +31,17 @@ export type ErrorsByPath = Record<string, string>
 export abstract class BaseNode<T> {
     constructor(protected def: T, protected ctx: ParseContext) {}
 
-    abstract validate(value: unknown, errors: Record<string, string>): void
+    protected defToString() {
+        return stringifyDefinition(this.def)
+    }
+
+    protected addUnassignable(value: unknown, errors: ErrorsByPath) {
+        errors[this.ctx.path] = `${toString(value, {
+            maxNestedStringLength: 50
+        })} is not assignable to ${this.defToString()}.`
+    }
+
+    abstract validate(value: unknown, errors: ErrorsByPath): void
     abstract generate(): unknown
 }
 
