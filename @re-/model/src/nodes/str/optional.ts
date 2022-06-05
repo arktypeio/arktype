@@ -1,5 +1,5 @@
-import { BaseNode, BaseNodeClass } from "../node.js"
 import { Str } from "./str.js"
+import { BaseNode, BaseNodeClass, ErrorsByPath } from "#node"
 
 const invalidModifierError = `Modifier '?' is only valid at the end of a type definition.`
 
@@ -31,11 +31,10 @@ export namespace Optional {
             return Str.Node.parse(this.def.slice(0, -1), this.ctx)
         }
 
-        validate(value: unknown) {
-            if (value === undefined) {
-                return true
+        validate(value: unknown, errors: ErrorsByPath) {
+            if (value !== undefined) {
+                this.next().validate(value, errors)
             }
-            return this.next().validate(value)
         }
 
         generate() {

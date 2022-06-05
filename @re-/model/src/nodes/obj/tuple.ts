@@ -1,5 +1,11 @@
+import { Entry } from "@re-/tools"
 import { Root } from "../root.js"
-import { BaseNode, BaseNodeClass } from "#node"
+import {
+    BaseNode,
+    BaseNodeClass,
+    buildUnassignableErrorMessage,
+    ErrorsByPath
+} from "#node"
 
 export namespace Tuple {
     export type Definition = unknown[] | readonly unknown[]
@@ -10,28 +16,39 @@ export namespace Tuple {
     > = class extends BaseNode<Definition> {
         static matches = (def: object): def is Definition => Array.isArray(def)
 
-        next() {
-            return this.def.map((elementDef, elementIndex) =>
+        elements() {
+            return this.def.map((elementDef, elementIndex) => [
+                elementIndex,
                 Root.Node.parse(elementDef, {
                     ...this.ctx,
                     path: [...this.ctx.path, `${elementIndex}`],
                     shallowSeen: []
                 })
-            )
+            ]) as Entry<number, BaseNode<unknown>>[]
         }
 
-        validate(value: unknown) {
+        validate(value: unknown, errors: ErrorsByPath) {
             if (!Array.isArray(value)) {
-                return false
+                errors[this.ctx.path.join("/")] = buildUnassignableErrorMessage(
+                    this.def,
+                    value
+                )
+                return
             }
             if (this.def.length !== value.length) {
-                return false
+                errors[this.ctx.path.join("/")] = buildUnassignableErrorMessage(
+                    this.def,
+                    value
+                )
+                return
             }
-            return this.next().every((node, i) => node.validate(value[i]))
+            for (const [i, node] of this.elements()) {
+                node.validate(value[i], errors)
+            }
         }
 
         generate() {
-            return this.next().map((node) => node.generate())
+            return this.elements().map(([, node]) => node.generate())
         }
     }
 }

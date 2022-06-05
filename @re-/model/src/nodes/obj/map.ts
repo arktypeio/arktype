@@ -1,7 +1,12 @@
 import { diffSets, Entry, Evaluate } from "@re-/tools"
 import { Root } from "../root.js"
 import { Optional } from "../str/index.js"
-import { BaseNode, BaseNodeClass } from "#node"
+import {
+    BaseNode,
+    BaseNodeClass,
+    buildUnassignableErrorMessage,
+    ErrorsByPath
+} from "#node"
 
 export namespace Map {
     export type Parse<
@@ -39,17 +44,25 @@ export namespace Map {
             ]) as Entry<string, BaseNode<unknown>>[]
         }
 
-        validate(value: unknown) {
+        validate(value: unknown, errors: ErrorsByPath) {
             if (!value || typeof value !== "object" || Array.isArray(value)) {
-                return false
+                errors[this.ctx.path.join("/")] = buildUnassignableErrorMessage(
+                    this.def,
+                    value
+                )
+                return
             }
             const keyDiff = diffSets(Object.keys(this.def), Object.keys(value))
             if (keyDiff) {
-                return false
+                errors[this.ctx.path.join("/")] = buildUnassignableErrorMessage(
+                    this.def,
+                    value
+                )
+                return
             }
-            return this.props().every(([prop, node]) =>
-                node.validate((value as any)[prop])
-            )
+            for (const [prop, node] of this.props()) {
+                node.validate((value as any)[prop], errors)
+            }
         }
 
         generate() {

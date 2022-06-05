@@ -1,6 +1,12 @@
 import { isAlpha, isAlphaNumeric } from "@re-/tools"
 import { UngeneratableError } from "#errors"
-import { BaseNode, BaseNodeClass, ParseContext } from "#node"
+import {
+    BaseNode,
+    BaseNodeClass,
+    buildUnassignableErrorMessage,
+    ErrorsByPath,
+    ParseContext
+} from "#node"
 
 type KeywordHandler<T> = {
     generate: (ctx: ParseContext) => T
@@ -140,8 +146,13 @@ export namespace Keyword {
             return def in keywords
         }
 
-        validate(value: unknown) {
-            return keywords[this.def].validate(value)
+        validate(value: unknown, errors: ErrorsByPath) {
+            if (!keywords[this.def].validate(value)) {
+                errors[this.ctx.path.join("/")] = buildUnassignableErrorMessage(
+                    this.def,
+                    value
+                )
+            }
         }
 
         generate() {
