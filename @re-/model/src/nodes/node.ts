@@ -35,17 +35,9 @@ export interface ParentNode<T extends Parent, Parent> {
     parse: (def: T, ctx: ParseContext) => BaseNode<T>
 }
 
-export { BaseNode as TerminalNode }
-
-export abstract class NonTerminalNode<T> extends BaseNode<T> {
-    abstract next(): BaseNode<unknown>
-    abstract validate(value: unknown): boolean
-    abstract generate(): unknown
-}
-
 export type BaseNodeClass<T extends Parent, Parent> = (new (
     def: T,
     ctx: ParseContext
 ) => BaseNode<T>) & {
-    matches: (def: Parent, ctx: ParseContext) => def is T
+    matches: (def: Parent) => def is T
 }

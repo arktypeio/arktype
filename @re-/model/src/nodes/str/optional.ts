@@ -1,4 +1,4 @@
-import { BaseNodeClass, NonTerminalNode } from "../node.js"
+import { BaseNode, BaseNodeClass } from "../node.js"
 import { Str } from "./str.js"
 
 const invalidModifierError = `Modifier '?' is only valid at the end of a type definition.`
@@ -19,7 +19,7 @@ export namespace Optional {
     export const Node: BaseNodeClass<
         Definition,
         string
-    > = class extends NonTerminalNode<Definition> {
+    > = class extends BaseNode<Definition> {
         static matches(def: string): def is Definition {
             return def.endsWith("?")
         }

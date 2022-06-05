@@ -1,5 +1,3 @@
 export namespace Literal {
-    export type Definition = RegExp | PrimitiveLiteral
-
-    export type PrimitiveLiteral = number | bigint | boolean | undefined | null
+    export type Definition = number | bigint | boolean | undefined | null
 }

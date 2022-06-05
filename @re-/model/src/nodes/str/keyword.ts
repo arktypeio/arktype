@@ -1,6 +1,6 @@
 import { isAlpha, isAlphaNumeric } from "@re-/tools"
 import { UngeneratableError } from "#errors"
-import { BaseNodeClass, ParseContext, TerminalNode } from "#node"
+import { BaseNode, BaseNodeClass, ParseContext } from "#node"
 
 type KeywordHandler<T> = {
     generate: (ctx: ParseContext) => T
@@ -135,7 +135,7 @@ export namespace Keyword {
     export const Node: BaseNodeClass<
         Definition,
         string
-    > = class extends TerminalNode<Definition> {
+    > = class extends BaseNode<Definition> {
         static matches(def: string): def is Definition {
             return def in keywords
         }

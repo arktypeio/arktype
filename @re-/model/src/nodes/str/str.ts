@@ -83,9 +83,9 @@ export namespace Str {
     export const Node: ParentNode<string, unknown> = {
         matches: (def): def is string => typeof def === "string",
         parse: (def, ctx) => {
-            if (Optional.Node.matches(def, ctx)) {
+            if (Optional.Node.matches(def)) {
                 return new Optional.Node(def, ctx)
-            } else if (Keyword.Node.matches(def, ctx)) {
+            } else if (Keyword.Node.matches(def)) {
                 return new Keyword.Node(def, ctx)
             }
             throw new Error("hi")

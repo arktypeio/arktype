@@ -4,8 +4,8 @@ import { Root } from "./src/nodes/root.js"
 
 bench("validate undefined", () => {
     Root.Node.parse("string?", defaultParseContext).validate(undefined)
-}).median("42.00ns")
+}).median("46.00ns")
 
 bench("valdiate string", () => {
     Root.Node.parse("string?", defaultParseContext).validate("test")
-}).median("98.00ns")
+}).median("128.00ns")
