@@ -1,13 +1,13 @@
 import { diffSets, Evaluate, Merge, transform } from "@re-/tools"
-import { typeDefProxy } from "./internal.js"
 import {
     BaseOptions,
-    createCreateFunction,
-    ModelFunction,
+    createModelFunction,
     Model,
+    ModelFunction,
     ModelOptions
 } from "./model.js"
 import { Root } from "./nodes/index.js"
+import { Base } from "#base"
 
 export type MetaKey = "onCycle" | "onResolve"
 
@@ -51,7 +51,7 @@ export const compile: CompileFunction = (
             throw new Error(errorParts.join(" "))
         }
     }
-    const create = createCreateFunction({ dictionary, config })
+    const create = createModelFunction({ dictionary, config })
     const extend: ExtendFunction<unknown> = (newDefinitions, newConfig) =>
         compile(
             // @ts-ignore
@@ -70,7 +70,7 @@ export const compile: CompileFunction = (
             // @ts-ignore
             create(definition, { ...config, ...config?.models?.[typeName] })
         ]),
-        types: typeDefProxy,
+        types: Base.typeDefProxy,
         create,
         extend
     }

@@ -1,4 +1,4 @@
-import { toString } from "@re-/tools"
+import { isDigits, isEmpty, toString, uncapitalize } from "@re-/tools"
 import { ModelConfig } from "../model.js"
 
 export namespace Base {
@@ -7,8 +7,14 @@ export namespace Base {
         ctx: ParseContext
     ) => Node<DefType>
 
+    export const typeDefProxy: any = new Proxy({}, { get: () => typeDefProxy })
+
     export abstract class Node<DefType> {
         constructor(protected def: DefType, protected ctx: ParseContext) {}
+
+        get type() {
+            return typeDefProxy
+        }
 
         protected stringifyDef() {
             return stringifyDef(this.def)
@@ -27,7 +33,20 @@ export namespace Base {
             errors[this.ctx.path] = message
         }
 
-        abstract validate(value: unknown, errors: ErrorsByPath): void
+        validateByPath(value: unknown) {
+            const errorsByPath: ErrorsByPath = {}
+            this.allows(value, errorsByPath)
+            return errorsByPath
+        }
+
+        validate(value: unknown) {
+            const errorsByPath = this.validateByPath(value)
+            return isEmpty(errorsByPath)
+                ? { data: value }
+                : { error: stringifyErrors(errorsByPath), errorsByPath }
+        }
+
+        abstract allows(value: unknown, errors: ErrorsByPath): void
         abstract generate(): unknown
     }
 
@@ -55,8 +74,8 @@ export namespace Base {
     export type ErrorsByPath = Record<string, string>
 
     export class ParseError extends Error {
-        constructor(definition: unknown, path: string[], description: string) {
-            super(buildParseErrorMessage(definition, path, description))
+        constructor(message: string) {
+            super(message)
         }
     }
 
@@ -68,13 +87,13 @@ export namespace Base {
             maxNestedStringLength: 50
         })
 
-    export const stringifyPathContext = (path: string[]) =>
-        path.length ? ` at path ${path.join("/")}` : ""
+    export const stringifyPathContext = (path: string) =>
+        path ? "" : ` at path ${path}`
 
     /** Description should start with a verb, e.g. "is of invalid type 'function'" or "contains a shallow cycle" */
     export const buildParseErrorMessage = (
         definition: unknown,
-        path: string[],
+        path: string,
         description: string
     ) =>
         `Definition ${stringifyDef(definition)}${stringifyPathContext(
@@ -88,4 +107,42 @@ export namespace Base {
         `${toString(value, {
             maxNestedStringLength: 50
         })} is not assignable to ${stringifyDef(def)}.`
+
+    export const stringifyErrors = (errors: ErrorsByPath) => {
+        const errorPaths = Object.keys(errors)
+        if (errorPaths.length === 0) {
+            return ""
+        }
+        if (errorPaths.length === 1) {
+            const errorPath = errorPaths[0]
+            return `${
+                errorPath
+                    ? `At ${
+                          isDigits(errorPath) ? "index" : "path"
+                      } ${errorPath}, `
+                    : ""
+            }${errorPath ? uncapitalize(errors[errorPath]) : errors[errorPath]}`
+        }
+        return `Encountered errors at the following paths:\n${toString(errors, {
+            indent: 2
+        })}`
+    }
+
+    export type ParseErrorMessage<Message extends string = string> =
+        `Error: ${Message}`
+
+    export type UnknownTypeError<
+        Definition extends string = "your definition"
+    > = `Unable to determine the type of ${Definition extends "your definition"
+        ? Definition
+        : `'${Definition}'`}.`
+
+    export class UngeneratableError extends Error {
+        constructor(def: string, defType: string) {
+            super(ungeneratableError(def, defType))
+        }
+    }
+
+    export const ungeneratableError = (def: string, defType: string) =>
+        `Unable to generate a value for '${def}' (${defType} generation is unsupported).`
 }

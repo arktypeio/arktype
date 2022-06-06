@@ -1,8 +1,8 @@
 import { Spliterate } from "@re-/tools"
-import { ParseErrorMessage } from "../../../errors.js"
 import { EmbeddedNumberLiteral } from "../embeddedLiteral/embeddedNumberLiteral.js"
 import { Keyword } from "../keyword.js"
 import { Str } from "../str.js"
+import { Base } from "#base"
 
 type Comparable = {
     [K in keyof Keyword.Types]: Keyword.Types[K] extends number | string
@@ -33,7 +33,7 @@ export namespace Constraint {
         Dict,
         Ctx,
         Bounded extends string = ExtractBounded<Def>
-    > = Bounded extends ParseErrorMessage
+    > = Bounded extends Base.ParseErrorMessage
         ? Bounded
         : Str.Parse<Bounded, Dict, Ctx>
 
@@ -42,7 +42,7 @@ export namespace Constraint {
         Dict,
         Root,
         Bounded extends string = ExtractBounded<Def>
-    > = Bounded extends ParseErrorMessage
+    > = Bounded extends Base.ParseErrorMessage
         ? Bounded
         : Str.Validate<Bounded, Dict, Root>
 
@@ -74,9 +74,9 @@ export namespace Constraint {
             ? Left extends EmbeddedNumberLiteral.Definition
                 ? Right extends EmbeddedNumberLiteral.Definition
                     ? Middle
-                    : ParseErrorMessage<InvalidBoundError<Middle, Right>>
-                : ParseErrorMessage<InvalidBoundError<Middle, Left>>
-            : ParseErrorMessage<UnboundableError<Middle>>
+                    : Base.ParseErrorMessage<InvalidBoundError<Middle, Right>>
+                : Base.ParseErrorMessage<InvalidBoundError<Middle, Left>>
+            : Base.ParseErrorMessage<UnboundableError<Middle>>
         : Parts extends SingleBoundedParts<
               infer Left,
               ComparatorToken,
@@ -85,9 +85,9 @@ export namespace Constraint {
         ? Left extends Comparable
             ? Right extends EmbeddedNumberLiteral.Definition
                 ? Left
-                : ParseErrorMessage<InvalidBoundError<Left, Right>>
-            : ParseErrorMessage<UnboundableError<Left>>
-        : ParseErrorMessage<ConstraintError>
+                : Base.ParseErrorMessage<InvalidBoundError<Left, Right>>
+            : Base.ParseErrorMessage<UnboundableError<Left>>
+        : Base.ParseErrorMessage<ConstraintError>
 
     export const matcher = /(<=|>=|<|>)/
 }

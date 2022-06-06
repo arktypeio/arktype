@@ -1,13 +1,7 @@
 import { Evaluate, isEmpty, KeyValuate } from "@re-/tools"
-import {
-    duplicateSpaceError,
-    stringifyErrors,
-    ValidationErrors
-} from "./errors.js"
-import { errorsFromCustomValidator, typeDefProxy } from "./internal.js"
-import { defaultParseContext, ParseContext } from "./nodes/base.js"
 import { Root } from "./nodes/index.js"
 import { ConfiguredSpace, SpaceConfig, SpaceDefinition } from "./space.js"
+import { Base } from "#base"
 
 /*
  * Just use unknown for now since we don't have all the definitions yet
@@ -55,9 +49,9 @@ export type ValidateConfig = {
 
 export type CustomValidator = (
     value: unknown,
-    errors: ValidationErrors,
-    ctx: ParseContext
-) => string | ValidationErrors
+    errors: Base.ErrorsByPath,
+    ctx: Base.ParseContext
+) => string | Base.ErrorsByPath
 
 export type AssertOptions = ValidateConfig
 
@@ -66,32 +60,46 @@ export type ValidateFunction = <Options extends ValidateConfig>(
     options?: Options
 ) => {
     error?: string
-    errorsByPath?: ValidationErrors
+    errorsByPath?: Base.ErrorsByPath
 }
 
-const createRootValidate =
-    (
-        validate: any,
-        definition: unknown,
-        customValidator: CustomValidator | undefined
-    ): ValidateFunction =>
-    (value, options) => {
-        let errorsByPath = validate(value, options)
-        if (customValidator) {
-            errorsByPath = errorsFromCustomValidator(customValidator, [
-                value,
-                errorsByPath,
-                // @ts-ignore
-                { def: definition, ctx: defaultParseContext }
-            ])
-        }
-        return isEmpty(errorsByPath)
-            ? {}
-            : {
-                  error: stringifyErrors(errorsByPath),
-                  errorsByPath: errorsByPath
-              }
+export const errorsFromCustomValidator = (
+    customValidator: CustomValidator,
+    args: Parameters<CustomValidator>
+): Base.ErrorsByPath => {
+    const result = customValidator(...args)
+    if (result && typeof result === "string") {
+        // @ts-ignore
+        return validationError({ path: args[2].ctx.path, message: result })
+    } else if (result) {
+        return result as Base.ErrorsByPath
     }
+    return {}
+}
+
+// const createRootValidate =
+//     (
+//         validate: any,
+//         definition: unknown,
+//         customValidator: CustomValidator | undefined
+//     ): ValidateFunction =>
+//     (value, options) => {
+//         let errorsByPath = validate(value, options)
+//         if (customValidator) {
+//             errorsByPath = errorsFromCustomValidator(customValidator, [
+//                 value,
+//                 errorsByPath,
+//                 // @ts-ignore
+//                 { def: definition, ctx: defaultParseContext }
+//             ])
+//         }
+//         return isEmpty(errorsByPath)
+//             ? {}
+//             : {
+//                   error: Base.stringifyErrors(errorsByPath),
+//                   errorsByPath: errorsByPath
+//               }
+//     }
 
 // Move meta keys like onCycle and onResolve to config, since they are not valid types
 const configureSpace = (definition: SpaceDefinition): ConfiguredSpace => {
@@ -109,12 +117,14 @@ const configureSpace = (definition: SpaceDefinition): ConfiguredSpace => {
     }
 }
 
-export const createCreateFunction =
+export const createModelFunction =
     (predefinedSpace?: SpaceDefinition): ModelFunction<any> =>
     // @ts-ignore
     (definition, config) => {
         if (predefinedSpace && config?.space) {
-            throw new Error(duplicateSpaceError)
+            throw new Error(
+                "Space has already been determined according to the source of this 'model' method."
+            )
         }
         const space = configureSpace(
             config?.space ??
@@ -122,37 +132,38 @@ export const createCreateFunction =
                     dictionary: {}
                 }
         )
-        const context: ParseContext = {
-            ...defaultParseContext,
+        const context: Base.ParseContext = {
+            ...Base.defaultParseContext,
             config: {
                 ...config,
                 space
             }
         }
-        const {
-            validate: internalValidate,
-            references,
-            generate
-        } = Root.Node.parse(definition, context) as any
-        const validate = createRootValidate(
-            internalValidate,
-            definition,
-            config?.validate?.validator
-        )
-        return {
-            type: typeDefProxy,
-            space,
-            definition,
-            validate,
-            references,
-            generate,
-            assert: (value: unknown, options?: AssertOptions) => {
-                const { error } = validate(value, options)
-                if (error) {
-                    throw new Error(error)
-                }
-            }
-        }
+        return Root.parse(definition, context)
+        // const {
+        //     validate: internalValidate,
+        //     references,
+        //     generate
+        // } = Root.parse(definition, context) as any
+        // const validate = createRootValidate(
+        //     internalValidate,
+        //     definition,
+        //     config?.validate?.validator
+        // )
+        // return {
+        //     type: typeDefProxy,
+        //     space,
+        //     definition,
+        //     validate,
+        //     references,
+        //     generate,
+        //     assert: (value: unknown, options?: AssertOptions) => {
+        //         const { error } = validate(value, options)
+        //         if (error) {
+        //             throw new Error(error)
+        //         }
+        //     }
+        // }
     }
 
 export type Model<Def, ModelType> = Evaluate<{
@@ -180,4 +191,4 @@ export type ModelFunction<PredefinedDict> = <
  * @param options {@as ModelConfig?} And that.
  * @returns {@as any} The result.
  */
-export const model: ModelFunction<{}> = createCreateFunction()
+export const model: ModelFunction<{}> = createModelFunction()

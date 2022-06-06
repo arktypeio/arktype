@@ -5,9 +5,12 @@ import { Tuple } from "./tuple.js"
 import { Base } from "#base"
 
 export namespace Obj {
-    export type Validate<Def extends object, Dict> = Def extends RegExp
-        ? string
-        : { [K in keyof Def]: Root.Validate<Def, Dict> }
+    // Objects of these types are inherently valid and should not be checked via "Obj.Validate"
+    export type Terminal = RegExp
+
+    export type Validate<Def extends object, Dict> = {
+        [K in keyof Def]: Root.Validate<Def[K], Dict>
+    }
 
     export type Parse<Def extends object, Dict, Seen> = Def extends RegExp
         ? string

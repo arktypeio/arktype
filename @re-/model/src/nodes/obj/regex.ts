@@ -1,5 +1,4 @@
 import { Base } from "#base"
-import { UngeneratableError } from "#errors"
 
 export namespace Regex {
     export type Definition = RegExp
@@ -8,7 +7,7 @@ export namespace Regex {
         def instanceof RegExp
 
     export class Node extends Base.Node<Definition> {
-        validate(value: unknown, errors: Base.ErrorsByPath) {
+        allows(value: unknown, errors: Base.ErrorsByPath) {
             if (typeof value !== "string") {
                 this.addUnassignableMessage(
                     `Non-string value ${Base.stringifyValue(
@@ -30,7 +29,7 @@ export namespace Regex {
         }
 
         generate() {
-            throw new UngeneratableError(`/${this.def.source}/`, "Regex")
+            throw new Base.UngeneratableError(`/${this.def.source}/`, "Regex")
         }
     }
 }

@@ -1,16 +1,15 @@
 import { assert } from "@re-/assert"
 import { model } from "@re-/model"
-import { definitionTypeErrorTemplate } from "../../internal.js"
 
 describe("root definition", () => {
     it("bad type def type", () => {
         // @ts-expect-error
-        assert(() => model({ bad: Symbol() })).throwsAndHasTypeError(
-            definitionTypeErrorTemplate
-        )
+        assert(() => model({ bad: Symbol() }))
+            .throws.snap()
+            .type.errors.snap()
         // @ts-expect-error
-        assert(() => model({ bad: () => ({}) })).throwsAndHasTypeError(
-            definitionTypeErrorTemplate
-        )
+        assert(() => model({ bad: () => ({}) }))
+            .throws.snap()
+            .type.errors.snap()
     })
 })

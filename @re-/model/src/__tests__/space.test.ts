@@ -1,6 +1,5 @@
 import { assert } from "@re-/assert"
 import { compile, model } from "@re-/model"
-import { duplicateSpaceError } from "../errors.js"
 
 describe("compile", () => {
     it("single", () => {
@@ -180,6 +179,8 @@ describe("compile", () => {
             space.create("a", {
                 space: { dictionary: { a: {} } }
             })
-        ).throws(duplicateSpaceError)
+        ).throws.snap(
+            `Error: Space has already been determined according to the source of this 'model' method.`
+        )
     })
 })

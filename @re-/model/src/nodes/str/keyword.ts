@@ -1,6 +1,5 @@
 import { isAlpha, isAlphaNumeric } from "@re-/tools"
 import { Base } from "#base"
-import { UngeneratableError } from "#errors"
 
 type KeywordHandler<T> = {
     generate: (ctx: Base.ParseContext) => T
@@ -32,19 +31,19 @@ const keywords = defineKeywords({
     },
     true: {
         generate: () => true as const,
-        validate: (value) => value === "true"
+        validate: (value) => value === true
     },
     false: {
         generate: () => false as const,
-        validate: (value) => value === "false"
+        validate: (value) => value === false
     },
     undefined: {
         generate: () => undefined,
-        validate: (value) => value === "undefined"
+        validate: (value) => value === undefined
     },
     null: {
         generate: () => null,
-        validate: (value) => value === "null"
+        validate: (value) => value === null
     },
     any: {
         generate: () => undefined as any,
@@ -56,11 +55,11 @@ const keywords = defineKeywords({
     },
     void: {
         generate: () => undefined as void,
-        validate: (value) => value === "undefined"
+        validate: (value) => value === undefined
     },
     never: {
         generate: () => {
-            throw new UngeneratableError("never", "never")
+            throw new Base.UngeneratableError("never", "never")
         },
         validate: () => false
     },
@@ -135,7 +134,7 @@ export namespace Keyword {
     export const matches = (def: string): def is Definition => def in keywords
 
     export class Node extends Base.Node<Definition> {
-        validate(value: unknown, errors: Base.ErrorsByPath) {
+        allows(value: unknown, errors: Base.ErrorsByPath) {
             if (!keywords[this.def].validate(value)) {
                 this.addUnassignable(value, errors)
             }

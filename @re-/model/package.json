@@ -22,8 +22,7 @@
         }
     },
     "imports": {
-        "#base": "./src/nodes/base.js",
-        "#errors": "./src/errors.js"
+        "#base": "./src/nodes/base.js"
     },
     "scripts": {
         "build": "re tsc",

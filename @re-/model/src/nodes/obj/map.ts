@@ -32,7 +32,7 @@ export namespace Map {
             ]) as Entry<string, Base.Node<unknown>>[]
         }
 
-        validate(value: unknown, errors: Base.ErrorsByPath) {
+        allows(value: unknown, errors: Base.ErrorsByPath) {
             if (!value || typeof value !== "object" || Array.isArray(value)) {
                 this.addUnassignable(value, errors)
                 return
@@ -43,7 +43,7 @@ export namespace Map {
                 return
             }
             for (const [prop, node] of this.props()) {
-                node.validate((value as any)[prop], errors)
+                node.allows((value as any)[prop], errors)
             }
         }
 

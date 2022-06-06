@@ -1,18 +1,18 @@
-import { ParseErrorMessage, UnknownTypeError } from "../../errors.js"
 import { Base } from "../base.js"
 import { Alias } from "./alias.js"
 import { EmbeddedBigintLiteral } from "./embeddedLiteral/embeddedBigintLiteral.js"
 import { EmbeddedNumberLiteral } from "./embeddedLiteral/embeddedNumberLiteral.js"
 import { EmbeddedRegexLiteral } from "./embeddedLiteral/embeddedRegexLiteral.js"
 import { StringLiteral } from "./embeddedLiteral/stringLiteral.js"
-import { Constraint, Intersection, List } from "./expression/index.js"
+import { Constraint, Intersection } from "./expression/index.js"
 import { Keyword } from "./keyword.js"
+import { List } from "./list.js"
 import { Optional } from "./optional.js"
 import { Union } from "./union.js"
 
-type BinaryValidationResult<Left, Right> = Left extends ParseErrorMessage
+type BinaryValidationResult<Left, Right> = Left extends Base.ParseErrorMessage
     ? Left
-    : Right extends ParseErrorMessage
+    : Right extends Base.ParseErrorMessage
     ? Right
     : Left
 
@@ -50,7 +50,7 @@ export namespace Str {
         ? Validate<Child, Dict, Root>
         : Def extends Constraint.Definition
         ? Constraint.Validate<Def, Dict, Root>
-        : ParseErrorMessage<UnknownTypeError<Def>>
+        : Base.ParseErrorMessage<Base.UnknownTypeError<Def>>
 
     export type Parse<
         Def extends string,
@@ -79,7 +79,7 @@ export namespace Str {
         ? Parse<Child, Dict, Seen>[]
         : Def extends Constraint.Definition
         ? Constraint.Parse<Def, Dict, Seen>
-        : ParseErrorMessage<UnknownTypeError<Def>>
+        : unknown
 
     export const matches = (def: unknown): def is string =>
         typeof def === "string"
@@ -91,7 +91,15 @@ export namespace Str {
             return new Keyword.Node(def, ctx)
         } else if (Union.matches(def)) {
             return new Union.Node(def, ctx)
+        } else if (List.matches(def)) {
+            return new List.Node(def, ctx)
+        } else if (Alias.matches(def, ctx)) {
+            return new Alias.Node(def, ctx)
         }
-        throw new Error("hi")
+        throw new Base.ParseError(
+            `Unable to determine the type of ${Base.stringifyDef(
+                def
+            )}${Base.stringifyPathContext(ctx.path)}.`
+        )
     }
 }

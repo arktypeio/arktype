@@ -23,9 +23,9 @@ export namespace Optional {
             return Str.parse(this.def.slice(0, -1), this.ctx)
         }
 
-        validate(value: unknown, errors: Base.ErrorsByPath) {
+        allows(value: unknown, errors: Base.ErrorsByPath) {
             if (value !== undefined) {
-                this.next().validate(value, errors)
+                this.next().allows(value, errors)
             }
         }
 

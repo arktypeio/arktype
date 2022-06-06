@@ -20,12 +20,12 @@ export namespace Union {
             )
         }
 
-        validate(value: unknown, errors: Base.ErrorsByPath) {
-            this.left().validate(value, errors)
+        allows(value: unknown, errors: Base.ErrorsByPath) {
+            this.left().allows(value, errors)
             const leftErrors = errors[this.ctx.path]
             if (leftErrors) {
                 delete errors[this.ctx.path]
-                this.right().validate(value, errors)
+                this.right().allows(value, errors)
                 const rightErrors = errors[this.ctx.path]
                 if (rightErrors) {
                     this.addUnassignableMessage(

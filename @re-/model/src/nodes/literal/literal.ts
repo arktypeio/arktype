@@ -11,7 +11,7 @@ export namespace Literal {
         typeof def === "bigint"
 
     export class Node extends Base.Node<Definition> {
-        validate(value: unknown, errors: Base.ErrorsByPath) {
+        allows(value: unknown, errors: Base.ErrorsByPath) {
             if (value !== this.def) {
                 this.addUnassignable(value, errors)
             }

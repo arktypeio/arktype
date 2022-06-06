@@ -20,7 +20,7 @@ export namespace Tuple {
             ]) as Entry<number, Base.Node<unknown>>[]
         }
 
-        validate(value: unknown, errors: Base.ErrorsByPath) {
+        allows(value: unknown, errors: Base.ErrorsByPath) {
             if (!Array.isArray(value)) {
                 this.addUnassignable(value, errors)
                 return
@@ -30,7 +30,7 @@ export namespace Tuple {
                 return
             }
             for (const [i, node] of this.elements()) {
-                node.validate(value[i], errors)
+                node.allows(value[i], errors)
             }
         }
 
