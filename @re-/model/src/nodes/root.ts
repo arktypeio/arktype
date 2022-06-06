@@ -37,20 +37,17 @@ export namespace Root {
 
     export type BadDefinitionType = Function | symbol
 
-    export const Node: Base.Parser<unknown, unknown> = {
-        matches: (def): def is unknown => true,
-        parse: (def, ctx) => {
-            if (Str.Node.matches(def, ctx)) {
-                return Str.Node.parse(def, ctx)
-            }
-            if (Obj.Node.matches(def, ctx)) {
-                return Obj.Node.parse(def, ctx)
-            }
-            throw new ParseError(
-                def,
-                [],
-                `is of disallowed type ${typeof def}.`
-            )
+    export const matches: Base.Matcher<unknown, unknown> = (
+        def
+    ): def is unknown => true
+
+    export const parse: Base.Parser<unknown> = (def, ctx) => {
+        if (Str.matches(def, ctx)) {
+            return Str.parse(def, ctx)
         }
+        if (Obj.matches(def, ctx)) {
+            return Obj.parse(def, ctx)
+        }
+        throw new ParseError(def, [], `is of disallowed type ${typeof def}.`)
     }
 }

@@ -2,10 +2,15 @@ import { toString } from "@re-/tools"
 import { ModelConfig } from "../model.js"
 
 export namespace Base {
-    export interface Parser<DefType extends ParentDefType, ParentDefType> {
-        matches: (def: ParentDefType, ctx: ParseContext) => def is DefType
-        parse: (def: DefType, ctx: ParseContext) => Node<DefType>
-    }
+    export type Matcher<ParentDefType, DefType extends ParentDefType> = (
+        def: ParentDefType,
+        ctx: ParseContext
+    ) => def is DefType
+
+    export type Parser<DefType> = (
+        def: DefType,
+        ctx: ParseContext
+    ) => Node<DefType>
 
     export abstract class Node<DefType> {
         constructor(protected def: DefType, protected ctx: ParseContext) {}

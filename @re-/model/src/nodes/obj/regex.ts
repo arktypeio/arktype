@@ -4,11 +4,10 @@ import { UngeneratableError } from "#errors"
 export namespace Regex {
     export type Definition = RegExp
 
-    export class Node extends Base.Node<Definition> {
-        static matches(def: object): def is Definition {
-            return def instanceof RegExp
-        }
+    export const matches = (def: object): def is Definition =>
+        def instanceof RegExp
 
+    export class Node extends Base.Node<Definition> {
         validate(value: unknown) {
             return typeof value === "string" && this.def.test(value)
         }

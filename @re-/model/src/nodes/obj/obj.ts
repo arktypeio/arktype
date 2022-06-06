@@ -15,16 +15,17 @@ export namespace Obj {
         ? { -readonly [I in keyof Def]: Root.Parse<Def[I], Dict, Seen> }
         : Map.Parse<Def, Dict, Seen>
 
-    export const Node: Base.Parser<object, unknown> = {
-        matches: (def): def is object => !!def && typeof def === "object",
-        parse: (def, ctx) => {
-            if (Regex.Node.matches(def)) {
-                return new Regex.Node(def, ctx)
-            }
-            if (Tuple.Node.matches(def)) {
-                return new Tuple.Node(def, ctx)
-            }
-            return new Map.Node(def, ctx)
+    export const matches: Base.Matcher<unknown, object> = (
+        def
+    ): def is object => !!def && typeof def === "object"
+
+    export const parse: Base.Parser<object> = (def, ctx) => {
+        if (Regex.matches(def)) {
+            return new Regex.Node(def, ctx)
         }
+        if (Tuple.matches(def)) {
+            return new Tuple.Node(def, ctx)
+        }
+        return new Map.Node(def, ctx)
     }
 }

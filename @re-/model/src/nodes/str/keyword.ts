@@ -132,11 +132,9 @@ export namespace Keyword {
 
     export type Types = HandledTypes<typeof keywords>
 
-    export class Node extends Base.Node<Definition> {
-        static matches(def: string): def is Definition {
-            return def in keywords
-        }
+    export const matches = (def: string): def is Definition => def in keywords
 
+    export class Node extends Base.Node<Definition> {
         validate(value: unknown, errors: Base.ErrorsByPath) {
             if (!keywords[this.def].validate(value)) {
                 this.addUnassignable(value, errors)

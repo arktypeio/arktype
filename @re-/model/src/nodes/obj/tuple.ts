@@ -5,15 +5,16 @@ import { Base } from "#base"
 export namespace Tuple {
     export type Definition = unknown[] | readonly unknown[]
 
-    export class Node extends Base.Node<Definition> {
-        static matches = (def: object): def is Definition => Array.isArray(def)
+    export const matches = (def: object): def is Definition =>
+        Array.isArray(def)
 
+    export class Node extends Base.Node<Definition> {
         elements() {
             return this.def.map((elementDef, elementIndex) => [
                 elementIndex,
-                Root.Node.parse(elementDef, {
+                Root.parse(elementDef, {
                     ...this.ctx,
-                    path: this.ctx.path + `/${elementIndex}`,
+                    path: `${this.ctx.path}/${elementIndex}`,
                     shallowSeen: []
                 })
             ]) as Entry<number, Base.Node<unknown>>[]

@@ -5,22 +5,22 @@ import { Root } from "./src/nodes/root.js"
 const defaultParseContext = Base.defaultParseContext
 
 bench("validate undefined", () => {
-    Root.Node.parse("string?", defaultParseContext).validate(undefined, {})
+    Root.parse("string?", defaultParseContext).validate(undefined, {})
 }).median("46.00ns")
 
 bench("valdiate string", () => {
-    Root.Node.parse("string?", defaultParseContext).validate("test", {})
+    Root.parse("string?", defaultParseContext).validate("test", {})
 }).median("128.00ns")
 
 bench("valdiate deeep", () => {
-    Root.Node.parse(
+    Root.parse(
         "string???????????????????????????????????????????",
         defaultParseContext
     ).validate("test", {})
 }).median("950.00ns")
 
 bench("validate map", () => {
-    Root.Node.parse(
+    Root.parse(
         { a: "string?", b: "number?", c: { nested: "boolean?" } },
         defaultParseContext
     ).validate({ a: "okay", b: 5, c: { nested: true } }, {})
@@ -28,7 +28,7 @@ bench("validate map", () => {
 
 const errors = {}
 
-Root.Node.parse(
+Root.parse(
     { a: "string?", b: "number?", c: { nested: "boolean?" } },
     defaultParseContext
 ).validate({ a: 5, b: 5, c: { nested: null } }, errors)
@@ -36,19 +36,19 @@ Root.Node.parse(
 console.log(toString(errors))
 
 bench("validate map bad", () => {
-    Root.Node.parse(
+    Root.parse(
         { a: "string?", b: "number?", c: { nested: "boolean?" } },
         defaultParseContext
     ).validate({ a: 5, b: 5, c: { nested: true } }, {})
 }).median("1.43us")
 
 bench("valdiate tuple", () => {
-    Root.Node.parse(
+    Root.parse(
         ["string?", "number?", ["boolean?"]],
         defaultParseContext
     ).validate(["okay", 5, [true]], {})
 }).median("762.00ns")
 
 bench("validate regex", () => {
-    Root.Node.parse(/.*/, defaultParseContext).validate("test", {})
+    Root.parse(/.*/, defaultParseContext).validate("test", {})
 }).median("99.00ns")

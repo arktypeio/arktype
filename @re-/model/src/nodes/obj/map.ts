@@ -19,16 +19,12 @@ export namespace Map {
             -readonly [K in OptionalKey]?: Root.Parse<Def[K], Dict, Seen>
         }
     >
-    export class Node extends Base.Node<object> {
-        // We don't need any extra validation besides Obj's match function
-        static matches(def: object): def is object {
-            return true
-        }
 
+    export class Node extends Base.Node<object> {
         props() {
             return Object.entries(this.def).map(([prop, propDef]) => [
                 prop,
-                Root.Node.parse(propDef, {
+                Root.parse(propDef, {
                     ...this.ctx,
                     path: `${this.ctx.path}/${prop}`,
                     shallowSeen: []

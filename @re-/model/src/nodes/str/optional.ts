@@ -16,16 +16,11 @@ export namespace Optional {
         ? Str.Validate<Child, Dict, Root>
         : InvalidModifierError
 
-    export class Node extends Base.Node<Definition> {
-        static matches(def: string): def is Definition {
-            return def.endsWith("?")
-        }
+    export const matches = (def: string): def is Definition => def.endsWith("?")
 
+    export class Node extends Base.Node<Definition> {
         next() {
-            // if (this.ctx.stringRoot !== this.def) {
-            //     throw new Error(invalidModifierError)
-            // }
-            return Str.Node.parse(this.def.slice(0, -1), this.ctx)
+            return Str.parse(this.def.slice(0, -1), this.ctx)
         }
 
         validate(value: unknown, errors: Base.ErrorsByPath) {
