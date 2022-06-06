@@ -5,7 +5,6 @@ import { Obj } from "./obj/index.js"
 import { Str } from "./str/index.js"
 import {
     DefinitionTypeError,
-    ParseError,
     ParseErrorMessage,
     UnknownTypeError
 } from "#errors"
@@ -37,17 +36,20 @@ export namespace Root {
 
     export type BadDefinitionType = Function | symbol
 
-    export const matches: Base.Matcher<unknown, unknown> = (
-        def
-    ): def is unknown => true
-
     export const parse: Base.Parser<unknown> = (def, ctx) => {
-        if (Str.matches(def, ctx)) {
+        if (Str.matches(def)) {
             return Str.parse(def, ctx)
         }
-        if (Obj.matches(def, ctx)) {
+        if (Obj.matches(def)) {
             return Obj.parse(def, ctx)
         }
-        throw new ParseError(def, [], `is of disallowed type ${typeof def}.`)
+        if (Literal.matches(def)) {
+            return new Literal.Node(def, ctx)
+        }
+        throw new Base.ParseError(
+            def,
+            [],
+            `is of disallowed type ${typeof def}.`
+        )
     }
 }

@@ -110,7 +110,7 @@ const configureSpace = (definition: SpaceDefinition): ConfiguredSpace => {
 }
 
 export const createCreateFunction =
-    (predefinedSpace?: SpaceDefinition): CreateFunction<any> =>
+    (predefinedSpace?: SpaceDefinition): ModelFunction<any> =>
     // @ts-ignore
     (definition, config) => {
         if (predefinedSpace && config?.space) {
@@ -165,7 +165,7 @@ export type Model<Def, ModelType> = Evaluate<{
     references: (options?: ReferencesConfig) => any
 }>
 
-export type CreateFunction<PredefinedDict> = <
+export type ModelFunction<PredefinedDict> = <
     Def,
     Options extends ModelOptions,
     ActiveDict = KeyValuate<Options["space"], "dictionary", PredefinedDict>
@@ -180,4 +180,4 @@ export type CreateFunction<PredefinedDict> = <
  * @param options {@as ModelConfig?} And that.
  * @returns {@as any} The result.
  */
-export const model: CreateFunction<{}> = createCreateFunction()
+export const model: ModelFunction<{}> = createCreateFunction()

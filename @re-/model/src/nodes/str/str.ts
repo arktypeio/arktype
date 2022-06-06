@@ -80,9 +80,8 @@ export namespace Str {
         ? Constraint.Parse<Def, Dict, Seen>
         : ParseErrorMessage<UnknownTypeError<Def>>
 
-    export const matches: Base.Matcher<unknown, string> = (
-        def
-    ): def is string => typeof def === "string"
+    export const matches = (def: unknown): def is string =>
+        typeof def === "string"
 
     export const parse: Base.Parser<string> = (def, ctx) => {
         if (Optional.matches(def)) {

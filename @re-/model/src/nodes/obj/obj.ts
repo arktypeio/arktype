@@ -15,9 +15,8 @@ export namespace Obj {
         ? { -readonly [I in keyof Def]: Root.Parse<Def[I], Dict, Seen> }
         : Map.Parse<Def, Dict, Seen>
 
-    export const matches: Base.Matcher<unknown, object> = (
-        def
-    ): def is object => !!def && typeof def === "object"
+    export const matches = (def: unknown): def is object =>
+        !!def && typeof def === "object"
 
     export const parse: Base.Parser<object> = (def, ctx) => {
         if (Regex.matches(def)) {

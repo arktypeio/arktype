@@ -3,7 +3,7 @@ import { typeDefProxy } from "./internal.js"
 import {
     BaseOptions,
     createCreateFunction,
-    CreateFunction,
+    ModelFunction,
     Model,
     ModelOptions
 } from "./model.js"
@@ -114,7 +114,7 @@ export type Space<Dict> = {
     config: SpaceConfig<keyof Dict & string>
     types: DictToTypes<Dict>
     dictionary: Dict
-    create: CreateFunction<Dict>
+    create: ModelFunction<Dict>
     extend: ExtendFunction<Dict>
 }
 

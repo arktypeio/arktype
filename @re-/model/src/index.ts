@@ -1,5 +1,5 @@
 export type {
-    CreateFunction,
+    ModelFunction as CreateFunction,
     ModelOptions,
     ValidateConfig,
     ReferencesConfig,

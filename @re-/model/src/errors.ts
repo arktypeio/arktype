@@ -7,7 +7,7 @@ import {
     uncapitalize
 } from "@re-/tools"
 import { ExtractableDefinition } from "./internal.js"
-import { ParseContext } from "./nodes/base.js"
+import { Base } from "./nodes/base.js"
 
 export type ParseErrorMessage<Message extends string = string> =
     `Error: ${Message}`
@@ -73,7 +73,7 @@ export const splittableValidationError = ({
 
 export interface BaseParseArgs {
     def: unknown
-    ctx: ParseContext
+    ctx: Base.ParseContext
 }
 
 export type ShallowCycleError<

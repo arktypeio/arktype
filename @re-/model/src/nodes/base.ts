@@ -2,11 +2,6 @@ import { toString } from "@re-/tools"
 import { ModelConfig } from "../model.js"
 
 export namespace Base {
-    export type Matcher<ParentDefType, DefType extends ParentDefType> = (
-        def: ParentDefType,
-        ctx: ParseContext
-    ) => def is DefType
-
     export type Parser<DefType> = (
         def: DefType,
         ctx: ParseContext
@@ -15,14 +10,21 @@ export namespace Base {
     export abstract class Node<DefType> {
         constructor(protected def: DefType, protected ctx: ParseContext) {}
 
-        protected defToString() {
-            return stringifyDefinition(this.def)
+        protected stringifyDef() {
+            return stringifyDef(this.def)
         }
 
         protected addUnassignable(value: unknown, errors: ErrorsByPath) {
-            errors[this.ctx.path] = `${toString(value, {
-                maxNestedStringLength: 50
-            })} is not assignable to ${this.defToString()}.`
+            errors[this.ctx.path] = `${stringifyValue(
+                value
+            )} is not assignable to ${this.stringifyDef()}.`
+        }
+
+        protected addUnassignableMessage(
+            message: string,
+            errors: ErrorsByPath
+        ) {
+            errors[this.ctx.path] = message
         }
 
         abstract validate(value: unknown, errors: ErrorsByPath): void
@@ -58,8 +60,13 @@ export namespace Base {
         }
     }
 
-    export const stringifyDefinition = (def: unknown) =>
+    export const stringifyDef = (def: unknown) =>
         toString(def, { quotes: "none", maxNestedStringLength: 50 })
+
+    export const stringifyValue = (value: unknown) =>
+        toString(value, {
+            maxNestedStringLength: 50
+        })
 
     export const stringifyPathContext = (path: string[]) =>
         path.length ? ` at path ${path.join("/")}` : ""
@@ -70,7 +77,7 @@ export namespace Base {
         path: string[],
         description: string
     ) =>
-        `Definition ${stringifyDefinition(definition)}${stringifyPathContext(
+        `Definition ${stringifyDef(definition)}${stringifyPathContext(
             path
         )} ${description}.`
 
@@ -80,5 +87,5 @@ export namespace Base {
     ) =>
         `${toString(value, {
             maxNestedStringLength: 50
-        })} is not assignable to ${stringifyDefinition(def)}.`
+        })} is not assignable to ${stringifyDef(def)}.`
 }
