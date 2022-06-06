@@ -1,7 +1,8 @@
 import { bench } from "@re-/assert"
 import { toString } from "@re-/tools"
-import { defaultParseContext } from "./src/nodes/node.js"
+import { Base } from "./src/nodes/base.js"
 import { Root } from "./src/nodes/root.js"
+const defaultParseContext = Base.defaultParseContext
 
 bench("validate undefined", () => {
     Root.Node.parse("string?", defaultParseContext).validate(undefined, {})
@@ -39,7 +40,7 @@ bench("validate map bad", () => {
         { a: "string?", b: "number?", c: { nested: "boolean?" } },
         defaultParseContext
     ).validate({ a: 5, b: 5, c: { nested: true } }, {})
-}).median("782.00ns")
+}).median("1.43us")
 
 bench("valdiate tuple", () => {
     Root.Node.parse(

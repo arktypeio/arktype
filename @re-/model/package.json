@@ -22,7 +22,7 @@
         }
     },
     "imports": {
-        "#node": "./src/nodes/node.js",
+        "#base": "./src/nodes/base.js",
         "#errors": "./src/errors.js"
     },
     "scripts": {

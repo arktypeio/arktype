@@ -2,7 +2,7 @@ import { Root } from "../root.js"
 import { Map } from "./map.js"
 import { Regex } from "./regex.js"
 import { Tuple } from "./tuple.js"
-import { ParentNode } from "#node"
+import { Base } from "#base"
 
 export namespace Obj {
     export type Validate<Def extends object, Dict> = Def extends RegExp
@@ -15,7 +15,7 @@ export namespace Obj {
         ? { -readonly [I in keyof Def]: Root.Parse<Def[I], Dict, Seen> }
         : Map.Parse<Def, Dict, Seen>
 
-    export const Node: ParentNode<object, unknown> = {
+    export const Node: Base.Parser<object, unknown> = {
         matches: (def): def is object => !!def && typeof def === "object",
         parse: (def, ctx) => {
             if (Regex.Node.matches(def)) {

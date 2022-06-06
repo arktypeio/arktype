@@ -1,6 +1,6 @@
 import { IsAnyOrUnknown } from "@re-/tools"
+import { Base } from "./base.js"
 import { Literal } from "./literal/index.js"
-import { ParentNode } from "./node.js"
 import { Obj } from "./obj/index.js"
 import { Str } from "./str/index.js"
 import {
@@ -37,7 +37,7 @@ export namespace Root {
 
     export type BadDefinitionType = Function | symbol
 
-    export const Node: ParentNode<unknown, unknown> = {
+    export const Node: Base.Parser<unknown, unknown> = {
         matches: (def): def is unknown => true,
         parse: (def, ctx) => {
             if (Str.Node.matches(def, ctx)) {

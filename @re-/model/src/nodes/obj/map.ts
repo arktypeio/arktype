@@ -1,7 +1,7 @@
 import { diffSets, Entry, Evaluate } from "@re-/tools"
 import { Root } from "../root.js"
 import { Optional } from "../str/index.js"
-import { BaseNode, BaseNodeClass, ErrorsByPath } from "#node"
+import { Base } from "#base"
 
 export namespace Map {
     export type Parse<
@@ -19,10 +19,7 @@ export namespace Map {
             -readonly [K in OptionalKey]?: Root.Parse<Def[K], Dict, Seen>
         }
     >
-    export const Node: BaseNodeClass<
-        object,
-        object
-    > = class extends BaseNode<object> {
+    export class Node extends Base.Node<object> {
         // We don't need any extra validation besides Obj's match function
         static matches(def: object): def is object {
             return true
@@ -36,10 +33,10 @@ export namespace Map {
                     path: `${this.ctx.path}/${prop}`,
                     shallowSeen: []
                 })
-            ]) as Entry<string, BaseNode<unknown>>[]
+            ]) as Entry<string, Base.Node<unknown>>[]
         }
 
-        validate(value: unknown, errors: ErrorsByPath) {
+        validate(value: unknown, errors: Base.ErrorsByPath) {
             if (!value || typeof value !== "object" || Array.isArray(value)) {
                 this.addUnassignable(value, errors)
                 return

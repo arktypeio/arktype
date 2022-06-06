@@ -1,10 +1,10 @@
 import { isAlpha, isAlphaNumeric } from "@re-/tools"
+import { Base } from "#base"
 import { UngeneratableError } from "#errors"
-import { BaseNode, BaseNodeClass, ErrorsByPath, ParseContext } from "#node"
 
 type KeywordHandler<T> = {
-    generate: (ctx: ParseContext) => T
-    validate: (value: T, ctx: ParseContext) => boolean
+    generate: (ctx: Base.ParseContext) => T
+    validate: (value: T, ctx: Base.ParseContext) => boolean
 }
 
 type KeywordMap<T> = Record<string, KeywordHandler<T>>
@@ -132,15 +132,12 @@ export namespace Keyword {
 
     export type Types = HandledTypes<typeof keywords>
 
-    export const Node: BaseNodeClass<
-        Definition,
-        string
-    > = class extends BaseNode<Definition> {
+    export class Node extends Base.Node<Definition> {
         static matches(def: string): def is Definition {
             return def in keywords
         }
 
-        validate(value: unknown, errors: ErrorsByPath) {
+        validate(value: unknown, errors: Base.ErrorsByPath) {
             if (!keywords[this.def].validate(value)) {
                 this.addUnassignable(value, errors)
             }

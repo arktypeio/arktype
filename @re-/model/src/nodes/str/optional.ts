@@ -1,5 +1,5 @@
 import { Str } from "./str.js"
-import { BaseNode, BaseNodeClass, ErrorsByPath } from "#node"
+import { Base } from "#base"
 
 const invalidModifierError = `Modifier '?' is only valid at the end of a type definition.`
 
@@ -16,10 +16,7 @@ export namespace Optional {
         ? Str.Validate<Child, Dict, Root>
         : InvalidModifierError
 
-    export const Node: BaseNodeClass<
-        Definition,
-        string
-    > = class extends BaseNode<Definition> {
+    export class Node extends Base.Node<Definition> {
         static matches(def: string): def is Definition {
             return def.endsWith("?")
         }
@@ -31,7 +28,7 @@ export namespace Optional {
             return Str.Node.parse(this.def.slice(0, -1), this.ctx)
         }
 
-        validate(value: unknown, errors: ErrorsByPath) {
+        validate(value: unknown, errors: Base.ErrorsByPath) {
             if (value !== undefined) {
                 this.next().validate(value, errors)
             }

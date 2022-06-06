@@ -1,13 +1,10 @@
+import { Base } from "#base"
 import { UngeneratableError } from "#errors"
-import { BaseNode, BaseNodeClass } from "#node"
 
 export namespace Regex {
     export type Definition = RegExp
 
-    export const Node: BaseNodeClass<
-        Definition,
-        object
-    > = class extends BaseNode<Definition> {
+    export class Node extends Base.Node<Definition> {
         static matches(def: object): def is Definition {
             return def instanceof RegExp
         }

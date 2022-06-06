@@ -1,14 +1,11 @@
 import { Entry } from "@re-/tools"
 import { Root } from "../root.js"
-import { BaseNode, BaseNodeClass, ErrorsByPath } from "#node"
+import { Base } from "#base"
 
 export namespace Tuple {
     export type Definition = unknown[] | readonly unknown[]
 
-    export const Node: BaseNodeClass<
-        Definition,
-        object
-    > = class extends BaseNode<Definition> {
+    export class Node extends Base.Node<Definition> {
         static matches = (def: object): def is Definition => Array.isArray(def)
 
         elements() {
@@ -19,10 +16,10 @@ export namespace Tuple {
                     path: this.ctx.path + `/${elementIndex}`,
                     shallowSeen: []
                 })
-            ]) as Entry<number, BaseNode<unknown>>[]
+            ]) as Entry<number, Base.Node<unknown>>[]
         }
 
-        validate(value: unknown, errors: ErrorsByPath) {
+        validate(value: unknown, errors: Base.ErrorsByPath) {
             if (!Array.isArray(value)) {
                 this.addUnassignable(value, errors)
                 return

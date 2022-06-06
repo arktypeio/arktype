@@ -1,5 +1,5 @@
 import { ParseErrorMessage, UnknownTypeError } from "../../errors.js"
-import { ParentNode } from "../node.js"
+import { Base } from "../base.js"
 import { Alias } from "./alias.js"
 import { EmbeddedBigintLiteral } from "./embeddedLiteral/embeddedBigintLiteral.js"
 import { EmbeddedNumberLiteral } from "./embeddedLiteral/embeddedNumberLiteral.js"
@@ -80,7 +80,7 @@ export namespace Str {
         ? Constraint.Parse<Def, Dict, Seen>
         : ParseErrorMessage<UnknownTypeError<Def>>
 
-    export const Node: ParentNode<string, unknown> = {
+    export const Node: Base.Parser<string, unknown> = {
         matches: (def): def is string => typeof def === "string",
         parse: (def, ctx) => {
             if (Optional.Node.matches(def)) {

@@ -5,8 +5,8 @@ import {
     ValidationErrors
 } from "./errors.js"
 import { errorsFromCustomValidator, typeDefProxy } from "./internal.js"
+import { defaultParseContext, ParseContext } from "./nodes/base.js"
 import { Root } from "./nodes/index.js"
-import { defaultParseContext, ParseContext } from "./nodes/node.js"
 import { ConfiguredSpace, SpaceConfig, SpaceDefinition } from "./space.js"
 
 /*
