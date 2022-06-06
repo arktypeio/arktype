@@ -47,3 +47,7 @@ bench("validate regex", () => {
 bench("validate literal", () => {
     Root.parse(7, defaultParseContext).validate(7, {})
 }).median("84.00ns")
+
+bench("validate union", () => {
+    Root.parse("string|number", defaultParseContext).validate(5, {})
+}).median("571.00ns")

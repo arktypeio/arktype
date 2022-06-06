@@ -5,9 +5,10 @@ import { EmbeddedBigintLiteral } from "./embeddedLiteral/embeddedBigintLiteral.j
 import { EmbeddedNumberLiteral } from "./embeddedLiteral/embeddedNumberLiteral.js"
 import { EmbeddedRegexLiteral } from "./embeddedLiteral/embeddedRegexLiteral.js"
 import { StringLiteral } from "./embeddedLiteral/stringLiteral.js"
-import { Constraint, Intersection, List, Union } from "./expression/index.js"
+import { Constraint, Intersection, List } from "./expression/index.js"
 import { Keyword } from "./keyword.js"
 import { Optional } from "./optional.js"
+import { Union } from "./union.js"
 
 type BinaryValidationResult<Left, Right> = Left extends ParseErrorMessage
     ? Left
@@ -88,6 +89,8 @@ export namespace Str {
             return new Optional.Node(def, ctx)
         } else if (Keyword.matches(def)) {
             return new Keyword.Node(def, ctx)
+        } else if (Union.matches(def)) {
+            return new Union.Node(def, ctx)
         }
         throw new Error("hi")
     }
