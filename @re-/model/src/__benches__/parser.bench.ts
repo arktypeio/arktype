@@ -51,3 +51,25 @@ bench("validate literal", () => {
 bench("validate union", () => {
     Root.parse("string|number", defaultParseContext).validate(5, {})
 }).median("571.00ns")
+
+const errors = {}
+Root.parse(
+    {
+        a: "string|number",
+        b: "boolean?",
+        c: { nested: ["undefined|null", "bigint"] }
+    },
+    defaultParseContext
+).validate({ a: [], b: "hi", c: { nested: [true, 5] } }, errors)
+console.log(errors)
+
+bench("errors at paths", () => {
+    Root.parse(
+        {
+            a: "string|number",
+            b: "boolean?",
+            c: { nested: ["undefined|null", "bigint"] }
+        },
+        defaultParseContext
+    ).validate({ a: [], b: "hi", c: { nested: [true, 5] } }, {})
+}).median("4.27us")
