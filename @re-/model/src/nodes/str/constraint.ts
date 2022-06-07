@@ -1,7 +1,7 @@
 import { Spliterate } from "@re-/tools"
-import { EmbeddedNumberLiteral } from "../embeddedLiteral/embeddedNumberLiteral.js"
-import { Keyword } from "../keyword.js"
-import { Str } from "../str.js"
+import { EmbeddedNumberLiteral } from "./embeddedNumberLiteral.js"
+import { Keyword } from "./keyword.js"
+import { Str } from "./str.js"
 import { Base } from "#base"
 
 type Comparable = {
@@ -20,10 +20,67 @@ type InvalidBoundError<
 type UnboundableError<Bounded extends string> =
     `Bounded definition '${Bounded}' must be a number or string keyword.`
 
+const unboundableError = (inner: string) =>
+    `Bounded definition '${Base.stringifyDef(
+        inner
+    )}' must be a number or string keyword.`
+
 const constraintErrorTemplate =
     "Constraints must be either of the form N<L or L<N<L, where N is a constrainable type (e.g. number), L is a number literal (e.g. 5), and < is any comparison operator."
 
 type ConstraintError = typeof constraintErrorTemplate
+
+const buildComparatorErrorMessage = (
+    comparatorError: string,
+    value: string,
+    bound: number,
+    isString: boolean
+) => {
+    return `${Base.stringifyValue(value)} is ${comparatorError} ${bound}${
+        isString ? " characters" : ""
+    }.`
+}
+
+const comparators: {
+    [K in ComparatorToken]: (
+        value: string,
+        comparable: number,
+        bound: number,
+        isString: boolean
+    ) => string
+} = {
+    "<=": (value, comparable, bound, isString) =>
+        comparable > bound
+            ? buildComparatorErrorMessage(
+                  "greater than",
+                  value,
+                  bound,
+                  isString
+              )
+            : "",
+    ">=": (value, comparable, bound, isString) =>
+        comparable < bound
+            ? buildComparatorErrorMessage("less than", value, bound, isString)
+            : "",
+    "<": (value, comparable, bound, isString) =>
+        comparable >= bound
+            ? buildComparatorErrorMessage(
+                  "greater than or equal to",
+                  value,
+                  bound,
+                  isString
+              )
+            : "",
+    ">": (value, comparable, bound, isString) =>
+        comparable <= bound
+            ? buildComparatorErrorMessage(
+                  "less than or equal to",
+                  value,
+                  bound,
+                  isString
+              )
+            : ""
+}
 
 export namespace Constraint {
     export type Definition = `${string}${ComparatorToken}${string}`
@@ -90,4 +147,20 @@ export namespace Constraint {
         : Base.ParseErrorMessage<ConstraintError>
 
     export const matcher = /(<=|>=|<|>)/
+
+    export class Node extends Base.Node<Definition> {
+        bounded() {
+            return Str.parse(this.def.slice(0, -1), this.ctx)
+        }
+
+        allows(value: unknown, errors: Base.ErrorsByPath) {
+            if (value !== undefined) {
+                this.bounded().allows(value, errors)
+            }
+        }
+
+        generate() {
+            return undefined
+        }
+    }
 }

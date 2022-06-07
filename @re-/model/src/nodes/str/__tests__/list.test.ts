@@ -1,5 +1,5 @@
 import { assert } from "@re-/assert"
-import { model } from "@re-/model"
+import { model } from "#api"
 import { lazily } from "@re-/tools"
 
 describe("list", () => {

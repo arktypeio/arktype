@@ -5,7 +5,7 @@ export namespace Base {
     export type Parser<DefType> = (
         def: DefType,
         ctx: ParseContext
-    ) => Node<DefType>
+    ) => Node<unknown>
 
     export const typeDefProxy: any = new Proxy({}, { get: () => typeDefProxy })
 

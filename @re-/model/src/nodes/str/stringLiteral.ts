@@ -1,3 +1,5 @@
+import { Base } from "#base"
+
 export namespace StringLiteral {
     export type SingleQuoted<Text extends string> =
         Text extends `${string}'${string}` ? never : `'${Text}'`
@@ -23,4 +25,21 @@ export namespace StringLiteral {
      * Or a definition enclosed by double quotes that does not contain any other double quotes
      */
     export const matcher = /^('[^']*'|^"[^"]*?")$/
+
+    export const matches = (def: string): def is Definition<string> =>
+        matcher.test(def)
+
+    export class Node extends Base.Node<Definition<string>> {
+        quotedText = this.def.slice(1, -1)
+
+        allows(value: unknown, errors: Base.ErrorsByPath) {
+            if (this.quotedText !== value) {
+                this.addUnassignable(value, errors)
+            }
+        }
+
+        generate() {
+            return this.quotedText
+        }
+    }
 }
