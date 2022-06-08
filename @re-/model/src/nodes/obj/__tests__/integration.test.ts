@@ -1,6 +1,6 @@
 import { assert } from "@re-/assert"
-import { model } from "#api"
 import { lazily } from "@re-/tools"
+import { model } from "#api"
 
 describe("integration", () => {
     const mixed = lazily(() =>

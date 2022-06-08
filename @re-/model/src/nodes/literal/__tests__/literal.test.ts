@@ -1,6 +1,6 @@
 import { assert } from "@re-/assert"
-import { model } from "#api"
 import { lazily } from "@re-/tools"
+import { model } from "#api"
 
 describe("number", () => {
     describe("type", () => {
@@ -159,26 +159,6 @@ describe("null", () => {
         assert(n.validate(null).error).is(undefined)
         assert(n.validate(undefined).error).snap(
             `undefined is not assignable to null.`
-        )
-    })
-})
-describe("regex", () => {
-    const regex = lazily(() => model(/.*@redo\.dev/))
-    it("type", () => {
-        assert(regex.type).typed as string
-    })
-    it("generation", () => {
-        assert(() => regex.generate()).throws.snap(
-            `TypeError: Generation of regular expressions is not supported.`
-        )
-    })
-    it("validation", () => {
-        assert(regex.validate("david@redo.dev").error).is(undefined)
-        assert(regex.validate("david@redo.qa").error).snap(
-            `'david@redo.qa' is not assignable to /.*@redo\\.dev/.`
-        )
-        assert(regex.validate({ inObject: "david@redo.dev" }).error).snap(
-            `{inObject: 'david@redo.dev'} is not assignable to /.*@redo\\.dev/.`
         )
     })
 })

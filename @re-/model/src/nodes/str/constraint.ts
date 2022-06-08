@@ -1,5 +1,5 @@
 import { Spliterate } from "@re-/tools"
-import { EmbeddedNumberLiteral } from "./embeddedNumberLiteral.js"
+import { EmbeddedNumber } from "./embedded.js"
 import { Keyword } from "./keyword.js"
 import { Str } from "./str.js"
 import { Base } from "#base"
@@ -128,8 +128,8 @@ export namespace Constraint {
         infer Right
     >
         ? Middle extends Comparable
-            ? Left extends EmbeddedNumberLiteral.Definition
-                ? Right extends EmbeddedNumberLiteral.Definition
+            ? Left extends EmbeddedNumber.Definition
+                ? Right extends EmbeddedNumber.Definition
                     ? Middle
                     : Base.ParseErrorMessage<InvalidBoundError<Middle, Right>>
                 : Base.ParseErrorMessage<InvalidBoundError<Middle, Left>>
@@ -140,7 +140,7 @@ export namespace Constraint {
               infer Right
           >
         ? Left extends Comparable
-            ? Right extends EmbeddedNumberLiteral.Definition
+            ? Right extends EmbeddedNumber.Definition
                 ? Left
                 : Base.ParseErrorMessage<InvalidBoundError<Left, Right>>
             : Base.ParseErrorMessage<UnboundableError<Left>>
