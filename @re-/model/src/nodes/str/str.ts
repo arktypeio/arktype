@@ -1,7 +1,4 @@
-import { asNumber } from "@re-/tools"
 import { Base } from "../base.js"
-import { Literal } from "../index.js"
-import { Regex } from "../obj/regex.js"
 import { Alias } from "./alias.js"
 import { Constraint } from "./constraint.js"
 import { EmbeddedBigInt, EmbeddedNumber, EmbeddedRegex } from "./embedded.js"

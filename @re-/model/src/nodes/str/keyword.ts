@@ -1,22 +1,21 @@
 import { isAlpha, isAlphaNumeric } from "@re-/tools"
 import { Base } from "#base"
 
-type KeywordHandler<T> = {
-    generate: (ctx: Base.ParseContext) => T
-    validate: (value: T, ctx: Base.ParseContext) => boolean
+type KeywordHandler = {
+    generate: (ctx: Base.ParseContext) => unknown
+    validate: (value: unknown, ctx: Base.ParseContext) => boolean
+    isString?: true
+    isNumber?: true
 }
 
-type KeywordMap<T> = Record<string, KeywordHandler<T>>
+type KeywordHandlerMap = Record<string, KeywordHandler>
 
-type DefineKeywords<T> = <Map extends KeywordMap<T>>(handlers: Map) => Map
+// Just a no-op to narrow the handlers object so we can infer types from it
+const defineKeywords = <Handlers extends KeywordHandlerMap>(
+    handlers: Handlers
+) => handlers
 
-type HandledTypes<Handlers extends KeywordMap<any>> = {
-    [K in keyof Handlers]: ReturnType<Handlers[K]["generate"]>
-}
-
-const defineKeywords: DefineKeywords<unknown> = (handlers) => handlers
-
-const keywords = defineKeywords({
+const handlers = defineKeywords({
     symbol: {
         generate: () => Symbol(),
         validate: (value) => typeof value === "symbol"
@@ -73,11 +72,13 @@ const keywords = defineKeywords({
     },
     number: {
         generate: () => 0,
-        validate: (value) => typeof value === "number"
+        validate: (value) => typeof value === "number",
+        isNumber: true
     },
     string: {
         generate: () => "",
-        validate: (value) => typeof value === "string"
+        validate: (value) => typeof value === "string",
+        isString: true
     },
     bigint: {
         generate: () => BigInt(0),
@@ -86,62 +87,103 @@ const keywords = defineKeywords({
     // Number subtypes
     integer: {
         generate: () => 0,
-        validate: (value) => Number.isInteger(value)
+        validate: (value) => Number.isInteger(value),
+        isNumber: true
     },
     positive: {
         generate: () => 1,
-        validate: (value) => typeof value === "number" && value > 0
+        validate: (value) => typeof value === "number" && value > 0,
+        isNumber: true
     },
     nonnegative: {
         generate: () => 0,
-        validate: (value) => typeof value === "number" && value >= 0
+        validate: (value) => typeof value === "number" && value >= 0,
+        isNumber: true
     },
     // String subtypes
     email: {
         generate: () => "david@redo.dev",
         validate: (value) =>
-            typeof value === "string" && /^(.+)@(.+)$/.test(value)
+            typeof value === "string" && /^(.+)@(.+)$/.test(value),
+        isString: true
     },
     alpha: {
         generate: () => "",
-        validate: (value) => typeof value === "string" && isAlpha(value)
+        validate: (value) => typeof value === "string" && isAlpha(value),
+        isString: true
     },
     alphanumeric: {
         generate: () => "",
-        validate: (value) => typeof value === "string" && isAlphaNumeric(value)
+        validate: (value) => typeof value === "string" && isAlphaNumeric(value),
+        isString: true
     },
     lowercase: {
         generate: () => "",
         validate: (value) =>
-            typeof value === "string" && value === value.toLowerCase()
+            typeof value === "string" && value === value.toLowerCase(),
+        isString: true
     },
     uppercase: {
         generate: () => "",
         validate: (value) =>
-            typeof value === "string" && value === value.toUpperCase()
+            typeof value === "string" && value === value.toUpperCase(),
+        isString: true
     },
     character: {
         generate: () => "a",
-        validate: (value) => typeof value === "string" && value.length === 1
+        validate: (value) => typeof value === "string" && value.length === 1,
+        isString: true
     }
 })
+
+type Handlers = typeof handlers
+
+type ExtractKeywordTypesFromHandlers = {
+    [K in keyof Handlers]: ReturnType<Handlers[K]["generate"]>
+}
+
+type ExtractKeywordsByType<Identifier extends "isString" | "isNumber"> = {
+    [Keyword in keyof Handlers]: Identifier extends keyof Handlers[Keyword]
+        ? Keyword
+        : never
+}[keyof Handlers]
 
 export namespace Keyword {
     export type Definition = keyof Types
 
-    export type Types = HandledTypes<typeof keywords>
+    export type Types = ExtractKeywordTypesFromHandlers
 
-    export const matches = (def: string): def is Definition => def in keywords
+    export type NumberKeyword = ExtractKeywordsByType<"isNumber">
+
+    export type StringKeyword = ExtractKeywordsByType<"isString">
+
+    export const getSubtypeHandlers = () => {
+        const subtypeHandlers = {
+            number: {} as KeywordHandlerMap,
+            string: {} as KeywordHandlerMap
+        }
+        for (const [keyword, handler] of Object.entries(handlers)) {
+            if ("isNumber" in handler) {
+                subtypeHandlers.number[keyword] = handler
+            }
+            if ("isString" in handler) {
+                subtypeHandlers.string[keyword] = handler
+            }
+        }
+        return subtypeHandlers
+    }
+
+    export const matches = (def: string): def is Definition => def in handlers
 
     export class Node extends Base.Node<Definition> {
         allows(value: unknown, errors: Base.ErrorsByPath) {
-            if (!keywords[this.def].validate(value)) {
+            if (!handlers[this.def].validate(value)) {
                 this.addUnassignable(value, errors)
             }
         }
 
         generate() {
-            return keywords[this.def].generate()
+            return handlers[this.def].generate()
         }
     }
 }
