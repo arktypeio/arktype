@@ -8,15 +8,11 @@ type BoundableKeyword = Keyword.NumberOnly | Keyword.StringOnly
 
 type ComparatorToken = "<=" | ">=" | "<" | ">"
 
-type InvalidBoundError<
-    Inner extends string,
-    Limit extends string
-> = `'${Limit}' must be a number literal to bound '${Inner}'.`
+type InvalidBoundError<Bound extends string> =
+    `Bound ${Bound} must be a number literal.`
 
-const invalidBoundError = (inner: string, limit: string) =>
-    `'${Base.stringifyDef(
-        limit
-    )}' must be a number literal to bound '${Base.stringifyDef(inner)}'.`
+const invalidBoundError = (bound: string) =>
+    `Bound ${Base.stringifyDef(bound)} must be a number literal.`
 
 type UnboundableError<Bounded extends string> =
     `Bounded definition '${Bounded}' must be a number or string keyword.`
@@ -33,12 +29,11 @@ type ConstraintError = typeof constraintErrorTemplate
 
 const buildComparatorErrorMessage = (
     comparatorError: string,
-    value: string,
-    bound: number,
-    isString: boolean
+    value: string | number,
+    bound: number
 ) => {
     return `${Base.stringifyValue(value)} is ${comparatorError} ${bound}${
-        isString ? " characters" : ""
+        typeof value === "string" ? " characters" : ""
     }.`
 }
 
@@ -51,42 +46,33 @@ const comparatorInverses = {
 
 const comparators: {
     [K in ComparatorToken]: (
-        value: string,
-        comparable: number,
-        bound: number,
-        isString: boolean
+        // The original value whose bounds are being validated
+        value: string | number,
+        // The value to check against bounds (# of characters for a string, the value itself for a number)
+        valueToCompare: number,
+        // The bound against which to check valueToCompare
+        bound: number
     ) => string
 } = {
-    "<=": (value, comparable, bound, isString) =>
+    "<=": (value, comparable, bound) =>
         comparable > bound
-            ? buildComparatorErrorMessage(
-                  "greater than",
-                  value,
-                  bound,
-                  isString
-              )
+            ? buildComparatorErrorMessage("greater than", value, bound)
             : "",
-    ">=": (value, comparable, bound, isString) =>
+    ">=": (value, comparable, bound) =>
         comparable < bound
-            ? buildComparatorErrorMessage("less than", value, bound, isString)
+            ? buildComparatorErrorMessage("less than", value, bound)
             : "",
-    "<": (value, comparable, bound, isString) =>
+    "<": (value, comparable, bound) =>
         comparable >= bound
             ? buildComparatorErrorMessage(
                   "greater than or equal to",
                   value,
-                  bound,
-                  isString
+                  bound
               )
             : "",
-    ">": (value, comparable, bound, isString) =>
+    ">": (value, comparable, bound) =>
         comparable <= bound
-            ? buildComparatorErrorMessage(
-                  "less than or equal to",
-                  value,
-                  bound,
-                  isString
-              )
+            ? buildComparatorErrorMessage("less than or equal to", value, bound)
             : ""
 }
 
@@ -139,8 +125,8 @@ export namespace Constraint {
             ? Left extends EmbeddedNumber.Definition
                 ? Right extends EmbeddedNumber.Definition
                     ? Middle
-                    : Base.ParseErrorMessage<InvalidBoundError<Middle, Right>>
-                : Base.ParseErrorMessage<InvalidBoundError<Middle, Left>>
+                    : Base.ParseErrorMessage<InvalidBoundError<Right>>
+                : Base.ParseErrorMessage<InvalidBoundError<Left>>
             : Base.ParseErrorMessage<UnboundableError<Middle>>
         : Parts extends SingleBoundedParts<
               infer Left,
@@ -150,75 +136,97 @@ export namespace Constraint {
         ? Left extends BoundableKeyword
             ? Right extends EmbeddedNumber.Definition
                 ? Left
-                : Base.ParseErrorMessage<InvalidBoundError<Left, Right>>
+                : Base.ParseErrorMessage<InvalidBoundError<Right>>
             : Base.ParseErrorMessage<UnboundableError<Left>>
         : Base.ParseErrorMessage<ConstraintError>
 
     export const matcher = /(<=|>=|<|>)/
 
+    const validateBound = (part: string) => {
+        if (!EmbeddedNumber.matches(part)) {
+            throw new Error(invalidBoundError(part))
+        }
+        return EmbeddedNumber.valueFrom(part)
+    }
+
+    const boundables = Keyword.getSubtypeHandlers()
+
+    const getBoundableHandler = (part: string) => {
+        if (part in boundables.number) {
+            return boundables.number[part]
+        }
+        if (part in boundables.string) {
+            return boundables.string[part]
+        }
+        throw new Error(unboundableError(part))
+    }
+
     export class Node extends Base.Node<Definition> {
-        bounded() {
-            const boundables = Keyword.getSubtypeHandlers()
+        parse() {
+            // Odd-indexed parts will always be comparators (<=, >=, < or >)
+            // We still need to validate even-indexed parts as boundable keywords or number literals
             const parts = this.def.split(matcher)
             if (parts.length === 5) {
-                if (!(parts[1] in comparators && parts[3] in comparators)) {
-                    throw new Error(constraintErrorTemplate)
-                }
-                if (
-                    !(
-                        parts[2] in boundables.string ||
-                        parts[2] in boundables.number
-                    )
-                ) {
-                    throw new Error(unboundableError(parts[2]))
-                }
-                if (!EmbeddedNumber.matches(parts[0])) {
-                    throw new Error(invalidBoundError(parts[2], parts[0]))
-                }
-                if (!EmbeddedNumber.matches(parts[4])) {
-                    throw new Error(invalidBoundError(parts[2], parts[4]))
-                }
-                const firstComparator =
-                    comparatorInverses[parts[1] as ComparatorToken]
-                const secondComparator = parts[3] as ComparatorToken
                 return {
-                    bounded: Str.parser.parse(parts[2], ctx) as any,
-                    [firstComparator]: parts[0],
-                    [secondComparator]: parts[4]
+                    bounded: {
+                        keyword: parts[2],
+                        handler: getBoundableHandler(parts[2])
+                    },
+                    /** We have to take the inverse of the first comparator in an expression like
+                     * 5<=number<10
+                     * so that it can be split into two expressions like
+                     * number>=5
+                     * number<10
+                     */
+                    [comparatorInverses[parts[1] as ComparatorToken]]:
+                        validateBound(parts[0]),
+                    [parts[3]]: validateBound(parts[4])
                 }
             }
             if (parts.length === 3) {
-                if (!(parts[1] in comparators)) {
-                    throw new Error(constraintErrorTemplate)
-                }
-                if (
-                    !(
-                        parts[0] in boundables.string ||
-                        parts[0] in boundables.number
-                    )
-                ) {
-                    throw new Error(unboundableError(parts[0]))
-                }
-                if (!EmbeddedNumber.matches(parts[2])) {
-                    throw new Error(invalidBoundError(parts[0], parts[2]))
-                }
-                const comparator = parts[1] as ComparatorToken
                 return {
-                    bounded: Str.parser.parse(parts[0], ctx) as any,
-                    [comparator]: parts[2]
+                    bounded: {
+                        keyword: parts[0],
+                        handler: getBoundableHandler(parts[0])
+                    },
+                    [parts[1]]: parts[2]
                 }
             }
             throw new Error(constraintErrorTemplate)
         }
 
         allows(value: unknown, errors: Base.ErrorsByPath) {
-            if (value !== undefined) {
-                this.bounded().allows(value, errors)
+            const { bounded, ...bounds } = this.parse()
+            if (!bounded.handler.validate(value, this.ctx)) {
+                this.addUnassignableMessage(
+                    `${Base.stringifyValue(value)} is not assignable to ${
+                        bounded.keyword
+                    }.`,
+                    errors
+                )
+                return
+            }
+            const boundEntries = Object.entries(bounds) as [
+                ComparatorToken,
+                number
+            ][]
+            for (const [comparator, bound] of boundEntries) {
+                const boundError = comparators[comparator](
+                    value as string | number,
+                    typeof value === "string"
+                        ? value.length
+                        : (value as number),
+                    bound
+                )
+                if (boundError) {
+                    this.addUnassignableMessage(boundError, errors)
+                    return
+                }
             }
         }
 
         generate() {
-            return undefined
+            throw new Base.UngeneratableError(this.def, "constraint")
         }
     }
 }
