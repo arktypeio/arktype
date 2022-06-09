@@ -51,6 +51,12 @@ bench("validate union", () => {
     Root.parse("string|number", defaultParseContext).validateByPath(5)
 }).median("571.00ns")
 
+const unionCached = Root.parse("string|number", defaultParseContext)
+
+bench("validate union cached", () => {
+    unionCached.validateByPath(5)
+}).median("268.00ns")
+
 bench("errors at paths", () => {
     Root.parse(
         {
@@ -61,12 +67,6 @@ bench("errors at paths", () => {
         defaultParseContext
     ).validateByPath({ a: [], b: "hi", c: { nested: [true, 5] } })
 }).median("4.27us")
-
-// console.log(
-//     Root.parse({ a: "string[][]" }, defaultParseContext).validate({
-//         a: [[1, true, "we're", "strings", 5], true, [5, 3, "hi", "ho"], [], "o"]
-//     })
-// )
 
 bench("list type", () => {
     Root.parse("string[]", defaultParseContext).validateByPath([

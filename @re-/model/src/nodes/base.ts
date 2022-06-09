@@ -50,7 +50,27 @@ export namespace Base {
         abstract generate(): unknown
     }
 
+    export abstract class NonTerminal<DefType> extends Node<DefType> {
+        constructor(protected def: DefType, protected ctx: ParseContext) {
+            super(def, ctx)
+            if (ctx.eager) {
+            }
+        }
+
+        abstract children: Record<string, () => Node<unknown>>
+
+        private cache: Record<string, Node<unknown>> = {}
+
+        protected child(name: string) {
+            if (!(name in this.cache)) {
+                this.cache[name] = this.children[name]()
+            }
+            return this.cache[name]
+        }
+    }
+
     export type ParseContext = {
+        eager: boolean
         path: string
         seen: string[]
         shallowSeen: string[]
@@ -65,6 +85,7 @@ export namespace Base {
                 config: {}
             }
         },
+        eager: false,
         path: "",
         seen: [],
         shallowSeen: [],
@@ -103,10 +124,7 @@ export namespace Base {
     export const buildUnassignableErrorMessage = (
         def: unknown,
         value: unknown
-    ) =>
-        `${toString(value, {
-            maxNestedStringLength: 50
-        })} is not assignable to ${stringifyDef(def)}.`
+    ) => `${stringifyValue(value)})} is not assignable to ${stringifyDef(def)}.`
 
     export const stringifyErrors = (errors: ErrorsByPath) => {
         const errorPaths = Object.keys(errors)

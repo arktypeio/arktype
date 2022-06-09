@@ -134,19 +134,19 @@ importers:
       '@re-/assert': workspace:*
       '@re-/node': workspace:*
       '@re-/tools': workspace:*
+      micro-memoize: 4.0.10
       remark: 14.0.2
       remark-parse: 10.0.1
       ts-morph: 14.0.0
-      zod: 3.17.3
     dependencies:
       '@re-/tools': link:../tools
+      micro-memoize: 4.0.10
     devDependencies:
       '@re-/assert': link:../assert
       '@re-/node': link:../node
       remark: 14.0.2
       remark-parse: 10.0.1
       ts-morph: 14.0.0
-      zod: 3.17.3
 
   '@re-/node':
     specifiers:
@@ -13550,10 +13550,6 @@ packages:
     optionalDependencies:
       commander: 2.20.3
     dev: false
-
-  /zod/3.17.3:
-    resolution: {integrity: sha512-4oKP5zvG6GGbMlqBkI5FESOAweldEhSOZ6LI6cG+JzUT7ofj1ZOC0PJudpQOpT1iqOFpYYtX5Pw0+o403y4bcg==}
-    dev: true
 
   /zwitch/1.0.5:
     resolution: {integrity: sha512-V50KMwwzqJV0NpZIZFwfOD5/lyny3WlSzRiXgA0G7VUnRlqttta1L6UQIHzd6EuBY/cHGfwTIck7w1yH6Q5zUw==}
