@@ -13,7 +13,7 @@ describe("constraint", () => {
             it("invalid single bound", () => {
                 // @ts-expect-error
                 assert(() => model("number<integer")).throwsAndHasTypeError(
-                    "'integer' must be a number literal to bound 'number'."
+                    "Bound 'integer' must be a number literal."
                 )
             })
             it("invalid left bound", () => {

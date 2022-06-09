@@ -104,6 +104,8 @@ export namespace Str {
             return new Union.Node(def, ctx)
         } else if (List.matches(def)) {
             return new List.Node(def, ctx)
+        } else if (Constraint.matches(def)) {
+            return new Constraint.Node(def, ctx)
         }
         throw new Base.ParseError(
             `Unable to determine the type of ${Base.stringifyDef(

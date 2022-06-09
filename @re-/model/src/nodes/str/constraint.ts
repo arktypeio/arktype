@@ -9,10 +9,10 @@ type BoundableKeyword = Keyword.NumberOnly | Keyword.StringOnly
 type ComparatorToken = "<=" | ">=" | "<" | ">"
 
 type InvalidBoundError<Bound extends string> =
-    `Bound ${Bound} must be a number literal.`
+    `Bound '${Bound}' must be a number literal.`
 
 const invalidBoundError = (bound: string) =>
-    `Bound ${Base.stringifyDef(bound)} must be a number literal.`
+    `Bound '${Base.stringifyDef(bound)}' must be a number literal.`
 
 type UnboundableError<Bounded extends string> =
     `Bounded definition '${Bounded}' must be a number or string keyword.`
@@ -140,7 +140,9 @@ export namespace Constraint {
             : Base.ParseErrorMessage<UnboundableError<Left>>
         : Base.ParseErrorMessage<ConstraintError>
 
-    export const matcher = /(<=|>=|<|>)/
+    const matcher = /(<=|>=|<|>)/
+
+    export const matches = (def: string): def is Definition => matcher.test(def)
 
     const validateBound = (part: string) => {
         if (!EmbeddedNumber.matches(part)) {
@@ -189,7 +191,7 @@ export namespace Constraint {
                         keyword: parts[0],
                         handler: getBoundableHandler(parts[0])
                     },
-                    [parts[1]]: parts[2]
+                    [parts[1]]: validateBound(parts[2])
                 }
             }
             throw new Error(constraintErrorTemplate)
