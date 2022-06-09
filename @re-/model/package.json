@@ -38,7 +38,7 @@
     "devDependencies": {
         "@re-/assert": "workspace:*",
         "@re-/node": "workspace:*",
-        "ts-morph": "14.0.0",
+        "ts-morph": "15.1.0",
         "remark": "14.0.2",
         "remark-parse": "10.0.1"
     }

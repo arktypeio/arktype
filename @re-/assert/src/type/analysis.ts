@@ -1,9 +1,9 @@
 import { existsSync, mkdirSync, rmSync } from "node:fs"
-import { relative } from "node:path"
 import { readJson, writeJson } from "@re-/node"
 import { default as memoize } from "micro-memoize"
 import { Project, SyntaxKind, ts, Type } from "ts-morph"
 import {
+    getFileKey,
     getReAssertConfig,
     LinePosition,
     positionToString,
@@ -109,8 +109,6 @@ const concatenateChainedErrors = (
         )
         .join("\n")
 
-const getFileKey = (path: string) => relative(".", path)
-
 type AnalyzeTypeAssertionsOptions = {
     isInitialCache?: boolean
 }
@@ -134,10 +132,9 @@ const analyzeTypeAssertions = memoize(
         const diagnosticsByFile: DiagnosticsByFile = {}
 
         // We have to use this internal checker to access errors ignore by @ts-ignore or @ts-expect-error
-        const tsProgram = project.getProgram().compilerObject as any
-        const diagnostics: ts.Diagnostic[] = tsProgram
-            .getDiagnosticsProducingTypeChecker()
-            .getDiagnostics()
+        const diagnostics: ts.Diagnostic[] = (
+            project.getTypeChecker().compilerObject as any
+        ).getDiagnostics()
         for (const diagnostic of diagnostics) {
             const filePath = diagnostic.file?.fileName
             if (!filePath) {

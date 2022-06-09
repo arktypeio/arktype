@@ -15,7 +15,6 @@ export const updateBaselineIfNeeded = (
     if (baseline && !ctx.config.updateSnapshots) {
         return
     }
-    console.log(`✍️  ${baseline ? "Rewriting" : "Writing"} your baseline...`)
     const serializedValue = serializeBaseline(result)
     if (!ctx.lastSnapCallPosition) {
         throw new Error(
@@ -25,19 +24,8 @@ export const updateBaselineIfNeeded = (
     writeInlineSnapshotToFile({
         position: ctx.lastSnapCallPosition,
         serializedValue,
-        snapFunctionName: ctx.kind
-    })
-    // Summarize updates at the end of output
-    process.on("beforeExit", () => {
-        let updateSummary = `  ${
-            baseline ? "🆙  Updated" : "✨  Established"
-        } baseline '${ctx.name}' `
-        updateSummary += baseline
-            ? `from ${serializeBaseline(baseline)} to `
-            : "at "
-        updateSummary += `${serializedValue}.`
-        console.groupEnd()
-        console.log(updateSummary)
+        snapFunctionName: ctx.kind,
+        baselineName: ctx.name
     })
 }
 

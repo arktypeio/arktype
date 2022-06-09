@@ -1,3 +1,4 @@
+import { writeJson } from "@re-/node"
 import { Base } from "../base.js"
 import { Alias } from "./alias.js"
 import { Constraint } from "./constraint.js"
@@ -83,34 +84,46 @@ export namespace Str {
     export const matches = (def: unknown): def is string =>
         typeof def === "string"
 
+    let cache: Record<string, Base.Node<unknown>> = {}
+
+    export const resetCache = () => {
+        cache = {}
+    }
+
+    process.on("exit", () => writeJson("cache.json", Object.keys(cache)))
+
     export const parse: Base.Parser<string> = (def, ctx) => {
-        if (Optional.matches(def)) {
-            return new Optional.Node(def, ctx)
-        } else if (Keyword.matches(def)) {
-            return new Keyword.Node(def, ctx)
-        } else if (Alias.matches(def, ctx)) {
-            return new Alias.Node(def, ctx)
-        } else if (StringLiteral.matches(def)) {
-            return new StringLiteral.Node(def, ctx)
-        } else if (EmbeddedRegex.matches(def)) {
-            return EmbeddedRegex.parse(def, ctx)
-        } else if (EmbeddedNumber.matches(def)) {
-            return EmbeddedNumber.parse(def, ctx)
-        } else if (EmbeddedBigInt.matches(def)) {
-            return EmbeddedBigInt.parse(def, ctx)
-        } else if (Intersection.matches(def)) {
-            return new Intersection.Node(def, ctx)
-        } else if (Union.matches(def)) {
-            return new Union.Node(def, ctx)
-        } else if (List.matches(def)) {
-            return new List.Node(def, ctx)
-        } else if (Constraint.matches(def)) {
-            return new Constraint.Node(def, ctx)
+        if (!(def in cache)) {
+            if (Optional.matches(def)) {
+                cache[def] = new Optional.Node(def, ctx)
+            } else if (Keyword.matches(def)) {
+                cache[def] = new Keyword.Node(def, ctx)
+            } else if (Alias.matches(def, ctx)) {
+                cache[def] = new Alias.Node(def, ctx)
+            } else if (StringLiteral.matches(def)) {
+                cache[def] = new StringLiteral.Node(def, ctx)
+            } else if (EmbeddedRegex.matches(def)) {
+                cache[def] = EmbeddedRegex.parse(def, ctx)
+            } else if (EmbeddedNumber.matches(def)) {
+                cache[def] = EmbeddedNumber.parse(def, ctx)
+            } else if (EmbeddedBigInt.matches(def)) {
+                cache[def] = EmbeddedBigInt.parse(def, ctx)
+            } else if (Intersection.matches(def)) {
+                cache[def] = new Intersection.Node(def, ctx)
+            } else if (Union.matches(def)) {
+                cache[def] = new Union.Node(def, ctx)
+            } else if (List.matches(def)) {
+                cache[def] = new List.Node(def, ctx)
+            } else if (Constraint.matches(def)) {
+                cache[def] = new Constraint.Node(def, ctx)
+            } else {
+                throw new Base.ParseError(
+                    `Unable to determine the type of ${Base.stringifyDef(
+                        def
+                    )}${Base.stringifyPathContext(ctx.path)}.`
+                )
+            }
         }
-        throw new Base.ParseError(
-            `Unable to determine the type of ${Base.stringifyDef(
-                def
-            )}${Base.stringifyPathContext(ctx.path)}.`
-        )
+        return cache[def]
     }
 }

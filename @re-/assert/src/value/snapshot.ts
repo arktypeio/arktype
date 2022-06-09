@@ -2,8 +2,9 @@ import { randomUUID } from "node:crypto"
 import { existsSync, readdirSync } from "node:fs"
 import { basename, dirname, isAbsolute, join } from "node:path"
 import { readJson, writeJson } from "@re-/node"
-import { CallExpression, SyntaxKind, ts } from "ts-morph"
+import { CallExpression, SourceFile, SyntaxKind, ts } from "ts-morph"
 import {
+    getFileKey,
     getReAssertConfig,
     positionToString,
     SourcePosition
@@ -14,6 +15,7 @@ export interface SnapshotArgs {
     position: SourcePosition
     serializedValue: string
     snapFunctionName?: string
+    baselineName?: string
 }
 
 export interface ExternalSnapshotArgs extends SnapshotArgs {
@@ -94,20 +96,63 @@ export const findCallExpressionAncestor = (
     return matchingCall
 }
 
-export const writeInlineSnapshotToFile = ({
-    position,
-    serializedValue,
-    snapFunctionName = "snap"
-}: SnapshotArgs) => {
-    const project = getTsProject()
-    const file = project.getSourceFileOrThrow(position.file)
-    const snapCall = findCallExpressionAncestor(position, snapFunctionName)
-    process.on("exit", () => {
-        for (const originalArg of snapCall.getArguments()) {
+type QueuedUpdate = {
+    file: SourceFile
+    snapCall: CallExpression
+    serializedValue: string
+    baselineName: string | undefined
+}
+
+const queuedUpdates: QueuedUpdate[] = []
+
+// Waiting until process exit to write snapshots avoids invalidating existing source positions
+process.on("exit", () => {
+    for (const {
+        file,
+        snapCall,
+        serializedValue,
+        baselineName
+    } of queuedUpdates) {
+        const originalArgs = snapCall.getArguments()
+        const previousValue = originalArgs.length
+            ? originalArgs[0].getText()
+            : undefined
+        for (const originalArg of originalArgs) {
             snapCall.removeArgument(originalArg)
         }
         snapCall.addArgument(serializedValue.replace(`\\`, `\\\\`))
         file.saveSync()
+        let updateSummary = `${
+            originalArgs.length ? "🆙  Updated" : "📸  Established"
+        } `
+        updateSummary += baselineName
+            ? `baseline '${baselineName}' `
+            : `snap on line ${snapCall.getStartLineNumber()} of ${getFileKey(
+                  file.getFilePath()
+              )} `
+        updateSummary += previousValue
+            ? `from ${previousValue} to `
+            : `${baselineName ? "at" : "as"} `
+
+        updateSummary += `${serializedValue}.`
+        console.log(updateSummary)
+    }
+})
+
+export const writeInlineSnapshotToFile = ({
+    position,
+    serializedValue,
+    snapFunctionName = "snap",
+    baselineName
+}: SnapshotArgs) => {
+    const project = getTsProject()
+    const file = project.getSourceFileOrThrow(position.file)
+    const snapCall = findCallExpressionAncestor(position, snapFunctionName)
+    queuedUpdates.push({
+        file,
+        snapCall,
+        serializedValue,
+        baselineName
     })
 }
 

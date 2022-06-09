@@ -35,7 +35,7 @@
         "@microsoft/api-extractor": "7.22.2",
         "@microsoft/api-extractor-model": "7.17.2",
         "@microsoft/api-documenter": "7.17.10",
-        "ts-morph": "14.0.0",
+        "ts-morph": "15.1.0",
         "prettier": "2.6.2"
     },
     "devDependencies": {

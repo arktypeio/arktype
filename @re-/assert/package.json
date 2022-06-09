@@ -33,6 +33,6 @@
         "@re-/node": "workspace:*",
         "@re-/tools": "workspace:*",
         "micro-memoize": "4.0.10",
-        "ts-morph": "14.0.0"
+        "ts-morph": "15.1.0"
     }
 }
