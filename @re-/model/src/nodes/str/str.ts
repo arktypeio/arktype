@@ -1,4 +1,3 @@
-import { writeJson } from "@re-/node"
 import { Base } from "../base.js"
 import { Alias } from "./alias.js"
 import { Constraint } from "./constraint.js"

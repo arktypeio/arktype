@@ -18,18 +18,14 @@ export namespace Optional {
 
     export const matches = (def: string): def is Definition => def.endsWith("?")
 
-    export class Node extends Base.NonTerminal<Definition> {
-        #child?: Base.Node<unknown>
-        get child() {
-            if (!this.#child) {
-                this.#child = Str.parse(this.def.slice(0, -1), this.ctx)
-            }
-            return this.#child
+    export class Node extends Base.Linked<Definition> {
+        parse() {
+            return Str.parse(this.def.slice(0, -1), this.ctx)
         }
 
         allows(value: unknown, errors: Base.ErrorsByPath) {
             if (value !== undefined) {
-                this.child.allows(value, errors)
+                this.next().allows(value, errors)
             }
         }
 

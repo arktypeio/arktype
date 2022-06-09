@@ -50,7 +50,50 @@ export namespace Base {
         abstract generate(): unknown
     }
 
-    export abstract class NonTerminal<DefType> extends Node<DefType> {}
+    export abstract class Branching<DefType> extends Node<DefType> {
+        #branches: IterableIterator<Node<unknown>>
+        #cache: Node<unknown>[] = []
+
+        constructor(def: DefType, ctx: ParseContext) {
+            super(def, ctx)
+
+            this.#branches = this.parse()
+            if (ctx.eager) {
+                for (const child of this.#branches) {
+                    this.#cache.push(child)
+                }
+            }
+        }
+
+        branch(i: number) {
+            while (!(i in this.#cache)) {
+                this.#cache.push(this.#branches.next().value)
+            }
+            return this.#cache[i]
+        }
+
+        abstract parse(): Generator<Node<unknown>>
+    }
+
+    export abstract class Linked<DefType> extends Node<DefType> {
+        #cache?: Node<unknown>
+
+        constructor(def: DefType, ctx: ParseContext) {
+            super(def, ctx)
+            if (ctx.eager) {
+                this.#cache = this.parse()
+            }
+        }
+
+        abstract parse(): Node<unknown>
+
+        next() {
+            if (!this.#cache) {
+                this.#cache = this.parse()
+            }
+            return this.#cache
+        }
+    }
 
     export type ParseContext = {
         eager: boolean
