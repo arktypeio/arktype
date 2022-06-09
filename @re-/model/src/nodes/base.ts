@@ -50,24 +50,7 @@ export namespace Base {
         abstract generate(): unknown
     }
 
-    export abstract class NonTerminal<DefType> extends Node<DefType> {
-        constructor(protected def: DefType, protected ctx: ParseContext) {
-            super(def, ctx)
-            if (ctx.eager) {
-            }
-        }
-
-        abstract children: Record<string, () => Node<unknown>>
-
-        private cache: Record<string, Node<unknown>> = {}
-
-        protected child(name: string) {
-            if (!(name in this.cache)) {
-                this.cache[name] = this.children[name]()
-            }
-            return this.cache[name]
-        }
-    }
+    export abstract class NonTerminal<DefType> extends Node<DefType> {}
 
     export type ParseContext = {
         eager: boolean

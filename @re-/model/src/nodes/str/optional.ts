@@ -19,17 +19,17 @@ export namespace Optional {
     export const matches = (def: string): def is Definition => def.endsWith("?")
 
     export class Node extends Base.NonTerminal<Definition> {
-        // next() {
-        //     return Str.parse(this.def.slice(0, -1), this.ctx)
-        // }
-
-        children = {
-            inner: () => Str.parse(this.def.slice(0, -1), this.ctx)
+        #child?: Base.Node<unknown>
+        get child() {
+            if (!this.#child) {
+                this.#child = Str.parse(this.def.slice(0, -1), this.ctx)
+            }
+            return this.#child
         }
 
         allows(value: unknown, errors: Base.ErrorsByPath) {
             if (value !== undefined) {
-                this.child("inner").allows(value, errors)
+                this.child.allows(value, errors)
             }
         }
 
