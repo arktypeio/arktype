@@ -4,11 +4,7 @@ import { Keyword } from "./keyword.js"
 import { Str } from "./str.js"
 import { Base } from "#base"
 
-type Comparable = {
-    [K in keyof Keyword.Types]: Keyword.Types[K] extends number | string
-        ? K
-        : never
-}[keyof Keyword.Types]
+type BoundableKeyword = Keyword.NumberOnly | Keyword.StringOnly
 
 type ComparatorToken = "<=" | ">=" | "<" | ">"
 
@@ -16,6 +12,11 @@ type InvalidBoundError<
     Inner extends string,
     Limit extends string
 > = `'${Limit}' must be a number literal to bound '${Inner}'.`
+
+const invalidBoundError = (inner: string, limit: string) =>
+    `'${Base.stringifyDef(
+        limit
+    )}' must be a number literal to bound '${Base.stringifyDef(inner)}'.`
 
 type UnboundableError<Bounded extends string> =
     `Bounded definition '${Bounded}' must be a number or string keyword.`
@@ -39,6 +40,13 @@ const buildComparatorErrorMessage = (
     return `${Base.stringifyValue(value)} is ${comparatorError} ${bound}${
         isString ? " characters" : ""
     }.`
+}
+
+const comparatorInverses = {
+    "<=": ">=",
+    ">=": "<=",
+    "<": ">",
+    ">": "<"
 }
 
 const comparators: {
@@ -127,7 +135,7 @@ export namespace Constraint {
         ComparatorToken,
         infer Right
     >
-        ? Middle extends Comparable
+        ? Middle extends BoundableKeyword
             ? Left extends EmbeddedNumber.Definition
                 ? Right extends EmbeddedNumber.Definition
                     ? Middle
@@ -139,7 +147,7 @@ export namespace Constraint {
               ComparatorToken,
               infer Right
           >
-        ? Left extends Comparable
+        ? Left extends BoundableKeyword
             ? Right extends EmbeddedNumber.Definition
                 ? Left
                 : Base.ParseErrorMessage<InvalidBoundError<Left, Right>>
@@ -150,7 +158,57 @@ export namespace Constraint {
 
     export class Node extends Base.Node<Definition> {
         bounded() {
-            return Str.parse(this.def.slice(0, -1), this.ctx)
+            const boundables = Keyword.getSubtypeHandlers()
+            const parts = this.def.split(matcher)
+            if (parts.length === 5) {
+                if (!(parts[1] in comparators && parts[3] in comparators)) {
+                    throw new Error(constraintErrorTemplate)
+                }
+                if (
+                    !(
+                        parts[2] in boundables.string ||
+                        parts[2] in boundables.number
+                    )
+                ) {
+                    throw new Error(unboundableError(parts[2]))
+                }
+                if (!EmbeddedNumber.matches(parts[0])) {
+                    throw new Error(invalidBoundError(parts[2], parts[0]))
+                }
+                if (!EmbeddedNumber.matches(parts[4])) {
+                    throw new Error(invalidBoundError(parts[2], parts[4]))
+                }
+                const firstComparator =
+                    comparatorInverses[parts[1] as ComparatorToken]
+                const secondComparator = parts[3] as ComparatorToken
+                return {
+                    bounded: Str.parser.parse(parts[2], ctx) as any,
+                    [firstComparator]: parts[0],
+                    [secondComparator]: parts[4]
+                }
+            }
+            if (parts.length === 3) {
+                if (!(parts[1] in comparators)) {
+                    throw new Error(constraintErrorTemplate)
+                }
+                if (
+                    !(
+                        parts[0] in boundables.string ||
+                        parts[0] in boundables.number
+                    )
+                ) {
+                    throw new Error(unboundableError(parts[0]))
+                }
+                if (!EmbeddedNumber.matches(parts[2])) {
+                    throw new Error(invalidBoundError(parts[0], parts[2]))
+                }
+                const comparator = parts[1] as ComparatorToken
+                return {
+                    bounded: Str.parser.parse(parts[0], ctx) as any,
+                    [comparator]: parts[2]
+                }
+            }
+            throw new Error(constraintErrorTemplate)
         }
 
         allows(value: unknown, errors: Base.ErrorsByPath) {

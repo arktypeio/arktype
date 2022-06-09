@@ -153,9 +153,9 @@ export namespace Keyword {
 
     export type Types = ExtractKeywordTypesFromHandlers
 
-    export type NumberKeyword = ExtractKeywordsByType<"isNumber">
+    export type NumberOnly = ExtractKeywordsByType<"isNumber">
 
-    export type StringKeyword = ExtractKeywordsByType<"isString">
+    export type StringOnly = ExtractKeywordsByType<"isString">
 
     export const getSubtypeHandlers = () => {
         const subtypeHandlers = {
