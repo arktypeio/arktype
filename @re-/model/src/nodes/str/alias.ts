@@ -1,6 +1,6 @@
 import { And, WithPropValue } from "@re-/tools"
 import { Root } from "../root.js"
-import { Common, Terminal } from "#common"
+import { Common, Leaf } from "#common"
 
 export namespace Alias {
     export type Parse<Def extends keyof Dict, Dict, Seen> = And<
@@ -28,7 +28,7 @@ export namespace Alias {
     export const matches = (def: string, ctx: Common.ParseContext) =>
         def in ctx.config.space.dictionary
 
-    export class Node extends Terminal<string> {
+    export class Node extends Leaf<string> {
         resolve() {
             /**
              * Keep track of definitions we've seen since last resolving to an object or built-in.

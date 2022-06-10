@@ -1,5 +1,5 @@
 import { Str } from "./str.js"
-import { Common, Linked } from "#common"
+import { Branch, Common } from "#common"
 
 export namespace List {
     export type Definition<Child extends string = string> = `${Child}[]`
@@ -7,7 +7,7 @@ export namespace List {
     export const matches = (def: string): def is Definition =>
         def.endsWith("[]")
 
-    export class Node extends Linked<Definition> {
+    export class Node extends Branch<Definition> {
         parse() {
             return Str.parse(this.def.slice(0, -2), this.ctx)
         }

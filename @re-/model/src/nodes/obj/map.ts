@@ -1,7 +1,7 @@
 import { diffSets, Entry, Evaluate } from "@re-/tools"
 import { Root } from "../root.js"
 import { Optional } from "../str/index.js"
-import { Common, Linked } from "#common"
+import { Branch, Common } from "#common"
 
 export namespace Map {
     export type Parse<
@@ -22,7 +22,7 @@ export namespace Map {
 
     type ParseResult = Entry<string, Common.Node>[]
 
-    export class Node extends Linked<object, ParseResult> {
+    export class Node extends Branch<object, ParseResult> {
         parse() {
             return Object.entries(this.def).map(([prop, propDef]) => [
                 prop,

@@ -1,4 +1,4 @@
-import { Common, Terminal } from "#common"
+import { Common, Leaf } from "#common"
 
 export namespace Regex {
     export type Definition = RegExp
@@ -6,7 +6,7 @@ export namespace Regex {
     export const matches = (def: object): def is Definition =>
         def instanceof RegExp
 
-    export class Node extends Terminal<Definition> {
+    export class Node extends Leaf<Definition> {
         allows(value: unknown, errors: Common.ErrorsByPath) {
             if (typeof value !== "string") {
                 this.addUnassignableMessage(

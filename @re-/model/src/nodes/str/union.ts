@@ -1,6 +1,6 @@
 import { createSplittableMatcher } from "./common.js"
 import { Str } from "./str.js"
-import { Common, Linked } from "#common"
+import { Branch, Common } from "#common"
 
 export namespace Union {
     export type Definition<
@@ -12,7 +12,7 @@ export namespace Union {
 
     const matcher = createSplittableMatcher("|")
 
-    export class Node extends Linked<Definition, Common.Node[]> {
+    export class Node extends Branch<Definition, Common.Node[]> {
         parse() {
             return this.def
                 .match(matcher)!

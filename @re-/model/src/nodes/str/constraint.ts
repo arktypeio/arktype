@@ -2,7 +2,7 @@ import { Spliterate } from "@re-/tools"
 import { EmbeddedNumber } from "./embedded.js"
 import { Keyword } from "./keyword.js"
 import { Str } from "./str.js"
-import { Common, Linked } from "#common"
+import { Branch, Common } from "#common"
 
 type BoundableKeyword = Keyword.NumberOnly | Keyword.StringOnly
 
@@ -174,7 +174,7 @@ export namespace Constraint {
         }
     }
 
-    export class Node extends Linked<Definition, ParseResult> {
+    export class Node extends Branch<Definition, ParseResult> {
         parse() {
             // Odd-indexed parts will always be comparators (<=, >=, < or >)
             // We still need to validate even-indexed parts as boundable keywords or number literals

@@ -1,6 +1,6 @@
 import { Entry } from "@re-/tools"
 import { Root } from "../root.js"
-import { Common, Linked } from "#common"
+import { Branch, Common } from "#common"
 
 export namespace Tuple {
     export type Definition = unknown[] | readonly unknown[]
@@ -10,7 +10,7 @@ export namespace Tuple {
 
     type ParseResult = Entry<number, Common.Node>[]
 
-    export class Node extends Linked<Definition, ParseResult> {
+    export class Node extends Branch<Definition, ParseResult> {
         parse() {
             return this.def.map((elementDef, elementIndex) => [
                 elementIndex,

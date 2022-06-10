@@ -1,5 +1,5 @@
 import { isAlpha, isAlphaNumeric } from "@re-/tools"
-import { Common, Terminal } from "#common"
+import { Common, Leaf } from "#common"
 
 type KeywordHandlerMap = Record<string, Keyword.Handler>
 
@@ -175,7 +175,7 @@ export namespace Keyword {
 
     export const matches = (def: string): def is Definition => def in handlers
 
-    export class Node extends Terminal<Definition> {
+    export class Node extends Leaf<Definition> {
         allows(value: unknown, errors: Common.ErrorsByPath) {
             if (!handlers[this.def].validate(value)) {
                 this.addUnassignable(value, errors)

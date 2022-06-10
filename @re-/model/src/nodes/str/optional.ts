@@ -1,5 +1,5 @@
 import { Str } from "./str.js"
-import { Common, Linked } from "#common"
+import { Branch, Common } from "#common"
 
 const invalidModifierError = `Modifier '?' is only valid at the end of a type definition.`
 
@@ -18,7 +18,7 @@ export namespace Optional {
 
     export const matches = (def: string): def is Definition => def.endsWith("?")
 
-    export class Node extends Linked<Definition> {
+    export class Node extends Branch<Definition> {
         parse() {
             return Str.parse(this.def.slice(0, -1), this.ctx)
         }
