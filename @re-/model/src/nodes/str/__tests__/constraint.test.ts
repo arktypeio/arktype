@@ -19,13 +19,13 @@ describe("constraint", () => {
             it("invalid left bound", () => {
                 // @ts-expect-error
                 assert(() => eager("null<number<5")).throwsAndHasTypeError(
-                    "'null' must be a number literal to bound 'number'."
+                    "Bound 'null' must be a number literal."
                 )
             })
             it("invalid right bound", () => {
                 // @ts-expect-error
                 assert(() => eager("1<number<string")).throwsAndHasTypeError(
-                    "'string' must be a number literal to bound 'number'."
+                    "Bound 'string' must be a number literal."
                 )
             })
             it("two invalid bounds", () => {
@@ -33,7 +33,7 @@ describe("constraint", () => {
                     // @ts-expect-error
                     eager("number<number<number")
                 ).throwsAndHasTypeError(
-                    "'number' must be a number literal to bound 'number'."
+                    "Bound 'number' must be a number literal."
                 )
             })
             it("single-bounded unboundable", () => {

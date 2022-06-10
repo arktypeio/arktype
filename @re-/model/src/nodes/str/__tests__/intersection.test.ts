@@ -42,26 +42,23 @@ describe("intersection", () => {
         })
         describe("errors", () => {
             it("empty intersection", () => {
-                // @ts-ignore
                 assert(model("number&string").validate("5").error).snap(
-                    `'5' is not assignable to all of number&string.`
+                    `'5' is not assignable to number.`
                 )
             })
             it("two types", () => {
-                assert(model("boolean&true").validate("false").error).snap(
-                    `'false' is not assignable to all of boolean&true.`
+                assert(model("boolean&true").validate(false).error).snap(
+                    `false is not assignable to true.`
                 )
             })
             it("several types", () => {
                 assert(
                     model("unknown&true&boolean").validate(false).error
-                ).snap(
-                    `false is not assignable to all of unknown&true&boolean.`
-                )
+                ).snap(`false is not assignable to true.`)
             })
             it("bad keyword specifiers", () => {
                 assert(model("integer&positive").validate(7.5).error).snap(
-                    `7.5 is not assignable to all of integer&positive.`
+                    `7.5 is not assignable to integer.`
                 )
             })
         })

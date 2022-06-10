@@ -34,12 +34,12 @@ describe("regex", () => {
         describe("errors", () => {
             it("bad string", () => {
                 assert(model("/^[0-9]*$/").validate("durrrrrr").error).snap(
-                    "'durrrrrr' is not assignable to /^[0-9]*$/."
+                    `'durrrrrr' does not match expression /^[0-9]*$/.`
                 )
             })
             it("non-string", () => {
                 assert(model("/^[0-9]*$/").validate(5).error).snap(
-                    `5 is not assignable to /^[0-9]*$/.`
+                    `Non-string value 5 cannot satisfy regex definitions.`
                 )
             })
             it("messy string", () => {
@@ -48,7 +48,7 @@ describe("regex", () => {
                         "(b,c&d)=>eeef"
                     ).error
                 ).equals(
-                    `'(b,c&d)=>eeef' is not assignable to /\\((a|b)\\,[^?&]*\\)=>e+f?/.`
+                    `'(b,c&d)=>eeef' does not match expression /\\((a|b)\\,[^?&]*\\)=>e+f?/.`
                 )
             })
         })
@@ -56,7 +56,7 @@ describe("regex", () => {
     describe("generation", () => {
         it("unsupported", () => {
             assert(() => model("/.*/").generate()).throws.snap(
-                `Error: Unable to generate a value for '/.*/' (regex generation is unsupported).`
+                `Error: Unable to generate a value for '/.*/' (Regex generation is unsupported).`
             )
         })
     })

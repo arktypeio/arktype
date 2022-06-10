@@ -14,10 +14,10 @@ describe("regex", () => {
     it("validation", () => {
         assert(regex.validate("david@redo.dev").error).is(undefined)
         assert(regex.validate("david@redo.qa").error).snap(
-            `'david@redo.qa' is not assignable to /.*@redo\\.dev/.`
+            `'david@redo.qa' does not match expression /.*@redo\\.dev/.`
         )
         assert(regex.validate({ inObject: "david@redo.dev" }).error).snap(
-            `{inObject: 'david@redo.dev'} is not assignable to /.*@redo\\.dev/.`
+            `Non-string value {inObject: 'david@redo.dev'} cannot satisfy regex definitions.`
         )
     })
 })

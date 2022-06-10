@@ -108,9 +108,9 @@ export namespace Str {
             return new Constraint.Node(def, ctx)
         }
         throw new Common.ParseError(
-            `Unable to determine the type of ${Common.stringifyDef(
+            `Unable to determine the type of '${Common.stringifyDef(
                 def
-            )}${Common.stringifyPathContext(ctx.path)}.`
+            )}'${Common.stringifyPathContext(ctx.path)}.`
         )
     }
 }

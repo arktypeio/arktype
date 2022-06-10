@@ -46,8 +46,7 @@ export namespace EmbeddedBigInt {
     /** Matches a well-formatted integer expression followed by "n" */
     export const matches = (def: string): def is Definition => matcher.test(def)
 
-    export const valueFrom = (def: Definition) =>
-        BigInt(asNumber(def.slice(0, -1), { assert: true }))
+    export const valueFrom = (def: Definition) => BigInt(def.slice(0, -1))
 
     export const parse: Common.Parser<Definition> = (def, ctx) =>
         new Literal.Node(valueFrom(def), ctx)
