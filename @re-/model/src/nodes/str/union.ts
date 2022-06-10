@@ -1,3 +1,4 @@
+import { createSplittableMatcher } from "./common.js"
 import { Str } from "./str.js"
 import { Base } from "#base"
 
@@ -9,31 +10,28 @@ export namespace Union {
 
     export const matches = (def: string): def is Definition => def.includes("|")
 
+    const matcher = createSplittableMatcher("|")
+
     export class Node extends Base.Branching<Definition> {
         *parse() {
-            yield Str.parse(this.def.slice(0, this.def.indexOf("|")), this.ctx)
-            return Str.parse(
-                this.def.slice(this.def.indexOf("|") + 1),
-                this.ctx
-            )
+            for (const member of this.def.match(matcher)!) {
+                yield Str.parse(member, this.ctx)
+            }
         }
 
         allows(value: unknown, errors: Base.ErrorsByPath) {
-            this.branch(0).allows(value, errors)
-            const leftErrors = errors[this.ctx.path]
-            if (leftErrors) {
-                delete errors[this.ctx.path]
-                this.branch(1).allows(value, errors)
-                const rightErrors = errors[this.ctx.path]
-                if (rightErrors) {
-                    this.addUnassignableMessage(
-                        `${Base.stringifyValue(
-                            value
-                        )} is not assignable to any of ${this.stringifyDef()}.`,
-                        errors
-                    )
+            for (const branch of this.branches()) {
+                const error = branch.validateByPath(value)[this.ctx.path]
+                if (!error) {
+                    return
                 }
             }
+            this.addUnassignableMessage(
+                `${Base.stringifyValue(
+                    value
+                )} is not assignable to any of ${this.stringifyDef()}.`,
+                errors
+            )
         }
 
         generate() {

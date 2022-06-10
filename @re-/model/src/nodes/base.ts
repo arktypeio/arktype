@@ -50,6 +50,26 @@ export namespace Base {
         abstract generate(): unknown
     }
 
+    export abstract class Linked<DefType> extends Node<DefType> {
+        #cache?: Node<unknown>
+
+        constructor(def: DefType, ctx: ParseContext) {
+            super(def, ctx)
+            if (ctx.eager) {
+                this.#cache = this.parse()
+            }
+        }
+
+        next() {
+            if (!this.#cache) {
+                this.#cache = this.parse()
+            }
+            return this.#cache
+        }
+
+        abstract parse(): Node<unknown>
+    }
+
     export abstract class Branching<DefType> extends Node<DefType> {
         #branches: IterableIterator<Node<unknown>>
         #cache: Node<unknown>[] = []
@@ -65,6 +85,24 @@ export namespace Base {
             }
         }
 
+        *branches() {
+            let i = 0
+            let node = this.branch(0)
+            while (node) {
+                yield node
+                i++
+                node = this.branch(i)
+            }
+            // do {
+            //     if (i in this.#cache) {
+            //         yield this.#cache[i]
+            //     } else {
+            //         node = this.#branches.next().value
+            //     }
+            //     i++
+            // } while (node)
+        }
+
         branch(i: number) {
             while (!(i in this.#cache)) {
                 this.#cache.push(this.#branches.next().value)
@@ -73,26 +111,6 @@ export namespace Base {
         }
 
         abstract parse(): Generator<Node<unknown>>
-    }
-
-    export abstract class Linked<DefType> extends Node<DefType> {
-        #cache?: Node<unknown>
-
-        constructor(def: DefType, ctx: ParseContext) {
-            super(def, ctx)
-            if (ctx.eager) {
-                this.#cache = this.parse()
-            }
-        }
-
-        abstract parse(): Node<unknown>
-
-        next() {
-            if (!this.#cache) {
-                this.#cache = this.parse()
-            }
-            return this.#cache
-        }
     }
 
     export type ParseContext = {
