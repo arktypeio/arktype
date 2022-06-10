@@ -26,7 +26,7 @@ export namespace Map {
                 prop,
                 Root.parse(propDef, {
                     ...this.ctx,
-                    path: `${this.ctx.path}/${prop}`,
+                    path: `${this.ctx.path}${this.ctx.path ? "/" : ""}${prop}`,
                     shallowSeen: []
                 })
             ]) as Entry<string, Base.Node<unknown>>[]

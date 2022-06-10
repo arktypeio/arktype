@@ -34,27 +34,31 @@ describe("numberLiteral", () => {
     })
     describe("validation", () => {
         it("whole", () => {
-            const { validate } = model("8")
-            assert(validate(8).error).is(undefined)
-            assert(validate(8).error).is(undefined)
-            assert(validate(8.000_001).error).is(
+            const eight = model("8")
+            assert(eight.validate(8).error).is(undefined)
+            assert(eight.validate(8).error).is(undefined)
+            assert(eight.validate(8.000_001).error).is(
                 "8.000001 is not assignable to 8."
             )
-            assert(validate("8").error).is("'8' is not assignable to 8.")
+            assert(eight.validate("8").error).is("'8' is not assignable to 8.")
         })
         it("decimal", () => {
-            const { validate } = model("1.618")
-            assert(validate(1.618).error).is(undefined)
-            assert(validate(2).error).is("2 is not assignable to 1.618.")
-            assert(validate("1.618").error).is(
+            const goldenRatio = model("1.618")
+            assert(goldenRatio.validate(1.618).error).is(undefined)
+            assert(goldenRatio.validate(2).error).is(
+                "2 is not assignable to 1.618."
+            )
+            assert(goldenRatio.validate("1.618").error).is(
                 "'1.618' is not assignable to 1.618."
             )
         })
         it("negative", () => {
-            const { validate } = model("-13.37")
-            assert(validate(-13.37).error).is(undefined)
-            assert(validate(-14).error).is("-14 is not assignable to -13.37.")
-            assert(validate("-13.37").error).is(
+            const unLeet = model("-13.37")
+            assert(unLeet.validate(-13.37).error).is(undefined)
+            assert(unLeet.validate(-14).error).is(
+                "-14 is not assignable to -13.37."
+            )
+            assert(unLeet.validate("-13.37").error).is(
                 "'-13.37' is not assignable to -13.37."
             )
         })

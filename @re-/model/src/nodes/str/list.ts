@@ -20,7 +20,9 @@ export namespace List {
             for (const [i, element] of Object.entries(value)) {
                 const itemErrors = this.item().validateByPath(element)
                 for (const [path, message] of Object.entries(itemErrors)) {
-                    let itemPath = `${this.ctx.path}/${i}`
+                    let itemPath = `${this.ctx.path}${
+                        this.ctx.path ? "/" : ""
+                    }${i}`
                     if (path !== this.ctx.path) {
                         itemPath += `/${path.slice(this.ctx.path.length)}`
                     }

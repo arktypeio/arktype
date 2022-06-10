@@ -93,14 +93,6 @@ export namespace Base {
                 i++
                 node = this.branch(i)
             }
-            // do {
-            //     if (i in this.#cache) {
-            //         yield this.#cache[i]
-            //     } else {
-            //         node = this.#branches.next().value
-            //     }
-            //     i++
-            // } while (node)
         }
 
         branch(i: number) {
@@ -153,7 +145,7 @@ export namespace Base {
         })
 
     export const stringifyPathContext = (path: string) =>
-        path ? "" : ` at path ${path}`
+        path ? ` at path ${path}` : ""
 
     /** Description should start with a verb, e.g. "is of invalid type 'function'" or "contains a shallow cycle" */
     export const buildParseErrorMessage = (

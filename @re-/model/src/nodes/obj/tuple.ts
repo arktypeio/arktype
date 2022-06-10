@@ -14,7 +14,9 @@ export namespace Tuple {
                 elementIndex,
                 Root.parse(elementDef, {
                     ...this.ctx,
-                    path: `${this.ctx.path}/${elementIndex}`,
+                    path: `${this.ctx.path}${
+                        this.ctx.path ? "/" : ""
+                    }${elementIndex}`,
                     shallowSeen: []
                 })
             ]) as Entry<number, Base.Node<unknown>>[]

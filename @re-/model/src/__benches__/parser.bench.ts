@@ -100,3 +100,13 @@ bench("list type", () => {
         5
     ])
 }).median("1.49us")
+
+bench("validate tuple", () => {
+    Root.parse("string[]", defaultParseContext).validate([
+        "hi",
+        "there",
+        "we're",
+        "strings",
+        5
+    ])
+}).median("2.46us")
