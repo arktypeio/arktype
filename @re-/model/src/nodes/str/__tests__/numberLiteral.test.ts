@@ -1,5 +1,5 @@
 import { assert } from "@re-/assert"
-import { model } from "#api"
+import { eager, model } from "#api"
 
 describe("numberLiteral", () => {
     /*
@@ -20,13 +20,13 @@ describe("numberLiteral", () => {
         describe("errors", () => {
             it("multiple decimals", () => {
                 // @ts-expect-error
-                assert(() => model("127.0.0.1")).throwsAndHasTypeError(
+                assert(() => eager("127.0.0.1")).throwsAndHasTypeError(
                     "Unable to determine the type of '127.0.0.1'."
                 )
             })
             it("with alpha", () => {
                 // @ts-expect-error
-                assert(() => model("13three7")).throwsAndHasTypeError(
+                assert(() => eager("13three7")).throwsAndHasTypeError(
                     "Unable to determine the type of '13three7'."
                 )
             })

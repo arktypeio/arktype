@@ -1,5 +1,5 @@
 import { assert } from "@re-/assert"
-import { model } from "#api"
+import { eager, model } from "#api"
 
 describe("bigintLiteral", () => {
     describe("type", () => {
@@ -12,7 +12,7 @@ describe("bigintLiteral", () => {
         describe("errors", () => {
             it("decimal", () => {
                 // @ts-expect-error
-                assert(() => model("99999.99n")).throwsAndHasTypeError(
+                assert(() => eager("99999.99n")).throwsAndHasTypeError(
                     "Unable to determine the type of '99999.99n'."
                 )
             })

@@ -4,7 +4,7 @@ import type { Base as BaseNode } from "./kinds/base.js"
 
 export type Node<DefType = unknown> = BaseNode<DefType>
 
-export type Parser<DefType> = (def: DefType, ctx: ParseContext) => Node<DefType>
+export type Parser<DefType> = (def: DefType, ctx: ParseContext) => Node
 
 export const typeDefProxy: any = new Proxy({}, { get: () => typeDefProxy })
 

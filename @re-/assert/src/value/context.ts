@@ -1,5 +1,6 @@
 import { strict } from "node:assert"
 import { isDeepStrictEqual } from "node:util"
+import { caller } from "@re-/node"
 import {
     ElementOf,
     Func,
@@ -311,7 +312,7 @@ export const valueAssertions = <T>(
         if (!expected || ctx.config.updateSnapshots) {
             if (!isDeepStrictEqual(actualSerialized, serialize(expected))) {
                 const snapshotArgs: SnapshotArgs = {
-                    position,
+                    position: caller(),
                     serializedValue: actualSerialized
                 }
                 if (ctx.config.precached) {
@@ -351,7 +352,7 @@ export const valueAssertions = <T>(
                     ) {
                         updateExternalSnapshot({
                             serializedValue: actualSerialized,
-                            position,
+                            position: caller(),
                             name,
                             customPath: options.path
                         })

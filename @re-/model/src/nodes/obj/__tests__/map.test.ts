@@ -1,5 +1,5 @@
 import { assert } from "@re-/assert"
-import { model } from "#api"
+import { eager, model } from "#api"
 
 describe("map", () => {
     describe("empty", () => {
@@ -114,28 +114,28 @@ describe("map", () => {
                     }
                 }
             })
+            it("removes readonly modifier", () => {
+                const readonlyDef = {
+                    a: "true",
+                    b: "false",
+                    c: { nested: "boolean" }
+                } as const
+                assert(model(readonlyDef).type).typed as {
+                    a: true
+                    b: false
+                    c: {
+                        nested: boolean
+                    }
+                }
+            })
             describe("errors", () => {
                 it("invalid prop def", () => {
                     // @ts-expect-error
-                    assert(() => model({ a: { b: "whoops" } }))
+                    assert(() => eager({ a: { b: "whoops" } }))
                         .throws(
                             "Unable to determine the type of 'whoops' at path a/b."
                         )
                         .type.errors("Unable to determine the type of 'whoops'")
-                })
-                it("removes readonly modifier", () => {
-                    const readonlyDef = {
-                        a: "true",
-                        b: "false",
-                        c: { nested: "boolean" }
-                    } as const
-                    assert(model(readonlyDef).type).typed as {
-                        a: true
-                        b: false
-                        c: {
-                            nested: boolean
-                        }
-                    }
                 })
             })
         })

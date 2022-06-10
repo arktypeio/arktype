@@ -1,5 +1,5 @@
 import { assert } from "@re-/assert"
-import { model } from "#api"
+import { eager, model } from "#api"
 
 describe("regex", () => {
     describe("type", () => {
@@ -9,13 +9,13 @@ describe("regex", () => {
         describe("errors", () => {
             it("unterminated", () => {
                 // @ts-expect-error
-                assert(() => model("/.*")).throwsAndHasTypeError(
+                assert(() => eager("/.*")).throwsAndHasTypeError(
                     "Unable to determine the type of '/.*'."
                 )
             })
             it("extra forward slash", () => {
                 // @ts-expect-error
-                assert(() => model("/.*//")).throwsAndHasTypeError(
+                assert(() => eager("/.*//")).throwsAndHasTypeError(
                     "Unable to determine the type of '/.*//'."
                 )
             })

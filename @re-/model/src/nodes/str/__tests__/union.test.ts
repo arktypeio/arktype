@@ -1,6 +1,6 @@
 import { assert } from "@re-/assert"
 import { narrow } from "@re-/tools"
-import { model } from "#api"
+import { eager, model } from "#api"
 
 describe("union", () => {
     describe("type", () => {
@@ -18,13 +18,13 @@ describe("union", () => {
         describe("errors", () => {
             it("bad reference", () => {
                 // @ts-expect-error
-                assert(() => model("number|sting")).throwsAndHasTypeError(
+                assert(() => eager("number|sting")).throwsAndHasTypeError(
                     "Unable to determine the type of 'sting'."
                 )
             })
             it("double pipes", () => {
                 // @ts-expect-error
-                assert(() => model("boolean||null")).throwsAndHasTypeError(
+                assert(() => eager("boolean||null")).throwsAndHasTypeError(
                     "Unable to determine the type of ''."
                 )
             })

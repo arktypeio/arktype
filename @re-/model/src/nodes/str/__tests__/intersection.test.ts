@@ -1,5 +1,5 @@
 import { assert } from "@re-/assert"
-import { model } from "#api"
+import { eager, model } from "#api"
 
 describe("intersection", () => {
     describe("type", () => {
@@ -16,13 +16,13 @@ describe("intersection", () => {
         describe("errors", () => {
             it("bad reference", () => {
                 // @ts-expect-error
-                assert(() => model("boolean&tru")).throwsAndHasTypeError(
+                assert(() => eager("boolean&tru")).throwsAndHasTypeError(
                     "Unable to determine the type of 'tru'."
                 )
             })
             it("double and", () => {
                 // @ts-expect-error
-                assert(() => model("boolean&&true")).throwsAndHasTypeError(
+                assert(() => eager("boolean&&true")).throwsAndHasTypeError(
                     "Unable to determine the type of ''."
                 )
             })

@@ -1,5 +1,5 @@
 import { assert } from "@re-/assert"
-import { model } from "#api"
+import { eager, model } from "#api"
 
 describe("constraint", () => {
     describe("type", () => {
@@ -12,51 +12,51 @@ describe("constraint", () => {
         describe("errors", () => {
             it("invalid single bound", () => {
                 // @ts-expect-error
-                assert(() => model("number<integer")).throwsAndHasTypeError(
+                assert(() => eager("number<integer")).throwsAndHasTypeError(
                     "Bound 'integer' must be a number literal."
                 )
             })
             it("invalid left bound", () => {
                 // @ts-expect-error
-                assert(() => model("null<number<5")).throwsAndHasTypeError(
+                assert(() => eager("null<number<5")).throwsAndHasTypeError(
                     "'null' must be a number literal to bound 'number'."
                 )
             })
             it("invalid right bound", () => {
                 // @ts-expect-error
-                assert(() => model("1<number<string")).throwsAndHasTypeError(
+                assert(() => eager("1<number<string")).throwsAndHasTypeError(
                     "'string' must be a number literal to bound 'number'."
                 )
             })
             it("two invalid bounds", () => {
                 assert(() =>
                     // @ts-expect-error
-                    model("number<number<number")
+                    eager("number<number<number")
                 ).throwsAndHasTypeError(
                     "'number' must be a number literal to bound 'number'."
                 )
             })
             it("single-bounded unboundable", () => {
                 // @ts-expect-error
-                assert(() => model("object<999")).throwsAndHasTypeError(
+                assert(() => eager("object<999")).throwsAndHasTypeError(
                     "Bounded definition 'object' must be a number or string keyword."
                 )
             })
             it("double-bounded unboundable", () => {
                 // @ts-expect-error
-                assert(() => model("1<object<999")).throwsAndHasTypeError(
+                assert(() => eager("1<object<999")).throwsAndHasTypeError(
                     "Bounded definition 'object' must be a number or string keyword."
                 )
             })
             it("doubly invalid bounded unboundable", () => {
                 // @ts-expect-error
-                assert(() => model("null<object<true")).throwsAndHasTypeError(
+                assert(() => eager("null<object<true")).throwsAndHasTypeError(
                     "Bounded definition 'object' must be a number or string keyword."
                 )
             })
             it("too many values", () => {
                 // @ts-expect-error
-                assert(() => model("1<2<number<4")).throwsAndHasTypeError(
+                assert(() => eager("1<2<number<4")).throwsAndHasTypeError(
                     "Constraints must be either of the form N<L or L<N<L, where N is a constrainable type (e.g. number), L is a number literal (e.g. 5), and < is any comparison operator."
                 )
             })

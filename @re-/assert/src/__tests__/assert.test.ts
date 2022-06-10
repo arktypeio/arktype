@@ -10,7 +10,7 @@ const testDir = dirName()
 
 const shouldThrow = (a: false) => {
     if (a) {
-        throw new Error("true is not assignable to false")
+        throw new Error(`${a} is not assignable to false`)
     }
 }
 
@@ -252,6 +252,26 @@ describe("assertions", () => {
                     .type.toString.snap(`{ re: number; }`),
             strict.AssertionError,
             "number"
+        )
+    })
+
+    test("error and type error snap", () => {
+        // @ts-expect-error
+        assert(() => shouldThrow(true))
+            .throws.snap(`Error: true is not assignable to false`)
+            .type.errors.snap(
+                `Argument of type 'true' is not assignable to parameter of type 'false'.`
+            )
+        strict.throws(
+            () =>
+                // @ts-expect-error
+                assert(() => shouldThrow(1))
+                    .throws.snap(`Error: 1 is not assignable to false`)
+                    .type.errors.snap(
+                        `Argument of type '2' is not assignable to parameter of type 'false'.`
+                    ),
+            strict.AssertionError,
+            "'2'"
         )
     })
 

@@ -1,5 +1,5 @@
 import { assert } from "@re-/assert"
-import { model } from "#api"
+import { eager, model } from "#api"
 
 describe("list", () => {
     describe("type", () => {
@@ -12,19 +12,19 @@ describe("list", () => {
         describe("errors", () => {
             it("bad item type", () => {
                 // @ts-expect-error
-                assert(() => model("nonexistent[]")).throwsAndHasTypeError(
+                assert(() => eager("nonexistent[]")).throwsAndHasTypeError(
                     "Unable to determine the type of 'nonexistent'."
                 )
             })
             it("unclosed bracket", () => {
                 // @ts-expect-error
-                assert(() => model("boolean[")).throwsAndHasTypeError(
+                assert(() => eager("boolean[")).throwsAndHasTypeError(
                     "Unable to determine the type of 'boolean['."
                 )
             })
             it("tuple", () => {
                 // @ts-expect-error
-                assert(() => model("[any]")).throwsAndHasTypeError(
+                assert(() => eager("[any]")).throwsAndHasTypeError(
                     "Unable to determine the type of '[any]'."
                 )
             })

@@ -47,6 +47,13 @@ export abstract class Base<DefType> {
             : { error: stringifyErrors(errorsByPath), errorsByPath }
     }
 
+    assert(value: unknown) {
+        const { error } = this.validate(value)
+        if (error) {
+            throw new Error(error)
+        }
+    }
+
     abstract allows(value: unknown, errors: ErrorsByPath): void
     abstract generate(): unknown
 }

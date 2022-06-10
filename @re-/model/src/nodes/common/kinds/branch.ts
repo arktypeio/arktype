@@ -5,20 +5,20 @@ export abstract class Branch<
     DefType,
     Next = Base<unknown>
 > extends Base<DefType> {
-    #cache?: Next
+    private cache?: Next
 
     constructor(def: DefType, ctx: ParseContext) {
         super(def, ctx)
         if (ctx.eager) {
-            this.#cache = this.parse()
+            this.cache = this.parse()
         }
     }
 
     next() {
-        if (!this.#cache) {
-            this.#cache = this.parse()
+        if (!this.cache) {
+            this.cache = this.parse()
         }
-        return this.#cache
+        return this.cache
     }
 
     abstract parse(): Next

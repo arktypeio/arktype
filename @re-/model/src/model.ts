@@ -1,4 +1,4 @@
-import { Evaluate, isEmpty, KeyValuate } from "@re-/tools"
+import { Evaluate, KeyValuate } from "@re-/tools"
 import { Root } from "./nodes/index.js"
 import { ConfiguredSpace, SpaceConfig, SpaceDefinition } from "./space.js"
 import { Common } from "#common"
@@ -27,7 +27,12 @@ export type GenerateConfig = {
     onRequiredCycle?: any
 }
 
+export interface ParseConfig {
+    eager?: boolean
+}
+
 export interface BaseOptions {
+    parse?: ParseConfig
     validate?: ValidateConfig
     generate?: GenerateConfig
     references?: ReferencesConfig
@@ -134,36 +139,13 @@ export const createModelFunction =
         )
         const context: Common.ParseContext = {
             ...Common.defaultParseContext,
+            ...predefinedSpace?.config?.parse,
             config: {
                 ...config,
                 space
             }
         }
         return Root.parse(definition, context)
-        // const {
-        //     validate: internalValidate,
-        //     references,
-        //     generate
-        // } = Root.parse(definition, context) as any
-        // const validate = createRootValidate(
-        //     internalValidate,
-        //     definition,
-        //     config?.validate?.validator
-        // )
-        // return {
-        //     type: typeDefProxy,
-        //     space,
-        //     definition,
-        //     validate,
-        //     references,
-        //     generate,
-        //     assert: (value: unknown, options?: AssertOptions) => {
-        //         const { error } = validate(value, options)
-        //         if (error) {
-        //             throw new Error(error)
-        //         }
-        //     }
-        // }
     }
 
 export type Model<Def, ModelType> = Evaluate<{
@@ -192,3 +174,8 @@ export type ModelFunction<PredefinedDict> = <
  * @returns {@as any} The result.
  */
 export const model: ModelFunction<{}> = createModelFunction()
+
+export const eager: ModelFunction<{}> = createModelFunction({
+    config: { parse: { eager: true } },
+    dictionary: {}
+})

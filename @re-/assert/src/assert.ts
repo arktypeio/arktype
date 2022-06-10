@@ -1,7 +1,7 @@
 import { fileURLToPath } from "node:url"
 import { caller } from "@re-/node"
 import { ListPossibleTypes } from "@re-/tools"
-import { getReAssertConfig, ReAssertConfig } from "./common.js"
+import { getReAssertConfig, ReAssertConfig, SourcePosition } from "./common.js"
 import { typeAssertions, TypeAssertions } from "./type/index.js"
 import { ValueAssertion, valueAssertions } from "./value/index.js"
 

@@ -1,5 +1,5 @@
 import { assert } from "@re-/assert"
-import { model } from "#api"
+import { eager, model } from "#api"
 
 describe("tuple", () => {
     describe("empty", () => {
@@ -25,7 +25,7 @@ describe("tuple", () => {
                 it("invalid item definition", () => {
                     assert(() =>
                         // @ts-expect-error
-                        model(["string", ["number", "boolean", "whoops"]])
+                        eager(["string", ["number", "boolean", "whoops"]])
                     )
                         .throws(
                             "Unable to determine the type of 'whoops' at path 1/2."
