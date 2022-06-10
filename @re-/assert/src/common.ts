@@ -44,7 +44,7 @@ const argsIncludeUpdateFlag = (args: string[]) =>
 const checkArgsForMatcher = (args: string[]) => {
     const filterFlagIndex = args.indexOf("--only")
     if (filterFlagIndex === -1) {
-        return false
+        return undefined
     }
     return args.at(filterFlagIndex + 1)
 }
@@ -54,9 +54,12 @@ export const getReAssertConfig = memoize((): ReAssertConfig => {
     const tsconfig = existsSync("tsconfig.json") ? resolve("tsconfig.json") : ""
     const reAssertJson: ReAssertJson = reJson.assert ?? {}
     let argsToCheck: string[] | undefined
+    let precached = false
     if (process.env.RE_ASSERT_CMD) {
         // If using @re-/assert runner, RE_ASSERT_CMD will be set to the original cmd.
         argsToCheck = process.env.RE_ASSERT_CMD.split(" ")
+        // Precached should default to true if we are running from the @re-/assert runner
+        precached = true
     } else if (process.env.JEST_WORKER_ID) {
         // If we're in a jest worker process, check the parent process cmd args
         const parentCmd = getCmdFromPid(process.ppid)
@@ -85,7 +88,7 @@ export const getReAssertConfig = memoize((): ReAssertConfig => {
         updateSnapshots: argsIncludeUpdateFlag(argsToCheck),
         matcher,
         tsconfig,
-        precached: false,
+        precached,
         preserveCache: false,
         assertAliases: ["assert"],
         stringifySnapshots: false,

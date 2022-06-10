@@ -86,14 +86,6 @@ module.exports = defineConfig({
             }
         ],
         /**
-         * Don't look for empty expressions as they're easy to catch in a PR
-         * and clutter the IDE as you type
-         */
-        "no-empty": "off",
-        "@typescript-eslint/no-empty-function": "off",
-        "@typescript-eslint/no-empty-interface": "off",
-        "unicorn/no-lonely-if": "off",
-        /**
          * Allow more flexible typing
          */
         "@typescript-eslint/ban-ts-comment": "off",

@@ -58,7 +58,7 @@ export const buildParseErrorMessage = (
 ) =>
     `Definition ${stringifyDef(definition)}${stringifyPathContext(
         path
-    )} ${description}.`
+    )} ${description}`
 
 export const buildUnassignableErrorMessage = (def: unknown, value: unknown) =>
     `${stringifyValue(value)})} is not assignable to ${stringifyDef(def)}.`

@@ -3,5 +3,16 @@
     "editor.formatOnSave": true,
     "editor.codeActionsOnSave": ["source.fixAll"],
     "typescript.tsdk": "./node_modules/typescript/lib",
-    "typescript.enablePromptUseWorkspaceTsdk": true
+    "typescript.enablePromptUseWorkspaceTsdk": true,
+    "eslint.options": {
+        "overrideConfig": {
+            "rules": {
+                "@typescript-eslint/no-empty-function": "off",
+                "@typescript-eslint/no-empty-interface": "off",
+                "no-empty": "off",
+                "prefer-const": "off",
+                "unicorn/no-lonely-if": "off"
+            }
+        }
+    }
 }
