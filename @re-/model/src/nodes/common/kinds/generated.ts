@@ -1,9 +1,9 @@
-import { ParseContext } from "../common.js"
-import { Node } from "./base.js"
+import { Node, ParseContext } from "../common.js"
+import { Base } from "./base.js"
 
-export abstract class Branching<DefType> extends Node<DefType> {
-    #brancher: Generator<Node<unknown>, Node<unknown>>
-    #cache: Node<unknown>[] = []
+export abstract class Generated<DefType> extends Base<DefType> {
+    #brancher: Generator<Node, Node>
+    #cache: Node[] = []
     #doneIndex: number | undefined
 
     constructor(def: DefType, ctx: ParseContext) {
@@ -40,5 +40,5 @@ export abstract class Branching<DefType> extends Node<DefType> {
         return this.#cache[i]
     }
 
-    abstract parse(): Generator<Node<unknown>>
+    abstract parse(): Generator<Node>
 }

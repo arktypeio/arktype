@@ -1,6 +1,6 @@
 import { createSplittableMatcher } from "./common.js"
 import { Str } from "./str.js"
-import { Branching, Common } from "#common"
+import { Common, Linked } from "#common"
 
 export namespace Union {
     export type Definition<
@@ -12,20 +12,15 @@ export namespace Union {
 
     const matcher = createSplittableMatcher("|")
 
-    export class Node extends Branching<Definition> {
-        *parse() {
-            const members = this.def.match(matcher)!
-            let i = 0
-            // Yield parsed nodes until we hit the last group, then return its parse result
-            while (i < members.length - 1) {
-                yield Str.parse(members[i], this.ctx)
-                i++
-            }
-            return Str.parse(members[i], this.ctx)
+    export class Node extends Linked<Definition, Common.Node[]> {
+        parse() {
+            return this.def
+                .match(matcher)!
+                .map((member) => Str.parse(member, this.ctx))
         }
 
         allows(value: unknown, errors: Common.ErrorsByPath) {
-            for (const branch of this.branches()) {
+            for (const branch of this.next()) {
                 const error = branch.validateByPath(value)[this.ctx.path]
                 if (!error) {
                     return
@@ -40,7 +35,7 @@ export namespace Union {
         }
 
         generate() {
-            return this.branches().next().value.generate()
+            return this.next()[0].generate()
         }
     }
 }

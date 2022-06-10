@@ -1,3 +1,3 @@
-export { Terminal } from "./terminal.js"
-export { Branching } from "./branching.js"
-export { Linked } from "./linked.js"
+export { Leaf as Terminal } from "./leaf.js"
+export { Generated as Branching } from "./generated.js"
+export { Branch as Linked } from "./branch.js"

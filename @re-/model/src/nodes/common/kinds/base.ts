@@ -8,7 +8,7 @@ import {
     typeDefProxy
 } from "../common.js"
 
-export abstract class Node<DefType> {
+export abstract class Base<DefType> {
     constructor(protected def: DefType, protected ctx: ParseContext) {}
 
     get type() {

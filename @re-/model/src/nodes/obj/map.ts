@@ -20,7 +20,7 @@ export namespace Map {
         }
     >
 
-    type ParseResult = Entry<string, Common.Node<unknown>>[]
+    type ParseResult = Entry<string, Common.Node>[]
 
     export class Node extends Linked<object, ParseResult> {
         parse() {

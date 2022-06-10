@@ -1,10 +1,10 @@
 import { ParseContext } from "../common.js"
-import { Node } from "./base.js"
+import { Base } from "./base.js"
 
-export abstract class Linked<
+export abstract class Branch<
     DefType,
-    Next = Node<unknown>
-> extends Node<DefType> {
+    Next = Base<unknown>
+> extends Base<DefType> {
     #cache?: Next
 
     constructor(def: DefType, ctx: ParseContext) {

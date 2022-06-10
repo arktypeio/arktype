@@ -1,7 +1,8 @@
 import { isDigits, toString, uncapitalize } from "@re-/tools"
 import { ModelConfig } from "../../model.js"
-import type { Node } from "./kinds/base.js"
-export type { Node } from "./kinds/base.js"
+import type { Base as BaseNode } from "./kinds/base.js"
+
+export type Node<DefType = unknown> = BaseNode<DefType>
 
 export type Parser<DefType> = (def: DefType, ctx: ParseContext) => Node<DefType>
 

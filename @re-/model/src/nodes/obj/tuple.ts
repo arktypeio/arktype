@@ -8,7 +8,7 @@ export namespace Tuple {
     export const matches = (def: object): def is Definition =>
         Array.isArray(def)
 
-    type ParseResult = Entry<number, Common.Node<unknown>>[]
+    type ParseResult = Entry<number, Common.Node>[]
 
     export class Node extends Linked<Definition, ParseResult> {
         parse() {
