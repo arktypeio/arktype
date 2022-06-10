@@ -1,10 +1,9 @@
 import { assert } from "@re-/assert"
 import { model } from "#api"
-import { lazily } from "@re-/tools"
 
 describe("tuple", () => {
     describe("empty", () => {
-        const empty = lazily(() => model([]))
+        const empty = model([])
         it("type", () => {
             assert(empty.type).typed as []
         })
@@ -17,7 +16,7 @@ describe("tuple", () => {
         })
     })
     describe("shallow", () => {
-        const shallow = lazily(() => model(["string", "number", 6]))
+        const shallow = model(["string", "number", 6])
         describe("type", () => {
             it("standard", () => {
                 assert(shallow.type).typed as [string, number, 6]
@@ -64,9 +63,11 @@ describe("tuple", () => {
         })
     })
     describe("nested", () => {
-        const nested = lazily(() =>
-            model(["'Cuckoo'", ["'Swallow'", "'Oriole'", "'Condor'"], []])
-        )
+        const nested = model([
+            "'Cuckoo'",
+            ["'Swallow'", "'Oriole'", "'Condor'"],
+            []
+        ])
         describe("type", () => {
             it("handles nested tuples", () => {
                 assert(nested.type).typed as [

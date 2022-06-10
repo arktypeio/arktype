@@ -11,7 +11,7 @@ export namespace Root {
         ? Str.Validate<Def, Dict, Def>
         : Def extends BadDefinitionType
         ? Common.ParseErrorMessage<"Values of type 'function' or 'symbol' are not valid definitions.">
-        : Def extends Obj.Terminal
+        : Def extends Obj.Leaves
         ? Def
         : Def extends object
         ? Obj.Validate<Def, Dict>

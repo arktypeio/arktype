@@ -97,3 +97,6 @@ export class UngeneratableError extends Error {
 
 export const ungeneratableError = (def: string, defType: string) =>
     `Unable to generate a value for '${def}' (${defType} generation is unsupported).`
+
+export const appendToPath = (path: string, segment: string | number) =>
+    path ? `${path}/${segment}` : String(segment)

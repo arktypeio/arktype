@@ -1,5 +1,4 @@
 import { assert } from "@re-/assert"
-import { lazily } from "@re-/tools"
 import { model } from "#api"
 
 describe("number", () => {
@@ -102,7 +101,7 @@ describe("bigint", () => {
 })
 describe("boolean", () => {
     describe("true", () => {
-        const t = lazily(() => model(true))
+        const t = model(true)
         it("type", () => {
             assert(t.type).typed as true
         })
@@ -117,7 +116,7 @@ describe("boolean", () => {
         })
     })
     describe("false", () => {
-        const f = lazily(() => model(false))
+        const f = model(false)
         it("type", () => {
             assert(f.type).typed as false
         })
@@ -133,7 +132,7 @@ describe("boolean", () => {
     })
 })
 describe("undefined", () => {
-    const u = lazily(() => model(undefined))
+    const u = model(undefined)
     it("type", () => {
         assert(u.type).typed as undefined
     })
@@ -148,7 +147,7 @@ describe("undefined", () => {
     })
 })
 describe("null", () => {
-    const n = lazily(() => model(null))
+    const n = model(null)
     it("type", () => {
         assert(n.type).typed as null
     })

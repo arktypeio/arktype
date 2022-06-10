@@ -1,5 +1,4 @@
 import { assert } from "@re-/assert"
-import { lazily } from "@re-/tools"
 import { model } from "#api"
 
 describe("list", () => {
@@ -32,7 +31,7 @@ describe("list", () => {
         })
     })
     describe("validation", () => {
-        const numberArray = lazily(() => model("number[]"))
+        const numberArray = model("number[]")
         it("empty", () => {
             assert(numberArray.validate([]).error).is(undefined)
         })

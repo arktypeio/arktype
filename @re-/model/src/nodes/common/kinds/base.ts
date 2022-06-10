@@ -1,5 +1,6 @@
 import { isEmpty } from "@re-/tools"
 import {
+    appendToPath,
     ErrorsByPath,
     ParseContext,
     stringifyDef,
@@ -17,6 +18,10 @@ export abstract class Base<DefType> {
 
     protected stringifyDef() {
         return stringifyDef(this.def)
+    }
+
+    protected appendToPath(segment: string | number) {
+        return appendToPath(this.ctx.path, segment)
     }
 
     protected addUnassignable(value: unknown, errors: ErrorsByPath) {

@@ -1,4 +1,4 @@
-import { diffSets, Entry, Evaluate } from "@re-/tools"
+import { diffSets, DiffSetsResult, Entry, Evaluate } from "@re-/tools"
 import { Root } from "../root.js"
 import { Optional } from "../str/index.js"
 import { Branch, Common } from "#common"
@@ -22,13 +22,31 @@ export namespace Map {
 
     type ParseResult = Entry<string, Common.Node>[]
 
+    const mismatchedKeysError = (
+        keyErrors: NonNullable<DiffSetsResult<string>>
+    ) => {
+        let message = ""
+        if (keyErrors.removed) {
+            message += `Required keys '${keyErrors.removed.join(
+                ", "
+            )}' were missing.`
+        }
+        if (keyErrors.added) {
+            // Add a leading space if we also had missing keys
+            message += `${message ? " " : ""}Keys '${keyErrors.added.join(
+                ", "
+            )}' were unexpected.`
+        }
+        return message
+    }
+
     export class Node extends Branch<object, ParseResult> {
         parse() {
             return Object.entries(this.def).map(([prop, propDef]) => [
                 prop,
                 Root.parse(propDef, {
                     ...this.ctx,
-                    path: `${this.ctx.path}${this.ctx.path ? "/" : ""}${prop}`,
+                    path: this.appendToPath(prop),
                     shallowSeen: []
                 })
             ]) as ParseResult
@@ -41,7 +59,10 @@ export namespace Map {
             }
             const keyDiff = diffSets(Object.keys(this.def), Object.keys(value))
             if (keyDiff) {
-                this.addUnassignable(value, errors)
+                this.addUnassignableMessage(
+                    mismatchedKeysError(keyDiff),
+                    errors
+                )
                 return
             }
             for (const [prop, node] of this.next()) {

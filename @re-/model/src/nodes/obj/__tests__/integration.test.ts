@@ -1,11 +1,8 @@
 import { assert } from "@re-/assert"
-import { lazily } from "@re-/tools"
 import { model } from "#api"
 
 describe("integration", () => {
-    const mixed = lazily(() =>
-        model(["true", { a: ["string", ["number|boolean[]"]] }])
-    )
+    const mixed = model(["true", { a: ["string", ["number|boolean[]"]] }])
     it("type", () => {
         assert(mixed.type).typed as [
             true,

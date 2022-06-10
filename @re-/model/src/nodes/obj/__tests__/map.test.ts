@@ -1,10 +1,9 @@
 import { assert } from "@re-/assert"
-import { lazily } from "@re-/tools"
 import { model } from "#api"
 
 describe("map", () => {
     describe("empty", () => {
-        const empty = lazily(() => model({}))
+        const empty = model({})
         it("type", () => {
             assert(empty.type).typed as {}
         })
@@ -17,13 +16,12 @@ describe("map", () => {
         })
     })
     describe("shallow", () => {
-        const shallow = lazily(() =>
-            model({
-                a: "string",
-                b: "number",
-                c: 67
-            })
-        )
+        const shallow = model({
+            a: "string",
+            b: "number",
+            c: 67
+        })
+
         it("type", () => {
             assert(shallow.type).typed as {
                 a: string
@@ -103,13 +101,11 @@ describe("map", () => {
         })
     })
     describe("nested", () => {
-        const nested = lazily(() =>
-            model({
-                nested: {
-                    russian: "'doll'"
-                }
-            })
-        )
+        const nested = model({
+            nested: {
+                russian: "'doll'"
+            }
+        })
         describe("type", () => {
             it("standard", () => {
                 assert(nested.type).typed as {

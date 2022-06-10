@@ -6,7 +6,7 @@ import { Common } from "#common"
 
 export namespace Obj {
     // Objects of these types are inherently valid and should not be checked via "Obj.Validate"
-    export type Terminal = RegExp
+    export type Leaves = RegExp
 
     export type Validate<Def extends object, Dict> = {
         [K in keyof Def]: Root.Validate<Def[K], Dict>

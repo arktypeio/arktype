@@ -1,9 +1,8 @@
 import { assert } from "@re-/assert"
-import { lazily } from "@re-/tools"
 import { model } from "#api"
 
 describe("regex", () => {
-    const regex = lazily(() => model(/.*@redo\.dev/))
+    const regex = model(/.*@redo\.dev/)
     it("type", () => {
         assert(regex.type).typed as string
     })
