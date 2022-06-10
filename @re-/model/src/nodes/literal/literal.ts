@@ -1,4 +1,4 @@
-import { Base } from "#base"
+import { Common, Terminal } from "#common"
 
 export namespace Literal {
     export type Definition = number | bigint | boolean | undefined | null
@@ -10,8 +10,8 @@ export namespace Literal {
         typeof def === "number" ||
         typeof def === "bigint"
 
-    export class Node extends Base.Node<Definition> {
-        allows(value: unknown, errors: Base.ErrorsByPath) {
+    export class Node extends Terminal<Definition> {
+        allows(value: unknown, errors: Common.ErrorsByPath) {
             if (value !== this.def) {
                 this.addUnassignable(value, errors)
             }

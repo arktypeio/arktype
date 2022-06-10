@@ -1,4 +1,4 @@
-import { Base } from "#base"
+import { Common, Terminal } from "#common"
 
 export namespace StringLiteral {
     export type SingleQuoted<Text extends string> =
@@ -29,10 +29,10 @@ export namespace StringLiteral {
     export const matches = (def: string): def is Definition<string> =>
         matcher.test(def)
 
-    export class Node extends Base.Node<Definition<string>> {
+    export class Node extends Terminal<Definition<string>> {
         quotedText = this.def.slice(1, -1)
 
-        allows(value: unknown, errors: Base.ErrorsByPath) {
+        allows(value: unknown, errors: Common.ErrorsByPath) {
             if (this.quotedText !== value) {
                 this.addUnassignable(value, errors)
             }

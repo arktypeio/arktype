@@ -1,6 +1,6 @@
 import { createSplittableMatcher } from "./common.js"
 import { Str } from "./str.js"
-import { Base } from "#base"
+import { Branching, Common } from "#common"
 
 export namespace Intersection {
     export type Definition<
@@ -12,14 +12,14 @@ export namespace Intersection {
 
     const matcher = createSplittableMatcher("&")
 
-    export class Node extends Base.Branching<Definition> {
+    export class Node extends Branching<Definition> {
         *parse() {
             for (const member of this.def.match(matcher)!) {
                 yield Str.parse(member, this.ctx)
             }
         }
 
-        allows(value: unknown, errors: Base.ErrorsByPath) {
+        allows(value: unknown, errors: Common.ErrorsByPath) {
             for (const branch of this.branches()) {
                 branch.allows(value, errors)
                 if (errors[this.ctx.path]) {
@@ -29,7 +29,7 @@ export namespace Intersection {
         }
 
         generate() {
-            throw new Base.UngeneratableError(this.def, "intersection")
+            throw new Common.UngeneratableError(this.def, "intersection")
         }
     }
 }

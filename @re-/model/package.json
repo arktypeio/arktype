@@ -22,7 +22,7 @@
         }
     },
     "imports": {
-        "#base": "./src/nodes/base.js",
+        "#common": "./src/nodes/common/index.js",
         "#api": "./src/index.js"
     },
     "scripts": {

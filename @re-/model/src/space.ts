@@ -7,7 +7,7 @@ import {
     ModelOptions
 } from "./model.js"
 import { Root } from "./nodes/index.js"
-import { Base } from "#base"
+import { Common } from "#common"
 
 export type MetaKey = "onCycle" | "onResolve"
 
@@ -70,7 +70,7 @@ export const compile: CompileFunction = (
             // @ts-ignore
             create(definition, { ...config, ...config?.models?.[typeName] })
         ]),
-        types: Base.typeDefProxy,
+        types: Common.typeDefProxy,
         create,
         extend
     }

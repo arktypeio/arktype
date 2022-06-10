@@ -2,7 +2,7 @@ import { Root } from "../root.js"
 import { Map } from "./map.js"
 import { Regex } from "./regex.js"
 import { Tuple } from "./tuple.js"
-import { Base } from "#base"
+import { Common } from "#common"
 
 export namespace Obj {
     // Objects of these types are inherently valid and should not be checked via "Obj.Validate"
@@ -21,7 +21,7 @@ export namespace Obj {
     export const matches = (def: unknown): def is object =>
         !!def && typeof def === "object"
 
-    export const parse: Base.Parser<object> = (def, ctx) => {
+    export const parse: Common.Parser<object> = (def, ctx) => {
         if (Regex.matches(def)) {
             return new Regex.Node(def, ctx)
         }

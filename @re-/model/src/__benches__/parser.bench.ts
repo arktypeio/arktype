@@ -1,7 +1,7 @@
 import { bench } from "@re-/assert"
-import { Base } from "../nodes/base.js"
 import { Root } from "../nodes/root.js"
-const defaultParseContext = Base.defaultParseContext
+import { Common } from "#common"
+const defaultParseContext = Common.defaultParseContext
 
 bench("validate undefined", () => {
     Root.parse("string?", defaultParseContext).validateByPath(undefined)

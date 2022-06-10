@@ -1,4 +1,3 @@
-import { Base } from "../base.js"
 import { Alias } from "./alias.js"
 import { Constraint } from "./constraint.js"
 import { EmbeddedBigInt, EmbeddedNumber, EmbeddedRegex } from "./embedded.js"
@@ -8,10 +7,11 @@ import { List } from "./list.js"
 import { Optional } from "./optional.js"
 import { StringLiteral } from "./stringLiteral.js"
 import { Union } from "./union.js"
+import { Common } from "#common"
 
-type BinaryValidationResult<Left, Right> = Left extends Base.ParseErrorMessage
+type BinaryValidationResult<Left, Right> = Left extends Common.ParseErrorMessage
     ? Left
-    : Right extends Base.ParseErrorMessage
+    : Right extends Common.ParseErrorMessage
     ? Right
     : Left
 
@@ -49,7 +49,7 @@ export namespace Str {
         ? Validate<Child, Dict, Root>
         : Def extends Constraint.Definition
         ? Constraint.Validate<Def, Dict, Root>
-        : Base.ParseErrorMessage<Base.UnknownTypeError<Def>>
+        : Common.ParseErrorMessage<Common.UnknownTypeError<Def>>
 
     export type Parse<
         Def extends string,
@@ -83,7 +83,7 @@ export namespace Str {
     export const matches = (def: unknown): def is string =>
         typeof def === "string"
 
-    export const parse: Base.Parser<string> = (def, ctx) => {
+    export const parse: Common.Parser<string> = (def, ctx) => {
         if (Optional.matches(def)) {
             return new Optional.Node(def, ctx)
         } else if (Keyword.matches(def)) {
@@ -107,10 +107,10 @@ export namespace Str {
         } else if (Constraint.matches(def)) {
             return new Constraint.Node(def, ctx)
         }
-        throw new Base.ParseError(
-            `Unable to determine the type of ${Base.stringifyDef(
+        throw new Common.ParseError(
+            `Unable to determine the type of ${Common.stringifyDef(
                 def
-            )}${Base.stringifyPathContext(ctx.path)}.`
+            )}${Common.stringifyPathContext(ctx.path)}.`
         )
     }
 }

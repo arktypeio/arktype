@@ -1,7 +1,7 @@
 import { Evaluate, isEmpty, KeyValuate } from "@re-/tools"
 import { Root } from "./nodes/index.js"
 import { ConfiguredSpace, SpaceConfig, SpaceDefinition } from "./space.js"
-import { Base } from "#base"
+import { Common } from "#common"
 
 /*
  * Just use unknown for now since we don't have all the definitions yet
@@ -49,9 +49,9 @@ export type ValidateConfig = {
 
 export type CustomValidator = (
     value: unknown,
-    errors: Base.ErrorsByPath,
-    ctx: Base.ParseContext
-) => string | Base.ErrorsByPath
+    errors: Common.ErrorsByPath,
+    ctx: Common.ParseContext
+) => string | Common.ErrorsByPath
 
 export type AssertOptions = ValidateConfig
 
@@ -60,19 +60,19 @@ export type ValidateFunction = <Options extends ValidateConfig>(
     options?: Options
 ) => {
     error?: string
-    errorsByPath?: Base.ErrorsByPath
+    errorsByPath?: Common.ErrorsByPath
 }
 
 export const errorsFromCustomValidator = (
     customValidator: CustomValidator,
     args: Parameters<CustomValidator>
-): Base.ErrorsByPath => {
+): Common.ErrorsByPath => {
     const result = customValidator(...args)
     if (result && typeof result === "string") {
         // @ts-ignore
         return validationError({ path: args[2].ctx.path, message: result })
     } else if (result) {
-        return result as Base.ErrorsByPath
+        return result as Common.ErrorsByPath
     }
     return {}
 }
@@ -132,8 +132,8 @@ export const createModelFunction =
                     dictionary: {}
                 }
         )
-        const context: Base.ParseContext = {
-            ...Base.defaultParseContext,
+        const context: Common.ParseContext = {
+            ...Common.defaultParseContext,
             config: {
                 ...config,
                 space

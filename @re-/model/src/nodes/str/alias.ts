@@ -1,6 +1,6 @@
 import { And, WithPropValue } from "@re-/tools"
 import { Root } from "../root.js"
-import { Base } from "#base"
+import { Common, Terminal } from "#common"
 
 export namespace Alias {
     export type Parse<Def extends keyof Dict, Dict, Seen> = And<
@@ -25,10 +25,10 @@ export namespace Alias {
           >
         : Root.Parse<Dict[Def], Dict, Seen & { [K in Def]: true }>
 
-    export const matches = (def: string, ctx: Base.ParseContext) =>
+    export const matches = (def: string, ctx: Common.ParseContext) =>
         def in ctx.config.space.dictionary
 
-    export class Node extends Base.Node<string> {
+    export class Node extends Terminal<string> {
         resolve() {
             /**
              * Keep track of definitions we've seen since last resolving to an object or built-in.
@@ -64,7 +64,7 @@ export namespace Alias {
             })
         }
 
-        allows(value: unknown, errors: Base.ErrorsByPath) {
+        allows(value: unknown, errors: Common.ErrorsByPath) {
             this.resolve().allows(value, errors)
             // const customValidator =
             //     this.ctx.config.space.config?.models?.[this.def]?.validate

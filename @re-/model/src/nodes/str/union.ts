@@ -1,6 +1,6 @@
 import { createSplittableMatcher } from "./common.js"
 import { Str } from "./str.js"
-import { Base } from "#base"
+import { Branching, Common } from "#common"
 
 export namespace Union {
     export type Definition<
@@ -12,14 +12,19 @@ export namespace Union {
 
     const matcher = createSplittableMatcher("|")
 
-    export class Node extends Base.Branching<Definition> {
+    export class Node extends Branching<Definition> {
         *parse() {
-            for (const member of this.def.match(matcher)!) {
-                yield Str.parse(member, this.ctx)
+            const members = this.def.match(matcher)!
+            let i = 0
+            // Yield parsed nodes until we hit the last group, then return its parse result
+            while (i < members.length - 1) {
+                yield Str.parse(members[i], this.ctx)
+                i++
             }
+            return Str.parse(members[i], this.ctx)
         }
 
-        allows(value: unknown, errors: Base.ErrorsByPath) {
+        allows(value: unknown, errors: Common.ErrorsByPath) {
             for (const branch of this.branches()) {
                 const error = branch.validateByPath(value)[this.ctx.path]
                 if (!error) {
@@ -27,7 +32,7 @@ export namespace Union {
                 }
             }
             this.addUnassignableMessage(
-                `${Base.stringifyValue(
+                `${Common.stringifyValue(
                     value
                 )} is not assignable to any of ${this.stringifyDef()}.`,
                 errors
@@ -35,7 +40,7 @@ export namespace Union {
         }
 
         generate() {
-            return this.branch(0).generate()
+            return this.branches().next().value.generate()
         }
     }
 }

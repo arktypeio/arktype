@@ -1,14 +1,7 @@
 import { isAlpha, isAlphaNumeric } from "@re-/tools"
-import { Base } from "#base"
+import { Common, Terminal } from "#common"
 
-type KeywordHandler = {
-    generate: (ctx: Base.ParseContext) => unknown
-    validate: (value: unknown, ctx: Base.ParseContext) => boolean
-    isString?: true
-    isNumber?: true
-}
-
-type KeywordHandlerMap = Record<string, KeywordHandler>
+type KeywordHandlerMap = Record<string, Keyword.Handler>
 
 // Just a no-op to narrow the handlers object so we can infer types from it
 const defineKeywords = <Handlers extends KeywordHandlerMap>(
@@ -58,7 +51,7 @@ const handlers = defineKeywords({
     },
     never: {
         generate: () => {
-            throw new Base.UngeneratableError("never", "never")
+            throw new Common.UngeneratableError("never", "never")
         },
         validate: () => false
     },
@@ -157,6 +150,13 @@ export namespace Keyword {
 
     export type StringOnly = ExtractKeywordsByType<"isString">
 
+    export type Handler = {
+        generate: (ctx: Common.ParseContext) => unknown
+        validate: (value: unknown, ctx: Common.ParseContext) => boolean
+        isString?: true
+        isNumber?: true
+    }
+
     export const getSubtypeHandlers = () => {
         const subtypeHandlers = {
             number: {} as KeywordHandlerMap,
@@ -175,8 +175,8 @@ export namespace Keyword {
 
     export const matches = (def: string): def is Definition => def in handlers
 
-    export class Node extends Base.Node<Definition> {
-        allows(value: unknown, errors: Base.ErrorsByPath) {
+    export class Node extends Terminal<Definition> {
+        allows(value: unknown, errors: Common.ErrorsByPath) {
             if (!handlers[this.def].validate(value)) {
                 this.addUnassignable(value, errors)
             }

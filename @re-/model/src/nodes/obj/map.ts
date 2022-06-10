@@ -1,7 +1,7 @@
 import { diffSets, Entry, Evaluate } from "@re-/tools"
 import { Root } from "../root.js"
 import { Optional } from "../str/index.js"
-import { Base } from "#base"
+import { Common, Linked } from "#common"
 
 export namespace Map {
     export type Parse<
@@ -20,8 +20,10 @@ export namespace Map {
         }
     >
 
-    export class Node extends Base.Node<object> {
-        props() {
+    type ParseResult = Entry<string, Common.Node<unknown>>[]
+
+    export class Node extends Linked<object, ParseResult> {
+        parse() {
             return Object.entries(this.def).map(([prop, propDef]) => [
                 prop,
                 Root.parse(propDef, {
@@ -29,10 +31,10 @@ export namespace Map {
                     path: `${this.ctx.path}${this.ctx.path ? "/" : ""}${prop}`,
                     shallowSeen: []
                 })
-            ]) as Entry<string, Base.Node<unknown>>[]
+            ]) as ParseResult
         }
 
-        allows(value: unknown, errors: Base.ErrorsByPath) {
+        allows(value: unknown, errors: Common.ErrorsByPath) {
             if (!value || typeof value !== "object" || Array.isArray(value)) {
                 this.addUnassignable(value, errors)
                 return
@@ -42,14 +44,14 @@ export namespace Map {
                 this.addUnassignable(value, errors)
                 return
             }
-            for (const [prop, node] of this.props()) {
+            for (const [prop, node] of this.next()) {
                 node.allows((value as any)[prop], errors)
             }
         }
 
         generate() {
             return Object.fromEntries(
-                this.props().map(([prop, node]) => [prop, node.generate()])
+                this.next().map(([prop, node]) => [prop, node.generate()])
             )
         }
     }

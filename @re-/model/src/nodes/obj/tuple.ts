@@ -1,6 +1,6 @@
 import { Entry } from "@re-/tools"
 import { Root } from "../root.js"
-import { Base } from "#base"
+import { Common, Linked } from "#common"
 
 export namespace Tuple {
     export type Definition = unknown[] | readonly unknown[]
@@ -8,8 +8,10 @@ export namespace Tuple {
     export const matches = (def: object): def is Definition =>
         Array.isArray(def)
 
-    export class Node extends Base.Node<Definition> {
-        elements() {
+    type ParseResult = Entry<number, Common.Node<unknown>>[]
+
+    export class Node extends Linked<Definition, ParseResult> {
+        parse() {
             return this.def.map((elementDef, elementIndex) => [
                 elementIndex,
                 Root.parse(elementDef, {
@@ -19,10 +21,10 @@ export namespace Tuple {
                     }${elementIndex}`,
                     shallowSeen: []
                 })
-            ]) as Entry<number, Base.Node<unknown>>[]
+            ]) as ParseResult
         }
 
-        allows(value: unknown, errors: Base.ErrorsByPath) {
+        allows(value: unknown, errors: Common.ErrorsByPath) {
             if (!Array.isArray(value)) {
                 this.addUnassignable(value, errors)
                 return
@@ -31,13 +33,13 @@ export namespace Tuple {
                 this.addUnassignable(value, errors)
                 return
             }
-            for (const [i, node] of this.elements()) {
+            for (const [i, node] of this.next()) {
                 node.allows(value[i], errors)
             }
         }
 
         generate() {
-            return this.elements().map(([, node]) => node.generate())
+            return this.next().map(([, node]) => node.generate())
         }
     }
 }

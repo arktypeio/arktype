@@ -2,7 +2,7 @@ import { Spliterate } from "@re-/tools"
 import { EmbeddedNumber } from "./embedded.js"
 import { Keyword } from "./keyword.js"
 import { Str } from "./str.js"
-import { Base } from "#base"
+import { Common, Linked } from "#common"
 
 type BoundableKeyword = Keyword.NumberOnly | Keyword.StringOnly
 
@@ -12,13 +12,13 @@ type InvalidBoundError<Bound extends string> =
     `Bound '${Bound}' must be a number literal.`
 
 const invalidBoundError = (bound: string) =>
-    `Bound '${Base.stringifyDef(bound)}' must be a number literal.`
+    `Bound '${Common.stringifyDef(bound)}' must be a number literal.`
 
 type UnboundableError<Bounded extends string> =
     `Bounded definition '${Bounded}' must be a number or string keyword.`
 
 const unboundableError = (inner: string) =>
-    `Bounded definition '${Base.stringifyDef(
+    `Bounded definition '${Common.stringifyDef(
         inner
     )}' must be a number or string keyword.`
 
@@ -32,7 +32,7 @@ const buildComparatorErrorMessage = (
     value: string | number,
     bound: number
 ) => {
-    return `${Base.stringifyValue(value)} is ${comparatorError} ${bound}${
+    return `${Common.stringifyValue(value)} is ${comparatorError} ${bound}${
         typeof value === "string" ? " characters" : ""
     }.`
 }
@@ -84,7 +84,7 @@ export namespace Constraint {
         Dict,
         Ctx,
         Bounded extends string = ExtractBounded<Def>
-    > = Bounded extends Base.ParseErrorMessage
+    > = Bounded extends Common.ParseErrorMessage
         ? Bounded
         : Str.Parse<Bounded, Dict, Ctx>
 
@@ -93,7 +93,7 @@ export namespace Constraint {
         Dict,
         Root,
         Bounded extends string = ExtractBounded<Def>
-    > = Bounded extends Base.ParseErrorMessage
+    > = Bounded extends Common.ParseErrorMessage
         ? Bounded
         : Str.Validate<Bounded, Dict, Root>
 
@@ -125,9 +125,9 @@ export namespace Constraint {
             ? Left extends EmbeddedNumber.Definition
                 ? Right extends EmbeddedNumber.Definition
                     ? Middle
-                    : Base.ParseErrorMessage<InvalidBoundError<Right>>
-                : Base.ParseErrorMessage<InvalidBoundError<Left>>
-            : Base.ParseErrorMessage<UnboundableError<Middle>>
+                    : Common.ParseErrorMessage<InvalidBoundError<Right>>
+                : Common.ParseErrorMessage<InvalidBoundError<Left>>
+            : Common.ParseErrorMessage<UnboundableError<Middle>>
         : Parts extends SingleBoundedParts<
               infer Left,
               ComparatorToken,
@@ -136,9 +136,9 @@ export namespace Constraint {
         ? Left extends BoundableKeyword
             ? Right extends EmbeddedNumber.Definition
                 ? Left
-                : Base.ParseErrorMessage<InvalidBoundError<Right>>
-            : Base.ParseErrorMessage<UnboundableError<Left>>
-        : Base.ParseErrorMessage<ConstraintError>
+                : Common.ParseErrorMessage<InvalidBoundError<Right>>
+            : Common.ParseErrorMessage<UnboundableError<Left>>
+        : Common.ParseErrorMessage<ConstraintError>
 
     const matcher = /(<=|>=|<|>)/
 
@@ -163,7 +163,18 @@ export namespace Constraint {
         throw new Error(unboundableError(part))
     }
 
-    export class Node extends Base.Node<Definition> {
+    type Bounds = {
+        [K in ComparatorToken]?: EmbeddedNumber.Definition
+    }
+
+    type ParseResult = Bounds & {
+        bounded: {
+            keyword: BoundableKeyword
+            handler: Keyword.Handler
+        }
+    }
+
+    export class Node extends Linked<Definition, ParseResult> {
         parse() {
             // Odd-indexed parts will always be comparators (<=, >=, < or >)
             // We still need to validate even-indexed parts as boundable keywords or number literals
@@ -183,7 +194,7 @@ export namespace Constraint {
                     [comparatorInverses[parts[1] as ComparatorToken]]:
                         validateBound(parts[0]),
                     [parts[3]]: validateBound(parts[4])
-                }
+                } as ParseResult
             }
             if (parts.length === 3) {
                 return {
@@ -192,16 +203,16 @@ export namespace Constraint {
                         handler: getBoundableHandler(parts[0])
                     },
                     [parts[1]]: validateBound(parts[2])
-                }
+                } as ParseResult
             }
             throw new Error(constraintErrorTemplate)
         }
 
-        allows(value: unknown, errors: Base.ErrorsByPath) {
-            const { bounded, ...bounds } = this.parse()
+        allows(value: unknown, errors: Common.ErrorsByPath) {
+            const { bounded, ...bounds } = this.next()
             if (!bounded.handler.validate(value, this.ctx)) {
                 this.addUnassignableMessage(
-                    `${Base.stringifyValue(value)} is not assignable to ${
+                    `${Common.stringifyValue(value)} is not assignable to ${
                         bounded.keyword
                     }.`,
                     errors
@@ -228,7 +239,7 @@ export namespace Constraint {
         }
 
         generate() {
-            throw new Base.UngeneratableError(this.def, "constraint")
+            throw new Common.UngeneratableError(this.def, "constraint")
         }
     }
 }

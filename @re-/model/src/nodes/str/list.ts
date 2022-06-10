@@ -1,5 +1,5 @@
 import { Str } from "./str.js"
-import { Base } from "#base"
+import { Common, Linked } from "#common"
 
 export namespace List {
     export type Definition<Child extends string = string> = `${Child}[]`
@@ -7,18 +7,18 @@ export namespace List {
     export const matches = (def: string): def is Definition =>
         def.endsWith("[]")
 
-    export class Node extends Base.Node<Definition> {
-        item() {
+    export class Node extends Linked<Definition> {
+        parse() {
             return Str.parse(this.def.slice(0, -2), this.ctx)
         }
 
-        allows(value: unknown, errors: Base.ErrorsByPath) {
+        allows(value: unknown, errors: Common.ErrorsByPath) {
             if (!Array.isArray(value)) {
                 this.addUnassignable(value, errors)
                 return
             }
             for (const [i, element] of Object.entries(value)) {
-                const itemErrors = this.item().validateByPath(element)
+                const itemErrors = this.next().validateByPath(element)
                 for (const [path, message] of Object.entries(itemErrors)) {
                     let itemPath = `${this.ctx.path}${
                         this.ctx.path ? "/" : ""

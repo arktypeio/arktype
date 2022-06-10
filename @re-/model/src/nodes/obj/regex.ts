@@ -1,4 +1,4 @@
-import { Base } from "#base"
+import { Common, Terminal } from "#common"
 
 export namespace Regex {
     export type Definition = RegExp
@@ -6,11 +6,11 @@ export namespace Regex {
     export const matches = (def: object): def is Definition =>
         def instanceof RegExp
 
-    export class Node extends Base.Node<Definition> {
-        allows(value: unknown, errors: Base.ErrorsByPath) {
+    export class Node extends Terminal<Definition> {
+        allows(value: unknown, errors: Common.ErrorsByPath) {
             if (typeof value !== "string") {
                 this.addUnassignableMessage(
-                    `Non-string value ${Base.stringifyValue(
+                    `Non-string value ${Common.stringifyValue(
                         value
                     )} cannot satisfy regex definitions.`,
                     errors
@@ -19,9 +19,9 @@ export namespace Regex {
             }
             if (!this.def.test(value)) {
                 this.addUnassignableMessage(
-                    `${Base.stringifyValue(value)} does not match expression /${
-                        this.def.source
-                    }/.`,
+                    `${Common.stringifyValue(
+                        value
+                    )} does not match expression /${this.def.source}/.`,
                     errors
                 )
                 return
@@ -29,7 +29,7 @@ export namespace Regex {
         }
 
         generate() {
-            throw new Base.UngeneratableError(`/${this.def.source}/`, "Regex")
+            throw new Common.UngeneratableError(`/${this.def.source}/`, "Regex")
         }
     }
 }

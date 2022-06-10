@@ -1,7 +1,7 @@
 import { asNumber } from "@re-/tools"
 import { Literal } from "../literal/literal.js"
 import { Regex } from "../obj/regex.js"
-import { Base } from "#base"
+import { Common } from "#common"
 
 /**
  * These expressions act like other terminal nodes (i.e. they are never parsed further),
@@ -19,7 +19,7 @@ export namespace EmbeddedRegex {
 
     export const expressionFrom = (def: Definition<string>) => def.slice(1, -1)
 
-    export const parse: Base.Parser<Definition<string>> = (def, ctx) =>
+    export const parse: Common.Parser<Definition<string>> = (def, ctx) =>
         new Regex.Node(new RegExp(expressionFrom(def)), ctx)
 }
 
@@ -34,7 +34,7 @@ export namespace EmbeddedNumber {
     export const valueFrom = (def: Definition) =>
         asNumber(def, { assert: true })
 
-    export const parse: Base.Parser<Definition> = (def, ctx) =>
+    export const parse: Common.Parser<Definition> = (def, ctx) =>
         new Literal.Node(valueFrom(def), ctx)
 }
 
@@ -49,6 +49,6 @@ export namespace EmbeddedBigInt {
     export const valueFrom = (def: Definition) =>
         BigInt(asNumber(def.slice(0, -1), { assert: true }))
 
-    export const parse: Base.Parser<Definition> = (def, ctx) =>
+    export const parse: Common.Parser<Definition> = (def, ctx) =>
         new Literal.Node(valueFrom(def), ctx)
 }
