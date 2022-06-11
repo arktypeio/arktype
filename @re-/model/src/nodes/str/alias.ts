@@ -26,7 +26,7 @@ export namespace Alias {
         : Root.Parse<Dict[Def], Dict, Seen & { [K in Def]: true }>
 
     export const matches = (def: string, ctx: Common.ParseContext) =>
-        def in ctx.space.dictionary
+        ctx.space && def in ctx.space.models
 
     export class Node extends Leaf<string> {
         resolve() {
@@ -42,19 +42,18 @@ export namespace Alias {
             if (this.ctx.seen.includes(this.def)) {
                 throw new Error("cycle (temporary error)")
             }
-            let nextDef = this.ctx.space.dictionary[this.def]
-            if (
-                this.ctx.seen.includes(this.def) &&
-                "onCycle" in this.ctx.space.config
-            ) {
-                this.ctx.space.dictionary.cyclic = nextDef
-                nextDef = this.ctx.space.config.onCycle
+            // the matches() function ensures space is defined
+            const space = this.ctx.space!
+            let nextDef = space.modelDefinitions[this.def]
+            if (this.ctx.seen.includes(this.def) && "onCycle" in space.config) {
+                space.inputs.dictionary.cyclic = nextDef
+                nextDef = space.config.onCycle
             } else if (
                 this.ctx.seen.includes(this.def) &&
-                "onResolve" in this.ctx.space.config
+                "onResolve" in space.config
             ) {
-                this.ctx.space.dictionary.resolution = nextDef
-                nextDef = this.ctx.space.config.onResolve
+                space.inputs.dictionary.resolution = nextDef
+                nextDef = space.config.onResolve
             }
             return Root.parse(nextDef, {
                 ...this.ctx,

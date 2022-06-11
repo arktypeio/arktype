@@ -1,6 +1,6 @@
 import { isEmpty } from "@re-/tools"
 import { Root } from "./nodes/index.js"
-import { ConfiguredSpace } from "./space.js"
+import { Space } from "./space.js"
 import { Common } from "#common"
 
 /*
@@ -110,35 +110,35 @@ export const eager: ModelFunction = (definition, options = {}) => {
 
 export type Parse<Def, Dict> = Root.Parse<Def, Dict, {}>
 
-export class Model<Def, Dict = {}> implements ModelFrom<Def, Parse<Def, Dict>> {
-    public readonly definition: Def
+type AnyModel = ModelFrom<any, any>
+
+export class Model implements AnyModel {
     private root: Common.Node<unknown>
 
     constructor(
-        definition: Root.Validate<Def, Dict>,
+        public readonly definition: AnyModel["definition"],
         options?: BaseOptions,
-        space?: ConfiguredSpace
+        space?: Space
     ) {
-        this.definition = definition as Def
         this.root = Root.parse(definition, {
             ...Common.defaultParseContext,
             ...options?.parse,
-            space: space ?? { dictionary: {}, config: {} }
+            space
         })
     }
 
-    get type(): Parse<Def, Dict> {
+    get type() {
         return Common.typeDefProxy
     }
 
     validate(value: unknown) {
         const errorsByPath = this.root.validateByPath(value)
         return isEmpty(errorsByPath)
-            ? { data: value as Parse<Def, Dict> }
+            ? { data: value }
             : { error: Common.stringifyErrors(errorsByPath), errorsByPath }
     }
 
-    assert(value: unknown): asserts value is Parse<Def, Dict> {
+    assert(value: unknown) {
         const { error } = this.validate(value)
         if (error) {
             throw new Error(error)
@@ -146,6 +146,6 @@ export class Model<Def, Dict = {}> implements ModelFrom<Def, Parse<Def, Dict>> {
     }
 
     generate() {
-        return this.root.generate() as Parse<Def, Dict>
+        return this.root.generate()
     }
 }

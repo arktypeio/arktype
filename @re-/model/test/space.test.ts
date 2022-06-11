@@ -91,7 +91,11 @@ describe("compile", () => {
             }
         )
         const extended = mySpace.extend(
-            { user: { age: "number" }, other: "user[]", onCycle: "boolean" },
+            {
+                user: { age: "number" },
+                other: { users: "user[]", groups: "group[]" },
+                onCycle: "boolean"
+            },
             {
                 models: {
                     group: {
@@ -107,31 +111,49 @@ describe("compile", () => {
                 }
             }
         )
-        assert(extended.types).type.toString.snap(
-            `{ other: { age: number; }[]; user: { age: number; }; group: { members: { age: number; }[]; }; }`
-        )
-        assert(extended.config).equals({
-            onCycle: "boolean",
-            validate: {
-                ignoreExtraneousKeys: true
-            },
-            models: {
-                user: {
-                    validate: {
-                        ignoreExtraneousKeys: false
-                    }
-                },
-                group: {
-                    generate: {
-                        onRequiredCycle: true
-                    }
-                },
-                other: {
-                    validate: {
-                        ignoreExtraneousKeys: true
-                    }
-                }
+        assert(extended.types).typed as {
+            user: {
+                age: number
             }
-        })
+            group: {
+                members: {
+                    age: number
+                }[]
+            }
+            other: {
+                users: {
+                    age: number
+                }[]
+                groups: {
+                    members: {
+                        age: number
+                    }[]
+                }[]
+            }
+        }
+        assert(extended.inputs.dictionary).snap()
+        assert(extended.inputs.options).snap()
+        // assert(extended.inputs.options).equals({
+        //     validate: {
+        //         ignoreExtraneousKeys: true
+        //     },
+        //     models: {
+        //         user: {
+        //             validate: {
+        //                 ignoreExtraneousKeys: false
+        //             }
+        //         },
+        //         group: {
+        //             generate: {
+        //                 onRequiredCycle: true
+        //             }
+        //         },
+        //         other: {
+        //             validate: {
+        //                 ignoreExtraneousKeys: true
+        //             }
+        //         }
+        //     }
+        // })
     })
 })

@@ -1,4 +1,4 @@
-import { Evaluate, Merge } from "@re-/tools"
+import { Entry, Evaluate, Merge } from "@re-/tools"
 import { BaseOptions, Model, ModelFrom, ModelFunction } from "./model.js"
 import { Root } from "./nodes/index.js"
 import { Common } from "#common"
@@ -16,28 +16,38 @@ export interface SpaceOptions<ModelName extends string> extends BaseOptions {
     models?: { [K in ModelName]?: BaseOptions }
 }
 
-export interface SpaceConfig<ModelName extends string>
-    extends SpaceOptions<ModelName> {
+type ModelNameIn<Dict> = keyof Dict & string
+
+interface SpaceExtensionOptions<
+    BaseModelName extends string,
+    ExtensionModelName extends string
+> extends BaseOptions {
+    models?: {
+        [ModelName in BaseModelName | ExtensionModelName]?: BaseOptions
+    }
+}
+
+interface SpaceConfig extends SpaceOptions<any> {
     onCycle?: unknown
     onResolve?: unknown
 }
 
-export type SpaceDictionary = Record<string, unknown>
+type SpaceDictionary = Record<string, unknown>
 
-export type SpaceDefinition<Dict> = {
-    dictionary: Dict
-    config?: SpaceOptions<string>
+type ValidateDictionaryExtension<BaseDict, ExtensionDict> = {
+    [TypeName in keyof ExtensionDict]: Root.Validate<
+        ExtensionDict[TypeName],
+        Merge<BaseDict, ExtensionDict>
+    >
 }
 
-export type ConfiguredSpace = {
-    dictionary: Record<string, unknown>
-    config: SpaceConfig<string>
-}
-
-export type ExtendFunction<BaseDict> = <Dict>(
-    dictionary: ValidateDictionary<Dict>,
-    config?: SpaceOptions<(keyof Dict | keyof BaseDict) & string>
-) => Space<Merge<BaseDict, Dict>>
+export type ExtendFunction<BaseDict> = <ExtensionDict>(
+    dictionary: ValidateDictionaryExtension<BaseDict, ExtensionDict>,
+    config?: SpaceExtensionOptions<
+        ModelNameIn<BaseDict>,
+        ModelNameIn<ExtensionDict>
+    >
+) => SpaceFrom<Merge<BaseDict, ExtensionDict>>
 
 export type DictToTypes<Dict> = Evaluate<{
     [TypeName in Exclude<keyof Dict, MetaKey>]: Root.Parse<
@@ -53,54 +63,79 @@ export type ValidateDictionary<Dict> = {
 
 export type CompileFunction = <Dict>(
     dictionary: ValidateDictionary<Dict>,
-    options?: SpaceOptions<keyof Dict & string>
+    options?: SpaceOptions<ModelNameIn<Dict>>
 ) => SpaceFrom<Dict>
 
 export type SpaceFrom<Dict> = {
-    dictionary: Dict
     models: DictionaryToModels<Dict>
     types: DictToTypes<Dict>
     extend: ExtendFunction<Dict>
     create: ModelFunction<Dict>
+    inputs: {
+        dictionary: Dict
+        options: SpaceOptions<ModelNameIn<Dict>> | undefined
+    }
 }
 
 export const compile: CompileFunction = (dictionary, options) =>
     new Space(dictionary, options) as any
 
-export class Space<Dict> implements SpaceFrom<Dict> {
-    readonly dictionary: Dict
-    readonly config: SpaceOptions<keyof Dict & string>
-    readonly models: DictionaryToModels<Dict>
-    create: ModelFunction<Dict>
-    extend: ExtendFunction<Dict>
+const normalizeSpaceInputs = (
+    dictionary: any,
+    options?: SpaceOptions<string>
+) => {
+    const { onCycle, onResolve, ...modelDefinitions } = dictionary
+    const config: SpaceConfig = options ?? {}
+    if (onCycle) {
+        config.onCycle = onCycle
+    }
+    if (onResolve) {
+        config.onResolve = onResolve
+    }
+    return {
+        modelDefinitions,
+        config
+    }
+}
 
-    constructor(
-        dictionary: ValidateDictionary<Dict>,
-        options?: SpaceOptions<keyof Dict & string>
-    ) {
-        const { onCycle, onResolve, ...definitions } = dictionary as any
-        const config: SpaceConfig<string> = options ?? {}
-        if (onCycle) {
-            config.onCycle = onCycle
-        }
-        if (onResolve) {
-            config.onResolve = onResolve
-        }
-        this.dictionary = definitions
-        this.config = config as any
-        const models: any = {}
-        for (const [typeName, definition] of Object.entries(this.dictionary)) {
-            models[typeName] = new Model(definition, {
-                ...config,
-                ...config?.models?.[typeName]
+export class Space implements SpaceFrom<any> {
+    inputs: SpaceFrom<any>["inputs"]
+    models: DictionaryToModels<any>
+
+    modelDefinitions: SpaceDictionary
+    config: SpaceConfig
+
+    constructor(dictionary: SpaceDictionary, options?: SpaceOptions<string>) {
+        this.inputs = { dictionary, options }
+        const normalized = normalizeSpaceInputs(dictionary, options)
+        this.modelDefinitions = normalized.modelDefinitions
+        this.config = normalized.config
+        this.models = {} as any
+        for (const [typeName, definition] of Object.entries(
+            this.modelDefinitions
+        ) as Entry<string, any>[]) {
+            this.models[typeName] = new Model(definition, {
+                ...this.config,
+                ...this.config?.models?.[typeName]
             })
         }
-        this.models = models
-        this.create = (def, options) => new Model(def, options, this as any)
-        this.extend = (dict, options) => this as any
     }
 
-    get types(): DictToTypes<Dict> {
+    create(def: any, options?: BaseOptions) {
+        return new Model(def, options, this) as any
+    }
+
+    extend(extensions: SpaceDictionary, overrides?: SpaceOptions<string>) {
+        return new Space(
+            { ...this.inputs.dictionary, ...extensions },
+            {
+                ...this.inputs.options,
+                ...overrides
+            }
+        ) as any
+    }
+
+    get types() {
         return Common.typeDefProxy
     }
 }
