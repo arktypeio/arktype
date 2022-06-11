@@ -35,6 +35,7 @@ type CreateDeclaredDefineFunction = <
 const createDeclaredDefineFunction: CreateDeclaredDefineFunction =
     (declaredTypeNames, definedTypeName) => (definition) => {
         // Dummy create for validation
+        // @ts-ignore
         model(definition, {
             space: {
                 dictionary: transform(declaredTypeNames, ([, typeName]) => [

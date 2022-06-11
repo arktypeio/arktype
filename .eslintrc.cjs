@@ -121,7 +121,6 @@ module.exports = defineConfig({
          */
         {
             files: ["**/src/**"],
-            excludedFiles: ["**/__tests__/**", "**/__benches__/**"],
             rules: {
                 /**
                  * Keep functions and files concise and readable
@@ -143,7 +142,7 @@ module.exports = defineConfig({
          * These rules apply only to tests and benches
          */
         {
-            files: ["**/__tests__/**", "**/__benches__/**"],
+            files: ["**/test/**", "**/bench/**"],
             rules: {
                 "unicorn/consistent-function-scoping": "off",
                 "unicorn/numeric-separators-style": "off"
@@ -153,7 +152,7 @@ module.exports = defineConfig({
          * These rules apply only to benches
          */
         {
-            files: ["**/__benches__/**"],
+            files: ["**/bench/**"],
             rules: {
                 // Assignment to a variable is required to ensure types are parsed
                 "@typescript-eslint/no-unused-vars": "off"

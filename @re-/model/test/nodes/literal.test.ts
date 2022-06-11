@@ -60,7 +60,7 @@ describe("bigint", () => {
     describe("type", () => {
         // For now, using type.toString() since SWC is confused by bigint cast like "as -1n"
         it("positive", () => {
-            assert(model(999999999999999n).type).type.toString(
+            assert(model(999_999_999_999_999n).type).type.toString(
                 "999999999999999n"
             )
         })
@@ -72,13 +72,15 @@ describe("bigint", () => {
         it("positive", () => {
             assert(
                 // Is prime :D
-                model(12345678910987654321n).validate(12345678910987654321n)
-                    .error
+                model(12_345_678_910_987_654_321n).validate(
+                    12_345_678_910_987_654_321n
+                ).error
             ).is(undefined)
         })
         it("negative", () => {
             assert(
-                model(-18446744073709551616n).validate(-BigInt(2 ** 64)).error
+                model(-18_446_744_073_709_551_616n).validate(-BigInt(2 ** 64))
+                    .error
             ).is(undefined)
         })
         describe("errors", () => {

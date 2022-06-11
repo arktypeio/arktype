@@ -26,7 +26,7 @@ export namespace Alias {
         : Root.Parse<Dict[Def], Dict, Seen & { [K in Def]: true }>
 
     export const matches = (def: string, ctx: Common.ParseContext) =>
-        def in ctx.config.space.dictionary
+        def in ctx.space.dictionary
 
     export class Node extends Leaf<string> {
         resolve() {
@@ -42,19 +42,19 @@ export namespace Alias {
             if (this.ctx.seen.includes(this.def)) {
                 throw new Error("cycle (temporary error)")
             }
-            let nextDef = this.ctx.config.space.dictionary[this.def]
+            let nextDef = this.ctx.space.dictionary[this.def]
             if (
                 this.ctx.seen.includes(this.def) &&
-                "onCycle" in this.ctx.config.space.config
+                "onCycle" in this.ctx.space.config
             ) {
-                this.ctx.config.space.dictionary.cyclic = nextDef
-                nextDef = this.ctx.config.space.config.onCycle
+                this.ctx.space.dictionary.cyclic = nextDef
+                nextDef = this.ctx.space.config.onCycle
             } else if (
                 this.ctx.seen.includes(this.def) &&
-                "onResolve" in this.ctx.config.space.config
+                "onResolve" in this.ctx.space.config
             ) {
-                this.ctx.config.space.dictionary.resolution = nextDef
-                nextDef = this.ctx.config.space.config.onResolve
+                this.ctx.space.dictionary.resolution = nextDef
+                nextDef = this.ctx.space.config.onResolve
             }
             return Root.parse(nextDef, {
                 ...this.ctx,
@@ -67,9 +67,9 @@ export namespace Alias {
         allows(value: unknown, errors: Common.ErrorsByPath) {
             this.resolve().allows(value, errors)
             // const customValidator =
-            //     this.ctx.config.space.config?.models?.[this.def]?.validate
+            //     this.ctx.space.config?.models?.[this.def]?.validate
             //         ?.validator ??
-            //     this.ctx.config.space.config.validate?.validator
+            //     this.ctx.space.config.validate?.validator
             // if (customValidator) {
             //     return errorsFromCustomValidator(customValidator, [
             //         value,

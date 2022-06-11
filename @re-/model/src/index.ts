@@ -1,8 +1,7 @@
 export type {
-    ModelFunction as CreateFunction,
-    ModelOptions,
-    ValidateConfig,
-    ReferencesConfig,
+    ModelFunction,
+    BaseOptions,
+    ValidateOptions,
     CustomValidator,
     GenerateConfig
 } from "./model.js"

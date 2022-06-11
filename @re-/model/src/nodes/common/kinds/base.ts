@@ -1,20 +1,13 @@
-import { isEmpty } from "@re-/tools"
 import {
     appendToPath,
     ErrorsByPath,
     ParseContext,
     stringifyDef,
-    stringifyErrors,
-    stringifyValue,
-    typeDefProxy
+    stringifyValue
 } from "../common.js"
 
 export abstract class Base<DefType> {
     constructor(protected def: DefType, protected ctx: ParseContext) {}
-
-    get type() {
-        return typeDefProxy
-    }
 
     protected stringifyDef() {
         return stringifyDef(this.def)
@@ -38,20 +31,6 @@ export abstract class Base<DefType> {
         const errorsByPath: ErrorsByPath = {}
         this.allows(value, errorsByPath)
         return errorsByPath
-    }
-
-    validate(value: unknown) {
-        const errorsByPath = this.validateByPath(value)
-        return isEmpty(errorsByPath)
-            ? { data: value }
-            : { error: stringifyErrors(errorsByPath), errorsByPath }
-    }
-
-    assert(value: unknown) {
-        const { error } = this.validate(value)
-        if (error) {
-            throw new Error(error)
-        }
     }
 
     abstract allows(value: unknown, errors: ErrorsByPath): void

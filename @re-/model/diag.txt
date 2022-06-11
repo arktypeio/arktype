@@ -1,0 +1,21 @@
+test/customValidators.test.ts(60,50): error TS2339: Property 'def' does not exist on type 'ParseContext'.
+test/customValidators.test.ts(87,46): error TS2339: Property 'ctx' does not exist on type 'ParseContext'.
+test/nodes/str/union.test.ts(74,26): error TS2345: Argument of type '"nested|five|duck"' is not assignable to parameter of type '"Error: Unable to determine the type of 'nested'."'.
+test/nodes/str/union.test.ts(75,26): error TS2345: Argument of type '"duck|nested"' is not assignable to parameter of type '"Error: Unable to determine the type of 'duck'."'.
+test/space.test.ts(114,13): error TS2345: Argument of type '{ onCycle: string; validate: { ignoreExtraneousKeys: true; }; models: { user: { validate: { ignoreExtraneousKeys: false; }; }; group: { generate: { onRequiredCycle: boolean; }; }; other: { validate: { ignoreExtraneousKeys: true; }; }; }; }' is not assignable to parameter of type 'SpaceOptions<"onCycle" | "other" | "user" | "group">'.
+  Object literal may only specify known properties, and 'onCycle' does not exist in type 'SpaceOptions<"onCycle" | "other" | "user" | "group">'.
+Files:              205
+Lines:            82958
+Nodes:           278620
+Identifiers:     101002
+Symbols:         484797
+Types:           254782
+Instantiations: 1169496
+Memory used:    532404K
+I/O read:         0.01s
+I/O write:        0.00s
+Parse time:       0.57s
+Bind time:        0.21s
+Check time:       5.96s
+Emit time:        0.00s
+Total time:       6.75s

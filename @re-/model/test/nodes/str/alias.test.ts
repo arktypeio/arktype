@@ -1,29 +1,14 @@
 import { assert } from "@re-/assert"
-import { narrow } from "@re-/tools"
 import { compile, model } from "#api"
 
 describe("alias", () => {
     describe("type", () => {
         it("with space", () => {
+            assert(compile({ borf: true }).create("borf").type).typed as true
             assert(
-                model(
-                    "borf",
-                    narrow({
-                        space: { dictionary: { borf: true } }
-                    })
-                ).type
-            ).typed as true
-            assert(
-                model(
-                    { snorf: "borf[]" },
-                    narrow({
-                        space: {
-                            dictionary: {
-                                borf: { f: false, u: undefined }
-                            }
-                        }
-                    })
-                ).type
+                compile({
+                    borf: { f: false, u: undefined }
+                }).create({ snorf: "borf[]" }).type
             ).typed as { snorf: { f: false; u: undefined }[] }
         })
         it("with onCycle option", () => {
@@ -72,21 +57,14 @@ describe("alias", () => {
     })
     describe("validation", () => {
         it("simple space", () => {
-            const groceries = model(
-                { fruits: "fruit[]" },
-                narrow({
-                    space: {
-                        dictionary: {
-                            banana: {
-                                length: "number",
-                                description: "string?"
-                            },
-                            apple: { circumference: "number", type: "string" },
-                            fruit: "banana|apple"
-                        }
-                    }
-                })
-            )
+            const groceries = compile({
+                banana: {
+                    length: "number",
+                    description: "string?"
+                },
+                apple: { circumference: "number", type: "string" },
+                fruit: "banana|apple"
+            }).create({ fruits: "fruit[]" })
             assert(
                 groceries.validate({
                     fruits: [
@@ -142,18 +120,11 @@ Encountered errors at the following paths:
          * })
          */
         it("cyclic space", () => {
-            const bicycle = model(
-                { a: "a", b: "b", c: "either[]" },
-                narrow({
-                    space: {
-                        dictionary: {
-                            a: { a: "a?", b: "b?", isA: "true" },
-                            b: { a: "a?", b: "b?", isA: "false" },
-                            either: "a|b"
-                        }
-                    }
-                })
-            )
+            const bicycle = compile({
+                a: { a: "a?", b: "b?", isA: "true" },
+                b: { a: "a?", b: "b?", isA: "false" },
+                either: "a|b"
+            }).create({ a: "a", b: "b", c: "either[]" })
             assert(
                 bicycle.validate({
                     a: {
@@ -221,59 +192,53 @@ Encountered errors at the following paths:
   c/8: '{isA: 'the duck goes quack'} is not assignable to any of a|b.'
 }`)
         })
-        it("doesn't try to parse or validate any", () => {
-            // Parse any as type
+        it("doesn't try to validate any as a model definition", () => {
             assert(model({} as any).type).typed as any
-            // Parse any as space
+        })
+        it("doesn't try to validate any as a dictionary", () => {
             const parseWithAnySpace = () =>
-                model(
-                    { literal: "string", alias: "myType" },
-                    { space: { dictionary: {} } as any }
-                ).type
+                compile({} as any).create({
+                    literal: "string",
+                    // @ts-ignore
+                    alias: "myType"
+                }).type
             assert(parseWithAnySpace).typed as () => {
-                literal: string
                 alias: any
+                literal: string
             }
             assert(parseWithAnySpace)
                 .throws()
                 .snap(
                     `Error: Unable to determine the type of 'myType' at path alias.`
                 )
-            // Parse any as space member
-            assert(
-                model(["number", "a"], {
-                    space: { dictionary: { a: {} as any } }
-                }).type
-            ).typed as [number, any]
+        })
+        it("doesn't try to validate any as a dictionary member", () => {
+            assert(compile({ a: {} as any }).create(["number", "a"]).type)
+                .typed as [number, any]
         })
     })
     describe("generation", () => {
         it("simple space", () => {
             assert(
-                model(
-                    {
+                compile({
+                    banana: {
+                        length: "number",
+                        description: "string?"
+                    },
+                    apple: {
+                        circumference: "number",
+                        type: "string"
+                    },
+                    fruit: "banana|apple"
+                })
+                    .create({
                         fruits: "fruit[]",
                         bestBanana: "banana",
                         bestApple: "apple",
                         bestFruit: "fruit",
                         optionalFruit: "fruit?"
-                    },
-                    narrow({
-                        space: {
-                            dictionary: {
-                                banana: {
-                                    length: "number",
-                                    description: "string?"
-                                },
-                                apple: {
-                                    circumference: "number",
-                                    type: "string"
-                                },
-                                fruit: "banana|apple"
-                            }
-                        }
                     })
-                ).generate()
+                    .generate()
             ).equals({
                 fruits: [],
                 bestBanana: { length: 0 },
@@ -284,34 +249,24 @@ Encountered errors at the following paths:
         it("optional cycle", () => {
             // If it's optional, the cycle should be ignored and just return undefined
             assert(
-                model(
-                    "a",
-                    narrow({
-                        space: {
-                            dictionary: {
-                                a: { b: "b" },
-                                b: { c: "c?" },
-                                c: "a|b"
-                            }
-                        }
-                    })
-                ).generate()
+                compile({
+                    a: { b: "b" },
+                    b: { c: "c?" },
+                    c: "a|b"
+                })
+                    .create("a")
+                    .generate()
             ).equals({ b: {} })
         })
         it("required cycle", () => {
             assert(() =>
-                model(
-                    "a",
-                    narrow({
-                        space: {
-                            dictionary: {
-                                a: { b: "b" },
-                                b: { c: "c" },
-                                c: "a|b"
-                            }
-                        }
-                    })
-                ).generate()
+                compile({
+                    a: { b: "b" },
+                    b: { c: "c" },
+                    c: "a|b"
+                })
+                    .create("a")
+                    .generate()
             ).throws
                 .snap(`Error: Unable to generate a default value for type including a required cycle:
 a=>b=>c=>a
@@ -351,21 +306,16 @@ If you'd like to avoid throwing in when this occurs, pass a value to return when
             // ).value.equals({ b: { a: "cycle" } })
         })
         it("from parsed", () => {
-            const defaultValue = model(
-                {
+            const defaultValue = compile({
+                group: { name: "string", description: "string?" }
+            })
+                .create({
                     requiredGroup: "group",
                     requiredGroups: "group[]",
                     optionalGroup: "group?",
                     optionalGroups: "group[]?"
-                },
-                narrow({
-                    space: {
-                        dictionary: {
-                            group: { name: "string", description: "string?" }
-                        }
-                    }
                 })
-            ).generate()
+                .generate()
             assert(defaultValue).equals({
                 requiredGroup: { name: "" },
                 requiredGroups: []

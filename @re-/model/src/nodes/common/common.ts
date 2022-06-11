@@ -1,5 +1,6 @@
 import { isDigits, toString, uncapitalize } from "@re-/tools"
-import { ModelConfig } from "../../model.js"
+import { BaseOptions } from "../../model.js"
+import { ConfiguredSpace } from "../../space.js"
 import type { Base as BaseNode } from "./kinds/base.js"
 
 export type Node<DefType = unknown> = BaseNode<DefType>
@@ -13,16 +14,16 @@ export type ParseContext = {
     path: string
     seen: string[]
     shallowSeen: string[]
-    config: ModelConfig
+    config: BaseOptions
+    space: ConfiguredSpace
     stringRoot: string | null
 }
 
 export const defaultParseContext: ParseContext = {
-    config: {
-        space: {
-            dictionary: {},
-            config: {}
-        }
+    config: {},
+    space: {
+        dictionary: {},
+        config: {}
     },
     eager: false,
     path: "",

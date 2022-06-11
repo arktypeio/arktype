@@ -1,5 +1,5 @@
 import { assert } from "@re-/assert"
-import { compile, model } from "#api"
+import { compile } from "#api"
 
 describe("compile", () => {
     it("single", () => {
@@ -72,27 +72,6 @@ describe("compile", () => {
             space.create({ nested: { a: "a", b: "b", c: "c" } })
         ).throwsAndHasTypeError("Unable to determine the type of 'c'")
     })
-    it("compile result", () => {
-        const mySpace = compile({ a: { b: "b?" }, b: { a: "a?" } })
-        const a = mySpace.create("a")
-        assert(a.type)
-            .type.toString()
-            .snap(
-                `{ b?: { a?: { b?: any | undefined; } | undefined; } | undefined; }`
-            )
-        assert(mySpace.models.a.references()).equals({ b: ["b"] })
-        const aWithExtraneousKey = { c: "extraneous" }
-        const extraneousKeyMessage = "Keys 'c' were unexpected."
-        assert(a.validate(aWithExtraneousKey).error).is(extraneousKeyMessage)
-        assert(() => a.assert(aWithExtraneousKey)).throws(extraneousKeyMessage)
-        assert(a.generate()).equals({})
-        assert(a.references()).equals(["a"])
-        assert(a.definition).typedValue("a")
-        assert(mySpace.create("b").type).type.toString.snap(
-            `{ a?: { b?: { a?: any | undefined; } | undefined; } | undefined; }`
-        )
-        assert(mySpace.models.b.references()).equals({ a: ["a"] })
-    })
     it("extension", () => {
         const mySpace = compile(
             {
@@ -154,33 +133,5 @@ describe("compile", () => {
                 }
             }
         })
-    })
-    it("compiled space can be provided via model options", () => {
-        const space = compile({
-            user: { name: "string" },
-            group: { members: "user[]" }
-        })
-        const city = model({ people: "user[]", groups: "group[]" }, { space })
-        assert(city.type).type.toString.snap(
-            `{ groups: { members: { name: string; }[]; }[]; people: { name: string; }[]; }`
-        )
-        assert(
-            city.validate({
-                people: [{ name: "David" }],
-                groups: [{ members: [{ first: "David", last: "Blass" }] }]
-            }).error
-        ).snap(
-            `At path groups/0/members/0, required keys 'name' were missing. Keys 'first, last' were unexpected.`
-        )
-    })
-    it("space cannot be redefined from create", () => {
-        const space = compile({ a: "string" })
-        assert(() =>
-            space.create("a", {
-                space: { dictionary: { a: {} } }
-            })
-        ).throws.snap(
-            `Error: Space has already been determined according to the source of this 'model' method.`
-        )
     })
 })

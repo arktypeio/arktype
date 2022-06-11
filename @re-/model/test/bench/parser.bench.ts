@@ -1,5 +1,5 @@
 import { bench } from "@re-/assert"
-import { Root } from "../nodes/root.js"
+import { Root } from "#api"
 import { Common } from "#common"
 const defaultParseContext = Common.defaultParseContext
 
@@ -123,12 +123,12 @@ bench("list type", () => {
     ])
 }).median("1.59us")
 
-bench("validate tuple", () => {
-    Root.parse("string[]", defaultParseContext).validate([
-        "hi",
-        "there",
-        "we're",
-        "strings",
-        5
-    ])
-}).median("2.03us")
+// bench("validate tuple", () => {
+//     Root.parse("string[]", defaultParseContext).validate([
+//         "hi",
+//         "there",
+//         "we're",
+//         "strings",
+//         5
+//     ])
+// }).median("2.03us")

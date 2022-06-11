@@ -1,6 +1,6 @@
-import { Evaluate, KeyValuate } from "@re-/tools"
+import { isEmpty } from "@re-/tools"
 import { Root } from "./nodes/index.js"
-import { ConfiguredSpace, SpaceConfig, SpaceDefinition } from "./space.js"
+import { ConfiguredSpace } from "./space.js"
 import { Common } from "#common"
 
 /*
@@ -17,8 +17,6 @@ export type CheckReferences<
     }
 >
 
-export type ReferencesConfig = {}
-
 export type GenerateConfig = {
     /*
      * By default, generate will throw if it encounters a cyclic required type
@@ -33,39 +31,14 @@ export interface ParseConfig {
 
 export interface BaseOptions {
     parse?: ParseConfig
-    validate?: ValidateConfig
+    validate?: ValidateOptions
     generate?: GenerateConfig
-    references?: ReferencesConfig
 }
 
-export interface ModelOptions extends BaseOptions {
-    space?: SpaceDefinition
-}
-
-export interface ModelConfig extends BaseOptions {
-    space: ConfiguredSpace
-}
-
-export type ValidateConfig = {
+export type ValidateOptions = {
     ignoreExtraneousKeys?: boolean
     validator?: CustomValidator
     verbose?: boolean
-}
-
-export type CustomValidator = (
-    value: unknown,
-    errors: Common.ErrorsByPath,
-    ctx: Common.ParseContext
-) => string | Common.ErrorsByPath
-
-export type AssertOptions = ValidateConfig
-
-export type ValidateFunction = <Options extends ValidateConfig>(
-    value: unknown,
-    options?: Options
-) => {
-    error?: string
-    errorsByPath?: Common.ErrorsByPath
 }
 
 export const errorsFromCustomValidator = (
@@ -82,90 +55,44 @@ export const errorsFromCustomValidator = (
     return {}
 }
 
-// const createRootValidate =
-//     (
-//         validate: any,
-//         definition: unknown,
-//         customValidator: CustomValidator | undefined
-//     ): ValidateFunction =>
-//     (value, options) => {
-//         let errorsByPath = validate(value, options)
-//         if (customValidator) {
-//             errorsByPath = errorsFromCustomValidator(customValidator, [
-//                 value,
-//                 errorsByPath,
-//                 // @ts-ignore
-//                 { def: definition, ctx: defaultParseContext }
-//             ])
-//         }
-//         return isEmpty(errorsByPath)
-//             ? {}
-//             : {
-//                   error: Base.stringifyErrors(errorsByPath),
-//                   errorsByPath: errorsByPath
-//               }
-//     }
+export type CustomValidator = (
+    value: unknown,
+    errors: Common.ErrorsByPath,
+    ctx: Common.ParseContext
+) => string | Common.ErrorsByPath
 
-// Move meta keys like onCycle and onResolve to config, since they are not valid types
-const configureSpace = (definition: SpaceDefinition): ConfiguredSpace => {
-    const { onCycle, onResolve, ...dictionary } = definition.dictionary
-    const config: SpaceConfig<string> = definition.config ?? {}
-    if (onCycle) {
-        config.onCycle = onCycle
-    }
-    if (onResolve) {
-        config.onResolve = onResolve
-    }
-    return {
-        dictionary,
-        config
-    }
+export type AssertOptions = ValidateOptions
+
+export type ValidateFunction<ModeledType> = (
+    value: unknown,
+    options?: ValidateOptions
+) => {
+    data?: ModeledType
+    error?: string
+    errorsByPath?: Common.ErrorsByPath
 }
 
-export const createModelFunction =
-    (predefinedSpace?: SpaceDefinition): ModelFunction<any> =>
-    // @ts-ignore
-    (definition, config) => {
-        if (predefinedSpace && config?.space) {
-            throw new Error(
-                "Space has already been determined according to the source of this 'model' method."
-            )
-        }
-        const space = configureSpace(
-            config?.space ??
-                predefinedSpace ?? {
-                    dictionary: {}
-                }
-        )
-        const context: Common.ParseContext = {
-            ...Common.defaultParseContext,
-            ...predefinedSpace?.config?.parse,
-            config: {
-                ...config,
-                space
-            }
-        }
-        return Root.parse(definition, context)
-    }
+export type AssertFunction<ModeledType> = (
+    value: unknown,
+    options?: ValidateOptions
+) => asserts value is ModeledType
 
-export type Model<Def, ModelType> = Evaluate<{
+export type GenerateFunction<ModeledType> = (
+    options?: GenerateConfig
+) => ModeledType
+
+export type ModelFunction<Dict = {}> = <Def>(
+    definition: Root.Validate<Def, Dict>,
+    options?: BaseOptions
+) => ModelFrom<Def, Parse<Def, Dict>>
+
+export type ModelFrom<Def, ModeledType> = {
     definition: Def
-    type: ModelType
-    config: ModelOptions
-    validate: ValidateFunction
-    assert: (value: unknown, options?: AssertOptions) => void
-    generate: (options?: GenerateConfig) => ModelType
-    references: (options?: ReferencesConfig) => any
-}>
-
-export type ModelFunction<PredefinedDict> = <
-    Def,
-    Options extends ModelOptions,
-    ActiveDict = KeyValuate<Options["space"], "dictionary", PredefinedDict>
->(
-    definition: Root.Validate<Def, ActiveDict>,
-    options?: Options
-) => Model<Def, Root.Parse<Def, ActiveDict, {}>>
+    type: ModeledType
+    validate: ValidateFunction<ModeledType>
+    assert: AssertFunction<ModeledType>
+    generate: GenerateFunction<ModeledType>
+}
 
 /**
  * Create a model.
@@ -173,9 +100,52 @@ export type ModelFunction<PredefinedDict> = <
  * @param options {@as ModelConfig?} And that.
  * @returns {@as any} The result.
  */
-export const model: ModelFunction<{}> = createModelFunction()
+export const model: ModelFunction = (definition, options) =>
+    new Model(definition, options) as any
 
-export const eager: ModelFunction<{}> = createModelFunction({
-    config: { parse: { eager: true } },
-    dictionary: {}
-})
+export const eager: ModelFunction = (definition, options = {}) => {
+    options.parse = { eager: true }
+    return new Model(definition, options) as any
+}
+
+export type Parse<Def, Dict> = Root.Parse<Def, Dict, {}>
+
+export class Model<Def, Dict = {}> implements ModelFrom<Def, Parse<Def, Dict>> {
+    public readonly definition: Def
+    private root: Common.Node<unknown>
+
+    constructor(
+        definition: Root.Validate<Def, Dict>,
+        options?: BaseOptions,
+        space?: ConfiguredSpace
+    ) {
+        this.definition = definition as Def
+        this.root = Root.parse(definition, {
+            ...Common.defaultParseContext,
+            ...options?.parse,
+            space: space ?? { dictionary: {}, config: {} }
+        })
+    }
+
+    get type(): Parse<Def, Dict> {
+        return Common.typeDefProxy
+    }
+
+    validate(value: unknown) {
+        const errorsByPath = this.root.validateByPath(value)
+        return isEmpty(errorsByPath)
+            ? { data: value as Parse<Def, Dict> }
+            : { error: Common.stringifyErrors(errorsByPath), errorsByPath }
+    }
+
+    assert(value: unknown): asserts value is Parse<Def, Dict> {
+        const { error } = this.validate(value)
+        if (error) {
+            throw new Error(error)
+        }
+    }
+
+    generate() {
+        return this.root.generate() as Parse<Def, Dict>
+    }
+}
