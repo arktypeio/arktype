@@ -1,6 +1,5 @@
 import { assert } from "@re-/assert"
-import { test } from "mocha"
-import { addedOrChanged, deepEquals, diff, diffSets } from "../index.js"
+import { addedOrChanged, deepEquals, diff, diffSets } from "@re-/tools"
 import { o } from "./common.js"
 
 const updatedO = Object.freeze({
@@ -43,17 +42,17 @@ const extractedChanges = {
     e: [{ a: ["old"] }, { a: ["old"] }, { a: ["new"] }]
 }
 
-test("diffs shallow", () => {
-    assert(diff("hey", "hey")).equals()
+it("diffs shallow", () => {
+    assert(diff("hey", "hey")).equals(undefined)
     assert(diff("hey", "hi")).equals({ base: "hey", compare: "hi" })
 })
 
-test("diffs deep", () => {
-    assert(diff(o, o)).equals()
+it("diffs deep", () => {
+    assert(diff(o, o)).equals(undefined)
     assert(diff(o, updatedO)).value.equals(diffedChanges)
 })
 
-test("removed keys", () => {
+it("removed keys", () => {
     assert(diff({ a: "", b: "" }, { a: "" })).equals({
         removed: { b: "" }
     })
@@ -62,7 +61,7 @@ test("removed keys", () => {
     ).equals({ changed: { nested: { removed: { a: true } } } })
 })
 
-test("added keys", () => {
+it("added keys", () => {
     assert(diff({ a: "" }, { a: "", b: "" })).equals({
         added: { b: "" }
     })
@@ -71,28 +70,28 @@ test("added keys", () => {
     ).equals({ changed: { nested: { added: { a: true } } } })
 })
 
-test("diffs array", () => {
+it("diffs array", () => {
     assert(diff(["ok"], ["different"])).value.equals({
         changed: { 0: { base: "ok", compare: "different" } }
     })
 })
 
-test("extracts changes from deep objects", () => {
+it("extracts changes from deep objects", () => {
     assert(addedOrChanged(o, updatedO)).equals(extractedChanges)
 })
 
-test("diff sets", () => {
-    assert(diffSets(["a", "b"], ["b", "a"])).equals()
+it("diff sets", () => {
+    assert(diffSets(["a", "b"], ["b", "a"])).equals(undefined)
     assert(
         diffSets([{ a: true }, { b: true }], [{ b: true }, { a: true }])
-    ).equals()
+    ).equals(undefined)
     assert(diffSets(["a", "b"], ["b", "c"])).equals({
         added: ["c"],
         removed: ["a"]
     })
 })
 
-test("deepEquals", () => {
+it("deepEquals", () => {
     assert(deepEquals(o, { ...o })).equals(true)
     assert(
         deepEquals(o, {

@@ -1,6 +1,6 @@
 import { assert } from "@re-/assert"
-import { test } from "mocha"
-import { shapeFilter } from "../index.js"
+
+import { shapeFilter } from "@re-/tools"
 import { o } from "./common.js"
 
 const filter = {
@@ -21,7 +21,7 @@ const asserted = {
     },
     c: null
 }
-test("doesn't modify objects", () => {
+it("doesn't modify objects", () => {
     const originalSource = JSON.parse(JSON.stringify(o))
     const originalFilter = JSON.parse(JSON.stringify(filter))
     shapeFilter(o, filter)
@@ -29,18 +29,18 @@ test("doesn't modify objects", () => {
     assert(filter).equals(originalFilter)
 })
 
-test("filters simple objects", () => {
+it("filters simple objects", () => {
     const result: typeof asserted = shapeFilter(o, filter)
     assert(result).equals(asserted)
 })
 
-test("preserves source when filter is non-recursible", () => {
+it("preserves source when filter is non-recursible", () => {
     const asserted = { b: o.b }
     const result: typeof asserted = shapeFilter(o, { b: null })
     assert(result).equals(asserted)
 })
 
-test("stops recursing if filter is deeper than source", () => {
+it("stops recursing if filter is deeper than source", () => {
     const result: typeof asserted = shapeFilter(o, {
         ...filter,
         c: {
@@ -52,7 +52,7 @@ test("stops recursing if filter is deeper than source", () => {
     assert(result).equals(asserted)
 })
 
-test("ignores filter keys not in source", () => {
+it("ignores filter keys not in source", () => {
     const result: typeof asserted = shapeFilter(o, {
         ...filter,
         extraneous: null
@@ -60,6 +60,6 @@ test("ignores filter keys not in source", () => {
     assert(result).equals(asserted)
 })
 
-test("errors on non-object", () => {
+it("errors on non-object", () => {
     assert(() => shapeFilter(0, 0)).throws()
 })

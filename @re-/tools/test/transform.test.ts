@@ -1,6 +1,5 @@
 import { assert } from "@re-/assert"
-import { test } from "mocha"
-import { EntryMapper, transform } from "../index.js"
+import { EntryMapper, transform } from "@re-/tools"
 
 const o = {
     a: 1,
@@ -31,14 +30,14 @@ const mapLeavesToPaths: EntryMapper<any, any> = ([k, v], { path }) => [
     path.length === 2 ? path : v
 ]
 
-test("objects", () => {
+it("objects", () => {
     assert(transform(o, ([k, v]) => [k.toUpperCase(), -v])).equals({
         A: -1,
         B: -2,
         C: -3
     })
 })
-test("value type change", () => {
+it("value type change", () => {
     const result = transform(o, ([k, v]) => [v, k])
     assert(result).equals({
         1: "a",
@@ -48,33 +47,33 @@ test("value type change", () => {
         [x: number]: "a" | "b" | "c"
     }
 })
-test("deep", () => {
+it("deep", () => {
     const result = transform(deepO, mapLeavesToPaths, { deep: true })
     assert(result).equals(pathsOfDeepO)
 })
-test("recurseWhen", () => {
+it("recurseWhen", () => {
     const result = transform(deepO, mapLeavesToPaths, {
         deep: true,
         recurseWhen: ([k], { path }) => k === "b" && path.includes("b")
     })
     assert(result).equals({ a: o, b: pathsOfDeepO.b })
 })
-test("filter null from map results", () => {
+it("filter null from map results", () => {
     const result = transform(deepO, ([k, v]) => (k === "a" ? null : [k, v]), {
         deep: true
     })
     assert(result).value.equals({ b: { b: 2, c: 3 } })
 })
-test("errors on non-objects", () => {
+it("errors on non-objects", () => {
     assert(() => transform(null as any, (_) => _)).throws()
     assert(() => transform(undefined as any, (_) => _)).throws()
     assert(() => transform(true as any, (_) => _)).throws()
 })
-test("infer array", () => {
+it("infer array", () => {
     const inferredAsArrayResult = transform([true, false], ([i, v]) => [i, !v])
     assert(inferredAsArrayResult).equals([false, true]).typed as boolean[]
 })
-test("explicitly infer array", () => {
+it("explicitly infer array", () => {
     const specifiedInferArrayResult = transform(
         [true, false],
         ([i, v]) => [i, !v],
@@ -82,7 +81,7 @@ test("explicitly infer array", () => {
     )
     assert(specifiedInferArrayResult).equals([false, true]).typed as boolean[]
 })
-test("force record", () => {
+it("force record", () => {
     const specifiedAsArrayResult = transform(
         [true, false],
         ([i, v]) => [i, !v],
@@ -94,7 +93,7 @@ test("force record", () => {
         [x: number]: boolean
     }
 })
-test("force array", () => {
+it("force array", () => {
     const result = transform({ a: 3.14, b: 159 }, ([k, v]) => [k, `${v}`], {
         asArray: "always"
     })

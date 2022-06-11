@@ -11,11 +11,11 @@ Identifiers:     101002
 Symbols:         484797
 Types:           254782
 Instantiations: 1169496
-Memory used:    532404K
+Memory used:    532483K
 I/O read:         0.01s
 I/O write:        0.00s
-Parse time:       0.57s
-Bind time:        0.21s
-Check time:       5.96s
+Parse time:       0.54s
+Bind time:        0.20s
+Check time:       5.91s
 Emit time:        0.00s
-Total time:       6.75s
+Total time:       6.65s

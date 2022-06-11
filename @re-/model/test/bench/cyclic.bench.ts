@@ -6,7 +6,7 @@ import {
     cyclic50,
     cyclic500
 } from "./generated/cyclic.js"
-import { compile } from "#api"
+import { compile } from "@re-/model"
 
 bench("cyclic(10)", () => {
     const space = compile(cyclic10)

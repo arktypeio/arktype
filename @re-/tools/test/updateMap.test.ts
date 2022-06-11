@@ -1,6 +1,6 @@
 import { assert } from "@re-/assert"
-import { test } from "mocha"
-import { DeepUpdate, updateMap } from "../index.js"
+import { DeepUpdate, updateMap } from "@re-/tools"
+
 import { o } from "./common.js"
 
 const map: DeepUpdate<typeof o> = {
@@ -41,17 +41,17 @@ const expected = {
     e: [{ a: ["old"] }, { a: ["old"] }]
 }
 
-test("updates simple objects", () => {
+it("updates simple objects", () => {
     const result: typeof expected = updateMap(o, map)
     assert(result).equals(expected)
 })
 
-test("updates objects to null", () => {
+it("updates objects to null", () => {
     const result = updateMap(o, { a: null } as any)
     assert(result).value.equals({ ...o, a: null })
 })
 
-test("updates keys missing that aren't defined in the original object", () => {
+it("updates keys missing that aren't defined in the original object", () => {
     const result = updateMap(o, { a: { c: { d: true } } })
     assert(result).equals({
         ...o,
@@ -59,7 +59,7 @@ test("updates keys missing that aren't defined in the original object", () => {
     })
 })
 
-test("updates deep arrays", () => {
+it("updates deep arrays", () => {
     const deepArrayExpected = {
         ...o,
         e: [{ a: ["old"] }, { a: ["old"] }, { a: ["new"] }]

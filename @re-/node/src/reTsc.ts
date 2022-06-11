@@ -1,5 +1,5 @@
 import { existsSync, renameSync, rmSync } from "node:fs"
-import { basename, join, relative } from "node:path"
+import { join, relative } from "node:path"
 import { stdout } from "node:process"
 import {
     findPackageRoot,
@@ -22,9 +22,7 @@ const typesOut = join(outRoot, "types")
 const mjsOut = join(outRoot, "mjs")
 const cjsOut = join(outRoot, "cjs")
 const inFiles = walkPaths(srcRoot, {
-    excludeDirs: true,
-    exclude: (path) =>
-        path.includes("__tests__") || path.includes("__benches__")
+    excludeDirs: true
 })
 const successMessage = `🎁 Successfully built ${packageName}!`
 
@@ -40,13 +38,22 @@ export const buildTypes = () => {
         files: inFiles
     })
     try {
-        const cmd = `pnpm tsc --project ${tempTsConfig} --outDir ${outRoot}`
+        const cmd = `pnpm tsc --project ${tempTsConfig} --outDir ${outRoot} --emitDeclarationOnly`
         shell(cmd, {
             cwd: packageRoot,
             stdio: "pipe",
             suppressCmdStringLogging: true
         })
         renameSync(join(outRoot, "src"), typesOut)
+        const typesPackageJson = buildDistPackageJson({
+            transformImportsPath: (path) =>
+                path.endsWith(".js") ? path.slice(0, -3) + ".d.ts" : path
+        })
+        if (Object.keys(typesPackageJson).length) {
+            // If we needed to remap any imports from the original package.json,
+            // create a package.json in typesOut
+            writeJson(join(typesOut, "package.json"), typesPackageJson)
+        }
     } finally {
         rmSync(tempTsConfig)
     }
@@ -73,15 +80,30 @@ const swc = ({ outDir, moduleType, sourceMaps }: SwcOptions) => {
     shell(cmd, { suppressCmdStringLogging: true })
 }
 
-const buildDistPackageJson = (type: "module" | "commonjs") => {
-    const contents: any = { type }
+type BuildDistPackageJsonOptions = {
+    type?: "commonjs" | "module"
+    transformImportsPath?: (path: string) => string
+}
+
+const buildDistPackageJson = ({
+    type,
+    transformImportsPath
+}: BuildDistPackageJsonOptions) => {
+    const contents: any = {}
+    if (type) {
+        contents.type = type
+    }
     if (packageJson.imports) {
         for (const [alias, path] of Object.entries(packageJson.imports)) {
             if (typeof path === "string" && path.startsWith("./src/")) {
                 if (!contents.imports) {
                     contents.imports = {}
                 }
-                contents.imports[alias] = path.replace("./src/", "./")
+                let transformedPath = path.replace("./src/", "./")
+                if (transformImportsPath) {
+                    transformedPath = transformImportsPath(transformedPath)
+                }
+                contents.imports[alias] = transformedPath
             }
         }
     }
@@ -90,12 +112,18 @@ const buildDistPackageJson = (type: "module" | "commonjs") => {
 
 export const buildEsm = () => {
     swc({ outDir: mjsOut, sourceMaps: true })
-    writeJson(join(mjsOut, "package.json"), buildDistPackageJson("module"))
+    writeJson(
+        join(mjsOut, "package.json"),
+        buildDistPackageJson({ type: "module" })
+    )
 }
 
 export const buildCjs = () => {
     swc({ outDir: cjsOut, moduleType: "commonjs", sourceMaps: true })
-    writeJson(join(cjsOut, "package.json"), buildDistPackageJson("commonjs"))
+    writeJson(
+        join(cjsOut, "package.json"),
+        buildDistPackageJson({ type: "commonjs" })
+    )
 }
 
 type Transpiler = () => void
@@ -121,18 +149,6 @@ export type RedoTscOptions = {
     }
 }
 
-export const removeTests = () => {
-    if (!existsSync(outRoot)) {
-        return
-    }
-
-    for (const path of walkPaths(outRoot).filter(
-        (path) => basename(path) === "__tests__"
-    )) {
-        rmSync(path, { recursive: true, force: true })
-    }
-}
-
 export const redoTsc = (options?: RedoTscOptions) => {
     console.log(`🔨 Building ${packageName}...`)
     rmSync(outRoot, { recursive: true, force: true })
@@ -148,7 +164,6 @@ export const redoTsc = (options?: RedoTscOptions) => {
                 defaultTranspilers[name as keyof typeof defaultTranspilers]
         )
     transpile(transpilers)
-    removeTests()
     console.log(successMessage)
 }
 

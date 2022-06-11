@@ -1,8 +1,8 @@
 import { assert } from "@re-/assert"
-import { test } from "mocha"
-import { lazily } from "../index.js"
 
-test("calls thunk on prop access", () => {
+import { lazily } from "@re-/tools"
+
+it("calls thunk on prop access", () => {
     let callCounter = 0
     const lazyProxy = lazily(() => {
         callCounter++
@@ -21,7 +21,7 @@ test("calls thunk on prop access", () => {
     assert(lazyProxy.low).is("five")
     assert(callCounter).is(1)
 })
-test("errors on args", () => {
+it("errors on args", () => {
     assert(() => {
         // @ts-expect-error
         const badProxy = lazily((n: number) => n) as any
@@ -32,7 +32,7 @@ test("errors on args", () => {
             `Argument of type '(n: number) => number' is not assignable to parameter of type '() => object'.`
         )
 })
-test("errors on non-object", () => {
+it("errors on non-object", () => {
     assert(() => {
         // @ts-expect-error
         const badProxy = lazily(() => 5) as any

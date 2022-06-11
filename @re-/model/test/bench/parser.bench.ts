@@ -1,5 +1,5 @@
 import { bench } from "@re-/assert"
-import { Root } from "#api"
+import { Root } from "@re-/model"
 import { Common } from "#common"
 const defaultParseContext = Common.defaultParseContext
 

@@ -2,9 +2,11 @@
     "extends": "../tsconfig",
     "compilerOptions": {
         "diagnostics": true,
-        "emitDeclarationOnly": false,
         "noEmit": true,
         "composite": false,
-        "incremental": false
+        "incremental": false,
+        "paths": {
+            "@re-/model": ["../src/index.js"]
+        }
     }
 }

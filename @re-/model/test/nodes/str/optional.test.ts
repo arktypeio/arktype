@@ -1,5 +1,5 @@
 import { assert } from "@re-/assert"
-import { eager, model } from "#api"
+import { eager, model } from "@re-/model"
 
 describe("optional", () => {
     describe("type", () => {

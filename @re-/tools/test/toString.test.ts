@@ -1,14 +1,14 @@
 import { assert } from "@re-/assert"
-import { test } from "mocha"
-import { toString } from "../index.js"
+import { toString } from "@re-/tools"
+
 import { o } from "./common.js"
 
-test("default", () => {
+it("default", () => {
     assert(toString(o)).snap(
         `{a: {a: '', b: [0], c: {a: true, b: false, c: null}}, b: {a: {a: 1}}, c: null, d: 'initial', e: [{a: ['old']}, {a: ['old']}]}`
     )
 })
-test("quotes", () => {
+it("quotes", () => {
     assert(toString({ a: "quoteless" }, { quotes: "none" })).equals(
         `{a: quoteless}`
     )
@@ -25,7 +25,7 @@ test("quotes", () => {
         "{'a': 'quoteKeys'}"
     )
 })
-test("truncate", () => {
+it("truncate", () => {
     assert(
         toString(
             { a: "include this but not that" },
@@ -36,7 +36,7 @@ test("truncate", () => {
         `{a: 'include this'}`
     )
 })
-test("indent", () => {
+it("indent", () => {
     assert(toString(o, { indent: 2 })).snap(`{
   a: {
     a: '',
@@ -102,7 +102,7 @@ test("indent", () => {
     ]
 }`)
 })
-test("symbol keys", () => {
+it("symbol keys", () => {
     const symbolKey = Symbol("example")
     assert(
         toString({

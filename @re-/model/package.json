@@ -22,8 +22,7 @@
         }
     },
     "imports": {
-        "#common": "./src/nodes/common/index.js",
-        "#api": "./src/index.js"
+        "#common": "./src/nodes/common/index.js"
     },
     "scripts": {
         "build": "re tsc",
@@ -31,7 +30,7 @@
         "benchCyclic": "pnpm ts-node ./test/bench/cyclic.bench.ts",
         "generateBenchData": "pnpm ts-node ./scripts/generateBenchData.ts",
         "bench": "pnpm ts-node ./test/bench/parser.bench.ts",
-        "diag": "pnpm tsc -p ./test/tsconfig.test.json > diag.txt"
+        "diag": "pnpm tsc -p ./test/tsconfig.json > diag.txt"
     },
     "dependencies": {
         "@re-/tools": "workspace:*"

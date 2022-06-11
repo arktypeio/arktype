@@ -98,6 +98,7 @@ module.exports = defineConfig({
         "@typescript-eslint/no-unsafe-argument": "off",
         "@typescript-eslint/no-non-null-assertion": "off",
         "@typescript-eslint/restrict-template-expressions": "off",
+        "@typescript-eslint/restrict-plus-operands": "off",
         /**
          * Disable or adjust unicorn/recommended rules that don't fit our code style
          */

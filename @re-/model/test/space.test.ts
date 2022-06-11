@@ -1,5 +1,5 @@
 import { assert } from "@re-/assert"
-import { compile } from "#api"
+import { compile } from "@re-/model"
 
 describe("compile", () => {
     it("single", () => {

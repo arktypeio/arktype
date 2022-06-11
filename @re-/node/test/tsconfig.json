@@ -1,0 +1,9 @@
+{
+    "extends": "../tsconfig",
+    "compilerOptions": {
+        "composite": false,
+        "paths": {
+            "@re-/node": ["../src/index.js"]
+        }
+    }
+}

@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unused-vars*/
 import { assert } from "@re-/assert"
-import { compile, model } from "#api"
+import { compile, model } from "@re-/model"
 
 describe("demo", () => {
     it("model", () => {

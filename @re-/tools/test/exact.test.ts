@@ -1,8 +1,8 @@
 import { assert } from "@re-/assert"
-import { test } from "mocha"
-import { DeepEvaluate, Exact } from "../index.js"
 
-test("exact", () => {
+import { DeepEvaluate, Exact } from "@re-/tools"
+
+it("exact", () => {
     assert(
         {} as DeepEvaluate<
             Exact<
@@ -25,7 +25,7 @@ test("exact", () => {
         >
     ).typed as { a: "ok"; nested: { on: true } }
 })
-test("unions", () => {
+it("unions", () => {
     assert(
         {} as DeepEvaluate<
             Exact<{ a: string | number }, { a: string | number | boolean }>
@@ -38,7 +38,7 @@ test("unions", () => {
     ).typed as { a: string | number }
 })
 
-test("optional", () => {
+it("optional", () => {
     assert(
         {} as DeepEvaluate<
             Exact<{ a: { nested: true } }, { a?: { nested: boolean } }>

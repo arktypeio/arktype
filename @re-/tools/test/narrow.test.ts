@@ -1,8 +1,7 @@
 import { assert } from "@re-/assert"
-import { test } from "mocha"
-import { narrow } from "../index.js"
+import { narrow } from "@re-/tools"
 
-test("literals", () => {
+it("literals", () => {
     assert(narrow("ok")).typed as "ok"
     assert(
         narrow({
@@ -10,7 +9,7 @@ test("literals", () => {
         })
     ).typed as { nested: { string: "narrowed"; number: 1337 } }
 })
-test("arrays", () => {
+it("arrays", () => {
     assert(narrow([{ first: "narrowed" }, { second: 1337 }])).typed as [
         { first: "narrowed" },
         { second: 1337 }
@@ -19,7 +18,7 @@ test("arrays", () => {
         nested: ["yeah", { good: "okay" }]
     }
 })
-test("function", () => {
+it("function", () => {
     // Function return values can't be narrowed
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     assert(narrow((args: -1) => 1)).typed as (args: -1) => number
@@ -35,12 +34,12 @@ test("function", () => {
         }
     ]
 })
-test("any", () => {
+it("any", () => {
     assert(narrow({} as any)).typed as any
 })
 /*
  * See note in narrow.ts.
- * test("unknown", () => {
+ * it("unknown", () => {
  *     assert(narrow({} as unknown)).typed as unknown
  * })
  */

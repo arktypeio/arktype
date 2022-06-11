@@ -1,5 +1,5 @@
 import { assert } from "@re-/assert"
-import { eager } from "#api"
+import { eager } from "@re-/model"
 
 describe("root definition", () => {
     it("bad type def type", () => {

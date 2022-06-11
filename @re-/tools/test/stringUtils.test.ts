@@ -1,5 +1,4 @@
 import { assert } from "@re-/assert"
-import { describe, test } from "mocha"
 import {
     asNumber,
     camelCase,
@@ -13,13 +12,13 @@ import {
     isNumeric,
     lettersAfterFirstToLower,
     transformSubstring
-} from "../index.js"
+} from "@re-/tools"
 
 const original = "hello"
 const transform = (_: string) => _.toUpperCase()
 
 describe("transformSubstring", () => {
-    test("start only", () => {
+    it("start only", () => {
         assert(
             transformSubstring({
                 original,
@@ -28,7 +27,7 @@ describe("transformSubstring", () => {
             })
         ).equals("hELLO")
     })
-    test("end only", () => {
+    it("end only", () => {
         assert(
             transformSubstring({
                 original,
@@ -37,7 +36,7 @@ describe("transformSubstring", () => {
             })
         ).equals("Hello")
     })
-    test("both start and end", () => {
+    it("both start and end", () => {
         assert(
             transformSubstring({
                 original,
@@ -47,7 +46,7 @@ describe("transformSubstring", () => {
             })
         ).equals("hELLo")
     })
-    test("neither start nor end", () => {
+    it("neither start nor end", () => {
         assert(
             transformSubstring({
                 original,
@@ -58,53 +57,53 @@ describe("transformSubstring", () => {
 })
 
 describe("camelCase", () => {
-    test("single word", () => {
+    it("single word", () => {
         assert(camelCase(["HELLO"])).equals("hello")
     })
-    test("multiple words", () => {
+    it("multiple words", () => {
         assert(camelCase(["HELLO", "hELLO", "hELLO"])).equals("helloHelloHello")
     })
 })
 
 describe("capsCase", () => {
-    test("single word", () => {
+    it("single word", () => {
         assert(capsCase(["hELLO"])).equals("Hello")
     })
-    test("multiple words", () => {
+    it("multiple words", () => {
         assert(capsCase(["hELLO", "hELLO", "hELLO"])).equals("HelloHelloHello")
     })
 })
 
 describe("capitalize", () => {
-    test("works", () => {
+    it("works", () => {
         assert(capitalize("hello")).equals("Hello")
     })
 })
 
 describe("lettersAfterFirstToLower", () => {
-    test("works", () => {
+    it("works", () => {
         assert(lettersAfterFirstToLower("HELLO")).equals("Hello")
     })
 })
 
 describe("alphanumeric regex", () => {
-    test("isAlphaNumeric", () => {
+    it("isAlphaNumeric", () => {
         assert(isAlphaNumeric("aB0")).equals(true)
         assert(isAlphaNumeric("aB0!")).equals(false)
         assert(isAlphaNumeric(" ")).equals(false)
     })
-    test("isAlpha", () => {
+    it("isAlpha", () => {
         assert(isAlpha("aB")).equals(true)
         assert(isAlpha("aB0")).equals(false)
         assert(isAlpha(" ")).equals(false)
     })
-    test("isDigits", () => {
+    it("isDigits", () => {
         assert(isDigits("01")).equals(true)
         assert(isDigits("01A")).equals(false)
         assert(isDigits("5.0")).equals(false)
         assert(isDigits(" ")).equals(false)
     })
-    test("isNumeric", () => {
+    it("isNumeric", () => {
         assert(isNumeric("7.5")).equals(true)
         assert(isNumeric(7.5)).equals(true)
         assert(isNumeric("f")).equals(false)
@@ -122,7 +121,7 @@ describe("alphanumeric regex", () => {
         assert(() => asNumber("KEKW", { assert: true })).throws()
         assert(asNumber(12)).equals(12)
     })
-    test("filterChars", () => {
+    it("filterChars", () => {
         const s = "aB0 !a"
         assert(filterChars(s, isAlpha)).equals("aBa")
         assert(filterChars(s, (char) => char === "a")).equals("aa")
