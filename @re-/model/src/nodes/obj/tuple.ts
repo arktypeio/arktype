@@ -19,8 +19,7 @@ export namespace Tuple {
                 elementIndex,
                 Root.parse(elementDef, {
                     ...this.ctx,
-                    path: this.appendToPath(elementIndex),
-                    shallowSeen: []
+                    path: this.appendToPath(elementIndex)
                 })
             ]) as ParseResult
         }
@@ -42,8 +41,8 @@ export namespace Tuple {
             }
         }
 
-        generate() {
-            return this.next().map(([, node]) => node.generate())
+        generate(args: Common.GenerateArgs) {
+            return this.next().map(([, node]) => node.generate(args))
         }
     }
 }

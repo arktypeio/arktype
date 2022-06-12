@@ -45,8 +45,8 @@ export namespace Union {
             this.addUnassignableMessage(errorMessage, args.errors)
         }
 
-        generate() {
-            return this.next()[0].generate()
+        generate(args: Common.GenerateArgs) {
+            return this.next()[0].generate(args)
         }
     }
 }

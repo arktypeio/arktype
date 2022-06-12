@@ -28,8 +28,7 @@ export namespace Map {
                 prop,
                 Root.parse(propDef, {
                     ...this.ctx,
-                    path: this.appendToPath(prop),
-                    shallowSeen: []
+                    path: this.appendToPath(prop)
                 })
             ]) as ParseResult
         }
@@ -53,9 +52,9 @@ export namespace Map {
             }
         }
 
-        generate() {
+        generate(args: Common.GenerateArgs) {
             return Object.fromEntries(
-                this.next().map(([prop, node]) => [prop, node.generate()])
+                this.next().map(([prop, node]) => [prop, node.generate(args)])
             )
         }
 

@@ -10,19 +10,15 @@ export const typeDefProxy: any = new Proxy({}, { get: () => typeDefProxy })
 
 export type ParseContext = {
     path: string
-    seen: string[]
-    shallowSeen: string[]
     config: BaseOptions
     space: Space | undefined
     stringRoot: string | null
 }
 
 export const defaultParseContext: ParseContext = {
+    path: "",
     config: {},
     space: undefined,
-    path: "",
-    seen: [],
-    shallowSeen: [],
     stringRoot: null
 }
 
@@ -96,7 +92,7 @@ export const ungeneratableError = (def: string, defType: string) =>
 export const appendToPath = (path: string, segment: string | number) =>
     path ? `${path}/${segment}` : String(segment)
 
-export type GenerateConfig = {
+export type GenerateOptions = {
     /*
      * By default, generate will throw if it encounters a cyclic required type
      * If this options is provided, it will return its value instead
@@ -111,7 +107,7 @@ export interface ParseConfig {
 export interface BaseOptions {
     parse?: ParseConfig
     validate?: ValidateOptions
-    generate?: GenerateConfig
+    generate?: GenerateOptions
 }
 
 export type ValidateOptions = {
@@ -140,8 +136,26 @@ export type CustomValidator = (
     ctx: ParseContext
 ) => string | ErrorsByPath
 
-export type AllowsArgs = {
+export type NodeMethodContext = {
+    previousPath: string
+    seen: string[]
+    shallowSeen: string[]
+}
+
+export const defaultNodeMethodContext: NodeMethodContext = {
+    previousPath: "",
+    seen: [],
+    shallowSeen: []
+}
+
+export interface BaseNodeMethodArgs<Options> {
+    options: Options
+    ctx: NodeMethodContext
+}
+
+export interface AllowsArgs extends BaseNodeMethodArgs<ValidateOptions> {
     value: unknown
     errors: ErrorsByPath
-    options: ValidateOptions
 }
+
+export interface GenerateArgs extends BaseNodeMethodArgs<GenerateOptions> {}

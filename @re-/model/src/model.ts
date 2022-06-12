@@ -55,8 +55,11 @@ export class Model implements AnyModel {
         }
     }
 
-    generate() {
-        return this.root.generate()
+    generate(options: Common.GenerateOptions = {}) {
+        return this.root.generate({
+            options,
+            ctx: Common.defaultNodeMethodContext
+        })
     }
 }
 
@@ -91,7 +94,7 @@ export type AssertFunction<ModeledType> = (
 ) => asserts value is ModeledType
 
 export type GenerateFunction<ModeledType> = (
-    options?: Common.GenerateConfig
+    options?: Common.GenerateOptions
 ) => ModeledType
 
 export type ModelFunction<Dict = {}> = <Def>(

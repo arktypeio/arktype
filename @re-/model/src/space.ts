@@ -1,4 +1,4 @@
-import { deepMerge, Entry, Evaluate, Merge } from "@re-/tools"
+import { deepMerge, EntriesOf, Entry, Evaluate, Merge } from "@re-/tools"
 import { Model, ModelFrom, ModelFunction } from "./model.js"
 import { Root } from "./nodes/index.js"
 import { Common } from "#common"
@@ -8,20 +8,17 @@ export const compile: CompileFunction = (dictionary, options) =>
 
 export class Space implements SpaceFrom<any> {
     inputs: SpaceFrom<any>["inputs"]
-    models: DictionaryToModels<any>
-
-    modelDefinitions: SpaceDictionary
+    models: Record<string, Model>
+    modelDefinitionEntries: EntriesOf<SpaceDictionary>
     config: SpaceConfig
 
     constructor(dictionary: SpaceDictionary, options?: SpaceOptions<string>) {
         this.inputs = { dictionary, options }
         const normalized = normalizeSpaceInputs(dictionary, options)
-        this.modelDefinitions = normalized.modelDefinitions
+        this.modelDefinitionEntries = normalized.modelDefinitionEntries
         this.config = normalized.config
-        this.models = {} as any
-        for (const [typeName, definition] of Object.entries(
-            this.modelDefinitions
-        ) as Entry<string, any>[]) {
+        this.models = {}
+        for (const [typeName, definition] of this.modelDefinitionEntries) {
             this.models[typeName] = new Model(
                 definition,
                 deepMerge(this.config, this.config?.models?.[typeName]),
@@ -134,7 +131,7 @@ const normalizeSpaceInputs = (
         config.onResolve = onResolve
     }
     return {
-        modelDefinitions,
+        modelDefinitionEntries: Object.entries(modelDefinitions),
         config
     }
 }

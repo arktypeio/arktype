@@ -124,11 +124,9 @@ process.on("exit", () => {
         for (const originalArg of originalArgs) {
             snapCall.removeArgument(originalArg)
         }
-        let updatedSnapArgText =
-            typeof serializedValue === "string"
-                ? serializedValue
-                : toString(serializedValue, { quotes: "backtick" })
-        updatedSnapArgText.replace(`\\`, `\\\\`)
+        const updatedSnapArgText = toString(serializedValue, {
+            quotes: "backtick"
+        }).replace(`\\`, `\\\\`)
         snapCall.addArgument(updatedSnapArgText)
         file.saveSync()
         let updateSummary = `${

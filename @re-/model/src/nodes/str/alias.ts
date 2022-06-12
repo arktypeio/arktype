@@ -1,4 +1,5 @@
-import { And, WithPropValue } from "@re-/tools"
+import { And, RequireKeys, WithPropValue } from "@re-/tools"
+import { NodeMethodContext } from "../common/common.js"
 import { Root } from "../root.js"
 import { Common, Leaf } from "#common"
 
@@ -25,63 +26,60 @@ export namespace Alias {
           >
         : Root.Parse<Dict[Def], Dict, Seen & { [K in Def]: true }>
 
-    export const matches = (def: string, ctx: Common.ParseContext) =>
-        ctx.space && def in ctx.space.models
+    export const matches = (
+        def: string,
+        ctx: Common.ParseContext
+    ): ctx is RequireKeys<Common.ParseContext, "space"> =>
+        !!ctx.space?.models[def]
 
     export class Node extends Leaf<string> {
         resolve() {
-            // the matches() function ensures space is defined
-            const space = this.ctx.space!
+            // the matches() function has already ensured space is defined
+            return this.ctx.space!.models[this.def].root
             /**
              * Keep track of definitions we've seen since last resolving to an object or built-in.
              * If we encounter the same definition twice, we're dealing with a shallow cyclic space
              * like {user: "person", person: "user"}.
              *
              */
-            if (this.ctx.shallowSeen.includes(this.def)) {
-                throw new Error("Shallow cycle")
+            // if (this.ctx.shallowSeen.includes(this.def)) {
+            //     throw new Error("Shallow cycle")
+            // }
+            // let nextDef = space.modelDefinitionEntries[this.def]
+            // if (this.ctx.seen.includes(this.def) && "onCycle" in space.config) {
+            //     space.inputs.dictionary.cyclic = nextDef
+            //     nextDef = space.config.onCycle
+            // } else if (
+            //     this.ctx.seen.includes(this.def) &&
+            //     "onResolve" in space.config
+            // ) {
+            //     space.inputs.dictionary.resolution = nextDef
+            //     nextDef = space.config.onResolve
+            // }
+        }
+
+        private nextNodeMethodContext(
+            ctx: NodeMethodContext
+        ): NodeMethodContext {
+            return {
+                previousPath: ctx.previousPath + this.ctx.path,
+                seen: [...ctx.seen, this.def],
+                shallowSeen: [...ctx.shallowSeen, this.def]
             }
-            let nextDef = space.modelDefinitions[this.def]
-            if (this.ctx.seen.includes(this.def) && "onCycle" in space.config) {
-                space.inputs.dictionary.cyclic = nextDef
-                nextDef = space.config.onCycle
-            } else if (
-                this.ctx.seen.includes(this.def) &&
-                "onResolve" in space.config
-            ) {
-                space.inputs.dictionary.resolution = nextDef
-                nextDef = space.config.onResolve
-            }
-            return (space.models[this.def] as any).root
-            // return Root.parse(nextDef, {
-            //     ...this.ctx,
-            //     seen: [...this.ctx.seen, this.def],
-            //     shallowSeen: [...this.ctx.shallowSeen, this.def],
-            //     stringRoot: null
-            // })
         }
 
         allows(args: Common.AllowsArgs) {
-            this.resolve().allows(args)
-            // const customValidator =
-            //     this.ctx.space.config?.models?.[this.def]?.validate
-            //         ?.validator ??
-            //     this.ctx.space.config.validate?.validator
-            // if (customValidator) {
-            //     return errorsFromCustomValidator(customValidator, [
-            //         value,
-            //         errors,
-            //         {
-            //             def,
-            //             ctx
-            //         }
-            //     ])
-            // }
-            // return errors
+            return this.resolve().allows({
+                ...args,
+                ctx: this.nextNodeMethodContext(args.ctx)
+            })
         }
 
-        generate() {
-            return this.resolve().generate()
+        generate(args: Common.GenerateArgs) {
+            return this.resolve().generate({
+                ...args,
+                ctx: this.nextNodeMethodContext(args.ctx)
+            })
         }
     }
 }

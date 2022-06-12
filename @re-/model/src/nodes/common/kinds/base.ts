@@ -1,5 +1,6 @@
 import {
     appendToPath,
+    defaultNodeMethodContext,
     ErrorsByPath,
     ParseContext,
     stringifyDef,
@@ -31,10 +32,10 @@ export abstract class Base<DefType> {
 
     validateByPath(value: unknown, options: ValidateOptions = {}) {
         const errors: ErrorsByPath = {}
-        this.allows({ value, errors, options })
+        this.allows({ value, errors, options, ctx: defaultNodeMethodContext })
         return errors
     }
 
     abstract allows(args: Common.AllowsArgs): void
-    abstract generate(): unknown
+    abstract generate(args: Common.GenerateArgs): unknown
 }
