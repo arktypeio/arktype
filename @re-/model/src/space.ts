@@ -1,5 +1,5 @@
 import { deepMerge, EntriesOf, Evaluate, Merge } from "@re-/tools"
-import { model, Model, ModelFrom, ModelFunction } from "./model.js"
+import { Model, ModelFrom, ModelFunction } from "./model.js"
 import { Root } from "./nodes/index.js"
 import { Branch, Common } from "#common"
 
@@ -55,17 +55,24 @@ export class Space implements SpaceFrom<any> {
     }
 }
 
-export class Resolution extends Branch<unknown> {
+export class Resolution extends Branch<string> {
     config: Common.BaseOptions
 
-    constructor(public readonly alias: string, def: unknown, space: Space) {
-        const config = deepMerge(space.config, space.modelConfigs[alias])
-        super(def, Common.createRootParseContext(config, space.resolutions))
+    constructor(
+        private aliasDef: string,
+        private resolutionDef: unknown,
+        space: Space
+    ) {
+        const config = deepMerge(space.config, space.modelConfigs[aliasDef])
+        super(
+            aliasDef,
+            Common.createRootParseContext(config, space.resolutions)
+        )
         this.config = config
     }
 
     parse() {
-        return Root.parse(this.def, this.ctx)
+        return Root.parse(this.resolutionDef, this.ctx)
     }
 
     allows(args: Common.AllowsArgs) {
@@ -85,7 +92,7 @@ export class Resolution extends Branch<unknown> {
                 args.value,
                 builtInErrorsAtPath,
                 args.ctx,
-                this.alias
+                this.aliasDef
             )
             if (!customErrors) {
                 return
@@ -99,11 +106,11 @@ export class Resolution extends Branch<unknown> {
     }
 
     generate(args: Common.GenerateArgs) {
-        if (args.ctx.seen.includes(this.alias)) {
+        if (args.ctx.seen.includes(this.aliasDef)) {
             if (args.ctx.config.onRequiredCycle) {
                 return args.ctx.config.onRequiredCycle
             }
-            throw new Common.RequiredCycleError(this.alias, args.ctx.seen)
+            throw new Common.RequiredCycleError(this.aliasDef, args.ctx.seen)
         }
         return this.next().generate({
             ...args,
@@ -116,8 +123,8 @@ export class Resolution extends Branch<unknown> {
     ): Common.MethodContext<any> {
         return {
             ...ctx,
-            seen: [...ctx.seen, this.alias],
-            shallowSeen: [...ctx.shallowSeen, this.alias]
+            seen: [...ctx.seen, this.aliasDef],
+            shallowSeen: [...ctx.shallowSeen, this.aliasDef]
         }
     }
 }
