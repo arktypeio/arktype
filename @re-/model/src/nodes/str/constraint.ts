@@ -212,10 +212,10 @@ export namespace Constraint {
             const { bounded, ...bounds } = this.next()
             if (!bounded.handler.validate(args.value, this.ctx)) {
                 this.addCustomUnassignable(
+                    args,
                     `${Common.stringifyValue(
                         args.value
-                    )} is not assignable to ${bounded.keyword}.`,
-                    args
+                    )} is not assignable to ${bounded.keyword}.`
                 )
                 return
             }
@@ -232,14 +232,17 @@ export namespace Constraint {
                     bound
                 )
                 if (boundError) {
-                    this.addCustomUnassignable(boundError, args)
+                    this.addCustomUnassignable(args, boundError)
                     return
                 }
             }
         }
 
         generate() {
-            throw new Common.UngeneratableError(this.def, "constraint")
+            throw new Common.UngeneratableError(
+                this.def,
+                "Constraint generation is unsupported."
+            )
         }
     }
 }

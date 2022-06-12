@@ -1,6 +1,6 @@
-import { bench } from "#src"
 import { ListPossibleTypes, StringReplace } from "@re-/tools"
 import { Type } from "ts-morph"
+import { bench } from "#src"
 
 bench("bench call single stat", () => {
     return "boofoozoo".includes("foo")

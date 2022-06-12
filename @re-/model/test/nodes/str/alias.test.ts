@@ -182,21 +182,20 @@ describe("alias", () => {
             assert(model({} as any).type).typed as any
         })
         it("doesn't try to validate any as a dictionary", () => {
-            const parseWithAnySpace = () =>
-                compile({} as any).create({
-                    literal: "string",
-                    // @ts-ignore
-                    alias: "myType"
-                }).type
-            assert(parseWithAnySpace).typed as () => {
-                alias: any
+            const parseWithAnySpace = compile({} as any).create({
+                literal: "string",
+                // @ts-ignore
+                alias: "myType"
+            })
+            assert(parseWithAnySpace.type).typed as {
+                alias: unknown
                 literal: string
             }
-            assert(parseWithAnySpace)
-                .throws()
-                .snap(
-                    `Error: Unable to determine the type of 'myType' at path alias.`
-                )
+            assert(() =>
+                parseWithAnySpace.validate({ literal: "", alias: "" })
+            ).throws.snap(
+                `Error: Unable to determine the type of 'myType' at path alias.`
+            )
         })
         it("doesn't try to validate any as a dictionary member", () => {
             assert(compile({ a: {} as any }).create(["number", "a"]).type)
@@ -245,51 +244,46 @@ describe("alias", () => {
             ).equals({ b: {} })
         })
         it("required cycle", () => {
-            assert(() =>
+            const cyclicSpace = compile({
+                a: { b: "b" },
+                b: { c: "c" },
+                c: "a|b"
+            })
+            assert(() => cyclicSpace.create("a").generate()).throws.snap(
+                `Error: Unable to generate a value for 'a|b': None of the definitions can be generated.`
+            )
+            assert(() => cyclicSpace.create("a").generate({ verbose: true }))
+                .throws
+                .snap(`Error: Unable to generate a value for 'a|b': None of the definitions can be generated:
+Unable to generate a value for 'a': Definition includes a required cycle:
+a=>b=>c=>a
+If you'd like to avoid throwing in when this occurs, pass a value to return when this occurs to the 'onRequiredCycle' option.
+Unable to generate a value for 'b': Definition includes a required cycle:
+a=>b=>c=>b
+If you'd like to avoid throwing in when this occurs, pass a value to return when this occurs to the 'onRequiredCycle' option.`)
+        })
+        it("onRequiredCycle", () => {
+            assert(
                 compile({
                     a: { b: "b" },
                     b: { c: "c" },
                     c: "a|b"
                 })
                     .create("a")
-                    .generate()
-            ).throws
-                .snap(`Error: Unable to generate a default value for type including a required cycle:
-a=>b=>c=>a
-If you'd like to avoid throwing in when this occurs, pass a value to return when this occurs to the 'onRequiredCycle' option.`)
-        })
-        it("onRequiredCycle", () => {
-            // assert(
-            //     model(
-            //         "a",
-            //         narrow({
-            //             space: {
-            //                 dictionary: {
-            //                     a: { b: "b" },
-            //                     b: { c: "c" },
-            //                     c: "a|b"
-            //                 }
-            //             }
-            //         })
-            //     ).generate({ onRequiredCycle: { whoops: ["cycle"] } })
-            // ).value.equals({
-            //     b: { c: { whoops: ["cycle"] } }
-            // })
+                    .generate({ onRequiredCycle: { whoops: ["cycle"] } })
+            ).value.equals({
+                b: { c: { whoops: ["cycle"] } }
+            })
         })
         it("onRequiredCycle with union", () => {
-            // assert(
-            //     model(
-            //         "a|b",
-            //         narrow({
-            //             space: {
-            //                 dictionary: {
-            //                     a: { b: "b" },
-            //                     b: { a: "a" }
-            //                 }
-            //             }
-            //         })
-            //     ).generate({ onRequiredCycle: "cycle" })
-            // ).value.equals({ b: { a: "cycle" } })
+            assert(
+                compile({
+                    a: { b: "b" },
+                    b: { a: "a" }
+                })
+                    .create("a|b")
+                    .generate({ onRequiredCycle: "cycle" })
+            ).value.equals({ b: { a: "cycle" } })
         })
         it("from parsed", () => {
             const defaultValue = compile({

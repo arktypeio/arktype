@@ -29,7 +29,10 @@ export namespace Intersection {
         }
 
         generate() {
-            throw new Common.UngeneratableError(this.def, "intersection")
+            throw new Common.UngeneratableError(
+                this.def,
+                "Intersection generation is unsupported."
+            )
         }
     }
 }

@@ -113,9 +113,7 @@ describe("keyword", () => {
             assert(f.type).typed as (...args: any[]) => any
         })
         it("generation", () => {
-            assert(() => f.generate()).throws.snap(
-                `Error: Unable to generate a value for 'function' (function generation is unsupported).`
-            )
+            assert(typeof f.generate()).equals("function")
         })
         it("validation", () => {
             assert(f.validate(() => ({})).error).is(undefined)
@@ -222,7 +220,7 @@ describe("keyword", () => {
         })
         it("generation", () => {
             assert(() => n.generate()).throws.snap(
-                `Error: Unable to generate a value for 'never' (never generation is unsupported).`
+                `Error: Unable to generate a value for 'never': never is ungeneratable by definition.`
             )
         })
         it("validation", () => {

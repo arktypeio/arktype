@@ -1,6 +1,5 @@
 import { isEmpty } from "@re-/tools"
 import { Root } from "./nodes/index.js"
-import { Space } from "./space.js"
 import { Common } from "#common"
 
 /**
@@ -9,56 +8,63 @@ import { Common } from "#common"
  * @param options {@as ModelConfig?} And that.
  * @returns {@as any} The result.
  */
-export const model: ModelFunction = (definition, options) =>
-    new Model(definition, options) as any
+export const model: ModelFunction = (definition, options = {}) => {
+    const root = Root.parse(definition, Common.createRootParseContext(options))
+    return new Model(root, options) as any
+}
 
 export const eager: ModelFunction = (definition, options = {}) => {
     options.parse = { eager: true }
-    return new Model(definition, options) as any
+    return model(definition, options)
 }
 
 export class Model implements AnyModel {
-    root: Common.Node<unknown>
-    config: Common.BaseOptions
+    definition: unknown
 
     constructor(
-        public readonly definition: AnyModel["definition"],
-        options?: Common.BaseOptions,
-        space?: Space
+        public root: Common.Node,
+        public config: Common.BaseOptions = {}
     ) {
-        this.config = options ?? {}
-        this.root = Root.parse(definition, {
-            ...Common.defaultParseContext,
-            config: this.config,
-            space
-        })
+        this.definition = root.def
     }
 
     get type() {
         return Common.typeDefProxy
     }
 
+    validateByPath(value: unknown, options?: Common.ValidateOptions) {
+        const args: Common.AllowsArgs = {
+            value,
+            errors: {},
+            ctx: Common.createRootMethodContext({
+                ...this.config.validate,
+                ...options
+            })
+        }
+        this.root.allows(args)
+        return args.errors
+    }
+
     validate(value: unknown, options?: Common.ValidateOptions) {
-        const errorsByPath = this.root.validateByPath(value, {
-            ...this.config.validate,
-            ...options
-        })
+        const errorsByPath = this.validateByPath(value, options)
         return isEmpty(errorsByPath)
             ? { data: value }
             : { error: Common.stringifyErrors(errorsByPath), errorsByPath }
     }
 
-    assert(value: unknown) {
-        const { error } = this.validate(value)
+    assert(value: unknown, options?: Common.ValidateOptions) {
+        const { error } = this.validate(value, options)
         if (error) {
-            throw new Error(error)
+            throw new Common.ValidationError(error)
         }
     }
 
-    generate(options: Common.GenerateOptions = {}) {
+    generate(options?: Common.GenerateOptions) {
         return this.root.generate({
-            options,
-            ctx: Common.defaultNodeMethodContext
+            ctx: Common.createRootMethodContext({
+                ...this.config.generate,
+                ...options
+            })
         })
     }
 }

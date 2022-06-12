@@ -46,7 +46,7 @@ export namespace Map {
             }
             const keyErrors = this.checkKeyErrors(args)
             if (keyErrors) {
-                this.addCustomUnassignable(keyErrors, args)
+                this.addCustomUnassignable(args, keyErrors)
                 return
             }
             for (const [prop, node] of this.next()) {
@@ -61,9 +61,20 @@ export namespace Map {
         }
 
         generate(args: Common.GenerateArgs) {
-            return Object.fromEntries(
-                this.next().map(([prop, node]) => [prop, node.generate(args)])
-            )
+            const result: Definition = {}
+            for (const [prop, node] of this.next()) {
+                // Don't include optional keys by default in generated values
+                if (node instanceof Optional.Node) {
+                    continue
+                }
+                result[prop] = node.generate({
+                    ...args,
+                    ctx: deepMerge(args.ctx, {
+                        valuePath: Common.pathAdd(args.ctx.valuePath, prop)
+                    })
+                })
+            }
+            return result
         }
 
         private checkKeyErrors = (args: Common.AllowsArgs) => {
@@ -90,7 +101,7 @@ export namespace Map {
                     )}' were missing.`
                 }
             }
-            if (keyDiff.added && !args.options.ignoreExtraneousKeys) {
+            if (keyDiff.added && !args.ctx.config.ignoreExtraneousKeys) {
                 // Add a leading space if we also had missing keys
                 message += `${message ? " " : ""}Keys '${keyDiff.added.join(
                     ", "

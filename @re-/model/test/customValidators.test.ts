@@ -1,7 +1,7 @@
 import { assert } from "@re-/assert"
 import { compile, model } from "#src"
 
-describe("custom validators", () => {
+describe("customv validators", () => {
     const validator = (value: unknown) => {
         if (
             typeof value === "string" &&
@@ -12,9 +12,12 @@ describe("custom validators", () => {
         return `${value} is not a palindrome!`
     }
     it("inline", () => {
-        const palindrome = model("string", {
-            validate: { validator }
-        })
+        const palindrome = compile({ palindrome: "string" }).create(
+            "palindrome",
+            {
+                validate: { validator }
+            }
+        )
         assert(palindrome.validate("step on no pets").errorsByPath).is(
             undefined
         )
@@ -57,7 +60,7 @@ describe("custom validators", () => {
             { first: "string", second: { comesAfter: "first" } },
             {
                 validate: {
-                    validator: (value, errors, { def }) => {
+                    validator: (value, errors, ctx, def) => {
                         if (def === "first") {
                             return { ...errors, "from/first": "test" }
                         } else if (def === "second") {
@@ -84,11 +87,11 @@ describe("custom validators", () => {
     it("can access standard validation errors and ctx", () => {
         const num = model("number", {
             validate: {
-                validator: (value, errors, { ctx }) => {
+                validator: (value, errors, ctx) => {
                     const errorMessages = Object.values(errors)
                     if (errorMessages.length) {
                         return {
-                            [ctx.path.join("/")]: errorMessages
+                            [ctx.valuePath]: errorMessages
                                 .map((error) => `${error}!!!`)
                                 .join("")
                         }

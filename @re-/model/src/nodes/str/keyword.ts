@@ -51,13 +51,16 @@ const handlers = defineKeywords({
     },
     never: {
         generate: () => {
-            throw new Common.UngeneratableError("never", "never")
+            throw new Common.UngeneratableError(
+                "never",
+                "never is ungeneratable by definition."
+            )
         },
         validate: () => false
     },
     object: {
         generate: () => ({} as object),
-        validate: (value) => typeof value === "object"
+        validate: (value) => typeof value === "object" && value !== null
     },
     boolean: {
         generate: () => false,

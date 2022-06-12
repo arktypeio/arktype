@@ -10,26 +10,29 @@ export namespace Regex {
         allows(args: Common.AllowsArgs) {
             if (typeof args.value !== "string") {
                 this.addCustomUnassignable(
+                    args,
                     `Non-string value ${Common.stringifyValue(
                         args.value
-                    )} cannot satisfy regex definitions.`,
-                    args
+                    )} cannot satisfy regex definitions.`
                 )
                 return
             }
             if (!this.def.test(args.value)) {
                 this.addCustomUnassignable(
+                    args,
                     `${Common.stringifyValue(
                         args.value
-                    )} does not match expression /${this.def.source}/.`,
-                    args
+                    )} does not match expression /${this.def.source}/.`
                 )
                 return
             }
         }
 
         generate() {
-            throw new Common.UngeneratableError(`/${this.def.source}/`, "Regex")
+            throw new Common.UngeneratableError(
+                `/${this.def.source}/`,
+                "Regex generation is unsupported."
+            )
         }
     }
 }

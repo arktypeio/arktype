@@ -1,4 +1,4 @@
-import { IsAnyOrUnknown } from "@re-/tools"
+import { IsAny, IsAnyOrUnknown } from "@re-/tools"
 import { Literal } from "./literal/index.js"
 import { Obj } from "./obj/index.js"
 import { Str } from "./str/index.js"
@@ -29,12 +29,15 @@ export namespace Root {
         ? Obj.Parse<Def, Dict, Seen>
         : Def extends Literal.Definition
         ? Def
+        : IsAny<Dict> extends true
+        ? any
         : unknown
 
     export type BadDefinitionType = Function | symbol
 
     export const parse: Common.Parser<unknown> = (def, ctx) => {
         if (Str.matches(def)) {
+            ctx.stringRoot = def
             return Str.parse(def, ctx)
         }
         if (Obj.matches(def)) {

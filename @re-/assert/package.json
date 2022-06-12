@@ -27,7 +27,7 @@
     "scripts": {
         "build": "re tsc",
         "test": "pnpm ts-node ./src/runner.ts mocha",
-        "test-bench": "pnpm ts-node ./src/__benches__/test.bench.ts"
+        "test-bench": "pnpm ts-node ./test/bench/test.bench.ts"
     },
     "bin": {
         "reassert": "./runner.cjs"

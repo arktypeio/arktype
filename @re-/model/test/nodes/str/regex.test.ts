@@ -56,7 +56,7 @@ describe("regex", () => {
     describe("generation", () => {
         it("unsupported", () => {
             assert(() => model("/.*/").generate()).throws.snap(
-                `Error: Unable to generate a value for '/.*/' (Regex generation is unsupported).`
+                `Error: Unable to generate a value for '/.*/': Regex generation is unsupported.`
             )
         })
     })

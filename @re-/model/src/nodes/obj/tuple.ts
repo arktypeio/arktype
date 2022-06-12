@@ -31,8 +31,8 @@ export namespace Tuple {
             }
             if (this.def.length !== args.value.length) {
                 this.addCustomUnassignable(
-                    lengthError(this.def, args.value),
-                    args
+                    args,
+                    lengthError(this.def, args.value)
                 )
                 return
             }
@@ -48,7 +48,18 @@ export namespace Tuple {
         }
 
         generate(args: Common.GenerateArgs) {
-            return this.next().map(([, node]) => node.generate(args))
+            const result: unknown[] = []
+            for (const [i, node] of this.next()) {
+                result.push(
+                    node.generate({
+                        ...args,
+                        ctx: deepMerge(args.ctx, {
+                            valuePath: Common.pathAdd(args.ctx.valuePath, i)
+                        })
+                    })
+                )
+            }
+            return result
         }
     }
 }

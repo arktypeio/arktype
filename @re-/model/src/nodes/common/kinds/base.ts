@@ -1,12 +1,9 @@
 import {
     AllowsArgs,
-    defaultNodeMethodContext,
-    ErrorsByPath,
     GenerateArgs,
     ParseContext,
     stringifyDef,
-    stringifyValue,
-    ValidateOptions
+    stringifyValue
 } from "../common.js"
 
 export abstract class Base<DefType> {
@@ -22,14 +19,8 @@ export abstract class Base<DefType> {
         )} is not assignable to ${this.stringifyDef()}.`
     }
 
-    protected addCustomUnassignable(message: string, args: AllowsArgs) {
+    protected addCustomUnassignable(args: AllowsArgs, message: string) {
         args.errors[args.ctx.valuePath] = message
-    }
-
-    validateByPath(value: unknown, options: ValidateOptions = {}) {
-        const errors: ErrorsByPath = {}
-        this.allows({ value, errors, options, ctx: defaultNodeMethodContext })
-        return errors
     }
 
     abstract allows(args: AllowsArgs): void

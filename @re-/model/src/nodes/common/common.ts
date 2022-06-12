@@ -1,5 +1,4 @@
 import { isDigits, toString, uncapitalize } from "@re-/tools"
-import type { Space } from "../../space.js"
 import type { Base as BaseNode } from "./kinds/base.js"
 
 export type Node<DefType = unknown> = BaseNode<DefType>
@@ -7,20 +6,6 @@ export type Node<DefType = unknown> = BaseNode<DefType>
 export type Parser<DefType> = (def: DefType, ctx: ParseContext) => Node
 
 export const typeDefProxy: any = new Proxy({}, { get: () => typeDefProxy })
-
-export type ParseContext = {
-    parsePath: string
-    config: BaseOptions
-    space: Space | undefined
-    stringRoot: string | null
-}
-
-export const defaultParseContext: ParseContext = {
-    parsePath: "",
-    config: {},
-    space: undefined,
-    stringRoot: null
-}
 
 export type ErrorsByPath = Record<string, string>
 
@@ -81,13 +66,28 @@ export type UnknownTypeError<Definition extends string = "your definition"> =
         : `'${Definition}'`}.`
 
 export class UngeneratableError extends Error {
-    constructor(def: string, defType: string) {
-        super(ungeneratableError(def, defType))
+    constructor(def: string, reason: string) {
+        super(buildUngeneratableMessage(def, reason))
     }
 }
 
-export const ungeneratableError = (def: string, defType: string) =>
-    `Unable to generate a value for '${def}' (${defType} generation is unsupported).`
+export const buildUngeneratableMessage = (def: string, reason: string) =>
+    `Unable to generate a value for '${def}': ${reason}`
+
+export class RequiredCycleError extends UngeneratableError {
+    constructor(def: string, seen: string[]) {
+        super(
+            def,
+            `Definition includes a required cycle:\n${[...seen, def].join(
+                "=>"
+            )}\n` +
+                `If you'd like to avoid throwing in when this occurs, pass a value to return ` +
+                `when this occurs to the 'onRequiredCycle' option.`
+        )
+    }
+}
+
+export class ValidationError extends Error {}
 
 export const pathAdd = (...subpaths: (string | number)[]) =>
     subpaths.filter((_) => _ !== "").join("/")
@@ -98,6 +98,7 @@ export type GenerateOptions = {
      * If this options is provided, it will return its value instead
      */
     onRequiredCycle?: any
+    verbose?: boolean
 }
 
 export interface ParseConfig {
@@ -116,46 +117,56 @@ export type ValidateOptions = {
     verbose?: boolean
 }
 
-export const errorsFromCustomValidator = (
-    customValidator: CustomValidator,
-    args: Parameters<CustomValidator>
-): ErrorsByPath => {
-    const result = customValidator(...args)
-    if (result && typeof result === "string") {
-        // @ts-ignore
-        return validationError({ path: args[2].ctx.path, message: result })
-    } else if (result) {
-        return result as ErrorsByPath
-    }
-    return {}
-}
-
 export type CustomValidator = (
     value: unknown,
     errors: ErrorsByPath,
-    ctx: ParseContext
+    ctx: MethodContext<ValidateOptions>,
+    alias: string
 ) => string | ErrorsByPath
 
-export type MethodContext = {
+export type MethodContext<Config> = {
     valuePath: string
     seen: string[]
     shallowSeen: string[]
+    config: Config
 }
 
-export const defaultNodeMethodContext: MethodContext = {
-    valuePath: "",
-    seen: [],
-    shallowSeen: []
+export type ResolutionMap = Record<string, Node>
+
+export type ParseContext = {
+    parsePath: string
+    config: BaseOptions
+    resolutions: ResolutionMap
+    stringRoot: string | null
 }
 
-export type BaseMethodArgs<Options> = {
-    options: Options
-    ctx: MethodContext
+export const createRootParseContext = (
+    config: BaseOptions = {},
+    resolutions: ResolutionMap = {}
+): ParseContext => {
+    return {
+        config,
+        resolutions,
+        parsePath: "",
+        stringRoot: null
+    }
 }
 
-export type AllowsArgs = BaseMethodArgs<ValidateOptions> & {
+export const createRootMethodContext = <Config>(
+    config: Config
+): MethodContext<Config> => {
+    return {
+        valuePath: "",
+        seen: [],
+        shallowSeen: [],
+        config
+    }
+}
+
+export type AllowsArgs = {
     value: unknown
     errors: ErrorsByPath
+    ctx: MethodContext<ValidateOptions>
 }
 
-export type GenerateArgs = BaseMethodArgs<GenerateOptions>
+export type GenerateArgs = { ctx: MethodContext<GenerateOptions> }

@@ -1,10 +1,7 @@
-import { toString } from "@re-/tools"
+import { literalSerialize } from "../common.js"
 import { queueInlineSnapshotWriteOnProcessExit } from "../value/snapshot.js"
 import { BenchAssertionContext, BenchContext } from "./bench.js"
 import { MeasureComparison } from "./measure.js"
-
-const serializeBaseline = (baseline: string | object) =>
-    toString(baseline, { quotes: "double" })
 
 export const updateBaselineIfNeeded = (
     result: string | object,
@@ -15,7 +12,7 @@ export const updateBaselineIfNeeded = (
     if (baseline && !ctx.config.updateSnapshots) {
         return
     }
-    const serializedValue = serializeBaseline(result)
+    const serializedValue = literalSerialize(result)
     if (!ctx.lastSnapCallPosition) {
         throw new Error(
             `Unable to update baseline for ${ctx.name} ('lastSnapCallPosition' was unset).`
