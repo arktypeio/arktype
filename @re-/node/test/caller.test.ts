@@ -1,6 +1,6 @@
 import { platform } from "node:os"
 import { assert } from "@re-/assert"
-import { caller } from "@re-/node"
+import { caller } from "#src"
 import { callMeFromDir, callPipeSeperated } from "./fromDir/reflectedFromDir.js"
 import { callMe, callMeAnonymous } from "./reflected.js"
 

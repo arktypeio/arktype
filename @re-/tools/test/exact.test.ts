@@ -1,6 +1,5 @@
 import { assert } from "@re-/assert"
-
-import { DeepEvaluate, Exact } from "@re-/tools"
+import { DeepEvaluate, Exact } from "#src"
 
 it("exact", () => {
     assert(

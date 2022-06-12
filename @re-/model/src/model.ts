@@ -18,7 +18,7 @@ export const eager: ModelFunction = (definition, options = {}) => {
 }
 
 export class Model implements AnyModel {
-    private root: Common.Node<unknown>
+    root: Common.Node<unknown>
 
     constructor(
         public readonly definition: AnyModel["definition"],

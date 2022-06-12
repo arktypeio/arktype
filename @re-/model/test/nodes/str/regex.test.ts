@@ -1,5 +1,5 @@
 import { assert } from "@re-/assert"
-import { eager, model } from "@re-/model"
+import { eager, model } from "#src"
 
 describe("regex", () => {
     describe("type", () => {

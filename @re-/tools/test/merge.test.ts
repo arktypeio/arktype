@@ -1,5 +1,5 @@
 import { assert } from "@re-/assert"
-import { deepMerge, merge, narrow } from "@re-/tools"
+import { deepMerge, merge, narrow } from "#src"
 
 describe("merge", () => {
     it("simple values", () => {

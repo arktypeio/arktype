@@ -1,5 +1,5 @@
 import { assert } from "@re-/assert"
-import { model } from "@re-/model"
+import { model } from "#src"
 
 describe("integration", () => {
     const mixed = model(["true", { a: ["string", ["number|boolean[]"]] }])

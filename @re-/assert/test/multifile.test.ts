@@ -1,5 +1,5 @@
 import { strict } from "node:assert"
-import { assert } from "@re-/assert"
+import { assert } from "#src"
 
 describe("multifile", () => {
     it("gathers types across files", () => {

@@ -1,6 +1,6 @@
 import { strict } from "node:assert"
 import { join } from "node:path"
-import { assert } from "@re-/assert"
+import { assert } from "#src"
 import { dirName, readJson, writeJson } from "@re-/node"
 
 const n = 5

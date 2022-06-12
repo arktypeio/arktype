@@ -30,6 +30,8 @@ export namespace Alias {
 
     export class Node extends Leaf<string> {
         resolve() {
+            // the matches() function ensures space is defined
+            const space = this.ctx.space!
             /**
              * Keep track of definitions we've seen since last resolving to an object or built-in.
              * If we encounter the same definition twice, we're dealing with a shallow cyclic space
@@ -39,11 +41,6 @@ export namespace Alias {
             if (this.ctx.shallowSeen.includes(this.def)) {
                 throw new Error("Shallow cycle")
             }
-            if (this.ctx.seen.includes(this.def)) {
-                throw new Error("cycle (temporary error)")
-            }
-            // the matches() function ensures space is defined
-            const space = this.ctx.space!
             let nextDef = space.modelDefinitions[this.def]
             if (this.ctx.seen.includes(this.def) && "onCycle" in space.config) {
                 space.inputs.dictionary.cyclic = nextDef
@@ -55,6 +52,7 @@ export namespace Alias {
                 space.inputs.dictionary.resolution = nextDef
                 nextDef = space.config.onResolve
             }
+            return (space.models[this.def] as any).root
             return Root.parse(nextDef, {
                 ...this.ctx,
                 seen: [...this.ctx.seen, this.def],

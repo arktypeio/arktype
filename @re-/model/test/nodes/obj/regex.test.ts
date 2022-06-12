@@ -1,5 +1,5 @@
 import { assert } from "@re-/assert"
-import { model } from "@re-/model"
+import { model } from "#src"
 
 describe("regex", () => {
     const regex = model(/.*@redo\.dev/)

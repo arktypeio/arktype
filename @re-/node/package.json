@@ -18,6 +18,9 @@
             "require": "./dist/cjs/index.js"
         }
     },
+    "imports": {
+        "#src": "./src/index.js"
+    },
     "scripts": {
         "build": "pnpm ts-node ./src/cli.ts tsc",
         "test": "reassert mocha"

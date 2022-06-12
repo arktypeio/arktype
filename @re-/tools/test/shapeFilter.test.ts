@@ -1,7 +1,6 @@
 import { assert } from "@re-/assert"
-
-import { shapeFilter } from "@re-/tools"
 import { o } from "./common.js"
+import { shapeFilter } from "#src"
 
 const filter = {
     a: {

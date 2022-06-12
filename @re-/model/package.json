@@ -22,7 +22,8 @@
         }
     },
     "imports": {
-        "#common": "./src/nodes/common/index.js"
+        "#common": "./src/nodes/common/index.js",
+        "#src": "./src/index.js"
     },
     "scripts": {
         "build": "re tsc",

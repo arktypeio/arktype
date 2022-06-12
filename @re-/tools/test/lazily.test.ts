@@ -1,6 +1,6 @@
 import { assert } from "@re-/assert"
 
-import { lazily } from "@re-/tools"
+import { lazily } from "#src"
 
 it("calls thunk on prop access", () => {
     let callCounter = 0

@@ -1,5 +1,5 @@
 import { assert } from "@re-/assert"
-import { narrow } from "@re-/tools"
+import { narrow } from "#src"
 
 it("literals", () => {
     assert(narrow("ok")).typed as "ok"

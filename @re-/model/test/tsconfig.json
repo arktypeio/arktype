@@ -4,9 +4,6 @@
         "diagnostics": true,
         "noEmit": true,
         "composite": false,
-        "incremental": false,
-        "paths": {
-            "@re-/model": ["../src/index.js"]
-        }
+        "incremental": false
     }
 }

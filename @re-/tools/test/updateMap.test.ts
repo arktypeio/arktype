@@ -1,7 +1,6 @@
 import { assert } from "@re-/assert"
-import { DeepUpdate, updateMap } from "@re-/tools"
-
 import { o } from "./common.js"
+import { DeepUpdate, updateMap } from "#src"
 
 const map: DeepUpdate<typeof o> = {
     a: {

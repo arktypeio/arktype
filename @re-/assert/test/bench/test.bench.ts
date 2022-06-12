@@ -1,4 +1,4 @@
-import { bench } from "@re-/assert"
+import { bench } from "#src"
 import { ListPossibleTypes, StringReplace } from "@re-/tools"
 import { Type } from "ts-morph"
 

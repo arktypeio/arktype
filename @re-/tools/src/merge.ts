@@ -48,6 +48,9 @@ type MergeFn = (base: Mergeable, merged: Mergeable) => Mergeable
 const pairwiseMerge = (objs: unknown[], mergeFn: MergeFn) => {
     // Instead of throwing an error when an object is undefined, just don't merge it
     let remaining = objs.filter((_) => _ !== undefined) as Mergeable[]
+    if (!remaining.length) {
+        return undefined
+    }
     assertMergeable(remaining)
     while (remaining.length > 1) {
         let mergedPairs = []

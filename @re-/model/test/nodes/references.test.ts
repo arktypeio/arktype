@@ -1,5 +1,5 @@
 import { assert } from "@re-/assert"
-import { model } from "@re-/model"
+import { model } from "#src"
 
 describe("resolutions", () => {
     it("disabled", () => {
@@ -9,7 +9,7 @@ describe("resolutions", () => {
 /*
  * import { assert } from "@re-/assert"
  * import { diffSets } from "@re-/tools"
- * import { create } from "@re-/model"
+ * import { create } from "#src"
  * import { ReferencesOf } from "../../model.js"
  */
 

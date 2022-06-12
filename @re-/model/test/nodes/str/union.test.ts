@@ -1,6 +1,6 @@
 import { assert } from "@re-/assert"
 import { narrow } from "@re-/tools"
-import { eager, model } from "@re-/model"
+import { eager, model } from "#src"
 
 describe("union", () => {
     describe("type", () => {
