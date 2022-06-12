@@ -22,17 +22,17 @@ export namespace Union {
         allows(args: Common.AllowsArgs) {
             const branchDefinitionsToErrors: Record<string, string> = {}
             for (const branch of this.next()) {
-                const branchErrorMessage = branch.validateByPath(
-                    args.value,
-                    args.options
-                )[this.ctx.path]
-                if (!branchErrorMessage) {
+                branch.allows(args)
+                if (!args.errors[args.ctx.valuePath]) {
                     // If any branch of a Union does not have errors,
                     // we can return right away since the whole definition is valid
                     return
                 }
                 branchDefinitionsToErrors[branch.def as string] =
-                    branchErrorMessage
+                    args.errors[args.ctx.valuePath]
+                // To avoid this kind of hack for testing allows for non-paths,
+                // we should create a custom syntax for paths within a union/intersection
+                delete args.errors[args.ctx.valuePath]
             }
             let errorMessage = `${Common.stringifyValue(
                 args.value
@@ -42,7 +42,7 @@ export namespace Union {
                     branchDefinitionsToErrors
                 )}`
             }
-            this.addUnassignableMessage(errorMessage, args.errors)
+            this.addCustomUnassignable(errorMessage, args)
         }
 
         generate(args: Common.GenerateArgs) {

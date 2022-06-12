@@ -75,20 +75,16 @@ describe("alias", () => {
                 }).error
             ).equals(undefined)
             assert(
-                groceries.validate(
-                    {
-                        fruits: [
-                            {
-                                length: 5000,
-                                description: "I'm a big banana!",
-                                peel: "slippery"
-                            },
-                            { type: "Fuji" }
-                        ]
-                    },
-                    // Verbose should explain why each component of the union type doesn't apply
-                    { verbose: true }
-                ).error
+                groceries.validate({
+                    fruits: [
+                        {
+                            length: 5000,
+                            description: "I'm a big banana!",
+                            peel: "slippery"
+                        },
+                        { type: "Fuji" }
+                    ]
+                }).error
             ).snap(`Encountered errors at the following paths:
 {
   fruits/0: '{length: 5000, description: 'I'm a big banana!', peel: 'slippery'} is not assignable to any of banana|apple.',

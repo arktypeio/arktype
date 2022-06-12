@@ -13,7 +13,7 @@ export namespace Literal {
     export class Node extends Leaf<Definition> {
         allows(args: Common.AllowsArgs) {
             if (args.value !== this.def) {
-                this.addUnassignable(args.value, args.errors)
+                this.addUnassignable(args)
             }
         }
 

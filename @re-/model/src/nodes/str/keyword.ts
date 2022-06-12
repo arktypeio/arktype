@@ -178,7 +178,7 @@ export namespace Keyword {
     export class Node extends Leaf<Definition> {
         allows(args: Common.AllowsArgs) {
             if (!handlers[this.def].validate(args.value)) {
-                this.addUnassignable(args.value, args.errors)
+                this.addUnassignable(args)
             }
         }
 

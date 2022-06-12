@@ -22,7 +22,7 @@ export namespace Intersection {
         allows(args: Common.AllowsArgs) {
             for (const branch of this.next()) {
                 branch.allows(args)
-                if (args.errors[this.ctx.path]) {
+                if (args.errors[this.ctx.parsePath]) {
                     return
                 }
             }

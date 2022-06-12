@@ -9,20 +9,20 @@ export namespace Regex {
     export class Node extends Leaf<Definition> {
         allows(args: Common.AllowsArgs) {
             if (typeof args.value !== "string") {
-                this.addUnassignableMessage(
+                this.addCustomUnassignable(
                     `Non-string value ${Common.stringifyValue(
                         args.value
                     )} cannot satisfy regex definitions.`,
-                    args.errors
+                    args
                 )
                 return
             }
             if (!this.def.test(args.value)) {
-                this.addUnassignableMessage(
+                this.addCustomUnassignable(
                     `${Common.stringifyValue(
                         args.value
                     )} does not match expression /${this.def.source}/.`,
-                    args.errors
+                    args
                 )
                 return
             }

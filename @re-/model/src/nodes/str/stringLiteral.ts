@@ -34,7 +34,7 @@ export namespace StringLiteral {
 
         allows(args: Common.AllowsArgs) {
             if (this.quotedText !== args.value) {
-                this.addUnassignable(args.value, args.errors)
+                this.addUnassignable(args)
             }
         }
 

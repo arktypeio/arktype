@@ -1,13 +1,13 @@
 import {
-    appendToPath,
+    AllowsArgs,
     defaultNodeMethodContext,
     ErrorsByPath,
+    GenerateArgs,
     ParseContext,
     stringifyDef,
     stringifyValue,
     ValidateOptions
 } from "../common.js"
-import { Common } from "../index.js"
 
 export abstract class Base<DefType> {
     constructor(public def: DefType, public ctx: ParseContext) {}
@@ -16,18 +16,14 @@ export abstract class Base<DefType> {
         return stringifyDef(this.def)
     }
 
-    protected appendToPath(segment: string | number) {
-        return appendToPath(this.ctx.path, segment)
-    }
-
-    protected addUnassignable(value: unknown, errors: ErrorsByPath) {
-        errors[this.ctx.path] = `${stringifyValue(
-            value
+    protected addUnassignable(args: AllowsArgs) {
+        args.errors[args.ctx.valuePath] = `${stringifyValue(
+            args.value
         )} is not assignable to ${this.stringifyDef()}.`
     }
 
-    protected addUnassignableMessage(message: string, errors: ErrorsByPath) {
-        errors[this.ctx.path] = message
+    protected addCustomUnassignable(message: string, args: AllowsArgs) {
+        args.errors[args.ctx.valuePath] = message
     }
 
     validateByPath(value: unknown, options: ValidateOptions = {}) {
@@ -36,6 +32,6 @@ export abstract class Base<DefType> {
         return errors
     }
 
-    abstract allows(args: Common.AllowsArgs): void
-    abstract generate(args: Common.GenerateArgs): unknown
+    abstract allows(args: AllowsArgs): void
+    abstract generate(args: GenerateArgs): unknown
 }

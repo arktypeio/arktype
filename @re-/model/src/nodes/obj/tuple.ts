@@ -1,4 +1,4 @@
-import { Entry } from "@re-/tools"
+import { deepMerge, Entry } from "@re-/tools"
 import { Root } from "../root.js"
 import { Branch, Common } from "#common"
 
@@ -19,25 +19,31 @@ export namespace Tuple {
                 elementIndex,
                 Root.parse(elementDef, {
                     ...this.ctx,
-                    path: this.appendToPath(elementIndex)
+                    parsePath: Common.pathAdd(this.ctx.parsePath, elementIndex)
                 })
             ]) as ParseResult
         }
 
         allows(args: Common.AllowsArgs) {
             if (!Array.isArray(args.value)) {
-                this.addUnassignable(args.value, args.errors)
+                this.addUnassignable(args)
                 return
             }
             if (this.def.length !== args.value.length) {
-                this.addUnassignableMessage(
+                this.addCustomUnassignable(
                     lengthError(this.def, args.value),
-                    args.errors
+                    args
                 )
                 return
             }
             for (const [i, node] of this.next()) {
-                node.allows({ ...args, value: args.value[i] })
+                node.allows({
+                    ...args,
+                    value: args.value[i],
+                    ctx: deepMerge(args.ctx, {
+                        valuePath: Common.pathAdd(args.ctx.valuePath, i)
+                    })
+                })
             }
         }
 

@@ -46,7 +46,7 @@ export namespace Root {
         throw new Common.ParseError(
             Common.buildParseErrorMessage(
                 def,
-                ctx.path,
+                ctx.parsePath,
                 `is of disallowed type ${typeof def}.`
             )
         )

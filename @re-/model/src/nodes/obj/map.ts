@@ -1,9 +1,11 @@
-import { diffSets, Entry, Evaluate } from "@re-/tools"
+import { deepMerge, diffSets, Entry, Evaluate } from "@re-/tools"
 import { Root } from "../root.js"
 import { Optional } from "../str/index.js"
 import { Branch, Common } from "#common"
 
 export namespace Map {
+    export type Definition = Record<string, unknown>
+
     export type Parse<
         Def,
         Dict,
@@ -22,13 +24,13 @@ export namespace Map {
 
     type ParseResult = Entry<string, Common.Node>[]
 
-    export class Node extends Branch<Record<string, unknown>, ParseResult> {
+    export class Node extends Branch<Definition, ParseResult> {
         parse() {
             return Object.entries(this.def).map(([prop, propDef]) => [
                 prop,
                 Root.parse(propDef, {
                     ...this.ctx,
-                    path: this.appendToPath(prop)
+                    parsePath: Common.pathAdd(this.ctx.parsePath, prop)
                 })
             ]) as ParseResult
         }
@@ -39,16 +41,22 @@ export namespace Map {
                 typeof args.value !== "object" ||
                 Array.isArray(args.value)
             ) {
-                this.addUnassignable(args.value, args.errors)
+                this.addUnassignable(args)
                 return
             }
             const keyErrors = this.checkKeyErrors(args)
             if (keyErrors) {
-                this.addUnassignableMessage(keyErrors, args.errors)
+                this.addCustomUnassignable(keyErrors, args)
                 return
             }
             for (const [prop, node] of this.next()) {
-                node.allows({ ...args, value: (args.value as any)[prop] })
+                node.allows({
+                    ...args,
+                    value: (args.value as any)[prop],
+                    ctx: deepMerge(args.ctx, {
+                        valuePath: Common.pathAdd(args.ctx.valuePath, prop)
+                    })
+                })
             }
         }
 

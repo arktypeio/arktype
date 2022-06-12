@@ -9,7 +9,7 @@ export abstract class Generated<DefType> extends Base<DefType> {
     constructor(def: DefType, ctx: ParseContext) {
         super(def, ctx)
         this.brancher = this.parse()
-        if (ctx.eager) {
+        if (ctx.config.parse?.eager) {
             for (const child of this.brancher) {
                 this.cache.push(child)
             }

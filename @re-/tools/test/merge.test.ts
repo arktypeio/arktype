@@ -62,4 +62,14 @@ describe("deepMerge", () => {
             }
         }
     })
+    it("treats arrays like non-objects", () => {
+        const base = narrow({ a: [1, 2, 3, 4, 5], b: 6, c: [7], d: [8] })
+        const merged = narrow({
+            a: ["a", "b", "c"],
+            b: ["d"],
+            c: []
+        })
+        const result = deepMerge(base, merged)
+        assert(result).equals({ ...merged, d: [8] })
+    })
 })

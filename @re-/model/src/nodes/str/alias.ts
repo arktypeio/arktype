@@ -1,5 +1,4 @@
 import { And, RequireKeys, WithPropValue } from "@re-/tools"
-import { NodeMethodContext } from "../common/common.js"
 import { Root } from "../root.js"
 import { Common, Leaf } from "#common"
 
@@ -58,11 +57,11 @@ export namespace Alias {
             // }
         }
 
-        private nextNodeMethodContext(
-            ctx: NodeMethodContext
-        ): NodeMethodContext {
+        private nextMethodContext(
+            ctx: Common.MethodContext
+        ): Common.MethodContext {
             return {
-                previousPath: ctx.previousPath + this.ctx.path,
+                ...ctx,
                 seen: [...ctx.seen, this.def],
                 shallowSeen: [...ctx.shallowSeen, this.def]
             }
@@ -71,14 +70,14 @@ export namespace Alias {
         allows(args: Common.AllowsArgs) {
             return this.resolve().allows({
                 ...args,
-                ctx: this.nextNodeMethodContext(args.ctx)
+                ctx: this.nextMethodContext(args.ctx)
             })
         }
 
         generate(args: Common.GenerateArgs) {
             return this.resolve().generate({
                 ...args,
-                ctx: this.nextNodeMethodContext(args.ctx)
+                ctx: this.nextMethodContext(args.ctx)
             })
         }
     }

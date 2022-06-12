@@ -211,11 +211,11 @@ export namespace Constraint {
         allows(args: Common.AllowsArgs) {
             const { bounded, ...bounds } = this.next()
             if (!bounded.handler.validate(args.value, this.ctx)) {
-                this.addUnassignableMessage(
+                this.addCustomUnassignable(
                     `${Common.stringifyValue(
                         args.value
                     )} is not assignable to ${bounded.keyword}.`,
-                    args.errors
+                    args
                 )
                 return
             }
@@ -232,7 +232,7 @@ export namespace Constraint {
                     bound
                 )
                 if (boundError) {
-                    this.addUnassignableMessage(boundError, args.errors)
+                    this.addCustomUnassignable(boundError, args)
                     return
                 }
             }

@@ -1,3 +1,4 @@
+import { deepMerge } from "@re-/tools"
 import { Str } from "./str.js"
 import { Branch, Common } from "#common"
 
@@ -14,21 +15,18 @@ export namespace List {
 
         allows(args: Common.AllowsArgs) {
             if (!Array.isArray(args.value)) {
-                this.addUnassignable(args.value, args.errors)
+                this.addUnassignable(args)
                 return
             }
+            const nextNode = this.next()
             for (const [i, element] of Object.entries(args.value)) {
-                const itemErrors = this.next().validateByPath(
-                    element,
-                    args.options
-                )
-                for (const [path, message] of Object.entries(itemErrors)) {
-                    let itemPath = this.appendToPath(i)
-                    if (path !== this.ctx.path) {
-                        itemPath += path.slice(this.ctx.path.length)
-                    }
-                    args.errors[itemPath] = message
-                }
+                nextNode.allows({
+                    ...args,
+                    value: element,
+                    ctx: deepMerge(args.ctx, {
+                        valuePath: Common.pathAdd(args.ctx.valuePath, i)
+                    })
+                })
             }
         }
 

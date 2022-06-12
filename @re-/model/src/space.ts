@@ -1,4 +1,4 @@
-import { deepMerge, EntriesOf, Entry, Evaluate, Merge } from "@re-/tools"
+import { deepMerge, EntriesOf, Evaluate, Merge } from "@re-/tools"
 import { Model, ModelFrom, ModelFunction } from "./model.js"
 import { Root } from "./nodes/index.js"
 import { Common } from "#common"

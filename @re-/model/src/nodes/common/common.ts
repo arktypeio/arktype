@@ -9,14 +9,14 @@ export type Parser<DefType> = (def: DefType, ctx: ParseContext) => Node
 export const typeDefProxy: any = new Proxy({}, { get: () => typeDefProxy })
 
 export type ParseContext = {
-    path: string
+    parsePath: string
     config: BaseOptions
     space: Space | undefined
     stringRoot: string | null
 }
 
 export const defaultParseContext: ParseContext = {
-    path: "",
+    parsePath: "",
     config: {},
     space: undefined,
     stringRoot: null
@@ -89,8 +89,8 @@ export class UngeneratableError extends Error {
 export const ungeneratableError = (def: string, defType: string) =>
     `Unable to generate a value for '${def}' (${defType} generation is unsupported).`
 
-export const appendToPath = (path: string, segment: string | number) =>
-    path ? `${path}/${segment}` : String(segment)
+export const pathAdd = (...subpaths: (string | number)[]) =>
+    subpaths.filter((_) => _ !== "").join("/")
 
 export type GenerateOptions = {
     /*
@@ -136,26 +136,26 @@ export type CustomValidator = (
     ctx: ParseContext
 ) => string | ErrorsByPath
 
-export type NodeMethodContext = {
-    previousPath: string
+export type MethodContext = {
+    valuePath: string
     seen: string[]
     shallowSeen: string[]
 }
 
-export const defaultNodeMethodContext: NodeMethodContext = {
-    previousPath: "",
+export const defaultNodeMethodContext: MethodContext = {
+    valuePath: "",
     seen: [],
     shallowSeen: []
 }
 
-export interface BaseNodeMethodArgs<Options> {
+export type BaseMethodArgs<Options> = {
     options: Options
-    ctx: NodeMethodContext
+    ctx: MethodContext
 }
 
-export interface AllowsArgs extends BaseNodeMethodArgs<ValidateOptions> {
+export type AllowsArgs = BaseMethodArgs<ValidateOptions> & {
     value: unknown
     errors: ErrorsByPath
 }
 
-export interface GenerateArgs extends BaseNodeMethodArgs<GenerateOptions> {}
+export type GenerateArgs = BaseMethodArgs<GenerateOptions>

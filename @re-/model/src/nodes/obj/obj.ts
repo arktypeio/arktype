@@ -28,6 +28,6 @@ export namespace Obj {
         if (Tuple.matches(def)) {
             return new Tuple.Node(def, ctx)
         }
-        return new Map.Node(def, ctx)
+        return new Map.Node(def as Map.Definition, ctx)
     }
 }

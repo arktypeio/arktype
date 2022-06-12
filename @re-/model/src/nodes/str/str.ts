@@ -110,7 +110,7 @@ export namespace Str {
         throw new Common.ParseError(
             `Unable to determine the type of '${Common.stringifyDef(
                 def
-            )}'${Common.stringifyPathContext(ctx.path)}.`
+            )}'${Common.stringifyPathContext(ctx.parsePath)}.`
         )
     }
 }

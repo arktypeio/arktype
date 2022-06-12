@@ -87,7 +87,7 @@ type Mergeable = Record<string | number | symbol, unknown>
 const isMergeable = (
     value: unknown
 ): value is Record<string | number | symbol, unknown> =>
-    typeof value === "object" && value !== null
+    typeof value === "object" && value !== null && !Array.isArray(value)
 
 const shallowMerge = (base: Mergeable, merged: Mergeable) => {
     const result: Mergeable = { ...merged }
@@ -104,9 +104,11 @@ const recursiveMerge = (base: Mergeable, merged: Mergeable) => {
     const result = shallowMerge(base, merged)
     for (const key of Object.keys(result)) {
         if (key in base && key in merged) {
-            const [baseValue, mergedValue] = [base[key], merged[key]]
-            if (isMergeable(baseValue) && isMergeable(mergedValue)) {
-                result[key] = recursiveMerge(baseValue, mergedValue)
+            if (isMergeable(base[key]) && isMergeable(merged[key])) {
+                result[key] = recursiveMerge(
+                    base[key] as any,
+                    merged[key] as any
+                )
             }
         }
     }
