@@ -3,6 +3,58 @@ import { Root } from "./nodes/index.js"
 import { Space } from "./space.js"
 import { Common } from "#common"
 
+/**
+ * Create a model.
+ * @param definition {@as string} Document this.
+ * @param options {@as ModelConfig?} And that.
+ * @returns {@as any} The result.
+ */
+export const model: ModelFunction = (definition, options) =>
+    new Model(definition, options) as any
+
+export const eager: ModelFunction = (definition, options = {}) => {
+    options.parse = { eager: true }
+    return new Model(definition, options) as any
+}
+
+export class Model implements AnyModel {
+    private root: Common.Node<unknown>
+
+    constructor(
+        public readonly definition: AnyModel["definition"],
+        options?: BaseOptions,
+        space?: Space
+    ) {
+        this.root = Root.parse(definition, {
+            ...Common.defaultParseContext,
+            config: options ?? {},
+            space
+        })
+    }
+
+    get type() {
+        return Common.typeDefProxy
+    }
+
+    validate(value: unknown) {
+        const errorsByPath = this.root.validateByPath(value)
+        return isEmpty(errorsByPath)
+            ? { data: value }
+            : { error: Common.stringifyErrors(errorsByPath), errorsByPath }
+    }
+
+    assert(value: unknown) {
+        const { error } = this.validate(value)
+        if (error) {
+            throw new Error(error)
+        }
+    }
+
+    generate() {
+        return this.root.generate()
+    }
+}
+
 /*
  * Just use unknown for now since we don't have all the definitions yet
  * but we still want to allow references to other declared types
@@ -94,58 +146,6 @@ export type ModelFrom<Def, ModeledType> = {
     generate: GenerateFunction<ModeledType>
 }
 
-/**
- * Create a model.
- * @param definition {@as string} Document this.
- * @param options {@as ModelConfig?} And that.
- * @returns {@as any} The result.
- */
-export const model: ModelFunction = (definition, options) =>
-    new Model(definition, options) as any
-
-export const eager: ModelFunction = (definition, options = {}) => {
-    options.parse = { eager: true }
-    return new Model(definition, options) as any
-}
-
 export type Parse<Def, Dict> = Root.Parse<Def, Dict, {}>
 
 type AnyModel = ModelFrom<any, any>
-
-export class Model implements AnyModel {
-    private root: Common.Node<unknown>
-
-    constructor(
-        public readonly definition: AnyModel["definition"],
-        options?: BaseOptions,
-        space?: Space
-    ) {
-        this.root = Root.parse(definition, {
-            ...Common.defaultParseContext,
-            ...options?.parse,
-            space
-        })
-    }
-
-    get type() {
-        return Common.typeDefProxy
-    }
-
-    validate(value: unknown) {
-        const errorsByPath = this.root.validateByPath(value)
-        return isEmpty(errorsByPath)
-            ? { data: value }
-            : { error: Common.stringifyErrors(errorsByPath), errorsByPath }
-    }
-
-    assert(value: unknown) {
-        const { error } = this.validate(value)
-        if (error) {
-            throw new Error(error)
-        }
-    }
-
-    generate() {
-        return this.root.generate()
-    }
-}

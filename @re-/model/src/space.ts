@@ -3,6 +3,48 @@ import { BaseOptions, Model, ModelFrom, ModelFunction } from "./model.js"
 import { Root } from "./nodes/index.js"
 import { Common } from "#common"
 
+export class Space implements SpaceFrom<any> {
+    inputs: SpaceFrom<any>["inputs"]
+    models: DictionaryToModels<any>
+
+    modelDefinitions: SpaceDictionary
+    config: SpaceConfig
+
+    constructor(dictionary: SpaceDictionary, options?: SpaceOptions<string>) {
+        this.inputs = { dictionary, options }
+        const normalized = normalizeSpaceInputs(dictionary, options)
+        this.modelDefinitions = normalized.modelDefinitions
+        this.config = normalized.config
+        this.models = {} as any
+        for (const [typeName, definition] of Object.entries(
+            this.modelDefinitions
+        ) as Entry<string, any>[]) {
+            this.models[typeName] = new Model(definition, {
+                ...this.config,
+                ...this.config?.models?.[typeName]
+            })
+        }
+    }
+
+    create(def: any, options?: BaseOptions) {
+        return new Model(def, options, this) as any
+    }
+
+    extend(extensions: SpaceDictionary, overrides?: SpaceOptions<string>) {
+        return new Space(
+            { ...this.inputs.dictionary, ...extensions },
+            {
+                ...this.inputs.options,
+                ...overrides
+            }
+        ) as any
+    }
+
+    get types() {
+        return Common.typeDefProxy
+    }
+}
+
 export type MetaKey = "onCycle" | "onResolve"
 
 export type DictionaryToModels<Dict> = Evaluate<{
@@ -95,47 +137,5 @@ const normalizeSpaceInputs = (
     return {
         modelDefinitions,
         config
-    }
-}
-
-export class Space implements SpaceFrom<any> {
-    inputs: SpaceFrom<any>["inputs"]
-    models: DictionaryToModels<any>
-
-    modelDefinitions: SpaceDictionary
-    config: SpaceConfig
-
-    constructor(dictionary: SpaceDictionary, options?: SpaceOptions<string>) {
-        this.inputs = { dictionary, options }
-        const normalized = normalizeSpaceInputs(dictionary, options)
-        this.modelDefinitions = normalized.modelDefinitions
-        this.config = normalized.config
-        this.models = {} as any
-        for (const [typeName, definition] of Object.entries(
-            this.modelDefinitions
-        ) as Entry<string, any>[]) {
-            this.models[typeName] = new Model(definition, {
-                ...this.config,
-                ...this.config?.models?.[typeName]
-            })
-        }
-    }
-
-    create(def: any, options?: BaseOptions) {
-        return new Model(def, options, this) as any
-    }
-
-    extend(extensions: SpaceDictionary, overrides?: SpaceOptions<string>) {
-        return new Space(
-            { ...this.inputs.dictionary, ...extensions },
-            {
-                ...this.inputs.options,
-                ...overrides
-            }
-        ) as any
-    }
-
-    get types() {
-        return Common.typeDefProxy
     }
 }

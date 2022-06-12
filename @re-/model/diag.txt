@@ -1,20 +1,19 @@
-src/declaration.ts(58,6): error TS2315: Type 'Space' is not generic.
 test/customValidators.test.ts(60,50): error TS2339: Property 'def' does not exist on type 'ParseContext'.
 test/customValidators.test.ts(87,46): error TS2339: Property 'ctx' does not exist on type 'ParseContext'.
 test/nodes/str/union.test.ts(74,26): error TS2345: Argument of type '"nested|five|duck"' is not assignable to parameter of type '"Error: Unable to determine the type of 'nested'."'.
 test/nodes/str/union.test.ts(75,26): error TS2345: Argument of type '"duck|nested"' is not assignable to parameter of type '"Error: Unable to determine the type of 'duck'."'.
 Files:              205
-Lines:            83010
-Nodes:           278610
-Identifiers:     100995
-Symbols:         441852
-Types:           230406
-Instantiations: 1062744
-Memory used:    497600K
+Lines:            83023
+Nodes:           278781
+Identifiers:     101051
+Symbols:         463681
+Types:           242622
+Instantiations: 1118102
+Memory used:    507866K
 I/O read:         0.01s
 I/O write:        0.00s
-Parse time:       0.50s
-Bind time:        0.19s
-Check time:       4.99s
+Parse time:       0.54s
+Bind time:        0.20s
+Check time:       5.44s
 Emit time:        0.00s
-Total time:       5.68s
+Total time:       6.18s
