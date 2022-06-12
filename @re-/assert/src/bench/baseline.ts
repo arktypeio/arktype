@@ -1,5 +1,5 @@
 import { toString } from "@re-/tools"
-import { writeInlineSnapshotToFile } from "../value/snapshot.js"
+import { queueInlineSnapshotWriteOnProcessExit } from "../value/snapshot.js"
 import { BenchAssertionContext, BenchContext } from "./bench.js"
 import { MeasureComparison } from "./measure.js"
 
@@ -21,7 +21,7 @@ export const updateBaselineIfNeeded = (
             `Unable to update baseline for ${ctx.name} ('lastSnapCallPosition' was unset).`
         )
     }
-    writeInlineSnapshotToFile({
+    queueInlineSnapshotWriteOnProcessExit({
         position: ctx.lastSnapCallPosition,
         serializedValue,
         snapFunctionName: ctx.kind,

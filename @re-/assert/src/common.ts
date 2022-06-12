@@ -1,6 +1,7 @@
 import { existsSync } from "node:fs"
 import { join, relative, resolve } from "node:path"
 import { ensureDir, getCmdFromPid, readJson } from "@re-/node"
+import { transform } from "@re-/tools"
 import { default as memoize } from "micro-memoize"
 
 export type LinePosition = {
@@ -47,6 +48,21 @@ const checkArgsForMatcher = (args: string[]) => {
         return undefined
     }
     return args.at(filterFlagIndex + 1)
+}
+
+export const literalSerialize = (value: any): any => {
+    if (typeof value === "object") {
+        return value === null
+            ? null
+            : transform(value, ([k, v]) => [k, literalSerialize(v)])
+    }
+    if (typeof value === "symbol") {
+        return `<symbol ${value.description}>`
+    }
+    if (typeof value === "function") {
+        return `<function ${value.name}>`
+    }
+    return value
 }
 
 export const getReAssertConfig = memoize((): ReAssertConfig => {

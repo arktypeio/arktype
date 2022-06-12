@@ -69,9 +69,7 @@ describe("demo", () => {
         ).throws(
             "At path bestFriend/groups/0, required keys 'members' were missing."
         )
-        assert(space.types.user).type.toString.snap(
-            "{ name: string; groups: { title: string; members: { name: string; groups: { title: string; members: any[]; }[]; bestFriend?: any | undefined; }[]; }[]; bestFriend?: { name: string; groups: { title: string; members: { name: string; groups: any[]; bestFriend?: any | undefined; }[]; }[]; bestFriend?: any | undefined; } | undefined; }"
-        )
+        assert(space.types.user).type.toString.snap()
     })
     // See multifile.assert.ts for declaration demo
     it("constraints", () => {
@@ -106,7 +104,7 @@ describe("demo", () => {
         }
         assert(error).snap(`Encountered errors at the following paths:
 {
-  email: ''david@redo.biz' is not assignable to /[a-z]*@redo\\.dev/.',
+  email: ''david@redo.biz' does not match expression /[a-z]*@redo\\.dev/.',
   about/age: '17 is less than 18.',
   about/bio: ''I am very interesting.I am very interesting.I am ...' is greater than 160 characters.'
 }`)

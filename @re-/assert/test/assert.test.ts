@@ -1,7 +1,7 @@
 import { strict } from "node:assert"
 import { join } from "node:path"
-import { assert } from "#src"
 import { dirName, readJson, writeJson } from "@re-/node"
+import { assert } from "#src"
 
 const n = 5
 const o = { re: "do" }
@@ -165,8 +165,8 @@ describe("assertions", () => {
     const defaultSnapshotPath = join(testDir, "assert.snapshots.json")
     const defaultSnapshotFileContents = {
         "assert.test.ts": {
-            toFile: "{re: `do`}",
-            toFileUpdate: "{re: `oldValue`}"
+            toFile: { re: "do" },
+            toFileUpdate: { re: "oldValue" }
         }
     }
 
@@ -186,7 +186,7 @@ describe("assertions", () => {
         assert(contents).equals({
             "assert.test.ts": {
                 ...defaultSnapshotFileContents["assert.test.ts"],
-                toFileNew: "1337"
+                toFileNew: 1337
             }
         })
     })
@@ -200,7 +200,7 @@ describe("assertions", () => {
         const expectedContents = {
             "assert.test.ts": {
                 ...defaultSnapshotFileContents["assert.test.ts"],
-                ["toFileUpdate"]: "{re: `dew`}"
+                ["toFileUpdate"]: { re: "dew" }
             }
         }
         strict.deepEqual(updatedContents, expectedContents)
@@ -210,7 +210,7 @@ describe("assertions", () => {
     const defaultSnapshotCustomPath = join(testDir, "custom.snapshots.json")
     const defaultSnapshotCustomFileContents = {
         "assert.test.ts": {
-            toCustomFile: "{re: `do`}"
+            toCustomFile: { re: "do" }
         }
     }
 
@@ -237,7 +237,7 @@ describe("assertions", () => {
         assert(contents).equals({
             "assert.test.ts": {
                 ...defaultSnapshotCustomFileContents["assert.test.ts"],
-                toCustomFileNew: "null"
+                toCustomFileNew: null
             }
         })
     })
@@ -389,5 +389,9 @@ secondLine`)
     it("union of function chainable", () => {
         const t = {} as object | ((...args: any[]) => any)
         assert(t).equals({})
+    })
+    it("default serializer doesn't are about prop order", () => {
+        const actual = { a: true, b: false }
+        assert(actual).snap({ b: false, a: true })
     })
 })

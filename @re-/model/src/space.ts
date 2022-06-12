@@ -37,10 +37,7 @@ export class Space implements SpaceFrom<any> {
     extend(extensions: SpaceDictionary, overrides?: SpaceOptions<string>) {
         return new Space(
             { ...this.inputs.dictionary, ...extensions },
-            {
-                ...this.inputs.options,
-                ...overrides
-            }
+            deepMerge(this.inputs.options, overrides)
         ) as any
     }
 
@@ -129,7 +126,7 @@ const normalizeSpaceInputs = (
     options?: SpaceOptions<string>
 ) => {
     const { onCycle, onResolve, ...modelDefinitions } = dictionary
-    const config: SpaceConfig = options ?? {}
+    const config: SpaceConfig = { ...options }
     if (onCycle) {
         config.onCycle = onCycle
     }

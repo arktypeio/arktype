@@ -9,7 +9,7 @@ import {
     toString
 } from "@re-/tools"
 import { AssertionContext } from "../assert.js"
-import { SourcePosition } from "../common.js"
+import { literalSerialize, SourcePosition } from "../common.js"
 import {
     getAssertionData,
     TypeAssertions,
@@ -17,10 +17,10 @@ import {
 } from "../type/index.js"
 import {
     getSnapshotByName,
-    queueInlineSnapshotUpdate,
+    queueInlineSnapshotWriteOnProcessExit,
     SnapshotArgs,
     updateExternalSnapshot,
-    writeInlineSnapshotToFile
+    writeInlineSnapshotUpdateToCacheDir
 } from "./snapshot.js"
 
 export type ChainableValueAssertion<
@@ -306,7 +306,7 @@ export const valueAssertions = <T>(
     const serialize = (value: unknown) =>
         ctx.config.stringifySnapshots
             ? `${toString(value, { quotes: "double" })}`
-            : toString(value, { quotes: "backtick" })
+            : literalSerialize(value)
     const actualSerialized = serialize(actual)
     const inlineSnap = (expected?: unknown) => {
         if (!expected || ctx.config.updateSnapshots) {
@@ -316,9 +316,9 @@ export const valueAssertions = <T>(
                     serializedValue: actualSerialized
                 }
                 if (ctx.config.precached) {
-                    queueInlineSnapshotUpdate(snapshotArgs)
+                    writeInlineSnapshotUpdateToCacheDir(snapshotArgs)
                 } else {
-                    writeInlineSnapshotToFile(snapshotArgs)
+                    queueInlineSnapshotWriteOnProcessExit(snapshotArgs)
                 }
             }
         } else {

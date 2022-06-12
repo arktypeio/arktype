@@ -111,49 +111,22 @@ describe("compile", () => {
                 }
             }
         )
-        assert(extended.types).typed as {
-            user: {
-                age: number
+        assert(extended.types).type.toString.snap(
+            `{ user: { age: number; }; group: { members: { age: number; }[]; }; other: { groups: { members: { age: number; }[]; }[]; users: { age: number; }[]; }; }`
+        )
+        assert(extended.inputs.dictionary).snap({
+            user: { age: `number` },
+            group: { members: `user[]` },
+            onCycle: `boolean`,
+            other: { users: `user[]`, groups: `group[]` }
+        })
+        assert(extended.inputs.options).snap({
+            validate: { ignoreExtraneousKeys: true },
+            models: {
+                user: { validate: { ignoreExtraneousKeys: false } },
+                group: { generate: { onRequiredCycle: true } },
+                other: { validate: { ignoreExtraneousKeys: true } }
             }
-            group: {
-                members: {
-                    age: number
-                }[]
-            }
-            other: {
-                users: {
-                    age: number
-                }[]
-                groups: {
-                    members: {
-                        age: number
-                    }[]
-                }[]
-            }
-        }
-        assert(extended.inputs.dictionary).snap()
-        assert(extended.inputs.options).snap()
-        // assert(extended.inputs.options).equals({
-        //     validate: {
-        //         ignoreExtraneousKeys: true
-        //     },
-        //     models: {
-        //         user: {
-        //             validate: {
-        //                 ignoreExtraneousKeys: false
-        //             }
-        //         },
-        //         group: {
-        //             generate: {
-        //                 onRequiredCycle: true
-        //             }
-        //         },
-        //         other: {
-        //             validate: {
-        //                 ignoreExtraneousKeys: true
-        //             }
-        //         }
-        //     }
-        // })
+        })
     })
 })

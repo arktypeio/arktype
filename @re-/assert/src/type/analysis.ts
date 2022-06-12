@@ -9,7 +9,7 @@ import {
     positionToString,
     SourcePosition
 } from "../common.js"
-import { writeQueuedSnapshotUpdates } from "../value/index.js"
+import { writeCachedInlineSnapshotUpdates } from "../value/index.js"
 
 export interface SetupCacheOptions {
     forcePrecache?: boolean
@@ -35,7 +35,7 @@ export const cacheAssertions = ({ forcePrecache }: SetupCacheOptions = {}) => {
 export const cleanupAssertions = () => {
     const config = getReAssertConfig()
     try {
-        writeQueuedSnapshotUpdates()
+        writeCachedInlineSnapshotUpdates()
     } finally {
         if (!config.preserveCache) {
             rmSync(config.cacheDir, { recursive: true, force: true })
