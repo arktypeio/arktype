@@ -32,9 +32,9 @@ export namespace StringLiteral {
     export class Node extends Leaf<Definition<string>> {
         quotedText = this.def.slice(1, -1)
 
-        allows(value: unknown, errors: Common.ErrorsByPath) {
-            if (this.quotedText !== value) {
-                this.addUnassignable(value, errors)
+        allows(args: Common.AllowsArgs) {
+            if (this.quotedText !== args.value) {
+                this.addUnassignable(args.value, args.errors)
             }
         }
 

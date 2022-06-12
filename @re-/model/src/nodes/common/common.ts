@@ -1,5 +1,4 @@
 import { isDigits, toString, uncapitalize } from "@re-/tools"
-import { BaseOptions } from "../../model.js"
 import type { Space } from "../../space.js"
 import type { Base as BaseNode } from "./kinds/base.js"
 
@@ -10,7 +9,6 @@ export type Parser<DefType> = (def: DefType, ctx: ParseContext) => Node
 export const typeDefProxy: any = new Proxy({}, { get: () => typeDefProxy })
 
 export type ParseContext = {
-    eager: boolean
     path: string
     seen: string[]
     shallowSeen: string[]
@@ -22,7 +20,6 @@ export type ParseContext = {
 export const defaultParseContext: ParseContext = {
     config: {},
     space: undefined,
-    eager: false,
     path: "",
     seen: [],
     shallowSeen: [],
@@ -98,3 +95,53 @@ export const ungeneratableError = (def: string, defType: string) =>
 
 export const appendToPath = (path: string, segment: string | number) =>
     path ? `${path}/${segment}` : String(segment)
+
+export type GenerateConfig = {
+    /*
+     * By default, generate will throw if it encounters a cyclic required type
+     * If this options is provided, it will return its value instead
+     */
+    onRequiredCycle?: any
+}
+
+export interface ParseConfig {
+    eager?: boolean
+}
+
+export interface BaseOptions {
+    parse?: ParseConfig
+    validate?: ValidateOptions
+    generate?: GenerateConfig
+}
+
+export type ValidateOptions = {
+    ignoreExtraneousKeys?: boolean
+    validator?: CustomValidator
+    verbose?: boolean
+}
+
+export const errorsFromCustomValidator = (
+    customValidator: CustomValidator,
+    args: Parameters<CustomValidator>
+): ErrorsByPath => {
+    const result = customValidator(...args)
+    if (result && typeof result === "string") {
+        // @ts-ignore
+        return validationError({ path: args[2].ctx.path, message: result })
+    } else if (result) {
+        return result as ErrorsByPath
+    }
+    return {}
+}
+
+export type CustomValidator = (
+    value: unknown,
+    errors: ErrorsByPath,
+    ctx: ParseContext
+) => string | ErrorsByPath
+
+export type AllowsArgs = {
+    value: unknown
+    errors: ErrorsByPath
+    options: ValidateOptions
+}

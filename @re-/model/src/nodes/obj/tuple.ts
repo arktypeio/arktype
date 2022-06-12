@@ -25,20 +25,20 @@ export namespace Tuple {
             ]) as ParseResult
         }
 
-        allows(value: unknown, errors: Common.ErrorsByPath) {
-            if (!Array.isArray(value)) {
-                this.addUnassignable(value, errors)
+        allows(args: Common.AllowsArgs) {
+            if (!Array.isArray(args.value)) {
+                this.addUnassignable(args.value, args.errors)
                 return
             }
-            if (this.def.length !== value.length) {
+            if (this.def.length !== args.value.length) {
                 this.addUnassignableMessage(
-                    lengthError(this.def, value),
-                    errors
+                    lengthError(this.def, args.value),
+                    args.errors
                 )
                 return
             }
             for (const [i, node] of this.next()) {
-                node.allows(value[i], errors)
+                node.allows({ ...args, value: args.value[i] })
             }
         }
 

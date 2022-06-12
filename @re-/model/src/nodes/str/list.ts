@@ -12,19 +12,22 @@ export namespace List {
             return Str.parse(this.def.slice(0, -2), this.ctx)
         }
 
-        allows(value: unknown, errors: Common.ErrorsByPath) {
-            if (!Array.isArray(value)) {
-                this.addUnassignable(value, errors)
+        allows(args: Common.AllowsArgs) {
+            if (!Array.isArray(args.value)) {
+                this.addUnassignable(args.value, args.errors)
                 return
             }
-            for (const [i, element] of Object.entries(value)) {
-                const itemErrors = this.next().validateByPath(element)
+            for (const [i, element] of Object.entries(args.value)) {
+                const itemErrors = this.next().validateByPath(
+                    element,
+                    args.options
+                )
                 for (const [path, message] of Object.entries(itemErrors)) {
                     let itemPath = this.appendToPath(i)
                     if (path !== this.ctx.path) {
                         itemPath += path.slice(this.ctx.path.length)
                     }
-                    errors[itemPath] = message
+                    args.errors[itemPath] = message
                 }
             }
         }

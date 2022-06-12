@@ -53,16 +53,16 @@ export namespace Alias {
                 nextDef = space.config.onResolve
             }
             return (space.models[this.def] as any).root
-            return Root.parse(nextDef, {
-                ...this.ctx,
-                seen: [...this.ctx.seen, this.def],
-                shallowSeen: [...this.ctx.shallowSeen, this.def],
-                stringRoot: null
-            })
+            // return Root.parse(nextDef, {
+            //     ...this.ctx,
+            //     seen: [...this.ctx.seen, this.def],
+            //     shallowSeen: [...this.ctx.shallowSeen, this.def],
+            //     stringRoot: null
+            // })
         }
 
-        allows(value: unknown, errors: Common.ErrorsByPath) {
-            this.resolve().allows(value, errors)
+        allows(args: Common.AllowsArgs) {
+            this.resolve().allows(args)
             // const customValidator =
             //     this.ctx.space.config?.models?.[this.def]?.validate
             //         ?.validator ??

@@ -91,18 +91,8 @@ describe("alias", () => {
                 ).error
             ).snap(`Encountered errors at the following paths:
 {
-  fruits/0: '{length: 5000, description: 'I'm a big banana!', peel: 'slippery'} is not assignable to any of banana|apple.
-Encountered errors at the following paths:
-{
-  banana: 'At path fruits/0, keys 'peel' were unexpected.',
-  apple: 'At path fruits/0, required keys 'circumference, type' were missing. Keys 'length, description, peel' were unexpected.'
-}',
-  fruits/1: '{type: 'Fuji'} is not assignable to any of banana|apple.
-Encountered errors at the following paths:
-{
-  banana: 'At path fruits/1, required keys 'length' were missing. Keys 'type' were unexpected.',
-  apple: 'At path fruits/1, required keys 'circumference' were missing.'
-}'
+  fruits/0: '{length: 5000, description: 'I'm a big banana!', peel: 'slippery'} is not assignable to any of banana|apple.',
+  fruits/1: '{type: 'Fuji'} is not assignable to any of banana|apple.'
 }`)
         })
         /*

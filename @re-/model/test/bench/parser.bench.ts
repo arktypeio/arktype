@@ -1,6 +1,6 @@
 import { bench } from "@re-/assert"
-import { Root } from "#src"
 import { Common } from "#common"
+import { Root } from "#src"
 const defaultParseContext = Common.defaultParseContext
 
 bench("validate undefined", () => {
@@ -18,7 +18,10 @@ bench("parse deeep", () => {
     )
 }).median("52.00ns")
 
-const eagerParseContext = { ...defaultParseContext, eager: true }
+const eagerParseContext = {
+    ...defaultParseContext,
+    config: { parse: { eager: true } }
+}
 
 bench("parse deeep eager", () => {
     Root.parse(

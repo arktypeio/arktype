@@ -19,15 +19,17 @@ export const eager: ModelFunction = (definition, options = {}) => {
 
 export class Model implements AnyModel {
     root: Common.Node<unknown>
+    config: Common.BaseOptions
 
     constructor(
         public readonly definition: AnyModel["definition"],
-        options?: BaseOptions,
+        options?: Common.BaseOptions,
         space?: Space
     ) {
+        this.config = options ?? {}
         this.root = Root.parse(definition, {
             ...Common.defaultParseContext,
-            config: options ?? {},
+            config: this.config,
             space
         })
     }
@@ -36,8 +38,11 @@ export class Model implements AnyModel {
         return Common.typeDefProxy
     }
 
-    validate(value: unknown) {
-        const errorsByPath = this.root.validateByPath(value)
+    validate(value: unknown, options?: Common.ValidateOptions) {
+        const errorsByPath = this.root.validateByPath(value, {
+            ...this.config.validate,
+            ...options
+        })
         return isEmpty(errorsByPath)
             ? { data: value }
             : { error: Common.stringifyErrors(errorsByPath), errorsByPath }
@@ -69,55 +74,11 @@ export type CheckReferences<
     }
 >
 
-export type GenerateConfig = {
-    /*
-     * By default, generate will throw if it encounters a cyclic required type
-     * If this options is provided, it will return its value instead
-     */
-    onRequiredCycle?: any
-}
-
-export interface ParseConfig {
-    eager?: boolean
-}
-
-export interface BaseOptions {
-    parse?: ParseConfig
-    validate?: ValidateOptions
-    generate?: GenerateConfig
-}
-
-export type ValidateOptions = {
-    ignoreExtraneousKeys?: boolean
-    validator?: CustomValidator
-    verbose?: boolean
-}
-
-export const errorsFromCustomValidator = (
-    customValidator: CustomValidator,
-    args: Parameters<CustomValidator>
-): Common.ErrorsByPath => {
-    const result = customValidator(...args)
-    if (result && typeof result === "string") {
-        // @ts-ignore
-        return validationError({ path: args[2].ctx.path, message: result })
-    } else if (result) {
-        return result as Common.ErrorsByPath
-    }
-    return {}
-}
-
-export type CustomValidator = (
-    value: unknown,
-    errors: Common.ErrorsByPath,
-    ctx: Common.ParseContext
-) => string | Common.ErrorsByPath
-
-export type AssertOptions = ValidateOptions
+export type AssertOptions = Common.ValidateOptions
 
 export type ValidateFunction<ModeledType> = (
     value: unknown,
-    options?: ValidateOptions
+    options?: Common.ValidateOptions
 ) => {
     data?: ModeledType
     error?: string
@@ -126,16 +87,16 @@ export type ValidateFunction<ModeledType> = (
 
 export type AssertFunction<ModeledType> = (
     value: unknown,
-    options?: ValidateOptions
+    options?: Common.ValidateOptions
 ) => asserts value is ModeledType
 
 export type GenerateFunction<ModeledType> = (
-    options?: GenerateConfig
+    options?: Common.GenerateConfig
 ) => ModeledType
 
 export type ModelFunction<Dict = {}> = <Def>(
     definition: Root.Validate<Def, Dict>,
-    options?: BaseOptions
+    options?: Common.BaseOptions
 ) => ModelFrom<Def, Parse<Def, Dict>>
 
 export type ModelFrom<Def, ModeledType> = {

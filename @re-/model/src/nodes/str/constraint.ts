@@ -208,14 +208,14 @@ export namespace Constraint {
             throw new Error(constraintErrorTemplate)
         }
 
-        allows(value: unknown, errors: Common.ErrorsByPath) {
+        allows(args: Common.AllowsArgs) {
             const { bounded, ...bounds } = this.next()
-            if (!bounded.handler.validate(value, this.ctx)) {
+            if (!bounded.handler.validate(args.value, this.ctx)) {
                 this.addUnassignableMessage(
-                    `${Common.stringifyValue(value)} is not assignable to ${
-                        bounded.keyword
-                    }.`,
-                    errors
+                    `${Common.stringifyValue(
+                        args.value
+                    )} is not assignable to ${bounded.keyword}.`,
+                    args.errors
                 )
                 return
             }
@@ -225,14 +225,14 @@ export namespace Constraint {
             ][]
             for (const [comparator, bound] of boundEntries) {
                 const boundError = comparators[comparator](
-                    value as string | number,
-                    typeof value === "string"
-                        ? value.length
-                        : (value as number),
+                    args.value as string | number,
+                    typeof args.value === "string"
+                        ? args.value.length
+                        : (args.value as number),
                     bound
                 )
                 if (boundError) {
-                    this.addUnassignableMessage(boundError, errors)
+                    this.addUnassignableMessage(boundError, args.errors)
                     return
                 }
             }

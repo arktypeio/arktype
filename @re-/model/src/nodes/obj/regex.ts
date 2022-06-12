@@ -7,22 +7,22 @@ export namespace Regex {
         def instanceof RegExp
 
     export class Node extends Leaf<Definition> {
-        allows(value: unknown, errors: Common.ErrorsByPath) {
-            if (typeof value !== "string") {
+        allows(args: Common.AllowsArgs) {
+            if (typeof args.value !== "string") {
                 this.addUnassignableMessage(
                     `Non-string value ${Common.stringifyValue(
-                        value
+                        args.value
                     )} cannot satisfy regex definitions.`,
-                    errors
+                    args.errors
                 )
                 return
             }
-            if (!this.def.test(value)) {
+            if (!this.def.test(args.value)) {
                 this.addUnassignableMessage(
                     `${Common.stringifyValue(
-                        value
+                        args.value
                     )} does not match expression /${this.def.source}/.`,
-                    errors
+                    args.errors
                 )
                 return
             }

@@ -1,5 +1,5 @@
 import { deepMerge, Entry, Evaluate, Merge } from "@re-/tools"
-import { BaseOptions, Model, ModelFrom, ModelFunction } from "./model.js"
+import { Model, ModelFrom, ModelFunction } from "./model.js"
 import { Root } from "./nodes/index.js"
 import { Common } from "#common"
 
@@ -24,12 +24,13 @@ export class Space implements SpaceFrom<any> {
         ) as Entry<string, any>[]) {
             this.models[typeName] = new Model(
                 definition,
-                deepMerge(this.config, this.config?.models?.[typeName])
+                deepMerge(this.config, this.config?.models?.[typeName]),
+                this
             )
         }
     }
 
-    create(def: any, options?: BaseOptions) {
+    create(def: any, options?: Common.BaseOptions) {
         return new Model(def, deepMerge(this.config, options), this) as any
     }
 
@@ -57,8 +58,9 @@ export type DictionaryToModels<Dict> = Evaluate<{
     >
 }>
 
-export interface SpaceOptions<ModelName extends string> extends BaseOptions {
-    models?: { [K in ModelName]?: BaseOptions }
+export interface SpaceOptions<ModelName extends string>
+    extends Common.BaseOptions {
+    models?: { [K in ModelName]?: Common.BaseOptions }
 }
 
 type ModelNameIn<Dict> = keyof Dict & string
@@ -66,9 +68,9 @@ type ModelNameIn<Dict> = keyof Dict & string
 interface SpaceExtensionOptions<
     BaseModelName extends string,
     ExtensionModelName extends string
-> extends BaseOptions {
+> extends Common.BaseOptions {
     models?: {
-        [ModelName in BaseModelName | ExtensionModelName]?: BaseOptions
+        [ModelName in BaseModelName | ExtensionModelName]?: Common.BaseOptions
     }
 }
 

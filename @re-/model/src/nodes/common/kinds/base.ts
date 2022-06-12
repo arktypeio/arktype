@@ -3,11 +3,13 @@ import {
     ErrorsByPath,
     ParseContext,
     stringifyDef,
-    stringifyValue
+    stringifyValue,
+    ValidateOptions
 } from "../common.js"
+import { Common } from "../index.js"
 
 export abstract class Base<DefType> {
-    constructor(protected def: DefType, protected ctx: ParseContext) {}
+    constructor(public def: DefType, public ctx: ParseContext) {}
 
     protected stringifyDef() {
         return stringifyDef(this.def)
@@ -27,12 +29,12 @@ export abstract class Base<DefType> {
         errors[this.ctx.path] = message
     }
 
-    validateByPath(value: unknown) {
-        const errorsByPath: ErrorsByPath = {}
-        this.allows(value, errorsByPath)
-        return errorsByPath
+    validateByPath(value: unknown, options: ValidateOptions = {}) {
+        const errors: ErrorsByPath = {}
+        this.allows({ value, errors, options })
+        return errors
     }
 
-    abstract allows(value: unknown, errors: ErrorsByPath): void
+    abstract allows(args: Common.AllowsArgs): void
     abstract generate(): unknown
 }

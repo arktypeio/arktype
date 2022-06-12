@@ -176,9 +176,9 @@ export namespace Keyword {
     export const matches = (def: string): def is Definition => def in handlers
 
     export class Node extends Leaf<Definition> {
-        allows(value: unknown, errors: Common.ErrorsByPath) {
-            if (!handlers[this.def].validate(value)) {
-                this.addUnassignable(value, errors)
+        allows(args: Common.AllowsArgs) {
+            if (!handlers[this.def].validate(args.value)) {
+                this.addUnassignable(args.value, args.errors)
             }
         }
 

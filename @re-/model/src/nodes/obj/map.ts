@@ -1,4 +1,4 @@
-import { diffSets, DiffSetsResult, Entry, Evaluate } from "@re-/tools"
+import { diffSets, Entry, Evaluate } from "@re-/tools"
 import { Root } from "../root.js"
 import { Optional } from "../str/index.js"
 import { Branch, Common } from "#common"
@@ -22,25 +22,7 @@ export namespace Map {
 
     type ParseResult = Entry<string, Common.Node>[]
 
-    const mismatchedKeysError = (
-        keyErrors: NonNullable<DiffSetsResult<string>>
-    ) => {
-        let message = ""
-        if (keyErrors.removed) {
-            message += `Required keys '${keyErrors.removed.join(
-                ", "
-            )}' were missing.`
-        }
-        if (keyErrors.added) {
-            // Add a leading space if we also had missing keys
-            message += `${message ? " " : ""}Keys '${keyErrors.added.join(
-                ", "
-            )}' were unexpected.`
-        }
-        return message
-    }
-
-    export class Node extends Branch<object, ParseResult> {
+    export class Node extends Branch<Record<string, unknown>, ParseResult> {
         parse() {
             return Object.entries(this.def).map(([prop, propDef]) => [
                 prop,
@@ -52,21 +34,22 @@ export namespace Map {
             ]) as ParseResult
         }
 
-        allows(value: unknown, errors: Common.ErrorsByPath) {
-            if (!value || typeof value !== "object" || Array.isArray(value)) {
-                this.addUnassignable(value, errors)
+        allows(args: Common.AllowsArgs) {
+            if (
+                !args.value ||
+                typeof args.value !== "object" ||
+                Array.isArray(args.value)
+            ) {
+                this.addUnassignable(args.value, args.errors)
                 return
             }
-            const keyDiff = diffSets(Object.keys(this.def), Object.keys(value))
-            if (keyDiff) {
-                this.addUnassignableMessage(
-                    mismatchedKeysError(keyDiff),
-                    errors
-                )
+            const keyErrors = this.checkKeyErrors(args)
+            if (keyErrors) {
+                this.addUnassignableMessage(keyErrors, args.errors)
                 return
             }
             for (const [prop, node] of this.next()) {
-                node.allows((value as any)[prop], errors)
+                node.allows({ ...args, value: (args.value as any)[prop] })
             }
         }
 
@@ -74,6 +57,39 @@ export namespace Map {
             return Object.fromEntries(
                 this.next().map(([prop, node]) => [prop, node.generate()])
             )
+        }
+
+        private checkKeyErrors = (args: Common.AllowsArgs) => {
+            let message = ""
+            const keyDiff = diffSets(
+                Object.keys(this.def),
+                Object.keys(args.value as any)
+            )
+            if (!keyDiff) {
+                return message
+            }
+            if (keyDiff.removed) {
+                // Ignore missing keys that are optional
+                const missingRequiredKeys = keyDiff.removed.filter(
+                    (k) =>
+                        !(
+                            typeof this.def[k] === "string" &&
+                            Optional.matches(this.def[k] as string)
+                        )
+                )
+                if (missingRequiredKeys.length) {
+                    message += `Required keys '${missingRequiredKeys.join(
+                        ", "
+                    )}' were missing.`
+                }
+            }
+            if (keyDiff.added && !args.options.ignoreExtraneousKeys) {
+                // Add a leading space if we also had missing keys
+                message += `${message ? " " : ""}Keys '${keyDiff.added.join(
+                    ", "
+                )}' were unexpected.`
+            }
+            return message
         }
     }
 }

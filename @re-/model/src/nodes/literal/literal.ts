@@ -11,9 +11,9 @@ export namespace Literal {
         typeof def === "bigint"
 
     export class Node extends Leaf<Definition> {
-        allows(value: unknown, errors: Common.ErrorsByPath) {
-            if (value !== this.def) {
-                this.addUnassignable(value, errors)
+        allows(args: Common.AllowsArgs) {
+            if (args.value !== this.def) {
+                this.addUnassignable(args.value, args.errors)
             }
         }
 

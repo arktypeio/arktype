@@ -9,7 +9,7 @@ export abstract class Branch<
 
     constructor(def: DefType, ctx: ParseContext) {
         super(def, ctx)
-        if (ctx.eager) {
+        if (ctx.config.parse?.eager) {
             this.cache = this.parse()
         }
     }

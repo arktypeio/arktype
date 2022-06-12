@@ -19,10 +19,10 @@ export namespace Intersection {
                 .map((member) => Str.parse(member, this.ctx))
         }
 
-        allows(value: unknown, errors: Common.ErrorsByPath) {
+        allows(args: Common.AllowsArgs) {
             for (const branch of this.next()) {
-                branch.allows(value, errors)
-                if (errors[this.ctx.path]) {
+                branch.allows(args)
+                if (args.errors[this.ctx.path]) {
                     return
                 }
             }

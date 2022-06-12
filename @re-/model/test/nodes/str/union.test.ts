@@ -1,6 +1,6 @@
 import { assert } from "@re-/assert"
 import { narrow } from "@re-/tools"
-import { eager, model } from "#src"
+import { compile, eager, model } from "#src"
 
 describe("union", () => {
     describe("type", () => {
@@ -40,6 +40,34 @@ describe("union", () => {
                     .error
             ).is(undefined)
         })
+        it("verbose validation", () => {
+            assert(
+                compile({
+                    a: "b|c",
+                    b: "d|e",
+                    c: "f|g",
+                    d: 0,
+                    e: 1,
+                    f: 2,
+                    g: 3
+                }).models.a.validate(4, { verbose: true }).error
+            ).snap(`4 is not assignable to any of b|c.
+Encountered errors at the following paths:
+{
+  b: '4 is not assignable to any of d|e.
+Encountered errors at the following paths:
+{
+  d: '4 is not assignable to 0.',
+  e: '4 is not assignable to 1.'
+}',
+  c: '4 is not assignable to any of f|g.
+Encountered errors at the following paths:
+{
+  f: '4 is not assignable to 2.',
+  g: '4 is not assignable to 3.'
+}'
+}`)
+        })
         describe("errors", () => {
             it("two types", () => {
                 assert(model("'yes'|'no'").validate("maybe").error).snap(
@@ -64,15 +92,13 @@ describe("union", () => {
             assert(model("never|number|boolean").generate()).equals(false)
         })
         it("prefers simple aliases", () => {
-            const space = narrow({
-                dictionary: {
-                    five: 5,
-                    duck: "'duck'",
-                    nested: {}
-                }
+            const space = compile({
+                five: 5,
+                duck: "'duck'",
+                nested: {}
             })
-            assert(model("nested|five|duck", { space }).generate() as any).is(5)
-            assert(model("duck|nested", { space }).generate() as any).is("duck")
+            assert(space.create("nested|five|duck").generate()).is(5)
+            assert(space.create("duck|nested").generate()).is("duck")
         })
         it("generates onCycle values if needed", () => {
             // assert(

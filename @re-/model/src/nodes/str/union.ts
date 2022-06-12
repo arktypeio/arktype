@@ -19,19 +19,30 @@ export namespace Union {
                 .map((member) => Str.parse(member, this.ctx))
         }
 
-        allows(value: unknown, errors: Common.ErrorsByPath) {
+        allows(args: Common.AllowsArgs) {
+            const branchDefinitionsToErrors: Record<string, string> = {}
             for (const branch of this.next()) {
-                const error = branch.validateByPath(value)[this.ctx.path]
-                if (!error) {
+                const branchErrorMessage = branch.validateByPath(
+                    args.value,
+                    args.options
+                )[this.ctx.path]
+                if (!branchErrorMessage) {
+                    // If any branch of a Union does not have errors,
+                    // we can return right away since the whole definition is valid
                     return
                 }
+                branchDefinitionsToErrors[branch.def as string] =
+                    branchErrorMessage
             }
-            this.addUnassignableMessage(
-                `${Common.stringifyValue(
-                    value
-                )} is not assignable to any of ${this.stringifyDef()}.`,
-                errors
-            )
+            let errorMessage = `${Common.stringifyValue(
+                args.value
+            )} is not assignable to any of ${this.stringifyDef()}.`
+            if (args.options.verbose) {
+                errorMessage += `\n${Common.stringifyErrors(
+                    branchDefinitionsToErrors
+                )}`
+            }
+            this.addUnassignableMessage(errorMessage, args.errors)
         }
 
         generate() {
