@@ -1,8 +1,8 @@
 import { assert } from "@re-/assert"
-import { compile, model } from "#src"
+import { compile, CustomValidator, model } from "#src"
 
-describe("customv validators", () => {
-    const validator = (value: unknown) => {
+describe("custom validators", () => {
+    const validator: CustomValidator = ({ value }) => {
         if (
             typeof value === "string" &&
             value === [...value].reverse().join("")
@@ -57,10 +57,14 @@ describe("customv validators", () => {
     })
     it("space", () => {
         const space = compile(
-            { first: "string", second: { comesAfter: "first" } },
+            {
+                first: "string",
+                second: { comesAfter: "first" },
+                third: "string"
+            },
             {
                 validate: {
-                    validator: (value, errors, ctx, def) => {
+                    validator: ({ errors, def }) => {
                         if (def === "first") {
                             return { ...errors, "from/first": "test" }
                         } else if (def === "second") {
@@ -71,7 +75,7 @@ describe("customv validators", () => {
                 }
             }
         )
-        assert(() => space.models.first.assert("hmm")).throws.snap(
+        assert(() => space.models.third.assert("burba")).throws.snap(
             `Error: At path from/unknown, ???`
         )
         assert(
@@ -81,13 +85,14 @@ describe("customv validators", () => {
         ).snap(`Encountered errors at the following paths:
 {
   from/first: 'test',
-  from/second: 'hi'
+  from/second: 'hi',
+  from/unknown: '???'
 }`)
     })
     it("can access standard validation errors and ctx", () => {
         const num = model("number", {
             validate: {
-                validator: (value, errors, ctx) => {
+                validator: ({ errors, ctx }) => {
                     const errorMessages = Object.values(errors)
                     if (errorMessages.length) {
                         return {

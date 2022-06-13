@@ -32,19 +32,6 @@ export class Model implements AnyModel {
         return Common.typeDefProxy
     }
 
-    validateByPath(value: unknown, options?: Common.ValidateOptions) {
-        const args: Common.AllowsArgs = {
-            value,
-            errors: {},
-            ctx: Common.createRootMethodContext({
-                ...this.config.validate,
-                ...options
-            })
-        }
-        this.root.allows(args)
-        return args.errors
-    }
-
     validate(value: unknown, options?: Common.ValidateOptions) {
         const errorsByPath = this.validateByPath(value, options)
         return isEmpty(errorsByPath)
@@ -66,6 +53,25 @@ export class Model implements AnyModel {
                 ...options
             })
         })
+    }
+
+    validateByPath(value: unknown, options?: Common.ValidateOptions) {
+        const args: Common.AllowsArgs = {
+            value,
+            errors: {},
+            ctx: Common.createRootMethodContext({
+                ...this.config.validate,
+                ...options
+            })
+        }
+        this.root.allows(args)
+        if (this.config.validate?.validator) {
+            return Common.getErrorsFromCustomValidator(
+                this.config.validate.validator,
+                { ...args, def: this.definition }
+            )
+        }
+        return args.errors
     }
 }
 

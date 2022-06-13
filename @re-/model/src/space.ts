@@ -23,14 +23,18 @@ export class Space implements SpaceFrom<any> {
         this.resolutions = {}
         this.models = {}
         for (const [typeName, definition] of this.modelDefinitionEntries) {
+            const modelConfig = deepMerge(
+                this.config,
+                this.modelConfigs[typeName]
+            )
             this.resolutions[typeName] = new Resolution(
                 typeName,
                 definition,
-                this
+                Common.createRootParseContext(modelConfig, this.resolutions)
             )
             this.models[typeName] = new Model(
                 this.resolutions[typeName],
-                deepMerge(this.config, this.modelConfigs[typeName])
+                modelConfig
             )
         }
     }
@@ -56,19 +60,12 @@ export class Space implements SpaceFrom<any> {
 }
 
 export class Resolution extends Branch<string> {
-    config: Common.BaseOptions
-
     constructor(
         private aliasDef: string,
         private resolutionDef: unknown,
-        space: Space
+        ctx: Common.ParseContext
     ) {
-        const config = deepMerge(space.config, space.modelConfigs[aliasDef])
-        super(
-            aliasDef,
-            Common.createRootParseContext(config, space.resolutions)
-        )
-        this.config = config
+        super(aliasDef, ctx)
     }
 
     parse() {
@@ -76,32 +73,30 @@ export class Resolution extends Branch<string> {
     }
 
     allows(args: Common.AllowsArgs) {
-        this.next().allows({
-            ...args,
-            ctx: this.nextMethodContext(args.ctx)
-        })
-        const builtInErrorsAtPath: Common.ErrorsByPath = Object.fromEntries(
-            Object.entries(args.errors).filter(([path]) =>
-                path.startsWith(args.ctx.valuePath)
-            )
-        )
+        this.next().allows(this.nextArgs(args))
         const customValidator =
-            args.ctx.config.validator ?? this.config.validate?.validator
+            args.ctx.config.validator ?? this.ctx.config.validate?.validator
         if (customValidator) {
-            const customErrors = customValidator(
-                args.value,
-                builtInErrorsAtPath,
-                args.ctx,
-                this.aliasDef
+            // Only provide errors that occured starting at the resolution path to its custom validator
+            const defaultErrorsUnderPath: Common.ErrorsByPath =
+                Object.fromEntries(
+                    Object.entries(args.errors).filter(([path]) =>
+                        path.startsWith(args.ctx.valuePath)
+                    )
+                )
+            const customErrors = Common.getErrorsFromCustomValidator(
+                customValidator,
+                {
+                    ...args,
+                    errors: defaultErrorsUnderPath,
+                    def: this.def
+                }
             )
-            if (!customErrors) {
-                return
+            // Remove the original errors under this validation path
+            for (const path in defaultErrorsUnderPath) {
+                delete args.errors[path]
             }
-            if (typeof customErrors === "string") {
-                this.addCustomUnassignable(args, customErrors)
-            } else {
-                Object.assign(args.errors, customErrors)
-            }
+            Object.assign(args.errors, customErrors)
         }
     }
 
@@ -112,19 +107,19 @@ export class Resolution extends Branch<string> {
             }
             throw new Common.RequiredCycleError(this.aliasDef, args.ctx.seen)
         }
-        return this.next().generate({
-            ...args,
-            ctx: this.nextMethodContext(args.ctx)
-        })
+        return this.next().generate(this.nextArgs(args))
     }
 
-    private nextMethodContext(
-        ctx: Common.MethodContext<any>
-    ): Common.MethodContext<any> {
+    private nextArgs<Args extends { ctx: Common.MethodContext<any> }>(
+        args: Args
+    ): Args {
         return {
-            ...ctx,
-            seen: [...ctx.seen, this.aliasDef],
-            shallowSeen: [...ctx.shallowSeen, this.aliasDef]
+            ...args,
+            ctx: {
+                ...args.ctx,
+                seen: [...args.ctx.seen, this.aliasDef],
+                shallowSeen: [...args.ctx.shallowSeen, this.aliasDef]
+            }
         }
     }
 }

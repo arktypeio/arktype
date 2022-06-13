@@ -117,12 +117,30 @@ export type ValidateOptions = {
     verbose?: boolean
 }
 
+export type CustomValidatorArgs = {
+    value: unknown
+    errors: ErrorsByPath
+    ctx: MethodContext<ValidateOptions>
+    def: unknown
+}
+
 export type CustomValidator = (
-    value: unknown,
-    errors: ErrorsByPath,
-    ctx: MethodContext<ValidateOptions>,
-    alias: string
-) => string | ErrorsByPath
+    args: CustomValidatorArgs
+) => undefined | string | ErrorsByPath
+
+export const getErrorsFromCustomValidator = (
+    validator: CustomValidator,
+    args: CustomValidatorArgs
+): ErrorsByPath => {
+    const customErrors = validator(args)
+    if (!customErrors) {
+        return {}
+    }
+    if (typeof customErrors === "string") {
+        return { [args.ctx.valuePath]: customErrors }
+    }
+    return customErrors
+}
 
 export type MethodContext<Config> = {
     valuePath: string
