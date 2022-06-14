@@ -29,7 +29,7 @@ export class Model implements AnyModel {
     }
 
     get type() {
-        return Common.typeDefProxy
+        return Common.chainableNoOp
     }
 
     validate(value: unknown, options?: Common.ValidateOptions) {

@@ -55,7 +55,7 @@ export class Space implements SpaceFrom<any> {
     }
 
     get types() {
-        return Common.typeDefProxy
+        return Common.chainableNoOp
     }
 }
 

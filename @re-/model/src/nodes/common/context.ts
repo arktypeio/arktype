@@ -5,23 +5,7 @@ export type Node<DefType = unknown> = BaseNode<DefType>
 
 export type Parser<DefType> = (def: DefType, ctx: ParseContext) => Node
 
-/**
- *  Can be used to allow arbitrarily chained property access.
- *  This is useful for expressions whose meaning is not attached to a value,
- *  e.g. to allow the extraction of types using typeof without depending on
- *  the existence of a real object that conforms to that type's structure:
- *
- * @example
- * const myType: MyType = chainableNoOpProxy
- *
- * // The following types are equivalent
- * type ExtractedType = typeof myType.a.b.c
- * type DirectlyExtractedType = MyType["a"]["b"]["c"]
- */
-export const chainableNoOpProxy: any = new Proxy(
-    {},
-    { get: () => chainableNoOpProxy }
-)
+export const typeDefProxy: any = new Proxy({}, { get: () => typeDefProxy })
 
 export type ErrorsByPath = Record<string, string>
 
