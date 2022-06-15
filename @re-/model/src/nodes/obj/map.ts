@@ -1,7 +1,7 @@
 import { deepMerge, diffSets, Entry, Evaluate } from "@re-/tools"
 import { Root } from "../root.js"
 import { Optional } from "../str/index.js"
-import { Branch, Common } from "#common"
+import { Common } from "#common"
 
 export namespace Map {
     export type Definition = Record<string, unknown>
@@ -22,20 +22,20 @@ export namespace Map {
         }
     >
 
-    type ParseResult = Entry<string, Common.Node>[]
+    type ParseResult = Entry<string, Common.Parser.Node>[]
 
-    export class Node extends Branch<Definition, ParseResult> {
+    export class Node extends Common.Branch<Definition, ParseResult> {
         parse() {
             return Object.entries(this.def).map(([prop, propDef]) => [
                 prop,
                 Root.parse(propDef, {
                     ...this.ctx,
-                    parsePath: Common.pathAdd(this.ctx.path, prop)
+                    path: Common.pathAdd(this.ctx.path, prop)
                 })
             ]) as ParseResult
         }
 
-        allows(args: Common.AllowsArgs) {
+        allows(args: Common.Allows.Args) {
             if (
                 !args.value ||
                 typeof args.value !== "object" ||
@@ -46,7 +46,7 @@ export namespace Map {
             }
             const keyErrors = this.checkKeyErrors(args)
             if (keyErrors) {
-                this.addCustomUnassignable(args, keyErrors)
+                args.errors.add(args.ctx.path, keyErrors)
                 return
             }
             for (const [prop, node] of this.next()) {
@@ -54,13 +54,13 @@ export namespace Map {
                     ...args,
                     value: (args.value as any)[prop],
                     ctx: deepMerge(args.ctx, {
-                        valuePath: Common.pathAdd(args.ctx.valuePath, prop)
+                        path: Common.pathAdd(args.ctx.path, prop)
                     })
                 })
             }
         }
 
-        generate(args: Common.GenerateArgs) {
+        generate(args: Common.Generate.Args) {
             const result: Definition = {}
             for (const [prop, node] of this.next()) {
                 // Don't include optional keys by default in generated values
@@ -70,14 +70,14 @@ export namespace Map {
                 result[prop] = node.generate({
                     ...args,
                     ctx: deepMerge(args.ctx, {
-                        valuePath: Common.pathAdd(args.ctx.valuePath, prop)
+                        valuePath: Common.pathAdd(args.ctx.path, prop)
                     })
                 })
             }
             return result
         }
 
-        private checkKeyErrors = (args: Common.AllowsArgs) => {
+        private checkKeyErrors = (args: Common.Allows.Args) => {
             let message = ""
             const keyDiff = diffSets(
                 Object.keys(this.def),
@@ -101,7 +101,7 @@ export namespace Map {
                     )}' were missing.`
                 }
             }
-            if (keyDiff.added && !args.ctx.config.ignoreExtraneousKeys) {
+            if (keyDiff.added && !args.cfg.ignoreExtraneousKeys) {
                 // Add a leading space if we also had missing keys
                 message += `${message ? " " : ""}Keys '${keyDiff.added.join(
                     ", "

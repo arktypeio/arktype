@@ -35,12 +35,12 @@ export namespace Union {
                 .map((member) => Str.parse(member, this.ctx))
         }
 
-        allows(traversal: Common.Allows.Traversal) {
-            const unionErrors = traversal.ctx.errors.split(traversal.ctx.path)
+        allows(args: Common.Allows.Args) {
+            const unionErrors = args.errors.split(args.ctx.path)
             for (const branch of this.next()) {
                 const branchErrors = unionErrors.branch(branch.stringifyDef())
-                traversal.visit(branch, { errors: branchErrors })
-                branch.allows(traversal.next({ errors: branchErrors }))
+                args.errors = branchErrors
+                branch.allows(args)
                 if (branchErrors.count === 0) {
                     // If any branch of a Union does not have errors,
                     // we can return right away since the whole definition is valid
@@ -50,15 +50,12 @@ export namespace Union {
             }
             // If we haven't returned, all branches are invalid, so add an error
             const summaryErrorMessage = `${Common.stringifyValue(
-                traversal.ctx.value
+                args.value
             )} is not assignable to any of ${this.stringifyDef()}.`
-            if (traversal.cfg.verbose) {
+            if (args.cfg.verbose) {
                 unionErrors.mergeAll(summaryErrorMessage)
             } else {
-                traversal.ctx.errors.add(
-                    traversal.ctx.path,
-                    summaryErrorMessage
-                )
+                args.errors.add(args.ctx.path, summaryErrorMessage)
             }
         }
 
@@ -69,7 +66,7 @@ export namespace Union {
                 try {
                     possibleValues.push(node.generate(args))
                 } catch (error) {
-                    if (error instanceof Common.UngeneratableError) {
+                    if (error instanceof Common.Generate.UngeneratableError) {
                         generationErrors.push(error.message)
                     } else {
                         throw error
@@ -77,10 +74,10 @@ export namespace Union {
                 }
             }
             if (!possibleValues.length) {
-                throw new Common.UngeneratableError(
+                throw new Common.Generate.UngeneratableError(
                     this.def,
                     "None of the definitions can be generated" +
-                        (args.ctx.config.verbose
+                        (args.cfg.verbose
                             ? `:\n${generationErrors.join("\n")}`
                             : ".")
                 )

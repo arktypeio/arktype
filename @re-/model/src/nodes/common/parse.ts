@@ -26,13 +26,15 @@ export namespace Parser {
         resolutions: ResolutionMap
         path: string
         stringRoot: string | null
+        eager: boolean
     }
 
     export const createContext = (resolutions: ResolutionMap = {}): Context => {
         return {
             resolutions,
             path: "",
-            stringRoot: null
+            stringRoot: null,
+            eager: false
         }
     }
 

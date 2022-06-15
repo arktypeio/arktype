@@ -1,4 +1,4 @@
-import { Common, Leaf } from "#common"
+import { Common } from "#common"
 
 export namespace Literal {
     export type Definition = number | bigint | boolean | undefined | null
@@ -10,8 +10,8 @@ export namespace Literal {
         typeof def === "number" ||
         typeof def === "bigint"
 
-    export class Node extends Leaf<Definition> {
-        allows(args: Common.AllowsArgs) {
+    export class Node extends Common.Leaf<Definition> {
+        allows(args: Common.Allows.Args) {
             if (args.value !== this.def) {
                 this.addUnassignable(args)
             }

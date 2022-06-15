@@ -211,7 +211,7 @@ export namespace Constraint {
         allows(args: Common.Allows.Args) {
             const { bounded, ...bounds } = this.next()
             if (!bounded.handler.validate(args.value, this.ctx)) {
-                args.errors.set(
+                args.errors.add(
                     args.ctx.path,
                     `${Common.stringifyValue(
                         args.value
@@ -232,15 +232,14 @@ export namespace Constraint {
                     bound
                 )
                 if (boundError) {
-                    args.errors.set()
-                    this.addCustomUnassignable(args, boundError)
+                    args.errors.add(args.ctx.path, boundError)
                     return
                 }
             }
         }
 
         generate() {
-            throw new Common.UngeneratableError(
+            throw new Common.Generate.UngeneratableError(
                 this.def,
                 "Constraint generation is unsupported."
             )

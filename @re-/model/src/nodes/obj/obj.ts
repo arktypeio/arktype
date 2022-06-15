@@ -21,7 +21,7 @@ export namespace Obj {
     export const matches = (def: unknown): def is object =>
         !!def && typeof def === "object"
 
-    export const parse: Common.Parser<object> = (def, ctx) => {
+    export const parse: Common.Parser.Parser<object> = (def, ctx) => {
         if (Regex.matches(def)) {
             return new Regex.Node(def, ctx)
         }

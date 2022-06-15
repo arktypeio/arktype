@@ -7,35 +7,36 @@ export namespace Traverse {
         shallowSeen: string[]
     }
 
-    export const createContext = <Extensions>(
-        extensions: Extensions
-    ): Context & Extensions => {
+    export const createContext = (): Context => {
         return {
             path: "",
             seen: [],
-            shallowSeen: [],
-            ...extensions
+            shallowSeen: []
         }
     }
 
-    export abstract class Traversal<Ctx extends Context, Cfg> {
-        private ctxStack: Ctx[]
-        constructor(ctx: Ctx, public readonly cfg: Cfg) {
-            this.ctxStack = [ctx]
-        }
+    // export abstract class Traversal<Cfg> {
+    //     private ctxStack: Context[]
 
-        get ctx() {
-            return this.ctxStack.at(-1)!
-        }
+    //     constructor(public readonly cfg: Cfg) {
+    //         this.ctxStack = [
+    //             {
+    //                 path: "",
+    //                 seen: [],
+    //                 shallowSeen: []
+    //             }
+    //         ]
+    //     }
 
-        visit(node: Parser.Node, ctxUpdates?: Partial<Ctx>) {
-            if (ctxUpdates) {
-                this.ctxStack.push({ ...this.ctx, ...ctxUpdates })
-            }
-            this.onVisit(node)
-            return this.ctxStack.pop()
-        }
+    //     get ctx() {
+    //         return this.ctxStack.at(-1)!
+    //     }
 
-        abstract onVisit(node: Parser.Node): unknown
-    }
+    //     visit(node: Parser.Node, ctxUpdates?: Partial<Context>) {
+    //         if (ctxUpdates) {
+    //             this.ctxStack.push({ ...this.ctx, ...ctxUpdates })
+    //         }
+    //         return this.ctxStack.pop()
+    //     }
+    // }
 }

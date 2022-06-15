@@ -1,4 +1,3 @@
-import { Parser } from "../parse.js"
 import { stringifyDef, stringifyValue } from "../utils.js"
 import { Traverse } from "./traverse.js"
 
@@ -34,19 +33,19 @@ export namespace Allows {
         value: unknown
     ) => `${stringifyValue(value)} is not assignable to ${stringifyDef(def)}.`
 
-    // export const getErrorsFromCustomValidator = (
-    //     validator: CustomValidator,
-    //     args: CustomValidatorArgs
-    // ): ErrorTree => {
-    //     const customErrors = validator(args)
-    //     if (!customErrors) {
-    //         return {}
-    //     }
-    //     if (typeof customErrors === "string") {
-    //         return { [args.path]: customErrors }
-    //     }
-    //     return customErrors
-    // }
+    export const getErrorsFromCustomValidator = (
+        validator: CustomValidator,
+        args: CustomValidatorArgs
+    ): ErrorTree => {
+        const customErrors = validator(args)
+        if (!customErrors) {
+            return {}
+        }
+        if (typeof customErrors === "string") {
+            return { [args.path]: customErrors }
+        }
+        return customErrors
+    }
 
     export type ErrorsByPath = Record<string, string>
 
@@ -89,8 +88,24 @@ export namespace Allows {
             return Object.keys(this.errors).length
         }
 
+        isEmpty() {
+            return this.count === 0
+        }
+
         add(path: string, message: string) {
             this.errors[path] = message
+        }
+
+        has(path: string) {
+            return path in this.errors
+        }
+
+        get(path: string) {
+            return this.errors[path]
+        }
+
+        all() {
+            return this.errors
         }
 
         split(path: string) {
@@ -117,59 +132,47 @@ export namespace Allows {
         }
     }
 
+    export const createArgs = (value: unknown, options?: Options) => ({
+        value,
+        errors: new ErrorTree(),
+        ctx: Traverse.createContext(),
+        cfg: options ?? {}
+    })
+
     export type Config = Options
 
-    export type Context = Traverse.Context & {
-        errors: ErrorTree
-        value: unknown
-    }
-
-    export class Traversal extends Traverse.Traversal<Context, Config> {
-        constructor(value: unknown, options?: Options) {
-            super(
-                Traverse.createContext({ value, errors: new ErrorTree() }),
-                options ?? {}
-            )
-        }
-
-        addUnassignable(def: unknown, args: Allows.Args) {
-            this.ctx.errors.add(
-                this.ctx.path,
-                `${stringifyValue(
-                    args.value
-                )} is not assignable to ${stringifyDef(def)}.`
-            )
-        }
-
-        onVisit(node: Parser.Node) {
-            node.allows(this)
-        }
-    }
+    // export class Traversal extends Traverse.Traversal<Config> {
+    //     errors: ErrorTree
+    //     constructor(options?: Options) {
+    //         super(options ?? {})
+    //         this.errors = new ErrorTree()
+    //     }
+    // }
 }
 
-export class PathMap<T> extends Map<string, T> {
-    getUnder(path: string) {
-        const results: Record<string, T> = {}
-        for (const [pathToCheck, data] of this.entries()) {
-            if (pathToCheck.startsWith(path)) {
-                results[path] = data
-            }
-        }
-        return results
-    }
+// export class PathMap<T> extends Map<string, T> {
+//     getUnder(path: string) {
+//         const results: Record<string, T> = {}
+//         for (const [pathToCheck, data] of this.entries()) {
+//             if (pathToCheck.startsWith(path)) {
+//                 results[path] = data
+//             }
+//         }
+//         return results
+//     }
 
-    deleteUnder(path: string) {
-        for (const k of this.keys()) {
-            if (k.startsWith(path)) {
-                this.delete(k)
-            }
-        }
-    }
+//     deleteUnder(path: string) {
+//         for (const k of this.keys()) {
+//             if (k.startsWith(path)) {
+//                 this.delete(k)
+//             }
+//         }
+//     }
 
-    setUnder(path: string, dataByRelativePath: Record<string, T>) {
-        this.deleteUnder(path)
-        for (const [pathToSet, data] of Object.entries(dataByRelativePath)) {
-            this.set(pathToSet, data)
-        }
-    }
-}
+//     setUnder(path: string, dataByRelativePath: Record<string, T>) {
+//         this.deleteUnder(path)
+//         for (const [pathToSet, data] of Object.entries(dataByRelativePath)) {
+//             this.set(pathToSet, data)
+//         }
+//     }
+// }

@@ -1,6 +1,6 @@
 import { deepMerge, Entry } from "@re-/tools"
 import { Root } from "../root.js"
-import { Branch, Common } from "#common"
+import { Common } from "#common"
 
 export namespace Tuple {
     export type Definition = unknown[] | readonly unknown[]
@@ -11,27 +11,27 @@ export namespace Tuple {
     export const matches = (def: object): def is Definition =>
         Array.isArray(def)
 
-    type ParseResult = Entry<number, Common.Node>[]
+    type ParseResult = Entry<number, Common.Parser.Node>[]
 
-    export class Node extends Branch<Definition, ParseResult> {
+    export class Node extends Common.Branch<Definition, ParseResult> {
         parse() {
             return this.def.map((elementDef, elementIndex) => [
                 elementIndex,
                 Root.parse(elementDef, {
                     ...this.ctx,
-                    parsePath: Common.pathAdd(this.ctx.path, elementIndex)
+                    path: Common.pathAdd(this.ctx.path, elementIndex)
                 })
             ]) as ParseResult
         }
 
-        allows(args: Common.AllowsArgs) {
+        allows(args: Common.Allows.Args) {
             if (!Array.isArray(args.value)) {
                 this.addUnassignable(args)
                 return
             }
             if (this.def.length !== args.value.length) {
-                this.addCustomUnassignable(
-                    args,
+                args.errors.add(
+                    args.ctx.path,
                     lengthError(this.def, args.value)
                 )
                 return
@@ -41,20 +41,20 @@ export namespace Tuple {
                     ...args,
                     value: args.value[i],
                     ctx: deepMerge(args.ctx, {
-                        valuePath: Common.pathAdd(args.ctx.valuePath, i)
+                        valuePath: Common.pathAdd(args.ctx.path, i)
                     })
                 })
             }
         }
 
-        generate(args: Common.GenerateArgs) {
+        generate(args: Common.Generate.Args) {
             const result: unknown[] = []
             for (const [i, node] of this.next()) {
                 result.push(
                     node.generate({
                         ...args,
                         ctx: deepMerge(args.ctx, {
-                            valuePath: Common.pathAdd(args.ctx.valuePath, i)
+                            path: Common.pathAdd(args.ctx.path, i)
                         })
                     })
                 )

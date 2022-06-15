@@ -1,5 +1,5 @@
 import { isAlpha, isAlphaNumeric } from "@re-/tools"
-import { Allows, Leaf } from "#common"
+import { Common } from "#common"
 
 type KeywordHandlerMap = Record<string, Keyword.Handler>
 
@@ -51,7 +51,7 @@ const handlers = defineKeywords({
     },
     never: {
         generate: () => {
-            throw new Common.UngeneratableError(
+            throw new Common.Generate.UngeneratableError(
                 "never",
                 "never is ungeneratable by definition."
             )
@@ -154,8 +154,8 @@ export namespace Keyword {
     export type StringOnly = ExtractKeywordsByType<"isString">
 
     export type Handler = {
-        generate: (ctx: Common.ParseContext) => unknown
-        validate: (value: unknown, ctx: Common.ParseContext) => boolean
+        generate: (ctx: Common.Parser.Context) => unknown
+        validate: (value: unknown, ctx: Common.Parser.Context) => boolean
         isString?: true
         isNumber?: true
     }
@@ -178,8 +178,8 @@ export namespace Keyword {
 
     export const matches = (def: string): def is Definition => def in handlers
 
-    export class Node extends Leaf<Definition> {
-        allows(args: Allows.Args) {
+    export class Node extends Common.Leaf<Definition> {
+        allows(args: Common.Allows.Args) {
             if (!handlers[this.def].validate(args.value)) {
                 this.addUnassignable(args)
             }

@@ -19,7 +19,7 @@ export namespace EmbeddedRegex {
 
     export const expressionFrom = (def: Definition<string>) => def.slice(1, -1)
 
-    export const parse: Common.Parser<Definition<string>> = (def, ctx) =>
+    export const parse: Common.Parser.Parser<Definition<string>> = (def, ctx) =>
         new Regex.Node(new RegExp(expressionFrom(def)), ctx)
 }
 
@@ -34,7 +34,7 @@ export namespace EmbeddedNumber {
     export const valueFrom = (def: Definition) =>
         asNumber(def, { assert: true })
 
-    export const parse: Common.Parser<Definition> = (def, ctx) =>
+    export const parse: Common.Parser.Parser<Definition> = (def, ctx) =>
         new Literal.Node(valueFrom(def), ctx)
 }
 
@@ -48,6 +48,6 @@ export namespace EmbeddedBigInt {
 
     export const valueFrom = (def: Definition) => BigInt(def.slice(0, -1))
 
-    export const parse: Common.Parser<Definition> = (def, ctx) =>
+    export const parse: Common.Parser.Parser<Definition> = (def, ctx) =>
         new Literal.Node(valueFrom(def), ctx)
 }

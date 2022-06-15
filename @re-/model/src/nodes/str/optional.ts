@@ -1,5 +1,5 @@
 import { Str } from "./str.js"
-import { Branch, Common } from "#common"
+import { Common } from "#common"
 
 const invalidModifierErrorMessage = `Modifier '?' is only valid at the end of a type definition.`
 
@@ -14,19 +14,19 @@ export namespace Optional {
         Root
     > = `${Child}?` extends Root
         ? Str.Validate<Child, Dict, Root>
-        : Common.ParseErrorMessage<InvalidModifierError>
+        : Common.Parser.ParseErrorMessage<InvalidModifierError>
 
     export const matches = (def: string): def is Definition => def.endsWith("?")
 
-    export class Node extends Branch<Definition> {
+    export class Node extends Common.Branch<Definition> {
         parse() {
             if (this.ctx.stringRoot !== this.def) {
-                throw new Common.ParseError(invalidModifierErrorMessage)
+                throw new Common.Parser.ParseError(invalidModifierErrorMessage)
             }
             return Str.parse(this.def.slice(0, -1), this.ctx)
         }
 
-        allows(args: Common.AllowsArgs) {
+        allows(args: Common.Allows.Args) {
             if (args.value !== undefined) {
                 this.next().allows(args)
             }

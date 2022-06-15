@@ -10,14 +10,14 @@ export namespace Root {
         : Def extends string
         ? Str.Validate<Def, Dict, Def>
         : Def extends BadDefinitionType
-        ? Common.ParseErrorMessage<"Values of type 'function' or 'symbol' are not valid definitions.">
+        ? Common.Parser.ParseErrorMessage<"Values of type 'function' or 'symbol' are not valid definitions.">
         : Def extends Obj.Leaves
         ? Def
         : Def extends object
         ? Obj.Validate<Def, Dict>
         : Def extends Literal.Definition
         ? Def
-        : Common.ParseErrorMessage<Common.UnknownTypeError>
+        : Common.Parser.ParseErrorMessage<Common.Parser.UnknownTypeError>
 
     export type Parse<Def, Dict, Seen> = IsAnyOrUnknown<Def> extends true
         ? Def
@@ -35,7 +35,7 @@ export namespace Root {
 
     export type BadDefinitionType = Function | symbol
 
-    export const parse: Common.Parser<unknown> = (def, ctx) => {
+    export const parse: Common.Parser.Parser<unknown> = (def, ctx) => {
         if (Str.matches(def)) {
             ctx.stringRoot = def
             return Str.parse(def, ctx)
@@ -46,10 +46,10 @@ export namespace Root {
         if (Literal.matches(def)) {
             return new Literal.Node(def, ctx)
         }
-        throw new Common.ParseError(
-            Common.buildParseErrorMessage(
+        throw new Common.Parser.ParseError(
+            Common.Parser.buildParseErrorMessage(
                 def,
-                ctx.parsePath,
+                ctx.path,
                 `is of disallowed type ${typeof def}.`
             )
         )

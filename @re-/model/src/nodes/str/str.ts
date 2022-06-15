@@ -9,11 +9,12 @@ import { StringLiteral } from "./stringLiteral.js"
 import { Union } from "./union.js"
 import { Common } from "#common"
 
-type BinaryValidationResult<Left, Right> = Left extends Common.ParseErrorMessage
-    ? Left
-    : Right extends Common.ParseErrorMessage
-    ? Right
-    : Left
+type BinaryValidationResult<Left, Right> =
+    Left extends Common.Parser.ParseErrorMessage
+        ? Left
+        : Right extends Common.Parser.ParseErrorMessage
+        ? Right
+        : Left
 
 type BinaryValidate<
     Left extends string,
@@ -49,7 +50,7 @@ export namespace Str {
         ? Validate<Child, Dict, Root>
         : Def extends Constraint.Definition
         ? Constraint.Validate<Def, Dict, Root>
-        : Common.ParseErrorMessage<Common.UnknownTypeError<Def>>
+        : Common.Parser.ParseErrorMessage<Common.Parser.UnknownTypeError<Def>>
 
     export type Parse<
         Def extends string,
@@ -83,7 +84,7 @@ export namespace Str {
     export const matches = (def: unknown): def is string =>
         typeof def === "string"
 
-    export const parse: Common.Parser<string> = (def, ctx) => {
+    export const parse: Common.Parser.Parser<string> = (def, ctx) => {
         if (Optional.matches(def)) {
             return new Optional.Node(def, ctx)
         } else if (Keyword.matches(def)) {
@@ -107,10 +108,10 @@ export namespace Str {
         } else if (Constraint.matches(def)) {
             return new Constraint.Node(def, ctx)
         }
-        throw new Common.ParseError(
+        throw new Common.Parser.ParseError(
             `Unable to determine the type of '${Common.stringifyDef(
                 def
-            )}'${Common.stringifyPathContext(ctx.parsePath)}.`
+            )}'${Common.stringifyPathContext(ctx.path)}.`
         )
     }
 }

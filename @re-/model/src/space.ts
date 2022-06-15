@@ -1,7 +1,7 @@
 import { deepMerge, EntriesOf, Evaluate, Merge } from "@re-/tools"
-import { Model, ModelFrom, ModelFunction } from "./model.js"
+import { Model, ModelFrom, ModelFunction, Options } from "./model.js"
 import { Root } from "./nodes/index.js"
-import { Branch, Common } from "#common"
+import { Common } from "#common"
 
 export const compile: CompileFunction = (dictionary, options) =>
     new Space(dictionary, options) as any
@@ -11,8 +11,8 @@ export class Space implements SpaceFrom<any> {
     models: Record<string, Model>
     modelDefinitionEntries: EntriesOf<SpaceDictionary>
     config: SpaceConfig
-    modelConfigs: Record<string, Common.Options>
-    resolutions: Common.ResolutionMap
+    modelConfigs: Record<string, Options>
+    resolutions: Common.Parser.ResolutionMap
 
     constructor(dictionary: SpaceDictionary, options?: SpaceOptions<string>) {
         this.inputs = { dictionary, options }
@@ -30,7 +30,7 @@ export class Space implements SpaceFrom<any> {
             this.resolutions[typeName] = new Resolution(
                 typeName,
                 definition,
-                Common.createRootParseContext(modelConfig, this.resolutions)
+                Common.Parser.createContext(this.resolutions)
             )
             this.models[typeName] = new Model(
                 this.resolutions[typeName],
@@ -39,10 +39,10 @@ export class Space implements SpaceFrom<any> {
         }
     }
 
-    create(def: any, options?: Common.Options) {
+    create(def: any, options?: Options) {
         const root = Root.parse(
             def,
-            Common.createRootParseContext(options, this.resolutions)
+            Common.Parser.createContext(this.resolutions)
         )
         return new Model(root, deepMerge(this.config, options)) as any
     }
@@ -55,15 +55,15 @@ export class Space implements SpaceFrom<any> {
     }
 
     get types() {
-        return Common.chainableNoOp
+        return Common.chainableNoOpProxy
     }
 }
 
-export class Resolution extends Branch<string> {
+export class Resolution extends Common.Branch<string> {
     constructor(
         private aliasDef: string,
         private resolutionDef: unknown,
-        ctx: Common.ParseContext
+        ctx: Common.Parser.Context
     ) {
         super(aliasDef, ctx)
     }
@@ -72,19 +72,19 @@ export class Resolution extends Branch<string> {
         return Root.parse(this.resolutionDef, this.ctx)
     }
 
-    allows(args: Common.AllowsArgs) {
+    allows(args: Common.Allows.Args) {
         this.next().allows(this.nextArgs(args))
         const customValidator =
-            args.ctx.config.validator ?? this.ctx.config.validate?.validator
+            args.cfg.validator ?? this.ctx.config.validate?.validator
         if (customValidator) {
             // Only provide errors that occured starting at the resolution path to its custom validator
-            const defaultErrorsUnderPath: Common.ErrorsByPath =
+            const defaultErrorsUnderPath: Common.Allows.ErrorsByPath =
                 Object.fromEntries(
                     Object.entries(args.errors).filter(([path]) =>
-                        path.startsWith(args.ctx.valuePath)
+                        path.startsWith(args.ctx.path)
                     )
                 )
-            const customErrors = Common.getErrorsFromCustomValidator(
+            const customErrors = Common.Allows.getErrorsFromCustomValidator(
                 customValidator,
                 {
                     ...args,
@@ -100,17 +100,20 @@ export class Resolution extends Branch<string> {
         }
     }
 
-    generate(args: Common.GenerateArgs) {
+    generate(args: Common.Generate.Args) {
         if (args.ctx.seen.includes(this.aliasDef)) {
-            if (args.ctx.config.onRequiredCycle) {
-                return args.ctx.config.onRequiredCycle
+            if (args.cfg.onRequiredCycle) {
+                return args.cfg.onRequiredCycle
             }
-            throw new Common.RequiredCycleError(this.aliasDef, args.ctx.seen)
+            throw new Common.Generate.RequiredCycleError(
+                this.aliasDef,
+                args.ctx.seen
+            )
         }
         return this.next().generate(this.nextArgs(args))
     }
 
-    private nextArgs<Args extends { ctx: Common.TraversalContext<any> }>(
+    private nextArgs<Args extends { ctx: Common.Traverse.Context }>(
         args: Args
     ): Args {
         return {
@@ -133,8 +136,8 @@ export type DictionaryToModels<Dict> = Evaluate<{
     >
 }>
 
-export interface SpaceOptions<ModelName extends string> extends Common.Options {
-    models?: { [K in ModelName]?: Common.Options }
+export interface SpaceOptions<ModelName extends string> extends Options {
+    models?: { [K in ModelName]?: Options }
 }
 
 type ModelNameIn<Dict> = keyof Dict & string
@@ -142,9 +145,9 @@ type ModelNameIn<Dict> = keyof Dict & string
 interface SpaceExtensionOptions<
     BaseModelName extends string,
     ExtensionModelName extends string
-> extends Common.Options {
+> extends Options {
     models?: {
-        [ModelName in BaseModelName | ExtensionModelName]?: Common.Options
+        [ModelName in BaseModelName | ExtensionModelName]?: Options
     }
 }
 
@@ -211,7 +214,7 @@ const normalizeSpaceInputs = (
         config.onResolve = onResolve
     }
     return {
-        modelConfigs: models as Record<string, Common.Options>,
+        modelConfigs: models as Record<string, Options>,
         modelDefinitionEntries: Object.entries(modelDefinitions),
         config
     }
