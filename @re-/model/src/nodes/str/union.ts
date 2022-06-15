@@ -35,11 +35,12 @@ export namespace Union {
                 .map((member) => Str.parse(member, this.ctx))
         }
 
-        allows(args: Common.Allows.Args) {
-            const unionErrors = args.errors.split(args.ctx.path)
+        allows(traversal: Common.Allows.Traversal) {
+            const unionErrors = traversal.ctx.errors.split(traversal.ctx.path)
             for (const branch of this.next()) {
                 const branchErrors = unionErrors.branch(branch.stringifyDef())
-                branch.allows({ ...args, errors: branchErrors })
+                traversal.visit(branch, { errors: branchErrors })
+                branch.allows(traversal.next({ errors: branchErrors }))
                 if (branchErrors.count === 0) {
                     // If any branch of a Union does not have errors,
                     // we can return right away since the whole definition is valid
@@ -49,12 +50,15 @@ export namespace Union {
             }
             // If we haven't returned, all branches are invalid, so add an error
             const summaryErrorMessage = `${Common.stringifyValue(
-                args.value
+                traversal.ctx.value
             )} is not assignable to any of ${this.stringifyDef()}.`
-            if (args.cfg.verbose) {
+            if (traversal.cfg.verbose) {
                 unionErrors.mergeAll(summaryErrorMessage)
             } else {
-                args.errors.add(args.ctx.path, summaryErrorMessage)
+                traversal.ctx.errors.add(
+                    traversal.ctx.path,
+                    summaryErrorMessage
+                )
             }
         }
 

@@ -31,30 +31,3 @@ export const stringifyValue = (value: unknown) =>
 
 export const stringifyPathContext = (path: string) =>
     path ? ` at path ${path}` : ""
-
-export class PathMap<T> extends Map<string, T> {
-    getUnder(path: string) {
-        const results: Record<string, T> = {}
-        for (const [pathToCheck, data] of this.entries()) {
-            if (pathToCheck.startsWith(path)) {
-                results[path] = data
-            }
-        }
-        return results
-    }
-
-    deleteUnder(path: string) {
-        for (const k of this.keys()) {
-            if (k.startsWith(path)) {
-                this.delete(k)
-            }
-        }
-    }
-
-    setUnder(path: string, dataByRelativePath: Record<string, T>) {
-        this.deleteUnder(path)
-        for (const [pathToSet, data] of Object.entries(dataByRelativePath)) {
-            this.set(pathToSet, data)
-        }
-    }
-}

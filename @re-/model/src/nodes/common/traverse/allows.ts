@@ -1,3 +1,4 @@
+import { Parser } from "../parse.js"
 import { stringifyDef, stringifyValue } from "../utils.js"
 import { Traverse } from "./traverse.js"
 
@@ -19,10 +20,6 @@ export namespace Allows {
         path: string
     }
 
-    export type Context = Traverse.Context
-
-    export type Config = Options
-
     export type Args = {
         value: unknown
         errors: ErrorTree
@@ -37,19 +34,19 @@ export namespace Allows {
         value: unknown
     ) => `${stringifyValue(value)} is not assignable to ${stringifyDef(def)}.`
 
-    export const getErrorsFromCustomValidator = (
-        validator: CustomValidator,
-        args: CustomValidatorArgs
-    ): ErrorTree => {
-        const customErrors = validator(args)
-        if (!customErrors) {
-            return {}
-        }
-        if (typeof customErrors === "string") {
-            return { [args.path]: customErrors }
-        }
-        return customErrors
-    }
+    // export const getErrorsFromCustomValidator = (
+    //     validator: CustomValidator,
+    //     args: CustomValidatorArgs
+    // ): ErrorTree => {
+    //     const customErrors = validator(args)
+    //     if (!customErrors) {
+    //         return {}
+    //     }
+    //     if (typeof customErrors === "string") {
+    //         return { [args.path]: customErrors }
+    //     }
+    //     return customErrors
+    // }
 
     export type ErrorsByPath = Record<string, string>
 
@@ -120,20 +117,59 @@ export namespace Allows {
         }
     }
 
-    export class Traversal extends Traverse.Traversal<Config> {
-        private errors: ErrorTree
-        constructor(options?: Options) {
-            super(options ?? {})
-            this.errors = new ErrorTree()
+    export type Config = Options
+
+    export type Context = Traverse.Context & {
+        errors: ErrorTree
+        value: unknown
+    }
+
+    export class Traversal extends Traverse.Traversal<Context, Config> {
+        constructor(value: unknown, options?: Options) {
+            super(
+                Traverse.createContext({ value, errors: new ErrorTree() }),
+                options ?? {}
+            )
         }
 
         addUnassignable(def: unknown, args: Allows.Args) {
-            this.errors.set(
+            this.ctx.errors.add(
                 this.ctx.path,
                 `${stringifyValue(
                     args.value
                 )} is not assignable to ${stringifyDef(def)}.`
             )
+        }
+
+        onVisit(node: Parser.Node) {
+            node.allows(this)
+        }
+    }
+}
+
+export class PathMap<T> extends Map<string, T> {
+    getUnder(path: string) {
+        const results: Record<string, T> = {}
+        for (const [pathToCheck, data] of this.entries()) {
+            if (pathToCheck.startsWith(path)) {
+                results[path] = data
+            }
+        }
+        return results
+    }
+
+    deleteUnder(path: string) {
+        for (const k of this.keys()) {
+            if (k.startsWith(path)) {
+                this.delete(k)
+            }
+        }
+    }
+
+    setUnder(path: string, dataByRelativePath: Record<string, T>) {
+        this.deleteUnder(path)
+        for (const [pathToSet, data] of Object.entries(dataByRelativePath)) {
+            this.set(pathToSet, data)
         }
     }
 }

@@ -5,7 +5,7 @@ import { stringifyDef } from "../utils.js"
 export abstract class Base<DefType> {
     constructor(public def: DefType, public ctx: Parser.Context) {}
 
-    abstract allows(args: Allows.Args): void
+    abstract allows(args: Allows.Traversal): void
     abstract generate(args: Generate.Args): unknown
 
     stringifyDef() {
