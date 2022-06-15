@@ -13,7 +13,10 @@ export namespace Traverse {
         }
     }
 
-    export class Traversal<Ctx extends Context, Cfg> {
-        constructor(public ctx: Ctx, public readonly cfg: Cfg) {}
+    export class Traversal<Cfg> {
+        ctx: Context
+        constructor(public readonly cfg: Cfg) {
+            this.ctx = createContext()
+        }
     }
 }

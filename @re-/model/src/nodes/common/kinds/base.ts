@@ -8,7 +8,7 @@ export abstract class Base<DefType> {
     abstract allows(args: Allows.Args): void
     abstract generate(args: Generate.Args): unknown
 
-    protected stringifyDef() {
+    stringifyDef() {
         return stringifyDef(this.def)
     }
 }

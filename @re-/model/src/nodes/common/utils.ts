@@ -58,22 +58,3 @@ export class PathMap<T> extends Map<string, T> {
         }
     }
 }
-
-export class ErrorsByPath extends PathMap<string> {
-    toString() {
-        let formattedMessage = ""
-        if (this.size === 1) {
-            const [path, message] = this.entries()
-            if (path) {
-                formattedMessage += `At path ${path}, `
-            }
-            formattedMessage += message
-        } else if (this.size > 1) {
-            formattedMessage += "Encountered errors at the following paths:\n"
-            for (const [path, message] of this.entries()) {
-                formattedMessage += `  ${path}: ${message}\n`
-            }
-        }
-        return formattedMessage
-    }
-}
