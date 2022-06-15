@@ -1,4 +1,3 @@
-import { Parser } from "../parse.js"
 import { stringifyDef, stringifyValue } from "../utils.js"
 import { Traverse } from "./traverse.js"
 
@@ -11,7 +10,7 @@ export namespace Allows {
 
     export type CustomValidator = (
         args: CustomValidatorArgs
-    ) => undefined | string | ErrorsByPath
+    ) => undefined | string | ErrorTree
 
     export type CustomValidatorArgs = {
         def: unknown
@@ -26,7 +25,7 @@ export namespace Allows {
 
     export type Args = {
         value: unknown
-        errors: ErrorsByPath
+        errors: ErrorTree
         cfg: Config
         ctx: Traverse.Context
     }
@@ -41,7 +40,7 @@ export namespace Allows {
     export const getErrorsFromCustomValidator = (
         validator: CustomValidator,
         args: CustomValidatorArgs
-    ): ErrorsByPath => {
+    ): ErrorTree => {
         const customErrors = validator(args)
         if (!customErrors) {
             return {}
@@ -52,54 +51,53 @@ export namespace Allows {
         return customErrors
     }
 
-    export class PathMap<T> extends Map<string, T> {}
+    export type ErrorsByPath = Record<string, string>
 
-    export type ErrorTree = Record<
-        string,
-        { message?: string; branches?: Record<string, ErrorsByPath> }
-    >
+    export class ErrorBrancher {
+        private branches: Record<string, ErrorTree> = {}
 
-    export class ErrorsByBranch {
-        private branches: Record<string, ErrorsByPath>
+        constructor(private parent: ErrorsByPath, private path: string) {}
 
         branch(name: string) {
-            {
-                branchRoot.branches[name] = errorBranch
+            const branchErrors = new ErrorTree()
+            this.branches[name] = branchErrors
+            return branchErrors
+        }
+
+        prune(name: string) {
+            delete this.branches[name]
+        }
+
+        pruneAll() {
+            delete this.parent[this.path]
+        }
+
+        merge(name: string) {
+            this.parent[this.path] = this.branches[name].toString()
+        }
+
+        mergeAll(summary: string) {
+            let message = summary
+            for (const [name, errors] of Object.entries(this.branches)) {
+                message += `\n${name}: ${errors.toString()}`
             }
-            return errorBranch
+            this.parent[this.path] = message
         }
     }
 
-    export class ErrorsByPath {
-        private errors: ErrorTree = {}
+    export class ErrorTree {
+        private errors: ErrorsByPath = {}
 
         get count() {
             return Object.keys(this.errors).length
         }
 
-        message(path: string, message: string) {
-            if (!this.errors[path]) {
-                this.errors[path] = { message }
-            } else {
-                this.errors[path].message = message
-            }
+        add(path: string, message: string) {
+            this.errors[path] = message
         }
 
-        branch(path: string, name: string) {
-            const branchRoot = this.errors[path]
-            const errorBranch = new ErrorsByPath()
-            if (!branchRoot) {
-                this.errors[path] = { branches: { [name]: errorBranch } }
-            } else if (!branchRoot.branches) {
-                branchRoot.branches = { [name]: errorBranch }
-            } else {
-                branchRoot.branches[name] = errorBranch
-            }
-            return errorBranch
-        }
-
-        prune(path: string) {
-            delete this.errors[path]
+        split(path: string) {
+            return new ErrorBrancher(this.errors, path)
         }
 
         toString() {
@@ -123,10 +121,10 @@ export namespace Allows {
     }
 
     export class Traversal extends Traverse.Traversal<Config> {
-        private errors: ErrorsByPath
+        private errors: ErrorTree
         constructor(options?: Options) {
             super(options ?? {})
-            this.errors = new ErrorsByPath()
+            this.errors = new ErrorTree()
         }
 
         addUnassignable(def: unknown, args: Allows.Args) {

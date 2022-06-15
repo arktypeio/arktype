@@ -1,5 +1,4 @@
 import { TypeOfResult } from "@re-/tools"
-import { ErrorTree } from "../common/kinds/base.js"
 import { createSplittableMatcher } from "./common.js"
 import { Str } from "./str.js"
 import { Common } from "#common"
@@ -37,30 +36,29 @@ export namespace Union {
         }
 
         allows(args: Common.Allows.Args) {
+            const unionErrors = args.errors.split(args.ctx.path)
             for (const branch of this.next()) {
-                const branchErrors = args.errors.branch(
-                    args.ctx.path,
-                    branch.stringifyDef()
-                )
+                const branchErrors = unionErrors.branch(branch.stringifyDef())
                 branch.allows({ ...args, errors: branchErrors })
                 if (branchErrors.count === 0) {
                     // If any branch of a Union does not have errors,
                     // we can return right away since the whole definition is valid
-                    args.errors.prune(args.ctx.path)
+                    unionErrors.pruneAll()
                     return
                 }
             }
-
-            let errorMessage = `${Common.stringifyValue(
+            // If we haven't returned, all branches are invalid, so add an error
+            const summaryErrorMessage = `${Common.stringifyValue(
                 args.value
             )} is not assignable to any of ${this.stringifyDef()}.`
             if (args.cfg.verbose) {
-                errorMessage += `\n${Common.stringifyErrors(errorsByBranch)}`
+                unionErrors.mergeAll(summaryErrorMessage)
+            } else {
+                args.errors.add(args.ctx.path, summaryErrorMessage)
             }
-            this.addCustomUnassignable(args, errorMessage)
         }
 
-        generate(args: Common.GenerateArgs) {
+        generate(args: Common.Generate.Args) {
             const possibleValues: unknown[] = []
             const generationErrors: string[] = []
             for (const node of this.next()) {
