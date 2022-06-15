@@ -25,6 +25,6 @@ export namespace Alias {
           >
         : Root.Parse<Dict[Def], Dict, Seen & { [K in Def]: true }>
 
-    export const matches = (def: string, ctx: Common.ParseContext) =>
+    export const matches = (def: string, ctx: Common.Parser.Context) =>
         def in ctx.resolutions
 }

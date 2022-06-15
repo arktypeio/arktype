@@ -18,13 +18,16 @@ export const eager: ModelFunction = (definition, options = {}) => {
     return model(definition, options)
 }
 
+export type Options = {
+    parse?: ParseOptions
+    validate?: ValidateOptions
+    generate?: GenerateOptions
+}
+
 export class Model implements AnyModel {
     definition: unknown
 
-    constructor(
-        public root: Common.Node,
-        public config: Common.BaseOptions = {}
-    ) {
+    constructor(public root: Common.Node, public config: Common.Options = {}) {
         this.definition = root.def
     }
 
@@ -111,7 +114,7 @@ export type GenerateFunction<ModeledType> = (
 
 export type ModelFunction<Dict = {}> = <Def>(
     definition: Root.Validate<Def, Dict>,
-    options?: Common.BaseOptions
+    options?: Common.Options
 ) => ModelFrom<Def, Parse<Def, Dict>>
 
 export type ModelFrom<Def, ModeledType> = {

@@ -30,7 +30,7 @@ export namespace Map {
                 prop,
                 Root.parse(propDef, {
                     ...this.ctx,
-                    parsePath: Common.pathAdd(this.ctx.parsePath, prop)
+                    parsePath: Common.pathAdd(this.ctx.path, prop)
                 })
             ]) as ParseResult
         }

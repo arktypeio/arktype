@@ -11,7 +11,7 @@ export class Space implements SpaceFrom<any> {
     models: Record<string, Model>
     modelDefinitionEntries: EntriesOf<SpaceDictionary>
     config: SpaceConfig
-    modelConfigs: Record<string, Common.BaseOptions>
+    modelConfigs: Record<string, Common.Options>
     resolutions: Common.ResolutionMap
 
     constructor(dictionary: SpaceDictionary, options?: SpaceOptions<string>) {
@@ -39,7 +39,7 @@ export class Space implements SpaceFrom<any> {
         }
     }
 
-    create(def: any, options?: Common.BaseOptions) {
+    create(def: any, options?: Common.Options) {
         const root = Root.parse(
             def,
             Common.createRootParseContext(options, this.resolutions)
@@ -110,7 +110,7 @@ export class Resolution extends Branch<string> {
         return this.next().generate(this.nextArgs(args))
     }
 
-    private nextArgs<Args extends { ctx: Common.MethodContext<any> }>(
+    private nextArgs<Args extends { ctx: Common.TraversalContext<any> }>(
         args: Args
     ): Args {
         return {
@@ -133,9 +133,8 @@ export type DictionaryToModels<Dict> = Evaluate<{
     >
 }>
 
-export interface SpaceOptions<ModelName extends string>
-    extends Common.BaseOptions {
-    models?: { [K in ModelName]?: Common.BaseOptions }
+export interface SpaceOptions<ModelName extends string> extends Common.Options {
+    models?: { [K in ModelName]?: Common.Options }
 }
 
 type ModelNameIn<Dict> = keyof Dict & string
@@ -143,9 +142,9 @@ type ModelNameIn<Dict> = keyof Dict & string
 interface SpaceExtensionOptions<
     BaseModelName extends string,
     ExtensionModelName extends string
-> extends Common.BaseOptions {
+> extends Common.Options {
     models?: {
-        [ModelName in BaseModelName | ExtensionModelName]?: Common.BaseOptions
+        [ModelName in BaseModelName | ExtensionModelName]?: Common.Options
     }
 }
 
@@ -212,7 +211,7 @@ const normalizeSpaceInputs = (
         config.onResolve = onResolve
     }
     return {
-        modelConfigs: models as Record<string, Common.BaseOptions>,
+        modelConfigs: models as Record<string, Common.Options>,
         modelDefinitionEntries: Object.entries(modelDefinitions),
         config
     }

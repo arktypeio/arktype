@@ -19,7 +19,7 @@ export namespace Tuple {
                 elementIndex,
                 Root.parse(elementDef, {
                     ...this.ctx,
-                    parsePath: Common.pathAdd(this.ctx.parsePath, elementIndex)
+                    parsePath: Common.pathAdd(this.ctx.path, elementIndex)
                 })
             ]) as ParseResult
         }

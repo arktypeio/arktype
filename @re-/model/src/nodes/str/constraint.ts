@@ -2,7 +2,7 @@ import { Spliterate } from "@re-/tools"
 import { EmbeddedNumber } from "./embedded.js"
 import { Keyword } from "./keyword.js"
 import { Str } from "./str.js"
-import { Branch, Common } from "#common"
+import { Common } from "#common"
 
 type BoundableKeyword = Keyword.NumberOnly | Keyword.StringOnly
 
@@ -84,7 +84,7 @@ export namespace Constraint {
         Dict,
         Ctx,
         Bounded extends string = ExtractBounded<Def>
-    > = Bounded extends Common.ParseErrorMessage
+    > = Bounded extends Common.Parser.ParseErrorMessage
         ? Bounded
         : Str.Parse<Bounded, Dict, Ctx>
 
@@ -93,7 +93,7 @@ export namespace Constraint {
         Dict,
         Root,
         Bounded extends string = ExtractBounded<Def>
-    > = Bounded extends Common.ParseErrorMessage
+    > = Bounded extends Common.Parser.ParseErrorMessage
         ? Bounded
         : Str.Validate<Bounded, Dict, Root>
 
@@ -125,9 +125,9 @@ export namespace Constraint {
             ? Left extends EmbeddedNumber.Definition
                 ? Right extends EmbeddedNumber.Definition
                     ? Middle
-                    : Common.ParseErrorMessage<InvalidBoundError<Right>>
-                : Common.ParseErrorMessage<InvalidBoundError<Left>>
-            : Common.ParseErrorMessage<UnboundableError<Middle>>
+                    : Common.Parser.ParseErrorMessage<InvalidBoundError<Right>>
+                : Common.Parser.ParseErrorMessage<InvalidBoundError<Left>>
+            : Common.Parser.ParseErrorMessage<UnboundableError<Middle>>
         : Parts extends SingleBoundedParts<
               infer Left,
               ComparatorToken,
@@ -136,9 +136,9 @@ export namespace Constraint {
         ? Left extends BoundableKeyword
             ? Right extends EmbeddedNumber.Definition
                 ? Left
-                : Common.ParseErrorMessage<InvalidBoundError<Right>>
-            : Common.ParseErrorMessage<UnboundableError<Left>>
-        : Common.ParseErrorMessage<ConstraintError>
+                : Common.Parser.ParseErrorMessage<InvalidBoundError<Right>>
+            : Common.Parser.ParseErrorMessage<UnboundableError<Left>>
+        : Common.Parser.ParseErrorMessage<ConstraintError>
 
     const matcher = /(<=|>=|<|>)/
 
@@ -174,7 +174,7 @@ export namespace Constraint {
         }
     }
 
-    export class Node extends Branch<Definition, ParseResult> {
+    export class Node extends Common.Branch<Definition, ParseResult> {
         parse() {
             // Odd-indexed parts will always be comparators (<=, >=, < or >)
             // We still need to validate even-indexed parts as boundable keywords or number literals
@@ -208,11 +208,11 @@ export namespace Constraint {
             throw new Error(constraintErrorTemplate)
         }
 
-        allows(args: Common.AllowsArgs) {
+        allows(args: Common.Allows.Args) {
             const { bounded, ...bounds } = this.next()
             if (!bounded.handler.validate(args.value, this.ctx)) {
-                this.addCustomUnassignable(
-                    args,
+                args.errors.set(
+                    args.ctx.path,
                     `${Common.stringifyValue(
                         args.value
                     )} is not assignable to ${bounded.keyword}.`
@@ -232,6 +232,7 @@ export namespace Constraint {
                     bound
                 )
                 if (boundError) {
+                    args.errors.set()
                     this.addCustomUnassignable(args, boundError)
                     return
                 }
