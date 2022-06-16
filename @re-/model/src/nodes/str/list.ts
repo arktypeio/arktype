@@ -1,4 +1,3 @@
-import { deepMerge } from "@re-/tools"
 import { Str } from "./str.js"
 import { Common } from "#common"
 
@@ -23,9 +22,10 @@ export namespace List {
                 nextNode.allows({
                     ...args,
                     value: element,
-                    ctx: deepMerge(args.ctx, {
-                        valuePath: Common.pathAdd(args.ctx.path, i)
-                    })
+                    ctx: {
+                        ...args.ctx,
+                        path: Common.pathAdd(args.ctx.path, i)
+                    }
                 })
             }
         }

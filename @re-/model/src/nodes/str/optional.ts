@@ -20,9 +20,9 @@ export namespace Optional {
 
     export class Node extends Common.Branch<Definition> {
         parse() {
-            if (this.ctx.stringRoot !== this.def) {
-                throw new Common.Parser.ParseError(invalidModifierErrorMessage)
-            }
+            // if (this.ctx.stringRoot !== this.def) {
+            //     throw new Common.Parser.ParseError(invalidModifierErrorMessage)
+            // }
             return Str.parse(this.def.slice(0, -1), this.ctx)
         }
 

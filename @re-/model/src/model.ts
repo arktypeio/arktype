@@ -1,5 +1,3 @@
-import { isEmpty } from "@re-/tools"
-import { Allows } from "./nodes/common/common.js"
 import { Root } from "./nodes/index.js"
 import { Common } from "#common"
 
@@ -9,8 +7,11 @@ import { Common } from "#common"
  * @param options {@as ModelConfig?} And that.
  * @returns {@as any} The result.
  */
-export const model: ModelFunction = (definition, options = {}) => {
-    const root = Root.parse(definition, Common.Parser.createContext())
+export const model: ModelFunction = (definition, options) => {
+    const root = Root.parse(
+        definition,
+        Common.Parser.createContext(options?.parse)
+    )
     return new Model(root, options) as any
 }
 
@@ -52,10 +53,7 @@ export class Model implements AnyModel {
     }
 
     generate(options?: Common.Generate.Options) {
-        return this.root.generate({
-            ctx: Common.Traverse.createContext(),
-            cfg: options ?? {}
-        })
+        return this.root.generate(Common.Generate.createArgs(options))
     }
 
     validateByPath(value: unknown, options?: Common.Allows.Options) {

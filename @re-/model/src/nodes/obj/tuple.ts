@@ -1,4 +1,4 @@
-import { deepMerge, Entry } from "@re-/tools"
+import { Entry } from "@re-/tools"
 import { Root } from "../root.js"
 import { Common } from "#common"
 
@@ -40,9 +40,10 @@ export namespace Tuple {
                 node.allows({
                     ...args,
                     value: args.value[i],
-                    ctx: deepMerge(args.ctx, {
-                        valuePath: Common.pathAdd(args.ctx.path, i)
-                    })
+                    ctx: {
+                        ...args.ctx,
+                        path: Common.pathAdd(args.ctx.path, i)
+                    }
                 })
             }
         }
@@ -53,9 +54,10 @@ export namespace Tuple {
                 result.push(
                     node.generate({
                         ...args,
-                        ctx: deepMerge(args.ctx, {
+                        ctx: {
+                            ...args.ctx,
                             path: Common.pathAdd(args.ctx.path, i)
-                        })
+                        }
                     })
                 )
             }

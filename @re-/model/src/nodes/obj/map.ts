@@ -1,4 +1,4 @@
-import { deepMerge, diffSets, Entry, Evaluate } from "@re-/tools"
+import { diffSets, Entry, Evaluate } from "@re-/tools"
 import { Root } from "../root.js"
 import { Optional } from "../str/index.js"
 import { Common } from "#common"
@@ -37,8 +37,8 @@ export namespace Map {
 
         allows(args: Common.Allows.Args) {
             if (
-                !args.value ||
                 typeof args.value !== "object" ||
+                args.value === null ||
                 Array.isArray(args.value)
             ) {
                 this.addUnassignable(args)
@@ -53,9 +53,10 @@ export namespace Map {
                 node.allows({
                     ...args,
                     value: (args.value as any)[prop],
-                    ctx: deepMerge(args.ctx, {
+                    ctx: {
+                        ...args.ctx,
                         path: Common.pathAdd(args.ctx.path, prop)
-                    })
+                    }
                 })
             }
         }
@@ -69,9 +70,10 @@ export namespace Map {
                 }
                 result[prop] = node.generate({
                     ...args,
-                    ctx: deepMerge(args.ctx, {
-                        valuePath: Common.pathAdd(args.ctx.path, prop)
-                    })
+                    ctx: {
+                        ...args.ctx,
+                        path: Common.pathAdd(args.ctx.path, prop)
+                    }
                 })
             }
             return result

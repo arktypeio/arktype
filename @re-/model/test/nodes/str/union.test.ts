@@ -51,21 +51,12 @@ describe("union", () => {
                     g: 3
                 }).models.a.validate(4, { verbose: true }).error
             ).snap(`4 is not assignable to any of b|c.
-Encountered errors at the following paths:
-{
-  b: '4 is not assignable to any of d|e.
-Encountered errors at the following paths:
-{
-  d: '4 is not assignable to 0.',
-  e: '4 is not assignable to 1.'
-}',
-  c: '4 is not assignable to any of f|g.
-Encountered errors at the following paths:
-{
-  f: '4 is not assignable to 2.',
-  g: '4 is not assignable to 3.'
-}'
-}`)
+b: 4 is not assignable to any of d|e.
+d: 4 is not assignable to 0.
+e: 4 is not assignable to 1.
+c: 4 is not assignable to any of f|g.
+f: 4 is not assignable to 2.
+g: 4 is not assignable to 3.`)
         })
         describe("errors", () => {
             it("two types", () => {

@@ -31,11 +31,10 @@ describe("integration", () => {
             it("multiple", () => {
                 assert(mixed.validate([false, { a: [0, [0, 1, 2]] }]).error)
                     .snap(`Encountered errors at the following paths:
-{
-  0: 'false is not assignable to true.',
-  1/a/0: '0 is not assignable to string.',
-  1/a/1: 'Tuple of length 3 is not assignable to tuple of length 1.'
-}`)
+  0: false is not assignable to true.
+  1/a/0: 0 is not assignable to string.
+  1/a/1: Tuple of length 3 is not assignable to tuple of length 1.
+`)
             })
         })
     })

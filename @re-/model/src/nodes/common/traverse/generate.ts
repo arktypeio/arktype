@@ -10,7 +10,7 @@ export namespace Generate {
         verbose?: boolean
     }
 
-    export type Config = Required<Options>
+    export type Config = Options
 
     export type Args = { cfg: Config; ctx: Traverse.Context }
 
@@ -35,4 +35,9 @@ export namespace Generate {
             )
         }
     }
+
+    export const createArgs = (options?: Options): Generate.Args => ({
+        ctx: Traverse.createContext(),
+        cfg: options ?? {}
+    })
 }

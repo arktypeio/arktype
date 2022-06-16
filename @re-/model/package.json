@@ -41,6 +41,7 @@
         "@re-/node": "workspace:*",
         "ts-morph": "15.1.0",
         "remark": "14.0.2",
-        "remark-parse": "10.0.1"
+        "remark-parse": "10.0.1",
+        "zod": "3.17.3"
     }
 }

@@ -19,7 +19,7 @@ export namespace Obj {
         : Map.Parse<Def, Dict, Seen>
 
     export const matches = (def: unknown): def is object =>
-        !!def && typeof def === "object"
+        typeof def === "object" && def !== null
 
     export const parse: Common.Parser.Parser<object> = (def, ctx) => {
         if (Regex.matches(def)) {

@@ -4,18 +4,21 @@ import { compile } from "#src"
 describe("compile", () => {
     it("single", () => {
         assert(compile({ a: "string" }).types.a).typed as string
-        // @ts-expect-error
-        assert(() => compile({ a: "strig" })).throwsAndHasTypeError(
-            "Unable to determine the type of 'strig'."
-        )
+        assert(() =>
+            // @ts-expect-error
+            compile({ a: "strig" }, { parse: { eager: true } })
+        ).throwsAndHasTypeError("Unable to determine the type of 'strig'.")
     })
     it("independent", () => {
         assert(compile({ a: "string", b: { c: "boolean" } }).types.b).typed as {
             c: boolean
         }
         assert(() =>
-            // @ts-expect-error
-            compile({ a: "string", b: { c: "uhoh" } })
+            compile(
+                // @ts-expect-error
+                { a: "string", b: { c: "uhoh" } },
+                { parse: { eager: true } }
+            )
         ).throwsAndHasTypeError("Unable to determine the type of 'uhoh'")
     })
     it("interdependent", () => {
@@ -23,7 +26,7 @@ describe("compile", () => {
             .typed as string
         assert(() =>
             // @ts-expect-error
-            compile({ a: "yikes", b: { c: "a" } })
+            compile({ a: "yikes", b: { c: "a" } }, { parse: { eager: true } })
         ).throwsAndHasTypeError("Unable to determine the type of 'yikes'")
     })
     it("recursive", () => {
@@ -68,8 +71,11 @@ describe("compile", () => {
             "{ b: { a: { b: { a: any; }; }; }; } | { a: { b: { a: { b: any; }; }; }; } | null"
         )
         assert(() =>
-            // @ts-expect-error
-            space.create({ nested: { a: "a", b: "b", c: "c" } })
+            space.create(
+                // @ts-expect-error
+                { nested: { a: "a", b: "b", c: "c" } },
+                { parse: { eager: true } }
+            )
         ).throwsAndHasTypeError("Unable to determine the type of 'c'")
     })
     it("extension", () => {

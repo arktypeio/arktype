@@ -30,7 +30,7 @@ export class Space implements SpaceFrom<any> {
             this.resolutions[typeName] = new Resolution(
                 typeName,
                 definition,
-                Common.Parser.createContext(this.resolutions)
+                Common.Parser.createContext(modelConfig.parse, this.resolutions)
             )
             this.models[typeName] = new Model(
                 this.resolutions[typeName],
@@ -42,7 +42,7 @@ export class Space implements SpaceFrom<any> {
     create(def: any, options?: Options) {
         const root = Root.parse(
             def,
-            Common.Parser.createContext(this.resolutions)
+            Common.Parser.createContext(options?.parse, this.resolutions)
         )
         return new Model(root, deepMerge(this.config, options)) as any
     }
@@ -73,30 +73,26 @@ export class Resolution extends Common.Branch<string> {
     }
 
     allows(args: Common.Allows.Args) {
-        this.next().allows(this.nextArgs(args))
-        const customValidator =
-            args.cfg.validator ?? this.ctx.config.validate?.validator
+        const customValidator = args.cfg.validator //?? this.ctx.config.validate?.validator
         if (customValidator) {
-            // Only provide errors that occured starting at the resolution path to its custom validator
-            const defaultErrorsUnderPath: Common.Allows.ErrorsByPath =
-                Object.fromEntries(
-                    Object.entries(args.errors).filter(([path]) =>
-                        path.startsWith(args.ctx.path)
-                    )
-                )
             const customErrors = Common.Allows.getErrorsFromCustomValidator(
                 customValidator,
                 {
-                    ...args,
-                    errors: defaultErrorsUnderPath,
-                    def: this.def
+                    value: args.value,
+                    def: this.def,
+                    path: args.ctx.path,
+                    getOriginalErrors: () => {
+                        const originalErrors = new Common.Allows.ErrorTree()
+                        const allowsArgs = this.nextArgs(args)
+                        allowsArgs.errors = originalErrors
+                        this.next().allows(this.nextArgs(allowsArgs))
+                        return allowsArgs.errors.all()
+                    }
                 }
             )
-            // Remove the original errors under this validation path
-            for (const path in defaultErrorsUnderPath) {
-                delete args.errors[path]
-            }
-            Object.assign(args.errors, customErrors)
+            args.errors.assign(customErrors)
+        } else {
+            this.next().allows(this.nextArgs(args))
         }
     }
 

@@ -166,11 +166,10 @@ describe("map", () => {
                             e: { f: 0n }
                         }).error
                     ).snap(`Encountered errors at the following paths:
-{
-  a: 'Required keys 'b' were missing.',
-  c: 'Keys 'y' were unexpected.',
-  e/f: '0n is not assignable to object.'
-}`)
+  a: Required keys 'b' were missing.
+  c: Keys 'y' were unexpected.
+  e/f: 0n is not assignable to object.
+`)
                 })
             })
         })

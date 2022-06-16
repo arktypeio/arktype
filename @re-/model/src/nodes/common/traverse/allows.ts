@@ -1,3 +1,4 @@
+import { isDigits, uncapitalize } from "@re-/tools"
 import { stringifyDef, stringifyValue } from "../utils.js"
 import { Traverse } from "./traverse.js"
 
@@ -10,7 +11,7 @@ export namespace Allows {
 
     export type CustomValidator = (
         args: CustomValidatorArgs
-    ) => undefined | string | ErrorTree
+    ) => undefined | string | ErrorsByPath
 
     export type CustomValidatorArgs = {
         def: unknown
@@ -36,7 +37,7 @@ export namespace Allows {
     export const getErrorsFromCustomValidator = (
         validator: CustomValidator,
         args: CustomValidatorArgs
-    ): ErrorTree => {
+    ): ErrorsByPath => {
         const customErrors = validator(args)
         if (!customErrors) {
             return {}
@@ -96,6 +97,10 @@ export namespace Allows {
             this.errors[path] = message
         }
 
+        assign(errors: ErrorsByPath) {
+            Object.assign(this.errors, errors)
+        }
+
         has(path: string) {
             return path in this.errors
         }
@@ -113,26 +118,33 @@ export namespace Allows {
         }
 
         toString() {
-            let formattedMessage = ""
+            if (this.isEmpty()) {
+                return ""
+            }
             const entries = Object.entries(this.errors)
             if (entries.length === 1) {
                 const [path, message] = entries[0]
                 if (path) {
-                    formattedMessage += `At path ${path}, `
+                    return `At ${
+                        isDigits(path) ? "index" : "path"
+                    } ${path}, ${uncapitalize(message)}`
                 }
-                formattedMessage += message
-            } else if (entries.length > 1) {
-                formattedMessage +=
+                return message
+            } else {
+                let aggregatedMessage =
                     "Encountered errors at the following paths:\n"
                 for (const [path, message] of entries) {
-                    formattedMessage += `  ${path}: ${message}\n`
+                    aggregatedMessage += `  ${path}: ${message}\n`
                 }
+                return aggregatedMessage
             }
-            return formattedMessage
         }
     }
 
-    export const createArgs = (value: unknown, options?: Options) => ({
+    export const createArgs = (
+        value: unknown,
+        options?: Options
+    ): Allows.Args => ({
         value,
         errors: new ErrorTree(),
         ctx: Traverse.createContext(),
@@ -140,39 +152,4 @@ export namespace Allows {
     })
 
     export type Config = Options
-
-    // export class Traversal extends Traverse.Traversal<Config> {
-    //     errors: ErrorTree
-    //     constructor(options?: Options) {
-    //         super(options ?? {})
-    //         this.errors = new ErrorTree()
-    //     }
-    // }
 }
-
-// export class PathMap<T> extends Map<string, T> {
-//     getUnder(path: string) {
-//         const results: Record<string, T> = {}
-//         for (const [pathToCheck, data] of this.entries()) {
-//             if (pathToCheck.startsWith(path)) {
-//                 results[path] = data
-//             }
-//         }
-//         return results
-//     }
-
-//     deleteUnder(path: string) {
-//         for (const k of this.keys()) {
-//             if (k.startsWith(path)) {
-//                 this.delete(k)
-//             }
-//         }
-//     }
-
-//     setUnder(path: string, dataByRelativePath: Record<string, T>) {
-//         this.deleteUnder(path)
-//         for (const [pathToSet, data] of Object.entries(dataByRelativePath)) {
-//             this.set(pathToSet, data)
-//         }
-//     }
-// }

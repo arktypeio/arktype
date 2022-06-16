@@ -114,11 +114,10 @@ describe("tuple", () => {
                             ["Too long"]
                         ]).error
                     ).snap(`Encountered errors at the following paths:
-{
-  0: ''Clock' is not assignable to 'Cuckoo'.',
-  2: 'Tuple of length 1 is not assignable to tuple of length 0.',
-  1/2: ''Gondor' is not assignable to 'Condor'.'
-}`)
+  0: 'Clock' is not assignable to 'Cuckoo'.
+  2: Tuple of length 1 is not assignable to tuple of length 0.
+  1/2: 'Gondor' is not assignable to 'Condor'.
+`)
                 })
             })
         })

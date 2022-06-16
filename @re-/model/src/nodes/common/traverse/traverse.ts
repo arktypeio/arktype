@@ -1,5 +1,3 @@
-import { Parser } from "../parse.js"
-
 export namespace Traverse {
     export type Context = {
         path: string

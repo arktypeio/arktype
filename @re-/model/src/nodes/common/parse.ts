@@ -29,12 +29,16 @@ export namespace Parser {
         eager: boolean
     }
 
-    export const createContext = (resolutions: ResolutionMap = {}): Context => {
+    export const createContext = (
+        options?: Options,
+        resolutions: ResolutionMap = {}
+    ): Context => {
         return {
-            resolutions,
             path: "",
             stringRoot: null,
-            eager: false
+            eager: false,
+            ...options,
+            resolutions
         }
     }
 
