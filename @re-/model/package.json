@@ -25,7 +25,8 @@
         "build": "re tsc",
         "test": "reassert mocha",
         "bench": "pnpm ts-node ./src/__benches__/compileCyclic.bench.ts",
-        "generateBenches": "pnpm ts-node ./scripts/generateBenches.ts"
+        "generateBenches": "pnpm ts-node ./scripts/generateBenches.ts",
+        "replaceTags": "pnpm ts-node ../node/src/reTagToMarkdown.ts"
     },
     "dependencies": {
         "@re-/tools": "workspace:*"
@@ -33,8 +34,6 @@
     "devDependencies": {
         "@re-/assert": "workspace:*",
         "@re-/node": "workspace:*",
-        "ts-morph": "14.0.0",
-        "remark": "14.0.2",
-        "remark-parse": "10.0.1"
+        "ts-morph": "14.0.0"
     }
 }

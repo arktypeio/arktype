@@ -40,6 +40,8 @@
     },
     "devDependencies": {
         "@re-/assert": "link:../assert",
-        "@types/prettier": "2.6.1"
+        "@types/prettier": "2.6.1",
+        "remark": "14.0.2",
+        "remark-parse": "10.0.1"
     }
 }

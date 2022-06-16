@@ -1,7 +1,7 @@
-import { model } from "@re-/model"
+import { create } from "@re-/model"
 
 // Most common TypeScript expressions just work...
-export const userModel = model({
+export const userModel = create({
     name: {
         first: "string",
         middle: "string?",
@@ -11,7 +11,6 @@ export const userModel = model({
     browser: "'chrome'|'firefox'|'other'|null"
 })
 
-//@re_place createModelDemo.ts taggedThing
 // Mouse over "User" to see the inferred type...
 export type User = typeof userModel.type
 
@@ -24,8 +23,6 @@ export const userData = {
     age: 28,
     browser: "Internet Explorer" // :(
 }
-
 export const userValidationResult = userModel.validate(userData)
-// Try changing "userModel" or "userData" and see what happens!
 
-//@re_place createModelDemo.ts
+// Try changing "userModel" or "userData" and see what happens!
