@@ -56,7 +56,9 @@ if (runner === "node") {
     runTestsCmd += `node ${runnerBinPath} `
 }
 
-const runnerArgs = process.argv.slice(runnerArgIndex + 2).join(" ")
+let runnerArgs = process.argv.slice(runnerArgIndex + 2).join(" ")
+
+let skipTypes = runnerArgs.includes("--skipTypes")
 
 runTestsCmd += runnerArgs
 
@@ -64,13 +66,19 @@ runTestsCmd += runnerArgs
 let exitCode = 1
 
 try {
-    console.log(`⏳ @re-/assert: Analyzing type assertions...`)
-    const cacheStart = Date.now()
-    cacheAssertions({ forcePrecache: true })
-    const cacheSeconds = (Date.now() - cacheStart) / 1000
-    console.log(
-        `✅ @re-/assert: Finished caching type assertions in ${cacheSeconds} seconds.\n`
-    )
+    if (skipTypes) {
+        console.log(
+            "✅ Skipping type assertions because --skipTypes was passed."
+        )
+    } else {
+        console.log(`⏳ @re-/assert: Analyzing type assertions...`)
+        const cacheStart = Date.now()
+        cacheAssertions({ forcePrecache: true })
+        const cacheSeconds = (Date.now() - cacheStart) / 1000
+        console.log(
+            `✅ @re-/assert: Finished caching type assertions in ${cacheSeconds} seconds.\n`
+        )
+    }
     console.log(`⏳ @re-/assert: Using ${runner} to run your tests...`)
     const runnerStart = Date.now()
     exitCode = shell(runTestsCmd, {

@@ -10,11 +10,7 @@ import {
 } from "@re-/tools"
 import { AssertionContext } from "../assert.js"
 import { literalSerialize, SourcePosition } from "../common.js"
-import {
-    getAssertionData,
-    TypeAssertions,
-    typeAssertions
-} from "../type/index.js"
+import { getAssertionData, TypeAssertions } from "../type/index.js"
 import {
     getSnapshotByName,
     queueInlineSnapshotWriteOnProcessExit,
@@ -35,9 +31,7 @@ export type ChainableValueAssertion<
         (IsReturn extends true ? NextAssertions<AllowTypeAssertions> : {})
 > = (<Args extends ArgsType | [] = []>(
     ...args: Args
-) => Args extends []
-    ? ImmediateAssertions
-    : NextAssertions<AllowTypeAssertions>) &
+) => NextAssertions<AllowTypeAssertions>) &
     ImmediateAssertions
 
 export type ChainableAssertionOptions = {
@@ -53,20 +47,6 @@ export const chainableAssertion = (
 ) =>
     new Proxy(
         (...args: [expected: unknown]) => {
-            if (!args.length) {
-                const baseAssertions = valueAssertions(
-                    position,
-                    valueThunk(),
-                    config
-                )
-                if (isReturn) {
-                    return Object.assign(
-                        baseAssertions,
-                        getNextAssertions(position, config)
-                    )
-                }
-                return baseAssertions
-            }
             defaultAssert(valueThunk(), args[0], allowRegex)
             return getNextAssertions(position, config)
         },
@@ -81,10 +61,10 @@ export const chainableAssertion = (
                     config
                 )
                 if (isReturn) {
-                    return Object.assign(
-                        baseAssertions,
-                        getNextAssertions(position, config)
-                    )[prop]
+                    const nextAssertions = getNextAssertions(position, config)
+                    if (prop in nextAssertions) {
+                        return (nextAssertions as any)[prop]
+                    }
                 }
                 return baseAssertions[prop]
             }
@@ -245,7 +225,7 @@ export const runAssertionFunction = (
 export const getNextAssertions = (
     position: SourcePosition,
     ctx: AssertionContext
-) => (ctx.allowTypeAssertions ? typeAssertions(position, ctx) : {})
+) => (ctx.allowTypeAssertions ? new TypeAssertions(position, ctx) : {})
 
 export const valueAssertions = <T>(
     position: SourcePosition,
@@ -284,7 +264,7 @@ export const valueAssertions = <T>(
                 { allowRegex: true }
             )
         }
-        if (ctx["allowTypeAssertions"]) {
+        if (ctx.allowTypeAssertions) {
             // @ts-ignore
             functionAssertions.throwsAndHasTypeError = (
                 matchValue: string | RegExp
@@ -294,11 +274,13 @@ export const valueAssertions = <T>(
                     matchValue,
                     true
                 )
-                defaultAssert(
-                    getAssertionData(position).errors,
-                    matchValue,
-                    true
-                )
+                if (!ctx.config.skipTypes) {
+                    defaultAssert(
+                        getAssertionData(position).errors,
+                        matchValue,
+                        true
+                    )
+                }
             }
         }
         return functionAssertions
@@ -364,19 +346,21 @@ export const valueAssertions = <T>(
             }
         })
     } as any
-    if (ctx["allowTypeAssertions"]) {
+    if (ctx.allowTypeAssertions) {
         return {
             ...baseAssertions,
             typedValue: (expectedValue: unknown) => {
                 defaultAssert(actual, expectedValue)
-                const typeData = getAssertionData(position)
-                if (!typeData.type.expected) {
-                    throw new Error(
-                        `Expected an 'as' expression after 'typed' prop access at position ${position.char} on` +
-                            `line ${position.line} of ${position.file}.`
-                    )
+                if (!ctx.config.skipTypes) {
+                    const typeData = getAssertionData(position)
+                    if (!typeData.type.expected) {
+                        throw new Error(
+                            `Expected an 'as' expression after 'typed' prop access at position ${position.char} on` +
+                                `line ${position.line} of ${position.file}.`
+                        )
+                    }
+                    defaultAssert(typeData.type.actual, typeData.type.expected)
                 }
-                defaultAssert(typeData.type.actual, typeData.type.expected)
             }
         }
     }

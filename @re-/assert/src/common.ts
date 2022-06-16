@@ -23,6 +23,7 @@ export interface ReAssertConfig extends Required<ReAssertJson> {
     cacheDir: string
     assertionCacheFile: string
     snapCacheDir: string
+    skipTypes: boolean
 }
 
 interface ReAssertJson {
@@ -42,6 +43,9 @@ interface ReJson {
 const argsIncludeUpdateFlag = (args: string[]) =>
     args.some((arg) => ["-u", "--update", "--updateSnapshot"].includes(arg))
 
+const argsIncludeSkipTypesFlag = (args: string[]) =>
+    args.includes("--skipTypes")
+
 const checkArgsForMatcher = (args: string[]) => {
     const filterFlagIndex = args.indexOf("--only")
     if (filterFlagIndex === -1) {
@@ -57,10 +61,10 @@ export const literalSerialize = (value: any): any => {
             : transform(value, ([k, v]) => [k, literalSerialize(v)])
     }
     if (typeof value === "symbol") {
-        return `<symbol ${value.description}>`
+        return `<symbol ${value.description ?? "(anonymous)"}>`
     }
     if (typeof value === "function") {
-        return `<function ${value.name}>`
+        return `<function ${value.name ?? "(anonymous)"}>`
     }
     return value
 }
@@ -102,6 +106,7 @@ export const getReAssertConfig = memoize((): ReAssertConfig => {
     ensureDir(snapCacheDir)
     return {
         updateSnapshots: argsIncludeUpdateFlag(argsToCheck),
+        skipTypes: argsIncludeSkipTypesFlag(argsToCheck),
         matcher,
         tsconfig,
         precached,
@@ -118,3 +123,11 @@ export const getReAssertConfig = memoize((): ReAssertConfig => {
 })
 
 export const getFileKey = (path: string) => relative(".", path)
+
+/** This tries to chain arbitrary prop access and function calls without doing anything*/
+export const callableChainableNoOpProxy: any = new Proxy(
+    () => callableChainableNoOpProxy,
+    {
+        get: () => callableChainableNoOpProxy
+    }
+)

@@ -1,6 +1,6 @@
 import { strict } from "node:assert"
 import { AssertionContext } from "../assert.js"
-import { SourcePosition } from "../common.js"
+import { callableChainableNoOpProxy, SourcePosition } from "../common.js"
 import { chainableAssertion, ChainableValueAssertion } from "../value/index.js"
 import { getAssertionData } from "./analysis.js"
 
@@ -9,56 +9,53 @@ export type ValueFromTypeAssertion<
     Chained = Expected
 > = ChainableValueAssertion<[expected: Expected], false, Chained, false>
 
-export type TypeAssertions = {
-    type: {
-        toString: ValueFromTypeAssertion<string>
-        errors: ValueFromTypeAssertion<string | RegExp, string>
-    }
-    typed: unknown
+export type TypeAssertionProps = {
+    toString: ValueFromTypeAssertion<string>
+    errors: ValueFromTypeAssertion<string | RegExp, string>
 }
 
 export type AssertTypeContext = (
     position: SourcePosition,
     config: AssertionContext
-) => TypeAssertions
+) => TypeAssertionProps
 
-export const typeAssertions: AssertTypeContext = (
-    position: SourcePosition,
-    ctx: AssertionContext
-) => {
-    return new Proxy(
-        {
-            type: {
-                toString: chainableAssertion(
-                    position,
-                    () => getAssertionData(position).type.actual,
-                    { ...ctx, allowTypeAssertions: false }
-                ),
-                errors: chainableAssertion(
-                    position,
-                    () => getAssertionData(position).errors,
-                    { ...ctx, allowTypeAssertions: false },
-                    { allowRegex: true }
-                )
-            }
-        },
-        {
-            get: (target, prop) => {
-                if (prop === "typed") {
-                    const assertionData = getAssertionData(position)
-                    if (!assertionData.type.expected) {
-                        throw new Error(
-                            `Expected an 'as' expression after 'typed' prop access at position ${position.char} on ` +
-                                `line ${position.line} of ${position.file}.`
-                        )
-                    }
-                    strict.equal(
-                        assertionData.type.actual,
-                        assertionData.type.expected
-                    )
-                }
-                return (target as any)[prop]
-            }
+export class TypeAssertions {
+    constructor(
+        private position: SourcePosition,
+        private ctx: AssertionContext
+    ) {}
+
+    get type(): TypeAssertionProps {
+        if (this.ctx.config.skipTypes) {
+            return callableChainableNoOpProxy
         }
-    ) as any
+        return {
+            toString: chainableAssertion(
+                this.position,
+                () => getAssertionData(this.position).type.actual,
+                { ...this.ctx, allowTypeAssertions: false }
+            ),
+            errors: chainableAssertion(
+                this.position,
+                () => getAssertionData(this.position).errors,
+                { ...this.ctx, allowTypeAssertions: false },
+                { allowRegex: true }
+            )
+        } as TypeAssertionProps
+    }
+
+    get typed(): unknown {
+        if (this.ctx.config.skipTypes) {
+            return callableChainableNoOpProxy
+        }
+        const assertionData = getAssertionData(this.position)
+        if (!assertionData.type.expected) {
+            throw new Error(
+                `Expected an 'as' expression after 'typed' prop access at position ${this.position.char} on ` +
+                    `line ${this.position.line} of ${this.position.file}.`
+            )
+        }
+        strict.equal(assertionData.type.actual, assertionData.type.expected)
+        return undefined
+    }
 }

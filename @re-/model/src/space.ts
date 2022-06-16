@@ -27,8 +27,7 @@ export class Space implements SpaceFrom<any> {
                 this.config,
                 this.modelConfigs[typeName]
             )
-            this.resolutions[typeName] = new Resolution(
-                typeName,
+            this.resolutions[typeName] = Root.parse(
                 definition,
                 Common.Parser.createContext(modelConfig.parse, this.resolutions)
             )
@@ -56,70 +55,6 @@ export class Space implements SpaceFrom<any> {
 
     get types() {
         return Common.chainableNoOpProxy
-    }
-}
-
-export class Resolution extends Common.Branch<string> {
-    constructor(
-        private aliasDef: string,
-        private resolutionDef: unknown,
-        ctx: Common.Parser.Context
-    ) {
-        super(aliasDef, ctx)
-    }
-
-    parse() {
-        return Root.parse(this.resolutionDef, this.ctx)
-    }
-
-    allows(args: Common.Allows.Args) {
-        const customValidator = args.cfg.validator //?? this.ctx.config.validate?.validator
-        if (customValidator) {
-            const customErrors = Common.Allows.getErrorsFromCustomValidator(
-                customValidator,
-                {
-                    value: args.value,
-                    def: this.def,
-                    path: args.ctx.path,
-                    getOriginalErrors: () => {
-                        const originalErrors = new Common.Allows.ErrorTree()
-                        const allowsArgs = this.nextArgs(args)
-                        allowsArgs.errors = originalErrors
-                        this.next().allows(this.nextArgs(allowsArgs))
-                        return allowsArgs.errors.all()
-                    }
-                }
-            )
-            args.errors.assign(customErrors)
-        } else {
-            this.next().allows(this.nextArgs(args))
-        }
-    }
-
-    generate(args: Common.Generate.Args) {
-        if (args.ctx.seen.includes(this.aliasDef)) {
-            if (args.cfg.onRequiredCycle) {
-                return args.cfg.onRequiredCycle
-            }
-            throw new Common.Generate.RequiredCycleError(
-                this.aliasDef,
-                args.ctx.seen
-            )
-        }
-        return this.next().generate(this.nextArgs(args))
-    }
-
-    private nextArgs<Args extends { ctx: Common.Traverse.Context }>(
-        args: Args
-    ): Args {
-        return {
-            ...args,
-            ctx: {
-                ...args.ctx,
-                seen: [...args.ctx.seen, this.aliasDef],
-                shallowSeen: [...args.ctx.shallowSeen, this.aliasDef]
-            }
-        }
     }
 }
 

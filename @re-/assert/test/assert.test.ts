@@ -20,7 +20,6 @@ const throwError = () => {
 describe("assertions", () => {
     it("type toString", () => {
         assert(o).type.toString("{ re: string; }")
-        assert(o).type.toString().is("{ re: string; }")
         assert(o).type.toString.is("{ re: string; }")
     })
     it("typed", () => {
@@ -57,8 +56,7 @@ describe("assertions", () => {
             () =>
                 assert((input: string) => `${input}!`)
                     .args("hi")
-                    .returns.type.toString()
-                    .is("number"),
+                    .returns.type.toString("number"),
             strict.AssertionError,
             "string"
         )
@@ -75,8 +73,7 @@ describe("assertions", () => {
     it("args", () => {
         assert((input: string) => `${input}!`)
             .args("omg")
-            .returns()
-            .is("omg!")
+            .returns.is("omg!")
         strict.throws(
             () =>
                 assert((input: string) => {

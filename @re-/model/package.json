@@ -28,6 +28,7 @@
     "scripts": {
         "build": "re tsc",
         "test": "reassert mocha",
+        "testSkipTypes": "reassert mocha --skipTypes",
         "benchCyclic": "pnpm ts-node ./test/bench/cyclic.bench.ts",
         "generateBenchData": "pnpm ts-node ./scripts/generateBenchData.ts",
         "bench": "pnpm ts-node ./test/bench/parser.bench.ts",

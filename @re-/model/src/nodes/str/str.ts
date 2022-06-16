@@ -90,7 +90,7 @@ export namespace Str {
         } else if (Keyword.matches(def)) {
             return new Keyword.Node(def, ctx)
         } else if (Alias.matches(def, ctx)) {
-            return ctx.resolutions[def]
+            return new Alias.Node(def, ctx)
         } else if (StringLiteral.matches(def)) {
             return new StringLiteral.Node(def, ctx)
         } else if (EmbeddedRegex.matches(def)) {
