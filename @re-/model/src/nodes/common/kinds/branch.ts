@@ -1,4 +1,4 @@
-import { Parser } from "../parse.js"
+import { Parser } from "../parser.js"
 import { Base } from "./base.js"
 
 export abstract class Branch<
@@ -9,7 +9,7 @@ export abstract class Branch<
 
     constructor(def: DefType, ctx: Parser.Context) {
         super(def, ctx)
-        if (ctx.eager) {
+        if (ctx.cfg.parse?.eager) {
             this.cache = this.parse()
         }
     }

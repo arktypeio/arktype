@@ -1,4 +1,6 @@
 import { toString } from "@re-/tools"
+import { Parser } from "./parser.js"
+import { Allows, Generate } from "./traverse/index.js"
 
 /**
  *  Can be used to allow arbitrarily chained property access.
@@ -31,3 +33,9 @@ export const stringifyValue = (value: unknown) =>
 
 export const stringifyPathContext = (path: string) =>
     path ? ` at path ${path}` : ""
+
+export type ModelOptions = {
+    parse?: Parser.Options
+    validate?: Allows.Options
+    generate?: Generate.Options
+}

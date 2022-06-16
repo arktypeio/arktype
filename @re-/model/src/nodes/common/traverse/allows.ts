@@ -1,11 +1,14 @@
 import { isDigits, uncapitalize } from "@re-/tools"
+import { Parser } from "../parser.js"
 import { stringifyDef, stringifyValue } from "../utils.js"
 import { Traverse } from "./traverse.js"
+
+export type CustomValidator = Allows.CustomValidator
 
 export namespace Allows {
     export type Options = {
         ignoreExtraneousKeys?: boolean
-        validator?: CustomValidator
+        validator?: CustomValidator | "default"
         verbose?: boolean
     }
 
@@ -34,18 +37,32 @@ export namespace Allows {
         value: unknown
     ) => `${stringifyValue(value)} is not assignable to ${stringifyDef(def)}.`
 
-    export const getErrorsFromCustomValidator = (
+    export const customValidatorAllows = (
         validator: CustomValidator,
-        args: CustomValidatorArgs
-    ): ErrorsByPath => {
-        const customErrors = validator(args)
-        if (!customErrors) {
-            return {}
-        }
+        node: Parser.Node,
+        args: Args
+    ) => {
+        const customErrors = validator({
+            value: args.value,
+            path: args.ctx.path,
+            def: node.def,
+            getOriginalErrors: () => {
+                const branchedErrors = args.errors.split(args.ctx.path)
+                const originalErrors = branchedErrors.branch("original")
+                node.allows({
+                    ...args,
+                    cfg: { ...args.cfg, validator: "default" },
+                    errors: originalErrors
+                })
+                return originalErrors.all()
+            }
+        })
         if (typeof customErrors === "string") {
-            return { [args.path]: customErrors }
+            args.errors.add(args.ctx.path, customErrors)
         }
-        return customErrors
+        if (typeof customErrors === "object") {
+            args.errors.assign(customErrors)
+        }
     }
 
     export type ErrorsByPath = Record<string, string>
@@ -53,7 +70,7 @@ export namespace Allows {
     export class ErrorBrancher {
         private branches: Record<string, ErrorTree> = {}
 
-        constructor(private parent: ErrorsByPath, private path: string) {}
+        constructor(private parent: ErrorTree, private path: string) {}
 
         branch(name: string) {
             const branchErrors = new ErrorTree()
@@ -65,12 +82,8 @@ export namespace Allows {
             delete this.branches[name]
         }
 
-        pruneAll() {
-            delete this.parent[this.path]
-        }
-
         merge(name: string) {
-            this.parent[this.path] = this.branches[name].toString()
+            this.parent.add(this.path, this.branches[name].toString())
         }
 
         mergeAll(summary: string) {
@@ -78,7 +91,7 @@ export namespace Allows {
             for (const [name, errors] of Object.entries(this.branches)) {
                 message += `\n${name}: ${errors.toString()}`
             }
-            this.parent[this.path] = message
+            this.parent.add(this.path, message)
         }
     }
 
@@ -109,12 +122,16 @@ export namespace Allows {
             return this.errors[path]
         }
 
+        delete(path: string) {
+            delete this.errors[path]
+        }
+
         all() {
             return this.errors
         }
 
         split(path: string) {
-            return new ErrorBrancher(this.errors, path)
+            return new ErrorBrancher(this, path)
         }
 
         toString() {

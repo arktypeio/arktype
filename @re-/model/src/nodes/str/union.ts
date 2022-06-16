@@ -39,12 +39,10 @@ export namespace Union {
             const unionErrors = args.errors.split(args.ctx.path)
             for (const branch of this.next()) {
                 const branchErrors = unionErrors.branch(branch.stringifyDef())
-                args.errors = branchErrors
-                branch.allows(args)
+                branch.allows({ ...args, errors: branchErrors })
                 if (branchErrors.count === 0) {
                     // If any branch of a Union does not have errors,
                     // we can return right away since the whole definition is valid
-                    unionErrors.pruneAll()
                     return
                 }
             }

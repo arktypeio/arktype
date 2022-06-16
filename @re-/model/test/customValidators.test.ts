@@ -4,12 +4,11 @@ import { compile, CustomValidator, model } from "#src"
 describe("custom validators", () => {
     const validator: CustomValidator = ({ value }) => {
         if (
-            typeof value === "string" &&
-            value === [...value].reverse().join("")
+            typeof value !== "string" ||
+            value !== [...value].reverse().join("")
         ) {
-            return ""
+            return `${value} is not a palindrome!`
         }
-        return `${value} is not a palindrome!`
     }
     it("inline", () => {
         const palindrome = compile({ palindrome: "string" }).create(
@@ -18,7 +17,7 @@ describe("custom validators", () => {
                 validate: { validator }
             }
         )
-        assert(palindrome.validate("step on no pets").errorsByPath).is(
+        assert(palindrome.validate("step on no pets").errorsByPath).equals(
             undefined
         )
         assert(palindrome.validate("step on your cat").errorsByPath).equals({
@@ -58,45 +57,40 @@ describe("custom validators", () => {
     it("space", () => {
         const space = compile(
             {
-                first: "string",
-                second: { comesAfter: "first" },
-                third: "string"
+                first: 1,
+                second: 2
             },
             {
                 validate: {
-                    validator: ({ errors, def }) => {
+                    validator: ({ def, value, getOriginalErrors }) => {
                         if (def === "first") {
-                            return { ...errors, "from/first": "test" }
-                        } else if (def === "second") {
-                            return { ...errors, "from/second": "hi" }
+                            return value === 1
+                                ? undefined
+                                : {
+                                      "from/first": `${value} FAILED TO BE 1.`
+                                  }
                         }
-                        return { ...errors, "from/unknown": "???" }
+                        return getOriginalErrors()
                     }
                 }
             }
         )
-        assert(() => space.models.third.assert("burba")).throws.snap(
-            `Error: At path from/unknown, ???`
+        assert(space.models.first.validate(1).error).is(undefined)
+        assert(() => space.models.first.assert(2)).throws.snap(
+            `Error: At path from/first, 2 FAILED TO BE 1.`
         )
-        assert(
-            space
-                .create({ something: "second" })
-                .validate({ something: { comesAfter: "no" } }).error
-        ).snap(`Encountered errors at the following paths:
-{
-  from/first: 'test',
-  from/second: 'hi',
-  from/unknown: '???'
-}`)
+        assert(space.create("second").validate(1).error).snap(
+            `1 is not assignable to 2.`
+        )
     })
     it("can access standard validation errors and ctx", () => {
         const num = model("number", {
             validate: {
-                validator: ({ errors, ctx }) => {
-                    const errorMessages = Object.values(errors)
+                validator: ({ getOriginalErrors, path }) => {
+                    const errorMessages = Object.values(getOriginalErrors())
                     if (errorMessages.length) {
                         return {
-                            [ctx.valuePath]: errorMessages
+                            [path]: errorMessages
                                 .map((error) => `${error}!!!`)
                                 .join("")
                         }

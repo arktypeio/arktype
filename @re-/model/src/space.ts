@@ -1,6 +1,7 @@
 import { deepMerge, EntriesOf, Evaluate, Merge } from "@re-/tools"
-import { Model, ModelFrom, ModelFunction, Options } from "./model.js"
+import { Model, ModelFrom, ModelFunction } from "./model.js"
 import { Root } from "./nodes/index.js"
+import { Alias } from "./nodes/str/alias.js"
 import { Common } from "#common"
 
 export const compile: CompileFunction = (dictionary, options) =>
@@ -11,7 +12,7 @@ export class Space implements SpaceFrom<any> {
     models: Record<string, Model>
     modelDefinitionEntries: EntriesOf<SpaceDictionary>
     config: SpaceConfig
-    modelConfigs: Record<string, Options>
+    modelConfigs: Record<string, Common.ModelOptions>
     resolutions: Common.Parser.ResolutionMap
 
     constructor(dictionary: SpaceDictionary, options?: SpaceOptions<string>) {
@@ -22,26 +23,21 @@ export class Space implements SpaceFrom<any> {
         this.modelDefinitionEntries = normalized.modelDefinitionEntries
         this.resolutions = {}
         this.models = {}
-        for (const [typeName, definition] of this.modelDefinitionEntries) {
-            const modelConfig = deepMerge(
-                this.config,
-                this.modelConfigs[typeName]
+        for (const [alias, resolution] of this.modelDefinitionEntries) {
+            const ctx = Common.Parser.createContext(
+                deepMerge(this.config, this.modelConfigs[alias]),
+                this.resolutions
             )
-            this.resolutions[typeName] = Root.parse(
-                definition,
-                Common.Parser.createContext(modelConfig.parse, this.resolutions)
-            )
-            this.models[typeName] = new Model(
-                this.resolutions[typeName],
-                modelConfig
+            this.models[alias] = new Model(
+                new Alias.Node(alias, ctx, resolution)
             )
         }
     }
 
-    create(def: any, options?: Options) {
+    create(def: any, options?: Common.ModelOptions) {
         const root = Root.parse(
             def,
-            Common.Parser.createContext(options?.parse, this.resolutions)
+            Common.Parser.createContext(options, this.resolutions)
         )
         return new Model(root, deepMerge(this.config, options)) as any
     }
@@ -67,8 +63,9 @@ export type DictionaryToModels<Dict> = Evaluate<{
     >
 }>
 
-export interface SpaceOptions<ModelName extends string> extends Options {
-    models?: { [K in ModelName]?: Options }
+export interface SpaceOptions<ModelName extends string>
+    extends Common.ModelOptions {
+    models?: { [K in ModelName]?: Common.ModelOptions }
 }
 
 type ModelNameIn<Dict> = keyof Dict & string
@@ -76,9 +73,9 @@ type ModelNameIn<Dict> = keyof Dict & string
 interface SpaceExtensionOptions<
     BaseModelName extends string,
     ExtensionModelName extends string
-> extends Options {
+> extends Common.ModelOptions {
     models?: {
-        [ModelName in BaseModelName | ExtensionModelName]?: Options
+        [ModelName in BaseModelName | ExtensionModelName]?: Common.ModelOptions
     }
 }
 
@@ -145,7 +142,7 @@ const normalizeSpaceInputs = (
         config.onResolve = onResolve
     }
     return {
-        modelConfigs: models as Record<string, Options>,
+        modelConfigs: models as Record<string, Common.ModelOptions>,
         modelDefinitionEntries: Object.entries(modelDefinitions),
         config
     }

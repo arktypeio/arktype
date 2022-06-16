@@ -29,31 +29,33 @@ export namespace Alias {
         def in ctx.resolutions
 
     export class Node extends Common.Leaf<string> {
-        get resolution() {
-            return this.ctx.resolutions[this.def]
+        // @ts-ignore (spurious initialization error)
+        private next: Common.Parser.Node
+
+        constructor(
+            def: string,
+            ctx: Common.Parser.Context,
+            private nextDef?: unknown
+        ) {
+            if (def in ctx.resolutions) {
+                return ctx.resolutions[def]
+            }
+            super(def, ctx)
+            ctx.resolutions[def] = this
+            this.next = Root.parse(this.nextDef, this.ctx)
         }
 
         allows(args: Common.Allows.Args) {
-            const customValidator = args.cfg.validator //?? this.ctx.config.validate?.validator
-            if (customValidator) {
-                const customErrors = Common.Allows.getErrorsFromCustomValidator(
+            const customValidator =
+                args.cfg.validator ?? this.ctx.cfg.validate?.validator
+            if (customValidator && customValidator !== "default") {
+                Common.Allows.customValidatorAllows(
                     customValidator,
-                    {
-                        value: args.value,
-                        def: this.def,
-                        path: args.ctx.path,
-                        getOriginalErrors: () => {
-                            const originalErrors = new Common.Allows.ErrorTree()
-                            const allowsArgs = this.nextArgs(args)
-                            allowsArgs.errors = originalErrors
-                            this.resolution.allows(this.nextArgs(allowsArgs))
-                            return allowsArgs.errors.all()
-                        }
-                    }
+                    this,
+                    this.nextArgs(args)
                 )
-                args.errors.assign(customErrors)
             } else {
-                this.resolution.allows(this.nextArgs(args))
+                this.next.allows(this.nextArgs(args))
             }
         }
 
@@ -67,7 +69,7 @@ export namespace Alias {
                     args.ctx.seen
                 )
             }
-            return this.resolution.generate(this.nextArgs(args))
+            return this.next.generate(this.nextArgs(args))
         }
 
         private nextArgs<Args extends { ctx: Common.Traverse.Context }>(

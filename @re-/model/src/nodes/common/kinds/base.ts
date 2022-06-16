@@ -1,4 +1,4 @@
-import type { Parser } from "../parse.js"
+import type { Parser } from "../parser.js"
 import { Allows, Generate } from "../traverse/index.js"
 import { stringifyDef, stringifyValue } from "../utils.js"
 
@@ -14,7 +14,7 @@ export abstract class Base<DefType> {
 
     addUnassignable(args: Allows.Args) {
         args.errors.add(
-            this.ctx.path,
+            args.ctx.path,
             `${stringifyValue(
                 args.value
             )} is not assignable to ${this.stringifyDef()}.`

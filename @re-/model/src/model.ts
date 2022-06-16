@@ -1,3 +1,4 @@
+import { ModelOptions } from "./nodes/common/utils.js"
 import { Root } from "./nodes/index.js"
 import { Common } from "#common"
 
@@ -8,10 +9,7 @@ import { Common } from "#common"
  * @returns {@as any} The result.
  */
 export const model: ModelFunction = (definition, options) => {
-    const root = Root.parse(
-        definition,
-        Common.Parser.createContext(options?.parse)
-    )
+    const root = Root.parse(definition, Common.Parser.createContext(options))
     return new Model(root, options) as any
 }
 
@@ -20,16 +18,13 @@ export const eager: ModelFunction = (definition, options = {}) => {
     return model(definition, options)
 }
 
-export type Options = {
-    parse?: Common.Parser.Options
-    validate?: Common.Allows.Options
-    generate?: Common.Generate.Options
-}
-
 export class Model implements AnyModel {
     definition: unknown
 
-    constructor(public root: Common.Parser.Node, public config: Options = {}) {
+    constructor(
+        public root: Common.Parser.Node,
+        public config: ModelOptions = {}
+    ) {
         this.definition = root.def
     }
 
@@ -38,8 +33,19 @@ export class Model implements AnyModel {
     }
 
     validate(value: unknown, options?: Common.Allows.Options) {
-        const args = Common.Allows.createArgs(value, options)
-        this.root.allows(args)
+        const args = Common.Allows.createArgs(value, {
+            ...this.config.validate,
+            ...options
+        })
+        if (args.cfg.validator && args.cfg.validator !== "default") {
+            Common.Allows.customValidatorAllows(
+                args.cfg.validator,
+                this.root,
+                args
+            )
+        } else {
+            this.root.allows(args)
+        }
         return args.errors.isEmpty()
             ? { data: value }
             : { error: args.errors.toString(), errorsByPath: args.errors.all() }
@@ -54,18 +60,6 @@ export class Model implements AnyModel {
 
     generate(options?: Common.Generate.Options) {
         return this.root.generate(Common.Generate.createArgs(options))
-    }
-
-    validateByPath(value: unknown, options?: Common.Allows.Options) {
-        const args = Common.Allows.createArgs(value, options)
-        this.root.allows(args)
-        if (this.config.validate?.validator) {
-            // return Common.Allows.getErrorsFromCustomValidator(
-            //     this.config.validate.validator,
-            //     { ...args, def: this.definition }
-            // )
-        }
-        return args.errors.all()
     }
 }
 
@@ -105,7 +99,7 @@ export type GenerateFunction<ModeledType> = (
 
 export type ModelFunction<Dict = {}> = <Def>(
     definition: Root.Validate<Def, Dict>,
-    options?: Options
+    options?: ModelOptions
 ) => ModelFrom<Def, Parse<Def, Dict>>
 
 export type ModelFrom<Def, ModeledType> = {

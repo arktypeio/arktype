@@ -1,5 +1,6 @@
+import { Alias } from "../str/alias.js"
 import { Base } from "./kinds/base.js"
-import { stringifyDef, stringifyPathContext } from "./utils.js"
+import { ModelOptions, stringifyDef, stringifyPathContext } from "./utils.js"
 
 export namespace Parser {
     export type Node<DefType = unknown> = Base<DefType>
@@ -9,7 +10,7 @@ export namespace Parser {
         ctx: Parser.Context
     ) => Node
 
-    export type ResolutionMap = Record<string, Node>
+    export type ResolutionMap = Record<string, Alias.Node>
 
     export type Options = {
         eager?: boolean
@@ -26,18 +27,17 @@ export namespace Parser {
         resolutions: ResolutionMap
         path: string
         stringRoot: string | null
-        eager: boolean
+        cfg: ModelOptions
     }
 
     export const createContext = (
-        options?: Options,
+        cfg: ModelOptions = {},
         resolutions: ResolutionMap = {}
     ): Context => {
         return {
             path: "",
             stringRoot: null,
-            eager: false,
-            ...options,
+            cfg,
             resolutions
         }
     }
