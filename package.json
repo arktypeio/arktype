@@ -8,7 +8,7 @@
         "lint": "eslint .",
         "test": "pnpm -r test",
         "bench": "pnpm -r bench",
-        "check-pr": "pnpm lint && pnpm test && pnpm bench",
+        "check-pr": "pnpm build && pnpm lint && pnpm test && pnpm bench",
         "changeset": "changeset",
         "preinstall": "npx only-allow pnpm",
         "prepare": "husky install",
