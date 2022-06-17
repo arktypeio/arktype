@@ -58,7 +58,7 @@ jobs:
             - name: Test
               run: pnpm test
 
-    pr-check:
+    pr-checks:
         needs: compatibility
         timeout-minutes: 1
         runs-on: ubuntu-latest

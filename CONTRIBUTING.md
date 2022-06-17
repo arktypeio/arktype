@@ -70,10 +70,10 @@ Take a look at [their documentation](https://pnpm.io/workspaces) if you are conf
 git checkout -b my-topic-branch
 ```
 
-6. Once you've made the changes you want to and added corresponding unit tests, run the `check-pr` command in the project root and address any problems:
+6. Once you've made the changes you want to and added corresponding unit tests, run the `pr-checks` command in the project root and address any problems:
 
 ```sh
-pnpm check-pr
+pnpm pr-checks
 ```
 
 You can also run any of the commands individually:
