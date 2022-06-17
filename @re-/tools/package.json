@@ -1,6 +1,6 @@
 {
     "name": "@re-/tools",
-    "version": "2.1.0",
+    "version": "2.1.1",
     "author": "redo.dev",
     "description": "Lightweight utilities and types shared across Redo packages 🧰",
     "repository": {

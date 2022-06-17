@@ -1,5 +1,13 @@
 # @re-/model
 
+## 2.0.3-alpha
+
+### Patch Changes
+
+-   99891dd: Fix broken internal imports.
+-   Updated dependencies [99891dd]
+    -   @re-/tools@2.1.1
+
 ## 2.0.2-alpha
 
 ### Patch Changes

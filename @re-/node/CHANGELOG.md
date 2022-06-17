@@ -1,5 +1,11 @@
 # @re-/node
 
+## 2.1.2
+
+### Patch Changes
+
+-   99891dd: Fix broken internal imports.
+
 ## 2.1.1
 
 ### Patch Changes
