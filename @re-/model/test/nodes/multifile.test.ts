@@ -1,8 +1,6 @@
 import { assert } from "@re-/assert"
-// import { declare } from "#src"
 
-// // Declare the models you will define
-// export const { define, compile } = declare("user", "group")
+// Declare the models you will define
 import { compile } from "./multifile/declaration.js"
 import { groupDef } from "./multifile/group.js"
 import { userDef } from "./multifile/user.js"

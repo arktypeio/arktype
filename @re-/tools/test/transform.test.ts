@@ -1,5 +1,5 @@
 import { assert } from "@re-/assert"
-import { EntryMapper, transform } from "#src"
+import { EntryMapper, transform } from "../src/index.js"
 
 const o = {
     a: 1,

@@ -1,5 +1,5 @@
+import { Common } from "../common.js"
 import { Str } from "./str.js"
-import { Common } from "#common"
 
 const invalidModifierErrorMessage = `Modifier '?' is only valid at the end of a type definition.`
 

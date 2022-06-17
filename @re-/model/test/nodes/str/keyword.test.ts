@@ -1,5 +1,5 @@
 import { assert } from "@re-/assert"
-import { model } from "#src"
+import { model } from "../../../src/index.js"
 
 describe("keyword", () => {
     describe("string", () => {

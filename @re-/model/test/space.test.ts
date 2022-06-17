@@ -1,5 +1,5 @@
 import { assert } from "@re-/assert"
-import { compile } from "#src"
+import { compile } from "../src/index.js"
 
 describe("compile", () => {
     it("single", () => {

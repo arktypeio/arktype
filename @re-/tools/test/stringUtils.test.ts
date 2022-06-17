@@ -12,7 +12,7 @@ import {
     isNumeric,
     lettersAfterFirstToLower,
     transformSubstring
-} from "#src"
+} from "../src/index.js"
 
 const original = "hello"
 const transform = (_: string) => _.toUpperCase()

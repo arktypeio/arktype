@@ -1,6 +1,6 @@
 import { assert } from "@re-/assert"
+import { addedOrChanged, deepEquals, diff, diffSets } from "../src/index.js"
 import { o } from "./common.js"
-import { addedOrChanged, deepEquals, diff, diffSets } from "#src"
 
 const updatedO = Object.freeze({
     a: {

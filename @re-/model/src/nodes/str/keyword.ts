@@ -1,5 +1,5 @@
 import { isAlpha, isAlphaNumeric } from "@re-/tools"
-import { Common } from "#common"
+import { Common } from "../common.js"
 
 type KeywordHandlerMap = Record<string, Keyword.Handler>
 

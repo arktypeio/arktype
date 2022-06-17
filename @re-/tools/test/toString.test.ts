@@ -1,6 +1,6 @@
 import { assert } from "@re-/assert"
+import { toString } from "../src/index.js"
 import { o } from "./common.js"
-import { toString } from "#src"
 
 it("default", () => {
     assert(toString(o)).snap(
