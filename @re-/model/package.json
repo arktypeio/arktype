@@ -31,7 +31,7 @@
         "tnt": "reassert mocha --skipTypes",
         "benchCyclic": "pnpm ts-node ./test/bench/cyclic.bench.ts",
         "generateBenchData": "pnpm ts-node ./scripts/generateBenchData.ts",
-        "bench": "pnpm ts-node ./test/bench/parser.bench.ts",
+        "benchCore": "pnpm ts-node ./test/bench/parser.bench.ts",
         "diag": "pnpm tsc -p ./test/tsconfig.json > diag.txt",
         "updateReadme": "pnpm ts-node ../node/src/reTagToMarkdown.ts"
     },
