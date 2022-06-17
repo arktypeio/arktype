@@ -1,4 +1,4 @@
-import { Common } from "#common"
+import { Common } from "../common.js"
 
 export namespace Regex {
     export type Definition = RegExp

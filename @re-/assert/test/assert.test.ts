@@ -1,7 +1,7 @@
 import { strict } from "node:assert"
 import { join } from "node:path"
 import { dirName, readJson, writeJson } from "@re-/node"
-import { assert } from "#src"
+import { assert } from "../src/index.js"
 
 const n = 5
 const o = { re: "do" }

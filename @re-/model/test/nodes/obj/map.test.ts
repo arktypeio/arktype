@@ -1,5 +1,5 @@
 import { assert } from "@re-/assert"
-import { eager, model } from "#src"
+import { eager, model } from "../../../src/index.js"
 
 describe("map", () => {
     describe("empty", () => {

@@ -1,8 +1,8 @@
+import { Common } from "../common.js"
 import { Root } from "../root.js"
 import { Map } from "./map.js"
 import { Regex } from "./regex.js"
 import { Tuple } from "./tuple.js"
-import { Common } from "#common"
 
 export namespace Obj {
     // Objects of these types are inherently valid and should not be checked via "Obj.Validate"
