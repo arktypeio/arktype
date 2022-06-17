@@ -1,5 +1,5 @@
 import { Project } from "ts-morph"
-import { fromCwd } from "../index.js"
+import { fromCwd } from "../fs.js"
 import { getMapData } from "./mapTSfiles.js"
 
 export const reTag = () => {

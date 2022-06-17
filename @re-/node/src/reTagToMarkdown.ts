@@ -1,6 +1,4 @@
 import { join } from "node:path"
-import { remark } from "remark"
-import parseMarkdown from "remark-parse"
 import { findPackageRoot, fromCwd, readFile, writeFile } from "./fs.js"
 import { reTag } from "./reTag/reTag.js"
 
@@ -27,13 +25,15 @@ const generateCode =
     }
 
 export const reTagToMarkdown = (async () => {
+    const { remark } = await import("remark")
+    const remarkParse = await import("remark-parse")
+
     const mapData: Record<string, string> = reTag()
     const packageRoot = findPackageRoot(fromCwd())
     const mdPath = join(packageRoot, "README.md")
     const mdFile = readFile(mdPath)
-
     const file = await remark()
-        .use(parseMarkdown)
+        .use(remarkParse.default)
         .use(generateCode, mapData)
         .process(mdFile)
     writeFile(mdPath, file.toString())
