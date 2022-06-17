@@ -33,13 +33,16 @@ export class Model implements AnyModel {
     }
 
     validate(value: unknown, options?: Common.Allows.Options) {
-        const args = Common.Allows.createArgs(value, {
-            ...this.config.validate,
-            ...options
-        })
-        if (args.cfg.validator && args.cfg.validator !== "default") {
+        const args = Common.Allows.createArgs(
+            value,
+            options,
+            this.config.validate
+        )
+        const customValidator =
+            args.cfg.validator ?? args.ctx.modelCfg.validator ?? "default"
+        if (customValidator !== "default") {
             Common.Allows.customValidatorAllows(
-                args.cfg.validator,
+                customValidator,
                 this.root,
                 args
             )
@@ -59,7 +62,9 @@ export class Model implements AnyModel {
     }
 
     generate(options?: Common.Generate.Options) {
-        return this.root.generate(Common.Generate.createArgs(options))
+        return this.root.generate(
+            Common.Generate.createArgs(options, this.config.generate)
+        )
     }
 }
 

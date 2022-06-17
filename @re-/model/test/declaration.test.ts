@@ -13,8 +13,8 @@ describe("declare", () => {
         assert(() => define.gottaDefineThis("whoops")).throwsAndHasTypeError(
             "Unable to determine the type of 'whoops'"
         )
-        const { create } = compile(gottaDefineThis)
-        assert(create({ a: "gottaDefineThis" }).type).typed as {
+        const space = compile(gottaDefineThis)
+        assert(space.create({ a: "gottaDefineThis" }).type).typed as {
             a: boolean
         }
     })

@@ -34,10 +34,13 @@ export class Space implements SpaceFrom<any> {
         }
     }
 
-    create(def: any, options?: Common.ModelOptions) {
+    create(def: unknown, options?: Common.ModelOptions) {
         const root = Root.parse(
             def,
-            Common.Parser.createContext(options, this.resolutions)
+            Common.Parser.createContext(
+                deepMerge(this.config, options),
+                this.resolutions
+            )
         )
         return new Model(root, deepMerge(this.config, options)) as any
     }

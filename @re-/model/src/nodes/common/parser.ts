@@ -16,12 +16,7 @@ export namespace Parser {
         eager?: boolean
     }
 
-    export type Config = Required<Options>
-
-    export const createConfig = (options?: Options): Config => ({
-        ...options,
-        eager: false
-    })
+    export type Config = Options
 
     export type Context = {
         resolutions: ResolutionMap
@@ -61,7 +56,13 @@ export namespace Parser {
     export type ParseErrorMessage<Message extends string = string> =
         `Error: ${Message}`
 
-    export type UnknownTypeError<
+    export class UnknownTypeError extends ParseError {
+        constructor(def: string) {
+            super(`Unable to determine the type of '${def}'.`)
+        }
+    }
+
+    export type UnknownTypeErrorMessage<
         Definition extends string = "your definition"
     > = `Unable to determine the type of ${Definition extends "your definition"
         ? Definition

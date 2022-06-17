@@ -46,41 +46,49 @@ export namespace Alias {
         }
 
         allows(args: Common.Allows.Args) {
+            const nextArgs = this.nextArgs(args, this.ctx.cfg.validate)
             const customValidator =
-                args.cfg.validator ?? this.ctx.cfg.validate?.validator
-            if (customValidator && customValidator !== "default") {
+                nextArgs.cfg.validator ??
+                nextArgs.ctx.modelCfg.validator ??
+                "default"
+            if (customValidator !== "default") {
                 Common.Allows.customValidatorAllows(
                     customValidator,
                     this,
-                    this.nextArgs(args)
+                    nextArgs
                 )
             } else {
-                this.next.allows(this.nextArgs(args))
+                this.next.allows(nextArgs)
             }
         }
 
         generate(args: Common.Generate.Args) {
+            const nextArgs = this.nextArgs(args, this.ctx.cfg.generate)
             if (args.ctx.seen.includes(this.def)) {
-                if (args.cfg.onRequiredCycle) {
-                    return args.cfg.onRequiredCycle
+                const onRequiredCycle =
+                    nextArgs.cfg.onRequiredCycle ??
+                    nextArgs.ctx.modelCfg.onRequiredCycle
+                if (onRequiredCycle) {
+                    return onRequiredCycle
                 }
                 throw new Common.Generate.RequiredCycleError(
                     this.def,
                     args.ctx.seen
                 )
             }
-            return this.next.generate(this.nextArgs(args))
+            return this.next.generate(nextArgs)
         }
 
-        private nextArgs<Args extends { ctx: Common.Traverse.Context }>(
-            args: Args
-        ): Args {
+        private nextArgs<
+            Args extends { ctx: Common.Traverse.Context<any>; cfg: any }
+        >(args: Args, aliasCfg: any): Args {
             return {
                 ...args,
                 ctx: {
                     ...args.ctx,
                     seen: [...args.ctx.seen, this.def],
-                    shallowSeen: [...args.ctx.shallowSeen, this.def]
+                    shallowSeen: [...args.ctx.shallowSeen, this.def],
+                    modelCfg: { ...args.ctx.modelCfg, ...aliasCfg }
                 }
             }
         }

@@ -103,7 +103,11 @@ export namespace Map {
                     )}' were missing.`
                 }
             }
-            if (keyDiff.added && !args.cfg.ignoreExtraneousKeys) {
+            if (
+                keyDiff.added &&
+                !args.cfg.ignoreExtraneousKeys &&
+                !args.ctx.modelCfg.ignoreExtraneousKeys
+            ) {
                 // Add a leading space if we also had missing keys
                 message += `${message ? " " : ""}Keys '${keyDiff.added.join(
                     ", "

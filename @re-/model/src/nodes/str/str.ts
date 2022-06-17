@@ -50,7 +50,9 @@ export namespace Str {
         ? Validate<Child, Dict, Root>
         : Def extends Constraint.Definition
         ? Constraint.Validate<Def, Dict, Root>
-        : Common.Parser.ParseErrorMessage<Common.Parser.UnknownTypeError<Def>>
+        : Common.Parser.ParseErrorMessage<
+              Common.Parser.UnknownTypeErrorMessage<Def>
+          >
 
     export type Parse<
         Def extends string,

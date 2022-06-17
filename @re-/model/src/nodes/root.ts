@@ -17,7 +17,7 @@ export namespace Root {
         ? Obj.Validate<Def, Dict>
         : Def extends Literal.Definition
         ? Def
-        : Common.Parser.ParseErrorMessage<Common.Parser.UnknownTypeError>
+        : Common.Parser.ParseErrorMessage<Common.Parser.UnknownTypeErrorMessage>
 
     export type Parse<Def, Dict, Seen> = IsAnyOrUnknown<Def> extends true
         ? Def

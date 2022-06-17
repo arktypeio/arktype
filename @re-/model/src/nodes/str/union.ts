@@ -30,9 +30,12 @@ export namespace Union {
 
     export class Node extends Common.Branch<Definition, Common.Parser.Node[]> {
         parse() {
-            return this.def
-                .match(matcher)!
-                .map((member) => Str.parse(member, this.ctx))
+            return this.def.match(matcher)!.map((member) => {
+                if (member === "||") {
+                    throw new Common.Parser.UnknownTypeError("")
+                }
+                return Str.parse(member, this.ctx)
+            })
         }
 
         allows(args: Common.Allows.Args) {

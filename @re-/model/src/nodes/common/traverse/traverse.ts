@@ -1,15 +1,17 @@
 export namespace Traverse {
-    export type Context = {
+    export type Context<Cfg> = {
         path: string
         seen: string[]
         shallowSeen: string[]
+        modelCfg: Cfg
     }
 
-    export const createContext = (): Context => {
+    export const createContext = <Cfg>(modelOptions: Cfg): Context<Cfg> => {
         return {
             path: "",
             seen: [],
-            shallowSeen: []
+            shallowSeen: [],
+            modelCfg: modelOptions
         }
     }
 

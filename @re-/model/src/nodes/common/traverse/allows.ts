@@ -27,7 +27,7 @@ export namespace Allows {
         value: unknown
         errors: ErrorTree
         cfg: Config
-        ctx: Traverse.Context
+        ctx: Traverse.Context<Config>
     }
 
     export class ValidationError extends Error {}
@@ -160,12 +160,13 @@ export namespace Allows {
 
     export const createArgs = (
         value: unknown,
-        options?: Options
+        options: Options = {},
+        modelOptions: Options = {}
     ): Allows.Args => ({
         value,
         errors: new ErrorTree(),
-        ctx: Traverse.createContext(),
-        cfg: options ?? {}
+        ctx: Traverse.createContext(modelOptions),
+        cfg: options
     })
 
     export type Config = Options

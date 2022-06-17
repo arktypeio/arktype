@@ -12,7 +12,10 @@ export namespace Generate {
 
     export type Config = Options
 
-    export type Args = { cfg: Config; ctx: Traverse.Context }
+    export type Args = {
+        cfg: Config
+        ctx: Traverse.Context<Config>
+    }
 
     export class UngeneratableError extends Error {
         constructor(def: string, reason: string) {
@@ -36,8 +39,11 @@ export namespace Generate {
         }
     }
 
-    export const createArgs = (options?: Options): Generate.Args => ({
-        ctx: Traverse.createContext(),
-        cfg: options ?? {}
+    export const createArgs = (
+        options: Options = {},
+        modelOptions: Options = {}
+    ): Generate.Args => ({
+        ctx: Traverse.createContext(modelOptions),
+        cfg: options
     })
 }
