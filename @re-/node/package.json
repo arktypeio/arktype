@@ -16,11 +16,6 @@
             "types": "./dist/types/index.d.ts",
             "import": "./dist/mjs/index.js",
             "require": "./dist/cjs/index.js"
-        },
-        "./reTagToMarkdown": {
-            "types": "./dist/types/reTagToMarkdown.d.ts",
-            "import": "./dist/mjs/reTagToMarkdown.js",
-            "require": "./dist/cjs/reTagToMarkdown.js"
         }
     },
     "imports": {

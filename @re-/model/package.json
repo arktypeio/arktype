@@ -33,7 +33,7 @@
         "generateBenchData": "pnpm ts-node ./scripts/generateBenchData.ts",
         "benchCore": "pnpm ts-node ./test/bench/parser.bench.ts",
         "diag": "pnpm tsc -p ./test/tsconfig.json > diag.txt",
-        "updateReadme": "pnpm ts-node ../node/src/reTagToMarkdown.ts"
+        "updateReadme": "pnpm ts-node ./scripts/updateReadme.ts"
     },
     "dependencies": {
         "@re-/tools": "workspace:*"

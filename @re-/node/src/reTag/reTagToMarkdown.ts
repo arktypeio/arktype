@@ -1,6 +1,8 @@
 import { join } from "node:path"
-import { findPackageRoot, fromCwd, readFile, writeFile } from "./fs.js"
-import { reTag } from "./reTag/reTag.js"
+import { remark } from "remark"
+import remarkParse from "remark-parse"
+import { findPackageRoot, fromCwd, readFile, writeFile } from "../fs.js"
+import { BlocksByPath } from "./reTag.js"
 
 const CODE_TAG = "code"
 const GENERATED = "***GENERATED***"
@@ -26,17 +28,21 @@ const generateCode =
         }
     }
 
-export const reTagToMarkdown = (async () => {
-    const { remark } = await import("remark")
-    const remarkParse = await import("remark-parse")
+export type ReTagToMarkdownArgs = {
+    data: BlocksByPath
+    destination?: string
+}
 
-    const mapData: Record<string, string> = reTag()
+export const updateMarkdownTags = async ({
+    data,
+    destination
+}: ReTagToMarkdownArgs) => {
     const packageRoot = findPackageRoot(fromCwd())
-    const mdPath = join(packageRoot, "README.md")
+    const mdPath = destination ?? join(packageRoot, "README.md")
     const mdFile = readFile(mdPath)
     const file = await remark()
-        .use(remarkParse.default)
-        .use(generateCode, mapData)
+        .use(remarkParse)
+        .use(generateCode, data)
         .process(mdFile)
     writeFile(mdPath, file.toString())
-})()
+}
