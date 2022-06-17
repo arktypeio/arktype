@@ -24,6 +24,3 @@ space.models.user.assert({
     },
     groups: []
 })
-/**
- * @re_place compileSpaceDemo.ts
- */

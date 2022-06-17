@@ -28,23 +28,7 @@ jobs:
               run: pnpm test
 
             - name: Bench
-              id: bench
-              # Avoid truncating the output to one line
-              run: |
-                  results=$(pnpm bench)
-                  results="${results//'%'/'%25'}"
-                  results="${results//$'\n'/'%0A'}"
-                  results="${results//$'\r'/'%0D'}"                 
-                  echo "::set-output name=results::$results"
-
-            - name: Report benches
-              uses: thollander/actions-comment-pull-request@v1
-              with:
-                  message: |
-                      :weight_lifting: Your updated bench results:
-                      ${{ steps.bench.outputs.results }}
-                  comment_includes: "updated bench results"
-                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+              run: pnpm bench
 
     compatibility:
         needs: core

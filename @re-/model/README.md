@@ -33,7 +33,7 @@ This snippet will give you an idea of `@re-/model` syntax, but the best way to g
 import { create } from "@re-/model"
 
 // Most common TypeScript expressions just work...
-const user = model({
+export const userModel = create({
     name: {
         first: "string",
         middle: "string?",
@@ -55,8 +55,8 @@ export const userData = {
     age: 28,
     browser: "Internet Explorer" // :(
 }
-
 export const userValidationResult = userModel.validate(userData)
+
 // Try changing "userModel" or "userData" and see what happens!
 ```
 
@@ -109,8 +109,8 @@ import { declare } from "@re-/model"
 // Declare the models you will define
 export const { define, compile } = declare("user", "group")
 
-import { userDef } from "./user"
-import { groupDef } from "./group"
+import { userDef } from "./user.js"
+import { groupDef } from "./group.js"
 
 // Creates your space (or tells you which definition you forgot to include)
 const space = compile({ ...userDef, ...groupDef })
@@ -119,23 +119,22 @@ const space = compile({ ...userDef, ...groupDef })
 `user.ts`
 
 ```ts ***GENERATED*** user.ts
-import { define } from "./declareDemo"
+import { define } from "./declaration.js"
 
 export const userDef = define.user({
     name: "string",
     bestFriend: "user?",
-    // Type Hint: "Unable to determine the type of 'grop'"
-    groups: "grop[]"
+    groups: "group[]"
 })
 ```
 
 `group.ts`
 
 ```ts ***GENERATED*** group.ts
-import { define } from "./declareDemo"
+import { define } from "./declaration.js"
 
 export const groupDef = define.group({
-    title: "string",
+    name: "string",
     members: "user[]"
 })
 ```

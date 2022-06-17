@@ -32,7 +32,8 @@
         "benchCyclic": "pnpm ts-node ./test/bench/cyclic.bench.ts",
         "generateBenchData": "pnpm ts-node ./scripts/generateBenchData.ts",
         "bench": "pnpm ts-node ./test/bench/parser.bench.ts",
-        "diag": "pnpm tsc -p ./test/tsconfig.json > diag.txt"
+        "diag": "pnpm tsc -p ./test/tsconfig.json > diag.txt",
+        "updateReadme": "pnpm ts-node ../node/src/reTagToMarkdown.ts"
     },
     "dependencies": {
         "@re-/tools": "workspace:*"
@@ -40,9 +41,6 @@
     "devDependencies": {
         "@re-/assert": "workspace:*",
         "@re-/node": "workspace:*",
-        "ts-morph": "15.1.0",
-        "remark": "14.0.2",
-        "remark-parse": "10.0.1",
         "zod": "3.17.3"
     }
 }
