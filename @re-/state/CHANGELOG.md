@@ -1,5 +1,13 @@
 # @re-/state
 
+## 0.0.4
+
+### Patch Changes
+
+-   Updated dependencies [99891dd]
+    -   @re-/model@2.0.3
+    -   @re-/tools@2.1.1
+
 ## 0.0.3
 
 ### Patch Changes
