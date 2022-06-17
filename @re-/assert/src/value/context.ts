@@ -37,17 +37,30 @@ export type ChainableValueAssertion<
 export type ChainableAssertionOptions = {
     isReturn?: boolean
     allowRegex?: boolean
+    defaultExpected?: unknown
 }
 
 export const chainableAssertion = (
     position: SourcePosition,
     valueThunk: () => unknown,
     config: AssertionContext,
-    { isReturn = false, allowRegex = false }: ChainableAssertionOptions = {}
+    options: ChainableAssertionOptions = {}
 ) =>
     new Proxy(
         (...args: [expected: unknown]) => {
-            defaultAssert(valueThunk(), args[0], allowRegex)
+            let expected
+            if (args.length) {
+                expected = args[0]
+            } else {
+                if ("defaultExpected" in options) {
+                    expected = options.defaultExpected
+                } else {
+                    throw new Error(
+                        `Assertion requires an arg representing the expected value.`
+                    )
+                }
+            }
+            defaultAssert(valueThunk(), expected, options.allowRegex)
             return getNextAssertions(position, config)
         },
         {
@@ -60,7 +73,7 @@ export const chainableAssertion = (
                     valueThunk(),
                     config
                 )
-                if (isReturn) {
+                if (options.isReturn) {
                     const nextAssertions = getNextAssertions(position, config)
                     if (prop in nextAssertions) {
                         return (nextAssertions as any)[prop]
@@ -261,7 +274,7 @@ export const valueAssertions = <T>(
                 position,
                 () => getThrownMessage(runAssertionFunction(actual, ctx)),
                 ctx,
-                { allowRegex: true }
+                { allowRegex: true, defaultExpected: "" }
             )
         }
         if (ctx.allowTypeAssertions) {

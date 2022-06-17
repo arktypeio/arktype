@@ -62,8 +62,7 @@ let skipTypes = runnerArgs.includes("--skipTypes")
 
 runTestsCmd += runnerArgs
 
-// If the test process doesn't return successfully, this stays at 1
-let exitCode = 1
+let processError: unknown
 
 try {
     if (skipTypes) {
@@ -81,13 +80,15 @@ try {
     }
     console.log(`⏳ @re-/assert: Using ${runner} to run your tests...`)
     const runnerStart = Date.now()
-    exitCode = shell(runTestsCmd, {
+    shell(runTestsCmd, {
         env: { RE_ASSERT_CMD: runTestsCmd }
-    }).exitCode
+    })
     const runnerSeconds = (Date.now() - runnerStart) / 1000
     console.log(
         `✅ @re-/assert: ${runner} completed in ${runnerSeconds} seconds.\n`
     )
+} catch (error) {
+    processError = error
 } finally {
     console.log(
         `⏳ @re-/assert: Updating inline snapshots and cleaning up cache...`
@@ -98,7 +99,7 @@ try {
     console.log(
         `✅ @re-/assert: Finished cleanup in ${cleanupSeconds} seconds.`
     )
-    if (exitCode) {
-        process.exit(exitCode)
-    }
+}
+if (processError) {
+    throw processError
 }

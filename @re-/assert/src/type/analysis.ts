@@ -83,6 +83,7 @@ type AssertionData = {
     type: {
         actual: string
         expected?: string
+        equivalent?: boolean
     }
     errors: string
 }
@@ -252,12 +253,38 @@ const analyzeTypeAssertions = memoize(
                         char: end.character + 1
                     }
                 }
+                const typeData: AssertionData["type"] = {
+                    actual: typeToCheck.getText()
+                }
+                if (expectedType) {
+                    typeData.expected = expectedType.getText()
+                    if (typeData.expected === "any") {
+                        // If the expected type is any, just compare the type strings directly
+                        typeData.equivalent =
+                            typeData.actual === typeData.expected
+                    } else {
+                        // Otherwise, determine if the types are equivalent by checking mutual assignability
+                        // Using any as isTypeAssignableTo is not publicly exposed
+                        const checker: any =
+                            project.getTypeChecker().compilerObject
+                        const isActualAssignableToExpected =
+                            checker.isTypeAssignableTo(
+                                typeToCheck.compilerType,
+                                expectedType.compilerType
+                            )
+                        const isExpectedAssignableToActual =
+                            checker.isTypeAssignableTo(
+                                expectedType.compilerType,
+                                typeToCheck.compilerType
+                            )
+                        typeData.equivalent =
+                            isActualAssignableToExpected &&
+                            isExpectedAssignableToActual
+                    }
+                }
                 return {
                     location,
-                    type: {
-                        actual: typeToCheck.getText(),
-                        expected: expectedType?.getText()
-                    },
+                    type: typeData,
                     errors
                 }
             })

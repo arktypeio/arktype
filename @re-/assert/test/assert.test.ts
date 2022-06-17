@@ -70,6 +70,14 @@ describe("assertions", () => {
             "didn't throw"
         )
     })
+    it("throws empty", () => {
+        assert(throwError).throws()
+        strict.throws(
+            () => assert(() => shouldThrow(false)).throws(),
+            strict.AssertionError,
+            "didn't throw"
+        )
+    })
     it("args", () => {
         assert((input: string) => `${input}!`)
             .args("omg")
@@ -390,5 +398,12 @@ secondLine`)
     it("default serializer doesn't are about prop order", () => {
         const actual = { a: true, b: false }
         assert(actual).snap({ b: false, a: true })
+    })
+    it("typed allows equivalent types", () => {
+        const actual = { a: true, b: false }
+        assert(actual).typed as {
+            b: boolean
+            a: boolean
+        }
     })
 })

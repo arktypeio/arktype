@@ -55,7 +55,12 @@ export class TypeAssertions {
                     `line ${this.position.line} of ${this.position.file}.`
             )
         }
-        strict.equal(assertionData.type.actual, assertionData.type.expected)
+        if (
+            !assertionData.type.equivalent &&
+            assertionData.type.actual !== assertionData.type.expected
+        ) {
+            strict.equal(assertionData.type.actual, assertionData.type.expected)
+        }
         return undefined
     }
 }
