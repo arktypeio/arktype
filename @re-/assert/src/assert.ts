@@ -2,7 +2,7 @@ import { fileURLToPath } from "node:url"
 import { caller } from "@re-/node"
 import { ListPossibleTypes } from "@re-/tools"
 import { getReAssertConfig, ReAssertConfig } from "./common.js"
-import { typeAssertions, TypeAssertions } from "./type/index.js"
+import { TypeAssertions } from "./type/index.js"
 import { ValueAssertion, valueAssertions } from "./value/index.js"
 
 export type AvailableAssertions<T> = ValueAssertion<
@@ -44,9 +44,8 @@ export const assert: Assertion = (
         args: [],
         config: { ...getReAssertConfig(), ...internalConfigHooks }
     }
-    const assertionContext = valueAssertions(position, value, config)
-    if (config.allowTypeAssertions) {
-        return Object.assign(typeAssertions(position, config), assertionContext)
-    }
-    return assertionContext
+    return Object.assign(
+        new TypeAssertions(position, config),
+        valueAssertions(position, value, config)
+    )
 }

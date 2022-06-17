@@ -1,6 +1,0 @@
-{
-    "assert.test.ts": {
-        "toFile": "{re: `do`}",
-        "toFileUpdate": "{re: `oldValue`}"
-    }
-}

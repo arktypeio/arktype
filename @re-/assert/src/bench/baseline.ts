@@ -1,10 +1,7 @@
-import { toString } from "@re-/tools"
-import { writeInlineSnapshotToFile } from "../value/snapshot.js"
+import { literalSerialize } from "../common.js"
+import { queueInlineSnapshotWriteOnProcessExit } from "../value/snapshot.js"
 import { BenchAssertionContext, BenchContext } from "./bench.js"
 import { MeasureComparison } from "./measure.js"
-
-const serializeBaseline = (baseline: string | object) =>
-    toString(baseline, { quotes: "double" })
 
 export const updateBaselineIfNeeded = (
     result: string | object,
@@ -15,29 +12,17 @@ export const updateBaselineIfNeeded = (
     if (baseline && !ctx.config.updateSnapshots) {
         return
     }
-    console.log(`✍️  ${baseline ? "Rewriting" : "Writing"} your baseline...`)
-    const serializedValue = serializeBaseline(result)
+    const serializedValue = literalSerialize(result)
     if (!ctx.lastSnapCallPosition) {
         throw new Error(
             `Unable to update baseline for ${ctx.name} ('lastSnapCallPosition' was unset).`
         )
     }
-    writeInlineSnapshotToFile({
+    queueInlineSnapshotWriteOnProcessExit({
         position: ctx.lastSnapCallPosition,
         serializedValue,
-        snapFunctionName: ctx.kind
-    })
-    // Summarize updates at the end of output
-    process.on("beforeExit", () => {
-        let updateSummary = `  ${
-            baseline ? "🆙  Updated" : "✨  Established"
-        } baseline '${ctx.name}' `
-        updateSummary += baseline
-            ? `from ${serializeBaseline(baseline)} to `
-            : "at "
-        updateSummary += `${serializedValue}.`
-        console.groupEnd()
-        console.log(updateSummary)
+        snapFunctionName: ctx.kind,
+        baselineName: ctx.name
     })
 }
 

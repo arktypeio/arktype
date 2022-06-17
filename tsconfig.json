@@ -9,7 +9,6 @@
         "esModuleInterop": true,
         "resolveJsonModule": true,
         "composite": true,
-        "emitDeclarationOnly": true,
         "jsx": "react",
         "lib": ["ESNext"]
     },

@@ -1,128 +1,152 @@
-import { diffSets, Evaluate, Merge, transform } from "@re-/tools"
-import { Root } from "./definitions/index.js"
-import { typeDefProxy } from "./internal.js"
-import {
-    BaseOptions,
-    createCreateFunction,
-    CreateFunction,
-    Model,
-    ModelOptions
-} from "./model.js"
+import { deepMerge, EntriesOf, Evaluate, Merge } from "@re-/tools"
+import { Model, ModelFrom, ModelFunction } from "./model.js"
+import { Root } from "./nodes/index.js"
+import { Alias } from "./nodes/str/alias.js"
+import { Common } from "#common"
+
+export const compile: CompileFunction = (dictionary, options) =>
+    new Space(dictionary, options) as any
+
+export class Space implements SpaceFrom<any> {
+    inputs: SpaceFrom<any>["inputs"]
+    models: Record<string, Model>
+    modelDefinitionEntries: EntriesOf<SpaceDictionary>
+    config: SpaceConfig
+    modelConfigs: Record<string, Common.ModelOptions>
+    resolutions: Common.Parser.ResolutionMap
+
+    constructor(dictionary: SpaceDictionary, options?: SpaceOptions<string>) {
+        this.inputs = { dictionary, options }
+        const normalized = normalizeSpaceInputs(dictionary, options)
+        this.config = normalized.config
+        this.modelConfigs = normalized.modelConfigs
+        this.modelDefinitionEntries = normalized.modelDefinitionEntries
+        this.resolutions = {}
+        this.models = {}
+        for (const [alias, resolution] of this.modelDefinitionEntries) {
+            const ctx = Common.Parser.createContext(
+                deepMerge(this.config, this.modelConfigs[alias]),
+                this.resolutions
+            )
+            this.models[alias] = new Model(
+                new Alias.Node(alias, ctx, resolution)
+            )
+        }
+    }
+
+    create(def: unknown, options?: Common.ModelOptions) {
+        const root = Root.parse(
+            def,
+            Common.Parser.createContext(
+                deepMerge(this.config, options),
+                this.resolutions
+            )
+        )
+        return new Model(root, deepMerge(this.config, options)) as any
+    }
+
+    extend(extensions: SpaceDictionary, overrides?: SpaceOptions<string>) {
+        return new Space(
+            { ...this.inputs.dictionary, ...extensions },
+            deepMerge(this.inputs.options, overrides)
+        ) as any
+    }
+
+    get types() {
+        return Common.chainableNoOpProxy
+    }
+}
 
 export type MetaKey = "onCycle" | "onResolve"
 
 export type DictionaryToModels<Dict> = Evaluate<{
-    [TypeName in Exclude<keyof Dict, MetaKey>]: Model<
+    [TypeName in Exclude<keyof Dict, MetaKey>]: ModelFrom<
         Dict[TypeName],
-        Root.FastParse<Dict[TypeName], Dict, { [K in TypeName]: true }>
+        Root.Parse<Dict[TypeName], Dict, { [K in TypeName]: true }>
     >
 }>
 
-interface InternalSpaceOptions extends SpaceOptions<string> {
-    declaredTypeNames?: string[]
+export interface SpaceOptions<ModelName extends string>
+    extends Common.ModelOptions {
+    models?: { [K in ModelName]?: Common.ModelOptions }
 }
 
-// @ts-ignore
-export const compile: CompileFunction = (
-    dictionary,
-    config: InternalSpaceOptions = {}
-) => {
-    if (config.declaredTypeNames) {
-        const declarationErrors = diffSets(
-            config.declaredTypeNames,
-            Object.keys(dictionary)
-        )
-        if (declarationErrors) {
-            const errorParts = [] as string[]
-            if (declarationErrors.added) {
-                errorParts.push(
-                    `Defined types ${declarationErrors.added
-                        .map((_) => `'${_}'`)
-                        .join(", ")} were never declared.`
-                )
-            }
-            if (declarationErrors.removed) {
-                errorParts.push(
-                    `Declared types ${declarationErrors.removed
-                        .map((_) => `'${_}'`)
-                        .join(", ")} were never defined.`
-                )
-            }
-            throw new Error(errorParts.join(" "))
-        }
-    }
-    const create = createCreateFunction({ dictionary, config })
-    const extend: ExtendFunction<unknown> = (newDefinitions, newConfig) =>
-        compile(
-            // @ts-ignore
-            { ...dictionary, ...newDefinitions },
-            {
-                ...config,
-                ...newConfig,
-                models: { ...config?.models, ...newConfig?.models }
-            }
-        )
-    return {
-        dictionary,
-        config,
-        models: transform(dictionary, ([typeName, definition]) => [
-            typeName,
-            // @ts-ignore
-            create(definition, { ...config, ...config?.models?.[typeName] })
-        ]),
-        types: typeDefProxy,
-        create,
-        extend
+type ModelNameIn<Dict> = keyof Dict & string
+
+interface SpaceExtensionOptions<
+    BaseModelName extends string,
+    ExtensionModelName extends string
+> extends Common.ModelOptions {
+    models?: {
+        [ModelName in BaseModelName | ExtensionModelName]?: Common.ModelOptions
     }
 }
 
-export interface SpaceOptions<ModelName extends string> extends BaseOptions {
-    models?: { [K in ModelName]?: ModelOptions }
-}
-
-export interface SpaceConfig<ModelName extends string>
-    extends SpaceOptions<ModelName> {
+interface SpaceConfig extends SpaceOptions<any> {
     onCycle?: unknown
     onResolve?: unknown
 }
 
-export type SpaceDefinition = {
-    dictionary: Record<string, unknown>
-    config?: SpaceOptions<string>
+type SpaceDictionary = Record<string, unknown>
+
+type ValidateDictionaryExtension<BaseDict, ExtensionDict> = {
+    [TypeName in keyof ExtensionDict]: Root.Validate<
+        ExtensionDict[TypeName],
+        Merge<BaseDict, ExtensionDict>
+    >
 }
 
-export type ConfiguredSpace = {
-    dictionary: Record<string, unknown>
-    config: SpaceConfig<string>
-}
-
-export type ExtendFunction<BaseDict> = <Dict>(
-    dictionary: ValidateDictionary<Dict>,
-    config?: SpaceOptions<(keyof Dict | keyof BaseDict) & string>
-) => Space<Merge<BaseDict, Dict>>
+export type ExtendFunction<BaseDict> = <ExtensionDict>(
+    dictionary: ValidateDictionaryExtension<BaseDict, ExtensionDict>,
+    config?: SpaceExtensionOptions<
+        ModelNameIn<BaseDict>,
+        ModelNameIn<ExtensionDict>
+    >
+) => SpaceFrom<Merge<BaseDict, ExtensionDict>>
 
 export type DictToTypes<Dict> = Evaluate<{
-    [TypeName in Exclude<keyof Dict, MetaKey>]: Root.FastParse<
+    [TypeName in Exclude<keyof Dict, MetaKey>]: Root.Parse<
         Dict[TypeName],
         Dict,
         { [K in TypeName]: true }
     >
 }>
 
-export type Space<Dict> = {
-    models: DictionaryToModels<Dict>
-    config: SpaceConfig<keyof Dict & string>
-    types: DictToTypes<Dict>
-    dictionary: Dict
-    create: CreateFunction<Dict>
-    extend: ExtendFunction<Dict>
-}
-
 export type ValidateDictionary<Dict> = {
-    [TypeName in keyof Dict]: Root.FastValidate<Dict[TypeName], Dict>
+    [TypeName in keyof Dict]: Root.Validate<Dict[TypeName], Dict>
 }
 
 export type CompileFunction = <Dict>(
     dictionary: ValidateDictionary<Dict>,
-    config?: SpaceOptions<keyof Dict & string>
-) => Space<Dict>
+    options?: SpaceOptions<ModelNameIn<Dict>>
+) => SpaceFrom<Dict>
+
+export type SpaceFrom<Dict> = {
+    models: DictionaryToModels<Dict>
+    types: DictToTypes<Dict>
+    extend: ExtendFunction<Dict>
+    create: ModelFunction<Dict>
+    inputs: {
+        dictionary: Dict
+        options: SpaceOptions<ModelNameIn<Dict>> | undefined
+    }
+}
+
+const normalizeSpaceInputs = (
+    dictionary: any,
+    options: SpaceOptions<string> = {}
+) => {
+    const { onCycle, onResolve, ...modelDefinitions } = dictionary
+    const { models = {}, ...config } = options as SpaceConfig
+    if (onCycle) {
+        config.onCycle = onCycle
+    }
+    if (onResolve) {
+        config.onResolve = onResolve
+    }
+    return {
+        modelConfigs: models as Record<string, Common.ModelOptions>,
+        modelDefinitionEntries: Object.entries(modelDefinitions),
+        config
+    }
+}

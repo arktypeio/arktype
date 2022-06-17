@@ -70,33 +70,30 @@ Take a look at [their documentation](https://pnpm.io/workspaces) if you are conf
 git checkout -b my-topic-branch
 ```
 
-6. Once you've made the changes you want to:
-
-- Run the linter and resolve any warnings or errors:
+6. Once you've made the changes you want to and added corresponding unit tests, run the `check-pr` command in the project root and address any problems:
 
 ```sh
-pnpm lint
+pnpm check-pr
 ```
 
-- Make sure everything still builds successfully:
+You can also run any of the commands individually:
 
 ```sh
 pnpm build
-```
-
-- You've added new tests to cover your changes, and that all of our existing tests are passing:
-
-```sh
+pnpm lint
 pnpm test
+pnpm bench
 ```
 
-Once that's done, commit your changes and push to your fork:
+All of these command will run as part of our CI process and must succeed in order for us to accept your Pull Request.
+
+7. Once everything is passing, commit your changes and ensure your fork is up to date:
 
 ```sh
 git push -u
 ```
 
-7. Go to [the repository](https://github.com/re-do/re-po) and make a Pull Request.
+8. Go to [the repository](https://github.com/re-do/re-po) and make a Pull Request.
 
 The core team is monitoring for Pull Requests. We will review your Pull Request and either merge it, request changes to it, or close it with an explanation.
 
@@ -107,7 +104,7 @@ We use a [pnpm workspace](https://pnpm.io/workspaces) to manage our packages. Yo
 -   [@re-/model](@re-/model): Beautiful types from IDE to runtime 🧬
 -   [@re-/assert](@re-/assert): Seamless testing for types and code ✅
 -   [@re-/tools](@re-/tools): Lightweight utilities and types shared across Redo packages 🧰
--   [@re-/tools](@re-/node): Node-based utilities, scripts, and configs for Redo packages ⚙️
+-   [@re-/node](@re-/node): Node-based utilities, scripts, and configs for Redo packages ⚙️
 -   [@re-/docs](@re-/docs): Documentation for this repo 📚
 
 ## Project

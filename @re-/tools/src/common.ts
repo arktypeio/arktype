@@ -65,9 +65,15 @@ export type ValueOf<T> = T extends NonRecursible
     ? T[number]
     : T[keyof T]
 
-export type EntryOf<T> = { [K in keyof T]: [K, T[K]] }[T extends any[]
+export type Entry<K extends Key = Key, V = unknown> = [K, V]
+
+export type Entries<K extends Key = Key, V = unknown> = Entry<K, V>[]
+
+export type EntryOf<T> = { [K in keyof T]: [K, T[K]] }[T extends unknown[]
     ? keyof T & number
     : keyof T]
+
+export type EntriesOf<T> = EntryOf<T>[]
 
 export type Func<Parameters extends any[] = any[], ReturnType = any> = (
     ...args: Parameters
@@ -221,19 +227,28 @@ export type Get<T, K> = T[K]
 // @ts-ignore
 export type GetAs<T, K, Cast> = T[K] & Cast
 
-export type Entry<K extends Key = Key, V = any> = [K, V]
-
 export type List<T = any> = T[] | readonly T[]
 
 export type Recursible<T> = T extends NonRecursible ? never : T
 
-export type RequiredKeys<O> = {
+export type GetRequiredKeys<O> = {
     [K in keyof O]-?: {} extends Pick<O, K> ? never : K
 }[keyof O]
 
-export type OptionalKeys<O> = {
+export type GetOptionalKeys<O> = {
     [K in keyof O]-?: {} extends Pick<O, K> ? K : never
 }[keyof O]
+
+export type RequireKeys<O, KeysToMakeRequired extends keyof O> = O & {
+    [K in KeysToMakeRequired]-?: Exclude<O[K], undefined>
+}
+
+export type OptionalizeKeys<O, KeysToMakeOptional extends keyof O> = Omit<
+    O,
+    KeysToMakeOptional
+> & {
+    [K in KeysToMakeOptional]-?: O[K]
+}
 
 type GetLastUnionMember<T> = IntersectOf<
     T extends unknown ? (x: T) => void : never

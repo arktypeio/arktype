@@ -1,5 +1,10 @@
 import { caller } from "@re-/node"
-import { getReAssertConfig, ReAssertConfig, SourcePosition } from "../common.js"
+import {
+    callableChainableNoOpProxy,
+    getReAssertConfig,
+    ReAssertConfig,
+    SourcePosition
+} from "../common.js"
 import {
     AssertionName,
     BenchCallAssertions,
@@ -52,19 +57,8 @@ export const bench = <Fn extends () => unknown>(
         lastSnapCallPosition: undefined
     }
     if (ctx.config.matcher && !ctx.config.matcher.test(name)) {
-        // If a matcher was provided via --only and it does not match,
-        // return a noop that lets you arbitrarily chain properties.
-        const noopProxy: any = new Proxy(() => noopProxy, {
-            get: (target, prop) => {
-                // This tries to chain arbitrary prop access and function calls, but technically could throw if
-                // accessing prop from the function prototype, e.g. 'apply' (should not happen normally)
-                if (prop in target) {
-                    return (target as any)[prop]
-                }
-                return noopProxy
-            }
-        })
-        return noopProxy
+        // If a matcher was provided via --only and it does not match, ignore all checks
+        return callableChainableNoOpProxy
     }
     return {
         ...getBenchCallAssertions(fn, ctx),

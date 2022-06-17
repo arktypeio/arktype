@@ -2,8 +2,10 @@ import { randomUUID } from "node:crypto"
 import { existsSync, readdirSync } from "node:fs"
 import { basename, dirname, isAbsolute, join } from "node:path"
 import { readJson, writeJson } from "@re-/node"
-import { CallExpression, SyntaxKind, ts } from "ts-morph"
+import { toString } from "@re-/tools"
+import { CallExpression, SourceFile, SyntaxKind, ts } from "ts-morph"
 import {
+    getFileKey,
     getReAssertConfig,
     positionToString,
     SourcePosition
@@ -12,8 +14,9 @@ import { getTsProject, tsNodeAtPosition } from "../type/analysis.js"
 
 export interface SnapshotArgs {
     position: SourcePosition
-    serializedValue: string
+    serializedValue: unknown
     snapFunctionName?: string
+    baselineName?: string
 }
 
 export interface ExternalSnapshotArgs extends SnapshotArgs {
@@ -21,7 +24,10 @@ export interface ExternalSnapshotArgs extends SnapshotArgs {
     customPath: string | undefined
 }
 
-export const queueInlineSnapshotUpdate = ({
+/** Writes the update and position to cacheDir, which will eventually be read and copied to the source
+ * file by a cleanup process after all tests have completed.
+ */
+export const writeInlineSnapshotUpdateToCacheDir = ({
     position,
     serializedValue
 }: SnapshotArgs) => {
@@ -34,7 +40,7 @@ export const queueInlineSnapshotUpdate = ({
     )
 }
 
-export const writeQueuedSnapshotUpdates = () => {
+export const writeCachedInlineSnapshotUpdates = () => {
     const config = getReAssertConfig()
     if (!existsSync(config.snapCacheDir)) {
         throw new Error(
@@ -54,7 +60,7 @@ export const writeQueuedSnapshotUpdates = () => {
             }
             if (snapshotData) {
                 try {
-                    writeInlineSnapshotToFile(snapshotData)
+                    queueInlineSnapshotWriteOnProcessExit(snapshotData)
                 } catch (error) {
                     // If writeInlineSnapshotToFile throws an error, log it and move on to the next update
                     console.error(String(error))
@@ -94,20 +100,66 @@ export const findCallExpressionAncestor = (
     return matchingCall
 }
 
-export const writeInlineSnapshotToFile = ({
+type QueuedUpdate = {
+    file: SourceFile
+    snapCall: CallExpression
+    serializedValue: unknown
+    baselineName: string | undefined
+}
+
+const queuedUpdates: QueuedUpdate[] = []
+
+// Waiting until process exit to write snapshots avoids invalidating existing source positions
+process.on("exit", () => {
+    for (const {
+        file,
+        snapCall,
+        serializedValue,
+        baselineName
+    } of queuedUpdates) {
+        const originalArgs = snapCall.getArguments()
+        const previousValue = originalArgs.length
+            ? originalArgs[0].getText()
+            : undefined
+        for (const originalArg of originalArgs) {
+            snapCall.removeArgument(originalArg)
+        }
+        const updatedSnapArgText = toString(serializedValue, {
+            quotes: "backtick"
+        }).replace(`\\`, `\\\\`)
+        snapCall.addArgument(updatedSnapArgText)
+        file.saveSync()
+        let updateSummary = `${
+            originalArgs.length ? "🆙  Updated" : "📸  Established"
+        } `
+        updateSummary += baselineName
+            ? `baseline '${baselineName}' `
+            : `snap on line ${snapCall.getStartLineNumber()} of ${getFileKey(
+                  file.getFilePath()
+              )} `
+        updateSummary += previousValue
+            ? `from ${previousValue} to `
+            : `${baselineName ? "at" : "as"} `
+
+        updateSummary += `${serializedValue}.`
+        console.log(updateSummary)
+    }
+})
+
+export const queueInlineSnapshotWriteOnProcessExit = ({
     position,
     serializedValue,
-    snapFunctionName = "snap"
+    snapFunctionName = "snap",
+    baselineName
 }: SnapshotArgs) => {
     const project = getTsProject()
     const file = project.getSourceFileOrThrow(position.file)
     const snapCall = findCallExpressionAncestor(position, snapFunctionName)
-    process.on("exit", () => {
-        for (const originalArg of snapCall.getArguments()) {
-            snapCall.removeArgument(originalArg)
-        }
-        snapCall.addArgument(serializedValue.replace(`\\`, `\\\\`))
-        file.saveSync()
+    queuedUpdates.push({
+        file,
+        snapCall,
+        serializedValue,
+        baselineName
     })
 }
 
