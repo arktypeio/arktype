@@ -1,7 +1,7 @@
 import { asNumber } from "@re-/tools"
+import { Common } from "../common.js"
 import { Literal } from "../literal/literal.js"
 import { Regex } from "../obj/regex.js"
-import { Common } from "#common"
 
 /**
  * These expressions act like other terminal nodes (i.e. they are never parsed further),

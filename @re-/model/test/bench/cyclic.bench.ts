@@ -1,4 +1,5 @@
 import { bench } from "@re-/assert"
+import { compile } from "../../src/index.js"
 import {
     cyclic10,
     cyclic100,
@@ -6,7 +7,6 @@ import {
     cyclic50,
     cyclic500
 } from "./generated/cyclic.js"
-import { compile } from "#src"
 
 bench("cyclic(10)", () => {
     const space = compile(cyclic10)

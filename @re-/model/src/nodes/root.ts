@@ -1,8 +1,8 @@
 import { IsAny, IsAnyOrUnknown } from "@re-/tools"
+import { Common } from "./common.js"
 import { Literal } from "./literal/index.js"
 import { Obj } from "./obj/index.js"
 import { Str } from "./str/index.js"
-import { Common } from "#common"
 
 export namespace Root {
     export type Validate<Def, Dict> = Def extends []

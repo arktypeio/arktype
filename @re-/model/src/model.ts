@@ -1,6 +1,6 @@
+import { Common } from "./nodes/common.js"
 import { ModelOptions } from "./nodes/common/utils.js"
 import { Root } from "./nodes/index.js"
-import { Common } from "#common"
 
 /**
  * Create a model.

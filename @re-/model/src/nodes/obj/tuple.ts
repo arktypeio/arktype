@@ -1,6 +1,6 @@
 import { Entry } from "@re-/tools"
+import { Common } from "../common.js"
 import { Root } from "../root.js"
-import { Common } from "#common"
 
 export namespace Tuple {
     export type Definition = unknown[] | readonly unknown[]

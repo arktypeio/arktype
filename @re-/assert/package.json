@@ -21,9 +21,6 @@
             "require": "./dist/cjs/index.js"
         }
     },
-    "imports": {
-        "#src": "./src/index.js"
-    },
     "scripts": {
         "build": "re tsc",
         "test": "pnpm ts-node ./src/runner.ts mocha",

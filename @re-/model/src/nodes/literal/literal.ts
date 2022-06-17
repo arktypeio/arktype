@@ -1,4 +1,4 @@
-import { Common } from "#common"
+import { Common } from "../common.js"
 
 export namespace Literal {
     export type Definition = number | bigint | boolean | undefined | null

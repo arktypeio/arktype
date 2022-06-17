@@ -1,7 +1,7 @@
 import { diffSets, Entry, Evaluate } from "@re-/tools"
+import { Common } from "../common.js"
 import { Root } from "../root.js"
 import { Optional } from "../str/index.js"
-import { Common } from "#common"
 
 export namespace Map {
     export type Definition = Record<string, unknown>
