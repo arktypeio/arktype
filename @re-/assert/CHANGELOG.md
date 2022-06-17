@@ -1,5 +1,15 @@
 # @re-/assert
 
+## 0.3.1
+
+### Patch Changes
+
+-   879ea99: Check types for equivalency before failing assertions.
+-   879ea99: Improve bench/snap update summaries.
+-   Updated dependencies [2aa6e59]
+    -   @re-/node@2.1.1
+    -   @re-/tools@2.1.0
+
 ## 0.3.0
 
 ### Minor Changes
