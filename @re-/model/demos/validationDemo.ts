@@ -1,8 +1,8 @@
-import { model } from "@re-/model"
+import { create } from "@re-/model"
 
-const employee = model({
+const employee = create({
     // Not a fan of regex? Don't worry, 'email' is a builtin type :)
-    email: `/[a-z]*@redo\\.dev/`,
+    email: `/[a-z]*@redo\.dev/`,
     about: {
         // Single or double bound numeric types
         age: "18<=integer<125",
@@ -30,5 +30,3 @@ const { error } = employee.validate({
 //   about/bio: ''I am very interesting.I am very interesting.I am... was greater than 80 characters.'
 // }"
 console.log(error ?? "Flawless. Obviously.")
-
-//@re_place validationDemo.ts

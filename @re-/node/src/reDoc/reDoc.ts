@@ -2,7 +2,7 @@ import { mkdtempSync, rmSync } from "node:fs"
 import { join, resolve } from "node:path"
 import { TSDocConfiguration, TSDocParser } from "@microsoft/tsdoc"
 import { TSDocConfigFile } from "@microsoft/tsdoc-config"
-import { findPackageRoot, fromPackageRoot } from "../index.js"
+import { findPackageRoot, fromPackageRoot } from "../fs.js"
 import { analyzePackage } from "./analysis/index.js"
 import { generateDocs } from "./generation/generateDocs.js"
 

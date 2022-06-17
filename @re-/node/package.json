@@ -16,6 +16,11 @@
             "types": "./dist/types/index.d.ts",
             "import": "./dist/mjs/index.js",
             "require": "./dist/cjs/index.js"
+        },
+        "./reTagToMarkdown": {
+            "types": "./dist/types/reTagToMarkdown.d.ts",
+            "import": "./dist/mjs/reTagToMarkdown.js",
+            "require": "./dist/cjs/reTagToMarkdown.js"
         }
     },
     "scripts": {
@@ -23,23 +28,25 @@
         "test": "reassert mocha"
     },
     "bin": {
-        "re": "./cli.cjs"
+        "re": "./cli.js"
     },
     "dependencies": {
-        "execa": "5.0.0",
-        "prompts": "2.4.1",
-        "get-current-line": "6.6.0",
-        "deepmerge": "4.2.2",
-        "@microsoft/tsdoc": "0.14.1",
-        "@microsoft/tsdoc-config": "0.16.1",
+        "@microsoft/api-documenter": "7.17.10",
         "@microsoft/api-extractor": "7.22.2",
         "@microsoft/api-extractor-model": "7.17.2",
-        "@microsoft/api-documenter": "7.17.10",
-        "ts-morph": "14.0.0",
-        "prettier": "2.6.2"
+        "@microsoft/tsdoc": "0.14.1",
+        "@microsoft/tsdoc-config": "0.16.1",
+        "deepmerge": "4.2.2",
+        "execa": "5.0.0",
+        "get-current-line": "6.6.0",
+        "prettier": "2.6.2",
+        "prompts": "2.4.1",
+        "ts-morph": "14.0.0"
     },
     "devDependencies": {
         "@re-/assert": "link:../assert",
-        "@types/prettier": "2.6.1"
+        "@types/prettier": "2.6.1",
+        "remark": "14.0.2",
+        "remark-parse": "10.0.1"
     }
 }
