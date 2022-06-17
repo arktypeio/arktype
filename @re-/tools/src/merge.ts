@@ -53,7 +53,7 @@ const pairwiseMerge = (objs: unknown[], mergeFn: MergeFn) => {
     }
     assertMergeable(remaining)
     while (remaining.length > 1) {
-        let mergedPairs = []
+        const mergedPairs = []
         let i = 0
         while (i in remaining) {
             if (i + 1 in remaining) {
@@ -103,13 +103,13 @@ const shallowMerge = (base: Mergeable, merged: Mergeable) => {
 const recursiveMerge = (base: Mergeable, merged: Mergeable) => {
     const result = shallowMerge(base, merged)
     for (const key of Object.keys(result)) {
-        if (key in base && key in merged) {
-            if (isMergeable(base[key]) && isMergeable(merged[key])) {
-                result[key] = recursiveMerge(
-                    base[key] as any,
-                    merged[key] as any
-                )
-            }
+        if (
+            key in base &&
+            key in merged &&
+            isMergeable(base[key]) &&
+            isMergeable(merged[key])
+        ) {
+            result[key] = recursiveMerge(base[key] as any, merged[key] as any)
         }
     }
     return result

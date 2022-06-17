@@ -146,7 +146,8 @@ module.exports = defineConfig({
             files: ["**/test/**", "**/bench/**"],
             rules: {
                 "unicorn/consistent-function-scoping": "off",
-                "unicorn/numeric-separators-style": "off"
+                "unicorn/numeric-separators-style": "off",
+                "@typescript-eslint/no-empty-function": "off"
             }
         },
         /**

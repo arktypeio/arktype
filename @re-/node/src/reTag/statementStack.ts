@@ -42,14 +42,15 @@ export class StatementStack {
         while (this.peek() !== DELIMITER && this.peek() !== undefined) {
             str = `${this.pop()}\n${str}`
         }
-        if (this.peek() !== undefined) {
-            if (copy.lastIndexOf(DELIMITER) !== copy.indexOf(DELIMITER)) {
-                const copyWithDelimiterRemoved = [
-                    ...copy.slice(0, copy.lastIndexOf(DELIMITER)),
-                    ...copy.slice(copy.lastIndexOf(DELIMITER) + 1, copy.length)
-                ]
-                this.setStorage(copyWithDelimiterRemoved)
-            }
+        if (
+            this.peek() !== undefined &&
+            copy.lastIndexOf(DELIMITER) !== copy.indexOf(DELIMITER)
+        ) {
+            const copyWithDelimiterRemoved = [
+                ...copy.slice(0, copy.lastIndexOf(DELIMITER)),
+                ...copy.slice(copy.lastIndexOf(DELIMITER) + 1, copy.length)
+            ]
+            this.setStorage(copyWithDelimiterRemoved)
         }
         return str
     }

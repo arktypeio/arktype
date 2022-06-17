@@ -56,9 +56,9 @@ if (runner === "node") {
     runTestsCmd += `node ${runnerBinPath} `
 }
 
-let runnerArgs = process.argv.slice(runnerArgIndex + 2).join(" ")
+const runnerArgs = process.argv.slice(runnerArgIndex + 2).join(" ")
 
-let skipTypes = runnerArgs.includes("--skipTypes")
+const skipTypes = runnerArgs.includes("--skipTypes")
 
 runTestsCmd += runnerArgs
 
