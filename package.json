@@ -14,7 +14,7 @@
         "prepare": "husky install",
         "pre-commit": "pretty-quick --staged",
         "find-unused": "ts-node ./scripts/findUnused.ts",
-        "ci:version": "changeset version && ts-node ./scripts/addVersionSuffixes.ts",
+        "ci:version": "ts-node ./scripts/version.ts",
         "ci:publish": "changeset publish"
     },
     "devDependencies": {
