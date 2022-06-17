@@ -21,10 +21,13 @@
             "require": "./dist/cjs/index.js"
         }
     },
+    "imports": {
+        "#src": "./src/index.js"
+    },
     "scripts": {
         "build": "re tsc",
         "test": "pnpm ts-node ./src/runner.ts mocha",
-        "test-bench": "pnpm ts-node ./src/__benches__/test.bench.ts"
+        "test-bench": "pnpm ts-node ./test/bench/test.bench.ts"
     },
     "bin": {
         "reassert": "./runner.cjs"
@@ -33,6 +36,6 @@
         "@re-/node": "workspace:*",
         "@re-/tools": "workspace:*",
         "micro-memoize": "4.0.10",
-        "ts-morph": "14.0.0"
+        "ts-morph": "15.1.0"
     }
 }

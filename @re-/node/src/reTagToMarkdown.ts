@@ -10,14 +10,16 @@ const generateCode =
     (mapData: Record<string, string>) => (markdownParentNode: any) => {
         for (const child in markdownParentNode.children) {
             const node = markdownParentNode.children[child]
-            if (node.type === CODE_TAG && node.meta) {
-                if (MARKDOWN_TAG_MATCH.test(node.meta)) {
-                    const metaData = node.meta.replace(GENERATED, "").trim()
-                    if (mapData[metaData]) {
-                        node.value = mapData[metaData]
-                        if (!node.meta.includes(GENERATED)) {
-                            node.meta = `${GENERATED} ${node.meta}`
-                        }
+            if (
+                node.type === CODE_TAG &&
+                node.meta &&
+                MARKDOWN_TAG_MATCH.test(node.meta)
+            ) {
+                const metaData = node.meta.replace(GENERATED, "").trim()
+                if (mapData[metaData]) {
+                    node.value = mapData[metaData]
+                    if (!node.meta.includes(GENERATED)) {
+                        node.meta = `${GENERATED} ${node.meta}`
                     }
                 }
             }

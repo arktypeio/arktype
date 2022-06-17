@@ -1,5 +1,6 @@
 import { strict } from "node:assert"
 import { isDeepStrictEqual } from "node:util"
+import { caller } from "@re-/node"
 import {
     ElementOf,
     Func,
@@ -8,18 +9,14 @@ import {
     toString
 } from "@re-/tools"
 import { AssertionContext } from "../assert.js"
-import { SourcePosition } from "../common.js"
-import {
-    getAssertionData,
-    TypeAssertions,
-    typeAssertions
-} from "../type/index.js"
+import { literalSerialize, SourcePosition } from "../common.js"
+import { getAssertionData, TypeAssertions } from "../type/index.js"
 import {
     getSnapshotByName,
-    queueInlineSnapshotUpdate,
+    queueInlineSnapshotWriteOnProcessExit,
     SnapshotArgs,
     updateExternalSnapshot,
-    writeInlineSnapshotToFile
+    writeInlineSnapshotUpdateToCacheDir
 } from "./snapshot.js"
 
 export type ChainableValueAssertion<
@@ -34,39 +31,36 @@ export type ChainableValueAssertion<
         (IsReturn extends true ? NextAssertions<AllowTypeAssertions> : {})
 > = (<Args extends ArgsType | [] = []>(
     ...args: Args
-) => Args extends []
-    ? ImmediateAssertions
-    : NextAssertions<AllowTypeAssertions>) &
+) => NextAssertions<AllowTypeAssertions>) &
     ImmediateAssertions
 
 export type ChainableAssertionOptions = {
     isReturn?: boolean
     allowRegex?: boolean
+    defaultExpected?: unknown
 }
 
 export const chainableAssertion = (
     position: SourcePosition,
     valueThunk: () => unknown,
     config: AssertionContext,
-    { isReturn = false, allowRegex = false }: ChainableAssertionOptions = {}
+    options: ChainableAssertionOptions = {}
 ) =>
     new Proxy(
         (...args: [expected: unknown]) => {
-            if (!args.length) {
-                const baseAssertions = valueAssertions(
-                    position,
-                    valueThunk(),
-                    config
-                )
-                if (isReturn) {
-                    return Object.assign(
-                        baseAssertions,
-                        getNextAssertions(position, config)
+            let expected
+            if (args.length) {
+                expected = args[0]
+            } else {
+                if ("defaultExpected" in options) {
+                    expected = options.defaultExpected
+                } else {
+                    throw new Error(
+                        `Assertion requires an arg representing the expected value.`
                     )
                 }
-                return baseAssertions
             }
-            defaultAssert(valueThunk(), args[0], allowRegex)
+            defaultAssert(valueThunk(), expected, options.allowRegex)
             return getNextAssertions(position, config)
         },
         {
@@ -79,11 +73,11 @@ export const chainableAssertion = (
                     valueThunk(),
                     config
                 )
-                if (isReturn) {
-                    return Object.assign(
-                        baseAssertions,
-                        getNextAssertions(position, config)
-                    )[prop]
+                if (options.isReturn) {
+                    const nextAssertions = getNextAssertions(position, config)
+                    if (prop in nextAssertions) {
+                        return (nextAssertions as any)[prop]
+                    }
                 }
                 return baseAssertions[prop]
             }
@@ -244,7 +238,7 @@ export const runAssertionFunction = (
 export const getNextAssertions = (
     position: SourcePosition,
     ctx: AssertionContext
-) => (ctx.allowTypeAssertions ? typeAssertions(position, ctx) : {})
+) => (ctx.allowTypeAssertions ? new TypeAssertions(position, ctx) : {})
 
 export const valueAssertions = <T>(
     position: SourcePosition,
@@ -280,10 +274,10 @@ export const valueAssertions = <T>(
                 position,
                 () => getThrownMessage(runAssertionFunction(actual, ctx)),
                 ctx,
-                { allowRegex: true }
+                { allowRegex: true, defaultExpected: "" }
             )
         }
-        if (ctx["allowTypeAssertions"]) {
+        if (ctx.allowTypeAssertions) {
             // @ts-ignore
             functionAssertions.throwsAndHasTypeError = (
                 matchValue: string | RegExp
@@ -293,11 +287,13 @@ export const valueAssertions = <T>(
                     matchValue,
                     true
                 )
-                defaultAssert(
-                    getAssertionData(position).errors,
-                    matchValue,
-                    true
-                )
+                if (!ctx.config.skipTypes) {
+                    defaultAssert(
+                        getAssertionData(position).errors,
+                        matchValue,
+                        true
+                    )
+                }
             }
         }
         return functionAssertions
@@ -305,19 +301,19 @@ export const valueAssertions = <T>(
     const serialize = (value: unknown) =>
         ctx.config.stringifySnapshots
             ? `${toString(value, { quotes: "double" })}`
-            : toString(value, { quotes: "backtick" })
+            : literalSerialize(value)
     const actualSerialized = serialize(actual)
     const inlineSnap = (expected?: unknown) => {
         if (!expected || ctx.config.updateSnapshots) {
             if (!isDeepStrictEqual(actualSerialized, serialize(expected))) {
                 const snapshotArgs: SnapshotArgs = {
-                    position,
+                    position: caller(),
                     serializedValue: actualSerialized
                 }
                 if (ctx.config.precached) {
-                    queueInlineSnapshotUpdate(snapshotArgs)
+                    writeInlineSnapshotUpdateToCacheDir(snapshotArgs)
                 } else {
-                    writeInlineSnapshotToFile(snapshotArgs)
+                    queueInlineSnapshotWriteOnProcessExit(snapshotArgs)
                 }
             }
         } else {
@@ -351,7 +347,7 @@ export const valueAssertions = <T>(
                     ) {
                         updateExternalSnapshot({
                             serializedValue: actualSerialized,
-                            position,
+                            position: caller(),
                             name,
                             customPath: options.path
                         })
@@ -363,19 +359,21 @@ export const valueAssertions = <T>(
             }
         })
     } as any
-    if (ctx["allowTypeAssertions"]) {
+    if (ctx.allowTypeAssertions) {
         return {
             ...baseAssertions,
             typedValue: (expectedValue: unknown) => {
                 defaultAssert(actual, expectedValue)
-                const typeData = getAssertionData(position)
-                if (!typeData.type.expected) {
-                    throw new Error(
-                        `Expected an 'as' expression after 'typed' prop access at position ${position.char} on` +
-                            `line ${position.line} of ${position.file}.`
-                    )
+                if (!ctx.config.skipTypes) {
+                    const typeData = getAssertionData(position)
+                    if (!typeData.type.expected) {
+                        throw new Error(
+                            `Expected an 'as' expression after 'typed' prop access at position ${position.char} on` +
+                                `line ${position.line} of ${position.file}.`
+                        )
+                    }
+                    defaultAssert(typeData.type.actual, typeData.type.expected)
                 }
-                defaultAssert(typeData.type.actual, typeData.type.expected)
             }
         }
     }

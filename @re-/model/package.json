@@ -21,12 +21,19 @@
             "require": "./dist/cjs/index.js"
         }
     },
+    "imports": {
+        "#common": "./src/nodes/common/index.js",
+        "#src": "./src/index.js"
+    },
     "scripts": {
         "build": "re tsc",
         "test": "reassert mocha",
-        "bench": "pnpm ts-node ./src/__benches__/compileCyclic.bench.ts",
-        "generateBenches": "pnpm ts-node ./scripts/generateBenches.ts",
-        "replaceTags": "pnpm ts-node ../node/src/reTagToMarkdown.ts"
+        "tnt": "reassert mocha --skipTypes",
+        "benchCyclic": "pnpm ts-node ./test/bench/cyclic.bench.ts",
+        "generateBenchData": "pnpm ts-node ./scripts/generateBenchData.ts",
+        "benchCore": "pnpm ts-node ./test/bench/parser.bench.ts",
+        "diag": "pnpm tsc -p ./test/tsconfig.json > diag.txt",
+        "updateReadme": "pnpm ts-node ../node/src/reTagToMarkdown.ts"
     },
     "dependencies": {
         "@re-/tools": "workspace:*"
@@ -34,6 +41,6 @@
     "devDependencies": {
         "@re-/assert": "workspace:*",
         "@re-/node": "workspace:*",
-        "ts-morph": "14.0.0"
+        "zod": "3.17.3"
     }
 }

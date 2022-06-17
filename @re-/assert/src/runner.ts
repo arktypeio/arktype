@@ -58,28 +58,37 @@ if (runner === "node") {
 
 const runnerArgs = process.argv.slice(runnerArgIndex + 2).join(" ")
 
+const skipTypes = runnerArgs.includes("--skipTypes")
+
 runTestsCmd += runnerArgs
 
-// If the test process doesn't return successfully, this stays at 1
-let exitCode = 1
+let processError: unknown
 
 try {
-    console.log(`⏳ @re-/assert: Analyzing type assertions...`)
-    const cacheStart = Date.now()
-    cacheAssertions({ forcePrecache: true })
-    const cacheSeconds = (Date.now() - cacheStart) / 1000
-    console.log(
-        `✅ @re-/assert: Finished caching type assertions in ${cacheSeconds} seconds.\n`
-    )
+    if (skipTypes) {
+        console.log(
+            "✅ Skipping type assertions because --skipTypes was passed."
+        )
+    } else {
+        console.log(`⏳ @re-/assert: Analyzing type assertions...`)
+        const cacheStart = Date.now()
+        cacheAssertions({ forcePrecache: true })
+        const cacheSeconds = (Date.now() - cacheStart) / 1000
+        console.log(
+            `✅ @re-/assert: Finished caching type assertions in ${cacheSeconds} seconds.\n`
+        )
+    }
     console.log(`⏳ @re-/assert: Using ${runner} to run your tests...`)
     const runnerStart = Date.now()
-    exitCode = shell(runTestsCmd, {
+    shell(runTestsCmd, {
         env: { RE_ASSERT_CMD: runTestsCmd }
-    }).exitCode
+    })
     const runnerSeconds = (Date.now() - runnerStart) / 1000
     console.log(
         `✅ @re-/assert: ${runner} completed in ${runnerSeconds} seconds.\n`
     )
+} catch (error) {
+    processError = error
 } finally {
     console.log(
         `⏳ @re-/assert: Updating inline snapshots and cleaning up cache...`
@@ -90,7 +99,7 @@ try {
     console.log(
         `✅ @re-/assert: Finished cleanup in ${cleanupSeconds} seconds.`
     )
-    if (exitCode) {
-        process.exit(exitCode)
-    }
+}
+if (processError) {
+    throw processError
 }

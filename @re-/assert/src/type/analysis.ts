@@ -1,15 +1,15 @@
 import { existsSync, mkdirSync, rmSync } from "node:fs"
-import { relative } from "node:path"
 import { readJson, writeJson } from "@re-/node"
 import { default as memoize } from "micro-memoize"
 import { Project, SyntaxKind, ts, Type } from "ts-morph"
 import {
+    getFileKey,
     getReAssertConfig,
     LinePosition,
     positionToString,
     SourcePosition
 } from "../common.js"
-import { writeQueuedSnapshotUpdates } from "../value/index.js"
+import { writeCachedInlineSnapshotUpdates } from "../value/index.js"
 
 export interface SetupCacheOptions {
     forcePrecache?: boolean
@@ -35,7 +35,7 @@ export const cacheAssertions = ({ forcePrecache }: SetupCacheOptions = {}) => {
 export const cleanupAssertions = () => {
     const config = getReAssertConfig()
     try {
-        writeQueuedSnapshotUpdates()
+        writeCachedInlineSnapshotUpdates()
     } finally {
         if (!config.preserveCache) {
             rmSync(config.cacheDir, { recursive: true, force: true })
@@ -83,6 +83,7 @@ type AssertionData = {
     type: {
         actual: string
         expected?: string
+        equivalent?: boolean
     }
     errors: string
 }
@@ -109,8 +110,6 @@ const concatenateChainedErrors = (
         )
         .join("\n")
 
-const getFileKey = (path: string) => relative(".", path)
-
 type AnalyzeTypeAssertionsOptions = {
     isInitialCache?: boolean
 }
@@ -134,10 +133,9 @@ const analyzeTypeAssertions = memoize(
         const diagnosticsByFile: DiagnosticsByFile = {}
 
         // We have to use this internal checker to access errors ignore by @ts-ignore or @ts-expect-error
-        const tsProgram = project.getProgram().compilerObject as any
-        const diagnostics: ts.Diagnostic[] = tsProgram
-            .getDiagnosticsProducingTypeChecker()
-            .getDiagnostics()
+        const diagnostics: ts.Diagnostic[] = (
+            project.getTypeChecker().compilerObject as any
+        ).getDiagnostics()
         for (const diagnostic of diagnostics) {
             const filePath = diagnostic.file?.fileName
             if (!filePath) {
@@ -255,12 +253,38 @@ const analyzeTypeAssertions = memoize(
                         char: end.character + 1
                     }
                 }
+                const typeData: AssertionData["type"] = {
+                    actual: typeToCheck.getText()
+                }
+                if (expectedType) {
+                    typeData.expected = expectedType.getText()
+                    if (typeData.expected === "any") {
+                        // If the expected type is any, just compare the type strings directly
+                        typeData.equivalent =
+                            typeData.actual === typeData.expected
+                    } else {
+                        // Otherwise, determine if the types are equivalent by checking mutual assignability
+                        // Using any as isTypeAssignableTo is not publicly exposed
+                        const checker: any =
+                            project.getTypeChecker().compilerObject
+                        const isActualAssignableToExpected =
+                            checker.isTypeAssignableTo(
+                                typeToCheck.compilerType,
+                                expectedType.compilerType
+                            )
+                        const isExpectedAssignableToActual =
+                            checker.isTypeAssignableTo(
+                                expectedType.compilerType,
+                                typeToCheck.compilerType
+                            )
+                        typeData.equivalent =
+                            isActualAssignableToExpected &&
+                            isExpectedAssignableToActual
+                    }
+                }
                 return {
                     location,
-                    type: {
-                        actual: typeToCheck.getText(),
-                        expected: expectedType?.getText()
-                    },
+                    type: typeData,
                     errors
                 }
             })

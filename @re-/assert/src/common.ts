@@ -1,6 +1,7 @@
 import { existsSync } from "node:fs"
-import { join, resolve } from "node:path"
+import { join, relative, resolve } from "node:path"
 import { ensureDir, getCmdFromPid, readJson } from "@re-/node"
+import { transform } from "@re-/tools"
 import { default as memoize } from "micro-memoize"
 
 export type LinePosition = {
@@ -22,6 +23,7 @@ export interface ReAssertConfig extends Required<ReAssertJson> {
     cacheDir: string
     assertionCacheFile: string
     snapCacheDir: string
+    skipTypes: boolean
 }
 
 interface ReAssertJson {
@@ -41,12 +43,30 @@ interface ReJson {
 const argsIncludeUpdateFlag = (args: string[]) =>
     args.some((arg) => ["-u", "--update", "--updateSnapshot"].includes(arg))
 
+const argsIncludeSkipTypesFlag = (args: string[]) =>
+    args.includes("--skipTypes")
+
 const checkArgsForMatcher = (args: string[]) => {
     const filterFlagIndex = args.indexOf("--only")
     if (filterFlagIndex === -1) {
-        return false
+        return undefined
     }
     return args.at(filterFlagIndex + 1)
+}
+
+export const literalSerialize = (value: any): any => {
+    if (typeof value === "object") {
+        return value === null
+            ? null
+            : transform(value, ([k, v]) => [k, literalSerialize(v)])
+    }
+    if (typeof value === "symbol") {
+        return `<symbol ${value.description ?? "(anonymous)"}>`
+    }
+    if (typeof value === "function") {
+        return `<function ${value.name ?? "(anonymous)"}>`
+    }
+    return value
 }
 
 export const getReAssertConfig = memoize((): ReAssertConfig => {
@@ -54,9 +74,12 @@ export const getReAssertConfig = memoize((): ReAssertConfig => {
     const tsconfig = existsSync("tsconfig.json") ? resolve("tsconfig.json") : ""
     const reAssertJson: ReAssertJson = reJson.assert ?? {}
     let argsToCheck: string[] | undefined
+    let precached = false
     if (process.env.RE_ASSERT_CMD) {
         // If using @re-/assert runner, RE_ASSERT_CMD will be set to the original cmd.
         argsToCheck = process.env.RE_ASSERT_CMD.split(" ")
+        // Precached should default to true if we are running from the @re-/assert runner
+        precached = true
     } else if (process.env.JEST_WORKER_ID) {
         // If we're in a jest worker process, check the parent process cmd args
         const parentCmd = getCmdFromPid(process.ppid)
@@ -83,9 +106,10 @@ export const getReAssertConfig = memoize((): ReAssertConfig => {
     ensureDir(snapCacheDir)
     return {
         updateSnapshots: argsIncludeUpdateFlag(argsToCheck),
+        skipTypes: argsIncludeSkipTypesFlag(argsToCheck),
         matcher,
         tsconfig,
-        precached: false,
+        precached,
         preserveCache: false,
         assertAliases: ["assert"],
         stringifySnapshots: false,
@@ -97,3 +121,13 @@ export const getReAssertConfig = memoize((): ReAssertConfig => {
         ...reAssertJson
     }
 })
+
+export const getFileKey = (path: string) => relative(".", path)
+
+/** This tries to chain arbitrary prop access and function calls without doing anything*/
+export const callableChainableNoOpProxy: any = new Proxy(
+    () => callableChainableNoOpProxy,
+    {
+        get: () => callableChainableNoOpProxy
+    }
+)

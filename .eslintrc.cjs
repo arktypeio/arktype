@@ -86,14 +86,6 @@ module.exports = defineConfig({
             }
         ],
         /**
-         * Don't look for empty expressions as they're easy to catch in a PR
-         * and clutter the IDE as you type
-         */
-        "no-empty": "off",
-        "@typescript-eslint/no-empty-function": "off",
-        "@typescript-eslint/no-empty-interface": "off",
-        "unicorn/no-lonely-if": "off",
-        /**
          * Allow more flexible typing
          */
         "@typescript-eslint/ban-ts-comment": "off",
@@ -106,6 +98,7 @@ module.exports = defineConfig({
         "@typescript-eslint/no-unsafe-argument": "off",
         "@typescript-eslint/no-non-null-assertion": "off",
         "@typescript-eslint/restrict-template-expressions": "off",
+        "@typescript-eslint/restrict-plus-operands": "off",
         /**
          * Disable or adjust unicorn/recommended rules that don't fit our code style
          */
@@ -129,7 +122,6 @@ module.exports = defineConfig({
          */
         {
             files: ["**/src/**"],
-            excludedFiles: ["**/__tests__/**", "**/__benches__/**"],
             rules: {
                 /**
                  * Keep functions and files concise and readable
@@ -151,17 +143,18 @@ module.exports = defineConfig({
          * These rules apply only to tests and benches
          */
         {
-            files: ["**/__tests__/**", "**/__benches__/**"],
+            files: ["**/test/**", "**/bench/**"],
             rules: {
                 "unicorn/consistent-function-scoping": "off",
-                "unicorn/numeric-separators-style": "off"
+                "unicorn/numeric-separators-style": "off",
+                "@typescript-eslint/no-empty-function": "off"
             }
         },
         /**
          * These rules apply only to benches
          */
         {
-            files: ["**/__benches__/**"],
+            files: ["**/bench/**"],
             rules: {
                 // Assignment to a variable is required to ensure types are parsed
                 "@typescript-eslint/no-unused-vars": "off"

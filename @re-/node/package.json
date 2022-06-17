@@ -23,6 +23,9 @@
             "require": "./dist/cjs/reTagToMarkdown.js"
         }
     },
+    "imports": {
+        "#src": "./src/index.js"
+    },
     "scripts": {
         "build": "pnpm ts-node ./src/cli.ts tsc",
         "test": "reassert mocha"
@@ -36,17 +39,15 @@
         "@microsoft/api-extractor-model": "7.17.2",
         "@microsoft/tsdoc": "0.14.1",
         "@microsoft/tsdoc-config": "0.16.1",
-        "deepmerge": "4.2.2",
+        "ts-morph": "15.1.0",
         "execa": "5.0.0",
-        "get-current-line": "6.6.0",
         "prettier": "2.6.2",
-        "prompts": "2.4.1",
-        "ts-morph": "14.0.0"
+        "remark": "14.0.2",
+        "remark-parse": "10.0.1",
+        "get-current-line": "6.6.0"
     },
     "devDependencies": {
         "@re-/assert": "link:../assert",
-        "@types/prettier": "2.6.1",
-        "remark": "14.0.2",
-        "remark-parse": "10.0.1"
+        "@types/prettier": "2.6.1"
     }
 }
