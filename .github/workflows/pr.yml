@@ -57,3 +57,10 @@ jobs:
 
             - name: Test
               run: pnpm test
+
+    success:
+        needs: compatibility
+        timeout-minutes: 1
+        runs-on: ubuntu-latest
+        steps:
+            - run: echo All checks succeeded! 🚢
