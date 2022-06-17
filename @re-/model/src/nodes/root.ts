@@ -10,7 +10,7 @@ export namespace Root {
         : Def extends string
         ? Str.Validate<Def, Dict, Def>
         : Def extends BadDefinitionType
-        ? Common.Parser.ParseErrorMessage<"Values of type 'function' or 'symbol' are not valid definitions.">
+        ? BadDefinitionTypeMessage<Def>
         : Def extends Obj.Leaves
         ? Def
         : Def extends object
@@ -35,6 +35,11 @@ export namespace Root {
 
     export type BadDefinitionType = Function | symbol
 
+    type BadDefinitionTypeMessage<Def extends BadDefinitionType> =
+        Common.Parser.ParseErrorMessage<`Values of type ${Def extends Function
+            ? "function"
+            : "symbol"} are not valid definitions.`>
+
     export const parse: Common.Parser.Parser<unknown> = (def, ctx) => {
         if (Str.matches(def)) {
             ctx.stringRoot = def
@@ -47,11 +52,9 @@ export namespace Root {
             return new Literal.Node(def, ctx)
         }
         throw new Common.Parser.ParseError(
-            Common.Parser.buildParseErrorMessage(
-                def,
-                ctx.path,
-                `is of disallowed type ${typeof def}.`
-            )
+            `${
+                ctx.path ? `At path ${ctx.path}, values` : "Values"
+            } of type ${typeof def} are not valid definitions.`
         )
     }
 }
