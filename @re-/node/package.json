@@ -1,6 +1,6 @@
 {
     "name": "@re-/node",
-    "version": "2.1.1",
+    "version": "2.1.2",
     "author": "redo.dev",
     "description": "Node-based utilities, scripts, and configs for Redo packages ⚙️",
     "repository": {
@@ -17,9 +17,6 @@
             "import": "./dist/mjs/index.js",
             "require": "./dist/cjs/index.js"
         }
-    },
-    "imports": {
-        "#src": "./src/index.js"
     },
     "scripts": {
         "build": "pnpm ts-node ./src/cli.ts tsc",

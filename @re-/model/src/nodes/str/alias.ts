@@ -1,6 +1,6 @@
 import { And, WithPropValue } from "@re-/tools"
+import { Common } from "../common.js"
 import { Root } from "../root.js"
-import { Common } from "#common"
 
 export namespace Alias {
     export type Parse<Def extends keyof Dict, Dict, Seen> = And<

@@ -1,8 +1,8 @@
 import { Spliterate } from "@re-/tools"
+import { Common } from "../common.js"
 import { EmbeddedNumber } from "./embedded.js"
 import { Keyword } from "./keyword.js"
 import { Str } from "./str.js"
-import { Common } from "#common"
 
 type BoundableKeyword = Keyword.NumberOnly | Keyword.StringOnly
 

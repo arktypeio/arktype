@@ -1,6 +1,6 @@
+import { Common } from "../common.js"
 import { createSplittableMatcher } from "./common.js"
 import { Str } from "./str.js"
-import { Common } from "#common"
 
 export namespace Intersection {
     export type Definition<

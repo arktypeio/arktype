@@ -1,5 +1,5 @@
 import { assert } from "@re-/assert"
-import { narrow } from "#src"
+import { narrow } from "../src/index.js"
 
 it("literals", () => {
     assert(narrow("ok")).typed as "ok"

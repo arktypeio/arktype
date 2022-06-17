@@ -1,5 +1,5 @@
 import { assert } from "@re-/assert"
-import { eager } from "#src"
+import { eager } from "../../src/index.js"
 
 describe("root definition", () => {
     it("bad type def type", () => {

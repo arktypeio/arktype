@@ -1,8 +1,8 @@
 import { deepMerge, EntriesOf, Evaluate, Merge } from "@re-/tools"
 import { Model, ModelFrom, ModelFunction } from "./model.js"
+import { Common } from "./nodes/common.js"
 import { Root } from "./nodes/index.js"
 import { Alias } from "./nodes/str/alias.js"
-import { Common } from "#common"
 
 export const compile: CompileFunction = (dictionary, options) =>
     new Space(dictionary, options) as any

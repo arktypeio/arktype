@@ -45,15 +45,6 @@ export const buildTypes = () => {
             suppressCmdStringLogging: true
         })
         renameSync(join(outRoot, "src"), typesOut)
-        const typesPackageJson = buildDistPackageJson({
-            transformImportsPath: (path) =>
-                path.endsWith(".js") ? path.slice(0, -3) + ".d.ts" : path
-        })
-        if (Object.keys(typesPackageJson).length) {
-            // If we needed to remap any imports from the original package.json,
-            // create a package.json in typesOut
-            writeJson(join(typesOut, "package.json"), typesPackageJson)
-        }
     } finally {
         rmSync(tempTsConfig)
     }
@@ -80,50 +71,14 @@ const swc = ({ outDir, moduleType, sourceMaps }: SwcOptions) => {
     shell(cmd, { suppressCmdStringLogging: true })
 }
 
-type BuildDistPackageJsonOptions = {
-    type?: "commonjs" | "module"
-    transformImportsPath?: (path: string) => string
-}
-
-const buildDistPackageJson = ({
-    type,
-    transformImportsPath
-}: BuildDistPackageJsonOptions) => {
-    const contents: any = {}
-    if (type) {
-        contents.type = type
-    }
-    if (packageJson.imports) {
-        for (const [alias, path] of Object.entries(packageJson.imports)) {
-            if (typeof path === "string" && path.startsWith("./src/")) {
-                if (!contents.imports) {
-                    contents.imports = {}
-                }
-                let transformedPath = path.replace("./src/", "./")
-                if (transformImportsPath) {
-                    transformedPath = transformImportsPath(transformedPath)
-                }
-                contents.imports[alias] = transformedPath
-            }
-        }
-    }
-    return contents
-}
-
 export const buildEsm = () => {
     swc({ outDir: mjsOut, sourceMaps: true })
-    writeJson(
-        join(mjsOut, "package.json"),
-        buildDistPackageJson({ type: "module" })
-    )
+    writeJson(join(mjsOut, "package.json"), { type: "module" })
 }
 
 export const buildCjs = () => {
     swc({ outDir: cjsOut, moduleType: "commonjs", sourceMaps: true })
-    writeJson(
-        join(cjsOut, "package.json"),
-        buildDistPackageJson({ type: "commonjs" })
-    )
+    writeJson(join(cjsOut, "package.json"), { type: "commonjs" })
 }
 
 type Transpiler = () => void

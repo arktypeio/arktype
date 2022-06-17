@@ -1,7 +1,7 @@
 import { bench } from "@re-/assert"
 import z from "zod"
-import { Common } from "#common"
-import { model, Root } from "#src"
+import { model, Root } from "../../src/index.js"
+import { Common } from "../../src/nodes/common/index.js"
 
 const defaultParseContext = Common.Parser.createContext()
 
@@ -36,7 +36,9 @@ bench("parse deeep", () => {
     )
 }).median(`56.00ns`)
 
-const eagerParseContext = Common.Parser.createContext({ eager: true })
+const eagerParseContext = Common.Parser.createContext({
+    parse: { eager: true }
+})
 
 bench("parse deeep eager", () => {
     Root.parse(

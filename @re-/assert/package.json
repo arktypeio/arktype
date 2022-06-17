@@ -1,6 +1,6 @@
 {
     "name": "@re-/assert",
-    "version": "0.3.1",
+    "version": "0.3.2",
     "author": "redo.dev",
     "description": "Seamless testing for types and code✅",
     "repository": {
@@ -20,9 +20,6 @@
             "import": "./dist/mjs/index.js",
             "require": "./dist/cjs/index.js"
         }
-    },
-    "imports": {
-        "#src": "./src/index.js"
     },
     "scripts": {
         "build": "re tsc",

@@ -1,6 +1,6 @@
 {
     "name": "@re-/model",
-    "version": "2.0.2-alpha",
+    "version": "2.0.3-alpha",
     "author": "redo.dev",
     "description": "One definition from editor to runtime🧬",
     "repository": {
@@ -20,10 +20,6 @@
             "import": "./dist/mjs/index.js",
             "require": "./dist/cjs/index.js"
         }
-    },
-    "imports": {
-        "#common": "./src/nodes/common/index.js",
-        "#src": "./src/index.js"
     },
     "scripts": {
         "build": "re tsc",

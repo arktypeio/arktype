@@ -1,7 +1,7 @@
 import { TypeOfResult } from "@re-/tools"
+import { Common } from "../common.js"
 import { createSplittableMatcher } from "./common.js"
 import { Str } from "./str.js"
-import { Common } from "#common"
 
 type PreferredDefaults = ({ value: any } | { typeOf: TypeOfResult })[]
 

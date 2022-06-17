@@ -1,5 +1,5 @@
 import { assert } from "@re-/assert"
-import { compile, model } from "#src"
+import { compile, model } from "../src/index.js"
 
 describe("inheritable configs", () => {
     describe("methods", () => {

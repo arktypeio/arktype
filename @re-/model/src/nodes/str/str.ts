@@ -1,3 +1,4 @@
+import { Common } from "../common.js"
 import { Alias } from "./alias.js"
 import { Constraint } from "./constraint.js"
 import { EmbeddedBigInt, EmbeddedNumber, EmbeddedRegex } from "./embedded.js"
@@ -7,7 +8,6 @@ import { List } from "./list.js"
 import { Optional } from "./optional.js"
 import { StringLiteral } from "./stringLiteral.js"
 import { Union } from "./union.js"
-import { Common } from "#common"
 
 type BinaryValidationResult<Left, Right> =
     Left extends Common.Parser.ParseErrorMessage

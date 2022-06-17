@@ -1,5 +1,5 @@
 import { assert } from "@re-/assert"
-import { compile, eager, model } from "#src"
+import { compile, eager, model } from "../../../src/index.js"
 
 describe("union", () => {
     describe("type", () => {
