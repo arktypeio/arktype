@@ -1,4 +1,5 @@
-import { fromHere, reDoc } from "@re-/node"
+import { reDoc } from "@re-/doc"
+import { fromHere } from "@re-/node"
 
 reDoc({
     packages: [

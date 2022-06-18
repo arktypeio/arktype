@@ -8,9 +8,6 @@
         "url": "https://github.com/re-do/re-po.git",
         "directory": "@re-/assert"
     },
-    "engines": {
-        "node": ">=14.18.0"
-    },
     "type": "module",
     "main": "./dist/cjs/index.js",
     "types": "./dist/types/index.d.ts",

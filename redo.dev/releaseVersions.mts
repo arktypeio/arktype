@@ -1,5 +1,5 @@
-import { shell } from "@re-/node"
-import modelPackageJson from "../model/package.json"
+import { fromHere, readPackageJson, shell } from "@re-/node"
+const modelPackageJson = readPackageJson(fromHere("..", "@re-", "model"))
 
 const versionedPackages = [modelPackageJson]
 

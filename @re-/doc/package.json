@@ -1,12 +1,13 @@
 {
-    "name": "@re-/build",
-    "version": "0.0.1",
+    "name": "@re-/doc",
+    "version": "0.0.0",
+    "private": true,
     "author": "redo.dev",
-    "description": "Tools for building, testing, and documenting Redo packages 🔨",
+    "description": "Documentation generation for Redo packages 📚",
     "repository": {
         "type": "git",
         "url": "https://github.com/re-do/re-po.git",
-        "directory": "@re-/build"
+        "directory": "@re-/doc"
     },
     "type": "module",
     "main": "./dist/cjs/index.js",
