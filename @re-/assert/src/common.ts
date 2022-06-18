@@ -1,6 +1,7 @@
 import { existsSync } from "node:fs"
+import { platform } from "node:os"
 import { join, relative, resolve } from "node:path"
-import { ensureDir, getCmdFromPid, readJson } from "@re-/node"
+import { ensureDir, readJson, shell } from "@re-/node"
 import { transform } from "@re-/tools"
 import { default as memoize } from "micro-memoize"
 
@@ -125,9 +126,30 @@ export const getReAssertConfig = memoize((): ReAssertConfig => {
 export const getFileKey = (path: string) => relative(".", path)
 
 /** This tries to chain arbitrary prop access and function calls without doing anything*/
-export const callableChainableNoOpProxy: any = new Proxy(
-    () => callableChainableNoOpProxy,
-    {
-        get: () => callableChainableNoOpProxy
+export const chainableNoOpProxy: any = new Proxy(() => chainableNoOpProxy, {
+    get: () => chainableNoOpProxy
+})
+
+export const getCmdFromPid = (pid: number) =>
+    platform() === "win32" ? getCmdFromWindowsPid(pid) : getCmdFromPosixPid(pid)
+
+const getCmdFromWindowsPid = (pid: number) => {
+    const output = shell(
+        `wmic.exe path Win32_Process where handle='${pid}' get commandline`,
+        { stdio: "pipe" }
+    ).toString()
+    if (output.includes("No Instance(s) Available.")) {
+        return undefined
     }
-)
+    return output
+}
+
+const getCmdFromPosixPid = (pid: number) => {
+    const output = shell(`xargs -0 < /proc/${pid}/cmdline`, {
+        stdio: "pipe"
+    }).toString()
+    if (output.includes("No such file or directory")) {
+        return undefined
+    }
+    return output
+}

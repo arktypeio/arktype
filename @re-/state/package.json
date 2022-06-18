@@ -26,7 +26,7 @@
         "build": "echo Temporarily disabled",
         "test": "echo Temporarily disabled",
         "lint": "echo Temporarily disabled",
-        "buildDev": "re tsc",
+        "buildDev": "pnpm ts-node ../../scripts/build.ts",
         "testDev": "reassert mocha"
     },
     "dependencies": {

@@ -7,20 +7,11 @@ import {
     statSync,
     writeFileSync
 } from "node:fs"
-import {
-    readFile as readFileAsync,
-    writeFile as writeFileAsync
-} from "node:fs/promises"
 import { createRequire } from "node:module"
 import { homedir } from "node:os"
 import { dirname, join, parse } from "node:path"
 import { fileURLToPath, URL } from "node:url"
 import { caller } from "./caller.js"
-
-export const fromDir =
-    (dir: string) =>
-    (...pathSegments: string[]) =>
-        join(dir, ...pathSegments)
 
 export const ensureDir = (path: string) => {
     if (existsSync(path)) {
@@ -48,12 +39,6 @@ export type JsonTransformer = (data: object) => object
 export const rewriteJson = (path: string, transform: JsonTransformer) =>
     writeJson(path, transform(readJson(path)))
 
-export const readJsonAsync = async (path: string) =>
-    JSON.parse(await readFileAsync(path, { encoding: "utf8" }))
-
-export const writeJsonAsync = async (path: string, data: object) =>
-    writeFileAsync(path, JSON.stringify(data, null, 4))
-
 export type WalkOptions = {
     excludeFiles?: boolean
     excludeDirs?: boolean
@@ -75,9 +60,7 @@ export const walkPaths = (dir: string, options: WalkOptions = {}): string[] =>
     }, [] as string[])
 
 export const mapFilesToContents = (paths: string[]): Record<string, string> =>
-    Object.fromEntries(
-        paths.map((path) => [path, readFileSync(path).toString()])
-    )
+    Object.fromEntries(paths.map((path) => [path, readFile(path)]))
 
 /** Fetch the file and directory paths from a path, uri, or `import.meta.url` */
 export const filePath = (path: string) => {

@@ -19,18 +19,13 @@
         }
     },
     "scripts": {
-        "build": "pnpm ts-node ./src/cli.ts tsc",
+        "build": "pnpm ts-node ../../scripts/build.ts",
         "test": "reassert mocha"
     },
-    "bin": {
-        "re": "./cli.js"
-    },
     "dependencies": {
-        "execa": "5.0.0",
         "get-current-line": "6.6.0"
     },
     "devDependencies": {
-        "@re-/assert": "link:../assert",
-        "@types/prettier": "2.6.1"
+        "@re-/assert": "link:../assert"
     }
 }

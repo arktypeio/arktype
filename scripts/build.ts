@@ -6,10 +6,10 @@ import {
     readJson,
     readPackageJson,
     requireResolve,
+    shell,
     walkPaths,
     writeJson
-} from "./fs.js"
-import { shell } from "./shell.js"
+} from "../@re-/node/src/index.js"
 
 const cwd = process.cwd()
 const packageRoot = findPackageRoot(cwd)
@@ -26,6 +26,24 @@ const inFiles = walkPaths(srcRoot, {
 })
 const successMessage = `🎁 Successfully built ${packageName}!`
 
+export const redoTsc = (options?: RedoTscOptions) => {
+    console.log(`🔨 Building ${packageName}...`)
+    rmSync(outRoot, { recursive: true, force: true })
+    if (!options?.skip?.types) {
+        buildTypes()
+    }
+    const transpilers = Object.keys(defaultTranspilers)
+        .filter(
+            (name) => !options?.skip?.[name as keyof typeof defaultTranspilers]
+        )
+        .map(
+            (name) =>
+                defaultTranspilers[name as keyof typeof defaultTranspilers]
+        )
+    transpile(transpilers)
+    console.log(successMessage)
+}
+
 export const buildTypes = () => {
     stdout.write("⏳ Building types...".padEnd(successMessage.length))
     if (!existsSync(tsconfig)) {
@@ -40,9 +58,7 @@ export const buildTypes = () => {
     try {
         const cmd = `pnpm tsc --project ${tempTsConfig} --outDir ${outRoot} --emitDeclarationOnly`
         shell(cmd, {
-            cwd: packageRoot,
-            stdio: "pipe",
-            suppressCmdStringLogging: true
+            cwd: packageRoot
         })
         renameSync(join(outRoot, "src"), typesOut)
     } finally {
@@ -68,7 +84,7 @@ const swc = ({ outDir, moduleType, sourceMaps }: SwcOptions) => {
         cmd += `--source-maps inline `
     }
     cmd += inFiles.join(" ")
-    shell(cmd, { suppressCmdStringLogging: true })
+    shell(cmd)
 }
 
 export const buildEsm = () => {
@@ -104,29 +120,10 @@ export type RedoTscOptions = {
     }
 }
 
-export const redoTsc = (options?: RedoTscOptions) => {
-    console.log(`🔨 Building ${packageName}...`)
-    rmSync(outRoot, { recursive: true, force: true })
-    if (!options?.skip?.types) {
-        buildTypes()
+redoTsc({
+    skip: {
+        esm: process.argv.includes("--skipEsm"),
+        cjs: process.argv.includes("--skipCjs"),
+        types: process.argv.includes("--skipTypes")
     }
-    const transpilers = Object.keys(defaultTranspilers)
-        .filter(
-            (name) => !options?.skip?.[name as keyof typeof defaultTranspilers]
-        )
-        .map(
-            (name) =>
-                defaultTranspilers[name as keyof typeof defaultTranspilers]
-        )
-    transpile(transpilers)
-    console.log(successMessage)
-}
-
-export const runReTsc = () =>
-    redoTsc({
-        skip: {
-            esm: process.argv.includes("--skipEsm"),
-            cjs: process.argv.includes("--skipCjs"),
-            types: process.argv.includes("--skipTypes")
-        }
-    })
+})

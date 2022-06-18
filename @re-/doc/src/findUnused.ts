@@ -1,6 +1,6 @@
 import { relative } from "node:path"
+import { dirName, fromHere } from "@re-/node"
 import { BindingNamedNode, Project } from "ts-morph"
-import { dirName, fromHere } from "./fs.js"
 
 export const findUnused = () => {
     const project = new Project({

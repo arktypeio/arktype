@@ -1,7 +1,7 @@
 import { join } from "node:path"
+import { findPackageRoot, fromCwd, readFile, writeFile } from "@re-/node"
 import { remark } from "remark"
 import remarkParse from "remark-parse"
-import { findPackageRoot, fromCwd, readFile, writeFile } from "../fs.js"
 import { BlocksByPath } from "./reTag.js"
 
 const CODE_TAG = "code"

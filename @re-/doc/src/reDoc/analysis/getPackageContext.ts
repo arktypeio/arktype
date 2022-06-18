@@ -1,5 +1,5 @@
 import { join } from "node:path"
-import { readPackageJson, writeJson } from "../../index.js"
+import { readPackageJson, writeJson } from "@re-/node"
 import { ReDocContext } from "../reDoc.js"
 
 export type PackageContext = ReturnType<typeof getPackageContext>

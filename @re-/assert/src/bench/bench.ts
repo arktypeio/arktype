@@ -1,6 +1,6 @@
 import { caller } from "@re-/node"
 import {
-    callableChainableNoOpProxy,
+    chainableNoOpProxy,
     getReAssertConfig,
     ReAssertConfig,
     SourcePosition
@@ -59,7 +59,7 @@ export const bench = <Fn extends BenchableFunction>(
     }
     if (ctx.config.matcher && !ctx.config.matcher.test(name)) {
         // If a matcher was provided via --only and it does not match, ignore all checks
-        return callableChainableNoOpProxy
+        return chainableNoOpProxy
     }
     const assertions = new BenchAssertions(fn, ctx)
     Object.assign(assertions, createBenchTypeAssertions(ctx))

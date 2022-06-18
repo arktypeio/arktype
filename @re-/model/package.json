@@ -22,7 +22,7 @@
         }
     },
     "scripts": {
-        "build": "re tsc",
+        "build": "pnpm ts-node ../../scripts/build.ts",
         "test": "reassert mocha",
         "tnt": "reassert mocha --skipTypes",
         "benchCyclic": "pnpm ts-node ./test/bench/cyclic.bench.ts",
@@ -35,8 +35,8 @@
         "@re-/tools": "workspace:*"
     },
     "devDependencies": {
-        "@re-/assert": "workspace:*",
         "@re-/node": "workspace:*",
+        "@re-/assert": "workspace:*",
         "zod": "3.17.3"
     }
 }

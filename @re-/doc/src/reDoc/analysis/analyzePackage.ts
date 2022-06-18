@@ -1,4 +1,4 @@
-import { writeJson } from "../../index.js"
+import { writeJson } from "@re-/node"
 import { ReDocContext } from "../reDoc.js"
 import { getPackageApi, PackageApi } from "./getPackageApi.js"
 import { getPackageContext, PackageContext } from "./getPackageContext.js"

@@ -1,5 +1,5 @@
+import { fromCwd } from "@re-/node"
 import { Project } from "ts-morph"
-import { fromCwd } from "../fs.js"
 import { getMapData } from "./mapTSfiles.js"
 
 export type ReTagOptions = {

@@ -1,6 +1,6 @@
 import { join } from "node:path"
 import { Extractor, ExtractorConfig } from "@microsoft/api-extractor"
-import { readJson } from "../../index.js"
+import { readJson } from "@re-/node"
 import { ReDocContext } from "../reDoc.js"
 import { PackageContext } from "./getPackageContext.js"
 import { Transformations } from "./transformations/index.js"

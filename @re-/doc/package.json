@@ -19,27 +19,24 @@
         }
     },
     "scripts": {
-        "build": "pnpm ts-node ./src/cli.ts tsc",
-        "test": "reassert mocha"
+        "build": "pnpm ts-node ../../scripts/build.ts"
     },
     "bin": {
-        "re": "./cli.js"
+        "redoc": "./cli.js"
     },
     "dependencies": {
+        "@re-/node": "workspace:*",
         "@microsoft/api-documenter": "7.17.10",
         "@microsoft/api-extractor": "7.22.2",
         "@microsoft/api-extractor-model": "7.17.2",
         "@microsoft/tsdoc": "0.14.1",
         "@microsoft/tsdoc-config": "0.16.1",
         "ts-morph": "15.1.0",
-        "execa": "5.0.0",
         "prettier": "2.6.2",
         "remark": "14.0.2",
-        "remark-parse": "10.0.1",
-        "get-current-line": "6.6.0"
+        "remark-parse": "10.0.1"
     },
     "devDependencies": {
-        "@re-/assert": "link:../assert",
         "@types/prettier": "2.6.1"
     }
 }

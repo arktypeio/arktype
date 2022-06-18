@@ -7,8 +7,9 @@ import { cacheAssertions, cleanupAssertions } from "./type/index.js"
 
 let runTestsCmd = ""
 const runnerArgIndex = process.argv.findIndex((arg) =>
-    /.*runner\.c?(j|t)s$/.test(arg)
+    /.*cli\.c?(j|t)s$/.test(arg)
 )
+const nodeExecutable = process.execPath
 if (runnerArgIndex === -1) {
     throw new Error(
         `Unable to parse @re-/assert CLI args '${process.argv.join(
@@ -19,7 +20,7 @@ if (runnerArgIndex === -1) {
 const runner = process.argv[runnerArgIndex + 1]
 if (runner !== "jest" && runner !== "mocha" && runner !== "node") {
     throw new Error(
-        `A runner must be specified via "reAssert <runner> <opts?>"` +
+        `A runner must be specified via "reassert <runner> <opts?>"` +
             `where runner is either jest, mocha, or node.`
     )
 }
@@ -30,7 +31,7 @@ if (runner === "node") {
             `Node's test runner requires at least version 18. You are running ${version}.`
         )
     }
-    runTestsCmd += "node --loader ts-node/esm --test "
+    runTestsCmd += `${nodeExecutable} --loader ts-node/esm --test `
 } else {
     let runnerIndexPath: string
     try {
@@ -53,7 +54,7 @@ if (runner === "node") {
                 `an executable at the expected location ('${runnerBinPath}').`
         )
     }
-    runTestsCmd += `node ${runnerBinPath} `
+    runTestsCmd += `${nodeExecutable} ${runnerBinPath} `
 }
 
 const runnerArgs = process.argv.slice(runnerArgIndex + 2).join(" ")
@@ -81,6 +82,7 @@ try {
     console.log(`⏳ @re-/assert: Using ${runner} to run your tests...`)
     const runnerStart = Date.now()
     shell(runTestsCmd, {
+        stdio: "inherit",
         env: { RE_ASSERT_CMD: runTestsCmd }
     })
     const runnerSeconds = (Date.now() - runnerStart) / 1000
