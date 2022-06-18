@@ -1,12 +1,12 @@
 {
-    "name": "@re-/node",
-    "version": "2.1.2",
+    "name": "@re-/build",
+    "version": "0.0.1",
     "author": "redo.dev",
-    "description": "Node-based utilities, scripts, and configs for Redo packages ⚙️",
+    "description": "Tools for building, testing, and documenting Redo packages 🔨",
     "repository": {
         "type": "git",
         "url": "https://github.com/re-do/re-po.git",
-        "directory": "@re-/node"
+        "directory": "@re-/build"
     },
     "type": "module",
     "main": "./dist/cjs/index.js",
@@ -26,7 +26,16 @@
         "re": "./cli.js"
     },
     "dependencies": {
+        "@microsoft/api-documenter": "7.17.10",
+        "@microsoft/api-extractor": "7.22.2",
+        "@microsoft/api-extractor-model": "7.17.2",
+        "@microsoft/tsdoc": "0.14.1",
+        "@microsoft/tsdoc-config": "0.16.1",
+        "ts-morph": "15.1.0",
         "execa": "5.0.0",
+        "prettier": "2.6.2",
+        "remark": "14.0.2",
+        "remark-parse": "10.0.1",
         "get-current-line": "6.6.0"
     },
     "devDependencies": {

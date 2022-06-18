@@ -1,3 +1,6 @@
+import { readFileSync } from "node:fs"
+import { readFile } from "node:fs/promises"
+import { fileName } from "@re-/node"
 import { ListPossibleTypes, StringReplace } from "@re-/tools"
 import { Type } from "ts-morph"
 import { bench } from "../../src/index.js"
@@ -27,6 +30,16 @@ bench("bench unreturned type", () => {
 })
     .type()
     .mark({ mean: "184.99ms", median: "184.58ms" })
+
+const f = fileName()
+
+bench("syncfile", () => {
+    readFileSync(f)
+}).median(`2.24us`)
+
+await bench("async actual", async () => {
+    await readFile(f)
+}).median(`136.92us`)
 
 // Type should be similar to above, call should be similar to includes
 bench("chained call and type assertion", () => {

@@ -1,19 +1,18 @@
 import { performance } from "node:perf_hooks"
 import { caller } from "@re-/node"
 import { transform } from "@re-/tools"
-import { default as memoize } from "micro-memoize"
 import {
     compareToBaseline,
     updateBaselineIfNeeded as updateBaselineIfNeeded
 } from "./baseline.js"
-import { BenchContext, UntilOptions } from "./bench.js"
+import { BenchableFunction, BenchContext, UntilOptions } from "./bench.js"
 import {
     createMeasure,
     createMeasureComparison,
     MeasureString,
     stringifyMeasure
 } from "./measure.js"
-import { getBenchTypeAssertions } from "./type.js"
+import { BenchTypeAssertions, createBenchTypeAssertions } from "./type.js"
 
 export type StatName = keyof typeof stats
 
@@ -35,93 +34,189 @@ export const stats = {
     }
 }
 
-const loopCalls = (fn: () => void, ctx: BenchContext) => {
-    const results: number[] = []
-    const benchStart = performance.now()
-    // By default, will run for either 5 seconds or 1M calls, whichever comes first
-    const bounds: Required<UntilOptions> = {
-        ms: 5000,
-        count: 1_000_000,
-        ...ctx.options.until
-    }
-    const untilConditions = Object.entries(bounds).map(([metric, bound]) => {
-        const conditionMap: {
-            [K in keyof UntilOptions]-?: () => boolean
-        } = {
-            ms: () => performance.now() - benchStart >= bound,
-            count: () => results.length >= bound
+class ResultCollector {
+    results: number[] = []
+    private benchStart = performance.now()
+    private bounds: Required<UntilOptions>
+    private lastInvocationStart: number
+
+    constructor(private ctx: BenchContext) {
+        // By default, will run for either 5 seconds or 1M calls, whichever comes first
+        this.bounds = {
+            ms: 5000,
+            count: 1_000_000,
+            ...ctx.options.until
         }
-        return conditionMap[metric as keyof UntilOptions]!
-    })
-    while (!untilConditions.some((isMet) => isMet())) {
-        ctx.options.hooks?.beforeCall?.()
-        const invocationStart = performance.now()
-        fn()
-        results.push(performance.now() - invocationStart)
-        ctx.options.hooks?.afterCall?.()
+        this.lastInvocationStart = Number.NaN
     }
-    return results
+
+    startCall() {
+        this.ctx.options.hooks?.beforeCall?.()
+        this.lastInvocationStart = performance.now()
+    }
+
+    stopCall() {
+        this.results.push(performance.now() - this.lastInvocationStart)
+        this.ctx.options.hooks?.afterCall?.()
+    }
+
+    done() {
+        const metMsTarget =
+            performance.now() - this.benchStart >= this.bounds.ms
+        const metCountTarget = this.results.length >= this.bounds.count
+        return metMsTarget || metCountTarget
+    }
 }
 
-export type BenchCallAssertions = ReturnType<typeof getBenchCallAssertions>
+const loopCalls = (fn: () => void, ctx: BenchContext) => {
+    const collector = new ResultCollector(ctx)
+    while (!collector.done()) {
+        collector.startCall()
+        fn()
+        collector.stopCall()
+    }
+    return collector.results
+}
 
-export const getBenchCallAssertions = (fn: () => void, ctx: BenchContext) => {
-    const getCallTimes = memoize(() => {
-        const results = loopCalls(fn, ctx)
-        results.sort()
-        return results
-    })
-    const label = `${ctx.fromType ? "Typechecking" : "Calling"}: ${ctx.name}`
-    const nextAssertions = getBenchTypeAssertions(ctx)
-    const mark = (baseline?: Record<StatName, MeasureString>) => {
-        ctx.lastSnapCallPosition = caller()
+const loopAsyncCalls = async (fn: () => Promise<void>, ctx: BenchContext) => {
+    const collector = new ResultCollector(ctx)
+    while (!collector.done()) {
+        collector.startCall()
+        await fn()
+        collector.stopCall()
+    }
+    return collector.results
+}
+
+export class BenchAssertions<
+    Fn extends BenchableFunction,
+    NextAssertions = BenchTypeAssertions,
+    ReturnedAssertions = Fn extends () => Promise<void>
+        ? Promise<NextAssertions>
+        : NextAssertions
+> {
+    private label: string
+    private lastCallTimes: number[] | undefined
+    constructor(private fn: Fn, private ctx: BenchContext) {
+        this.label = `${ctx.isTypeAssertion ? "Typecheck" : "Call"}: ${
+            ctx.name
+        }`
+    }
+
+    private callTimesSync() {
+        if (!this.lastCallTimes) {
+            this.lastCallTimes = loopCalls(this.fn as any, this.ctx)
+            this.lastCallTimes.sort()
+        }
+        return this.lastCallTimes
+    }
+
+    private async callTimesAsync() {
+        if (!this.lastCallTimes) {
+            this.lastCallTimes = await loopAsyncCalls(this.fn as any, this.ctx)
+            this.lastCallTimes.sort()
+        }
+        return this.lastCallTimes
+    }
+
+    private createAssertion<Name extends AssertionName>(
+        name: Name,
+        baseline: Name extends "mark"
+            ? Record<StatName, MeasureString> | undefined
+            : MeasureString | undefined,
+        callTimes: number[]
+    ) {
+        if (name === "mark") {
+            return this.markAssertion(baseline as any, callTimes)
+        }
+        const ms: number = (stats as any)[name](callTimes)
+        const comparison = createMeasureComparison(
+            ms,
+            baseline as MeasureString
+        )
+        console.group(`${this.label} (${name}):`)
+        compareToBaseline(comparison, this.ctx)
+        console.groupEnd()
+        updateBaselineIfNeeded(stringifyMeasure(createMeasure(ms)), baseline, {
+            ...this.ctx,
+            kind: name
+        })
+        return this.getNextAssertions()
+    }
+
+    private markAssertion(
+        baseline: Record<StatName, MeasureString> | undefined,
+        callTimes: number[]
+    ) {
+        console.group(`${this.label}:`)
         const markEntries: [StatName, MeasureString | undefined][] = (
             baseline
                 ? Object.entries(baseline)
                 : // If nothing was passed, gather all available baselines by setting their values to undefined.
                   Object.entries(stats).map(([kind]) => [kind, undefined])
         ) as any
-        console.group(`${label}:`)
         const markResults = transform(
             markEntries,
             ([, [kind, kindBaseline]]) => {
                 console.group(kind)
-                const ms = stats[kind](getCallTimes())
+                const ms = stats[kind](callTimes)
                 const comparison = createMeasureComparison(ms, kindBaseline)
-                compareToBaseline(comparison, ctx)
+                compareToBaseline(comparison, this.ctx)
                 console.groupEnd()
                 return [kind, stringifyMeasure(comparison.result)]
             }
         )
         console.groupEnd()
         updateBaselineIfNeeded(markResults, baseline, {
-            ...ctx,
+            ...this.ctx,
             kind: "mark"
         })
-        return nextAssertions
+        return this.getNextAssertions()
     }
-    const individualAssertions = transform(stats, ([kind, calculate]) => {
-        const assertionOfKind = (baseline?: MeasureString) => {
-            ctx.lastSnapCallPosition = caller()
-            const ms = calculate(getCallTimes())
-            const comparison = createMeasureComparison(ms, baseline)
-            console.group(`${label} (${kind}):`)
-            compareToBaseline(comparison, ctx)
-            console.groupEnd()
-            updateBaselineIfNeeded(
-                stringifyMeasure(createMeasure(ms)),
-                baseline,
-                {
-                    ...ctx,
-                    kind
-                }
-            )
-            return nextAssertions
+
+    private getNextAssertions(): NextAssertions {
+        return (
+            this.ctx.isTypeAssertion ? {} : createBenchTypeAssertions(this.ctx)
+        ) as NextAssertions
+    }
+
+    private createStatMethod<Name extends AssertionName>(
+        name: Name,
+        baseline: Name extends "mark"
+            ? Record<StatName, MeasureString> | undefined
+            : MeasureString | undefined
+    ) {
+        if (this.ctx.isAsync) {
+            return new Promise((resolve, reject) => {
+                this.callTimesAsync().then((callTimes) => {
+                    resolve(this.createAssertion(name, baseline, callTimes))
+                }, reject)
+            })
         }
-        return [kind, assertionOfKind]
-    })
-    return {
-        mark,
-        ...individualAssertions
+        return this.createAssertion(name, baseline, this.callTimesSync())
+    }
+
+    median(baseline?: MeasureString) {
+        this.ctx.lastSnapCallPosition = caller()
+        return this.createStatMethod(
+            "median",
+            baseline
+        ) as any as ReturnedAssertions
+    }
+
+    mean(baseline?: MeasureString) {
+        this.ctx.lastSnapCallPosition = caller()
+        return this.createStatMethod(
+            "mean",
+            baseline
+        ) as any as ReturnedAssertions
+    }
+
+    mark(baseline?: Record<StatName, MeasureString>) {
+        this.ctx.lastSnapCallPosition = caller()
+        return this.createStatMethod(
+            "mark",
+            baseline
+        ) as any as ReturnedAssertions
     }
 }
