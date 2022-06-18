@@ -162,7 +162,7 @@ module.exports = defineConfig({
         },
         // Docusaurus requires pages export a default component
         {
-            files: ["@re-/docs/src/pages/*"],
+            files: ["redo.dev/src/pages/*"],
             rules: {
                 "import/no-default-export": "off"
             }

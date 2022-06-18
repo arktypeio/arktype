@@ -1,6 +1,6 @@
 import { strict } from "node:assert"
 import { AssertionContext } from "../assert.js"
-import { callableChainableNoOpProxy, SourcePosition } from "../common.js"
+import { chainableNoOpProxy, SourcePosition } from "../common.js"
 import { chainableAssertion, ChainableValueAssertion } from "../value/index.js"
 import { getAssertionData } from "./analysis.js"
 
@@ -27,7 +27,7 @@ export class TypeAssertions {
 
     get type(): TypeAssertionProps {
         if (this.ctx.config.skipTypes) {
-            return callableChainableNoOpProxy
+            return chainableNoOpProxy
         }
         return {
             toString: chainableAssertion(
@@ -46,7 +46,7 @@ export class TypeAssertions {
 
     get typed(): unknown {
         if (this.ctx.config.skipTypes) {
-            return callableChainableNoOpProxy
+            return chainableNoOpProxy
         }
         const assertionData = getAssertionData(this.position)
         if (!assertionData.type.expected) {
