@@ -16,35 +16,16 @@
             "types": "./dist/types/index.d.ts",
             "import": "./dist/mjs/index.js",
             "require": "./dist/cjs/index.js"
-        },
-        "./reTagToMarkdown": {
-            "types": "./dist/types/reTagToMarkdown.d.ts",
-            "import": "./dist/mjs/reTagToMarkdown.js",
-            "require": "./dist/cjs/reTagToMarkdown.js"
         }
     },
     "scripts": {
-        "build": "pnpm ts-node ./src/cli.ts tsc",
+        "build": "pnpm ts-node ../../scripts/build.ts",
         "test": "reassert mocha"
     },
-    "bin": {
-        "re": "./cli.js"
-    },
     "dependencies": {
-        "@microsoft/api-documenter": "7.17.10",
-        "@microsoft/api-extractor": "7.22.2",
-        "@microsoft/api-extractor-model": "7.17.2",
-        "@microsoft/tsdoc": "0.14.1",
-        "@microsoft/tsdoc-config": "0.16.1",
-        "ts-morph": "15.1.0",
-        "execa": "5.0.0",
-        "prettier": "2.6.2",
-        "remark": "14.0.2",
-        "remark-parse": "10.0.1",
         "get-current-line": "6.6.0"
     },
     "devDependencies": {
-        "@re-/assert": "link:../assert",
-        "@types/prettier": "2.6.1"
+        "@re-/assert": "link:../assert"
     }
 }

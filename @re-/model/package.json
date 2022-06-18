@@ -8,9 +8,6 @@
         "url": "https://github.com/re-do/re-po.git",
         "directory": "@re-/model"
     },
-    "engines": {
-        "node": ">=14.18.0"
-    },
     "type": "module",
     "main": "./dist/cjs/index.js",
     "types": "./dist/types/index.d.ts",
@@ -22,21 +19,21 @@
         }
     },
     "scripts": {
-        "build": "re tsc",
+        "build": "pnpm ts-node ../../scripts/build.ts",
         "test": "reassert mocha",
         "tnt": "reassert mocha --skipTypes",
         "benchCyclic": "pnpm ts-node ./test/bench/cyclic.bench.ts",
         "generateBenchData": "pnpm ts-node ./scripts/generateBenchData.ts",
         "benchCore": "pnpm ts-node ./test/bench/parser.bench.ts",
         "diag": "pnpm tsc -p ./test/tsconfig.json > diag.txt",
-        "updateReadme": "pnpm ts-node ../node/src/reTagToMarkdown.ts"
+        "updateReadme": "pnpm ts-node ./scripts/updateReadme.ts"
     },
     "dependencies": {
         "@re-/tools": "workspace:*"
     },
     "devDependencies": {
-        "@re-/assert": "workspace:*",
         "@re-/node": "workspace:*",
+        "@re-/assert": "workspace:*",
         "zod": "3.17.3"
     }
 }

@@ -19,11 +19,10 @@
         }
     },
     "scripts": {
-        "build": "re tsc",
+        "build": "pnpm ts-node ../../scripts/build.ts",
         "test": "reassert mocha"
     },
     "devDependencies": {
-        "@re-/node": "workspace:*",
         "@re-/assert": "link:../assert"
     }
 }

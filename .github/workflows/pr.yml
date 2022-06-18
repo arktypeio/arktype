@@ -30,6 +30,9 @@ jobs:
             - name: Bench
               run: pnpm bench
 
+            - name: Website
+              run: pnpm build-docs
+
     compatibility:
         needs: core
         timeout-minutes: 20

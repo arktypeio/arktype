@@ -119,22 +119,23 @@ const space = compile({ ...userDef, ...groupDef })
 `user.ts`
 
 ```ts ***GENERATED*** user.ts
-import { define } from "./declaration.js"
+import { define } from "./declareDemo.js"
 
 export const userDef = define.user({
     name: "string",
     bestFriend: "user?",
-    groups: "group[]"
+    // Type Hint: "Unable to determine the type of 'grop'"
+    groups: "grop[]"
 })
 ```
 
 `group.ts`
 
 ```ts ***GENERATED*** group.ts
-import { define } from "./declaration.js"
+import { define } from "./declareDemo.js"
 
 export const groupDef = define.group({
-    name: "string",
+    title: "string",
     members: "user[]"
 })
 ```
