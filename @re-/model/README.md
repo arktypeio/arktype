@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="../docs/static/img/logo.svg" height="64px" />
+  <img src="../../redo.dev/static/img/logo.svg" height="64px" />
   <h1>@re-/model</h1>
 </div>
 <div align="center">
