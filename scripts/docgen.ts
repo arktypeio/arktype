@@ -5,7 +5,10 @@ import { extractRepo, writeRepo } from "./docgen/index.js"
 export const config: DocGenConfig = {
     packages: [
         {
-            path: "@re-/model"
+            path: "@re-/model",
+            snippets: {
+                sources: ["demos"]
+            }
         }
     ],
     outDir: fromHere("doc")

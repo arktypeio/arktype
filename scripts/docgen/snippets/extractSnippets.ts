@@ -1,10 +1,8 @@
 import { Project } from "ts-morph"
-import { DocGenConfig } from "../config.js"
 
 export type ExtractPackageSnippetsContext = {
-    config: DocGenConfig
     project: Project
-    rootDir: string
+    sources: string[]
 }
 
 export type PackageSnippet = {
@@ -12,10 +10,11 @@ export type PackageSnippet = {
 }
 
 export const extractPackageSnippets = ({
-    config,
     project,
-    rootDir
+    sources
 }: ExtractPackageSnippetsContext): PackageSnippet[] => {
-    console.log("Getting snippets... (/s)")
-    return []
+    return sources.map((source) => {
+        const snippetSourceFile = project.addSourceFileAtPath(source)
+        return { text: snippetSourceFile.getText() }
+    })
 }

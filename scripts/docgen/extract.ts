@@ -20,8 +20,8 @@ export const extractRepo = (config: DocGenConfig): PackageMetadata[] => {
         tsConfigFilePath: join(REPO_ROOT, "tsconfig.references.json"),
         skipAddingFilesFromTsConfig: true
     })
-    return config.packages.map(({ path }) => {
-        const rootDir = join(REPO_ROOT, path)
+    return config.packages.map((packageConfig) => {
+        const rootDir = join(REPO_ROOT, packageConfig.path)
         const packageJson: PackageJson = readPackageJson(rootDir)
         const name = packageJson.name!
         const version = packageJson.version!
@@ -30,7 +30,13 @@ export const extractRepo = (config: DocGenConfig): PackageMetadata[] => {
             packageJson,
             rootDir
         })
-        const snippets = extractPackageSnippets({ config, project, rootDir })
+        let snippets: PackageSnippet[] = []
+        if (packageConfig.snippets) {
+            snippets = extractPackageSnippets({
+                project,
+                sources: packageConfig.snippets.sources
+            })
+        }
         return { name, version, api, snippets }
     })
 }
