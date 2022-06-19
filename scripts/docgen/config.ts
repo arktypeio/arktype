@@ -1,8 +1,8 @@
 export type DocGenConfig = {
     packages: DocGenPackageConfig[]
+    outDir: string
 }
 
 export type DocGenPackageConfig = {
-    name: string
-    entryPoints: string[]
+    path: string
 }

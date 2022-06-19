@@ -1,5 +1,5 @@
 import { join } from "node:path"
-import { ValueOf } from "@re-/tools"
+import { fromHere, readPackageJson } from "@re-/node"
 import {
     ExportedDeclarations,
     JSDoc,
@@ -8,15 +8,84 @@ import {
     SourceFile,
     SyntaxKind
 } from "ts-morph"
-import { fromHere } from "../../@re-/node/src/index.js"
+import { PackageJson } from "type-fest"
 import { DocGenConfig, DocGenPackageConfig } from "./config.js"
 
-export type ExtractedData = EntryPointData[]
+const REPO_ROOT = fromHere("..", "..")
+
+export type RepoMetadata = PackageData[]
+
+export const extractRepoMetaData = (config: DocGenConfig): RepoMetadata => {
+    const data: PackageData[] = []
+    const project = new Project({
+        tsConfigFilePath: join(REPO_ROOT, "tsconfig.references.json"),
+        skipAddingFilesFromTsConfig: true
+    })
+    for (const packageConfig of config.packages) {
+        data.push(extractPackageData(project, packageConfig))
+    }
+    return data
+}
+
+export type PackageData = {
+    name: string
+    version: string
+    api: EntryPointData[]
+}
 
 export type EntryPointData = {
-    packageName: string
-    path: string
+    subpath: string
     exports: ExportData[]
+}
+
+export const extractPackageData = (
+    project: Project,
+    packageConfig: DocGenPackageConfig
+): PackageData => {
+    const packageRoot = join(REPO_ROOT, packageConfig.path)
+    const packageJson = readPackageJson(packageRoot)
+    const entryPoints = getEntryPointsToRelativeDtsPaths(packageJson)
+    const api = entryPoints.map(([subpath, relativeDtsPath]) => {
+        const entryPointDts = project.addSourceFileAtPath(
+            join(packageRoot, relativeDtsPath)
+        )
+        return {
+            subpath,
+            exports: extractExportsFromDts(entryPointDts)
+        }
+    })
+    return {
+        name: packageJson.name,
+        version: packageJson.version,
+        api
+    }
+}
+
+export const hasTypesExport = (
+    conditions: PackageJson.Exports
+): conditions is { types: string } =>
+    typeof conditions === "object" &&
+    conditions !== null &&
+    "types" in conditions
+
+export type EntryPointPathEntry = [string, string]
+
+export const getEntryPointsToRelativeDtsPaths = (
+    packageJson: PackageJson
+): EntryPointPathEntry[] => {
+    if (!packageJson.exports) {
+        throw new Error(
+            `Package '${packageJson.name}' requires an 'exports' field in its package.json.`
+        )
+    }
+    return Object.entries(packageJson.exports).map(([path, conditions]) => {
+        if (!hasTypesExport(conditions)) {
+            throw new Error(
+                `Export ${path} from package.json in '${packageJson.name}' requires a 'types' key.`
+            )
+        }
+        return [path, conditions.types]
+    })
 }
 
 export type ExportData = {
@@ -25,47 +94,10 @@ export type ExportData = {
     tsDocs: TsDocData[] | undefined
 }
 
-export type TsDocData = {
-    tag: string
-    text: string
-}
-
-const REPO_ROOT = fromHere("..", "..")
-
-export const extractDocData = (config: DocGenConfig) => {
-    const data: ExtractedData = []
-    const project = new Project({
-        tsConfigFilePath: join(REPO_ROOT, "tsconfig.references.json")
-    })
-    for (const packageConfig of config.packages) {
-        data.push(...extractPackageData(project, packageConfig))
-    }
-    return data
-}
-
-export const extractPackageData = (
-    project: Project,
-    packageConfig: DocGenPackageConfig
-) => {
-    const extractedEntryPoints: EntryPointData[] = []
-    const packageName = packageConfig.name
-    const packageRoot = join(REPO_ROOT, packageName)
-    for (const entryPoint of packageConfig.entryPoints) {
-        const entryPointPath = join(packageRoot, entryPoint)
-        const entryPointFile = project.getSourceFileOrThrow(entryPointPath)
-        extractedEntryPoints.push({
-            packageName,
-            path: entryPoint,
-            exports: extractExportDataFromEntryPoint(entryPointFile)
-        })
-    }
-    return extractedEntryPoints
-}
-
-export const extractExportDataFromEntryPoint = (
-    entryPointFile: SourceFile
+export const extractExportsFromDts = (
+    entryPointDts: SourceFile
 ): ExportData[] => {
-    const exportNodes = entryPointFile.getExportedDeclarations().entries()
+    const exportNodes = entryPointDts.getExportedDeclarations().entries()
     const exports: ExportData[] = []
     for (const [name, exportDeclarations] of exportNodes) {
         exports.push(extractExportData(name, exportDeclarations))
@@ -108,6 +140,11 @@ export const extractExportData = (
         text: declarations.map((node) => node.getText()).join("\n"),
         tsDocs: extractTsDocData(declaration)
     }
+}
+
+export type TsDocData = {
+    tag: string
+    text: string
 }
 
 export const extractTsDocData = (

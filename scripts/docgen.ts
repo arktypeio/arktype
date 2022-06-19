@@ -1,17 +1,20 @@
+import { fromHere } from "@re-/node"
 import { DocGenConfig } from "./docgen/config.js"
-import { extractDocData } from "./docgen/extract.js"
-import { writeDocData } from "./docgen/write.js"
+import { extractRepoMetaData } from "./docgen/extract.js"
+import { writeDocs } from "./docgen/write.js"
 
 export const config: DocGenConfig = {
     packages: [
         {
-            name: "@re-/model",
-            entryPoints: ["src/index.ts"]
+            path: "@re-/model"
         }
-    ]
+    ],
+    outDir: fromHere("doc")
 }
-console.group(`reDoc: Generating docs for ${1} package(s)...✍️`)
-const data = extractDocData(config)
-writeDocData(data)
+console.group(
+    `reDoc: Generating docs for ${config.packages.length} package(s)...✍️`
+)
+const data = extractRepoMetaData(config)
+writeDocs(data, config.outDir)
 console.log(`reDoc: Enjoy your new docs! 📚`)
 console.groupEnd()
