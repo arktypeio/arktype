@@ -42,7 +42,7 @@ const createApiExtractorConfig = (
     $schema:
         "https://developer.microsoft.com/json-schemas/api-extractor/v7/api-extractor.schema.json",
     projectFolder,
-    mainEntryPointFilePath: `${projectFolder}/out/types/index.d.ts`,
+    mainEntryPointFilePath: `${projectFolder}/dist/types/index.d.ts`,
     apiReport: {
         enabled: false
     },

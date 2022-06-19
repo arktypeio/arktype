@@ -12,7 +12,6 @@ export type ReDocOptions = {
     packages?: PackageConfig[]
     baseOutputDir?: string
     rewriteExternalImports?: (packageName: string, memberName: string) => string
-    excludeIndexMd?: boolean
 }
 
 export const reDoc = (options: ReDocOptions = {}) => {
@@ -43,7 +42,7 @@ export const getReDocContext = (options: ReDocOptions) => {
     const rewriteExternalImports = options.rewriteExternalImports
     const excludeIndexMd = options.excludeIndexMd ?? false
     const tempDir = resolve(mkdtempSync("reDoc"))
-    // The tsdoc.json in @re-/node
+    // The tsdoc.json in @re-/doc
     const tsDocConfigPath = fromPackageRoot("tsdoc.json")
     const tsDocConfiguration = new TSDocConfiguration()
     const tsDocLoadedConfiguration = TSDocConfigFile.loadFile(tsDocConfigPath)

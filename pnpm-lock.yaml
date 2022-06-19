@@ -94,6 +94,7 @@ importers:
   '@re-/model':
     specifiers:
       '@re-/assert': workspace:*
+      '@re-/doc': workspace:*
       '@re-/node': workspace:*
       '@re-/tools': workspace:*
       zod: 3.17.3
@@ -101,6 +102,7 @@ importers:
       '@re-/tools': link:../tools
     devDependencies:
       '@re-/assert': link:../assert
+      '@re-/doc': link:../doc
       '@re-/node': link:../node
       zod: 3.17.3
 
