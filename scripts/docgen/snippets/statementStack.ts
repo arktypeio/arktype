@@ -1,16 +1,9 @@
-const DEFAULT_STACK_CAPACITY = 30
 const DELIMITER = "$$block_start$$"
 
 export class StatementStack {
     private storage: string[] = []
 
-    constructor(private capacity: number = DEFAULT_STACK_CAPACITY) {}
-    push(item: string, delimiter?: boolean): void {
-        if (this.size() === this.capacity) {
-            throw new Error(
-                "Stack has reached max capacity, you cannot add more items"
-            )
-        }
+    push(item: string, delimiter?: boolean) {
         if (delimiter) {
             this.storage.push(DELIMITER)
         } else {
@@ -18,25 +11,25 @@ export class StatementStack {
         }
     }
 
-    pop(): string | undefined {
+    pop() {
         return this.storage.pop()
     }
 
-    peek(): string | undefined {
+    peek() {
         return this.storage[this.size() - 1]
     }
 
-    size(): number {
+    size() {
         return this.storage.length
     }
-    getCopyOfStorage(): string[] {
+    getCopyOfStorage() {
         return [...this.storage]
     }
-    setStorage(storage: string[]): void {
+    setStorage(storage: string[]) {
         this.storage = storage
     }
 
-    storageToString(): string {
+    storageToString() {
         let str = ""
         const copy = this.getCopyOfStorage()
         while (this.peek() !== DELIMITER && this.peek() !== undefined) {

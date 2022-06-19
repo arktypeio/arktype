@@ -1,7 +1,6 @@
 import { fromHere } from "@re-/node"
 import { DocGenConfig } from "./docgen/config.js"
-import { extractRepoMetaData } from "./docgen/extract.js"
-import { writeDocs } from "./docgen/write.js"
+import { extractRepo, writeRepo } from "./docgen/index.js"
 
 export const config: DocGenConfig = {
     packages: [
@@ -14,7 +13,6 @@ export const config: DocGenConfig = {
 console.group(
     `reDoc: Generating docs for ${config.packages.length} package(s)...✍️`
 )
-const data = extractRepoMetaData(config)
-writeDocs(data, config.outDir)
+writeRepo({ config, packages: extractRepo(config) })
 console.log(`reDoc: Enjoy your new docs! 📚`)
 console.groupEnd()
