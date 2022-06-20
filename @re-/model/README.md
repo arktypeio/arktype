@@ -29,11 +29,11 @@ If you're using TypeScript, you'll need at least `4.4`.
 
 This snippet will give you an idea of `@re-/model` syntax, but the best way to get a feel for it is in a live editor. Try messing around with the `user` definition in [our demo](https://redo.dev/docs/model/intro#start-quick-%EF%B8%8F) or paste it in your own editor and see how the type hints help guide you in the right direction.
 
-```ts ***GENERATED*** createModelDemo.ts
-import { create } from "@re-/model"
+```ts @snipFrom:snippets/model.ts
+import { model } from "../src/index.js"
 
 // Most common TypeScript expressions just work...
-export const userModel = create({
+export const userModel = model({
     name: {
         first: "string",
         middle: "string?",
@@ -55,6 +55,7 @@ export const userData = {
     age: 28,
     browser: "Internet Explorer" // :(
 }
+
 export const userValidationResult = userModel.validate(userData)
 
 // Try changing "userModel" or "userData" and see what happens!
@@ -66,8 +67,8 @@ Working with types that refer to one another or themselves? So can your models!
 
 [Just compile a **space**.](https://redo.dev/docs/model/spaces)
 
-```ts ***GENERATED*** compileSpaceDemo.ts
-import { compile } from "@re-/model"
+```ts @snipFrom:snippets/space.ts
+import { compile } from "../src/index.js"
 
 const space = compile({
     user: {
@@ -84,15 +85,17 @@ const space = compile({
 // Even recursive and cyclic types are precisely inferred
 type User = typeof space.types.user
 
-// Throws: "At path bestFriend/groups/0, required keys 'members' were missing."
-space.models.user.assert({
+const data = {
     name: "Devin Aldai",
     bestFriend: {
         name: "Devin Olnyt",
         groups: [{ title: "Type Enjoyers" }]
     },
     groups: []
-})
+}
+
+// Throws: "At path bestFriend/groups/0, required keys 'members' were missing."
+space.models.user.assert(data)
 ```
 
 ## Definitions that split ✂️
@@ -103,36 +106,35 @@ Like keeping your files small and tidy? Perhaps you'd prefer to split your defin
 
 `index.ts`
 
-```ts ***GENERATED*** declareDemo.ts
-import { declare } from "@re-/model"
+```ts @snipFrom:snippets/declaration/declaration.ts
+import { declare } from "../../src/index.js"
 
 // Declare the models you will define
 export const { define, compile } = declare("user", "group")
 
-import { userDef } from "./user.js"
 import { groupDef } from "./group.js"
+import { userDef } from "./user.js"
 
 // Creates your space (or tells you which definition you forgot to include)
-const space = compile({ ...userDef, ...groupDef })
+export const space = compile({ ...userDef, ...groupDef })
 ```
 
 `user.ts`
 
-```ts ***GENERATED*** user.ts
-import { define } from "./declareDemo.js"
+```ts @snipFrom:snippets/declaration/user.ts
+import { define } from "./declaration.js"
 
 export const userDef = define.user({
     name: "string",
     bestFriend: "user?",
-    // Type Hint: "Unable to determine the type of 'grop'"
-    groups: "grop[]"
+    groups: "group[]"
 })
 ```
 
 `group.ts`
 
-```ts ***GENERATED*** group.ts
-import { define } from "./declareDemo.js"
+```ts @snipFrom:snippets/declaration/group.ts
+import { define } from "./declaration.js"
 
 export const groupDef = define.group({
     title: "string",
@@ -146,12 +148,12 @@ TypeScript can do a lot, but sometimes things you care about at runtime shouldn'
 
 [**Constraints** have you covered.](https://redo.dev/docs/model/constraints)
 
-```ts ***GENERATED*** validationDemo.ts
-import { create } from "@re-/model"
+```ts @snipFrom:snippets/constraints.ts
+import { model } from "../src/index.js"
 
-const employee = create({
+const employee = model({
     // Not a fan of regex? Don't worry, 'email' is a builtin type :)
-    email: `/[a-z]*@redo\.dev/`,
+    email: `/[a-z]*@redo.dev/`,
     about: {
         // Single or double bound numeric types
         age: "18<=integer<125",

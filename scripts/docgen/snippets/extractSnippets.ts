@@ -22,8 +22,8 @@ export const extractPackageSnippets = ({
     const packageSnippets: PackageSnippets = {}
     const snippetSourceFiles = project.addSourceFilesAtPaths(sources)
     for (const sourceFile of snippetSourceFiles) {
-        packageSnippets[relative(rootDir, sourceFile.getFilePath())] =
-            extractSnippetsFromFile(sourceFile)
+        const fileKey = relative(rootDir, sourceFile.getFilePath())
+        packageSnippets[fileKey] = extractSnippetsFromFile(sourceFile)
     }
     return packageSnippets
 }
@@ -36,18 +36,15 @@ export type FileSnippets = {
 export type LabeledSnippets = Record<string, Snippet>
 
 const extractSnippetsFromFile = (sourceFile: SourceFile): FileSnippets => {
-    const fileSnippets: FileSnippets = {
-        all: {
-            text: sourceFile.getFullText()
-        },
-        byLabel: {}
-    }
     const snippetRanges = extractSnippetRangesFromFile(sourceFile)
-    fileSnippets.byLabel = extractTextFromSnippetRanges(
-        sourceFile,
-        snippetRanges
-    )
-    return fileSnippets
+    const byLabel = extractTextFromSnippetRanges(sourceFile, snippetRanges)
+    return {
+        all: {
+            // It's important we get the file text after extracting snippets so snip comments are not included
+            text: sourceFile.getFullText().trim()
+        },
+        byLabel
+    }
 }
 
 const extractTextFromSnippetRanges = (

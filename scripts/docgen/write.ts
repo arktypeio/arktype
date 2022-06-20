@@ -13,10 +13,19 @@ export type WriteApiContext = {
 
 export const writeRepo = ({ config, packages }: WriteApiContext) => {
     rmSync(config.outDir, { recursive: true, force: true })
-    for (const packageMetadata of packages) {
+    for (const packageConfig of config.packages) {
+        const packageMetadata = packages.find(
+            (pkg) => packageConfig.path === pkg.name
+        )
+        if (!packageMetadata) {
+            throw new Error(
+                `Unable to find metadata associated with '${packageConfig.path}'.`
+            )
+        }
         const packageOutDir = join(config.outDir, packageMetadata.name)
         writePackageApi({ config, packageMetadata, packageOutDir })
-        writePackageSnippets({ config, packageMetadata, packageOutDir })
+        writePackageSnippets({ packageConfig, packageMetadata })
     }
+
     shell(`prettier --write ${config.outDir}`)
 }

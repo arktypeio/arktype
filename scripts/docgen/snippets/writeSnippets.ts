@@ -1,49 +1,134 @@
-import { dirname, join } from "node:path"
-import { ensureDir, writeFile } from "@re-/node"
-import { DocGenConfig } from "../config.js"
+import { existsSync } from "node:fs"
+import { basename, join } from "node:path"
+import { readFile, writeFile } from "@re-/node"
+import { DocGenPackageConfig, DocGenSnippetConsumer } from "../config.js"
 import { PackageMetadata } from "../extract.js"
-import { FileSnippets } from "./extractSnippets.js"
 
 export type WriteSnippetsContext = {
-    config: DocGenConfig
+    packageConfig: DocGenPackageConfig
     packageMetadata: PackageMetadata
-    packageOutDir: string
 }
 
-export const writePackageSnippets = ({
-    packageMetadata,
-    packageOutDir
-}: WriteSnippetsContext) => {
-    if (!packageMetadata.snippets) {
+export const writePackageSnippets = (ctx: WriteSnippetsContext) => {
+    if (!ctx.packageConfig.snippets) {
         return
     }
-    const snippetsOut = ensureDir(join(packageOutDir, "snippets"))
-    for (const [filePath, fileSnippets] of Object.entries(
-        packageMetadata.snippets
-    )) {
-        writeFileSnippets(snippetsOut, filePath, fileSnippets)
+    if (ctx.packageConfig.snippets.targets) {
+        updateTargets(ctx.packageConfig.snippets.targets, ctx)
+    }
+    if (ctx.packageConfig.snippets.consumers) {
+        runConsumers(ctx.packageConfig.snippets.consumers, ctx)
     }
 }
 
-const writeFileSnippets = (
-    snippetsOut: string,
-    filePath: string,
-    fileSnippets: FileSnippets
-) => {
-    let outPath = filePath.startsWith("snippets/")
-        ? filePath.slice(9)
-        : join("root", filePath)
-    outPath = outPath.replaceAll("/", "-")
-    const allSnippetOutPath = join(snippetsOut, outPath)
-    ensureDir(dirname(allSnippetOutPath))
-    writeFile(allSnippetOutPath, fileSnippets.all.text)
-    const labeledSnippetEntries = Object.entries(fileSnippets.byLabel)
-    if (labeledSnippetEntries.length) {
-        const labeledSnippetsOutDir = ensureDir(
-            allSnippetOutPath.replace(".ts", "ByLabel")
+const updateTargets = (targets: string[], ctx: WriteSnippetsContext) => {
+    for (const relativeTargetPath of targets) {
+        const fullTargetPath = join(
+            ctx.packageMetadata.rootDir,
+            relativeTargetPath
         )
-        for (const [label, snippet] of Object.entries(fileSnippets.byLabel)) {
-            writeFile(join(labeledSnippetsOutDir, label + ".ts"), snippet.text)
+        if (!existsSync(fullTargetPath)) {
+            throw new Error(`Target did not exist at path '${fullTargetPath}'.`)
         }
+        if (fullTargetPath.toLowerCase().endsWith(".md")) {
+            updateMarkdownTarget(fullTargetPath, ctx)
+        } else {
+            throw new Error(
+                `Unable to update target of unknown type at '${basename(
+                    relativeTargetPath
+                )}'.`
+            )
+        }
+    }
+}
+
+const runConsumers = (
+    consumers: DocGenSnippetConsumer[],
+    ctx: WriteSnippetsContext
+) => {
+    for (const consumer of consumers) {
+        consumer(ctx.packageMetadata.snippets ?? {})
+    }
+}
+
+const SNIP_FROM_TOKEN = "@snipFrom"
+
+const updateMarkdownTarget = (
+    targetPath: string,
+    ctx: WriteSnippetsContext
+) => {
+    const originalLines = readFile(targetPath).split("\n")
+    const transformedLines = []
+    let waitingForBlockEnd = false
+    for (const originalLine of originalLines) {
+        if (waitingForBlockEnd) {
+            if (originalLine.trim() === "```") {
+                transformedLines.push(originalLine)
+                waitingForBlockEnd = false
+            }
+        } else if (originalLine.includes(SNIP_FROM_TOKEN)) {
+            const parsedLine = parseLineContainingGeneratedToken(originalLine)
+            transformedLines.push(
+                originalLine,
+                ...getReplacementLines(parsedLine, targetPath, ctx)
+            )
+            // Until we reach a block end token, skip pushing originalLines to transformedLines
+            waitingForBlockEnd = true
+        } else {
+            transformedLines.push(originalLine)
+        }
+    }
+    writeFile(targetPath, transformedLines.join("\n"))
+}
+
+const getReplacementLines = (
+    { snippetFilePath, label }: ParsedGeneratedLine,
+    targetPath: string,
+    ctx: WriteSnippetsContext
+) => {
+    if (!(snippetFilePath in ctx.packageMetadata.snippets)) {
+        throw new Error(
+            `No snippets were extracted from ${snippetFilePath} referenced in update target ${targetPath}.`
+        )
+    }
+    const fileSnippets = ctx.packageMetadata.snippets[snippetFilePath]
+    let snippetTextToCopy: string
+    if (label) {
+        if (!(label in fileSnippets.byLabel)) {
+            throw new Error(
+                `No snippet with label ${label} exists in file at ${snippetFilePath} referenced by ${targetPath}. ` +
+                    `Available labels are ${Object.keys(
+                        fileSnippets.byLabel
+                    ).join(", ")}.`
+            )
+        }
+        snippetTextToCopy = fileSnippets.byLabel[label].text
+    } else {
+        snippetTextToCopy = fileSnippets.all.text
+    }
+    return snippetTextToCopy.split("\n")
+}
+
+type ParsedGeneratedLine = {
+    snippetFilePath: string
+    label: string | undefined
+}
+
+const parseLineContainingGeneratedToken = (
+    line: string
+): ParsedGeneratedLine => {
+    const generatedFromExpressionParts = line
+        .slice(line.indexOf(SNIP_FROM_TOKEN))
+        .split(" ")[0]
+        .split(":")
+    const snippetFilePath = generatedFromExpressionParts[1]
+    if (!snippetFilePath) {
+        throw new Error(
+            `@generatedFrom expression '${line}' required a file path, e.g. '@generatedFrom:demo.ts'.`
+        )
+    }
+    return {
+        snippetFilePath,
+        label: generatedFromExpressionParts[2]
     }
 }

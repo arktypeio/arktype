@@ -13,5 +13,7 @@ export type DocGenPackageConfig = {
 export type DocGenSnippetsConfig = {
     sources: string[]
     targets?: string[]
-    consumers?: (snippets: PackageSnippets) => void
+    consumers?: DocGenSnippetConsumer[]
 }
+
+export type DocGenSnippetConsumer = (snippets: PackageSnippets) => void

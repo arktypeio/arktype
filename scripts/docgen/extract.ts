@@ -13,7 +13,7 @@ export type PackageMetadata = {
     version: string
     rootDir: string
     api: ApiEntryPoint[]
-    snippets?: PackageSnippets
+    snippets: PackageSnippets
 }
 
 export const extractRepo = (config: DocGenConfig): PackageMetadata[] => {
@@ -31,7 +31,13 @@ export const extractRepo = (config: DocGenConfig): PackageMetadata[] => {
             packageJson,
             rootDir
         })
-        const packageMetadata: PackageMetadata = { name, version, rootDir, api }
+        const packageMetadata: PackageMetadata = {
+            name,
+            version,
+            rootDir,
+            api,
+            snippets: {}
+        }
         if (packageConfig.snippets) {
             const sources = packageConfig.snippets.sources.map((sourceGlob) =>
                 join(rootDir, sourceGlob)
