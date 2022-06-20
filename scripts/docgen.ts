@@ -7,7 +7,7 @@ export const config: DocGenConfig = {
         {
             path: "@re-/model",
             snippets: {
-                sources: ["demos/**"]
+                sources: ["snippets/**"]
             }
         }
     ],

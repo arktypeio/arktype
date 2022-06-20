@@ -1,7 +1,5 @@
-import { compile } from "@re-/model"
+import { compile } from "../src/index.js"
 
-// @snipStart id=whole
-// @snipStatement id=space
 const space = compile({
     user: {
         name: "string",
@@ -14,18 +12,17 @@ const space = compile({
     }
 })
 
-// @snipStart id=type
 // Even recursive and cyclic types are precisely inferred
 type User = typeof space.types.user
-// @snipEnd id=type
 
-// Throws: "At path bestFriend/groups/0, required keys 'members' were missing."
-space.models.user.assert({
+const data = {
     name: "Devin Aldai",
     bestFriend: {
         name: "Devin Olnyt",
         groups: [{ title: "Type Enjoyers" }]
     },
     groups: []
-})
-// @snipEnd id=whole
+}
+
+// Throws: "At path bestFriend/groups/0, required keys 'members' were missing."
+space.models.user.assert(data)

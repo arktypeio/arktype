@@ -1,4 +1,4 @@
-import { define } from "./declareDemo.js"
+import { define } from "./declaration.js"
 
 export const groupDef = define.group({
     title: "string",

@@ -9,7 +9,6 @@ module.exports = defineConfig({
         "plugin:@typescript-eslint/recommended",
         "plugin:@typescript-eslint/recommended-requiring-type-checking",
         "plugin:import/typescript",
-        "plugin:unicorn/recommended",
         "prettier"
     ],
     settings: {
@@ -100,21 +99,14 @@ module.exports = defineConfig({
         "@typescript-eslint/restrict-template-expressions": "off",
         "@typescript-eslint/restrict-plus-operands": "off",
         /**
-         * Disable or adjust unicorn/recommended rules that don't fit our code style
+         * ESM support, clarity
          */
-        "unicorn/explicit-length-check": "off",
-        "unicorn/no-useless-undefined": "off",
-        "unicorn/filename-case": ["error", { case: "camelCase" }],
-        "unicorn/prefer-switch": "off",
-        "unicorn/prevent-abbreviations": "off",
-        "unicorn/no-array-callback-reference": "off",
-        "unicorn/no-process-exit": "off",
+        "unicorn/prefer-module": "error",
+        "unicorn/prefer-node-protocol": "error",
         /**
-         * Temporarily disabled settings we may enable in the future
+         * Namespaces are useful for grouping generic types with related functionality
          */
-        "@typescript-eslint/no-namespace": "off",
-        "unicorn/no-array-reduce": "off",
-        "unicorn/no-null": "off"
+        "@typescript-eslint/no-namespace": "off"
     },
     overrides: [
         /**
@@ -145,8 +137,6 @@ module.exports = defineConfig({
         {
             files: ["**/test/**", "**/bench/**"],
             rules: {
-                "unicorn/consistent-function-scoping": "off",
-                "unicorn/numeric-separators-style": "off",
                 "@typescript-eslint/no-empty-function": "off"
             }
         },

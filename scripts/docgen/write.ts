@@ -1,3 +1,5 @@
+import { rmSync } from "node:fs"
+import { join } from "node:path"
 import { shell } from "@re-/node"
 import { writePackageApi } from "./api/writeApi.js"
 import { DocGenConfig } from "./config.js"
@@ -10,9 +12,11 @@ export type WriteApiContext = {
 }
 
 export const writeRepo = ({ config, packages }: WriteApiContext) => {
+    rmSync(config.outDir, { recursive: true, force: true })
     for (const packageMetadata of packages) {
-        writePackageApi({ config, packageMetadata })
-        writePackageSnippets({ config, packageMetadata })
+        const packageOutDir = join(config.outDir, packageMetadata.name)
+        writePackageApi({ config, packageMetadata, packageOutDir })
+        writePackageSnippets({ config, packageMetadata, packageOutDir })
     }
     shell(`prettier --write ${config.outDir}`)
 }

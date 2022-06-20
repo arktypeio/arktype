@@ -21,6 +21,7 @@ export const ensureDir = (path: string) => {
     } else {
         mkdirSync(path, { recursive: true })
     }
+    return path
 }
 
 export const readFile = (path: string) => readFileSync(path).toString()

@@ -5,7 +5,9 @@ export type DocGenConfig = {
 
 export type DocGenPackageConfig = {
     path: string
-    snippets?: {
-        sources: string[]
-    }
+    snippets?: DocGenSnippetsConfig
+}
+
+export type DocGenSnippetsConfig = {
+    sources: string[]
 }

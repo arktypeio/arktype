@@ -1,7 +1,7 @@
-import { create } from "@re-/model"
-
+import { model } from "../src/index.js"
+// @snipStart id=creatingAModel
 // Most common TypeScript expressions just work...
-export const userModel = create({
+export const userModel = model({
     name: {
         first: "string",
         middle: "string?",
@@ -13,6 +13,7 @@ export const userModel = create({
 
 // Mouse over "User" to see the inferred type...
 export type User = typeof userModel.type
+// @snipEnd id=creatingAModel
 
 // But a model can also validate your data at runtime...
 export const userData = {
@@ -23,6 +24,7 @@ export const userData = {
     age: 28,
     browser: "Internet Explorer" // :(
 }
+
 export const userValidationResult = userModel.validate(userData)
 
 // Try changing "userModel" or "userData" and see what happens!

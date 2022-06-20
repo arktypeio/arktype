@@ -7,16 +7,18 @@ import { ApiEntryPoint, ExportData } from "./extractApi.js"
 export type WritePackageApiContext = {
     config: DocGenConfig
     packageMetadata: PackageMetadata
+    packageOutDir: string
 }
 
 export const writePackageApi = ({
-    config,
-    packageMetadata
+    packageMetadata,
+    packageOutDir
 }: WritePackageApiContext) => {
-    const toDir = join(config.outDir, packageMetadata.name)
     for (const entryPoint of packageMetadata.api) {
         const entryPointOutDir =
-            entryPoint.subpath === "." ? toDir : join(toDir, entryPoint.subpath)
+            entryPoint.subpath === "."
+                ? packageOutDir
+                : join(packageOutDir, entryPoint.subpath)
         ensureDir(entryPointOutDir)
         writeEntryPoint(entryPoint, entryPointOutDir)
     }

@@ -4,15 +4,16 @@ import { Project } from "ts-morph"
 import { PackageJson } from "type-fest"
 import { ApiEntryPoint, extractPackageApi } from "./api/index.js"
 import { DocGenConfig } from "./config.js"
-import { extractPackageSnippets, SnippetMap } from "./snippets/index.js"
+import { ExtractedSnippets, extractPackageSnippets } from "./snippets/index.js"
 
 const REPO_ROOT = fromHere("..", "..")
 
 export type PackageMetadata = {
     name: string
     version: string
+    rootDir: string
     api: ApiEntryPoint[]
-    snippets: SnippetMap
+    snippets?: ExtractedSnippets
 }
 
 export const extractRepo = (config: DocGenConfig): PackageMetadata[] => {
@@ -30,17 +31,17 @@ export const extractRepo = (config: DocGenConfig): PackageMetadata[] => {
             packageJson,
             rootDir
         })
-        let snippets: SnippetMap = {}
+        const packageMetadata: PackageMetadata = { name, version, rootDir, api }
         if (packageConfig.snippets) {
             const sources = packageConfig.snippets.sources.map((sourceGlob) =>
                 join(rootDir, sourceGlob)
             )
-            snippets = extractPackageSnippets({
+            packageMetadata.snippets = extractPackageSnippets({
                 project,
                 sources,
                 rootDir
             })
         }
-        return { name, version, api, snippets }
+        return packageMetadata
     })
 }
