@@ -14,7 +14,7 @@ const space = compile({
 
 // Even recursive and cyclic types are precisely inferred
 type User = typeof space.types.user
-// @snipStart id=validatingASpace
+// @snipStart:validatingASpace
 const data = {
     name: "Devin Aldai",
     bestFriend: {
@@ -26,4 +26,4 @@ const data = {
 
 // Throws: "At path bestFriend/groups/0, required keys 'members' were missing."
 space.models.user.assert(data)
-// @snipEnd id=validatingASpace
+// @snipEnd:validatingASpace

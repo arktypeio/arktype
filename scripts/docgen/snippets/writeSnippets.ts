@@ -2,6 +2,7 @@ import { dirname, join } from "node:path"
 import { ensureDir, writeFile } from "@re-/node"
 import { DocGenConfig } from "../config.js"
 import { PackageMetadata } from "../extract.js"
+import { FileSnippets } from "./extractSnippets.js"
 
 export type WriteSnippetsContext = {
     config: DocGenConfig
@@ -17,21 +18,32 @@ export const writePackageSnippets = ({
         return
     }
     const snippetsOut = ensureDir(join(packageOutDir, "snippets"))
-    const filesOut = ensureDir(join(snippetsOut, "files"))
-    const blocksOut = ensureDir(join(snippetsOut, "blocks"))
-    for (const [path, snippet] of Object.entries(
-        packageMetadata.snippets.files
+    for (const [filePath, fileSnippets] of Object.entries(
+        packageMetadata.snippets
     )) {
-        const outPath = path.startsWith("snippets/")
-            ? path.slice(9)
-            : join("root", path)
-        const snippetDestinationPath = join(filesOut, outPath)
-        ensureDir(dirname(snippetDestinationPath))
-        writeFile(snippetDestinationPath, snippet.text)
+        writeFileSnippets(snippetsOut, filePath, fileSnippets)
     }
-    for (const [id, snippet] of Object.entries(
-        packageMetadata.snippets.blocks
-    )) {
-        writeFile(join(blocksOut, id + ".ts"), snippet.text)
+}
+
+const writeFileSnippets = (
+    snippetsOut: string,
+    filePath: string,
+    fileSnippets: FileSnippets
+) => {
+    let outPath = filePath.startsWith("snippets/")
+        ? filePath.slice(9)
+        : join("root", filePath)
+    outPath = outPath.replaceAll("/", "-")
+    const allSnippetOutPath = join(snippetsOut, outPath)
+    ensureDir(dirname(allSnippetOutPath))
+    writeFile(allSnippetOutPath, fileSnippets.all.text)
+    const labeledSnippetEntries = Object.entries(fileSnippets.byLabel)
+    if (labeledSnippetEntries.length) {
+        const labeledSnippetsOutDir = ensureDir(
+            allSnippetOutPath.replace(".ts", "ByLabel")
+        )
+        for (const [label, snippet] of Object.entries(fileSnippets.byLabel)) {
+            writeFile(join(labeledSnippetsOutDir, label + ".ts"), snippet.text)
+        }
     }
 }

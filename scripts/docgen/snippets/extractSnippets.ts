@@ -1,10 +1,8 @@
 import { relative } from "node:path"
 import { Node, Project, SourceFile, SyntaxKind, ts } from "ts-morph"
 
-export type ExtractedSnippets = {
-    files: Record<string, Snippet>
-    blocks: Record<string, Snippet>
-}
+/** Represents paths mapped to snippet data for a file */
+export type PackageSnippets = Record<string, FileSnippets>
 
 export type Snippet = {
     text: string
@@ -20,39 +18,64 @@ export const extractPackageSnippets = ({
     project,
     sources,
     rootDir
-}: ExtractPackageSnippetsArgs): ExtractedSnippets => {
-    const extractedSnippets: ExtractedSnippets = {
-        files: {},
-        blocks: {}
-    }
+}: ExtractPackageSnippetsArgs): PackageSnippets => {
+    const packageSnippets: PackageSnippets = {}
     const snippetSourceFiles = project.addSourceFilesAtPaths(sources)
     for (const sourceFile of snippetSourceFiles) {
-        const resolvedSnips = extractSnippetsFromFile(sourceFile)
-        for (const resolvedSnip of resolvedSnips) {
-            let text
-            if ("node" in resolvedSnip.range) {
-                text = resolvedSnip.range.node.getFullText()
-            } else {
-                text = sourceFile
-                    .getFullText()
-                    .slice(
-                        resolvedSnip.range.start.getStart(),
-                        resolvedSnip.range.end.getEnd()
-                    )
-            }
-            extractedSnippets.blocks[resolvedSnip.id] = {
-                text
-            }
-        }
-        extractedSnippets.files[relative(rootDir, sourceFile.getFilePath())] = {
-            text: sourceFile.getFullText()
-        }
+        packageSnippets[relative(rootDir, sourceFile.getFilePath())] =
+            extractSnippetsFromFile(sourceFile)
     }
-    return extractedSnippets
+    return packageSnippets
 }
 
-const extractSnippetsFromFile = (sourceFile: SourceFile): ResolvedSnip[] => {
-    const resolvedSnips: ResolvedSnip[] = []
+export type FileSnippets = {
+    all: Snippet
+    byLabel: LabeledSnippets
+}
+
+export type LabeledSnippets = Record<string, Snippet>
+
+const extractSnippetsFromFile = (sourceFile: SourceFile): FileSnippets => {
+    const fileSnippets: FileSnippets = {
+        all: {
+            text: sourceFile.getFullText()
+        },
+        byLabel: {}
+    }
+    const snippetRanges = extractSnippetRangesFromFile(sourceFile)
+    fileSnippets.byLabel = extractTextFromSnippetRanges(
+        sourceFile,
+        snippetRanges
+    )
+    return fileSnippets
+}
+
+const extractTextFromSnippetRanges = (
+    sourceFile: SourceFile,
+    snippetRanges: SnipRange[]
+): LabeledSnippets => {
+    const labeledSnippets: Record<string, Snippet> = {}
+    for (const resolvedSnip of snippetRanges) {
+        let text
+        if ("node" in resolvedSnip.range) {
+            text = resolvedSnip.range.node.getFullText()
+        } else {
+            text = sourceFile
+                .getFullText()
+                .slice(
+                    resolvedSnip.range.start.getStart(),
+                    resolvedSnip.range.end.getEnd()
+                )
+        }
+        labeledSnippets[resolvedSnip.id] = {
+            text
+        }
+    }
+    return labeledSnippets
+}
+
+const extractSnippetRangesFromFile = (sourceFile: SourceFile): SnipRange[] => {
+    const snipRanges: SnipRange[] = []
     const openBlocks: ParsedSnip[] = []
     const comments = sourceFile.getDescendantsOfKind(
         SyntaxKind.SingleLineCommentTrivia
@@ -75,7 +98,7 @@ const extractSnippetsFromFile = (sourceFile: SourceFile): ResolvedSnip[] => {
                     matchingSnipStartIndex,
                     1
                 )[0]
-                resolvedSnips.push({
+                snipRanges.push({
                     id: parsedSnip.id,
                     range: {
                         start: matchingSnipStart.node,
@@ -83,7 +106,7 @@ const extractSnippetsFromFile = (sourceFile: SourceFile): ResolvedSnip[] => {
                     }
                 })
             } else {
-                resolvedSnips.push({
+                snipRanges.push({
                     id: parsedSnip.id,
                     range: { node: parsedSnip.node }
                 })
@@ -97,12 +120,12 @@ const extractSnippetsFromFile = (sourceFile: SourceFile): ResolvedSnip[] => {
                 .join(",")}.`
         )
     }
-    return resolvedSnips
+    return snipRanges
 }
 
 type SnipKind = `@snip${"Statement" | "Start" | "End"}`
 
-type ResolvedSnip = {
+type SnipRange = {
     id: string
     range:
         | { node: Node<ts.Node> }
@@ -119,11 +142,10 @@ const parseSnipComment = (snipComment: Node<ts.Node>): ParsedSnip => {
     const commentText = snipComment.getText()
     const snipText = commentText.slice(commentText.indexOf("@snip"))
     const parts = snipText.split(" ")
-    const kind = parts[0] as SnipKind
-    const id = parts.find((part) => part.match(/id=.+/))?.slice(3)
+    const [kind, id] = parts[0].split(":") as [SnipKind, string | undefined]
     if (!id) {
         throw new Error(
-            `Snip comment '${snipText}' requires an id like '@snipStatement id=example'.`
+            `Snip comment '${snipText}' requires a label like '@snipStatement:mySnipLabel'.`
         )
     }
     let node

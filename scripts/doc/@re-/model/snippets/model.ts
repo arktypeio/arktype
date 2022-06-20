@@ -1,5 +1,5 @@
 import { model } from "../src/index.js"
-
+// @snipStart:creatingAModel
 // Most common TypeScript expressions just work...
 export const userModel = model({
     name: {
@@ -13,6 +13,7 @@ export const userModel = model({
 
 // Mouse over "User" to see the inferred type...
 export type User = typeof userModel.type
+// @snipEnd:creatingAModel
 
 // But a model can also validate your data at runtime...
 export const userData = {
