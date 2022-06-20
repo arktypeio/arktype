@@ -1,6 +1,7 @@
+import { join } from "node:path"
+import { writeJson } from "@re-/node"
 import { DocGenConfig } from "../config.js"
 import { PackageMetadata } from "../extract.js"
-import { PackageSnippet } from "./extractSnippets.js"
 
 export type WriteSnippetsContext = {
     config: DocGenConfig
@@ -10,7 +11,6 @@ export type WriteSnippetsContext = {
 export const writePackageSnippets = ({
     config,
     packageMetadata
-}: WriteSnippetsContext): PackageSnippet[] => {
-    console.log("Getting snippets... (/s)")
-    return []
+}: WriteSnippetsContext) => {
+    writeJson(join(config.outDir, "snippets.json"), packageMetadata.snippets)
 }

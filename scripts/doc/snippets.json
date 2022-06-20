@@ -1,0 +1,14 @@
+{
+    "space": {
+        "text": "const space = compile({\n    user: {\n        name: \"string\",\n        bestFriend: \"user?\",\n        groups: \"group[]\"\n    },\n    group: {\n        title: \"string\",\n        members: \"user[]\"\n    }\n})"
+    },
+    "type": {
+        "text": "// Even recursive and cyclic types are precisely inferred\ntype User = typeof space.types.user"
+    },
+    "whole": {
+        "text": "// @snipStatement id=space\nconst space = compile({\n    user: {\n        name: \"string\",\n        bestFriend: \"user?\",\n        groups: \"group[]\"\n    },\n    group: {\n        title: \"string\",\n        members: \"user[]\"\n    }\n})\n\n// @snipStart id=type\n// Even recursive and cyclic types are precisely inferred\ntype User = typeof space.types.user\n// @snipEnd id=type\n\n// Throws: \"At path bestFriend/groups/0, required keys 'members' were missing.\"\nspace.models.user.assert({\n    name: \"Devin Aldai\",\n    bestFriend: {\n        name: \"Devin Olnyt\",\n        groups: [{ title: \"Type Enjoyers\" }]\n    },\n    groups: []\n})"
+    },
+    "demos/validationDemo.ts": {
+        "text": "// @snipFile\nimport { create } from \"@re-/model\"\n\nconst employee = create({\n    // Not a fan of regex? Don't worry, 'email' is a builtin type :)\n    email: `/[a-z]*@redo\\.dev/`,\n    about: {\n        // Single or double bound numeric types\n        age: \"18<=integer<125\",\n        // Or string lengths\n        bio: \"string<=80\"\n    }\n})\n\n// Subtypes like 'email' and 'integer' become 'string' and 'number'\ntype Employee = typeof employee.type\n\n// The error messages are so nice you might be tempted to break your code more often ;)\nconst { error } = employee.validate({\n    email: \"david@redo.biz\",\n    about: {\n        age: 17,\n        bio: \"I am very interesting.\".repeat(5)\n    }\n})\n\n// Output: \"Encountered errors at the following paths:\n// {\n//   email: ''david@redo.biz' is not assignable to /[a-z]*@redo.dev/.',\n//   about/age: '17 was less than 18.',\n//   about/bio: ''I am very interesting.I am very interesting.I am... was greater than 80 characters.'\n// }\"\nconsole.log(error ?? \"Flawless. Obviously.\")\n"
+    }
+}

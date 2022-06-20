@@ -1,35 +1,32 @@
 const DELIMITER = "$$block_start$$"
 
 export class StatementStack {
-    private storage: string[] = []
+    private statements: string[] = []
 
     push(item: string, delimiter?: boolean) {
         if (delimiter) {
-            this.storage.push(DELIMITER)
+            this.statements.push(DELIMITER)
         } else {
-            this.storage.push(item)
+            this.statements.push(item)
         }
     }
 
     pop() {
-        return this.storage.pop()
+        return this.statements.pop()
     }
 
     peek() {
-        return this.storage[this.size() - 1]
+        return this.statements[this.size() - 1]
     }
 
     size() {
-        return this.storage.length
+        return this.statements.length
     }
     getCopyOfStorage() {
-        return [...this.storage]
-    }
-    setStorage(storage: string[]) {
-        this.storage = storage
+        return [...this.statements]
     }
 
-    storageToString() {
+    toString() {
         let str = ""
         const copy = this.getCopyOfStorage()
         while (this.peek() !== DELIMITER && this.peek() !== undefined) {
@@ -43,7 +40,7 @@ export class StatementStack {
                 ...copy.slice(0, copy.lastIndexOf(DELIMITER)),
                 ...copy.slice(copy.lastIndexOf(DELIMITER) + 1, copy.length)
             ]
-            this.setStorage(copyWithDelimiterRemoved)
+            this.statements = copyWithDelimiterRemoved
         }
         return str
     }

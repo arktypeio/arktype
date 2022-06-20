@@ -1,3 +1,4 @@
+// @snipFile
 import { create } from "@re-/model"
 
 const employee = create({

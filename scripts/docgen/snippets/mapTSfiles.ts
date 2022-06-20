@@ -48,7 +48,7 @@ const mapBlocksAndStatements = (
                 blockFlagActive = false
                 prepCommentThenMap(
                     comment,
-                    statementStack.storageToString(),
+                    statementStack.toString(),
                     mappedData
                 )
             } else if (regex.blockGrab.test(comment)) {
@@ -60,7 +60,6 @@ const mapBlocksAndStatements = (
             statementStack.push(statement.getText())
         }
     }
-
     const eof = file.getLastToken()
     const eofCommentRange = eof.getLeadingCommentRanges()
     if (eofCommentRange) {
@@ -70,7 +69,7 @@ const mapBlocksAndStatements = (
                 blockFlagActive = false
                 prepCommentThenMap(
                     comment,
-                    statementStack.storageToString(),
+                    statementStack.toString(),
                     mappedData
                 )
             }
@@ -82,7 +81,6 @@ export const getMapData = (project: Project, map: Record<string, string>) => {
         const text = file.getFullText()
         const fileName = file.getBaseName()
         addBlockToMaps(fileName, text, map)
-
         if (regex.blockOrStatementGrab.test(text)) {
             mapBlocksAndStatements(file, text, map)
         }
