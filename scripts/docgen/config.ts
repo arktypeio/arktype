@@ -1,4 +1,7 @@
-import { PackageSnippets } from "./snippets/extractSnippets.js"
+import {
+    PackageSnippets,
+    SnippetTransformToggleOptions
+} from "./snippets/extractSnippets.js"
 
 export type DocGenConfig = {
     packages: DocGenPackageConfig[]
@@ -11,9 +14,14 @@ export type DocGenPackageConfig = {
 }
 
 export type DocGenSnippetsConfig = {
-    sources: string[]
+    sources: DocGenSnippetExtractionConfig[]
     targets?: string[]
     consumers?: DocGenSnippetConsumer[]
+}
+
+export type DocGenSnippetExtractionConfig = {
+    fileGlob: string
+    transforms?: SnippetTransformToggleOptions
 }
 
 export type DocGenSnippetConsumer = (snippets: PackageSnippets) => void

@@ -1,20 +1,20 @@
 import { join } from "node:path"
 import { ensureDir, writeFile } from "@re-/node"
 import { DocGenConfig } from "../config.js"
-import { PackageMetadata } from "../extract.js"
+import { PackageExtractionData } from "../extract.js"
 import { ApiEntryPoint, ExportData } from "./extractApi.js"
 
 export type WritePackageApiContext = {
     config: DocGenConfig
-    packageMetadata: PackageMetadata
+    extractedPackage: PackageExtractionData
     packageOutDir: string
 }
 
 export const writePackageApi = ({
-    packageMetadata,
+    extractedPackage,
     packageOutDir
 }: WritePackageApiContext) => {
-    for (const entryPoint of packageMetadata.api) {
+    for (const entryPoint of extractedPackage.api) {
         const entryPointOutDir =
             entryPoint.subpath === "."
                 ? packageOutDir

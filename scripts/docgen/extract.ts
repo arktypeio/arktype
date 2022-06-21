@@ -8,46 +8,55 @@ import { extractPackageSnippets, PackageSnippets } from "./snippets/index.js"
 
 const REPO_ROOT = fromHere("..", "..")
 
-export type PackageMetadata = {
-    name: string
-    version: string
-    rootDir: string
+export type PackageExtractionData = {
+    metadata: PackageMetadata
     api: ApiEntryPoint[]
     snippets: PackageSnippets
 }
 
-export const extractRepo = (config: DocGenConfig): PackageMetadata[] => {
+export type PackageMetadata = {
+    name: string
+    version: string
+    rootDir: string
+    packageJsonData: PackageJson
+}
+
+export const extractRepo = (config: DocGenConfig): PackageExtractionData[] => {
     const project = new Project({
         tsConfigFilePath: join(REPO_ROOT, "tsconfig.references.json"),
         skipAddingFilesFromTsConfig: true
     })
     return config.packages.map((packageConfig) => {
         const rootDir = join(REPO_ROOT, packageConfig.path)
-        const packageJson: PackageJson = readPackageJson(rootDir)
-        const name = packageJson.name!
-        const version = packageJson.version!
+        const packageJsonData: PackageJson = readPackageJson(rootDir)
+        const packageMetadata: PackageMetadata = {
+            name: packageJsonData.name!,
+            version: packageJsonData.version!,
+            rootDir,
+            packageJsonData
+        }
         const api = extractPackageApi({
             project,
-            packageJson,
+            packageJson: packageJsonData,
             rootDir
         })
-        const packageMetadata: PackageMetadata = {
-            name,
-            version,
-            rootDir,
+        const extractedPackage: PackageExtractionData = {
+            metadata: packageMetadata,
             api,
             snippets: {}
         }
         if (packageConfig.snippets) {
-            const sources = packageConfig.snippets.sources.map((sourceGlob) =>
-                join(rootDir, sourceGlob)
+            const sources = packageConfig.snippets.sources.map(
+                ({ fileGlob, ...rest }) => {
+                    return { fileGlob: join(rootDir, fileGlob), ...rest }
+                }
             )
-            packageMetadata.snippets = extractPackageSnippets({
+            extractedPackage.snippets = extractPackageSnippets({
                 project,
                 sources,
-                rootDir
+                packageMetadata
             })
         }
-        return packageMetadata
+        return extractedPackage
     })
 }

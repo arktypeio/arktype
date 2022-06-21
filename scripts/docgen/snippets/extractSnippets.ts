@@ -1,5 +1,7 @@
 import { relative } from "node:path"
 import { Node, Project, SourceFile, SyntaxKind, ts } from "ts-morph"
+import { DocGenSnippetExtractionConfig } from "../config.js"
+import { PackageMetadata } from "../extract.js"
 
 /** Represents paths mapped to snippet data for a file */
 export type PackageSnippets = Record<string, FileSnippets>
@@ -8,24 +10,52 @@ export type Snippet = {
     text: string
 }
 
+export type SnippetTransformToggleOptions = {
+    imports?: boolean
+}
+
+export type SnippetTransformToggles = Required<SnippetTransformToggleOptions>
+
 export type ExtractPackageSnippetsArgs = {
     project: Project
-    sources: string[]
-    rootDir: string
+    sources: DocGenSnippetExtractionConfig[]
+    packageMetadata: PackageMetadata
 }
+
+export const addDefaultsToTransformOptions = (
+    options: SnippetTransformToggleOptions | undefined
+): SnippetTransformToggles => ({
+    imports: true,
+    ...options
+})
 
 export const extractPackageSnippets = ({
     project,
     sources,
-    rootDir
+    packageMetadata
 }: ExtractPackageSnippetsArgs): PackageSnippets => {
     const packageSnippets: PackageSnippets = {}
-    const snippetSourceFiles = project.addSourceFilesAtPaths(sources)
-    for (const sourceFile of snippetSourceFiles) {
-        const fileKey = relative(rootDir, sourceFile.getFilePath())
-        packageSnippets[fileKey] = extractSnippetsFromFile(sourceFile)
+    for (const source of sources) {
+        const snippetSourceFiles = project.addSourceFilesAtPaths(
+            source.fileGlob
+        )
+        for (const sourceFile of snippetSourceFiles) {
+            const fileKey = relative(
+                packageMetadata.rootDir,
+                sourceFile.getFilePath()
+            )
+            packageSnippets[fileKey] = extractSnippetsFromFile(sourceFile, {
+                packageMetadata,
+                transforms: addDefaultsToTransformOptions(source.transforms)
+            })
+        }
     }
     return packageSnippets
+}
+
+export type ExtractFileSnippetContext = {
+    packageMetadata: PackageMetadata
+    transforms: SnippetTransformToggles
 }
 
 export type FileSnippets = {
@@ -35,7 +65,11 @@ export type FileSnippets = {
 
 export type LabeledSnippets = Record<string, Snippet>
 
-const extractSnippetsFromFile = (sourceFile: SourceFile): FileSnippets => {
+const extractSnippetsFromFile = (
+    sourceFile: SourceFile,
+    ctx: ExtractFileSnippetContext
+): FileSnippets => {
+    applyTransforms(sourceFile, ctx)
     const snippetRanges = extractSnippetRangesFromFile(sourceFile)
     const byLabel = extractTextFromSnippetRanges(sourceFile, snippetRanges)
     return {
@@ -44,6 +78,24 @@ const extractSnippetsFromFile = (sourceFile: SourceFile): FileSnippets => {
             text: sourceFile.getFullText().trim()
         },
         byLabel
+    }
+}
+
+const applyTransforms = (
+    sourceFile: SourceFile,
+    ctx: ExtractFileSnippetContext
+) => {
+    if (ctx.transforms.imports) {
+        // Replace relative internal imports with standard external imports
+        const importDeclarations = sourceFile.getDescendantsOfKind(
+            SyntaxKind.ImportDeclaration
+        )
+        for (const declaration of importDeclarations) {
+            const specifier = declaration.getModuleSpecifier()
+            if (specifier.getLiteralText().endsWith("src/index.js")) {
+                specifier.replaceWithText(`"${ctx.packageMetadata.name}"`)
+            }
+        }
     }
 }
 

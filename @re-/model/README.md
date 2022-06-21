@@ -27,10 +27,10 @@ If you're using TypeScript, you'll need at least `4.4`.
 
 ## Start quick ⏱️
 
-This snippet will give you an idea of `@re-/model` syntax, but the best way to get a feel for it is in a live editor. Try messing around with the `user` definition in [our demo](https://redo.dev/docs/model/intro#start-quick-%EF%B8%8F) or paste it in your own editor and see how the type hints help guide you in the right direction.
+This snippet will give you an idea of `@re-/model` syntax, but the best way to get a feel for it is in a live editor. Try messing around with the `user` definition in [our demo](https://redo.dev/model/intro#start-quick-%EF%B8%8F) or paste it in your own editor and see how the type hints help guide you in the right direction.
 
 ```ts @snipFrom:snippets/model.ts
-import { model } from "../src/index.js"
+import { model } from "@re-/model"
 
 // Most common TypeScript expressions just work...
 export const userModel = model({
@@ -65,10 +65,10 @@ export const userValidationResult = userModel.validate(userData)
 
 Working with types that refer to one another or themselves? So can your models!
 
-[Just compile a **space**.](https://redo.dev/docs/model/spaces)
+[Just compile a **space**.](https://redo.dev/model/spaces)
 
 ```ts @snipFrom:snippets/space.ts
-import { compile } from "../src/index.js"
+import { compile } from "@re-/model"
 
 const space = compile({
     user: {
@@ -102,12 +102,12 @@ space.models.user.assert(data)
 
 Like keeping your files small and tidy? Perhaps you'd prefer to split your definitions up.
 
-[Try a **declaration**.](https://redo.dev/docs/model/declarations)
+[Try a **declaration**.](https://redo.dev/model/declarations)
 
 `index.ts`
 
 ```ts @snipFrom:snippets/declaration/declaration.ts
-import { declare } from "../../src/index.js"
+import { declare } from "@re-/model"
 
 // Declare the models you will define
 export const { define, compile } = declare("user", "group")
@@ -146,10 +146,10 @@ export const groupDef = define.group({
 
 TypeScript can do a lot, but sometimes things you care about at runtime shouldn't affect your type.
 
-[**Constraints** have you covered.](https://redo.dev/docs/model/constraints)
+[**Constraints** have you covered.](https://redo.dev/model/constraints)
 
 ```ts @snipFrom:snippets/constraints.ts
-import { model } from "../src/index.js"
+import { model } from "@re-/model"
 
 const employee = model({
     // Not a fan of regex? Don't worry, 'email' is a builtin type :)
@@ -198,7 +198,7 @@ Object definitions are sets of keys or indices corresponding to string, literal,
 Map definitions are represented using the familiar object literal syntax.
 
 ```ts
-const foo = create({
+const foo = model({
     key: "string?",
     anotherKey: ["unknown", { re: "'model'|'state'|'test'" }]
 })
@@ -220,7 +220,7 @@ type FooToo = {
 Tuple definitions are useful for fixed-length lists and are represented as array literals.
 
 ```ts
-const bar = create([
+const bar = model([
     "true|null",
     { coords: ["number", "number"], piOus: [3, 1, 4] }
 ])

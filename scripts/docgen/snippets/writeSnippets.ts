@@ -2,11 +2,11 @@ import { existsSync } from "node:fs"
 import { basename, join } from "node:path"
 import { readFile, writeFile } from "@re-/node"
 import { DocGenPackageConfig, DocGenSnippetConsumer } from "../config.js"
-import { PackageMetadata } from "../extract.js"
+import { PackageExtractionData } from "../extract.js"
 
 export type WriteSnippetsContext = {
     packageConfig: DocGenPackageConfig
-    packageMetadata: PackageMetadata
+    extractedPackage: PackageExtractionData
 }
 
 export const writePackageSnippets = (ctx: WriteSnippetsContext) => {
@@ -24,7 +24,7 @@ export const writePackageSnippets = (ctx: WriteSnippetsContext) => {
 const updateTargets = (targets: string[], ctx: WriteSnippetsContext) => {
     for (const relativeTargetPath of targets) {
         const fullTargetPath = join(
-            ctx.packageMetadata.rootDir,
+            ctx.extractedPackage.metadata.rootDir,
             relativeTargetPath
         )
         if (!existsSync(fullTargetPath)) {
@@ -47,7 +47,7 @@ const runConsumers = (
     ctx: WriteSnippetsContext
 ) => {
     for (const consumer of consumers) {
-        consumer(ctx.packageMetadata.snippets ?? {})
+        consumer(ctx.extractedPackage.snippets ?? {})
     }
 }
 
@@ -86,12 +86,12 @@ const getReplacementLines = (
     targetPath: string,
     ctx: WriteSnippetsContext
 ) => {
-    if (!(snippetFilePath in ctx.packageMetadata.snippets)) {
+    if (!(snippetFilePath in ctx.extractedPackage.snippets)) {
         throw new Error(
             `No snippets were extracted from ${snippetFilePath} referenced in update target ${targetPath}.`
         )
     }
-    const fileSnippets = ctx.packageMetadata.snippets[snippetFilePath]
+    const fileSnippets = ctx.extractedPackage.snippets[snippetFilePath]
     let snippetTextToCopy: string
     if (label) {
         if (!(label in fileSnippets.byLabel)) {
@@ -124,7 +124,7 @@ const parseLineContainingGeneratedToken = (
     const snippetFilePath = generatedFromExpressionParts[1]
     if (!snippetFilePath) {
         throw new Error(
-            `@generatedFrom expression '${line}' required a file path, e.g. '@generatedFrom:demo.ts'.`
+            `${SNIP_FROM_TOKEN} expression '${line}' required a file path, e.g. '${SNIP_FROM_TOKEN}:demo.ts'.`
         )
     }
     return {
