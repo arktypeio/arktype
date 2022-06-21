@@ -271,14 +271,14 @@ All TypeScript keywords that can be used to represent a type are valid definitio
 
 The type of these definitions will be inferred as `string`, but they will validate that the criterion corresponding to their keyword.
 
-| Keyword          | String is valid if it...                                            |
-| ---------------- | ------------------------------------------------------------------- |
-| `"email"`        | Matches the pattern from [emailregex.com](https://emailregex.com/). |
-| `"alpha"`        | Includes exclusively lowercase and/or uppercase letters.            |
-| `"alphanumeric"` | Includes exclusively digits, lowercase and/or uppercase letters.    |
-| `"lowercase"`    | Does not contain uppercase letters.                                 |
-| `"uppercase"`    | Does not contain lowercase letters.                                 |
-| `"character"`    | Is of length 1.                                                     |
+| Keyword          | String is valid if it...                                         |
+| ---------------- | ---------------------------------------------------------------- |
+| `"email"`        | Matches the pattern /^(.+)@(.+)\.(.+)$/.                         |
+| `"alpha"`        | Includes exclusively lowercase and/or uppercase letters.         |
+| `"alphanumeric"` | Includes exclusively digits, lowercase and/or uppercase letters. |
+| `"lowercase"`    | Does not contain uppercase letters.                              |
+| `"uppercase"`    | Does not contain lowercase letters.                              |
+| `"character"`    | Is of length 1.                                                  |
 
 ##### Number subtypes
 
