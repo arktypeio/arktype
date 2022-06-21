@@ -28,7 +28,7 @@ You might also find parts of these packages useful, but they are mostly for inte
 -   [@re-/assert](@re-/assert): Seamless testing for types and code ✅
 -   [@re-/tools](@re-/tools): Lightweight utilities and types shared across Redo packages 🧰
 -   [@re-/node](@re-/node): Node-based utilities, scripts, and configs for Redo packages ⚙️
--   [@re-/docs](@re-/docs): Documentation for this repo 📚
+-   [redo.dev](./redo.dev): Source code for [redo.dev](https://redo.dev) 🔁
 
 ## Contributing
 
@@ -43,5 +43,4 @@ Our current and planned work can always be found [here](https://github.com/re-do
 
 ## License
 
-This project is licensed under the terms of the
-[MIT license](/LICENSE).
+This project is licensed under the terms of the [MIT license](/LICENSE).
