@@ -12,7 +12,6 @@ specifiers:
   '@mdx-js/react': 1.6.22
   '@mui/icons-material': 5.6.2
   '@mui/material': 5.6.2
-  '@re-/doc': link:../@re-/doc
   '@re-/node': link:../@re-/node
   '@tsconfig/docusaurus': 1.0.5
   '@types/node': 18.0.0
@@ -48,7 +47,6 @@ dependencies:
 devDependencies:
   '@docusaurus/module-type-aliases': 2.0.0-beta.21_w7o5yyljkiidx2s2nzb26ottzu
   '@docusaurus/types': 2.0.0-beta.21_w7o5yyljkiidx2s2nzb26ottzu
-  '@re-/doc': link:../@re-/doc
   '@re-/node': link:../@re-/node
   '@tsconfig/docusaurus': 1.0.5
   '@types/node': 18.0.0

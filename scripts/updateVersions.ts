@@ -7,7 +7,8 @@ import {
     shell,
     writeFile,
     writeJson
-} from "../@re-/node/src/index.js"
+} from "@re-/node"
+import { docgen } from "./docgen/main.js"
 
 const suffixes = {
     model: "alpha"
@@ -66,3 +67,5 @@ type SuffixTransformer = (args: {
     packageJson?: any
     changelog?: string
 }
+
+docgen()

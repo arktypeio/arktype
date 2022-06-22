@@ -1,16 +1,16 @@
 {
     "name": "redo.dev",
-    "version": "0.0.4",
+    "version": "0.0.0",
     "author": "redo.dev",
     "private": true,
     "scripts": {
         "docusaurus": "docusaurus",
         "start": "docusaurus start",
-        "build": "pnpm install --ignore-workspace && pnpm ts-node ./build.mts",
+        "build": "pnpm ts-node ./build.mts",
         "swizzle": "docusaurus swizzle",
         "deploy": "docusaurus deploy",
         "clear": "docusaurus clear",
-        "serve": "docusaurus serve --dir dist",
+        "serve": "docusaurus serve --dir ../docs",
         "write-translations": "docusaurus write-translations",
         "write-heading-ids": "docusaurus write-heading-ids",
         "typecheck": "tsc",
@@ -18,8 +18,7 @@
         "update-apis": "pnpm ts-node ./updateApis.mts",
         "set-current-model-version": "docusaurus docs:version:model ",
         "set-current-state-version": "docusaurus docs:version:state ",
-        "set-current-test-version": "docusaurus docs:version:test ",
-        "build-pages": "npm run build && rm -rf ../../docs && mkdir ../../docs && cp -r dist/* ../../docs"
+        "set-current-test-version": "docusaurus docs:version:test "
     },
     "dependencies": {
         "@docusaurus/core": "2.0.0-beta.21",
@@ -40,7 +39,6 @@
     },
     "devDependencies": {
         "@re-/node": "link:../@re-/node",
-        "@re-/doc": "link:../@re-/doc",
         "@docusaurus/module-type-aliases": "2.0.0-beta.21",
         "@docusaurus/types": "2.0.0-beta.21",
         "@tsconfig/docusaurus": "1.0.5",

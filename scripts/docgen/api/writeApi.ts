@@ -1,27 +1,29 @@
+import { rmSync } from "node:fs"
 import { join } from "node:path"
-import { ensureDir, writeFile } from "@re-/node"
-import { DocGenConfig } from "../config.js"
+import { ensureDir, shell, writeFile } from "@re-/node"
+import { DocGenApiConfig } from "../config.js"
 import { PackageExtractionData } from "../extract.js"
 import { ApiEntryPoint, ExportData } from "./extractApi.js"
 
 export type WritePackageApiContext = {
-    config: DocGenConfig
+    packageApiConfig: DocGenApiConfig
     extractedPackage: PackageExtractionData
-    packageOutDir: string
 }
 
 export const writePackageApi = ({
     extractedPackage,
-    packageOutDir
+    packageApiConfig
 }: WritePackageApiContext) => {
+    rmSync(packageApiConfig.outDir, { recursive: true, force: true })
     for (const entryPoint of extractedPackage.api) {
         const entryPointOutDir =
             entryPoint.subpath === "."
-                ? packageOutDir
-                : join(packageOutDir, entryPoint.subpath)
+                ? packageApiConfig.outDir
+                : join(packageApiConfig.outDir, entryPoint.subpath)
         ensureDir(entryPointOutDir)
         writeEntryPoint(entryPoint, entryPointOutDir)
     }
+    shell(`prettier --write ${packageApiConfig.outDir}`)
 }
 
 const writeEntryPoint = (
@@ -36,8 +38,8 @@ const writeEntryPoint = (
 
 const generateMarkdownForExport = (exported: ExportData) => {
     const md = new MarkdownSection(exported.name)
-    md.section("tags").text(JSON.stringify(exported.tsDocs, null, 4))
-    md.section("text").text(exported.text)
+    md.section("tags").tsBlock(JSON.stringify(exported.tsDocs, null, 4))
+    md.section("text").tsBlock(exported.text)
     return md.toString()
 }
 
@@ -51,6 +53,15 @@ class MarkdownSection {
         const section = new MarkdownSection(header, this.depth + 1)
         this.contents.push(section)
         return section
+    }
+
+    tsBlock(content: string) {
+        return this.codeBlock(content, "ts")
+    }
+
+    codeBlock(content: string, language: string) {
+        this.contents.push("```" + language + "\n" + content + "\n```\n")
+        return this
     }
 
     text(content: string) {

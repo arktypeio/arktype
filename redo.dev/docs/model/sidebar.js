@@ -22,9 +22,9 @@ module.exports = {
             type: "category",
             label: "API",
             items: [
-                { type: "doc", label: "create", id: "api/model.create" },
-                { type: "doc", label: "compile", id: "api/model.compile" },
-                { type: "doc", label: "declare", id: "api/model.declare" }
+                { type: "doc", label: "model", id: "api/model" },
+                { type: "doc", label: "compile", id: "api/compile" },
+                { type: "doc", label: "declare", id: "api/declare" }
             ]
         }
     ]

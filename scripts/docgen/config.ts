@@ -5,12 +5,16 @@ import {
 
 export type DocGenConfig = {
     packages: DocGenPackageConfig[]
-    outDir: string
 }
 
 export type DocGenPackageConfig = {
     path: string
+    api: DocGenApiConfig
     snippets?: DocGenSnippetsConfig
+}
+
+export type DocGenApiConfig = {
+    outDir: string
 }
 
 export type DocGenSnippetsConfig = {

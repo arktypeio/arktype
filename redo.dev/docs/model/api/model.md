@@ -1,29 +1,38 @@
-[@re-/model](./model.md)
+# model
 
-## model package
+## tags
 
-## Functions
+```ts
+;[
+    {
+        tag: "param",
+        text: "@param definition {"
+    },
+    {
+        tag: "as",
+        text: "@as string} Document this.\n * "
+    },
+    {
+        tag: "param",
+        text: "@param options {"
+    },
+    {
+        tag: "as",
+        text: "@as ModelConfig?} And that.\n * "
+    },
+    {
+        tag: "returns",
+        text: "@returns {"
+    },
+    {
+        tag: "as",
+        text: "@as any} The result.\n "
+    }
+]
+```
 
-| Function                                         | Description     |
-| ------------------------------------------------ | --------------- |
-| [create(definition, options)](./model.create.md) | Create a model. |
+## text
 
-## Variables
-
-| Variable                      | Description |
-| ----------------------------- | ----------- |
-| [compile](./model.compile.md) |             |
-| [declare](./model.declare.md) |             |
-
-## Type Aliases
-
-| Type Alias                                      | Description |
-| ----------------------------------------------- | ----------- |
-| [CreateFunction](./model.createfunction.md)     |             |
-| [CustomValidator](./model.customvalidator.md)   |             |
-| [GenerateConfig](./model.generateconfig.md)     |             |
-| [ModelConfig](./model.modelconfig.md)           |             |
-| [ParseConfig](./model.parseconfig.md)           |             |
-| [ReferencesConfig](./model.referencesconfig.md) |             |
-| [SpaceDefinition](./model.spacedefinition.md)   |             |
-| [ValidateConfig](./model.validateconfig.md)     |             |
+```ts
+model: ModelFunction
+```

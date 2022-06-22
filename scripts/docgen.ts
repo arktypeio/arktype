@@ -1,26 +1,3 @@
-import { fromHere } from "@re-/node"
-import { DocGenConfig } from "./docgen/config.js"
-import { extractRepo, writeRepo } from "./docgen/index.js"
+import { docgen } from "./docgen/main.js"
 
-export const config: DocGenConfig = {
-    packages: [
-        {
-            path: "@re-/model",
-            snippets: {
-                sources: [
-                    {
-                        fileGlob: "snippets/**"
-                    }
-                ],
-                targets: ["README.md"]
-            }
-        }
-    ],
-    outDir: fromHere("doc")
-}
-console.group(
-    `reDoc: Generating docs for ${config.packages.length} package(s)...✍️`
-)
-writeRepo({ config, packages: extractRepo(config) })
-console.log(`reDoc: Enjoy your new docs! 📚`)
-console.groupEnd()
+docgen()
