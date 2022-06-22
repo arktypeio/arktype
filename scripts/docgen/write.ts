@@ -27,6 +27,6 @@ export const writeRepo = ({ config, packages }: WriteApiContext) => {
             packageConfig,
             extractedPackage: extractedPackageData
         })
-        shell("pnpm build-gh-pages")
+        // shell("pnpm build-gh-pages")
     }
 }
