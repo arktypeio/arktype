@@ -2,6 +2,7 @@
 import { join } from "node:path"
 import {
     fromHere,
+    fromPackageRoot,
     readFile,
     readJson,
     shell,
@@ -48,6 +49,10 @@ forEachPackageWithSuffix(({ packageJson, suffix }) => {
 
 shell("pnpm changeset version")
 
+const docusaurusVersionedPackages: Record<string, string> = {
+    "@re-/model": "model"
+}
+
 forEachPackageWithSuffix(({ packageJson, changelog, suffix }) => {
     const versionWithSuffix = packageJson.version + `-${suffix}`
     const updatedChangelog = changelog.replaceAll(
@@ -55,6 +60,14 @@ forEachPackageWithSuffix(({ packageJson, changelog, suffix }) => {
         versionWithSuffix
     )
     packageJson.version = versionWithSuffix
+    if (packageJson.name in docusaurusVersionedPackages) {
+        shell(
+            `pnpm docusaurus docs:version:${
+                docusaurusVersionedPackages[packageJson.name]
+            } ${packageJson.version}`,
+            { cwd: fromPackageRoot("redo.dev") }
+        )
+    }
     return { packageJson, changelog: updatedChangelog }
 })
 
