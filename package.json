@@ -8,17 +8,20 @@
         "lint": "eslint .",
         "test": "pnpm -r test",
         "bench": "pnpm -r bench",
-        "pr-checks": "pnpm build && pnpm lint && pnpm test && pnpm bench && pnpm build-docs",
-        "build-docs": "cd redo.dev && pnpm build",
+        "pr-checks": "pnpm build && pnpm lint && pnpm test && pnpm bench && pnpm gh-pages-dryrun",
+        "docgen": "ts-node ./scripts/docgen.ts && pnpm build-gh-pages",
+        "gh-pages-dryrun": "pnpm run --dir redo.dev dry-run",
+        "build-gh-pages": "pnpm run --dir redo.dev build",
         "changeset": "changeset",
         "preinstall": "npx only-allow pnpm",
         "prepare": "husky install",
         "pre-commit": "pretty-quick --staged",
         "find-unused": "ts-node ./scripts/findUnused.ts",
-        "ci:version": "ts-node ./scripts/version.ts",
-        "ci:publish": "changeset publish"
+        "ci:version": "ts-node ./scripts/updateVersions.ts && pnpm build-gh-pages",
+        "ci:publish": "pnpm changeset publish"
     },
     "devDependencies": {
+        "@re-/node": "link:./@re-/node",
         "@changesets/cli": "2.23.0",
         "@swc/cli": "0.1.57",
         "@swc/core": "1.2.204",
@@ -41,7 +44,8 @@
         "pretty-quick": "3.1.3",
         "ts-morph": "15.1.0",
         "ts-node": "10.8.1",
-        "typescript": "4.7.4"
+        "typescript": "4.7.4",
+        "type-fest": "2.13.1"
     },
     "config": {
         "commitizen": {

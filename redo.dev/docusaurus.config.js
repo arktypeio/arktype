@@ -104,7 +104,7 @@ const config = {
                         items: [
                             {
                                 label: "Model",
-                                to: "/model/intro"
+                                to: "/model"
                             },
                             {
                                 label: "State",

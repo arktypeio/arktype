@@ -2,9 +2,7 @@ import { useColorMode } from "@docusaurus/theme-common"
 import Collapse from "@mui/icons-material/ExpandLess"
 import Expand from "@mui/icons-material/ExpandMore"
 import Terminal from "@mui/icons-material/Terminal"
-import { Box, Button, Stack, Typography } from "@mui/material"
-import useMediaQuery from "@mui/material/useMediaQuery"
-import clsx from "clsx"
+import { Button, Container, Grid, Stack, Typography } from "@mui/material"
 import React, { useState } from "react"
 import { modelDemo } from "./demos/model"
 import * as Svgs from "./svg"
@@ -51,9 +49,8 @@ const ToolSummary = ({
     const { colorMode } = useColorMode()
     const buttonColor = colorMode === "dark" ? "secondary" : "primary"
     const isActiveDemo = activeDemo === demoElement
-    const isDesktop = useMediaQuery("(min-width:1000px)")
     return (
-        <Box className={clsx("col col--4")}>
+        <>
             <div className="text--center">{illustration}</div>
             <div className="text--center">
                 <Typography
@@ -84,70 +81,60 @@ const ToolSummary = ({
                     >
                         Learn more
                     </Button>
-                    {demoElement && isDesktop ? (
-                        <>
-                            <Typography
-                                component="p"
-                                variant="h6"
-                                fontWeight="300"
-                            >
-                                or
-                            </Typography>
-                            <Button
-                                color={buttonColor}
-                                variant="contained"
-                                sx={{ whiteSpace: "nowrap" }}
-                                onClick={() => {
-                                    setActiveDemo(
-                                        isActiveDemo ? null : demoElement
-                                    )
-                                }}
-                                endIcon={
-                                    <div style={{ display: "flex" }}>
-                                        <Terminal />
-                                        {isActiveDemo ? (
-                                            <Collapse />
-                                        ) : (
-                                            <Expand />
-                                        )}
-                                    </div>
-                                }
-                            >
-                                {isActiveDemo ? "All done?" : "Try it here!"}
-                            </Button>
-                        </>
-                    ) : null}
+                    <Stack
+                        direction="row"
+                        spacing={2}
+                        sx={{
+                            display: {
+                                xs: "none",
+                                md: demoElement ? "inherit" : "none"
+                            }
+                        }}
+                    >
+                        <Typography component="p" variant="h6" fontWeight="300">
+                            or
+                        </Typography>
+                        <Button
+                            color={buttonColor}
+                            variant="contained"
+                            sx={{ whiteSpace: "nowrap" }}
+                            onClick={() => {
+                                setActiveDemo(
+                                    isActiveDemo ? null : demoElement!
+                                )
+                            }}
+                            endIcon={
+                                <div style={{ display: "flex" }}>
+                                    <Terminal />
+                                    {isActiveDemo ? <Collapse /> : <Expand />}
+                                </div>
+                            }
+                        >
+                            {isActiveDemo ? "All done?" : "Try it here!"}
+                        </Button>
+                    </Stack>
                 </Stack>
             </div>
-        </Box>
+        </>
     )
 }
 
 export const ToolSummaries = () => {
     const [activeDemo, setActiveDemo] = useState<null | JSX.Element>(null)
     return (
-        <section
-            style={{
-                display: "flex",
-                alignItems: "center",
-                padding: "2rem 0",
-                width: "100%",
-                fontSize: "larger"
-            }}
-        >
-            <div className="container">
-                <div className="row" style={{ padding: 8 }}>
-                    {toolSummaries.map((props, index) => (
+        <Container>
+            <Grid container maxWidth="lg" direction="row">
+                {toolSummaries.map((props, index) => (
+                    <Grid item key={index} xs={12} md={4}>
                         <ToolSummary
-                            key={index}
                             {...props}
                             setActiveDemo={setActiveDemo}
                             activeDemo={activeDemo}
                         />
-                    ))}
-                </div>
-                {activeDemo}
-            </div>
-        </section>
+                    </Grid>
+                ))}
+            </Grid>
+            {activeDemo}
+        </Container>
     )
 }

@@ -27,13 +27,13 @@ If you're using TypeScript, you'll need at least `4.4`.
 
 ## Start quick ⏱️
 
-This snippet will give you an idea of `@re-/model` syntax, but the best way to get a feel for it is in a live editor. Try messing around with the `user` definition in [our demo](https://redo.dev/docs/model/intro#start-quick-%EF%B8%8F) or paste it in your own editor and see how the type hints help guide you in the right direction.
+This snippet will give you an idea of `@re-/model` syntax, but the best way to get a feel for it is in a live editor. Try messing around with the `user` definition in [our demo](https://redo.dev/model/intro#start-quick-%EF%B8%8F) or paste it in your own editor and see how the type hints help guide you in the right direction.
 
-```ts ***GENERATED*** createModelDemo.ts
-import { create } from "@re-/model"
+```ts @snipFrom:snippets/model.ts
+import { model } from "@re-/model"
 
 // Most common TypeScript expressions just work...
-export const userModel = create({
+export const userModel = model({
     name: {
         first: "string",
         middle: "string?",
@@ -55,6 +55,7 @@ export const userData = {
     age: 28,
     browser: "Internet Explorer" // :(
 }
+
 export const userValidationResult = userModel.validate(userData)
 
 // Try changing "userModel" or "userData" and see what happens!
@@ -64,9 +65,9 @@ export const userValidationResult = userModel.validate(userData)
 
 Working with types that refer to one another or themselves? So can your models!
 
-[Just compile a **space**.](https://redo.dev/docs/model/spaces)
+[Just compile a **space**.](https://redo.dev/model/spaces)
 
-```ts ***GENERATED*** compileSpaceDemo.ts
+```ts @snipFrom:snippets/space.ts
 import { compile } from "@re-/model"
 
 const space = compile({
@@ -84,55 +85,56 @@ const space = compile({
 // Even recursive and cyclic types are precisely inferred
 type User = typeof space.types.user
 
-// Throws: "At path bestFriend/groups/0, required keys 'members' were missing."
-space.models.user.assert({
+const data = {
     name: "Devin Aldai",
     bestFriend: {
         name: "Devin Olnyt",
         groups: [{ title: "Type Enjoyers" }]
     },
     groups: []
-})
+}
+
+// Throws: "At path bestFriend/groups/0, required keys 'members' were missing."
+space.models.user.assert(data)
 ```
 
 ## Definitions that split ✂️
 
 Like keeping your files small and tidy? Perhaps you'd prefer to split your definitions up.
 
-[Try a **declaration**.](https://redo.dev/docs/model/declarations)
+[Try a **declaration**.](https://redo.dev/model/declarations)
 
 `index.ts`
 
-```ts ***GENERATED*** declareDemo.ts
+```ts @snipFrom:snippets/declaration/declaration.ts
 import { declare } from "@re-/model"
 
 // Declare the models you will define
 export const { define, compile } = declare("user", "group")
 
-import { userDef } from "./user.js"
 import { groupDef } from "./group.js"
+import { userDef } from "./user.js"
 
 // Creates your space (or tells you which definition you forgot to include)
-const space = compile({ ...userDef, ...groupDef })
+export const space = compile({ ...userDef, ...groupDef })
 ```
 
 `user.ts`
 
-```ts ***GENERATED*** user.ts
-import { define } from "./declareDemo.js"
+```ts @snipFrom:snippets/declaration/user.ts
+import { define } from "./declaration.js"
 
 export const userDef = define.user({
     name: "string",
     bestFriend: "user?",
-    // Type Hint: "Unable to determine the type of 'grop'"
-    groups: "grop[]"
+    groups: "group[]"
 })
 ```
 
 `group.ts`
 
-```ts ***GENERATED*** group.ts
-import { define } from "./declareDemo.js"
+```ts @snipFrom:snippets/declaration/group.ts
+import { define } from "./declaration.js"
 
 export const groupDef = define.group({
     title: "string",
@@ -144,14 +146,14 @@ export const groupDef = define.group({
 
 TypeScript can do a lot, but sometimes things you care about at runtime shouldn't affect your type.
 
-[**Constraints** have you covered.](https://redo.dev/docs/model/constraints)
+[**Constraints** have you covered.](https://redo.dev/model/constraints)
 
-```ts ***GENERATED*** validationDemo.ts
-import { create } from "@re-/model"
+```ts @snipFrom:snippets/constraints.ts
+import { model } from "@re-/model"
 
-const employee = create({
+const employee = model({
     // Not a fan of regex? Don't worry, 'email' is a builtin type :)
-    email: `/[a-z]*@redo\.dev/`,
+    email: `/[a-z]*@redo.dev/`,
     about: {
         // Single or double bound numeric types
         age: "18<=integer<125",
@@ -196,7 +198,7 @@ Object definitions are sets of keys or indices corresponding to string, literal,
 Map definitions are represented using the familiar object literal syntax.
 
 ```ts
-const foo = create({
+const foo = model({
     key: "string?",
     anotherKey: ["unknown", { re: "'model'|'state'|'test'" }]
 })
@@ -218,7 +220,7 @@ type FooToo = {
 Tuple definitions are useful for fixed-length lists and are represented as array literals.
 
 ```ts
-const bar = create([
+const bar = model([
     "true|null",
     { coords: ["number", "number"], piOus: [3, 1, 4] }
 ])
@@ -269,14 +271,14 @@ All TypeScript keywords that can be used to represent a type are valid definitio
 
 The type of these definitions will be inferred as `string`, but they will validate that the criterion corresponding to their keyword.
 
-| Keyword          | String is valid if it...                                            |
-| ---------------- | ------------------------------------------------------------------- |
-| `"email"`        | Matches the pattern from [emailregex.com](https://emailregex.com/). |
-| `"alpha"`        | Includes exclusively lowercase and/or uppercase letters.            |
-| `"alphanumeric"` | Includes exclusively digits, lowercase and/or uppercase letters.    |
-| `"lowercase"`    | Does not contain uppercase letters.                                 |
-| `"uppercase"`    | Does not contain lowercase letters.                                 |
-| `"character"`    | Is of length 1.                                                     |
+| Keyword          | String is valid if it...                                         |
+| ---------------- | ---------------------------------------------------------------- |
+| `"email"`        | Matches the pattern /^(.+)@(.+)\.(.+)$/.                         |
+| `"alpha"`        | Includes exclusively lowercase and/or uppercase letters.         |
+| `"alphanumeric"` | Includes exclusively digits, lowercase and/or uppercase letters. |
+| `"lowercase"`    | Does not contain uppercase letters.                              |
+| `"uppercase"`    | Does not contain lowercase letters.                              |
+| `"character"`    | Is of length 1.                                                  |
 
 ##### Number subtypes
 

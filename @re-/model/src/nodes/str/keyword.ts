@@ -100,7 +100,7 @@ const handlers = defineKeywords({
     email: {
         generate: () => "david@redo.dev",
         validate: (value) =>
-            typeof value === "string" && /^(.+)@(.+)$/.test(value),
+            typeof value === "string" && /^(.+)@(.+)\.(.+)$/.test(value),
         isString: true
     },
     alpha: {

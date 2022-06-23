@@ -303,9 +303,9 @@ export const valueAssertions = <T>(
             ? `${toString(value, { quotes: "double" })}`
             : literalSerialize(value)
     const actualSerialized = serialize(actual)
-    const inlineSnap = (expected?: unknown) => {
-        if (!expected || ctx.config.updateSnapshots) {
-            if (!isDeepStrictEqual(actualSerialized, serialize(expected))) {
+    const inlineSnap = (...args: [unknown]) => {
+        if (!args.length || ctx.config.updateSnapshots) {
+            if (!isDeepStrictEqual(actualSerialized, serialize(args[0]))) {
                 const snapshotArgs: SnapshotArgs = {
                     position: caller(),
                     serializedValue: actualSerialized
@@ -317,7 +317,7 @@ export const valueAssertions = <T>(
                 }
             }
         } else {
-            strict.deepEqual(actualSerialized, serialize(expected))
+            strict.deepEqual(actualSerialized, serialize(args[0]))
         }
         return nextAssertions
     }

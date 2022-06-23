@@ -21,6 +21,7 @@ export const ensureDir = (path: string) => {
     } else {
         mkdirSync(path, { recursive: true })
     }
+    return path
 }
 
 export const readFile = (path: string) => readFileSync(path).toString()
@@ -32,7 +33,7 @@ export const readJson = (path: string) =>
     JSON.parse(readFileSync(path, { encoding: "utf8" }))
 
 export const writeJson = (path: string, data: object) =>
-    writeFileSync(path, JSON.stringify(data, null, 4))
+    writeFileSync(path, JSON.stringify(data, null, 4) + "\n")
 
 export type JsonTransformer = (data: object) => object
 

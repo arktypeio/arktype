@@ -9,7 +9,6 @@ module.exports = defineConfig({
         "plugin:@typescript-eslint/recommended",
         "plugin:@typescript-eslint/recommended-requiring-type-checking",
         "plugin:import/typescript",
-        "plugin:unicorn/recommended",
         "prettier"
     ],
     settings: {
@@ -22,7 +21,7 @@ module.exports = defineConfig({
     parserOptions: {
         project: ["tsconfig.json", "@re-/*/tsconfig.json"]
     },
-    ignorePatterns: ["@re-/state/**", "**/dist/**", "**/demos/**", "**/*js"],
+    ignorePatterns: ["@re-/state/**", "**/dist/**", "**/snippets/**", "**/*js"],
     rules: {
         /**
          * General restrictions
@@ -100,21 +99,18 @@ module.exports = defineConfig({
         "@typescript-eslint/restrict-template-expressions": "off",
         "@typescript-eslint/restrict-plus-operands": "off",
         /**
-         * Disable or adjust unicorn/recommended rules that don't fit our code style
+         * ESM support, clarity
          */
-        "unicorn/explicit-length-check": "off",
-        "unicorn/no-useless-undefined": "off",
-        "unicorn/filename-case": ["error", { case: "camelCase" }],
-        "unicorn/prefer-switch": "off",
-        "unicorn/prevent-abbreviations": "off",
-        "unicorn/no-array-callback-reference": "off",
-        "unicorn/no-process-exit": "off",
+        "unicorn/prefer-module": "error",
+        "unicorn/prefer-node-protocol": "error",
         /**
-         * Temporarily disabled settings we may enable in the future
+         * Namespaces are useful for grouping generic types with related functionality
          */
         "@typescript-eslint/no-namespace": "off",
-        "unicorn/no-array-reduce": "off",
-        "unicorn/no-null": "off"
+        /**
+         * This rule is buggy and often leads to cases where "autofix" introduces type errors
+         */
+        "@typescript-eslint/no-unnecessary-type-assertion": "off"
     },
     overrides: [
         /**
@@ -145,8 +141,6 @@ module.exports = defineConfig({
         {
             files: ["**/test/**", "**/bench/**"],
             rules: {
-                "unicorn/consistent-function-scoping": "off",
-                "unicorn/numeric-separators-style": "off",
                 "@typescript-eslint/no-empty-function": "off"
             }
         },
