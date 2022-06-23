@@ -17,15 +17,15 @@ module.exports = {
                     id: "constraints"
                 }
             ]
-        },
-        {
-            type: "category",
-            label: "API",
-            items: [
-                { type: "doc", label: "model", id: "api/model" },
-                { type: "doc", label: "compile", id: "api/compile" },
-                { type: "doc", label: "declare", id: "api/declare" }
-            ]
         }
+        // {
+        //     type: "category",
+        //     label: "API",
+        //     items: [
+        //         { type: "doc", label: "model", id: "api/model" },
+        //         { type: "doc", label: "compile", id: "api/compile" },
+        //         { type: "doc", label: "declare", id: "api/declare" }
+        //     ]
+        // }
     ]
 }
