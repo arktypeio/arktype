@@ -72,6 +72,8 @@ type SuffixTransformer = (args: {
 
 docgen()
 
+const REDO_DEV_DIR = fromPackageRoot("redo.dev")
+
 const docusaurusVersionedPackages = [
     {
         packageRoot: fromPackageRoot("@re-", "model"),
@@ -81,7 +83,15 @@ const docusaurusVersionedPackages = [
 
 for (const { packageRoot, docsName } of docusaurusVersionedPackages) {
     const packageJson = readPackageJson(packageRoot)
-    shell(`pnpm docusaurus docs:version:${docsName} ${packageJson.version}`, {
-        cwd: fromPackageRoot("redo.dev")
-    })
+    const existingVersions: string[] = readJson(
+        join(REDO_DEV_DIR, `${docsName}_versions.json`)
+    )
+    if (!existingVersions.includes(packageJson.version)) {
+        shell(
+            `pnpm docusaurus docs:version:${docsName} ${packageJson.version}`,
+            {
+                cwd: REDO_DEV_DIR
+            }
+        )
+    }
 }
