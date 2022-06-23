@@ -16,8 +16,8 @@
         "prepare": "husky install",
         "pre-commit": "pretty-quick --staged",
         "find-unused": "ts-node ./scripts/findUnused.ts",
-        "ci:version": "ts-node ./scripts/updateVersions.ts",
-        "ci:publish": "ts-node ./scripts/publishVersions.ts"
+        "ci:version": "ts-node ./scripts/updateVersions.ts && pnpm build-gh-pages",
+        "ci:publish": "pnpm changeset publish"
     },
     "devDependencies": {
         "@re-/node": "link:./@re-/node",

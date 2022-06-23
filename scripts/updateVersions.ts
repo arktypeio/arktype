@@ -5,6 +5,7 @@ import {
     fromPackageRoot,
     readFile,
     readJson,
+    readPackageJson,
     shell,
     writeFile,
     writeJson
@@ -49,10 +50,6 @@ forEachPackageWithSuffix(({ packageJson, suffix }) => {
 
 shell("pnpm changeset version")
 
-const docusaurusVersionedPackages: Record<string, string> = {
-    "@re-/model": "model"
-}
-
 forEachPackageWithSuffix(({ packageJson, changelog, suffix }) => {
     const versionWithSuffix = packageJson.version + `-${suffix}`
     const updatedChangelog = changelog.replaceAll(
@@ -60,14 +57,6 @@ forEachPackageWithSuffix(({ packageJson, changelog, suffix }) => {
         versionWithSuffix
     )
     packageJson.version = versionWithSuffix
-    if (packageJson.name in docusaurusVersionedPackages) {
-        shell(
-            `pnpm docusaurus docs:version:${
-                docusaurusVersionedPackages[packageJson.name]
-            } ${packageJson.version}`,
-            { cwd: fromPackageRoot("redo.dev") }
-        )
-    }
     return { packageJson, changelog: updatedChangelog }
 })
 
@@ -82,3 +71,17 @@ type SuffixTransformer = (args: {
 }
 
 docgen()
+
+const docusaurusVersionedPackages = [
+    {
+        packageRoot: fromPackageRoot("@re-", "model"),
+        docsName: "model"
+    }
+]
+
+for (const { packageRoot, docsName } of docusaurusVersionedPackages) {
+    const packageJson = readPackageJson(packageRoot)
+    shell(`pnpm docusaurus docs:version:${docsName} ${packageJson.version}`, {
+        cwd: fromPackageRoot("redo.dev")
+    })
+}
