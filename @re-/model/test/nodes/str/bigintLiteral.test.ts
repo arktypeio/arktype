@@ -3,10 +3,15 @@ import { eager, model } from "../../../src/index.js"
 
 describe("bigintLiteral", () => {
     describe("type", () => {
+        /*
+         * TODO: Until ts-morph's embedded TS version is >= 4.8, these will still be inferred as bigint
+         */
         it("positive", () => {
+            // assert(model("999999999999999n").type).typed as 999999999999999n
             assert(model("999999999999999n").type).typed as bigint
         })
         it("negative", () => {
+            // assert(model("-1n").type).typed as -1n
             assert(model("-1n").type).typed as bigint
         })
         describe("errors", () => {
@@ -22,9 +27,8 @@ describe("bigintLiteral", () => {
         it("positive", () => {
             assert(
                 // Is prime :D
-                model("12345678910987654321n").validate(
-                    12_345_678_910_987_654_321n
-                ).error
+                model("12345678910987654321n").validate(12345678910987654321n)
+                    .error
             ).is(undefined)
         })
         it("negative", () => {

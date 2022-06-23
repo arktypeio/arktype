@@ -69,9 +69,9 @@ export namespace Str {
         : // eslint-disable-next-line @typescript-eslint/no-unused-vars
         Def extends EmbeddedRegex.Definition<infer Expression>
         ? string
-        : Def extends EmbeddedNumber.Definition<infer Value>
+        : Def extends EmbeddedNumber.Definition<infer Value extends number>
         ? Value
-        : Def extends EmbeddedBigInt.Definition<infer Value>
+        : Def extends EmbeddedBigInt.Definition<infer Value extends bigint>
         ? Value
         : Def extends Intersection.Definition<infer Left, infer Right>
         ? Str.Parse<Left, Dict, Seen> & Str.Parse<Right, Dict, Seen>

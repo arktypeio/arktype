@@ -1,18 +1,15 @@
-test/bench/parser.bench.ts(3,10): error TS2305: Module '"#src"' has no exported member 'Root'.
-test/customValidators.test.ts(60,50): error TS2339: Property 'def' does not exist on type 'ParseContext'.
-test/customValidators.test.ts(87,46): error TS2339: Property 'ctx' does not exist on type 'ParseContext'.
-Files:              205
-Lines:            83070
-Nodes:           279189
-Identifiers:     101233
-Symbols:         474985
-Types:           248942
-Instantiations: 1148087
-Memory used:    524394K
-I/O read:         0.01s
+Files:              223
+Lines:            84830
+Nodes:           292811
+Identifiers:     106128
+Symbols:         520605
+Types:           274111
+Instantiations: 1248689
+Memory used:    584373K
+I/O read:         0.02s
 I/O write:        0.00s
-Parse time:       0.49s
-Bind time:        0.19s
-Check time:       5.44s
+Parse time:       0.56s
+Bind time:        0.23s
+Check time:       6.37s
 Emit time:        0.00s
-Total time:       6.12s
+Total time:       7.16s

@@ -3,18 +3,19 @@ import { eager, model } from "../../../src/index.js"
 
 describe("numberLiteral", () => {
     /*
-     * As of TS 4.5, I don't think it's possible to parse a number literal from a string type
-     * Runtime functionality like "getDefault" and "validate" will still use the more specific
-     * value, but the TS type is inferred as "number"
+     * TODO: Until ts-morph's embedded TS version is >= 4.8, these will still be inferred as number
      */
     describe("type", () => {
         it("whole", () => {
+            // assert(model("4").type).typed as 4
             assert(model("4").type).typed as number
         })
         it("decimal", () => {
+            // assert(model("1.234").type).typed as 1.234
             assert(model("1.234").type).typed as number
         })
         it("negative", () => {
+            // assert(model("-5.7").type).typed as -5.7
             assert(model("-5.7").type).typed as number
         })
         describe("errors", () => {

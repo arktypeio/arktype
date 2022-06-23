@@ -164,7 +164,7 @@ export namespace Constraint {
     }
 
     type Bounds = {
-        [K in ComparatorToken]?: EmbeddedNumber.Definition
+        [K in ComparatorToken]?: number
     }
 
     type ParseResult = Bounds & {
