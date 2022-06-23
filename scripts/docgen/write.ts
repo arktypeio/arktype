@@ -1,4 +1,3 @@
-import { shell } from "@re-/node"
 import { writePackageApi } from "./api/writeApi.js"
 import { DocGenConfig } from "./config.js"
 import { PackageExtractionData } from "./extract.js"
@@ -11,22 +10,21 @@ export type WriteApiContext = {
 
 export const writeRepo = ({ config, packages }: WriteApiContext) => {
     for (const packageConfig of config.packages) {
-        const extractedPackageData = packages.find(
+        const extractedPackage = packages.find(
             (pkg) => packageConfig.path === pkg.metadata.name
         )
-        if (!extractedPackageData) {
+        if (!extractedPackage) {
             throw new Error(
                 `Unable to find metadata associated with '${packageConfig.path}'.`
             )
         }
         writePackageApi({
             packageApiConfig: packageConfig.api,
-            extractedPackage: extractedPackageData
+            extractedPackage
         })
         writePackageSnippets({
             packageConfig,
-            extractedPackage: extractedPackageData
+            extractedPackage
         })
-        // shell("pnpm build-gh-pages")
     }
 }

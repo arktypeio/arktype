@@ -9,7 +9,7 @@
         "test": "pnpm -r test",
         "bench": "pnpm -r bench",
         "pr-checks": "pnpm build && pnpm lint && pnpm test && pnpm bench && pnpm build-gh-pages",
-        "docgen": "ts-node ./scripts/docgen.ts",
+        "docgen": "ts-node ./scripts/docgen.ts && pnpm build-gh-pages",
         "build-gh-pages": "pnpm run --dir redo.dev build",
         "changeset": "changeset",
         "preinstall": "npx only-allow pnpm",
