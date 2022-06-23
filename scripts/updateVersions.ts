@@ -88,7 +88,7 @@ for (const { packageRoot, docsName } of docusaurusVersionedPackages) {
     )
     if (!existingVersions.includes(packageJson.version)) {
         shell(
-            `pnpm docusaurus docs:version:${docsName} ${packageJson.version}`,
+            `pnpx docusaurus docs:version:${docsName} ${packageJson.version}`,
             {
                 cwd: REDO_DEV_DIR
             }
