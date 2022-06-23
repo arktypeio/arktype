@@ -8,6 +8,7 @@
         "start": "docusaurus start",
         "in": "pnpm install --ignore-workspace",
         "build": "pnpm ts-node ./build.mts",
+        "dry-run": "pnpm ts-node ./build.mts --dry-run",
         "swizzle": "docusaurus swizzle",
         "deploy": "docusaurus deploy",
         "clear": "docusaurus clear",
@@ -15,9 +16,7 @@
         "write-translations": "docusaurus write-translations",
         "write-heading-ids": "docusaurus write-heading-ids",
         "typecheck": "tsc",
-        "test": "echo No tests for docs!",
-        "update-apis": "pnpm ts-node ./updateApis.mts",
-        "set-current-model-version": "docusaurus docs:version:model "
+        "test": "echo No tests for docs!"
     },
     "dependencies": {
         "@docusaurus/core": "2.0.0-beta.21",
