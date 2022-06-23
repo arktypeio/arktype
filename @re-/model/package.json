@@ -1,6 +1,6 @@
 {
     "name": "@re-/model",
-    "version": "2.0.3-alpha",
+    "version": "2.0.4-alpha",
     "author": "redo.dev",
     "description": "One definition from editor to runtime🧬",
     "repository": {
