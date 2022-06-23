@@ -2,15 +2,15 @@
 ;(self.webpackChunkredo_dev = self.webpackChunkredo_dev || []).push([
     [237],
     {
-        5867: (e, t, r) => {
+        6264: (e, t, r) => {
             r.r(t), r.d(t, { default: () => R })
-            var a = r(6664),
-                l = r(3552),
-                n = r(1776),
-                i = r(9715),
-                c = r(9047),
-                m = r(3889),
-                o = r(9212)
+            var a = r(2812),
+                l = r(2504),
+                n = r(6863),
+                i = r(5605),
+                c = r(6737),
+                m = r(9496),
+                o = r(1371)
             const s = ({ isDark: e }) =>
                 (0, o.Z)({
                     palette: {
@@ -23,16 +23,16 @@
                     },
                     typography: { fontFamily: "'Ubuntu', sans-serif" }
                 })
-            var h = r(1473),
-                f = r(8625),
-                y = r(7198),
-                p = r(6351),
-                d = r(1972),
-                E = r(4385),
-                x = r(6188),
-                g = r(1626)
+            var h = r(6174),
+                f = r(9232),
+                y = r(5233),
+                p = r(8688),
+                d = r(7269),
+                E = r(5822),
+                x = r(5157),
+                g = r(7595)
             const w = m.createElement(
-                p.Z,
+                g.Z,
                 {
                     style: {
                         width: "100%",
@@ -54,7 +54,7 @@
                         "allow-forms allow-modals allow-popups allow-presentation allow-same-origin allow-scripts"
                 })
             )
-            var Z = r(2701)
+            var Z = r(5866)
             const M = () => {
                     const { palette: e } = (0, Z.Z)()
                     return m.createElement(
@@ -1600,11 +1600,10 @@
                 }) => {
                     const { colorMode: o } = (0, a.I)(),
                         s = "dark" === o ? "secondary" : "primary",
-                        w = c === l,
-                        Z = (0, x.Z)("(min-width:1000px)")
+                        E = c === l
                     return m.createElement(
-                        p.Z,
-                        { className: (0, g.Z)("col col--4") },
+                        m.Fragment,
+                        null,
                         m.createElement(
                             "div",
                             { className: "text--center" },
@@ -1635,14 +1634,14 @@
                             ),
                             m.createElement("br", null),
                             m.createElement(
-                                d.Z,
+                                p.Z,
                                 {
                                     spacing: 2,
                                     direction: "row",
                                     justifyContent: "center"
                                 },
                                 m.createElement(
-                                    E.Z,
+                                    d.Z,
                                     {
                                         variant: "outlined",
                                         color: s,
@@ -1651,79 +1650,65 @@
                                     },
                                     "Learn more"
                                 ),
-                                l && Z
-                                    ? m.createElement(
-                                          m.Fragment,
-                                          null,
-                                          m.createElement(
-                                              i.Z,
-                                              {
-                                                  component: "p",
-                                                  variant: "h6",
-                                                  fontWeight: "300"
-                                              },
-                                              "or"
-                                          ),
-                                          m.createElement(
-                                              E.Z,
-                                              {
-                                                  color: s,
-                                                  variant: "contained",
-                                                  sx: { whiteSpace: "nowrap" },
-                                                  onClick: () => {
-                                                      n(w ? null : l)
-                                                  },
-                                                  endIcon: m.createElement(
-                                                      "div",
-                                                      {
-                                                          style: {
-                                                              display: "flex"
-                                                          }
-                                                      },
-                                                      m.createElement(
-                                                          y.Z,
-                                                          null
-                                                      ),
-                                                      w
-                                                          ? m.createElement(
-                                                                h.Z,
-                                                                null
-                                                            )
-                                                          : m.createElement(
-                                                                f.Z,
-                                                                null
-                                                            )
-                                                  )
-                                              },
-                                              w ? "All done?" : "Try it here!"
-                                          )
-                                      )
-                                    : null
+                                m.createElement(
+                                    p.Z,
+                                    {
+                                        direction: "row",
+                                        spacing: 2,
+                                        sx: {
+                                            display: {
+                                                xs: "none",
+                                                md: l ? "inherit" : "none"
+                                            }
+                                        }
+                                    },
+                                    m.createElement(
+                                        i.Z,
+                                        {
+                                            component: "p",
+                                            variant: "h6",
+                                            fontWeight: "300"
+                                        },
+                                        "or"
+                                    ),
+                                    m.createElement(
+                                        d.Z,
+                                        {
+                                            color: s,
+                                            variant: "contained",
+                                            sx: { whiteSpace: "nowrap" },
+                                            onClick: () => {
+                                                n(E ? null : l)
+                                            },
+                                            endIcon: m.createElement(
+                                                "div",
+                                                { style: { display: "flex" } },
+                                                m.createElement(y.Z, null),
+                                                E
+                                                    ? m.createElement(h.Z, null)
+                                                    : m.createElement(f.Z, null)
+                                            )
+                                        },
+                                        E ? "All done?" : "Try it here!"
+                                    )
+                                )
                             )
                         )
                     )
                 },
-                D = () => {
+                P = () => {
                     const [e, t] = (0, m.useState)(null)
                     return m.createElement(
-                        "section",
-                        {
-                            style: {
-                                display: "flex",
-                                alignItems: "center",
-                                padding: "2rem 0",
-                                width: "100%",
-                                fontSize: "larger"
-                            }
-                        },
+                        E.Z,
+                        null,
                         m.createElement(
-                            "div",
-                            { className: "container" },
-                            m.createElement(
-                                "div",
-                                { className: "row", style: { padding: 8 } },
-                                j.map((r, a) => {
-                                    return m.createElement(
+                            x.ZP,
+                            { container: !0, maxWidth: "lg", direction: "row" },
+                            j.map((r, a) => {
+                                return m.createElement(
+                                    x.ZP,
+                                    { item: !0, key: a, xs: 12, md: 4 },
+                                    m.createElement(
                                         H,
                                         ((l = ((e, t) => {
                                             for (var r in t || (t = {}))
@@ -1733,7 +1718,7 @@
                                                     A.call(t, r) &&
                                                         O(e, r, t[r])
                                             return e
-                                        })({ key: a }, r)),
+                                        })({}, r)),
                                         k(
                                             l,
                                             C({
@@ -1742,19 +1727,19 @@
                                             })
                                         ))
                                     )
-                                    var l
-                                })
-                            ),
-                            e
-                        )
+                                )
+                                var l
+                            })
+                        ),
+                        e
                     )
                 }
-            var P = r(1609),
+            var D = r(3298),
                 F = Object.defineProperty,
-                N = Object.getOwnPropertySymbols,
-                V = Object.prototype.hasOwnProperty,
-                I = Object.prototype.propertyIsEnumerable,
-                W = (e, t, r) =>
+                V = Object.getOwnPropertySymbols,
+                W = Object.prototype.hasOwnProperty,
+                B = Object.prototype.propertyIsEnumerable,
+                I = (e, t, r) =>
                     t in e
                         ? F(e, t, {
                               enumerable: !0,
@@ -1763,12 +1748,12 @@
                               value: r
                           })
                         : (e[t] = r),
-                B = (e, t) => {
-                    for (var r in t || (t = {})) V.call(t, r) && W(e, r, t[r])
-                    if (N) for (var r of N(t)) I.call(t, r) && W(e, r, t[r])
+                T = (e, t) => {
+                    for (var r in t || (t = {})) W.call(t, r) && I(e, r, t[r])
+                    if (V) for (var r of V(t)) B.call(t, r) && I(e, r, t[r])
                     return e
                 }
-            const T = (e) => ({
+            const N = (e) => ({
                     initial: { pathLength: 0, opacity: 0 },
                     animate: { pathLength: 1, opacity: 1 },
                     transition: { delay: e, duration: 0.4 }
@@ -1779,51 +1764,51 @@
                         } = (0, Z.Z)(),
                         a = "#264bcf"
                     return m.createElement(
-                        P.E.svg,
+                        D.E.svg,
                         { style: e, viewBox: "0 0 1823 576" },
                         m.createElement(
-                            P.E.g,
+                            D.E.g,
                             {
                                 id: "background",
                                 fill: "none",
                                 strokeLinecap: "round",
                                 strokeWidth: "72"
                             },
-                            m.createElement(P.E.path, {
+                            m.createElement(D.E.path, {
                                 id: "rMain",
                                 d: "m54.26 516.9v-259.9c10.07-85.6 64.81-169.7 148.8-197.8 74.87-26.98 162.5 0.3147 213.4 60.18 9.632 10.87 18.22 22.65 25.68 35.11",
                                 stroke: a
                             }),
                             m.createElement(
-                                P.E.path,
-                                B(
+                                D.E.path,
+                                T(
                                     {
                                         id: "rArrow",
                                         d: "m353.4 154.4h88.82v-88.82",
                                         stroke: t.main,
                                         strokeLinejoin: "round"
                                     },
-                                    T(0.4)
+                                    N(0.4)
                                 )
                             ),
-                            m.createElement(P.E.path, {
+                            m.createElement(D.E.path, {
                                 id: "eMain",
                                 d: "m840.9 482.5a213.1 238.5 0 0 1-252.7-6.964 213.1 238.5 0 0 1-69.05-272.1 213.1 238.5 0 0 1 211.7-154.5 213.1 238.5 0 0 1 194.7 180.4",
                                 stroke: a,
                                 strokeLinejoin: "round"
                             }),
                             m.createElement(
-                                P.E.path,
-                                B(
+                                D.E.path,
+                                T(
                                     {
                                         id: "eLine",
                                         d: "m600 225h235",
                                         stroke: t.main
                                     },
-                                    T(0.8)
+                                    N(0.8)
                                 )
                             ),
-                            m.createElement(P.E.circle, {
+                            m.createElement(D.E.circle, {
                                 id: "colonTop",
                                 cx: "1031",
                                 cy: "225",
@@ -1837,7 +1822,7 @@
                                 initial: { y: -600 },
                                 animate: { y: 0 }
                             }),
-                            m.createElement(P.E.circle, {
+                            m.createElement(D.E.circle, {
                                 id: "colonBottom",
                                 cx: "1033",
                                 cy: "392.1",
@@ -1851,26 +1836,26 @@
                                 initial: { y: -600 },
                                 animate: { y: 0 }
                             }),
-                            m.createElement(P.E.path, {
+                            m.createElement(D.E.path, {
                                 id: "dMain",
                                 d: "m1042 524.5c115.5-6.018 205.7-113.8 203.2-243-2.486-129.2-96.73-232.5-212.4-233",
                                 stroke: a
                             }),
-                            m.createElement(P.E.path, {
+                            m.createElement(D.E.path, {
                                 id: "oMain",
                                 d: "m1559 48.53a192 192 0 0 0-56.07 8.531c-82.15 25.3-145.2 104.4-155.2 203.2-12.18 120.3 58.18 231.8 163.6 259.2 105.4 27.39 212.5-37.99 248.9-152 36.45-114-9.264-240.5-106.3-294.2",
                                 stroke: a
                             }),
                             m.createElement(
-                                P.E.path,
-                                B(
+                                D.E.path,
+                                T(
                                     {
                                         id: "oArrow",
                                         d: "m1743 73.4h-88.82v88.82",
                                         stroke: t.main,
                                         strokeLinejoin: "round"
                                     },
-                                    T(1.2)
+                                    N(1.2)
                                 )
                             )
                         )
@@ -1909,7 +1894,7 @@
                         m.createElement(
                             "main",
                             { style: { background: r ? "#242424" : "white" } },
-                            m.createElement(D, null)
+                            m.createElement(P, null)
                         )
                     )
                 },

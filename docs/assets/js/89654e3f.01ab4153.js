@@ -1,10 +1,10 @@
 "use strict"
 ;(self.webpackChunkredo_dev = self.webpackChunkredo_dev || []).push([
-    [747],
+    [23],
     {
-        7965: (e, t, r) => {
+        9613: (e, t, r) => {
             r.d(t, { Zo: () => p, kt: () => f })
-            var n = r(3889)
+            var n = r(9496)
             function o(e, t, r) {
                 return (
                     t in e
@@ -144,17 +144,17 @@
             }
             u.displayName = "MDXCreateElement"
         },
-        6340: (e, t, r) => {
+        4883: (e, t, r) => {
             r.r(t),
                 r.d(t, {
                     assets: () => y,
                     contentTitle: () => f,
-                    default: () => O,
+                    default: () => h,
                     frontMatter: () => u,
                     metadata: () => m,
                     toc: () => b
                 })
-            var n = r(7965),
+            var n = r(9613),
                 o = Object.defineProperty,
                 a = Object.defineProperties,
                 i = Object.getOwnPropertyDescriptors,
@@ -176,35 +176,32 @@
                     return e
                 }
             const u = { hide_table_of_contents: !0 },
-                f = "Declarations",
+                f = "Spaces",
                 m = {
-                    unversionedId: "declarations",
-                    id: "declarations",
-                    title: "Declarations",
+                    unversionedId: "spaces",
+                    id: "spaces",
+                    title: "Spaces",
                     description:
-                        "Like keeping your files small and tidy? Perhaps you'd prefer to split your definitions up.",
-                    source: "@site/docs/model/declarations.mdx",
+                        "Working with types that refer to one another or themselves? So can your models!",
+                    source: "@site/docs/model/spaces.mdx",
                     sourceDirName: ".",
-                    slug: "/declarations",
-                    permalink: "/model/next/declarations",
+                    slug: "/spaces",
+                    permalink: "/model/next/spaces",
                     draft: !1,
                     tags: [],
                     version: "current",
                     frontMatter: { hide_table_of_contents: !0 },
                     sidebar: "sidebar",
-                    previous: {
-                        title: "Spaces",
-                        permalink: "/model/next/spaces"
-                    },
+                    previous: { title: "Model", permalink: "/model/next/" },
                     next: {
-                        title: "Constraints",
-                        permalink: "/model/next/constraints"
+                        title: "Declarations",
+                        permalink: "/model/next/declarations"
                     }
                 },
                 y = {},
                 b = [],
                 v = { toc: b }
-            function O(e) {
+            function h(e) {
                 var t,
                     r = e,
                     { components: o } = r,
@@ -223,21 +220,17 @@
                     "wrapper",
                     ((t = d(d({}, v), p)),
                     a(t, i({ components: o, mdxType: "MDXLayout" }))),
+                    (0, n.kt)("h1", d({}, { id: "spaces" }), "Spaces"),
                     (0, n.kt)(
-                        "h1",
-                        d({}, { id: "declarations" }),
-                        "Declarations"
+                        "p",
+                        null,
+                        "Working with types that refer to one another or themselves? So can your models!"
                     ),
                     (0, n.kt)(
                         "p",
                         null,
-                        "Like keeping your files small and tidy? Perhaps you'd prefer to split your definitions up."
-                    ),
-                    (0, n.kt)(
-                        "p",
-                        null,
-                        "Try a ",
-                        (0, n.kt)("strong", { parentName: "p" }, "declaration"),
+                        "Just compile a ",
+                        (0, n.kt)("strong", { parentName: "p" }, "space"),
                         "."
                     ),
                     (0, n.kt)(
@@ -255,8 +248,8 @@
                             }
                         },
                         (0, n.kt)("iframe", {
-                            id: "demo",
-                            src: "https://stackblitz.com/edit/re-model-declaration?file=models%2Findex.ts&hideDevTools=1&hideExplorer=1&hideNavigation=1&theme=dark",
+                            id: "demo2",
+                            src: "https://stackblitz.com/edit/re-model-space?embed=1&file=space.ts&hideDevTools=1&hideExplorer=1&hideNavigation=1&theme=dark",
                             style: {
                                 height: "100%",
                                 width: "100%",
@@ -269,7 +262,7 @@
                     )
                 )
             }
-            O.isMDXComponent = !0
+            h.isMDXComponent = !0
         }
     }
 ])

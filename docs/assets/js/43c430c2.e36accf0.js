@@ -1,152 +1,152 @@
 "use strict"
 ;(self.webpackChunkredo_dev = self.webpackChunkredo_dev || []).push([
-    [585],
+    [747],
     {
-        7965: (e, r, t) => {
-            t.d(r, { Zo: () => p, kt: () => f })
-            var n = t(3889)
-            function o(e, r, t) {
+        9613: (e, t, r) => {
+            r.d(t, { Zo: () => p, kt: () => f })
+            var n = r(9496)
+            function o(e, t, r) {
                 return (
-                    r in e
-                        ? Object.defineProperty(e, r, {
-                              value: t,
+                    t in e
+                        ? Object.defineProperty(e, t, {
+                              value: r,
                               enumerable: !0,
                               configurable: !0,
                               writable: !0
                           })
-                        : (e[r] = t),
+                        : (e[t] = r),
                     e
                 )
             }
-            function a(e, r) {
-                var t = Object.keys(e)
+            function a(e, t) {
+                var r = Object.keys(e)
                 if (Object.getOwnPropertySymbols) {
                     var n = Object.getOwnPropertySymbols(e)
-                    r &&
-                        (n = n.filter(function (r) {
+                    t &&
+                        (n = n.filter(function (t) {
                             return Object.getOwnPropertyDescriptor(
                                 e,
-                                r
+                                t
                             ).enumerable
                         })),
-                        t.push.apply(t, n)
+                        r.push.apply(r, n)
                 }
-                return t
+                return r
             }
             function i(e) {
-                for (var r = 1; r < arguments.length; r++) {
-                    var t = null != arguments[r] ? arguments[r] : {}
-                    r % 2
-                        ? a(Object(t), !0).forEach(function (r) {
-                              o(e, r, t[r])
+                for (var t = 1; t < arguments.length; t++) {
+                    var r = null != arguments[t] ? arguments[t] : {}
+                    t % 2
+                        ? a(Object(r), !0).forEach(function (t) {
+                              o(e, t, r[t])
                           })
                         : Object.getOwnPropertyDescriptors
                         ? Object.defineProperties(
                               e,
-                              Object.getOwnPropertyDescriptors(t)
+                              Object.getOwnPropertyDescriptors(r)
                           )
-                        : a(Object(t)).forEach(function (r) {
+                        : a(Object(r)).forEach(function (t) {
                               Object.defineProperty(
                                   e,
-                                  r,
-                                  Object.getOwnPropertyDescriptor(t, r)
+                                  t,
+                                  Object.getOwnPropertyDescriptor(r, t)
                               )
                           })
                 }
                 return e
             }
-            function l(e, r) {
+            function l(e, t) {
                 if (null == e) return {}
-                var t,
+                var r,
                     n,
-                    o = (function (e, r) {
+                    o = (function (e, t) {
                         if (null == e) return {}
-                        var t,
+                        var r,
                             n,
                             o = {},
                             a = Object.keys(e)
                         for (n = 0; n < a.length; n++)
-                            (t = a[n]), r.indexOf(t) >= 0 || (o[t] = e[t])
+                            (r = a[n]), t.indexOf(r) >= 0 || (o[r] = e[r])
                         return o
-                    })(e, r)
+                    })(e, t)
                 if (Object.getOwnPropertySymbols) {
                     var a = Object.getOwnPropertySymbols(e)
                     for (n = 0; n < a.length; n++)
-                        (t = a[n]),
-                            r.indexOf(t) >= 0 ||
+                        (r = a[n]),
+                            t.indexOf(r) >= 0 ||
                                 (Object.prototype.propertyIsEnumerable.call(
                                     e,
-                                    t
+                                    r
                                 ) &&
-                                    (o[t] = e[t]))
+                                    (o[r] = e[r]))
                 }
                 return o
             }
-            var s = n.createContext({}),
-                c = function (e) {
-                    var r = n.useContext(s),
-                        t = r
+            var c = n.createContext({}),
+                s = function (e) {
+                    var t = n.useContext(c),
+                        r = t
                     return (
                         e &&
-                            (t =
-                                "function" == typeof e ? e(r) : i(i({}, r), e)),
-                        t
+                            (r =
+                                "function" == typeof e ? e(t) : i(i({}, t), e)),
+                        r
                     )
                 },
                 p = function (e) {
-                    var r = c(e.components)
-                    return n.createElement(s.Provider, { value: r }, e.children)
+                    var t = s(e.components)
+                    return n.createElement(c.Provider, { value: t }, e.children)
                 },
                 d = {
                     inlineCode: "code",
                     wrapper: function (e) {
-                        var r = e.children
-                        return n.createElement(n.Fragment, {}, r)
+                        var t = e.children
+                        return n.createElement(n.Fragment, {}, t)
                     }
                 },
-                u = n.forwardRef(function (e, r) {
-                    var t = e.components,
+                u = n.forwardRef(function (e, t) {
+                    var r = e.components,
                         o = e.mdxType,
                         a = e.originalType,
-                        s = e.parentName,
+                        c = e.parentName,
                         p = l(e, [
                             "components",
                             "mdxType",
                             "originalType",
                             "parentName"
                         ]),
-                        u = c(t),
+                        u = s(r),
                         f = o,
-                        m = u["".concat(s, ".").concat(f)] || u[f] || d[f] || a
-                    return t
+                        m = u["".concat(c, ".").concat(f)] || u[f] || d[f] || a
+                    return r
                         ? n.createElement(
                               m,
-                              i(i({ ref: r }, p), {}, { components: t })
+                              i(i({ ref: t }, p), {}, { components: r })
                           )
-                        : n.createElement(m, i({ ref: r }, p))
+                        : n.createElement(m, i({ ref: t }, p))
                 })
-            function f(e, r) {
-                var t = arguments,
-                    o = r && r.mdxType
+            function f(e, t) {
+                var r = arguments,
+                    o = t && t.mdxType
                 if ("string" == typeof e || o) {
-                    var a = t.length,
+                    var a = r.length,
                         i = new Array(a)
                     i[0] = u
                     var l = {}
-                    for (var s in r) hasOwnProperty.call(r, s) && (l[s] = r[s])
+                    for (var c in t) hasOwnProperty.call(t, c) && (l[c] = t[c])
                     ;(l.originalType = e),
                         (l.mdxType = "string" == typeof e ? e : o),
                         (i[1] = l)
-                    for (var c = 2; c < a; c++) i[c] = t[c]
+                    for (var s = 2; s < a; s++) i[s] = r[s]
                     return n.createElement.apply(null, i)
                 }
-                return n.createElement.apply(null, t)
+                return n.createElement.apply(null, r)
             }
             u.displayName = "MDXCreateElement"
         },
-        7860: (e, r, t) => {
-            t.r(r),
-                t.d(r, {
+        6549: (e, t, r) => {
+            r.r(t),
+                r.d(t, {
                     assets: () => y,
                     contentTitle: () => f,
                     default: () => O,
@@ -154,76 +154,75 @@
                     metadata: () => m,
                     toc: () => b
                 })
-            var n = t(7965),
+            var n = r(9613),
                 o = Object.defineProperty,
                 a = Object.defineProperties,
                 i = Object.getOwnPropertyDescriptors,
                 l = Object.getOwnPropertySymbols,
-                s = Object.prototype.hasOwnProperty,
-                c = Object.prototype.propertyIsEnumerable,
-                p = (e, r, t) =>
-                    r in e
-                        ? o(e, r, {
+                c = Object.prototype.hasOwnProperty,
+                s = Object.prototype.propertyIsEnumerable,
+                p = (e, t, r) =>
+                    t in e
+                        ? o(e, t, {
                               enumerable: !0,
                               configurable: !0,
                               writable: !0,
-                              value: t
+                              value: r
                           })
-                        : (e[r] = t),
-                d = (e, r) => {
-                    for (var t in r || (r = {})) s.call(r, t) && p(e, t, r[t])
-                    if (l) for (var t of l(r)) c.call(r, t) && p(e, t, r[t])
+                        : (e[t] = r),
+                d = (e, t) => {
+                    for (var r in t || (t = {})) c.call(t, r) && p(e, r, t[r])
+                    if (l) for (var r of l(t)) s.call(t, r) && p(e, r, t[r])
                     return e
                 }
-            const u = { sidebar_position: 3, hide_table_of_contents: !0 },
+            const u = { hide_table_of_contents: !0 },
                 f = "Declarations",
                 m = {
                     unversionedId: "declarations",
-                    id: "version-1.11.0/declarations",
+                    id: "declarations",
                     title: "Declarations",
                     description:
                         "Like keeping your files small and tidy? Perhaps you'd prefer to split your definitions up.",
-                    source: "@site/model_versioned_docs/version-1.11.0/declarations.mdx",
+                    source: "@site/docs/model/declarations.mdx",
                     sourceDirName: ".",
                     slug: "/declarations",
-                    permalink: "/model/declarations",
+                    permalink: "/model/next/declarations",
                     draft: !1,
                     tags: [],
-                    version: "1.11.0",
-                    sidebarPosition: 3,
-                    frontMatter: {
-                        sidebar_position: 3,
-                        hide_table_of_contents: !0
+                    version: "current",
+                    frontMatter: { hide_table_of_contents: !0 },
+                    sidebar: "sidebar",
+                    previous: {
+                        title: "Spaces",
+                        permalink: "/model/next/spaces"
                     },
-                    sidebar: "defaultSidebar",
-                    previous: { title: "Spaces", permalink: "/model/spaces" },
                     next: {
                         title: "Constraints",
-                        permalink: "/model/constraints"
+                        permalink: "/model/next/constraints"
                     }
                 },
                 y = {},
                 b = [],
                 v = { toc: b }
             function O(e) {
-                var r,
-                    t = e,
-                    { components: o } = t,
-                    p = ((e, r) => {
-                        var t = {}
+                var t,
+                    r = e,
+                    { components: o } = r,
+                    p = ((e, t) => {
+                        var r = {}
                         for (var n in e)
-                            s.call(e, n) && r.indexOf(n) < 0 && (t[n] = e[n])
+                            c.call(e, n) && t.indexOf(n) < 0 && (r[n] = e[n])
                         if (null != e && l)
                             for (var n of l(e))
-                                r.indexOf(n) < 0 &&
-                                    c.call(e, n) &&
-                                    (t[n] = e[n])
-                        return t
-                    })(t, ["components"])
+                                t.indexOf(n) < 0 &&
+                                    s.call(e, n) &&
+                                    (r[n] = e[n])
+                        return r
+                    })(r, ["components"])
                 return (0, n.kt)(
                     "wrapper",
-                    ((r = d(d({}, v), p)),
-                    a(r, i({ components: o, mdxType: "MDXLayout" }))),
+                    ((t = d(d({}, v), p)),
+                    a(t, i({ components: o, mdxType: "MDXLayout" }))),
                     (0, n.kt)(
                         "h1",
                         d({}, { id: "declarations" }),

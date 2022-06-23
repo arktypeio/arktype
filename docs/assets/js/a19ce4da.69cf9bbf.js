@@ -1,10 +1,10 @@
 "use strict"
 ;(self.webpackChunkredo_dev = self.webpackChunkredo_dev || []).push([
-    [452],
+    [868],
     {
-        7965: (e, t, r) => {
+        9613: (e, t, r) => {
             r.d(t, { Zo: () => p, kt: () => f })
-            var n = r(3889)
+            var n = r(9496)
             function o(e, t, r) {
                 return (
                     t in e
@@ -55,7 +55,7 @@
                 }
                 return e
             }
-            function c(e, t) {
+            function s(e, t) {
                 if (null == e) return {}
                 var r,
                     n,
@@ -83,7 +83,7 @@
                 return o
             }
             var l = n.createContext({}),
-                u = function (e) {
+                c = function (e) {
                     var t = n.useContext(l),
                         r = t
                     return (
@@ -94,30 +94,30 @@
                     )
                 },
                 p = function (e) {
-                    var t = u(e.components)
+                    var t = c(e.components)
                     return n.createElement(l.Provider, { value: t }, e.children)
                 },
-                s = {
+                d = {
                     inlineCode: "code",
                     wrapper: function (e) {
                         var t = e.children
                         return n.createElement(n.Fragment, {}, t)
                     }
                 },
-                d = n.forwardRef(function (e, t) {
+                u = n.forwardRef(function (e, t) {
                     var r = e.components,
                         o = e.mdxType,
                         a = e.originalType,
                         l = e.parentName,
-                        p = c(e, [
+                        p = s(e, [
                             "components",
                             "mdxType",
                             "originalType",
                             "parentName"
                         ]),
-                        d = u(r),
+                        u = c(r),
                         f = o,
-                        m = d["".concat(l, ".").concat(f)] || d[f] || s[f] || a
+                        m = u["".concat(l, ".").concat(f)] || u[f] || d[f] || a
                     return r
                         ? n.createElement(
                               m,
@@ -131,36 +131,36 @@
                 if ("string" == typeof e || o) {
                     var a = r.length,
                         i = new Array(a)
-                    i[0] = d
-                    var c = {}
-                    for (var l in t) hasOwnProperty.call(t, l) && (c[l] = t[l])
-                    ;(c.originalType = e),
-                        (c.mdxType = "string" == typeof e ? e : o),
-                        (i[1] = c)
-                    for (var u = 2; u < a; u++) i[u] = r[u]
+                    i[0] = u
+                    var s = {}
+                    for (var l in t) hasOwnProperty.call(t, l) && (s[l] = t[l])
+                    ;(s.originalType = e),
+                        (s.mdxType = "string" == typeof e ? e : o),
+                        (i[1] = s)
+                    for (var c = 2; c < a; c++) i[c] = r[c]
                     return n.createElement.apply(null, i)
                 }
                 return n.createElement.apply(null, r)
             }
-            d.displayName = "MDXCreateElement"
+            u.displayName = "MDXCreateElement"
         },
-        3532: (e, t, r) => {
+        3434: (e, t, r) => {
             r.r(t),
                 r.d(t, {
-                    assets: () => b,
+                    assets: () => y,
                     contentTitle: () => f,
-                    default: () => h,
-                    frontMatter: () => d,
+                    default: () => O,
+                    frontMatter: () => u,
                     metadata: () => m,
-                    toc: () => y
+                    toc: () => b
                 })
-            var n = r(7965),
+            var n = r(9613),
                 o = Object.defineProperty,
                 a = Object.defineProperties,
                 i = Object.getOwnPropertyDescriptors,
-                c = Object.getOwnPropertySymbols,
+                s = Object.getOwnPropertySymbols,
                 l = Object.prototype.hasOwnProperty,
-                u = Object.prototype.propertyIsEnumerable,
+                c = Object.prototype.propertyIsEnumerable,
                 p = (e, t, r) =>
                     t in e
                         ? o(e, t, {
@@ -170,43 +170,42 @@
                               value: r
                           })
                         : (e[t] = r),
-                s = (e, t) => {
+                d = (e, t) => {
                     for (var r in t || (t = {})) l.call(t, r) && p(e, r, t[r])
-                    if (c) for (var r of c(t)) u.call(t, r) && p(e, r, t[r])
+                    if (s) for (var r of s(t)) c.call(t, r) && p(e, r, t[r])
                     return e
                 }
-            const d = { id: "intro", title: "Intro", sidebar_position: 1 },
-                f = "State",
+            const u = { sidebar_position: 4, hide_table_of_contents: !0 },
+                f = "Constraints",
                 m = {
-                    unversionedId: "intro",
-                    id: "intro",
-                    title: "Intro",
-                    description: "Under Construction",
-                    source: "@site/docs/state/index.mdx",
+                    unversionedId: "constraints",
+                    id: "version-1.11.0/constraints",
+                    title: "Constraints",
+                    description:
+                        "TypeScript can do a lot, but sometimes things you care about at runtime shouldn't affect your type.",
+                    source: "@site/model_versioned_docs/version-1.11.0/constraints.mdx",
                     sourceDirName: ".",
-                    slug: "/",
-                    permalink: "/state/",
+                    slug: "/constraints",
+                    permalink: "/model/constraints",
                     draft: !1,
                     tags: [],
-                    version: "current",
-                    sidebarPosition: 1,
+                    version: "1.11.0",
+                    sidebarPosition: 4,
                     frontMatter: {
-                        id: "intro",
-                        title: "Intro",
-                        sidebar_position: 1
+                        sidebar_position: 4,
+                        hide_table_of_contents: !0
                     },
-                    sidebar: "defaultSidebar"
+                    sidebar: "defaultSidebar",
+                    previous: {
+                        title: "Declarations",
+                        permalink: "/model/declarations"
+                    },
+                    next: { title: "Syntax", permalink: "/model/syntax" }
                 },
-                b = {},
-                y = [
-                    {
-                        value: "Under Construction",
-                        id: "under-construction",
-                        level: 2
-                    }
-                ],
-                v = { toc: y }
-            function h(e) {
+                y = {},
+                b = [],
+                v = { toc: b }
+            function O(e) {
                 var t,
                     r = e,
                     { components: o } = r,
@@ -214,92 +213,63 @@
                         var r = {}
                         for (var n in e)
                             l.call(e, n) && t.indexOf(n) < 0 && (r[n] = e[n])
-                        if (null != e && c)
-                            for (var n of c(e))
+                        if (null != e && s)
+                            for (var n of s(e))
                                 t.indexOf(n) < 0 &&
-                                    u.call(e, n) &&
+                                    c.call(e, n) &&
                                     (r[n] = e[n])
                         return r
                     })(r, ["components"])
                 return (0, n.kt)(
                     "wrapper",
-                    ((t = s(s({}, v), p)),
+                    ((t = d(d({}, v), p)),
                     a(t, i({ components: o, mdxType: "MDXLayout" }))),
-                    (0, n.kt)("h1", s({}, { id: "state" }), "State"),
                     (0, n.kt)(
-                        "h2",
-                        s({}, { id: "under-construction" }),
-                        "Under Construction"
+                        "h1",
+                        d({}, { id: "constraints" }),
+                        "Constraints"
                     ),
                     (0, n.kt)(
                         "p",
                         null,
-                        "We're working hard on a new tool that uses ",
-                        (0, n.kt)(
-                            "a",
-                            s({ parentName: "p" }, { href: "/model/intro" }),
-                            "models"
-                        ),
-                        " to make states that can manage themselves."
+                        "TypeScript can do a lot, but sometimes things you care about at runtime shouldn't affect your type."
                     ),
                     (0, n.kt)(
                         "p",
                         null,
-                        "Think Redux but with less boilerplate, more flexibility, and implicit validation."
-                    ),
-                    (0, n.kt)(
-                        "p",
-                        null,
-                        "If you want to learn more, the project is tracked ",
-                        (0, n.kt)(
-                            "a",
-                            s(
-                                { parentName: "p" },
-                                {
-                                    href: "https://github.com/re-do/re-po/projects/1"
-                                }
-                            ),
-                            "here"
-                        ),
-                        "."
-                    ),
-                    (0, n.kt)(
-                        "p",
-                        null,
-                        "If you're interested in contributing, check out our guide ",
-                        (0, n.kt)(
-                            "a",
-                            s(
-                                { parentName: "p" },
-                                {
-                                    href: "https://github.com/re-do/re-po/blob/main/CONTRIBUTING.md"
-                                }
-                            ),
-                            "here"
-                        ),
-                        " or, if you really want to make my day, reach out to ",
-                        (0, n.kt)(
-                            "a",
-                            s(
-                                { parentName: "p" },
-                                { href: "mailto:david@redo.dev" }
-                            ),
-                            "david@redo.dev"
-                        ),
-                        ". I'd love to talk about your ideas or suggest issues that might be a good fit! \ud83d\ude3b"
+                        (0, n.kt)("strong", { parentName: "p" }, "Constraints"),
+                        " have you covered."
                     ),
                     (0, n.kt)(
                         "div",
-                        null,
-                        (0, n.kt)("img", {
-                            style: { height: 300 },
-                            src: "/img/construction.svg",
-                            alt: "Under Construction"
+                        {
+                            style: {
+                                width: "100%",
+                                height: "790px",
+                                border: 0,
+                                marginLeft: -8,
+                                marginRight: -8,
+                                padding: 16,
+                                overflow: "hidden",
+                                borderRadius: 8
+                            }
+                        },
+                        (0, n.kt)("iframe", {
+                            id: "demo",
+                            src: "https://stackblitz.com/edit/re-model-constraints?embed=1&file=constraints.ts&hideDevTools=1&hideExplorer=1&hideNavigation=1&theme=dark",
+                            style: {
+                                height: "100%",
+                                width: "100%",
+                                borderRadius: 8
+                            },
+                            title: "@re-/model",
+                            sandbox:
+                                "allow-forms allow-modals allow-popups allow-presentation allow-same-origin allow-scripts"
                         })
                     )
                 )
             }
-            h.isMDXComponent = !0
+            O.isMDXComponent = !0
         }
     }
 ])

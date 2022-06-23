@@ -10,7 +10,7 @@
         "bench": "pnpm -r bench",
         "pr-checks": "pnpm build && pnpm lint && pnpm test && pnpm bench && pnpm build-gh-pages",
         "docgen": "ts-node ./scripts/docgen.ts",
-        "build-gh-pages": "ts-node ./redo.dev/build.mts",
+        "build-gh-pages": "pnpm run --dir redo.dev build",
         "changeset": "changeset",
         "preinstall": "npx only-allow pnpm",
         "prepare": "husky install",

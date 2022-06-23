@@ -1,10 +1,10 @@
 "use strict"
 ;(self.webpackChunkredo_dev = self.webpackChunkredo_dev || []).push([
-    [23],
+    [118],
     {
-        7965: (e, t, r) => {
+        9613: (e, t, r) => {
             r.d(t, { Zo: () => p, kt: () => f })
-            var n = r(3889)
+            var n = r(9496)
             function o(e, t, r) {
                 return (
                     t in e
@@ -55,7 +55,7 @@
                 }
                 return e
             }
-            function l(e, t) {
+            function c(e, t) {
                 if (null == e) return {}
                 var r,
                     n,
@@ -82,9 +82,9 @@
                 }
                 return o
             }
-            var c = n.createContext({}),
-                s = function (e) {
-                    var t = n.useContext(c),
+            var s = n.createContext({}),
+                l = function (e) {
+                    var t = n.useContext(s),
                         r = t
                     return (
                         e &&
@@ -94,36 +94,36 @@
                     )
                 },
                 p = function (e) {
-                    var t = s(e.components)
-                    return n.createElement(c.Provider, { value: t }, e.children)
+                    var t = l(e.components)
+                    return n.createElement(s.Provider, { value: t }, e.children)
                 },
-                d = {
+                u = {
                     inlineCode: "code",
                     wrapper: function (e) {
                         var t = e.children
                         return n.createElement(n.Fragment, {}, t)
                     }
                 },
-                u = n.forwardRef(function (e, t) {
+                d = n.forwardRef(function (e, t) {
                     var r = e.components,
                         o = e.mdxType,
                         a = e.originalType,
-                        c = e.parentName,
-                        p = l(e, [
+                        s = e.parentName,
+                        p = c(e, [
                             "components",
                             "mdxType",
                             "originalType",
                             "parentName"
                         ]),
-                        u = s(r),
+                        d = l(r),
                         f = o,
-                        m = u["".concat(c, ".").concat(f)] || u[f] || d[f] || a
+                        y = d["".concat(s, ".").concat(f)] || d[f] || u[f] || a
                     return r
                         ? n.createElement(
-                              m,
+                              y,
                               i(i({ ref: t }, p), {}, { components: r })
                           )
-                        : n.createElement(m, i({ ref: t }, p))
+                        : n.createElement(y, i({ ref: t }, p))
                 })
             function f(e, t) {
                 var r = arguments,
@@ -131,36 +131,36 @@
                 if ("string" == typeof e || o) {
                     var a = r.length,
                         i = new Array(a)
-                    i[0] = u
-                    var l = {}
-                    for (var c in t) hasOwnProperty.call(t, c) && (l[c] = t[c])
-                    ;(l.originalType = e),
-                        (l.mdxType = "string" == typeof e ? e : o),
-                        (i[1] = l)
-                    for (var s = 2; s < a; s++) i[s] = r[s]
+                    i[0] = d
+                    var c = {}
+                    for (var s in t) hasOwnProperty.call(t, s) && (c[s] = t[s])
+                    ;(c.originalType = e),
+                        (c.mdxType = "string" == typeof e ? e : o),
+                        (i[1] = c)
+                    for (var l = 2; l < a; l++) i[l] = r[l]
                     return n.createElement.apply(null, i)
                 }
                 return n.createElement.apply(null, r)
             }
-            u.displayName = "MDXCreateElement"
+            d.displayName = "MDXCreateElement"
         },
-        2103: (e, t, r) => {
+        5727: (e, t, r) => {
             r.r(t),
                 r.d(t, {
-                    assets: () => y,
+                    assets: () => m,
                     contentTitle: () => f,
-                    default: () => h,
-                    frontMatter: () => u,
-                    metadata: () => m,
+                    default: () => v,
+                    frontMatter: () => d,
+                    metadata: () => y,
                     toc: () => b
                 })
-            var n = r(7965),
+            var n = r(9613),
                 o = Object.defineProperty,
                 a = Object.defineProperties,
                 i = Object.getOwnPropertyDescriptors,
-                l = Object.getOwnPropertySymbols,
-                c = Object.prototype.hasOwnProperty,
-                s = Object.prototype.propertyIsEnumerable,
+                c = Object.getOwnPropertySymbols,
+                s = Object.prototype.hasOwnProperty,
+                l = Object.prototype.propertyIsEnumerable,
                 p = (e, t, r) =>
                     t in e
                         ? o(e, t, {
@@ -170,99 +170,74 @@
                               value: r
                           })
                         : (e[t] = r),
-                d = (e, t) => {
-                    for (var r in t || (t = {})) c.call(t, r) && p(e, r, t[r])
-                    if (l) for (var r of l(t)) s.call(t, r) && p(e, r, t[r])
+                u = (e, t) => {
+                    for (var r in t || (t = {})) s.call(t, r) && p(e, r, t[r])
+                    if (c) for (var r of c(t)) l.call(t, r) && p(e, r, t[r])
                     return e
                 }
-            const u = { hide_table_of_contents: !0 },
-                f = "Spaces",
-                m = {
-                    unversionedId: "spaces",
-                    id: "spaces",
-                    title: "Spaces",
+            const d = { sidebar_position: 6, hide_table_of_contents: !0 },
+                f = "API",
+                y = {
+                    unversionedId: "api",
+                    id: "version-1.11.0/api",
+                    title: "API",
                     description:
-                        "Working with types that refer to one another or themselves? So can your models!",
-                    source: "@site/docs/model/spaces.mdx",
+                        "Detailed API docs are coming soon! For now, check out the examples from this README and use the type hints you get to learn how you can customize your models and spaces. If you have any questions, don't hesitate to reach out on the dedicated Discord channel!",
+                    source: "@site/model_versioned_docs/version-1.11.0/api.mdx",
                     sourceDirName: ".",
-                    slug: "/spaces",
-                    permalink: "/model/next/spaces",
+                    slug: "/api",
+                    permalink: "/model/api",
                     draft: !1,
                     tags: [],
-                    version: "current",
-                    frontMatter: { hide_table_of_contents: !0 },
-                    sidebar: "sidebar",
-                    previous: { title: "Model", permalink: "/model/next/" },
-                    next: {
-                        title: "Declarations",
-                        permalink: "/model/next/declarations"
-                    }
+                    version: "1.11.0",
+                    sidebarPosition: 6,
+                    frontMatter: {
+                        sidebar_position: 6,
+                        hide_table_of_contents: !0
+                    },
+                    sidebar: "defaultSidebar",
+                    previous: { title: "Syntax", permalink: "/model/syntax" }
                 },
-                y = {},
+                m = {},
                 b = [],
-                v = { toc: b }
-            function h(e) {
+                h = { toc: b }
+            function v(e) {
                 var t,
                     r = e,
                     { components: o } = r,
                     p = ((e, t) => {
                         var r = {}
                         for (var n in e)
-                            c.call(e, n) && t.indexOf(n) < 0 && (r[n] = e[n])
-                        if (null != e && l)
-                            for (var n of l(e))
+                            s.call(e, n) && t.indexOf(n) < 0 && (r[n] = e[n])
+                        if (null != e && c)
+                            for (var n of c(e))
                                 t.indexOf(n) < 0 &&
-                                    s.call(e, n) &&
+                                    l.call(e, n) &&
                                     (r[n] = e[n])
                         return r
                     })(r, ["components"])
                 return (0, n.kt)(
                     "wrapper",
-                    ((t = d(d({}, v), p)),
+                    ((t = u(u({}, h), p)),
                     a(t, i({ components: o, mdxType: "MDXLayout" }))),
-                    (0, n.kt)("h1", d({}, { id: "spaces" }), "Spaces"),
+                    (0, n.kt)("h1", u({}, { id: "api" }), "API"),
                     (0, n.kt)(
                         "p",
                         null,
-                        "Working with types that refer to one another or themselves? So can your models!"
-                    ),
-                    (0, n.kt)(
-                        "p",
-                        null,
-                        "Just compile a ",
-                        (0, n.kt)("strong", { parentName: "p" }, "space"),
-                        "."
-                    ),
-                    (0, n.kt)(
-                        "div",
-                        {
-                            style: {
-                                width: "100%",
-                                height: "730px",
-                                border: 0,
-                                marginLeft: -8,
-                                marginRight: -8,
-                                padding: 16,
-                                overflow: "hidden",
-                                borderRadius: 8
-                            }
-                        },
-                        (0, n.kt)("iframe", {
-                            id: "demo2",
-                            src: "https://stackblitz.com/edit/re-model-space?embed=1&file=space.ts&hideDevTools=1&hideExplorer=1&hideNavigation=1&theme=dark",
-                            style: {
-                                height: "100%",
-                                width: "100%",
-                                borderRadius: 8
-                            },
-                            title: "@re-/model",
-                            sandbox:
-                                "allow-forms allow-modals allow-popups allow-presentation allow-same-origin allow-scripts"
-                        })
+                        "Detailed API docs are coming soon! For now, check out the examples from this README and use the type hints you get to learn how you can customize your models and spaces. If you have any questions, don't hesitate to reach out on the ",
+                        (0, n.kt)(
+                            "a",
+                            u(
+                                { parentName: "p" },
+                                { href: "https://discord.gg/WSNF3Kc4xh" }
+                            ),
+                            "dedicated Discord channel"
+                        ),
+                        "!"
                     )
                 )
             }
-            h.isMDXComponent = !0
+            v.isMDXComponent = !0
         }
     }
 ])

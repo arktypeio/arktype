@@ -1,10 +1,10 @@
 "use strict"
 ;(self.webpackChunkredo_dev = self.webpackChunkredo_dev || []).push([
-    [868],
+    [506],
     {
-        7965: (e, t, r) => {
-            r.d(t, { Zo: () => p, kt: () => f })
-            var n = r(3889)
+        9613: (e, t, r) => {
+            r.d(t, { Zo: () => p, kt: () => u })
+            var n = r(9496)
             function o(e, t, r) {
                 return (
                     t in e
@@ -55,7 +55,7 @@
                 }
                 return e
             }
-            function s(e, t) {
+            function l(e, t) {
                 if (null == e) return {}
                 var r,
                     n,
@@ -82,9 +82,9 @@
                 }
                 return o
             }
-            var l = n.createContext({}),
+            var s = n.createContext({}),
                 c = function (e) {
-                    var t = n.useContext(l),
+                    var t = n.useContext(s),
                         r = t
                     return (
                         e &&
@@ -95,7 +95,7 @@
                 },
                 p = function (e) {
                     var t = c(e.components)
-                    return n.createElement(l.Provider, { value: t }, e.children)
+                    return n.createElement(s.Provider, { value: t }, e.children)
                 },
                 d = {
                     inlineCode: "code",
@@ -104,20 +104,20 @@
                         return n.createElement(n.Fragment, {}, t)
                     }
                 },
-                u = n.forwardRef(function (e, t) {
+                f = n.forwardRef(function (e, t) {
                     var r = e.components,
                         o = e.mdxType,
                         a = e.originalType,
-                        l = e.parentName,
-                        p = s(e, [
+                        s = e.parentName,
+                        p = l(e, [
                             "components",
                             "mdxType",
                             "originalType",
                             "parentName"
                         ]),
-                        u = c(r),
-                        f = o,
-                        m = u["".concat(l, ".").concat(f)] || u[f] || d[f] || a
+                        f = c(r),
+                        u = o,
+                        m = f["".concat(s, ".").concat(u)] || f[u] || d[u] || a
                     return r
                         ? n.createElement(
                               m,
@@ -125,41 +125,41 @@
                           )
                         : n.createElement(m, i({ ref: t }, p))
                 })
-            function f(e, t) {
+            function u(e, t) {
                 var r = arguments,
                     o = t && t.mdxType
                 if ("string" == typeof e || o) {
                     var a = r.length,
                         i = new Array(a)
-                    i[0] = u
-                    var s = {}
-                    for (var l in t) hasOwnProperty.call(t, l) && (s[l] = t[l])
-                    ;(s.originalType = e),
-                        (s.mdxType = "string" == typeof e ? e : o),
-                        (i[1] = s)
+                    i[0] = f
+                    var l = {}
+                    for (var s in t) hasOwnProperty.call(t, s) && (l[s] = t[s])
+                    ;(l.originalType = e),
+                        (l.mdxType = "string" == typeof e ? e : o),
+                        (i[1] = l)
                     for (var c = 2; c < a; c++) i[c] = r[c]
                     return n.createElement.apply(null, i)
                 }
                 return n.createElement.apply(null, r)
             }
-            u.displayName = "MDXCreateElement"
+            f.displayName = "MDXCreateElement"
         },
-        7923: (e, t, r) => {
+        6056: (e, t, r) => {
             r.r(t),
                 r.d(t, {
-                    assets: () => y,
-                    contentTitle: () => f,
-                    default: () => O,
-                    frontMatter: () => u,
+                    assets: () => b,
+                    contentTitle: () => u,
+                    default: () => h,
+                    frontMatter: () => f,
                     metadata: () => m,
-                    toc: () => b
+                    toc: () => y
                 })
-            var n = r(7965),
+            var n = r(9613),
                 o = Object.defineProperty,
                 a = Object.defineProperties,
                 i = Object.getOwnPropertyDescriptors,
-                s = Object.getOwnPropertySymbols,
-                l = Object.prototype.hasOwnProperty,
+                l = Object.getOwnPropertySymbols,
+                s = Object.prototype.hasOwnProperty,
                 c = Object.prototype.propertyIsEnumerable,
                 p = (e, t, r) =>
                     t in e
@@ -171,50 +171,50 @@
                           })
                         : (e[t] = r),
                 d = (e, t) => {
-                    for (var r in t || (t = {})) l.call(t, r) && p(e, r, t[r])
-                    if (s) for (var r of s(t)) c.call(t, r) && p(e, r, t[r])
+                    for (var r in t || (t = {})) s.call(t, r) && p(e, r, t[r])
+                    if (l) for (var r of l(t)) c.call(t, r) && p(e, r, t[r])
                     return e
                 }
-            const u = { sidebar_position: 4, hide_table_of_contents: !0 },
-                f = "Constraints",
+            const f = { sidebar_position: 2, hide_table_of_contents: !0 },
+                u = "Spaces",
                 m = {
-                    unversionedId: "constraints",
-                    id: "version-1.11.0/constraints",
-                    title: "Constraints",
+                    unversionedId: "spaces",
+                    id: "version-1.11.0/spaces",
+                    title: "Spaces",
                     description:
-                        "TypeScript can do a lot, but sometimes things you care about at runtime shouldn't affect your type.",
-                    source: "@site/model_versioned_docs/version-1.11.0/constraints.mdx",
+                        "Working with types that refer to one another or themselves? So can your models!",
+                    source: "@site/model_versioned_docs/version-1.11.0/spaces.mdx",
                     sourceDirName: ".",
-                    slug: "/constraints",
-                    permalink: "/model/constraints",
+                    slug: "/spaces",
+                    permalink: "/model/spaces",
                     draft: !1,
                     tags: [],
                     version: "1.11.0",
-                    sidebarPosition: 4,
+                    sidebarPosition: 2,
                     frontMatter: {
-                        sidebar_position: 4,
+                        sidebar_position: 2,
                         hide_table_of_contents: !0
                     },
                     sidebar: "defaultSidebar",
-                    previous: {
+                    previous: { title: "Model", permalink: "/model/intro" },
+                    next: {
                         title: "Declarations",
                         permalink: "/model/declarations"
-                    },
-                    next: { title: "Syntax", permalink: "/model/syntax" }
+                    }
                 },
-                y = {},
-                b = [],
-                v = { toc: b }
-            function O(e) {
+                b = {},
+                y = [],
+                v = { toc: y }
+            function h(e) {
                 var t,
                     r = e,
                     { components: o } = r,
                     p = ((e, t) => {
                         var r = {}
                         for (var n in e)
-                            l.call(e, n) && t.indexOf(n) < 0 && (r[n] = e[n])
-                        if (null != e && s)
-                            for (var n of s(e))
+                            s.call(e, n) && t.indexOf(n) < 0 && (r[n] = e[n])
+                        if (null != e && l)
+                            for (var n of l(e))
                                 t.indexOf(n) < 0 &&
                                     c.call(e, n) &&
                                     (r[n] = e[n])
@@ -224,28 +224,25 @@
                     "wrapper",
                     ((t = d(d({}, v), p)),
                     a(t, i({ components: o, mdxType: "MDXLayout" }))),
+                    (0, n.kt)("h1", d({}, { id: "spaces" }), "Spaces"),
                     (0, n.kt)(
-                        "h1",
-                        d({}, { id: "constraints" }),
-                        "Constraints"
+                        "p",
+                        null,
+                        "Working with types that refer to one another or themselves? So can your models!"
                     ),
                     (0, n.kt)(
                         "p",
                         null,
-                        "TypeScript can do a lot, but sometimes things you care about at runtime shouldn't affect your type."
-                    ),
-                    (0, n.kt)(
-                        "p",
-                        null,
-                        (0, n.kt)("strong", { parentName: "p" }, "Constraints"),
-                        " have you covered."
+                        "Just compile a ",
+                        (0, n.kt)("strong", { parentName: "p" }, "space"),
+                        "."
                     ),
                     (0, n.kt)(
                         "div",
                         {
                             style: {
                                 width: "100%",
-                                height: "790px",
+                                height: "730px",
                                 border: 0,
                                 marginLeft: -8,
                                 marginRight: -8,
@@ -255,8 +252,8 @@
                             }
                         },
                         (0, n.kt)("iframe", {
-                            id: "demo",
-                            src: "https://stackblitz.com/edit/re-model-constraints?embed=1&file=constraints.ts&hideDevTools=1&hideExplorer=1&hideNavigation=1&theme=dark",
+                            id: "demo2",
+                            src: "https://stackblitz.com/edit/re-model-space?embed=1&file=space.ts&hideDevTools=1&hideExplorer=1&hideNavigation=1&theme=dark",
                             style: {
                                 height: "100%",
                                 width: "100%",
@@ -269,7 +266,7 @@
                     )
                 )
             }
-            O.isMDXComponent = !0
+            h.isMDXComponent = !0
         }
     }
 ])

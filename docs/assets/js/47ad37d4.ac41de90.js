@@ -1,10 +1,10 @@
 "use strict"
 ;(self.webpackChunkredo_dev = self.webpackChunkredo_dev || []).push([
-    [630],
+    [662],
     {
-        7965: (e, r, t) => {
+        9613: (e, r, t) => {
             t.d(r, { Zo: () => u, kt: () => d })
-            var n = t(3889)
+            var n = t(9496)
             function a(e, r, t) {
                 return (
                     r in e
@@ -144,7 +144,7 @@
             }
             f.displayName = "MDXCreateElement"
         },
-        3756: (e, r, t) => {
+        6113: (e, r, t) => {
             t.r(r),
                 t.d(r, {
                     assets: () => y,
@@ -152,9 +152,9 @@
                     default: () => O,
                     frontMatter: () => f,
                     metadata: () => m,
-                    toc: () => g
+                    toc: () => b
                 })
-            var n = t(7965),
+            var n = t(9613),
                 a = Object.defineProperty,
                 o = Object.defineProperties,
                 c = Object.getOwnPropertyDescriptors,
@@ -176,27 +176,32 @@
                     return e
                 }
             const f = {},
-                d = "eager",
+                d = "declare",
                 m = {
-                    unversionedId: "api/eager",
-                    id: "api/eager",
-                    title: "eager",
+                    unversionedId: "api/declare",
+                    id: "api/declare",
+                    title: "declare",
                     description: "tags",
-                    source: "@site/docs/model/api/eager.md",
+                    source: "@site/docs/model/api/declare.md",
                     sourceDirName: "api",
-                    slug: "/api/eager",
-                    permalink: "/model/next/api/eager",
+                    slug: "/api/declare",
+                    permalink: "/model/next/api/declare",
                     draft: !1,
                     tags: [],
                     version: "current",
-                    frontMatter: {}
+                    frontMatter: {},
+                    sidebar: "sidebar",
+                    previous: {
+                        title: "compile",
+                        permalink: "/model/next/api/compile"
+                    }
                 },
                 y = {},
-                g = [
+                b = [
                     { value: "tags", id: "tags", level: 2 },
                     { value: "text", id: "text", level: 2 }
                 ],
-                b = { toc: g }
+                v = { toc: b }
             function O(e) {
                 var r,
                     t = e,
@@ -214,9 +219,9 @@
                     })(t, ["components"])
                 return (0, n.kt)(
                     "wrapper",
-                    ((r = s(s({}, b), u)),
+                    ((r = s(s({}, v), u)),
                     o(r, c({ components: a, mdxType: "MDXLayout" }))),
-                    (0, n.kt)("h1", s({}, { id: "eager" }), "eager"),
+                    (0, n.kt)("h1", s({}, { id: "declare" }), "declare"),
                     (0, n.kt)("h2", s({}, { id: "tags" }), "tags"),
                     (0, n.kt)(
                         "pre",
@@ -240,7 +245,7 @@
                                 { parentName: "pre" },
                                 { className: "language-ts" }
                             ),
-                            "eager: ModelFunction\n"
+                            "declare: DeclareFunction\n"
                         )
                     )
                 )
