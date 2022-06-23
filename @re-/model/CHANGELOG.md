@@ -1,5 +1,12 @@
 # @re-/model
 
+## 2.0.4-alpha
+
+### Patch Changes
+
+-   Updated dependencies [7eb5576]
+    -   @re-/tools@2.2.0
+
 ## 2.0.3-alpha
 
 ### Patch Changes

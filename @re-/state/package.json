@@ -1,6 +1,6 @@
 {
     "name": "@re-/state",
-    "version": "0.0.4",
+    "version": "0.0.5",
     "private": true,
     "author": "redo.dev",
     "description": "Self-validating states from simple shapes 🧮",

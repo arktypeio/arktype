@@ -1,6 +1,6 @@
 {
     "name": "@re-/node",
-    "version": "2.1.2",
+    "version": "2.2.0",
     "author": "redo.dev",
     "description": "Node-based utilities, scripts, and configs for Redo packages ⚙️",
     "repository": {
