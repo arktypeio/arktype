@@ -237,7 +237,9 @@ describe("keyword", () => {
             const email = model("email")
             assert(email.type).typed as string
             assert(email.validate("david@redo.dev").error).is(undefined)
-            assert(email.validate("david@redo@dev").error).snap(undefined)
+            assert(email.validate("david@redo@dev").error).snap(
+                `'david@redo@dev' is not assignable to email.`
+            )
         })
         it("alpha", () => {
             const alpha = model("alpha")

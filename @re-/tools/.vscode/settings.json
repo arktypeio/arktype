@@ -2,7 +2,7 @@
     "editor.defaultFormatter": "esbenp.prettier-vscode",
     "editor.formatOnSave": true,
     "editor.codeActionsOnSave": ["source.fixAll.eslint"],
-    "typescript.tsdk": "../../node_modules/typescript/lib",
+    "typescript.tsdk": "./node_modules/typescript/lib",
     "typescript.enablePromptUseWorkspaceTsdk": true,
     "eslint.options": {
         "overrideConfig": {
@@ -10,8 +10,7 @@
                 "@typescript-eslint/no-empty-function": "off",
                 "@typescript-eslint/no-empty-interface": "off",
                 "no-empty": "off",
-                "prefer-const": "off",
-                "unicorn/no-lonely-if": "off"
+                "prefer-const": "off"
             }
         }
     }

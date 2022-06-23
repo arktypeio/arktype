@@ -18,7 +18,7 @@ temp
 # Formatter-specific overrides
 #-------------------------------------------------------------------------------------------------------------------
 pnpm-lock.yaml
-# This is the build output from @re-/docs for gh-pages
-./docs
+# This is the build output from redo.dev for gh-pages
+/docs
 # @re-/assert's cache
 .reassert

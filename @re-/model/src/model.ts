@@ -55,10 +55,11 @@ export class Model implements AnyModel {
     }
 
     assert(value: unknown, options?: Common.Allows.Options) {
-        const { error } = this.validate(value, options)
-        if (error) {
-            throw new Common.Allows.ValidationError(error)
+        const validationResult = this.validate(value, options)
+        if (validationResult.error) {
+            throw new Common.Allows.ValidationError(validationResult.error)
         }
+        return validationResult.data
     }
 
     generate(options?: Common.Generate.Options) {
@@ -96,7 +97,7 @@ export type ValidateFunction<ModeledType> = (
 export type AssertFunction<ModeledType> = (
     value: unknown,
     options?: Common.Allows.Options
-) => asserts value is ModeledType
+) => ModeledType
 
 export type GenerateFunction<ModeledType> = (
     options?: Common.Generate.Options

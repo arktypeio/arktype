@@ -124,8 +124,8 @@ export type CompileFunction = <Dict>(
 export type SpaceFrom<Dict> = {
     models: DictionaryToModels<Dict>
     types: DictToTypes<Dict>
-    extend: ExtendFunction<Dict>
     create: ModelFunction<Dict>
+    extend: ExtendFunction<Dict>
     inputs: {
         dictionary: Dict
         options: SpaceOptions<ModelNameIn<Dict>> | undefined
