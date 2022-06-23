@@ -106,7 +106,11 @@ module.exports = defineConfig({
         /**
          * Namespaces are useful for grouping generic types with related functionality
          */
-        "@typescript-eslint/no-namespace": "off"
+        "@typescript-eslint/no-namespace": "off",
+        /**
+         * This rule is buggy and often leads to cases where "autofix" introduces type errors
+         */
+        "@typescript-eslint/no-unnecessary-type-assertion": "off"
     },
     overrides: [
         /**
