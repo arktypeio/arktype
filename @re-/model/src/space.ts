@@ -13,20 +13,6 @@ import { Alias } from "./nodes/str/alias.js"
 export const space: CreateSpaceFn = (dictionary, options) =>
     new Space(dictionary, options) as any
 
-const configureSpace = (
-    dictionary: SpaceDictionary,
-    options: SpaceOptions<string> = {}
-): SpaceConfig => {
-    const { __meta__ = {}, ...definitions } = dictionary
-    const { models = {}, ...config } = options
-    return {
-        ...config,
-        meta: __meta__ as MetaDefinitions,
-        definitions,
-        models
-    }
-}
-
 export class Space implements SpaceFrom<any> {
     inputs: SpaceFrom<any>["inputs"]
     models: Record<string, Model>
@@ -151,4 +137,18 @@ export type ValidateDictionaryExtension<BaseDict, ExtensionDict> = {
         ExtensionDict[TypeName],
         Merge<BaseDict, ExtensionDict>
     >
+}
+
+const configureSpace = (
+    dictionary: SpaceDictionary,
+    options: SpaceOptions<string> = {}
+): SpaceConfig => {
+    const { __meta__ = {}, ...definitions } = dictionary
+    const { models = {}, ...config } = options
+    return {
+        ...config,
+        meta: __meta__ as MetaDefinitions,
+        definitions,
+        models
+    }
 }
