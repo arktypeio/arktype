@@ -258,8 +258,11 @@ const analyzeTypeAssertions = memoize(
                 }
                 if (expectedType) {
                     typeData.expected = expectedType.getText()
-                    if (typeData.expected === "any") {
-                        // If the expected type is any, just compare the type strings directly
+                    if (
+                        typeData.expected === "any" ||
+                        typeData.actual === "any"
+                    ) {
+                        // If either type is any, just compare the type strings directly
                         typeData.equivalent =
                             typeData.actual === typeData.expected
                     } else {

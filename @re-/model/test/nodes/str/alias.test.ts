@@ -13,11 +13,13 @@ describe("alias", () => {
         })
         it("with onCycle option", () => {
             const cyclic = compile({
+                __meta__: {
+                    onCycle: {
+                        cyclic: "cyclic?"
+                    }
+                },
                 a: { b: "b", isA: "true", isB: "false" },
-                b: { a: "a", isA: "false", isB: "true" },
-                onCycle: {
-                    cyclic: "cyclic?"
-                }
+                b: { a: "a", isA: "false", isB: "true" }
             }).create({
                 a: "a",
                 b: "b"
@@ -34,12 +36,14 @@ describe("alias", () => {
         })
         it("with onResolve option", () => {
             const withOnResolve = compile({
+                __meta__: {
+                    onResolve: {
+                        wasResolved: "true",
+                        resolvedType: "resolution"
+                    }
+                },
                 a: { b: "b", isA: "true", isB: "false" },
-                b: { a: "a", isA: "false", isB: "true" },
-                onResolve: {
-                    wasResolved: "true",
-                    resolvedType: "resolution"
-                }
+                b: { a: "a", isA: "false", isB: "true" }
             }).create({
                 referencesA: "a",
                 noReferences: {

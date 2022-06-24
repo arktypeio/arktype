@@ -120,12 +120,12 @@ type DictToTypes<Dict> = Evaluate<{
     >
 }>
 
-type MetaDefinitions = {
+export type MetaDefinitions = {
     onCycle?: unknown
     onResolve?: unknown
 }
 
-type MetaKey = "__meta__"
+export type MetaKey = "__meta__"
 
 type ModelNameIn<Dict> = keyof Dict & string
 
