@@ -7,12 +7,26 @@ import {
     transform
 } from "@re-/tools"
 import { CheckReferences, model } from "./model.js"
-import {
-    compile,
-    SpaceFrom,
-    SpaceOptions,
-    ValidateDictionary
-} from "./space.js"
+import { space, SpaceFrom, SpaceOptions, ValidateDictionary } from "./space.js"
+
+export const declare: DeclareFn = (...names) => ({
+    // @ts-ignore
+    define: createDeclaredDefineFunctionMap(names),
+    compile: (dict, options) => {
+        const discrepancies = diffSets(names, Object.keys(dict))
+        if (discrepancies) {
+            throw new DeclarationError(discrepancies)
+        }
+        return space(dict as any, options)
+    }
+})
+
+export type DeclareFn = <DeclaredTypeNames extends string[]>(
+    ...names: Narrow<DeclaredTypeNames>
+) => {
+    define: DeclaredDefineFunctionMap<DeclaredTypeNames>
+    compile: DeclaredCompileFunction<DeclaredTypeNames>
+}
 
 const createDeclaredDefineFunctionMap = <DeclaredTypeNames extends string[]>(
     typeNames: DeclaredTypeNames
@@ -64,17 +78,12 @@ type CheckDeclaredCompilation<Dict, DeclaredTypeNames extends string[]> = {
     [TypeName in ElementOf<DeclaredTypeNames>]: ValidateDictionary<Dict>[TypeName]
 }
 
-type DeclaredCompileFunction<DeclaredTypeNames extends string[]> = <Dict>(
+export type DeclaredCompileFunction<DeclaredTypeNames extends string[]> = <
+    Dict
+>(
     dictionary: Exact<Dict, CheckDeclaredCompilation<Dict, DeclaredTypeNames>>,
     config?: SpaceOptions<keyof Dict & string>
 ) => SpaceFrom<Dict>
-
-type DeclareFunction = <DeclaredTypeNames extends string[]>(
-    ...names: Narrow<DeclaredTypeNames>
-) => {
-    define: DeclaredDefineFunctionMap<DeclaredTypeNames>
-    compile: DeclaredCompileFunction<DeclaredTypeNames>
-}
 
 export class DeclarationError extends Error {
     constructor(discrepancies: NonNullable<DiffSetsResult>) {
@@ -96,16 +105,3 @@ export class DeclarationError extends Error {
         super(errorParts.join(" "))
     }
 }
-
-export const declare: DeclareFunction = (...names) => ({
-    // @ts-ignore
-    define: createDeclaredDefineFunctionMap(names),
-    compile: (dict, options) => {
-        const discrepancies = diffSets(names, Object.keys(dict))
-        if (discrepancies) {
-            throw new DeclarationError(discrepancies)
-        }
-        // @ts-ignore
-        return compile(dict, options)
-    }
-})

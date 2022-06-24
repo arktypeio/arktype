@@ -1,18 +1,18 @@
 import { assert } from "@re-/assert"
-import { compile, model } from "../../../src/index.js"
+import { model, space } from "../../../src/index.js"
 
 describe("alias", () => {
     describe("type", () => {
         it("with space", () => {
-            assert(compile({ borf: true }).create("borf").type).typed as true
+            assert(space({ borf: true }).create("borf").type).typed as true
             assert(
-                compile({
+                space({
                     borf: { f: false, u: undefined }
                 }).create({ snorf: "borf[]" }).type
             ).typed as { snorf: { f: false; u: undefined }[] }
         })
         it("with onCycle option", () => {
-            const cyclic = compile({
+            const cyclic = space({
                 __meta__: {
                     onCycle: {
                         cyclic: "cyclic?"
@@ -35,7 +35,7 @@ describe("alias", () => {
             )
         })
         it("with onResolve option", () => {
-            const withOnResolve = compile({
+            const withOnResolve = space({
                 __meta__: {
                     onResolve: {
                         wasResolved: "true",
@@ -61,7 +61,7 @@ describe("alias", () => {
     })
     describe("validation", () => {
         it("simple space", () => {
-            const groceries = compile({
+            const groceries = space({
                 banana: {
                     length: "number",
                     description: "string?"
@@ -109,7 +109,7 @@ describe("alias", () => {
          * })
          */
         it("cyclic space", () => {
-            const bicycle = compile({
+            const bicycle = space({
                 a: { a: "a?", b: "b?", isA: "true" },
                 b: { a: "a?", b: "b?", isA: "false" },
                 either: "a|b"
@@ -184,7 +184,7 @@ describe("alias", () => {
             assert(model({} as any).type).typed as any
         })
         it("doesn't try to validate any as a dictionary", () => {
-            const parseWithAnySpace = compile({} as any).create({
+            const parseWithAnySpace = space({} as any).create({
                 literal: "string",
                 // @ts-ignore
                 alias: "myType"
@@ -200,14 +200,14 @@ describe("alias", () => {
             )
         })
         it("doesn't try to validate any as a dictionary member", () => {
-            assert(compile({ a: {} as any }).create(["number", "a"]).type)
+            assert(space({ a: {} as any }).create(["number", "a"]).type)
                 .typed as [number, any]
         })
     })
     describe("generation", () => {
         it("simple space", () => {
             assert(
-                compile({
+                space({
                     banana: {
                         length: "number",
                         description: "string?"
@@ -236,7 +236,7 @@ describe("alias", () => {
         it("optional cycle", () => {
             // If it's optional, the cycle should be ignored and just return undefined
             assert(
-                compile({
+                space({
                     a: { b: "b" },
                     b: { c: "c?" },
                     c: "a|b"
@@ -246,7 +246,7 @@ describe("alias", () => {
             ).equals({ b: {} })
         })
         it("required cycle", () => {
-            const cyclicSpace = compile({
+            const cyclicSpace = space({
                 a: { b: "b" },
                 b: { c: "c" },
                 c: "a|b"
@@ -266,7 +266,7 @@ If you'd like to avoid throwing in when this occurs, pass a value to return when
         })
         it("onRequiredCycle", () => {
             assert(
-                compile({
+                space({
                     a: { b: "b" },
                     b: { c: "c" },
                     c: "a|b"
@@ -279,7 +279,7 @@ If you'd like to avoid throwing in when this occurs, pass a value to return when
         })
         it("onRequiredCycle with union", () => {
             assert(
-                compile({
+                space({
                     a: { b: "b" },
                     b: { a: "a" }
                 })
@@ -288,7 +288,7 @@ If you'd like to avoid throwing in when this occurs, pass a value to return when
             ).value.equals({ b: { a: "cycle" } })
         })
         it("from parsed", () => {
-            const defaultValue = compile({
+            const defaultValue = space({
                 group: { name: "string", description: "string?" }
             })
                 .create({

@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unused-vars*/
 import { assert } from "@re-/assert"
-import { compile, model } from "../src/index.js"
+import { model, space } from "../src/index.js"
 
 describe("demo", () => {
     it("model", () => {
@@ -41,7 +41,7 @@ describe("demo", () => {
         )
     })
     it("space", () => {
-        const space = compile({
+        const mySpace = space({
             user: {
                 name: "string",
                 bestFriend: "user?",
@@ -54,11 +54,11 @@ describe("demo", () => {
         })
 
         // Typescript types can be extracted like this
-        type User = typeof space.types.user
+        type User = typeof mySpace.types.user
 
         // Throws: "At path bestFriend/groups/0, required keys 'members' were missing."
         assert(() =>
-            space.models.user.assert({
+            mySpace.models.user.assert({
                 name: "Devin Aldai",
                 bestFriend: {
                     name: "Devin Olnyt",
@@ -69,7 +69,7 @@ describe("demo", () => {
         ).throws(
             "At path bestFriend/groups/0, required keys 'members' were missing."
         )
-        assert(space.types.user).type.toString.snap(
+        assert(mySpace.types.user).type.toString.snap(
             `{ name: string; groups: { title: string; members: { name: string; groups: { title: string; members: any[]; }[]; bestFriend?: any | undefined; }[]; }[]; bestFriend?: { name: string; groups: { title: string; members: { name: string; groups: any[]; bestFriend?: any | undefined; }[]; }[]; bestFriend?: any | undefined; } | undefined; }`
         )
     })

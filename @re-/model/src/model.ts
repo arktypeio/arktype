@@ -1,4 +1,4 @@
-import { chainableNoOpProxy } from "@re-/tools"
+import { chainableNoOpProxy, Evaluate } from "@re-/tools"
 import { Common } from "./nodes/common.js"
 import { ModelOptions } from "./nodes/common/utils.js"
 import { Root } from "./nodes/index.js"
@@ -19,7 +19,20 @@ export const eager: ModelFunction = (definition, options = {}) => {
     return model(definition, options)
 }
 
-export class Model implements AnyModel {
+export type ModelFunction<Dict = {}> = <Def>(
+    definition: Root.Validate<Def, Dict>,
+    options?: ModelOptions
+) => ModelFrom<Def, Parse<Def, Dict>>
+
+export type ModelFrom<Def, ModeledType> = Evaluate<{
+    definition: Def
+    type: ModeledType
+    validate: ValidateFunction<ModeledType>
+    assert: AssertFunction<ModeledType>
+    generate: GenerateFunction<ModeledType>
+}>
+
+export class Model implements ModelFrom<any, any> {
     definition: unknown
 
     constructor(
@@ -104,19 +117,4 @@ export type GenerateFunction<ModeledType> = (
     options?: Common.Generate.Options
 ) => ModeledType
 
-export type ModelFunction<Dict = {}> = <Def>(
-    definition: Root.Validate<Def, Dict>,
-    options?: ModelOptions
-) => ModelFrom<Def, Parse<Def, Dict>>
-
-export type ModelFrom<Def, ModeledType> = {
-    definition: Def
-    type: ModeledType
-    validate: ValidateFunction<ModeledType>
-    assert: AssertFunction<ModeledType>
-    generate: GenerateFunction<ModeledType>
-}
-
 export type Parse<Def, Dict> = Root.Parse<Def, Dict, {}>
-
-type AnyModel = ModelFrom<any, any>

@@ -1,20 +1,20 @@
 import { assert } from "@re-/assert"
-import { compile } from "../src/index.js"
+import { space } from "../src/index.js"
 
-describe("compile", () => {
+describe("space", () => {
     it("single", () => {
-        assert(compile({ a: "string" }).types.a).typed as string
+        assert(space({ a: "string" }).types.a).typed as string
         assert(() =>
             // @ts-expect-error
-            compile({ a: "strig" }, { parse: { eager: true } })
+            space({ a: "strig" }, { parse: { eager: true } })
         ).throwsAndHasTypeError("Unable to determine the type of 'strig'.")
     })
     it("independent", () => {
-        assert(compile({ a: "string", b: { c: "boolean" } }).types.b).typed as {
+        assert(space({ a: "string", b: { c: "boolean" } }).types.b).typed as {
             c: boolean
         }
         assert(() =>
-            compile(
+            space(
                 // @ts-expect-error
                 { a: "string", b: { c: "uhoh" } },
                 { parse: { eager: true } }
@@ -22,23 +22,22 @@ describe("compile", () => {
         ).throwsAndHasTypeError("Unable to determine the type of 'uhoh'")
     })
     it("interdependent", () => {
-        assert(compile({ a: "string", b: { c: "a" } }).types.b.c)
-            .typed as string
+        assert(space({ a: "string", b: { c: "a" } }).types.b.c).typed as string
         assert(() =>
             // @ts-expect-error
-            compile({ a: "yikes", b: { c: "a" } }, { parse: { eager: true } })
+            space({ a: "yikes", b: { c: "a" } }, { parse: { eager: true } })
         ).throwsAndHasTypeError("Unable to determine the type of 'yikes'")
     })
     it("recursive", () => {
         // Recursive type displays any but calculates just-in-time for each property access
         assert(
-            compile({ a: { dejaVu: "a?" } }).types.a.dejaVu?.dejaVu?.dejaVu
+            space({ a: { dejaVu: "a?" } }).types.a.dejaVu?.dejaVu?.dejaVu
         ).type.toString.snap("{ dejaVu?: any | undefined; } | undefined")
     })
     it("cyclic", () => {
-        const space = compile({ a: { b: "b" }, b: { a: "a" } })
+        const cyclicSpace = space({ a: { b: "b" }, b: { a: "a" } })
         // Type hint displays as any on hitting cycle
-        assert(space.types.a).typed as {
+        assert(cyclicSpace.types.a).typed as {
             b: {
                 a: {
                     b: {
@@ -48,30 +47,30 @@ describe("compile", () => {
             }
         }
         // But still yields correct types when properties are accessed
-        assert(space.types.b.a.b.a.b.a.b.a).typed as {
+        assert(cyclicSpace.types.b.a.b.a.b.a.b.a).typed as {
             b: {
                 a: any
             }
         }
         // @ts-expect-error
-        assert(space.types.a.b.a.b.c).type.errors.snap(
+        assert(cyclicSpace.types.a.b.a.b.c).type.errors.snap(
             `Property 'c' does not exist on type '{ a: { b: ...; }; }'.`
         )
     })
     it("object list", () => {
-        assert(compile({ a: "string", b: [{ c: "a" }] }).types.b).typed as [
+        assert(space({ a: "string", b: [{ c: "a" }] }).types.b).typed as [
             {
                 c: string
             }
         ]
     })
-    it("can parse from compiled types", () => {
-        const space = compile({ a: { b: "b" }, b: { a: "a" } })
-        assert(space.create("a|b|null").type).type.toString.snap(
+    it("create from space", () => {
+        const anotherCyclicSpace = space({ a: { b: "b" }, b: { a: "a" } })
+        assert(anotherCyclicSpace.create("a|b|null").type).type.toString.snap(
             "{ b: { a: { b: { a: any; }; }; }; } | { a: { b: { a: { b: any; }; }; }; } | null"
         )
         assert(() =>
-            space.create(
+            anotherCyclicSpace.create(
                 // @ts-expect-error
                 { nested: { a: "a", b: "b", c: "c" } },
                 { parse: { eager: true } }
@@ -79,14 +78,13 @@ describe("compile", () => {
         ).throwsAndHasTypeError("Unable to determine the type of 'c'")
     })
     it("extension", () => {
-        const mySpace = compile(
+        const mySpace = space(
             {
                 __meta__: {
                     onCycle: "number"
                 },
                 user: { name: "string" },
-                group: { members: "user[]" },
-                onCycle: "number"
+                group: { members: "user[]" }
             },
             {
                 validate: { ignoreExtraneousKeys: true },
@@ -122,9 +120,26 @@ describe("compile", () => {
                 }
             }
         )
-        assert(extended.types).type.toString.snap(
-            `{ user: { age: number; }; group: { members: { age: number; }[]; }; other: { groups: { members: { age: number; }[]; }[]; users: { age: number; }[]; }; }`
-        )
+        assert(extended.types).typed as {
+            user: {
+                age: number
+            }
+            group: {
+                members: {
+                    age: number
+                }[]
+            }
+            other: {
+                users: {
+                    age: number
+                }[]
+                groups: {
+                    members: {
+                        age: number
+                    }[]
+                }[]
+            }
+        }
         assert(extended.inputs.dictionary).snap({
             __meta__: {
                 onCycle: `boolean`

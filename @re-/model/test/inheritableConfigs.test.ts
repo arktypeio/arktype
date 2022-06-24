@@ -1,5 +1,5 @@
 import { assert } from "@re-/assert"
-import { compile, model } from "../src/index.js"
+import { model, space } from "../src/index.js"
 
 describe("inheritable configs", () => {
     describe("methods", () => {
@@ -30,7 +30,7 @@ describe("inheritable configs", () => {
             )
         })
         it("model config in space", () => {
-            const space = compile(
+            const mySpace = space(
                 { user: { name: "string" } },
                 {
                     models: {
@@ -39,28 +39,28 @@ describe("inheritable configs", () => {
                 }
             )
             assert(
-                space.models.user.validate({
+                mySpace.models.user.validate({
                     name: "David Blass",
                     age: 28
                 }).error
             ).is(undefined)
         })
         it("space config", () => {
-            const space = compile(
+            const mySpace = space(
                 { user: { name: "string" } },
                 {
                     validate: { ignoreExtraneousKeys: true }
                 }
             )
             assert(
-                space.models.user.validate({
+                mySpace.models.user.validate({
                     name: "David Blass",
                     age: 28
                 }).error
             ).is(undefined)
         })
         it("precedence", () => {
-            const nesting = compile(
+            const nesting = space(
                 { doll: { contents: "doll" } },
                 {
                     generate: { onRequiredCycle: "space" },
@@ -82,14 +82,14 @@ describe("inheritable configs", () => {
             )
             // When no model-specific config is provided, space config applies
             assert(
-                compile(
+                space(
                     { doll: { contents: "doll" } },
                     { generate: { onRequiredCycle: "space" } }
                 ).models.doll.generate()
             ).equals({ contents: "space" } as any)
             // When there is no other config, create options will apply
             assert(
-                compile({ doll: { contents: "doll" } })
+                space({ doll: { contents: "doll" } })
                     .create("doll", { generate: { onRequiredCycle: "create" } })
                     .generate().contents
             ).equals("create" as any)

@@ -1,4 +1,4 @@
-import { And, WithPropValue } from "@re-/tools"
+import { And, Get, WithPropValue } from "@re-/tools"
 import type { MetaKey } from "../../space.js"
 import { Common } from "../common.js"
 import { Root } from "../root.js"
@@ -11,8 +11,7 @@ export namespace Alias {
         Def extends "resolution" ? false : true
     > extends true
         ? Root.Parse<
-              // @ts-ignore
-              GetMetaDefinitions<Dict, "onResolve">,
+              Get<GetMetaDefinitions<Dict>, "onResolve">,
               WithPropValue<Dict, "resolution", Dict[Def]>,
               Seen & { [K in Def]: true }
           >
@@ -21,8 +20,7 @@ export namespace Alias {
               Def extends keyof Seen ? true : false
           > extends true
         ? Root.Parse<
-              // @ts-ignore
-              GetMetaDefinitions<Dict, "onCycle">,
+              Get<GetMetaDefinitions<Dict>, "onCycle">,
               WithPropValue<Dict, "cyclic", Dict[Def]>,
               {}
           >

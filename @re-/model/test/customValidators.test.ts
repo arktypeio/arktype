@@ -1,5 +1,5 @@
 import { assert } from "@re-/assert"
-import { compile, CustomValidator, model } from "../src/index.js"
+import { CustomValidator, model, space } from "../src/index.js"
 
 describe("custom validators", () => {
     const validator: CustomValidator = ({ value }) => {
@@ -11,7 +11,7 @@ describe("custom validators", () => {
         }
     }
     it("inline", () => {
-        const palindrome = compile({ palindrome: "string" }).create(
+        const palindrome = space({ palindrome: "string" }).create(
             "palindrome",
             {
                 validate: { validator }
@@ -25,19 +25,19 @@ describe("custom validators", () => {
         })
     })
     it("model root", () => {
-        const space = compile(
+        const mySpace = space(
             { palindrome: "string" },
             { models: { palindrome: { validate: { validator } } } }
         )
-        assert(space.models.palindrome.validate("redivider").error).is(
+        assert(mySpace.models.palindrome.validate("redivider").error).is(
             undefined
         )
-        assert(space.models.palindrome.validate("predivider").error).is(
+        assert(mySpace.models.palindrome.validate("predivider").error).is(
             `predivider is not a palindrome!`
         )
     })
     it("model nested", () => {
-        const space = compile(
+        const mySpace = space(
             { palindrome: "string", yourPal: { name: "palindrome" } },
             {
                 models: {
@@ -47,15 +47,15 @@ describe("custom validators", () => {
                 }
             }
         )
-        assert(space.models.yourPal.validate({ name: "bob" }).error).is(
+        assert(mySpace.models.yourPal.validate({ name: "bob" }).error).is(
             undefined
         )
-        assert(space.models.yourPal.validate({ name: "rob" }).error).snap(
+        assert(mySpace.models.yourPal.validate({ name: "rob" }).error).snap(
             `At path name, rob is not a palindrome!`
         )
     })
     it("space", () => {
-        const space = compile(
+        const mySpace = space(
             {
                 first: 1,
                 second: 2
@@ -75,11 +75,11 @@ describe("custom validators", () => {
                 }
             }
         )
-        assert(space.models.first.validate(1).error).is(undefined)
-        assert(() => space.models.first.assert(2)).throws.snap(
+        assert(mySpace.models.first.validate(1).error).is(undefined)
+        assert(() => mySpace.models.first.assert(2)).throws.snap(
             `Error: At path from/first, 2 FAILED TO BE 1.`
         )
-        assert(space.create("second").validate(1).error).snap(
+        assert(mySpace.create("second").validate(1).error).snap(
             `1 is not assignable to 2.`
         )
     })

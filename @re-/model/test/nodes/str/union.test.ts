@@ -1,5 +1,5 @@
 import { assert } from "@re-/assert"
-import { compile, eager, model } from "../../../src/index.js"
+import { eager, model, space } from "../../../src/index.js"
 
 describe("union", () => {
     describe("type", () => {
@@ -41,7 +41,7 @@ describe("union", () => {
         })
         it("verbose validation", () => {
             assert(
-                compile({
+                space({
                     a: "b|c",
                     b: "d|e",
                     c: "f|g",
@@ -82,13 +82,13 @@ g: 4 is not assignable to 3.`)
             assert(model("never|number|boolean").generate()).equals(false)
         })
         it("prefers simple aliases", () => {
-            const space = compile({
+            const mySpace = space({
                 five: 5,
                 duck: "'duck'",
                 nested: {}
             })
-            assert(space.create("nested|five|duck").generate()).is(5)
-            assert(space.create("duck|nested").generate()).is("duck")
+            assert(mySpace.create("nested|five|duck").generate()).is(5)
+            assert(mySpace.create("duck|nested").generate()).is("duck")
         })
         it("generates onCycle values if needed", () => {
             // assert(

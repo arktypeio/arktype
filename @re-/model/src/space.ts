@@ -10,7 +10,7 @@ import { Common } from "./nodes/common.js"
 import { Root } from "./nodes/index.js"
 import { Alias } from "./nodes/str/alias.js"
 
-export const compile: CompileFunction = (dictionary, options) =>
+export const space: CreateSpaceFn = (dictionary, options) =>
     new Space(dictionary, options) as any
 
 const configureSpace = (
@@ -74,7 +74,7 @@ export class Space implements SpaceFrom<any> {
     }
 }
 
-type CompileFunction = <Dict>(
+export type CreateSpaceFn = <Dict>(
     dictionary: ValidateDictionary<Dict>,
     options?: SpaceOptions<ModelNameIn<Dict>>
 ) => SpaceFrom<Dict>
@@ -87,14 +87,14 @@ export type SpaceOptions<ModelName extends string> = Common.ModelOptions & {
     models?: { [K in ModelName]?: Common.ModelOptions }
 }
 
-type SpaceConfig = RequireKeys<SpaceOptions<any>, "models"> & {
+export type SpaceConfig = RequireKeys<SpaceOptions<any>, "models"> & {
     meta: MetaDefinitions
     definitions: SpaceDictionary
 }
 
-type SpaceDictionary = Record<string, unknown>
+export type SpaceDictionary = Record<string, unknown>
 
-export type SpaceFrom<Dict> = {
+export type SpaceFrom<Dict> = Evaluate<{
     models: DictionaryToModels<Dict>
     types: DictToTypes<Dict>
     create: ModelFunction<Dict>
@@ -103,20 +103,20 @@ export type SpaceFrom<Dict> = {
         dictionary: Dict
         options: SpaceOptions<ModelNameIn<Dict>> | undefined
     }
-}
+}>
 
-type DictionaryToModels<Dict> = Evaluate<{
+export type DictionaryToModels<Dict> = Evaluate<{
     [TypeName in Exclude<keyof Dict, MetaKey>]: ModelFrom<
         Dict[TypeName],
-        Root.Parse<Dict[TypeName], Dict, { [K in TypeName]: true }>
+        Root.Parse<Dict[TypeName], Dict, {}>
     >
 }>
 
-type DictToTypes<Dict> = Evaluate<{
+export type DictToTypes<Dict> = Evaluate<{
     [TypeName in Exclude<keyof Dict, MetaKey>]: Root.Parse<
         Dict[TypeName],
         Dict,
-        { [K in TypeName]: true }
+        {}
     >
 }>
 
@@ -127,9 +127,9 @@ export type MetaDefinitions = {
 
 export type MetaKey = "__meta__"
 
-type ModelNameIn<Dict> = keyof Dict & string
+export type ModelNameIn<Dict> = keyof Dict & string
 
-type ExtendFunction<BaseDict> = <ExtensionDict>(
+export type ExtendFunction<BaseDict> = <ExtensionDict>(
     dictionary: ValidateDictionaryExtension<BaseDict, ExtensionDict>,
     config?: SpaceExtensionOptions<
         ModelNameIn<BaseDict>,
@@ -137,16 +137,16 @@ type ExtendFunction<BaseDict> = <ExtensionDict>(
     >
 ) => SpaceFrom<Merge<BaseDict, ExtensionDict>>
 
-interface SpaceExtensionOptions<
+export type SpaceExtensionOptions<
     BaseModelName extends string,
     ExtensionModelName extends string
-> extends Common.ModelOptions {
+> = Common.ModelOptions & {
     models?: {
         [ModelName in BaseModelName | ExtensionModelName]?: Common.ModelOptions
     }
 }
 
-type ValidateDictionaryExtension<BaseDict, ExtensionDict> = {
+export type ValidateDictionaryExtension<BaseDict, ExtensionDict> = {
     [TypeName in keyof ExtensionDict]: Root.Validate<
         ExtensionDict[TypeName],
         Merge<BaseDict, ExtensionDict>
