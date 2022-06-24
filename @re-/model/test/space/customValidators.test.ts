@@ -1,5 +1,5 @@
 import { assert } from "@re-/assert"
-import { CustomValidator, model, space } from "../src/index.js"
+import { CustomValidator, model, space } from "../../src/index.js"
 
 describe("custom validators", () => {
     const validator: CustomValidator = ({ value }) => {

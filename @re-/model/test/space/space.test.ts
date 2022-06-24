@@ -1,5 +1,5 @@
 import { assert } from "@re-/assert"
-import { space } from "../src/index.js"
+import { space } from "../../src/index.js"
 
 describe("space", () => {
     it("single", () => {

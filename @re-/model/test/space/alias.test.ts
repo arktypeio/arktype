@@ -1,5 +1,5 @@
 import { assert } from "@re-/assert"
-import { model, space } from "../../../src/index.js"
+import { model, space } from "../../src/index.js"
 
 describe("alias", () => {
     describe("type", () => {
