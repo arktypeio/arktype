@@ -1,6 +1,7 @@
 import { strict } from "node:assert"
+import { chainableNoOpProxy } from "@re-/tools"
 import { AssertionContext } from "../assert.js"
-import { chainableNoOpProxy, SourcePosition } from "../common.js"
+import { SourcePosition } from "../common.js"
 import { chainableAssertion, ChainableValueAssertion } from "../value/index.js"
 import { getAssertionData } from "./analysis.js"
 

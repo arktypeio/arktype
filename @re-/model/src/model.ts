@@ -1,3 +1,4 @@
+import { chainableNoOpProxy } from "@re-/tools"
 import { Common } from "./nodes/common.js"
 import { ModelOptions } from "./nodes/common/utils.js"
 import { Root } from "./nodes/index.js"
@@ -29,7 +30,7 @@ export class Model implements AnyModel {
     }
 
     get type() {
-        return Common.chainableNoOpProxy
+        return chainableNoOpProxy
     }
 
     validate(value: unknown, options?: Common.Allows.Options) {

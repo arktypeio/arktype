@@ -81,6 +81,9 @@ describe("compile", () => {
     it("extension", () => {
         const mySpace = compile(
             {
+                __meta__: {
+                    onCycle: "number"
+                },
                 user: { name: "string" },
                 group: { members: "user[]" },
                 onCycle: "number"
@@ -98,9 +101,11 @@ describe("compile", () => {
         )
         const extended = mySpace.extend(
             {
+                __meta__: {
+                    onCycle: "boolean"
+                },
                 user: { age: "number" },
-                other: { users: "user[]", groups: "group[]" },
-                onCycle: "boolean"
+                other: { users: "user[]", groups: "group[]" }
             },
             {
                 models: {
@@ -121,9 +126,11 @@ describe("compile", () => {
             `{ user: { age: number; }; group: { members: { age: number; }[]; }; other: { groups: { members: { age: number; }[]; }[]; users: { age: number; }[]; }; }`
         )
         assert(extended.inputs.dictionary).snap({
+            __meta__: {
+                onCycle: `boolean`
+            },
             user: { age: `number` },
             group: { members: `user[]` },
-            onCycle: `boolean`,
             other: { users: `user[]`, groups: `group[]` }
         })
         assert(extended.inputs.options).snap({
