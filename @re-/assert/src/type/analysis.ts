@@ -253,12 +253,22 @@ const analyzeTypeAssertions = memoize(
                         char: end.character + 1
                     }
                 }
+                const typeToString = (type: Type) =>
+                    (type.compilerType as any).intrinsicName === "error"
+                        ? `Unable to resolve type of '${type.getText()}'.`
+                        : type.getText()
                 const typeData: AssertionData["type"] = {
-                    actual: typeToCheck.getText()
+                    actual: typeToString(typeToCheck)
                 }
                 if (expectedType) {
-                    typeData.expected = expectedType.getText()
+                    typeData.expected = typeToString(expectedType)
                     if (
+                        typeData.expected.startsWith("Unable to resolve") ||
+                        typeData.actual.startsWith("Unable to resolve")
+                    ) {
+                        // If either type was unresolvable, treat the comparison as an error
+                        typeData.equivalent = false
+                    } else if (
                         typeData.expected === "any" ||
                         typeData.actual === "any"
                     ) {

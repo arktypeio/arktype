@@ -33,12 +33,12 @@ describe("regex", () => {
         })
         describe("errors", () => {
             it("bad string", () => {
-                assert(model("/^[0-9]*$/").validate("durrrrrr").error).snap(
-                    `'durrrrrr' does not match expression /^[0-9]*$/.`
-                )
+                assert(
+                    model("/^[0-9]*$/").validate("durrrrrr").error?.message
+                ).snap(`'durrrrrr' does not match expression /^[0-9]*$/.`)
             })
             it("non-string", () => {
-                assert(model("/^[0-9]*$/").validate(5).error).snap(
+                assert(model("/^[0-9]*$/").validate(5).error?.message).snap(
                     `Non-string value 5 cannot satisfy regex definitions.`
                 )
             })
@@ -46,7 +46,7 @@ describe("regex", () => {
                 assert(
                     model(`/\\((a|b)\\,[^?&]*\\)=>e+f?/`).validate(
                         "(b,c&d)=>eeef"
-                    ).error
+                    ).error?.message
                 ).equals(
                     `'(b,c&d)=>eeef' does not match expression /\\((a|b)\\,[^?&]*\\)=>e+f?/.`
                 )

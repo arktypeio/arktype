@@ -17,10 +17,8 @@ describe("custom validators", () => {
                 validate: { validator }
             }
         )
-        assert(palindrome.validate("step on no pets").errorsByPath).equals(
-            undefined
-        )
-        assert(palindrome.validate("step on your cat").errorsByPath).equals({
+        assert(palindrome.validate("step on no pets").error).equals(undefined)
+        assert(palindrome.validate("step on your cat").error?.paths).equals({
             "": `step on your cat is not a palindrome!`
         })
     })
@@ -32,9 +30,9 @@ describe("custom validators", () => {
         assert(mySpace.models.palindrome.validate("redivider").error).is(
             undefined
         )
-        assert(mySpace.models.palindrome.validate("predivider").error).is(
-            `predivider is not a palindrome!`
-        )
+        assert(
+            mySpace.models.palindrome.validate("predivider").error?.message
+        ).is(`predivider is not a palindrome!`)
     })
     it("model nested", () => {
         const mySpace = space(
@@ -50,9 +48,9 @@ describe("custom validators", () => {
         assert(mySpace.models.yourPal.validate({ name: "bob" }).error).is(
             undefined
         )
-        assert(mySpace.models.yourPal.validate({ name: "rob" }).error).snap(
-            `At path name, rob is not a palindrome!`
-        )
+        assert(
+            mySpace.models.yourPal.validate({ name: "rob" }).error?.message
+        ).snap(`At path name, rob is not a palindrome!`)
     })
     it("space", () => {
         const mySpace = space(
@@ -79,7 +77,7 @@ describe("custom validators", () => {
         assert(() => mySpace.models.first.assert(2)).throws.snap(
             `Error: At path from/first, 2 FAILED TO BE 1.`
         )
-        assert(mySpace.create("second").validate(1).error).snap(
+        assert(mySpace.create("second").validate(1).error?.message).snap(
             `1 is not assignable to 2.`
         )
     })
@@ -100,7 +98,7 @@ describe("custom validators", () => {
             }
         })
         assert(num.validate(7.43).error).is(undefined)
-        assert(num.validate("ssalbdivad").error).snap(
+        assert(num.validate("ssalbdivad").error?.message).snap(
             `'ssalbdivad' is not assignable to number.!!!`
         )
     })

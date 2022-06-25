@@ -18,28 +18,30 @@ describe("number", () => {
             const eight = model(8)
             assert(eight.validate(8).error).is(undefined)
             assert(eight.validate(8).error).is(undefined)
-            assert(eight.validate(8.000_001).error).is(
+            assert(eight.validate(8.000_001).error?.message).is(
                 "8.000001 is not assignable to 8."
             )
-            assert(eight.validate("8").error).is("'8' is not assignable to 8.")
+            assert(eight.validate("8").error?.message).is(
+                "'8' is not assignable to 8."
+            )
         })
         it("decimal", () => {
             const goldenRatio = model(1.618)
-            assert(goldenRatio.validate(1.618).error).is(undefined)
-            assert(goldenRatio.validate(2).error).is(
+            assert(goldenRatio.validate(1.618).error?.message).is(undefined)
+            assert(goldenRatio.validate(2).error?.message).is(
                 "2 is not assignable to 1.618."
             )
-            assert(goldenRatio.validate("1.618").error).is(
+            assert(goldenRatio.validate("1.618").error?.message).is(
                 "'1.618' is not assignable to 1.618."
             )
         })
         it("negative", () => {
             const unLeet = model(-13.37)
             assert(unLeet.validate(-13.37).error).is(undefined)
-            assert(unLeet.validate(-14).error).is(
+            assert(unLeet.validate(-14).error?.message).is(
                 "-14 is not assignable to -13.37."
             )
-            assert(unLeet.validate("-13.37").error).is(
+            assert(unLeet.validate("-13.37").error?.message).is(
                 "'-13.37' is not assignable to -13.37."
             )
         })
@@ -83,12 +85,12 @@ describe("bigint", () => {
         })
         describe("errors", () => {
             it("wrong value", () => {
-                assert(model(999n).validate(1000n).error).snap(
+                assert(model(999n).validate(1000n).error?.message).snap(
                     `1000n is not assignable to 999n.`
                 )
             })
             it("non-bigint", () => {
-                assert(model(0n).validate(0).error).snap(
+                assert(model(0n).validate(0).error?.message).snap(
                     `0 is not assignable to 0n.`
                 )
             })
@@ -114,7 +116,7 @@ describe("boolean", () => {
         })
         it("validation", () => {
             assert(t.validate(true).error).is(undefined)
-            assert(t.validate(false).error).snap(
+            assert(t.validate(false).error?.message).snap(
                 `false is not assignable to true.`
             )
         })
@@ -129,7 +131,7 @@ describe("boolean", () => {
         })
         it("validation", () => {
             assert(f.validate(false).error).is(undefined)
-            assert(f.validate(true).error).snap(
+            assert(f.validate(true).error?.message).snap(
                 `true is not assignable to false.`
             )
         })
@@ -145,7 +147,7 @@ describe("undefined", () => {
     })
     it("validation", () => {
         assert(u.validate(undefined).error).is(undefined)
-        assert(u.validate(null).error).snap(
+        assert(u.validate(null).error?.message).snap(
             `null is not assignable to undefined.`
         )
     })
@@ -160,7 +162,7 @@ describe("null", () => {
     })
     it("validation", () => {
         assert(n.validate(null).error).is(undefined)
-        assert(n.validate(undefined).error).snap(
+        assert(n.validate(undefined).error?.message).snap(
             `undefined is not assignable to null.`
         )
     })

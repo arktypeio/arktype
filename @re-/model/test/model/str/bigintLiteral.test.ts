@@ -38,12 +38,12 @@ describe("bigintLiteral", () => {
         })
         describe("errors", () => {
             it("wrong value", () => {
-                assert(model("999n").validate(1000n).error).snap(
+                assert(model("999n").validate(1000n).error?.message).snap(
                     `1000n is not assignable to 999n.`
                 )
             })
             it("non-bigint", () => {
-                assert(model("0n").validate(0).error).snap(
+                assert(model("0n").validate(0).error?.message).snap(
                     `0 is not assignable to 0n.`
                 )
             })

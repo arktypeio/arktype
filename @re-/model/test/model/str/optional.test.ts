@@ -68,7 +68,7 @@ describe("optional", () => {
         })
         describe("errors", () => {
             it("bad inner type", () => {
-                assert(model("true?").validate(false).error).snap(
+                assert(model("true?").validate(false).error?.message).snap(
                     `false is not assignable to true.`
                 )
             })

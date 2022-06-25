@@ -38,28 +38,30 @@ describe("numberLiteral", () => {
             const eight = model("8")
             assert(eight.validate(8).error).is(undefined)
             assert(eight.validate(8).error).is(undefined)
-            assert(eight.validate(8.000_001).error).is(
+            assert(eight.validate(8.000_001).error?.message).is(
                 "8.000001 is not assignable to 8."
             )
-            assert(eight.validate("8").error).is("'8' is not assignable to 8.")
+            assert(eight.validate("8").error?.message).is(
+                "'8' is not assignable to 8."
+            )
         })
         it("decimal", () => {
             const goldenRatio = model("1.618")
             assert(goldenRatio.validate(1.618).error).is(undefined)
-            assert(goldenRatio.validate(2).error).is(
+            assert(goldenRatio.validate(2).error?.message).is(
                 "2 is not assignable to 1.618."
             )
-            assert(goldenRatio.validate("1.618").error).is(
+            assert(goldenRatio.validate("1.618").error?.message).is(
                 "'1.618' is not assignable to 1.618."
             )
         })
         it("negative", () => {
             const unLeet = model("-13.37")
             assert(unLeet.validate(-13.37).error).is(undefined)
-            assert(unLeet.validate(-14).error).is(
+            assert(unLeet.validate(-14).error?.message).is(
                 "-14 is not assignable to -13.37."
             )
-            assert(unLeet.validate("-13.37").error).is(
+            assert(unLeet.validate("-13.37").error?.message).is(
                 "'-13.37' is not assignable to -13.37."
             )
         })

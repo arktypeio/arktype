@@ -74,7 +74,7 @@ describe("snippets", () => {
                 bio: string
             }
         }
-        assert(error).snap(`Encountered errors at the following paths:
+        assert(error?.message).snap(`Encountered errors at the following paths:
   email: 'david@redo.biz' does not match expression /[a-z]*@redo\\.dev/.
   about/age: 17 is less than 18.
   about/bio: 'I am very interesting.I am very interesting.I am ...' is greater than 160 characters.

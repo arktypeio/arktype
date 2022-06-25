@@ -13,7 +13,7 @@ export const user = model({
 
 // And can be used just like types...
 export type User = typeof user.type
-export type IsEquivalentTo = {
+export type EquivalentType = {
     age: number
     browser: "chrome" | "firefox" | "other" | null
     name: {

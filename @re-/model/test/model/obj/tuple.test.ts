@@ -9,7 +9,9 @@ describe("tuple", () => {
         })
         it("validation", () => {
             assert(empty.validate([]).error).is(undefined)
-            assert(empty.validate({}).error).snap(`{} is not assignable to [].`)
+            assert(empty.validate({}).error?.message).snap(
+                `{} is not assignable to [].`
+            )
         })
         it("generation", () => {
             assert(empty.generate()).equals([])
@@ -40,18 +42,20 @@ describe("tuple", () => {
             })
             describe("errors", () => {
                 it("bad item value", () => {
-                    assert(shallow.validate(["violin", 42n, 6]).error).snap(
-                        `At index 1, 42n is not assignable to number.`
-                    )
+                    assert(
+                        shallow.validate(["violin", 42n, 6]).error?.message
+                    ).snap(`At index 1, 42n is not assignable to number.`)
                 })
                 it("too short", () => {
-                    assert(shallow.validate(["violin", 42]).error).snap(
+                    assert(
+                        shallow.validate(["violin", 42]).error?.message
+                    ).snap(
                         `Tuple of length 2 is not assignable to tuple of length 3.`
                     )
                 })
                 it("too long", () => {
                     assert(
-                        shallow.validate(["violin", 42, 6, null]).error
+                        shallow.validate(["violin", 42, 6, null]).error?.message
                     ).snap(
                         `Tuple of length 4 is not assignable to tuple of length 3.`
                     )
@@ -92,7 +96,7 @@ describe("tuple", () => {
                         "Cuckoo",
                         ["Swallow", "Oriole", "Condor"],
                         []
-                    ]).error
+                    ]).error?.message
                 ).is(undefined)
             })
             describe("errors", () => {
@@ -101,7 +105,7 @@ describe("tuple", () => {
                         nested.validate([
                             "Cuckoo",
                             ["Swallow", "Oriole", "Gondor"]
-                        ]).error
+                        ]).error?.message
                     ).snap(
                         `Tuple of length 2 is not assignable to tuple of length 3.`
                     )
@@ -112,7 +116,7 @@ describe("tuple", () => {
                             "Clock",
                             ["Swallow", "Oriole", "Gondor"],
                             ["Too long"]
-                        ]).error
+                        ]).error?.message
                     ).snap(`Encountered errors at the following paths:
   0: 'Clock' is not assignable to 'Cuckoo'.
   2: Tuple of length 1 is not assignable to tuple of length 0.

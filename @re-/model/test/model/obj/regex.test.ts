@@ -13,10 +13,12 @@ describe("regex", () => {
     })
     it("validation", () => {
         assert(regex.validate("david@redo.dev").error).is(undefined)
-        assert(regex.validate("david@redo.qa").error).snap(
+        assert(regex.validate("david@redo.qa").error?.message).snap(
             `'david@redo.qa' does not match expression /.*@redo\\.dev/.`
         )
-        assert(regex.validate({ inObject: "david@redo.dev" }).error).snap(
+        assert(
+            regex.validate({ inObject: "david@redo.dev" }).error?.message
+        ).snap(
             `Non-string value {inObject: 'david@redo.dev'} cannot satisfy regex definitions.`
         )
     })

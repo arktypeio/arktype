@@ -95,78 +95,79 @@ describe("constraint", () => {
         })
         describe("errors", () => {
             it("invalid string length", () => {
-                assert(model("string>4").validate("four").error).snap(
+                assert(model("string>4").validate("four").error?.message).snap(
                     `'four' is less than or equal to 4 characters.`
                 )
-                assert(model("string>4").validate("4").error).snap(
+                assert(model("string>4").validate("4").error?.message).snap(
                     `'4' is less than or equal to 4 characters.`
                 )
-                assert(model("string<4").validate("four").error).snap(
+                assert(model("string<4").validate("four").error?.message).snap(
                     `'four' is greater than or equal to 4 characters.`
                 )
                 assert(
                     model("string<4").validate("longerThanFourCharacters").error
+                        ?.message
                 ).snap(
                     `'longerThanFourCharacters' is greater than or equal to 4 characters.`
                 )
-                assert(model("string>=4").validate("4").error).snap(
+                assert(model("string>=4").validate("4").error?.message).snap(
                     `'4' is less than 4 characters.`
                 )
                 assert(
                     model("string<=4").validate("longerThanFourCharacters")
-                        .error
+                        .error?.message
                 ).snap(
                     `'longerThanFourCharacters' is greater than 4 characters.`
                 )
             })
             it("single-bounded invalid", () => {
-                assert(model("number<=5").validate(7).error).snap(
+                assert(model("number<=5").validate(7).error?.message).snap(
                     `7 is greater than 5.`
                 )
-                assert(model("number>=-999").validate(-1000).error).snap(
-                    `-1000 is less than -999.`
-                )
-                assert(model("number<5").validate(5).error).snap(
+                assert(
+                    model("number>=-999").validate(-1000).error?.message
+                ).snap(`-1000 is less than -999.`)
+                assert(model("number<5").validate(5).error?.message).snap(
                     `5 is greater than or equal to 5.`
                 )
-                assert(model("number<5").validate(9999).error).snap(
+                assert(model("number<5").validate(9999).error?.message).snap(
                     `9999 is greater than or equal to 5.`
                 )
-                assert(model("number>-5").validate(-5).error).snap(
+                assert(model("number>-5").validate(-5).error?.message).snap(
                     `-5 is less than or equal to -5.`
                 )
-                assert(model("number>-5").validate(-1000).error).snap(
+                assert(model("number>-5").validate(-1000).error?.message).snap(
                     `-1000 is less than or equal to -5.`
                 )
             })
             it("double-bounded invalid", () => {
-                assert(model("5<number<10").validate(-9).error).snap(
+                assert(model("5<number<10").validate(-9).error?.message).snap(
                     `-9 is less than or equal to 5.`
                 )
-                assert(model("5<number<10").validate(99).error).snap(
+                assert(model("5<number<10").validate(99).error?.message).snap(
                     `99 is greater than or equal to 10.`
                 )
-                assert(model("7>number>-2000").validate(-3000).error).snap(
-                    `-3000 is less than or equal to -2000.`
-                )
-                assert(model("7>number>-2000").validate(3000).error).snap(
-                    `3000 is greater than or equal to 7.`
-                )
-                assert(model("5<=number<9999").validate(9999).error).snap(
-                    `9999 is greater than or equal to 9999.`
-                )
-                assert(model("5<=number<9999").validate(10_000).error).snap(
-                    `10000 is greater than or equal to 9999.`
-                )
-                assert(model("5<=number<9999").validate(4).error).snap(
+                assert(
+                    model("7>number>-2000").validate(-3000).error?.message
+                ).snap(`-3000 is less than or equal to -2000.`)
+                assert(
+                    model("7>number>-2000").validate(3000).error?.message
+                ).snap(`3000 is greater than or equal to 7.`)
+                assert(
+                    model("5<=number<9999").validate(9999).error?.message
+                ).snap(`9999 is greater than or equal to 9999.`)
+                assert(
+                    model("5<=number<9999").validate(10_000).error?.message
+                ).snap(`10000 is greater than or equal to 9999.`)
+                assert(model("5<=number<9999").validate(4).error?.message).snap(
                     `4 is less than 5.`
                 )
-                assert(model("-5>=number>=-1000").validate(0).error).snap(
-                    `0 is greater than -5.`
-                )
-                assert(model("-5>=number>=-1000").validate(-1001).error).snap(
-                    `-1001 is less than -1000.`
-                )
+                assert(
+                    model("-5>=number>=-1000").validate(0).error?.message
+                ).snap(`0 is greater than -5.`)
+                assert(
+                    model("-5>=number>=-1000").validate(-1001).error?.message
+                ).snap(`-1001 is less than -1000.`)
             })
         })
     })

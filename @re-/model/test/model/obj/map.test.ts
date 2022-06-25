@@ -9,7 +9,9 @@ describe("map", () => {
         })
         it("validation", () => {
             assert(empty.validate({}).error).is(undefined)
-            assert(empty.validate([]).error).snap(`[] is not assignable to {}.`)
+            assert(empty.validate([]).error?.message).snap(
+                `[] is not assignable to {}.`
+            )
         })
         it("generation", () => {
             assert(empty.generate()).equals({})
@@ -58,17 +60,18 @@ describe("map", () => {
                         },
 
                         { ignoreExtraneousKeys: true }
-                    ).error
+                    ).error?.message
                 ).snap(`Required keys 'b' were missing.`)
             })
             describe("errors", () => {
                 it("bad value", () => {
                     assert(
                         shallow.validate({ a: "ko", b: 123.4, c: 76 }).error
+                            ?.message
                     ).snap(`At path c, 76 is not assignable to 67.`)
                 })
                 it("missing keys", () => {
-                    assert(shallow.validate({ a: "ok" }).error).snap(
+                    assert(shallow.validate({ a: "ok" }).error?.message).snap(
                         `Required keys 'b, c' were missing.`
                     )
                 })
@@ -80,7 +83,7 @@ describe("map", () => {
                             c: 67,
                             d: "extraneous",
                             e: "x-ray-knee-us"
-                        }).error
+                        }).error?.message
                     ).snap(`Keys 'd, e' were unexpected.`)
                 })
                 it("missing and extraneous keys", () => {
@@ -89,7 +92,7 @@ describe("map", () => {
                             a: "ok",
                             d: "extraneous",
                             e: "x-ray-knee-us"
-                        }).error
+                        }).error?.message
                     ).snap(
                         `Required keys 'b, c' were missing. Keys 'd, e' were unexpected.`
                     )
@@ -149,7 +152,7 @@ describe("map", () => {
                 it("bad prop value", () => {
                     assert(
                         nested.validate({ nested: { russian: "tortoise" } })
-                            .error
+                            .error?.message
                     ).snap(
                         `At path nested/russian, 'tortoise' is not assignable to 'doll'.`
                     )
@@ -164,7 +167,7 @@ describe("map", () => {
                             a: {},
                             c: { d: 20, y: "why?" },
                             e: { f: 0n }
-                        }).error
+                        }).error?.message
                     ).snap(`Encountered errors at the following paths:
   a: Required keys 'b' were missing.
   c: Keys 'y' were unexpected.

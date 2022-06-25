@@ -33,33 +33,35 @@ describe("intersection", () => {
             assert(model("boolean&true").validate(true).error).is(undefined)
         })
         it("several types", () => {
-            assert(model("unknown&boolean&false").validate(false).error).is(
+            assert(
+                model("unknown&boolean&false").validate(false).error?.message
+            ).is(undefined)
+        })
+        it("keyword specifiers", () => {
+            assert(model("integer&nonnegative").validate(7).error?.message).is(
                 undefined
             )
         })
-        it("keyword specifiers", () => {
-            assert(model("integer&nonnegative").validate(7).error).is(undefined)
-        })
         describe("errors", () => {
             it("empty intersection", () => {
-                assert(model("number&string").validate("5").error).snap(
-                    `'5' is not assignable to number.`
-                )
+                assert(
+                    model("number&string").validate("5").error?.message
+                ).snap(`'5' is not assignable to number.`)
             })
             it("two types", () => {
-                assert(model("boolean&true").validate(false).error).snap(
-                    `false is not assignable to true.`
-                )
+                assert(
+                    model("boolean&true").validate(false).error?.message
+                ).snap(`false is not assignable to true.`)
             })
             it("several types", () => {
                 assert(
-                    model("unknown&true&boolean").validate(false).error
+                    model("unknown&true&boolean").validate(false).error?.message
                 ).snap(`false is not assignable to true.`)
             })
             it("bad keyword specifiers", () => {
-                assert(model("integer&positive").validate(7.5).error).snap(
-                    `7.5 is not assignable to integer.`
-                )
+                assert(
+                    model("integer&positive").validate(7.5).error?.message
+                ).snap(`7.5 is not assignable to integer.`)
             })
         })
     })

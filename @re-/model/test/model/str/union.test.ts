@@ -49,7 +49,7 @@ describe("union", () => {
                     e: 1,
                     f: 2,
                     g: 3
-                }).models.a.validate(4, { verbose: true }).error
+                }).models.a.validate(4, { verbose: true }).error?.message
             ).snap(`4 is not assignable to any of b|c.
 b: 4 is not assignable to any of d|e.
 d: 4 is not assignable to 0.
@@ -60,12 +60,12 @@ g: 4 is not assignable to 3.`)
         })
         describe("errors", () => {
             it("two types", () => {
-                assert(model("'yes'|'no'").validate("maybe").error).snap(
-                    `'maybe' is not assignable to any of 'yes'|'no'.`
-                )
+                assert(
+                    model("'yes'|'no'").validate("maybe").error?.message
+                ).snap(`'maybe' is not assignable to any of 'yes'|'no'.`)
             })
             it("several types", () => {
-                assert(model("2|4|6|8").validate(5).error).snap(
+                assert(model("2|4|6|8").validate(5).error?.message).snap(
                     `5 is not assignable to any of 2|4|6|8.`
                 )
             })

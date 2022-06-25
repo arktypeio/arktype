@@ -8,7 +8,7 @@ describe("inheritable configs", () => {
                 model({ name: "string" }).validate({
                     name: "David Blass",
                     age: 28
-                }).error
+                }).error?.message
             ).snap(`Keys 'age' were unexpected.`)
         })
         it("ad hoc", () => {

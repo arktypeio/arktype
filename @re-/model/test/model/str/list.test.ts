@@ -45,14 +45,14 @@ describe("list", () => {
         })
         describe("errors", () => {
             it("non-list", () => {
-                assert(numberArray.validate({}).error).snap(
+                assert(numberArray.validate({}).error?.message).snap(
                     `{} is not assignable to number[].`
                 )
             })
             it("bad item", () => {
-                assert(numberArray.validate([1, 2, "3", 4, 5]).error).snap(
-                    `At index 2, '3' is not assignable to number.`
-                )
+                assert(
+                    numberArray.validate([1, 2, "3", 4, 5]).error?.message
+                ).snap(`At index 2, '3' is not assignable to number.`)
             })
         })
     })

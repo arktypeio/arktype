@@ -12,7 +12,7 @@ describe("keyword", () => {
         })
         it("validation", () => {
             assert(s.validate("KEKW").error).is(undefined)
-            assert(s.validate(["whoops"]).error).snap(
+            assert(s.validate(["whoops"]).error?.message).snap(
                 `['whoops'] is not assignable to string.`
             )
         })
@@ -28,7 +28,7 @@ describe("keyword", () => {
         it("validation", () => {
             assert(n.validate(-83).error).is(undefined)
             assert(n.validate(0.999).error).is(undefined)
-            assert(n.validate("42").error).snap(
+            assert(n.validate("42").error?.message).snap(
                 `'42' is not assignable to number.`
             )
         })
@@ -44,7 +44,9 @@ describe("keyword", () => {
         it("validation", () => {
             assert(b.validate(true).error).is(undefined)
             assert(b.validate(false).error).is(undefined)
-            assert(b.validate(0).error).snap(`0 is not assignable to boolean.`)
+            assert(b.validate(0).error?.message).snap(
+                `0 is not assignable to boolean.`
+            )
         })
     })
     describe("true", () => {
@@ -57,7 +59,7 @@ describe("keyword", () => {
         })
         it("validation", () => {
             assert(t.validate(true).error).is(undefined)
-            assert(t.validate(false).error).snap(
+            assert(t.validate(false).error?.message).snap(
                 `false is not assignable to true.`
             )
         })
@@ -72,7 +74,7 @@ describe("keyword", () => {
         })
         it("validation", () => {
             assert(f.validate(false).error).is(undefined)
-            assert(f.validate(true).error).snap(
+            assert(f.validate(true).error?.message).snap(
                 `true is not assignable to false.`
             )
         })
@@ -87,7 +89,7 @@ describe("keyword", () => {
         })
         it("validation", () => {
             assert(b.validate(999n).error).is(undefined)
-            assert(b.validate(999).error).snap(
+            assert(b.validate(999).error?.message).snap(
                 `999 is not assignable to bigint.`
             )
         })
@@ -102,7 +104,7 @@ describe("keyword", () => {
         })
         it("validation", () => {
             assert(s.validate(Symbol("")).error).is(undefined)
-            assert(s.validate("@").error).snap(
+            assert(s.validate("@").error?.message).snap(
                 `'@' is not assignable to symbol.`
             )
         })
@@ -117,7 +119,7 @@ describe("keyword", () => {
         })
         it("validation", () => {
             assert(f.validate(() => ({})).error).is(undefined)
-            assert(f.validate({}).error).snap(
+            assert(f.validate({}).error?.message).snap(
                 `{} is not assignable to function.`
             )
         })
@@ -133,7 +135,7 @@ describe("keyword", () => {
         it("validation", () => {
             assert(o.validate([]).error).is(undefined)
             assert(o.validate({}).error).is(undefined)
-            assert(o.validate(null).error).snap(
+            assert(o.validate(null).error?.message).snap(
                 `null is not assignable to object.`
             )
         })
@@ -148,7 +150,7 @@ describe("keyword", () => {
         })
         it("validation", () => {
             assert(u.validate(undefined).error).is(undefined)
-            assert(u.validate(null).error).snap(
+            assert(u.validate(null).error?.message).snap(
                 `null is not assignable to undefined.`
             )
         })
@@ -163,7 +165,7 @@ describe("keyword", () => {
         })
         it("validation", () => {
             assert(n.validate(null).error).is(undefined)
-            assert(n.validate(undefined).error).snap(
+            assert(n.validate(undefined).error?.message).snap(
                 `undefined is not assignable to null.`
             )
         })
@@ -178,7 +180,7 @@ describe("keyword", () => {
         })
         it("validation", () => {
             assert(v.validate(undefined).error).is(undefined)
-            assert(v.validate(null).error).snap(
+            assert(v.validate(null).error?.message).snap(
                 `null is not assignable to void.`
             )
         })
@@ -224,10 +226,10 @@ describe("keyword", () => {
             )
         })
         it("validation", () => {
-            assert(n.validate("sometimes").error).snap(
+            assert(n.validate("sometimes").error?.message).snap(
                 `'sometimes' is not assignable to never.`
             )
-            assert(n.validate(undefined).error).snap(
+            assert(n.validate(undefined).error?.message).snap(
                 `undefined is not assignable to never.`
             )
         })
@@ -237,7 +239,7 @@ describe("keyword", () => {
             const email = model("email")
             assert(email.type).typed as string
             assert(email.validate("david@redo.dev").error).is(undefined)
-            assert(email.validate("david@redo@dev").error).snap(
+            assert(email.validate("david@redo@dev").error?.message).snap(
                 `'david@redo@dev' is not assignable to email.`
             )
         })
@@ -245,7 +247,7 @@ describe("keyword", () => {
             const alpha = model("alpha")
             assert(alpha.type).typed as string
             assert(alpha.validate("aBc").error).is(undefined)
-            assert(alpha.validate("a B c").error).snap(
+            assert(alpha.validate("a B c").error?.message).snap(
                 `'a B c' is not assignable to alpha.`
             )
         })
@@ -253,7 +255,7 @@ describe("keyword", () => {
             const alphaNumeric = model("alphanumeric")
             assert(alphaNumeric.type).typed as string
             assert(alphaNumeric.validate("aBc123").error).is(undefined)
-            assert(alphaNumeric.validate("aBc+123").error).snap(
+            assert(alphaNumeric.validate("aBc+123").error?.message).snap(
                 `'aBc+123' is not assignable to alphanumeric.`
             )
         })
@@ -263,7 +265,7 @@ describe("keyword", () => {
             assert(lowercase.validate("as long as no uppercase").error).is(
                 undefined
             )
-            assert(lowercase.validate("whoOps").error).snap(
+            assert(lowercase.validate("whoOps").error?.message).snap(
                 `'whoOps' is not assignable to lowercase.`
             )
         })
@@ -273,7 +275,7 @@ describe("keyword", () => {
             assert(uppercase.validate("AS LONG AS NO LOWERCASE").error).is(
                 undefined
             )
-            assert(uppercase.validate("WHOoPS").error).snap(
+            assert(uppercase.validate("WHOoPS").error?.message).snap(
                 `'WHOoPS' is not assignable to uppercase.`
             )
         })
@@ -281,7 +283,7 @@ describe("keyword", () => {
             const character = model("character")
             assert(character.type).typed as string
             assert(character.validate("!").error).is(undefined)
-            assert(character.validate(":(").error).snap(
+            assert(character.validate(":(").error?.message).snap(
                 `':(' is not assignable to character.`
             )
         })
@@ -291,7 +293,7 @@ describe("keyword", () => {
             const integer = model("integer")
             assert(integer.type).typed as number
             assert(integer.validate(5).error).is(undefined)
-            assert(integer.validate(5.0001).error).snap(
+            assert(integer.validate(5.0001).error?.message).snap(
                 `5.0001 is not assignable to integer.`
             )
         })
@@ -299,7 +301,7 @@ describe("keyword", () => {
             const positive = model("positive")
             assert(positive.type).typed as number
             assert(positive.validate(0.0001).error).is(undefined)
-            assert(positive.validate(-0.0001).error).snap(
+            assert(positive.validate(-0.0001).error?.message).snap(
                 `-0.0001 is not assignable to positive.`
             )
         })
@@ -307,7 +309,7 @@ describe("keyword", () => {
             const nonNegative = model("nonnegative")
             assert(nonNegative.type).typed as number
             assert(nonNegative.validate(0).error).is(undefined)
-            assert(nonNegative.validate(-999).error).snap(
+            assert(nonNegative.validate(-999).error?.message).snap(
                 `-999 is not assignable to nonnegative.`
             )
         })
