@@ -30,7 +30,13 @@ export namespace Allows {
         ctx: Traverse.Context<Config>
     }
 
-    export class ValidationError extends Error {}
+    export class ValidationError extends Error {
+        paths: ErrorsByPath
+        constructor(errors: ErrorTree) {
+            super(errors.toString())
+            this.paths = errors.all()
+        }
+    }
 
     export const buildUnassignableErrorMessage = (
         def: unknown,

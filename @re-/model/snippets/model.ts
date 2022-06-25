@@ -1,6 +1,6 @@
 import { model } from "../src/index.js"
 
-// A model is defined just like a type...
+// Models look just like types...
 export const user = model({
     age: "number",
     browser: "'chrome'|'firefox'|'other'|null",
@@ -11,7 +11,7 @@ export const user = model({
     }
 })
 
-// And can be used just like a type...
+// And can be used just like types...
 export type User = typeof user.type
 export type IsEquivalentTo = {
     age: number
@@ -23,7 +23,7 @@ export type IsEquivalentTo = {
     }
 }
 
-// That also validates your data at runtime.
+// But while types are confined to your IDE...
 export const fetchUser = () => {
     return {
         name: {
@@ -35,7 +35,14 @@ export const fetchUser = () => {
     }
 }
 
-// "At path browser, 'Internet Explorer' is not assignable to any of 'chrome'|'firefox'|'other'|null."
-export const { error } = user.validate(fetchUser())
+// Models can validate your data anytime, anywhere, with the clarity and precision of TypeScript.
+export const { error, data } = user.validate(fetchUser())
+
+if (error) {
+    // "At path browser, 'Internet Explorer' is not assignable to any of 'chrome'|'firefox'|'other'|null."
+    console.log(error.message)
+} else {
+    console.log(data)
+}
 
 // Try changing "user" or "fetchUser" and see what happens!

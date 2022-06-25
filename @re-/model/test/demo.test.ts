@@ -6,7 +6,7 @@ import { model, space } from "../src/index.js"
 describe("snippets", () => {
     it("model", () => {
         assert(user.type).typed as IsEquivalentTo
-        assert(error).is(
+        assert(error?.message).is(
             "At path browser, 'Internet Explorer' is not assignable to any of 'chrome'|'firefox'|'other'|null."
         )
     })

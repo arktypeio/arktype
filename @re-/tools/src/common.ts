@@ -97,6 +97,15 @@ export const isEmpty = (value: object) => {
     return isRecursible(value) ? !Object.keys(value).length : false
 }
 
+/** Either:
+ * First, with all properties of Second as undefined
+ * OR
+ * Second, with all properties of First as undefined
+ **/
+export type MutuallyExclusiveProps<First, Second> =
+    | (First & { [K in keyof Second]: undefined })
+    | (Second & { [K in keyof First]: undefined })
+
 export type PathMap = { [key: string]: PathMap }
 
 export const mapPaths = (paths: string[][]) => {

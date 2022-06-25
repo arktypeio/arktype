@@ -1,4 +1,8 @@
-import { chainableNoOpProxy, Evaluate } from "@re-/tools"
+import {
+    chainableNoOpProxy,
+    Evaluate,
+    MutuallyExclusiveProps
+} from "@re-/tools"
 import { Common } from "./nodes/common.js"
 import { ModelOptions } from "./nodes/common/utils.js"
 import { Root } from "./nodes/index.js"
@@ -65,13 +69,15 @@ export class Model implements ModelFrom<any, any> {
         }
         return args.errors.isEmpty()
             ? { data: value }
-            : { error: args.errors.toString(), errorsByPath: args.errors.all() }
+            : {
+                  error: new Common.Allows.ValidationError(args.errors)
+              }
     }
 
     assert(value: unknown, options?: Common.Allows.Options) {
         const validationResult = this.validate(value, options)
         if (validationResult.error) {
-            throw new Common.Allows.ValidationError(validationResult.error)
+            throw validationResult.error
         }
         return validationResult.data
     }
@@ -88,11 +94,14 @@ export type AssertOptions = Common.Allows.Options
 export type ValidateFunction<ModeledType> = (
     value: unknown,
     options?: Common.Allows.Options
-) => {
-    data?: ModeledType
-    error?: string
-    errorsByPath?: Common.Allows.ErrorsByPath
-}
+) => ValidationResult<ModeledType>
+
+export type ValidationResult<ModeledType> = MutuallyExclusiveProps<
+    { data: ModeledType },
+    {
+        error: Common.Allows.ValidationError
+    }
+>
 
 export type AssertFunction<ModeledType> = (
     value: unknown,
