@@ -3,15 +3,15 @@ import {
     DiffSetsResult,
     ElementOf,
     Exact,
+    Get,
     Narrow,
     transform
 } from "@re-/tools"
-import { CheckReferences, model } from "./model.js"
 import { space, SpaceFrom, SpaceOptions, ValidateDictionary } from "./space.js"
+import { Root } from "./index.js"
 
 export const declare: DeclareFn = (...names) => ({
-    // @ts-ignore
-    define: createDeclaredDefineFunctionMap(names),
+    define: createDeclaredDefineFunctionMap(names) as any,
     compile: (dict, options) => {
         const discrepancies = diffSets(names, Object.keys(dict))
         if (discrepancies) {
@@ -61,21 +61,30 @@ type CreateDeclaredDefineFunction = <
 const createDeclaredDefineFunction: CreateDeclaredDefineFunction =
     (declaredTypeNames, definedTypeName) => (definition) => {
         // Dummy create for validation
-        // @ts-ignore
-        model(definition, {
-            space: {
-                dictionary: transform(declaredTypeNames, ([, typeName]) => [
-                    typeName,
-                    "unknown"
-                ])
-            }
-        })
+        space(
+            Object.fromEntries(
+                declaredTypeNames.map((typeName) => [typeName, "unknown"])
+            )
+        ).create(definition as any)
         return { [definedTypeName]: definition } as any
     }
 
+/*
+ * Just use unknown for now since we don't have all the definitions yet
+ * but we still want to allow references to other declared types
+ */
+type CheckReferences<Def, DeclaredTypeName extends string> = Root.Validate<
+    Def,
+    {
+        [TypeName in DeclaredTypeName]: "unknown"
+    }
+>
+
 type CheckDeclaredCompilation<Dict, DeclaredTypeNames extends string[]> = {
-    // @ts-ignore
-    [TypeName in ElementOf<DeclaredTypeNames>]: ValidateDictionary<Dict>[TypeName]
+    [TypeName in ElementOf<DeclaredTypeNames>]: Get<
+        ValidateDictionary<Dict>,
+        TypeName
+    >
 }
 
 export type DeclaredCompileFunction<DeclaredTypeNames extends string[]> = <

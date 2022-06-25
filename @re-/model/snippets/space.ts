@@ -1,6 +1,6 @@
 import { space } from "../src/index.js"
 
-const mySpace = space({
+export const mySpace = space({
     user: {
         name: "string",
         bestFriend: "user?",
@@ -13,8 +13,8 @@ const mySpace = space({
 })
 
 // Even recursive and cyclic types are precisely inferred
-type User = typeof mySpace.types.user
-// @snipStart:validatingASpace
+export type User = typeof mySpace.types.user
+
 const data = {
     name: "Devin Aldai",
     bestFriend: {
@@ -26,4 +26,3 @@ const data = {
 
 // Throws: "At path bestFriend/groups/0, required keys 'members' were missing."
 mySpace.models.user.assert(data)
-// @snipEnd:validatingASpace

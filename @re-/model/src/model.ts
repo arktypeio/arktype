@@ -83,20 +83,6 @@ export class Model implements ModelFrom<any, any> {
     }
 }
 
-/*
- * Just use unknown for now since we don't have all the definitions yet
- * but we still want to allow references to other declared types
- */
-export type CheckReferences<
-    Def,
-    DeclaredTypeName extends string
-> = Root.Validate<
-    Def,
-    {
-        [TypeName in DeclaredTypeName]: "unknown"
-    }
->
-
 export type AssertOptions = Common.Allows.Options
 
 export type ValidateFunction<ModeledType> = (

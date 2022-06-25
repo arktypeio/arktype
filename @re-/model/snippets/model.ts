@@ -1,30 +1,41 @@
 import { model } from "../src/index.js"
-// @snipStart:creatingAModel
-// Most common TypeScript expressions just work...
-export const userModel = model({
+
+// A model is defined just like a type...
+export const user = model({
+    age: "number",
+    browser: "'chrome'|'firefox'|'other'|null",
     name: {
         first: "string",
         middle: "string?",
         last: "string"
-    },
-    age: "number",
-    browser: "'chrome'|'firefox'|'other'|null"
+    }
 })
 
-// Mouse over "User" to see the inferred type...
-export type User = typeof userModel.type
-// @snipEnd:creatingAModel
-
-// But a model can also validate your data at runtime...
-export const userData = {
+// And can be used just like a type...
+export type User = typeof user.type
+export type IsEquivalentTo = {
+    age: number
+    browser: "chrome" | "firefox" | "other" | null
     name: {
-        first: "Reed",
-        last: "Doe"
-    },
-    age: 28,
-    browser: "Internet Explorer" // :(
+        first: string
+        middle?: string
+        last: string
+    }
 }
 
-export const userValidationResult = userModel.validate(userData)
+// That also validates your data at runtime.
+export const fetchUser = () => {
+    return {
+        name: {
+            first: "Reed",
+            last: "Doe"
+        },
+        age: 28,
+        browser: "Internet Explorer" // :(
+    }
+}
 
-// Try changing "userModel" or "userData" and see what happens!
+// "At path browser, 'Internet Explorer' is not assignable to any of 'chrome'|'firefox'|'other'|null."
+export const { error } = user.validate(fetchUser())
+
+// Try changing "user" or "fetchUser" and see what happens!

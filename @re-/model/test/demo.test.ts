@@ -1,41 +1,11 @@
 /* eslint-disable @typescript-eslint/no-unused-vars*/
 import { assert } from "@re-/assert"
+import { error, IsEquivalentTo, user } from "../snippets/model.js"
 import { model, space } from "../src/index.js"
 
-describe("demo", () => {
+describe("snippets", () => {
     it("model", () => {
-        // Most common TypeScript expressions just work...
-        const user = model({
-            name: {
-                first: "string",
-                middle: "string?",
-                last: "string"
-            },
-            age: "number",
-            browser: "'chrome'|'firefox'|'other'|null"
-        })
-
-        // If you're using TypeScript, you can create your type...
-        type User = typeof user.type
-
-        // But a model can also validate your data at runtime...
-        const { error } = user.validate({
-            name: {
-                first: "Reed",
-                last: "Doe"
-            },
-            age: 28,
-            browser: "Internet Explorer" // :(
-        })
-        assert(user.type).typed as {
-            name: {
-                first: string
-                last: string
-                middle?: string | undefined
-            }
-            age: number
-            browser: "chrome" | "firefox" | "other" | null
-        }
+        assert(user.type).typed as IsEquivalentTo
         assert(error).is(
             "At path browser, 'Internet Explorer' is not assignable to any of 'chrome'|'firefox'|'other'|null."
         )
