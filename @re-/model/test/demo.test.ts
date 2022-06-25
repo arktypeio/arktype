@@ -1,11 +1,11 @@
 /* eslint-disable @typescript-eslint/no-unused-vars*/
 import { assert } from "@re-/assert"
-import { error, IsEquivalentTo, user } from "../snippets/model.js"
+import { EquivalentType, error, user } from "../snippets/model.js"
 import { model, space } from "../src/index.js"
 
 describe("snippets", () => {
     it("model", () => {
-        assert(user.type).typed as IsEquivalentTo
+        assert(user.type).typed as EquivalentType
         assert(error?.message).is(
             "At path browser, 'Internet Explorer' is not assignable to any of 'chrome'|'firefox'|'other'|null."
         )
