@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unused-vars*/
 import { assert } from "@re-/assert"
 import { EquivalentType, error, user } from "../snippets/model.js"
+import { redo } from "../snippets/space.js"
 import { model, space } from "../src/index.js"
 
 describe("snippets", () => {
@@ -10,39 +11,7 @@ describe("snippets", () => {
             "At path browser, 'Internet Explorer' is not assignable to any of 'chrome'|'firefox'|'other'|null."
         )
     })
-    it("space", () => {
-        const mySpace = space({
-            user: {
-                name: "string",
-                bestFriend: "user?",
-                groups: "group[]"
-            },
-            group: {
-                title: "string",
-                members: "user[]"
-            }
-        })
-
-        // Typescript types can be extracted like this
-        type User = typeof mySpace.types.user
-
-        // Throws: "At path bestFriend/groups/0, required keys 'members' were missing."
-        assert(() =>
-            mySpace.models.user.assert({
-                name: "Devin Aldai",
-                bestFriend: {
-                    name: "Devin Olnyt",
-                    groups: [{ title: "Type Enjoyers" }]
-                },
-                groups: []
-            })
-        ).throws(
-            "At path bestFriend/groups/0, required keys 'members' were missing."
-        )
-        assert(mySpace.types.user).type.toString.snap(
-            `{ name: string; groups: { title: string; members: { name: string; groups: { title: string; members: any[]; }[]; bestFriend?: any | undefined; }[]; }[]; bestFriend?: { name: string; groups: { title: string; members: { name: string; groups: any[]; bestFriend?: any | undefined; }[]; }[]; bestFriend?: any | undefined; } | undefined; }`
-        )
-    })
+    it("space", () => {})
     // See multifile.assert.ts for declaration demo
     it("constraints", () => {
         const employee = model({

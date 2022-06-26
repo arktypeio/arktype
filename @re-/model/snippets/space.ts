@@ -1,5 +1,6 @@
 import { space } from "../src/index.js"
 
+// Spaces are collections of models that can reference each other.
 export const redo = space({
     package: {
         name: "string",
@@ -37,5 +38,9 @@ export const readPackageData = () => {
     }
 }
 
-// Throws: "At path bestFriend/groups/0, required keys 'members' were missing."
-redo.models.package.assert(readPackageData())
+export const getValidatedPackageData = () => {
+    const packageDataFromFile = readPackageData()
+    // Throws:
+    const validatedPackageData = redo.models.package.assert(packageDataFromFile)
+    return validatedPackageData
+}

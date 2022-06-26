@@ -27,10 +27,10 @@ export type EquivalentType = {
 export const fetchUser = () => {
     return {
         name: {
-            first: "Reed",
-            last: "Doe"
+            first: "Dan",
+            last: "Ambramov"
         },
-        age: 28,
+        age: 29,
         browser: "Internet Explorer" // R.I.P.
     }
 }
@@ -41,8 +41,6 @@ export const { error, data } = user.validate(fetchUser())
 if (error) {
     // "At path browser, 'Internet Explorer' is not assignable to any of 'chrome'|'firefox'|'other'|null."
     console.log(error.message)
-} else {
-    console.log(data)
 }
 
 // Try changing "user" or "fetchUser" and see what happens!
