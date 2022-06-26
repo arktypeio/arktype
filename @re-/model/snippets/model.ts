@@ -31,11 +31,11 @@ export const fetchUser = () => {
             last: "Doe"
         },
         age: 28,
-        browser: "Internet Explorer" // :(
+        browser: "Internet Explorer" // R.I.P.
     }
 }
 
-// Models can validate your data anytime, anywhere, with the clarity and precision of TypeScript.
+// Models can validate your data anytime, anywhere, with the same clarity and precision you expect from TypeScript.
 export const { error, data } = user.validate(fetchUser())
 
 if (error) {

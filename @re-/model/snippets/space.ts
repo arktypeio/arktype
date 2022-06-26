@@ -1,28 +1,41 @@
 import { space } from "../src/index.js"
 
-export const mySpace = space({
-    user: {
+export const redo = space({
+    package: {
         name: "string",
-        bestFriend: "user?",
-        groups: "group[]"
+        version: "string",
+        dependencies: "package[]",
+        contributors: "contributor[]"
     },
-    group: {
-        title: "string",
-        members: "user[]"
+    contributor: {
+        name: "string",
+        isInternal: "boolean",
+        packages: "package[]"
     }
 })
 
 // Even recursive and cyclic types are precisely inferred
-export type User = typeof mySpace.types.user
+export type Package = typeof redo.types.package
 
-const data = {
-    name: "Devin Aldai",
-    bestFriend: {
-        name: "Devin Olnyt",
-        groups: [{ title: "Type Enjoyers" }]
-    },
-    groups: []
+export const readPackageData = () => {
+    return {
+        name: "@re-/model",
+        version: "latest",
+        dependencies: [
+            {
+                name: "@re-/tools",
+                version: 2.2,
+                dependencies: []
+            }
+        ],
+        contributors: [
+            {
+                name: "David Blass",
+                isInternal: true
+            }
+        ]
+    }
 }
 
 // Throws: "At path bestFriend/groups/0, required keys 'members' were missing."
-mySpace.models.user.assert(data)
+redo.models.package.assert(readPackageData())

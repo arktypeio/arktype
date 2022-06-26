@@ -1,8 +1,12 @@
 {
     "name": "@re-/assert",
     "version": "0.4.0",
-    "author": "redo.dev",
     "description": "Seamless testing for types and code✅",
+    "author": {
+        "name": "David Blass",
+        "email": "david@redo.dev",
+        "url": "https://redo.dev"
+    },
     "repository": {
         "type": "git",
         "url": "https://github.com/re-do/re-po.git",
