@@ -18,7 +18,13 @@ jobs:
               uses: ./.github/actions/setup
 
             - name: Build and publish redo.dev
-              run: "pnpm ci:publish-pages"
+              run: pnpm build-pages
+
+            - name: Deploy to GitHub Pages
+              uses: peaceiris/actions-gh-pages@v3
+              with:
+                  github_token: ${{ secrets.GITHUB_TOKEN }}
+                  publish_dir: ./redo.dev/dist
 
     create-release-pr:
         runs-on: ubuntu-latest
