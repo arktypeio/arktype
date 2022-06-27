@@ -1,6 +1,7 @@
 import { And, Get, WithPropValue } from "@re-/tools"
 import type { MetaKey } from "../../space.js"
 import { Common } from "../common.js"
+import { Allows } from "../common/common.js"
 import { Root } from "../root.js"
 
 type GetMetaDefinitions<Dict> = MetaKey extends keyof Dict ? Dict[MetaKey] : {}
@@ -48,6 +49,24 @@ export namespace Alias {
 
         allows(args: Common.Allows.Args) {
             const nextArgs = this.nextArgs(args, this.ctx.cfg.validate)
+            if (typeof args.value === "object" && args.value !== null) {
+                if (
+                    args.ctx.checkedValuesByAlias[this.def]?.includes(
+                        args.value
+                    )
+                ) {
+                    // If we've already seen this value, it must not have any errors or else we wouldn't be here
+                    return
+                }
+                if (!args.ctx.checkedValuesByAlias[this.def]) {
+                    nextArgs.ctx.checkedValuesByAlias[this.def] = [args.value]
+                } else {
+                    nextArgs.ctx.checkedValuesByAlias[this.def] = [
+                        ...args.ctx.checkedValuesByAlias[this.def],
+                        args.value
+                    ]
+                }
+            }
             const customValidator =
                 nextArgs.cfg.validator ??
                 nextArgs.ctx.modelCfg.validator ??
@@ -81,7 +100,10 @@ export namespace Alias {
         }
 
         private nextArgs<
-            Args extends { ctx: Common.Traverse.Context<any>; cfg: any }
+            Args extends {
+                ctx: Common.Traverse.Context<any>
+                cfg: any
+            }
         >(args: Args, aliasCfg: any): Args {
             return {
                 ...args,

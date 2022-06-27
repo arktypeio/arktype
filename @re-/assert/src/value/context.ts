@@ -302,7 +302,7 @@ export const valueAssertions = <T>(
     }
     const serialize = (value: unknown) =>
         ctx.config.stringifySnapshots
-            ? `${toString(value, { quotes: "double" })}`
+            ? `${toString(value, { quote: "double" })}`
             : literalSerialize(value)
     const actualSerialized = serialize(actual)
     const inlineSnap = (...args: [unknown]) => {

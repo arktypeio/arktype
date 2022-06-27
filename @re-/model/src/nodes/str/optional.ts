@@ -19,8 +19,6 @@ export namespace Optional {
     export const matches = (def: string): def is Definition => def.endsWith("?")
 
     export class Node extends Common.Branch<Definition> {
-        kind = "optional"
-
         parse() {
             if (this.ctx.stringRoot !== this.def) {
                 throw new Common.Parser.ParseError(invalidModifierErrorMessage)

@@ -23,11 +23,15 @@ export namespace Allows {
         path: string
     }
 
+    export type Context = Traverse.Context<Config> & {
+        checkedValuesByAlias: Record<string, object[]>
+    }
+
     export type Args = {
         value: unknown
         errors: ErrorTree
         cfg: Config
-        ctx: Traverse.Context<Config>
+        ctx: Context
     }
 
     export class ValidationError extends Error {
@@ -168,12 +172,16 @@ export namespace Allows {
         value: unknown,
         options: Options = {},
         modelOptions: Options = {}
-    ): Allows.Args => ({
-        value,
-        errors: new ErrorTree(),
-        ctx: Traverse.createContext(modelOptions),
-        cfg: options
-    })
+    ): Allows.Args => {
+        const args = {
+            value,
+            errors: new ErrorTree(),
+            ctx: Traverse.createContext(modelOptions) as Context,
+            cfg: options
+        }
+        args.ctx.checkedValuesByAlias = {}
+        return args
+    }
 
     export type Config = Options
 }

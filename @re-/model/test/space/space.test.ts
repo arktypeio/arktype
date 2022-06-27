@@ -28,12 +28,6 @@ describe("space", () => {
             space({ a: "yikes", b: { c: "a" } }, { parse: { eager: true } })
         ).throwsAndHasTypeError("Unable to determine the type of 'yikes'")
     })
-    it("recursive", () => {
-        // Recursive type displays any but calculates just-in-time for each property access
-        assert(
-            space({ a: { dejaVu: "a?" } }).types.a.dejaVu?.dejaVu?.dejaVu
-        ).type.toString.snap("{ dejaVu?: any | undefined; } | undefined")
-    })
     it("cyclic", () => {
         const cyclicSpace = space({ a: { b: "b" }, b: { a: "a" } })
         // Type hint displays as any on hitting cycle

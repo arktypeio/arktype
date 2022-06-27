@@ -6,7 +6,7 @@ export const pathAdd = (...subpaths: (string | number)[]) =>
     subpaths.filter((_) => _ !== "").join("/")
 
 export const stringifyDef = (def: unknown) =>
-    toString(def, { quotes: "none", maxNestedStringLength: 50 })
+    toString(def, { quote: "none", maxNestedStringLength: 50 })
 
 export const stringifyValue = (value: unknown) =>
     toString(value, {
