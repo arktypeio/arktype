@@ -21,10 +21,15 @@ jobs:
               run: pnpm build-pages
 
             - name: Publish redo.dev
-              uses: rayluo/github-pages-overwriter@v1.2
-              with:
-                  source-directory: ./redo.dev/dist
-                  target-branch: gh-pages
+              # The first command prevents husky hooks from triggering in CI:
+              # https://typicode.github.io/husky/#/?id=disable-husky-in-cidockerprod
+              run: |
+                  npm ci --omit=dev --ignore-scripts
+                  git worktree add redo.dev/dist gh-pages
+                  cd redo.dev/dist
+                  git add --all
+                  git commit -m "chore: publish to https://redo.dev"
+                  git push origin gh-pages
 
     create-release-pr:
         runs-on: ubuntu-latest
