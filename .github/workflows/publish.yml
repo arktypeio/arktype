@@ -17,19 +17,8 @@ jobs:
             - name: Setup re-po
               uses: ./.github/actions/setup
 
-            - name: Build redo.dev
-              run: |
-                  git worktree add redo.dev/dist gh-pages
-                  pnpm build-pages
-
-            - name: Publish redo.dev
-              run: |
-                  cd redo.dev/dist
-                  git add --force --all
-                  git config --global user.name "GitHub Actions Bot"
-                  git config --global user.email "<>"
-                  git commit -m "chore: publish to https://redo.dev"
-                  git push origin gh-pages
+            - name: Build and publish redo.dev
+              run: "pnpm ci:publish-pages"
 
     create-release-pr:
         runs-on: ubuntu-latest

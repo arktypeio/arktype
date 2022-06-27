@@ -14,7 +14,8 @@
         "deploy": "docusaurus deploy",
         "clear": "docusaurus clear",
         "write-translations": "docusaurus write-translations",
-        "write-heading-ids": "docusaurus write-heading-ids"
+        "write-heading-ids": "docusaurus write-heading-ids",
+        "ci:publish": "pnpm ts-node ./build.mts --publish"
     },
     "dependencies": {
         "@docusaurus/core": "2.0.0-beta.21",

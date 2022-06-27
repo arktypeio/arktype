@@ -17,7 +17,8 @@
         "pre-commit": "pretty-quick --staged",
         "find-unused": "ts-node ./scripts/findUnused.ts",
         "ci:version": "ts-node ./scripts/updateVersions.ts && pnpm build-pages",
-        "ci:publish": "pnpm changeset publish"
+        "ci:publish": "pnpm changeset publish",
+        "ci:publish-pages": "pnpm --filter 'redo.dev' ci:publish"
     },
     "devDependencies": {
         "@re-/node": "link:./@re-/node",
