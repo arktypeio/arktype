@@ -18,11 +18,12 @@ jobs:
               uses: ./.github/actions/setup
 
             - name: Build redo.dev
-              run: pnpm build-pages
+              run: |
+                  git worktree add redo.dev/dist gh-pages
+                  pnpm build-pages
 
             - name: Publish redo.dev
               run: |
-                  git worktree add redo.dev/dist gh-pages
                   cd redo.dev/dist
                   git add --all
                   git commit -m "chore: publish to https://redo.dev"
