@@ -107,7 +107,7 @@ We use a [pnpm workspace](https://pnpm.io/workspaces) to manage our packages. Yo
 -   [@re-/assert](@re-/assert): Seamless testing for types and code ✅
 -   [@re-/tools](@re-/tools): Lightweight utilities and types shared across Redo packages 🧰
 -   [@re-/node](@re-/node): Node-based utilities, scripts, and configs for Redo packages ⚙️
--   [@re-/docs](@re-/docs): Documentation for this repo 📚
+-   [redo.dev](./redo.dev): Source code for [redo.dev](https://redo.dev) 🔁
 
 ## Project
 
