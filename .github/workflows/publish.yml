@@ -25,7 +25,7 @@ jobs:
             - name: Publish redo.dev
               run: |
                   cd redo.dev/dist
-                  git add --all
+                  git add --force --all
                   git config --global user.name "GitHub Actions Bot"
                   git config --global user.email "<>"
                   git commit -m "chore: publish to https://redo.dev"
