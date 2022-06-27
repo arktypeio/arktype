@@ -1,0 +1,52 @@
+name: publish
+
+on:
+    push:
+        branches: [main]
+
+jobs:
+    update-gh-pages:
+        runs-on: ubuntu-latest
+        timeout-minutes: 20
+        steps:
+            - name: Checkout re-po
+              uses: actions/checkout@v3
+              with:
+                  fetch-depth: 0
+
+            - name: Setup re-po
+              uses: ./.github/actions/setup
+
+            - name: Build and publish redo.dev
+              run: pnpm build-pages
+
+            - name: Deploy to GitHub Pages
+              uses: peaceiris/actions-gh-pages@v3
+              with:
+                  github_token: ${{ secrets.GITHUB_TOKEN }}
+                  publish_dir: ./redo.dev/dist
+
+    create-release-pr:
+        runs-on: ubuntu-latest
+        timeout-minutes: 20
+        steps:
+            - name: Checkout re-po
+              uses: actions/checkout@v3
+              with:
+                  fetch-depth: 0
+
+            - name: Setup re-po
+              uses: ./.github/actions/setup
+
+            - name: Setup .npmrc
+              run: echo "//registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}" >> .npmrc
+
+            - name: Create and publish versions
+              uses: changesets/action@v1
+              with:
+                  commit: "chore: update versions"
+                  title: "chore: update versions"
+                  version: pnpm ci:version
+                  publish: pnpm ci:publish
+              env:
+                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
