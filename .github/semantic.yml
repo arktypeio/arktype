@@ -1,7 +1,6 @@
 titleOnly: true
 scopes:
     - assert
-    - doc
     - model
     - node
     - state
