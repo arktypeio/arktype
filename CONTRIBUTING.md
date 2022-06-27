@@ -79,10 +79,12 @@ pnpm pr-checks
 You can also run any of the commands individually:
 
 ```sh
+pnpm install
 pnpm build
 pnpm lint
 pnpm test
 pnpm bench
+pnpm build-pages
 ```
 
 All of these command will run as part of our CI process and must succeed in order for us to accept your Pull Request.
