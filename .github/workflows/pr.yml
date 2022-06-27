@@ -31,7 +31,7 @@ jobs:
               run: pnpm bench
 
             - name: Website
-              run: pnpm gh-pages-dryrun
+              run: pnpm build-pages
 
     compatibility:
         needs: core

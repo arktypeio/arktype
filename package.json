@@ -4,20 +4,19 @@
     "packageManager": "pnpm@7.1.2",
     "type": "module",
     "scripts": {
-        "build": "pnpm -r build",
-        "lint": "eslint .",
+        "build": "pnpm --filter '@re-/*' build",
+        "build-pages": "pnpm --filter 'redo.dev' build",
         "test": "pnpm -r test",
         "bench": "pnpm -r bench",
-        "pr-checks": "pnpm build && pnpm lint && pnpm test && pnpm bench && pnpm gh-pages-dryrun",
-        "docgen": "ts-node ./scripts/docgen.ts && pnpm build-gh-pages",
-        "gh-pages-dryrun": "pnpm run --dir redo.dev dry-run",
-        "build-gh-pages": "pnpm run --dir redo.dev build",
+        "lint": "eslint .",
+        "pr-checks": "pnpm install && pnpm build && pnpm lint && pnpm test && pnpm bench && pnpm build-pages",
+        "docgen": "ts-node ./scripts/docgen.ts && pnpm build-pages",
         "changeset": "changeset",
         "preinstall": "npx only-allow pnpm",
         "prepare": "husky install",
         "pre-commit": "pretty-quick --staged",
         "find-unused": "ts-node ./scripts/findUnused.ts",
-        "ci:version": "ts-node ./scripts/updateVersions.ts && pnpm build-gh-pages",
+        "ci:version": "ts-node ./scripts/updateVersions.ts && pnpm build-pages",
         "ci:publish": "pnpm changeset publish"
     },
     "devDependencies": {
@@ -50,6 +49,14 @@
     "config": {
         "commitizen": {
             "path": "cz-conventional-changelog"
+        }
+    },
+    "pnpm": {
+        "peerDependencyRules": {
+            "ignoreMissing": [
+                "webpack",
+                "@babel/core"
+            ]
         }
     }
 }
