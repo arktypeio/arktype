@@ -21,10 +21,7 @@ jobs:
               run: pnpm build-pages
 
             - name: Publish redo.dev
-              # The first command prevents husky hooks from triggering in CI:
-              # https://typicode.github.io/husky/#/?id=disable-husky-in-cidockerprod
               run: |
-                  npm ci --omit=dev --ignore-scripts
                   git worktree add redo.dev/dist gh-pages
                   cd redo.dev/dist
                   git add --all
