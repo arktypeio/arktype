@@ -26,7 +26,7 @@ jobs:
               run: |
                   cd redo.dev/dist
                   git add --all
-                  git commit -m "chore: publish to https://redo.dev"
+                  git commit -m "chore: publish to https://redo.dev" --author "CI <ci@redo.dev>"
                   git push origin gh-pages
 
     create-release-pr:
