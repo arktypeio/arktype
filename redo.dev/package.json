@@ -11,8 +11,6 @@
         "test": "echo No tests for docs!",
         "serve": "docusaurus serve --dir dist",
         "swizzle": "docusaurus swizzle",
-        "deploy": "docusaurus deploy",
-        "clear": "docusaurus clear",
         "write-translations": "docusaurus write-translations",
         "write-heading-ids": "docusaurus write-heading-ids"
     },
