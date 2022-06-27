@@ -15,7 +15,7 @@ export const redo = space({
     }
 })
 
-// Even recursive and cyclic types are precisely inferred
+// Recursive and cyclic types are inferred to arbitrary depth.
 export type Package = typeof redo.types.package
 
 export const readPackageData = () => {

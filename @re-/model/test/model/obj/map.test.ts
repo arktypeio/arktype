@@ -61,7 +61,7 @@ describe("map", () => {
 
                         { ignoreExtraneousKeys: true }
                     ).error?.message
-                ).snap(`Required keys 'b' were missing.`)
+                ).snap(`At path b, required value of type number was missing.`)
             })
             describe("errors", () => {
                 it("bad value", () => {
@@ -71,9 +71,11 @@ describe("map", () => {
                     ).snap(`At path c, 76 is not assignable to 67.`)
                 })
                 it("missing keys", () => {
-                    assert(shallow.validate({ a: "ok" }).error?.message).snap(
-                        `Required keys 'b, c' were missing.`
-                    )
+                    assert(shallow.validate({ a: "ok" }).error?.message)
+                        .snap(`Encountered errors at the following paths:
+  b: Required value of type number was missing.
+  c: Required value of type 67 was missing.
+`)
                 })
                 it("extraneous keys", () => {
                     assert(
@@ -84,7 +86,7 @@ describe("map", () => {
                             d: "extraneous",
                             e: "x-ray-knee-us"
                         }).error?.message
-                    ).snap(`Keys 'd, e' were unexpected.`)
+                    ).snap(`Keys 'd', 'e' were unexpected.`)
                 })
                 it("missing and extraneous keys", () => {
                     assert(
@@ -93,9 +95,11 @@ describe("map", () => {
                             d: "extraneous",
                             e: "x-ray-knee-us"
                         }).error?.message
-                    ).snap(
-                        `Required keys 'b, c' were missing. Keys 'd, e' were unexpected.`
-                    )
+                    ).snap(`Encountered errors at the following paths:
+  b: Required value of type number was missing.
+  c: Required value of type 67 was missing.
+  : Keys 'd', 'e' were unexpected.
+`)
                 })
             })
         })
@@ -169,7 +173,7 @@ describe("map", () => {
                             e: { f: 0n }
                         }).error?.message
                     ).snap(`Encountered errors at the following paths:
-  a: Required keys 'b' were missing.
+  a/b: Required value of type string was missing.
   c: Keys 'y' were unexpected.
   e/f: 0n is not assignable to object.
 `)

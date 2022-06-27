@@ -1,8 +1,8 @@
 /* eslint-disable @typescript-eslint/no-unused-vars*/
 import { assert } from "@re-/assert"
 import { EquivalentType, error, user } from "../snippets/model.js"
-import { redo } from "../snippets/space.js"
-import { model, space } from "../src/index.js"
+import { getValidatedPackageData, redo } from "../snippets/space.js"
+import { model } from "../src/index.js"
 
 describe("snippets", () => {
     it("model", () => {
@@ -11,7 +11,17 @@ describe("snippets", () => {
             "At path browser, 'Internet Explorer' is not assignable to any of 'chrome'|'firefox'|'other'|null."
         )
     })
-    it("space", () => {})
+    it("space", () => {
+        assert(redo.types.package).type.toString.snap(
+            `{ name: string; version: string; dependencies: { name: string; version: string; dependencies: any[]; contributors: { name: string; isInternal: boolean; packages: { name: string; version: string; dependencies: any[]; contributors: any[]; }[]; }[]; }[]; contributors: { name: string; isInternal: boolean; packages: { name: string; version: string; dependencies: any[]; contributors: { name: string; isInternal: boolean; packages: any[]; }[]; }[]; }[]; }`
+        )
+        assert(() => getValidatedPackageData()).throws
+            .snap(`Error: Encountered errors at the following paths:
+  dependencies/0/version: 2.2 is not assignable to string.
+  dependencies/0/contributors: Required value of type contributor[] was missing.
+  contributors/0/packages: Required value of type package[] was missing.
+`)
+    })
     // See multifile.assert.ts for declaration demo
     it("constraints", () => {
         const employee = model({

@@ -1,4 +1,4 @@
-import { diffSets, Entry, Evaluate } from "@re-/tools"
+import { Entry, Evaluate } from "@re-/tools"
 import { Common } from "../common.js"
 import { Root } from "../root.js"
 import { Optional } from "../str/index.js"
@@ -24,6 +24,11 @@ export namespace Map {
 
     type ParseResult = Entry<string, Common.Parser.Node>[]
 
+    export const isMapLike = (
+        value: unknown
+    ): value is Record<string, unknown> =>
+        typeof value === "object" && value !== null && !Array.isArray(value)
+
     export class Node extends Common.Branch<Definition, ParseResult> {
         parse() {
             return Object.entries(this.def).map(([prop, propDef]) => [
@@ -36,28 +41,41 @@ export namespace Map {
         }
 
         allows(args: Common.Allows.Args) {
-            if (
-                typeof args.value !== "object" ||
-                args.value === null ||
-                Array.isArray(args.value)
-            ) {
+            if (!isMapLike(args.value)) {
                 this.addUnassignable(args)
                 return
             }
-            const keyErrors = this.checkKeyErrors(args)
-            if (keyErrors) {
-                args.errors.add(args.ctx.path, keyErrors)
-                return
-            }
+            const valueKeysLeftToCheck = new Set(Object.keys(args.value))
             for (const [prop, node] of this.next()) {
-                node.allows({
-                    ...args,
-                    value: (args.value as any)[prop],
-                    ctx: {
-                        ...args.ctx,
-                        path: Common.pathAdd(args.ctx.path, prop)
-                    }
-                })
+                const pathWithProp = Common.pathAdd(args.ctx.path, prop)
+                if (prop in args.value) {
+                    node.allows({
+                        ...args,
+                        value: args.value[prop],
+                        ctx: {
+                            ...args.ctx,
+                            path: pathWithProp
+                        }
+                    })
+                } else if (!(node instanceof Optional.Node)) {
+                    args.errors.add(
+                        pathWithProp,
+                        `Required value of type ${node.stringifyDef()} was missing.`
+                    )
+                }
+                valueKeysLeftToCheck.delete(prop)
+            }
+            if (
+                valueKeysLeftToCheck.size &&
+                !args.cfg.ignoreExtraneousKeys &&
+                !args.ctx.modelCfg.ignoreExtraneousKeys
+            ) {
+                args.errors.add(
+                    args.ctx.path,
+                    `Keys ${[...valueKeysLeftToCheck]
+                        .map((k) => `'${k}'`)
+                        .join(", ")} were unexpected.`
+                )
             }
         }
 
@@ -77,43 +95,6 @@ export namespace Map {
                 })
             }
             return result
-        }
-
-        private checkKeyErrors = (args: Common.Allows.Args) => {
-            let message = ""
-            const keyDiff = diffSets(
-                Object.keys(this.def),
-                Object.keys(args.value as any)
-            )
-            if (!keyDiff) {
-                return message
-            }
-            if (keyDiff.removed) {
-                // Ignore missing keys that are optional
-                const missingRequiredKeys = keyDiff.removed.filter(
-                    (k) =>
-                        !(
-                            typeof this.def[k] === "string" &&
-                            Optional.matches(this.def[k] as string)
-                        )
-                )
-                if (missingRequiredKeys.length) {
-                    message += `Required keys '${missingRequiredKeys.join(
-                        ", "
-                    )}' were missing.`
-                }
-            }
-            if (
-                keyDiff.added &&
-                !args.cfg.ignoreExtraneousKeys &&
-                !args.ctx.modelCfg.ignoreExtraneousKeys
-            ) {
-                // Add a leading space if we also had missing keys
-                message += `${message ? " " : ""}Keys '${keyDiff.added.join(
-                    ", "
-                )}' were unexpected.`
-            }
-            return message
         }
     }
 }

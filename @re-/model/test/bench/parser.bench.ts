@@ -76,7 +76,22 @@ bench("validate map model", () => {
         b: 5,
         c: { nested: true }
     })
-}).median(`1.90us`)
+}).median(`1.80us`)
+
+bench("validate map extraneous", () => {
+    Root.parse(
+        { a: "string?", b: "number?", c: { nested: "boolean?" } },
+        defaultParseContext
+    ).validateByPath({
+        a: "okay",
+        b: 5,
+        c: { nested: true },
+        d: true,
+        e: true,
+        f: {},
+        g: true
+    })
+}).median(`2.28us`)
 
 bench("zod map", () => {
     z.object({
