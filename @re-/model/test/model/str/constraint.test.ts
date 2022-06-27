@@ -96,28 +96,28 @@ describe("constraint", () => {
         describe("errors", () => {
             it("invalid string length", () => {
                 assert(model("string>4").validate("four").error?.message).snap(
-                    `'four' is less than or equal to 4 characters.`
+                    `"four" is less than or equal to 4 characters.`
                 )
                 assert(model("string>4").validate("4").error?.message).snap(
-                    `'4' is less than or equal to 4 characters.`
+                    `"4" is less than or equal to 4 characters.`
                 )
                 assert(model("string<4").validate("four").error?.message).snap(
-                    `'four' is greater than or equal to 4 characters.`
+                    `"four" is greater than or equal to 4 characters.`
                 )
                 assert(
                     model("string<4").validate("longerThanFourCharacters").error
                         ?.message
                 ).snap(
-                    `'longerThanFourCharacters' is greater than or equal to 4 characters.`
+                    `"longerThanFourCharacters" is greater than or equal to 4 characters.`
                 )
                 assert(model("string>=4").validate("4").error?.message).snap(
-                    `'4' is less than 4 characters.`
+                    `"4" is less than 4 characters.`
                 )
                 assert(
                     model("string<=4").validate("longerThanFourCharacters")
                         .error?.message
                 ).snap(
-                    `'longerThanFourCharacters' is greater than 4 characters.`
+                    `"longerThanFourCharacters" is greater than 4 characters.`
                 )
             })
             it("single-bounded invalid", () => {

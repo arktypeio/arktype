@@ -46,7 +46,7 @@ describe("intersection", () => {
             it("empty intersection", () => {
                 assert(
                     model("number&string").validate("5").error?.message
-                ).snap(`'5' is not assignable to number.`)
+                ).snap(`"5" is not assignable to number.`)
             })
             it("two types", () => {
                 assert(

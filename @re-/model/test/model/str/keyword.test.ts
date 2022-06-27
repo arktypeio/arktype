@@ -13,7 +13,7 @@ describe("keyword", () => {
         it("validation", () => {
             assert(s.validate("KEKW").error).is(undefined)
             assert(s.validate(["whoops"]).error?.message).snap(
-                `['whoops'] is not assignable to string.`
+                `["whoops"] is not assignable to string.`
             )
         })
     })
@@ -29,7 +29,7 @@ describe("keyword", () => {
             assert(n.validate(-83).error).is(undefined)
             assert(n.validate(0.999).error).is(undefined)
             assert(n.validate("42").error?.message).snap(
-                `'42' is not assignable to number.`
+                `"42" is not assignable to number.`
             )
         })
     })
@@ -105,7 +105,7 @@ describe("keyword", () => {
         it("validation", () => {
             assert(s.validate(Symbol("")).error).is(undefined)
             assert(s.validate("@").error?.message).snap(
-                `'@' is not assignable to symbol.`
+                `"@" is not assignable to symbol.`
             )
         })
     })
@@ -227,7 +227,7 @@ describe("keyword", () => {
         })
         it("validation", () => {
             assert(n.validate("sometimes").error?.message).snap(
-                `'sometimes' is not assignable to never.`
+                `"sometimes" is not assignable to never.`
             )
             assert(n.validate(undefined).error?.message).snap(
                 `undefined is not assignable to never.`
@@ -240,7 +240,7 @@ describe("keyword", () => {
             assert(email.type).typed as string
             assert(email.validate("david@redo.dev").error).is(undefined)
             assert(email.validate("david@redo@dev").error?.message).snap(
-                `'david@redo@dev' is not assignable to email.`
+                `"david@redo@dev" is not assignable to email.`
             )
         })
         it("alpha", () => {
@@ -248,7 +248,7 @@ describe("keyword", () => {
             assert(alpha.type).typed as string
             assert(alpha.validate("aBc").error).is(undefined)
             assert(alpha.validate("a B c").error?.message).snap(
-                `'a B c' is not assignable to alpha.`
+                `"a B c" is not assignable to alpha.`
             )
         })
         it("alphanumeric", () => {
@@ -256,7 +256,7 @@ describe("keyword", () => {
             assert(alphaNumeric.type).typed as string
             assert(alphaNumeric.validate("aBc123").error).is(undefined)
             assert(alphaNumeric.validate("aBc+123").error?.message).snap(
-                `'aBc+123' is not assignable to alphanumeric.`
+                `"aBc+123" is not assignable to alphanumeric.`
             )
         })
         it("lowercase", () => {
@@ -266,7 +266,7 @@ describe("keyword", () => {
                 undefined
             )
             assert(lowercase.validate("whoOps").error?.message).snap(
-                `'whoOps' is not assignable to lowercase.`
+                `"whoOps" is not assignable to lowercase.`
             )
         })
         it("uppercase", () => {
@@ -276,7 +276,7 @@ describe("keyword", () => {
                 undefined
             )
             assert(uppercase.validate("WHOoPS").error?.message).snap(
-                `'WHOoPS' is not assignable to uppercase.`
+                `"WHOoPS" is not assignable to uppercase.`
             )
         })
         it("character", () => {
@@ -284,7 +284,7 @@ describe("keyword", () => {
             assert(character.type).typed as string
             assert(character.validate("!").error).is(undefined)
             assert(character.validate(":(").error?.message).snap(
-                `':(' is not assignable to character.`
+                `":(" is not assignable to character.`
             )
         })
     })

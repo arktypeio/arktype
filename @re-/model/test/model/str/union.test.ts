@@ -62,7 +62,7 @@ g: 4 is not assignable to 3.`)
             it("two types", () => {
                 assert(
                     model("'yes'|'no'").validate("maybe").error?.message
-                ).snap(`'maybe' is not assignable to any of 'yes'|'no'.`)
+                ).snap(`"maybe" is not assignable to any of 'yes'|'no'.`)
             })
             it("several types", () => {
                 assert(model("2|4|6|8").validate(5).error?.message).snap(

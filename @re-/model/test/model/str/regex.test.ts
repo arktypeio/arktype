@@ -35,7 +35,7 @@ describe("regex", () => {
             it("bad string", () => {
                 assert(
                     model("/^[0-9]*$/").validate("durrrrrr").error?.message
-                ).snap(`'durrrrrr' does not match expression /^[0-9]*$/.`)
+                ).snap(`"durrrrrr" does not match expression /^[0-9]*$/.`)
             })
             it("non-string", () => {
                 assert(model("/^[0-9]*$/").validate(5).error?.message).snap(
@@ -47,8 +47,8 @@ describe("regex", () => {
                     model(`/\\((a|b)\\,[^?&]*\\)=>e+f?/`).validate(
                         "(b,c&d)=>eeef"
                     ).error?.message
-                ).equals(
-                    `'(b,c&d)=>eeef' does not match expression /\\((a|b)\\,[^?&]*\\)=>e+f?/.`
+                ).snap(
+                    `"(b,c&d)=>eeef" does not match expression /\\((a|b)\\,[^?&]*\\)=>e+f?/.`
                 )
             })
         })

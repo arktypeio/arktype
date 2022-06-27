@@ -7,8 +7,8 @@ import { model } from "../src/index.js"
 describe("snippets", () => {
     it("model", () => {
         assert(user.type).typed as EquivalentType
-        assert(error?.message).is(
-            "At path browser, 'Internet Explorer' is not assignable to any of 'chrome'|'firefox'|'other'|null."
+        assert(error?.message).snap(
+            `At path browser, "Internet Explorer" is not assignable to any of 'chrome'|'firefox'|'other'|null.`
         )
     })
     it("space", () => {
@@ -54,9 +54,9 @@ describe("snippets", () => {
             }
         }
         assert(error?.message).snap(`Encountered errors at the following paths:
-  email: 'david@redo.biz' does not match expression /[a-z]*@redo\\.dev/.
+  email: "david@redo.biz" does not match expression /[a-z]*@redo\\.dev/.
   about/age: 17 is less than 18.
-  about/bio: 'I am very interesting.I am very interesting.I am ...' is greater than 160 characters.
+  about/bio: "I am very interesting.I am very interesting.I am ..." is greater than 160 characters.
 `)
     })
 })

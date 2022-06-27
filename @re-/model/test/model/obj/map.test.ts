@@ -158,7 +158,7 @@ describe("map", () => {
                         nested.validate({ nested: { russian: "tortoise" } })
                             .error?.message
                     ).snap(
-                        `At path nested/russian, 'tortoise' is not assignable to 'doll'.`
+                        `At path nested/russian, "tortoise" is not assignable to 'doll'.`
                     )
                 })
                 it("multiple", () => {

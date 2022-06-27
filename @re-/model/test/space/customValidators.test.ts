@@ -99,7 +99,7 @@ describe("custom validators", () => {
         })
         assert(num.validate(7.43).error).is(undefined)
         assert(num.validate("ssalbdivad").error?.message).snap(
-            `'ssalbdivad' is not assignable to number.!!!`
+            `"ssalbdivad" is not assignable to number.!!!`
         )
     })
 })

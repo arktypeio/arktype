@@ -90,8 +90,8 @@ describe("alias", () => {
                     ]
                 }).error?.message
             ).snap(`Encountered errors at the following paths:
-  fruits/0: {length: 5000, description: 'I'm a big banana!', peel: 'slippery'} is not assignable to any of banana|apple.
-  fruits/1: {type: 'Fuji'} is not assignable to any of banana|apple.
+  fruits/0: {length: 5000, description: "I'm a big banana!", peel: "slippery"} is not assignable to any of banana|apple.
+  fruits/1: {type: "Fuji"} is not assignable to any of banana|apple.
 `)
         })
         // it("errors on shallow cycle", () => {
@@ -175,7 +175,7 @@ describe("alias", () => {
             ).snap(`Encountered errors at the following paths:
   a/a/a/a/a/a/a/isA: false is not assignable to true.
   b/b/b/b/b/b/b/isA: true is not assignable to false.
-  c/8: {isA: 'the duck goes quack'} is not assignable to any of a|b.
+  c/8: {isA: "the duck goes quack"} is not assignable to any of a|b.
 `)
         })
         it("doesn't try to validate any as a model definition", () => {

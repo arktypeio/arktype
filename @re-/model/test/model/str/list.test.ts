@@ -52,7 +52,7 @@ describe("list", () => {
             it("bad item", () => {
                 assert(
                     numberArray.validate([1, 2, "3", 4, 5]).error?.message
-                ).snap(`At index 2, '3' is not assignable to number.`)
+                ).snap(`At index 2, "3" is not assignable to number.`)
             })
         })
     })
