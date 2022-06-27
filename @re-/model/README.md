@@ -33,7 +33,7 @@ Modify any of these examples in our live editor to see the types and validation 
 
 [Try it out.](https://redo.dev/model/intro#start-quick-%EF%B8%8F)
 
-```ts @snipFrom:snippets/model.ts
+```ts @snipFrom:docs/snippets/model.ts
 import { model } from "@re-/model"
 
 // Models look just like types...
@@ -84,7 +84,7 @@ if (error) {
 
 [Try it out.](https://redo.dev/model/spaces)
 
-```ts @snipFrom:snippets/space.ts
+```ts @snipFrom:docs/snippets/space.ts
 import { compile } from "@re-/model"
 
 const space = compile({
@@ -123,7 +123,7 @@ Like keeping your files small and tidy? Perhaps you'd prefer to split your defin
 
 `index.ts`
 
-```ts @snipFrom:snippets/declaration/declaration.ts
+```ts @snipFrom:docs/snippets/declaration/declaration.ts
 import { declare } from "@re-/model"
 
 // Declare the models you will define
@@ -138,7 +138,7 @@ export const space = compile({ ...userDef, ...groupDef })
 
 `user.ts`
 
-```ts @snipFrom:snippets/declaration/user.ts
+```ts @snipFrom:docs/snippets/declaration/user.ts
 import { define } from "./declaration.js"
 
 export const userDef = define.user({
@@ -150,7 +150,7 @@ export const userDef = define.user({
 
 `group.ts`
 
-```ts @snipFrom:snippets/declaration/group.ts
+```ts @snipFrom:docs/snippets/declaration/group.ts
 import { define } from "./declaration.js"
 
 export const groupDef = define.group({
@@ -165,7 +165,7 @@ TypeScript can do a lot, but sometimes things you care about at runtime shouldn'
 
 [**Constraints** have you covered.](https://redo.dev/model/constraints)
 
-```ts @snipFrom:snippets/constraints.ts
+```ts @snipFrom:docs/snippets/constraints.ts
 import { model } from "@re-/model"
 
 const employee = model({

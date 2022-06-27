@@ -1,4 +1,4 @@
-import { model } from "../src/index.js"
+import { model } from "../../src/index.js"
 
 const employee = model({
     // Not a fan of regex? Don't worry, 'email' is a builtin type :)

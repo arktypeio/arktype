@@ -1,4 +1,4 @@
-import { model } from "../src/index.js"
+import { model } from "../../src/index.js"
 
 // Models look just like types...
 export const user = model({

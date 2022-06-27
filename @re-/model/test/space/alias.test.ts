@@ -257,10 +257,10 @@ describe("alias", () => {
                 .snap(`Error: Unable to generate a value for 'a|b': None of the definitions can be generated:
 Unable to generate a value for 'a': Definition includes a required cycle:
 a=>b=>c=>a
-If you'd like to avoid throwing in when this occurs, pass a value to return when this occurs to the 'onRequiredCycle' option.
+If you'd like to avoid throwing when this occurs, pass a value to return when this occurs to the 'onRequiredCycle' option.
 Unable to generate a value for 'b': Definition includes a required cycle:
 a=>b=>c=>b
-If you'd like to avoid throwing in when this occurs, pass a value to return when this occurs to the 'onRequiredCycle' option.`)
+If you'd like to avoid throwing when this occurs, pass a value to return when this occurs to the 'onRequiredCycle' option.`)
         })
         it("onRequiredCycle", () => {
             assert(

@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unused-vars*/
 import { assert } from "@re-/assert"
-import { EquivalentType, error, user } from "../snippets/model.js"
-import { getValidatedPackageData, redo } from "../snippets/space.js"
+import { EquivalentType, error, user } from "../docs/snippets/model.js"
+import { getValidatedPackageData, redo } from "../docs/snippets/space.js"
 import { model } from "../src/index.js"
 
 describe("snippets", () => {

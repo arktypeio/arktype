@@ -33,7 +33,7 @@ export namespace Generate {
                 `Definition includes a required cycle:\n${[...seen, def].join(
                     "=>"
                 )}\n` +
-                    `If you'd like to avoid throwing in when this occurs, pass a value to return ` +
+                    `If you'd like to avoid throwing when this occurs, pass a value to return ` +
                     `when this occurs to the 'onRequiredCycle' option.`
             )
         }

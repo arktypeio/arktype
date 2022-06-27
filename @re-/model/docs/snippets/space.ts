@@ -1,4 +1,4 @@
-import { space } from "../src/index.js"
+import { space } from "../../src/index.js"
 
 // Spaces are collections of models that can reference each other.
 export const redo = space({
