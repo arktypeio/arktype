@@ -26,7 +26,9 @@ jobs:
               run: |
                   cd redo.dev/dist
                   git add --all
-                  git commit -m "chore: publish to https://redo.dev" --author "CI <ci@redo.dev>"
+                  git config --global user.name "GitHub Actions Bot"
+                  git config --global user.email "<>"
+                  git commit -m "chore: publish to https://redo.dev"
                   git push origin gh-pages
 
     create-release-pr:
