@@ -149,6 +149,17 @@ export namespace Constraint {
 
     export const matches = (def: string): def is Definition => matcher.test(def)
 
+    export const getReference = (def: Definition) => {
+        const parts = def.split(matcher)
+        if (parts.length === 5) {
+            return parts[2]
+        } else if (parts.length === 3) {
+            return parts[0]
+        } else {
+            return def
+        }
+    }
+
     const validateBound = (part: string) => {
         if (!EmbeddedNumber.matches(part)) {
             throw new Error(invalidBoundError(part))

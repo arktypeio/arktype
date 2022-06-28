@@ -9,7 +9,11 @@ import { Model, ModelFrom, ModelFunction } from "./model.js"
 import { Common } from "./nodes/common.js"
 import { Root } from "./nodes/index.js"
 import { Alias } from "./nodes/str/alias.js"
-import { ValidateResolution } from "./resolutions.js"
+import {
+    checkForShallowCycle,
+    ParseResolution,
+    ValidateResolution
+} from "./resolutions.js"
 
 export const space: CreateSpaceFn = (dictionary, options) =>
     new Space(dictionary, options) as any
@@ -25,6 +29,7 @@ export class Space implements SpaceFrom<any> {
         this.config = configureSpace(dictionary, options)
         this.resolutions = {}
         this.models = {}
+        checkForShallowCycle(dictionary)
         for (const [alias, resolution] of Object.entries(
             this.config.definitions
         )) {
@@ -67,7 +72,7 @@ export type CreateSpaceFn = <Dict>(
 ) => SpaceFrom<ValidateDictionary<Dict>>
 
 export type ValidateDictionary<Dict> = {
-    [TypeName in keyof Dict]: ValidateResolution<Dict[TypeName], Dict> //Root.Validate<Dict[TypeName], Dict>
+    [TypeName in keyof Dict]: ValidateResolution<TypeName, Dict>
 }
 
 export type SpaceOptions<ModelName extends string> = Common.ModelOptions & {
@@ -95,16 +100,12 @@ export type SpaceFrom<Dict> = Evaluate<{
 export type DictionaryToModels<Dict> = Evaluate<{
     [TypeName in Exclude<keyof Dict, MetaKey>]: ModelFrom<
         Dict[TypeName],
-        Root.Parse<Dict[TypeName], Dict, {}>
+        ParseResolution<TypeName, Dict>
     >
 }>
 
 export type DictToTypes<Dict> = Evaluate<{
-    [TypeName in Exclude<keyof Dict, MetaKey>]: Root.Parse<
-        Dict[TypeName],
-        Dict,
-        {}
-    >
+    [TypeName in Exclude<keyof Dict, MetaKey>]: ParseResolution<TypeName, Dict>
 }>
 
 export type MetaDefinitions = {

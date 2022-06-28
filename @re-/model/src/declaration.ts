@@ -7,7 +7,7 @@ import {
     Narrow,
     transform
 } from "@re-/tools"
-import { space, SpaceFrom, SpaceOptions, ValidateDictionary } from "./space.js"
+import { Space, SpaceFrom, SpaceOptions, ValidateDictionary } from "./space.js"
 import { Root } from "./index.js"
 
 export const declare: DeclareFn = (...names) => ({
@@ -17,7 +17,7 @@ export const declare: DeclareFn = (...names) => ({
         if (discrepancies) {
             throw new DeclarationError(discrepancies)
         }
-        return space(dict as any, options)
+        return new Space(dict, options) as any
     }
 })
 
@@ -61,11 +61,11 @@ type CreateDeclaredDefineFunction = <
 const createDeclaredDefineFunction: CreateDeclaredDefineFunction =
     (declaredTypeNames, definedTypeName) => (definition) => {
         // Dummy create for validation
-        space(
+        new Space(
             Object.fromEntries(
                 declaredTypeNames.map((typeName) => [typeName, "unknown"])
-            ) as any
-        ).create(definition as any)
+            )
+        ).create(definition)
         return { [definedTypeName]: definition } as any
     }
 

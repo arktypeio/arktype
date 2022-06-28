@@ -94,18 +94,16 @@ describe("alias", () => {
   fruits/1: {type: "Fuji"} is not assignable to any of banana|apple.
 `)
         })
-        // it("errors on shallow cycle", () => {
-        //     // @ts-expect-error
-        //     const shallowRecursive = space({ a: "a" })
-        //     assert(() =>
-        //         shallowRecursive.models.a.assert("what's an a?")
-        //     ).throws("shallow")
-        //     // @ts-expect-error
-        //     const shallowCyclic = space({ a: "b", b: "c", c: "a|b|c" })
-        //     assert(() => shallowCyclic.models.a.assert(["what's a b?"])).throws(
-        //         "shallow"
-        //     )
-        // })
+        it("errors on shallow cycle", () => {
+            // @ts-expect-error
+            assert(() => space({ a: "a" }))
+                .throws.snap(`Error: a references a shallow cycle: a=>a.`)
+                .type.errors.snap()
+            // @ts-expect-error
+            assert(() => space({ a: "b", b: "c", c: "a|b|c" }))
+                .throws.snap(`Error: a references a shallow cycle: a=>b=>c=>a.`)
+                .type.errors.snap()
+        })
         it("cyclic space", () => {
             const bicycle = space({
                 a: { a: "a?", b: "b?", isA: "true" },

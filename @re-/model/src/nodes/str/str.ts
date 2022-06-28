@@ -1,5 +1,6 @@
 import { Common } from "../common.js"
 import { Alias } from "./alias.js"
+import { createSplittableMatcher } from "./common.js"
 import { Constraint } from "./constraint.js"
 import { EmbeddedBigInt, EmbeddedNumber, EmbeddedRegex } from "./embedded.js"
 import { Intersection } from "./intersection.js"
@@ -57,6 +58,11 @@ export namespace Str {
     export type References<Def extends string> =
         Def extends Optional.Definition<infer Child>
             ? References<Child>
+            : Def extends  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+                  | StringLiteral.Definition<infer Text>
+                  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+                  | EmbeddedRegex.Definition<infer Expression>
+            ? [Def]
             : Def extends Intersection.Definition<infer Left, infer Right>
             ? [...References<Left>, ...References<Right>]
             : Def extends Union.Definition<infer Left, infer Right>
@@ -66,6 +72,28 @@ export namespace Str {
             : Def extends Constraint.Definition
             ? Constraint.References<Def>
             : [Def]
+
+    const splittableMatcher = createSplittableMatcher("|&")
+
+    export const references = (def: string): string[] => {
+        const result = []
+        // Union and intersection are the only types of string definitions that contain multiple references
+        const parts = def.match(splittableMatcher)!
+        for (let part of parts) {
+            if (StringLiteral.matches(part) || EmbeddedRegex.matches(part)) {
+                // These are the only two types that can contain non-alphanumeric characters within a reference
+                result.push(part)
+            } else {
+                if (Constraint.matches(part)) {
+                    // If the part is a constraint, extract the bounded reference before parsing any further
+                    part = Constraint.getReference(part)
+                }
+                // At this point, removing all non-alphanumeric characters should yield remaining references to builtins or aliases
+                result.push(part.replace(/[^a-z0-9]/gi, ""))
+            }
+        }
+        return result
+    }
 
     export type Parse<
         Def extends string,

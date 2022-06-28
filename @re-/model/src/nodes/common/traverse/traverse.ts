@@ -2,7 +2,6 @@ export namespace Traverse {
     export type Context<Cfg> = {
         path: string
         seen: string[]
-        shallowSeen: string[]
         modelCfg: Cfg
     }
 
@@ -10,7 +9,6 @@ export namespace Traverse {
         return {
             path: "",
             seen: [],
-            shallowSeen: [],
             modelCfg: modelOptions
         }
     }

@@ -59,11 +59,7 @@ export type TypeOfResult = typeof typeOfResult
 
 export type PropertyOf<T> = T[keyof T]
 export type ElementOf<T extends List> = T[number]
-export type ValueOf<T> = T extends NonRecursible
-    ? never
-    : T extends any[]
-    ? T[number]
-    : T[keyof T]
+export type ValueOf<T> = T extends any[] ? T[number] : T[keyof T]
 
 export type Entry<K extends Key = Key, V = unknown> = [K, V]
 

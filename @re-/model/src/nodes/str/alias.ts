@@ -1,16 +1,21 @@
 import { And, Get, WithPropValue } from "@re-/tools"
 import type { MetaKey } from "../../space.js"
 import { Common } from "../common.js"
-import { Allows } from "../common/common.js"
 import { Root } from "../root.js"
 
 type GetMetaDefinitions<Dict> = MetaKey extends keyof Dict ? Dict[MetaKey] : {}
 
 export namespace Alias {
-    export type Parse<Def extends keyof Dict, Dict, Seen> = And<
-        "onResolve" extends keyof GetMetaDefinitions<Dict> ? true : false,
-        Def extends "resolution" ? false : true
-    > extends true
+    export type Parse<
+        Def extends keyof Dict,
+        Dict,
+        Seen
+    > = Dict[Def] extends Common.Parser.ParseErrorMessage
+        ? unknown
+        : And<
+              "onResolve" extends keyof GetMetaDefinitions<Dict> ? true : false,
+              Def extends "resolution" ? false : true
+          > extends true
         ? Root.Parse<
               Get<GetMetaDefinitions<Dict>, "onResolve">,
               WithPropValue<Dict, "resolution", Dict[Def]>,
@@ -110,7 +115,6 @@ export namespace Alias {
                 ctx: {
                     ...args.ctx,
                     seen: [...args.ctx.seen, this.def],
-                    shallowSeen: [...args.ctx.shallowSeen, this.def],
                     modelCfg: { ...args.ctx.modelCfg, ...aliasCfg }
                 }
             }

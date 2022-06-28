@@ -12,9 +12,11 @@ export namespace Intersection {
 
     const matcher = createSplittableMatcher("&")
 
+    export const getMembers = (def: Definition) => def.match(matcher)!
+
     export class Node extends Common.Branch<Definition, Common.Parser.Node[]> {
         parse() {
-            return this.def.match(matcher)!.map((member) => {
+            return getMembers(this.def).map((member) => {
                 if (member === "&&") {
                     throw new Common.Parser.UnknownTypeError("")
                 }

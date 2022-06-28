@@ -22,7 +22,9 @@ export namespace Root {
     export type Parse<Def, Dict, Seen> = IsAnyOrUnknown<Def> extends true
         ? Def
         : Def extends string
-        ? Str.Parse<Def, Dict, Seen>
+        ? Def extends Common.Parser.ParseErrorMessage
+            ? unknown
+            : Str.Parse<Def, Dict, Seen>
         : Def extends BadDefinitionType
         ? unknown
         : Def extends object

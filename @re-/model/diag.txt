@@ -1,19 +1,15 @@
-src/declaration.ts(15,5): error TS2322: Type '<Dict>(dict: Exact<Dict, CheckDeclaredCompilation<Dict, DeclaredTypeNames>>, options: SpaceOptions<keyof Dict & string> | undefined) => { ...; }' is not assignable to type 'DeclaredCompileFunction<DeclaredTypeNames>'.
-  Call signature return types '{ models: {}; types: {}; create: ModelFunction<ValidateDictionary<unknown>>; extend: ExtendFunction<ValidateDictionary<unknown>>; inputs: { ...; }; }' and '{ models: { [K in keyof { [TypeName in Exclude<keyof Dict, "__meta__">]: { definition: Dict[TypeName]; type: Parse<Dict[TypeName], Dict, {}>; validate: ValidateFunction<...>; assert: AssertFunction<...>; generate: GenerateFunction<...>; }; }]: { [TypeName in Exclude<...>]: { ...; }; }[K]; }; types: { [K in keyof { [...' are incompatible.
-    The types of 'models' are incompatible between these types.
-      Type '{}' is not assignable to type '{ [K in keyof { [TypeName in Exclude<keyof Dict, "__meta__">]: { definition: Dict[TypeName]; type: Parse<Dict[TypeName], Dict, {}>; validate: ValidateFunction<...>; assert: AssertFunction<...>; generate: GenerateFunction<...>; }; }]: { [TypeName in Exclude<...>]: { ...; }; }[K]; }'.
 Files:              216
-Lines:            83038
-Nodes:           279005
-Identifiers:     101095
-Symbols:         519680
-Types:           277273
-Instantiations: 1307188
-Memory used:    582573K
+Lines:            83138
+Nodes:           279482
+Identifiers:     101253
+Symbols:         527552
+Types:           279157
+Instantiations: 1330520
+Memory used:    584680K
 I/O read:         0.01s
 I/O write:        0.00s
-Parse time:       0.56s
+Parse time:       0.58s
 Bind time:        0.23s
-Check time:       6.26s
+Check time:       6.42s
 Emit time:        0.00s
-Total time:       7.05s
+Total time:       7.22s
