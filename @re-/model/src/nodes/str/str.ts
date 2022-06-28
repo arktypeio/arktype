@@ -55,23 +55,29 @@ export namespace Str {
               Common.Parser.UnknownTypeErrorMessage<Def>
           >
 
-    export type References<Def extends string> =
-        Def extends Optional.Definition<infer Child>
-            ? References<Child>
-            : Def extends  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-                  | StringLiteral.Definition<infer Text>
-                  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-                  | EmbeddedRegex.Definition<infer Expression>
-            ? [Def]
-            : Def extends Intersection.Definition<infer Left, infer Right>
-            ? [...References<Left>, ...References<Right>]
-            : Def extends Union.Definition<infer Left, infer Right>
-            ? [...References<Left>, ...References<Right>]
-            : Def extends List.Definition<infer Child>
-            ? References<Child>
-            : Def extends Constraint.Definition
-            ? Constraint.References<Def>
-            : [Def]
+    export type References<
+        Def extends string,
+        Filter
+    > = Def extends Optional.Definition<infer Child>
+        ? References<Child, Filter>
+        : Def extends  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+              | StringLiteral.Definition<infer Text>
+              // eslint-disable-next-line @typescript-eslint/no-unused-vars
+              | EmbeddedRegex.Definition<infer Expression>
+        ? FilterReference<Def, Filter>
+        : Def extends Intersection.Definition<infer Left, infer Right>
+        ? [...References<Left, Filter>, ...References<Right, Filter>]
+        : Def extends Union.Definition<infer Left, infer Right>
+        ? [...References<Left, Filter>, ...References<Right, Filter>]
+        : Def extends List.Definition<infer Child>
+        ? References<Child, Filter>
+        : Def extends Constraint.Definition
+        ? Constraint.References<Def, Filter>
+        : FilterReference<Def, Filter>
+
+    type FilterReference<Def extends string, Filter> = Def extends Filter
+        ? [Def]
+        : []
 
     const splittableMatcher = createSplittableMatcher("|&")
 

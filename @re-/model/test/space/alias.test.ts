@@ -96,13 +96,13 @@ describe("alias", () => {
         })
         it("errors on shallow cycle", () => {
             // @ts-expect-error
-            assert(() => space({ a: "a" }))
-                .throws.snap(`Error: a references a shallow cycle: a=>a.`)
-                .type.errors.snap()
-            // @ts-expect-error
-            assert(() => space({ a: "b", b: "c", c: "a|b|c" }))
-                .throws.snap(`Error: a references a shallow cycle: a=>b=>c=>a.`)
-                .type.errors.snap()
+            assert(() => space({ a: "a" })).throwsAndHasTypeError(
+                `Error: a references a shallow cycle: a=>a.`
+            )
+            assert(() =>
+                // @ts-expect-error
+                space({ a: "b", b: "c", c: "a|b|c" })
+            ).throwsAndHasTypeError(`a references a shallow cycle: a=>b=>c=>a`)
         })
         it("cyclic space", () => {
             const bicycle = space({

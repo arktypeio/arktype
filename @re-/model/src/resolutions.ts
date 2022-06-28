@@ -1,69 +1,89 @@
 import { ElementOf, IsAny, Iteration, Join, KeyValuate } from "@re-/tools"
 import { Common } from "./nodes/common.js"
 import { Root, Str } from "./nodes/index.js"
-import { SpaceDictionary } from "./space.js"
+import { AliasIn, SpaceDictionary } from "./space.js"
 
-export type ShallowCycleError<
-    Alias,
-    Seen extends any[]
-> = Common.Parser.ParseErrorMessage<`${Alias &
-    string} references a shallow cycle: ${Join<Seen, "=>">}.`>
+export type ShallowCycleError<Seen extends string[]> =
+    Common.Parser.ParseErrorMessage<`${Seen[0]} references a shallow cycle: ${Join<
+        Seen,
+        "=>"
+    >}.`>
 
-export const shallowCycleError = (def: string, shallowSeen: string[]) =>
-    `${def} references a shallow cycle: ${[...shallowSeen, def].join("=>")}.`
+export const shallowCycleError = (shallowSeen: string[]) =>
+    `${shallowSeen[0]} references a shallow cycle: ${shallowSeen.join("=>")}.`
 
+/** When we detect a ShallowCycle, the generic will return a string tuple representing the cycle path.
+ *  Otherwise, we return an empty tuple if no tuple is detected.
+ *  This generic simply returns cycle path if it is not an empty tuple, otherwise it will return Else.
+ */
+type IfShallowCycleElse<
+    CheckResult extends string[],
+    Else
+> = [] extends CheckResult ? Else : CheckResult
+
+/**  For a list of string references, if any is in Seen, return Seen plus that reference,
+ *   to represent the path at which the cycle occured. Otherwise, append the reference to seen and recurse.  */
 type IterateReferencesForShallowCycle<
     References,
     Dict,
-    Seen extends unknown[]
+    Seen extends string[]
 > = References extends Iteration<string, infer Current, infer Remaining>
     ? Current extends ElementOf<Seen>
         ? [...Seen, Current]
-        : CheckReferenceForShallowCycleRecurse<
-              KeyValuate<Dict, Current>,
-              Dict,
-              [...Seen, Current]
-          > extends []
-        ? IterateReferencesForShallowCycle<Remaining, Dict, Seen>
-        : CheckReferenceForShallowCycleRecurse<
-              KeyValuate<Dict, Current>,
-              Dict,
-              [...Seen, Current]
+        : IfShallowCycleElse<
+              CheckResolutionForShallowCycleRecurse<
+                  KeyValuate<Dict, Current>,
+                  Dict,
+                  [...Seen, Current]
+              >,
+              IterateReferencesForShallowCycle<Remaining, Dict, Seen>
           >
     : []
 
-type CheckReferenceForShallowCycleRecurse<
-    Reference,
+/** For a given resolution, check it's shallow references to other aliases for cycles */
+type CheckResolutionForShallowCycleRecurse<
+    Resolution,
     Dict,
-    Seen extends unknown[]
-> = Reference extends string
-    ? IterateReferencesForShallowCycle<Str.References<Reference>, Dict, Seen>
+    Seen extends string[]
+> = Resolution extends string
+    ? IterateReferencesForShallowCycle<
+          Str.References<Resolution, keyof Dict>,
+          Dict,
+          Seen
+      >
     : []
 
 type CheckResolutionForShallowCycle<
     Resolution,
     Dict,
-    Seen extends unknown[]
+    Seen extends string[]
 > = IsAny<Resolution> extends true
     ? []
-    : CheckReferenceForShallowCycleRecurse<Resolution, Dict, Seen>
+    : CheckResolutionForShallowCycleRecurse<Resolution, Dict, Seen>
 
-export type ParseResolution<Alias extends keyof Dict, Dict> = Root.Parse<
+export type ParseResolution<Alias extends AliasIn<Dict>, Dict> = Root.Parse<
     Dict[Alias],
     Dict,
     { [K in Alias]: true }
 >
 
+type IfShallowCycleErrorElse<
+    CheckResult extends string[],
+    Else
+> = [] extends CheckResult ? Else : ShallowCycleError<CheckResult>
+
 export type ValidateResolution<
     Alias extends keyof Dict,
     Dict
 > = Dict[Alias] extends string
-    ? CheckResolutionForShallowCycle<Dict[Alias], Dict, [Alias]> extends []
-        ? Root.Validate<Dict[Alias], Dict>
-        : ShallowCycleError<
-              Alias,
-              CheckResolutionForShallowCycle<Dict[Alias], Dict, [Alias]>
-          >
+    ? IfShallowCycleErrorElse<
+          CheckResolutionForShallowCycle<
+              Dict[Alias],
+              Dict,
+              [Extract<Alias, string>]
+          >,
+          Str.Validate<Dict[Alias], Dict, Dict[Alias]>
+      >
     : Root.Validate<Dict[Alias], Dict>
 
 type ReferenceMap = Record<string, string[]>
@@ -87,7 +107,9 @@ const checkRecursiveShallowReferences = (directReferenceMap: ReferenceMap) => {
     const checked: Record<string, boolean> = {}
     const checkShallowReferencePath = (alias: string, path: string[]) => {
         if (path.includes(alias)) {
-            throw new Common.Parser.ParseError(shallowCycleError(alias, path))
+            throw new Common.Parser.ParseError(
+                shallowCycleError([...path, alias])
+            )
         }
         for (const shallowReference of directReferenceMap[alias]) {
             if (shallowReference in directReferenceMap) {

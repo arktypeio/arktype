@@ -68,7 +68,7 @@ export class Space implements SpaceFrom<any> {
 
 export type CreateSpaceFn = <Dict>(
     dictionary: ValidateDictionary<Dict>,
-    options?: SpaceOptions<ModelNameIn<Dict>>
+    options?: SpaceOptions<AliasIn<Dict>>
 ) => SpaceFrom<ValidateDictionary<Dict>>
 
 export type ValidateDictionary<Dict> = {
@@ -93,19 +93,19 @@ export type SpaceFrom<Dict> = Evaluate<{
     extend: ExtendFunction<Dict>
     inputs: {
         dictionary: Dict
-        options: SpaceOptions<ModelNameIn<Dict>> | undefined
+        options: SpaceOptions<AliasIn<Dict>> | undefined
     }
 }>
 
 export type DictionaryToModels<Dict> = Evaluate<{
-    [TypeName in Exclude<keyof Dict, MetaKey>]: ModelFrom<
+    [TypeName in AliasIn<Dict>]: ModelFrom<
         Dict[TypeName],
         ParseResolution<TypeName, Dict>
     >
 }>
 
 export type DictToTypes<Dict> = Evaluate<{
-    [TypeName in Exclude<keyof Dict, MetaKey>]: ParseResolution<TypeName, Dict>
+    [TypeName in AliasIn<Dict>]: ParseResolution<TypeName, Dict>
 }>
 
 export type MetaDefinitions = {
@@ -115,14 +115,11 @@ export type MetaDefinitions = {
 
 export type MetaKey = "__meta__"
 
-export type ModelNameIn<Dict> = keyof Dict & string
+export type AliasIn<Dict> = Extract<Exclude<keyof Dict, MetaKey>, string>
 
 export type ExtendFunction<BaseDict> = <ExtensionDict>(
     dictionary: ValidateDictionaryExtension<BaseDict, ExtensionDict>,
-    config?: SpaceExtensionOptions<
-        ModelNameIn<BaseDict>,
-        ModelNameIn<ExtensionDict>
-    >
+    config?: SpaceExtensionOptions<AliasIn<BaseDict>, AliasIn<ExtensionDict>>
 ) => SpaceFrom<Merge<BaseDict, ExtensionDict>>
 
 export type SpaceExtensionOptions<
