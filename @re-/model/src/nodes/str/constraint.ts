@@ -97,6 +97,11 @@ export namespace Constraint {
         ? Bounded
         : Str.Validate<Bounded, Dict, Root>
 
+    export type References<
+        Def extends string,
+        Bounded extends string = ExtractBounded<Def>
+    > = Str.References<Bounded>
+
     type SingleBoundedParts<
         Left extends string = string,
         Comparator extends ComparatorToken = ComparatorToken,

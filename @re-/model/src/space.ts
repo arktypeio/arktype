@@ -9,6 +9,7 @@ import { Model, ModelFrom, ModelFunction } from "./model.js"
 import { Common } from "./nodes/common.js"
 import { Root } from "./nodes/index.js"
 import { Alias } from "./nodes/str/alias.js"
+import { ValidateResolution } from "./resolutions.js"
 
 export const space: CreateSpaceFn = (dictionary, options) =>
     new Space(dictionary, options) as any
@@ -63,10 +64,10 @@ export class Space implements SpaceFrom<any> {
 export type CreateSpaceFn = <Dict>(
     dictionary: ValidateDictionary<Dict>,
     options?: SpaceOptions<ModelNameIn<Dict>>
-) => SpaceFrom<Dict>
+) => SpaceFrom<ValidateDictionary<Dict>>
 
 export type ValidateDictionary<Dict> = {
-    [TypeName in keyof Dict]: Root.Validate<Dict[TypeName], Dict>
+    [TypeName in keyof Dict]: ValidateResolution<Dict[TypeName], Dict> //Root.Validate<Dict[TypeName], Dict>
 }
 
 export type SpaceOptions<ModelName extends string> = Common.ModelOptions & {

@@ -54,6 +54,19 @@ export namespace Str {
               Common.Parser.UnknownTypeErrorMessage<Def>
           >
 
+    export type References<Def extends string> =
+        Def extends Optional.Definition<infer Child>
+            ? References<Child>
+            : Def extends Intersection.Definition<infer Left, infer Right>
+            ? [...References<Left>, ...References<Right>]
+            : Def extends Union.Definition<infer Left, infer Right>
+            ? [...References<Left>, ...References<Right>]
+            : Def extends List.Definition<infer Child>
+            ? References<Child>
+            : Def extends Constraint.Definition
+            ? Constraint.References<Def>
+            : [Def]
+
     export type Parse<
         Def extends string,
         Dict,

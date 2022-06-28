@@ -64,7 +64,7 @@ const createDeclaredDefineFunction: CreateDeclaredDefineFunction =
         space(
             Object.fromEntries(
                 declaredTypeNames.map((typeName) => [typeName, "unknown"])
-            )
+            ) as any
         ).create(definition as any)
         return { [definedTypeName]: definition } as any
     }
