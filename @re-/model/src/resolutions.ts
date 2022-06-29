@@ -47,7 +47,7 @@ type CheckResolutionForShallowCycleRecurse<
     Seen extends string[]
 > = Resolution extends string
     ? IterateReferencesForShallowCycle<
-          Str.References<Resolution, keyof Dict>,
+          Str.RecursiveReferences<Resolution, keyof Dict>,
           Dict,
           Seen
       >

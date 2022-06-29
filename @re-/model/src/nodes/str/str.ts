@@ -34,8 +34,8 @@ export namespace Str {
         | "cyclic"
         | "resolution"
         ? Root
-        : Def extends Optional.Definition<infer Child>
-        ? Optional.Validate<Child, Dict, Root>
+        : Def extends Optional.Definition<infer Next>
+        ? Optional.Validate<Next, Dict, Root>
         : Def extends  // eslint-disable-next-line @typescript-eslint/no-unused-vars
               | StringLiteral.Definition<infer Text>
               // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -47,8 +47,8 @@ export namespace Str {
         ? BinaryValidate<Left, Right, Dict, Root>
         : Def extends Union.Definition<infer Left, infer Right>
         ? BinaryValidate<Left, Right, Dict, Root>
-        : Def extends List.Definition<infer Child>
-        ? Validate<Child, Dict, Root>
+        : Def extends List.Definition<infer Next>
+        ? Validate<Next, Dict, Root>
         : Def extends Constraint.Definition
         ? Constraint.Validate<Def, Dict, Root>
         : Common.Parser.ParseErrorMessage<
@@ -58,26 +58,30 @@ export namespace Str {
     export type References<
         Def extends string,
         Filter
-    > = Def extends Optional.Definition<infer Child>
-        ? References<Child, Filter>
-        : Def extends  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-              | StringLiteral.Definition<infer Text>
-              // eslint-disable-next-line @typescript-eslint/no-unused-vars
-              | EmbeddedRegex.Definition<infer Expression>
-        ? FilterReference<Def, Filter>
+    > = Def extends Optional.Definition<infer Next>
+        ? RecursiveReferences<Next, Filter>
+        : RecursiveReferences<Def, Filter>
+
+    export type RecursiveReferences<Def extends string, Filter> = Def extends  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        | StringLiteral.Definition<infer Text>
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        | EmbeddedRegex.Definition<infer Expression>
+        ? Common.FilterToTuple<Def, Filter>
         : Def extends Intersection.Definition<infer Left, infer Right>
-        ? [...References<Left, Filter>, ...References<Right, Filter>]
+        ? [
+              ...RecursiveReferences<Left, Filter>,
+              ...RecursiveReferences<Right, Filter>
+          ]
         : Def extends Union.Definition<infer Left, infer Right>
-        ? [...References<Left, Filter>, ...References<Right, Filter>]
-        : Def extends List.Definition<infer Child>
-        ? References<Child, Filter>
+        ? [
+              ...RecursiveReferences<Left, Filter>,
+              ...RecursiveReferences<Right, Filter>
+          ]
+        : Def extends List.Definition<infer Next>
+        ? RecursiveReferences<Next, Filter>
         : Def extends Constraint.Definition
         ? Constraint.References<Def, Filter>
-        : FilterReference<Def, Filter>
-
-    type FilterReference<Def extends string, Filter> = Def extends Filter
-        ? [Def]
-        : []
+        : Common.FilterToTuple<Def, Filter>
 
     const splittableMatcher = createSplittableMatcher("|&")
 
@@ -109,8 +113,8 @@ export namespace Str {
         ? Keyword.Types[Def]
         : Def extends keyof Dict
         ? Alias.Parse<Def, Dict, Seen>
-        : Def extends Optional.Definition<infer Child>
-        ? Parse<Child, Dict, Seen> | undefined
+        : Def extends Optional.Definition<infer Next>
+        ? Parse<Next, Dict, Seen> | undefined
         : Def extends StringLiteral.Definition<infer Text>
         ? Text
         : // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -124,8 +128,8 @@ export namespace Str {
         ? Str.Parse<Left, Dict, Seen> & Str.Parse<Right, Dict, Seen>
         : Def extends Union.Definition<infer Left, infer Right>
         ? Str.Parse<Left, Dict, Seen> | Str.Parse<Right, Dict, Seen>
-        : Def extends List.Definition<infer Child>
-        ? Parse<Child, Dict, Seen>[]
+        : Def extends List.Definition<infer Next>
+        ? Parse<Next, Dict, Seen>[]
         : Def extends Constraint.Definition
         ? Constraint.Parse<Def, Dict, Seen>
         : unknown

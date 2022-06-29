@@ -7,6 +7,10 @@ export namespace Regex {
         def instanceof RegExp
 
     export class Node extends Common.Leaf<Definition> {
+        defToString() {
+            return `/${this.def.source}/`
+        }
+
         allows(args: Common.Allows.Args) {
             if (typeof args.value !== "string") {
                 args.errors.add(
@@ -22,7 +26,7 @@ export namespace Regex {
                     this.ctx.path,
                     `${Common.stringifyValue(
                         args.value
-                    )} does not match expression /${this.def.source}/.`
+                    )} does not match expression ${this.defToString()}.`
                 )
                 return
             }

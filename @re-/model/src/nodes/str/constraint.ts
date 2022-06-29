@@ -1,5 +1,6 @@
 import { Spliterate } from "@re-/tools"
 import { Common } from "../common.js"
+import { StrBranch } from "./common.js"
 import { EmbeddedNumber } from "./embedded.js"
 import { Keyword } from "./keyword.js"
 import { Str } from "./str.js"
@@ -97,10 +98,10 @@ export namespace Constraint {
         ? Bounded
         : Str.Validate<Bounded, Dict, Root>
 
-    export type References<Def extends string, Filter> = Str.References<
-        ExtractBounded<Def>,
+    export type References<
+        Def extends string,
         Filter
-    >
+    > = Str.RecursiveReferences<ExtractBounded<Def>, Filter>
 
     type SingleBoundedParts<
         Left extends string = string,
@@ -190,7 +191,7 @@ export namespace Constraint {
         }
     }
 
-    export class Node extends Common.Branch<Definition, ParseResult> {
+    export class Node extends StrBranch<Definition, ParseResult> {
         parse() {
             // Odd-indexed parts will always be comparators (<=, >=, < or >)
             // We still need to validate even-indexed parts as boundable keywords or number literals

@@ -1,4 +1,5 @@
 import type { Parser } from "../parser.js"
+import { References } from "../references.js"
 import { Allows, Generate } from "../traverse/index.js"
 import { stringifyDef, stringifyValue } from "../utils.js"
 
@@ -7,6 +8,8 @@ export abstract class Base<DefType> {
 
     abstract allows(args: Allows.Args): void
     abstract generate(args: Generate.Args): unknown
+    // abstract references(args: References.Args): string[]
+    // abstract defToString(): string
 
     stringifyDef() {
         return stringifyDef(this.def)
@@ -19,11 +22,5 @@ export abstract class Base<DefType> {
                 args.value
             )} is not assignable to ${this.stringifyDef()}.`
         )
-    }
-
-    validateByPath(value: unknown, options?: Allows.Options) {
-        const args = Allows.createArgs(value, options)
-        this.allows(args)
-        return args.errors.all()
     }
 }

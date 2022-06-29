@@ -11,6 +11,10 @@ export namespace Literal {
         typeof def === "bigint"
 
     export class Node extends Common.Leaf<Definition> {
+        defToString() {
+            return this.stringifyDef()
+        }
+
         allows(args: Common.Allows.Args) {
             if (args.value !== this.def) {
                 this.addUnassignable(args)

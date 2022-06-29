@@ -113,3 +113,5 @@ export type GenerateFunction<ModeledType> = (
 ) => ModeledType
 
 export type Parse<Def, Dict> = Root.Parse<Def, Dict, {}>
+
+export type References<Def, Filter = unknown> = Root.References<Def, Filter>

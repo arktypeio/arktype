@@ -35,6 +35,16 @@ export namespace Root {
         ? any
         : unknown
 
+    export type References<Def, Filter> = Def extends string
+        ? Def extends Common.Parser.ParseErrorMessage
+            ? unknown
+            : Str.References<Def, Filter>
+        : Def extends object
+        ? Obj.References<Def, Filter>
+        : Def extends Literal.Definition
+        ? Common.FilterToTuple<Def, Filter>
+        : []
+
     export type BadDefinitionType = Function | symbol
 
     type BadDefinitionTypeMessage<Def extends BadDefinitionType> =

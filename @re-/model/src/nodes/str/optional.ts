@@ -1,4 +1,5 @@
 import { Common } from "../common.js"
+import { StrBranch } from "./common.js"
 import { Str } from "./str.js"
 
 const invalidModifierErrorMessage = `Modifier '?' is only valid at the end of a type definition.`
@@ -18,7 +19,7 @@ export namespace Optional {
 
     export const matches = (def: string): def is Definition => def.endsWith("?")
 
-    export class Node extends Common.Branch<Definition> {
+    export class Node extends StrBranch<Definition> {
         parse() {
             if (this.ctx.stringRoot !== this.def) {
                 throw new Common.Parser.ParseError(invalidModifierErrorMessage)

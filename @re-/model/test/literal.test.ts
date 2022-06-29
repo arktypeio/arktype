@@ -1,5 +1,5 @@
 import { assert } from "@re-/assert"
-import { model } from "../../src/index.js"
+import { model } from "../src/index.js"
 
 describe("number", () => {
     describe("type", () => {

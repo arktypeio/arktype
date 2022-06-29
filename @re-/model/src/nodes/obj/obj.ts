@@ -1,4 +1,4 @@
-import { Evaluate } from "@re-/tools"
+import { Evaluate, Iteration, ListPossibleTypes, ValueOf } from "@re-/tools"
 import { Common } from "../common.js"
 import { Root } from "../root.js"
 import { Map } from "./map.js"
@@ -20,6 +20,24 @@ export namespace Obj {
               -readonly [I in keyof Def]: Root.Parse<Def[I], Dict, Seen>
           }>
         : Map.Parse<Def, Dict, Seen>
+
+    export type References<Def extends object, Filter> = ReferencesRecurse<
+        ListPossibleTypes<ValueOf<Def>>,
+        [],
+        Filter
+    >
+
+    type ReferencesRecurse<
+        Values extends unknown[],
+        Result extends unknown[],
+        Filter
+    > = Values extends Iteration<unknown, infer Current, infer Remaining>
+        ? ReferencesRecurse<
+              Remaining,
+              [...Result, ...Root.References<Current, Filter>],
+              Filter
+          >
+        : Result
 
     export const matches = (def: unknown): def is object =>
         typeof def === "object" && def !== null

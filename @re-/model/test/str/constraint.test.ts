@@ -1,5 +1,5 @@
 import { assert } from "@re-/assert"
-import { eager, model } from "../../../src/index.js"
+import { eager, model } from "../../src/index.js"
 
 describe("constraint", () => {
     describe("type", () => {
